@@ -58,6 +58,8 @@ and set `S-needs-info`; do not invent it.
 | `issue.stale-status` | `gh pr view N` or `gh issue view N`, then change "open" to "merged" (or the true state) and tick what it finished. |
 | `issue.links` | Make the link relative and point it at a file and anchor that exist on `main`. |
 | `issue.provenance` | Add the `From:` line naming where the issue came from. |
+| `issue.attachment-personal` | Never quote the log. Ask the author in a comment to replace their name with `~` in the log, attach the new copy and delete the old link; a maintainer may remove the link from the body meanwhile ([Attached logs](../../../docs/guides/issues.md#attachments)). |
+| `issue.attachment-data` | Open the log only to judge it (never copy it anywhere). If it holds game files or game text, a maintainer removes the link from the body and asks the author to attach a log without it ([LEGAL.md](../../../LEGAL.md)); if it is a long ordinary Coney log, leave it. |
 | `issue.triage-age` | Triage it now ([Triage](../../../docs/guides/issues.md#triage)). |
 | `issue.info-age` | Ask once more in a comment, or close as not planned with the reason. |
 | `issue.progress-idle` | Ask the track for its state; return the issue to `S-ready-to-start` when nobody works on it. |

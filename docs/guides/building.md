@@ -147,6 +147,11 @@ never `until grep -q ... log; do sleep ...; done`, which waits for ever when the
 [Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests; `coney-tools workspace
 clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
 
+No agent waits on a build past its prompt cache (about an hour): a call waits at most 40 minutes for a slot and takes
+at most 45 in all, and leaves at once with exit 75 when the queue says it cannot fit. A longer wait runs detached
+(`--detach`), the agent writes `STATUS.md` and stops, and whoever continues reads `coney-tools build result`
+([Build waits](agents.md#build-waits)).
+
 | Preset | Build type | What it is for |
 | --- | --- | --- |
 | `dev` | Debug | day-to-day work |

@@ -105,7 +105,7 @@ body:
     id: log
     attributes:
       label: Log
-      description: Attach Coney's log, the text it prints in the terminal you started it from (copy it into a `.txt` file and drag it here).
+      description: Attach Coney's log, the text it prints in the terminal you started it from (copy it into a `.txt` file and drag it here). It is public, so first replace your user name in any path with `~` and remove email addresses; the hygiene workflow checks.
   - type: checkboxes
     id: no-game-files
     attributes:

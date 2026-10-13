@@ -108,9 +108,12 @@ void PowerMeter::update(std::uint64_t nowMs, bool draining, float drainPerSecond
     m_value = std::min(m_maximum, m_value + wholePoints(static_cast<float>(m_refillPerSecond), elapsed, m_carry));
 }
 
-RageMeter::RageMeter(int maximum, int gainPercent, std::uint64_t startMs)
-    : m_maximum(maximum), m_gainPercent(gainPercent), m_lastMs(startMs) {
-    CONEY_ASSERT(maximum > 0);
+RageMeter::RageMeter(const RageClass& rage, std::uint64_t startMs)
+    : m_maximum(rage.maximum), m_gainPercent(rage.gainPercent),
+      m_decayPerSecond(static_cast<float>(rage.maximum * rage.decayPercent) / 100.0F / kRageRateSeconds),
+      m_drainPerSecond(static_cast<float>(rage.maximum * rage.drainPercent) / 100.0F / kRageRateSeconds),
+      m_lastMs(startMs) {
+    CONEY_ASSERT(rage.maximum > 0);
 }
 
 void RageMeter::set(int value) { m_value = std::clamp(value, 0, m_maximum); }
@@ -172,7 +175,7 @@ void RageMeter::force(std::uint64_t nowMs) {
     m_carry = 0.0F;
 }
 
-void RageMeter::update(std::uint64_t nowMs, const CombatTuning& tuning) {
+void RageMeter::update(std::uint64_t nowMs) {
     const std::uint64_t elapsed = nowMs > m_lastMs ? nowMs - m_lastMs : 0;
     m_lastMs = nowMs;
     // A locked meter stays where it is.
@@ -181,7 +184,7 @@ void RageMeter::update(std::uint64_t nowMs, const CombatTuning& tuning) {
     }
     if (m_raging) {
         // Rage drains the meter and ends with it.
-        m_value = std::max(0, m_value - wholePoints(tuning.rageDrainPerSecond, elapsed, m_carry));
+        m_value = std::max(0, m_value - wholePoints(m_drainPerSecond, elapsed, m_carry));
         if (m_value == 0) {
             m_raging = false;
             m_carry = 0.0F;
@@ -193,7 +196,7 @@ void RageMeter::update(std::uint64_t nowMs, const CombatTuning& tuning) {
         m_carry = 0.0F;
         return;
     }
-    m_value = std::max(0, m_value - wholePoints(tuning.rageDecayPerSecond, elapsed, m_carry));
+    m_value = std::max(0, m_value - wholePoints(m_decayPerSecond, elapsed, m_carry));
 }
 
 } // namespace coney::combat

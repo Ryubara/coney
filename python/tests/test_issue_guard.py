@@ -1,19 +1,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for .claude/hooks/issue_guard.py, the Claude Code hook that refuses raw `gh` commands which write an issue.
+"""Tests for .claude/hooks/issue_guard.py, the Claude Code hook that refuses a raw `gh` call filing an issue.
 
 The script is a standalone, standard-library-only file (the hook runs it on every shell command), so it is loaded by
-path. The matcher must block a command only where `gh` starts one; text that merely mentions the command passes.
+path. The matcher must block a command only where `gh` starts an issue write; reading, commenting, labelling and
+closing pass, and so does a command that names only some other repository.
 """
 
 import importlib.util
 import io
 import json
+import subprocess
+from pathlib import Path
 from types import ModuleType
 
 import pytest
 from conventions_support import REPO
 
 SCRIPT = REPO / ".claude" / "hooks" / "issue_guard.py"
+#: The repository the tests pretend the working directory belongs to.
+HERE = "example/project"
 
 
 def load() -> ModuleType:
@@ -28,15 +33,31 @@ def load() -> ModuleType:
 GUARD = load()
 
 BLOCKED = [
+    "gh issue create --title x",
+    "gh issue create --title x --body-file note.md",
+    "  gh issue create -t x",
+    "cd repo && gh issue create --title x",
+    "echo done; gh issue create --title x",
+    "FOO=1 gh issue create --title x",
+    "gh issue edit 5 --body-file note.md",
+    "gh issue edit 5 --body 'text'",
+    "gh issue edit 5 -F note.md",
+    "gh issue edit 5 --add-label bug --body-file note.md",
+    "gh api repos/example/project/issues -X POST -f title=x",
+    "gh api repos/example/project/issues/5 --method PATCH -f body=x",
+    "gh api repos/example/project/issues -f title=x",
+    "gh issue create --repo example/project --title x",
+    "gh issue create -R example/project --title x",
+    "GH_REPO=example/project gh issue create --title x",
+    "gh issue create \\\n  --title x",
+    "gh issue create `\n  --title x",
     "gh issue create --title x --body y",
     "gh issue create",
     "  gh issue create --title x",
     "cd worktree && gh issue create --title x --body-file f.md",
-    "echo done; gh issue create --title x",
     "cat f | gh issue create --title x --body-file -",
     "echo $(gh issue create --title x --body y)",
     "(gh issue create --title x --body y)",
-    "FOO=1 gh issue create --title x",
     "gh.exe issue create --title x",
     "& gh issue create --title x --body y",
     "gh issue edit 5 --body-file f.md",
@@ -47,30 +68,46 @@ BLOCKED = [
     "gh issue edit 5 --title t --body-file f.md",
     "gh issue edit 5 \\\n  --body-file f.md",
     "gh issue edit 5 `\n  --body-file f.md",
-    "gh api repos/o/r/issues -X POST -f title=x -f body=y",
-    "gh api repos/o/r/issues -f title=x -f body=y",
+    "gh api repos/example/project/issues -X POST -f title=x -f body=y",
+    "gh api repos/example/project/issues -f title=x -f body=y",
     "gh api repos/{owner}/{repo}/issues --method POST -f title=x",
     "gh api repos/{owner}/{repo}/issues/5 -X PATCH -f body=new",
     "gh api repos/{owner}/{repo}/issues/5 --method PATCH -F body=@f.md",
     "gh api repos/{owner}/{repo}/issues/5 -X PATCH -f title=new",
     "gh api repos/{owner}/{repo}/issues/5/sub_issues -X POST -F sub_issue_id=9",
-    "gh api /repos/o/r/issues -X POST --input f.json",
+    "gh api /repos/example/project/issues -X POST --input f.json",
     "gh api graphql -f query='mutation { createIssue(input: {}) { issue { id } } }'",
     "gh api graphql -f query='mutation { updateIssue(input: {}) { issue { id } } }'",
 ]
 
 ALLOWED = [
     "",
-    "ls -la",
     "gh issue view 5 --comments",
     "gh issue list --state open",
+    "gh issue close 5",
+    "gh issue reopen 5",
+    "gh issue comment 5 --body 'text'",
+    "gh issue edit 5 --add-label bug",
+    "gh issue edit 5 --title 'a title'",
+    "gh api repos/example/project/issues/5",
+    "gh api repos/example/project/issues/5/comments -f body=x",
+    "gh pr create --title x --body-file note.md",
+    "uv run --project python coney-tools issue create --title x --body note.md",
+    'echo "gh issue create --title x"',
+    "echo 'gh issue edit 5 --body-file f'",
+    'git commit -m "docs: use coney-tools issue, not gh issue create"',
+    "grep -rn 'gh issue create' docs",
+    "cat <<'EOF' > note.md\ngh issue create --title x\nEOF",
+    "cat <<EOF\nuse:\n  gh issue edit 5 --body-file f\nEOF\nls",
+    "@'\ngh issue create --title x\n'@ | Set-Content note.md",
+    "mygh issue create --title x",
+    "ls -la",
     "gh issue edit 5 --add-label A-ai",
     "gh issue edit 5 --remove-label S-needs-triage --add-label S-in-progress",
     "gh issue edit 5 --title 'A better title'",
     "gh issue comment 5 --body 'a comment'",
     "gh issue comment 5 --body-file note.md",
     "gh issue close 5 --reason completed",
-    "gh issue reopen 5",
     "gh pr create --title x --body y",
     "gh pr edit 5 --body-file f.md",
     "gh api repos/{owner}/{repo}/issues/5 --jq .id",
@@ -86,25 +123,79 @@ ALLOWED = [
     'echo "gh issue create is blocked"',
     "echo 'run gh issue edit 5 --body-file f.md instead'",
     'git commit -m "document gh issue create and gh issue edit --body"',
-    "grep -rn 'gh issue create' docs",
     'rg "gh issue create" .',
     "cat <<'EOF' > note.md\ngh issue create --title x\ngh issue edit 5 --body-file f\nEOF",
     "cat <<EOF\nuse:\n  gh issue create\nEOF\nls",
-    "cat <<-EOF\n\tgh api repos/o/r/issues -X POST\n\tEOF",
-    "@'\ngh issue create --title x\n'@ | Set-Content note.md",
+    "cat <<-EOF\n\tgh api repos/example/project/issues -X POST\n\tEOF",
     "ghissue create",
     "gh issues create",
+    # Another repository: the rule is this repository's own.
+    "gh issue create -R other/scratch --title x",
+    "gh issue create --repo other/scratch --title x",
+    "gh issue create --repo=other/scratch --title x",
+    "GH_REPO=other/scratch gh issue create --title x",
+    "gh issue edit 3 --repo other/scratch --body-file f",
+    "gh api repos/other/scratch/issues -X POST -f title=x",
+]
+
+#: Naming this repository, even next to another one, is still this repository's issue.
+NAMES_THIS_ONE = [
+    "gh issue create -R Example/Project --title x",
+    "gh issue create -R other/scratch -R example/project --title x",
+    "gh api repos/other/scratch/issues -X POST -f title=x && gh api repos/example/project/issues -X POST -f title=y",
 ]
 
 
-@pytest.mark.parametrize("command", BLOCKED)
-def test_a_command_that_writes_an_issue_is_blocked(command: str) -> None:
-    assert GUARD.blocked(command), command
+@pytest.fixture(autouse=True)
+def this_repository(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The working directory belongs to `HERE`."""
+    monkeypatch.setattr(GUARD, "this_repository", lambda cwd: HERE)
+
+
+@pytest.mark.parametrize("command", BLOCKED + NAMES_THIS_ONE)
+def test_a_raw_issue_write_is_blocked(command: str) -> None:
+    assert GUARD.blocked(command, "."), command
 
 
 @pytest.mark.parametrize("command", ALLOWED)
-def test_a_command_that_only_reads_or_mentions_it_passes(command: str) -> None:
-    assert not GUARD.blocked(command), command
+def test_reading_commenting_and_other_repositories_pass(command: str) -> None:
+    assert not GUARD.blocked(command, "."), command
+
+
+def test_a_repository_that_cannot_be_told_counts_as_this_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(GUARD, "this_repository", lambda cwd: None)
+    assert GUARD.blocked("gh issue create -R other/scratch --title x", ".")
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://github.com/Example/Project.git\n", "example/project"),
+        ("https://github.com/example/project", "example/project"),
+        ("git@github.com:example/project.git\n", "example/project"),
+        ("https://user@github.com/example/project/", "example/project"),
+    ],
+)
+def test_the_repository_is_read_from_the_origin_remote(
+    monkeypatch: pytest.MonkeyPatch, url: str, expected: str
+) -> None:
+    monkeypatch.undo()
+    done = subprocess.CompletedProcess([], 0, stdout=url, stderr="")
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: done)
+    assert GUARD.this_repository(".") == expected
+
+
+def test_no_origin_remote_gives_no_repository(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.undo()
+    done = subprocess.CompletedProcess([], 2, stdout="", stderr="no such remote")
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: done)
+    assert GUARD.this_repository(".") is None
+
+    def missing(*args: object, **kwargs: object) -> None:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(subprocess, "run", missing)
+    assert GUARD.this_repository(".") is None
 
 
 def run(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], stdin: str) -> tuple[int, str]:
@@ -116,25 +207,27 @@ def run(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], std
 
 def payload(command: str, tool: str = "Bash") -> str:
     """The JSON Claude Code sends a PreToolUse hook."""
-    return json.dumps({"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": {"command": command}})
+    return json.dumps(
+        {"hook_event_name": "PreToolUse", "tool_name": tool, "cwd": str(Path.cwd()), "tool_input": {"command": command}}
+    )
 
 
-def test_a_blocked_call_exits_2_and_points_to_coney_tools(
+def test_a_blocked_call_exits_2_and_names_the_replacement(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    code, err = run(monkeypatch, capsys, payload("gh issue create --title x --body y"))
+    code, err = run(monkeypatch, capsys, payload("gh issue create --title x"))
     assert code == 2
-    assert "coney-tools issue draft" in err and "issue create" in err and "issue edit" in err
+    assert "coney-tools issue" in err and "issue draft" in err
 
 
 def test_the_powershell_tool_is_checked_the_same_way(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert run(monkeypatch, capsys, payload("gh issue edit 3 --body-file f.md", "PowerShell"))[0] == 2
+    assert run(monkeypatch, capsys, payload("gh issue create --title x", "PowerShell"))[0] == 2
 
 
-def test_an_allowed_call_exits_0_silently(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    assert run(monkeypatch, capsys, payload("gh issue view 5")) == (0, "")
+def test_a_comment_exits_0_silently(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    assert run(monkeypatch, capsys, payload("gh issue comment 5 --body hi")) == (0, "")
 
 
 @pytest.mark.parametrize(
@@ -151,6 +244,5 @@ def test_the_settings_register_the_hook_for_both_shell_tools() -> None:
     entries = settings["hooks"]["PreToolUse"]
     guard = [entry for entry in entries if "issue_guard.py" in json.dumps(entry)]
     assert len(guard) == 1 and guard[0]["matcher"] == "Bash|PowerShell"
-    # The entry shares its matcher with other guards, so look for the hook anywhere in its list.
-    hooks = [hook for hook in guard[0]["hooks"] if "issue_guard.py" in hook["command"]]
-    assert len(hooks) == 1 and hooks[0]["type"] == "command"
+    commands = [hook["command"] for hook in guard[0]["hooks"]]
+    assert any("issue_guard.py" in command for command in commands)

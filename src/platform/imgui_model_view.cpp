@@ -143,7 +143,7 @@ void ImGuiModelView::draw(std::string_view hideLabel) {
         if (!open) {
             continue;
         }
-        ImGui::SetNextWindowSize(kWindowSize, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(kWindowSize.x * m_uiScale, kWindowSize.y * m_uiScale), ImGuiCond_FirstUseEver);
         if (ImGui::Begin(entry.label.c_str(), &open)) {
             ImGuiTextFilter& filter = m_filters[entry.label];
             filter.Draw("Filter", ImGui::GetContentRegionAvail().x * 0.6F);
@@ -407,7 +407,7 @@ void ImGuiModelView::drawWatch(const MenuItem& item, const std::string& path) {
     const std::vector<float> samples = series->values();
     const std::string latest = std::format("{:.3f}", series->latest());
     ImGui::PlotLines("##plot", samples.data(), static_cast<int>(samples.size()), 0, latest.c_str(), FLT_MAX, FLT_MAX,
-                     ImVec2(-FLT_MIN, kPlotHeight));
+                     ImVec2(-FLT_MIN, kPlotHeight * m_uiScale));
 }
 
 } // namespace coney::platform

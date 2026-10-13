@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
-from coney_tools import audit_files, audit_github, audit_local
+from coney_tools import audit_files, audit_github, audit_local, log_scan
 from coney_tools.audit import (
     SCOPES,
     Report,
@@ -20,11 +20,16 @@ from coney_tools.audit import (
 )
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import CheckSpec, Conventions, load_conventions
+from coney_tools.log_scan import Scans
 
 #: Findings of one check printed in the text report before "... N more" (the JSON and `--show 0` list them all).
 DEFAULT_SHOWN = 10
 #: Checks that need the default branch's files; without them they do not run and a notice says so.
 NEEDS_TREE = frozenset({"issue.links"})
+#: Checks that read the issues' attached logs; they run only when the attachments were downloaded (`--attachments`).
+NEEDS_ATTACHMENTS = frozenset({"issue.attachment-data", "issue.attachment-personal"})
+#: Scans the attachments of the issues a snapshot holds (`log_scan.scan_issues` over the issues the run picks).
+Scan = Callable[[audit_github.Snapshot, Conventions], Scans]
 
 
 def add_audit_parser(repo_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -51,6 +56,11 @@ def add_audit_parser(repo_commands: argparse._SubParsersAction[argparse.Argument
     )
     audit.add_argument(
         "--snapshot", type=Path, metavar="FILE", help="with --github: read this saved snapshot, not GitHub"
+    )
+    audit.add_argument(
+        "--attachments",
+        action="store_true",
+        help="with --github: download the logs attached to open issues and scan them (hygiene.attachments)",
     )
     audit.add_argument("--save-snapshot", type=Path, metavar="FILE", help="with --github: also write the snapshot read")
     audit.add_argument(
@@ -90,8 +100,12 @@ def build_report(
     only: Sequence[str],
     args: argparse.Namespace,
     cwd: Path,
+    scan: Scan | None = None,
 ) -> Report:
-    """Run the checks of `scopes` and return the report; reads GitHub and the workspace only when asked."""
+    """Run the checks of `scopes` and return the report; reads GitHub and the workspace only when asked.
+
+    `scan` downloads and scans the attachments of the issues it chooses; without it the attachment checks do not run.
+    """
     specs: list[CheckSpec] = specs_in(conventions, scopes, only)
     report = Report(tuple(scopes))
     contexts: dict[str, object] = {}
@@ -108,7 +122,18 @@ def build_report(
             specs = [spec for spec in specs if spec.id not in NEEDS_TREE]
         if snapshot.settings is None and snapshot.rulesets is None:
             specs = [spec for spec in specs if spec.id != "gh.ruleset"]
-        contexts["github"] = audit_github.GithubContext(conventions, snapshot, tree, root)
+        attachments = None
+        if scan is None:
+            if any(spec.id in NEEDS_ATTACHMENTS for spec in specs):
+                report.notices.append(
+                    "attachments not downloaded (--attachments): the issue.attachment checks did not run"
+                )
+            specs = [spec for spec in specs if spec.id not in NEEDS_ATTACHMENTS]
+        elif any(spec.id in NEEDS_ATTACHMENTS for spec in specs):
+            scans = scan(snapshot, conventions)
+            report.notices.extend(scans.notices)
+            attachments = scans.results
+        contexts["github"] = audit_github.GithubContext(conventions, snapshot, tree, root, attachments)
     if "local" in scopes:
         local = audit_local.build_context(cwd, args.workspace, conventions)
         report.notices.extend(local.notices)
@@ -116,6 +141,12 @@ def build_report(
     run_checks(specs, contexts, report)
     report.findings = sort_findings(report.findings, [spec.id for spec in specs])
     return report
+
+
+def scan_open_issues(snapshot: audit_github.Snapshot, conventions: Conventions) -> Scans:
+    """Download and scan the attachments of every open issue (the sweep, and `repo audit --attachments`)."""
+    bodies = {issue.number: issue.body for issue in snapshot.open_issues()}
+    return log_scan.scan_issues(bodies, conventions.hygiene.attachments, log_scan.download)
 
 
 def run_audit(args: argparse.Namespace) -> int:
@@ -129,7 +160,10 @@ def run_audit(args: argparse.Namespace) -> int:
     for option, scope in (("snapshot", "github"), ("save_snapshot", "github"), ("workspace", "local")):
         if getattr(args, option) is not None and scope not in scopes:
             raise ConfigError(f"--{option.replace('_', '-')} needs --{scope}")
-    report = build_report(root, conventions, scopes, args.only, args, cwd)
+    if args.attachments and "github" not in scopes:
+        raise ConfigError("--attachments needs --github")
+    scan = scan_open_issues if args.attachments else None
+    report = build_report(root, conventions, scopes, args.only, args, cwd, scan)
     if args.json:
         print(to_json(report))
     else:

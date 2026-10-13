@@ -22,6 +22,7 @@ from coney_tools import audit_text
 from coney_tools.audit import Problem, check
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, IssueForm
+from coney_tools.log_scan import ScanResult
 from coney_tools.repo_checks import (
     NUMBER_REFERENCE,
     check_body,
@@ -344,6 +345,9 @@ class GithubContext:
     tree: MainTree | None = None
     #: The checkout, which holds the issue forms the `issue.form` check reads; None skips that check.
     root: Path | None = None
+    #: The scans of the issues' attached logs by issue number (`log_scan`), or None when no attachment was downloaded
+    #: (the attachment checks then do not run).
+    attachments: Mapping[int, tuple[ScanResult, ...]] | None = None
 
     @property
     def now(self) -> datetime:
@@ -609,6 +613,36 @@ def issue_form_shape(context: GithubContext) -> Iterator[Problem]:
         if found:
             shown = "; ".join(problem.message for problem in found[:3])
             yield _problem(issue, shown + (f"; and {len(found) - 3} more" if len(found) > 3 else ""))
+
+
+# --- issues: attached logs -----------------------------------------------------------------------------------------
+
+
+def _attachment_problems(context: GithubContext, kind: str, advice: str) -> Iterator[Problem]:
+    """A problem per open issue whose scanned attachments found `kind` (`game_data` or `personal`), with `advice`."""
+    for number, results in sorted((context.attachments or {}).items()):
+        issue = context.snapshot.issue(number)
+        if issue is None or not issue.open:
+            continue
+        said = [f"{result.name} {reason}" for result in results for reason in getattr(result, kind)]
+        if said:
+            yield _problem(issue, f"{'; '.join(said)}: {advice}")
+
+
+@check("issue.attachment-data")
+def issue_attachment_data(context: GithubContext) -> Iterator[Problem]:
+    """An attached log holds no game data: it is text, not too large, and not script source or game text."""
+    yield from _attachment_problems(
+        context, "game_data", "delete the attachment if it holds game files or game text (LEGAL.md)"
+    )
+
+
+@check("issue.attachment-personal")
+def issue_attachment_personal(context: GithubContext) -> Iterator[Problem]:
+    """An attached log shows no user folder path and no email address."""
+    yield from _attachment_problems(
+        context, "personal", "delete the attachment and attach a copy with the name replaced by ~"
+    )
 
 
 # --- issues: ages -------------------------------------------------------------------------------------------------

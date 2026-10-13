@@ -267,6 +267,14 @@ bool GameSound::Voices::scenePlaying() const {
     return context != nullptr && context->scenes != nullptr && context->scenes->cinematicActive();
 }
 
+bool GameSound::cinematicPlaying() const {
+    if (m_context != nullptr && m_context->scenes != nullptr && m_context->scenes->cinematicActive()) {
+        return true;
+    }
+    const SoundEngine* engine = m_sounds.engine();
+    return engine != nullptr && engine->cinematic();
+}
+
 // ---- The sound matrix ----
 
 bool GameSound::loadSoundMatrix(std::string_view name) {
@@ -679,7 +687,11 @@ void GameSound::updateListener() {
     const anim::Vec3 right = anim::normalise(anim::cross(camera::viewForward(view), camera::viewUp(view)));
     m_listener = Listener{.position = soundVec(view.position), .right = soundVec(right)};
     const std::optional<double> player = playerHandle();
-    if (m_listenerMode == 1 && player) {
+    // While a cinematic runs the camera is the scene camera, and both listeners stay on it whatever SndSetListener
+    // chose: Gm_Level_Update skips the player's ear then (docs/research/sound.md#scene-world-sound).
+    // The listener step is at 0x00158d58.
+    // @orig 0x00158728 Mode1::Update (unknown)
+    if (m_listenerMode == 1 && player && !cinematicPlaying()) {
         if (const std::optional<SpeakerPlace> at = locate(*player); at) {
             m_listener.position = SoundVec{at->position.x, at->position.y, at->position.z + kPlayerEarHeight};
         }

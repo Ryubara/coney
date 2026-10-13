@@ -10,10 +10,14 @@ the Bash and PowerShell tools, refuses what bypasses that check:
 * `gh api` calls that create an issue, change an issue's body or title, link a sub-issue, or send a GraphQL
   `createIssue`, `updateIssue` or `addSubIssue`.
 
-Labels, titles, comments and closing an issue stay allowed. A command is refused only where `gh` starts one (the start
-of a line, or after `;`, `&`, `|`, `(` or `$(`), so text that merely mentions it passes: an `echo`, a commit message, a
-`grep`, and the body of a here-document or here-string. `coney-tools`' own `gh` calls are subprocesses, not tool calls,
-so they are never seen here.
+Labels, titles, comments and closing an issue stay allowed. A command that names another repository (`-R owner/name`,
+`--repo owner/name`, `GH_REPO=owner/name` or a `repos/owner/name` API path) and never names this one passes, so a
+scratch or sibling repository can be worked on from here. This repository is the one the working directory's
+`origin` remote points at, so no repository name is written down here.
+
+A command is refused only where `gh` starts one (the start of a line, or after `;`, `&`, `|`, `(` or `$(`), so text
+that merely mentions it passes: an `echo`, a commit message, a `grep`, and the body of a here-document or
+here-string. `coney-tools`' own `gh` calls are subprocesses, not tool calls, so they are never seen here.
 
 It runs before every shell command, so it is standard-library only and imports nothing it does not use. Exit code 2
 blocks the call and shows stderr to the agent; every other outcome (also input it cannot read) exits 0.
@@ -23,7 +27,9 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
+from pathlib import Path
 
 #: Where a command starts: the line start or after `;`, `&`, `|`, `(` or `$(`, then optional `NAME=value` assignments.
 _START = r"(?:^|[;&|(]|\$\()[ \t]*(?:[A-Za-z_]\w*=\S*[ \t]+)*"
@@ -54,6 +60,13 @@ _HERESTRING = re.compile(r"@(?P<quote>['\"])[ \t]*\n.*?\n(?P=quote)@", re.DOTALL
 #: A line continuation (a backslash, or a backtick in PowerShell, at the end of a line).
 _CONTINUATION = re.compile(r"(?:\\|`)[ \t]*\n")
 
+#: A repository a command names: `-R x/y`, `--repo x/y`, `GH_REPO=x/y` or an API path `repos/x/y`.
+_NAMED = re.compile(
+    r"""(?:[ \t](?:-R|--repo)[ \t=]+|\bGH_REPO=|\brepos/)["']?(?P<repo>[\w.-]+/[\w.-]+)""", re.IGNORECASE
+)
+#: A GitHub remote address, in the `https://host/owner/name(.git)` or `git@host:owner/name(.git)` form.
+_REMOTE = re.compile(r"[/:](?P<repo>[\w.-]+/[\w.-]+?)(?:\.git)?/?$")
+
 MESSAGE = (
     "Blocked: issues are filed and edited only through coney-tools, which checks the body against the issue form "
     "first (docs/guides/issues.md, 'Filing an issue'). Draft: `uv run --project python coney-tools issue draft task "
@@ -83,8 +96,8 @@ def _api_writes_issue(args: str) -> bool:
     return bool(fields & {"body", "title"}) or _INPUT.search(args) is not None
 
 
-def blocked(command: str) -> bool:
-    """Whether the shell command writes an issue with a raw `gh` call."""
+def writes_issue(command: str) -> bool:
+    """Whether the shell command starts a raw `gh` call that files or rewrites an issue."""
     text = command.replace("\r\n", "\n")
     text = _HEREDOC.sub(lambda match: match.group("head"), text)
     text = _HERESTRING.sub(" ", text)
@@ -100,6 +113,40 @@ def blocked(command: str) -> bool:
     return False
 
 
+def named_repositories(command: str) -> set[str]:
+    """The `owner/name` repositories the command names, lower-cased."""
+    return {match.group("repo").lower() for match in _NAMED.finditer(command)}
+
+
+def this_repository(cwd: str) -> str | None:
+    """The `owner/name` of the working directory's `origin` remote, lower-cased; None when it cannot be read."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", cwd or ".", "remote", "get-url", "origin"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = _REMOTE.search(done.stdout.strip()) if done.returncode == 0 else None
+    return match.group("repo").lower() if match else None
+
+
+def blocked(command: str, cwd: str = "") -> bool:
+    """Whether the command is refused: a raw issue write that does not name only some other repository."""
+    if not writes_issue(command):
+        return False
+    named = named_repositories(command)
+    if not named:
+        return True
+    # The command names repositories: it passes only when none is this one, and a repository that cannot be told
+    # counts as this one.
+    here = this_repository(cwd)
+    return here is None or here in named
+
+
 def main() -> int:
     """Read the hook's JSON from stdin; 2 (blocked, with the reason on stderr) or 0."""
     try:
@@ -107,7 +154,8 @@ def main() -> int:
         command = data["tool_input"]["command"]
     except (ValueError, KeyError, TypeError, OSError):
         return 0
-    if isinstance(command, str) and blocked(command):
+    cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else str(Path.cwd())
+    if isinstance(command, str) and blocked(command, cwd):
         sys.stderr.write(MESSAGE)
         return 2
     return 0

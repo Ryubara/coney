@@ -59,7 +59,8 @@ float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot
 } // namespace
 
 Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const FighterProfile& profile)
-    : m_ranges(ranges), m_flags(profile.player ? flag::kPlayerFlags : 0), m_combat(ranges, 0, seed),
+    : m_ranges(ranges), m_flags(profile.player ? flag::kPlayerFlags : 0),
+      m_combat(ranges, 0, seed, profile.powerClass.powerMax, profile.powerClass.refillPerSecond, profile.rage),
       m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
       m_grabbedRandom(seed + 1U), m_player(profile.player), m_bossClass(profile.bossClass) {}
 

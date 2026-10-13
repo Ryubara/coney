@@ -512,3 +512,22 @@ def test_the_workflow_runs_the_command_the_conventions_describe() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "coney-tools repo hygiene --event" in text and "coney-tools repo hygiene --sweep" in text
     assert "--apply" in text
+
+
+def test_an_issue_event_scans_its_attached_logs_and_comments_without_quoting_them(tmp_path: Path) -> None:
+    link = "https://github.com/user-attachments/files/101/coney.txt"
+    other = "https://github.com/user-attachments/files/102/other.txt"
+    asked: list[str] = []
+
+    def fetch(url: str, limit: int, timeout: float) -> bytes:
+        asked.append(url)
+        return rb"[info] disc: C:\Users\Jane Doe\disc.iso" + b"\n"
+
+    body = task_body(extra=f"### Log\n\n[coney.txt]({link})\n\n")
+    path = snapshot_file(tmp_path, issues=[issue(7, body=body), issue(8, body=f"{task_body()}\n{other}")])
+    remote = FakeRemote()
+    run_hygiene(namespace(path, event=7), remote, fetch=fetch)
+    assert asked == [link]
+    text = remote.comments[7][0][2]
+    assert "`issue.attachment-personal` (warn): coney.txt shows a user folder path on line 1" in text
+    assert "Jane" not in text

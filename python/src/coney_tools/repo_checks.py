@@ -307,7 +307,7 @@ def _check_local_paths(text: str) -> list[str]:
     ]
 
 
-def _image_targets(section: str) -> list[str]:
+def image_targets(section: str) -> list[str]:
     """What the Markdown images and `<img>` tags of `section` point at, in order of appearance."""
     found: list[tuple[int, str]] = []
     for image in _MARKDOWN_IMAGE.finditer(section):
@@ -329,7 +329,7 @@ def screenshots_problems(
     upload it. `name` is the section's heading and `none_line` the start of its `none` line (`Screenshots: none`); a
     pull request and an issue differ only in those.
     """
-    targets = _image_targets(section)
+    targets = image_targets(section)
     local = [target for target in targets if not _REMOTE.match(target)]
     if local and uploaded_only:
         return [

@@ -458,7 +458,9 @@ uv run --project python coney-tools pcsx2 launch [STATE] --agent ID
 Starts PCSX2 on a state file (`-fastboot -statefile`, the disc through a hard link in the scratch folder when its path
 holds commas or parentheses), waits until the game runs, and leaves it running; with no state it boots the disc and
 returns once PINE answers. It is the only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
-process outside the agent's process tree; why: [Driving PCSX2](research-workflow.md#driving-pcsx2)). It refuses to
+process outside the agent's process tree; why: [Driving PCSX2](research-workflow.md#driving-pcsx2)). With
+`CONEY_WINDOW_DISPLAY` set ([Which display](running.md#window-display)), it moves each PCSX2 window onto that
+display as it appears, without activating it; `pcsx2 record` does the same. It refuses to
 start when something already serves PINE. It runs under `--agent`'s claim (made, and kept, if you hold none) and records
 PCSX2's pid in it;
 `--pcsx2-dir` must be that claim's copy.
@@ -567,11 +569,15 @@ uv run --project python coney-tools repo check
 uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools repo check-body [--body FILE|-]
+uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
+    [--claude EXE] [--timeout-minutes N]
+uv run --project python coney-tools repo check-review PR.md --worktree WT
+uv run --project python coney-tools repo review-stamp PR.md --worktree WT
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
-    [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
-uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
+    [--show N] [--snapshot FILE] [--save-snapshot FILE] [--attachments] [--workspace DIR] [--list]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--rerun [--apply]]
 uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
@@ -588,6 +594,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `paths.docs` and no `Docs: none` line in the body.
 * `repo check-body` checks a pull request description against the template ([What a pull request
   shows](testing.md#pr-evidence)).
+* `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
+  [review](#repo-review).
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
 * `repo render` rewrites the generated blocks of `AGENTS.md`, `CONTRIBUTING.md` and every guide under `docs/guides/`
   from the conventions: the text between a `<!-- conventions:begin NAME -->` line and the next
@@ -597,8 +605,33 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
-* `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
+* `repo pr-health` lists the open pull requests that are stuck, and with `--rerun` restarts the checks that failed for a
+  reason that no longer holds: see [pr-health](#repo-pr-health).
 * `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
+
+### repo review {#repo-review}
+
+The gate a description passes before the coordinator pushes it ([The description review](how-we-work.md#pr-review)).
+`PR.md` is the description file as agents write it: the title on line 1, then the body; image paths in it are relative
+to its folder.
+
+* `repo review` runs the `pr-reviewer` agent once, headlessly: it reads `.claude/agents/pr-reviewer.md` from the
+  checkout the command runs in, hands it to `claude -p --agents FILE --agent pr-reviewer --model M
+  --dangerously-skip-permissions` (a throwaway run, in `PR.md`'s folder) with a task naming `PR.md`, the worktree and
+  `--base` (default `origin/main`), and then runs `check-review`. It removes an old `REVIEW.json` and `REVIEW.md` first,
+  so a run that writes no verdict cannot leave an earlier pass behind. `--model` overrides the agent file's model,
+  `--effort` sets the effort level, `--claude` names the executable and `--timeout-minutes` (default 30) stops a run
+  that hangs. Exit 0 when the verdict releases the branch, 1 when it does not or `claude` failed, 2 when the review
+  cannot run (no description, no agent file, not a worktree).
+* `repo check-review` reads `REVIEW.json` next to `PR.md` and passes only when the verdict is `pass` with no blocker,
+  its `tip` is the worktree's HEAD, its `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is
+  listed with its hash now and differs from every other one. Exit 1 lists each reason (a stale tip, an edited
+  description, a replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
+* `repo review-stamp` prints those values as JSON (`tip`, `body_sha256`, `images` with `path` and `sha256`, `null` for a
+  missing file). The agent copies them into its verdict, so the hash is computed in one place.
+
+The file names, the agent and the hash rule are `pull_requests.review` in `.github/conventions.yml`; the rules in full
+are the generated list in [The description review](how-we-work.md#pr-review).
 
 ### repo audit {#repo-audit}
 
@@ -619,7 +652,10 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
   `--snapshot FILE` audits a saved snapshot instead of reading GitHub (the tests do; so can you, offline). The link
-  check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
+  check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing. `--attachments` also
+  downloads the `.txt` and `.log` files attached to open issues and scans them for possible game data and personal
+  information (`issue.attachment-data`, `issue.attachment-personal`; [Attached logs](issues.md#attachments)); without
+  it those two checks do not run and a notice says so.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
   among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
   captures. The limits are the `workspace` section of the file. It asks GitHub once for the merged pull requests of
@@ -642,7 +678,7 @@ edits an issue, a pull request or a label; fixing the findings is the coordinato
 `repo pr-health` answers "which open pull requests need someone to act?" with one read of the open pull requests and
 their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
 which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
-number, and changes nothing:
+number, and changes nothing (except `--rerun --apply`, below):
 
 ```text
 #7 fix-bat-cross checks-failed lint: body, markdownlint -> author
@@ -667,6 +703,46 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
 the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
 
+**`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
+person to notice. It adds a line per run, `#<n> <branch> rerun <checks> (run <id>): <why> -> <outcome>`, and in
+`--json` a `rerun` list (an empty list when there is nothing to rerun; the `stuck` list and the exit code are the same
+with or without `--rerun`, so exit code 1 still means a pull request is stuck). Without `--apply` it is a dry run that
+prints `would rerun` and changes nothing; `--apply` calls `gh run rerun <run> --failed`. It reads the
+head commit and description of each pull request and, for a failed required check, the runs of the head commit and
+sometimes its job log. A required check is judged stale in two ways, and a real lint, build or test failure is never
+restarted:
+
+| Stale because | How it is known | What happens |
+| --- | --- | --- |
+| the text was fixed | the `title` or `body` check failed and the pull request's **current** title or description passes `repo check-title` or `check-body` | status `new-event`: the report says to edit the title or description; no rerun is made |
+| the runner or GitHub failed | the check concluded `CANCELLED`, `STARTUP_FAILURE` or `TIMED_OUT`, or it failed and its log matches a pattern of `hygiene.pr_health.rerun.log_patterns` (the runner was lost or shut down, an action could not be downloaded) | `would rerun` / `reran` |
+
+Each `rerun` entry is one run, with these fields (stable; scripts such as the PR guard read them):
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `number` | integer | The pull request's number |
+| `branch` | string | Its head branch |
+| `run` | integer | The workflow run (an id of `gh run list`) holding the stale checks |
+| `checks` | list of strings | The stale required checks of that run, sorted |
+| `reasons` | list of strings | Why each is stale, in the order of `checks` |
+| `status` | string | `would-rerun` (dry run), `reran`, `refused` (GitHub would not), `capped` (already rerun `max_per_sha` times) or `new-event` (a fixed title or description) |
+| `detail` | string | Empty for `would-rerun` and `reran`; otherwise what happened and the new event the pull request needs |
+
+A rerun reuses the event the run started from, with the title and description of that time, so it cannot make `title`
+or `body` see a fix (observed: a rerun made after a description was fixed failed on the old text). A fixed text needs a
+new event instead (an edit of the title or description, or closing and reopening the pull request), which the report
+names; it is not done automatically because reopening changes the pull request's state.
+
+The limits are in `hygiene.pr_health.rerun` of the conventions file: `max_per_sha` (a workflow is rerun at most that
+many times on one head commit, counted from the attempts GitHub keeps for its runs, so restarting the tool loses
+nothing; at the cap the status is `capped` and the line says to push a commit), the names of the title and
+description checks, the conclusions and the log patterns. A run is restarted with `--failed` only when all its failed
+jobs are stale; when it also holds a real failure, only the stale jobs are restarted (`--job`). When GitHub refuses
+(`gh run rerun` fails, for example "cannot be retried"), the status is `refused` and the line carries GitHub's message
+and the new event the pull request needs: push a commit for a runner failure. The reads are `gh run list --commit`
+and `gh api repos/{owner}/{repo}/actions/jobs/<id>/logs`; only `--apply` writes.
+
 ### repo hygiene {#repo-hygiene}
 
 `repo hygiene` is what the `hygiene` workflow runs ([Workflows](repo-conventions.md#workflows)); you can run it too.
@@ -682,6 +758,9 @@ settings in `hygiene.comments` of `.github/conventions.yml`:
   it is missing. Item comments are written by a sweep only when `hygiene.comments.on_sweep` is true, and then at most
   `max_per_sweep` of them, resolves first; it starts false, so the sweep only reports and item comments come from
   events.
+* Both scan attached logs, as `repo audit --attachments` does ([Attached logs](issues.md#attachments)): an event the
+  logs of its own issue, a sweep those of every open issue, within `hygiene.attachments.max_per_run` downloads. A
+  download that fails is a notice (printed, and in the report), not a finding.
 * Without `--apply` nothing is written: it prints `would create comment on #7: ...` for each write. `--snapshot FILE`
   audits a saved snapshot ([audit](#repo-audit)); the comments are still read from GitHub.
 
@@ -786,8 +865,9 @@ sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-g
 ```sh
 uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority] [--max-wait MIN]
-    [--budget MIN] [-j N] [--dir CHECKOUT]
+    [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json]
+uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
 ```
 
@@ -862,21 +942,36 @@ through a lock folder, as the PCSX2 claims do.
 the queue may claim, so waiters cannot overtake one another; `--priority` tickets go ahead of normal ones (for the
 coordinator, or a build somebody is waiting on). A ticket whose process is gone is dropped. While it waits, the
 command prints its place, a rough wait (from the holders' recorded step and how long they have run it) and the
-holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default 45, per claim; also spelled
-`--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and exits `75`
-with `still queued, position N of M, try again later`. On `75`, do other work and run the same command again.
+holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default and most 40, per claim;
+also spelled `--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and
+exits `75` with `still queued, position N of M, try again later` and the way on: do other work and run the same
+command again, or start it with `--detach`, write `STATUS.md` and stop ([Build waits](agents.md#build-waits)).
 
-**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default 55; `0` turns it off) caps the whole
-call, waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. Each
+**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default and most 45) caps the whole call,
+waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. A larger
+`--max-wait` or `--budget`, or `--budget 0` (no budget), is refused with exit `2` unless the run is detached. Each
 finished step's duration is kept in `durations.json` in the claims directory, the last ten per preset, step and size
 (`ci/configure/main`, `ci/build/fast` or `ci/build/main` by lane, `ci/test/filtered` with `-R` or `-L`, `ci/test/full`
 without); a failed step is not recorded. While a run waits for a slot, it leaves the queue with exit `75` as soon as
 the time the call has taken plus the median of what it waits for (a phase's steps added up; with no history, the
 typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
 the budget, and says so with the numbers: `time budget: 25 min of the call so far; the build would take about 30 min
-(median of 4 runs) and the budget is 55 min`. The test phase counts the build before it, and the wait for the build
-folder counts too. The budget only decides whether to keep waiting: a step that has started always runs to its end,
-and a free slot is always taken.
+(median of 4 runs) and the budget is 45 min`. It also leaves at its first look when the queue's own estimate of the
+wait still ahead (from the holders' steps), added to those, would pass the budget: `the queue ahead is about 50 min`.
+The test phase counts the build before it, and the wait for the build folder counts too. The budget only decides
+whether to keep waiting: a step that has started always runs to its end, and a free slot is always taken.
+
+**Detached runs.** `--detach` checks the run as usual (precheck, refusals), then starts the same run in a process of
+its own, apart from the calling shell (on Windows `DETACHED_PROCESS` in a new process group, out of the caller's job
+when the job allows it; elsewhere a session of its own), and returns at once printing the log path and the child's
+pid. A detached run may wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and
+neither is capped. Its children still end with it, but nothing watches the shell that started it. It records itself
+in `build-result.json` in the worktree's scratch folder (state, agent, preset, pid, log, start time; at the end the
+exit code, the printed summary and the end time; its console output goes to `build-detached.out` beside it), however
+it ends, a refused precheck included. A second `--detach` in a worktree whose detached run still runs is refused.
+`build result` prints that record: the run's own exit code and summary once it has ended, `75` and `still running`
+while it runs, and `1` with `ended without a result` when its process is gone without writing one (killed);
+`--json` prints the record itself.
 
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`
@@ -963,16 +1058,19 @@ step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
-    [--shell-hours N] [--log-idle-hours N]
+    [--min-gb N] [--margin-gb N] [--shell-hours N] [--log-idle-hours N]
 uv run --project python coney-tools workspace disk [--min-gb N]
 ```
 
 `clean` removes the worktrees whose work is merged (with their local branches) and deletes the `build/` folders
-nobody has touched for `--build-hours` (default 12), skipping any worktree holding the busy file
-(`workspace.busy_marker`, `.coney-busy`); it is a dry run without `--apply`, and reports the bytes reclaimed and
-the free space before and after. It also lists, and with `--apply` stops, the **stale processes**: shells older than
-`--shell-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours` (default 1), and
-orphaned `ctest` or `coney_tests` runs whose parent is gone. `disk` prints the workspace drive's free space and
-exits 1 below `--min-gb` (default: `workspace.disk_min_free_gb` of
+nobody has touched for `--build-hours` (default `workspace.build_idle_hours`, 4), skipping any worktree holding the
+busy file (`workspace.busy_marker`, `.coney-busy`). When the drive is still under `--min-gb` (default
+`workspace.disk_min_free_gb`, 30) after that, it deletes more `build/` folders, oldest last use first and never a
+worktree's sources, until `--margin-gb` (default `workspace.disk_margin_gb`, 10) above the floor is free, skipping
+worktrees that are busy or hold or wait for a build slot (disk pressure). It is a dry run without `--apply`, and
+reports each deletion, the bytes reclaimed and the free space before and after. It also lists, and with `--apply`
+stops, the **stale processes**: shells older than `--shell-hours` (default 3) waiting in a sleep loop on files
+unchanged for `--log-idle-hours` (default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone.
+`disk` prints the workspace drive's free space and exits 1 below `--min-gb` (default: `workspace.disk_min_free_gb` of
 [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).
