@@ -1001,6 +1001,10 @@ Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#grab).
 
 Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#grabbing).
 
+#### Rembrandt's power move and its spray can {#power-move-props}
+
+Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#power-move-props).
+
 ### Strong grapple {#strong-grapple}
 
 Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#strong-grapple).
@@ -1017,9 +1021,17 @@ Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#grab-p
 
 Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#grab-turn).
 
+#### The hold walk: clips, speed and turning {#hold-walk}
+
+Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#hold-walk).
+
 ### The mount {#mount}
 
 Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#mount).
+
+#### The mount's power strike ends the mount {#mount-power}
+
+Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#mount-power).
 
 ### Grabbed, and breaking free {#grabbed}
 
@@ -1033,13 +1045,33 @@ Moved to [Combat: grabs, tackles, the hold and the mount](combat-grabs.md#pair-b
 
 Moved to [Combat: throws, the bat and mugging](combat-throws.md#throws).
 
+#### Where a throw goes {#throw-direction}
+
+Moved to [Combat: throws, the bat and mugging](combat-throws.md#throw-direction).
+
 ### A bat in hand {#bat}
 
 Moved to [Combat: throws, the bat and mugging](combat-throws.md#bat).
 
+#### Moving attacks with something in hand {#armed-moves}
+
+Moved to [Combat: throws, the bat and mugging](combat-throws.md#armed-moves).
+
 ### Mugging {#mugging}
 
 Moved to [Combat: throws, the bat and mugging](combat-throws.md#mugging).
+
+#### Mug difficulty: who is hard to mug {#mug-difficulty}
+
+Moved to [Combat: throws, the bat and mugging](combat-throws.md#mug-difficulty).
+
+#### The other stick games: mug meter modes 1-3 {#other-stick-games}
+
+Moved to [Combat: throws, the bat and mugging](combat-throws.md#other-stick-games).
+
+#### The cuffing hold {#cuffing-hold}
+
+Moved to [Combat: throws, the bat and mugging](combat-throws.md#cuffing-hold).
 
 ### Damage, health and reactions {#damage}
 
@@ -1049,9 +1081,17 @@ Moved to [Combat: damage, reactions and defeat](combat-reactions.md#damage).
 
 Moved to [Combat: damage, reactions and defeat](combat-reactions.md#busy-target).
 
+#### Moves a hit cannot stop: the dive, the charge and the paired moves {#protected-moves}
+
+Moved to [Combat: damage, reactions and defeat](combat-reactions.md#protected-moves).
+
 ### Reactions: stun, knockdown and getting up {#reactions}
 
 Moved to [Combat: damage, reactions and defeat](combat-reactions.md#reactions).
+
+#### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
+
+Moved to [Combat: damage, reactions and defeat](combat-reactions.md#scripted-knockdowns).
 
 ### Down and under attack: getting up and countering {#ground-escape}
 
@@ -1060,6 +1100,14 @@ Moved to [Combat: damage, reactions and defeat](combat-reactions.md#ground-escap
 ### Knocked out, and the mission failing {#defeat}
 
 Moved to [Combat: damage, reactions and defeat](combat-reactions.md#defeat).
+
+#### Who sets and clears the knocked-out bit {#knocked-out-bit}
+
+Moved to [Combat: damage, reactions and defeat](combat-reactions.md#knocked-out-bit).
+
+#### Who can help {#defeat-helpers}
+
+Moved to [Combat: damage, reactions and defeat](combat-reactions.md#defeat-helpers).
 
 ### Being hit, at runtime {#being-hit-runtime}
 
@@ -1077,13 +1125,41 @@ Moved to [Combat: the power meter, rage and reviving](combat-rage.md#power-meter
 
 Moved to [Combat: the power meter, rage and reviving](combat-rage.md#rage).
 
+#### The flash during a move {#flash-mid-move}
+
+Moved to [Combat: the power meter, rage and reviving](combat-rage.md#flash-mid-move).
+
+#### Everything rage does {#rage-effects}
+
+Moved to [Combat: the power meter, rage and reviving](combat-rage.md#rage-effects).
+
+#### Dropping what is held when hit {#keep-weapon}
+
+Moved to [Combat: the power meter, rage and reviving](combat-rage.md#keep-weapon).
+
 ### Reviving a downed Warrior {#revive}
 
 Moved to [Combat: the power meter, rage and reviving](combat-rage.md#revive).
 
+#### At runtime {#revive-runtime}
+
+Moved to [Combat: the power meter, rage and reviving](combat-rage.md#revive-runtime).
+
 ### Target selection {#targets}
 
 Moved to [Combat: targets, AI attacks and breakables](combat-targets.md#targets).
+
+#### Teammates: what the player may do to his own crew {#teammates}
+
+Moved to [Combat: targets, AI attacks and breakables](combat-targets.md#teammates).
+
+#### The fight stance {#fight-stance}
+
+Moved to [Combat: targets, AI attacks and breakables](combat-targets.md#fight-stance).
+
+##### The led steer {#led-steer}
+
+Moved to [Combat: targets, AI attacks and breakables](combat-targets.md#led-steer).
 
 ### An AI's attacks {#ai-attacks}
 
