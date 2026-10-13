@@ -15,7 +15,8 @@
 // or a pad (Human). The grabber plays the victim's side of each paired move on it, aligns it, and while the hold is
 // attached places it every update at the hold's offset in the grabber's frame (the original's `Human_MoveAttached`,
 // `0x00244e78`); the victim's own update then neither moves it nor lets it act.
-// Research: docs/research/combat.md#grab, docs/research/combat.md#grab-posing, docs/research/combat.md#grab-turn
+// Research: docs/research/combat-grabs.md#grab, docs/research/combat-grabs.md#grab-posing,
+// docs/research/combat-grabs.md#grab-turn
 
 namespace coney::human {
 
@@ -80,7 +81,7 @@ class Holdable : public Combatant {
     virtual void face(anim::Vec3 point) = 0;
     /// Turns it to `headingRadians` and slides it to `goal` across the ground, each at a constant rate over `seconds`
     /// (TurnAndSlide: `Human_TurnToOver`, `Human_MoveToOver`), on top of its clip's root motion: a front hold's throw
-    /// carries its victim round the thrower this way (docs/research/combat.md#throw-direction).
+    /// carries its victim round the thrower this way (docs/research/combat-throws.md#throw-direction).
     virtual void carryOver(anim::Vec3 goal, float headingRadians, float seconds) = 0;
     /// Its own anim set (an escape's grabber side plays from it).
     [[nodiscard]] virtual const characters::AnimSet& anims() const = 0;
@@ -88,7 +89,7 @@ class Holdable : public Combatant {
     /// the grabber whose intro it answers takes it. None for one no brain drives (the default).
     [[nodiscard]] virtual std::optional<CounterPress> takeCounterPress() { return std::nullopt; }
     /// Its grabber's numbers this update, while a grab (not a tackle) holds it attached: with them its own next
-    /// update may struggle, strike back or escape (`Player_UpdateGrabbed`, docs/research/combat.md#grabbed). A
+    /// update may struggle, strike back or escape (`Player_UpdateGrabbed`, docs/research/combat-grabs.md#grabbed). A
     /// passive target ignores them (the default).
     virtual void heldInGrab(const combat::GrabberState& /*grabber*/, bool /*fromRear*/) {}
     /// What it did to its grabber in its last update while held, once (none by default): the grabber plays its side.

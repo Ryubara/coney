@@ -70,57 +70,57 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **The snap's target**: Coney does not test the clear line (`0x00222a90`) and does not keep the snap's target as
   the current target ([Combat](combat.md#attacks)).
 - **Object targets**: only glass panes; doors and loose objects are not targets, and the approach from far × 1.5 is
-  missing ([Breakables](combat.md#breakables)).
+  missing ([Breakables](combat-targets.md#breakables)).
 
 ## Stance
 
 - **The fight stance** is a stand-in (locked onto a target), not the original's enter and leave rules
-  ([The fight stance](combat.md#fight-stance)). Every gate that tests the stance (moving attacks, strafes, the
+  ([The fight stance](combat-targets.md#fight-stance)). Every gate that tests the stance (moving attacks, strafes, the
   snaps' path) inherits it.
 
 ## Grabs, tackles and the mount
 
 - **The tackle** always connects with 5 / 6 (the front hit), without the original's connect gates; 7, the hit from
-  the rear, never plays ([Grab and tackle](combat.md#grab)).
+  the rear, never plays ([Grab and tackle](combat-grabs.md#grab)).
 - **Wall throws** (155-161) are picked by the original's ray and a head-on one turns the pair square to the face at
   once, not over 0.01 s, and the slam's `0x41` sweep (the dust puff, the impact sound and a world object struck) is
-  not built ([Throws](combat.md#throws)). **Coney's choice**: the thrown body does not strike its own thrower.
+  not built ([Throws](combat-throws.md#throws)). **Coney's choice**: the thrown body does not strike its own thrower.
 - **Where a plain throw goes**: the pair is turned onto the stick over 1/6 s from the front hold and the rear hold
   spins to the front first, as in the original, but the throw clips' own root turn is about a third larger than at
   runtime (149 turns the thrower −120° for −90°) and the front victim lands 19.2° right of the stick (2.1° at
   runtime): an open question on the root turn and the task's rate
-  ([Where a throw goes](combat.md#throw-direction)).
+  ([Where a throw goes](combat-throws.md#throw-direction)).
 - **The mounted victim** cannot struggle (250), get the mounter off or reverse (242 / 243)
   ([The mounted victim](combat-moves.md#mounted-victim)).
 - **The mount's power strike** stops at its first part: the extensions (227 / 228, 233 / 234; 229 is a filler that
-  never plays) a press in the window plays are missing ([The mount](combat.md#mount)).
+  never plays) a press in the window plays are missing ([The mount](combat-grabs.md#mount)).
 - **The mount's power strike does not end the mount**: in the original the strike breaks the pin (the mounter stands
   in the fight stance, the victim stays grounded and is no longer mounted); Coney goes back to the mount (210 / 207)
-  ([The mount](combat.md#mount)).
+  ([The mount](combat-grabs.md#mount)).
 - **Circle with no target** does not search at far × 1.25 for a grab or tackle target in every case
-  ([Grab and tackle](combat.md#grab), step 2).
+  ([Grab and tackle](combat-grabs.md#grab), step 2).
 - **Escapes**: human flag `0x20000` (got off at once) is not modelled; the release clips by side are partly stand-ins
-  ([Grabbed](combat.md#grabbed)).
-- **Mugging**: the victim's qualification (class, money, brain state) is not tested ([Mugging](combat.md#mugging)).
+  ([Grabbed](combat-grabs.md#grabbed)).
+- **Mugging**: the victim's qualification (class, money, brain state) is not tested ([Mugging](combat-throws.md#mugging)).
 
 ## Being hit
 
 - **Damage modifiers**: the held weapon's bonus (`CfgObj` `+0x58` × the power class factor), the ×2 flag and the
-  ×3 against a cuffed human are missing ([Damage](combat.md#damage)).
-- **Stun and ground times** are not scaled as the original scales them ([Reactions](combat.md#reactions)).
+  ×3 against a cuffed human are missing ([Damage](combat-reactions.md#damage)).
+- **Stun and ground times** are not scaled as the original scales them ([Reactions](combat-reactions.md#reactions)).
 - **Reactions while held**: a hit on a human in a grab or mount does not play the held reactions.
 - **Knocked out and the mission failing**: the defeat path is in progress on the mission branches
-  ([Knocked out](combat.md#defeat)).
+  ([Knocked out](combat-reactions.md#defeat)).
 - **The power meter** is fixed at 400 with a refill of 60 per second; the original takes both from the human's power
-  class and the Warrior upgrades ([Power meter](combat.md#power-meter)).
+  class and the Warrior upgrades ([Power meter](combat-rage.md#power-meter)).
 
 ## Specials, rage and stealth
 
 - **Rage** starts only through the block branch (L1 + R1 while blocking), not by the original's other routes
-  ([Rage](combat.md#rage)).
+  ([Rage](combat-rage.md#rage)).
 - **Stealth** (hiding in shadow, 630 / 633, the stealth kill 637-641) is not built ([Stealth](combat-moves.md#stealth)).
 - **Flash revive** (command `0x27`): built for player 1, every Warrior revivable from his creation
-  ([Combat: revive](combat.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op
+  ([Combat: revive](combat-rage.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op
   partner's flash and a knocked-out human waking on his own are not.
 
 ## Weapons
@@ -151,4 +151,4 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   commands Coney ignores do nothing ([Attack kinds](../references/attacks.md#attack-kind)).
 - **A human held in another human's grab** (the player in an AI's, or an AI in the player's) struggles, strikes back
   and escapes by its command as `Player_UpdateGrabbed` decides, the grabber playing its side an update later; the
-  **reversal** (R1) is not offered this way ([Grabbed](combat.md#grabbed)).
+  **reversal** (R1) is not offered this way ([Grabbed](combat-grabs.md#grabbed)).

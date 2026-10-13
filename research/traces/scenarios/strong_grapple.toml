@@ -1,8 +1,8 @@
 # The strong grapple (circle + cross, command 0x23) at a civilian 1.0 m in front, facing the player, with a full power
 # meter. The hooks log Player_SpecialAttack, which start function it picks (grab, tackle or paired), each hit's scoring
-# and what the tutorial callback would be given. Research: docs/research/combat.md#strong-grapple.
+# and what the tutorial callback would be given. Research: docs/research/combat-grabs.md#strong-grapple.
 description = "slot 6: circle + cross at PoizoCiv 1.0 m ahead; the strong grapple's path, clips, damage and callback id"
-research = "docs/research/combat.md#strong-grapple"
+research = "docs/research/combat-grabs.md#strong-grapple"
 input = "strong_grapple.txt"
 updates = 150
 fields = ["player", "held", "enemy"]

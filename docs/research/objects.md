@@ -13,7 +13,7 @@ end's Wonder Wheel as the worked case), an object's **tint**, the **objective ma
 the player to walk into), the **breakable glass** panes, the **doors** and the **breakable barriers**. The lists are
 [Object tints](../references/tints.md), [Glass types](../references/glass-types.md) and [Doors](../references/doors.md);
 the classes and pools of world objects and glass panes are on [Tasks](tasks.md#classes), the crimes a pane can raise on
-[AI: crimes](ai-gangs.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
+[AI: crimes](ai-gangs.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat-targets.md#breakables).
 
 ## Original structure
 
@@ -357,7 +357,7 @@ sound; `0x13` stops both ([Small lights and strobes](script-types.md#small-light
 `level99_objs.txt` holds 112 lines: 14 emitters and 98 objects; 89 lines name zone 0 (the emitters among them) and 23
 zone 26 (the two stores' jewellery and a cash register, flags 2), a zone `BNESetup` (`global.lua`, called by
 `level99.lua`'s `RegisterObjects`) enables, as it does each of zones 21-32 the level defines. Disc check (NTSC-U,
-2026-10-06, counts only); the store's items at runtime on [Combat: breakables](combat.md#breakables).
+2026-10-06, counts only); the store's items at runtime on [Combat: breakables](combat-targets.md#breakables).
 
 #### Streaming {#streaming}
 
@@ -565,7 +565,7 @@ again restarts every track from frame 0. Inferred from [Scenes: ending](scenes.m
 
 ### Pickable objects {#pickable}
 
-Triangle's pick-up search ([Breakables](combat.md#breakables)) and `Human_PickUpObject` take only objects with flag
+Triangle's pick-up search ([Breakables](combat-targets.md#breakables)) and `Human_PickUpObject` take only objects with flag
 `0x8000` (object `+0x54`). Each class's `init` sets the flags, confirmed (code):
 
 | Class | Init (`+0x54`) | Pickable | Exceptions |
@@ -590,10 +590,10 @@ pile stays. The 13 types of class `dyn_pile` ([Script types](script-types.md#dyn
 Confirmed (code) at the cited addresses.
 
 1. **Triangle** (or an AI's pick-up action) sends the pile message 0 like any pickable object
-   ([Breakables](combat.md#breakables): a player must have empty hands). `DynPile_OnMessage` (`0x003d3d30`) answers by
-   sending the taker message **`0x14`** with the pile as the object.
+   ([Breakables](combat-targets.md#breakables): a player must have empty hands). `DynPile_OnMessage` (`0x003d3d30`)
+   answers by sending the taker message **`0x14`** with the pile as the object.
 2. The taker's `0x14` (`Human_HandleMessage`, `0x00245920`) plays the **pick-up clip** of the pile's `pickup_anim`
-   ([Combat: the pick-up clip](combat.md#breakables); `na` gives 461, or 462 when the pile is more than 0.8 m above
+   ([Combat: the pick-up clip](combat-targets.md#breakables); `na` gives 461, or 462 when the pile is more than 0.8 m above
    his feet). A spray-can box (type 44) is refused first when the player's spray charges (item 3) are at the limit.
 3. The clip's take event ([event 9](#held)) sends the pile message `0x1b`, which the pile answers with human message
    3 (same function). That makes the object by the pile's **object type** (`CfgObj`'s `type`, type record `+0x86`),
@@ -652,7 +652,7 @@ Confirmed (code) at the cited addresses.
 One mechanism carries every object a human holds (a bat, a bottle, a brick, a stolen stereo, a hat being picked
 up): the object is **attached to one bone** of the human's skeleton at a **fixed local offset**, and both the bone
 and the offset come from an **event in the clip that puts it in the hand**, not from `CfgObj` or a weapon table. The
-bat is the worked case ([Combat: a bat in hand](combat.md#bat)); what the human does with it (anim sets, strikes,
+bat is the worked case ([Combat: a bat in hand](combat-throws.md#bat)); what the human does with it (anim sets, strikes,
 `+0x338`) is there too.
 
 **The attachment** (confirmed (code) at `0x003a1810`, `0x003a1858`, `0x003a19b0`): world object fields
@@ -679,8 +679,8 @@ world = parent's world transform (its vtable +0x9c: for a human, its position an
 ```
 
 A human's bone transform (`0x0023bde8`, its vtable `+0xbc`) is the bone's entry of the per-update bone cache
-([Combat: the bone cache](combat.md#grab-posing)'s `0x006b6880` + index × `0x470`, built once per update from the playing
-pose, model space) with the **position multiplied by the human's scale** (`+0x65c`, 0.97 for Rembrandt) and the
+([Combat: the bone cache](combat-grabs.md#grab-posing)'s `0x006b6880` + index × `0x470`, built once per update from the
+playing pose, model space) with the **position multiplied by the human's scale** (`+0x65c`, 0.97 for Rembrandt) and the
 rotation as is. The object itself is never scaled. `0x003a1ad8` (vtable `+0xac`, the pose extrapolated to now) does
 the same for an attached object, the local rotation advanced by its angular velocity (`+0x40`, zero while held).
 
@@ -709,14 +709,14 @@ angular velocity zeroed, attached to the human at the bone, flags `0x6000000` cl
 event's. When the human is **not** in a scene, the local position is then moved along the object's own `y` axis by the
 type's float at `CfgObj` `+0x70` (the local rotation applied to `(0, v, 0)`), so a model whose origin is not at its
 grip is slid to it (0.39 m for `dyn_bat_tuff`). The object then sends the human message 3 (applies its anim set and
-puts it in `+0x338`, [Combat: a bat in hand](combat.md#bat)) and message `0x17` (with `CfgObj` `+0x68`; not traced).
+puts it in `+0x338`, [Combat: a bat in hand](combat-throws.md#bat)) and message `0x17` (with `CfgObj` `+0x68`; not traced).
 There is **no blend**: the object stays where it lay until the event's update and is in the hand on the next draw.
 `melee_weapon` keeps the event's position in its data block too, and moves the local position again along `y` by
 `CfgObj` `+0x70` / `+0x74` on its messages `0x12` / `0x13` (senders not traced).
 
 **Scripted placement** (`HuPlaceItemInHand`, `0x00238540` → `0x0024c280` → `0x0024c6d8` → `0x00101360`, confirmed
 (code)): drops what the human holds, creates the object by name at the human's position, and reads the **first type-9
-event** of the low pick-up clip its `pickup_anim` selects ([Combat: the pick-up clip](combat.md#bat)) without playing
+event** of the low pick-up clip its `pickup_anim` selects ([Combat: the pick-up clip](combat-throws.md#bat)) without playing
 it, sending the object message `0x1b` at once; the `+0x70` slide applies when object `+0x110` is −1. Unlike the clip
 path the event's position is not multiplied by the human's scale. A left-hand or hat pick-up clip has no type-9 event,
 so nothing is attached.
@@ -768,7 +768,7 @@ addresses cited unless marked.
 1. **It is in his hand, attached and drawn like the player's.** The swap places the object with
    `Human_PlaceObjectInHandByPickupClip` (`0x0024c6d8`), the same path as `HuPlaceItemInHand`: the first type-9 event
    of the low pick-up clip of the type's `pickup_anim` gives the bone and offset (bone 25, the right hand, for 461, 481
-   and 498; [Combat: a bat in hand](combat.md#bat)), and message `0x1b` **take** attaches the object to the
+   and 498; [Combat: a bat in hand](combat-throws.md#bat)), and message `0x1b` **take** attaches the object to the
    Warrior (`+0x54` bit `0x10`, parent, pose bone) and puts it in his `+0x338`; message 3 applies its anim set. There
    is nothing player-only in any of this, and `HuRender` (`0x00237e98`) draws every human's attached objects after
    the human, so the weapon shows in the Warrior's hand on the next draw, posed by his bone cache. A left-hand or hat
@@ -776,8 +776,8 @@ addresses cited unless marked.
    placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
    `+0x338` ([AI: the Warriors' think](ai.md#think-warrior), step 7).
 2. **He fights with it.** An AI attacks through the player's dispatcher ([Combat: an AI's
-   attacks](combat.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
-   (`0x00231a80`, [Combat: moving attacks with something in hand](combat.md#armed-moves)), so a Warrior holding a
+   attacks](combat-targets.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
+   (`0x00231a80`, [Combat: moving attacks with something in hand](combat-throws.md#armed-moves)), so a Warrior holding a
    bat (set 3) swings 34 / 36 (37 at a grounded target), a baton (set 2) 39 / 41, a knife (set 1) 45 / 47.
 3. **The damage** is that clip's [damage table](combat.md#damage-table) value plus the weapon's: `Strike_Contact`
    (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
@@ -795,7 +795,7 @@ addresses cited unless marked.
    drop it: during a throw clip or clip 602 with set 1 (`Human_ApplyPendingDamage` `0x00265f70`), when the hit
    stuns or knocks him down while he is hurt, when it comes from a counter or special clip (620 and above), or when
    he is grabbed holding a bat; all but the throw case are stopped by `HuSetKeepWeapon`
-   ([Combat: dropping what is held when hit](combat.md#keep-weapon)).
+   ([Combat: dropping what is held when hit](combat-rage.md#keep-weapon)).
 
 **Coney fixes** (owner item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
@@ -825,7 +825,7 @@ and 20, [the binding](../references/bindings/config.md#cfgobj)), never per model
 
 | Type byte | `CfgObj` argument | What it chooses | Two-handed value |
 | --- | --- | --- | --- |
-| `+0x65` | 14 `pickupAnim` | the pick-up clip ([Combat: the pick-up clip](combat.md#bat)) | 2 `TwoHandPickUp`: 503, or 504 above 0.8 m |
+| `+0x65` | 14 `pickupAnim` | the pick-up clip ([Combat: the pick-up clip](combat-throws.md#bat)) | 2 `TwoHandPickUp`: 503, or 504 above 0.8 m |
 | `+0x87` | 20 `animSet` | the **move style** pushed while it is held, which swaps the idle and locomotion clips | 4 `OVERHEAD_WEAPON_SET` |
 
 The object is still attached to **one bone, the right hand (25)**; both hands meet it because every clip the style
@@ -835,7 +835,7 @@ alike because their take handlers are alike (below), and the class only decides 
 
 **1. The pick-up** uses `+0x65` (`Human_PlayPickupClip`, `0x0025e5a8`, from the human's message `0x14`): 2 plays
 **503** `ANIM_BARREL_PICK_UP`, or **504** `…_HIGH` when the object is more than 0.8 m above the human's feet.
-Confirmed (code), as on [Combat](combat.md#bat).
+Confirmed (code), as on [Combat](combat-throws.md#bat).
 
 **2. The take** (the clip's type-9 event, human message `0x89` in `Human_HandleMessage` `0x00245920`) sends the
 object message `0x1b` with, in push order, the human, the event's **bone**, the event's position × the human's scale,
@@ -892,14 +892,14 @@ unless the human has state `0x180000`. Confirmed (code) at `0x002460f4` and `0x0
 | 33 run stop | 417 | 523 | `ANIM_BARREL_MOVEMENT_RUN_STOP` |
 
 Every other slot keeps its default (the attack slots do not matter: with set 4 in hand square and cross throw,
-[Combat: moving attacks with something in hand](combat.md#armed-moves)). Style 6 (`GHETTO_SET`, the two ghetto
+[Combat: moving attacks with something in hand](combat-throws.md#armed-moves)). Style 6 (`GHETTO_SET`, the two ghetto
 blasters, `pickupAnim` 7) is the same shape with the ghetto clips (idle 555, walk 561, run 563, run stop 569, ...).
 Styles 1-3 (knife, baton, bat) change only attack and block slots, which is why a bat is carried with the plain idle
-and walk ([Combat: a bat in hand](combat.md#bat)).
+and walk ([Combat: a bat in hand](combat-throws.md#bat)).
 
 **4. Letting go.** The drop (`Human_DropHeld`, `0x00257f38`, [Drop](#held)) and the throw pop the style the object
 pushed, so the slots go back to the defaults. Before a pick-up clip, a held object is dropped first when the new
-object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6 ([Combat](combat.md#bat)).
+object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6 ([Combat](combat-throws.md#bat)).
 
 **At runtime** (confirmed (runtime), PCSX2 2.9.94, quick-save slot 8 copy (`level99` checkpoint 2), scenario
 `repo:research/traces/scenarios/cashreg_carry.toml`: the player put at (53.23, 56.45) facing +y, 0.8 m south of the
@@ -1792,7 +1792,7 @@ speed 0; step 41 the run start clip 414 at gait 2-3, building up again from ther
 `OverheadWeapon_Break` (the 0.65 volume), not by the movement; what holds him idle for those 5 updates is not traced.
 
 **A strike** (any of the player's or an AI's strike shapes that meet a `MELEETARGET` body,
-[Combat](combat.md#breakables); square at a trash can plays 661 `SPECIAL_BREAK_OBJECT_LOW`) reaches the object through
+[Combat](combat-targets.md#breakables); square at a trash can plays 661 `SPECIAL_BREAK_OBJECT_LOW`) reaches the object through
 `Strike_Contact` (`0x0021b290`, [above](#breakable-props)): the hit counter `+0x10d` goes 1 → 0, the impact sound
 (`Human_PlayImpactSound` with 9, or 26 armed, and the object's material), a noise report (30 m), message 6 to the volume
 boxes (the object was intact), stats crime 9 when the hit left a counter at 0 and the object has no flag `0x20`, and
@@ -2137,9 +2137,9 @@ Coney's stand-ins, where this page is silent:
   its leaves once broken. Game state bits 2 and 4 are not read. An
   object type no `CfgObj` names is a swinging door of 100 hitpoints.
 - Square with no human in front aims at a whole pane (its centre) as `Player_PickTarget`'s object pass does
-  ([Combat](combat.md#targets)); the object attack's hit breaks that pane. Doors are not object targets yet. Every other
-  hit reaches an object through the strike shapes ([Combat](combat.md#moving-strikes)): a segment shape meets a
-  pane's box as spheres every 5 cm along it, and a door through its two triangles while they are enabled. A broken
+  ([Combat](combat-targets.md#targets)); the object attack's hit breaks that pane. Doors are not object targets yet.
+  Every other hit reaches an object through the strike shapes ([Combat](combat.md#moving-strikes)): a segment shape
+  meets a pane's box as spheres every 5 cm along it, and a door through its two triangles while they are enabled. A broken
   barrier's triangles stay on until its removal, standing for the body the break leaves (`dyn_door_wall_a`, whose
   body goes, and `dyn_door_vargas`, which is never removed, turn them off at the break). Thrown
   objects do not reach the objects yet: nothing is thrown in play.
@@ -2161,9 +2161,9 @@ Coney's stand-ins, where this page is silent:
 **Breakable props** ([Breakable props](#breakable-props), `repo:src/world_objects/props.h`): `CfgObj` keeps the
 counters' bytes, the body word, the material and the body's centre, size and shape; `bodyFlagsOf` and
 `isStrikeTarget` decide which world objects a strike may pick. Square offers player 1 the drawn ones within 2 m
-([Combat](combat.md#targets)) and its object attack strikes the one picked; a moving attack's strike shapes strike any
-whose body they reach (a box of the type's size about its centre, or a sphere of half its x). `Props::strike` follows
-`Strike_Contact`'s order: intact or not, `WorldObject_TakeHit`, the impact sound, message 6 only while intact, then
+([Combat](combat-targets.md#targets)) and its object attack strikes the one picked; a moving attack's strike shapes
+strike any whose body they reach (a box of the type's size about its centre, or a sphere of half its x). `Props::strike`
+follows `Strike_Contact`'s order: intact or not, `WorldObject_TakeHit`, the impact sound, message 6 only while intact, then
 `DynMasks_OnHit` for a `dyn_masks` prop: its sound and two dust bursts at the hit point, and on a break the crate
 stack's or the bench's piece (and the bench's splinters); then it loses its body and is removed (message 2, its record
 gone). `GetRTTI` gives `0x400` for a pane. Coney's stand-ins: the noise, statistic 9, the burn near a fire and the

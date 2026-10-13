@@ -6,7 +6,7 @@
 // he holds no one) until lesson 7's scene `l99_c7` takes him over. He still holds the bum of his power move 59 on the
 // update before the scene's play; the play binds them, and each bind resets its human and ends his pair, so as the
 // scene starts and once it has ended and given him back no human is grabbing, holding, held or mounted
-// (docs/research/scenes.md#join-reset, docs/research/combat.md#grabbing). It
+// (docs/research/scenes.md#join-reset, docs/research/combat-grabs.md#grabbing). It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
 

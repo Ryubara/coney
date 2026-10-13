@@ -128,7 +128,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x2f0` | vec4 | external push velocity, added to the velocity when moving | confirmed (code) |
 | `+0x338` | handle | the object **in the hand** (Nil when none); pose bone 25 is the right hand (runtime), 19 the left (inferred from the left-hand pick-up clips) ([World objects: objects in a human's hand](objects.md#held)) | confirmed (code), runtime |
 | `+0x33c` | handle | the object being picked up, from the pick-up's message `0x14` until its clip event attaches it | confirmed (code), runtime |
-| `+0x348` / `+0x34c` | handle | the **carried prop** a clip makes (event `0x30`) and removes (event `0x31`), attached at point `0x13` and moved by event `0x37`: both hold the same handle once attached; Rembrandt's power move 59 uses it ([Combat: props of a power move](combat.md#power-move-props)) | confirmed (code), runtime |
+| `+0x348` / `+0x34c` | handle | the **carried prop** a clip makes (event `0x30`) and removes (event `0x31`), attached at point `0x13` and moved by event `0x37`: both hold the same handle once attached; Rembrandt's power move 59 uses it ([Combat: props of a power move](combat-grabs.md#power-move-props)) | confirmed (code), runtime |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
 | `+0x380` | int | HUD player panel (0 or 1), -1 for none ([Players](#players)) | confirmed (code) |
 | `+0x384` | int | airborne updates so far | confirmed (code) |
@@ -174,8 +174,8 @@ are Rembrandt's.
 | `+0x18` | int | anim state ([Clip selection](#clip-selection)) |
 | `+0x20` | int | anim id playing (getter `0x002266b8`) |
 | `+0x28`-`+0xb3` | int[35] | [anim slots](#anim-slots) |
-| `+0x144` / `+0x146` | s16 | **health** / its maximum ([Combat](combat.md#damage)) |
-| `+0x148` | s16 | the **power meter** that grabs spend, refilled at the power class's `+0x2a` per second to the maximum `0x00223068` returns (`+0x28`, [Combat](combat.md#power-meter)) |
+| `+0x144` / `+0x146` | s16 | **health** / its maximum ([Combat](combat-reactions.md#damage)) |
+| `+0x148` | s16 | the **power meter** that grabs spend, refilled at the power class's `+0x2a` per second to the maximum `0x00223068` returns (`+0x28`, [Combat](combat-rage.md#power-meter)) |
 | `+0x14a` | s16 | **stamina** ([Sprint](#sprint)) |
 | `+0x14c` / `+0x154` | u32 | game time (ms, `*(0x0050b734) + 0x48`) of the last update of the second meter / of stamina |
 | `+0x150` / `+0x158` | float | the fractions carried between updates of the two meters |
@@ -209,9 +209,9 @@ the bytes after `+0x37` are [below the table](#power-class-bytes). The sparring 
 | --- | --- | --- |
 | `+0x00` | 1.3 | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
 | `+0x04` | 0.3 | the **hurt** threshold: below this fraction of maximum health the human is hurt (`0x00222ff8`) |
-| `+0x10` / `+0x14` | 1.0 / 1.0 | the stun time's / the ground time's factor while hurt ([Combat](combat.md#reactions)) |
+| `+0x10` / `+0x14` | 1.0 / 1.0 | the stun time's / the ground time's factor while hurt ([Combat](combat-reactions.md#reactions)) |
 | `+0x1c` / `+0x20` | 3.0 / 3.0 | AI only: the factor on `CfgAttackDelay`, the second when the target is down (`0x00223800`) |
-| `+0x28` | 400 | the **power meter's maximum** ([Combat](combat.md#power-meter)) |
+| `+0x28` | 400 | the **power meter's maximum** ([Combat](combat-rage.md#power-meter)) |
 | `+0x2a` | 60 | the power meter's refill per second |
 | `+0x2c` | 135 | **stamina maximum** |
 | `+0x2e` | 40 | **stamina refill per second** |
@@ -326,7 +326,7 @@ is made or becomes a player; the evidence is as the cited page gives it. Every t
 | Category | byte `+0x11b` | (read from the record) | 14 the Warriors: a player takes his Warrior's power class; 13 the bosses and big fighters; the money class and the civilian reactions ([Starting money](crimes.md#starting-money)) | confirmed (code) |
 | Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
 | Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
-| Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat.md#damage)) |
+| Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat-reactions.md#damage)) |
 | Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat.md#damage-table)) | confirmed (code), confirmed (runtime) |
 | Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai.md)) | confirmed (code) |
 | Range table | float × 45 at `+0x00` (÷ 100) | not traced | no reader found | not traced |
@@ -345,7 +345,7 @@ is made or becomes a player; the evidence is as the cited page gives it. Every t
 | Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100) |
 | Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100) |
 | Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`) |
-| Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat.md#reactions)) |
+| Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat-reactions.md#reactions)) |
 | Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
 | Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
 | AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai.md#block)) |
@@ -358,7 +358,7 @@ Warriors, 9 everyone else), read through `0x00222b58`. Confirmed (code) at each 
 
 | Stat | Field | What it does |
 | --- | --- | --- |
-| Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat.md#rage)) |
+| Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat-rage.md#rage)) |
 | Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
 | Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat.md#damage-table)); the Stats screen's Strength bar |
 | Context games | bytes `+0x07`-`+0x0c` | the cuffing hold, the uncuff mash, tagging, lock picking, the stereo theft and mugging |
@@ -881,7 +881,7 @@ So a level loaded without a `SetCheckPoint` starts at checkpoint 1, or at whatev
 heading (`0x00416258`), and for a human also calls its vtable slot `+0x14c`. Confirmed (code). Neither places the
 object on the ground as `HuCreate` does (above), but a human not in a scene (`+0x280` = −1) is lowered onto whatever a
 short ray (0.5) straight down hits (`0x0023d440`; confirmed (code)). A human in a grab, mount or mugging is first let
-go, its partner playing a reaction clip ([Combat](combat.md#pair-break)).
+go, its partner playing a reaction clip ([Combat](combat-grabs.md#pair-break)).
 
 **Interiors are below the street.** Starts with `z` near −195 to −215 (`level5` checkpoint 2, `level11` 1 and 2,
 `level20` 1 and 3, the hub ...) are rooms placed about 200 m under the city in the same world (inferred from the values
@@ -1522,7 +1522,7 @@ addresses given:
   for that human. Confirmed (runtime): at a strong grapple's connect the victim's 658, started by `PairedTask_Init`
   (`0x00108a78`, caller `0x00108af4`), was dispatched for the **player** (the grabber, whose set holds 658).
 - **A follow-on task fires when it is built, not when it starts playing.** At a grab's connect, `Grab_Connect`
-  ([Combat](combat.md#grab-posing)) builds the connecting clip and, under it, the hold's four-clip mix (type 11,
+  ([Combat](combat-grabs.md#grab-posing)) builds the connecting clip and, under it, the hold's four-clip mix (type 11,
   `AnimTaskFourMix_Construct`, `0x00106f50`) on both stacks in the same update; the four-mix's constructor takes its
   clips (82 and 86 for the grabber, 83 and 87 for the victim) and so fires the callbacks of the **hold ids at the
   connect**, the length of the connecting clip before the hold plays. Confirmed (runtime), PCSX2 2.9.94, `level99`
@@ -1531,7 +1531,7 @@ addresses given:
   connecting clip started (657 from `AnimTaskChained_Construct`, `0x00105990`); in the strong grapple the hold played
   and the tutorial callback received 82 **34 updates later**, and no second dispatch of 82 came when the hold began.
   So level99's `PlayerState` (registered on the player's 82 and 84) runs at the connect, and lesson 5's
-  `P1.Power` (the hit scored with 82, [Strong grapple](combat.md#strong-grapple)) 34 updates after it, never in the
+  `P1.Power` (the hit scored with 82, [Strong grapple](combat-grabs.md#strong-grapple)) 34 updates after it, never in the
   same update. A plain grab fires 82 at its connect the same way (lessons 2, 6 and 8).
 - **Coney's implementation** (`ScriptedBrains::runAnimCallbacks`): the starts are gathered over the characters' step
   and the callbacks called after it. A human that starts the same id more than once in one step gets **one** call
@@ -2247,8 +2247,8 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x0021d570` | `Human_HasScriptHandler` | True when the script handler (`+0xe8`) has a handler or the force flag `+0x1b2` is set. | confirmed (code) |
 | `0x0021d848` | `Human_SetPushable` | Clears (on) or sets (off) body flag 0x200 and stores the choice in `+0x3bf`. | confirmed (code) |
 | `0x0021d880` | `Human_SpawnParticleAbove` | Spawns a named particle at the human's feet plus 1 m. | confirmed (code) |
-| `0x0021d928` | `Human_SpawnHitEffect` | A hit on a human: a `sub_punch_flash` whose blood count comes from the attacker's weapon and the victim's hurt and blocking state; a kind-39 object queues a blur pulse and hint 26 instead ([Combat: hit blood](combat.md#hit-blood)). | confirmed (code) |
-| `0x0021de48` | `Human_SpawnAnimEffect` | A clip's type-`0x21` effect event: spawns `sub_` + its code at the human's bone (`bld` blood, `pch` blood or sweat by hurt, `blo` blood and a decal, and the non-blood codes) ([Combat: hit blood](combat.md#hit-blood)). | confirmed (code) |
+| `0x0021d928` | `Human_SpawnHitEffect` | A hit on a human: a `sub_punch_flash` whose blood count comes from the attacker's weapon and the victim's hurt and blocking state; a kind-39 object queues a blur pulse and hint 26 instead ([Combat: hit blood](combat-reactions.md#hit-blood)). | confirmed (code) |
+| `0x0021de48` | `Human_SpawnAnimEffect` | A clip's type-`0x21` effect event: spawns `sub_` + its code at the human's bone (`bld` blood, `pch` blood or sweat by hurt, `blo` blood and a decal, and the non-blood codes) ([Combat: hit blood](combat-reactions.md#hit-blood)). | confirmed (code) |
 | `0x0021e3a8` | `Human_GetSoundVolumeScale` | 1.0, or the combat-framing volume (game state `+0x24c`) for a player while the camera frames a fight. | confirmed (code) |
 | `0x0021e940` | `Human_UpdateSpeech` | Per update speech: when the line ends, clears speaking state and runs the end callback once; while it plays, moves the stream to the head and faces the partner. | confirmed (code) |
 | `0x0021ec30` | `Human_GetSpeechHandle` | Returns the current speech line handle `+0x178`. | confirmed (code) |
@@ -2348,7 +2348,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x002269d8` | `Human_GetGrabOther` | Record `+0xc4` resolved, the other human of a grab. | confirmed (code) |
 | `0x00226a00` | `Human_ClearGrabOther` | Record `+0xc4` = null. | confirmed (code) |
 | `0x00226a20` | `Human_GetHeadPoint` | The upper point of the human's capsule segment: feet + `+0x4e8` - 0.16 x scale. | confirmed (code) |
-| `0x00226aa0` | `Human_GetLedSlotPoint` | Aim point n (`+0x1e0` + n x 0x10) after refreshing them (0x0023cd30); point 0, the head, is the led attack steer's target ([Combat: the led steer](combat.md#led-steer)). Not a formation. | confirmed (code) |
+| `0x00226aa0` | `Human_GetLedSlotPoint` | Aim point n (`+0x1e0` + n x 0x10) after refreshing them (0x0023cd30); point 0, the head, is the led attack steer's target ([Combat: the led steer](combat-targets.md#led-steer)). Not a formation. | confirmed (code) |
 | `0x00226af8` | `Human_SetTargetFromHandle` | Sets the target from a handle: a player sets its own human or object target; an AI sets the brain's target and `+0x128`; skipped while a player with record flag `+0x1b` is locked on. | confirmed (code) |
 | `0x00226e20` | `Human_GetTargetHandle` | The target handle `+0xc8`, refreshed from the brain first for an AI. | confirmed (code) |
 | `0x00226ea8` | `Human_GetTargetResolved` | The target `+0xc8` resolved, refreshed from the brain first for an AI. | confirmed (code) |
@@ -2397,7 +2397,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00228630` | `Human_SetState20000000` | Sets state flag 0x20000000 (the victim just before a tackle hit). | confirmed (code) |
 | `0x00228658` | `Human_GetLastHitObject` | Record `+0xd0` resolved: the world object that last hit the human. | confirmed (code) |
 | `0x00228680` | `Human_GetLastHitObjectHandle` | Record `+0xd0` as a handle (null without a record). | confirmed (code) |
-| `0x002286a0` | `Human_IsSwingingHeld` | Held flag 0x800000, or 0x1000010 while holding an object and playing one of the eleven object throw clips (467, 471, 472, 491, 502, 505-507, 551-553; a throw wind-up, not a melee swing). A hit drops the held object while it is true ([Combat: dropping what is held](combat.md#keep-weapon)). | confirmed (code) |
+| `0x002286a0` | `Human_IsSwingingHeld` | Held flag 0x800000, or 0x1000010 while holding an object and playing one of the eleven object throw clips (467, 471, 472, 491, 502, 505-507, 551-553; a throw wind-up, not a melee swing). A hit drops the held object while it is true ([Combat: dropping what is held](combat-rage.md#keep-weapon)). | confirmed (code) |
 | `0x002287e0` | `Humans_StaticInitAll` | Static initialiser: Humans_StaticInit(1, 0xffff). | confirmed (code) |
 | `0x00228818` | `SpeedClass_Get` | Speed class record `0x006b6548` + class x 0x18. | confirmed (code) |
 | `0x00228830` | `PowerClass_Get` | Power class record `0x006619a0` + class x 0x44. | confirmed (code) |
@@ -2683,7 +2683,7 @@ the human code reads.
 | `0x0023bc80` | `Humans_StaticInitAnimHandles` | Humans_InitAnimHandles(1, 0xffff). | confirmed (code) |
 | `0x0023bcf0` | `Human_ClearVelocity` | Zeroes the task velocity and `+0x3a0`, clears the bone cache's `+0x460` and marks the move dirty (`+0x255`). | confirmed (code) |
 | `0x0023be98` | `Task_SendHandleMessage0` | Sends message 0 with a handle to a task (Human_PickUpObject). | confirmed (code) |
-| `0x0023cd30` | `Human_UpdateLedSlots` | When the move is dirty (`+0x255`), recomputes four aim points in world space: `+0x1e0` = the world transform composed with `+0x500` (bone 6, the head), `+0x1f0` with `+0x540` (bone 3), `+0x200` with `+0x4e0` (bone 2, the hips), `+0x210` = the position + 0.3 m up ([Combat: the led steer](combat.md#led-steer)). | confirmed (code) |
+| `0x0023cd30` | `Human_UpdateLedSlots` | When the move is dirty (`+0x255`), recomputes four aim points in world space: `+0x1e0` = the world transform composed with `+0x500` (bone 6, the head), `+0x1f0` with `+0x540` (bone 3), `+0x200` with `+0x4e0` (bone 2, the hips), `+0x210` = the position + 0.3 m up ([Combat: the led steer](combat-targets.md#led-steer)). | confirmed (code) |
 | `0x0023ceb8` | `Task_SetVelocityXYZ` | Sets a task's velocity from three floats (w = 1). | confirmed (code) |
 | `0x0023cf00` | `Human_SetMoveVelocity` | Sets the velocity `+0x30`, its speed `+0x1ac` and the gait for that speed `+0x1a8`, and marks the move dirty. | confirmed (code) |
 | `0x0023cf70` | `Human_ClearTurn` | Clears the turn state `+0x300`, `+0x304`, `+0x331`, `+0x332`; attacks and climbs call it before steering. | confirmed (code) |
@@ -2723,7 +2723,7 @@ the human code reads.
 | `0x0024c560` | `Human_PlaceObjectInHand` | Puts a world object into the hand by its type record, unless picking up already (held 0x4000). | confirmed (code) |
 | `0x0024c7b0` | `Human_StickThrownKnife` | Sticks a thrown knife into the human. | confirmed (code) |
 | `0x0024cac8` | `Human_DetachProp` | Detaches the object `+0x358`, marks its body dirty and drops it (message 0x3e). | confirmed (code) |
-| `0x0024cbb0` | `Human_CreateCarriedProp` | Destroys the prop at `+0x348`, creates the named object at the human, keeps it in `+0x34c` and attaches it at point `0x13` (`Human_AttachCarriedProp`); clip event `0x30` ([Combat: props of a power move](combat.md#power-move-props)). | confirmed (code) |
+| `0x0024cbb0` | `Human_CreateCarriedProp` | Destroys the prop at `+0x348`, creates the named object at the human, keeps it in `+0x34c` and attaches it at point `0x13` (`Human_AttachCarriedProp`); clip event `0x30` ([Combat: props of a power move](combat-grabs.md#power-move-props)). | confirmed (code) |
 | `0x0024cd30` | `Human_AttachCarriedProp` | Attaches the prop `+0x34c` to attach point 0x13 with its type's offset. | confirmed (code) |
 | `0x0024ce40` | `Human_ReleaseCarriedProps` | Drops a held kind-0x27 object and clears the carried props `+0x348`, `+0x34c`. | confirmed (code) |
 | `0x0024cef0` | `Player_AttachGear` | For a player with the unlocked gear (unlockables 6/5, 6/6): spawns the gear pieces on its bones from the transforms at 0x00715480. | confirmed (code) |
@@ -2798,8 +2798,8 @@ arrival clips of an AI, and the per-human actions.
 | `0x00255cf8` | `Human_UpdateSpecialIdle` | State code 0x1d: the special idle (672 start, then 671 looping) from the script's clips; ends the special state. | confirmed (code) |
 | `0x002570e8` | `Human_ComputeThrowVelocity` | The launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale. | confirmed (code) |
 | `0x00257ce8` | `Human_EndThrowAim` | Cancels the throw aim and drops what cannot stay in hand (kinds 4 and 6; any but sets 1 and 2 without human flag 0x2000). | confirmed (code) |
-| `0x00257d70` | `Human_EndThrowAimDropHeavy` | Ends the throw aim: drops a held object of kind 4 or 6, then (no human flag 0x2000) drops any other when the human is hurt or holds set 3, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat.md#keep-weapon)). | confirmed (code) |
-| `0x00257e38` | `Human_EndThrowAimIfHurt` | Ends the throw aim and drops a held object of kind 4 or 6; a hurt human (no human flag 0x2000) also drops any other, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat.md#keep-weapon)). | confirmed (code) |
+| `0x00257d70` | `Human_EndThrowAimDropHeavy` | Ends the throw aim: drops a held object of kind 4 or 6, then (no human flag 0x2000) drops any other when the human is hurt or holds set 3, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat-rage.md#keep-weapon)). | confirmed (code) |
+| `0x00257e38` | `Human_EndThrowAimIfHurt` | Ends the throw aim and drops a held object of kind 4 or 6; a hurt human (no human flag 0x2000) also drops any other, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat-rage.md#keep-weapon)). | confirmed (code) |
 | `0x00257ef0` | `Human_KnockOffHatIfDown` | Class 0x80 down or dead: knocks the hat off ([Hats](#hats)). | confirmed (code) |
 | `0x00258330` | `Human_KnockOffHat` | Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](#hats)). | confirmed (code) |
 | `0x00258968` | `Human_ReleaseAll` | Lets go of everything: breaks a pair, ends a mini-game, drops the held object, clears the object target, ends rage, clears state 0x18800f, empties the move-style stack and sets style 0x12. | confirmed (code) |

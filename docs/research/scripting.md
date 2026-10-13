@@ -879,15 +879,15 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | # | Section | Waits for (anim ids, in order) | Move | Researched |
 | --- | --- | --- | --- | --- |
 | 1 | camera, intro | flags and scenes | | [Scenes](scenes.md) |
-| 2 | basic attacks | 12; 11; 51 or 53; 55; 219 or 221; 223 | square, cross, grab strikes, mount strikes | [Combat](combat.md#grabbing), [mount](combat.md#mount) |
+| 2 | basic attacks | 12; 11; 51 or 53; 55; 219 or 221; 223 | square, cross, grab strikes, mount strikes | [Combat](combat-grabs.md#grabbing), [mount](combat-grabs.md#mount) |
 | 3 | targeting | the `PadSetHandlerEx` handler | L1 | [Input](../references/bindings/input.md#padsethandlerex) |
 | 4 | light, then heavy combos | 12, 16, then 19 or 20; 12, 15; 11, 13; 12, 16, then 17 or 18 | chains | [Attacks](combat.md#attacks) |
-| 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat.md#run-attacks), [Strong grapple](combat.md#strong-grapple) |
-| 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat.md#grabbing) |
+| 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat.md#run-attacks), [Strong grapple](combat-grabs.md#strong-grapple) |
+| 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat-grabs.md#grabbing) |
 | 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat.md#attacks), [the second wave](ai.md#level99-snaps) |
-| 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat.md#throws) |
-| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), [the prompt](#message-handlers) |
-| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat.md#rage); 65 and 233 inferred |
+| 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat-throws.md#throws) |
+| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat-throws.md#bat), [the prompt](#message-handlers) |
+| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage); 65 and 233 inferred |
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
 
@@ -898,19 +898,19 @@ bums. Points an implementer needs:
 
 - **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
   The script gives no spray can: Rembrandt's 59 makes and removes its own (`dyn_s_spraycan`, clip events
-  `0x30` / `0x31`) and stops its spray sound (event `0x45`), [Combat](combat.md#power-move-props). The scene
+  `0x30` / `0x31`) and stops its spray sound (event `0x45`), [Combat](combat-grabs.md#power-move-props). The scene
   `l99_c7` that follows binds the victim, `CombatEnemy.GenWarrior` (Rudy), to role 6 `rudy`; the pair is broken
   when the cinematic is played ([Scenes](scenes.md#humans)).
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
   power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
-  `Player_UpdatePowerMove` (confirmed (code) for the mount too: [the mount's power strike](combat.md#mount-power)
+  `Player_UpdatePowerMove` (confirmed (code) for the mount too: [the mount's power strike](combat-grabs.md#mount-power)
   puts the mounter in state `0x1000`, which the dispatcher sends there). **What arms `P1.RageMoves`** (the step order):
     1. `P1.WeaponsDone` clears the tutorial callback and starts the section 2000 ms later.
     2. `P1.SetupRageMode` makes rage gains possible again (`HuSetPreventRage(false)`). It sets the meter to 0.5 and
        locks it, and it registers the rage handlers: enter `P1.EnterRageMode`, exit `P1.ExitRageMode`, full
        `P1.CheckRage`, 20000 and 5000 ms. It arms **no** tutorial callback.
     3. The meter fills only from the player's own hits. The lock stops the drain but not `Human_AddRage`
-       ([Rage](combat.md#rage)), so the player must earn the other half (39 of class 6's 78) by hurting someone.
+       ([Rage](combat-rage.md#rage)), so the player must earn the other half (39 of class 6's 78) by hurting someone.
     4. When it is full, `Human_AddRage` calls the full handler once, `P1.CheckRage(player, true)`. That shows the
        next text, drops his weapon, turns every command off and turns command 31 (L1 + R1) back on.
     5. Pressing L1 + R1 starts rage, which calls `P1.EnterRageMode(player, …)`. That turns every button back on except
@@ -927,7 +927,7 @@ bums. Points an implementer needs:
   message-0 handler with the lesson's prompt, places the players in the pen, sets up the fence's enemies and starts a
   check that runs every 250 ms. The handler, on the first bat taken, removes the handler and prompt from all three,
   arms the tutorial callback and returns nothing, so the game's own pick-up puts the bat in hand ([A bat in
-  hand](combat.md#bat)); no binding does it. The check asks `HuGetHeldObject`: holding, it shows the lesson's current
+  hand](combat-throws.md#bat)); no binding does it. The check asks `HuGetHeldObject`: holding, it shows the lesson's current
   text once; empty-handed after holding, it shows a "pick it up again" text; it stops rescheduling once the lesson is
   done. A dropped bat has no prompt any more, but triangle's plain search still takes it (bats are
   [pickable](objects.md#pickable)). Inferred from the disassembly of the script; the game side is confirmed where
@@ -1036,8 +1036,8 @@ later. Any other id is ignored.
 So the answer is **both, by state**: `TT_19a` is the idle text all through the lesson, `TT_24e` the holding text
 after the first power strike. The lesson counts **only the grab's power strike from the front hold** (57, then its
 extension 59): the standing cross + square (653, lesson 5's special), the mount's power strike (225) and a power
-strike from the rear hold (scored as 80, [the power strike](combat.md#grabbing)) never count. The texts that read like
-a standing move are only ever shown while the player holds someone, and a player who lets go is told to grab.
+strike from the rear hold (scored as 80, [the power strike](combat-grabs.md#grabbing)) never count. The texts that read
+like a standing move are only ever shown while the player holds someone, and a player who lets go is told to grab.
 
 **What the owner saw in Coney** (item 33, steps 1-7): standing he got the power-move text; grabbing, the grab hint;
 mounted, the power-move text; picked up again, the pick-up hint; let go, the power-move text; grabbed, the grab
@@ -1120,9 +1120,9 @@ the disassembly of the scripts (names, ids and values only).
 | Step | Started by | What the script sets up | Waits for | Mechanics |
 | --- | --- | --- | --- | --- |
 | 2.1 set-up | `P2.SetupLesson1` | the Warriors remade for the checkpoint, flash command 40 off, both players at 35 % health and demi-god 0.25, scene `l99_c2` | the scene's end | [Scenes](scenes.md) |
-| 2.2 store | `P2.EndStreetScn` | Vermin's talk prompt (message 0), `CfgInventoryCallback(P2.UpdateLootCount)`, `vInsideStore` message 3 | three items of item 10 | [Breakables](combat.md#breakables), [inventory callback](player-state.md#pickup-callback) |
-| 2.3 car | `P2.SetupCars`, 3 s after the third item | `CarMakeGoodAsNew` and `CarSpawnRadio` on the three cars, the locked camera `VerminCar`, Vermin's line; then `CfgSetSteroTheftHandler(P2.CarRadioStolen)` | the first stereo a player steals (`radioNeeded` 2 is never read) | [Cars: windows](cars.md#windows), [the theft](combat.md#stereo-theft), [context kind 3](crimes.md#context-records) |
-| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai-scripting.md#scripted) |
+| 2.2 store | `P2.EndStreetScn` | Vermin's talk prompt (message 0), `CfgInventoryCallback(P2.UpdateLootCount)`, `vInsideStore` message 3 | three items of item 10 | [Breakables](combat-targets.md#breakables), [inventory callback](player-state.md#pickup-callback) |
+| 2.3 car | `P2.SetupCars`, 3 s after the third item | `CarMakeGoodAsNew` and `CarSpawnRadio` on the three cars, the locked camera `VerminCar`, Vermin's line; then `CfgSetSteroTheftHandler(P2.CarRadioStolen)` | the first stereo a player steals (`radioNeeded` 2 is never read) | [Cars: windows](cars.md#windows), [the theft](combat-targets.md#stereo-theft), [context kind 3](crimes.md#context-records) |
+| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat-throws.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai-scripting.md#scripted) |
 | 2.5 Vermin | `P2.SeeVermin`, 5 s later | the camera `VerminWait`, `ObjShow(dyn_objective_w)`, Vermin a radar objective (texture 27), command 38 on after 2.5 s | `vFenceSection` message 3 → `SetCheckPoint(3)`, `level99_lesson2` | [HUD](hud.md) |
 | 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai-scripting.md#dealer) |
 | 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai-moving.md#path-planning) |
@@ -1130,12 +1130,12 @@ the disassembly of the scripts (names, ids and values only).
 | 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md#jump), [Moving into a pane](objects.md#pane-break) |
 | 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
 | 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai-scripting.md#dealer), [trigger spheres](#triggers) |
-| 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat.md#rage), [How the mission ends](#level99) |
+| 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat-rage.md#rage), [How the mission ends](#level99) |
 
 Points an implementer needs:
 
 - **2.4**: `SetInterrogateParam(160, 75, 255, 5000, 2500, 20000, 40, 60, 20000, 0, 0)` makes the mugging 5 s on
-  target with 20 s off target allowed ([Mugging](combat.md#mugging)). The mug callback runs for every end of a
+  target with 20 s off target allowed ([Mugging](combat-throws.md#mugging)). The mug callback runs for every end of a
   mugging; the lesson ignores a false one.
 - **3.6**: a player hitting the dealer (message 1 or 16) fades out, removes his gang and makes him again after 2 s,
   the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai-scripting.md#dealer)): $20 for
@@ -2019,7 +2019,7 @@ Fixes, in the order to take them (each one implementer unit):
 2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Done (issue #353):
    Coney now makes the fix below. Before the press the player was already in the fight stance (the stance walk clips 380
    and 384, then the fight idle 358): chapter 2's first spot has a human within 2 m, whom [the
-   stance](combat.md#fight-stance) takes as its target; chapter 1's spots have none. `HuTag` started 334
+   stance](combat-targets.md#fight-stance) takes as its target; chapter 1's spots have none. `HuTag` started 334
    `ANIM_TAGGING_INTRO`, and on the next update Coney's stance walk, with the stick at rest, put the fight idle 358 back
    over it, so the intro was no longer playing and the spray counted as cut short. In the original nothing of the stance
    runs during a spray: `Human_UpdateActions` (`0x00254e78`) calls `MiniGame_Update`, which for a tagging player runs
@@ -2045,7 +2045,7 @@ Fixes, in the order to take them (each one implementer unit):
    price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the chapter's first paint (inferred from the
    script); Coney drops nothing. Fix and test on [Crimes](crimes.md#down-drop).
 5. **A hidden player enters the fight stance.** The original's stance starts only when the state word lacks
-   `0x200000`, the hidden state ([Fight stance](combat.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
+   `0x200000`, the hidden state ([Fight stance](combat-targets.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
    picks a target without the lock ([The stealth kill](stealth.md#stealth-kill)). Coney's stance ignores the hidden
    state, so creeping up on a scout puts the player in the fight walk. Test: a hidden player walking to 1.5 m behind
    an enemy keeps the stealth walk (633) and has no target until L1.
@@ -2686,7 +2686,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   [Objective markers](objects.md#objective-markers)), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
   lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
   play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the grab and
-  its strikes, the mount and its strikes ([Combat](combat.md#mount)), the L2 let-go, the targeting lesson (L1 held
+  its strikes, the mount and its strikes ([Combat](combat-grabs.md#mount)), the L2 let-go, the targeting lesson (L1 held
   2 s, heard through the `PadSetHandlerEx` handler, which the play mode calls after the level's step with each
   human's pad command, [PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)), the combos and the strong
   attack, then stop at the strong grapple (circle + cross), whose research is under way.

@@ -51,7 +51,7 @@ struct CombatInput {
     bool snapTarget = false; ///< The snap's search found a human that is not the target (SquareInput).
     /// The human square, cross or circle aims at is held from the rear in front of this one and allows a tandem
     /// (combat::tandemCanStart(), the caller's search). Square and cross start it after their other target tests,
-    /// circle before grabbing (docs/research/combat.md#grab, step 3).
+    /// circle before grabbing (docs/research/combat-grabs.md#grab, step 3).
     bool tandemTarget = false;
     ChainTargets chain;          ///< What the chain's next step reads of the targets (AttackChain::update()).
     bool fromRear = false;       ///< Holding the victim from behind.
@@ -168,14 +168,14 @@ class PlayerCombat {
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
-    // power check or cost; with nobody to grab, nothing (docs/research/combat.md#strong-grapple). Refused, like the
-    // special, with an object in hand (docs/research/combat-moves.md#bat-cross).
+    // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). Refused, like
+    // the special, with an object in hand (docs/research/combat-moves.md#bat-cross).
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
     void updateMounting(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // In a grab, square or cross in the power move's window plays its next part, id + 2 (57 → 59, 63 → 65). Returns
-    // whether it did. Research: docs/research/combat.md#grabbing
+    // whether it did. Research: docs/research/combat-grabs.md#grabbing
     // @orig 0x0027df38 Player_UpdatePowerMove (unknown)
     bool extendPowerMove(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.

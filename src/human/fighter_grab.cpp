@@ -17,7 +17,8 @@
 
 // The fighter's grabs the player holds: the intro and the alignment, the connecting clips, the snap to the hold and
 // the attachment, the moves inside the hold, the tackle's mount, the stick turning the pair, and letting go.
-// Research: docs/research/combat.md#grab-posing, docs/research/combat.md#grab-turn, docs/research/combat.md#grabbing
+// Research: docs/research/combat-grabs.md#grab-posing, docs/research/combat-grabs.md#grab-turn,
+// docs/research/combat-grabs.md#grabbing
 
 namespace coney::human {
 
@@ -29,7 +30,7 @@ constexpr float kPi = std::numbers::pi_v<float>;
 // The mount's slide and turn of the mounter onto the victim (`Human_AlignToVictimFacing`, 0x00277248).
 constexpr float kMountSeatSeconds = 0.1F;
 // A front hold's plain throw turns the pair onto the stick over this long (`Human_TurnToOver`, `Human_MoveToOver`
-// from `Player_Throw`, docs/research/combat.md#throw-direction): 5 updates.
+// from `Player_Throw`, docs/research/combat-throws.md#throw-direction): 5 updates.
 constexpr float kThrowTurnSeconds = 1.0F / 6.0F;
 
 // The alignment's slide is dropped from this far, or above this speed (m/s).
@@ -40,8 +41,8 @@ constexpr float kAlignMaxSpeed = 50.0F;
 constexpr int kEscapeFront = 100;
 constexpr int kEscapeRear = 112;
 
-// The wall throw's ray (docs/research/combat.md#throws): its height above the feet, its length past the far range,
-// the steepest face normal · up that counts (cos 80°), and the head-on bound (normal · ray at most cos 135°).
+// The wall throw's ray (docs/research/combat-throws.md#throws): its height above the feet, its length past the far
+// range, the steepest face normal · up that counts (cos 80°), and the head-on bound (normal · ray at most cos 135°).
 constexpr float kWallThrowRayHeight = 1.4F;
 constexpr float kWallThrowRayExtra = 0.2F;
 constexpr float kWallThrowSteep = 0.17365F;
@@ -413,7 +414,7 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
             // From the rear hold the spin to the front (80, the victim 81) plays first, then the throw; the victim is
             // let go when the throw's clip begins (throwAfterSpin()). Nothing turns the pair, so the body flies along
             // the side's axis of the facing at the press (`Grab_StartPairedMove`,
-            // docs/research/combat.md#throw-direction).
+            // docs/research/combat-throws.md#throw-direction).
             const std::array<std::uint32_t, 2> moves{id::kGrabSpinToFront, clips::clipOf(out.startAnim)};
             animator.playCombat(moves, kAnimFightIdle, AnimState::Attack, clips::kPairFade, clips::kAttackHolds);
             m_held->playPaired(clips::one(id::kGrabSpinToFront + 1), animator.anims(), clips::kGrabHeld,
@@ -456,7 +457,7 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
                                AnimState::Hold, TargetState::Mounted);
         }
         // Nothing holds the pair during 118 / 119: each body moves by its own clip from where the hold left it, and
-        // at 210 the mounter is moved onto the victim (seatMount(), docs/research/combat.md#mount).
+        // at 210 the mounter is moved onto the victim (seatMount(), docs/research/combat-grabs.md#mount).
         if (m_held != nullptr) {
             m_held->setAttached(false);
             m_pair = PairStage::Moving;

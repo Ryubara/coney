@@ -12,7 +12,7 @@
 
 // The prop a clip makes a human carry for the length of a move (Rembrandt's spray can in his power move 59), and the
 // clip events that make it, place it and remove it.
-// Research: docs/research/combat.md#power-move-props, docs/research/characters.md (human +0x348, +0x34c)
+// Research: docs/research/combat-grabs.md#power-move-props, docs/research/characters.md (human +0x348, +0x34c)
 
 namespace coney::human {
 

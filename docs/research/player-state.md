@@ -2,7 +2,7 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
 (Ghidra, and the disc's compiled scripts read with `coney-tools`' Lua walker); the pickup callback also at runtime
-(PCSX2 2.9.94, 2026-10-06, scenario `store_loot`, [Combat: breakables](combat.md#breakables)).
+(PCSX2 2.9.94, 2026-10-06, scenario `store_loot`, [Combat: breakables](combat-targets.md#breakables)).
 
 ## Purpose
 
@@ -41,11 +41,11 @@ Two blocks of `0x3f4` bytes at game state `+0x480`, one per player; item *i* is 
 duration in ms (`+0x28`). There are 23 items, ids 0-22. Confirmed (code) at `0x0041e250` and `0x0041e420`.
 
 The code uses five of them by number: 1 the flash (a revive; d-pad right heals with it, or at full health with upgrade
-(6, 8) fills and starts rage, [Combat](combat.md#rage)), 2 money, 3 spray-paint charges, 5 handcuffs and 6 handcuff keys
-(a cuffed player with upgrade (6, 15) spends one with triangle, [Combat](combat.md#rage)), and 10 for stolen loot (the
-pickup and drop code, `0x00232c60`, `0x002334d0`, `0x0023bf00`; confirmed (code)). A human's **pocket** is one item id
-(`+0x250`) and a count (`+0x254`), set by `HuPutItemInPocket` (`0x00238190`; confirmed (code)); that it holds the same
-ids is inferred from the scripts' calls.
+(6, 8) fills and starts rage, [Combat](combat-rage.md#rage)), 2 money, 3 spray-paint charges, 5 handcuffs and 6 handcuff
+keys (a cuffed player with upgrade (6, 15) spends one with triangle, [Combat](combat-rage.md#rage)), and 10 for stolen
+loot (the pickup and drop code, `0x00232c60`, `0x002334d0`, `0x0023bf00`; confirmed (code)). A human's **pocket** is one
+item id (`+0x250`) and a count (`+0x254`), set by `HuPutItemInPocket` (`0x00238190`; confirmed (code)); that it holds
+the same ids is inferred from the scripts' calls.
 
 ### Adding an item and the callbacks {#pickup-callback}
 
@@ -62,7 +62,7 @@ flags. Then, in this order, synchronously, after the count has changed. Confirme
 
 A world pick-up (`Human_PickUpObject`, `0x0023bf00`) passes `notify` = 1 for the item it gives and 0 for the money
 that comes with loot. A store's jewellery gives item **10** ×1 (notify) and then its value in money (no notify)
-([Combat: breakables](combat.md#breakables)). Confirmed (runtime): at the store each of three pick-ups called
+([Combat: breakables](combat-targets.md#breakables)). Confirmed (runtime): at the store each of three pick-ups called
 `Inventory_AddItem(player 0, 10, 1, 1)` then `(0, 2, 7, 0)`.
 
 **Mission 1's store** (`level99_lesson1.lua`): a player entering the box `vInsideStore` (message 3) runs
@@ -77,8 +77,8 @@ third pick-up.
 ### Walking over a power-up {#walk-over}
 
 Objects of class `powerup_item` (spray cans `dyn_spraycan`, flashes, keys, money) are taken by **touching** them, not
-with triangle: the triangle search skips the class ([Combat: breakables](combat.md#breakables)). Confirmed (code) at
-`0x00219d50`, `0x0023bf00`:
+with triangle: the triangle search skips the class ([Combat: breakables](combat-targets.md#breakables)). Confirmed
+(code) at `0x00219d50`, `0x0023bf00`:
 
 1. **Contact.** When a human's body touches an object (`Human_OnContact`, `0x00219d50`), a class other than
    `powerup_item` (the name at `0x0055a908`) is a solid contact. A power-up is passed through and picked up, unless it
@@ -101,7 +101,7 @@ with triangle: the triangle search skips the class ([Combat: breakables](combat.
    | 14 `TYPE_REVIVAL` | a player below the limit | item 1 ×1 (a flash) |
    | 16 `TYPE_SPRAYCAN` | a player below the limit (`0x0041ded0(3)`) | item **3** ×1 (one charge; never past 9) |
    | 28 `TYPE_MONEY` | a player | item 2 × the object's value (`+0x124`) |
-   | 12 `TYPE_SPECIAL` | | the named mission items and loot ([Combat: breakables](combat.md#breakables)) |
+   | 12 `TYPE_SPECIAL` | | the named mission items and loot ([Combat: breakables](combat-targets.md#breakables)) |
 
    Each gift passes `notify` = 1 ([above](#pickup-callback)), plays the item's pick-up sound and removes the object
    (`0x0023be98`); the first spray can, key or flash also queues that item's hint once (game state flags `0x2000`,

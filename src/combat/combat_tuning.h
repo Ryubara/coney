@@ -48,8 +48,8 @@ struct CombatTuning {
     int mashDecay = 15;
     int mashPressGain = 250;
 
-    /// The mugging (docs/research/combat.md#mugging): the stick length that counts, the time on target it needs, the
-    /// time on target between moves of the target angle, the total time off target allowed (ms), the on-target
+    /// The mugging (docs/research/combat-throws.md#mugging): the stick length that counts, the time on target it needs,
+    /// the time on target between moves of the target angle, the total time off target allowed (ms), the on-target
     /// tolerance and the re-roll gap (degrees), as the record seen at runtime has them.
     float muggingStick = 0.5F;
     int muggingRequiredMs = 5000;

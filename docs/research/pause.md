@@ -472,7 +472,7 @@ What a reload restores from `SetCheckPoint` is on [Scripts](scripting.md#run-nex
 reason (`0x001d1fb8`) and pushes **mode 0xc** (`0x00155408`), whose `Enter` (`0x0015cae0`) switches the task manager to
 phase 1, saves the sound state (`0x001115a8`; that `0x00110548` and `0x0010fba8` stop it is inferred) and opens the
 mission-failed menu. Confirmed (code). The engine's own failure (players out or busted) reaches the same menu after a 180-update
-countdown ([Combat](combat.md#defeat)).
+countdown ([Combat](combat-reactions.md#defeat)).
 
 The menu (`MissionFailedMenu_Open`, `0x001d23d0`), confirmed (code):
 

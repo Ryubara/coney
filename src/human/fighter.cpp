@@ -671,7 +671,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         consumed = true;
     } else if (out.grabAction != combat::GrabAction::None) {
         // A throw from the front hold turns the pair first: onto a head-on wall, or a plain throw onto the stick. The
-        // rear hold's path turns nothing (docs/research/combat.md#throw-direction).
+        // rear hold's path turns nothing (docs/research/combat-throws.md#throw-direction).
         const bool frontThrow = out.grabAction == combat::GrabAction::Throw && m_held != nullptr && !rearThrowPath();
         Holdable* thrown = frontThrow ? m_held : nullptr;
         if (frontThrow) {
@@ -885,7 +885,7 @@ void Fighter::steerOnto(int animId, const Combatant& target, const FighterInput&
     const bool led = ledAllowed && ledSteer(animId);
     const float time = led ? toEvent + kSteerLeadExtraSeconds : std::min(seconds, toEvent + kSteerLeadExtraSeconds);
     // The led steer aims at the target's head (slot point 0), read once here as the attack starts; the other at its
-    // position (docs/research/combat.md#led-steer).
+    // position (docs/research/combat-targets.md#led-steer).
     const anim::Vec3 point = led ? target.ledPoint() : target.position();
     const anim::Vec3 to = anim::subtract(point, input.position);
     const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
@@ -1072,7 +1072,7 @@ void Fighter::trackTarget(const FighterInput& input, std::uint32_t phase) {
     // update it is read, mid-attack too, and L1 does not keep it (the drop is refused only while locked, and the sprint
     // has just cleared the lock); held without stamina, a stance with +0x08 clear is left. Either way nothing else of
     // the stance runs this update, so L1 picks nothing either. Not in a hold, which the busy gate keeps out
-    // (docs/research/combat.md#fight-stance).
+    // (docs/research/combat-targets.md#fight-stance).
     if (m_player && (input.buttons & pad::kL2) != 0 && m_held == nullptr) {
         if ((input.sprinting && (phase & combat::kPhaseGrabStart) == 0) || phase == 0) {
             m_target = nullptr;

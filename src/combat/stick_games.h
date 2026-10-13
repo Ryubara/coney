@@ -10,7 +10,7 @@
 // The minigames the combat input runs: the mugging (hold the stick on a target angle that keeps moving), the stereo
 // theft's stick rotation (mode 3) and the L1/R1 button mash (mode 1). Each takes one update's input and game time and
 // says whether it is still running, has succeeded or has failed. The stick here is the pad's own (x right, y up).
-// Research: docs/research/combat.md#mugging, docs/research/combat.md#stereo-theft
+// Research: docs/research/combat-throws.md#mugging, docs/research/combat-targets.md#stereo-theft
 
 namespace coney::combat {
 

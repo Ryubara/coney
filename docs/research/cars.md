@@ -338,7 +338,7 @@ thresholds (`+0x40` / `+0x5c`): the coupe's rear body band repeats its two doors
 the back, and the van's masks differ more; dump them by type when needed. The sedan's box is 2.40 × 6.05 m (`+0x00`),
 the cabin 2.61 m long (`+0x24`).
 
-**Targeting a car** (`Player_PickTarget`, `0x0027a6c0`, [Combat](combat.md#targets)). The car pass (world `+0x844`,
+**Targeting a car** (`Player_PickTarget`, `0x0027a6c0`, [Combat](combat-targets.md#targets)). The car pass (world `+0x844`,
 `0x0038e860` with reach 1.0 and filter `0x00279f50`) comes after the human passes and before the objects (`+0x840`)
 and glass (`+0x84c`). Confirmed (code):
 
@@ -352,7 +352,7 @@ and glass (`+0x84c`). Confirmed (code):
    `+0x11f4`), must be non-empty, and the point is **1 m ahead of the human** (his facing × (0, 1, 0)), at his feet
    **+ 1.5 m** when those parts include a window or 6 / 7 (mask `0x2a80c0`), + 1.0 m for the bonnet or boot (`0x30`),
    else at the feet. So a window target sits 1.5 m up, and `Player_ObjectAttack` plays 662 for it
-   ([Breakables](combat.md#breakables)).
+   ([Breakables](combat-targets.md#breakables)).
 4. `0x0038b520` takes the nearest face of the box from outside it (±x beside the car, ±y before or behind it, the
    corner's direction diagonally) and returns parts only when the human faces that face (his forward · the face's
    outward normal ≤ −0.7); then the zone tables above, from his position.
@@ -415,8 +415,8 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   (an object's body is tested against its own shapes, here the two boxes), and the first overlap calls
   `Strike_Contact` (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`.
   So **any punch or kick whose hand, forearm, foot or shin overlaps either box hits the car**, whether the car is
-  the square's target or not; the square's object attack (661 / 662, [Breakables](combat.md#breakables)) is only the
-  way the player aims at it. Once struck, the body goes on the striking body's contact list and is not struck again
+  the square's target or not; the square's object attack (661 / 662, [Breakables](combat-targets.md#breakables)) is only
+  the way the player aims at it. Once struck, the body goes on the striking body's contact list and is not struck again
   until the shapes go off. **Confirmed (runtime)** (`car_glance`): the player 0.14 m beside the sedan's right side,
   facing 55° away from it (so the car fails the target's facing test), pressed square: the plain `S1` (clip 12)
   broke window 21 five updates after it started, and a second `S1` reached door 20 (its first-hit bit); the car

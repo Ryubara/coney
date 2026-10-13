@@ -17,7 +17,7 @@
 // fighter starts it and puts itself in place; the victim plays his side from the attacker's set and passes the set to
 // his grabber, whose fighter joins on its next update; the victim takes the damage when his intro ends; the grabber
 // lets go into the fight stance after its end clip and the victim lies on the ground (or dies) after his.
-// Research: docs/research/combat-moves.md#tandem, docs/research/combat.md#protected-moves
+// Research: docs/research/combat-moves.md#tandem, docs/research/combat-reactions.md#protected-moves
 
 namespace coney::human {
 

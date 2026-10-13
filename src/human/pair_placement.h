@@ -12,7 +12,7 @@
 // the snap at the clips' end (the victim put at the hold's offset in the grabber's frame), and the check that a move in
 // the hold finds the victim in its place. Every offset is in the grabber's frame, x to its right and y ahead, and comes
 // from the Anim Range List's direction × reach of the grabber's anim id. Pure functions of their arguments.
-// Research: docs/research/combat.md#grab-posing
+// Research: docs/research/combat-grabs.md#grab-posing
 
 namespace coney::human {
 
@@ -21,7 +21,7 @@ namespace coney::human {
 inline constexpr anim::Vec3 kFrontHoldOffset{0.380F, 1.012F, 0.0F};
 inline constexpr anim::Vec3 kRearHoldOffset{-0.097F, 0.222F, 0.0F};
 /// The mounted victim's offset under a tackle, 0.032 m ahead and 0.120 m to the mounter's left (confirmed at runtime):
-/// clip 210's type-8 pair event, for a clip without it (docs/research/combat.md#grab-turn).
+/// clip 210's type-8 pair event, for a clip without it (docs/research/combat-grabs.md#grab-turn).
 inline constexpr anim::Vec3 kMountOffset{-0.120F, 0.032F, 0.0F};
 /// The connecting clips' reach (72 from the front, 74 from the rear) and far range, for a list without them.
 inline constexpr float kConnectReachFront = 0.999F;

@@ -14,7 +14,7 @@ namespace {
 // The ground clips (docs/references/anim-ids.md): lying on the back and getting up.
 constexpr std::uint32_t kGroundedIdle = 196;
 constexpr std::uint32_t kGroundedRise = 199;
-// The clip event type that knocks a victim down (docs/research/combat.md#reactions).
+// The clip event type that knocks a victim down (docs/research/combat-reactions.md#reactions).
 constexpr std::uint16_t kKnockdownEvent = 7;
 
 // The one clip `clip` as an array.

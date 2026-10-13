@@ -116,7 +116,7 @@ TEST_CASE("the led steer aims at the head, posed into the world", "[human][strik
     // The head (bone 6) 0.05 m right of the victim's feet, 0.2 m forward and 1.7 m up, as a fighter's leans in the
     // fight idle 358. The victim faces the attacker, so the point the led steer aims at stands 0.2 m nearer him than
     // the victim's position, not beyond it, and on the victim's right, not his left: the model frame is x right,
-    // y forward, z up (docs/research/combat.md#led-steer).
+    // y forward, z up (docs/research/combat-targets.md#led-steer).
     Strike strike(1.5F, 0.5F);
     strike.skeleton.offsets.at(6) = coney::anim::Vec3{0.05F, 0.2F, 1.7F};
     strike.humans.update(strike.mesh.get());
@@ -168,7 +168,8 @@ TEST_CASE("an attack whose shapes never reach the victim misses, though it stand
 TEST_CASE("a thrown human's flight strikes a bystander it meets: no health lost, a crushing high hit",
           "[human][strike]") {
     // The "attacker" here is the thrown body: it plays the throw's victim clip 148, whose events switch all its shapes
-    // on, 0.4 m from a bystander. 148's Anim Range entry is -60 with hit code 0x3a (docs/research/combat.md#throws).
+    // on, 0.4 m from a bystander. 148's Anim Range entry is -60 with hit code 0x3a
+    // (docs/research/combat-throws.md#throws).
     Strike strike(0.4F, 0.0F);
     const std::array<std::uint32_t, 1> flight{148};
     strike.attacker.play(flight, 196, coney::human::AnimState::Hold, coney::human::TargetState::Grounded);

@@ -12,7 +12,7 @@
 
 // The triangle pick-up search (`0x0024d810`) and its choices: which loose object a human with nothing in hand picks
 // up, and the clip he picks it up with.
-// Research: docs/research/combat.md#breakables
+// Research: docs/research/combat-targets.md#breakables
 
 namespace coney::world_objects {
 
@@ -110,7 +110,7 @@ struct PileTake {
 
 /// The pick-up clip for an object of pick-up animation `pickupAnim` `height` metres above the feet: the animation's
 /// pair, low up to kPickupLowHeight, else high (0, 1 and above 7: 461/462; 2: 503/504; 3: 481/482; 4: 498/499;
-/// 5: 463/464; 6: 465 at any height; 7: 549/550; docs/research/combat.md#bat).
+/// 5: 463/464; 6: 465 at any height; 7: 549/550; docs/research/combat-throws.md#bat).
 /// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
 [[nodiscard]] int pickupClip(int pickupAnim, float height);
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The player grabbing and tackling another human, not a sandbox target (human/holdable.h,
-// docs/research/combat.md#grab, docs/research/combat.md#grab-posing): the grab holds the human, the reaction goal
-// its brain gets follows its state, the hold's moves and the throw land on it, a human with flag 0x40 cannot be
-// grabbed, the grab-block flags stop a grab of their side, the power-out escape follows the victim's flags, and a human
-// gone from the level or freed by a script ends the hold. Synthetic clips; the player's stick and
-// buttons come from input scripts.
+// docs/research/combat-grabs.md#grab, docs/research/combat-grabs.md#grab-posing): the grab holds the human, the
+// reaction goal its brain gets follows its state, the hold's moves and the throw land on it, a human with flag 0x40
+// cannot be grabbed, the grab-block flags stop a grab of their side, the power-out escape follows the victim's flags,
+// and a human gone from the level or freed by a script ends the hold. Synthetic clips; the player's stick and buttons
+// come from input scripts.
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -325,7 +325,8 @@ TEST_CASE("the power strike ends the grab with the victim down, unless square in
 }
 
 TEST_CASE("placing the grabber breaks the pair: the victim plays its reaction and stands free", "[human][combat]") {
-    // docs/research/combat.md#pair-break: the human placed plays nothing and is free; a front grab's victim plays 145.
+    // docs/research/combat-grabs.md#pair-break: the human placed plays nothing and is free; a front grab's victim plays
+    // 145.
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
     fight.run("5 tap circle\n", 40);
@@ -399,7 +400,7 @@ TEST_CASE("a held human struggles out of a grab: square costs the grabber power,
           "[human][combat]") {
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
-    // The held human presses square three times, then circle (docs/research/combat.md#grabbed).
+    // The held human presses square three times, then circle (docs/research/combat-grabs.md#grabbed).
     fight.otherCommand = [](std::uint64_t frame) {
         if (frame == 30 || frame == 60 || frame == 90) {
             return combat::command::kSquarePressed;
@@ -440,7 +441,7 @@ TEST_CASE("a held human struggles out of a grab: square costs the grabber power,
 TEST_CASE("a throw toward a wall within the side's reach is the wall throw", "[human][combat]") {
     const FightCharacter character;
     // Circle with the stick ahead throws ahead: with a wall 2 m ahead (within 155's far range of 2.25 m) the wall
-    // throw 155 / 156 plays; with none, the plain throw 147 / 148 (docs/research/combat.md#throws).
+    // throw 155 / 156 plays; with none, the plain throw 147 / 148 (docs/research/combat-throws.md#throws).
     const auto throwClips = [&character](const std::vector<coney::test::Tri>& walls) {
         HumanFight fight(character, 1.5F, walls);
         std::vector<std::uint32_t> clips;

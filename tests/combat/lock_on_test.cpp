@@ -9,7 +9,8 @@
 #include "combat/combat_tuning.h"
 
 // When the fight stance locks onto its target, the combat-walk clip by the stick's angle, the target's drop distance,
-// and the grabbing player's stick turn (docs/research/combat.md#targets, docs/research/combat.md#grab-turn).
+// and the grabbing player's stick turn (docs/research/combat-targets.md#targets,
+// docs/research/combat-grabs.md#grab-turn).
 
 using Catch::Approx;
 using namespace coney::combat;

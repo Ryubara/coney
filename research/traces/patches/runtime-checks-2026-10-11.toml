@@ -1,8 +1,8 @@
-# The runtime-checks pass of 2026-10-11 (docs/research/combat.md#teammates, docs/research/scripting.md#level80-arrest-fire).
+# The runtime-checks pass of 2026-10-11 (docs/research/combat-targets.md#teammates, docs/research/scripting.md#level80-arrest-fire).
 
 [hook.hit-by-chief]
 description = "Each call of WarriorBrain_OnHitByChief (0x00306190, from a Warrior brain's event 1): the brain and its arguments, with the brain's hit-back window end (+0x2dc) and count (+0x2e4) before the call."
-research = "docs/research/combat.md#teammates"
+research = "docs/research/combat-targets.md#teammates"
 address = 0x00306190
 # addiu sp,sp,-0x60; sq s0,0x50(sp)
 original = [0x27bdffa0, 0x7fb00050]
@@ -10,7 +10,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "brain
 
 [hook.hit-reaction]
 description = "Each call of Hit_PlayReaction (0x0026b0a0, a standing human's reaction to a hit): its arguments and the caller."
-research = "docs/research/combat.md#teammates"
+research = "docs/research/combat-targets.md#teammates"
 address = 0x0026b0a0
 # addiu sp,sp,-0x50; sq s3,0x10(sp)
 original = [0x27bdffb0, 0x7fb30010]
@@ -18,7 +18,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.attack-target-push]
 description = "Each call of AttackTargetGoal_Push (0x002aeda0): the human given the goal, its target and the time limit."
-research = "docs/research/combat.md#teammates"
+research = "docs/research/combat-targets.md#teammates"
 address = 0x002aeda0
 # addiu sp,sp,-0x50; sq s2,0x20(sp)
 original = [0x27bdffb0, 0x7fb20020]
@@ -106,7 +106,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s5", name = "task"
 
 [hook.say-command]
 description = "Each call of Human_SayCommand (0x002205e0, a human told to say a speech command): the caller, the human and the command (0x58 the friend's complaint of Strike_Contact)."
-research = "docs/research/combat.md#teammates"
+research = "docs/research/combat-targets.md#teammates"
 address = 0x002205e0
 # addiu sp,sp,-0xc0; sq s0,0xa0(sp)
 original = [0x27bdff40, 0x7fb000a0]

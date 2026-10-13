@@ -26,10 +26,10 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
 | `0x002880d8` | `Player_CrossWithWeapon` | square and cross with a set 4-6 object: smash or throw | confirmed (code) |
 | `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`) | confirmed (code) |
 | `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle ([Combat](combat.md#run-attacks)) | confirmed (code) |
-| `0x00284920` | `Player_GrabOrTackle` | circle tapped / held ([Combat](combat.md#grab)) | confirmed (code) |
-| `0x0027ec20` | `Player_UpdateMounting` | the mounter's inputs ([Combat](combat.md#mount)) | confirmed (code) |
+| `0x00284920` | `Player_GrabOrTackle` | circle tapped / held ([Combat](combat-grabs.md#grab)) | confirmed (code) |
+| `0x0027ec20` | `Player_UpdateMounting` | the mounter's inputs ([Combat](combat-grabs.md#mount)) | confirmed (code) |
 | `0x0027f1a0` | `Player_UpdateTackled` | the mounted victim's inputs: struggle, get-off, reversal | confirmed (code) |
-| `0x0027fd68` | `Player_UpdateGrabbed` | the held victim's inputs ([Combat](combat.md#grabbed)) | confirmed (code) |
+| `0x0027fd68` | `Player_UpdateGrabbed` | the held victim's inputs ([Combat](combat-grabs.md#grabbed)) | confirmed (code) |
 | `0x0027e040` | `Player_UpdateActionsHidden` | hidden in shadow (state `0x200000`): the stealth kill | confirmed (code) |
 | `0x0027de78` | `Player_OnCommand36` | command `0x36`: the push 21 | confirmed (code) |
 | `0x00287fe0` | `Attack_StartGroundStrike` | commands `0x37` / `0x38`: 193 / 194 | confirmed (code) |
@@ -184,7 +184,7 @@ distances between the humans' positions; "nearest" sorts by that distance (`Sort
 | A chain step | a cross step (`SX2`, `XX2`, `SSX3`) re-searches with `Player_FindAttackTarget(h, next id)` when not locked; a square step keeps the target |
 | Snaps 25 / 27 / 29 | their own search: nearest within 2.0 m and 45° of the stick, line clear ([Combat](combat.md#attacks)) |
 | The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat.md#charge-aim)) |
-| The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat.md#strong-grapple)) |
+| The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat-grabs.md#strong-grapple)) |
 
 **`Player_PickTarget(range)`** (`0x0027a6c0`), in order; the first pass that finds anything ends the search:
 
@@ -198,7 +198,7 @@ distances between the humans' positions; "nearest" sorts by that distance (`Sort
    `0x402000`. Both need a body, `Human_IsTargetable`, a height difference of at most 2 m, not friendly, another gang
    (brain `+0x20c`), not down or dead, held flag `0x40` and state `0x1c00000000` clear.
 4. A car (`CarManager_FindTarget`, 1.0 m), then world objects within range, then glass panes within range, each
-   inside the cone ([Targets](combat.md#targets)).
+   inside the cone ([Targets](combat-targets.md#targets)).
 5. With no current target only: humans within range × 0.9 **at any angle** (`TargetFilter_AnyAngle` `0x002797b0`).
 6. The cone widens to 2.356 rad (135°): world objects within range × 0.8, then humans within range × 0.7 **at any
    angle** (`TargetFilter_Wide` `0x002796a0` has no angle test; it skips state `0x100000000` instead of "down").
@@ -212,13 +212,13 @@ else the facing turned toward the id's offset point (`Attack_GetOffsetHeading` `
 when the id has no reach).
 
 **The current target between attacks** comes from the stance logic each update ([The fight
-stance](combat.md#fight-stance)): the nearest enemy within 6 m is tracked; one within **2 m** enters the stance and
-becomes the target (and with the street's `CfgAutoLockAndCombat` the lock); it is swapped for the nearest within 2 m
+stance](combat-targets.md#fight-stance)): the nearest enemy within 6 m is tracked; one within **2 m** enters the stance
+and becomes the target (and with the street's `CfgAutoLockAndCombat` the lock); it is swapped for the nearest within 2 m
 once the target is beyond 3 m; the lock bit goes beyond 13 m; the locked walk drops a target beyond 2.5 m unless L1
 (`+0x00` `0x8`) holds it. L1 pressed or held also picks one.
 
 **Turning onto it**: an attack whose target is within its far range turns and slides onto it; beyond, it only turns
-([Combat](combat.md#targets)). Which steer runs, and so how long the slide lasts and where it aims, is set out in
+([Combat](combat-targets.md#targets)). Which steer runs, and so how long the slide lasts and where it aims, is set out in
 [The two steers](#two-steers) below. The turn does not face the target: it turns
 so that the attack's **direction** points at it. The direction is the record's offset (`+0x0` / `+0x2`, read by
 `AttackTable_GetOffset` `0x00254418`), a unit vector in thousandths in the attacker's frame (y forward; x right,
@@ -416,7 +416,7 @@ of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain pres
    ([Combat](combat.md#attacks)).
 4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](#targeting)) when a pad player has none, or it is
    farther than **2.5 m** (`0x005104c0`, 6.25 squared as `CfgDistances` sets it). No human but an
-   object → `Player_ObjectAttack` ([Combat](combat.md#breakables)).
+   object → `Player_ObjectAttack` ([Combat](combat-targets.md#breakables)).
 5. **Low target** (`Human_IsHighOrBusy`, `0x00225200`): the attacker's point stands more than 1.3 and less than
    1.8 m above the target's (`Object_HeightDiff` `0x00229a10`: attacker's z minus target's, of the point each
    object's vtable `+0xac` gives); otherwise, unless the target is more than 0.7 m higher, the target's state: in a
@@ -468,7 +468,7 @@ damage, hit code `0x0a`.
 
 ### Counters from square and cross {#counters}
 
-Besides R1 at the catch ([Combat](combat.md#grabbed)), **square or cross** pressed while an enemy is coming in for
+Besides R1 at the catch ([Combat](combat-grabs.md#grabbed)), **square or cross** pressed while an enemy is coming in for
 a grab or tackle counters it. `Human_CanCounterGrab` (`0x00258e88`): the attacker plays 69-71 (grab intro or miss),
 faces the player and targets him. `Human_CanCounterTackle` (`0x002590f8`): the attacker plays 2-4. Then
 `Attack_StartPaired(player, attacker, 76 or 9, 1, 0x400000)`. Pad players only; the AI's equivalent is command 3
@@ -502,9 +502,9 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
 - **Started from square, cross, circle tapped or circle held**, when the target is held from the rear (state
   `0x20`, by anyone: a gang member or another player), the attacker stands within 45° of the victim's front
   (`Human_GetSideOf(victim, attacker, 1)` = 0), and the victim's held flags have none of `0xc12200`. Square and cross
-  test it after the target-state strikes; circle tests it before grabbing ([Combat](combat.md#grab), step 3). The
+  test it after the target-state strikes; circle tests it before grabbing ([Combat](combat-grabs.md#grab), step 3). The
   three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a
-  pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat.md#ai-attacks)). An earlier
+  pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat-targets.md#ai-attacks)). An earlier
   reading here said "the player only"; that is corrected below. Square and cross pressed **together** (command
   `0x22`) are not among them: that is the special 653, which hits the victim and breaks the hold. Every input, with
   runtime checks: [Which button starts it](#tandem-input).
@@ -603,13 +603,14 @@ cited unless marked:
 2. **Who holds.** Only a rear hold allows it: the player's own rear hold (after R1's spin, or a grab that connects
    from behind) or an AI's. A front-held enemy refuses kind 22 (state `0x10` is in the grab's refusing mask
    `0x7bfdc8f7fd0`); teammates hit him with ordinary strikes instead, and a third human's hit breaks the hold
-   ([Attacking a busy target](combat.md#busy-target)).
+   ([Attacking a busy target](combat-reactions.md#busy-target)).
 3. **The player as the attacker** starts it with square, cross or circle at a rear-held enemy he faces.
 4. **What the three play**: the set by the attacker's held object (a bat or baton 181-186, a knife 187-192, else
    163-168, 169-174 or 175-180 at random); held `0x800000` on the attacker and the grabber, `0x400000` on the victim
-   (so no one else starts an attack on any of the three, [Moves a hit cannot stop](combat.md#protected-moves)); the
-   grabber is let go into the fight stance at the end. The victim's damage (the attacker's intro and end values) is
-   pending until his intro ends; lethal, his death reaction plays from the end clip.
+   (so no one else starts an attack on any of the three, [Moves a hit cannot
+   stop](combat-reactions.md#protected-moves)); the grabber is let go into the fight stance at the end. The victim's
+   damage (the attacker's intro and end values) is pending until his intro ends; lethal, his death reaction plays from
+   the end clip.
 5. **Scoring**: `Grab_ScoreMove` for the grabber (the set's base id) and the attacker (base + 2), skipped when the
    victim has human flag `0x10` (the demi-god floor reached).
 
@@ -649,7 +650,7 @@ rear-held enemy (in a real fight, or after an `IssueWarriorCommand` attack order
    view from the held flags `0xc12200` (a **Coney stand-in** today: never set, always false), and let the queued
    grab become the tandem instead of an ordinary grab. A front-held target stays refused.
 4. The held flags of the three (`0x800000` / `0x400000`) feed the start guard of [Moves a hit cannot
-   stop](combat.md#protected-moves), so others leave them alone.
+   stop](combat-reactions.md#protected-moves), so others leave them alone.
 5. Test: an AI ally in front of the player's rear hold picks kind 22 and starts the tandem (assert the three clips
    and the victim's damage at the intro end); in front of a front hold it does not.
 
@@ -674,7 +675,7 @@ or an AI's. Where the page is silent, these are **Coney's choices**:
   updates after the damage measured at runtime (open question below).
 - **The damage** lands when the victim's intro hands over to his end clip, as a hit with no reaction. A defeating hit
   takes all his health, and his death waits until his clips no longer hold `0xc12200`
-  ([Moves a hit cannot stop](combat.md#protected-moves), item 4).
+  ([Moves a hit cannot stop](combat-reactions.md#protected-moves), item 4).
 - **The empty-handed set** is one of the three drawn evenly from the fighter's own random numbers.
 - **No scoring.** `Grab_ScoreMove` is not called: its "100 points of category 6" has no counterpart in Coney's
   player statistics, which have categories 0-5 (open question below).
@@ -732,7 +733,7 @@ player was free. After one 250, R1 every 3 updates gave the reversal 242 / 243 o
 
 ### Weapons {#weapons}
 
-The armed moves' choice of clip is on [Combat](combat.md#armed-moves). Added here, confirmed (code):
+The armed moves' choice of clip is on [Combat](combat-throws.md#armed-moves). Added here, confirmed (code):
 
 - **Armed chain**: square repeats the set's two swings, 34 → 35 → 34 (bat), 39 → 40 (baton), 45 → 46 (knife), for
   as long as presses come in the window; cross's combo count 2 means it never chains. A step needs the swing's
@@ -746,7 +747,7 @@ The armed moves' choice of clip is on [Combat](combat.md#armed-moves). Added her
   hit counter (`+0x10e` first for objects with flag `0x4000000`, then `+0x10d`); at 0 the weapon breaks
   (`WorldObject_Break`, `0x00393e20`). The counters start from `CfgObj` bytes `+0x5a` / `+0x5b`; 0 (or −1) means it
   never wears. The ordinary swings have no `use` event, which is why 12 bat hits never broke a bat
-  ([Combat](combat.md#bat)).
+  ([Combat](combat-throws.md#bat)).
 - **Thrown objects** (sets 4-6, `Player_CrossWithWeapon`, `0x002880d8`): set 4 throws 505 / 506 / 507 at a target
   searched within 10 m; set 5 throws 467 / 471 / 472 within 20 m, after trying the smash 473 / 475 on a human in
   reach; set 6 throws 551 / 552 / 553. A thrown object's hit deals its `CfgObj` `+0x58`
@@ -798,13 +799,13 @@ k counts updates from the move's first; "free" is the first k a `0x10` starts 36
 | 34 square (`BAT_COMBO_S1`) | 0-12 | 13-24 | 25-36 | **37** | 389 (`0x40000000`, refuses nothing) with nobody near |
 | 36 cross (`BAT_COMBO_X1`) | 0-19 | 20-22 | 23-34 | **35** | 389 |
 | square, square (the chain) | as 34: the second square is stored as 2 and never played | | | **37** | 389 |
-| triangle (with nothing to take) | no clip: the bat is dropped at once ([Losing it](combat.md#bat)) | | | **next update** | cross now plays the unarmed `X1` 11 |
+| triangle (with nothing to take) | no clip: the bat is dropped at once ([Losing it](combat-throws.md#bat)) | | | **next update** | cross now plays the unarmed `X1` 11 |
 | cross + square (`0x22`), nobody near | 502 `SWINGABLE_OBJECT_THROW`, holding `0x10` for 35 updates; the bat leaves the hand at k20 | | | 35, unarmed | 389 |
 | cross + square, a target within 2.0 m | nothing (the throw is refused, `Player_Special` `0x00287730` refuses anyone holding an object) | | | **at once** | the cross's own release (`0x10`) plays 36 |
 
 The 34 lasted 37 updates at runtime (k0-36), one fewer than the 38 the frame-data table rounds from its frame count;
 36 lasted 35. 35 `BAT_COMBO_SS2` never played from the pad, so its phases were not measured. The run attack 501 (21
-updates, `0x1000000` throughout, [Combat](combat.md#armed-moves)) and the grounded strike 37 (30 updates, no
+updates, `0x1000000` throughout, [Combat](combat-throws.md#armed-moves)) and the grounded strike 37 (30 updates, no
 phase events: `0x1` from `Attack_StartGrounded` to its end, inferred from the frame data) were not rerun here.
 
 Compared with the unarmed fight: there a press in a move's wind-up or window is kept and plays the next step, so the
@@ -863,9 +864,9 @@ fixed for issue #228:
 | `0x39` | `Player_ArmedSpecial` | throw the melee weapon (as `0x22`) |
 | `0x33` | `Player_OnCommand33` (`0x00281188`) | the pick-up search |
 | `0x32` | `Player_OnCommand32` (`0x002832c8`) | uncuff with a key |
-| `0x27` | `Player_TryRevive` (`0x00286ba8`) | revive a downed Warrior with a flash: 351 then 353 on the reviver, 354 on the revived ([Combat](combat.md#revive)); also d-pad left in the street's tables |
+| `0x27` | `Player_TryRevive` (`0x00286ba8`) | revive a downed Warrior with a flash: 351 then 353 on the reviver, 354 on the revived ([Combat](combat-rage.md#revive)); also d-pad left in the street's tables |
 | 5 (as L2 held) | `Player_UpdateGrabbing` / `Player_UpdateMounting` (`PlayerCmd_IsLetGo` `0x0027bf08`) | in a grab, let go (95 / 94); in the mount, get off (244 / 245, the victim rises with 199). The Grabbing and Mounting reaction goals send it every update near a train ([AI](ai.md#fight-reactions)) |
-| `0x19` | `Player_UpdateGrabbing` (`PlayerCmd_IsGrabSpin` `0x0027bd98`, as R1 pressed) | spin the grab: front to rear 78 / 79, rear to front 80 / 81 ([Combat](combat.md#grabbing)). The Grabbing goal sends it to turn a front-held victim to his attackers |
+| `0x19` | `Player_UpdateGrabbing` (`PlayerCmd_IsGrabSpin` `0x0027bd98`, as R1 pressed) | spin the grab: front to rear 78 / 79, rear to front 80 / 81 ([Combat](combat-grabs.md#grabbing)). The Grabbing goal sends it to turn a front-held victim to his attackers |
 
 Confirmed (code).
 
@@ -954,7 +955,7 @@ Strikes at a low, mid or held target:
 | 661 | `SPECIAL_BREAK_OBJECT_LOW` | `carhit_low` | 34 (25 f × 0.75) | shin B, foot B 8-13 | - | 1.11 / 2.00 | 60 | `0x00` |
 | 120 | `GRAB_FRONT_STRIKE_01` | `gen_attack_mounting` | 26 (19 f × 0.75) | R forearm, R hand 8-13 | - | 1.20 / 1.50 | 50 | `0x2a` |
 
-Grabs, grab strikes and throws ([Combat](combat.md#grab)):
+Grabs, grab strikes and throws ([Combat](combat-grabs.md#grab)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -989,7 +990,7 @@ Grabs, grab strikes and throws ([Combat](combat.md#grab)):
 | 649 | `RAGE_ATTACK2_FRONT` | `gen_grab_n_attack_front` | 34 (34 f × 1.0) | - | - | 1.14 / 2.50 | 60 | `0x00` |
 | 651 | `RAGE_ATTACK2_REAR` | `gen_grab_n_attack_back` | 38 (38 f × 1.0) | - | - | 0.80 / 2.50 | 60 | `0x00` |
 
-Tackles and the mount ([Combat](combat.md#mount)):
+Tackles and the mount ([Combat](combat-grabs.md#mount)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -1072,7 +1073,7 @@ Stealth kills:
 | 639 | `STEALTH_KNIFE_KILL` | `player_stealthkill_weak` | 52 (39 f × 0.75) | - | - | 0.74 / 1.50 | 3000 | `0x00` |
 | 641 | `STEALTH_BATON_KILL` | `player_stealthkill_weak` | 52 (39 f × 0.75) | - | - | 0.74 / 1.50 | 3000 | `0x00` |
 
-Weapons ([Combat](combat.md#armed-moves)):
+Weapons ([Combat](combat-throws.md#armed-moves)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -1130,29 +1131,29 @@ Block, rage and the rest:
 
 Found while building this table; for the owners of those pages. Confirmed (code) at the cited addresses.
 
-- [Combat](combat.md#attacks) "a mugging (`0x0026f860`)" and [Combat](combat.md#grab) "grabbed by `0x0026f860`":
+- [Combat](combat.md#attacks) "a mugging (`0x0026f860`)" and [Combat](combat-grabs.md#grab) "grabbed by `0x0026f860`":
   `0x0026f860` is `Tandem_Start`, the three-person [tandem](#tandem), not a mugging or a grab from behind.
 - [Combat](combat.md#state-flags): state `0x1000` is the paired power-move state (power strikes, specials, stealth
   kills), not "throwing" alone.
-- [Combat](combat.md#grab) and [Combat](combat.md#fight-stance): `0x00244770` is `Human_MoveThrowAim` (aiming a
-  throw), not a stealth state; hiding is state `0x200000` ([Stealth](#stealth)).
+- [Combat](combat-grabs.md#grab) and [Combat](combat-targets.md#fight-stance): `0x00244770` is `Human_MoveThrowAim`
+  (aiming a throw), not a stealth state; hiding is state `0x200000` ([Stealth](#stealth)).
 - [Combat](combat.md#attacks): the target-state strikes (193, 212, 120) are tested only in the fight-stance path, after
   the strafes and snaps; outside a stance the moving attacks test only the low target (193). Cross has its own 194
   and 661 ([Cross](#cross)).
-- [Combat](combat.md#bat): a weapon's wear is the hit counter `+0x10d` / `+0x10e`, taken down by one on each `use`
+- [Combat](combat-throws.md#bat): a weapon's wear is the hit counter `+0x10d` / `+0x10e`, taken down by one on each `use`
   event; `+0x128` is not its hitpoints ([Weapons](#weapons)).
 - [Characters](characters.md#clip-selection) reads the 633 / 636 mix under `0x00228188` as "carrying"; the function is
   `Human_IsStalkingTarget`, and 633 / 636 are `STEALTH_WALK` / `STEALTH_READY_WALK`: the hidden walk blending toward
   the kill-ready walk ([Stealth](#stealth)).
-- [Combat](combat.md#targets) step 1 "keep the current target while `0x0027a120` accepts it": that filter accepts
+- [Combat](combat-targets.md#targets) step 1 "keep the current target while `0x0027a120` accepts it": that filter accepts
   only world objects, so a human target is always searched for again; and the 135° pass's humans (× 0.7, filter
   `0x002796a0`) have no angle test at all ([Targets](#targeting)).
 - [Combat](combat.md#attacks) "Square takes a target from `Player_PickTarget`": in the stance square keeps the
   current target within 3 m and searches only without one or beyond; cross always searches ([Targets](#targeting)).
-- [Combat](combat.md#targets), the steer's turn: the new heading is the goal's heading minus the attack's direction
+- [Combat](combat-targets.md#targets), the steer's turn: the new heading is the goal's heading minus the attack's direction
   (record offset `+0x0` / `+0x2`), not the goal's heading; a snap turns its side, not its front, to the target
   ([Targets](#targeting)).
-- [Combat](combat.md#targets), the steer's goal "only half that lead": a lead over 1 m that takes the target farther
+- [Combat](combat-targets.md#targets), the steer's goal "only half that lead": a lead over 1 m that takes the target farther
   away is cut to 0.5 m long (the lead × 0.5 / its length), not halved ([Contact](#reach)).
 
 ## Coney's implementation

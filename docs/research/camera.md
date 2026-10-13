@@ -893,7 +893,7 @@ Rembrandt). Confirmed (code): each update `Human_StateUpdate` (`0x0023fea8`, vta
 human's bone transform (vtable `+0xbc`, `Human_GetBoneTransform` `0x0023bde8`) with bone 2 and the destination
 `+0x4e0` (the 32-byte entry: position at `+0x4e0`, rotation at `+0x4f0`); in the same call it fetches bone 0 (the root,
 for the root motion), 3 into `+0x540`, 5 into `+0x520` and 6 into `+0x500` (the head look's origin). The bone comes from
-the per-update bone cache ([Combat](combat.md#grab-posing)), built from the playing pose and already composed through
+the per-update bone cache ([Combat](combat-grabs.md#grab-posing)), built from the playing pose and already composed through
 the parent table, so it is the animated hips, not the clip's root track. With no model instance (`+0xd8` 0) it is not
 written and keeps its old value. Its position is the pelvis channel's: the idle's pelvis height 1.067 × 0.97 = 1.035,
 the runtime value standing (inferred from that match).
@@ -1207,7 +1207,7 @@ Only while the game mode on top is 1 (play, inferred), switch 11 is on and the p
 `0x001292a4`-`0x001292e8`: the look-behind ends on the update the player slows to a walk, stops or starts an attack,
 as if R1 were let go). Confirmed (code). So **R1 never turns the camera round from a standstill, a walk or a fight
 stance**: a player blocking (standing, gait 0) or locked on (the combat walk is gait 3,
-[Combat](combat.md#fight-stance)) gets no look-behind, and R1 is free for the block. Not checked at runtime.
+[Combat](combat-targets.md#fight-stance)) gets no look-behind, and R1 is free for the block. Not checked at runtime.
 `0x001298c0`, confirmed (code), with the 75° and 45° cosines set by `Cam_Follow_StaticInit` (`0x00134ab0`):
 
 1. **First held update**: the band's near edge is saved in `+0x35c`. When the angle between the player's facing and
@@ -2345,9 +2345,10 @@ The parts of the shot itself:
 **The game-over shot** (`Cam_GetFailed(1)` in the gameplay mode's update, `0x00158728`), confirmed (code) at the
 cited addresses:
 
-1. **When.** `W_GameState + 0x14c` is 1 (a failure: the players are out or busted, [Combat](combat.md#defeat)), the
-   level is not an Armies level, the game-state flags `+0x152` do not have bit 2 (with it the countdown goes to 0 at
-   once and the menu comes with no shot), and player 0's camera is not already type 12. In player terms:
+1. **When.** `W_GameState + 0x14c` is 1 (a failure: the players are out or busted,
+   [Combat](combat-reactions.md#defeat)), the level is not an Armies level, the game-state flags `+0x152` do not have
+   bit 2 (with it the countdown goes to 0 at once and the menu comes with no shot), and player 0's camera is not already
+   type 12. In player terms:
    - **Armies levels** (`GameState_IsArmiesLevel`, levels 60-64) never get the shot: their failure counts down
      at most 90 updates (3 s, the same cap as a level completed) with the current camera still running, then
      pushes the Armies game-over (`ANGameOver_Toggle`) instead of `MissionFailed_Toggle`.

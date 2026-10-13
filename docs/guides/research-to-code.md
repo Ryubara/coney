@@ -43,7 +43,7 @@ All the code and tests named are in the repository; open them beside this page.
 
 ### The revive of a downed Warrior
 
-**The page.** [Reviving a downed Warrior](../research/combat.md#revive) describes the `Player_TryRevive` function
+**The page.** [Reviving a downed Warrior](../research/combat-rage.md#revive) describes the `Player_TryRevive` function
 (`0x00286ba8`) as an ordered list of refusals, then the way test, then the flash. It gives:
 
 - **A constant with its unit:** the way test sweeps a capsule of radius 0.2 m, as tall as the reviver's own.
@@ -51,7 +51,7 @@ All the code and tests named are in the repository; open them beside this page.
   Warrior as the reviver.
 - **A rule about who pays:** at the end of clip 351 the downed human's flash is spent if he has one, else the
   reviver's.
-- **Runtime numbers**, in [At runtime](../research/combat.md#revive-runtime): clip 351 lasts 21 updates (0.70 s),
+- **Runtime numbers**, in [At runtime](../research/combat-rage.md#revive-runtime): clip 351 lasts 21 updates (0.70 s),
   353 lasts 33, 389 lasts 25 and 354 lasts 72; the reviver ends about 0.70 m from the downed human and 11-13 degrees
   to the left of the line to him.
 

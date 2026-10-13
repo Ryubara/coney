@@ -5,9 +5,9 @@
 // The level plays in the game session as `--play-level level93` plays it (support/disc_session.h), its opening scene
 // skipped with the pad. Player 1 drops the knife he starts with, then is put in front of each Molotov in turn, facing
 // it, from each side until one works, and presses triangle as a player does; with the Molotov in hand he is put back
-// outside, where a second press drops it (docs/research/objects.md#pickable, docs/research/combat.md#breakables). It
-// runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
-// (LEGAL.md).
+// outside, where a second press drops it (docs/research/objects.md#pickable,
+// docs/research/combat-targets.md#breakables). It runs only when the environment variable CONEY_DISC names the disc and
+// skips otherwise; it prints counts only (LEGAL.md).
 
 #include <cmath>
 #include <cstddef>

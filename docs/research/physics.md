@@ -589,7 +589,7 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   `Human_CanPush` (`0x002320a0`) refuses when either is in a fight stance, holds any of the held flags `0x2fefefff` or
   any state of `0x7bf9e9f7ff0`; otherwise it **swaps the two places**: each human's transform is set to the other's
   position with its own rotation (vtable `+0x6c`), so a player who keeps walking into a free teammate at a jog or
-  faster for 2 s ends up on the other side of him ([Combat: teammates](combat.md#teammates)). Confirmed (code) at
+  faster for 2 s ends up on the other side of him ([Combat: teammates](combat-targets.md#teammates)). Confirmed (code) at
   `0x00219b08`; the swap was seen at runtime with the timer aged by hand (Combat: teammates).
 
 The mover's own velocity is cut by the slide only when it is a player ([Sweeping a body](#sweep)).

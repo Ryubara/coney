@@ -99,8 +99,8 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
         } else if (animId == combat::anim_id::kTackleIntro) {
             far = 2999;
         }
-        // The grab's records (combat.md#grab-posing): the connecting clips straight ahead at their reach with a far
-        // range of 2.5 m, the front and rear holds at their offsets; the snaps to their sides as on the disc
+        // The grab's records (combat-grabs.md#grab-posing): the connecting clips straight ahead at their reach with a
+        // far range of 2.5 m, the front and rear holds at their offsets; the snaps to their sides as on the disc
         // (formats/animation.md#anim-range-list); every other id straight ahead at 1 m.
         struct Place {
             std::int16_t x;
@@ -128,7 +128,7 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
                                                    {161, 1549}, {0, 4110},   {1, 3000}};
         const auto placed = places.find(animId);
         const Place place = placed != places.end() ? placed->second : Place{0, 1000, 1.0F};
-        // The wall throws' far ranges, as on the disc (combat.md#throws), and the charge's and the dive's bands
+        // The wall throws' far ranges, as on the disc (combat-throws.md#throws), and the charge's and the dive's bands
         // (combat.md#charge-aim).
         if (const auto wall = wallFars.find(animId); wall != wallFars.end()) {
             far = wall->second;

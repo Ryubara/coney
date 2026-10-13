@@ -136,6 +136,11 @@ nav:
           - Profiles, options and saving: research/save.md
           - Combat: research/combat.md
           - "Combat moves: table and frame data": research/combat-moves.md
+          - "Combat grabs: the hold, the mount and breaking a pair": research/combat-grabs.md
+          - "Combat throws, the bat and mugging": research/combat-throws.md
+          - "Combat reactions: damage, knockdown and defeat": research/combat-reactions.md
+          - "Combat power, rage and reviving": research/combat-rage.md
+          - "Combat targets, AI attacks and breakables": research/combat-targets.md
           - "Combat: where Coney differs": research/combat-diffs.md
           - Crimes and context actions: research/crimes.md
           - "Stealth: hiding, guards and distractions": research/stealth.md

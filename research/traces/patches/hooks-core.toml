@@ -149,7 +149,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = 
 
 [hook.pick-up]
 description = "Each call of Human_PickUpObject (0x0023bf00): the caller, the object, its x and y, its object-type index and its model hash (+0xc4)."
-research = "docs/research/combat.md#breakables"
+research = "docs/research/combat-targets.md#breakables"
 address = 0x0023bf00
 # addiu sp,sp,-0xa0; sq s2,0x70(sp)
 original = [0x27bdff60, 0x7fb20070]
@@ -165,7 +165,7 @@ log = [
 
 [hook.context-use]
 description = "Each call of ContextAction_Use (0x0024d530, triangle with nothing grabbed): the human and its context record (+0x660)."
-research = "docs/research/combat.md#breakables"
+research = "docs/research/combat-targets.md#breakables"
 address = 0x0024d530
 # addiu sp,sp,-0xa0; sq s1,0x80(sp)
 original = [0x27bdff60, 0x7fb10080]
@@ -214,7 +214,7 @@ edits = [
 
 [hook.special-attack]
 description = "Each call of Player_SpecialAttack (0x00263c90, from Player_Special for commands 0x22 and 0x23): the human and the variant (0 cross + square, 1 circle + cross)."
-research = "docs/research/combat.md#strong-grapple"
+research = "docs/research/combat-grabs.md#strong-grapple"
 address = 0x00263c90
 # addiu sp,sp,-0x60; sq s1,0x40(sp)
 original = [0x27bdffa0, 0x7fb10040]
@@ -222,7 +222,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human
 
 [hook.grab-start]
 description = "Each call of Grab_Start (0x0026c548): the caller, the grabber, the mode and the base id kept at record +0xb4."
-research = "docs/research/combat.md#strong-grapple"
+research = "docs/research/combat-grabs.md#strong-grapple"
 address = 0x0026c548
 # addiu sp,sp,-0xb0; sq s0,0xa0(sp)
 original = [0x27bdff50, 0x7fb000a0]
@@ -230,7 +230,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.tackle-start]
 description = "Each call of the tackle start (0x002707a8): the caller, the tackler, the intro id and the base id."
-research = "docs/research/combat.md#strong-grapple"
+research = "docs/research/combat-grabs.md#strong-grapple"
 address = 0x002707a8
 # addiu sp,sp,-0xb0; sq s0,0xa0(sp)
 original = [0x27bdff50, 0x7fb000a0]
@@ -238,7 +238,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.paired-start]
 description = "Each call of Attack_StartPaired (0x00262ac8): the caller, the attacker, the victim, the id, the paired flag and the state flags."
-research = "docs/research/combat.md#strong-grapple"
+research = "docs/research/combat-grabs.md#strong-grapple"
 address = 0x00262ac8
 # addiu sp,sp,-0xf0; sw a2,0x40(sp)
 original = [0x27bdff10, 0xafa60040]
@@ -294,7 +294,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = 
 
 [hook.pickup-clip]
 description = "Each call of the pick-up clip starter (0x0025e5a8, the human's message 0x14): the human, the type's pick-up animation and its animation set."
-research = "docs/research/combat.md#breakables"
+research = "docs/research/combat-targets.md#breakables"
 address = 0x0025e5a8
 # addiu sp,sp,-0xd0; sq s1,0xb0(sp)
 original = [0x27bdff30, 0x7fb100b0]
@@ -302,7 +302,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.melee-message]
 description = "Each message a melee_weapon gets (its class handler 0x003fead0): the weapon, the message number and the caller."
-research = "docs/research/combat.md#bat"
+research = "docs/research/combat-throws.md#bat"
 address = 0x003fead0
 # addiu sp,sp,-0x90; sq s0,0x80(sp)
 original = [0x27bdff70, 0x7fb00080]
@@ -502,7 +502,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s3", name = "human
 
 [hook.hit-effect]
 description = "Each call of Human_SpawnHitEffect (0x0021d928): the attacker, the victim and the blocking flag (t1) of a strike, throw or blast on a human; the return address tells which (Strike_Contact, ThrownObject_HitHuman, Explosion_DamageHumansInRadius)."
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 address = 0x0021d928
 # addiu sp,sp,-0xf0; sq s5,0x80(sp)
 original = [0x27bdff10, 0x7fb50080]
@@ -510,7 +510,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.anim-effect]
 description = "Each call of Human_SpawnAnimEffect (0x0021de48): a clip's type-0x21 effect event; the first four bytes of the effect name ('sub_'), the next four (the code), the human and the bone."
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 address = 0x0021de48
 # addiu sp,sp,-0x100; sq s3,0xb0(sp)
 original = [0x27bdff00, 0x7fb300b0]
@@ -518,7 +518,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[a0 + 0x4]", name 
 
 [hook.punch-flash]
 description = "Each sub_punch_flash init (SubPunchFlash_Init, 0x003b1460): the new task."
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 address = 0x003b1460
 # addiu sp,sp,-0x570; sq s0,0x540(sp)
 original = [0x27bdfa90, 0x7fb00540]
@@ -526,7 +526,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task"
 
 [hook.blood-effect]
 description = "Each sub_blood_effect init (SubBloodEffect_Init, 0x003af7a0): the new task."
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 address = 0x003af7a0
 # addiu sp,sp,-0x520; sq s0,0x500(sp)
 original = [0x27bdfae0, 0x7fb00500]
@@ -534,7 +534,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task"
 
 [hook.splatter-init]
 description = "Each blood_splatter init (BloodSplatter_Init, 0x003ae990): the new blob task."
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 address = 0x003ae990
 # addiu sp,sp,-0x110; sq s0,0xf0(sp)
 original = [0x27bdfef0, 0x7fb000f0]
@@ -542,7 +542,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task"
 
 [hook.splatter-land]
 description = "BloodSplatter_Update taking its landing branch (0x003aeca4, flag 0x20000000 seen, just before the blood_02 sound): the blob, its step, its position and the contact normal's z."
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 address = 0x003aeca4
 # lui at,0x3f80; mtc1 at,f20
 original = [0x3c013f80, 0x4481a000]

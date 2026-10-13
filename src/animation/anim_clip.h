@@ -62,7 +62,7 @@ struct ClipEvent {
     Vec3 position;          ///< +8: scaled as a position key.
     Quat rotation;          ///< +0xe: x, y, z, with w rebuilt as a rotation key's.
     /// The 16 bytes from +8 to the event's end, as stored: the object name types 0x30 and 0x31 carry (`s_spraycan`,
-    /// read with eventText(); docs/research/combat.md#power-move-props).
+    /// read with eventText(); docs/research/combat-grabs.md#power-move-props).
     std::array<char, 16> text{};
 };
 

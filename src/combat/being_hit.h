@@ -12,8 +12,8 @@
 // The victim's side of a hit, as `Human_ApplyPendingDamage` takes it each update: a held block first (a duck the
 // attacker's clip announced lets the attack pass over), the health floor of a player, the hit armour of a player
 // winding up or in a chain window, and the knocked-down human's mashing. Pure decisions; the human plays the clips.
-// Research: docs/research/combat.md#damage, docs/research/combat.md#block, docs/research/combat.md#reactions,
-// docs/research/combat.md#being-hit-runtime
+// Research: docs/research/combat-reactions.md#damage, docs/research/combat.md#block,
+// docs/research/combat-reactions.md#reactions, docs/research/combat-reactions.md#being-hit-runtime
 
 namespace coney::combat {
 
@@ -69,11 +69,12 @@ inline constexpr float kDuckCounterReachScale = 1.25F;
 /// The record `+0x08` held flags under which a hit takes its health but plays no reaction (`Human_ApplyPendingDamage`,
 /// `0x00265f70`): `0x1000000` (the charge, the run attack, a landing), `0x800000` and `0x400000` (the dive, a paired
 /// move's or a tandem's victim), `0x10000`, `0x4000`, `0x2000` (the counter), `0x800`, `0x200` and `0x40`
-/// (docs/research/combat.md#protected-moves).
+/// (docs/research/combat-reactions.md#protected-moves).
 inline constexpr std::uint32_t kReactionCancellingHeld = 0x01c16a40;
 
 /// Whether a victim holding `held` on the record `+0x08` plays no reaction to a hit that does not end him: the health
-/// drops, the pending damage is cleared and the move he is making plays on (docs/research/combat.md#protected-moves).
+/// drops, the pending damage is cleared and the move he is making plays on
+/// (docs/research/combat-reactions.md#protected-moves).
 [[nodiscard]] bool heldCancelsReaction(std::uint32_t held);
 
 /// The damage a hit really takes off a victim at `health` of `maximum` with the health floor (human flag

@@ -3,9 +3,9 @@
 // Checks against the player's own disc: Rembrandt (loaded from the disc) grabs the fight yard's front target
 // (assets/sandbox/combat.layout, a passive human::TargetHuman with Rembrandt's clips) and throws it with the stick at
 // 0.9 at several angles from his facing, in open ground. With the disc's own throw clips, the body flies along the
-// stick as the original's does at runtime (docs/research/combat.md#throw-direction). Driven by in-memory input scripts
-// on the fixed 30 Hz step with no window and no clock. They run only when the environment variable CONEY_DISC names
-// the disc and skip otherwise; they print angles and distances only, never data (LEGAL.md).
+// stick as the original's does at runtime (docs/research/combat-throws.md#throw-direction). Driven by in-memory input
+// scripts on the fixed 30 Hz step with no window and no clock. They run only when the environment variable CONEY_DISC
+// names the disc and skip otherwise; they print angles and distances only, never data (LEGAL.md).
 
 #include <algorithm>
 #include <array>

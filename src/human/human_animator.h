@@ -218,9 +218,9 @@ class HumanAnimator {
     /// Ends the workout's clips: the exit clip (anim 692) and then the idle, or the idle at once with none.
     void endWorkout(const anim::AnimClip* exit);
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
-    /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
-    /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays, nor while the Animation
-    /// player's clip plays (playDebugClip()).
+    /// looping with no root velocity, since the human sets the velocity (docs/research/combat-targets.md#targets). A
+    /// clip the set lacks is the fight idle's, or the idle's. Changes nothing while it already plays, nor while the
+    /// Animation player's clip plays (playDebugClip()).
     void playCombatWalk(std::uint32_t clip);
     /// **Coney's own**, for the debug menus' Animation player (docs/guides/debug-menu.md#animation-player); the
     /// original has nothing like it, and nothing of the original's calls it. Plays `clip` (anim `animId`, which must

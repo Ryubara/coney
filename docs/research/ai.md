@@ -362,7 +362,7 @@ said. Confirmed (code) at each address.
         1. Not grabbing: done.
         2. Near a train (`Brain_IsNearTrain`): write command 5 every update. In `Player_UpdateGrabbing` command 5
            (L2 held, `PlayerCmd_IsLetGo` `0x0027bf08`) **lets go**: grabber 95, victim 94
-           ([Combat](combat.md#grabbing)). Confirmed (code).
+           ([Combat](combat-grabs.md#grabbing)). Confirmed (code).
         3. The target is the held man (`+0xc4`). While actions are queued, wait.
         4. **Presenting him.** This happens in a rear grab when the nearest player is friendly to A, is not busy,
            his actions are not blocked and he is within A's near range (brain `+0x13c`, 3 m), and player 1 (game
@@ -374,7 +374,7 @@ said. Confirmed (code) at each address.
            action (`SetCommandAction_Init(action, B, 0x19, 0x21)`: command `0x19` after a 33 ms start delay, the
            base field `+0x04`) and wait. Command `0x19` is the grab **spin** (`PlayerCmd_IsGrabSpin` `0x0027bd98`,
            as R1 pressed): front to rear, 78 / 79 (`0x0026d570`), into the rear hold 84 / 85
-           ([Combat](combat.md#grabbing)). So he turns the victim round, and step 6 then holds him up facing the
+           ([Combat](combat-grabs.md#grabbing)). So he turns the victim round, and step 6 then holds him up facing the
            others. Confirmed (code) at `0x002b60c0` and `0x0027f3b0`.
         6. **A rear grab with the flag**, when the victim has a number of slot holders other than 1, or while
            presenting. Find the nearest player among the victim's slot holders, else the nearest of his active
@@ -411,7 +411,7 @@ said. Confirmed (code) at each address.
 - **Mounting** (`0x13`, the tackler on top, `0x002b6638`).
     1. Not tackling: done.
     2. Near a train: command 5, which in the mount (`Player_UpdateMounting` `0x0027ec20`) **gets off**: 244 / 245,
-       the victim rises with 199 ([Combat](combat.md#mount)).
+       the victim rises with 199 ([Combat](combat-grabs.md#mount)).
     3. The target is the held man. Pick a kind; 45 and 36 do nothing.
     4. Kind 35 (the ground punches): 40 % of the time two of them, chained.
 - **Grabbed** (`0x14`, `0x002b6848`).
@@ -438,7 +438,7 @@ said. Confirmed (code) at each address.
     only from this goal. Kind 42 is the command `0xf`
     (`AttackKind_ToCommand`, `0x00231090`); a downed human never reaches the dispatcher, so no attack plays:
     the one command cuts his ground time as a press does
-    ([Combat](combat.md#ground-escape); inferred). This corrects [AI goals](ai-goals.md#goal-reactions)' "against
+    ([Combat](combat-reactions.md#ground-escape); inferred). This corrects [AI goals](ai-goals.md#goal-reactions)' "against
     the target".
 
 #### Who backs off (FightBackOff) {#fight-back-off-pusher}
@@ -1022,9 +1022,9 @@ What turns a fighter toward his target once the run-in is over. Confirmed (code)
       Update writes nothing in the update it ends (in the band, no circling), and its Abort re-aims `+0x110` only for
       a "no stance" class.
     - the **attack's own turn**: the attack starts (`0x00261c80`, `0x00262368`, `0x00261a08`, the grab `0x0026c548`,
-      the tackle `0x002707a8`) turn him to his target (the brain's, [Combat](combat.md#ai-attacks)) with
+      the tackle `0x002707a8`) turn him to his target (the brain's, [Combat](combat-targets.md#ai-attacks)) with
       `Human_TurnToFaceObject`, and the steer onto the target (`Attack_SteerToTarget`,
-      [Combat](combat.md#ai-attacks)) runs to the clip's first event.
+      [Combat](combat-targets.md#ai-attacks)) runs to the clip's first event.
 - **Otherwise nothing.** In a fight stance with no movement action running, `+0x110` is his facing and his speed 0:
   the control neither turns him nor starts a turn on the spot, and he does not track the target (no lock-on
   turn: that is the player's stance control, which an AI never runs). Inferred from the above: a fighter who
@@ -1068,7 +1068,7 @@ anim set (`0x00231a80`):
 - Anything else: **2 m**.
 
 The far-reach test of `Human_CanStartAttack` maps kinds 1-9 to their own clips (12-20) and kind 22 to 70
-([Combat](combat.md#ai-attacks)). This one uses only clips 11 and 12 for kinds 1-9, and 72 for the grab.
+([Combat](combat-targets.md#ai-attacks)). This one uses only clips 11 and 12 for kinds 1-9, and 72 for the grab.
 
 #### Picking the attack kind {#pick-attack}
 
@@ -1155,8 +1155,8 @@ state word has none of `0x7bf9e9f7ff0`.
 - A has damage pending (record `+0x118`);
 - the distance is beyond the kind's far reach.
 
-It then runs a per-kind test, given in full on [Combat](combat.md#ai-attacks). Confirmed (code), all kinds read. It
-matches `Human_CanUseAttackKind` above except here:
+It then runs a per-kind test, given in full on [Combat](combat-targets.md#ai-attacks). Confirmed (code), all kinds read.
+It matches `Human_CanUseAttackKind` above except here:
 
 - **10** (snap): A free only; no sector or attack-slot test.
 - **12, 13**: T must be high or busy (`Human_IsHighOrBusy`); the other way in (T without `0x2000` holding
@@ -1817,7 +1817,7 @@ The attack action (vtable `0x00542ce0`, `AttackAction_Init` `0x002fa918`):
   brain's `+0x1ec` (when it may be attacked next, `0x00290e78`) from a **separate per-kind time** (`0x00231590`:
   the attacker's clip length for the kind, [Attack slots, active places and spacing](#attack-places)), scaled by
   `0x00510ad0` / the target brain's spacing byte `+0x14a` (or `+0x14b`, by `0x00223b48`) when that is not 0; the
-  attacking gang's `CfgGang` sets those bytes ([Combat](combat.md#ai-attacks)).
+  attacking gang's `CfgGang` sets those bytes ([Combat](combat-targets.md#ai-attacks)).
   This corrects the earlier reading that both took the attack delay. Then it writes the command
   (`AttackKind_ToCommand`) into the per-player record `+0x20` (`PlayerRecord_SetCommand`, `0x00147ef0`) and, when
   the action has an angle (`+0x1c` ≥ 0), a stick of magnitude 1.0 at that angle.
@@ -1913,7 +1913,7 @@ them grabs.
     - the target plays **2-4** (`TACKLE_MISS`, `TACKLE_INTRO`, `TACKLE_PLAYER_INTRO`; `0x002590f8`) → **9**
       `TACKLE_FRONT_COUNTER`;
 
-    each as a paired move (`Attack_StartPaired`, `0x00262ac8`, flag `0x400000`; [Combat](combat.md#grabbing)). Both
+    each as a paired move (`Attack_StartPaired`, `0x00262ac8`, flag `0x400000`; [Combat](combat-grabs.md#grabbing)). Both
     tests also need: the human free (record `+0x08` none of `0xfc7eaf7`, state none of `0x7bf9e9f7ff0`), not hurt
     (`0x00222ff8`), the target not knocked down (`+0xe0` `0x80000`), the target's own target this human,
     `0x002672d0` 0 both ways (inferred: face to face), a counter chance above 0, and, while the byte
@@ -2769,15 +2769,15 @@ Around the commands:
 | Repeating the current order | unforced: line again, no rebuild | refused silently (matches, minus the line) |
 | [Automatic commands](ai-gangs.md#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
 | Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
-| Revive ([Combat](combat.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](combat.md#revive)); no AI rescue (`SaveHuman`) |
+| Revive ([Combat](combat-rage.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](combat-rage.md#revive)); no AI rescue (`SaveHuman`) |
 | [Weapon swap](#warrior-swap) | instant; the object is attached to the bone of the low pick-up clip's first type-9 event and drawn there; 146 `give_me` | **partial**: the hands swap, the anim set follows, the line plays; the Warrior's object is **not drawn** |
 
 **Item 37: the given weapon.** In the original the swap puts the object in the Warrior's hand exactly as
 `HuPlaceItemInHand` does (`Human_PlaceObjectInHandByPickupClip`, `0x0024c6d8`: the bone and offset of the low pick-up
 clip's first type-9 event, message `0x1b` take, his anim set applied), so it hangs from that bone like the player's
 ([Objects: in a hand](objects.md#held)). **He fights with it**, confirmed (code): his anim set is the weapon's, so the
-same pad commands his attacks press play the armed swings ([Combat](combat.md#armed-moves)); the attack pick adds the
-armed bonus to the strikes ([Picking the attack](#pick-attack)); armed fighters fight from anywhere within 1.1 × the
+same pad commands his attacks press play the armed swings ([Combat](combat-throws.md#armed-moves)); the attack pick adds
+the armed bonus to the strikes ([Picking the attack](#pick-attack)); armed fighters fight from anywhere within 1.1 × the
 far range ([pick-ups: using](ai-gangs.md#warrior-pickups)). He keeps a knife, baton or bat; outside co-op an object of
 kind 4 or 6 is **dropped** at his next think with no enemies unless the steal tactic runs
 ([Think, step 3](#think-warrior)). In Coney, `ai::swapHeldObjects` (`repo:src/ai/swap_prompt.cpp`) moves the handle
@@ -2800,7 +2800,7 @@ it was not run (Coney reading); the kind 4 / 6 drop is not built.
    fights for him and (with `SaveHuman`) frees or revives him.
 4. **Draw the Warrior's weapon** (item 37): place every human's held object at his own pose, not only player 1's
    (the same bone and offset as the swap's placement); then add the kind 4 / 6 drop rule.
-5. **Revive** (item 8): built for player 1 ([Combat](combat.md#revive)); the crew's flag (`Human_Init`'s) and the AI
+5. **Revive** (item 8): built for player 1 ([Combat](combat-rage.md#revive)); the crew's flag (`Human_Init`'s) and the AI
    rescue remain.
 6. **The 50 m range refusal** with 18 / 92, then the hide tactic and the hide-in-shadow order.
 

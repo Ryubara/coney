@@ -516,7 +516,7 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b49f8` | `GroundedGoal_Init` | init | Grounded (`0x17`), vtable `0x00540210` | confirmed (code) |
 | `0x002b4a38` | `GroundedGoal_Start` | Start | notes the attacker (brain `+0x124`) and the start time | confirmed (code) |
 | `0x002b4aa0` | `GroundedGoal_WantsCounter` | helper | Grounded never counters: 0 | confirmed (code) |
-| `0x002b4aa8` | `GroundedGoal_Process` | Process | Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat.md#ground-escape)) ([reactions](ai.md#fight-reactions)) | inferred |
+| `0x002b4aa8` | `GroundedGoal_Process` | Process | Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai.md#fight-reactions)) | inferred |
 | `0x002b4b88` | `StunnedGoal_Init` | init | Stunned (`0x18`), vtable `0x005401b0` | confirmed (code) |
 | `0x002b4bb8` | `StunnedGoal_Process` | Process | Stunned: no target; done when no longer stunned | confirmed (code) |
 | `0x002b4c00` | `OnFireGoal_Init` | init | OnFire (`0x19`), vtable `0x0053ff70` | confirmed (code) |
@@ -631,7 +631,7 @@ him on the way. Pushed by the arrested goal (`0x002b6eb0`) and by FollowAndDefen
   20 m who claims him.
 
 No caller pushes it for one AI Warrior downed beside another, and the revive itself needs a flash that only a player's
-inventory holds ([Combat: revive](combat.md#revive), step 3): **an AI Warrior revives a player who holds a flash, never
+inventory holds ([Combat: revive](combat-rage.md#revive), step 3): **an AI Warrior revives a player who holds a flash, never
 another AI Warrior**. Inferred from the callers and `Player_TryRevive`.
 
 **How Process runs**, confirmed (code) at `0x002b8ad8`. Goal fields: `+0x20` the saved human's handle, `+0x10` the
@@ -664,7 +664,7 @@ are the brain's ranges `+0x140` and `+0x13c`; *d²* the squared distance from th
    once (`+0x3c`), standing (gait idle) and holding no flag but `0x40000000`: a cuffed human gets an `UnlockHuman`
    action (command `0x32`, [uncuffing](crimes.md)); a knocked-out one gets, when the way is clear
    (`Human_IsWayClearTo`), his wake time `+0xf0` pushed 10 s later, then a `Revive` action (command `0x27`, the
-   player's [revive](combat.md#revive) with its tests); state 2.
+   player's [revive](combat-rage.md#revive) with its tests); state 2.
 
 ### Domination (type 0x7d) {#goal-hold-flag}
 

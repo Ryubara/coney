@@ -3,7 +3,8 @@
 // Checks against the player's own disc that an object attack breaks a pane when the attack reaches it, not as it
 // starts: `level99` checkpoint 2 played as `--play-level level99 --checkpoint 2` plays it, headless, its scene
 // skipped; player 1 is put in front of one of the store's cabinet fronts and presses square, which plays the object
-// attack at the pane (docs/research/combat.md#breakables); the pane breaks when the clip's strike shapes reach it
+// attack at the pane (docs/research/combat-targets.md#breakables); the pane breaks when the clip's strike shapes reach
+// it
 // (`Strike_Contact`, docs/research/objects.md#coneys-implementation), several updates after the press. It runs only
 // when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 #include <algorithm>
@@ -172,7 +173,7 @@ TEST_CASE("the disc's level99 store: square at a cabinet front breaks the pane w
                 struck ? "by the strike shapes" : "by the attack");
     CHECK(scripts.scripts().errors() == 0);
     // Not as the attack starts (the dispatcher's hit update, 2) but when its strike shapes reach the pane: 12 updates
-    // after the press, as at runtime (docs/research/combat.md#breakables).
+    // after the press, as at runtime (docs/research/combat-targets.md#breakables).
     CHECK(struck);
     CHECK(brokeAfter == 12);
 }

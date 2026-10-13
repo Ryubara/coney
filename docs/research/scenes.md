@@ -389,7 +389,7 @@ human out of shadow (`Brain_SetHiddenInShadow`) and, for player 1, ends a pendin
 brain `+0x2d5` = 0 (`0x0028ef00`); the motion reset (slot `+0x14c`, `0x0023f158`: velocities and turn zeroed, the
 transform re-applied as it is); `0x00227388` sends message `0x15` to the object whose handle is at `+0x360` (not
 traced) and clears it; the record's state code `+0x14` and `+0x18` = 0. None of them touches the state bits of a
-grab or a mount, and none calls `Grab_Release` or `Human_BreakPair` ([Combat](combat.md#pair-break)).
+grab or a mount, and none calls `Grab_Release` or `Human_BreakPair` ([Combat](combat-grabs.md#pair-break)).
 
 **A human in a grab at the start is not taken in** (rare: the join has already let a bound human go,
 [The reset at the join](#join-reset)). "Free" (`0x002263d8`) means: state `0x100000000` clear, none of the grab,
@@ -398,7 +398,7 @@ mount and tackle-mount bits `0xcf0` (grabbed `0x10` / `0x20`, grabbing `0x40` / 
 the `+0x08` bits; a human that is grabbing, grabbed, mounting or mounted is **skipped**: not counted, not reset, no
 clip, its `+0x280` left −1, while the scene plays on without it. The grab is not released by the start, on either
 human (the partner need not be bound at all). Its join goal still holds a player's pad off, so the grab runs on
-until something breaks it: its power running out (`Grab_Release`, 95 / 94; inferred, [Combat](combat.md#pair-break)),
+until something breaks it: its power running out (`Grab_Release`, 95 / 94; inferred, [Combat](combat-grabs.md#pair-break)),
 a script teleporting either human, or, for a skipped scene, the end's placement below (both through
 `Human_BreakPair`, the partner playing its reaction clip). The cinematic's step 0 → 1 (`Gang_ClearBums`,
 `0x0016b8d0`) destroys the player's gang members whose type byte `+0x11b` is 6; it does not release grabs either.
@@ -418,7 +418,7 @@ skipped, hooks `pair-break`, `throw-clear-link`, `prop-release`):
 | --- | --- |
 | 2057 | 59 starts (Rembrandt state `0x1005`, Rudy `0x2001`, held `0x400000`, Rudy's clip 60); `P1.PowerMovesDone` scheduled |
 | 2131 | `P1.PowerMovesDone`: `ScenePreload("l99_c7")` |
-| 2141 | 59's event `0x31` removes the spray can ([Combat](combat.md#power-move-props)) |
+| 2141 | 59's event `0x31` removes the spray can ([Combat](combat-grabs.md#power-move-props)) |
 | 2142 | `ScenePlayCinematic`; in the same update `Human_ResetForMode` (`0x002325e0`) runs on every human: `Human_ReleaseCarriedProps` for each, and **`Human_BreakPair(Rudy)`** (return `0x00232690`), which clears the throw link (`Throw_ClearLink(Rembrandt, —)` from `0x00258db4`): the pair ends there, 85 updates into the 94-update 59 |
 | 2143 on | both in the scene: state `0x800000`, scene id 2630 at `+0x280`, clip 388; Rudy stands on role 6's start mark (−282.58, 127.29) |
 | about 2540-2730 | Rudy's role clip moves him (−282.6, 127.3) → (−276.6, 122.2): the Warriors drag him off |
@@ -433,7 +433,7 @@ waits for that caller.
 **Coney** (#225 and #281, implemented): `SceneSystem::joinHuman`, the bind, resets the human first, before it checks
 the scene or the role (`SceneHost::resetHumanForJoin()`, `Human::resetForJoin()`), with the steps of
 [the reset at the join](#join-reset) that Coney models: a throw's aim cancelled, any pair broken (`Human_BreakPair`,
-[Combat](combat.md#pair-break)), a wound ended, then `HuSetNormalMode(human, true)` (a grab, a stun, rage and a fall
+[Combat](combat-grabs.md#pair-break)), a wound ended, then `HuSetNormalMode(human, true)` (a grab, a stun, rage and a fall
 ended, the idle, at least 1 health), and the carried prop gone; and every raging human's rage ends at once
 (`human::endAllRage()`, play mode's join reset). A human never bound is not reset. Stand-in: fire, mini-games, overlay
 tasks, held kind-`0x27` / `0x10` objects, slow motion, a climb's body and a picked object are not in Coney, so those
@@ -479,7 +479,7 @@ runtime in the update of the play call (`l99_c7`, issue #225). The reset is exac
    (`Humans_EndAllRage`, all players, not only this human); fire put out; a mini-game ended; a throw's aim
    cancelled; `+0x644` = 0.
 2. When the human is in any paired or special state (mask `0x7001e193ff0`): **the pair is broken**
-   (`Human_BreakPair`, [Combat](combat.md#pair-break)), then a mini-game aborted, a special state and a workout
+   (`Human_BreakPair`, [Combat](combat-grabs.md#pair-break)), then a mini-game aborted, a special state and a workout
    ended, a mug (`0x100` / `0x200`), a tag (`0x2000000`), a tackle hold (`0x8000000000` / `0x10000000000`), a tackle
    (`0x800` / `0x400`) or a grab (`0xc0` / `0x30`, both sides) ended with its partner, and wounded (`0x10000`), down
    (`0x80000`) and stunned (`0x100000`) ended.
@@ -788,7 +788,7 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
 1. Cinematic: scene state `0x410` = 0; system music back on when step 6 turned it off.
 2. Each bound human: its sounds stopped; when skipped, `+0x280` = −1 and it is **placed at its role's end pose** (in
    the scene's space, through `Human_SetTransform`, so a human still in a grab is let go by `Human_BreakPair` and its
-   partner plays a reaction clip, [Combat](combat.md#pair-break));
+   partner plays a reaction clip, [Combat](combat-grabs.md#pair-break));
    its join goal (types `0x27`-`0x2a`) is popped, which gives a player back control ([Humans](#humans)); unbound.
 3. Each object: when skipped, placed at its end pose; then its scene slot (`+0x110`) is −1 again, its sound
    stopped, its body flagged (`0x80000000`) and added back to the world, and its record unpinned (`SceneAddObject`
@@ -1081,8 +1081,8 @@ shown, its keys set the scene camera's view and its end pops the camera back ove
 with no cameras, the end is a cut). The player and the level's cast (the humans its scripts made) are posed from
 their roles' frames and, when let go, stand where the scene left them (a cast human placed as a spawn places it),
 placed at the release itself so the end function's own moves (`level87`'s `TeleportToFlag`) win ([Ending](#ending));
-that placement breaks any pair the human is in, its partner playing its reaction ([Combat](combat.md#pair-break)). A
-player or cast human that is grabbing, grabbed, mounting or mounted at the start is left out as [Humans](#humans)
+that placement breaks any pair the human is in, its partner playing its reaction ([Combat](combat-grabs.md#pair-break)).
+A player or cast human that is grabbing, grabbed, mounting or mounted at the start is left out as [Humans](#humans)
 says (the stage's free test, `SceneHost::humanFree`): not taken in or posed, its grab going on, and at the end placed
 only when the scene was skipped. Other bound humans are drawn as puppets of their characters. Sounds go through
 the sound engine
@@ -1104,7 +1104,7 @@ trace above.
 
 - Which human state the start resets (answered: small resets, [Humans](#humans); a grab is never released by it).
   Messages `0x95` / `0x96` set the human's transform from the scene's space (`Human_HandleMessage`, `0x00245920`),
-  which breaks a pair ([Combat](combat.md#pair-break)); the start's message 10 goes to the human's held object,
+  which breaks a pair ([Combat](combat-grabs.md#pair-break)); the start's message 10 goes to the human's held object,
   not the human.
   What the object at human `+0x360` is (message `0x15` at the start).
 - How `ScenePlayAnimation` fits the scene to its humans (`0x003547e8`), and the 0.1 at `0x0039d618`.

@@ -10,7 +10,7 @@
 
 // The reach of each attack kind: the anim whose record gives the near and the far reach, or the fixed distance, by
 // gait, the target's ground and the object in hand; and the start test's differences from the per-kind test.
-// Research: docs/research/ai.md#attack-reach, docs/research/combat.md#ai-attacks
+// Research: docs/research/ai.md#attack-reach, docs/research/combat-targets.md#ai-attacks
 
 using coney::ai::ReachInput;
 

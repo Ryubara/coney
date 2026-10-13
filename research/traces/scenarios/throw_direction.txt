@@ -1,5 +1,5 @@
 # Grab (circle), then the stick at 0.9, 18 degrees left of the camera's up, with circle on the same update: a throw.
-# Research: docs/research/combat.md#throw-direction.
+# Research: docs/research/combat-throws.md#throw-direction.
 10 tap circle
 61 stick left -28 86
 61 tap circle

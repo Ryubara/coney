@@ -39,7 +39,7 @@ constexpr std::uint64_t kArmAt = 250;
 constexpr std::uint64_t kFirstTrial = 300;
 // The play frames each trial has to itself: a move, the other swing and the wait for everything to end.
 constexpr std::uint64_t kTrialLength = 120;
-// The bat's anim set (docs/research/combat.md#bat) and its object's type name.
+// The bat's anim set (docs/research/combat-throws.md#bat) and its object's type name.
 constexpr int kBatSet = 3;
 constexpr double kBatObject = 9999.0;
 

@@ -62,7 +62,7 @@
   depth: thorough
   notes: >-
     The handle is not checked for being a human. That the pending damage is applied on the next update is from the
-    damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
+    damage page ([Combat](../../research/combat-reactions.md#damage)); the outcome (knock-out or death) follows the usual rules
     (inferred).
   usage: {chunks: 29, calls: 46, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 86, 93, 31, 14, 9, 51, 52, 54, 55, 83, 20, 60, 61, 62, 63, 64]}
   coney: implemented
@@ -615,7 +615,7 @@
   notes: >-
     The AI stays held until something releases brain `+0x09` (not traced which binding). State flag 0x40000000 is
     the down latch (HuMakeGrounded false clears it; confirmed (runtime): 196 at once, health 1, then 199 on the
-    update after the latch was cleared, combat.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human
+    update after the latch was cleared, combat-reactions.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human
     flag 0x10 (also set by a hit stopped at a health floor) are not named yet. Bit meanings: characters.md#the-record,
     combat.md#state-flags.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [92]}
@@ -633,7 +633,7 @@
     `0x80000`, grounded) and lies in 196 at once, with no fall clip; its state code is set to 3 and state flags
     `0x20000000` and `0x40000000` (the down latch) set. While latched it never rises. With false the latch is cleared,
     and the human rises (199) on its next update if its down time has run out, else when it does
-    ([Combat](../../research/combat.md#scripted-knockdowns)).
+    ([Combat](../../research/combat-reactions.md#scripted-knockdowns)).
   evidence: confirmed-runtime
   depth: thorough
   notes: >-
@@ -661,7 +661,7 @@
     global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction,
     ungrabbable, ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears
     them ([Scripts: level5](../../research/scripting.md#level5)). Rage itself:
-    [Combat](../../research/combat.md#rage).
+    [Combat](../../research/combat-rage.md#rage).
   usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 82, 20, 11]}
   coney: implemented
 
@@ -805,7 +805,7 @@
     Bit set at 0x00237328 and read at five places (0x00257ce8, 0x00257d70, 0x00257e38, 0x0026a7bc, 0x0022ed14). It
     does not stop the drop of an object whose throw a hit interrupts, nor of a kind-39 object
     (Human_ApplyPendingDamage, 0x00265f70). Rage's SetRageMode sets it. Details:
-    [Combat: dropping what is held when hit](../../research/combat.md#keep-weapon).
+    [Combat: dropping what is held when hit](../../research/combat-rage.md#keep-weapon).
   usage: {chunks: 12, calls: 18, boot: true, mission1: true, result_used: false, levels: [34, 93, 14, 51, 54, 83]}
   coney: implemented
 
@@ -1185,7 +1185,7 @@
     A human with flag `0x100` (`+0xe1` bit 0, as `HuSetUnstunnable` sets; `Human_Stun` tests it at 0x0022f68c) ignores
     the stun unless it has the endless-stun flag 0x8000000; confirmed (runtime): with `0x100` nothing happened,
     without it 355/356 for the class's 750 ms, then 357
-    ([Combat](../../research/combat.md#scripted-knockdowns)). Humans in movement styles 7-10 or 0xf, knocked down, or
+    ([Combat](../../research/combat-reactions.md#scripted-knockdowns)). Humans in movement styles 7-10 or 0xf, knocked down, or
     flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or grabbed human only clears the flag.
     What state flag 0x20000000 means is open. Used on Luther in level 64.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [64]}
@@ -1699,7 +1699,7 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to hurt; a bad handle does nothing."}
     - {name: amount, lua: number, ctype: int, desc: "Damage in hitpoints (16 bits; the sign is kept, the size compared)."}
     - {name: attacker, lua: number, ctype: unsigned, desc: "Handle of the human credited with the hit, or 0 for none (0 is tested, not NilHandle)."}
-    - {name: react, lua: number, ctype: unsigned, desc: "Stored in record `+0x11a`, read only when the victim is in a grab: 2 or more plays the heavier paired reaction. It does not decide whether the victim reacts ([Combat](../../research/combat.md#scripted-knockdowns))."}
+    - {name: react, lua: number, ctype: unsigned, desc: "Stored in record `+0x11a`, read only when the victim is in a grab: 2 or more plays the heavier paired reaction. It does not decide whether the victim reacts ([Combat](../../research/combat-reactions.md#scripted-knockdowns))."}
     - {name: useHeld, lua: boolean, desc: "With no attacker, true records the human's own held object as what hit it; ignored with an attacker."}
   description: >-
     Queues damage on the human as one more hit of this update, through the same path as a melee strike: it becomes the
@@ -1712,7 +1712,7 @@
   notes: >-
     A smaller hit in the same update is dropped, not added. Also written: human `+0x5d2` (last damage). Scripts pass
     attacker 0 to hurt without blame; the victim is then its own foe, and a standing victim plays 275 (hit code 10 from
-    its own side 3), confirmed (runtime) ([Combat](../../research/combat.md#scripted-knockdowns)).
+    its own side 3), confirmed (runtime) ([Combat](../../research/combat-reactions.md#scripted-knockdowns)).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 55]}
 
 - name: HuSetKillerMode
@@ -1724,7 +1724,7 @@
     - {name: "on", lua: boolean, desc: "true sets killer mode, false clears it."}
   description: >-
     Sets or clears bit 0x20 of the human's flag word (`+0xe0`). With it set, every strike the human lands deals the
-    victim's whole remaining health (`Strike_Contact`, [Combat](../../research/combat.md#damage)), so one hit knocks
+    victim's whole remaining health (`Strike_Contact`, [Combat](../../research/combat-reactions.md#damage)), so one hit knocks
     out or kills; scripts give it to a few scripted killers.
   evidence: confirmed-code
   depth: thorough
@@ -1787,7 +1787,7 @@
   depth: thorough
   notes: >-
     No lower bound: 0 or a negative value is stored as given; what the damage code then does with it is not traced
-    (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat.md#damage).
+    (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat-reactions.md#damage).
   usage: {chunks: 23, calls: 57, boot: false, mission1: false, result_used: false, levels: [80, 5, 93, 31, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
