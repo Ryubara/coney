@@ -253,7 +253,8 @@ installs the right Python and the locked dependencies into `python/.venv` the fi
 ```sh
 uv run --project python coney-tools --help
 uv run --project python pytest python/tests
-uv run --project python ruff check python
+uv run --project python ruff check python .claude/hooks
+uv run --project python ruff format --check python .claude/hooks
 uv run --project python mypy --config-file python/pyproject.toml python/src python/tests
 ```
 

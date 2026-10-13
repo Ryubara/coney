@@ -269,12 +269,13 @@ uv run --project python coney-tools check changed
 
 It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files CI's pull-request job
 would check (a changed header through the `.cpp` files that include it), `mkdocs build --strict` when docs changed,
-pytest and mypy when `python/` changed, and `repo check`; it needs a `build/dev` that was configured once
-(`coney-tools build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets through: a
-designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
-(`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not
-replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
-sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
+ruff, pytest and mypy when `python/` or `.claude/` changed, and `repo check`; it needs a `build/dev` that was
+configured once (`coney-tools build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets
+through: a designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked
+`std::optional` access (`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the
+options. It does not replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC
+emits, macOS, the sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed
+files only.
 
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
@@ -287,10 +288,10 @@ The whole gate:
   `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
   [build slot](coney-tools.md#build) and loads the MSVC environment itself; agents never run `cmake --build` or `ctest`
   directly).
-- **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`;
-  `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
-  generator's `--check` (`natives render`, `natives coney`, `natives cpp`, `refs render`, `missions render`). Rerun a
-  generator without `--check` when you change what it reads.
+- **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
+  `python/`; `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables are built into
+  the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,
+  `refs render`, `missions render`). Rerun a generator without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
   `mkdocs build --strict` passes.
 
