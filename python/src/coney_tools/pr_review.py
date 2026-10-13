@@ -8,7 +8,9 @@ every picture it shows, and writes a verdict next to the description file. This 
 reviewed and checks it before a push:
 
 * `review-stamp` prints what a verdict must quote: the branch tip, the description's hash and each local image's hash.
-  The agent copies them, so it never computes a hash itself.
+  The agent copies them, so it never computes a hash itself. It first runs the title and body checks (`precheck`, the
+  same ones `check-review` and `review` run) and refuses, printing their reasons and no stamp, when they fail: a
+  description CI would refuse is not worth a review, and any later edit to it makes the verdict stale.
 * `check-review` passes only when the title and body pass the same checks CI runs (`check_title`, `check_body`) and the
   verdict is `pass` with no blocker and every quoted value is still current, so a new commit, an edit or a replaced
   picture sends the description back for review.
@@ -210,6 +212,24 @@ def description_problems(description: str, conventions: Conventions, branch_mode
     ]
 
 
+def precheck(
+    pr_file: Path,
+    worktree: Path,
+    conventions: Conventions,
+    models_of: ModelReader | None = None,
+    base: str = DEFAULT_BASE,
+) -> list[str]:
+    """What is wrong with the description file before anything is reviewed: the title and body checks CI runs, plus the
+    Model line held to the trailers of the branch's commits after `base`; empty when it is fit to review.
+
+    The one place the rule lives: `check-review` (as the first half of its answer), `review` (before the agent starts)
+    and `review-stamp` (before the agent has a stamp to copy) all call it. ReviewError when the description cannot be
+    read or the commits cannot be listed.
+    """
+    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
+    return description_problems(read_description(pr_file), conventions, models)
+
+
 def check_review(
     pr_file: Path,
     worktree: Path,
@@ -225,8 +245,7 @@ def check_review(
     which only the local gate can read. ReviewError when the description itself cannot be read, the worktree has no
     HEAD or its commits cannot be listed.
     """
-    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
-    problems = description_problems(read_description(pr_file), conventions, models)
+    problems = precheck(pr_file, worktree, conventions, models_of, base)
     return problems + _verdict_problems(pr_file, worktree, conventions.pull_requests.review, head_of)
 
 
@@ -300,7 +319,7 @@ def review_command(
 
 def review_prompt(pr_file: Path, worktree: Path, base: str, rules: Review) -> str:
     """The task the launcher gives the agent: which files, which diff, the stamp command and where to write."""
-    stamp = f'"{sys.executable}" -m coney_tools.cli repo review-stamp "{pr_file}" --worktree "{worktree}"'
+    stamp = f'"{sys.executable}" -m coney_tools.cli repo review-stamp "{pr_file}" --worktree "{worktree}" --base {base}'
     return (
         f"Review the pull request description in {pr_file} before it is released.\n"
         f'- The branch is checked out in {worktree}; its change is `git -C "{worktree}" diff {base}...HEAD`.\n'
@@ -348,8 +367,7 @@ def run_review(
     worktree = worktree.resolve()
     folder = pr_file.parent
     # A description CI would refuse is not worth a review run: send it back first.
-    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
-    early = description_problems(read_description(pr_file), conventions, models)
+    early = precheck(pr_file, worktree, conventions, models_of, base)
     if early:
         return _report(early, folder / rules.report_file)
     definition = agent_definition(root / ".claude" / "agents" / f"{rules.agent}.md")
@@ -421,19 +439,31 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     check.add_argument("--worktree", type=Path, required=True, help=wt_help)
     check.add_argument("--base", default=DEFAULT_BASE, help=base_help)
     stamp = repo_commands.add_parser(
-        "review-stamp", help="print, as JSON, the tip, description hash and image hashes a verdict must quote"
+        "review-stamp",
+        help=(
+            "print, as JSON, the tip, description hash and image hashes a verdict must quote; refuses, with the "
+            "title and body reasons, a description check-review would refuse"
+        ),
     )
     stamp.add_argument("pr_file", type=Path, help=pr_help)
     stamp.add_argument("--worktree", type=Path, required=True, help=wt_help)
+    stamp.add_argument("--base", default=DEFAULT_BASE, help=base_help)
 
 
 def run_review_command(args: argparse.Namespace) -> int:
     """Run `repo review`, `check-review` or `review-stamp`."""
-    if args.command == "review-stamp":
-        print(json.dumps(make_stamp(args.pr_file, args.worktree), indent=2))
-        return 0
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
+    if args.command == "review-stamp":
+        # Refuse before the reviewer has a stamp to copy: no stamp on stdout, the reasons on stderr.
+        problems = precheck(args.pr_file, args.worktree, conventions, base=args.base)
+        if problems:
+            print("review-stamp refused: fix the description first, then stamp and review it:", file=sys.stderr)
+            for problem in problems:
+                print(f"  {problem}", file=sys.stderr)
+            return 1
+        print(json.dumps(make_stamp(args.pr_file, args.worktree), indent=2))
+        return 0
     rules = conventions.pull_requests.review
     if args.command == "check-review":
         problems = check_review(args.pr_file, args.worktree, conventions, base=args.base)

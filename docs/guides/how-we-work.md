@@ -125,7 +125,8 @@ coordinator, who pushes them when CI has room.
 
 ### The description review {#pr-review}
 
-`coney-tools repo check-body` (and CI) only checks a description's structure. On 2026-10-12 a pull request was
+`coney-tools repo check-body` (and CI) only checks a description's structure, and the review itself starts only on a
+description that passes it (below). On 2026-10-12 a pull request was
 released whose screenshots did not match it: three of its four pictures showed a letterboxed scene instead of
 gameplay, and its before and after pair were the same file. So a second reader goes over every description before it
 is pushed: the `pr-reviewer` agent ([Running agents](agents.md#setup)). It reads the description, the branch's diff and
@@ -143,8 +144,12 @@ uv run --project python coney-tools repo check-review <PR.md> --worktree <worktr
 ```
 
 `repo review` runs the agent headlessly (`claude -p`, a throwaway run in the scratch folder) and then
-`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)). It
-also runs the title and body checks CI runs, so a description CI would refuse never reaches the push. A failing
+`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)). Both
+run the title and body checks CI runs, and so does `repo review-stamp`, the first thing the agent runs, whether
+`repo review` started it or a coordinator launched it as a subagent: it refuses a description CI would refuse, with the
+same messages and no stamp, so the review never starts on text that the release step would send back (an edit then
+makes the verdict stale and costs a second review). Run `repo check-title` and `repo check-body` on a description as
+you write it. A failing
 verdict goes back as a fix to the description or the captures, never as a push. The gate's rules, generated
 from `pull_requests.review` in [.github/conventions.yml](repo:.github/conventions.yml):
 
