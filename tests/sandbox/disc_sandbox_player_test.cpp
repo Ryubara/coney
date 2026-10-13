@@ -175,7 +175,7 @@ TEST_CASE("Rembrandt walks up a slope, a stair set and over low ledges to a wall
         const FrameRecord& last = run.frames.back();
         CHECK(last.position.z == Approx(0.0F).margin(0.02));
         const float stop = -5.5F - coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale) -
-                           coney::human::bodyTuning().contactClear;
+                           0.01F; // the sweep's back-off (docs/research/physics-bodies.md#u3-codes)
         CHECK(last.position.y > stop - 0.03F);
         CHECK(last.position.y < stop + 0.03F);
         CHECK(!last.airborne);

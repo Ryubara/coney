@@ -174,6 +174,9 @@ add_executable(coney_tests
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp
     raycast/collision_mesh_test.cpp
+    physics/body_sweep_test.cpp
+    physics/mesh_sweep_test.cpp
+    physics/sphere_triangle_test.cpp
     raycast/disc_collision_test.cpp
     scripting/ai_bindings_test.cpp
     scripting/anim_callbacks_test.cpp

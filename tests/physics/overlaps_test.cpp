@@ -28,7 +28,7 @@ const Vec4 kJunk{7.0F, 7.0F, 7.0F, 7.0F};
 // A contact filled with a marker, so the tests see which fields a test writes.
 Contact marked() {
     Contact contact;
-    contact.halves = {ContactHalf{kJunk, kJunk, 7, 7}, ContactHalf{kJunk, kJunk, 7, 7}};
+    contact.halves = {ContactHalf{nullptr, false, kJunk, kJunk, 7, 7}, ContactHalf{nullptr, false, kJunk, kJunk, 7, 7}};
     contact.fraction = 7.0F;
     contact.depth = 7.0F;
     contact.point = kJunk;

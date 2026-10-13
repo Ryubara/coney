@@ -23,6 +23,9 @@
 #include "human/fighter_clips.h"
 #include "human/jump.h"
 #include "human/step_control.h"
+#include "physics/body_sweep.h"
+#include "physics/mesh_sweep.h"
+#include "physics/sphere_triangle.h"
 #include "world_objects/pickups.h"
 
 namespace coney::human {
@@ -91,28 +94,58 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 // face), and fences go by the clip.
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
-// Pushes a sphere of `radius`, centred `centreHeight` above the feet at `feet`, out of the walls `filter` keeps, up
-// to three times; returns where the feet end, or nothing when the sphere is still in a wall after that. Each push's
-// direction, the wall's normal, is added to `normals` when given.
-std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float radius,
-                                   float centreHeight, const WallFilter& filter, std::vector<std::uint16_t>& scratch,
-                                   std::vector<anim::Vec3>* normals = nullptr) {
-    for (int pass = 0; pass <= kSweepPasses; ++pass) {
-        const anim::Vec3 centre = anim::add(feet, anim::Vec3{0.0F, 0.0F, centreHeight});
-        const auto push = nearestWallPush(mesh, centre, radius, filter, scratch);
-        if (!push || anim::length(*push) < kClear) {
-            return feet;
-        }
-        if (pass == kSweepPasses) {
-            break;
-        }
-        if (normals != nullptr) {
-            normals->push_back(anim::normalise(*push));
-        }
-        feet = anim::add(feet, *push);
+// The walking body's owner as the physics world's sweep sees it (docs/research/physics-bodies.md#u3-records), for one
+// sweep: the human's feet as the sweep moves them, the velocity it writes back, and `Human_OnContact`'s answer for the
+// level.
+class WalkingOwner final : public physics::BodyOwner {
+  public:
+    WalkingOwner(const raycast::CollisionMesh& mesh, anim::Vec3 start, bool airborne, bool inPairOrBlock,
+                 std::span<const std::uint8_t> passThrough)
+        : m_mesh(mesh), m_start(start), m_position(start), m_airborne(airborne), m_inPairOrBlock(inPairOrBlock),
+          m_passThrough(passThrough) {}
+
+    [[nodiscard]] std::uint32_t typeMask() const override { return physics::kTypeHuman; }
+    [[nodiscard]] bool airborne() const override { return m_airborne; }
+    // The human copies its transform before it moves, so the cached position is where the sweep starts.
+    [[nodiscard]] anim::Vec3 cachedPosition() const override { return m_start; }
+    [[nodiscard]] anim::Vec3 position() const override { return m_position; }
+    void setPosition(anim::Vec3 position) override { m_position = position; }
+    void setVelocity(anim::Vec3 velocity) override { m_written = velocity; }
+    // **Coney's choice**: 1 for the weight and the push weight (the human's pushes are already divided by its push
+    // weight when they are added, addPush(), and the body carries kBodyPushUndivided), 0 restitution (the level's
+    // answer is a slide, never a bounce).
+    [[nodiscard]] float attribute(int which) const override {
+        return which == physics::kAttributeRestitution ? 0.0F : 1.0F;
     }
-    return std::nullopt;
-}
+    [[nodiscard]] physics::Body* body() override { return m_body; }
+    // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
+    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters.md#walls, step 4).
+    [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
+        if (contact.triangle && !m_passThrough.empty()) {
+            const std::uint8_t material = m_mesh.triangles()[*contact.triangle].material;
+            if (std::ranges::find(m_passThrough, material) != m_passThrough.end()) {
+                return 0;
+            }
+        }
+        return physics::kAnswerScale | physics::kCodeSlide;
+    }
+    [[nodiscard]] bool inPairOrBlock() const override { return m_inPairOrBlock; }
+
+    // Gives the body this owner answers for.
+    void setBody(physics::Body* body) { m_body = body; }
+    // The velocity the sweep wrote back, if any.
+    [[nodiscard]] std::optional<anim::Vec3> written() const { return m_written; }
+
+  private:
+    const raycast::CollisionMesh& m_mesh;
+    anim::Vec3 m_start;
+    anim::Vec3 m_position;
+    bool m_airborne;
+    bool m_inPairOrBlock;
+    std::span<const std::uint8_t> m_passThrough;
+    physics::Body* m_body = nullptr;
+    std::optional<anim::Vec3> m_written;
+};
 
 // The capsule strike (docs/research/combat.md#capsule-strike): whether any bone strike shape of `shapes` (posed now;
 // `before`, the update before) meets the target's upright `capsule`. A segment is tested where it stands, against the
@@ -502,83 +535,87 @@ std::span<const std::uint8_t> Human::passThrough() const {
     return {};
 }
 
-std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from, anim::Vec3 displacement) {
+Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push, bool meetOthers) {
     m_contacts.clear();
+    const anim::Vec3 from = m_position;
     // A body that does not move meets nothing.
+    const anim::Vec3 displacement = anim::add(anim::scale(velocity, m_stepSeconds), push);
     if (anim::length(displacement) <= 0.0F) {
-        return Swept{.feet = from};
+        return Swept{.feet = from, .velocity = std::nullopt};
     }
     // The other humans' capsules first. **Coney's choice**: the original sorts the humans' and the walls' contacts of
-    // a pass by fraction together; here the humans take their part of the move before the walls take theirs.
-    displacement = meetHumans(from, displacement);
-    if (anim::length(displacement) <= kClear) {
-        return Swept{.feet = from};
+    // a pass by fraction together; here the humans take their part of the move before the walls take theirs. Their
+    // slides take the velocity's part into them too, as the resolution's code 1 does.
+    const anim::Vec3 move = meetOthers ? meetHumans(from, displacement) : displacement;
+    for (const anim::Vec3 normal : m_contacts) {
+        physics::removeNormalPart(velocity, normal);
     }
-    // The walking sphere (0.4704 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0), 0.05 m clear
-    // of the feet, against the walls the move goes into and that are 0.25 m tall or more; each push slides it along
-    // that wall and leaves it 0.01 m clear.
+    // The level, through the physics world's sweep (docs/research/physics-bodies.md#u3-sweep): the walking sphere
+    // (0.4705 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0) against the walls the move goes
+    // into, 0.25 m tall or more. What the humans left of the move beyond the velocity's goes in as the pending
+    // push-out, undivided. Only a player's body writes the slid velocity back (body flag 0x400).
     const float radius = walkingSphereRadius();
-    const float centreHeight = walkingSphereCentreHeight();
-    WallFilter filter{.move = displacement,
-                      .skipLow = true,
-                      .excludeMaterials = passThrough(),
-                      .toContact = true,
-                      .keepClear = bodyTuning().contactClear};
-    // A wall face the sphere already touches is a contact at fraction 0 (docs/research/characters.md#slopes): the move
-    // loses only its part into the face, in 3D, and nothing pushes the sphere out, so a move into a face leaning back
-    // rises along it and the snap then puts the feet on what is under them. The faces it meets on the way are pushed
-    // to contact below, as before.
-    const anim::Vec3 move = slideAlongTouchedFaces(mesh, anim::add(from, anim::Vec3{0.0F, 0.0F, centreHeight}), radius,
-                                                   displacement, filter, m_nearby, &m_contacts);
-    const float length = anim::length(move);
-    if (length <= kClear) {
-        return Swept{.feet = from};
+    WalkingOwner owner(mesh, from, m_airborne, m_fighter.inPair() || m_fighter.blocking(), passThrough());
+    physics::Body body{.owner = &owner,
+                       .flags = physics::kBodyPushUndivided | (m_profile.player ? physics::kBodyWriteVelocity : 0U),
+                       .typeMask = physics::kTypeHuman,
+                       .pushOut = anim::subtract(move, anim::scale(velocity, m_stepSeconds)),
+                       .stuck = static_cast<int>(m_blockedUpdates),
+                       .shape = physics::BodyShape{.type = physics::ShapeType::Capsule,
+                                                   .radius = radius,
+                                                   .enabled = true,
+                                                   .footGap = bodyTuning().footGap,
+                                                   .minWallHeight = bodyTuning().minWallHeight},
+                       .scaleKind = physics::ContactScale::Human};
+    owner.setBody(&body);
+    physics::MeshWorld world(mesh, m_meshScratch);
+    static_cast<void>(physics::sweepBody(m_stepSeconds, world, body, velocity));
+    m_blockedUpdates = static_cast<std::uint32_t>(body.stuck);
+    // A slide the sweep kept for the next move (contact flag 0x2) joins the pending push.
+    m_pendingPush = anim::add(m_pendingPush, body.pushOut);
+    Swept swept{.feet = owner.position(), .velocity = owner.written()};
+    // A human met asks for the write-back as a wall does (a player's body only).
+    if (m_profile.player && !m_contacts.empty() && !swept.velocity) {
+        swept.velocity = velocity;
     }
-    filter.move = move;
-    const anim::Vec3 moved = anim::add(from, move);
-    const auto feet = slideOut(mesh, moved, radius, centreHeight, filter, m_nearby, &m_contacts);
-    if (!feet) {
-        return std::nullopt;
-    }
-    // The corner slide (docs/research/characters.md#walls, steps 6-7): a sphere wrapping round the edge its walls name
-    // is carried along them, toward that edge, max(move, r) a second for this update only (its part along the move
-    // taken away); the stored velocity is not changed by it. **Coney's reading** of the original's passes: the slide
-    // is found where the move put the sphere and added once, then pushed out of the walls it goes into as the move
-    // was; the pair-or-block test that turns it off (`0x00227fd8`) is not built.
-    const anim::Vec3 sum =
-        edgeSlide(mesh, anim::add(moved, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, filter, m_nearby);
-    Swept swept{.feet = *feet};
-    if (anim::length(sum) >= kClear) {
-        const anim::Vec3 along = anim::scale(move, 1.0F / length);
-        anim::Vec3 slide = anim::scale(anim::normalise(sum), std::max(length, radius));
-        slide = anim::scale(anim::subtract(slide, anim::scale(along, anim::dot(slide, along))), m_stepSeconds);
-        WallFilter slideFilter = filter;
-        slideFilter.move = anim::add(move, slide);
-        const auto slid = slideOut(mesh, anim::add(*feet, slide), radius, centreHeight, slideFilter, m_nearby);
-        if (slid) {
-            swept = Swept{.feet = *slid, .slide = anim::subtract(*slid, *feet)};
-        }
-    }
-    // Then the world objects' bodies the move goes into, each push sliding the sphere along the body, and the walls
-    // again so no push leaves it in one.
+    // Then the world objects' bodies the move goes into, each push sliding the sphere along the body (**Coney
+    // stand-in** until the objects are bodies of the physics world, Unit 11). The pushes are swept through the level as
+    // a push-out, so none leaves the body in a wall.
     if (m_objectPush == nullptr || !*m_objectPush) {
         return swept;
     }
-    bool pushed = false;
+    const float centreHeight = radius + bodyTuning().footGap;
+    anim::Vec3 at = swept.feet;
+    anim::Vec3 total{};
+    const std::size_t humansMet = m_contacts.size();
     for (int pass = 0; pass < kSweepPasses; ++pass) {
-        const std::optional<anim::Vec3> push =
-            (*m_objectPush)(*this, anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, move);
-        if (!push || anim::length(*push) < kClear) {
+        const std::optional<anim::Vec3> out =
+            (*m_objectPush)(*this, anim::add(at, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, move);
+        if (!out || anim::length(*out) < kClear) {
             break;
         }
-        m_contacts.push_back(anim::normalise(*push));
-        swept.feet = anim::add(swept.feet, *push);
-        pushed = true;
+        m_contacts.push_back(anim::normalise(*out));
+        total = anim::add(total, *out);
+        at = anim::add(at, *out);
     }
-    if (pushed) {
-        if (const auto out = slideOut(mesh, swept.feet, radius, centreHeight, filter, m_nearby, &m_contacts)) {
-            swept.feet = *out;
+    if (m_contacts.size() == humansMet) {
+        return swept;
+    }
+    WalkingOwner pushed(mesh, swept.feet, m_airborne, true, passThrough());
+    physics::Body pushBody = body;
+    pushBody.owner = &pushed;
+    pushBody.flags = physics::kBodyPushUndivided;
+    pushBody.pushOut = total;
+    pushed.setBody(&pushBody);
+    static_cast<void>(physics::sweepBody(m_stepSeconds, world, pushBody, anim::Vec3{}));
+    swept.feet = pushed.position();
+    // A player's velocity slides along the objects as along the level.
+    if (m_profile.player) {
+        anim::Vec3 slid = swept.velocity.value_or(velocity);
+        for (std::size_t i = humansMet; i < m_contacts.size(); ++i) {
+            physics::removeNormalPart(slid, m_contacts[i]);
         }
+        swept.velocity = slid;
     }
     return swept;
 }
@@ -661,12 +698,15 @@ anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
     return anim::add(anim::subtract(at, from), left);
 }
 
-std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
-    // A player's push-out sphere is 0.5 × scale, centred its radius plus 0.05 above the feet, out of every wall.
+void Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
+    // A player's push-out sphere is 0.5 × scale, centred its radius plus 0.05 above the feet, out of the nearest wall
+    // (docs/research/physics-bodies.md#u2-003477c0-physicsbody-pushoutofwalls); the push waits for the next move.
     const float radius = airSphereRadius();
-    const WallFilter filter{
-        .move = anim::Vec3{}, .skipLow = false, .excludeMaterials = passThrough(), .toContact = false};
-    return slideOut(mesh, feet, radius, radius + bodyTuning().footGap, filter, m_nearby);
+    const physics::Sphere sphere{.centre = anim::add(feet, anim::Vec3{0.0F, 0.0F, radius + bodyTuning().footGap}),
+                                 .radius = radius};
+    if (const auto push = physics::pushOutOfWalls(mesh, sphere, m_meshScratch); push) {
+        addPush(*push);
+    }
 }
 
 void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
@@ -710,11 +750,9 @@ void Human::land(anim::Vec3 feet) {
 }
 
 void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
-    // On the ground the velocity has no z: walking climbs only through the snap. A slope slows the human, uphill and
-    // downhill alike.
+    // On the ground the velocity has no z: walking climbs only through the snap. The push-out other humans' walks
+    // left goes with this move, on top of the velocity's (docs/research/physics.md#sweep).
     m_velocity.z = 0.0F;
-    // The push-out other humans' walks left goes with this move, on top of the velocity's
-    // (docs/research/physics.md#sweep).
     const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
     // A charge stopped dead against a wall stays stopped until its clip ends; only a push moves it.
     const bool charging = m_animator.animId() == static_cast<std::uint32_t>(combat::anim_id::kRunningAttackCharge);
@@ -722,78 +760,61 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     if (m_chargeStopped) {
         m_velocity.x = 0.0F;
         m_velocity.y = 0.0F;
-        const auto pushed = sweep(mesh, m_position, push);
-        snapToGround(mesh, pushed ? pushed->feet : m_position);
+        snapToGround(mesh, sweep(mesh, anim::Vec3{}, push, true).feet);
         return;
     }
+    // A slope slows the human, uphill and downhill alike: the sweep is given the scaled velocity.
     const float factor = slopeFactor(m_groundNormal.z);
-    const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds + push.x,
-                                  m_velocity.y * factor * m_stepSeconds + push.y, 0.0F};
-    anim::Vec3 feet = m_position;
-    if (const auto moved = sweep(mesh, m_position, displacement); moved) {
-        feet = moved->feet;
-        m_blockedUpdates = 0;
-        // What the walls left of the move; the corner slide moves the body but not its velocity.
-        const anim::Vec3 slid = anim::subtract(anim::subtract(moved->feet, moved->slide), m_position);
-        if (charging && anim::length(slid) < kChargeStopShare * anim::length(displacement)) {
-            // The charge met a wall head-on: it goes on to the wall along its own line, with no slide, and stops.
-            const anim::Vec3 along = anim::normalise(displacement);
-            feet = anim::add(m_position, anim::scale(along, std::max(0.0F, anim::dot(slid, along))));
-            m_velocity.x = 0.0F;
-            m_velocity.y = 0.0F;
-            m_chargeStopped = true;
-        } else {
-            slideVelocity();
-        }
-    } else {
-        // Blocked: the body stays and its horizontal velocity goes.
+    const anim::Vec3 velocity{m_velocity.x * factor, m_velocity.y * factor, 0.0F};
+    const Swept moved = sweep(mesh, velocity, push, true);
+    anim::Vec3 feet = moved.feet;
+    const anim::Vec3 displacement = anim::add(anim::scale(velocity, m_stepSeconds), push);
+    const anim::Vec3 went = anim::subtract(moved.feet, m_position);
+    if (charging && anim::length(displacement) > 0.0F &&
+        anim::length(went) < kChargeStopShare * anim::length(displacement)) {
+        // The charge met a wall head-on: it goes on to the wall along its own line, with no slide, and stops.
+        const anim::Vec3 along = anim::normalise(displacement);
+        feet = anim::add(m_position, anim::scale(along, std::max(0.0F, anim::dot(went, along))));
         m_velocity.x = 0.0F;
         m_velocity.y = 0.0F;
-        ++m_blockedUpdates;
+        m_chargeStopped = true;
+    } else if (moved.velocity) {
+        // The velocity the sweep wrote back: slid along what it met (a player's), or stopped when stuck. **Coney's
+        // reading**: the sweep was given the slope-scaled velocity, so the scale is taken off again (the page does not
+        // say which one the original writes back). Its z (a slide up a face that leans back) goes with the velocity
+        // until the next update on the ground sets it to 0 (docs/research/characters.md#slopes, step 5).
+        m_velocity.x = factor > 0.0F ? moved.velocity->x / factor : 0.0F;
+        m_velocity.y = factor > 0.0F ? moved.velocity->y / factor : 0.0F;
+        m_velocity.z = moved.velocity->z;
     }
     snapToGround(mesh, feet);
-}
-
-void Human::slideVelocity() {
-    // Each contact takes from the velocity its part into the wall, in 3D, only when it goes in; the z this leaves goes
-    // with the next update's (docs/research/characters.md#slopes, step 3). Along a wall the velocity keeps its part
-    // along it however far the sweep pushed the body out, so a body the snap lowers into a face that leans back is not
-    // slowed by being pushed out of it again.
-    // Only a player's body has the flag (`0x400`) that writes the slid velocity back; an AI asks for its full speed
-    // again each update, so a slide never brakes it (docs/research/physics.md#sweep).
-    if (!m_profile.player) {
-        return;
-    }
-    anim::Vec3 velocity{m_velocity.x, m_velocity.y, 0.0F};
-    for (const anim::Vec3 normal : m_contacts) {
-        if (const float into = anim::dot(velocity, normal); into < 0.0F) {
-            velocity = anim::subtract(velocity, anim::scale(normal, into));
-        }
-    }
-    m_velocity.x = velocity.x;
-    m_velocity.y = velocity.y;
 }
 
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
     const anim::Vec3 displacement = anim::add(anim::scale(m_velocity, m_stepSeconds), anim::Vec3{push.x, push.y, 0.0F});
-    anim::Vec3 feet = anim::add(m_position, displacement);
-    // Walls still push the airborne body: move across, push out, then fall straight.
     const anim::Vec3 across{m_position.x + displacement.x, m_position.y + displacement.y, m_position.z};
-    // The airborne body breaks the panes it reaches first, so a pane broken now no longer blocks the push-out
+    // The airborne body breaks the panes it reaches first, so a pane broken now no longer blocks the sweep
     // (docs/research/objects.md#pane-break). **Coney stand-in**: the push-out sphere stands for both the body and the
     // jump's strike shapes, whose sizes are not traced.
     if (m_bodyContact != nullptr && *m_bodyContact) {
         const float radius = airSphereRadius();
         (*m_bodyContact)(*this, anim::Vec3{across.x, across.y, across.z + radius + bodyTuning().footGap}, radius);
     }
-    if (const auto moved = pushOutInAir(mesh, across); moved) {
-        feet = anim::Vec3{moved->x, moved->y, m_position.z + displacement.z};
-        m_blockedUpdates = 0;
-    } else {
-        feet = anim::Vec3{m_position.x, m_position.y, m_position.z + displacement.z};
-        ++m_blockedUpdates;
+    // The walls take the move across the ground; airborne, the sweep makes no corner slide and a player keeps a
+    // quarter of the speed it slid with (the human body's contact scale,
+    // docs/research/physics-bodies.md#u3-human-scale).
+    // **Coney's reading**: the fall itself goes straight down and lands by the segment below, not by the sweep's
+    // landing contact (#369).
+    const Swept moved =
+        sweep(mesh, anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, anim::Vec3{push.x, push.y, 0.0F}, false);
+    if (moved.velocity) {
+        m_velocity.x = moved.velocity->x;
+        m_velocity.y = moved.velocity->y;
     }
+    const anim::Vec3 feet{moved.feet.x, moved.feet.y, m_position.z + displacement.z};
+    // After the move, the push out of the walls the body overlaps, for the next move (the owner's after-move call).
+    pushOutInAir(mesh, feet);
     // A floor an earlier move passed, now kLandingDepth or more above the feet: land on it, the whole horizontal move
     // made (at runtime the landing update still moved at the run's 7.80 m/s, docs/research/characters.md#falling).
     // Shallower, the body falls a whole step more through it. Nothing under the feet any more (they went over an

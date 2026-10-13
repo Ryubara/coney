@@ -33,7 +33,7 @@ Box boxB() { return Box{.half = {2.0F, 1.0F, 0.5F}, .axes = kUnturned, .centre =
 Contact marked() {
     Contact contact;
     const Vec4 junk{7.0F, 7.0F, 7.0F, 7.0F};
-    contact.halves = {ContactHalf{junk, junk, 7, 7}, ContactHalf{junk, junk, 7, 7}};
+    contact.halves = {ContactHalf{nullptr, false, junk, junk, 7, 7}, ContactHalf{nullptr, false, junk, junk, 7, 7}};
     contact.fraction = 7.0F;
     contact.depth = 7.0F;
     contact.point = junk;

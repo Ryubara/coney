@@ -78,6 +78,10 @@ add_library(coney_core STATIC
     physics/segment_kernels.cpp
     physics/sphere_box_sweep.cpp
     raycast/collision_mesh.cpp
+    physics/body_sweep.cpp
+    physics/contact.cpp
+    physics/mesh_sweep.cpp
+    physics/sphere_triangle.cpp
     gui/bar.cpp
     gui/base_widget.cpp
     gui/global_strings.cpp
