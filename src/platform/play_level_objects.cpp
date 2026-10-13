@@ -51,7 +51,8 @@ namespace {
 // A segment strike shape meets a pane's body as spheres of its radius along it, at most this far apart (**Coney's
 // reading**: the pane test takes spheres).
 constexpr float kPaneSampleStep = 0.05F;
-// How near a world object must be to be offered as a target: the square's 2 m search (docs/research/combat.md#targets).
+// How near a world object must be to be offered as a target: the square's 2 m search
+// (docs/research/combat-targets.md#targets).
 constexpr float kObjectTargetReach = 2.0F;
 // The strike test looks at world objects within this of the feet (Coney's stand-in for "the bodies near the human":
 // past every riot prop's body and a strike shape's reach).
@@ -108,7 +109,8 @@ bool throwClip(std::uint32_t animId) {
 }
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
 constexpr float kStereoReach = 2.0F;
-// The player's Warrior class byte `+0x0b`, which makes a theft's stage 3 turns (docs/research/combat.md#stereo-theft).
+// The player's Warrior class byte `+0x0b`, which makes a theft's stage 3 turns
+// (docs/research/combat-targets.md#stereo-theft).
 constexpr std::uint8_t kPlayerTheftByte = 2;
 // **Coney's stand-in** for the reach of the pickable door's kind-2 record (not traced): triangle within this many
 // metres of the door's position starts a pick.
@@ -144,7 +146,7 @@ void reportStrikeSound(human::Human& human, std::uint32_t struck, float volume, 
 // (docs/research/crimes.md#lockpick); any other press abandons it.
 constexpr std::uint16_t kLockPickKeeps =
     pad::kCross | pad::kL1 | pad::kR2 | pad::kUp | pad::kDown | pad::kLeft | pad::kRight | pad::kSelect;
-// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat.md#rage); its fade in is
+// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat-rage.md#rage); its fade in is
 // Coney's (the scripted clips' 0.2 s).
 constexpr std::uint32_t kFlashAnim = 665;
 constexpr std::uint32_t kFlashHeld = 0x2000;
@@ -518,7 +520,7 @@ void PlayLevelMode::stepGameOver(const Pad& pad) {
     }
     if (!m_gameOver->failed()) {
         // The check runs over the players; once player 1 is handed to the AI (`--ai-player`) the list is empty and
-        // nothing fails the mission (docs/research/combat.md#defeat, docs/research/characters.md#players).
+        // nothing fails the mission (docs/research/combat-reactions.md#defeat, docs/research/characters.md#players).
         if (m_ai->playerReleased()) {
             return;
         }
@@ -529,9 +531,9 @@ void PlayLevelMode::stepGameOver(const Pad& pad) {
                                     .canFreeSelf = false,
                                     .holdsFlash = m_pickups->carried(0, item::kRevive) > 0,
                                     .waitBlocked = false};
-        // The others of player 1's gang (docs/research/combat.md#defeat-helpers). Free: not cuffed, not knocked out
-        // and not held (in a grab or tackle, state 0x10000). An empty gang is not "none able": it goes on to the
-        // route test, which then finds no one.
+        // The others of player 1's gang (docs/research/combat-reactions.md#defeat-helpers). Free: not cuffed, not
+        // knocked out and not held (in a grab or tackle, state 0x10000). An empty gang is not "none able": it goes on
+        // to the route test, which then finds no one.
         // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
         const ai::Gang* gang = m_ai->playerBrain().gang();
         std::vector<const human::Human*> others;
@@ -732,7 +734,7 @@ void PlayLevelMode::giveObjectTargets() {
     }
     std::vector<human::ObjectTarget> objects;
     // The world objects in the world whose body makes them a strike target (a street prop, a trash can), not broken,
-    // within 2 m in height and near enough for the square's reach (docs/research/combat.md#targets).
+    // within 2 m in height and near enough for the square's reach (docs/research/combat-targets.md#targets).
     if (m_records != nullptr && m_objectTypes != nullptr) {
         const anim::Vec3 feet = m_player->human().position();
         for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {

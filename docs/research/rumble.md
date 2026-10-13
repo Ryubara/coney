@@ -502,8 +502,8 @@ stands.
   state `0x10000` and crawls (`ANIM_WOUNDED_IDLE`, 200, then `ANIM_WOUNDED_HIT_REACT_DIE`, 204). Both count as out
   for the brawl, and so does the dying state before them (`0x80000000`, from the lethal hit). A knocked-out fighter is
   **deleted 461 updates** (15.4 s) after it lies down (four of four checked in offset 0's match): 420 knocked out, then
-  41 dead ([Combat: the knocked-out bit](combat.md#knocked-out-bit)). At `RumbleOver` the standing fighters of the
-  winning side but the winner are deleted 25 updates after the brains go off (offset 0), as `CreateWinCam` does.
+  41 dead ([Combat: the knocked-out bit](combat-reactions.md#knocked-out-bit)). At `RumbleOver` the standing fighters of
+  the winning side but the winner are deleted 25 updates after the brains go off (offset 0), as `CreateWinCam` does.
 
 ### The sides swapped {#gang-battle-swap}
 
@@ -555,12 +555,12 @@ They come from the recordings; where a rule differs from what the report did bef
    (`0x00227e60`): in the trace's columns, `state & 0x80050000` (dying `0x80000000`, knocked out `0x40000`, wounded
    `0x10000`) or `state_hi & 0x1` (dead), or the human gone from the trace. A fighter is out from the update of the
    lethal hit (dying) and never comes back in a brawl: none is revivable, so a knock-out turns into death after 14 s
-   and deletion 41 updates later ([Combat: who sets and clears the knocked-out bit](combat.md#knocked-out-bit), with
-   its runtime timeline). `0x40000` alone is not enough: it comes only with clip 349, after the dying reaction and any
-   wounded crawl, and goes for the last 41 updates. Clip 349 and `0x40000` start on the same update, so either marks
-   the knock-out itself. The attack's recovery `0x40000` is the `phase` column, not `state`. Health stays 1, so health
-   0 is never a knock-out test. **Standing time** is a fighter's updates in the fight while not out; every rate is per
-   standing minute at 30 updates a second, per side.
+   and deletion 41 updates later ([Combat: who sets and clears the knocked-out
+   bit](combat-reactions.md#knocked-out-bit), with its runtime timeline). `0x40000` alone is not enough: it comes only
+   with clip 349, after the dying reaction and any wounded crawl, and goes for the last 41 updates. Clip 349 and
+   `0x40000` start on the same update, so either marks the knock-out itself. The attack's recovery `0x40000` is the
+   `phase` column, not `state`. Health stays 1, so health 0 is never a knock-out test. **Standing time** is a fighter's
+   updates in the fight while not out; every rate is per standing minute at 30 updates a second, per side.
 4. **The winner** is the side with fighters standing at `RumbleOver`; the fighters out of each side are counted then.
 5. **Attacks** are wind-up starts: the `phase` bit `0x1` turning on (the `command` column does not hold an AI's
    attacks). Their distance is the target's at that update.
@@ -616,8 +616,8 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his flags are
   the released ones ([Combat: human flags](combat.md#human-flags)) and the pad drives nobody, so his brain alone moves
   him and `HuSwitchPlayer` finds no player to hand on. With no one in the player list, the game-over check ([Combat:
-  defeat](combat.md#defeat)) has no one to fail the match for, however he fares. **Coney's choices**: he keeps the
-  player's fighter profile (the wider body sphere `Human_ReleasePlayer` puts back to 1.0, [Physics](physics.md#sweep),
+  defeat](combat-reactions.md#defeat)) has no one to fail the match for, however he fares. **Coney's choices**: he keeps
+  the player's fighter profile (the wider body sphere `Human_ReleasePlayer` puts back to 1.0, [Physics](physics.md#sweep),
   and the player's hit flags), as after `HuSwitchPlayer`; the scripts' player 1 handle still names him; the HUD panel
   stays. `--ai-seed` varies the AI's draws: the shared stream's index (`0x006eb880`, [Scripting](scripting.md)) starts
   that far in, and Coney's per-brain generators, which the original does not have, are seeded from it.

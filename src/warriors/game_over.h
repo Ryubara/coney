@@ -8,7 +8,7 @@
 
 // The engine's game-over check and the hand-off to the mission-failed screen: when every player is knocked out or
 // cuffed and his crew cannot help, the mission fails, and 180 updates later the mission-failed mode (0xc) opens.
-// Research: docs/research/combat.md#defeat, docs/references/bindings/level.md#enablegameovercheck
+// Research: docs/research/combat-reactions.md#defeat, docs/references/bindings/level.md#enablegameovercheck
 
 namespace coney {
 

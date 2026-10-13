@@ -25,7 +25,7 @@ inline constexpr std::uint32_t kGrabHeld = 83;
 inline constexpr std::uint32_t kGrabRearHold = 84;
 inline constexpr std::uint32_t kGrabRearHeld = 85;
 inline constexpr std::uint32_t kGrabLetGoReact = 94;
-// A pair broken from outside (docs/research/combat.md#pair-break): the clip the human not placed plays.
+// A pair broken from outside (docs/research/combat-grabs.md#pair-break): the clip the human not placed plays.
 inline constexpr std::uint32_t kBreakRearGrabber = 106;   ///< GRAB_REAR_BREAK: the grabber of a rear grab or mugging
 inline constexpr std::uint32_t kBreakRearVictim = 107;    ///< GRAB_REAR_BREAK_REACT: its victim
 inline constexpr std::uint32_t kBreakFrontGrabber = 138;  ///< GRAB_FRONT_HIT_VICTIM_KNOCKDOWN_REACT: front grabber
@@ -109,7 +109,7 @@ inline constexpr HeldFlags kMovingAttackHolds{.held = combat::kPhaseRunAttack, .
 /// The dive holds 0x400000 instead, which makes the human busy (docs/research/combat.md#charge-aim).
 inline constexpr HeldFlags kDiveHolds{.held = combat::kPhaseDive, .set = combat::kPhaseDive};
 
-/// The moves of a hold switch both humans on the same update, with no fade (docs/research/combat.md#grab-posing).
+/// The moves of a hold switch both humans on the same update, with no fade (docs/research/combat-grabs.md#grab-posing).
 inline constexpr float kPairFade = 0.0F;
 
 /// No clips: just a loop.
@@ -141,7 +141,7 @@ inline constexpr std::array<std::uint32_t, 0> kNoClips{};
 
 /// Whether `animId` carries strike windows that make the human playing it the striker though it attacks no one: a
 /// thrown victim's flight (148, 150, 152, 154) and the extreme reactions (292-303) it knocks a bystander into, which
-/// can chain (docs/research/combat.md#throws).
+/// can chain (docs/research/combat-throws.md#throws).
 [[nodiscard]] inline bool carriesStrike(int animId) {
     constexpr int kFirstThrownVictim = 148;
     constexpr int kLastThrownVictim = 154;

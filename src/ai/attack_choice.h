@@ -82,10 +82,10 @@ struct StartGuard {
 };
 
 /// Whether A may start attack kind `kind` on T now (`Human_CanStartAttack`): the guard, then the per-kind test of
-/// docs/research/combat.md#ai-attacks. It mirrors canUseAttackKind() but for: the snap (A free only), the grounded
-/// strikes (T high or busy, A free of `0x48000`), 14 (T knocked down), 15 (T none of `0x40100f0800`), the tackle
-/// (A's power too), the grab (T none of `0xc12200`, a rear-held T only from in front), the throw (A free) and 27, 28,
-/// 38, 39 (no free test).
+/// docs/research/combat-targets.md#ai-attacks. It mirrors canUseAttackKind() but for: the snap (A free only), the
+/// grounded strikes (T high or busy, A free of `0x48000`), 14 (T knocked down), 15 (T none of `0x40100f0800`), the
+/// tackle (A's power too), the grab (T none of `0xc12200`, a rear-held T only from in front), the throw (A free) and
+/// 27, 28, 38, 39 (no free test).
 /// @orig 0x00224778 Human_CanStartAttack (unknown)
 [[nodiscard]] bool canStartAttack(const StartGuard& guard, const AttackerView& attacker, const TargetView& target,
                                   int kind);

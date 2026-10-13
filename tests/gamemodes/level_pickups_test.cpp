@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// A level's loose objects as a player uses them with triangle (docs/research/combat.md#breakables,
-// docs/research/combat.md#bat): an object's message 0 and its prompt, the search over the spawn records, the take,
-// which adds a TYPE_SPECIAL's loot and money through the inventory callbacks or puts a weapon in hand, and the drop.
+// A level's loose objects as a player uses them with triangle (docs/research/combat-targets.md#breakables,
+// docs/research/combat-throws.md#bat): an object's message 0 and its prompt, the search over the spawn records, the
+// take, which adds a TYPE_SPECIAL's loot and money through the inventory callbacks or puts a weapon in hand, and the
+// drop.
 #include "gamemodes/level_pickups.h"
 
 #include <cstddef>

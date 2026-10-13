@@ -296,8 +296,8 @@ TEST_CASE("a grab, a strike and a forward throw, with the power meter paying for
 
 TEST_CASE("a rear hold's throw lands its hit the spin's updates later than a front hold's", "[combat]") {
     // From a rear hold the spin to the front (80) plays before the throw's clip
-    // (docs/research/combat.md#throw-direction, item 4), so the hit comes 2 updates after the throw's own start, here
-    // 17 updates after the press.
+    // (docs/research/combat-throws.md#throw-direction, item 4), so the hit comes 2 updates after the throw's own start,
+    // here 17 updates after the press.
     const AnimRangeList ranges = researchedRanges();
     Runner runner(&ranges);
     const auto frames = runner.run("90 tap circle\n180 stick left 0 100\n181 tap circle\n182 stick left 0 0\n", 215,

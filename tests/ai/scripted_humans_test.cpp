@@ -425,7 +425,7 @@ TEST_CASE("the rage handler runs when a human's meter fills, with its handle and
     level.scripted->humanHost().runRageHandlers();
     level.scripted->humanHost().runRageHandlers();
     REQUIRE(level.rageCalls.size() == 1);
-    // (human, true): Lua 4's true is 1 (docs/research/combat.md#rage).
+    // (human, true): Lua 4's true is 1 (docs/research/combat-rage.md#rage).
     CHECK(level.rageCalls[0] == std::vector<double>{1.0, 1.0});
 }
 

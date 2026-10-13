@@ -31,7 +31,7 @@
 // stun, the 2750 ms on the ground and the mash, the hit armour, the block and the duck, the grab on the player (the
 // counter, the struggle, the strike back, the escape, the reversal); then lock-on and the combat walk, turning a grab,
 // the class damage per human, and a target moved by its reaction's root motion
-// (docs/research/combat.md#being-hit-runtime).
+// (docs/research/combat-reactions.md#being-hit-runtime).
 
 using Catch::Approx;
 using coney::anim::Vec3;
@@ -582,7 +582,8 @@ TEST_CASE("a hit reports its sound at the attacker, a charge's body pair first, 
 
 TEST_CASE("L2 drops the target on the update it is read, mid-attack and with L1 held", "[human][combat]") {
     // X1 at a target 0.95 m ahead, L1 held throughout; L2 pressed in its wind-up drops the target there and then, and
-    // nothing picks it again while L2 is held (docs/research/combat.md#fight-stance). Without L2 the lock holds.
+    // nothing picks it again while L2 is held (docs/research/combat-targets.md#fight-stance). Without L2 the lock
+    // holds.
     for (const bool l2 : {true, false}) {
         INFO((l2 ? "L2 at 12" : "no L2"));
         const FightCharacter character;

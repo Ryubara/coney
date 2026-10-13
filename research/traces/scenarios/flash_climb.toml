@@ -2,9 +2,9 @@
 # so every tap is a fresh test (level99's states have the command off for pad 0; the setup turns it on). The
 # flash-use hook says whether Flash_Use ran at once (called from Player_UseItemCommand, ra 0x00284820) or from clip
 # 665's event (Human_HandleMessage, ra 0x002473c4); the clip column says whether 665 started.
-# Research: docs/research/combat.md#flash-mid-move.
+# Research: docs/research/combat-rage.md#flash-mid-move.
 description = "slot 7: d-pad right every 3 updates through the running fence climb"
-research = "docs/research/combat.md#flash-mid-move"
+research = "docs/research/combat-rage.md#flash-mid-move"
 input = "flash_climb.txt"
 updates = 150
 fields = ["player", "held"]

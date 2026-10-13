@@ -17,8 +17,8 @@
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
 
-// Where a throw from a grab sends the body (docs/research/combat.md#throw-direction): from a front hold the pair is
-// turned onto the stick over 1/6 s, the thrower so that the side's body axis points along the stick and the victim
+// Where a throw from a grab sends the body (docs/research/combat-throws.md#throw-direction): from a front hold the pair
+// is turned onto the stick over 1/6 s, the thrower so that the side's body axis points along the stick and the victim
 // carried round him, so the body flies along the stick whatever its angle within the side's 90 degrees; from a rear
 // hold the spin to the front plays first and nothing turns. A grabbed passive target in open ground, the stick at 0.9
 // (below the hold's walk at 0.95) pushed on the update circle is pressed.

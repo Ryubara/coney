@@ -41,7 +41,7 @@ constexpr float kStrikeCapsuleHeight = 2.0F;
 // The struck capsule's top above the head bone, and its least height, before the body scale
 // (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat.md#capsule-strike).
 constexpr float kCapsuleAboveHead = 0.2F;
-/// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat.md#led-steer).
+/// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat-targets.md#led-steer).
 constexpr int kLedPointBone = 6;
 // Beyond this between the feet no strike shape can meet another body's (each reaches well under 1.5 m from its feet),
 // so the victim is not posed.
@@ -340,8 +340,8 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_chargeStopped = false;
     m_lean = 0.0F;
     // A placement first breaks any pair the human is in (Human_SetTransform calls Human_BreakPair,
-    // docs/research/combat.md#pair-break), so its partner is let go; then the fighting starts afresh and the flags the
-    // scripts set stay.
+    // docs/research/combat-grabs.md#pair-break), so its partner is let go; then the fighting starts afresh and the
+    // flags the scripts set stay.
     m_fighter.breakPair();
     const std::uint64_t flags = m_fighter.flags();
     const std::optional<TargetState> broken = m_fighter.takeBrokenHold();

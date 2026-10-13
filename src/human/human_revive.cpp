@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // A human's clips in a revive: the reviver's 351, 353 and the way back to his idle, and the revived human's heal and
 // 354. Who may revive whom, the flash and the lines are the game mode's (gamemodes/gameplay_revive.cpp).
-// Research: docs/research/combat.md#revive
+// Research: docs/research/combat-rage.md#revive
 #include <array>
 #include <cstdint>
 #include <span>

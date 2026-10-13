@@ -1,9 +1,9 @@
-# The counter from the rise (docs/research/combat.md#ground-escape): PoizoCiv, a puppet, knocks the player down with
+# The counter from the rise (docs/research/combat-reactions.md#ground-escape): PoizoCiv, a puppet, knocks the player down with
 # the special 653 and kicks him on the ground at 64; square at 80 gets him up (199 from update 81), and square at 96
 # lands in 199's counter window (k = 15-17): 620 on update 97. The window was measured by moving the second tap
 # (square at 89-106, cross at 94-100); a tap whose command lands outside updates 96-98 plays nothing.
 description = "slot 6: the player knocked down by a puppet's 653 and kicked at 64; square at 80 starts 199, square at 96 counters (620)"
-research = "docs/research/combat.md#ground-escape"
+research = "docs/research/combat-reactions.md#ground-escape"
 input = "ground_rise_counter.txt"
 updates = 150
 fields = ["player", "enemy", "down"]

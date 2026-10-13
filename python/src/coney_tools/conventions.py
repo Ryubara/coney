@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, datetime
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -216,8 +216,8 @@ class Checklist:
     section: str
     #: What an unchecked `- [ ]` item gets (`refused`: the description fails the check).
     unchecked: str
-    #: The day the rule began; a pull request merged before it kept the older `Remaining` list.
-    since: date
+    #: The moment the rule began (UTC); a pull request merged before it kept the older `Remaining` list.
+    since: datetime
     #: The line that opened that older list (`Remaining:`), whose unchecked items had to cite an issue as `#N`.
     legacy_label: str
 
@@ -705,12 +705,13 @@ def _flag(value: object, where: str) -> bool:
     return value
 
 
-def _day(value: object, where: str) -> date:
-    """A calendar day written as quoted `YYYY-MM-DD` text."""
+def _moment(value: object, where: str) -> datetime:
+    """A moment written as quoted `YYYY-MM-DD` (midnight UTC) or `YYYY-MM-DDTHH:MM:SSZ` text, as an aware UTC time."""
     try:
-        return date.fromisoformat(_text(value, where))
+        moment = datetime.fromisoformat(_text(value, where))
     except ValueError:
-        raise _fail(where, "expected a day written as YYYY-MM-DD") from None
+        raise _fail(where, "expected a day or moment written as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ") from None
+    return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
 
 
 def _count(value: object, where: str, minimum: int = 1) -> int:
@@ -965,7 +966,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         checklist=Checklist(
             section=checklist["section"],
             unchecked=_choice(checklist["unchecked"], _at(checklist_where, "unchecked"), ("refused",)),
-            since=_day(checklist["since"], _at(checklist_where, "since")),
+            since=_moment(checklist["since"], _at(checklist_where, "since")),
             legacy_label=_text(checklist["legacy_label"], _at(checklist_where, "legacy_label")),
         ),
         screenshots=ScreenshotsRule(

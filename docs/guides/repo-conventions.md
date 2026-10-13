@@ -110,7 +110,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.labels` | github | error | skill | an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label |
 | `issue.closed-status` | github | error | skill | a closed issue still carries an S- status label (the issue-status workflow removes it; this is the backstop) |
 | `issue.person-word` | github | error | skill | an open issue says 'owner' for a person (say 'user' for who tested or filed it, 'maintainer' for who decides) |
-| `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue |
+| `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue (names the closing pull request when its Checklist is all ticked) |
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
 | `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
 | `issue.provenance` | github | warn | skill | an issue that an older pull request's Remaining list points at has no From: line |

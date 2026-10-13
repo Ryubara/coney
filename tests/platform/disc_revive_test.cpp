@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that player 1 revives a knocked-out Warrior with a flash, as the original does
-// (docs/research/combat.md#revive, docs/research/hud.md#action-prompts): `level80` checkpoint 2 played in the game
+// (docs/research/combat-rage.md#revive, docs/research/hud.md#action-prompts): `level80` checkpoint 2 played in the game
 // session as `coney --play-level level80 --checkpoint 2` plays it (support/disc_session.h), one of player 1's Warriors
 // knocked out by a strike that takes all his health (no script flags him: every Warrior is made revivable), and a
 // driver that walks player 1 to him with the left stick at 60 % (turned by the camera, as a player steers), then taps
@@ -315,7 +315,7 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
                 "health %d of %d\n",
                 crew, begin, end, settle, up, turning, standOff, range != nullptr ? range->reach : 0.0F, offLine,
                 direction, flashesAtHeal, healthAtHeal, downed.fighter().health().maximum());
-    // The runtime's figures (docs/research/combat.md#revive-runtime): 351 21 updates, 353 33, 389 25, 354 72; the
+    // The runtime's figures (docs/research/combat-rage.md#revive-runtime): 351 21 updates, 353 33, 389 25, 354 72; the
     // steer 25 updates, ending about 0.70 m from him and 11-13 degrees to the left of the line.
     CHECK(begin >= 20);
     CHECK(begin <= 22);

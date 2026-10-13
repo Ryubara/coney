@@ -9,7 +9,8 @@
 // A fighter's numbers: health, the damage pending this update, the power meter grabs spend and the rage meter hits
 // fill. Time-based meters take the game time in whole milliseconds, as the original keeps it, and carry the fraction
 // of a point between updates, so at the fixed 1/30 s step they move by the researched amounts per update.
-// Research: docs/research/combat.md#damage, docs/research/combat.md#power-meter, docs/research/combat.md#rage
+// Research: docs/research/combat-reactions.md#damage, docs/research/combat-rage.md#power-meter,
+// docs/research/combat-rage.md#rage
 
 namespace coney::combat {
 

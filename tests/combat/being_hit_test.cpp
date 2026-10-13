@@ -10,7 +10,7 @@
 #include "combat/reactions.h"
 
 // The victim's side of a hit as pure rules: the attacker's warning events, the hit armour, the health floor, the block
-// and the mash (docs/research/combat.md#block, docs/research/combat.md#damage).
+// and the mash (docs/research/combat.md#block, docs/research/combat-reactions.md#damage).
 
 using namespace coney::combat;
 

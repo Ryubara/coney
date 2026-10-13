@@ -13,7 +13,7 @@
 #include "support/fixtures.h"
 
 // The pair's placement: offsets in the grabber's frame, the alignment before the connecting clips, the gate at their
-// end and the check a move in the hold makes, against the values on docs/research/combat.md#grab-posing.
+// end and the check a move in the hold makes, against the values on docs/research/combat-grabs.md#grab-posing.
 
 using Catch::Approx;
 using coney::anim::Vec3;

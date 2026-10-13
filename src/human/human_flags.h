@@ -82,7 +82,7 @@ inline constexpr std::uint64_t kBlockJump = 0x10000000;
 /// rather than only knocked out. No reader is on the page, so Coney only keeps it.
 inline constexpr std::uint64_t kWoundable = 0x8;
 /// Killer mode (`HuSetKillerMode`): every strike it lands takes all the victim's health (`Strike_Contact`
-/// `0x0021b290`, docs/research/combat.md#damage).
+/// `0x0021b290`, docs/research/combat-reactions.md#damage).
 inline constexpr std::uint64_t kKiller = 0x20;
 /// Double damage (`HuSetDoubleDamage`): its hits deal twice their damage and ignore hit armour
 /// (`Human_AddPendingDamage` `0x00264bd8`); as a grabbed victim it escapes when the grabber's power runs out

@@ -228,6 +228,19 @@ def test_a_required_checkbox_must_be_ticked_in_the_bug_form() -> None:
     )
 
 
+def test_the_frequency_may_be_unknown() -> None:
+    """A user's playtest note may not know how often it happens; the bug form allows `Unknown`."""
+    bug = (
+        "### Coney version or commit\n\nabc123\n\n### How did you start the game?\n\nStory\n\n"
+        "### Steps to reproduce\n\n1. Start\n\n### What happens\n\nIt breaks.\n\n"
+        "### How often does it happen?\n\nUnknown\n\n### Screenshots\n\nScreenshots: none (a crash)\n\n"
+        "### No game files\n\n"
+        "- [x] I attached no game files: no disc images, BIOS, extracted assets, save files or game text.\n"
+    )
+    options = CheckOptions(tree=TREE)
+    assert issue_form.check_issue("A crash", bug, BUG, CONVENTIONS, options).problems == []
+
+
 def test_a_dropdown_option_that_starts_with_a_dash_is_accepted_plain_or_in_backticks() -> None:
     """The bug form's `--play-level` option is rendered by GitHub as plain text, and may be written in backticks."""
     bug = (
@@ -407,6 +420,14 @@ def test_the_form_is_found_from_the_headings_the_title_or_the_command_line_defau
         == "bug"
     )
     assert issue_form.detect_form("A title", "no headings", CONVENTIONS) == CONVENTIONS.issues.cli_uses_form
+
+
+def test_a_bug_title_on_a_task_form_body_is_still_a_task() -> None:
+    """#461: the headings decide first; the title prefix only breaks a tie or names a body with no known headings."""
+    shared = "### Screenshots\n\nScreenshots: none (x)"
+    assert issue_form.detect_form("Bug: a crash", GOOD, CONVENTIONS) == "task"
+    assert issue_form.detect_form("Task: a fix", shared, CONVENTIONS) == "task"
+    assert issue_form.detect_form("Bug: a crash", shared, CONVENTIONS) == "bug"
 
 
 def test_state_names_and_kinds_are_what_the_docs_say() -> None:

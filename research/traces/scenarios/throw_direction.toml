@@ -3,9 +3,9 @@
 # stick (magnitude 0.9, 18° left of the camera's up, 171° in the world at runtime) is 44° to the right of his facing:
 # a front throw (147 / 148) whose 1/6 s turn takes the whole difference. Stick and circle come on the same update, so the hold walk (stick above
 # 0.95) never moves the pair first. Read the victim's path in the stick's frame (stick_heading, v_x, v_y).
-# Research: docs/research/combat.md#throw-direction.
+# Research: docs/research/combat-throws.md#throw-direction.
 description = "slot 6: grab PoizoCiv 1.0 m ahead from the front, then throw with the stick about 44 degrees right of the facing: the turn onto the stick and the thrown body's path"
-research = "docs/research/combat.md#throw-direction"
+research = "docs/research/combat-throws.md#throw-direction"
 input = "throw_direction.txt"
 updates = 130
 fields = ["player"]

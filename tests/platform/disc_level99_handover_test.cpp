@@ -43,7 +43,7 @@ constexpr std::uint64_t kTheftAt = 745;
 constexpr std::uint64_t kEnd = 1500;
 
 // The pad: the intro scene skipped, the street scene skipped, then at `theft` square at the car's window, triangle for
-// the stereo and the left stick turned in circles at 90 % for the theft's stick game (combat.md#stereo-theft).
+// the stereo and the left stick turned in circles at 90 % for the theft's stick game (combat-targets.md#stereo-theft).
 std::string padScript(std::uint64_t theft) {
     std::string script = std::format("100 tap cross\n{} tap cross\n{} tap square\n{} tap triangle\n", kStreetSkipAt,
                                      theft + 40, theft + 120);

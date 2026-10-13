@@ -18,7 +18,7 @@ struct CountRow {
     int event1;
 };
 
-// The research's chain and moving attacks (docs/research/combat.md#rage), then Coney's two grab moves.
+// The research's chain and moving attacks (docs/research/combat-rage.md#rage), then Coney's two grab moves.
 constexpr std::array<CountRow, 16> kCounts{{
     {.animId = 11, .event2 = 0, .event1 = 1},
     {.animId = 12, .event2 = 1, .event1 = 0},

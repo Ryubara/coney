@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's carried props: the object a human's clip makes him carry for a move (Rembrandt's spray can in his
 // power move 59) made when his clip asks for it, hung from its attach point each step, drawn there, and removed when
-// the clip, a cinematic's start or his removal takes it away (docs/research/combat.md#power-move-props).
+// the clip, a cinematic's start or his removal takes it away (docs/research/combat-grabs.md#power-move-props).
 #include <format>
 #include <optional>
 #include <utility>

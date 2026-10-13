@@ -23,8 +23,8 @@
 
 // A level's loose objects as a player uses them with triangle: an object's interaction prompt, the pick-up search over
 // the spawn records, the take (loot into the inventory, a weapon into the hand) and the drop.
-// Research: docs/research/crimes.md#triangle, docs/research/combat.md#breakables, docs/research/combat.md#bat,
-// docs/research/player-state.md#pickup-callback
+// Research: docs/research/crimes.md#triangle, docs/research/combat-targets.md#breakables,
+// docs/research/combat-throws.md#bat, docs/research/player-state.md#pickup-callback
 
 namespace coney {
 
@@ -225,7 +225,7 @@ class LevelPickups {
     void spendItem(int player, int item);
 
     /// The mugging record `SetInterrogateParam` set (set 0-2's override) while its required time is not 0; nothing for
-    /// the defaults (docs/research/combat.md#mugging).
+    /// the defaults (docs/research/combat-throws.md#mugging).
     [[nodiscard]] std::optional<combat::MuggingParams> muggingOverride() const;
 
     /// Player `player` (0 or 1) won a mugging of a human no player controls: in the update that reached the required

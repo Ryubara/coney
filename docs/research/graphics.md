@@ -493,7 +493,7 @@ hit; the pieces are not drawn yet (they are cards, not the renderer's camera-fac
 
 #### The rage look {#rage-look}
 
-What the screen does while a player rages ([Combat: everything rage does](combat.md#rage-effects)): look 2 on the
+What the screen does while a player rages ([Combat: everything rage does](combat-rage.md#rage-effects)): look 2 on the
 screen-effects manager of the player's view (`0x005fdeb8[player]`), a warm dark tint plus a shimmering ghost of the
 last frame that is strongest at the screen's edges. Look 2's numbers come from `CfgScrFx` in `config_preload2.lua`
 ([look 2](../references/screen-effects.md#fx-look-2)): tint (51, 25, 0, 80), in 1,000 ms, out 5,000 ms, blur alpha
@@ -537,7 +537,7 @@ was 3 until 591.85 s and 9 from 591.95 s; the tint went from `0x50001933` toward
 at 593.58 s, 4.2 s in.
 
 **End, at once** (`ScreenFx_EndLook(manager, 3)`, for the instant ends listed on
-[Combat](combat.md#rage-effects), the pause menu among them): the current look becomes the base look and both blends
+[Combat](combat-rage.md#rage-effects), the pause menu among them): the current look becomes the base look and both blends
 use look 8's out time, 0, so the tint and blur snap back on the next frame with no grid fade.
 
 So look 3 is rage's fading grid and look 8 the hand-back to the base look; look 4 does the same for look 0 (the
@@ -934,7 +934,7 @@ The humans in view are drawn in the world pass after the `s` world ([The streame
 matrix palette the skin is drawn with; `HumanRender_Draw` passes `full` = 1.
 
 1. The source is the human's **bone cache** (`Human_GetBoneCache`, `0x0023bca0`: `0x006b6880` + human index ×
-   `0x470`, [Combat: the bone cache](combat.md#grab-posing)): 34 entries of 32 bytes, entry `b` holding a position
+   `0x470`, [Combat: the bone cache](combat-grabs.md#grab-posing)): 34 entries of 32 bytes, entry `b` holding a position
    (vec4) at `+b × 0x20` and a rotation quaternion `(x, y, z, w)` at `+b × 0x20 + 0x10`, in the model's z-up frame
    and already composed through the parent table (model space, not parent-relative).
 2. For each pose bone `b` from 2 to 33 (with `full` = 0, bone 2 only): `L_b` = the rotation as a matrix

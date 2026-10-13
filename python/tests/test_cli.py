@@ -2,13 +2,16 @@
 """Tests for coney_tools.cli: exit codes and output of each command."""
 
 import io
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from conventions_support import changed, write_checkout
 from git_support import make_branch, message
 
-from coney_tools.cli import main
+from coney_tools.cli import main, use_utf8_output
 
 
 def test_version(capsys: pytest.CaptureFixture[str]) -> None:
@@ -297,3 +300,32 @@ def test_check_body_with_a_worktree_git_cannot_read_exits_2(
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
     assert main(["repo", "check-body", "--worktree", str(tmp_path / "missing")]) == 2
     assert "origin/main" in capsys.readouterr().err
+
+
+def test_output_streams_are_switched_to_utf8_whatever_the_console_code_page() -> None:
+    """A redirected stdout on Windows is cp1252 and cannot write an arrow; the tool writes UTF-8 instead."""
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    use_utf8_output([stream, io.StringIO()])  # a stream without `reconfigure` is left alone
+    stream.write("a → b")
+    stream.flush()
+    assert raw.getvalue() == "a → b".encode()
+
+
+def test_utf8_output_keeps_each_streams_error_handler() -> None:
+    """stderr's backslashreplace survives, so a lone surrogate in an error message is escaped, not a crash."""
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", errors="backslashreplace")
+    use_utf8_output([stream])
+    assert stream.encoding == "utf-8" and stream.errors == "backslashreplace"
+    stream.write("bad \udcff name")
+    stream.flush()
+    assert raw.getvalue() == b"bad \\udcff name"
+
+
+def test_a_command_run_with_a_cp1252_pipe_prints_unicode(tmp_path: Path) -> None:
+    """The real entry point, with stdout a pipe in cp1252 (as under `repo audit --json > file` on Windows)."""
+    code = "import sys; from coney_tools.cli import use_utf8_output; use_utf8_output(); print('\u2192')"
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    done = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, check=False)
+    assert done.returncode == 0 and done.stdout.strip() == "→".encode()

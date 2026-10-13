@@ -13,7 +13,7 @@
 #include "combat/meters.h"
 
 // The rage the player's hits give, as two awards truncated on their own, against the gains read at runtime
-// (docs/research/combat.md#rage, docs/research/combat.md#being-hit-runtime).
+// (docs/research/combat-rage.md#rage, docs/research/combat-reactions.md#being-hit-runtime).
 
 using namespace coney::combat;
 

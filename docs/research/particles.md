@@ -461,4 +461,4 @@ are dropped at once rather than at their next update, and their draws come from 
 - What `+0xc8`-`+0xd0` (1.0, 5.0, 0.3) scale in the particle draw, and what the negated sprite width does (the
   facing, blending and Z of a format-0 batch are in [Drifting fog](#fog)).
 - `glasstest`'s sprite and fall, and which types the objects' dust (`0x003c57d8`) and bursts (`0x003c6038`) make.
-- Which combat hits spawn which spark types (the blood is on [Combat: hit blood](combat.md#hit-blood)).
+- Which combat hits spawn which spark types (the blood is on [Combat: hit blood](combat-reactions.md#hit-blood)).

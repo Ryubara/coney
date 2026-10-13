@@ -13,7 +13,7 @@
 // reaction it plays on its feet (a plain one, a stun or a knockdown), the stun's and the ground's timers, getting up,
 // and the knocked-down human's mashing. Its owner decides when a hit reaches it (a block, the hit armour, a hold) and
 // what else it is doing; this plays the reaction clips through the owner's animator.
-// Research: docs/research/combat.md#reactions, docs/research/combat.md#being-hit-runtime
+// Research: docs/research/combat-reactions.md#reactions, docs/research/combat-reactions.md#being-hit-runtime
 
 namespace coney::human {
 

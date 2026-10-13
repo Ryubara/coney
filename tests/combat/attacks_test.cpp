@@ -269,7 +269,7 @@ TEST_CASE("an anim set's square, cross and strikes, and the defaults for set 0",
     CHECK(bat.cross == 36);
     CHECK(bat.mounting == 38);
     CHECK(bat.grounded == 37);
-    // The knife's and the baton's (combat.md#bat): square, cross, mounting (0x12) and grounded (0x13).
+    // The knife's and the baton's (combat-throws.md#bat): square, cross, mounting (0x12) and grounded (0x13).
     const AnimSetClips knife = animSetClips(1);
     CHECK(knife.square == 45);
     CHECK(knife.cross == 47);
@@ -337,8 +337,8 @@ TEST_CASE("a knife, baton or bat in hand: 501 at a run, the slot's swing otherwi
 }
 
 TEST_CASE("in a fight stance neither unarmed moving attack plays; the armed run attack still does", "[combat]") {
-    // Player_Square and Player_Cross skip their run and walk attacks in a stance (combat.md#armed-moves): square goes
-    // on to the snap or S1, cross to X1; a bat's run attack 501 has no stance test.
+    // Player_Square and Player_Cross skip their run and walk attacks in a stance (combat-throws.md#armed-moves): square
+    // goes on to the snap or S1, cross to X1; a bat's run attack 501 has no stance test.
     const auto in = [](Gait gait, int set = 0) {
         return SquareInput{
             .stick = {1.0F, 0.0F}, .gait = gait, .heldSet = set, .fightStance = true, .snapTarget = true};

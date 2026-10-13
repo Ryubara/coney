@@ -644,7 +644,7 @@ Confirmed (code) at the addresses given:
 | --- | --- | --- |
 | `+0x178` | the current line's sound handle; "alive" means it still resolves to a task (`SoundHandle_Resolve`, `0x0010f578`) | every line start |
 | `+0x188` / `+0x190` | the Lua callback (an interned name, 0 for none) and its argument | **every** line start writes both, 0 when the new line has none (`0x0021e56c`, `0x0021e818`); `Human_UpdateSpeech` clears `+0x188` just before it calls it (`0x0021eb20`) |
-| `+0x194` | "the line may be cut": 1 normally; 0 while a line that must play out runs | 0: `Human_PlaySpeechCutting` (`0x0021e744`, every `HuSpeakNI` line and every cutting line), `Player_StartPreparedLine` (`0x0021f26c`) and `Strike_Contact` after its `fuck_you` (88) complaint (`0x0021b4a4`, [Combat](combat.md#teammates)); 1: `Human_StopSpeech` when it stops (`0x0021ecac`), `Human_UpdateSpeech` when no line is alive and no callback is pending (`0x0021ebbc`), `Human_Init` |
+| `+0x194` | "the line may be cut": 1 normally; 0 while a line that must play out runs | 0: `Human_PlaySpeechCutting` (`0x0021e744`, every `HuSpeakNI` line and every cutting line), `Player_StartPreparedLine` (`0x0021f26c`) and `Strike_Contact` after its `fuck_you` (88) complaint (`0x0021b4a4`, [Combat](combat-targets.md#teammates)); 1: `Human_StopSpeech` when it stops (`0x0021ecac`), `Human_UpdateSpeech` when no line is alive and no callback is pending (`0x0021ebbc`), `Human_Init` |
 | `+0x195` | set with `+0x194` by a stop: the stopped line's queued voice follow-up (`+0x184`) is dropped | `Human_StopSpeech` |
 
 **Stopping** (`Human_StopSpeech(human, force)`, `0x0021ec38`): nothing when no line is alive. Without `force`,

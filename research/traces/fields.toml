@@ -878,7 +878,7 @@ address = "rec(h) + 0x14a"
 type = "s16"
 
 [[humans]]
-name = "rage"                             # rage (combat.md#rage)
+name = "rage"                             # rage (combat-rage.md#rage)
 address = "h + 0x650"
 type = "s32"
 
@@ -1130,7 +1130,7 @@ name = "brain_off"                        # brain +0x09: 1 before the countdown 
 address = "brain(h) + 0x09"
 type = "u8"
 
-# A downed player (docs/research/combat.md#ground-escape): the time he gets up, the hits taken on the ground and the
+# A downed player (docs/research/combat-reactions.md#ground-escape): the time he gets up, the hits taken on the ground and the
 # player's own state word (the mount's 0x800, grounded 0x80000).
 [[down]]
 name = "d_getup"                          # record +0x104, the time a knocked-down human gets up (ms)

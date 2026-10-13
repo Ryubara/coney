@@ -20,8 +20,8 @@
 // catch, the struggle, the strike back, the escape and the reversal), or held by a grab that drives it (enterHold(), a
 // human with a brain the player grabs or tackles). Another human's strikes and warnings reach it
 // through Human (a Combatant); the tests use the same entry points (Fighter::takeHit(), warn(), catchInGrab()).
-// Research: docs/research/combat.md#damage, docs/research/combat.md#block, docs/research/combat.md#grabbed,
-// docs/research/combat.md#being-hit-runtime
+// Research: docs/research/combat-reactions.md#damage, docs/research/combat.md#block,
+// docs/research/combat-grabs.md#grabbed, docs/research/combat-reactions.md#being-hit-runtime
 
 namespace coney::human {
 
@@ -140,7 +140,7 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         // A lethal hit waits while the clip playing holds any of 0xc12200 (a dive, a paired move's or a tandem's
         // victim): the health is gone, no reaction plays, and the death plays once the flags drop (update(), step 1).
         // The charge's 0x1000000 is not in the mask, so a charger dies at once
-        // (docs/research/combat.md#protected-moves, item 4).
+        // (docs/research/combat-reactions.md#protected-moves, item 4).
         if ((animator.flags() & combat::kTandemRefusingHeld) != 0) {
             m_deathPending = hit;
             return;
@@ -150,8 +150,8 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     }
     // A move holding any of 0x1c16a40 (the charge, the dive, a paired move's victim) takes the health and plays on:
     // the pending damage is cleared with no reaction (`Human_ApplyPendingDamage`,
-    // docs/research/combat.md#protected-moves). So a victim the charge flings into the charger, whose extreme reaction
-    // strikes with every shape, cannot knock him down.
+    // docs/research/combat-reactions.md#protected-moves). So a victim the charge flings into the charger, whose extreme
+    // reaction strikes with every shape, cannot knock him down.
     // @orig 0x00265f70 Human_ApplyPendingDamage (unknown)
     if (combat::heldCancelsReaction(animator.flags())) {
         ++m_hitsShrugged;

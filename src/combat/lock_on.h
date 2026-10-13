@@ -8,7 +8,7 @@
 // Moving in a fight: when the fight stance's movement locks onto the target (it then faces the target every update
 // and the stick walks it without turning, picking the combat-walk clip by the stick's angle), when the target is
 // dropped, and how the stick turns a grabbing player and the victim it holds.
-// Research: docs/research/combat.md#targets, docs/research/combat.md#grab-turn
+// Research: docs/research/combat-targets.md#targets, docs/research/combat-grabs.md#grab-turn
 
 namespace coney::combat {
 

@@ -303,6 +303,20 @@ def test_a_closed_issue_with_an_unchecked_item_and_no_number_is_found() -> None:
     assert problem.item == "#94" and "1 unchecked item" in problem.message and "the runtime check" in problem.message
 
 
+def test_a_closed_issue_names_the_merged_pull_request_with_a_ticked_checklist_that_closed_it() -> None:
+    body = task_body(extra="### Fix list\n\n- [ ] the runtime check\n\n")
+    ctx = context(
+        issues=[issue(94, body=body, state="CLOSED", labels=("task",)), issue(95, body=body, state="CLOSED")],
+        pulls=[
+            pull(7, state="MERGED", merged=AFTER, closes=(94,)),
+            pull(8, state="MERGED", merged=AFTER, closes=(95,), body=UNFINISHED),
+        ],
+    )
+    first, second = found(gh.issue_closed_unchecked, ctx)
+    assert "closed by #7, whose Checklist is all ticked" in first.message
+    assert "closed by" not in second.message
+
+
 @pytest.mark.parametrize("reason", ["NOT_PLANNED", "DUPLICATE"])
 def test_a_dropped_issue_may_keep_its_items(reason: str) -> None:
     body = task_body(extra="### Fix list\n\n- [ ] never done\n\n")
@@ -459,8 +473,8 @@ def test_a_local_path_or_a_local_image_in_a_description_is_found() -> None:
 
 LEGACY = PR_BODY.replace("Done:\n", "Remaining:\n\n- [ ] the follow-up\n- [ ] tracked (#44)\n\nDone:\n")
 UNFINISHED = PR_BODY.replace("Done:\n", "Done:\n\n- [ ] the second unit (#44)\n")
-BEFORE = "2026-10-11T23:59:00Z"
-AFTER = "2026-10-12T00:00:00Z"
+BEFORE = "2026-10-12T10:39:12Z"
+AFTER = "2026-10-12T10:39:13Z"
 
 
 def test_a_pull_request_merged_before_the_rule_with_an_uncited_remaining_item_is_found() -> None:

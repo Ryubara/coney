@@ -492,7 +492,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The first four are the power meter's drain per second (combat.md#power-meter), confirmed (runtime) for 0, 15
+    The first four are the power meter's drain per second (combat-rage.md#power-meter), confirmed (runtime) for 0, 15
     and 15; rate5's state is not traced.
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 

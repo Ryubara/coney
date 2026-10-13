@@ -151,7 +151,9 @@ pull_requests:
   # Every task a pull request lists is finished: an unticked `- [ ]` item in the section is refused, and work the pull
   # request does not finish is not listed (it lives in its own issue). A pull request merged before `since` kept the
   # older `legacy_label` list, whose unchecked items each had to cite an issue as `#N`; the audit still holds those.
-  checklist: {section: Checklist, unchecked: refused, since: "2026-10-12", legacy_label: "Remaining:"}
+  # `since` is the moment the rule's pull request (#391) merged, to the second (UTC), not a day: pull requests merged
+  # earlier on that day were written before the rule.
+  checklist: {section: Checklist, unchecked: refused, since: "2026-10-12T10:39:13Z", legacy_label: "Remaining:"}
   screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
   ai_use:
     section: "AI use"
@@ -489,7 +491,7 @@ hygiene:
       severity: error
       fix: skill
       keys: [pull_requests.checklist]
-      summary: "a closed issue keeps an unchecked item that names no follow-up issue"
+      summary: "a closed issue keeps an unchecked item that names no follow-up issue (names the closing pull request when its Checklist is all ticked)"
     issue.stale-status:
       scope: github
       severity: warn

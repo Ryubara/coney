@@ -17,7 +17,8 @@
 // Grabbing and tackling: when circle may start one, how far it searches for a target, and what the buttons and the
 // stick do while the player holds someone: strikes, the power strike, throws by stick direction, the mugging and the
 // spin, with what each costs from the power meter.
-// Research: docs/research/combat.md#grab, docs/research/combat.md#grabbing, docs/research/combat.md#throws
+// Research: docs/research/combat-grabs.md#grab, docs/research/combat-grabs.md#grabbing,
+// docs/research/combat-throws.md#throws
 
 namespace coney::combat {
 
@@ -65,7 +66,8 @@ inline constexpr float kGrabbableHeight = 0.25F;
 
 /// The index of the nearest available candidate within `range` of `from` in plan, within `halfAngle` of the direction
 /// `aim` and `maxHeight` above or below, or kNoTarget: the strong grapple's search (`0x0027a4b0`,
-/// docs/research/combat.md#strong-grapple). **Coney choice**: nearest in plan distance (`0x003868d0` is not traced).
+/// docs/research/combat-grabs.md#strong-grapple). **Coney choice**: nearest in plan distance (`0x003868d0` is not
+/// traced).
 [[nodiscard]] std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim,
                                         std::span<const TargetCandidate> candidates, float range, float halfAngle,
                                         float maxHeight);
@@ -123,12 +125,12 @@ struct GrabOutcome {
 /// - R1 pressed (3) spins front to rear (78) or rear to front (80); L2 held (5) lets go (95);
 /// - triangle mugs a victim that qualifies;
 /// - a strike, power strike or a front hold's plain throw is refused (nothing played or spent) when the victim is not
-///   in its place (`0x00277958`, docs/research/combat.md#grab-posing); a wall throw and a throw on the rear hold's
-///   path are not (docs/research/combat.md#throw-direction).
+///   in its place (`0x00277958`, docs/research/combat-grabs.md#grab-posing); a wall throw and a throw on the rear
+///   hold's path are not (docs/research/combat-throws.md#throw-direction).
 ///
 /// In rage nothing is spent or needed.
 /// - circle (its press) with the stick at kThrowStick or less from the front mounts the victim (118, victim 119, then
-///   210 on 207), with no power check and no cost (`Grab_StartMountFromFront`, docs/research/combat.md#mount);
+///   210 on 207), with no power check and no cost (`Grab_StartMountFromFront`, docs/research/combat-grabs.md#mount);
 ///
 /// **Coney choice**: cross strikes on 0x10, not on its press (which would fire before a power strike's square).
 /// @orig 0x0027f3b0 Player_UpdateGrabbing (unknown)
@@ -157,7 +159,7 @@ struct MountOutcome {
     int powerSpent = 0;          ///< Taken from the power meter.
 };
 
-/// One update of the mount, the same after a tackle or a grab (docs/research/combat.md#mount):
+/// One update of the mount, the same after a tackle or a grab (docs/research/combat-grabs.md#mount):
 /// - square (0xf) strikes with 219 or 221 at random, cross (0x10) with 223, each spending CombatTuning::grabStrikeCost
 ///   × 0.5 of the meter (40 of 400) at any level;
 /// - cross held and square pressed (0x22) is the power strike 225 (231 in rage), which needs more than

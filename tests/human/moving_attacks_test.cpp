@@ -226,7 +226,7 @@ TEST_CASE("L2 + cross at a run charges and L2 + square dives; the run resumes af
         int clip;
     };
     for (const bool throughHumans : {true, false}) {
-        // Bare hands and a bat: the charge and the dive are the same (combat.md#armed-moves).
+        // Bare hands and a bat: the charge and the dive are the same (combat-throws.md#armed-moves).
         for (const int set : {0, 3}) {
             for (const Case& c : {Case{"cross", id::kRunningAttackCharge}, Case{"square", id::kRunningAttackDive}}) {
                 INFO((throughHumans ? "through Humans" : "through Human::step")
@@ -270,8 +270,8 @@ TEST_CASE("at a sprint square has no moving attack (S1) and cross plays the run 
     for (const bool throughHumans : {true, false}) {
         for (const std::string_view button : {"square", "cross"}) {
             INFO((throughHumans ? "through Humans" : "through Human::step") << ", " << button);
-            // Square's run test is gait 4 exactly; cross's is gait 4 or 5 (combat.md#armed-moves). L2 is let go just
-            // before the press so the command is the button's own, not L2's combination.
+            // Square's run test is gait 4 exactly; cross's is gait 4 or 5 (combat-throws.md#armed-moves). L2 is let go
+            // just before the press so the command is the button's own, not L2's combination.
             Runner runner(throughHumans);
             const std::string text = "5 stick left 0 100\n30 press l2\n" + std::to_string(kPress - 1) +
                                      " release l2\n" + std::to_string(kPress) + " tap " + std::string(button) + "\n";

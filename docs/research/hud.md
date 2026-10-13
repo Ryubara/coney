@@ -244,7 +244,7 @@ A `HudBar` (`0x001a1008`, the first `0x70` bytes of the player panel). Its field
 | `+0x5c` | right to left |
 
 **Values** (`0x00214138`): fill = min(rage, rage maximum) / 150 and capacity = rage maximum / 150, each clamped to
-0-1. Rage is human `+0x650` and the maximum the Warrior class's s16 `+0x00` ([Combat](combat.md#rage)); 150 is the
+0-1. Rage is human `+0x650` and the maximum the Warrior class's s16 `+0x00` ([Combat](combat-rage.md#rage)); 150 is the
 constant `0.0066667`. So a Warrior with maximum 78 has a white strip over 52 % of the meter, and the red fill grows
 along it. Confirmed (code); 40 of 78 confirmed (runtime): red to 27 %, white to 52 %, grey to the end.
 
@@ -705,12 +705,12 @@ the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
   (`0x00265f70`) runs on the victim's pending hit when the attacker is pad-controlled (player record `+0x1b`): with
   `landed` 1 for a hit that lands and 0 for one a block stops (both call the callback). `0x002653d8` returns first when
   the attacker's brain `+0x4` is not 0 or the two are allies (`0x00290230`), then calls the callback only when the
-  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat.md#rage)). The anim id
-  is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
+  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat-rage.md#rage)). The anim
+  id is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
 - The id is read when the **victim** applies the pending damage, not when the hit was dealt. For a hit dealt as a
   clip ends, the attacker has already moved on: the strong grapple's damage is added at the end of 657 and applied as
   the hold 82 starts, so the callback gets **82** (84 from the rear). Confirmed (runtime)
-  ([Strong grapple](combat.md#strong-grapple)).
+  ([Strong grapple](combat-grabs.md#strong-grapple)).
 - So it fires **once per hit, every hit**, for as long as it is set; nothing in the engine clears it after a call. It is
   cleared by `HUDSetTutorialCallback(nil)` and when the HUD is released at `UnloadLevel` (`0x001607b8` →
   `0x001ae980` → `0x001cdc20`, which zeroes `+0x3a0`).
@@ -879,7 +879,7 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       flag `+0xe0` bit `0x4` (`Human_Init` sets it on every player and every Warrior, brain types 0 and 3;
       `Human_MakePlayer` on a player too; scripts set or clear it with `HuSetRevivable`; [Combat: human
       flags](combat.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash, string
-      4 showed ([Combat: revive at runtime](combat.md#revive-runtime)).
+      4 showed ([Combat: revive at runtime](combat-rage.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
@@ -1182,7 +1182,7 @@ otherwise `(158, 24 + int(h × 1.1571), 24)` with `h` the health % (`h × 0.0133
 - **low health**: above 0.1 % and at or below 25 % (`0x00510514`) the fill **blinks**: black for 232 ms
   (`0x00510510`), its colour for the next 232 ms, and again (one clock for all players, read from the clock at
   `0x0050b8b8`, inferred: the real-time clock); seen at runtime at 25 %;
-- **rage full**: when rage reaches the Warrior class's maximum (`0x00223260`, [Combat](combat.md#rage)) after being
+- **rage full**: when rage reaches the Warrior class's maximum (`0x00223260`, [Combat](combat-rage.md#rage)) after being
   below it, the whole outer ring turns gold `(128, 100, 0, 255)` for 200 ms (`0x00510528`), then shows normally for
   200 ms, three times;
 - **raging**, once those flashes are done: the fill is light grey `(191, 191, 191)` (runtime: confirmed).
@@ -1221,7 +1221,7 @@ last); the value is the band's fill, not the health. Not seen at runtime.
   fog off, and the blend and Z states as the world pass left them; the legs hid the ring behind them at runtime (Z
   test on).
 
-**Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat.md#targets))
+**Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat-targets.md#targets))
 at a non-player target, a sprite of `part_page1` rectangle 0 lies under the target at 0.041 m, size 0.9 × `s`, white
 at the ring's alpha (black in Rumble), human `+0x66c` = 1 (only while the per-player `+0x1b` is set). With two players
 on one screen (not Rumble), each player also gets an icon above the head (`0x0024b2a8`, `Human_AttachSpinningIcon`).
@@ -1889,8 +1889,8 @@ are [listed with the bars](#scripted-bars).
 | `0x001b6168` | `NumIndicator_ApplyLayout` | the [gang-count indicator](#gang-count-indicator)'s layout globals per video mode; German (`W_GameState + 0x120` = 4) adds 0.05 to the origin's x and 0.07 to the header gap | confirmed (code) |
 | `0x001b6358` | `NumIndicator_Setup(ind, position, header)` | from the HUD's set-up (`0x001ad588`): the header sprite when given, two black shadows, nine tally sprites; count 9, gang −1, off | confirmed (code) |
 | `0x001b66e0`, `0x001b6ba0` | `NumIndicator_Shutdown`, `NumIndicator_Render` | slot `+0x68`: shuts the header (when made) and the nine tally sprites down (slot `+0x70`); slot `+0x38`: when shown, the shadows, the header and `count` tally sprites | confirmed (code) |
-| `0x001b6770` | `NumIndicator_Set(ind, on, gang)` | `HUDSetNumIndicator` for player 2 (`0x001b4438`; players 0 and 1 go to their panel's slots `+0x50` and `+0x48`): gang `+0xc60`, on `+0x04`, count `+0xc40` = the gang's living members (`0x00166158`) | confirmed (code) |
-| `0x001b67b8` | `NumIndicator_Update` | slot `+0x30`: when shown, recounts and lays out the tally marks ([below](#gang-count-indicator)) | confirmed (code) |
+| `0x001b6770` | `NumIndicator_Set(ind, on, gang)` | `HUDSetNumIndicator` for player 2 (`0x001b4438`; players 0 and 1 go to their panel's slots `+0x50` and `+0x48`): gang `+0xc60`, on `+0x04`, count `+0xc40` = the gang's **standing** members, `Gang_CountLiving(gang, 1)` (`0x001b6798`, `li a1,0x1` in the delay slot; [what it counts](#gang-count-what)) | confirmed (code) |
+| `0x001b67b8` | `NumIndicator_Update` | slot `+0x30`: when shown, recounts (`Gang_CountLiving(gang, 1)` again, `0x001b68a4`) and lays out the tally marks ([below](#gang-count-indicator)) | confirmed (code) |
 | `0x001b6c50` | `HudCounter_Setup(iconSize, iconDepth, c, position, textOffset, iconColour, textColour, metrics, sprite, instance, textFlags, anchor, fontSlot, visible, active, markup)` | an icon (`BaseWidget` `+0x300`) and a text: a `TextWidget` at `+0x40`, or with `markup` a markup text widget at `+0x110` (`+0x410` = markup); text at position + `*textOffset` (`+0x400`); used by the item counters ([Item counters](#item-counters)) | confirmed (code) |
 | `0x001b6df0`, `0x001b6e40` | `HudCounter_Shutdown`, `HudCounter_SetPosition` | slot `+0x68` (shared with five subclass vtables): shuts the text and the icon down, `+0x0c` = 0; slot `+0x08`: text at pos + `+0x400`, icon at pos, pos to `+0x20` | confirmed (code) |
 | `0x001b6ed8`, `0x001b6f60` | `HudCounter_Render`, `HudCounter_Update` | slot `+0x38`: when visible and shown, the icon then the text; slot `+0x30`: the text then the icon | confirmed (code) |
@@ -1917,7 +1917,8 @@ are [listed with the bars](#scripted-bars).
 
 #### The gang-count indicator {#gang-count-indicator}
 
-`HUDSetNumIndicator`'s shared indicator (HUD `+0x16b30`) counts a gang's living members as **tally marks**: four
+`HUDSetNumIndicator`'s shared indicator (HUD `+0x16b30`) counts a gang's standing members ([what it
+counts](#gang-count-what)) as **tally marks**: four
 strokes and a fifth crossing them. Confirmed (code) at `0x001b6358`, `0x001b67b8`, `0x001b6168`; values in the
 default mode.
 
@@ -1937,7 +1938,7 @@ default mode.
   (`0x16f`, a long flat bar, 37 × 6 texels) for every fifth, blue, all rotated **3.3 rad** (about 189°, so tilted
   about 9° off their art). Size (an overlay height; the width follows from the rectangle's aspect): 0.04 × 1.2 =
   **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` × `0x0050d604`).
-- **Where mark *i* goes** (0-based, *i* < the living count), in GUI units, `NumIndicator_Update` (`0x001b67b8`) with
+- **Where mark *i* goes** (0-based, *i* < the standing count), in GUI units, `NumIndicator_Update` (`0x001b67b8`) with
   the default mode's layout (`NumIndicator_ApplyLayout`, `0x001b6168`: origin (0.09, 0.94) `0x0050d5f0`/`0x0050d5f8`,
   header shift 0.08 `0x0050d600`):
 
@@ -1958,7 +1959,7 @@ default mode.
   is the one seen**: the header at the first mark's no-header place plus (0.065, −0.1) = **(0.06, 0.944)**, size
   0.04 × 1.2 = 0.048 (`0x0050d608` × `0x0050d604`), and the marks from x 0.125. German moves the origin 0.05 right
   and the header shift to 0.15. Confirmed (code).
-- Only nine mark sprites exist (`+0x340`), but the loop lays out as many as the gang has living members; a tenth
+- Only nine mark sprites exist (`+0x340`), but the loop lays out as many as the gang has standing members; a tenth
   would be the second crossing bar at x −0.05 + origin (back over the first group) and would write past the sprites
   (inferred; the Rumble gangs that use it are not checked for size).
 - **Who calls it** (disc scan of the compiled scripts): only Rumble, `brawl.lua` and `royal.lua`, each in two branches
@@ -1969,14 +1970,45 @@ default mode.
 - **Players 0 and 1** (`HUD_SetNumIndicator`, `0x001b4438`) go to their **panel's own tally** instead: interface slot
   `+0x50` stores the gang at panel `+0x4140` (`0x004eca18`) and slot `+0x48` the "on" at `+0x4130` (`0x004eca10`);
   in an `ANHud` panel (levels 60-69) both slots are empty functions. The panel's update (`PlayerHUD_RefreshTallyMarks`,
-  `0x00214bc8`) counts the gang's living members into `+0x413c` and lays out the same pattern of strokes and bars
+  `0x00214bc8`; the live path is `PlayerHUD_Update`, `0x00214138`) counts the gang's standing members into
+  `+0x413c` and lays out the same pattern of strokes and bars
   (`PlayerHUD_LayoutTallyMarks`, `0x00213e68`, the nine sprites at `+0x4150`, in the player's colour) from the panel's
   origin (`+0x40e0`, the [panel base](#the-player-panel-layout-0x0050fa10) by panel layout `+0x40f4`) with the panel
   layout table's entries. No header is drawn there. See [the panel's tally](#panel-tally) for the numbers.
 
+#### What the count counts {#gang-count-what}
+
+Every HUD count of a gang's members passes **1** as `Gang_CountLiving`'s second argument, so the marks show the
+members that are **standing**, not every member that still exists. **Evidence:** confirmed (code) at each call
+site below. Because both the indicator and the panel recount every update, a member who is knocked out or tackled
+loses his mark while he is down and gets it back when he is up again (inferred from the recount and the state test;
+not watched in PCSX2).
+
+| Call | Caller | Argument |
+| --- | --- | --- |
+| `0x001b6798` | `NumIndicator_Set` (`0x001b6770`), the shared indicator when it is turned on | `Gang_CountLiving(Gang_Get(gang), 1)`: `li a1,0x1` in the delay slot |
+| `0x001b68a4` | `NumIndicator_Update` (`0x001b67b8`), each update while shown | `Gang_CountLiving(Gang_Get(gang), 1)`: `li a1,0x1` |
+| `0x00214310` | `PlayerHUD_Update` (`0x00214138`), the panel tally of players 0 and 1 while `+0x4130` is on | `Gang_GetHeadCountById(+0x4140, 1)`: `li a1,0x1` at `0x00214314` |
+| `0x00214c00` | `PlayerHUD_RefreshTallyMarks` (`0x00214bc8`, no caller found) | `Gang_GetHeadCountById(+0x4140, 1)`: `li a1,0x1` at `0x00214bf4` |
+
+- `Gang_GetHeadCountById(id, living)` (`0x0016a458`, also behind the script's `GangGetHeadCount`): 0 when `id` is
+  −1, else `Gang_CountLiving(Gang_Get(id), living)` (`Gang_Get`, `0x0016c388`) with `living` passed through
+  unchanged. Confirmed (code) at `0x0016a458`. So the panel tally (a one-player brawl's gang 1 included) and the
+  shared indicator count the same way.
+- `Gang_CountLiving(gang, living)` (`0x00166158`) walks the gang's 16 member handles at gang `+0x48`. With
+  `living` **equal to 1** it counts a slot when the handle resolves and `Human_IsDownOrDead` (`0x00227e60`) is not 1;
+  with **any other value** it returns `HandleArray16_CountLive(gang + 0x48)` (`0x004dae00`), the handles that
+  resolve, down or not. Confirmed (code) at `0x00166158`, `0x004dae00`.
+- `Human_IsDownOrDead` (`0x00227e60`) is 1 when the human has no record (`+0xd4` = 0) or is in any of the states
+  `0x180050000`: dead `0x100000000`, dying `0x80000000`, knocked out `0x40000`, tackled `0x10000`
+  ([the gang pages](ai-gangs.md) name the bits). Confirmed (code) at `0x00227e60`. Health is not read.
+- `Gang_CountStanding` (`0x00166220`, the script's `GangGetStandingCount` through `0x0016a4a8`) is a **different,
+  stricter** count that the HUD does not use: a member counts when his handle resolves and he is not knocked out,
+  not in state `0x100000000` and not wounded (three separate tests). Confirmed (code) at `0x00166220`.
+
 #### The panel's tally (players 0 and 1) {#panel-tally}
 
-`PlayerHUD_LayoutTallyMarks(panel, shifted)` (`0x00213e68`) lays out mark *i* (0-based, *i* < the living count
+`PlayerHUD_LayoutTallyMarks(panel, shifted)` (`0x00213e68`) lays out mark *i* (0-based, *i* < the standing count
 `+0x413c`) from the panel table `T` = `0x0050fa40` + layout × `0x240` (the table of [the panel
 layout](#the-player-panel-layout-0x0050fa10)). Values read from the executable (the default mode; other modes
 rewrite the table, `0x00211ef8`); confirmed (code) at `0x00213e68`, `0x00213770`, `0x00214138`:
@@ -2355,7 +2387,7 @@ second record (`+0x90`); its x values are in the last column.
   100, 0), bar 2 red (170, 43, 43), arcs red, prompt `0x180`; 1 `0x00286550` (being mugged by the other player): the
   bar colours swapped, prompt `0x181`; 2 `0x002833c0` and 3 `Player_UpdateMugHold` (`0x00283a30`), the two sides of a
   hold (`Player_UpdateHold` picks by state flag `0x8000000000`): as 0 and 1 with blue (35, 83, 188) for red; what
-  each game does and what its bars show is on [Combat: the other stick games](combat.md#other-stick-games). The
+  each game does and what its bars show is on [Combat: the other stick games](combat-throws.md#other-stick-games). The
   prompt's texts are `GSTRING.HUD` entries `0x180` and `0x181` (not reproduced here).
 - The prompt is a `MessageHUD` (`MessageHUD_Setup(1.0, 1.0, …, font slot 3)`) whose alignment byte is never set
   (inferred: left, 0), so at x −0.01 it starts at the screen's left edge (inferred, not checked at run time).
@@ -2454,7 +2486,7 @@ timing, which `TextProgressHud` shares). Behaviour: [Objectives](#objectives-hud
 ### After `GUI/ScrollInHUD.cpp` (no path string): spray counter and the stereo-theft panel {#fn-after-scrollinhud}
 
 The spray-paint counter, then the stereo-theft panel (two at HUD `+0xfea0`, `0xb10` bytes each, vtable `0x0053ab28`;
-the game is [Combat: the stereo theft](combat.md#stereo-theft)).
+the game is [Combat: the stereo theft](combat-targets.md#stereo-theft)).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2509,7 +2541,7 @@ With the anchor `A = (0.12, 0.57)` (player 1: x = 0.88) and `S = 0.08`:
   (`Math_MapRange(value, 0, target, 0.025, 0.05)`), angle = −value. The value is the stick angle turned in the current
   stage, in radians, from 0 up to the stage target (`Theft_UpdateStereo` `0x0027e908`, clamped there), and the target
   is the one `StereoHud_Start` was given: the player class's turn per stage (`Human_GetClassSpinAngle`, 6π or 2π,
-  [Combat](combat.md#stereo-theft)). So the gauge grows from half size to full size and spins once per radian turned.
+  [Combat](combat-targets.md#stereo-theft)). So the gauge grows from half size to full size and spins once per radian turned.
 - **The pop**: while value ≥ target (the 250 ms pause after a stage is complete, while the value stays at the
   target), the gauge's **y** grows by a step each update and the step doubles (from 0.001: 0.001, 0.002, 0.004, ...,
   so 0.127 after 7 updates). The gauge falls down the screen and accelerates; below the target the step is reset to
@@ -2696,7 +2728,7 @@ Confirmed (code) at `0x00210e48`, `0x00211938`, `0x002102f0`.
 | `0x00213718`, `0x00213770` | `PlayerHUD_FindCounterSlot`, `PlayerHUD_UpdateCounters` | the [item counters](#item-counters): the slot (of four, `0x0050fee0` + player × `0xc0`) holding an item or the first free one; the counters' slots, places and counts | confirmed (code) |
 | `0x00213e68` | `PlayerHUD_LayoutTallyMarks(panel, shifted)` | `+0x413c` marks from the origin `+0x40e0` with the table's `+0x1f0`-`+0x230`, every fifth crossing the four before, shifted below the counters ([The panel's tally](#panel-tally)) | confirmed (code) |
 | `0x00214138` | `PlayerHUD_Update` | slot `+0x40`: values, colours and positions each frame ([The rage meter](#the-rage-meter) and the sections after it) | confirmed (code) |
-| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = living members of gang `+0x4140` (`0x0016a458`), laid out unshifted; slot `+0x68`: the marks drawn at full alpha. No caller found (inferred unused): `PlayerHUD_Update` and `PlayerHUD_Render` do the live work; `HUD_SetNumIndicator` turns the tally on ([The panel's tally](#panel-tally)) | confirmed (code) |
+| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = standing members of gang `+0x4140` (`Gang_GetHeadCountById(gang, 1)`, `0x0016a458`, call `0x00214c00`; [what it counts](#gang-count-what)), laid out unshifted; slot `+0x68`: the marks drawn at full alpha. No caller found (inferred unused): `PlayerHUD_Update` and `PlayerHUD_Render` do the live work; `HUD_SetNumIndicator` turns the tally on ([The panel's tally](#panel-tally)) | confirmed (code) |
 | `0x00214cb0`, `0x00214ce8` | `PlayerHUD_StaticInit`, `PlayerHUD_StaticInitStub` | static initialiser (ctor list `0x0053414c`): the colour `0x00640c40` = (128, 0, 0, 111) | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
@@ -2789,7 +2821,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
 - **The prompt beside a downed Warrior** (user item 8, "no revive prompt"): Coney's revive step read only a script's
   knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
-  needed, and d-pad left revives him ([Combat: revive](combat.md#revive)). He must also be revivable (flag `0x4`),
+  needed, and d-pad left revives him ([Combat: revive](combat-rage.md#revive)). He must also be revivable (flag `0x4`),
   which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat.md#human-flags)), in
   Coney too (`ai::startingFlags`). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior
   with a strike (no script call), walks player 1 to him with the stick at 60 % and sees no prompt without a flash,
@@ -2838,7 +2870,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record
   `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's living members as
   tally marks from x 0.125, turned 3.3 rad, recounted each update; German's layout moves both. **Coney's readings**:
-  living is health left (`0x00166158`'s test is not described); at most nine marks; the shadows sort at the banners'
+  living is health left, which differs from the original: it counts standing members, `Gang_CountLiving(gang, 1)`,
+  not down or dead and regardless of health ([what the count counts](#gang-count-what), issue #456); at most nine
+  marks; the shadows sort at the banners'
   shadow depth. Players 0 and 1's go to their [panel tallies](#panel-tally) (`PlayerPanel::tallyMarkPlace()`): the same
   marks from the panel's base in the rage colour at the panel's fade, dropped below the money and counters.
 - **In play**: the play mode steps the HUD with player 1's rage, score, money and item counts (flash, spray paint,

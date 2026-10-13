@@ -8,7 +8,7 @@
 // The left stick as combat reads it: a length and an angle from the player's facing, and which side of the player it
 // points to. Combat takes the stick already turned into the player's frame (x to the player's right, y ahead), as the
 // original compares the camera-turned stick with the facing; the caller does the turning.
-// Research: docs/research/combat.md#attacks, docs/research/combat.md#throws
+// Research: docs/research/combat.md#attacks, docs/research/combat-throws.md#throws
 
 namespace coney::combat {
 
@@ -29,7 +29,7 @@ enum class Side : std::uint8_t { Front, Right, Rear, Left };
 /// The side an angle from the facing falls on: under 45° ahead, beyond 135° behind, otherwise right or left (exactly
 /// 45° and exactly 135° are sides: the original's test for a side is `0.785 <= |d|`). A throw picks its clip this way;
 /// a snap attack wants any side but the front.
-/// Research: docs/research/combat.md#throw-direction (item 2)
+/// Research: docs/research/combat-throws.md#throw-direction (item 2)
 [[nodiscard]] inline Side sideOf(float angleDegrees) {
     const float off = std::fabs(angleDegrees);
     if (off < 45.0F) {

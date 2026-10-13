@@ -3,11 +3,11 @@
 # type 3, human flags 0x7 with the revivable 0x4 from Human_Init), is then put 1 m in front of Cleon, his health set to
 # 0 and Human_OnHealthOut called on him as a fight's last hit does; Cleon is given one flash and taps d-pad left
 # (command 0x27). The trace shows the revive: Revive_Start, the clips 351 / 353 / 354 and 389, the flash spent, the
-# heal, lines 76 and 75. Research: docs/research/combat.md#revive-runtime. The state is not a quick-save slot: a
+# heal, lines 76 and 75. Research: docs/research/combat-rage.md#revive-runtime. The state is not a quick-save slot: a
 # level80 state saved at that hint (a copy of the re-pathing pass's, with the patched words put back), passed with
 # --state and absolute paths.
 description = "level80 cp1: Cleon revives a knocked-out Vermin with a flash (d-pad left); clip order and timing"
-research = "docs/research/combat.md#revive-runtime"
+research = "docs/research/combat-rage.md#revive-runtime"
 input = "revive_crew.txt"
 updates = 600
 fields = ["player"]

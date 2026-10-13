@@ -650,7 +650,7 @@ actions are not blocked); unless already in state 3 his current line is cut (`0x
 
 So, with the clips loaded, **event 0 starts the pair, and the dealer's `money_take` completes it**: its clip event
 `0x41` at frame 17 (message `0xc1`, `Human_HandleMessage` `0x002473bc`) calls `DealerGoal_FinishPair` (`0x002c7c20`),
-which does step 6 when `+0x45` is set ([Combat](combat.md#rage)). A second event 0 during the pair completes it at
+which does step 6 when `+0x45` is set ([Combat](combat-rage.md#rage)). A second event 0 during the pair completes it at
 once. Confirmed (code) at `0x002c74d8` and `0x002473bc`; the frame from the disc's clip.
 
 **Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1), confirmed (code) at the addresses cited:

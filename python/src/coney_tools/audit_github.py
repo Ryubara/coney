@@ -530,8 +530,26 @@ def issue_closed_unchecked(context: GithubContext) -> Iterator[Problem]:
             shown = "; ".join(repr(_short(item, 50)) for item in loose[:3])
             more = f" and {len(loose) - 3} more" if len(loose) > 3 else ""
             yield _problem(
-                issue, f"closed with {len(loose)} unchecked item(s) naming no follow-up issue: {shown}{more}"
+                issue,
+                f"closed with {len(loose)} unchecked item(s) naming no follow-up issue: {shown}{more}"
+                + _closing_hint(context, issue),
             )
+
+
+def _closing_hint(context: GithubContext, issue: Issue) -> str:
+    """Names the merged pull request that closed the issue with a fully ticked Checklist: its unchecked items are then
+    probably done, so the fix is to tick them and name that pull request (a person confirms; the audit only points)."""
+    rules = context.conventions.pull_requests
+    done = [
+        pull.number
+        for pull in context.snapshot.pulls_in("merged")
+        if issue.number in pull.closes
+        and _merged_since_the_rule(context, pull)
+        and not unfinished_items(pull.body, rules)
+    ]
+    if not done:
+        return ""
+    return f"; closed by #{done[-1]}, whose Checklist is all ticked: if it did these, tick them and name it"
 
 
 @check("issue.stale-status")
@@ -736,8 +754,8 @@ def pr_person_word(context: GithubContext) -> Iterator[Problem]:
 
 
 def _merged_since_the_rule(context: GithubContext, pull: Pull) -> bool:
-    """Whether the pull request merged on or after the day the Checklist rule began (`checklist.since`)."""
-    return pull.merged is not None and pull.merged.date() >= context.conventions.pull_requests.checklist.since
+    """Whether the pull request merged at or after the moment the Checklist rule began (`checklist.since`)."""
+    return pull.merged is not None and pull.merged >= context.conventions.pull_requests.checklist.since
 
 
 def _items_message(items: list[str]) -> str:

@@ -824,7 +824,7 @@ SpawnAreaEffect(human, radius, damage, excludeSelf, sparedKind)
 Deals a one-off blast of damage around a human, as an explosion does (Explosion_DamageHumansInRadius): up to 60 humans
 within the radius of his centre are found, and each one with a clear line from the centre (a world ray cast) gets the
 damage as pending damage from him, with a hit reaction, through the normal damage path ([Combat:
-damage](../../research/combat.md#damage)). Used once, in a boss fight.
+damage](../../research/combat-reactions.md#damage)). Used once, in a boss fight.
 
 **Notes.** Humans the centre human counts as friends (0x00222a90) get the damage negated and no reaction, so (inferred)
 they take none. Nothing is drawn or played by this call; any visual comes from the script.

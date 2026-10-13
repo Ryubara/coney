@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The revive's "way clear" test (human/way_clear.h, docs/research/combat.md#revive): a 0.2 m capsule as tall as the
-// reviver swept from his feet to the downed human's passes when it meets nothing, or meets the downed human first.
+// The revive's "way clear" test (human/way_clear.h, docs/research/combat-rage.md#revive): a 0.2 m capsule as tall as
+// the reviver swept from his feet to the downed human's passes when it meets nothing, or meets the downed human first.
 // Synthetic walls and capsules.
 #include <array>
 

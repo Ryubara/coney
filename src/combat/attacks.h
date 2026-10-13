@@ -15,7 +15,8 @@
 // third press into a three-hit combo. An attack's phases (wind-up, chain window, end, recovery) are the bits of the
 // record's `+0x08` its clip holds and its events move (docs/research/tasks.md#held-flags); the chain reads them. Only
 // the hit is counted in updates.
-// Research: docs/research/combat.md#attacks, docs/research/combat.md#run-attacks, docs/research/combat.md#breakables
+// Research: docs/research/combat.md#attacks, docs/research/combat.md#run-attacks,
+// docs/research/combat-targets.md#breakables
 
 namespace coney::combat {
 
@@ -46,7 +47,7 @@ inline constexpr std::uint32_t kDispatchDroppingPhases = 0x05c7fee0;
 /// bit, the duck and the run attack.
 inline constexpr std::uint32_t kAttackRefusingPhases = 0x0100101f;
 /// The `+0x08` bits that refuse a special: cross + square's 653 and circle + cross's strong grapple (`Player_Special`,
-/// `0x00287730`, docs/research/combat.md#strong-grapple).
+/// `0x00287730`, docs/research/combat-grabs.md#strong-grapple).
 inline constexpr std::uint32_t kSpecialRefusingPhases = 0xaeebf7ff;
 /// The `+0x08` bits under which R1 may still block (`Human_CanFight`, `0x00224f28`): among an attack's phases only its
 /// end phase 0x4, so a block cuts the end phase but not the wind-up, window or recovery
@@ -129,11 +130,12 @@ inline constexpr int kStartTandem = -2;
 /// @orig 0x00287a18 Player_Cross (unknown)
 [[nodiscard]] int crossAttack(const SquareInput& input);
 
-/// The armed branch square and cross take with a knife, baton or bat in hand (docs/research/combat.md#armed-moves), in
-/// its order: at a run (gait 4, or for cross 4 or 5, with no phase bit and the stick beyond 0.95) 501; at a grounded or
-/// tackled target the set's grounded strike (slot `0x13`); at a breakable anim_id::kNone (objectAttack() picks the
-/// clip); kStartTandem at a target that allows a tandem; otherwise the set's swing `swing` (slot `0x10` for square,
-/// `0x11` for cross). No walk attack, no snaps and no strike on a grabbed target: a walking player swings where he is.
+/// The armed branch square and cross take with a knife, baton or bat in hand
+/// (docs/research/combat-throws.md#armed-moves), in its order: at a run (gait 4, or for cross 4 or 5, with no phase bit
+/// and the stick beyond 0.95) 501; at a grounded or tackled target the set's grounded strike (slot `0x13`); at a
+/// breakable anim_id::kNone (objectAttack() picks the clip); kStartTandem at a target that allows a tandem; otherwise
+/// the set's swing `swing` (slot `0x10` for square, `0x11` for cross). No walk attack, no snaps and no strike on a
+/// grabbed target: a walking player swings where he is.
 /// **Coney's reading**: the mugging this branch may start is not built.
 [[nodiscard]] int armedAttack(const SquareInput& input, bool cross);
 
@@ -142,16 +144,16 @@ inline constexpr int kStartTandem = -2;
 [[nodiscard]] bool throwSet(int set);
 
 /// The throw square, cross, the charge or the dive starts with an object of throwSet() `SquareInput::heldSet` in hand
-/// (docs/research/combat.md#armed-moves), by the gait: at gait 3-5 the set's throw from a run, at gait 2 its throw from
-/// a walk (the standing one in a fight stance), else its standing throw; anim_id::kNone for any other set. Unlike the
-/// run attack, the record's `+0x08` and the stick are not tested. **Coney's reading**: set 5's smash on a human in
-/// reach (473 / 475) and the knife turned into set 5 are not built, and the aiming state (`Human_MoveThrowAim`) is not
-/// entered, so the throw plays at once.
+/// (docs/research/combat-throws.md#armed-moves), by the gait: at gait 3-5 the set's throw from a run, at gait 2 its
+/// throw from a walk (the standing one in a fight stance), else its standing throw; anim_id::kNone for any other set.
+/// Unlike the run attack, the record's `+0x08` and the stick are not tested. **Coney's reading**: set 5's smash on a
+/// human in reach (473 / 475) and the knife turned into set 5 are not built, and the aiming state
+/// (`Human_MoveThrowAim`) is not entered, so the throw plays at once.
 /// @orig 0x002880d8 Player_CrossWithWeapon (unknown)
 [[nodiscard]] int throwAttack(const SquareInput& input);
 
-/// The clips an anim set puts in the slots the armed square and cross read (docs/research/combat.md#bat): `S1`, `X1`,
-/// the grounded strike and the mounting strike. Set 0 is the defaults.
+/// The clips an anim set puts in the slots the armed square and cross read (docs/research/combat-throws.md#bat): `S1`,
+/// `X1`, the grounded strike and the mounting strike. Set 0 is the defaults.
 struct AnimSetClips {
     int square = anim_id::kAttackS1;          ///< Slot `0x10`.
     int cross = anim_id::kAttackX1;           ///< Slot `0x11`.

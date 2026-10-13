@@ -22,8 +22,8 @@ namespace coney::combat {
 inline constexpr std::uint32_t kTandemRefusingHeld = 0xc12200;
 /// What the attacker's and the grabber's clips hold on the record `+0x08` for the whole tandem...
 inline constexpr std::uint32_t kTandemAttackerHeld = 0x800000;
-/// ... and the victim's (docs/research/combat.md#protected-moves): no one else starts an attack on any of the three,
-/// and a hit takes health but plays no reaction.
+/// ... and the victim's (docs/research/combat-reactions.md#protected-moves): no one else starts an attack on any of the
+/// three, and a hit takes health but plays no reaction.
 inline constexpr std::uint32_t kTandemVictimHeld = 0x400000;
 
 /// The first id of each set (docs/research/combat-moves.md#frame-data): `TANDEM_01` to `TANDEM_03` empty-handed,

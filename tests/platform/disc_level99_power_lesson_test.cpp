@@ -3,10 +3,10 @@
 // Checks against the player's own disc that level99's power-move lesson (checkpoint 1, lesson 6) plays as the
 // original's does, through the player's path (`--play-level level99 --checkpoint 1`, support/disc_session.h) under
 // the lessons' pad script: Rembrandt's extension 59 makes him carry `dyn_s_spraycan` from its first updates until its
-// event 0x31 about 85 updates later (docs/research/combat.md#power-move-props); its spray loop is held only between
-// its frames 14 and 27 and nobody holds a sound afterwards (docs/research/sound-events.md#spray-loop); and the scene
-// `l99_c7` that follows takes in the bum he was holding in role 6 (`rudy`), whom its clip moves away from his start
-// mark (docs/research/scenes.md#humans). It runs only when the environment variable CONEY_DISC names the disc and
+// event 0x31 about 85 updates later (docs/research/combat-grabs.md#power-move-props); its spray loop is held only
+// between its frames 14 and 27 and nobody holds a sound afterwards (docs/research/sound-events.md#spray-loop); and the
+// scene `l99_c7` that follows takes in the bum he was holding in role 6 (`rudy`), whom its clip moves away from his
+// start mark (docs/research/scenes.md#humans). It runs only when the environment variable CONEY_DISC names the disc and
 // skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>

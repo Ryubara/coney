@@ -14,9 +14,9 @@
 #include "animation/anim_clip.h"
 #include "human/locomotion.h"
 
-// An attack's steer onto its target (docs/research/combat.md#targets): the turn and the slide at a constant rate over
-// the time to the clip's first event + 0.1 s, the last step only for the time left; the goal led by the target's
-// velocity and short of it by the reach. Synthetic numbers only.
+// An attack's steer onto its target (docs/research/combat-targets.md#targets): the turn and the slide at a constant
+// rate over the time to the clip's first event + 0.1 s, the last step only for the time left; the goal led by the
+// target's velocity and short of it by the reach. Synthetic numbers only.
 
 using Catch::Approx;
 using coney::anim::AnimClip;

@@ -1,11 +1,11 @@
 # Lesson 9's bat pick-up (mission 1, level99 checkpoint 3 save): slot 1 has the three dyn_bat_tuff on the ground near
 # the pen; the setup stands the player 1 m behind the first (its record index 0x21, handle 0x210000) and, at update 40,
 # calls SetMsgHandlerEx (0x00386168) on it with message 0, a callback name (Probe, not defined) and a prompt
-# (Take), as the lesson's setup does with its own. Research: docs/research/scripting.md#message-handlers, docs/research/combat.md#bat.
+# (Take), as the lesson's setup does with its own. Research: docs/research/scripting.md#message-handlers, docs/research/combat-throws.md#bat.
 # The hooks log the kind-1 context record, triangle's ContextAction_Use and message 0 to the bat, the pick-up clip
 # (461, set 3) and Human_PickUpObject; the second triangle drops the bat (no clip).
 description = "level99 lesson 9: a bat given a script prompt, triangle to take it, triangle to drop it"
-research = "docs/research/combat.md#bat"
+research = "docs/research/combat-throws.md#bat"
 input = "weapon_pickup.txt"
 updates = 300
 fields = ["player"]

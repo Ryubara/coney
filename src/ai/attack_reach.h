@@ -12,7 +12,7 @@ class AnimRangeList;
 // (`Attack_ReachSquared`) and the far reach `Human_CanStartAttack` refuses beyond (`Attack_FarReachSquared`). Each is
 // one anim's record in the attacker's Anim Range List (its reach `+0x4`, or its far range), or a fixed distance for
 // throws, ranged objects and kinds with no clip. Pure: the caller says what A holds and how he moves.
-// Research: docs/research/ai.md#attack-reach, docs/research/combat.md#ai-attacks
+// Research: docs/research/ai.md#attack-reach, docs/research/combat-targets.md#ai-attacks
 
 namespace coney::ai {
 
