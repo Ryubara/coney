@@ -159,9 +159,7 @@ at most 45 in all, and leaves at once with exit 75 when the queue says it cannot
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
-`ci` and `asan` also compile the way a compiler cache can store, as CI does ([Caches](#ci-caches)): MSVC keeps the
-debug information inside each object (`/Z7`) instead of one shared PDB, and no target uses a precompiled header.
-Debugging works the same; the linker still writes the executable's PDB.
+On MSVC every preset keeps debug information in each object (`/Z7`): [Debug information](#debug-info).
 
 `ctest` runs the Catch2 unit tests (`coney_tests`) and smoke tests of the `coney` executable itself: it starts and
 stops headless, prints its help, refuses a bad command line, plays a synthetic input script and opens
@@ -187,6 +185,18 @@ test case that skips without the disc but lacks the tag fails a Python test.
 
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
+
+### Debug information on MSVC {#debug-info}
+
+Every preset keeps the debug information inside each object (`/Z7`,
+`CMAKE_MSVC_DEBUG_INFORMATION_FORMAT` `Embedded`, policy CMP0141 on for the dependencies too) instead of MSVC's
+default `/Zi`, which has every compile write one shared PDB through `mspdbsrv`. Several builds at once (a few agents
+sharing a machine, or `-j` on a busy one) contend for that PDB and fail at random with `fatal error C1090: PDB API
+call failed, error code 23`; a rerun clears it, but costs a rebuild. With `/Z7` a compile never touches a shared
+file, and a compiler cache can store the object ([Caches](#ci-caches)). Debugging works the same; the linker still
+writes the executable's PDB. The setting lives once, in the hidden `embedded-debug-info` preset of
+`CMakePresets.json`, which `dev`, `release` and the hidden `cacheable` preset inherit. `ci` and `asan` (through
+`cacheable`) also turn precompiled headers off, which a cache cannot use; `dev` and `release` keep them.
 
 ## Sanitizers
 
@@ -453,9 +463,9 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
 - **Sharing.** clang-tidy builds with the same compiler, preset and flags as `build (linux-clang-19)`, so it restores
   that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
 - **What a cache can store.** The `ci` and `asan` presets inherit the hidden `cacheable` preset: MSVC's default `/Zi`
-  writes every object's debug information into one shared PDB, which ccache refuses, so they use `/Z7`
-  (`CMAKE_MSVC_DEBUG_INFORMATION_FORMAT` `Embedded`, with policy CMP0141 on for the dependencies too); and SDL3's
-  precompiled header made its 265 sources uncacheable everywhere, so `CMAKE_DISABLE_PRECOMPILE_HEADERS` is on.
+  writes every object's debug information into one shared PDB, which ccache refuses, so they use `/Z7` (every
+  preset does; [Debug information on MSVC](#debug-info)); and SDL3's precompiled header made its 265 sources
+  uncacheable everywhere, so `CMAKE_DISABLE_PRECOMPILE_HEADERS` is on.
 - **Sizes.** Each job's cap is 700 MB (`max-size` of the `ccache` action). Six jobs save (four `build`, two
   `sanitizers`): at most 6 × 0.7 = 4.2 GB, plus three dependency entries (one per OS, about 0.1 to 0.2 GB each) and
   the `setup-uv` caches (about 50 MB per OS), about 5 GB in all, half of the 10 GB. While a `main` run is between its
