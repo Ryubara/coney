@@ -392,7 +392,8 @@ def _prctl() -> Callable[..., int] | None:
     if not sys.platform.startswith("linux"):
         return None
     try:
-        return ctypes.CDLL(None, use_errno=True).prctl  # type: ignore[no-any-return]
+        prctl: Callable[..., int] = ctypes.CDLL(None, use_errno=True).prctl
+        return prctl
     except (OSError, AttributeError):
         return None
 

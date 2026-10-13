@@ -39,6 +39,7 @@ from coney_tools.disc import Disc
 from coney_tools.extract_output import Output, Report
 from coney_tools.extract_types import TYPES
 from coney_tools.wad_cli import open_disc
+from coney_tools.xbox_source import XboxSource
 
 #: The WAD stages, in the order they see each entry.
 _WAD_TYPES = ("index", "scripts", "textures", "models", "animations", "levels", "worlds", "scenes", "data", "raw")
@@ -66,7 +67,7 @@ EXPECTED: dict[str, dict[str, int]] = {
 _PIECE = 8 << 20
 
 
-def _write_texture_map(path: Path, identity: dict[str, str], xbox: extract_xbox.XboxSource) -> None:
+def _write_texture_map(path: Path, identity: dict[str, str], xbox: XboxSource) -> None:
     """Write the Xbox texture map of this run's replacements (xbox_texture_map's layout); print its count and hash."""
     from coney_tools import xbox_texture_map
 
@@ -123,7 +124,7 @@ def _movie_fields(header: movies.BinkHeader) -> dict[str, object]:
     }
 
 
-def extract_movies(disc: Disc, output: Output, xbox: extract_xbox.XboxSource | None = None) -> Report:
+def extract_movies(disc: Disc, output: Output, xbox: XboxSource | None = None) -> Report:
     """Copy every `PSS/*.BIK` as is, with its header values in `movies/index.json`; with an Xbox disc, its larger
     version where extract_xbox.movie_choice takes it (the record then says `"source": "xbox"`)."""
     report = Report("movies")

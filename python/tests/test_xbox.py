@@ -273,9 +273,9 @@ def test_xgd1_partition_found_at_its_offset() -> None:
     """A full disc image: the partition starts at 0x18300000, which the reader finds without reading the gap."""
     image = SparseImage(0x18300000, partition({"default.xbe": b"xbe", "bik/a.bik": b"BIKi"}))
     handle = io.BufferedReader(image)
-    where = xdvdfs.find_partition(handle, Path("disc.iso"))  # type: ignore[arg-type]
+    where = xdvdfs.find_partition(handle, Path("disc.iso"))
     assert where == 0x18300000
-    files, folders = xdvdfs.read_tree(handle, where, Path("disc.iso"))  # type: ignore[arg-type]
+    files, folders = xdvdfs.read_tree(handle, where, Path("disc.iso"))
     assert folders == 1
     assert files["bik/a.bik"] == xdvdfs.XdvdfsFile("bik/a.bik", files["bik/a.bik"].sector, 4)
 

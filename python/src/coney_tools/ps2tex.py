@@ -147,7 +147,8 @@ def unswizzle_table(width: int, height: int) -> npt.NDArray[np.int64]:
     texel, row by row."""
     log_w = max(width - 1, 0).bit_length()
     y, x = np.mgrid[0:height, 0:width].astype(np.int64)
-    return ((y & ~3) * width + _swizzle_index(x, y, log_w)).ravel()
+    table: npt.NDArray[np.int64] = ((y & ~3) * width + _swizzle_index(x, y, log_w)).ravel()
+    return table
 
 
 def _transfer(packet: bytes, at: int) -> tuple[int, int, int, int]:

@@ -448,7 +448,7 @@ def analyse(
     end_step, winner, known = match_end(trace, exclude)
     positions: dict[int, dict[int, tuple[float, float]]] = {}
     for step, samples in trace.by_step.items():
-        positions[step] = {s.human: (s.x, s.y) for s in samples if s.x is not None and s.y is not None}  # type: ignore[misc]
+        positions[step] = {s.human: (s.x, s.y) for s in samples if s.x is not None and s.y is not None}
     humans = {
         human: _analyse_human(trace, samples, positions, end_step, engage_distance)
         for human, samples in trace.by_human.items()
@@ -667,9 +667,9 @@ def compare_runs(
             outside = {str(v) for v in ours} - {str(v) for v in theirs}
             results.append(Comparison(name, theirs, ours, "different" if outside else ""))
             continue
-        low, _, high = _spread([float(v) for v in theirs])  # type: ignore[arg-type]
+        low, _, high = _spread([float(v) for v in theirs])
         slack = (high - low) * margin + 1e-9
-        median = statistics.median(float(v) for v in ours)  # type: ignore[arg-type]
+        median = statistics.median(float(v) for v in ours)
         flag = "below" if median < low - slack else "above" if median > high + slack else ""
         results.append(Comparison(name, theirs, ours, flag))
     return results
@@ -682,7 +682,7 @@ def _spread_text(values: list[Metric]) -> str:
     if isinstance(values[0], str):
         counts = Counter(str(v) for v in values)
         return ", ".join(f"{name} x{count}" for name, count in sorted(counts.items()))
-    low, middle, high = _spread([float(v) for v in values])  # type: ignore[arg-type]
+    low, middle, high = _spread([float(v) for v in values])
     return f"{_format(low)} / {_format(middle)} / {_format(high)}"
 
 

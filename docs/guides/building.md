@@ -243,7 +243,7 @@ installs the right Python and the locked dependencies into `python/.venv` the fi
 uv run --project python coney-tools --help
 uv run --project python pytest python/tests
 uv run --project python ruff check python
-uv run --project python mypy python/src python/tests
+uv run --project python mypy --config-file python/pyproject.toml python/src python/tests
 ```
 
 `coney-tools config show` prints the paths your `coney.local.toml` sets (start from `coney.local.example.toml`;

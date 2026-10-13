@@ -27,6 +27,19 @@ from coney_tools.local_gate import StepResult
 STEPS: tuple[str, ...] = ("repo", "pre-commit", "clang-tidy", "docs", "python")
 #: Characters of file names handed to one `pre-commit run --files`; Windows refuses a command line over ~32,000.
 COMMAND_LINE_BUDGET = 20000
+#: The mypy run, the same words as CI's python job. It runs from the repository root, where mypy finds no config, so
+#: `--config-file` hands it the `[tool.mypy] strict = true` of python/pyproject.toml (without it the run is not strict).
+MYPY_COMMAND: tuple[str, ...] = (
+    "uv",
+    "run",
+    "--project",
+    "python",
+    "mypy",
+    "--config-file",
+    "python/pyproject.toml",
+    "python/src",
+    "python/tests",
+)
 #: Lines of a failed clang-tidy run shown when nothing in it looks like a diagnostic.
 FALLBACK_TAIL_LINES = 30
 
@@ -233,7 +246,7 @@ def _step_python(root: Path, changed: list[str]) -> StepResult:
     problems: list[str] = []
     for label, command in (
         ("pytest", ["uv", "run", "--project", "python", "pytest", "python/tests", "-q", "-x", "--no-header"]),
-        ("mypy", ["uv", "run", "--project", "python", "mypy", "python/src", "python/tests"]),
+        ("mypy", list(MYPY_COMMAND)),
     ):
         code, output = local_gate.run_command(command, root)
         if code != 0:

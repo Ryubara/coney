@@ -115,5 +115,5 @@ def looks_like_container(head: bytes, size: int) -> bool:
     if zero != 0 or count == 0:
         return False
     if marker == PACK_MARKER:
-        return second == size - HEADER
-    return second + HEADER * (count + 1) == size
+        return bool(second == size - HEADER)
+    return bool(second + HEADER * (count + 1) == size)

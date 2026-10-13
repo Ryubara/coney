@@ -657,7 +657,7 @@ def _construct_mapping(loader: _Loader, node: yaml.MappingNode, deep: bool = Fal
     return dict(loader.construct_pairs(node, deep=deep))
 
 
-_Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)  # type: ignore[arg-type]
+_Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)
 
 
 def _fail(where: str, problem: str) -> ConventionsError:

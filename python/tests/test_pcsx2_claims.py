@@ -5,6 +5,7 @@ process layer is replaced by a fake."""
 
 import ctypes
 import json
+import sys
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -281,8 +282,8 @@ def test_launch_runs_under_a_claim_and_records_the_pid(
 
     # A real PCSX2 copy may be running on this port while the tests run; the launch must not see it.
     monkeypatch.setattr(pcsx2_cli, "_port_open", lambda port: False)
-    monkeypatch.setattr(pcsx2_cli.pcsx2_proc, "start_detached", lambda command: 31337)
-    monkeypatch.setattr(pcsx2_cli.pcsx2_proc, "focus_guard", lambda: None)
+    monkeypatch.setattr(pcsx2_proc, "start_detached", lambda command: 31337)
+    monkeypatch.setattr(pcsx2_proc, "focus_guard", lambda: None)
     monkeypatch.setattr(pcsx2_cli, "_wait_for_game", lambda *a, **k: FakeClient())
     monkeypatch.setattr(pcsx2_cli, "disc_link", lambda iso, scratch: iso)
     assert pcsx2_cli.run_launch(Path("s.p2s"), None, iso, tmp_path / "scratch", "alice") == 0
@@ -347,10 +348,10 @@ def test_dpi_awareness_is_set_once_on_windows_and_never_elsewhere(monkeypatch: p
 
     monkeypatch.setattr(pcsx2_proc, "_user32", lambda: FakeUser32())
     pcsx2_proc.ensure_dpi_aware.cache_clear()
-    monkeypatch.setattr(pcsx2_proc.sys, "platform", "linux")
+    monkeypatch.setattr(sys, "platform", "linux")
     assert pcsx2_proc.ensure_dpi_aware() is False and calls == []
     pcsx2_proc.ensure_dpi_aware.cache_clear()
-    monkeypatch.setattr(pcsx2_proc.sys, "platform", "win32")
+    monkeypatch.setattr(sys, "platform", "win32")
     assert pcsx2_proc.ensure_dpi_aware() is True
     assert pcsx2_proc.ensure_dpi_aware() is True
     assert calls == [ctypes.c_void_p(-4).value]

@@ -17,7 +17,7 @@ from typing import Any, ClassVar
 import pytest
 from conventions_support import REPO, conventions_with
 
-from coney_tools import clips, pcsx2_clip, pcsx2_proc
+from coney_tools import clips, pcsx2_claims, pcsx2_cli, pcsx2_clip, pcsx2_proc
 from coney_tools.conventions import Clips
 
 RULES = Clips(folder="clips", max_seconds=10, warn_mb=10, keep_hours=24)
@@ -419,15 +419,15 @@ def test_pcsx2_clip_uses_pcsx2s_own_capture_and_never_the_screen(
         encodes.append(list(args))
         Path(args[-1]).write_bytes(b"\0" * 10)
 
-    monkeypatch.setattr(pcsx2_clip.pcsx2_cli, "Emulator", FakeEmulator)
-    monkeypatch.setattr(pcsx2_clip.pcsx2_cli, "resolve_paths", lambda *a: None)
-    monkeypatch.setattr(pcsx2_clip.pcsx2_claims, "default_registry", lambda: registry)
+    monkeypatch.setattr(pcsx2_cli, "Emulator", FakeEmulator)
+    monkeypatch.setattr(pcsx2_cli, "resolve_paths", lambda *a: None)
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: registry)
     monkeypatch.setattr(pcsx2_proc, "key_targets", lambda pid: [type("W", (), {"hwnd": 1})()])
     monkeypatch.setattr(pcsx2_proc, "post_keys", toggle)
     monkeypatch.setattr(pcsx2_proc, "capture", no_screen)
     monkeypatch.setattr(pcsx2_proc, "render_window", no_screen)
     sleeps: list[float] = []
-    monkeypatch.setattr(pcsx2_clip.time, "sleep", sleeps.append)
+    monkeypatch.setattr(time, "sleep", sleeps.append)
     monkeypatch.setattr(clips, "run_ffmpeg", encode)
     monkeypatch.setattr(clips, "probe", lambda path, ffprobe, runner=None: clips.parse_probe(json.dumps(CLEAN_PROBE)))
 

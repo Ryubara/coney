@@ -286,7 +286,7 @@ def parse_header(data: bytes, what: str = "scene") -> Header:
         objects=objects,
         camera=camera,
         lights=lights,
-        tracks=_tracks(reader, tables, counts),  # type: ignore[arg-type]
+        tracks=_tracks(reader, tables, counts),
     )
 
 
@@ -301,7 +301,7 @@ def parse_segment(data: bytes, what: str = "segment") -> Segment:
         size=len(data),
         name=_text(data, 4, _NAME),
         next_segment=_text(data, 0x14, 4),
-        tracks=_tracks(reader, reader.table(0x1C, 4), counts),  # type: ignore[arg-type]
+        tracks=_tracks(reader, reader.table(0x1C, 4), counts),
     )
 
 

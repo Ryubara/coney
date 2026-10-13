@@ -477,7 +477,8 @@ the harness that drives a running Coney or PCSX2 with scripted input.
   include `wad`, `xbox`, `pcsx2` (the PCSX2 bridge) and `trace` ([The coney-tools command line](coney-tools.md)).
 - **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff format
   also runs in pre-commit. Strict typing matters here because these tools parse binary formats, where a wrong type
-  is a silent wrong answer.
+  is a silent wrong answer. The mypy command always passes `--config-file python/pyproject.toml`: it runs from the
+  repository root, where mypy finds no config and would silently skip `strict`.
 - **Repository rules are read, not copied.** A value that is a rule of running the repository (a commit area, a
   title limit, a description section, a label, a path class, a limit in days) is a key of
   `.github/conventions.yml`, read through `coney_tools/conventions.py`; code never repeats it as a constant
