@@ -11,8 +11,6 @@ import re
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 
-from coney_tools.repo_checks import NUMBER_REFERENCE
-
 _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 #: A second- or third-level heading; the forms write `###`, an issue filed from the command line often `##`.
 _HEADING = re.compile(r"^(?P<hashes>#{2,3})[ \t]+(?P<name>\S.*?)[ \t]*#*[ \t]*$")
@@ -20,7 +18,7 @@ _HEADING = re.compile(r"^(?P<hashes>#{2,3})[ \t]+(?P<name>\S.*?)[ \t]*#*[ \t]*$"
 _FENCE = re.compile(r"^[ \t]*(```|~~~)")
 #: What a list item starts with, which is not content (`- `, `- [ ] `, `* [x] `, a lone `-`). A marker is followed by
 #: a space or ends the line, so a word that starts with a dash (the option `--play-level`, `-5`) is content.
-_LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\][ \t]*|[ \t]+|$)")
+LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\][ \t]*|[ \t]+|$)")
 #: What a form writes for a field the reporter left empty.
 _NO_RESPONSE = "_no response_"
 #: A fenced block or an inline code span.
@@ -29,8 +27,10 @@ _CODE = re.compile(r"^[ \t]*(?P<fence>```|~~~).*?^[ \t]*(?P=fence)[^\n]*$|`[^`\n
 _URL = re.compile(r"https?://\S+", re.IGNORECASE)
 #: A Markdown link: its text and its target.
 _LINK = re.compile(r"(?<!!)\[(?P<text>[^\]\n]*)\]\((?P<target>[^)\s]*)[^)\n]*\)")
+#: A reference to an issue or pull request, `#123` (also what the audit looks for in issues).
+NUMBER_REFERENCE = re.compile(r"(?<![\w&/])#\d+\b")
 #: An unchecked task-list item, `- [ ] text`.
-_OPEN_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[ \][ \t]*(?P<text>.*)$")
+OPEN_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[ \][ \t]*(?P<text>.*)$")
 
 
 def clean(body: str) -> str:
@@ -76,7 +76,7 @@ def answer(text: str) -> str:
     """What a section really says: `text` without list markers, the form's `_No response_` and empty lines."""
     lines = []
     for line in text.splitlines():
-        content = _LIST_MARKER.sub("", line.strip()).strip()
+        content = LIST_MARKER.sub("", line.strip()).strip()
         if content and content.casefold() != _NO_RESPONSE:
             lines.append(content)
     return "\n".join(lines)
@@ -125,12 +125,12 @@ def unchecked_items(body: str) -> list[str]:
             continue
         if fenced:
             continue
-        item = _OPEN_ITEM.match(line)
+        item = OPEN_ITEM.match(line)
         stripped = line.strip()
         if item:
             items.append([item.group("text").strip()])
             continuing = True
-        elif continuing and stripped and line[:1] in (" ", "\t") and not _LIST_MARKER.match(stripped):
+        elif continuing and stripped and line[:1] in (" ", "\t") and not LIST_MARKER.match(stripped):
             items[-1].append(stripped)
         else:
             continuing = False
