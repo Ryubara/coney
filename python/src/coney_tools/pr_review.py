@@ -190,7 +190,8 @@ def description_problems(description: str, conventions: Conventions) -> list[str
     """What CI's `title` and `body` jobs would refuse in the description file's text, each reason prefixed `title:` or
     `body:`.
 
-    The file is split as `gh pr create --body-file` gets it: line 1 is the title, what follows is the body. A local
+    The file follows the PR.md convention (the title on line 1, the body after it); the coordinator passes them to
+    `gh pr create` as the title and `--body-file`. A local
     image is accepted where CI wants an uploaded one, because `gh --attach` uploads it when the pull request is opened
     (a missing or identical picture is the verdict check's business).
     """
