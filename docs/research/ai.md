@@ -2716,6 +2716,14 @@ The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gam
 (`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](ai-gangs.md#warrior-commands) and
 [the lines](ai-gangs.md#warrior-command-lines).
 
+The menu's "???" (user playtest, `level80` checkpoint 2) is `GSTRING.COMMAND` entry 7, the text the original shows for
+a **disabled** highlighted command ([HUD](hud.md#warrior-command-menu)). That checkpoint's script switches every command
+off and follow back on (`WCEnableCommand` on the player's human) as its first calls, before the level has made his
+brain; Coney found no player for the handle then and dropped the switch, so follow too stayed off, greyed and labelled
+"???", and the level start's forced follow was refused. Fixed (2026-10-11): the player index comes from the human's
+creation until his brain exists (`playerOf`, `repo:src/scripting/story_bindings.cpp`); a command the script leaves off
+still shows "???", as in the original.
+
 | Command (menu slot) | Original tactic and members' goal | Chief's line / answer | Coney | Where |
 | --- | --- | --- | --- | --- |
 | 0 follow (up) | `WarriorFollowTactic` (`0x12`, 9 m): `FollowPlayer` mode 3; a repeat adds `FollowFormation` (`0x003114e0`) | 2 `follow` (86 hidden) / 131 | **partial**: tactic and goals built; no line, no answer, no repeat | `repo:src/ai/crew.cpp` |

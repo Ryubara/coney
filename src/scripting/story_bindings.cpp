@@ -17,6 +17,7 @@
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
+#include "warriors/created_humans.h"
 #include "warriors/crime_reports.h"
 #include "world_objects/object_types.h"
 #include "world_objects/volume_boxes.h"
@@ -192,10 +193,20 @@ std::optional<StoryPoint> positionOf(const BindingContext& context, double handl
     return host != nullptr ? host->position(handle) : std::nullopt;
 }
 
-// Which player (0 or 1) controls the human `handle` names; nothing for none.
+// Which player (0 or 1) controls the human `handle` names; nothing for none. **Coney reading**: Coney keeps no player
+// index on the human, so it is read from his brain once made, before that from his creation.
 std::optional<std::size_t> playerOf(const BindingContext& context, double handle) {
     const HumanBindingHost* host = humansOf(context);
-    const std::optional<int> index = host != nullptr ? host->playerIndex(handle) : std::nullopt;
+    std::optional<int> index = host != nullptr ? host->playerIndex(handle) : std::nullopt;
+    // A human whose brain is not made yet (a level's first calls run before its cast): the player index `HuCreate`
+    // gave him (human `+0x1b0`), from the humans made so far.
+    if (!index && context.humans != nullptr) {
+        for (int player = 1; player <= static_cast<int>(kStoryPlayers); ++player) {
+            if (const HumanCreation* made = context.humans->player(player); made != nullptr && made->handle == handle) {
+                index = player - 1;
+            }
+        }
+    }
     if (!index || *index < 0 || *index >= static_cast<int>(kStoryPlayers)) {
         return std::nullopt;
     }

@@ -105,6 +105,7 @@ add_executable(coney_tests
     platform/disc_level80_end_test.cpp
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
+    platform/disc_crew_commands_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
