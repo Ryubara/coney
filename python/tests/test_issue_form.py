@@ -238,7 +238,7 @@ def test_a_dropdown_option_that_starts_with_a_dash_is_accepted_plain_or_in_backt
         "- [x] I attached no game files: no disc images, BIOS, extracted assets, save files or game text.\n"
     )
     options = CheckOptions(tree=TREE)
-    for written in ("--play-level", "`--play-level`", "- --play-level"):
+    for written in ("--play-level", "`--play-level`", "- --play-level", "- `--play-level`"):
         text = bug.replace("\n--play-level\n", f"\n{written}\n", 1)
         assert issue_form.check_issue("A crash", text, BUG, CONVENTIONS, options).problems == [], written
 
