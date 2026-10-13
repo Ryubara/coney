@@ -221,6 +221,12 @@ coordinator triages them and is the only one who writes to GitHub; an agent read
 --comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
 closes it. The whole process: [Issues](issues.md).
 
+**Issue rules are enforced, not remembered.** An issue is drafted, checked and filed only with `coney-tools issue
+draft`, `check` and `create` (or `edit` and `link`); the repository's Claude Code hook (`.claude/hooks/issue_guard.py`)
+refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh api` call that writes an issue; and
+the `issue-check` workflow checks every issue opened or edited on the website or through the API and keeps one
+comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
+
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
 CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
 message to the coordinator (title, area, research page, what "done" means) and the coordinator files it as an issue of

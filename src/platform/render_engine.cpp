@@ -708,6 +708,10 @@ void RenderEngine::present() {
     if (m_lineBlend && m_camera != nullptr) {
         blendLines();
     }
+    // A clip takes the frame as the game drew it, before the debug menus go over it.
+    if (m_frameTap && m_camera != nullptr) {
+        tapFrame();
+    }
     if (m_presentOverlay) {
         m_presentOverlay(*this);
     }
@@ -838,6 +842,32 @@ void RenderEngine::blendLines() {
                                      graphics::UvRect{0.0F, shift, 1.0F, 1.0F + shift},
                                      graphics::Rgba{255, 255, 255, 128}};
     drawWindowQuads(m_lineRaster, std::span<const graphics::LogicalQuad>(&quad, 1));
+}
+
+void RenderEngine::tapFrame() {
+    const graphics::ScreenRect rect = m_viewport;
+    if (rect.width <= 0 || rect.height <= 0) {
+        return;
+    }
+    const auto width = static_cast<std::size_t>(rect.width);
+    const auto height = static_cast<std::size_t>(rect.height);
+    const std::size_t rowBytes = width * 4;
+    m_tapRows.resize(rowBytes * height);
+    m_tapFrame.resize(rowBytes * height);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    // OpenGL counts rows from the bottom of the frame; the rectangle is given from the top.
+    glReadPixels(rect.x, m_frameSize.height - rect.y - rect.height, rect.width, rect.height, GL_RGBA, GL_UNSIGNED_BYTE,
+                 m_tapRows.data());
+    if (glGetError() != GL_NO_ERROR) {
+        return;
+    }
+    for (std::size_t y = 0; y < height; ++y) {
+        std::memcpy(&m_tapFrame[y * rowBytes], &m_tapRows[(height - 1 - y) * rowBytes], rowBytes);
+    }
+    for (std::size_t i = 3; i < m_tapFrame.size(); i += 4) {
+        m_tapFrame[i] = 255; // the screen shows no alpha (see captureBackBuffer())
+    }
+    m_frameTap(m_tapFrame, graphics::Extent{rect.width, rect.height});
 }
 
 void RenderEngine::requestCapture(std::uint64_t frameIndex, std::string path) {

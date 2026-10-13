@@ -183,9 +183,16 @@ void GaitBlendTask::advance(float seconds) {
     const AnimClip& leader = *m_clips[upperLeads() ? lower + 1 : lower].clip;
     if (leader.duration > 0.0F) {
         m_phase += rate() * seconds / leader.duration;
-        m_phase -= std::floor(m_phase); // the leading clip wraps
+        // The leading clip wraps: counted once per wrap.
+        const float whole = std::floor(m_phase);
+        if (whole >= 1.0F) {
+            m_wraps += static_cast<std::uint32_t>(whole);
+        }
+        m_phase -= whole;
     }
 }
+
+float GaitBlendTask::lowerTime() const { return timeAt(lowerClip(), m_phase); }
 
 Pose GaitBlendTask::sample(std::span<const Quat, kPoseBones> defaultRotations) const {
     const std::size_t lower = lowerIndex();

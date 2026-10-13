@@ -30,6 +30,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
+      [--record FILE [--record-seconds N]]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
@@ -49,6 +50,41 @@ Without `--headless`, a machine with no display or no OpenGL fails at start-up w
 differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
 the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place); they go on a pull
 request as attachments, uploaded with `gh --attach` ([Capturing and attaching](testing.md#pr-media)).
+
+### Recording a clip {#record}
+
+`--record FILE` writes a short video clip of the run for an issue or a pull request: H.264 in an MP4, 30 frames a
+second (one per fixed step), 720 lines high at the picture's shape (960 x 720 for the usual 4:3), CRF 26 with the
+`slow` preset, and the game's own sound as AAC at 96 kbit/s. `--record-seconds N` sets its length, 1 to 10 seconds;
+10, the default, is also the most. Coney's own debug tooling, with no counterpart in the original.
+
+```sh
+CLIPS=$(uv run --project python coney-tools clips folder my-task)   # the absolute path of the clips folder
+build/dev/src/platform/coney --disc /path/to/warriors.iso --record "$CLIPS/front-end.mp4" --record-seconds 5
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script tests/support/play_walk.txt --record "$CLIPS/walk.mp4"
+```
+
+- **What it records.** The frames Coney draws, read back from its own frame buffer after the game's 2D layers (HUD,
+  menus, fades, line blend) and before the debug menus and the developer overlay are drawn, so neither appears; the
+  debug menus' lines in the 3D scene are switched off while it records. It never reads the screen or a window. The
+  sound is the mixer's own output, step by step.
+- **When.** From the first frame, or with `--play-level` from the level's first frame of play (as `--frames` counts).
+  Without `--frames` the run ends when the clip is done. `--record` puts Coney in test mode (one step and one render a
+  frame, no clock), so the same command and `--input-script` give the same frames: the line it prints ends with a hash
+  of every frame recorded.
+- **Where.** `FILE` must be a plain name (letters, digits, `.`, `_`, `-`) ending in `.mp4`, in an existing folder
+  named `clips` outside every git checkout: the task's scratch folder, `<workspace>/scratch/<task>/clips/`
+  (`coney-tools clips folder TASK` makes and prints it). Pass it absolute: a relative `../../scratch/...` is right
+  only from the main checkout, not from a worktree (three levels deep). Anything else is refused before the run
+  starts.
+- **What the file holds.** Only the picture and the sound: no title, comment, encoder version or path (FFmpeg runs
+  with `-map_metadata -1`, bit-exact headers and x264's settings note removed). `coney-tools clips check` confirms it.
+- **Needs** a window (not `--headless`, `--load` or `--render-references`) and FFmpeg: `CONEY_FFMPEG` names the
+  program, else `ffmpeg` is looked up on `PATH`. Frames go to FFmpeg through its standard input (its only input), the
+  sound is muxed in a second pass; the part files beside the clip are deleted. A clip over 10 MB prints a warning.
+
+Clips are uploaded only with `coney-tools clips publish`, which deletes them afterwards
+([Clips](testing.md#clips)).
 
 The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
@@ -109,9 +145,9 @@ stall such as dragging the window) the game slows down rather than catching up i
 when a frame runs long. A blended frame shows the world up to one step (33 ms) behind the newest simulated state, and
 the pads are read once per step, as in the original.
 
-Test mode is lockstep: with `--frames`, `--headless`, `--input-script` or `--screenshot` every frame is one step and
-one render, with no clock, so a run gives the same result every time on any machine. `--fps-cap` and `--show-fps`
-are refused there.
+Test mode is lockstep: with `--frames`, `--headless`, `--input-script`, `--screenshot` or `--record` every frame is
+one step and one render, with no clock, so a run gives the same result every time on any machine. `--fps-cap`
+and `--show-fps` are refused there.
 
 A test-mode run's window opens without taking the keyboard focus, so a scripted run never interrupts someone typing;
 `--no-activate` does the same for any other run, and `--render-references` never takes it. Agents start Coney only
@@ -147,8 +183,9 @@ against `WARRIORS.WAD`, and prints how many entries it lists.
 
 With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes. First the start-up movies
 play with their sound (`LOGO`, `PLOGO`, then the intro `L1_IN`; [Movies](../research/movies.md#coneys-implementation)):
-any pad button skips one, except `LOGO`, which always plays its 3.8 s. `--skip-movies` skips every movie at once; the
-frame numbers below count from the legal screen, as they do with it. Then the legal screen for five seconds (150
+any pad button skips one, except `LOGO`, which always plays its 3.8 s. `--skip-movies` skips every movie at once (but
+one chosen on the debug menu's [Movies page](debug-menu.md#movies)); the frame numbers below count from the legal
+screen, as they do with it. Then the legal screen for five seconds (150
 frames; no button skips it, as in the original), the memory-card check's "checking" message for three seconds (90
 frames), then the menus' first screen over `level100`'s world, the game's logo and a blinking "press START" (from frame
 242). START leads to the main menu (story, extras, quick rumble); the d-pad or the left stick moves, cross chooses and

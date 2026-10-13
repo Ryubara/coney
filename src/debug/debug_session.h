@@ -84,14 +84,22 @@ struct DebugServices {
     std::function<bool(std::string_view name)> loadSandbox;
     /// The sound output (its volumes and test tone, for the Audio page); null in a run without sound.
     std::function<AudioControls*()> audio;
+    /// The movies on the disc (`LOGO`, `L99_IN`: discMovies()), for the Movies page; empty: no movies in this run.
+    std::function<std::vector<std::string>()> movies;
+    /// Plays the movie `name` over the game at the start of the next frame, showing ordinary captions whatever the
+    /// subtitle option when `captions`; the game is held beneath it and resumes as it was when the movie ends or is
+    /// skipped (docs/guides/debug-menu.md#movies). False, changing nothing, when it cannot (no such movie, or a movie
+    /// playing already). Empty: movies cannot be played in this run.
+    std::function<bool(std::string_view name, bool captions)> playMovie;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua
 /// console, the display switches, the sandbox script state) and the pad menu's navigator. The game makes one, gives
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
-/// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Display,
-/// Audio, Input. Adding a feature is adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
+/// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Missions,
+/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Display, Audio, Input. Adding a feature is adding a
+/// page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
     /// A session over `tunables` (which must outlive it) and `services`; `inner` is the input source the gate wraps

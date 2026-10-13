@@ -1,7 +1,7 @@
 # Gang fights: how a gang fights together
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on 2026-10-12;
-no runtime check yet (the gang-battle trace of issue #273 is the runtime check, [below](#trace)).
+checked at runtime on Rumble's 9-a-side brawl in PCSX2 2.9.94 on 2026-10-12 and 2026-10-13 ([Runtime checks](#runtime)).
 
 How the members of a gang share out a big fight: who goes for whom, how many may hit one man at once, what the rest
 do while they wait, when they switch, how they help each other and what the gang as a whole adds. There is **no
@@ -209,12 +209,215 @@ on results 1, 5 or 6. Under TacticAttack:
 4. **Events**: 1 and 11 (a member hit or spotting someone) give Melee to a member with no fight goal while no team-up
    runs; 2 (a member died) fires `TacMemberDied` unless fled; 18 runs the flight check; 19 and 22 give everyone Melee
    again; 20 runs `AttackTactic_OnViolence`.
-5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`); whether Rumble does is not known (the trace
-   records it).
+5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`). Rumble does not: `+0xd9` stayed 0 for both
+   sides in every recorded match and no order ran ([Runtime checks](#runtime)).
 
 Side 1's AI members (with the player as chief) get the forced attack command, `WCIssueCommand(player, 1, true)`:
 FollowAndAttack on the player, best enemy within 60 m of him, and no shared target. Their gang type 3 lets one of
 them swing at a standing man at a time (v2 1) and four at a downed one (v3 4).
+
+## Runtime checks {#runtime}
+
+Confirmed (runtime), PCSX2 2.9.94: eight recordings of [Rumble's gang battle](rumble.md#gang-battle-trace), every
+human on every update, five with the Furies as side 1 (2026-10-12 and 2026-10-13) and three with the sides swapped
+([The sides swapped](rumble.md#gang-battle-swap)); the five of 2026-10-13 also ran the hooks of
+`repo:research/traces/patches/gang-battle.toml`. Counts are over the fight (the brains going on to `RumbleOver`), per
+minute that a fighter stands. The numbers per match are on [Rumble](rumble.md#gang-battle-results).
+
+1. **Each side's tactic.** Side 1 runs the attack command's tactic (`WarriorAttackTactic`, vtable `0x00544160`) for
+   the whole match, with FollowAndAttack (52) at the bottom of every member's stack; so side 1 never meets
+   TacticAttack's idle check, events, flight or team-ups. Side 2 runs TacticConfront (vtable `0x00543740`) for its
+   first 23 to 47 updates, then TacticAttack (`0x00543320`), with FindEnemy (65) at the bottom, Melee (8) above it and
+   Fight (15) on top. The alert state (`+0x32`) is 1 from the brains going on (0 under TacticConfront).
+2. **No shared target and no team-ups.** The shared target (`+0x10`) stayed empty and `GangEnableAttackStrategies`
+   (`+0xd9`) 0 on both sides in every match, and no team-up order ran. The leader (`+0x44`) stays one fighter until he goes
+   down, then passes to another (side 1 starts with `P11`).
+3. **The limits.** At most 4 of a side target one man, as the 4 attack slots allow. The spacing bytes on a man are
+   those of the gang type attacking him: on side 2's fighters (attacked by type 3) 1 standing and 4 downed, on side 1's
+   (attacked by type 19) 2 standing and 1 or 2 downed (the downed byte is raised only by a slot taken while he is
+   down). The active places held on a man stay within his byte, except in 0 to 2 % of the samples where places are
+   held, nearly all within 10 s after he got up (inferred: places taken while he was down, under the downed byte,
+   stay until their holders let go; `Brain_ClaimActiveAttacker` `0x00291008` only looks at the first `s` places).
+4. **Fight goals last 4 s.** Every fight goal starts with 4000 ms left (a few with 500 to 2500 ms), and 24 to 74 % of
+   them run to 4 s or longer (kept while an active place is held; the longest 41 s), so a member re-chooses every few
+   seconds ([Target switches](#switches) rule 1).
+5. **Where the waiting ones stand.** A fighter with Fight on top and no active place stands a median 0.9 to 1.1 m from
+   a target who is fighting him (1 to 5 % of that time in the 4 to 4.75 m band), and 1.5 to 3.5 m from a target
+   fighting someone else (6 to 25 % in the band, 29 to 67 % beyond 2.5 m). The band is where a reposition sends a
+   waiter, not where waiters spend their time ([What the waiting ones do](#waiting)). Taunts (clip `0x25b`) come 0 to
+   1.9 times a standing minute.
+6. **What changes a target** (the `set-target` hook on `Brain_SetTarget` `0x0028cfe0`, by its caller; five matches,
+   per standing minute): the enemy pick (`Brain_PickBestEnemy`, Melee's on side 2 and FollowAndAttack's on side 1,
+   inferred from the goals each side runs: the hook cannot tell the two callers apart) sets one 13 to 31 times and
+   clears one 7 to 28 times (it clears, then sets: a change of enemy shows as a clear and a set in one update); the
+   fight goal's forced re-target (`FightGoal_Process`, rule 2 of [the switches](#switches)) switches 2 to 17 times;
+   **hitting back** at the man who hit him (`GangBrain_OnEvent`, event 1, forced) 1.0 to 4.7, which side 1 does
+   through `Brain_Fight` and side 2 directly; clears by `Human_DropTarget`, the Stunned goal and a slot displacement
+   (`Brain_ClaimAttackSlot`) 0 to 7.5. Calls that set the same target again (most of them, through `Human_SetTarget`
+   `0x00226c30`) change nothing. Every return address the recordings logged, the other call sites and each cause:
+   [What each caller means](#set-target-causes). An earlier reading put side 1's `Brain_Fight` switches on its
+   FollowAndAttack goal; the hook's second address shows they are all the hit-back.
+7. **Help.** Help calls (the `help-call` hook on `Gang_BroadcastHelpCall` `0x00293640`) come from three sites of
+   `Brain_DefaultOnEvent` `0x00292d80`, which the hook tells apart by return address: on a hit (event 1, call at
+   `0x002930d0`, returning to `0x002930d8`, with an amount in `a3`), on an attack warning (event `0x10`, call
+   `0x00292f00`, return `0x00292f08`) and on a **new enemy** (event `0xb`, call `0x002934f4`, return `0x002934fc`:
+   unless that enemy is throwing at him, `Human_IsThrowingAt` `0x002281d8`, a 20 m call with the new-enemy flag `t0` =
+   1 and `a2`, `a3` zero; confirmed (code), [the shared handler](ai.md#shared-events) item 3). Event `0xb` comes from
+   the enemy scan when `Brain_AddEnemy` lists an enemy for the first time, and is rare once both sides are engaged
+   (inferred): 0.1 to 1.3 a standing minute a side (confirmed (runtime)). Per standing minute, five matches (three
+   swapped, two not): hit and warning, the Orphans 41 to 70 and the Furies 12 to 37 (the Orphans are hit more); all
+   three sites, the Orphans 41 to 71 and the Furies 13 to 38. [Rumble's comparison](rumble.md#gang-battle-metrics)
+   rule 11 counts all three. Every helper sent (the `send-helper` hook on `Gang_SendHelper` `0x002b75b8`, 0.1 to 1.6 a
+   minute) was sent by a hearer answering a call (`Brain_OnViolenceSeen` `0x00291960`); TacticAttack's 3 s idle check
+   never sent one, because side 2's fighters never had an empty goal stack (0 to 0.5 % of the time; side 1's 0.4 to
+   12.6 %).
+8. **Side and gang** (the swap): the Furies won all eight matches, as side 1 and as side 2, and the Blocking goal
+   and few reactions go with the Furies, while side 2 attacks more often than side 1 whichever gang it is
+   ([Rumble: the sides swapped](rumble.md#gang-battle-swap)).
+
+### What each set-target caller means {#set-target-causes}
+
+`Brain_SetTarget` has **102 call sites** (confirmed (code), the cross-references to `0x0028cfe0`). The five hooked
+recordings logged 21 distinct return addresses, one per call site; the first table below gives those 21 (and the
+second `GetItemGoal_Process` site, which a match could reach), the second table every other site.
+
+The `set-target` hook logs `ra`, the return address into the function that called `Brain_SetTarget`, and `ra2`, the
+word at `0(sp)` on entry: the caller's own stack slot 0, since the hook runs before `Brain_SetTarget` moves `sp`.
+`ra2` is the caller's own return address wherever that caller saves `ra` at `0(sp)` (confirmed (code) at each
+prologue's `sd ra,0x0(sp)`):
+
+- the wrappers `Human_SetTarget` (`0x00226c40`), `Brain_Fight` (`0x0028d308`) and `Human_DropTarget`
+  (`0x00226f7c`), for which `ra2` names the cause;
+- `GangBrain_OnEvent` (`0x00304fcc`), `Brain_OnViolenceSeen` (`0x0029197c`), `StunnedGoal_Process` (`0x002b4bc0`),
+  `SpectateGoal_End` (`0x002b4300`) and `AttackAction_Start` (`0x002fa9cc`), for which `ra2` names only the
+  dispatcher that ran them, one value each in the recordings: `Brain_OnEvent` (`0x0028f928`, returning to
+  `0x0028f974`), `GangBrain_OnEvent`'s call of `Brain_OnViolenceSeen` (returning to `0x003052a4`), `Goal_Process`
+  (`0x0029eed8`, `0x0029ef64`), `Goal_End` (`0x0029edd8`, `0x0029ee08`) and `Action_Update` (`0x002f9e48`,
+  `0x002f9ed4`). These add nothing to the cause; `ra` alone gives it.
+
+The other logged callers save `ra` elsewhere (`Brain_PickBestEnemy` at `0x10(sp)`, `0x0029f270`; `FightGoal_Process`
+at `0x30`, `EngageEnemyGoal_Process` at `0xa0`, `GetItemGoal_Process` at `0x60`, `Brain_ClaimAttackSlot` at `0x80`,
+`WoundedGoal_Process` at `0x50`, `Gang_AddMember` at `0x40`, `Brain_DefaultOnEvent` and `SpectateGoal_Process` at
+`0x20`, `GrabbingGoal_Process` and `GrabbedGoal_Process` at `0x10`), so for them `ra2` is a stale stack word (for
+`Brain_PickBestEnemy` it varies from call to call) and means nothing. **For the next recording**: logging the word
+at `sp + 0x10` as well would recover `Brain_PickBestEnemy`'s caller, since that is where it saves `ra`: `0x002aecb8`
+for `MeleeGoal_Process`, `0x002bc224` for `FollowAndAttackGoal_Process` (it has 29 call sites in all), which would
+replace rule 6's inferred side split with a measured one.
+
+The functions and conditions are confirmed (code) at the call sites (each call is the instruction 8 bytes before
+`ra`); "changes" counts calls that changed the brain's target, over the whole of the five hooked recordings (offsets
+100 and 500 and the three swapped; `ra2` was logged in three of them, offsets 100, 500 and swapped 682), confirmed
+(runtime).
+
+| `ra` | `ra2` | Caller | Cause | Force | Changes |
+| --- | --- | --- | --- | --- | --- |
+| `0x0029f298` | | `Brain_PickBestEnemy` (`0x0029f230`) | **AI pick**, first step: clears the target before scoring the enemy list | 0 | 1772 clears |
+| `0x0029f368` | | `Brain_PickBestEnemy` | **AI pick**: the best-scoring valid enemy ([Who goes for whom](#targets)); called by Melee (side 2) and FollowAndAttack (side 1; inferred from the goals each side runs, `ra2` cannot tell) | 0 | 2269 sets |
+| `0x002b3ca8` | | `FightGoal_Process` (`0x002b3ab0`) | **re-target to the man in front**: the nearest human within 1.5 m straight ahead, a threat, no GrabTarget goal ([switches](#switches) rule 2) | 1 | 835 switches |
+| `0x00305220` | `0x0028f974` | `GangBrain_OnEvent` (`0x00304fa8`) | **hit back**: event 1 from a non-friendly attacker, not busy, a fight goal already on the stack: takes the attacker as enemy and target | 1 | 116 switches, 3 sets |
+| `0x0028d330` | `0x00305200` | `Brain_Fight` from `GangBrain_OnEvent` | **hit back**, as above with no fight goal on the stack: `Brain_Fight(attacker, -1, 1)` | 1 | 104 switches (plus 51 switches and 9 sets with force 1 where `ra2` was not logged) |
+| `0x0028d330` | `0x00291c6c` | `Brain_Fight` from `Brain_OnViolenceSeen` (`0x00291960`) | **help response**: event 20 (a help call, [Helping](#help) rule 1) heard with no fight goal: fights the side picked by `Brain_PickSideInFight` | 0 | 10 sets (plus 4 unlogged with force 0) |
+| `0x00291c80` | `0x003052a4` | `Brain_OnViolenceSeen` | **help response** with a fight goal already on the stack | 0 | 37 sets |
+| `0x002afcd0` | | `EngageEnemyGoal_Process` (`0x002afa48`) | **engage re-target**: the nearest enemy he can see, every 2 s, when his own is beyond 5 m ([switches](#switches) rule 3) | 1 | 7 switches, 2 sets |
+| `0x002fad04` | `0x002f9ed4` | `AttackAction_Start` (`0x002fa9a8`) | **attack action**: a queued attack aimed at a human other than the target makes him the target | 0 | 14 switches, 1 set |
+| `0x002dce08` | | `GetItemGoal_Process` (`0x002dc9f8`) | **item fight**: an attack (`Brain_QueueAttack`, kind `0x11`) on a human within 1 m of the item he goes for, when `Human_CanStartAttack` allows it; the other site, ra `0x002dcb08`, targets a non-friendly human who holds the item | 0 | 2 sets |
+| `0x0028e0fc` | | `Brain_ClaimAttackSlot` (`0x0028df30`) | **displaced**: a closer attacker took the last attack slot on the man; the farther holder's target is cleared ([limits](#limits) rule 1). The logged brain is the displaced one | 0 | 61 clears |
+| `0x00226fd8` | `0x0028fb30` | `Human_DropTarget` from `Brain_MaybeSpotPlayers` (`0x0028fae8`) | **own state**: every think while his state holds any of `0x1f80874000` (dying, wounded, cuffed, knocked out, dead and others) | 0 | 154 clears |
+| `0x00226fd8` | `0x0028c414` | `Human_DropTarget` from `Brain_OnKnockedOut` (`0x0028c3b0`) | **knocked out** ([AI](ai.md#reaction-goals)) | 0 | 8 clears |
+| `0x00226fd8` | `0x0028c564` | `Human_DropTarget` from `Brain_TearDown` (`0x0028c4f8`) | the brain torn down (the human deleted) | 0 | none |
+| `0x00226fd8` | `0x002ade80` | `Human_DropTarget` from `MeleeGoal_End` (`0x002ade60`) | **Melee ends**: its End runs when the goal is popped | 0 | 53 clears |
+| `0x00226fd8` | `0x002dc884` | `Human_DropTarget` from `GetItemGoal_Start` (`0x002dc7f8`) | **goes for an item** (side 1 only in these matches) | 0 | 38 clears |
+| `0x00226fd8` | `0x0030678c` | `Human_DropTarget` from `Tactic_Start` (`0x00306690`) | **new tactic**: each non-player member is popped to his goal base and drops his target (side 2's TacticConfront, then TacticAttack; side 1's at the start) | 0 | 51 clears |
+| `0x00226fd8` | not logged | `Human_DropTarget` | any of the five above | 0 | 90 clears |
+| `0x002b4bdc` | `0x0029ef64` | `StunnedGoal_Process` (`0x002b4bb8`) | **stunned**: no target while the Stunned goal runs | 0 | 186 clears |
+| `0x002b52fc` | | `WoundedGoal_Process` (`0x002b52c0`) | wounded: no target (already cleared by the own-state drop) | 0 | none |
+| `0x002b437c`, `0x002b4310` | `0x002b4310`: `0x0029ee08` | `SpectateGoal_Process` / `_End` (`0x002b4330`, `0x002b42f0`) | spectating: no target | 0 | 9 clears |
+| `0x00166370` | | `Gang_AddMember` (`0x00166308`) | joining a gang (the match's set-up, before the fight) | 0 | 5 clears |
+| `0x00226cbc` | `0x00226f5c` | `Human_SetTarget` from `Human_SyncTargetFromBrain` (`0x00226ee8`) | the human copying the brain's own target back: never a change | 0 | none (about 330,000 calls) |
+| `0x00292dfc` | | `Brain_DefaultOnEvent` (`0x00292d80`) | event 2, the brain's reset ([shared events](ai.md#shared-events)) | 0 | none |
+| `0x002b6160`, `0x002b6974`, `0x002b69e8` | | `GrabbingGoal_Process`, `GrabbedGoal_Process` | a grab's reaction goals | 0 | none |
+
+**The other 80 sites**, none of which any of the five recordings logged (confirmed (runtime)). Set or clear and the
+force are read at each call (confirmed (code)); the conditions of the first group are confirmed (code) in the
+functions named; for the rest the cause is the function's role as [AI goals](ai-goals.md) and [AI code](ai-code.md)
+give it. `ra` is the call + 8.
+
+*Goals and handlers a brawl's fighters run or could meet:*
+
+| `ra` | Caller | Cause | Force |
+| --- | --- | --- | --- |
+| `0x002aec88` | `MeleeGoal_Process` (`0x002aebf8`) | **no slot**: with threat response 0 (brain `+0x21c`) Melee keeps its set enemy instead of picking; when that enemy is valid but his brain gives this man no attack slot (`Brain_HasAttackSlot`), the target is cleared and Melee ends. With a threat response (2 from the brain's creation) Melee picks through `Brain_PickBestEnemy` instead | 0, clear |
+| `0x002bc278` | `FollowAndAttackGoal_Process` (`0x002bc198`) | **too far from the leader**: the pick is more than 60 m (squared 3600) from the goal's leader | 0, clear |
+| `0x002b4af4` | `GroundedGoal_Process` (`0x002b4aa8`) | **down**: each update while he is knocked down, the target is cleared when the target is hidden in shadow (the target's brain `+0x2d4`) | 0, clear |
+| `0x0030797c` | `AttackTactic_OnViolence` (`0x00307878`) | TacticAttack, event 20: each member with an empty goal stack takes the side the leader picked as enemy and target ([AI reimplementation](ai-reimpl.md#attack-on-violence)); side 2's stacks were empty 0 to 0.5 % of the time | 0, set |
+| `0x002af3ac` | `AttackTargetGoal_Process` (`0x002af278`) | each update, the goal's own target once validated (a goal a script order gives) | 0, set |
+| `0x002b1e88` | `ChaseGoal_Process` (`0x002b1860`) | the chased man, whenever he is in line of sight (when he is hidden in shadow, only within 2 m and when this brain sees hidden humans, `+0x2d5`); also added as an enemy | 0, set |
+| `0x002b66cc` | `MountingGoal_Process` (`0x002b6638`) | the man under him (his pair link `+0xc4`) | 0, set |
+| `0x002b6cb8` | `MountedGoal_Process` (`0x002b6bb8`) | the man on top of him, after the help call, when his brain is not type 5 and has a threat response | 0, set |
+| `0x002bb908` | `GrabTargetGoal_Process` (`0x002bb858`) | the human to grab | 1, set |
+| `0x002b92f0` | `SaveHumanGoal_Process` (`0x002b8ad8`) | a human whom `Brain_IsThreat` (`0x00290138`) calls a threat (the goal fights off attackers on its way) | 1, set |
+| `0x002a3590` | `ManWeaponPileGoal_Process` | the human he throws at | 0, set |
+| `0x0026a280` | `HitReact_OnSpecialEnd` (`0x0026a1f8`) | end of a special hit reaction: when the human's foe is **the player** (brain type 0) and the player's target is this human, the player's target is cleared; never an AI's | 0, clear |
+| `0x0022c984`, `0x0022c230` | `Grab_Link` (`0x0022c730`), `Pair_LinkMount` (`0x0022bfd0`) | a grab or mount links: when the victim is **the player** (brain type 0), the player's target becomes the grabber | 0, set |
+| `0x00226d88`, `0x00226dc8`, `0x00226b84` | `Human_SetTargetObject` (`0x00226cd0`), `Human_SetTargetFromHandle` (`0x00226af8`) | a human's own target written to his brain: callers are the player's controls (`Player_Square`, `Player_Cross`, `Player_LockOnTarget` and others) and `Human_SyncTargetFromBrain` | 0, set |
+| `0x00190518` | `Human_TraceThrowAim` (`0x0018fee0`) | after the aim trace of a throw ([Objects: throws](objects.md#throws)); the condition was not traced | 1, clear |
+| `0x00169b80` | `Gang_CalmMembers` (`0x00169b00`) | the gang calmed: each AI member's target and enemies cleared | 0, clear |
+| `0x00260128` | `Cuff_OnCufferClipEnd` (`0x002600f0`) | the cuffer's clip ends (cops) | 0, clear |
+
+*Other goals, brains, tactics and bosses* (missions, the street, cops, the player; not on a brawl fighter's stack):
+
+| `ra` | Caller | Set or clear, force |
+| --- | --- | --- |
+| `0x002baa1c` | `StandGroundGoal_Process` | clear, 0 |
+| `0x002baee8`, `0x002bb104`, `0x002bb334` | `ObjectPileGoal_End`, `ObjectPileGoal_Process` (twice) | clear 0, clear 0, set 1 |
+| `0x002bd6d4`, `0x002be2b8` | `FollowAndDefendGoal_DefendCrime`, `FollowAndDefendGoal_Process` | set 1, clear 0 |
+| `0x002be930`, `0x002be9e8`, `0x002bea74` | `HoldPositionGoal_Process` | clear, 0 |
+| `0x002bf9d0`, `0x002bfa9c` | `WarriorVandalStealGoal_Process` | set 0, clear 0 |
+| `0x002c4674` | `Goal_ReportCrimeB` | set, 1 |
+| `0x002c9230`, `0x002c92c0`, `0x002c9aa8`, `0x002c9c0c`, `0x002ca040`, `0x002ca104`, `0x002ca7cc` | `HTLDefenseGoal_Process` (twice), `HTLDefenseFightGoal_Process` (twice), `HTLOffenseGoal_Process` (twice), `HTLOffenseFightGoal_Process` | clear 0, not traced 0, set 1, clear 0, clear 0, clear 0, set 1 |
+| `0x002ce284` | `StealGoal_Start` | clear, 0 |
+| `0x002d36f8` | `ScatterGoal_Process` | set, 0 |
+| `0x002d9984` | `BoxerGoal_Process` | set, 0 |
+| `0x002daaf0` | `MoveToExitFlagGoal_Resume` | clear, 0 |
+| `0x002de630`, `0x002deac0`, `0x002deb0c`, `0x002dec18`, `0x002dec2c` | `FollowPlayerGoal_Suspend`, `FollowPlayerGoal_Process` (four) | clear, set, set, clear, clear; 0 |
+| `0x002e20c0` | `DevilRunGoal_Pace` | set, 0 |
+| `0x002e3308`, `0x002e3a10`, `0x002e3c20`, `0x002e3e4c` | `AvoidEnemiesGoal_Resume`, `AvoidEnemiesGoal_Process` (three) | clear, clear, set, set; 0 |
+| `0x002e6624` | `ShopkeeperGoal_Reset` | clear, 0 |
+| `0x002e89d4`, `0x002ea1f0`, `0x002ebf70` | `BigBrawlerGoal_OnAttackWarning`, `BigFighterGoal_OnAttackWarning`, `BigFighterAGoal_OnAttackWarning` | set, 1 |
+| `0x002ed920`, `0x002ed958`, `0x002eddc8`, `0x002ede64` | `BigThrowerGoal_Process` | set, set, clear, clear; 0 |
+| `0x002ef3a8`, `0x002ef614` | `StationaryThrowerGoal_Process` | set, clear; 0 |
+| `0x002f80fc`, `0x002f8370` | `HideAndSeekGoal_Found`, `HideAndSeekGoal_OnAttackWarning` | set, 1 |
+| `0x002a237c`, `0x002a2398`, `0x002a24b4`, `0x002a26ac`, `0x002a297c`, `0x002a2b50`, `0x002a2e74` | `BossDiegoGoal_Process` | set 1 (four), clear 0 (two), set 0 |
+| `0x0030c284` | `BossRoofTactic_OnEvent` | set, 1 |
+| `0x0031aa00`, `0x0031ae5c` | `ScoutTactic_OnEvent`, `ScoutTactic_OnViolence` | set, 0 |
+| `0x0031e6b4` | `VandalizeTactic_OnDamage` | set, 1 |
+| `0x002fefc4` | `CivilianBrain_Think` | clear, 0 |
+| `0x00301fc0`, `0x00302668` | `CopBrain_ReportCrime`, `CopBrain_OnEvent` | set 1, set 0 |
+| `0x00303644` | `PlayerBrain_Update` | clear, 0 |
+
+So the causes rule 7 of [Rumble's comparison](rumble.md#gang-battle-metrics) needs map as follows: **AI pick**
+`0x0029f298` and `0x0029f368` (a clear and a set in one update, a change of enemy); **re-target in front**
+`0x002b3ca8`; **hit back** `0x00305220` and `0x0028d330` with `ra2` `0x00305200` (or, unlogged, force 1);
+**help response** `0x00291c80` and `0x0028d330` with `ra2` `0x00291c6c` (or, unlogged, force 0); **engage**
+`0x002afcd0`; **displaced** `0x0028e0fc`; **reactions and own state** (stunned, wounded, knocked out, down)
+`0x002b4bdc`, `0x002b52fc`, `0x002b4af4` (Grounded, never logged: it runs only while he is down, but the clear's cause
+is the target hiding in shadow, not his being down) and `Human_DropTarget` from `0x0028fb30` and
+`0x0028c414`; **orders** (tactic start, Melee's end, an item) `Human_DropTarget` from `0x0030678c`, `0x002ade80` and
+`0x002dc884`. The sites a brawl could reach but the recordings never logged (Melee's no-slot clear `0x002aec88`,
+FollowAndAttack's 60 m clear `0x002bc278`, TacticAttack's violence handler `0x0030797c`, the grab and mount
+reactions) are in the second table; a comparison that meets one should count it under its cause there. Two causes
+the brief of issue #273 names have no site of their own:
+
+- **A helper sent** (`Gang_SendHelper` `0x002b75b8`) does not set a target itself: neither it nor the HelpRespond
+  goal is among the 102 callers (confirmed (code)). Its caller does, on the same man, just before sending:
+  `Brain_OnViolenceSeen` sets the side it picked as the target (`0x00291c80`, or `Brain_Fight` with `ra2`
+  `0x00291c6c`) and then sends him toward that man (confirmed (code), the calls at `0x00291c78` and `0x00291cdc`),
+  and `AttackTactic_OnViolence` does the same for an idle member (`0x0030797c`). Every send in the recordings came
+  from `Brain_OnViolenceSeen` ([Runtime checks](#runtime) rule 7), so a helper sent shows in the trace as a **help
+  response**. This corrects the earlier reading that the target came from Melee's later pick.
+- **Re-target on the target's death**: no caller reacts to the target going down; the fight goal's validation fails,
+  the goal ends and the next pick clears and sets (`0x0029f298`, `0x0029f368`), or a slot is lost (`0x0028e0fc`)
+  ([switches](#switches) rule 1; inferred: none of the 102 call sites is such a handler).
 
 ## Coney needs {#coney}
 
@@ -263,6 +466,12 @@ Per human and update (the field set the gang-battle trace uses; brain = `0x006d5
 | Helping | help calls (hook `0x00293640`), helpers sent (hook `0x002b75b8`), side picked (hook `0x002912b0`), state flags of mates (grabbed `0x30`, down `0x80000`) | hooks; human record `+0x00` |
 | The gang | alert `+0x32`, tactic vtable (`+0x40` → `+0x1c`), leader `+0x44`, team-ups allowed `+0xd9`, can flee `+0xdf`, start count `+0xe0`, running order (tactic `+0x10` → its vtable `+0x0c`) | gang record; the tactic |
 
+The `humans` field set records the brain and gang quantities above (the gang's as `g_alert`, `g_tactic`, `g_leader`,
+`g_chosen`, `g_teamups` and `g_order`, the team-up order running), and the hooks `set-target`, `help-call` and
+`send-helper` of `repo:research/traces/patches/gang-battle.toml` log the target changes with their caller, the help
+calls and the helpers sent. The wait reason (`Brain_CheckAttack`'s result) is not recorded yet: it needs a hook where
+the result is returned, not at the entry.
+
 Metrics the comparison can draw from them, per gang: the share of updates with 0, 1, 2, ... members on one enemy and
 with 0, 1, 2 active places held; the mean time a member holds one target; switches per minute split by cause
 (re-target, fight-goal end, engage re-target); the share of slot holders inside 4-4.75 m while waiting; taunts per
@@ -273,5 +482,4 @@ minute by kind.
 
 - What fills game state `+0x280` / `+0x284`, the attack command's fallback for the shared target.
 - Who reads TacticAttack's interval `+0x2c` / `+0x30` (`AttackTactic_ComputeSpacing` `0x00307668`).
-- Whether Rumble's arenas turn on `GangEnableAttackStrategies` (gang `+0xd9`); the gang-battle trace reads it.
 - What sends event `0x15` (the slot holders' taunts).

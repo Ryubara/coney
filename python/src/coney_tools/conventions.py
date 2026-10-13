@@ -471,6 +471,10 @@ class Thresholds:
     pr_pending_hours: int
 
 
+#: The causes `coney-tools repo pr-health` reports, in the order one pull request lists them.
+PR_HEALTH_CAUSES = ("checks-failed", "conflict", "ci-stuck", "auto-merge-off")
+
+
 @dataclass(frozen=True)
 class AttachmentPatterns:
     """The regular expressions the attachment scan looks for, one tuple per kind of finding (`log_scan`)."""
@@ -528,10 +532,19 @@ class RerunRules:
 
 @dataclass(frozen=True)
 class PrHealth:
-    """How `coney-tools repo pr-health` sorts a failing required check, and when it may rerun one."""
+    """How `coney-tools repo pr-health` sorts failing checks, labels stuck pull requests and reruns stale checks."""
 
     #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
     lint_checks: tuple[str, ...]
+    #: Cause to the label `repo pr-health --labels` puts on an open pull request with that cause and takes off when it
+    #: is gone (`conflict` to `S-conflict`); a label of the list, and no other label is ever touched.
+    labels: Mapping[str, str]
+    #: How many times `--labels` rereads GitHub while it still answers `UNKNOWN` for a pull request's mergeability
+    #: (it computes it on demand, so the first read after a push to main is often unknown).
+    unknown_retries: int
+    #: Seconds between those rereads.
+    unknown_wait_seconds: int
+    #: When `--rerun` may restart a failed required check.
     rerun: RerunRules
 
 
@@ -570,6 +583,20 @@ class Hygiene:
 
 
 @dataclass(frozen=True)
+class Clips:
+    """The in-game video clips' rules (`coney-tools clips`, `pcsx2 clip`)."""
+
+    #: The folder name the clips of a task live in: `<scratch>/<task>/<folder>/`.
+    folder: str
+    #: The longest clip, in seconds (also Coney's `--record-seconds` cap).
+    max_seconds: int
+    #: A clip bigger than this many megabytes is reported.
+    warn_mb: int
+    #: `clips clean` deletes clips older than this many hours.
+    keep_hours: int
+
+
+@dataclass(frozen=True)
 class Workspace:
     """The local workspace rules (`workspace clean|disk`); hosted checks ignore them."""
 
@@ -584,6 +611,7 @@ class Workspace:
     #: A worktree holding a file of this name is never cleaned.
     busy_marker: str
     remove_worktree_when_merged: bool
+    clips: Clips
 
 
 @dataclass(frozen=True)
@@ -1249,7 +1277,18 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     )
     limits = _table(table["thresholds"], limits_where, keys)
     health_where = _at(where, "pr_health")
-    health = _table(table["pr_health"], health_where, ("lint_checks", "rerun"))
+    health = _table(
+        table["pr_health"],
+        health_where,
+        ("lint_checks", "labels", "unknown_retries", "unknown_wait_seconds", "rerun"),
+    )
+    labels_where = _at(health_where, "labels")
+    cause_labels = _mapping(health["labels"], labels_where)
+    for cause, label in cause_labels.items():
+        _names_in([cause], PR_HEALTH_CAUSES, labels_where, "a cause of repo pr-health")
+        _text(label, _at(labels_where, cause))
+    if len(set(cause_labels.values())) != len(cause_labels):
+        raise _fail(labels_where, "a label is used for two causes")
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
@@ -1267,6 +1306,9 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
         pr_health=PrHealth(
             lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks")),
+            labels=MappingProxyType(dict(cause_labels)),
+            unknown_retries=_count(health["unknown_retries"], _at(health_where, "unknown_retries"), minimum=0),
+            unknown_wait_seconds=_count(health["unknown_wait_seconds"], _at(health_where, "unknown_wait_seconds")),
             rerun=_read_rerun(health["rerun"], _at(health_where, "rerun")),
         ),
         attachments=_read_attachments(table["attachments"], _at(where, "attachments")),
@@ -1308,8 +1350,11 @@ def _read_workspace(data: object, where: str) -> Workspace:
         "build_idle_hours",
         "busy_marker",
         "remove_worktree_when_merged",
+        "clips",
     )
     table = _table(data, where, keys)
+    clips_where = _at(where, "clips")
+    clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours"))
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
@@ -1319,6 +1364,12 @@ def _read_workspace(data: object, where: str) -> Workspace:
         busy_marker=_text(table["busy_marker"], _at(where, "busy_marker")),
         remove_worktree_when_merged=_flag(
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")
+        ),
+        clips=Clips(
+            folder=_text(clips["folder"], _at(clips_where, "folder")),
+            max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),
+            warn_mb=_count(clips["warn_mb"], _at(clips_where, "warn_mb")),
+            keep_hours=_count(clips["keep_hours"], _at(clips_where, "keep_hours")),
         ),
     )
 
@@ -1341,6 +1392,7 @@ def parse_conventions(data: object) -> Conventions:
     for form in issues.forms.values():
         _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")
     _names_in(hygiene.report_issue.labels, names, "hygiene.report_issue.labels", "in labels.list")
+    _names_in(hygiene.pr_health.labels.values(), names, "hygiene.pr_health.labels", "in labels.list")
     return Conventions(
         version=SUPPORTED_VERSION,
         repo=_read_repo(table["repo"], "repo"),

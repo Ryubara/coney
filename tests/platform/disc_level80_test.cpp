@@ -430,26 +430,33 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     REQUIRE(warrior != nullptr);
     REQUIRE(player != nullptr);
     const auto facingHim = [&level, warrior] {
-        // Once he stands (the freed Warriors walk off at first), 1 m east of him, facing west (heading 90 degrees
+        // Once he stands still (the freed Warriors walk off at first), 1 m east of him, facing west (heading 90 degrees
         // faces -x), for a think period. His goals are held meanwhile (the brain suspended, as BrSuspend does; his
         // thinks still run the prompt's test): moved off his formation slot by the teleport, his follow goal would
         // otherwise run him back to it, out of the swap's reach.
+        // Still means standing at no speed for a whole think period (his brain thinks one step in five): a stop from a
+        // run plays the run stop (417), which reads as standing on its first update (0 m/s) and then carries him about
+        // 1.6 m along his facing (docs/research/characters.md#sprint), into the player and off the prompt's front.
+        constexpr int kThinkPeriod = 6;
+        constexpr float kStill = 1e-3F;
+        // A fresh count for each wait.
+        const auto standsStill = [warrior] {
+            return [warrior, standing = 0]() mutable {
+                const coney::anim::Vec3 v = warrior->human().velocity();
+                const bool still =
+                    warrior->human().gait() == coney::human::Gait::Standing && std::hypot(v.x, v.y) < kStill;
+                standing = still ? standing + 1 : 0;
+                return standing >= kThinkPeriod;
+            };
+        };
         warrior->setSuspended(false);
-        REQUIRE(level.runUntil([warrior] { return warrior->human().gait() == coney::human::Gait::Standing; }, kWait));
+        REQUIRE(level.runUntil(standsStill(), kWait));
         warrior->setSuspended(true);
         const coney::anim::Vec3 at = warrior->human().position();
         level.play()->teleportPlayer(
             coney::world_objects::Placement{.position = {at.x + 1.0F, at.y, at.z}, .headingDegrees = 90.0F});
-        // He may still be slowing to a stop for a few steps; the test waits until he has stood for a whole think
-        // period (his brain thinks one step in five).
-        constexpr int kThinkPeriod = 6;
-        int standing = 0;
-        REQUIRE(level.runUntil(
-            [warrior, &standing] {
-                standing = warrior->human().gait() == coney::human::Gait::Standing ? standing + 1 : 0;
-                return standing >= kThinkPeriod;
-            },
-            kWait));
+        // Then a whole think period beside him, still, for the prompt's test.
+        REQUIRE(level.runUntil(standsStill(), kWait));
     };
     constexpr double kHeld = 9999.0;
     player->human().script().heldObject = kHeld;

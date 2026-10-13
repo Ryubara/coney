@@ -240,6 +240,20 @@ TEST_CASE("a wall stops the body a radius away and lets it slide along", "[human
     CHECK(human.position().y > y + 0.5F);
 }
 
+TEST_CASE("a move longer than the body's reach meets the wall from where it starts, not past it", "[human]") {
+    const TestCharacter character;
+    const auto mesh =
+        coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                coney::test::wallFacingMinusX(50.0F, 0.0F, 80.0F, -1.0F, 5.0F)));
+    Human human = spawnHuman(character, mesh.get(), Vec3{49.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    // A 2 m push in one update would carry the sphere past the wall's plane; the sweep stops it 0.01 m short of the
+    // touch (docs/research/physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule).
+    human.addPush(Vec3{2.0F, 0.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    CHECK(human.position().x == Approx(50.0F - coney::human::playerWalkingRadius(1.0F) - 0.01F).margin(0.002));
+}
+
 TEST_CASE("running into a wall at a steep angle brakes the player to the slid speed", "[human]") {
     const TestCharacter character;
     const auto mesh =

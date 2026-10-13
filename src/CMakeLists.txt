@@ -14,6 +14,7 @@ add_library(coney_core STATIC
     core/input_script.cpp
     core/name_hash.cpp
     core/parse_number.cpp
+    core/clip_recording.cpp
     core/window_display.cpp
     core/options.cpp
     core/pad.cpp
@@ -78,6 +79,10 @@ add_library(coney_core STATIC
     physics/segment_kernels.cpp
     physics/sphere_box_sweep.cpp
     raycast/collision_mesh.cpp
+    physics/body_sweep.cpp
+    physics/contact.cpp
+    physics/mesh_sweep.cpp
+    physics/sphere_triangle.cpp
     gui/bar.cpp
     gui/base_widget.cpp
     gui/global_strings.cpp
@@ -263,6 +268,7 @@ target_sources(coney_core PRIVATE
     human/locomotion_gate.cpp
     human/jump.cpp
     human/locomotion.cpp
+    human/workout.cpp
     human/pair_placement.cpp
     human/fighter.cpp
     human/fighter_counter.cpp
@@ -403,6 +409,7 @@ target_sources(coney_core PRIVATE
     debug/pages_engine.cpp
     debug/pages_entity.cpp
     debug/pages_hud.cpp
+    debug/pages_movies.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
     debug/pages_time.cpp

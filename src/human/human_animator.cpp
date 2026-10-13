@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "core/assert.h"
+#include "human/fighter_clips.h"
 #include "human/locomotion_gate.h"
 
 namespace coney::human {
@@ -340,6 +341,34 @@ void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const charac
     m_state = state;
 }
 
+void HumanAnimator::playTagEnd(bool stance) {
+    // Built from the end: the idle, or in the stance the fight idle after its transition, then 336 before them.
+    constexpr std::uint32_t kEndHeld = 0x800000;
+    constexpr std::uint32_t kStanceHeld = 0x80000;
+    constexpr float kEndFade = 0.05F;
+    std::unique_ptr<anim::AnimTask> chain;
+    if (const anim::AnimClip* idle = clip(kAnimFightIdle); stance && idle != nullptr) {
+        chain = std::make_unique<anim::LoopTask>(*idle, kAnimFightIdle, m_anims->rate(kAnimFightIdle), 0U);
+    } else {
+        chain = idleLoop();
+    }
+    std::uint32_t endHeld = kEndHeld;
+    if (stance) {
+        // The stance's 0x80000 is set at once, so 336 sets it too; 359 holds it after 336 lets it go.
+        endHeld |= kStanceHeld;
+        constexpr std::uint32_t kTransition = kAnimFightIdle + 1;
+        if (hasClip(kTransition)) {
+            chain =
+                clipThen(kTransition, std::move(chain), nullptr, HeldFlags{.held = kStanceHeld, .set = kStanceHeld});
+        }
+    }
+    if (hasClip(clips::kTaggingEnd)) {
+        chain = clipThen(clips::kTaggingEnd, std::move(chain), nullptr, HeldFlags{.held = endHeld, .set = endHeld});
+    }
+    m_tasks.change(std::move(chain), kEndFade);
+    m_state = AnimState::Attack;
+}
+
 void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, float fade, HeldFlags held) {
     std::unique_ptr<anim::AnimTask> chain = gaitBlend(kRunValue, 0.0F);
     for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
@@ -358,6 +387,38 @@ void HumanAnimator::playScripted(const anim::AnimClip& clip, std::uint32_t animI
     task->holdFlags(held.held, held.set);
     m_tasks.change(std::move(task), fade);
     m_state = AnimState::Attack;
+}
+
+void HumanAnimator::playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
+    const std::array<anim::GaitClip, 5> clips{
+        anim::GaitClip{loops[0], kAnimWorkoutLoop}, anim::GaitClip{loops[1], kAnimWorkoutLoop + 1},
+        anim::GaitClip{loops[2], kAnimWorkoutLoop + 2}, anim::GaitClip{loops[2], kAnimWorkoutLoop + 2},
+        anim::GaitClip{loops[2], kAnimWorkoutLoop + 2}};
+    auto blend = std::make_unique<anim::GaitBlendTask>(clips, 0.0F, kWorkoutBlendSpeed, 1.0F,
+                                                       anim::kTaskContinuous | anim::kTaskNoRootVelocity);
+    m_tasks.change(std::make_unique<anim::ClipThenNextTask>(enter, kAnimWorkoutEnter, 1.0F, 0U, std::move(blend)),
+                   kWorkoutFade);
+    m_state = AnimState::Workout;
+}
+
+anim::GaitBlendTask* HumanAnimator::workoutLoop() const {
+    if (m_state != AnimState::Workout) {
+        return nullptr;
+    }
+    auto* blend = dynamic_cast<anim::GaitBlendTask*>(m_tasks.top());
+    return blend != nullptr && blend->animId() >= kAnimWorkoutLoop ? blend : nullptr;
+}
+
+void HumanAnimator::endWorkout(const anim::AnimClip* exit) {
+    if (m_state != AnimState::Workout) {
+        return;
+    }
+    if (exit != nullptr) {
+        playScripted(*exit, kAnimWorkoutExit, 1.0F, kCombatFade, HeldFlags{});
+        return;
+    }
+    buildIdle();
+    m_state = AnimState::Idle;
 }
 
 void HumanAnimator::playCombatWalk(std::uint32_t walk) {
@@ -393,7 +454,7 @@ bool HumanAnimator::settling() const {
 
 void HumanAnimator::choose(const AnimInputs& inputs) {
     // A held combat pose stays until combat plays something else.
-    if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk) {
+    if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk || m_state == AnimState::Workout) {
         return;
     }
     // An action's clips play out (but a move's closing 389 gives way to a move asked for); then the state is whatever
@@ -444,6 +505,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         case AnimState::Attack:
         case AnimState::Hold:
         case AnimState::CombatWalk:
+        case AnimState::Workout:
             break;
         }
         m_state = next;

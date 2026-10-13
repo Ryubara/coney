@@ -7,12 +7,16 @@ function(coney_target_defaults target)
     target_compile_features(${target} PUBLIC cxx_std_23)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
     if(MSVC)
-        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
+        # /fp:precise is the default; stated so the float rules below read the same on every compiler.
+        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8 /fp:precise)
         if(CONEY_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE /WX)
         endif()
     else()
-        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        # No fused multiply-add: GCC contracts across statements by default and Apple clang (arm64) within one, while
+        # x86 and MSVC builds do not, so the same float code gave different low bits per platform. The physics kernels
+        # follow the original order of sums and lose bits to cancellation, so contraction showed (1e-5).
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
         if(CONEY_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE -Werror)
         endif()

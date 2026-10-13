@@ -131,6 +131,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
 | Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
+| Movies | the disc's [movies](#movies) with what plays each; choose one to watch it full screen with its captions, then carry on where you were |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
@@ -196,6 +197,40 @@ its next step, from the front end or from inside a level (`StartUpFlow::jumpToLe
 have yet (before the preloads at the legal screen fill it) is refused and the page says so. The list is
 `src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the [levels
 list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
+
+### Movies {#movies}
+
+The Movies page plays any of the disc's Bink movies over whatever the game is doing, and then gives the game back
+exactly as it was. It is **Coney's own path**, debug tooling and not a mechanic: the original plays a movie only from
+its own callers (start-up, a level's intro and outro, the front end's attract movie and EXTRAS,
+[Movies](../research/movies.md#callers)), never on request. Nothing changes while you do not use it.
+
+- **The list** is the disc's own `PSS` folder: every `PSS/<NAME>.BIK`, as `coney-tools movies list` reads it, so
+  Coney keeps no copy of it (`discMovies()`, `src/gamemodes/movie_player.h`). The start-up movies come first in the
+  order the game plays them, then the others by name (`TRAILER`), then the levels' by level number. Each is tagged
+  with what plays it in the game, read from its name: `start-up`, `level9 intro` (`L9_IN`), `level31 outro`
+  (`L31_OUT`). Without a disc, or before the game session runs (a sandbox or a viewer), the page says *No movies*.
+- **Captions always**, on by default, shows a movie's ordinary captions whatever the game's subtitle option says
+  (an English game has it off, so its movies show none). Off, the option decides, as for the game's own movies.
+- **Choosing a movie** closes the menu and plays the movie at the start of the next frame, full screen on the movie
+  player the game uses (`movies::MovieMode`): its frames, its sound at 80 %, its captions. Any button skips it, as
+  any button skips the game's own movies; `LOGO`, which the game plays unskippable, plays to its end. The button that
+  chose it is held back from the movie until you let go of it, as every press that closes the menu is.
+- **While it plays the game is held**: the movie player sits on top of the mode stack, so the mode beneath (play, the
+  pause menu, the front end) runs no step, its scripts, timers and scenes stand still (the game clock stops, as under
+  any movie) and the HUD is hidden as under the pause menu. Unlike the game's own movies, which stop the music and
+  every sound first, a debug movie **holds** the game's sound where it is, as the pause menu does, and gives it back
+  when it ends; if something holds it already (the pause menu under the movie), it is left held.
+  `--skip-movies` skips only the game's own movies: one chosen here plays anyway.
+- **When it ends or is skipped** the movie player leaves the stack and the mode beneath resumes, as after the pause
+  menu: the same mode, the same level state and checkpoint, the player and camera where they were, the pad going to
+  the game as before. **The menu stays closed** (Coney's choice): it had to close for the movie's skip to reach the
+  movie, and you come back to the game as after any movie. L3 + R3 opens it again on the Movies page with the cursor
+  on the movie you watched, for the next one.
+
+A movie cannot be chosen while another plays. A disc test (`tests/platform/disc_debug_movies_test.cpp`) drives the
+page through the pad in `level99`, plays `PLOGO` to its end and skips `L99_IN`, and checks that the mode stack, the
+player, the camera, the level, the checkpoint, the HUD and the sound engine's pause are the same before and after.
 
 **Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
 Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say
@@ -276,7 +311,7 @@ never a copy of them, so a change to a radius or a rule shows at once:
 
 | Switch | Draws |
 | --- | --- |
-| Wall classes | the collision wireframe (in place of the plain one, same radius and budget) coloured by how the walking sweep classes each triangle (`human::wallClassOf()`, [Walls](../research/characters.md#walls)): **red** a wall, **yellow** a steep face too low or thin to stop a walk (a kerb, a stair's riser), **green** a floor, **blue** a ceiling, **grey** a disabled triangle, **magenta** one with no usable normal |
+| Wall classes | the collision wireframe (in place of the plain one, same radius and budget) coloured by how the walking sweep classes each triangle (`human::wallClassOf()`, through the physics sweep's own wall rules: [Unit 2](../research/physics-bodies.md#unit-2)): **red** a wall, **yellow** a steep face too low or thin to stop a walk (a kerb, a stair's riser), **green** a floor, **blue** a ceiling, **grey** a disabled triangle, **magenta** one with no usable normal |
 | Shapes | on each human: grounded, the walking sphere the wall sweep moves (**cyan**; the player's 0.4704 m, an AI human's 0.35 m, × the scale, its centre that plus 0.05 m above the feet); airborne, the push-out sphere (**magenta**, 0.5 m × the scale); the 2 m upright capsule other humans' sweeps meet (**grey**); the ground snap's ray (**green**); during a climb, the face found, its normal and the top (**orange**) |
 | Shapes on all humans | on (the default): every human's shapes; off: the player's and the Entity inspector's selection's only |
 | Strike shapes | the strike shapes switched on this step (**red** swept spheres) and the spine and head they are tested against (**yellow**) |
@@ -367,7 +402,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | Category | Tunables (default) |
 | --- | --- |
 | Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8) |
-| Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), contact clear (0.01 m left between the walking sphere and a wall), air radius (0.5 × scale) |
+| Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), air radius (0.5 × scale) |
 | Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |

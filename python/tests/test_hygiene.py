@@ -369,7 +369,8 @@ def test_an_event_comments_on_its_item_once_and_edits_it_when_it_changes(
 def test_fixing_the_item_resolves_the_comment_instead_of_deleting_it(tmp_path: Path) -> None:
     remote = FakeRemote()
     run_hygiene(namespace(snapshot_file(tmp_path, issues=[broken_issue(7)]), event=7), remote)
-    fixed = snapshot_file(tmp_path, issues=[issue(7)])
+    # The issue checks want the form's level-three headings, so the fixed issue writes Screenshots that way too.
+    fixed = snapshot_file(tmp_path, issues=[issue(7, body=task_body().replace("## Screenshots", "### Screenshots"))])
     run_hygiene(namespace(fixed, event=7), remote)
     [(_, _, body)] = remote.comments[7]
     assert body == render_resolved(COMMENTS) and remote.writes[-1][0] == "edit"
@@ -474,8 +475,15 @@ def triggers(data: dict[Any, Any]) -> dict[str, Any]:
     return data.get("on") or data[True]
 
 
-def test_the_workflow_may_only_read_the_code_and_write_issues() -> None:
-    assert workflow()["permissions"] == {"contents": "read", "issues": "write"}
+def test_the_workflow_may_only_read_the_code_and_write_issues_and_pull_requests() -> None:
+    # `issues: write` alone is a 403 for a comment or a label on a pull request, so both writes are needed.
+    assert workflow()["permissions"] == {
+        "contents": "read",
+        "issues": "write",
+        "pull-requests": "write",
+        "checks": "read",
+        "statuses": "read",
+    }
 
 
 def test_the_sweep_schedule_is_the_conventions() -> None:
@@ -484,9 +492,16 @@ def test_the_sweep_schedule_is_the_conventions() -> None:
 
 def test_it_reacts_to_item_events_and_can_be_run_by_hand() -> None:
     on = triggers(workflow())
-    assert {"issues", "pull_request_target", "schedule", "workflow_dispatch"} == set(on)
+    assert {"issues", "pull_request_target", "schedule", "push", "workflow_dispatch"} == set(on)
     assert {"opened", "edited", "labeled", "unlabeled", "reopened"} <= set(on["issues"]["types"])
     assert "synchronize" not in on["pull_request_target"]["types"]
+
+
+def test_it_labels_the_pull_requests_on_every_push_to_the_default_branch() -> None:
+    assert triggers(workflow())["push"] == {"branches": [CONVENTIONS.repo.default_branch]}
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert text.count("coney-tools repo pr-health --labels --apply") == 2  # the push case and the sweep
+    assert "push)" in text and "github.event_name == 'push'" in text
 
 
 def test_no_expression_reaches_a_script_and_the_checkout_takes_no_other_ref() -> None:

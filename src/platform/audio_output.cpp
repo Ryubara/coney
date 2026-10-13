@@ -67,7 +67,10 @@ void AudioOutput::endFrame(std::uint32_t steps) {
     m_game.update();
     m_sounds.update(static_cast<float>(steps) * kStepMilliseconds);
     if (m_offline) {
-        m_offline->pullStep();
+        const std::span<const std::int16_t> mixed = m_offline->pullStep();
+        if (m_stepTap) {
+            m_stepTap(mixed);
+        }
     }
     m_mixer->collect();
 }

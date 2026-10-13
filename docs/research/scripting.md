@@ -2007,9 +2007,10 @@ lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping tr
 
 Fixes, in the order to take them (each one implementer unit):
 
-1. **A spray cut short leaves its spot dead** (issue #330). Played from checkpoint 1 into 2, triangle at chapter 2's
-   first spot called `HuTag` and Coney logged that the spray was cut short on the next update; no event 14 followed,
-   so `TagFinished` never put the spot's prompt back, and 30 later presses there did nothing. The original's
+1. **A spray cut short leaves its spot dead** (issue #330). Done: Coney's cut-short path now gives the tagger
+   event 14 with (tag, 0). Played from checkpoint 1 into 2, triangle at chapter 2's first spot called `HuTag` and
+   Coney logged that the spray was cut short on the next update; no event 14 followed, so `TagFinished` never put the
+   spot's prompt back, and 30 later presses there did nothing. The original's
    `Tag_UpdatePlayer` (`0x00273c60`) calls `Tag_End` whenever the action is no longer `0x17` or `0x18` and the spray
    flag `0x2000000` is not set while the tag still exists, and `Tag_End` (`0x0022e848`) always gives the tagger event
    `0xe` with finished = `+0x3ba` (0 here). Confirmed (code). Fix: Coney's cut-short path delivers event 14 with
@@ -2054,7 +2055,8 @@ Fixes, in the order to take them (each one implementer unit):
    their counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
 8. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
    sight](ai-gangs.md#aggro-on-sight), issue #73).
-9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
+9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70),
+   and the end clip 336 that removes the can (fix 9 there, issue #407; done for player 1).
 10. **The spray sellers** after a hit ([GoalDealer](ai-scripting.md#dealer), items 7 and 15): chapter 2's first seller
     is the one the hints point at.
 11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land (issue #333;

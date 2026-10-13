@@ -2,6 +2,7 @@
 add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
+    core/clip_recording_test.cpp
     core/deferred_input_test.cpp
     core/event_log_test.cpp
     core/frame_clock_test.cpp
@@ -150,8 +151,10 @@ add_executable(coney_tests
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
+    platform/disc_debug_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
+    platform/clip_recorder_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/imgui_model_view_test.cpp
     platform/imgui_ui_scale_test.cpp
@@ -173,6 +176,9 @@ add_executable(coney_tests
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp
     raycast/collision_mesh_test.cpp
+    physics/body_sweep_test.cpp
+    physics/mesh_sweep_test.cpp
+    physics/sphere_triangle_test.cpp
     raycast/disc_collision_test.cpp
     scripting/ai_bindings_test.cpp
     scripting/anim_callbacks_test.cpp
@@ -274,6 +280,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/workout_test.cpp
     human/human_revive_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
@@ -351,6 +358,7 @@ target_sources(coney_tests PRIVATE
     debug/human_shapes_test.cpp
     debug/input_gate_test.cpp
     debug/menu_navigator_test.cpp
+    debug/movies_page_test.cpp
     debug/native_caller_test.cpp
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp

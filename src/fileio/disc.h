@@ -64,6 +64,11 @@ class Disc {
     /// openFile() and Stream::read() do.
     [[nodiscard]] std::expected<std::vector<std::byte>, Error> readFile(std::string_view name) const;
 
+    /// The names of the files in the folder `folder` directly below the root (`PSS` gives `LOGO.BIK`, ...), cleaned
+    /// as cleanDiscName() cleans them and sorted; empty when there is no such folder. The root itself is not a folder
+    /// below it, so `""` lists nothing.
+    [[nodiscard]] std::vector<std::string> filesIn(std::string_view folder) const;
+
     /// The folder or image this disc was opened from.
     [[nodiscard]] const std::filesystem::path& path() const { return m_path; }
     /// Whether the disc is an ISO image rather than a folder.

@@ -3,33 +3,39 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <optional>
 #include <vector>
 
-#include "human/body.h"
+#include "physics/contact.h"
+#include "physics/mesh_sweep.h"
 #include "raycast/collision_mesh.h"
 
 namespace coney::human {
 
 namespace {
 
-// How far apart along the way the walls are tested, m, and the spheres up the capsule.
-constexpr float kWallStep = 0.1F;
-
-// Whether a wall of `mesh` that the move `move` goes into stops a sphere of the capsule anywhere at `feet`: its
-// spheres of kWayClearRadius from just above the walking sweep's low walls up to `height`.
-bool wallAt(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float height, anim::Vec3 move,
-            std::vector<std::uint16_t>& scratch) {
-    const WallFilter filter{.move = move, .skipLow = true, .excludeMaterials = {}};
-    // The spheres' centres from one radius above the feet, a diameter apart, the last no higher than one radius
-    // below the top (at least one).
+// Whether a wall of `mesh` stops any sphere of the capsule swept from `feet` by `move`: its spheres of
+// kWayClearRadius from one radius above the feet up to `height`, each swept as the walking sphere is
+// (physics::sweepCapsuleMesh: walls the move goes into, 0.25 m tall or more).
+bool wallOnTheWay(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float height, anim::Vec3 move) {
+    // The spheres' centres a diameter apart, the last no higher than one radius below the top (at least one).
     const float span = std::max(0.0F, height - (2.0F * kWayClearRadius));
     const int spheres = 1 + static_cast<int>(std::floor((span / (2.0F * kWayClearRadius)) + 1e-4F));
+    physics::MeshScratch scratch;
+    std::vector<physics::Contact> contacts;
     for (int i = 0; i < spheres; ++i) {
         const float up = kWayClearRadius + (2.0F * kWayClearRadius * static_cast<float>(i));
         const anim::Vec3 centre{feet.x, feet.y, feet.z + up};
-        if (nearestWallPush(mesh, centre, kWayClearRadius, filter, scratch).has_value()) {
+        const anim::Vec3 reach{kWayClearRadius, kWayClearRadius, kWayClearRadius};
+        const anim::Vec3 end = anim::add(centre, move);
+        const physics::Box box{
+            anim::subtract(anim::Vec3{std::min(centre.x, end.x), std::min(centre.y, end.y), std::min(centre.z, end.z)},
+                           reach),
+            anim::add(anim::Vec3{std::max(centre.x, end.x), std::max(centre.y, end.y), std::max(centre.z, end.z)},
+                      reach)};
+        const physics::CapsuleSweep sweep{
+            .feet = feet, .radius = kWayClearRadius, .move = move, .footGap = up - kWayClearRadius};
+        if (physics::sweepCapsuleMesh(mesh, box, sweep, scratch, contacts) > 0) {
             return true;
         }
     }
@@ -51,20 +57,8 @@ bool wayClear(const raycast::CollisionMesh* mesh, anim::Vec3 from, float height,
             return false;
         }
     }
-    if (mesh == nullptr) {
-        return true;
-    }
     // A wall on the way to the goal blocks it.
-    const float length = std::hypot(move.x, move.y) * reach;
-    const int samples = std::max(1, static_cast<int>(std::ceil(length / kWallStep)));
-    std::vector<std::uint16_t> scratch;
-    for (int i = 0; i <= samples; ++i) {
-        const float t = reach * static_cast<float>(i) / static_cast<float>(samples);
-        if (wallAt(*mesh, anim::add(from, anim::scale(move, t)), height, move, scratch)) {
-            return false;
-        }
-    }
-    return true;
+    return mesh == nullptr || !wallOnTheWay(*mesh, from, height, anim::scale(move, reach));
 }
 
 } // namespace coney::human

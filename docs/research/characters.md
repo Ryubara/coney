@@ -2896,31 +2896,21 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   refill (the maximum and the refill each human's power class's, [Stats](#stats-coney)) and the gait, airborne and
   "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
   0, asked again every update).
-- `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale² (× 1.4286 for
-  the player: 0.4705 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
-  0.25 m low-and-thin rule, the fence materials passed through while climbing over, and the airborne push-out sphere
-  (0.5 × scale for a player). The walking sphere is stopped where it touches a triangle, so a face lower than its
-  centre stops it where it meets the face's top edge, `sqrt((r + clearance)² − (r + 0.05 − h)²)` from the face
-  (0.396, 0.399 and 0.422 m for 0.255, 0.26 and 0.30 m faces with the original's fitted 0.006 m, as at runtime); a
-  face under 0.25 m is walked onto in one update with no change of speed or clip. An AI human's sphere is
-  0.35 × scale × scale (`human::aiWalkingRadius`, its body `+0x60` being 1.0). For a player each wall or object the
-  sweep slides along takes from the velocity its part into it (`v −= (v · n) n`, the slide response), so a wall met
-  at a steep angle brakes him; the velocity is not rebuilt from where the pushes left the body. An AI's velocity is
-  never braked by a slide. A wall face the sphere already reaches at the start of the move (the centre over the
-  face, or past one edge whose segment is within the radius; never past a corner) takes only the move's part into
-  it, along the face's own plane in 3D, and does not push the sphere out (`human::slideAlongTouchedFaces`, the
-  fraction-0 contact), so a move into a face leaning back rises along it. The sweep's push-out leaves the sphere
-  0.01 m clear of a face it met (`BodyTuning::contactClear`), where the original's sweep leaves it at the contact
-  and then lets it sink in (above: the crease edge came to 0.27 m of a 0.35 m sphere), so a face leaning back
-  within the radius plus that clearance counts as already reached (**Coney's reading**). Without it, at `level99`'s
-  gravel heap a bum
-  walking the path's leg (his walk 0.557 m/s) was pushed back off face 680 every update, never slid along it, and
-  stood for good at its foot, (−275.4, 131.6), under the stuck test; now he crosses the heap and reaches his flag in
-  1,334 updates (`repo:tests/platform/disc_level99_heap_test.cpp`). The sweep also carries the sphere round a convex
-  corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
-  wraps beyond that edge, `n × up` toward it, × max(move, `r`) a second, its part along the move taken away, for the
-  update only. **Coney's reading** of the passes: the slide is found where the move put the sphere, added once and
-  pushed out as the move is; the pair-or-block test that turns it off is not built.
+- `src/human/body.*` holds the walking body's sizes for [Walls and steps](#walls): the sphere of 0.35 × scale²
+  (× 1.4286 for the player: 0.4705 m) centred 0.05 above its radius, the 0.25 m wall height, the fence materials
+  passed through while climbing over, and the airborne push-out sphere (0.5 × scale for a player). An AI human's
+  sphere is 0.35 × scale × scale (`human::aiWalkingRadius`, its body `+0x60` being 1.0). The walls themselves are
+  the physics world's sweep (`src/physics/`, [Physics](physics.md#coneys-implementation)), run by `Human::sweep`:
+  wall triangles `|n.z|` ≤ 0.65 that the move goes into, the 0.25 m low-and-thin rule, the sphere swept from where
+  the move starts and met where it first touches (face, edge or corner), advanced to 0.01 m short of it along the
+  normal, then the slid move swept again, up to three passes. So a face lower than the sphere's centre stops it
+  where it meets the face's top edge, and a face under 0.25 m is walked onto in one update with no change of speed
+  or clip. Only a player's slid velocity is written back (`v −= (v · n) n`, the slide response), so a wall met at a
+  steep angle brakes him; an AI's velocity is never braked by a slide. Nothing pushes a walking sphere out of a face
+  it overlaps, so a move into a face leaning back rises along it ([Slopes](#slopes)). The corner slide (flag bits
+  14-15) is added to the move on the ground unless the human is in a pair or blocking. While airborne the same
+  sweep takes the move across the ground, and the air sphere's push out of the nearest wall waits for the next
+  move.
 - `src/human/jump.*` is the jump's checks and launch ([Jumping](#jump)): faster than 3.3 m/s and the stored gait at
   jog or above, refused when a climbable face lies within 5.5 m; the run or sprint speed forward and 5.5 m/s up.
   A start clip does not stop it.
@@ -3150,12 +3140,11 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   `SetDynamicAnimation` does each: the file listed twice is one entry, so twelve files are listed.
 - **The hub's hold on a human** (`level95`; `src/scripting/hub_bindings.*`, acting through `ai::ScriptedHub`): money,
   death, character class and voice set are read; the scale, name, cuffs, muggable, pedestrian reaction,
-  unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the human faces the equipment
-  and works out (no movement or fighting) with the start, repetition and end callbacks; a player pumps with cross and
-  quits with triangle, the effort decaying by `CfgWorkoutParams`' second table. **Stand-ins**: a workout begins within
-  1.5 m of the equipment, a repetition lasts 1.5 s at an effort of 1, and no workout or dynamic clip plays; combat
-  mode and the gear are kept, their context actions not built. The original's workouts, every station and why
-  Coney's start does nothing: [Workouts](workouts.md).
+  unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the enter clip into a loop
+  blend of the three workout clips, the effort pumped with cross and decaying by `CfgWorkoutParams`' tables, a
+  repetition each wrap of the loop, the end on triangle or when worn down, then the exit clip
+  ([Workouts](workouts.md#coney), `human::WorkoutEffort`). **Stand-ins**: another human's equipment is reached within
+  1.5 m; no dynamic clip plays; combat mode and the gear are kept, their context actions not built.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 

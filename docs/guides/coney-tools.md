@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers sixteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers seventeen groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, [`build`](#build), which
 configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
 the repository's own rules (titles, descriptions, labels), `wad`, which reads the game's
@@ -10,6 +10,7 @@ headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#pro
 of the README and the docs current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
 and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
+[`clips`](#clips), which checks, publishes and cleans up in-game video clips,
 [`mcp`](#mcp), which starts the debugging servers for agent tools, and [`workspace`](#workspace), which sets up the
 local workspace. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
 is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
@@ -478,6 +479,55 @@ refused inside the repository. With
 hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
 makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
 
+```sh
+uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
+```
+
+Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
+output**: nothing on the desktop is read. For the run, the claimed copy's ini switches the capture on (with sound),
+points PCSX2's videos folder at a staging folder beside the clip, turns every on-screen display element off (FPS,
+messages, the recording indicator) and binds "Toggle Video Capture" to F12, which is posted to PCSX2's window by handle
+to start and stop it; the ini is put back when PCSX2 closes. The capture is then re-encoded into `CLIP` as Coney's
+clips are (960 x 720, H.264 and AAC, no metadata, cut at the length) through `clips.run_ffmpeg`, and the staging
+folder deleted. PCSX2 2.9.94 tears the first ~1.15 s of its capture (a black band along the bottom), so the capture
+runs 1.5 s longer (`CAPTURE_START_TRIM`) and the clip starts after that, still lasting `--seconds`.
+`--out` is a path under the scratch folder, `<workspace>/scratch/<task>/clips/NAME.mp4`; give it absolute (the
+folder `clips folder TASK` prints), because a relative `../../scratch/...` is wrong from a worktree, which sits three
+levels below the workspace. The game comes from `game_dir` in `coney.local.toml`; without it pass `--iso DISC`,
+and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
+`CLIP` follows the [clips](#clips) rules. It needs FFmpeg as `clips` finds it, and Windows (keys by
+handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clip` made it.
+
+## clips {#clips}
+
+```sh
+uv run --project python coney-tools clips folder TASK
+uv run --project python coney-tools clips check CLIP [CLIP...]
+uv run --project python coney-tools clips publish (--pr N | --issue N) [--edit] (--body TEXT | --body-file FILE) CLIP [CLIP...]
+uv run --project python coney-tools clips clean [--older-than HOURS] [--dry-run]
+```
+
+In-game video clips for issues and pull requests, made by `coney --record` ([Recording a clip](running.md#record)) or
+`pcsx2 clip` (above). The rules and why: [Clips](testing.md#clips); the limits are `workspace.clips` in
+`.github/conventions.yml`.
+
+* `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
+  shared scratch folder (`../../scratch` beside the main checkout).
+* `check` runs ffprobe on each clip and prints its length, size, picture and whether it has sound. It refuses a clip
+  outside a task's clips folder or inside a git checkout, one longer than `max_seconds` (10), and one with any tag
+  beyond the fixed ones an MP4's boxes carry (`major_brand`, `minor_version`, `compatible_brands`, `language`,
+  `handler_name`, `vendor_id` and a version-free `encoder`); one bigger than `warn_mb` (10 MB) gets a warning.
+* `publish` makes the same checks, then uploads every clip in one gh command, `gh pr|issue comment N` (or `edit` with
+  `--edit`, into the description) with one `--attach` per clip, and **deletes the clips once gh succeeds**. When gh
+  fails, it keeps them and says so (exit 1). A body may place a clip with a `./clips/<name>.mp4` reference, which gh
+  replaces with the upload when the clip is named the same way. It is the only way clips are uploaded.
+* `clean` deletes every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
+  including what a failed recording left (part files, a `pcsx2 clip` staging folder); `--dry-run` only counts.
+
+FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside `CONEY_FFMPEG` (the variable Coney's
+`--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a
+capture device or any input that is not a file.
+
 ## trace {#trace}
 
 ```sh
@@ -577,7 +627,7 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--attachments] [--workspace DIR] [--list]
-uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--rerun [--apply]]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
 uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
@@ -649,9 +699,10 @@ are the generated list in [The description review](how-we-work.md#pr-review).
   pull request template, `.github/scripts/ci-scope.sh` and pre-commit's size limit still agree with the file, and that
   the generated blocks are current.
 * `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
-  `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`), its
-  Screenshots, its labels, a closed issue that still carries an `S-` status label, the word "owner" for the person
-  (say "user"), closed issues and merged pull requests that
+  `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`, headings
+  that are not the form's `###` headings in its order, an Area that is not an option), its Screenshots, its labels,
+  a closed issue that still carries an `S-` status label, the word "owner" for the person (say "user"), closed issues
+  and merged pull requests that
   keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
@@ -704,8 +755,21 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
 `--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
 `--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
-`other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
-the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+`other` (the `--verbose` lines), `notices` and `labels` (see below). Exit code 0 when nothing is stuck, 1 when something
+is, 2 when `gh` or the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to
+unstick or to push.
+
+`--labels` also compares the labels on every open pull request with its causes and prints what would change, after the
+findings: `add S-conflict to #12 (conflict with main)`, `remove S-failing from #7 (cleared)` (`would add ...` until
+`--labels --apply`). `hygiene.pr_health.labels` in `.github/conventions.yml` maps the causes to labels (`conflict` to
+`S-conflict`, `checks-failed` to `S-failing`); a pull request with the cause gets the label, one without it loses the
+label (a draft is never stuck, so it carries neither), and no other label is ever added or removed.
+`--labels --apply` makes the
+changes through `gh api` on the issue labels endpoints and needs a token that may write issues; the exit code is still
+the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a pull request's mergeability the
+command rereads up to `hygiene.pr_health.unknown_retries` times, `unknown_wait_seconds` apart, and a pull request still
+unknown keeps its conflict label as it is. The labels must exist in the repository with their colours: `repo labels
+--apply` creates them from `labels.list`.
 
 **`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
 person to notice. It adds a line per run, `#<n> <branch> rerun <checks> (run <id>): <why> -> <outcome>`, and in
@@ -774,6 +838,41 @@ comment. Text from GitHub quoted in a comment (a title in a finding) cannot ment
 close the marker, and the report writes `#12` so that it makes no cross-reference in the item's timeline. Exit code 0
 when it ran, 2 when `gh` or the conventions cannot be read.
 
+## issue {#issue}
+
+```sh
+uv run --project python coney-tools issue draft [task|bug]
+uv run --project python coney-tools issue check --title T --body FILE [--form F] [--leftover] [--online] [--attach F]
+uv run --project python coney-tools issue create --title T --body FILE [--label L ...] [--parent N] [--leftover]
+    [--attach F] [--offline] [--dry-run]
+uv run --project python coney-tools issue edit N --body FILE [--title T] [--offline] [--dry-run]
+uv run --project python coney-tools issue link N --parent P [--dry-run]
+```
+
+Drafts, checks and files issues in their form's exact shape ([Filing an issue](issues.md#filing)). Every rule is
+read from `issues` in `.github/conventions.yml` and from the form files in `.github/ISSUE_TEMPLATE/`; nothing is
+copied into the code.
+
+* `draft` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
+  description, required or optional, and the allowed values (the Area's `A-` labels, a bug's dropdown choices), then
+  the `From:` line. The form is `task` unless you name `bug`.
+* `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
+  (`title`, `headings`, `empty`, `choices`, `screenshots`, `from`, `links`, `wording`, `status`); exit 0 when there is
+  none, 1 otherwise. The form comes from `--form`, else the title prefix, else the headings. Docs and research pages
+  and their `{#anchor}`s are looked up in `origin/main` of the checkout with git, offline; a missing `origin/main` is
+  a note, not a pass. `--leftover` wants the `From:` line. `--online` reads the state of each cited `#N` with `gh`
+  and compares it with the words "open", "merged" and "closed" beside it. `--attach` says local screenshots will be
+  uploaded, so a local image in the Screenshots section is accepted.
+* `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
+  the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
+  form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
+  `issue link` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running none.
+* `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
+  `gh issue edit`. `link` makes an existing issue a sub-issue of another.
+
+The body is filed without the draft's comments. Exit 2 when the conventions, a form file or the body file cannot be
+read.
+
 ## check {#check}
 
 ```sh
@@ -791,8 +890,8 @@ line, and any failure makes the command exit 1:
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...) | `mkdocs build --strict` into a throwaway folder |
-| `python` | `python/` changed | `pytest python/tests` and `mypy python/src python/tests` |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | `mkdocs build --strict` into a throwaway folder |
+| `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `pytest python/tests` and `mypy python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
 changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in

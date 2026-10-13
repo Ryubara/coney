@@ -19,6 +19,7 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -32,6 +33,7 @@
 #include "audio/object_sounds.h"
 #include "characters/character_types.h"
 #include "core/chunk_system.h"
+#include "core/clip_recording.h"
 #include "core/deferred_input.h"
 #include "core/error.h"
 #include "core/event_log.h"
@@ -66,6 +68,7 @@
 #include "movies/movie_mode.h"
 #include "platform/audio_output.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/clip_recorder.h"
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
@@ -1086,7 +1089,83 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
+    // `--record`: a clip of the frames as the game draws them (read back before the menus above are drawn) and of
+    // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
+    // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.
+    std::unique_ptr<coney::platform::ClipRecorder> clip;
+    bool clipDone = false;
+    bool clipFailed = false;
+    const auto finishClip = [&clip, &clipDone, &clipFailed] {
+        clipDone = true;
+        auto summary = clip->finish();
+        if (!summary) {
+            std::fprintf(stderr, "coney: %s\n", summary.error().message.c_str());
+            clipFailed = true;
+            return;
+        }
+        const double megabytes = static_cast<double>(summary->bytes) / 1'000'000.0;
+        printText(std::format("clip {}: {} frames ({:.2f} s) of {}x{} as {}x{}, {} sound, {:.2f} MB, frames hash "
+                              "{:#018x}\n",
+                              summary->path, summary->frames,
+                              static_cast<double>(summary->frames) / coney::clips::kClipFps, summary->source.width,
+                              summary->source.height, summary->size.width, summary->size.height,
+                              summary->sound ? "with" : "no", megabytes, summary->framesHash));
+        if (summary->bytes > coney::clips::kClipWarnBytes) {
+            printText("warning: the clip is over 10 MB; record fewer seconds\n");
+        }
+    };
+    if (const std::optional<std::string>& recordPath = options->recordPath; recordPath) {
+        if (!renderer.drawsPixels()) {
+            std::fprintf(stderr, "coney: --record needs a window that draws\n");
+            return 1;
+        }
+        auto made = coney::platform::ClipRecorder::create(
+            *recordPath, options->recordSeconds.value_or(coney::clips::kMaxClipSeconds), audio != nullptr);
+        if (!made) {
+            std::fprintf(stderr, "coney: %s\n", made.error().message.c_str());
+            return 1;
+        }
+        clip = std::move(*made);
+        renderer.setFrameTap([&clip](std::span<const std::uint8_t> rgba, coney::graphics::Extent size) {
+            clip->addFrame(rgba, coney::clips::ClipSize{size.width, size.height});
+        });
+        if (audio) {
+            audio->setStepTap([&clip](std::span<const std::int16_t> samples) { clip->addSound(samples); });
+        }
+        if (!commandLineLevel) {
+            clip->start();
+        }
+        const bool endsWithClip = !frameLimit && !playFrameLimit;
+        hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, &session,
+                            endsWithClip, armed = !commandLineLevel]() mutable {
+            // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only.
+            debugSession.debugDraw() = coney::debug::DebugDrawOptions{};
+            if (!armed && session && session->inPlay()) {
+                armed = true;
+                clip->start();
+            }
+            if (endsWithClip && clipDone) {
+                return false;
+            }
+            return inner();
+        };
+        hooks.endFrame = [inner = std::move(hooks.endFrame), &clip, &clipDone, &finishClip](std::uint32_t steps) {
+            if (inner) {
+                inner(steps); // the sound output: the step's mix reaches the clip here
+            }
+            if (!clipDone && clip->full()) {
+                finishClip();
+            }
+        };
+    }
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
+    if (clip && !clipDone) {
+        finishClip(); // the run ended first: a shorter clip
+    }
+    renderer.setFrameTap({});
+    if (audio) {
+        audio->setStepTap({});
+    }
     if (pacer && options->showFps) {
         printText(pacer->summary());
     }
@@ -1140,5 +1219,5 @@ int main(int argc, char** argv) {
                               frame.path, frame.size.width, frame.size.height, frame.stats.notBackground,
                               frame.stats.pixels, frame.stats.hash));
     }
-    return 0;
+    return clipFailed ? 1 : 0;
 }

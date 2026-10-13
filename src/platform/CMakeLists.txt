@@ -27,6 +27,8 @@ target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp parti
                                       room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# In-game clips for issues and pull requests (`--record`, docs/guides/testing.md#clips): FFmpeg run as a program.
+target_sources(coney_platform PRIVATE clip_recorder.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
 target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 # The trimmed FFmpeg that decodes the Bink movies (docs/guides/building.md#ffmpeg); only src/platform/ sees it.

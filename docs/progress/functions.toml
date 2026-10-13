@@ -4705,6 +4705,18 @@ subsystem = "Human"
 size = 372
 
 [[function]]
+address = 0x0022d348
+name = "Human_StartWorkout"
+subsystem = "Human"
+size = 52
+
+[[function]]
+address = 0x0022d380
+name = "Human_EndWorkout"
+subsystem = "Human"
+size = 120
+
+[[function]]
 address = 0x0022d3f8
 name = "Uncuff_BeginMash"
 subsystem = "Human"
@@ -6515,6 +6527,12 @@ address = 0x00278210
 name = "Tag_RestartSprayClips"
 subsystem = "Human"
 size = 404
+
+[[function]]
+address = 0x002783b0
+name = "Tag_EndSprayClips"
+subsystem = "Human"
+size = 624
 
 [[function]]
 address = 0x00279078
@@ -13828,3 +13846,153 @@ address = 0x0042a938
 name = "Movie_Play"
 subsystem = "Movie"
 size = 1768
+
+[[function]]
+address = 0x0023e408
+name = "Human_LandingTest"
+subsystem = "Human"
+size = 732
+
+[[function]]
+address = 0x0033d2d8
+name = "IPhysics_SweepShapeVsMesh"
+subsystem = "Physics"
+size = 92
+
+[[function]]
+address = 0x0033d340
+name = "IPhysics_SweepBodyVsMesh"
+subsystem = "Physics"
+size = 340
+
+[[function]]
+address = 0x0033d718
+name = "Contact_InsertSorted"
+subsystem = "Physics"
+size = 160
+
+[[function]]
+address = 0x0033d7b8
+name = "PhysicsVec_BackOffPlane"
+subsystem = "Physics"
+size = 180
+
+[[function]]
+address = 0x003414c0
+name = "AABB_ScaleAboutCentre"
+subsystem = "Physics"
+size = 372
+
+[[function]]
+address = 0x00341840
+name = "AABB_ExtendByMove"
+subsystem = "Physics"
+size = 184
+
+[[function]]
+address = 0x00341e18
+name = "PhysicsBody_GetContactScale"
+subsystem = "Physics"
+size = 40
+
+[[function]]
+address = 0x00342288
+name = "PhysicsHumanBody_GetContactScale"
+subsystem = "Physics"
+size = 72
+
+[[function]]
+address = 0x00343a90
+name = "CollTri_ComputeEdges"
+subsystem = "Physics"
+size = 140
+
+[[function]]
+address = 0x00343b20
+name = "CollTri_ComputeEdgeNormals"
+subsystem = "Physics"
+size = 272
+
+[[function]]
+address = 0x00343c30
+name = "CollTri_ComputeNormal"
+subsystem = "Physics"
+size = 92
+
+[[function]]
+address = 0x00343c90
+name = "CollTri_Flip"
+subsystem = "Physics"
+size = 72
+
+[[function]]
+address = 0x00347170
+name = "CollisionMesh_BeginShapeQuery"
+subsystem = "Physics"
+size = 396
+
+[[function]]
+address = 0x00347300
+name = "MeshContacts_SortByFraction"
+subsystem = "Physics"
+size = 184
+
+[[function]]
+address = 0x003473b8
+name = "PhysicsMeshOverlap_Box"
+subsystem = "Physics"
+size = 8
+
+[[function]]
+address = 0x003473c0
+name = "PhysicsMeshOverlap_Capsule"
+subsystem = "Physics"
+size = 8
+
+[[function]]
+address = 0x003473c8
+name = "PhysicsMeshOverlap_Sphere"
+subsystem = "Physics"
+size = 1016
+
+[[function]]
+address = 0x00348a50
+name = "PhysicsMesh_SweepSphere"
+subsystem = "Physics"
+size = 1836
+
+[[function]]
+address = 0x0034d938
+name = "Ray_InfiniteCylinder"
+subsystem = "Physics"
+size = 1728
+
+[[function]]
+address = 0x0034dff8
+name = "SphereSweep_EdgeCylinder"
+subsystem = "Physics"
+size = 296
+
+[[function]]
+address = 0x0034e120
+name = "Segment_SphereIntersect"
+subsystem = "Physics"
+size = 664
+
+[[function]]
+address = 0x0034e840
+name = "PointTriangle_DistanceSq"
+subsystem = "Physics"
+size = 1420
+
+[[function]]
+address = 0x0034edd0
+name = "SphereTriangle_Penetration"
+subsystem = "Physics"
+size = 108
+
+[[function]]
+address = 0x0034ee40
+name = "Sweep_SphereTriangleThunk"
+subsystem = "Physics"
+size = 32

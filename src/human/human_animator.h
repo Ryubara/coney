@@ -77,6 +77,7 @@ enum class AnimState : std::int8_t {
     Hold = 104,    ///< **Coney's**: a held combat pose (a block, a grab, a mount, a mugging) until combat changes it.
     CombatWalk =
         105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
+    Workout = 106, ///< **Coney's**: a workout's enter clip, then its loop blend, until the workout ends.
 };
 
 /// The bits of the human's record `+0x08` a clip task holds while it plays and sets as it starts
@@ -107,6 +108,13 @@ inline constexpr float kJumpFade = 0.1F;
 inline constexpr float kLandFade = 0.0F;
 /// The fade into a combat clip, seconds. **Coney's choice** (the combat builders are not researched).
 inline constexpr float kCombatFade = 0.1F;
+/// A workout's start: the fade-out it pushes (0.1333 s) and its loop blend's speed (16 units a second).
+inline constexpr float kWorkoutFade = 0.1333F;
+inline constexpr float kWorkoutBlendSpeed = 16.0F;
+/// The workout's anim ids: the enter and exit clips and the first loop clip (slots 691-695).
+inline constexpr std::uint32_t kAnimWorkoutEnter = 691;
+inline constexpr std::uint32_t kAnimWorkoutExit = 692;
+inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
 /// A new attack enters over this long from the pose before it (`AnimTaskChained_Construct(0.2, ...)` in `Attack_Start`
 /// and `Attack_StartSolo`, docs/research/combat-moves.md#input). **Coney's reading**: a chain step, which the original
 /// swaps into the running task (its blend not traced), keeps kCombatFade.
@@ -175,6 +183,13 @@ class HumanAnimator {
     /// (docs/research/tasks.md#held-flags), but 389, which holds its own `0x40000000` as at runtime.
     void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade = kCombatFade,
                     HeldFlags held = {});
+    /// A tag spray's end: 336 `ANIM_TAGGING_END` after a 0.05 s fade, then the idle (slot 0); in a fight stance
+    /// (`stance`) 336, the transition 359 and the fight idle 358 looping. 336 holds and sets `0x800000` (a hit gets no
+    /// reaction while it plays), and in a fight stance also `0x80000`, which 359 holds after it. 336's event `0x31` at
+    /// frame 7 drops the can its intro 334 made (docs/research/crimes.md#tag-look, "The end"). Ids the anim set lacks
+    /// are skipped.
+    /// @orig 0x002783b0 Tag_EndSprayClips (unknown)
+    void playTagEnd(bool stance);
     /// Combat, the victim's side of a paired move: plays `clips` in turn from `attacker`'s anim set at its rates (a
     /// grab's victim plays the grabber's reaction clips, authored with the grabber's), then its own `loop`, after a
     /// fade of `fade` (0: the two humans switch on the same update). `state` as for playCombat(). Ids `attacker`
@@ -191,6 +206,16 @@ class HumanAnimator {
     /// plays, its task holding `held` on the record `+0x08`.
     /// Research: docs/research/ai-scripting.md#dyn-animation
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
+    /// A workout's clips (docs/research/workouts.md#engine): a fade of kWorkoutFade, the enter clip (anim 691) and
+    /// then a gait blend over the three loop clips (693-695) at kWorkoutBlendSpeed units a second, its target kept as
+    /// given and no root motion sampled (flags `0x201`); the state stays Workout until endWorkout(). **Coney choice**:
+    /// the blend starts at value 0 (its first value is not on the page), and slots 696-697, which the blend names but
+    /// never reaches, repeat the fast clip.
+    void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops);
+    /// The workout's loop blend once the enter clip has handed over to it; null before, or with no workout.
+    [[nodiscard]] anim::GaitBlendTask* workoutLoop() const;
+    /// Ends the workout's clips: the exit clip (anim 692) and then the idle, or the idle at once with none.
+    void endWorkout(const anim::AnimClip* exit);
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
     /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
     /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays.

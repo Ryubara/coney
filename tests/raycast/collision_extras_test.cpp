@@ -16,6 +16,8 @@
 
 #include "core/error.h"
 #include "human/body.h"
+#include "physics/contact.h"
+#include "physics/mesh_sweep.h"
 #include "raycast/collision_builder.h"
 #include "raycast/collision_mesh.h"
 #include "sandbox/sandbox_layout.h"
@@ -63,7 +65,7 @@ Ray alongY(float x, float y0, float length) { return Ray{{x, y0, 1.0F}, {0.0F, 1
 
 } // namespace
 
-TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, it pushes the walking body, and it clears",
+TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking sweep meets it, and it clears",
           "[collision_builder][debug]") {
     // A floor over the whole 80 m grid, as a level's street.
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
@@ -94,17 +96,24 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, it pushes the
     REQUIRE(coney::raycast::dropToGround(*mesh, 20.0F, above));
     CHECK(above.z == Approx(2.6F));
 
-    // The walking body's wall push meets it, as it meets a level's own wall.
-    std::vector<std::uint16_t> scratch;
+    // The walking capsule's sweep meets it, as it meets a level's own wall (the human's walking body moves through
+    // physics::sweepBody, whose mesh sweep this is).
     const float radius = coney::human::walkingRadius(1.0F);
+    coney::physics::MeshScratch scratch;
+    const coney::physics::CapsuleSweep walking{.feet = coney::anim::Vec3{40.0F, 43.0F, 0.0F},
+                                               .radius = radius,
+                                               .move = coney::anim::Vec3{0.0F, 1.0F, 0.0F},
+                                               .ownerAirborne = false,
+                                               .footGap = 0.05F,
+                                               .minWallHeight = 0.25F};
+    const coney::physics::Box query{coney::anim::Vec3{38.0F, 41.0F, 0.0F}, coney::anim::Vec3{42.0F, 46.0F, 2.0F}};
+    std::vector<coney::physics::Contact> contacts;
+    REQUIRE(coney::physics::sweepCapsuleMesh(*mesh, query, walking, scratch, contacts) > 0);
+    REQUIRE_FALSE(contacts.empty());
+    // The sphere's front reaches the face at y = 43.85 after 0.85 m less its radius.
+    CHECK(contacts.front().fraction == Approx(0.85F - radius).margin(1e-4));
+    CHECK(contacts.front().halves[1].normal.y == Approx(-1.0F));
     const coney::anim::Vec3 centre{40.0F, 43.85F - 0.2F, coney::human::walkingCentreHeight(1.0F)};
-    const coney::human::WallFilter walking{
-        .move = coney::anim::Vec3{0.0F, 0.1F, 0.0F}, .skipLow = true, .excludeMaterials = {}};
-    const auto push = coney::human::nearestWallPush(*mesh, centre, radius, walking, scratch);
-    REQUIRE(push.has_value());
-    if (push) {
-        CHECK(push->y == Approx(-(radius - 0.2F)).margin(1e-4));
-    }
     const auto sphere = mesh->spherePush(radius, Vec3{centre.x, centre.y, centre.z}, {});
     CHECK(sphere.touched);
 
@@ -115,7 +124,8 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, it pushes the
     CHECK(mesh->vertices().size() == builtVertices);
     CHECK(allLists(*mesh) == builtLists);
     CHECK_FALSE(mesh->rayCast(alongY(40.5F, 30.0F, 20.0F), {}, 0).has_value());
-    CHECK_FALSE(coney::human::nearestWallPush(*mesh, centre, radius, walking, scratch).has_value());
+    contacts.clear();
+    CHECK(coney::physics::sweepCapsuleMesh(*mesh, query, walking, scratch, contacts) == 0);
 }
 
 TEST_CASE("spawned triangles leave the file's own hits and their order alone", "[collision_builder][debug]") {
