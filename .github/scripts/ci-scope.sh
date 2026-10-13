@@ -37,8 +37,10 @@ conventions_path=".github/conventions.yml"
 conventions="$(dirname "${BASH_SOURCE[0]}")/../conventions.yml"
 if [[ "${EVENT:-}" == pull_request ]] && base_text="$(git show "HEAD^1:$conventions_path" 2>/dev/null)"; then
   conventions_text="$base_text"
+  echo "ci-scope: path lists from the base (HEAD^1)" >&2
 else
   conventions_text="$(cat "$conventions")"
+  echo "ci-scope: path lists from the checkout" >&2
 fi
 
 # The patterns of one list, one per line: the quoted items under the `  <key>:` line of the file.
