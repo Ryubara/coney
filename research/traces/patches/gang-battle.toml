@@ -15,8 +15,10 @@ log = [
   { value = "a0", name = "brain" },
   { value = "a1", name = "human" },
   { value = "a2", name = "force" },
-  # Most calls come through Human_SetTarget (0x00226c30, ra 0x00226cbc), which keeps its own return address at
-  # 0(sp): logged here, it names the goal that set the target.
+  # The word at 0(sp) is the caller's own return address when the caller saves ra there: Human_SetTarget
+  # (ra 0x00226cbc; always from Human_SyncTargetFromBrain, ra2 0x00226f5c, never a change), Brain_Fight (ra 0x0028d330)
+  # and Human_DropTarget (ra 0x00226fd8), so for those three it names the cause; for other callers it is a stale
+  # stack word. Every ra and ra2 with its cause: docs/research/gang-fights.md#set-target-causes.
   { value = "[sp + 0x0]", name = "ra2" },
 ]
 
