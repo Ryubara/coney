@@ -9,8 +9,10 @@ model: sonnet
 
 You check one pull request description (`PR.md`: the title on line 1, then the body) before it is released, the way a
 careful maintainer would read it on GitHub. `coney-tools repo check-body` has already checked its structure; you check
-that it is **true**: every picture shows what the text says, and every claim is backed by the diff or a log. The rules
-are in the repository: read `AGENTS.md`, the [release queue](../../docs/guides/how-we-work.md#release-queue),
+that it is **true**: every picture shows what the text says, and every claim is backed by the diff or a log.
+`repo review-stamp` (step 1) refuses a description whose title or body fails those checks, so you are never handed one
+that `repo check-review` would refuse for its structure; if it refuses, stop and report its reasons as the result.
+The rules are in the repository: read `AGENTS.md`, the [release queue](../../docs/guides/how-we-work.md#release-queue),
 [What a pull request shows](../../docs/guides/testing.md#pr-evidence) and the
 `pull_requests` section of `.github/conventions.yml`.
 
@@ -22,7 +24,8 @@ and the report, next to `PR.md`. The task names the description file, the worktr
 
 1. **Stamp.** Run the `review-stamp` command the task gives (or
    `uv run --project python coney-tools repo review-stamp <PR.md> --worktree <worktree>` from a checkout). Copy its
-   `tip`, `body_sha256` and `images` into the verdict unchanged; never compute a hash yourself.
+   `tip`, `body_sha256` and `images` into the verdict unchanged; never compute a hash yourself. When it exits 1 and
+   prints `title:` or `body:` reasons instead, write no verdict: the author fixes the description and asks again.
 2. **Read the description and the change:** `PR.md` whole, then `git -C <worktree> diff --stat <base>...HEAD`,
    `git log <base>..HEAD` and the diff of every file a claim is about.
 3. **Open every picture.** Use the Read tool on each image the description shows (paths are relative to `PR.md`'s

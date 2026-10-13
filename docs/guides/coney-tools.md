@@ -622,7 +622,7 @@ uv run --project python coney-tools repo check-body [--body FILE|-] [--worktree 
 uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
     [--claude EXE] [--timeout-minutes N]
 uv run --project python coney-tools repo check-review PR.md --worktree WT [--base REF]
-uv run --project python coney-tools repo review-stamp PR.md --worktree WT
+uv run --project python coney-tools repo review-stamp PR.md --worktree WT [--base REF]
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
@@ -647,7 +647,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `origin/main`, to `HEAD`) and requires the AI use `Model:` line to name every model a `Co-Authored-By` trailer on them
   credits: see [the Model line](#repo-model-line).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
-  [review](#repo-review).
+  [review](#repo-review). All three refuse a description whose title or body fails the checks above.
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
 * `repo render` rewrites the generated blocks of `AGENTS.md`, `CONTRIBUTING.md` and every guide under `docs/guides/`
   from the conventions: the text between a `<!-- conventions:begin NAME -->` line and the next
@@ -683,13 +683,14 @@ the wrong model, and it cost three review rounds (pull requests #460, #466 and #
   trailers: pass `--base <parent branch>`.
 * **The message.** One reason per missing model, naming it:
   `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
-* **Where it runs.** Locally, where the branch is at hand: `repo check-review` and `repo review` read the commits of the
-  worktree after `--base` (default `origin/main`) and refuse before the agent starts, and `repo check-body --worktree WT`
-  does the same for a description on its own. **CI does not run it:** the `body` job gets the description from the event
-  and has no commits (its checkout is shallow, and a full history for one string comparison would slow a required
-  check on every edit), so it passes no models and stays a description-only check, as `Docs: none` is. The coordinator's
-  release step is the gate ([The description review](how-we-work.md#pr-review)). A branch git cannot list (an unknown
-  `--base`, not a worktree) exits 2 rather than passing as one without trailers.
+* **Where it runs.** Locally, where the branch is at hand: `repo check-review`, `repo review` and `repo review-stamp` read
+  the commits of the worktree after `--base` (default `origin/main`) and refuse before the agent starts, and
+  `repo check-body --worktree WT` does the same for a description on its own. **CI does not run it:** the `body` job
+  gets the description from the event and has no commits (its checkout is shallow, and a full history for one string
+  comparison would slow a required check on every edit), so it passes no models and stays a description-only check, as
+  `Docs: none` is. The coordinator's release step is the gate
+  ([The description review](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`, not a worktree)
+  exits 2 rather than passing as one without trailers.
 * **One source.** The trailer's key and addresses are `commits.trailers` and the rule's switch is
   `pull_requests.ai_use.model.names_trailer_models` in [.github/conventions.yml](repo:.github/conventions.yml); the check
   holds no copy, and the generated rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md) state it.
@@ -703,11 +704,11 @@ to its folder.
 * `repo review` runs the `pr-reviewer` agent once, headlessly: it reads `.claude/agents/pr-reviewer.md` from the
   checkout the command runs in, hands it to `claude -p --agents FILE --agent pr-reviewer --model M
   --dangerously-skip-permissions` (a throwaway run, in `PR.md`'s folder) with a task naming `PR.md`, the worktree and
-  `--base` (default `origin/main`), and then runs `check-review`. It removes an old `REVIEW.json` and `REVIEW.md` first,
-  so a run that writes no verdict cannot leave an earlier pass behind. `--model` overrides the agent file's model,
-  `--effort` sets the effort level, `--claude` names the executable and `--timeout-minutes` (default 30) stops a run
-  that hangs. Exit 0 when the verdict releases the branch, 1 when it does not or `claude` failed, 2 when the review
-  cannot run (no description, no agent file, not a worktree).
+  `--base` (default `origin/main`), and then runs `check-review`. Its task has the agent stamp with the same `--base`.
+  It removes an old `REVIEW.json` and `REVIEW.md` first, so a run that writes no verdict cannot leave an earlier pass
+  behind. `--model` overrides the agent file's model, `--effort` sets the effort level, `--claude` names the
+  executable and `--timeout-minutes` (default 30) stops a run that hangs. Exit 0 when the verdict releases the branch,
+  1 when it does not or `claude` failed, 2 when the review cannot run (no description, no agent file, not a worktree).
 * `repo check-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
   `check-body` on the rest (`PR.md`'s convention: title on line 1, body after it), except that a local image counts as an
   upload, since `gh --attach` uploads it when the pull request is opened. Each reason is printed with a `title:` or
@@ -720,7 +721,13 @@ to its folder.
   every other one. Exit 1 lists each reason (a title or body CI would refuse, a stale tip, an edited description, a
   replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
 * `repo review-stamp` prints those values as JSON (`tip`, `body_sha256`, `images` with `path` and `sha256`, `null` for a
-  missing file). The agent copies them into its verdict, so the hash is computed in one place.
+  missing file). The agent copies them into its verdict, so the hash is computed in one place. It first runs the same
+  title and body checks as `check-review` (one function, `precheck`, including the `Model:` line against the commits
+  after `--base`, default `origin/main`) and, when they fail, prints the reasons with their `title:` or `body:` prefix on
+  stderr, prints no stamp and exits 1, so a reviewer launched as a subagent cannot review a description that
+  `check-review` would refuse at release. Exit 2 when `PR.md` cannot be read or the worktree's commits cannot be listed.
+  It takes the rules from the checkout the tool is installed in, so it runs from any folder (the agent runs it in
+  the scratch folder).
 
 The file names, the agent and the hash rule are `pull_requests.review` in `.github/conventions.yml`; the rules in full
 are the generated list in [The description review](how-we-work.md#pr-review).

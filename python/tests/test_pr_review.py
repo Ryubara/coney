@@ -350,6 +350,101 @@ def test_check_review_exits_1_for_a_description_missing_a_section(
     assert "body:" in capsys.readouterr().out
 
 
+# --- review-stamp refuses a description check-review would refuse ----------------------------------------------------
+
+
+def stamp_argv(pr: Path, worktree: Path, *extra: str) -> list[str]:
+    """The command line of `repo review-stamp` on `pr`."""
+    return ["repo", "review-stamp", str(pr), "--worktree", str(worktree), *extra]
+
+
+def test_review_stamp_runs_from_a_folder_outside_any_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The agent runs the stamp in PR.md's folder (the scratch folder), which is not inside the repository: the rules
+    # come from the checkout the tool is installed in, not from the current folder.
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    pr = write_pr(scratch)
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.chdir(scratch)
+    assert main(stamp_argv(pr, tmp_path)) == 0
+    assert json.loads(capsys.readouterr().out)["tip"] == TIP
+    pr.write_text(BODY.replace("tools: Add a thing", "tools: Share a thing"), encoding="utf-8")
+    assert main(stamp_argv(pr, tmp_path)) == 1
+    assert "title:" in capsys.readouterr().err
+
+
+def test_review_stamp_refuses_a_bad_title_and_prints_no_stamp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The pull request whose title verb `Share` is not allowed.
+    pr = write_pr(tmp_path, BODY.replace("tools: Add a thing", "tools: Share a thing"))
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.chdir(REPO)
+    assert main(stamp_argv(pr, tmp_path)) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "title:" in captured.err and "Share" in captured.err
+
+
+def test_review_stamp_refuses_a_missing_template_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    pr = write_pr(tmp_path, BODY.replace("## Screenshots", "Screenshots: none (no visible change)\n\n## Details"))
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.chdir(REPO)
+    assert main(stamp_argv(pr, tmp_path)) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "body:" in captured.err and "## Screenshots" in captured.err
+
+
+def test_review_stamp_gives_the_same_reasons_as_check_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    pr = write_pr(tmp_path, BODY.replace("tools: Add a thing", "Add a thing.").replace("## Screenshots", "## Pictures"))
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.chdir(REPO)
+    assert main(stamp_argv(pr, tmp_path)) == 1
+    stamp_lines = {line.strip() for line in capsys.readouterr().err.splitlines()}
+    assert main(["repo", "check-review", str(pr), "--worktree", str(tmp_path)]) == 1
+    review_lines = {line.strip() for line in capsys.readouterr().out.splitlines()}
+    reasons = {line for line in review_lines if line.startswith(("title:", "body:"))}
+    assert reasons and reasons <= stamp_lines
+
+
+def test_review_stamp_holds_the_model_line_to_the_branch_trailers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    make_branch(repo, [message("tools: Add a thing", "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")])
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    pr = write_pr(scratch)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.setattr(pr_review, "branch_trailer_models", REAL_BRANCH_MODELS)
+    assert main(stamp_argv(pr, repo, "--base", "main~1")) == 1
+    assert "Claude Opus 5.5" in capsys.readouterr().err
+    pr.write_text(BODY.replace("Claude Sonnet 5.5", "Claude Opus 5.5"), encoding="utf-8")
+    assert main(stamp_argv(pr, repo, "--base", "main~1")) == 0
+    assert json.loads(capsys.readouterr().out)["tip"] == TIP
+
+
+def test_the_precheck_is_the_first_half_of_check_review(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path, BODY.replace("## Screenshots", "## Pictures"))
+    write_verdict(pr)
+    early = pr_review.precheck(pr, tmp_path, CONVENTIONS)
+    assert early and check_review(pr, tmp_path, CONVENTIONS, head)[: len(early)] == early
+
+
+def test_the_agent_is_told_to_stamp_with_the_base(tmp_path: Path) -> None:
+    prompt = pr_review.review_prompt(tmp_path / "PR.md", tmp_path, "origin/dev", RULES)
+    assert "review-stamp" in prompt and "--base origin/dev" in prompt
+
+
 # --- the agent definition and the launcher --------------------------------------------------------------------------
 
 
