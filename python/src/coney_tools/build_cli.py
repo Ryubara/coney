@@ -44,6 +44,10 @@ DETACHED_MAX_WAIT = 240.0
 #: The file in the worktree's scratch folder that a --detach run records itself in, and its console output.
 RESULT_FILE = "build-result.json"
 DETACHED_OUTPUT = "build-detached.out"
+#: Windows process creation flags of the detached child, spelt out so they exist on every platform.
+CREATE_NEW_PROCESS_GROUP = 0x00000200
+CREATE_NO_WINDOW = 0x08000000
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 #: A variable name for `--env`.
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -391,9 +395,11 @@ def spawn_detached(command: list[str], cwd: Path, output: Path) -> int:
         common: dict[str, Any] = {"cwd": cwd, "stdin": subprocess.DEVNULL, "stdout": sink, "stderr": subprocess.STDOUT}
         if sys.platform != "win32":
             return subprocess.Popen(command, start_new_session=True, **common).pid
-        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        # CREATE_NO_WINDOW, never DETACHED_PROCESS: the venv python.exe is a launcher whose child interpreter finds no
+        # console to inherit, so Windows gives it a new one that Windows Terminal shows as an empty window.
+        flags = CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
         try:
-            return subprocess.Popen(command, creationflags=flags | subprocess.CREATE_BREAKAWAY_FROM_JOB, **common).pid
+            return subprocess.Popen(command, creationflags=flags | CREATE_BREAKAWAY_FROM_JOB, **common).pid
         except OSError:  # the caller's job forbids leaving it: the child then ends with that job
             return subprocess.Popen(command, creationflags=flags, **common).pid
 

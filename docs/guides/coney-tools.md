@@ -1179,9 +1179,10 @@ The test phase counts the build before it, and the wait for the build folder cou
 whether to keep waiting: a step that has started always runs to its end, and a free slot is always taken.
 
 **Detached runs.** `--detach` checks the run as usual (precheck, refusals), then starts the same run in a process of
-its own, apart from the calling shell (on Windows `DETACHED_PROCESS` in a new process group, out of the caller's job
-when the job allows it; elsewhere a session of its own), and returns at once printing the log path and the child's
-pid. A detached run may wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and
+its own, apart from the calling shell (on Windows `CREATE_NO_WINDOW` in a new process group, never
+`DETACHED_PROCESS`, which makes Windows Terminal show an empty window for the venv launcher's child; out of the
+caller's job when the job allows it; elsewhere a session of its own), and returns at once printing the log path and the
+child's pid. A detached run may wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and
 neither is capped. Its children still end with it, but nothing watches the shell that started it. It records itself
 in `build-result.json` in the worktree's scratch folder (state, agent, preset, pid, log, start time; at the end the
 exit code, the printed summary and the end time; its console output goes to `build-detached.out` beside it), however
