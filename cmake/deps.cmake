@@ -3,6 +3,34 @@
 # To update one: change the SHA and the tag comment together, rebuild from a clean build directory, run the tests.
 include(FetchContent)
 
+# A folder that keeps the fetched sources between builds, for CI (docs/guides/building.md#ci-caches): when
+# CONEY_DEPS_SOURCES names one (the environment variable of that name gives the default), each dependency is fetched
+# into <folder>/<name> instead of this build's _deps/, and once that folder holds a complete fetch made from this very
+# file (its stamp holds this file's SHA-256) it is used as it is, with no download. The path is the same on every run
+# and for every preset, so the compiler cache sees the same command lines. Empty (the default): nothing changes.
+set(CONEY_DEPS_SOURCES "$ENV{CONEY_DEPS_SOURCES}" CACHE PATH "Folder that keeps the fetched dependency sources")
+file(SHA256 "${CMAKE_CURRENT_LIST_FILE}" _coney_deps_hash)
+set(_coney_deps SDL3 librw Catch2 imgui ffmpeg)
+foreach(_dep IN LISTS _coney_deps)
+    # _coney_<name>_where: the SOURCE_DIR option for its declaration when it is fetched into the folder, else empty.
+    set(_coney_${_dep}_where "")
+    if(CONEY_DEPS_SOURCES)
+        file(TO_CMAKE_PATH "${CONEY_DEPS_SOURCES}/${_dep}" _dir)
+        string(TOUPPER "${_dep}" _upper)
+        set(_stamp "")
+        if(EXISTS "${_dir}/.coney-deps-hash")
+            file(READ "${_dir}/.coney-deps-hash" _stamp)
+        endif()
+        if(DEFINED FETCHCONTENT_SOURCE_DIR_${_upper})
+            # Someone pointed it at their own copy; leave that alone.
+        elseif(_stamp STREQUAL _coney_deps_hash)
+            set(FETCHCONTENT_SOURCE_DIR_${_upper} "${_dir}")
+        else()
+            set(_coney_${_dep}_where SOURCE_DIR "${_dir}")
+        endif()
+    endif()
+endforeach()
+
 # SYSTEM: their headers are treated as system headers, so their warnings never fail our -Werror build.
 
 # SDL3 release-3.4.18, zlib licence. Static, so the executable needs no DLL next to it.
@@ -17,7 +45,8 @@ set(SDL_AUDIO ON CACHE BOOL "" FORCE)
 # is SDL's own alias of SDL3-static when only the static library is built) and an SDL3 installed on the machine is
 # never picked up. It needs CMake 3.24; we require 3.28.
 FetchContent_Declare(SDL3 GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-                          GIT_TAG 829a65d769d935c4852f8159e964312c0957260a SYSTEM OVERRIDE_FIND_PACKAGE)
+                          GIT_TAG 829a65d769d935c4852f8159e964312c0957260a ${_coney_SDL3_where}
+                          SYSTEM OVERRIDE_FIND_PACKAGE)
 
 # librw master at 2026-08-26, MIT licence. Built for its GL3 platform with SDL3 as the window and context library
 # (LIBRW_GL3_GFXLIB=SDL3), which needs the OpenGL headers and libraries: libgl1-mesa-dev on Linux, the system's own on
@@ -29,17 +58,17 @@ set(LIBRW_GL3_GFXLIB "SDL3" CACHE STRING "" FORCE)
 set(LIBRW_TOOLS OFF CACHE BOOL "" FORCE)
 set(LIBRW_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(librw GIT_REPOSITORY https://github.com/aap/librw.git
-                           GIT_TAG 18532c2e13efbc1aa43f0b00b4459831f9414de0 SYSTEM)
+                           GIT_TAG 18532c2e13efbc1aa43f0b00b4459831f9414de0 ${_coney_librw_where} SYSTEM)
 
 # Catch2 v3.16.0, Boost Software Licence. Tests only.
 FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-                            GIT_TAG 317ac1ed4c0bb6e6b91eafc817e05c488feffcb3 SYSTEM)
+                            GIT_TAG 317ac1ed4c0bb6e6b91eafc817e05c488feffcb3 ${_coney_Catch2_where} SYSTEM)
 
 # Dear ImGui v1.92.9b (a lightweight tag, so the commit is the tag's own), MIT licence. The developer overlay of the
 # debug menus (docs/guides/debug-menu.md), used only in src/platform/. It ships no CMake build, so the library is
 # made below from its core, its std::string helpers and the SDL3 and OpenGL 3 backends.
 FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
-                           GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab SYSTEM)
+                           GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab ${_coney_imgui_where} SYSTEM)
 
 FetchContent_MakeAvailable(SDL3 librw Catch2 imgui)
 
@@ -87,7 +116,16 @@ list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/extras")
 set(FFMPEG_VERSION "9.0.2")
 FetchContent_Declare(ffmpeg URL https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
                             URL_HASH SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-                            DOWNLOAD_EXTRACT_TIMESTAMP ON)
+                            DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_ffmpeg_where})
 FetchContent_MakeAvailable(ffmpeg)
 set(FFMPEG_SOURCE_DIR "${ffmpeg_SOURCE_DIR}")
+
+# Mark each dependency fetched into CONEY_DEPS_SOURCES as complete, only now that every fetch above has succeeded, so
+# a fetch that failed half-way is never taken for a finished one.
+foreach(_dep IN LISTS _coney_deps)
+    if(_coney_${_dep}_where)
+        list(GET _coney_${_dep}_where 1 _dir)
+        file(WRITE "${_dir}/.coney-deps-hash" "${_coney_deps_hash}")
+    endif()
+endforeach()
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/ffmpeg" "${CMAKE_BINARY_DIR}/_deps/ffmpeg-coney")

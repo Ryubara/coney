@@ -1,30 +1,62 @@
-# Compile through ccache on Linux and macOS and keep its cache between runs, so a job recompiles only what changed.
-# A runner starts empty, so without this every job recompiles everything, SDL3 and librw included. Windows is left
-# out: MSVC's /Zi debug info writes a shared PDB that ccache cannot cache, so it needs /Z7 first.
+# Compile through ccache and restore its cache from main, so a job recompiles only what changed. A runner starts
+# empty, so without this every job recompiles everything, SDL3 and librw included. Windows (MSVC) works too because
+# the ci and asan presets inherit "cacheable" (CMakePresets.json): /Z7 keeps the debug info in each object, where
+# MSVC's default /Zi writes a shared PDB that ccache refuses, and no precompiled headers, which ccache cannot use.
 # Call it after the step that installs the packages (on Linux the package index is already updated by then), and
-# print `ccache --show-stats` at the end of the job to see the hit rate.
+# end the job with ./.github/actions/ccache-save, which reports the hit rate and saves the cache (main only).
+#
+# Only pushes to main (and release/ branches), the nightly run and manual runs save; a pull request only restores.
+# A cache saved by a pull request is scoped to its refs/pull/N/merge ref, so no other pull request can restore it,
+# and every one of them pushed main's useful entries out of the repository's 10 GB (9.6 GB used on 2026-10-13, 28
+# entries, one per job and commit). Rules and sizes: docs/guides/building.md#ci-caches.
 name: ccache
-description: Install ccache, route CMake's compiler through it and restore and save its cache.
+description: Install ccache, route CMake's compiler through it and restore the newest cache of this job from main.
 
 inputs:
   key:
-    description: Names this job's cache (its OS and compiler), so unlike builds never share objects.
+    description: >-
+      Names this job's cache (its preset, OS and compiler), so unlike builds never share objects. Two jobs share a
+      key only when their compiler, flags and preset are identical; the one that does not save calls ccache-save
+      with save false.
     required: true
+  max-size:
+    description: >-
+      ccache's size cap. One full build's objects must fit, or the build evicts its own objects and the next run
+      misses; every saved job's cap together must fit the repository's 10 GB (docs/guides/building.md#ci-caches).
+    default: 700M
 
 runs:
   using: composite
   steps:
+    # The start time, so ccache-save can drop what this job did not use (its --evict-older-than).
+    - shell: bash
+      run: echo "CONEY_CCACHE_START=$(date +%s)" >> "$GITHUB_ENV"
     - if: runner.os == 'Linux'
       shell: bash
       run: sudo apt-get install -y ccache
     - if: runner.os == 'macOS'
       shell: bash
       run: brew install ccache
-    # CMake reads these two variables when it first configures; the presets stay untouched, so local builds do not
-    # use ccache unless the developer asks. COMPILERCHECK=content because the compilers are installed fresh on every
-    # run and their modification times mean nothing.
-    - if: runner.os != 'Windows'
-      shell: bash
+    # Windows has no package of it on the runner: the official release, checked against its SHA-256 (the release's
+    # published digest). 4.14.1 caches MSVC's /Z7 compiles with /showIncludes, which Ninja uses for its header lists.
+    - if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $version = '4.14.1'
+        $name = "ccache-$version-windows-x86_64"
+        $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
+        Invoke-WebRequest -Uri "https://github.com/ccache/ccache/releases/download/v$version/$name.zip" -OutFile $zip
+        $expected = '6219f3865ca59aec41ee4b678df171d5d35855ecb2b6dbbbd20690b3a68af7b4'
+        if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $expected) { throw "ccache ${version}: wrong SHA-256" }
+        Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+        Add-Content $env:GITHUB_PATH (Join-Path $env:RUNNER_TEMP $name)
+    # CMake reads the two launcher variables when it first configures; the presets stay untouched, so local builds do
+    # not use ccache unless the developer asks. COMPILERCHECK=content because the compilers are installed fresh on
+    # every run and their modification times mean nothing.
+    - shell: bash
+      env:
+        KEY: ${{ inputs.key }}
+        MAX_SIZE: ${{ inputs.max-size }}
       run: |
         {
           echo "CMAKE_C_COMPILER_LAUNCHER=ccache"
@@ -32,13 +64,16 @@ runs:
           echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache"
           echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
           echo "CCACHE_COMPILERCHECK=content"
-          echo "CCACHE_MAXSIZE=300M"
+          echo "CCACHE_MAXSIZE=$MAX_SIZE"
+          echo "CONEY_CCACHE_KEY=$KEY"
         } >> "$GITHUB_ENV"
-    # One entry per commit: it restores the newest entry of this job (the pull request's own, else main's) and
-    # saves a new one at the end. The 300M cap and the repository's 10 GB limit evict the oldest.
-    - if: runner.os != 'Windows'
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # The key never matches (run ids are unique), so the prefix finds the newest entry of this job: on a pull request
+    # main's (a pull request's restore looks in its own scope, then its base branch's), on main its own newest.
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .ccache
-        key: ccache-${{ inputs.key }}-${{ github.sha }}
+        key: ccache-${{ inputs.key }}-${{ github.run_id }}
         restore-keys: ccache-${{ inputs.key }}-
+    # The restored cache carries the counters of the run that saved it; start from zero so the report is this job's.
+    - shell: bash
+      run: ccache --zero-stats
