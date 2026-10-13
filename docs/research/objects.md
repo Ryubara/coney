@@ -783,6 +783,10 @@ addresses cited unless marked.
    (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
    float when the held world object's body flags have `0x10000` (the melee weapons). The same `Strike_Contact` serves
    the player, so a given bat hits as hard in a Warrior's hand as in the player's, scaled by his own class.
+   **Correction** (issue #492, confirmed (runtime)): the `level34` Furies' bat swings (501, 36, 37) never reached
+   `Strike_Contact`; each hit was the bat's own body touching the victim (`WorldObject_OnContact` `0x00394050` →
+   `ThrownObject_HitHuman` `0x00392b88`), which deals `CfgObj` `+0x58` × the holder's class float alone, without the
+   clip's damage ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)).
 4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
    a weight; category 14, the Warriors, is not one of the categories 9, 10, 13 that get 0) ([AI: picking the attack
    kind](ai.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
@@ -806,7 +810,8 @@ its anim set):
 2. Attach the given object to the receiver's right hand with the pick-up clip's type-9 offset, as the player's
    pick-up does, and leave a left-hand or hat object on the ground.
 3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
-   bat) and that `Strike_Contact`'s weapon bonus (`CfgObj` `+0x58` × class float) applies to AI attackers.
+   bat) and that its hit deals the weapon's `CfgObj` `+0x58` × his class float, as the bat's own contact does
+   ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)).
 4. Add the armed bonus to Coney's attack pick and the set's clips to its reach test, if missing.
 5. Drop a held kind 4 or 6 object from a Warrior with no enemies outside co-op.
 6. Test: give a bat to a Warrior; assert he holds it, its world pose equals his transform ∘ scaled hand bone ∘ local
