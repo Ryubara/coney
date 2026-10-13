@@ -20,8 +20,8 @@
 # pull requests (`issues: write` and `pull-requests: write`). Both writes are needed: the comment and label endpoints
 # live under /issues/{number}, but for a pull request this token gets "Resource not accessible by integration" (HTTP
 # 403) with `issues: write` alone, so the labels on every open pull request (the push run after #444) and the comment
-# on #434 failed. `pull-requests: write` adds nothing the code uses: it only calls those two endpoints, never merges,
-# approves, edits a title or body, or pushes.
+# on #434 failed. `pull-requests: write` adds nothing the code uses: on a pull request it only calls those two
+# endpoints, and it never merges, approves, edits a title or body, or pushes.
 #
 # It runs with `pull_request_target` so that a pull request from a fork can be commented on; for that reason it checks
 # out the default branch only (no `ref`, no `repository`: never the pull request's own code) and nothing a pull
