@@ -116,6 +116,8 @@ class RumbleMenuMode final : public GameMode {
     /// written over what the screens chose when the arena is confirmed, as the fixture of the disc tests does, so the
     /// arena's scripts run as in the original. Nothing (the default) leaves the screens' choice alone.
     void setLaunchOverride(std::optional<RumbleLaunch> launch) { m_launch = launch; }
+    /// What setLaunchOverride() gave: `--rumble`'s match, or nothing.
+    [[nodiscard]] const std::optional<RumbleLaunch>& launchOverride() const { return m_launch; }
 
     /// Whether the last visit started a fight / was cancelled.
     [[nodiscard]] bool started() const { return m_started; }

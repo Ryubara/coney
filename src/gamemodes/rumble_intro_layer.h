@@ -7,6 +7,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "gamemodes/front_end_services.h"
@@ -48,12 +49,16 @@ class RumbleIntroLayer final : public PlayOverlay {
 
     /// The intro.
     [[nodiscard]] const gui::RumbleIntro& intro() const { return m_intro; }
+    /// Runs `afterDone` each time the countdown ends, once the script's `onDone` (`FinishCountdown`, which ends in the
+    /// rules' `StartIt`) has returned: StartUpFlow's `--ai-player` hand-over. Coney's own hook.
+    void setAfterDone(std::function<void()> afterDone) { m_afterDone = std::move(afterDone); }
 
   private:
     PauseSheetLoader m_loadSheet;
     FrontEndServices& m_services;
     GameState& m_state;
     std::function<void(std::string_view)> m_log;
+    std::function<void()> m_afterDone;
     gui::RumbleIntro m_intro;
     MenuLayer m_layer;
     bool m_loaded = false;

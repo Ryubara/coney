@@ -52,6 +52,11 @@ class SandboxRenderer {
     /// nothing is drawn.
     void render(RenderEngine& engine, const WorldView& view, const std::function<void()>& drawObjects = {});
 
+    /// Draws only the sandbox's geometry into a frame someone else began, with the camera and fog they set: the debug
+    /// menus' spawned objects among a level's scenery (LevelPlayScenery). Turns on Z test and write and back-face
+    /// culling, as a world pass has them, and leaves them on. Nothing with the NULL backend.
+    void drawGeometry(const RenderEngine& engine) const;
+
     /// The atomics the mesh was split into.
     [[nodiscard]] std::size_t atomicCount() const { return m_atomics.size(); }
     /// The textures loaded (none with the NULL backend).

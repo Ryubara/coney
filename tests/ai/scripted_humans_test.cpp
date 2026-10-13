@@ -527,6 +527,26 @@ TEST_CASE("WCIssueCommand reaches a player's crew only while the command is enab
     CHECK(level.scripted->humanHost().playerGang() == 4);
 }
 
+// level80 checkpoint 2 switches every command off and follow back on as its first calls, before the level makes the
+// player's human: the switch must reach player 1's commands, or the menu greys follow out and labels it "???".
+TEST_CASE("WCEnableCommand for a player's human the level has not made yet switches that player's command",
+          "[ai][scripted]") {
+    Level level;
+    coney::CreatedHumans created;
+    REQUIRE(created.add(
+        coney::HumanCreation{.name = "Cleon", .position = std::nullopt, .playerIndex = 1, .handle = 228.0}));
+    REQUIRE(created.add(
+        coney::HumanCreation{.name = "Vermin", .position = std::nullopt, .playerIndex = 0, .handle = 229.0}));
+    level.context.humans = &created;
+    level.call("WCEnableAllCommands", {Value()});
+    level.call("WCEnableCommand", {Value(228.0), Value(0.0), Value(1.0)});
+    CHECK(level.state.characters.warriorCommands[0][0]);
+    CHECK_FALSE(level.state.characters.warriorCommands[0][1]);
+    // An AI human's handle switches nothing.
+    level.call("WCEnableCommand", {Value(229.0), Value(1.0), Value(1.0)});
+    CHECK_FALSE(level.state.characters.warriorCommands[0][1]);
+}
+
 TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; GangDelete deletes its members",
           "[ai][scripted]") {
     Level level;

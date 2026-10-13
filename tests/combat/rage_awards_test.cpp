@@ -67,7 +67,7 @@ TEST_CASE("each award sets the hold, and rage on gives nothing", "[combat]") {
     RageMeter rage;
     CHECK(awardHitRage(rage, 15, false, tuning, 1000, RepeatTracker{}) == 13);
     // Held until 6000 ms: no decay before it.
-    rage.update(5990, tuning);
+    rage.update(5990);
     CHECK(rage.value() == 13);
     rage.set(78);
     REQUIRE(rage.start(6000));

@@ -111,6 +111,9 @@ class DiscSession {
     [[nodiscard]] std::uint64_t frames() const { return m_frames; }
     /// Frames the pad script has played (0 before the first frame of play).
     [[nodiscard]] std::uint64_t playFrames() const { return m_input->framesPlayed(); }
+    /// The pads as the session reads them: a test that puts the debug menus' input gate between the pads and the
+    /// game, as `coney` does, gives it this and hands the gate to stack().setInput().
+    [[nodiscard]] InputSource& input() { return *m_input; }
 
     /// How long a level may take to start playing: 2 minutes of frames, longer than any loading screen.
     static constexpr std::uint64_t kPlayLimit = 3600;

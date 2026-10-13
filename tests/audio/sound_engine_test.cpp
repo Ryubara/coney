@@ -422,6 +422,57 @@ TEST_CASE("the ambient bed fades in, and a new one replaces it", "[audio]") {
     CHECK(rig.engine->stats().tasks == 1);
 }
 
+// #404, docs/research/sound.md#scene-world-sound: a cinematic does not touch the ambient bed (no engine-wide mute); the
+// hub's scripts stop it themselves (SoundStopAmbientTrack, a 2 s fade-out), and the scene's end plays nothing again.
+TEST_CASE("a cinematic leaves the ambient bed at full volume; stopping it fades it out over 2 s", "[audio][scenes]") {
+    Rig rig;
+    rig.engine->playAmbientTrack(kLoopSound);
+    rig.steps(62); // past its 2 s fade-in
+    const SoundHandle bed = rig.engine->ambientTrack();
+    REQUIRE(bed.valid());
+    const float full = rig.sent(bed, 0);
+    REQUIRE(full > 0.0F);
+
+    rig.engine->setCinematic(true);
+    rig.steps(1);
+    CHECK(rig.sent(bed, 0) == Approx(full));
+    CHECK(rig.sent(bed, 1) == Approx(full));
+
+    rig.engine->stopAmbientTrack();
+    CHECK_FALSE(rig.engine->ambientTrack().valid());
+    rig.steps(30); // half way
+    CHECK(rig.sent(bed, 0) < full);
+    CHECK(rig.sent(bed, 0) > 0.0F);
+    rig.steps(32);
+    CHECK_FALSE(rig.engine->isPlaying(bed));
+
+    rig.engine->setCinematic(false);
+    rig.steps(30);
+    CHECK_FALSE(rig.engine->ambientTrack().valid());
+    CHECK(rig.engine->liveSounds().empty());
+}
+
+TEST_CASE("liveSounds lists the live sounds in start order with what was sent for them", "[audio]") {
+    Rig rig;
+    const SoundHandle flat = rig.engine->play(kBankSound);
+    const SoundHandle placed = rig.engine->play(kBank3DSound, SoundPlay{.position = SoundVec{30.0F, 0.0F, 0.0F}});
+    rig.steps(1);
+    const std::vector<coney::audio::LiveSound> live = rig.engine->liveSounds();
+    REQUIRE(live.size() == 2);
+    CHECK(live[0].handle == flat);
+    CHECK(live[0].hash == kBankSound);
+    CHECK(live[0].soundClass == kBank2D);
+    CHECK_FALSE(live[0].positional);
+    CHECK(live[0].sent[0] == Approx(rig.sent(flat, 0)));
+    CHECK(live[1].handle == placed);
+    CHECK(live[1].positional);
+    // 30 m away, past its 20 m far distance: live but silent.
+    CHECK(live[1].sent[0] == Approx(0.0F));
+    rig.engine->stop(flat);
+    rig.steps(1);
+    CHECK(rig.engine->liveSounds().size() == 1);
+}
+
 TEST_CASE("the sound player plays the game's sounds through the engine and registered sounds first", "[audio]") {
     Mixer mixer;
     coney::audio::SoundPlayer player(mixer);

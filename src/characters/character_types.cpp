@@ -34,6 +34,8 @@ constexpr std::size_t kFemale = 12;
 // `CfgPowerClass`'s arguments (docs/references/bindings/config.md#cfgpowerclass), 0-based, and the fields they fill.
 constexpr std::size_t kPowerMax = 1;         // +0x28
 constexpr std::size_t kPowerRefill = 2;      // +0x2a
+constexpr std::size_t kStaminaMax = 3;       // +0x2c
+constexpr std::size_t kStaminaRefill = 4;    // +0x2e
 constexpr std::size_t kGroundMs = 5;         // +0x34
 constexpr std::size_t kStunMs = 6;           // +0x30
 constexpr std::size_t kHurt = 9;             // +0x04
@@ -45,10 +47,19 @@ constexpr std::size_t kDelayDownFactor = 16; // +0x20
 constexpr std::size_t kStruggle = 17;        // +0x36
 constexpr std::size_t kCounter = 19;         // +0x24, clamped 0-1
 constexpr std::size_t kThrowsAtWalls = 21;   // +0x39, clamped 0-1
+constexpr std::size_t kRingByte = 28;        // +0x40, clamped 0-100
+constexpr int kMaxRingByte = 100;
 
 // `CfgWarriorClass`'s arguments (docs/references/bindings/config.md#cfgwarriorclass), 0-based.
 constexpr std::size_t kWarriorClassId = 0;
+constexpr std::size_t kWarriorHealthPercent = 1; // byte +0x05
 constexpr std::size_t kWarriorDamagePercent = 2; // byte +0x06
+constexpr std::size_t kWarriorRageMax = 3;       // 16 bits at +0x00
+constexpr std::size_t kWarriorRageGain = 4;      // byte +0x02
+constexpr std::size_t kWarriorRageDecay = 5;     // byte +0x03
+constexpr std::size_t kWarriorRageDrain = 6;     // byte +0x04
+constexpr int kByteMax = 255;
+constexpr int kU16Max = 65535;
 
 // The entry for `key` in `entries` (kept sorted by key), replaced or inserted: a later call of a key wins.
 template <typename Value> void putSorted(std::vector<std::pair<int, Value>>& entries, int key, Value value) {
@@ -95,7 +106,30 @@ std::vector<double> listAt(std::span<const script::Value> call, std::size_t inde
     }
 }
 
+// Argument `index` of `call` as a record field of 0 to `maximum` (**Coney's choice**: clamped, which gives what the
+// binding stores for every value the scripts pass), or nothing when it is not a number.
+std::optional<int> fieldAt(std::span<const script::Value> call, std::size_t index, int maximum) {
+    const std::optional<int> value = wholeAt(call, index);
+    return value ? std::optional<int>(std::clamp(*value, 0, maximum)) : std::nullopt;
+}
+
 } // namespace
+
+WarriorClass parseCfgWarriorClass(std::span<const script::Value> call) {
+    WarriorClass parsed;
+    parsed.healthPercent = fieldAt(call, kWarriorHealthPercent, kByteMax);
+    parsed.damagePercent = fieldAt(call, kWarriorDamagePercent, kByteMax);
+    // The rage needs all four: a call that leaves one out keeps the player's default.
+    const std::optional<int> rageMax = fieldAt(call, kWarriorRageMax, kU16Max);
+    const std::optional<int> gain = fieldAt(call, kWarriorRageGain, kByteMax);
+    const std::optional<int> decay = fieldAt(call, kWarriorRageDecay, kByteMax);
+    const std::optional<int> drain = fieldAt(call, kWarriorRageDrain, kByteMax);
+    if (rageMax.has_value() && *rageMax > 0 && gain.has_value() && decay.has_value() && drain.has_value()) {
+        parsed.rage = combat::RageClass{
+            .maximum = *rageMax, .gainPercent = *gain, .decayPercent = *decay, .drainPercent = *drain};
+    }
+    return parsed;
+}
 
 std::optional<CharacterType> parseCfgChar(std::span<const script::Value> call) {
     const std::optional<int> type = wholeAt(call, kType);
@@ -146,6 +180,8 @@ combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const
     };
     whole(kPowerMax, power.powerMax);
     whole(kPowerRefill, power.refillPerSecond);
+    whole(kStaminaMax, power.staminaMax);
+    whole(kStaminaRefill, power.staminaRefillPerSecond);
     whole(kGroundMs, power.groundMs);
     whole(kStunMs, power.stunMs);
     whole(kStruggle, power.struggleDivisor);
@@ -162,6 +198,8 @@ combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const
     int walls = power.throwsAtWalls ? 1 : 0;
     whole(kThrowsAtWalls, walls);
     power.throwsAtWalls = std::clamp(walls, 0, 1) == 1;
+    whole(kRingByte, power.ringByte);
+    power.ringByte = std::clamp(power.ringByte, 0, kMaxRingByte);
     return power;
 }
 
@@ -174,11 +212,8 @@ CharacterTypes CharacterTypes::fromRecorded(const script::RecordedCalls& recorde
         }
     }
     for (const std::vector<script::Value>& call : recorded.calls("CfgWarriorClass")) {
-        const std::optional<int> id = wholeAt(call, kWarriorClassId);
-        const std::optional<int> percent = wholeAt(call, kWarriorDamagePercent);
-        if (id.has_value() && percent.has_value()) {
-            // A byte in the record.
-            putSorted(types.m_damagePercents, *id, std::clamp(*percent, 0, 255));
+        if (const std::optional<int> id = wholeAt(call, kWarriorClassId)) {
+            putSorted(types.m_warriorClasses, *id, parseCfgWarriorClass(call));
         }
     }
     for (const std::vector<script::Value>& call : recorded.calls("CfgChar")) {
@@ -218,8 +253,18 @@ std::optional<PlayerTraits> CharacterTypes::playerTraitsOf(int type) const {
         traits.powerClass = *power;
     }
     traits.warriorClass = warriorClassOf(type);
-    if (const int* percent = findSorted(m_damagePercents, traits.warriorClass)) {
-        traits.damagePercent = *percent;
+    if (const WarriorClass* warrior = findSorted(m_warriorClasses, traits.warriorClass)) {
+        traits.damagePercent = warrior->damagePercent.value_or(0);
+        traits.healthPercent = warrior->healthPercent.value_or(0);
+        traits.rage = warrior->rage;
+    }
+    // Human_MakePlayer's difficulty scaling: the health times the Warrior class's percentage, rounded
+    // (docs/references/warrior-classes.md). **Coney's reading**: the type's own `+0x116`, as an AI human of the type
+    // gets it (the page does not say which record Human_Init reads it from; every Warriors alias has its class's).
+    traits.health = own->health.value_or(0);
+    if (traits.healthPercent > 0) {
+        traits.health =
+            static_cast<int>(std::lround(static_cast<double>(traits.health) * traits.healthPercent / 100.0));
     }
     return traits;
 }

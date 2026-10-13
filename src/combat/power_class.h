@@ -9,13 +9,15 @@ namespace coney::combat {
 
 /// One power class.
 struct PowerClass {
-    int powerMax = 400;            ///< `+0x28`: the power meter's maximum.
-    int refillPerSecond = 60;      ///< `+0x2a`: the power meter's refill.
-    float hurtFraction = 0.3F;     ///< `+0x04`: below this share of its health the human is hurt.
-    float hurtPowerFactor = 0.75F; ///< `+0x18`: the power maximum's scale while hurt.
-    int stunMs = 200;              ///< `+0x30`: a stun's length.
-    int groundMs = 2750;           ///< `+0x34`: how long a knockdown keeps it down.
-    int struggleDivisor = 3;       ///< Byte `+0x36`: the grab struggle's divisor.
+    int powerMax = 400;       ///< `+0x28`: the power meter's maximum.
+    int refillPerSecond = 60; ///< `+0x2a`: the power meter's refill.
+    int staminaMax = 135; ///< `+0x2c`: the stamina maximum (`Human_StaminaMax`, docs/research/characters.md#sprint).
+    int staminaRefillPerSecond = 40; ///< `+0x2e`: the stamina refill.
+    float hurtFraction = 0.3F;       ///< `+0x04`: below this share of its health the human is hurt.
+    float hurtPowerFactor = 0.75F;   ///< `+0x18`: the power maximum's scale while hurt.
+    int stunMs = 200;                ///< `+0x30`: a stun's length.
+    int groundMs = 2750;             ///< `+0x34`: how long a knockdown keeps it down.
+    int struggleDivisor = 3;         ///< Byte `+0x36`: the grab struggle's divisor.
     // What only an AI reads (docs/research/ai.md#block, docs/research/ai.md#attack-action). The attack delay's factors
     // are Rembrandt's as read at runtime; the three chances are **Coney choices** until the disc's are read (the
     // configuration's `CfgPowerClass`, ai::AiConfig).
@@ -27,8 +29,9 @@ struct PowerClass {
     /// Byte `+0x39` (`CfgPowerClass` argument 22, 0-1): a grabber of this class throws his man into a wall next to
     /// them when there is one (`Grabbing_PickMove`, docs/research/ai.md#fight-reactions).
     bool throwsAtWalls = false;
-    /// Byte `+0x40`: the health rings span byte / 100 of their circle (35 for Rembrandt's class 64, read at runtime;
-    /// what the field is meant as is open, docs/research/hud.md#the-health-rings).
+    /// Byte `+0x40` (`CfgPowerClass` argument 29, 0-100): the health rings span byte / 100 of their circle (35 for
+    /// Rembrandt's class 64, read at runtime; docs/research/hud.md#the-health-rings), and the pause Stats screen's
+    /// Health bar is byte / 100 (docs/research/pause.md#stats-screen).
     int ringByte = 35;
 };
 
@@ -37,6 +40,9 @@ inline constexpr PowerClass kPlayerPowerClass{};
 /// The street civilian's class (2, `PoizoCiv`).
 inline constexpr PowerClass kCivilianPowerClass{.powerMax = 200,
                                                 .refillPerSecond = 32,
+                                                // Class 2 on normal (docs/references/power-classes.md).
+                                                .staminaMax = 95,
+                                                .staminaRefillPerSecond = 20,
                                                 .hurtFraction = 0.35F,
                                                 .hurtPowerFactor = 0.55F,
                                                 .stunMs = 750,
