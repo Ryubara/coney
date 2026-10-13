@@ -50,15 +50,16 @@ addresses cited unless marked; the per-gang values are confirmed (disc) from `co
      `DealerGoal_End` (`0x002c70fc`, when it is him) clear it.
 
    Both are set to the null handle (`0x006ebd30`) by the level's reset (`GameState_ResetForLevel`, `0x00418d0c` and
-   `0x00418d24`) and first written at construction. So with no lock-on, **the attack command sends the crew after the snitch** (the civilian
-   phoning the police), else after the scout calling his gang or the dealer who cheated the player. Confirmed (code)
-   at the writers cited, each of which passes the brain's own human; `GameState_SetCrimeReporter` and
-   `GameState_SetDealerCustomer` are their only writers apart from `GameState_Construct` (`0x00418708`, every
-   `sw` to `+0x280` and the setter's callers checked).
+   `0x00418d24`) and first written at construction. So with no lock-on, **the attack command sends the crew after
+   the snitch** (the civilian phoning the police), else after the scout calling his gang or the dealer who cheated
+   the player. Confirmed (code) at the writers cited, each of which passes the brain's own human;
+   `GameState_SetCrimeReporter` and `GameState_SetDealerCustomer` are their only writers apart from
+   `GameState_Construct` (`0x00418708`, every `sw` to `+0x280` and the setter's callers checked).
 
    `Gang_SetSharedTarget` (`0x00165b70`) accepts the target only when it passes `Brain_ValidateEnemy` for the
-   gang's leader and is not of a friendly gang, and then **adds it to every AI member's enemy list**. With +400 in the score (and the scan always re-adding it) the whole crew converges on him. A forced
-   command (`WCIssueCommand(..., true)`, as Rumble uses) never sets it. No other gang sets one.
+   gang's leader and is not of a friendly gang, and then **adds it to every AI member's enemy list**. With +400 in
+   the score (and the scan always re-adding it) the whole crew converges on him. A forced command
+   (`WCIssueCommand(..., true)`, as Rumble uses) never sets it. No other gang sets one.
 
 ## How many hit one man at once {#limits}
 
