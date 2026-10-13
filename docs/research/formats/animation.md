@@ -265,8 +265,8 @@ and 16-bit values) overrides the range data for some ids, through the jump table
 
 1. **Init** (`0x001041f8`): find each channel's first key in sections A, B and C and set up its countdown.
 2. **Advance** (`0x001044a0`) by dt times the task's [playback rate](#playback-rate): the time grows, the frame is
-   `time × 30`, and each passing frame steps the channels (`0x00104110`). Past the duration it returns the overshoot,
-   so the caller can loop or chain the next clip without losing time.
+   `time × 30`, and each passing frame steps the channels (`0x00104110`). A step that would reach the clip's frame
+   count is not taken: it returns an overshoot instead, which ends or wraps the clip ([When a clip ends](#clip-end)).
 3. **Sample** (`0x00104ce0`): for each channel, `t = (frame − key start) / next key's delta`; lerp positions
    (`0x00336bb8`) and nlerp rotations (`0x00336bf8`: flip the second quaternion when the dot product is negative,
    then normalise). A next delta of 0 (the channel's end) holds the last key.
@@ -457,6 +457,87 @@ A task's rate (`+0x0c`) is set by its constructor:
 The human's walking speeds (`0x00254078`) divide by the same rate, and the gait loops carry flag `0x1000` (rate 1.0),
 so the speeds on [Characters](../characters.md#speed-classes) stand.
 
+### When a clip ends {#clip-end}
+
+**The end test** is in the cursor's advance (`AnimCursor_Advance`, `0x001044a0`), and every clip task uses it: the
+clip that hands over (types 3 and 6, `0x00105af0`, `0x00108bd0`) and the loop (type 1, `0x00105770`). With *t* the
+cursor's time (`+0x18`), *s* the step (dt × the task's rate) and *D* the descriptor's duration (`+0x0c`):
+
+```text
+end   = uint(D × 30 + 0.5)          the frame count F (D is a whole number of frames on the disc)
+frame = uint((t + s) × 30 + 0.5)    the frame the step would reach
+frame < end:  step the channels, add s to t, fire the events passed; return 0
+otherwise:    change nothing; return (t + s) − (D − 1/60)
+```
+
+So **a clip ends on the update whose step would bring its frame to F**, the same rule as an event at frame F
+([Reading the tables](../combat-moves.md#reading)): counting the clip's first update as k = 0 and its first step on
+k = 1, it ends on the first k with k × *r* ≥ F − 0.5, one update later on an exact tie at rates 0.75 and 0.9 (the
+summed time falls a hair short). A clip therefore **lasts ceil((F − 0.5) / *r*) updates** away from the ties, not
+ceil(F / *r*); its time never reaches *D*, and the last frame it shows is F − 1. Confirmed (code) at `0x001044a0`.
+
+**On the end update** (confirmed (code) at `0x00105af0`, `0x00108bd0`, `0x00105570`, `0x00105f78`):
+
+1. The ending step changes nothing: no channel steps and **no event fires**, so an event at frame F or later never
+   fires in a clip that hands over (events fire only from the step, `AnimCursor_Step` `0x00104110`).
+2. Types 3 and 6 put their **next task** on the stack in their own place, **in the same update**: the next task, not
+   the old clip, is sampled for the pose and its root motion that update. With a blend time of 0 the next task is not
+   advanced that update (it shows its time 0); with a blend time it is advanced by dt (its own advance applies its
+   rate), having followed the last *b* seconds of the clip in the sampler (`0x00105ba0`: its time kept to the time
+   into the blend window, its pose blended over the clip's by that share of *b*). The overshoot is used only as a
+   flag; it is not carried into the next task.
+3. The old task is put on a deferred list (`AnimTask_DeferGive` `0x00105640`), which `AnimTask_FlushDeferred`
+   (`0x00105570`) empties once every human's animation has stepped, **before** the state updates and the actions of
+   the same update ([Humans_Update](../tasks.md#humans-update)). The release (`0x00105f78` for type 3) clears the
+   human's state flag `0x4000000000` and the **held flags** the task still holds from record `+0x08`, sets bit
+   `0x80000000` at `+0x40` of an object the human reports (vtable `+0xf4`) when the held flags had `0x400000`, and
+   calls the **end callback** (`+0x2c`) with the human. The flush then refreshes the human's playing anim id (record
+   `+0x20`) from the new top task.
+
+So on the end update the dispatcher, the stick gate and the AI already see the move as over: its held flags are clear,
+its callback has run and record `+0x20` names the next clip. That is the "free again" update of the attack tables.
+The release is the same function when a task is cut off rather than ending, so **the end callback also runs when a
+clip is cut off** (confirmed (code) at `0x00105f78`: nothing in it tests how the task ended); a task cut off before its
+end also gives its next task back.
+
+**A loop** (type 1, `0x00105770`) wraps on the same test: it restarts its cursor (`AnimCursor_Restart`), advances it
+by the returned overshoot and calls its wrap callback (`+0x28`, with the human at handle `+0x24`). Because the
+overshoot is measured from *D* − 1/60, **a loop repeats every *D* − 1/60 seconds of clip time** (F − 0.5 frames), not
+every *D*: the frame F key is never shown, and each pass starts 1/60 s of clip time later than an exact *D* period
+would. Confirmed (code); confirmed (runtime) below.
+
+A step whose overshoot comes out exactly 0.0 is taken as "not ended" by the callers, although the cursor was not
+stepped; the task would then repeat that update for ever. Only an end exactly on a tie in exact float arithmetic could
+give 0.0; none was seen (inferred from the arithmetic, speculative that it can happen).
+
+**At runtime** (PCSX2 2.9.94, level99 street, slot 1 copied; scenarios `clip_end_chains` and `clip_end_loop` in
+`repo:research/traces/scenarios/`, the bottom task's cursor read every update). The chain clips' lengths, from the
+first update showing the id to the first showing the next one, all match the rule; the cursor's last time was below
+*D* and its last frame F − 1 each time:
+
+| Clip | F × rate | Measured | Rule | ceil(F / *r*) |
+| --- | --- | --- | --- | --- |
+| 19 `SSS3` | 21 × 0.8 | **26** (5 runs) | 26 | 27 |
+| 20 `SSS3_HOLD` | 26 × 0.8 | 32 (5 runs) | 32 | 33 |
+| 17 `SSX3` | 27 × 0.8 | 34 (2) | 34 | 34 |
+| 11 `X1`, 14 `XS2` | 24 × 0.8 | 30 (2 each) | 30 | 30 |
+| 15 `SX2` | 16 × 0.8 | 20 (2) | 20 | 20 |
+| 389 (the attack's end clip) | 19 × 0.75 | 25 | 25 | 26 |
+
+The lengths measured before agree as well: 12 `S1` 20 ([Tasks](../tasks.md#held-flags)), 34 37 and 36 35 (a tie,
+25.5 / 0.75 = 34, one late) ([Cross with a bat in hand](../combat-moves.md#bat-cross)), 69 16, the fence climb's 440
+11, 441 15 (both ties) and 442 13 ([Characters](../characters.md#climb)), the dive 1 61
+([Combat](../combat.md#protected-moves)). The rule with the time summed in single precision rounded toward zero gives
+every one of them; ceil(F / *r*) is one too many for 19, 20, 389, 34 and the dive, and the rule without the late tie
+one too few for 36, 440 and 441. The idle loop 388 (60 frames,
+2.0 s, at 0.75) wrapped every 79 updates, its time after each wrap 0.0249, 0.0166, 0.0083 s: each pass 1.9833 s of
+clip time, *D* − 1/60.
+
+**What to build:** end a clip that hands over on the update its step would reach frame F, using the event rule
+(summed time, the frame `uint(t × 30 + 0.5)`, the late ties); on that update sample the next task instead, clear the
+held flags, run the end callback and report the next clip's id before anything reads them. Loop a looping clip with a
+period of *D* − 1/60.
+
 ### Root motion {#root-motion}
 
 The sampler (`AnimCursor_SamplePose`, `0x00104ce0`) is given the task's rate in `f12` and puts section A's root
@@ -497,7 +578,11 @@ Confirmed (code).
 angle)* and moves by *rate × (the key's velocity)* × dt, while the clip's time advances by *rate × dt*. Over a
 whole clip the turn is therefore the sum of the key angles over the clip's frames, **whatever the rate**, just as
 the distance is the descriptor's displacement whatever the rate. A turn not scaled by the rate comes out 1/rate times
-too large: 4/3 at 0.75, which is what Coney showed on the throws (#263).
+too large: 4/3 at 0.75, which is what Coney showed on the throws (#263). The clip-end rule
+([When a clip ends](#clip-end)) does not explain that third: it changes a clip's length by at most one update, and so
+its turn by at most one key's angle × the rate (the throws turned about 3° per update at runtime, against the 30° of
+149's missing third), and on the end update the original samples the next task, so the ending clip turns nothing
+then. A Coney clip that plays one update too long adds one more key's turn on top of the missing rate (inferred).
 
 **On the disc** (counts and angles only, from the extracted clips; the turn summed as the key in force over each
 frame of the clip, the rate from the id's Anim Range List flags): in the generic set, 161 of the 722 ids have a bone 0
@@ -597,7 +682,12 @@ In the task system:
 - **The clip that hands over** supports only a blend time of 0 (all the locomotion uses) and carries its overshoot into
   the next task. It ends when less than 0.1 ms of its clip is left: a clip of a whole number of updates at its rate
   ends on the update its time reaches its length (`XX2`'s 24 frames at 0.8 in 30 updates at runtime), not one later
-  when the floats' sum falls a hair short.
+  when the floats' sum falls a hair short. **A known difference:** that is ceil(F / *r*) updates, where the original
+  ends on the update its frame would reach F (ceil((F − 0.5) / *r*), late on a tie, [When a clip ends](#clip-end)):
+  Coney plays one update too many on 19, 20, 34, 389, the dive and 50 of the 174 clips on
+  [Combat moves](../combat-moves.md#frame-data). Clip 34 alone is ended a step early as a stand-in
+  (`handOverEarly`). Coney's loop carries its whole overshoot (a period of *D*), the original's a period of
+  *D* − 1/60.
 - **Held flags** ([Tasks](../tasks.md#held-flags)): a task holds bits of its human's record `+0x08` and sets its start
   bits as it starts (first clearing the bits it holds). Events `0x2c` (clear `0x1`, set `0x2`), `0x2d` (clear `0x7`, set
   `0x4`) and `0x48` (all held bits replaced by `0x40000`) act only on a task that holds the bits they change, and only
@@ -655,4 +745,7 @@ In the task system:
   mount code, `0x00270b38`, `0x00271ef0`).
 - The human test `0x00223440` that makes `0x00176d60` take the queued tasks' pose as the default pose.
 - The order in which the instance samples its task stack (bottom-up is inferred from the fade's sampler).
-- The type 3 task's blend into its next task when its blend time is not 0.
+- The type 3 task's blend into its next task when its blend time is not 0: how the next task's time is kept in the
+  window is read ([When a clip ends](#clip-end)), but not checked at runtime; after 389 (blended into 388) the idle
+  showed 0.15 s on its first update.
+- Whether a loop's wrap fires the events at frame 0 of the new pass (`AnimCursor_Restart` was not read for it).

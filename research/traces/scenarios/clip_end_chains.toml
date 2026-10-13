@@ -1,0 +1,52 @@
+# When a clip ends: the square chain (12, 16, 19 / 20) ten times, then X1, XS2, SX2 and SSX3 twice each.
+# Research: docs/research/formats/animation.md#clip-end. Slot 1 (the street, nobody near). Logs the bottom task's
+# cursor (time, frame, the clip's duration) and the task's rate, so the update a clip hands over can be read against
+# its frame count. Frames are updates of 1/30 s.
+description = "the square chain ten times, then X1, XS2, SX2 and SSX3 twice each, every 90 updates, with the cursor"
+research = "docs/research/formats/animation.md#clip-end"
+input = "clip_end_chains.txt"
+updates = 1660
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "tasks"
+address = "u32(player + 0xd8) + 0x2ac"
+type = "u16"
+follow = true
+
+[[field]]
+name = "t0_type"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x14"
+type = "s32"
+follow = true
+
+[[field]]
+name = "t0_rate"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0xc"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_time"
+address = "u32(u32(u32(player + 0xd8) + 0x2bc) + 0x18) + 0x18"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_frame"
+address = "u32(u32(u32(player + 0xd8) + 0x2bc) + 0x18) + 0x1c"
+type = "u16"
+follow = true
+
+[[field]]
+name = "t0_length"
+address = "u32(u32(u32(u32(player + 0xd8) + 0x2bc) + 0x18) + 0x4) + 0xc"
+type = "f32"
+follow = true

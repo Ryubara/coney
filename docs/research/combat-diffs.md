@@ -134,9 +134,11 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   release swings where the original throws. The special 653 and circle + cross's strong grapple no longer start with an
   object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)). Coney:
   `repo:src/combat/player_combat.cpp`.
-- **Clip 34's length** (the bat's square): Coney ends it a step early (a stand-in) so that cross works from k37 as in
-  the original; the clip-end rule behind it is an open question ([Open questions](combat-moves.md#open-questions)).
-  Coney: `repo:src/human/human_animator.cpp`.
+- **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
+  it on the update its frame would reach F, one update sooner on 19, 20, 34, 389, the dive and 50 of the 174 clips in
+  the move tables ([When a clip ends](formats/animation.md#clip-end)). Coney ends clip 34 alone a step early (a
+  stand-in) so that cross works from k37 as in the original; the rule can now replace it. Coney:
+  `repo:src/animation/anim_task.cpp`, `repo:src/human/human_animator.cpp`.
 - **Wear**: weapons never break; the original wears them on the `use` event.
 - **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 39 / 40 (baton)
   and 45 / 46 (knife) for a square pressed in the swing. With a bat the two agree: 34 has no chain window, so the
