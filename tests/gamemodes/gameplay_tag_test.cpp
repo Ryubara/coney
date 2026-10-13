@@ -3,6 +3,7 @@
 // starts the stick game and calls CfgTagStartCallback's function at once with (tagger, tag, flag); without paint the
 // player himself gets event 14 with the tag and 0; the stick game's finish gives him event 14 with the tag and 1.
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -61,8 +62,9 @@ std::map<std::string, std::vector<std::byte>, std::less<>> tagScripts() {
     return files;
 }
 
-// A level standing in for the play mode: player 1 has no spray clips (his stick game starts at once), and the drops of
-// his held object (`held`) as a spray begins are counted.
+// A level standing in for the play mode: player 1 has no spray clips (his stick game starts at once) unless `clips` is
+// set, when his intro plays until the test says it loops or stops; the drops of his held object (`held`) as a spray
+// begins are counted.
 class SprayLevel final : public coney::GameMode, public coney::ScriptedPlayer {
   public:
     [[nodiscard]] std::uint32_t id() const override { return 0x1ff; }
@@ -72,8 +74,14 @@ class SprayLevel final : public coney::GameMode, public coney::ScriptedPlayer {
     void teleportPlayer(const coney::world_objects::Placement& /*placement*/) override {}
     void dropHeldForTag() override { ++drops; }
     [[nodiscard]] std::string heldObjectType() const override { return held; }
-    std::string held; // the type name of what player 1 holds
-    int drops = 0;
+    bool startTagSpray(const std::array<float, 3>& /*point*/) override { return clips; }
+    [[nodiscard]] bool tagSprayLooping() const override { return clips && looping; }
+    [[nodiscard]] bool tagSprayPlaying() const override { return !clips || playing; }
+    std::string held;     // the type name of what player 1 holds
+    int drops = 0;        // the drops asked for
+    bool clips = false;   // whether player 1 has spray clips
+    bool playing = true;  // with clips: whether a spray clip still plays
+    bool looping = false; // with clips: whether the loop 335 has started
 };
 
 // Pad 1 with the left stick the test sets, in [-1, 1] with y up.
@@ -257,4 +265,39 @@ TEST_CASE("a spray drops a held overhead or ghetto weapon first; a club stays in
     CHECK(dropsHolding(4) == 1); // OVERHEAD_WEAPON_SET
     CHECK(dropsHolding(6) == 1); // GHETTO_SET
     CHECK(dropsHolding(0) == 0);
+}
+
+TEST_CASE("a spray whose intro is cut short gives the player event 14 unfinished and frees the spot for another press",
+          "[gameplay][tag]") {
+    // Tag_UpdatePlayer (0x00273c60) ends a spray whose action was taken over, and Tag_End (0x0022e848) always gives the
+    // tagger event 14 with (tag, finished); the script's handler puts the spot's prompt back on 0
+    // (docs/research/scripting.md#level87-fixes, fix 1).
+    TagRun run;
+    run.scripts.state().player.inventory.setSprayPaint(0, 3);
+    (void)run.scripts.flags().add(kTag, "tagSpot", {2.0F, 2.0F, 0.0F}, 0.0F);
+    REQUIRE(run.level != nullptr);
+    run.level->clips = true;
+    run.call("HuTag", {Value(run.player), Value(kTag), Value(kFlag)});
+    // The intro plays: no stick game and no event yet.
+    run.frames(1);
+    CHECK(run.gameplay->tagSession() == nullptr);
+    CHECK(run.ended.empty());
+
+    // Something else takes the body before the loop: the spray ends unfinished.
+    run.level->playing = false;
+    run.frames(1);
+    CHECK(run.gameplay->tagSession() == nullptr);
+    CHECK(run.started.empty());
+    REQUIRE(run.ended.size() == 1);
+    CHECK(run.ended[0] == std::vector<double>{run.player, kTag, 0.0});
+
+    // A second press at the spot starts a new spray, which reaches its loop and the stick game.
+    run.level->playing = true;
+    run.call("HuTag", {Value(run.player), Value(kTag), Value(kFlag)});
+    run.level->looping = true;
+    run.frames(1);
+    CHECK(run.gameplay->tagSession() != nullptr);
+    REQUIRE(run.started.size() == 1);
+    CHECK(run.started[0] == std::vector<double>{run.player, kTag, kFlag});
+    CHECK(run.ended.size() == 1);
 }

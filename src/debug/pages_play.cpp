@@ -13,6 +13,7 @@
 
 #include "debug/debug_pages.h"
 #include "debug/debug_session.h"
+#include "debug/fighter_spawn.h"
 #include "debug/play_controls.h"
 #include "human/climb.h"
 
@@ -22,6 +23,14 @@ namespace {
 
 // What a page shows in place of its items when no player plays.
 constexpr std::string_view kNoPlayer = "no player: --play-level, or a sandbox from the Levels page";
+
+// What the AI fighters page remembers between clicks: the model picked (0 is Random), how many to spawn, and the random
+// numbers Random draws (a fixed seed, so a run with the same clicks spawns the same models).
+struct FighterSpawnState {
+    std::size_t model = 0;
+    double amount = 1.0;
+    SpawnRandom random{0x5eed5eedU};
+};
 
 // A point as the pages print it.
 std::string pointText(anim::Vec3 p) { return std::format("({:.2f}, {:.2f}, {:.2f})", p.x, p.y, p.z); }
@@ -313,9 +322,10 @@ void addSpawnerPage(DebugSession& session) {
 
 void addFightersPage(DebugSession& session) {
     auto distance = std::make_shared<double>(4.0);
+    auto spawn = std::make_shared<FighterSpawnState>();
     session.model().addPage(
         "AI fighters",
-        [&session, distance](MenuPage& page) {
+        [&session, distance, spawn](MenuPage& page) {
             const PlayControls* play = session.play();
             if (play == nullptr) {
                 page.add(watchItem("No player", [] { return std::string(kNoPlayer); }));
@@ -331,17 +341,45 @@ void addFightersPage(DebugSession& session) {
             ahead.units = "m";
             ahead.defaultValue = 4.0;
             page.add(std::move(ahead));
-            page.add(playAction(session, "Spawn a fighter",
-                                [&session, distance](PlayControls& p) {
-                                    const anim::Vec3 feet = spotAhead(p.playerFeet(), p.playerHeadingDegrees(),
-                                                                      static_cast<float>(*distance));
-                                    // It faces the player.
-                                    auto spawned = p.spawnFighter(feet, p.playerHeadingDegrees() + 180.0F);
-                                    session.print(spawned ? std::format("fighters: one at {}", pointText(feet))
-                                                          : "fighters: " + spawned.error().message);
+            // The model picker: Random (each fighter its own), then every human model the scene can load. With no
+            // list (a mode that does not know the configuration's types) only Random is there, and it means the
+            // scene's own character.
+            std::vector<std::string> modelChoices{"Random"};
+            const std::vector<std::string> models = play->fighterModels();
+            modelChoices.insert(modelChoices.end(), models.begin(), models.end());
+            page.add(choiceItem(
+                         "Model", std::move(modelChoices), [spawn] { return spawn->model; },
+                         [spawn](std::size_t choice) { spawn->model = choice; }))
+                .withHelp("The model, animation set and moves of the fighters: one of the human models, or Random for "
+                          "a different one each.");
+            MenuItem amount = numberItem(
+                "Amount", [spawn] { return spawn->amount; }, [spawn](double v) { spawn->amount = v; }, 1.0,
+                static_cast<double>(kMaxFighterAmount), 1.0, true);
+            amount.defaultValue = 1.0;
+            amount.help = "How many fighters one click spawns, in rows of five in front of the player.";
+            page.add(std::move(amount));
+            page.add(playAction(session, "Spawn fighters",
+                                [&session, distance, spawn](PlayControls& p) {
+                                    const int amount = static_cast<int>(spawn->amount);
+                                    const std::vector<std::string> picks =
+                                        pickFighterModels(p.fighterModels(), spawn->model, amount, spawn->random);
+                                    const float heading = p.playerHeadingDegrees();
+                                    const std::vector<anim::Vec3> spots =
+                                        fighterSpots(p.playerFeet(), heading, static_cast<float>(*distance), amount);
+                                    std::size_t made = 0;
+                                    for (std::size_t i = 0; i < spots.size(); ++i) {
+                                        // Each faces the player.
+                                        auto spawned = p.spawnFighterAs(spots[i], heading + 180.0F, picks[i]);
+                                        if (!spawned) {
+                                            session.print("fighters: " + spawned.error().message);
+                                            break;
+                                        }
+                                        ++made;
+                                    }
+                                    session.print(std::format("fighters: {} spawned of {}", made, spots.size()));
                                 }))
-                .withHelp("An AI human with a sparring Warrior's brain, facing the player; it fights him when he is "
-                          "in its melee range and engaging is on.");
+                .withHelp("AI humans with a sparring Warrior's brain, facing the player, as the model and amount "
+                          "above; they fight him when he is in their melee range and engaging is on.");
             page.add(playToggle(
                          session, "Engaging", [](const PlayControls& p) { return p.fightersEngage(); },
                          [](PlayControls& p, bool on) { p.setFightersEngage(on); }))

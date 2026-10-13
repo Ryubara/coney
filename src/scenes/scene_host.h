@@ -76,6 +76,12 @@ class SceneHost {
     /// Whether `human` is free to be taken in at the start: not grabbing, grabbed, mounting or mounted. A human in a
     /// pair is left out of the scene (docs/research/scenes.md#humans).
     [[nodiscard]] virtual bool humanFree(double /*human*/) { return true; }
+    /// A script binds `human` to a scene role (joinHuman()): he is reset first, as the original's `Scene_BindHuman`
+    /// does (`Human_ResetForMode`, any kind of scene, even when the bind is then refused): his carried prop removed and
+    /// any pair he is in broken, so the start's free test (humanFree()) finds him free
+    /// (docs/research/scenes.md#join-reset). Nothing by default.
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
+    virtual void resetHumanForJoin(double /*human*/) {}
     /// The scene takes `human` over (`+0x280` = the scene, its brain's actions cleared, its clip pushed).
     virtual void humanEnterScene(double /*human*/, std::size_t /*role*/) {}
     /// The scene drives `human` this update.

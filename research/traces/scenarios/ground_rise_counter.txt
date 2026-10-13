@@ -1,0 +1,3 @@
+# square once in 196 (he rises next update), then once in 199's counter window
+80 tap square
+96 tap square

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -10,6 +11,7 @@
 #include <vector>
 
 #include "ai/hub_goals.h"
+#include "human/workout.h"
 #include "scripting/hub_bindings.h"
 #include "warriors/hub_state.h"
 
@@ -50,20 +52,23 @@ struct HubLookups {
 /// One human's workout (`HuWorkout`): the state code `0x1b` until it begins, then the working-out flag.
 struct WorkoutRun {
     double equipment = 0;
+    /// The enter, exit, slow, mid and fast clips' names (anims 691-695).
     std::array<std::string, 5> clips;
     bool begun = false;          ///< Working out (state flag `0x20000000000`); before, it waits to begin.
-    float blend = 1.0F;          ///< The effort (`+0x670`): an AI's from `HuSetWorkoutBlend`, a player's 0-1 × 3.
-    float effort = 1.0F / 3.0F;  ///< A player's own effort, 0-1, which the pad pumps.
-    std::uint64_t nextRepMs = 0; ///< When the next repetition's callback is due.
+    bool ending = false;         ///< Action `0x1c`: the next update ends it.
+    bool gone = false;           ///< Dropped without an end (a start that never began).
+    human::WorkoutEffort effort; ///< The effort `+0x670` and hold counter `+0x674`.
+    std::uint32_t wraps = 0;     ///< The loop's wraps already called back as repetitions.
+    bool looping = false;        ///< The enter clip has handed over to the loop: the update runs from then on.
+    float value = 0.0F;          ///< The loop's value when last seen on top (*v* while another clip covers it).
 };
 
 /// The hub bindings' host on the brains a level's scripts drive.
 class ScriptedHub final : public script::HubBindingHost {
   public:
-    /// How near the equipment a workout begins, m (**Coney stand-in** for the start clip's reach, not on the page).
+    /// How near equipment other than the human himself a workout begins, m (**Coney stand-in** for the start clip's
+    /// attack-table reach; the scripts make the player his own target, which always passes).
     static constexpr float kWorkoutReach = 1.5F;
-    /// A repetition's length at an effort of 1, ms (**Coney stand-in**: the loop clip's timing is not traced).
-    static constexpr std::uint64_t kRepMs = 1500;
     /// How often a player's brain counts the AI humans after him (`BrHasEnemies`), in brain updates.
     static constexpr std::uint64_t kEnemyCountPeriod = 300;
 
@@ -73,7 +78,9 @@ class ScriptedHub final : public script::HubBindingHost {
     /// What the host reads from the level.
     void setLookups(HubLookups lookups) { m_lookups = std::move(lookups); }
 
-    /// After each characters' step at game time `nowMs`: the workouts begin, pump, repeat and end; each player's count
+    /// After each characters' step at game time `nowMs`: the workouts begin (all five clips loaded, the enter clip
+    /// into the loop blend), pump, repeat on each wrap of the loop's leading clip and end
+    /// (docs/research/workouts.md#engine, human::WorkoutEffort); each player's count
     /// of AI humans after him is refreshed every kEnemyCountPeriod brain updates; a fleeing gang beaten below its
     /// percentage sends its fleeing members off.
     /// @orig 0x00255540 Human_UpdateWorkout (unknown)
@@ -106,6 +113,8 @@ class ScriptedHub final : public script::HubBindingHost {
     /// humans play no clip by id from outside their dispatcher yet). Refused for a human out of health.
     /// @orig 0x00238948 Human_PlayDynAnim (unknown)
     void playDynAnim(double human, std::string_view anim) override;
+    /// `HuWorkout`: the five clips, the target and the start (action `0x1b`), which the next update begins. The
+    /// binding's Ghidra name repeats that of the start it leads to (beginWorkout(), `0x0022d348`).
     /// @orig 0x00238bd8 Human_StartWorkout (unknown)
     void workout(const script::WorkoutCall& call) override;
     /// @orig 0x00238d30 Human_StopWorkout (unknown)
@@ -160,10 +169,15 @@ class ScriptedHub final : public script::HubBindingHost {
     void onBrain(double handle, const std::function<void(Brain&)>& body);
     // Calls the Lua function `name` with the human's handle, when it is set.
     void callBack(const std::string& name, double handle);
-    // Ends `brain`'s workout: the flag cleared and the end callback called.
+    // Ends `brain`'s workout: the flag cleared, the end callback called, then the exit clip (the loop stopped only
+    // when it is on top). @orig 0x0022d380 Human_EndWorkout (unknown)
     void endWorkout(Brain& brain);
     // One update of the workouts.
     void updateWorkouts(std::uint64_t nowMs);
+    // The start (action 0x1b) of `run` on `brain`: the reach and the five clips, then the clips, the flag and the
+    // start callback; false when it cannot start (the action goes back to 0).
+    // @orig 0x0022d348 Human_StartWorkout (unknown)
+    bool beginWorkout(Brain& brain, WorkoutRun& run);
     // One update of the players' enemy counts.
     void updateEnemyCounts();
     // One update of the fleeing gangs.

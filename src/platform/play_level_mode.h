@@ -252,6 +252,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::expected<void, Error> clearSpawned() override;
     [[nodiscard]] bool canSpawnFighter() const override { return true; }
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees) override;
+    [[nodiscard]] std::vector<std::string> fighterModels() const override;
+    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model) override;
     [[nodiscard]] std::size_t fighterCount() const override { return m_ai->count(); }
     void clearFighters() override;
     [[nodiscard]] bool fightersEngage() const override { return m_ai->engaging(); }
@@ -291,6 +293,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void setSounds(audio::SoundPlayer* sounds) { m_stage->setSounds(sounds); }
     /// The scene stage: what the playing scene shows.
     [[nodiscard]] const SceneStage& stage() const { return *m_stage; }
+    /// The object of the prop `human` carries (its handle), made from his clip's event `0x30`; nothing when he carries
+    /// none (docs/research/combat.md#power-move-props).
+    [[nodiscard]] std::optional<double> carriedPropOf(const human::Human& human) const;
 
     /// Skins `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
     /// in the world (RenderWare's axes) for drawing.
@@ -419,8 +424,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const ai::AiHuman* castHumanOf(double handle);
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
-    // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
-    void addFighter(anim::Vec3 spot, float headingDegrees);
+    // Spawns a fighter dropped onto the ground below `spot`, with its mesh, as the character of `model` (empty: the
+    // scene's own).
+    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {});
     // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
     // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
@@ -658,8 +664,35 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Notes where `human`'s hat is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
     void poseHat(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
                  anim::Vec3 feet, float heading);
-    // Places this frame's worn hats among the world objects (before PlacedObjects::draw()).
-    void drawHats();
+    // Places this frame's worn hats and carried props among the world objects (before PlacedObjects::draw()).
+    void drawAttachedObjects();
+
+    // --- play_level_props.cpp: the props the humans' clips make them carry (docs/research/combat.md#power-move-props).
+
+    // One human's carried prop as the mode keeps it: its object (0 for none), type and where it hangs.
+    struct Carrier {
+        double prop = 0.0;
+        std::string typeName;
+        world_objects::HeldAttachment local;
+    };
+    // After the humans' step: every human's carried prop made, hung from its attach point or removed.
+    void stepCarriedProps();
+    // One human's part of stepCarriedProps(), posed at this step by `pose` of `character` at `feet` facing `heading`.
+    void stepCarrier(human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
+                     anim::Vec3 feet, float heading);
+    // Makes the object of `prop` at `human` and attaches it at point 0x13 with its type's held offset, as `carrier`'s;
+    // a type that is missing or not one to carry is not made, and the human carries nothing.
+    // @orig 0x0024cbb0 Human_CreateCarriedProp (unknown)
+    // @orig 0x0024cd30 Human_AttachCarriedProp (unknown)
+    void makeCarriedProp(human::Human& human, const human::CarriedProp& prop, Carrier& carrier);
+    // Removes `carrier`'s object.
+    void removeCarriedProp(Carrier& carrier);
+    // Removes the object of a prop `human` no longer carries now, not at the next stepCarriedProps(): a scene bind's
+    // reset releases it in the middle of the step, and the original's release destroys the object at once.
+    void dropReleasedProp(const human::Human& human);
+    // Notes where `human`'s carried prop is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
+    void poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
+                         anim::Vec3 feet, float heading);
 
     // Draws the humans: their lights, the render states, each mesh in its two passes.
     void drawCharacter() const;
@@ -760,6 +793,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;
+        std::string model;   // the model it was spawned as; empty: the scene's character
         bool hidden = false; // its human was deleted
     };
     std::vector<FighterMesh> m_fighterMeshes;
@@ -832,7 +866,11 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::map<const human::Human*, Wearer> m_wearers;
     std::set<double> m_wornHats;
     world_objects::FallingHats m_fallingHats;
-    std::vector<std::pair<double, world_objects::WorldPose>> m_hatDraws;
+    // The carried props: each human's and the handles carried.
+    std::map<const human::Human*, Carrier> m_carriers;
+    std::set<double> m_carriedProps;
+    // Where this frame draws the worn hats and the carried props.
+    std::vector<std::pair<double, world_objects::WorldPose>> m_attachedDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
     Inspector m_inspector{*this};              // the Entity inspector's view of the mode

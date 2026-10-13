@@ -4,10 +4,15 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "warriors/level_table.h"
 
 namespace coney {
+
+namespace io {
+class Disc;
+}
 
 /// The movie player as the game modes ask it (`Movie_Play`, `0x0042a938`): play the movie `name` (`LOGO`, `L1_IN`,
 /// `L99_IN`) to its end or until it is skipped. The original blocks until the movie ends, stops the music
@@ -36,5 +41,21 @@ class MoviePlayer {
 /// Research: docs/research/level-loading.md#initlevel (step 12), docs/research/frontend.md#story-start
 /// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 [[nodiscard]] std::optional<std::string> levelIntroMovie(const LevelRecord& record, double section);
+
+/// The movies on `disc`: every `PSS/<NAME>.BIK`, named without the extension (`LOGO`), in sortMovies() order. The
+/// disc's own folder is the list, as `coney-tools movies list` reads it: Coney keeps no copy of it. For the debug
+/// menu's Movies page (docs/guides/debug-menu.md#movies).
+[[nodiscard]] std::vector<std::string> discMovies(const io::Disc& disc);
+
+/// Sorts movie names for a list: the start-up movies in the order `main` plays them (kStartUpMovies) but for a
+/// level's, then any other movie by name (`TRAILER`), then the levels' (`L<n>_IN`, `L<n>_OUT`) by level number, the
+/// intro before the outro. Coney's order, for reading.
+void sortMovies(std::vector<std::string>& names);
+
+/// Who plays the movie `name` in the game, read from its name alone: `start-up` for a start-up movie, `level<n>
+/// intro` for `L<n>_IN` (InitLevel) and `level<n> outro` for `L<n>_OUT` (mode 1's Exit), joined by a comma when
+/// both; empty when the name says nothing (`TRAILER`).
+/// Research: docs/research/movies.md#callers
+[[nodiscard]] std::string movieUse(std::string_view name);
 
 } // namespace coney

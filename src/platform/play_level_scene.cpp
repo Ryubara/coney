@@ -12,7 +12,9 @@
 #include <utility>
 
 #include "gamemodes/level_pickups.h"
+#include "human/human.h"
 #include "human/human_sounds.h"
+#include "human/humans.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_disc.h"
@@ -84,6 +86,20 @@ void PlayLevelMode::makeStage() {
         }
         const ai::AiHuman* fighter = castHumanOf(human);
         return fighter == nullptr || !fighter->human->fighter().inPair();
+    });
+    // A human a script binds to a role is reset first (scenes.md#join-reset): his carried prop goes, his pair breaks
+    // and he is back in his normal mode, so the free test above takes in a human the player was holding (l99_c7's
+    // Rudy, held in Rembrandt's power move). A handle that is no human here (a stand-in) has nothing to reset, but
+    // every bind, also a stand-in's, ends every raging human's rage.
+    m_stage->setJoinReset([this](double handle) {
+        if (handle == m_playerHandle) {
+            m_player->human().resetForJoin();
+            dropReleasedProp(m_player->human());
+        } else if (const ai::AiHuman* fighter = castHumanOf(handle); fighter != nullptr) {
+            fighter->human->resetForJoin();
+            dropReleasedProp(*fighter->human);
+        }
+        human::endAllRage(m_player->humans().humans());
     });
     // Placed at the release, before the scene's end function can move them on.
     m_stage->setReleaseHandler([this](const SceneStage::Release& release) { placeReleased(release); });

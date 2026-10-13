@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/game_session.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <format>
@@ -21,6 +22,7 @@
 #include "fileio/executable.h"
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/memory_card_mode.h"
+#include "gamemodes/movie_player.h"
 #include "gui/text_layout.h"
 #include "human/player.h"
 #include "movies/disc_captions.h"
@@ -225,6 +227,18 @@ void GameSession::attachAudio(AudioOutput* audio) {
             engine->stopAll();
         }
     });
+    // The debug menu's movies hold the game's sound as the pause menu does and give it back after, unless something
+    // (the pause menu under the movie) holds it already (docs/guides/debug-menu.md#movies).
+    movies::SoundHold hold;
+    hold.hold = [audio] {
+        if (const audio::SoundEngine* engine = audio->sounds().engine(); engine != nullptr && engine->paused()) {
+            return false;
+        }
+        audio->sounds().pauseAll();
+        return true;
+    };
+    hold.release = [audio] { audio->sounds().resumeAll(); };
+    m_movieMode->setSoundHold(std::move(hold));
     // The HUD's sounds through the game-facing player (docs/research/hud.md#coneys-implementation).
     m_flow->hud().setSoundOutput([audio](std::string_view name) { audio->sounds().play(name); });
     // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
@@ -254,6 +268,25 @@ void GameSession::beginFrame() {
         const std::string level = std::exchange(m_pendingLevel, std::nullopt).value_or(std::string{});
         (void)m_flow->jumpToLevel(level, m_pendingCheckpoint);
     }
+    if (m_pendingMovie) {
+        auto [name, captions] = std::exchange(m_pendingMovie, std::nullopt).value_or(std::pair<std::string, bool>{});
+        movies().playMovie(name, movies::MovieRequest{.debug = true, .alwaysCaptions = captions});
+    }
+}
+
+bool GameSession::playDebugMovie(std::string_view name, bool captions) {
+    if (m_pendingMovie || movies().busy() || std::ranges::find(discMovieNames(), name) == discMovieNames().end()) {
+        return false;
+    }
+    m_pendingMovie.emplace(std::string(name), captions);
+    return true;
+}
+
+const std::vector<std::string>& GameSession::discMovieNames() {
+    if (!m_discMovies) {
+        m_discMovies = discMovies(m_wad.disc());
+    }
+    return *m_discMovies;
 }
 
 bool GameSession::inPlay() const { return m_stack.top() == &m_flow->gameplay() && m_flow->gameplay().playing(); }
@@ -323,6 +356,15 @@ void connectDebugServices(debug::DebugServices& services, const std::function<Ga
     services.gameState = [session]() -> GameState* {
         GameSession* game = session();
         return game != nullptr ? &game->flow().state() : nullptr;
+    };
+    // The Movies page: the disc's movies, each played over the game, which resumes as it was.
+    services.movies = [session] {
+        GameSession* game = session();
+        return game != nullptr ? game->discMovieNames() : std::vector<std::string>{};
+    };
+    services.playMovie = [session](std::string_view name, bool captions) {
+        GameSession* game = session();
+        return game != nullptr && game->playDebugMovie(name, captions);
     };
 }
 

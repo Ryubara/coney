@@ -436,6 +436,13 @@ def test_tidy_step_skips_when_no_cpp_changed(repo: Path) -> None:
         (["src/other.cpp"], False),
         (["python/src/coney_tools/cli.py"], False),
         (["src/README.md"], False),
+        # The docs build imports the progress tracker (and its config errors) from python/src.
+        (["python/src/coney_tools/progress.py"], True),
+        (["python/src/coney_tools/progress_render.py"], True),
+        (["python/src/coney_tools/progress_research.py"], True),
+        (["python/src/coney_tools/progress_cli.py"], True),
+        (["python/src/coney_tools/config.py"], True),
+        (["python/tests/test_progress.py"], False),
     ],
 )
 def test_docs_build_runs_only_for_docs(changed: list[str], wanted: bool) -> None:
@@ -444,6 +451,22 @@ def test_docs_build_runs_only_for_docs(changed: list[str], wanted: bool) -> None
 
 def test_python_step_skips_without_python_changes() -> None:
     assert check_cli._step_python(REPO, ["docs/page.md"]).skipped
+
+
+@pytest.mark.parametrize(
+    ("changed", "wanted"),
+    [
+        (["python/src/coney_tools/cli.py"], True),
+        ([".claude/hooks/block_raw_build.py"], True),
+        ([".claude/settings.json"], True),
+        (["docs/page.md"], False),
+        (["src/other.cpp"], False),
+        (["claude/x.py"], False),
+    ],
+)
+def test_pytest_runs_for_python_and_the_claude_hooks(changed: list[str], wanted: bool) -> None:
+    """pytest also tests the .claude/ hooks, so a change there runs it too."""
+    assert check_cli._python_changed(changed) is wanted
 
 
 def test_long_output_is_cut_with_a_count() -> None:

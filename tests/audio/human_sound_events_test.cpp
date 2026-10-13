@@ -272,6 +272,52 @@ TEST_CASE("the spray loop keeps one sound per human", "[audio][human]") {
     CHECK(rig.sink.stopped[0].valid());
 }
 
+TEST_CASE("clip event 0x45 stops the spray loop the human holds, once, and no other human's", "[audio][human]") {
+    // docs/research/sound-events.md#spray-loop: SA 83 keeps its sound as the human's held sound; event 0x45
+    // (message 0xc5) stops it and empties the handle.
+    Rig rig;
+    rig.anim(83, 830);
+    HumanSoundCall rembrandt = human(5);
+    HumanSoundCall other = human(5);
+    other.human = 9.0;
+    rig.events.animSound(rembrandt, HumanTraits{}, 83);
+    rig.events.animSound(other, HumanTraits{}, 83);
+    REQUIRE(rig.sink.played.size() == 2);
+    CHECK(rig.events.holdsSound(7.0));
+    CHECK(rig.events.holdsSound(9.0));
+
+    HumanSoundCall stop = rembrandt;
+    stop.sound = coney::human::HumanSound{
+        .kind = coney::human::HumanSound::Kind::StopHeld, .animSound = 0, .at = {}, .sceneFeet = std::nullopt};
+    rig.events.play(stop, HumanTraits{});
+    REQUIRE(rig.sink.stopped.size() == 1);
+    CHECK(rig.sink.stopped[0].id == 1); // Rembrandt's, the first played
+    CHECK_FALSE(rig.events.holdsSound(7.0));
+    CHECK(rig.events.holdsSound(9.0));
+    // A second stop has nothing left to stop.
+    rig.events.play(stop, HumanTraits{});
+    CHECK(rig.sink.stopped.size() == 1);
+}
+
+TEST_CASE("a cinematic's start and a human's removal stop the held sounds", "[audio][human]") {
+    Rig rig;
+    rig.anim(83, 830);
+    HumanSoundCall a = human(5);
+    HumanSoundCall b = human(5);
+    b.human = 9.0;
+    rig.events.animSound(a, HumanTraits{}, 83);
+    rig.events.animSound(b, HumanTraits{}, 83);
+    // The human removed: his loop stops with him.
+    rig.events.humanRemoved(9.0);
+    REQUIRE(rig.sink.stopped.size() == 1);
+    CHECK_FALSE(rig.events.holdsSound(9.0));
+    CHECK(rig.events.holdsSound(7.0));
+    // A cinematic's start: every human's.
+    rig.events.stopHeldSounds();
+    CHECK(rig.sink.stopped.size() == 2);
+    CHECK_FALSE(rig.events.holdsSound(7.0));
+}
+
 TEST_CASE("a hit plays column 1, a player's columns 1 and 2 doubled, on a downed victim the prone torso",
           "[audio][human]") {
     namespace mat = coney::human::material;

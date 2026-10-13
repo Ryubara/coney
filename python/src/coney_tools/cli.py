@@ -15,6 +15,7 @@ from coney_tools import (
     audio_cli,
     build_cli,
     check_cli,
+    issue_cli,
     mcp_serve,
     mission_cli,
     missions_render,
@@ -255,6 +256,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
     add_audit_parser(repo_commands)
+    issue_cli.add_issue_parser(groups)
     add_pr_health_parser(repo_commands)
     add_review_parsers(repo_commands)
     add_hygiene_parser(repo_commands)
@@ -728,6 +730,8 @@ def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
     if args.group == "check":
         return check_cli.run_changed(args.base, args.build_dir, args.only, args.skip, args.jobs, args.clang_tidy)
+    if args.group == "issue":
+        return issue_cli.run_issue(args)
     if args.group == "wad":
         return _run_wad(args)
     if args.group == "xbox":

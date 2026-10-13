@@ -152,6 +152,17 @@ class PlayControls {
     virtual std::expected<void, Error> spawnFighter(anim::Vec3 /*feet*/, float /*headingDegrees*/) {
         return std::unexpected(Error{ErrorCode::InvalidArgument, "no AI fighters here"});
     }
+    /// The human models an AI fighter can be drawn and move as here, sorted: every distinct model the configuration's
+    /// character types name (characterChoices()). Empty where the types are not known, and then every fighter is the
+    /// scene's own character.
+    [[nodiscard]] virtual std::vector<std::string> fighterModels() const { return {}; }
+    /// As spawnFighter(), as the character `model` (one of fighterModels()): its model, animation set and moves. An
+    /// empty `model` is the scene's own character. Fails with ErrorCode::InvalidArgument where none can be spawned.
+    /// The default ignores the model.
+    virtual std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees,
+                                                      std::string_view /*model*/) {
+        return spawnFighter(feet, headingDegrees);
+    }
     /// AI fighters in the scene.
     [[nodiscard]] virtual std::size_t fighterCount() const { return 0; }
     /// Removes every AI fighter.
