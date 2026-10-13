@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -18,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_claims, build_run, process_lifetime
+from coney_tools import build_claims, build_run, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
@@ -32,6 +33,16 @@ KEEP_LOGS = 20
 ORPHAN_GRACE_SECONDS = 15.0
 #: The exit code of a run that ended because its caller was gone.
 EXIT_ORPHANED = 130
+#: The most minutes a build run may wait for a slot, and take in all, when its caller waits for it: an agent idle
+#: for an hour loses its prompt cache and pays to write it again (docs/guides/agents.md#build-waits). Longer waits
+#: run with --detach.
+MAX_WAIT_CAP = 40.0
+BUDGET_CAP = 45.0
+#: The default wait of a --detach run, which nobody sits through.
+DETACHED_MAX_WAIT = 240.0
+#: The file in the worktree's scratch folder that a --detach run records itself in, and its console output.
+RESULT_FILE = "build-result.json"
+DETACHED_OUTPUT = "build-detached.out"
 #: A variable name for `--env`.
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -80,22 +91,34 @@ def add_parser(groups: Any) -> None:
         "--max-wait",
         "--slots-wait-timeout",
         type=float,
-        default=45.0,
         metavar="MIN",
-        help="minutes to wait for a slot, per phase, before exiting with code 75 (default 45)",
+        help=f"minutes to wait for a slot, per phase, before exiting with code 75 (default and most "
+        f"{MAX_WAIT_CAP:.0f}; with --detach default {DETACHED_MAX_WAIT:.0f}, no limit)",
     )
     group.add_argument(
         "--budget",
         type=float,
-        default=55.0,
         metavar="MIN",
-        help="minutes the whole call may take, waits and steps together: stop waiting (exit 75) once the wait plus "
-        "what the step usually takes would pass it (default 55, under an hour's prompt cache; 0: no budget)",
+        help=f"minutes the whole call may take, waits and steps together: stop waiting (exit 75) once the wait plus "
+        f"what the step usually takes would pass it (default and most {BUDGET_CAP:.0f}, inside an hour's prompt "
+        "cache; with --detach default 0: no budget)",
     )
+    group.add_argument(
+        "--detach",
+        action="store_true",
+        help="run in the background, apart from this shell, and return at once: the result goes to "
+        "build-result.json in the worktree's scratch folder (`build result` shows it); for a wait or a run that "
+        "would outlast your prompt cache",
+    )
+    # Internal: how --detach starts its child (where its log and result go).
+    group.add_argument("--log-file", type=Path, help=argparse.SUPPRESS)
+    group.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
     status = commands.add_parser("status", help="who holds the slots, who waits, and stale entries")
     status.add_argument("--json", action="store_true", help="print JSON instead of text")
+    result = commands.add_parser("result", help="the outcome of the worktree's last --detach run")
+    result.add_argument("--json", action="store_true", help="print the record as JSON")
     release = commands.add_parser("release", help="manual cleanup: free an agent's slots and drop its queue places")
     release.add_argument("--agent", dest="release_agent", required=True, help="the agent whose entries to remove")
     release.add_argument("--force", action="store_true", help="also another agent's, or a build that still runs")
@@ -107,6 +130,8 @@ def run(args: argparse.Namespace) -> int:
     """Dispatch `build`, `build status` or `build release`."""
     if args.build_command == "status":
         return run_status(args.dir, args.json)
+    if args.build_command == "result":
+        return run_result(args.dir, args.json)
     if args.build_command == "release":
         return run_release(args.dir, args.release_agent, args.force, args.slot, args.lane)
     return run_build(args)
@@ -166,24 +191,66 @@ def _environment(base: dict[str, str], settings: list[str]) -> dict[str, str]:
     return env
 
 
+def limits(args: argparse.Namespace) -> tuple[float, float]:
+    """The run's (max wait, budget) in minutes: the flags, else the caps, or for a --detach run DETACHED_MAX_WAIT and
+    no budget. Raises ConfigError for a run its caller waits on that asks for more than the caps."""
+    detached = args.detach or args.result_file is not None
+    max_wait = args.max_wait if args.max_wait is not None else (DETACHED_MAX_WAIT if detached else MAX_WAIT_CAP)
+    budget = args.budget if args.budget is not None else (0.0 if detached else BUDGET_CAP)
+    if not detached and (max_wait > MAX_WAIT_CAP or budget <= 0 or budget > BUDGET_CAP):
+        raise ConfigError(
+            f"--max-wait {max_wait:g} --budget {budget:g}: a call you wait on may wait at most {MAX_WAIT_CAP:.0f} min "
+            f"and take at most {BUDGET_CAP:.0f} (a budget of 0, no limit, is refused too), or you outlast your prompt "
+            "cache. For a longer run use --detach, write STATUS.md and stop: `coney-tools build result` shows the "
+            "outcome to whoever continues (docs/guides/agents.md#build-waits)"
+        )
+    return max_wait, budget
+
+
 def run_build(args: argparse.Namespace) -> int:
     """`build`: precheck, then configure, build and test under the slots; print the log path first and a short
-    summary last. Exit 0 on success, 1 on a failed step, 75 when it gave up waiting for a slot."""
+    summary last. Exit 0 on success, 1 on a failed step, 75 when it gave up waiting for a slot. With --detach, start
+    the same run in the background and return at once; the child (--result-file) records its outcome there."""
+    if args.result_file is not None:
+        return _detached_child(args)
+    max_wait, budget = limits(args)
+    root, env = _precheck(args)
+    if args.detach:
+        return _start_detached(args, root, max_wait, budget)
+    log_path = _new_log(root, args.preset, args.build_dir.name if args.build_dir else None, args.agent)
+    return _build(args, root, env, log_path, (max_wait, budget), _tie_to_caller).exit_code
+
+
+def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
+    """Refuse a run that cannot work before anything waits: the agent id, the preset, the settings and the tools.
+    Returns the checkout and the environment of the run."""
     if not args.agent:
         raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
     if not AGENT_NAME.match(args.agent):
         raise ConfigError(f"agent id {args.agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
     root = _root(args.dir)
-    # The precheck: the preset exists, the settings are well formed and the tools are found, before anything waits.
     build_run.check_preset(root, args.preset)
     _environment({}, args.env)  # a malformed --env is refused now; it is applied after the Visual Studio environment
-    build_dir = (root / args.build_dir).resolve() if args.build_dir else None
     env = _environment(build_run.load_msvc_environment(os.environ, build_run.run_text), args.env)
     build_run.find_programs(env)
+    return root, env
+
+
+def _build(
+    args: argparse.Namespace,
+    root: Path,
+    env: dict[str, str],
+    log_path: Path,
+    limits_minutes: tuple[float, float],
+    lifetime: Callable[[build_run.ProcessToolchain], None],
+) -> build_run.Result:
+    """Configure, build and test under the slots, writing the full output to `log_path` and the summary to the
+    console; `limits_minutes` is (max wait, budget) and `lifetime` ties the toolchain's processes to this run (and the
+    run to its caller, when it has one)."""
+    build_dir = (root / args.build_dir).resolve() if args.build_dir else None
     numbers = _numbers(root)
     folder = build_dir if build_dir is not None else root / "build" / args.preset
     slots = build_claims.default_slots(MAIN_LANE, root)
-    log_path = _new_log(root, args.preset, build_dir.name if build_dir else None, args.agent)
     options = build_run.Options(
         agent=args.agent,
         preset=args.preset,
@@ -195,13 +262,13 @@ def run_build(args: argparse.Namespace) -> int:
         label=args.label,
         build_dir=build_dir,
         priority=args.priority,
-        max_wait=args.max_wait,
-        budget=args.budget,
+        max_wait=limits_minutes[0],
+        budget=limits_minutes[1],
         jobs=args.jobs,
     )
     print(f"log: {log_path}", flush=True)
     toolchain = build_run.ProcessToolchain(root, env)
-    _tie_to_caller(toolchain)
+    lifetime(toolchain)
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
         context = build_run.Context(
             slots=slots,
@@ -221,7 +288,172 @@ def run_build(args: argparse.Namespace) -> int:
         result = build_run.execute(options, context)
     for line in result.summary:
         print(line)
-    return result.exit_code
+    return result
+
+
+def _child_command(
+    args: argparse.Namespace, root: Path, limits_minutes: tuple[float, float], log: Path, result: Path
+) -> list[str]:
+    """The command line of a --detach run's child: this run's flags, its limits spelt out, and where its log and
+    result go."""
+    command = [sys.executable, "-m", "coney_tools.cli", "build", "--agent", args.agent, "--preset", args.preset]
+    command += ["--dir", str(root), "--max-wait", str(limits_minutes[0]), "--budget", str(limits_minutes[1])]
+    switches = (
+        ("--configure", args.configure),
+        ("--configure-only", args.configure_only),
+        ("--test", args.test),
+        ("--priority", args.priority),
+    )
+    command += [flag for flag, on in switches if on]
+    for flag, value in (("-R", args.regex), ("-L", args.label), ("--build-dir", args.build_dir), ("-j", args.jobs)):
+        command += [flag, str(value)] if value is not None else []
+    for setting in args.env:
+        command += ["--env", setting]
+    return [*command, "--log-file", str(log), "--result-file", str(result)]
+
+
+def spawn_detached(command: list[str], cwd: Path, output: Path) -> int:
+    """Start `command` apart from this process and its shell (no console, a process group or session of its own, out
+    of the caller's job where Windows allows it), its console output in `output`; returns its pid."""
+    with output.open("w", encoding="utf-8") as sink:
+        common: dict[str, Any] = {"cwd": cwd, "stdin": subprocess.DEVNULL, "stdout": sink, "stderr": subprocess.STDOUT}
+        if sys.platform != "win32":
+            return subprocess.Popen(command, start_new_session=True, **common).pid
+        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        try:
+            return subprocess.Popen(command, creationflags=flags | subprocess.CREATE_BREAKAWAY_FROM_JOB, **common).pid
+        except OSError:  # the caller's job forbids leaving it: the child then ends with that job
+            return subprocess.Popen(command, creationflags=flags, **common).pid
+
+
+def _start_detached(args: argparse.Namespace, root: Path, max_wait: float, budget: float) -> int:
+    """--detach: record the run as started, start its child and return at once with where to look later. Refuses a
+    second detached run in a worktree whose last one still runs (they would share one result file)."""
+    result = _log_folder(root) / RESULT_FILE
+    previous = _read_record(result)
+    if previous is not None and previous.get("state") == "running" and _alive(previous.get("pid")):
+        raise ConfigError(
+            f"a detached build of {previous.get('agent')} is still running (pid {previous.get('pid')}): "
+            "`coney-tools build result` shows how it ends"
+        )
+    log = _new_log(root, args.preset, args.build_dir.name if args.build_dir else None, args.agent)
+    _write_record(result, _record(args, None, log))
+    command = _child_command(args, root, (max_wait, budget), log, result)
+    pid = spawn_detached(command, root, result.parent / DETACHED_OUTPUT)
+    print(f"log: {log}")
+    print(f"detached: pid {pid}, result in {result}")
+    print(
+        "write STATUS.md and stop, or do other work: `coney-tools build result` shows the outcome "
+        "(exit 75 while it runs)"
+    )
+    return 0
+
+
+def _detached_child(args: argparse.Namespace) -> int:
+    """The child of a --detach run: the run itself, its outcome recorded in --result-file however it ends (a refused
+    precheck, a failure, an interrupt), so a successor can read it."""
+    record = _record(args, os.getpid(), args.log_file)
+    _write_record(args.result_file, record)
+    code, summary = 1, ["result: ended unexpectedly"]
+    try:
+        limits_minutes = limits(args)
+        root, env = _precheck(args)
+        args.log_file.parent.mkdir(parents=True, exist_ok=True)
+        result = _build(args, root, env, args.log_file, limits_minutes, lambda toolchain: _detached_lifetime())
+        code, summary = result.exit_code, result.summary
+        return code
+    except ConfigError as error:
+        code, summary = 2, [f"coney-tools: {error}"]
+        raise
+    except KeyboardInterrupt:
+        code, summary = 130, ["result: interrupted"]
+        raise
+    except SystemExit as stop:
+        code, summary = (stop.code if isinstance(stop.code, int) else 1), ["result: stopped by a signal"]
+        raise
+    finally:
+        ended = {"state": "done", "exit_code": code, "summary": summary, "ended": time.time()}
+        _write_record(args.result_file, {**record, **ended})
+
+
+def _detached_lifetime() -> None:
+    """A detached run's tie: its children end with it, but nothing watches the shell that started it, which is
+    expected to be gone."""
+    process_lifetime.bind_children()
+    process_lifetime.stop_on_signals()
+
+
+def _record(args: argparse.Namespace, pid: int | None, log: Path) -> dict[str, Any]:
+    """A running run's record: who runs what, its process (None until the child starts), its log, since when."""
+    return {
+        "state": "running",
+        "agent": args.agent,
+        "preset": args.preset,
+        "pid": pid,
+        "log": str(log),
+        "started": time.time(),
+    }
+
+
+def _write_record(path: Path, record: dict[str, Any]) -> None:
+    """Write a result record whole (a reader never sees half a file), retrying briefly while a reader on Windows
+    holds the old one open."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    for attempt in range(20):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.05)
+
+
+def _read_record(path: Path) -> dict[str, Any] | None:
+    """A result record, or None when there is none or it cannot be read."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _alive(pid: object) -> bool:
+    """Whether a recorded pid still runs (None: the child has not started yet, which counts as running)."""
+    return pid is None or (isinstance(pid, int) and pcsx2_proc.pid_alive(pid))
+
+
+def run_result(directory: Path | None, as_json: bool) -> int:
+    """`build result`: the outcome of the worktree's last --detach run. Exit: the run's own code once it has ended,
+    75 while it runs, 1 when there is none or it ended without a result."""
+    record = _read_record(_log_folder(_root(directory)) / RESULT_FILE)
+    if record is None:
+        print("no detached build recorded for this worktree")
+        return 1
+    if record.get("state") == "running":
+        if _alive(record.get("pid")):
+            code = build_run.EXIT_QUEUED
+        else:
+            code, record = 1, {**record, "state": "lost"}
+    else:
+        code = int(record.get("exit_code", 1))
+    if as_json:
+        print(json.dumps(record, indent=2))
+        return code
+    started = _minutes(float(record.get("started", 0)), time.time())
+    print(f"detached build of {record.get('agent')} ({record.get('preset')}), started {started} ago")
+    print(f"log: {record.get('log')}")
+    if record["state"] == "running":
+        print(f"still running (pid {record.get('pid')}): look again later")
+    elif record["state"] == "lost":
+        print(f"ended without a result (pid {record.get('pid')} is gone): see the log and {DETACHED_OUTPUT}")
+    else:
+        for line in record.get("summary", []):
+            print(line)
+        print(f"exit {code}")
+    return code
 
 
 def _tie_to_caller(toolchain: build_run.ProcessToolchain) -> None:

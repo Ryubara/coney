@@ -788,8 +788,9 @@ sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-g
 ```sh
 uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority] [--max-wait MIN]
-    [--budget MIN] [-j N] [--dir CHECKOUT]
+    [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json]
+uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
 ```
 
@@ -864,21 +865,36 @@ through a lock folder, as the PCSX2 claims do.
 the queue may claim, so waiters cannot overtake one another; `--priority` tickets go ahead of normal ones (for the
 coordinator, or a build somebody is waiting on). A ticket whose process is gone is dropped. While it waits, the
 command prints its place, a rough wait (from the holders' recorded step and how long they have run it) and the
-holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default 45, per claim; also spelled
-`--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and exits `75`
-with `still queued, position N of M, try again later`. On `75`, do other work and run the same command again.
+holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default and most 40, per claim;
+also spelled `--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and
+exits `75` with `still queued, position N of M, try again later` and the way on: do other work and run the same
+command again, or start it with `--detach`, write `STATUS.md` and stop ([Build waits](agents.md#build-waits)).
 
-**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default 55; `0` turns it off) caps the whole
-call, waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. Each
+**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default and most 45) caps the whole call,
+waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. A larger
+`--max-wait` or `--budget`, or `--budget 0` (no budget), is refused with exit `2` unless the run is detached. Each
 finished step's duration is kept in `durations.json` in the claims directory, the last ten per preset, step and size
 (`ci/configure/main`, `ci/build/fast` or `ci/build/main` by lane, `ci/test/filtered` with `-R` or `-L`, `ci/test/full`
 without); a failed step is not recorded. While a run waits for a slot, it leaves the queue with exit `75` as soon as
 the time the call has taken plus the median of what it waits for (a phase's steps added up; with no history, the
 typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
 the budget, and says so with the numbers: `time budget: 25 min of the call so far; the build would take about 30 min
-(median of 4 runs) and the budget is 55 min`. The test phase counts the build before it, and the wait for the build
-folder counts too. The budget only decides whether to keep waiting: a step that has started always runs to its end,
-and a free slot is always taken.
+(median of 4 runs) and the budget is 45 min`. It also leaves at its first look when the queue's own estimate of the
+wait still ahead (from the holders' steps), added to those, would pass the budget: `the queue ahead is about 50 min`.
+The test phase counts the build before it, and the wait for the build folder counts too. The budget only decides
+whether to keep waiting: a step that has started always runs to its end, and a free slot is always taken.
+
+**Detached runs.** `--detach` checks the run as usual (precheck, refusals), then starts the same run in a process of
+its own, apart from the calling shell (on Windows `DETACHED_PROCESS` in a new process group, out of the caller's job
+when the job allows it; elsewhere a session of its own), and returns at once printing the log path and the child's
+pid. A detached run may wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and
+neither is capped. Its children still end with it, but nothing watches the shell that started it. It records itself
+in `build-result.json` in the worktree's scratch folder (state, agent, preset, pid, log, start time; at the end the
+exit code, the printed summary and the end time; its console output goes to `build-detached.out` beside it), however
+it ends, a refused precheck included. A second `--detach` in a worktree whose detached run still runs is refused.
+`build result` prints that record: the run's own exit code and summary once it has ended, `75` and `still running`
+while it runs, and `1` with `ended without a result` when its process is gone without writing one (killed);
+`--json` prints the record itself.
 
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`
