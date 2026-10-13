@@ -78,7 +78,7 @@ enum class AnimState : std::int8_t {
     CombatWalk =
         105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
     Workout = 106, ///< **Coney's**: a workout's enter clip, then its loop blend, until the workout ends.
-    Debug = 107,   ///< **Coney's own**: the debug menus' Animation player plays a clip (HumanAnimator::playDebugClip()).
+    Debug = 107, ///< **Coney's own**: the debug menus' Animation player plays a clip (HumanAnimator::playDebugClip()).
 };
 
 /// The bits of the human's record `+0x08` a clip task holds while it plays and sets as it starts
