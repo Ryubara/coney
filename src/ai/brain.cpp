@@ -295,6 +295,8 @@ Goal* Brain::findGoal(GoalType type) {
     return nullptr;
 }
 
+bool Brain::hasFightGoal() { return findGoal(GoalType::Melee) != nullptr || findGoal(GoalType::LeftTurf) != nullptr; }
+
 bool Brain::queueAction(std::unique_ptr<Action> action) {
     if (action == nullptr || m_actionCount >= kActionQueueSize) {
         return false;

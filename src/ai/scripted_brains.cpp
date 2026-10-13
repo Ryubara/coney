@@ -392,7 +392,7 @@ void ScriptedBrains::tacticAttack(int gang, std::string_view callback) {
     if (held([this, gang, name = std::string(callback)] { tacticAttack(gang, name); })) {
         return;
     }
-    m_owner->gangs().setTactic(gang, std::make_unique<TacticAttack>(std::string(callback)));
+    ai::tacticAttack(m_owner->gangs(), gang, std::string(callback));
 }
 
 void ScriptedBrains::brFlushActions(double human) {

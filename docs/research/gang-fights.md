@@ -427,10 +427,9 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
    (`repo:src/ai/enemy_scan.h`) but only the Scout tactic calls them, so gang soldiers, Warriors and Rumble fighters
    learn enemies only from hits, help calls and tactics. Run `Brain_MaybeScanEnemies` from each brain's update, 5
    scan tokens an update.
-2. **TacticAttack's members choose by the score**: they run a stand-in melee goal on the nearest gang enemy
-   (`TacticMeleeGoal`); they need the real Melee goal with `Brain_PickBestEnemy` (flags `0xfffffffd`), so the slot
-   limit's −999 spreads them and the player's +20 focuses them.
-3. **The 3 s idle check sends the idle to the farthest busy mate** (HelpRespond after Melee), not only Melee.
+2. **TacticAttack's members choose by the score**: built ([Unit 2](ai-reimpl.md#unit-2)); they run the real Melee
+   goal, which picks with `Brain_PickBestEnemy`.
+3. **The 3 s idle check sends the idle to the farthest busy mate** (HelpRespond after Melee): built (Unit 2).
 4. **The team-ups** ([The gang as a whole](#gang) rule 4): not built (`repo:src/ai/tactic_attack.h`); with
    `GangEnableAttackStrategies`, the seven orders, their weights, counts, lines, gestures and the leader order's two
    temporary changes.
@@ -442,8 +441,9 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
    original's move-to-human holds them inside 4-4.75 m (they keep moving), and the taunt every 1-2 s is not called.
    Wait reasons 4, 6 and 8 are never raised (their inputs are not computed).
 8. **Event `0x15`'s slot-holder taunts** are not built (needs its sender, an open question).
-9. **The gang's alert state** (`+0x32`): its anim substitutions and the members' `+0x14d` are not modelled.
-10. **Flight**: TacticAttack's flee check (v9 × the starting count, class 11 only) under `GangCanFlee`.
+9. **The gang's alert state** (`+0x32`): built (Unit 2) as state, clip-group counts and the members' `+0x14d`;
+   nothing plays the clip groups or reads `+0x14d` yet (Coney has no turf-only target test).
+10. **Flight**: TacticAttack's flee check (v9 × the starting count, class 11 only) under `GangCanFlee`: built (Unit 2).
 11. **The tandem on a held enemy** ([Combat moves](combat-moves.md#tandem-ai), issue #84): not built.
 12. **FightBackOff** for the guard-and-back-off order and the [pusher](ai.md#fight-back-off-pusher): not built.
 

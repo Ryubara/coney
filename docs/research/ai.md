@@ -2615,13 +2615,12 @@ the offer (95), the refusals, thanks (98) or goodbye (99) as the buyer leaves, a
 state 1, and the wary look (100).
 
 **The Rumble tactics** (`src/ai/tactic_attack.*`, `src/ai/tactic_confront.*`, [Rumble mode](rumble.md#coney)).
-`TacticAttack` and `TacticConfront` follow the table above. **Stand-ins:** the tactic's melee goal (8,
-`TacticMeleeGoal`) takes the nearest member of an enemy gang as the enemy and target, runs to him (2 s at a time) beyond
-the fight goal's reach (90 % of the far melee range) and pushes the fight goal within it (the original's: [The Melee
-goal](#melee-goal)); the confront goal (60) closes on the other gang's leader to its distance and waits. **Coney
-choices:** a gang's leader is its first standing member not a player's (else the first standing); the confront's gang
-radii are 0 and there is always a way between the leaders, so 9 never fires; the attack's coordinated sub-tactics,
-`PedReaction` exception and spot line, and the confront's postures and formation are not built. A tactic replaced from
+`TacticAttack` and `TacticConfront` follow the table above; `TacticAttack` is built from
+[Unit 2](ai-reimpl.md#unit-2) and gives the real [Melee goal](#melee-goal). **Stand-ins:** the confront goal (60)
+closes on the other gang's leader to its distance and waits. **Coney choices:** a gang's leader is its first standing
+member not a player's (else the first standing); the confront's gang radii are 0 and there is always a way between
+the leaders, so 9 never fires; the attack's team-ups and spot line, and the confront's postures and formation are not
+built. A tactic replaced from
 inside its own update or callback is freed after the gangs' update, as the original queues the free (`0x00306630`).
 
 **The character bindings' goals and gangs** (`src/ai/scripted_humans.*`, `src/ai/scripted_goals.*`). `GoalBackoff`

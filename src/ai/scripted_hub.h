@@ -75,17 +75,17 @@ class ScriptedHub final : public script::HubBindingHost {
     /// The hold on `scripted`'s brains (which must outlive it).
     explicit ScriptedHub(ScriptedBrains& scripted);
 
-    /// What the host reads from the level.
-    void setLookups(HubLookups lookups) { m_lookups = std::move(lookups); }
+    /// What the host reads from the level; the categories and flee percentages also go to the gangs, whose attack
+    /// tactic's flight reads them (Gangs::setLookups()).
+    void setLookups(HubLookups lookups);
 
     /// After each characters' step at game time `nowMs`: the workouts begin (all five clips loaded, the enter clip
     /// into the loop blend), pump, repeat on each wrap of the loop's leading clip and end
     /// (docs/research/workouts.md#engine, human::WorkoutEffort); each player's count
-    /// of AI humans after him is refreshed every kEnemyCountPeriod brain updates; a fleeing gang beaten below its
-    /// percentage sends its fleeing members off.
+    /// of AI humans after him is refreshed every kEnemyCountPeriod brain updates. A beaten gang's flight is not
+    /// here: the attack tactic sends its fleeing members off (docs/research/ai-reimpl.md#attack-flight).
     /// @orig 0x00255540 Human_UpdateWorkout (unknown)
     /// @orig 0x003035d8 PlayerBrain_Update (unknown)
-    /// @orig 0x00307d40 GangTactic_CheckFlee (unknown)
     void update(std::uint64_t nowMs);
 
     // ---- script::HubBindingHost: each does nothing for a handle with no human or an id with no gang ----
@@ -140,10 +140,7 @@ class ScriptedHub final : public script::HubBindingHost {
     /// @orig 0x002e5a00 Goal_Shopkeeper (unknown)
     void goalShopkeeper(const script::ShopkeeperCall& call) override;
 
-    /// The gang's flight on or off; on, the members it has now are its starting count (**Coney's**: the original notes
-    /// the count when a tactic starts, which Coney's tactics do not report).
-    /// @orig 0x0016bcf0 Gang_SetCanFlee (unknown)
-    /// @orig 0x00307fe0 TacticAttack_Start (unknown)
+    /// The gang's flight on or off (Gang::setCanFlee()); the attack tactic's start notes the count it compares with.
     void canFlee(int gang, bool on) override;
     /// @orig 0x0016b8d0 Gang_ClearBums (unknown)
     void clearBums() override;
@@ -180,8 +177,6 @@ class ScriptedHub final : public script::HubBindingHost {
     bool beginWorkout(Brain& brain, WorkoutRun& run);
     // One update of the players' enemy counts.
     void updateEnemyCounts();
-    // One update of the fleeing gangs.
-    void updateFlight();
     // The category of `brain`'s human's class, if the configuration names one.
     [[nodiscard]] std::optional<int> categoryOf(const Brain& brain) const;
     // The goals' services, wired to the brains and the lookups.
@@ -194,12 +189,6 @@ class ScriptedHub final : public script::HubBindingHost {
     std::map<double, WorkoutRun> m_workouts;
     std::map<const Brain*, int> m_enemyCounts;
     std::map<const Brain*, std::uint64_t> m_countedAt;
-    // The fleeing gangs: their starting count and the standing count last seen.
-    struct Flight {
-        int start = 0;
-        int standing = 0;
-    };
-    std::map<int, Flight> m_flights;
 };
 
 } // namespace coney::ai

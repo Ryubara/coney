@@ -477,6 +477,8 @@ std::string_view goalTypeName(ai::GoalType type) {
         return "HoldPosition";
     case TravelPath:
         return "TravelPath";
+    case LeftTurf:
+        return "LeftTurf";
     case FindEnemy:
         return "FindEnemy";
     case AreaWalker:

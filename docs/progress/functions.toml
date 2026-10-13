@@ -1846,6 +1846,12 @@ subsystem = "GameModes"
 size = 40
 
 [[function]]
+address = 0x00164a28
+name = "Gang_SetAlertState"
+subsystem = "GameModes"
+size = 316
+
+[[function]]
 address = 0x00164bb8
 name = "Gang_SetMessageHandler"
 subsystem = "GameModes"
@@ -1880,6 +1886,12 @@ address = 0x00165b70
 name = "Gang_SetSharedTarget"
 subsystem = "GameModes"
 size = 276
+
+[[function]]
+address = 0x00166158
+name = "Gang_CountLiving"
+subsystem = "GameModes"
+size = 196
 
 [[function]]
 address = 0x00166220
@@ -1940,6 +1952,30 @@ address = 0x00168fe0
 name = "Gang_IsEnemyOf"
 subsystem = "GameModes"
 size = 124
+
+[[function]]
+address = 0x001694b8
+name = "Gang_AddCombatFidgetClips"
+subsystem = "GameModes"
+size = 44
+
+[[function]]
+address = 0x001694e8
+name = "Gang_RemoveCombatFidgetClips"
+subsystem = "GameModes"
+size = 32
+
+[[function]]
+address = 0x00169508
+name = "Gang_AddFightTauntClips"
+subsystem = "GameModes"
+size = 104
+
+[[function]]
+address = 0x00169570
+name = "Gang_RemoveFightTauntClips"
+subsystem = "GameModes"
+size = 68
 
 [[function]]
 address = 0x001696e0
@@ -7075,6 +7111,12 @@ subsystem = "Human"
 size = 32
 
 [[function]]
+address = 0x00290348
+name = "Brain_HasFightGoal"
+subsystem = "Human"
+size = 104
+
+[[function]]
 address = 0x002904a0
 name = "Brain_IsEngaged"
 subsystem = "Human"
@@ -9198,10 +9240,34 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x00307548
+name = "Tactic_Attack"
+subsystem = "Human"
+size = 124
+
+[[function]]
 address = 0x003075c8
-name = "TacticAttack_Init"
+name = "AttackTactic_Construct"
 subsystem = "Human"
 size = 160
+
+[[function]]
+address = 0x00307668
+name = "AttackTactic_ComputeSpacing"
+subsystem = "Human"
+size = 284
+
+[[function]]
+address = 0x00307788
+name = "AttackTactic_GiveMelee"
+subsystem = "Human"
+size = 236
+
+[[function]]
+address = 0x00307878
+name = "AttackTactic_OnViolence"
+subsystem = "Human"
+size = 408
 
 [[function]]
 address = 0x00307d40
@@ -9211,19 +9277,25 @@ size = 672
 
 [[function]]
 address = 0x00307fe0
-name = "TacticAttack_Start"
+name = "AttackTactic_Start"
 subsystem = "Human"
 size = 232
 
 [[function]]
+address = 0x003080c8
+name = "AttackTactic_End"
+subsystem = "Human"
+size = 132
+
+[[function]]
 address = 0x003081a8
-name = "TacticAttack_Process"
+name = "AttackTactic_Process"
 subsystem = "Human"
 size = 720
 
 [[function]]
 address = 0x00308478
-name = "TacticAttack_Event"
+name = "AttackTactic_OnEvent"
 subsystem = "Human"
 size = 352
 
