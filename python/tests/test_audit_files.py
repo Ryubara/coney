@@ -517,6 +517,35 @@ def test_the_script_reads_a_changed_list_from_the_conventions(root: Path, key: s
 
 
 @needs_bash
+def test_a_change_to_the_lists_is_judged_by_the_lists_it_merges_into(root: Path) -> None:
+    """The conventions file is docs-only, so a pull request that edits src/ and also lists src/ as docs-only must
+    still run the engine jobs: the script reads the lists of the base (HEAD^1), not of the merge commit."""
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True, env=GIT_ENV)
+    commit_all(root, "base")
+    edit(root, CONVENTIONS_FILE, "  docs_only:\n", '  docs_only:\n    - "src/"\n')
+    (root / "src").mkdir(exist_ok=True)
+    (root / "src" / "a.cpp").write_text("int a;\n", encoding="utf-8")
+    commit_all(root, "change")
+    outputs, printed = run_scope_on(root)
+    assert (outputs["build"], outputs["python-os"]) == ("true", LINUX)
+    assert "engine     src/a.cpp" in printed
+
+
+@needs_bash
+def test_the_script_falls_back_to_its_own_lists_when_the_base_has_none(root: Path) -> None:
+    """A pull request that adds the conventions file has no list in its base, so the script reads the file it has."""
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True, env=GIT_ENV)
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True, env=GIT_ENV)
+    subprocess.run(["git", "reset", "-q", "--", CONVENTIONS_FILE], cwd=root, check=True, env=GIT_ENV)
+    subprocess.run(["git", "commit", "-q", "-m", "base"], cwd=root, check=True, env=GIT_ENV)
+    (root / "src").mkdir(exist_ok=True)
+    (root / "src" / "a.cpp").write_text("int a;\n", encoding="utf-8")
+    commit_all(root, "change")
+    outputs, _ = run_scope_on(root)
+    assert (outputs["build"], outputs["python-os"]) == ("true", LINUX)
+
+
+@needs_bash
 @pytest.mark.parametrize("key", ["docs_only", "tools_only", "engine"])
 def test_a_conventions_file_without_a_list_stops_the_script(root: Path, key: str) -> None:
     text = (root / CONVENTIONS_FILE).read_text(encoding="utf-8").replace(f"  {key}:", f"  {key}_renamed:")
