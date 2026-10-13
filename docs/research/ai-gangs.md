@@ -1035,9 +1035,11 @@ brain `+0x124`; only a follower whose brain is of type 3, a Warrior, can be in i
 3. **On** when any player's brain `+0x2e4` is set (the players at game state `+0x224` / `+0x228`).
 4. **On** when a member of its gang has attackers (`Gang_AnyMemberHasAttackers` `0x00169658`) and its own brain
    `+0x152` is not 0, else off. `+0x152` counts the brains that have put this one in their enemy lists:
-   `Brain_AddEnemy` (`0x0028d538`) raises the new enemy's count (`Brain_CountHostile` `0x0028ef20`) unless a player
-   adds a player, and `Brain_UncountHostile` (`0x0028ef30`) lowers it. A player's own `+0x152` is instead recounted
-   every 300 updates ([The player](ai.md#think-player)).
+   `Brain_CountHostile` (`0x0028ef20`) raises it, called by `Brain_AddEnemy` (`0x0028d538`, unless a player adds a
+   player) and by [the enemy scan](ai.md#enemy-scan) (`0x0028b9e8` / `0x0028b7d0`); `Brain_UncountHostile`
+   (`0x0028ef30`) lowers it, called by the enemy scan, `Brain_UncountEnemy` (`0x0028d6a0`) and
+   `Brain_UncountAllEnemies` (`0x0028ef48`). A player's `+0x152` is raised and lowered the same way and also
+   recounted every 300 updates, which overwrites it ([The player](ai.md#think-player)).
 
 So the leader's target alone turns it on (test 1): an AI follower is in fight mode whenever his player chief has
 locked on to anyone but a Warrior, whether or not anyone attacks.
@@ -1047,20 +1049,24 @@ the field of view (brain `+0x12c`) becomes 2π, and with no actions queued:
 
 1. **The target**: his own target when it still passes `Brain_ValidateEnemy` (`0x0028d358`); else the human of his
    **own enemy list** (brain `+0x164`) nearest **to him**, if that human is up and within **20 m of the leader**;
-   else the leader's target, when up and not friendly (`Brain_IsFriendly` `0x00290230`); else none: the target is
-   cleared and it goes on as out of fight mode below, from leaving the stance (the field of view stays 2π).
+   else the leader's target when it is up: it is used for the steps below even when friendly, and only when it is
+   not friendly (`Brain_IsFriendly` `0x00290230`) does it also become his own target (`0x0028cfe0`; `0x002deae0` to
+   `0x002deb08`). With no leader's target, or a down one, none: the target is cleared and it goes on as out of fight
+   mode below, from leaving the stance (the field of view stays 2π).
 2. It enters the fight stance (`0x0022fe80`). The range is the far melee range (brain `+0x140`), or the near one
    (`+0x13c`) when the target's actions are blocked or he is busy.
 3. **Beyond the range** it only **turns** to the target (`TurnToPointAction` `0x002fe000`, at the human's max turn).
    **Within the range** it queues `MoveToHumanAction` (`MoveMelee`, [Move-to-human](ai-moving.md#move-melee)) on him
    with the band range + 0.5 m to range + 1.0 m and a 3 s limit: since he is already inside the band's near edge, it
    **backs off**, walking (gait 2), to keep that distance.
-4. It never attacks and never closes in from fight mode. A Warrior fights only under the attack command
+4. It never attacks and never starts a move toward the target from fight mode: the band move backs off (and
+   `MoveMelee` may side-step, or close in at gait 4 if the target gets beyond the band's far edge while it runs,
+   [Move-to-human](ai-moving.md#move-melee) steps 3-4). A Warrior fights only under the attack command
    ([Automatic commands](#warrior-auto-commands)) or when hit (below).
 
 Confirmed (runtime) at `level34` checkpoint 5 ([Scripts](scripting.md#level34-fixes) item 16): Ash and Snow stood
-1.3-1.6 m from the standing player, turning to Furies 6-13 m off, never walking toward them, and backed off at gait 2
-(1.92 m/s) once a Fury came within about 5 m. (An earlier version of this page had the turn and the move the other
+1.14-1.64 m from the standing player, turning to Furies that were 20.5 m (Snow) and 7.3 m (Ash) off when taken as targets, never walking
+toward them, and backed off at gait 2 (1.92 m/s) once a Fury came within 3.6 m (Snow) and 4.1 m (Ash). (An earlier version of this page had the turn and the move the other
 way round, and the target as the nearest attacker within 20 m of the follower.)
 
 Out of fight mode the goal sets the field of view back to 110° (1.9199 rad) and clears the target, then

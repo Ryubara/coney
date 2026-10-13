@@ -119,7 +119,7 @@ used.
 | `+0x144` | u32 | the enemy-scan interval: 2000 ms, cops 1000 ms |
 | `+0x15c` / `+0x160` | fn / u32 | the enemy-scan filter / the time of the last scan |
 | `+0x14a`, `+0x14b` | u8 | attack spacing |
-| `+0x152` | u8 | attackers on this human (player brain, counted every 300 updates) |
+| `+0x152` | u8 | hostiles: how many brains hold this human in their enemy lists, on every brain; raised by `Brain_CountHostile` `0x0028ef20` (from `Brain_AddEnemy` `0x0028d538` and [the enemy scan](#enemy-scan)), lowered by `Brain_UncountHostile` `0x0028ef30`; a player's is also recounted every 300 updates ([Fight mode](ai-gangs.md#warrior-follow)) |
 | `+0x164` | handle[16] | the **enemy list** |
 | `+0x1a4` | handle[16] | the **attack slots** taken on this human; the maximum at `+0x1e4` (`BrSetNumAttackSlots`) |
 | `+0x1e8` | u32 | the earliest time this brain may attack again (ms) |
