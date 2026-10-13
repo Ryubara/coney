@@ -14,14 +14,21 @@
 # `S-failing` on each that fails a required check, and takes the label off when that is fixed (`hygiene.pr_health` of
 # the conventions; those two labels only, never another). GitHub works out whether a pull request conflicts only when
 # asked, so a push to main is the moment the answer changes. It is not a required check (it is not in
-# merge.required_checks), so a failure here never blocks a merge. Its token is limited to writing issues (to GitHub a
-# comment or a label on a pull request is an issue write) and reading pull requests and their checks
-# (`pull-requests`, `checks` and `statuses` read, for `gh pr list`). It runs with `pull_request_target` so that a pull
-# request from a fork can be commented on; for that reason it checks out the default branch only (no `ref`, no
-# `repository`: never the pull request's own code) and nothing a pull request, an issue or a comment says is expanded
-# into a script's text: the item number and the event name reach the script through environment variables, and the
-# findings are quoted into comments by `neutralize` in hygiene_comments.py. It uses no third-party action beyond the
-# pinned checkout and uv. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# merge.required_checks), so a failure here never blocks a merge.
+#
+# Its token reads the code, checks and statuses (`checks` and `statuses` read, for `gh pr list`) and writes issues and
+# pull requests (`issues: write` and `pull-requests: write`). Both writes are needed: the comment and label endpoints
+# live under /issues/{number}, but for a pull request this token gets "Resource not accessible by integration" (HTTP
+# 403) with `issues: write` alone, so the labels on every open pull request (the push run after #444) and the comment
+# on #434 failed. `pull-requests: write` adds nothing the code uses: on a pull request it only calls those two
+# endpoints, and it never merges, approves, edits a title or body, or pushes.
+#
+# It runs with `pull_request_target` so that a pull request from a fork can be commented on; for that reason it checks
+# out the default branch only (no `ref`, no `repository`: never the pull request's own code) and nothing a pull
+# request, an issue or a comment says is expanded into a script's text: the item number and the event name reach the
+# script through environment variables, and the findings are quoted into comments by `neutralize` in
+# hygiene_comments.py. It uses no third-party action beyond the pinned checkout and uv. Actions are pinned to a full
+# commit SHA; the tag is in the comment beside it.
 name: hygiene
 
 on:
@@ -40,7 +47,7 @@ on:
 permissions:
   contents: read
   issues: write
-  pull-requests: read
+  pull-requests: write
   checks: read
   statuses: read
 

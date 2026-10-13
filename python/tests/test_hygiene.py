@@ -475,11 +475,12 @@ def triggers(data: dict[Any, Any]) -> dict[str, Any]:
     return data.get("on") or data[True]
 
 
-def test_the_workflow_may_only_read_the_code_and_pull_requests_and_write_issues() -> None:
+def test_the_workflow_may_only_read_the_code_and_write_issues_and_pull_requests() -> None:
+    # `issues: write` alone is a 403 for a comment or a label on a pull request, so both writes are needed.
     assert workflow()["permissions"] == {
         "contents": "read",
         "issues": "write",
-        "pull-requests": "read",
+        "pull-requests": "write",
         "checks": "read",
         "statuses": "read",
     }

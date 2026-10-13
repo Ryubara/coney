@@ -189,15 +189,17 @@ A second exception, approved on the same day: `hygiene.yml` also edits labels, a
 `main` and `S-failing` on each that fails a required check, and removes the label when the cause is gone, so the pull
 request list shows what is stuck without anyone running a command. A push to `main` is when GitHub's answer about
 conflicts changes. The labels and the rereads while GitHub is still working out a conflict are `hygiene.pr_health` in
-`.github/conventions.yml`; no other label is touched. The job additionally gets read access to pull requests, checks
-and statuses, which `gh pr list` needs for the checks, and still no write access beyond issues (a label on a pull
-request is an issue write). A check that fails after the last push to `main` is labelled at the next push or sweep, or
-by running the command by hand.
+`.github/conventions.yml`; no other label is touched. The job additionally gets read access to checks and statuses,
+which `gh pr list` needs for the checks, and write access to pull requests: the label and comment endpoints are issue
+endpoints, but with `issues: write` alone GitHub answers a call on a pull request with HTTP 403 ("Resource not
+accessible by integration"), as happened on 2026-10-13. The code only calls those two endpoints, so the extra
+permission is not used for anything else. A check that fails after the last push to `main` is labelled at the next
+push or sweep, or by running the command by hand.
 
 `hygiene.yml` is the one that comments, and it needed no approval for that: it writes the audit's findings back as
 one comment per issue or pull request, edited in place and never deleted, and a weekly report comment ([`repo
-hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read`, `issues: write` and read access to pull
-requests, checks and statuses, nothing more. It runs on
+hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read`, `issues: write`, `pull-requests: write` (a
+comment on a pull request needs it) and read access to checks and statuses, nothing more. It runs on
 `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
 default branch and never the pull request's code, and because what a title or body says reaches a script through
 an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It also
