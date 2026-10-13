@@ -42,7 +42,7 @@ inline constexpr float kTallyBarStep = 0.005F;
 /// A gang-count indicator (`HUDSetNumIndicator`; the shared one is `NumIndicator`, HUD `+0x16b30`): a gang's living
 /// members counted in blue tally marks, four strokes and a bar crossing them, after a header.
 ///
-/// Research: docs/research/hud.md#gang-count-indicator
+/// Research: docs/research/hud-functions-lua.md#gang-count-indicator
 struct NumIndicator {
     bool on = false;         ///< `+0x04`.
     int gang = -1;           ///< `+0xc60`: the gang whose count it shows; -1 for none.

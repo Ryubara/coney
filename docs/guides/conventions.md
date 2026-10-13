@@ -475,10 +475,13 @@ the harness that drives a running Coney or PCSX2 with scripted input.
 - **One command-line entry point:** `coney-tools <group> <command>`, for example `coney-tools wad extract`. No
   loose scripts: a script outside the CLI has no tests, no `--help` and nowhere obvious to be found. The groups
   include `wad`, `xbox`, `pcsx2` (the PCSX2 bridge) and `trace` ([The coney-tools command line](coney-tools.md)).
-- **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff format
-  also runs in pre-commit. Strict typing matters here because these tools parse binary formats, where a wrong type
-  is a silent wrong answer. The mypy command always passes `--config-file python/pyproject.toml`: it runs from the
-  repository root, where mypy finds no config and would silently skip `strict`.
+- **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff also
+  runs in pre-commit. Ruff covers `python/` and the Claude Code hook scripts in `.claude/hooks/`, which take the same
+  rules through their own `ruff.toml`; `RUFF_PATHS` in `python/src/coney_tools/check_cli.py` is the one list, and a
+  test fails when CI's commands or pre-commit's `files` pattern name other folders. Strict typing matters here
+  because these tools parse binary formats, where a wrong type is a silent wrong answer. The mypy command always
+  passes `--config-file python/pyproject.toml`: it runs from the repository root, where mypy finds no config and
+  would silently skip `strict`.
 - **Repository rules are read, not copied.** A value that is a rule of running the repository (a commit area, a
   title limit, a description section, a label, a path class, a limit in days) is a key of
   `.github/conventions.yml`, read through `coney_tools/conventions.py`; code never repeats it as a constant

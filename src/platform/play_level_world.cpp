@@ -2,7 +2,7 @@
 // The play mode's world objects and health rings: the scripts' spawn records brought in round the camera and drawn
 // with their models, tints and fades, the objective markers (docs/research/objects.md#objective-markers), the object
 // in player 1's hand, the glints of the pickups and lock-pickable doors (docs/research/particles.md#glints), and the
-// rings under player 1 and his target (docs/research/hud.md#the-health-rings).
+// rings under player 1 and his target (docs/research/hud-radar.md#the-health-rings).
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

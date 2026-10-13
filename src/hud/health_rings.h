@@ -13,7 +13,7 @@
 // (or rage while raging), and the outer ring of the player's target. Platform-neutral: the update decides who gets
 // rings, when, and their arcs, colours, size and alpha; ringFan() makes a ring's triangles; src/platform draws them
 // in the world pass after the blob shadows.
-// Research: docs/research/hud.md#the-health-rings
+// Research: docs/research/hud-radar.md#the-health-rings
 
 namespace coney::hud {
 
@@ -176,7 +176,7 @@ struct RingFrame {
 /// The rings' update: who has rings this update and how they look. The queue holds this update's rings until the
 /// next.
 ///
-/// Research: docs/research/hud.md#the-health-rings
+/// Research: docs/research/hud-radar.md#the-health-rings
 /// @orig 0x0024b780 Reticules_Update (unknown)
 class HealthRings {
   public:

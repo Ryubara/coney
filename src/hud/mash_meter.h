@@ -16,7 +16,7 @@ namespace coney::hud {
 /// the two end caps outside it (how `HudBar_Draw` places its four rectangles is not on the page); the glyphs are drawn
 /// at the text size as their height.
 ///
-/// Research: docs/research/hud.md#mash-meter-layout
+/// Research: docs/research/hud-functions-parts.md#mash-meter-layout
 class MashMeter {
   public:
     /// The uncuffing's button sprite word: `part_page0` rectangle 369.

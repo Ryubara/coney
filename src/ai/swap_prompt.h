@@ -32,7 +32,7 @@ inline constexpr float kSwapReach = 1.5F;
 /// held-flag test, the sparring byte (`+0x2e5`) and `+0x121` are not modelled, so they pass or fail as if clear; the
 /// two-player swap (`PlayerBrain_Think`) is not built.
 ///
-/// Research: docs/research/ai.md#think-warrior, docs/research/hud.md#talk-prompt
+/// Research: docs/research/ai.md#think-warrior, docs/research/hud-messages.md#talk-prompt
 /// @orig 0x003052f0 WarriorBrain_Think (unknown)
 void thinkSwapPrompt(Brain& brain);
 

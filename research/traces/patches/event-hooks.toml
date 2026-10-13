@@ -19,7 +19,7 @@ log = [{ value = "a1", name = "name", text = 64 }, "ra"]
 
 [hook.event-hint]
 description = "HintBox_Update taking the next hint off its queue (0x001cdf7c, after MarkupText_SetText): the hint's text, the moment it shows."
-research = "docs/research/hud.md#hints-hudsettutorialtext"
+research = "docs/research/hud-messages.md#hints-hudsettutorialtext"
 address = 0x001cdf7c
 # lbu v0,0x4(s1); lui a0,0x60
 original = [0x92220004, 0x3c040060]

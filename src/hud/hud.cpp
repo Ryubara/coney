@@ -130,7 +130,7 @@ std::string Hud::objectiveHeader(int slot) const {
     // is its plain character and the header read "ANew Objective" (issue #235).
     // Stand-in: the page does not say how the original assembles this string. That the icon is drawn from the money
     // font follows from how the tags draw (docs/research/gui.md#moneyfont); wrapping just the icon, with the <SIZE>
-    // outside, is Coney's choice (open question in docs/research/hud.md#objectives-hudsetobjective).
+    // outside, is Coney's choice (open question in docs/research/hud-messages.md#objectives-hudsetobjective).
     const std::size_t index = slot == 1 ? 1 : 0;
     const std::string icon =
         index == 0 ? "<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE>" : "<MONEYFONT><BOBJ></MONEYFONT>";

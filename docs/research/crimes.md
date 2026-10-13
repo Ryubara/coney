@@ -137,16 +137,16 @@ Confirmed (code) at `0x0027c120`, `0x002811f0`:
    the drop (`0x0024d810`, confirmed (code); an earlier reading had every human drop here).
 
 **The prompt** (two text widgets per player at HUD `+0x6b40`, `0x590` each;
-[HUD](hud.md#announcements-and-other-messages)) is chosen every frame by `HUD_Update` (`0x001af010`), confirmed (code):
-nothing while the player is mugging, mugged, tagging, in a mini-game of mode 2 or 3, in a hold (`0x18000000000`),
-uncuffing (action `0x15`) or a few other states, or when command `0xa` is not available (`0x00147738`). Otherwise, in
-order: holding a human who can be mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when the human has an interrogation
-set; a revivable friend or gang member knocked out within 3 m and in sight, while the player or (in co-op) the downed
-player carries a flash → 4 (revive, [HUD: the revive test](hud.md#action-prompts)); a context record → its text
-(`+0x10`; the second text `+0x14` goes in the hint box at priority 0, [HUD](hud.md#action-prompts)); else a nearby
-human's own talk prompt (`0x001acd60`).
-The panel's activity test then matches the prompt's text against the dealer prompts ([HUD](hud.md#the-player-panel)).
-The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and rises with a scroll-in message
+[HUD](hud-messages.md#announcements-and-other-messages)) is chosen every frame by `HUD_Update` (`0x001af010`), confirmed
+(code): nothing while the player is mugging, mugged, tagging, in a mini-game of mode 2 or 3, in a hold
+(`0x18000000000`), uncuffing (action `0x15`) or a few other states, or when command `0xa` is not available
+(`0x00147738`). Otherwise, in order: holding a human who can be mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when
+the human has an interrogation set; a revivable friend or gang member knocked out within 3 m and in sight, while the
+player or (in co-op) the downed player carries a flash → 4 (revive, [HUD: the revive
+test](hud-messages.md#action-prompts)); a context record → its text (`+0x10`; the second text `+0x14` goes in the hint
+box at priority 0, [HUD](hud-messages.md#action-prompts)); else a nearby human's own talk prompt (`0x001acd60`). The
+panel's activity test then matches the prompt's text against the dealer prompts ([HUD](hud.md#the-player-panel)). The
+prompt sits 0.04 above its place in the default video mode (0.02 in the others) and rises with a scroll-in message
 (`0x0019f430`).
 
 ### Arrest {#arrest}
@@ -278,7 +278,7 @@ record. Triangle at it starts the game, confirmed (code) at `0x0022d790`:
 1. Mode 2, both counters 0; state `0x4000000`; the human's target is the door; the first time (tutorial hints on),
    hint `0x14`; the **start callback** (`CfgSetLockPickHandler`'s first name) runs with the human's and the door's
    handles; the HUD dial is shown at the difficulty of the Warrior class's byte `+0x0a` less 1 (0-2).
-2. **The dial** (`LockPickDial_Draw`): three pins, all starting at 3.14 (not π, [HUD](hud.md#lock-pick-dial-layout)).
+2. **The dial** (`LockPickDial_Draw`): three pins, all starting at 3.14 (not π, [HUD](hud-functions-lua.md#lock-pick-dial-layout)).
    Each frame the current pin turns by 0.1 rad × its speed and wraps in 0-2π; the speeds are 1, 2 and 3, and the
    directions by difficulty are (+, +, +), (+, −, +) and (−, +, −). The step runs once per character update, 30 times
    a second, so a pin turns once in 62.8 steps (2.09 s), 31.4 (1.05 s) and 20.9 (0.70 s). Confirmed (runtime),
@@ -537,9 +537,9 @@ calls no script itself.
    `Tag_UpdatePlayer` ends the game once the can count is 0, so n cans give n charges.
 5. **Finished** (`Tag_IsComplete`, `Tag_GetProgress` `0x00274e38`) when the path count < p + 4, that is
    **p ≥ count − 3**: the third point from the end, which is where the drawn guide ends (the panel leaves the last 3
-   points out, [HUD](hud.md#fn-after-subtitle)). The progress is then 1.0; below it is p / count, the value sent to
-   the tag each update. Painting a 301st cell or running out of cans also makes it 1.0 but sets `+0x4fc`, which
-   `Tag_UpdatePlayer` treats as unfinished.
+   points out, [HUD](hud-functions-panels.md#fn-after-subtitle)). The progress is then 1.0; below it is p / count, the
+   value sent to the tag each update. Painting a 301st cell or running out of cans also makes it 1.0 but sets `+0x4fc`,
+   which `Tag_UpdatePlayer` treats as unfinished.
 6. Any command outside the game's own (`PlayerCmd_IsOtherInput`), no cans left, or the action becoming `0x18` ends
    it. A paused update (before `+0x514`) runs only step 4.
 
@@ -922,7 +922,7 @@ only). **Coney fixes**:
 passes, `GangClearWanted`'s work runs (`0x00169a20`): the police are neutral again and, for the player's gang, the HUD
 is told (`0x001b2520` message `0xb`) and the last crime type becomes 14 (`NoCrime`). While wanted, the HUD shows
 `CfgCrimeMessage` of the last crime type (a plain assault: 0) and the first report of each wanted spell sounds the
-`hudalarm` cue ([HUD: the crime message](hud.md#fn-radar-frame)). The HUD shows the time left as a
+`hudalarm` cue ([HUD: the crime message](hud-functions-parts.md#fn-radar-frame)). The HUD shows the time left as a
 fraction of 10 s (`0x001aa9b0`; full above 0.9). Gang `+0x5f0` is a second timer drawn the same way, and
 `GangIsWanted(gang, false)` tests it. `GangRespond` and `GoalCallGang` set it (`Gang_SetSecondWantedTimer`,
 `0x001698c8`); when it runs out, `Gang_UpdateWanted` (`0x001698f0`) calls the all-clear callback at game state
@@ -1042,7 +1042,7 @@ is not built), which `GangIsWanted(gang, false)` reads; a second argument passed
 `CheckIfWanted` relies on. In play the objects' break-ins report through it
 (`repo:src/gamemodes/level_crime_services.h`: the crime callback, the `CrimeScene` flag, which humans are players, and
 the offender's gang and player 1's through the level's brains, so a report makes the gang wanted, and player 1's HUD
-messages, 7 for a report and `0xb` when the wanted time runs out, to [the HUD's crime message](hud.md#fn-radar-frame);
+messages, 7 for a report and `0xb` when the wanted time runs out, to [the HUD's crime message](hud-functions-parts.md#fn-radar-frame);
 the police's hostility and the spawners are not wired to it yet). A break-in marks the nearest store flag within 10 m robbed
 (the gang in bits 18-22) and switches on the alarm strobe (a `part_strobe_red` of the level's objects file) within 6 m
 of it (`LevelObjectServices::robStore`): its [strober](script-types.md#strober), a red light pulsing on a 40-tick cycle,
@@ -1084,7 +1084,7 @@ replacing the pick on a roll of 50 or more; the pick speaks only when his `HuEna
 reaches `HuTag` through the spot's flag: the script gives the flag (activity 12) a message-0 handler and a prompt
 with `SetMsgHandlerEx`, a kind-1 [context record](#context-records). Coney locates such a record's object whether
 it is a spawn record, a flag or a particle system (`LevelPickups::actionObject()`), shows its text as player 1's
-[action prompt](hud.md#action-prompts) and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**:
+[action prompt](hud-messages.md#action-prompts) and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**:
 any picked crew mate may gesture (the gesture slots are not kept), and the busy test is the actions-blocked one;
 the spray clips stop at the end (back to the idle); an AI human given `HuTag` becomes the spot's tagger at once
 (its fade in) without walking to the flag (`GoalTag` walks him there first, [AI](ai.md#coney)). A spot telling
@@ -1129,7 +1129,7 @@ rolled object is not given to the human; `HuSetInterrogation` keeps the lines an
 (`ScriptState::interrogationLines`, `interrogationCallback`) and the prompt reads "interrogate", but not yet its
 mugging (the set lines, no pay, the callback once); not yet: the pocket items, the half-way `no_item` stop, ped
 type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
-(`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud.md#mug-meter-layout)).
+(`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout)).
 
 **The arrest and the uncuffing** (2026-10-07): `HuSetArrested` (`ai::ScriptedHumans::setArrested()`) cuffs the human
 (`Human::setArrested()`: stopped, its fighting ended, 320 looping), resets its brain as `Brain_OnArrested` does
@@ -1143,16 +1143,15 @@ runs the mash ([above](#uncuffing), `combat::ButtonMash`) with his class's byte 
 `combat::mashFactor()`); the cuffed human plays 326 paired, then 330. Success: he says 67 and is released (and revived
 when knocked out and revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed
 human gone or released some other way): 332 and back to 320. A body something else takes before the outcome (a hit)
-plays 331. Player 1's [mash meter](hud.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to the outcome,
-filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
-test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
+plays 331. Player 1's [mash meter](hud-functions-parts.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to
+the outcome, filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages
+meanwhile. A disc test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
 `level80` checkpoint 2 and reaches checkpoint 3; a cuffed friendly AI human wears the `dyn_cuffs` icon until his
-release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs'
-friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight,
-the partner and the shared body group are not kept; after a hit the cuffed human goes back to 320; the cuffs icon
-stays attached over his feet rather than detached where it appeared (he does not move while cuffed). Not yet: hint 19,
-the key path, the 0.2 m capsule test, players in cuffs, the leaderless
-gang's follow after a release and `0x00280fd8`.
+release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs' friendship
+(`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight, the partner and
+the shared body group are not kept; after a hit the cuffed human goes back to 320; the cuffs icon stays attached over
+his feet rather than detached where it appeared (he does not move while cuffed). Not yet: hint 19, the key path, the 0.2
+m capsule test, players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.

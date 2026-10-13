@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The radar (docs/research/hud.md#the-radar-on-screen, docs/research/gui.md#fn-radarhud): the zoom's easing, where
-// blips go, the map under the disc, the disc's triangles and the HUD's radar render, on synthetic data.
+// The radar (docs/research/hud-radar.md#the-radar-on-screen, docs/research/gui.md#fn-radarhud): the zoom's easing,
+// where blips go, the map under the disc, the disc's triangles and the HUD's radar render, on synthetic data.
 #include "hud/radar.h"
 
 #include <cmath>

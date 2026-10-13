@@ -178,7 +178,7 @@ rounding that 1/255 to nothing.
 ### Health rings and blood {#rings}
 
 In a fight (`level99`, the Bumper Bash yard, a GS dump with Rembrandt hit and an enemy targeted; confirmed (runtime))
-the ring on the ground under the target ([The health rings](hud.md#the-health-rings)) is one list of 64 triangles
+the ring on the ground under the target ([The health rings](hud-radar.md#the-health-rings)) is one list of 64 triangles
 (`TRI`, 192 vertices) textured from the same 512 × 256 particle page as the steam, in **context 1** (alpha test
 GEQUAL `0x40`, `AFAIL` `FB_ONLY`), blend `0x44`, Z test GEQUAL **with Z write**, **no fog**, drawn after the
 particles and before the tint. Its vertex colours are (38, 61, 13) green for the health it shows and (30, 30, 30)

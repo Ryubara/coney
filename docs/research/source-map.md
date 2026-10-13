@@ -298,13 +298,14 @@ The function-by-function pass over `GUI/` ([GUI](gui.md), [HUD](hud.md), [Front 
 boundaries (inferred from the stubs and what the code does; the [coverage](#coverage) counts predate them):
 
 - **`HUDInterface.cpp`** runs to its stub `0x001b3ea8`: everything from `0x001ad588` to there is the HUD object's
-  methods ([HUD](hud.md#fn-hudinterface)), and `HUDLua.cpp`'s code starts after it.
+  methods ([HUD](hud-functions-parts.md#fn-hudinterface)), and `HUDLua.cpp`'s code starts after it.
 - **After `MissionSelectHUD.cpp`** (which ends at its stub `0x001c1688`) comes a unit with no path string,
   `0x001c16a8` to its stub `0x001c3dc0`: `MultiLineTextWidget`, the HUD's generic bars and the counter panels
   ([GUI](gui.md#fn-multilinetext)). `RadarHUD.cpp` starts right after that stub, at `Radar_Setup` (`0x001c3de0`).
 - **After `PM_TooManyProfiles.cpp`** comes another unit with no path string, `0x0020db98` to its stub `0x00211c80`:
   the player panel base, the target panel and the Armies of the Night panel (`ANHud`), whose colours that stub's
-  initialiser sets ([HUD](hud.md#fn-player-panel-base)). So `0x00211c80` is not `PM_TooManyProfiles.cpp`'s stub.
+  initialiser sets ([HUD](hud-functions-panels.md#fn-player-panel-base)). So `0x00211c80` is not
+  `PM_TooManyProfiles.cpp`'s stub.
 - **`GameStats.cpp`** starts at `0x00214d08`: the five sprite-batch makers before its first anchor come after the
   player panel's static initialiser and serve only the statistics screen ([Front end](frontend.md#fn-gamestats)).
 

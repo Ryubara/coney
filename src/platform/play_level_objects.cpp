@@ -162,7 +162,7 @@ constexpr std::uint32_t kInterrogatePrompt = 0;
 constexpr std::uint32_t kLockPrompt = 15;
 constexpr std::uint32_t kStereoPrompt = 16;
 // The interface cues of the stereo theft: each stage completed, and also the fourth
-// (docs/research/hud.md#stereo-layout).
+// (docs/research/hud-functions-panels.md#stereo-layout).
 constexpr int kStageCue = 0x22;
 constexpr int kLastStageCue = 0x23;
 

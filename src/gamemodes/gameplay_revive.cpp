@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The gameplay mode's revive (docs/research/combat-rage.md#revive, docs/research/hud.md#action-prompts): the prompt
-// beside a knocked-out partner while player 1 holds a flash, d-pad left (command 0x27) to revive him, the reviver's 351
-// and 353, and at 351's end the flash spent, the heal and the revived human's 354.
+// The gameplay mode's revive (docs/research/combat-rage.md#revive, docs/research/hud-messages.md#action-prompts): the
+// prompt beside a knocked-out partner while player 1 holds a flash, d-pad left (command 0x27) to revive him, the
+// reviver's 351 and 353, and at 351's end the flash spent, the heal and the revived human's 354.
 #include <cstddef>
 #include <format>
 #include <string>

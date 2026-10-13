@@ -62,7 +62,7 @@ struct TagPanelState {
 /// colour, the cursor fading white to black, the charge of paint as a bar growing up from its bottom, and a frame.
 /// The play mode sets it each update while the player has a tag game and clears it when the game ends.
 ///
-/// Research: docs/research/hud.md#fn-after-subtitle
+/// Research: docs/research/hud-functions-panels.md#fn-after-subtitle
 /// @orig 0x001cb6f0 TagHud_Setup (unknown)
 class TagHud {
   public:

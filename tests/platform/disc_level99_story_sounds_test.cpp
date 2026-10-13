@@ -4,10 +4,10 @@
 // (a differential run against the PS2 found them missing): STORY from boot with a new profile, as a player reaches
 // the first mission, with the game's sound mixed offline, then lessons 1-6 on the pad (tests/support/level99_lessons.h)
 // from the frame gameplay starts. Each tutorial hint plays its interface cue (`vags/misc/bleep50`,
-// docs/research/hud.md#hint-box); the Rudy intro scene `l99_t1` plays its humans' footstep shuffles from their role
-// clips (docs/research/sound.md#anim-sounds); holding L1 at a target frames the fight and starts the angry breathing
-// (docs/research/sound.md#warriors-functions). It runs only when the environment variable CONEY_DISC names the disc
-// and skips otherwise; it prints counts only (LEGAL.md).
+// docs/research/hud-messages.md#hints-hudsettutorialtext); the Rudy intro scene `l99_t1` plays its humans' footstep
+// shuffles from their role clips (docs/research/sound.md#anim-sounds); holding L1 at a target frames the fight and
+// starts the angry breathing (docs/research/sound.md#warriors-functions). It runs only when the environment variable
+// CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>

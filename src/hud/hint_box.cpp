@@ -137,7 +137,7 @@ void HintBox::queue(std::string text, int priority) {
         }
     }
     // With nothing showing (the box was free, or the urgent hint just cleared it) the box takes the front at once, so
-    // two nil-then-text pairs in one update leave nothing queued (docs/research/hud.md#hint-queue-runtime).
+    // two nil-then-text pairs in one update leave nothing queued (docs/research/hud-messages.md#hint-queue-runtime).
     if (!m_showing) {
         takeNext();
     }
@@ -189,7 +189,7 @@ void HintBox::withdraw(std::string_view text) {
 void HintBox::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
     // A showing hint ends only when its markup's time is over; the next one is not taken in the same step, so it shows
-    // one step later (`TT_26b` 92 updates after `TT_26a`'s 3,000 ms, docs/research/hud.md#hint-queue-runtime).
+    // one step later (`TT_26b` 92 updates after `TT_26a`'s 3,000 ms, docs/research/hud-messages.md#hint-queue-runtime).
     if (m_showing) {
         std::optional<std::uint32_t> endMs = m_times.displayMs;
         if (m_times.freezeMs) {

@@ -326,12 +326,18 @@ nobody near):
 on the clip. A hit's damage is the clip's Anim Range List value (501's own: the class table writes no index for it, [The
 Anim Range List](combat.md#damage-table)); then, with the attacker's body `+0xd0` set and the held object's flags (vtable
 `+0x54`) having `0x10000`, **(damage + the object's `CfgObj` u16 `+0x58`) × the first float of the attacker's power
-class record** (`0x00222b78`, [Power meter](combat-rage.md#power-meter)), the same for a swing and a run attack. Because
+class record** (`0x00222b78`, [Power meter](combat-rage.md#power-meter)), the same for a swing and a run attack. That
+is what `Strike_Contact`'s code does, but at runtime it was not the path: the `level34` Furies' `dyn_bat` hits (501, 36
+and 37) never reached `Strike_Contact`, and each dealt the bat's own contact damage instead, `CfgObj` `+0x58` × the
+holder's class float with no clip damage (confirmed (runtime), [Combat: a bat's hit](combat-reactions.md#bat-knockdown);
+[Objects in a hand](objects.md#held) item 3). Whether the player's bat, or the knife and the baton, ever take the
+`Strike_Contact` weapon branch is open. Because
 record `+0x08` has `0x1000000`, the hit takes the moving-attack branch that 24, 0 and 1 take (a breakable gets hit kind
 2, [World objects](objects.md#door-break)). Rage: 501 is **event 1 × 1 = 5** (2 blocked) and kind 4, so never halved by
 repeats ([Rage](combat-rage.md#rage)), against the bat's square 34 at 2 and its cross 36 at 11, and the unarmed 24 at 1.
-The weapon is not worn: only its message 1 breaks it ([Losing it](#bat)). 501's damage, hit code and the victim's
-reaction were not measured.
+The weapon is not worn: only its message 1 breaks it ([Losing it](#bat)). With an AI holding `dyn_bat`, 501
+dealt the bat's 90 (class float 1.0), hit code `0x2a`, and the victim played 292-295 and went down
+([Combat: a bat's hit](combat-reactions.md#bat-knockdown)); the player's own 501 was not measured.
 
 **Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`, falling from the
 hand under physics: [Drop](objects.md#held)); confirmed (runtime). For a player that standing drop comes from the
@@ -446,8 +452,8 @@ no victim limit):
 Three more per-update state machines run the same stick game for the other player's side of a mugging and for both
 sides of the **cuffing hold** (the hold a tackle leads to, `Tackle_StartHold` `0x0022d030`, state `0x8000000000` for
 the holder and `0x10000000000` for the held; `Player_UpdateHold` picks the side; [The cuffing hold](#cuffing-hold)).
-Each drives the mug meter in its own mode ([HUD: the mug meter](hud.md#mug-meter-layout)). Confirmed (code) at
-`0x00286550`, `0x002833c0`, `0x00283a30`.
+Each drives the mug meter in its own mode ([HUD: the mug meter](hud-functions-panels.md#mug-meter-layout)). Confirmed
+(code) at `0x00286550`, `0x002833c0`, `0x00283a30`.
 
 What they share with `Player_UpdateMugging` (mode 0, above): the record `+0xd4` of the human running the game (state
 `+0x128`, progress `+0x12c`, off-target time `+0x138`, start `+0x130`, time limit `+0x134`), the target angle (human
@@ -478,7 +484,7 @@ value is not 0, being **near** the target resets the off-target time in the hold
 So a mugging between two players is a race between two games: the mugger's mode 0 succeeds at his own required time,
 the victim's mode 1 ends it in the victim's favour at the victim's required time, and a victim who stays off target
 too long hands the mugger the win. The hold is the same race between holder (mode 2) and held (mode 3). The modes'
-meter colours and prompts are on [HUD: the mug meter](hud.md#mug-meter-layout).
+meter colours and prompts are on [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout).
 
 ### The cuffing hold {#cuffing-hold}
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The radar's map disc and the placement of its blips (docs/research/hud.md#the-radar-on-screen,
+// The radar's map disc and the placement of its blips (docs/research/hud-radar.md#the-radar-on-screen,
 // docs/research/gui.md#fn-radarhud).
 #include "hud/radar.h"
 

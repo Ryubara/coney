@@ -125,7 +125,7 @@ TEST_CASE("a left-hand or hat object is dropped by the swap and taken by no hand
 
 TEST_CASE("a knocked-out Warrior offers no swap, so no Give Weapon prompt beside him", "[ai][swap]") {
     // The original clears +0x1b2 while HumanRecord_AreActionsBlocked holds for him; its mask holds the knocked-out
-    // state 0x40000 (docs/research/hud.md#action-prompts, "No flash, no prompt beside a downed Warrior").
+    // state 0x40000 (docs/research/hud-messages.md#action-prompts, "No flash, no prompt beside a downed Warrior").
     SwapScene s;
     coney::human::ScriptState& script = s.warrior->human().script();
     s.scene.player().human().script().heldObject = 7.0;

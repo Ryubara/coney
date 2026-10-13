@@ -258,7 +258,7 @@ One countdown (or count-up) timer for the whole game, the object at `*0x0051504c
 | `+0x08` / `+0x0c` | s32 | current time / target time, ms |
 | `+0x10` | float | rate the elapsed time is multiplied by: 1.0 from the constructor (`0x00423358`); other writers not traced |
 | `+0x14` | u32 | running (`W_StartStopWatch`'s argument; the update clears it at the target) |
-| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud.md#fn-after-textentrypad)); written by `W_ShowStopWatch` (`0x00423670` → `0x004235e0`) |
+| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud-functions-panels.md#fn-after-textentrypad)); written by `W_ShowStopWatch` (`0x00423670` → `0x004235e0`) |
 | `+0x20` | char[32] | the callback's name, kept as text (empty for none) |
 | `+0x40` / `+0x48` | s32 | warning window (ms) / time of the last warning beep; `W_SetStopWatch` sets 0 / 1000 |
 
@@ -808,7 +808,7 @@ eight `l99_` scenes on a loop ([Scenes: the scene test](scenes.md#scene-test)).
 → `P1.FirstGlow`, `vClimb` → `P3.MoveToClimb`, ...); message 8 on four flags (an AI teacher arrived); messages 1, 3, 4
 and 16 on the dealer, whose trigger sphere gives 3 and 4; 18 on a civilian and, through `GangSetMsgHandler`, on a gang;
 2 on two breakable fences; one 50-second stopwatch (`P1.SendWarriors` → `P1.TimesUp`); about 60 scheduled calls; the
-tutorial's attack callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), animation callbacks
+tutorial's attack callback (`HUDSetTutorialCallback`, [HUD](hud-messages.md#tutorial-callback)), animation callbacks
 ([Characters](characters.md#anim-callbacks)) and pad handlers (`PadSetHandlerEx`). How each is delivered:
 [Message handlers](#message-handlers), [Trigger boxes and spheres](#triggers), [The mission stopwatch](#stopwatch),
 [Scheduled calls](#scheduled-calls). No script of the mission launches a failure: the players are demi-gods (below)
@@ -872,8 +872,8 @@ researched and whether Coney implements it (`ShowHud`, for one, does nothing in 
 
 `level99_combat.lua` runs twelve sections in order from a
 table, each started by the previous one's end (directly, or scheduled 1-2.5 s later). A lesson that teaches a move
-sets `HUDSetTutorialCallback` and counts the anim ids the [callback](hud.md#tutorial-callback) passes, which is the
-attacker's id when the **victim applies the damage**, so only moves that hurt someone count. Inferred from the
+sets `HUDSetTutorialCallback` and counts the anim ids the [callback](hud-messages.md#tutorial-callback) passes, which is
+the attacker's id when the **victim applies the damage**, so only moves that hurt someone count. Inferred from the
 disassembly of the script (ids and counts only); the moves themselves are confirmed where linked.
 
 | # | Section | Waits for (anim ids, in order) | Move | Researched |
@@ -1066,8 +1066,8 @@ Every hint call, shown hint and callback of lessons 5-8 over two plays of the or
 same course and state as above, 3,600 updates each), by update from `P1.SetupPowerAttacks`, the call that starts
 lesson 5. Updates are tick counts halved, so two events in one update are exact; where the runs differ the second
 run's update follows a slash. "set" is a `HUDSetTutorialText` call, "shown" the `0x001cdf7c` show, "anim" an
-[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud.md#tutorial-callback)
-with its anim id. Method and hooks: [The queue at runtime](hud.md#hint-queue-runtime). Confirmed (runtime).
+[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud-messages.md#tutorial-callback)
+with its anim id. Method and hooks: [The queue at runtime](hud-messages.md#hint-queue-runtime). Confirmed (runtime).
 
 | Update | Lesson | What ran | Hint calls | Shown, in that update |
 | --- | --- | --- | --- | --- |
@@ -1096,7 +1096,7 @@ uses.) What a test can rely on:
 
 - **No lateness**: every text was shown in the update its `HUDSetTutorialText` call ran (0 updates late), because a
   nil cleared the box first and the box then showed the new text at once
-  ([Queueing](hud.md#hints-hudsettutorialtext)). The only late text in lessons 1-8 is `TT_26b` (lesson 3), queued
+  ([Queueing](hud-messages.md#hints-hudsettutorialtext)). The only late text in lessons 1-8 is `TT_26b` (lesson 3), queued
   behind `TT_26a`'s `<DISPLAYTIME 3000>` and shown 92 updates after it. So a playthrough test can assert that each
   lesson text shows in the update its callback ran, and that the box is never more than one text behind.
 - **`PlayerState` and the lesson callbacks never share an update in lesson 5**: the grab's anim callback runs at the
@@ -2330,7 +2330,12 @@ spawners and link to their subject pages; the rest are this mission's.
     `P3.EnterDiamond` runs, and the first hit comes about 270-300 updates after the scene for a player standing still.
     Next step: find which human hits first in Coney and what makes it hostile. Note: the original's player had 1,170
     health here and Coney's 900; the original state came from a save with progress, so that may be upgrades, not
-    a difference (not checked).
+    a difference (not checked). **Why the original's hits are 90-health knock-downs** (issue #492): every park and
+    fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the
+    unarmed 193 / 194, which deal 25, at a man down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 ×
+    the holder's class float, with the heavy high reaction
+    292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
+    hit](combat-reactions.md#bat-knockdown)).
 15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
     (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
     `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held
@@ -2342,6 +2347,81 @@ spawners and link to their subject pages; the rest are this mission's.
     in one run he died before the box. Coney with the same route and L2 held: `P3.GetToSubway` at update 4,085 and
     `HUDLaunchMissionComplete` at 4,501 (the first life, standing still, had died at checkpoint 5). Whether
     `L34_OUT` plays after it was not checked.
+16. **How the AI Warriors meet the Furies** (issue #493): in the original they **hold their ground beside the
+    player and let the Furies come**; they never walk out to meet them. Confirmed (runtime), PCSX2 2.9.94,
+    2026-10-13: a state of checkpoint 5 made by loading it through mode 8 from a `level99` state (the writes of item
+    14) and saved as the park's humans appeared, before `l34_c4` started; then
+    [`l34_warriors_meet_furies`](repo:research/traces/scenarios/l34_warriors_meet_furies.toml) recorded every human
+    every update with no input (hooks `event-call` and `event-callback`; two runs, identical step for step counted
+    from the scene's end, which came at update 717 in one and 716 in the other). The scene's end is the update that
+    runs `P3.EndParkScene` (its `tfence_shake_01` emitter); times are updates after it. Vermin is the player, at
+    (−207.97, −269.50); Ash and Snow are the AI Warriors.
+
+    | After the scene's end | Ash and Snow |
+    | --- | --- |
+    | 0 | Out of the scene under the follow command (tactic `0x005438c0`), `FollowPlayer` (`0x32`) their only goal, standing 1.64 m (Ash) and 1.34 m (Snow) from the player |
+    | 0-150 | No enemies; they stand. Snow turns once (mode 3, toward the player's heading) at +81 |
+    | +150 | `P3.FuryTimeout` (`P3.MoveFromFence`): the Furies' `GoalFight` on the player and `TacticAttack`, the Warriors made enemies of the park Furies |
+    | +152 / +178 | **Targets taken** (fight mode was on for both from about +151, when the hostile count reached 2 and the Furies took attack slots): Ash takes `FenceFury3` (7.3 m from him) as his target, Snow `ParkFury02` (20.5 m); each enters the fight stance (358 / 359) and only **turns** to his target, again and again as it moves |
+    | +280 | Still standing where the scene left them, gait 0, 1.47 m and 1.14 m from the player |
+    | +286 | The first park Fury within 5 m of the player |
+    | +299 | **The first hit, on the player** (292, a knock-down). The same update Snow, his target 3.6 m off, starts `MoveMelee` and **backs away** from him at gait 2 (1.92 m/s); Ash does the same at +316 (4.1 m) |
+    | +392 | The first hit on a Warrior (Ash, 1,800 to 1,710); each Warrior answers his first hit with an attack action (`0x00542ce0`) while `FollowPlayer` is still his only goal |
+    | +474 | The automatic **attack** command: tactic `0x00544160`, `FollowAndAttack` (`0x34`) with `Fight` (`0x0f`) on top: only now do they fight |
+
+    Until the first hit on a Warrior neither moved more than 2.96 m (Ash) or 4.68 m (Snow) from his spot, and never
+    above gait 2 (walk), all of it backing away. Why, confirmed (code), [Fight mode](ai-gangs.md#warrior-follow):
+    under `FollowPlayer` a Warrior in fight mode only turns to a target beyond his melee range and backs off from one
+    inside it (`0x002de7c0`); fight mode came on here because gang members had attackers (from +151 the Furies held
+    attack slots on the player and on both Warriors) and the Furies had listed the Warrior as an enemy (`0x002de650`,
+    test 4; the player had no target until +298); Snow's target came 26 updates after Ash's because the one enemy in
+    his list was over 20 m from the player until then (inferred); the Warriors attack only from the attack command,
+    which `WarChief_AutoCommand` (`0x00303988`) gives once the player's own target is within his far melee range and
+    he has attackers for 1.5 s without a break ([Automatic commands](ai-gangs.md#warrior-auto-commands)); with the
+    player knocked down and his target lost, that took until +474 (inferred).
+
+    **Coney** (as issue #493 states, from `fix-furies-passive`'s run): its AI Warriors follow the player under
+    `FollowPlayer` and run out to the Furies (one at up to gait 4, the other gait 3), so a Warrior is hit first and the
+    player 6 updates later (that run's trace, steps 997 and 1003); in the
+    original the player is hit first (+299) and a Warrior 93 updates later. The fixes, each against the original's
+    behaviour on [Fight mode](ai-gangs.md#warrior-follow) (code in `repo:src/ai/crew.cpp`, `FollowPlayerGoal`):
+
+    1. **Turn, do not close in.** In fight mode, beyond the range (the far melee range, or the near one when the
+       target's actions are blocked or he is busy) queue only a turn to the target; within it queue the move-to-human
+       action with the band range + 0.5 m to range + 1.0 m and a 3 s limit. Coney does the reverse (a move to the
+       target beyond the range).
+    2. **The band move.** Coney's `MoveToHumanAction` only closes in to a stop distance; it needs the original's
+       near / far band. The spec is `MoveMelee` on [Move-to-human](ai-moving.md#move-melee), side circling, its ±10
+       counters and its done rule (in the band, side counter 0, |radial counter| < 6) included; in short: below
+       near², back away at gait 2; above far², close in at gait 4; done inside the band. Without it item 1 cannot
+       back off.
+    3. **The target.** Keep the current target while it is still a valid enemy; else the nearest human of the
+       follower's own enemy list (to the follower) that is up and within 20 m of the **leader**; else the leader's
+       target when it is up, used for the turn or the back-off even when friendly but made the follower's own target
+       only when not friendly; with no leader's target or a down one, none. Coney takes the nearest attacker of any
+       crew member within 20 m of the follower.
+    4. **The fight-mode tests**, in the original's order: the leader's target not a Warrior turns it on; a player
+       holding an attack slot on the follower turns it off; any player's brain `+0x2e4` turns it on; a member with
+       attackers and a non-zero count of brains holding the follower as an enemy turns it on. Coney has only the last
+       two, and counts only attackers who hold the follower as an enemy. Give the brain the count (raised when another
+       brain adds it as an enemy, lowered when removed) rather than scanning attack slots.
+    5. **Field of view**: 2π in fight mode, 110° (and the target cleared) out of it.
+    6. **Test** (`[disc]`, `tests/platform/disc_level34_furies_test.cpp` or beside it, checkpoint 5, no input): from
+       the scene's end to the first hit on the player, neither AI Warrior is ever above gait 2 nor more than 5 m from
+       where the scene left him, and his top goal is `FollowPlayer`; the first hit lands on the player, not a Warrior;
+       neither attacks before he is first hit himself (each answers his first hit with an attack action), and neither
+       has the `FollowAndAttack` (`0x34`) or `Fight` (`0x0f`) goal before the attack tactic (`0x00544160`) is queued
+       for him, which comes after the player's first hit.
+
+    The fight-mode stand distance, 10 m instead of the goal's 9 m, is already Coney's (`kCrewFightFollowDistance`,
+    `repo:src/ai/crew.h`); keep it.
+
+    Open: who queues the attack action a Warrior plays on his first hit while `FollowPlayer` is his only goal (the
+    hit event's handler, [The Warriors](ai.md#think-warrior), is the likely source; not traced), and the Warriors'
+    far melee range (`+0x140`). A new action is queued only when the queue is empty, so the runs bound it only
+    roughly: Snow's last turn was chosen about 5.5-5.7 m from his target and his back-off at 3.6-3.8 m, Ash's back-off
+    at about 4.1-4.3 m, so between about 3.8 m and 5.5 m (inferred). Reading brain `+0x140` of a Warrior at runtime
+    settles it.
 
 <!-- markdownlint-enable MD029 -->
 
@@ -2698,10 +2778,10 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
   through the two markers (`vMark01`, `vMark03`; how the original draws them:
   [Objective markers](objects.md#objective-markers)), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
-  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
-  play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the grab and
-  its strikes, the mount and its strikes ([Combat](combat-grabs.md#mount)), the L2 let-go, the targeting lesson (L1 held
-  2 s, heard through the `PadSetHandlerEx` handler, which the play mode calls after the level's step with each
+  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud-messages.md#tutorial-callback)),
+  which the play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the
+  grab and its strikes, the mount and its strikes ([Combat](combat-grabs.md#mount)), the L2 let-go, the targeting lesson
+  (L1 held 2 s, heard through the `PadSetHandlerEx` handler, which the play mode calls after the level's step with each
   human's pad command, [PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)), the combos and the strong
   attack, then stop at the strong grapple (circle + cross), whose research is under way.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
@@ -2805,21 +2885,22 @@ handler component, as for `TriggerSphereEnable`).
   [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
 - **Hint texts set twice in one frame** (user checklist item 33b). (Answered by the original's runtime trace,
-  [The queue at runtime](hud.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither of the
-  two places where Coney's `level99` course run queued two texts in one step backs up in the original.
-  **Lesson 5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update
-  157, `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in
-  both runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
+  [The queue at runtime](hud-messages.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither
+  of the two places where Coney's `level99` course run queued two texts in one step backs up in the original. **Lesson
+  5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update 157,
+  `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in both
+  runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
   constructor (`0x00106fe0`, [Animation callbacks](characters.md#anim-callbacks)). **`P1.StartSnaps`**: its
   `HUDSetTutorialText` calls (nil, `TT_25c`, nil, `TT_25c`) ran in one tick; each text found the box free and showed
-  within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and
-  nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
+  within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and nothing
+  stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
   `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
-  behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
+  behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's
+  differences](hud-messages.md#hint-queue-runtime).)
 - **The stale throw hint** (user checklist item 38). (Answered for Coney: the user saw `level80`'s `TT_25` (lure the
   cops with a bottle) stay through step 3.4 until the Wreck'em order. The likely cause was the hint box's backlog: a
   lesson text queued behind another, then shown after the next clear. The box no longer queues on a nil-then-text set
-  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the user's path.
+  ([The queue at runtime](hud-messages.md#hint-queue-runtime)), and the bug no longer reproduces on the user's path.
   `repo:tests/platform/disc_level80_story_test.cpp` starts the story and jumps to checkpoint 3. It walks into Fox's box
   and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
   the next hint and no lesson text comes back. The original was not traced for this; the order is the one in

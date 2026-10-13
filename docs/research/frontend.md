@@ -1213,7 +1213,7 @@ list of the missions already completed, each with its checkpoints. The object (v
 `0x0053a3e0` at `+0x6c`) is built by `0x0015d4f8`. Areas are `MS_Area` records (`0x230` bytes), missions `MS_Mission`
 (`0x8c0` bytes), both allocated with those class strings. The mission records are the story table at W_GameState
 `+0x14d4` (`0x84` bytes each, count `+0x56d4`; level `+0x04`, checkpoint count `+0x08`, name `+0x49`, icon sprite
-`+0x78`, `+0x80` passed to the entry). The rest of the file is HUD code ([HUD](hud.md#fn-missionselecthud-hud)).
+`+0x78`, `+0x80` passed to the entry). The rest of the file is HUD code ([HUD](hud-functions-panels.md#fn-missionselecthud-hud)).
 
 **Layout** (`MissionSelect_Init` `0x001bcdd8` writes the globals per video mode, `MissionSelect_Build` `0x001bc5a8` and
 `MissionSelect_FillArea` `0x001bd838` use them; GUI coordinates; confirmed (code)):

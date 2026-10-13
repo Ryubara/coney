@@ -441,7 +441,7 @@ The **marker** a mission asks the player to walk into is two world objects: a di
 about the vertical, at the top of a translucent coloured column standing on the ground. Scripts place it with
 `ObjSpawn` of a `dyn_objective` type, show it with `ObjShow` and remove it with `ObjDestroy`; the volume box the
 player walks into is a separate object ([Scripting: triggers](scripting.md#triggers)). The marker has no radar part:
-a script that wants one adds a radar objective itself ([HUD](hud.md#the-radar-on-screen)).
+a script that wants one adds a radar objective itself ([HUD](hud-radar.md#the-radar-on-screen)).
 
 **In `level99`** (inferred from the script's calls): `RegisterObjects` spawns four `dyn_w_mission` (the script's
 `Objects.dyn_w_mission01`-`04`), each standing in a volume box. `P1.SetupCam` sets the first hint, calls
@@ -778,11 +778,19 @@ addresses cited unless marked.
 2. **He fights with it.** An AI attacks through the player's dispatcher ([Combat: an AI's
    attacks](combat-targets.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
    (`0x00231a80`, [Combat: moving attacks with something in hand](combat-throws.md#armed-moves)), so a Warrior holding a
-   bat (set 3) swings 34 / 36 (37 at a grounded target), a baton (set 2) 39 / 41, a knife (set 1) 45 / 47.
+   bat (set 3) swings 34 / 36 (37 at a grounded target, though the `level34` Furies also used the unarmed grounded
+   strikes 193 / 194 with a bat in hand, [Combat: a bat's hit](combat-reactions.md#bat-knockdown)), a baton (set 2) 39 /
+   41, a knife (set 1) 45 / 47.
 3. **The damage** is that clip's [damage table](combat.md#damage-table) value plus the weapon's: `Strike_Contact`
    (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
-   float when the held world object's body flags have `0x10000` (the melee weapons). The same `Strike_Contact` serves
-   the player, so a given bat hits as hard in a Warrior's hand as in the player's, scaled by his own class.
+   float when the held world object's body flags have `0x10000` (the melee weapons) (confirmed (code); whether this
+   branch runs for any held weapon's swing is open, below).
+   **Correction** (issue #492, confirmed (runtime) for `dyn_bat` in the `level34` Furies' hands only): their bat
+   swings (501, 36, 37) never reached `Strike_Contact`; each hit was the bat's own body touching the victim
+   (`WorldObject_OnContact` `0x00394050` → `ThrownObject_HitHuman` `0x00392b88`), which deals `CfgObj` `+0x58` × the
+   holder's class float, without the clip's damage ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Not
+   checked: the knife (set 1), the baton (set 2), other bats, and the player's own bat swings, so whether a weapon
+   hits as hard in a Warrior's hand as in the player's is open.
 4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
    a weight; category 14, the Warriors, is not one of the categories 9, 10, 13 that get 0) ([AI: picking the attack
    kind](ai.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
@@ -806,12 +814,14 @@ its anim set):
 2. Attach the given object to the receiver's right hand with the pick-up clip's type-9 offset, as the player's
    pick-up does, and leave a left-hand or hat object on the ground.
 3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
-   bat) and that `Strike_Contact`'s weapon bonus (`CfgObj` `+0x58` × class float) applies to AI attackers.
+   bat) and that an AI's bat hit deals the bat's `CfgObj` `+0x58` × his class float, as the bat's own contact does
+   ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Only `dyn_bat` in an AI's hand was measured; the knife,
+   the baton and the player's bat are unchecked, so keep their damage path an open question until they are.
 4. Add the armed bonus to Coney's attack pick and the set's clips to its reach test, if missing.
 5. Drop a held kind 4 or 6 object from a Warrior with no enemies outside co-op.
 6. Test: give a bat to a Warrior; assert he holds it, its world pose equals his transform ∘ scaled hand bone ∘ local
-   on the next draw, and an attack of his on an enemy plays 34 or 36 and deals the bat clip's damage plus the bat's
-   bonus.
+   on the next draw, and an attack of his on an enemy plays 34 or 36 and deals the bat's `CfgObj` `+0x58` × his class
+   float (not the clip's damage; fix 3).
 
 #### Two-handed objects {#two-handed}
 

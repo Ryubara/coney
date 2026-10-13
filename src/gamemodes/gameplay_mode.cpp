@@ -791,7 +791,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         // damage, with the id the attacker has already started (so that start's animation callback ran first), and a
         // lesson that moves on (level99's lesson 5 into 6 on the grapple's hold 82) sets its next text for the state
         // that callback recorded. The other order queued two texts in one step and left the hint box one text
-        // behind (docs/research/hud.md#tutorial-callback, docs/research/characters.md#anim-callbacks).
+        // behind (docs/research/hud-messages.md#tutorial-callback, docs/research/characters.md#anim-callbacks).
         callTutorialCallback();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();

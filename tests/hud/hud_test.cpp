@@ -94,7 +94,7 @@ TEST_CASE("a hint stays until cleared unless its markup times it; a text set on 
 
 TEST_CASE("two nil-then-text pairs in one update leave nothing queued; the same text twice shows twice", "[hud]") {
     // P1.StartSnaps's four calls in one tick: the box showed the text, cleared it and showed it again, cue twice
-    // (docs/research/hud.md#hint-queue-runtime).
+    // (docs/research/hud-messages.md#hint-queue-runtime).
     KeepingAudio audio;
     Hud hud = makeHud(&audio);
     step(hud, 0);

@@ -121,6 +121,11 @@ nav:
           - "Input: pads and player commands": research/input.md
           - GUI, sprite sheets and text: research/gui.md
           - In-game HUD: research/hud.md
+          - "HUD messages: objectives, hints, prompts and scripted bars": research/hud-messages.md
+          - "HUD radar, target panel and health rings": research/hud-radar.md
+          - "HUD function index: widgets, radar frame and the HUD interface": research/hud-functions-parts.md
+          - "HUD function index: the HUDLua bindings": research/hud-functions-lua.md
+          - "HUD function index: message, mission select and panel files": research/hud-functions-panels.md
           - Pause menu and mission failed: research/pause.md
           - Rumble mode: research/rumble.md
           - Armies of the Night: research/armies.md
