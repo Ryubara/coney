@@ -13,7 +13,7 @@ import os
 import re
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -198,10 +198,12 @@ class Emulator:
         patches: list[Patch],
         on_start: Callable[[int], None] | None = None,
         speed: float = 1.0,
+        ini: Sequence[tuple[str, str, str]] = (),
     ) -> None:
         """Start PCSX2 on `state` and wait until its game runs (no state: boot the disc and wait for PINE); `on_start`
         gets the process id as soon as it exists (the claim records it). `speed` below 1 runs the emulation slower
-        (the copy's `[Framerate]` `NominalScalar`, put back by close()). Raises ConfigError when PCSX2 already runs
+        (the copy's `[Framerate]` `NominalScalar`); `ini` gives more settings of the copy's ini for this run, each
+        (section, key, value). close() puts the ini back as it was. Raises ConfigError when PCSX2 already runs
         (one PINE client at a time, and a run needs a fresh start for its patches) or PineError when it never
         answers."""
         self.paths = paths
@@ -211,11 +213,14 @@ class Emulator:
         self.before = _slot_states(paths.pcsx2_dir)
         self.ini = paths.pcsx2_dir / "inis" / "PCSX2.ini"
         self.ini_text: str | None = None
-        if speed != 1.0:
+        settings = list(ini) + ([("Framerate", "NominalScalar", f"{speed:g}")] if speed != 1.0 else [])
+        if settings:
             # The copy is ours under the claim; its ini is put back as it was when PCSX2 closes.
             self.ini_text = self.ini.read_text(encoding="utf-8")
-            scaled = set_ini_value(self.ini_text, "Framerate", "NominalScalar", f"{speed:g}")
-            self.ini.write_text(scaled, encoding="utf-8")
+            changed = self.ini_text
+            for section, key, value in settings:
+                changed = set_ini_value(changed, section, key, value)
+            self.ini.write_text(changed, encoding="utf-8")
         disc = disc_link(paths.iso, paths.scratch)
         load = ["-statefile", str(state)] if state is not None else []
         command = [str(_executable(paths.pcsx2_dir)), "-fastboot", *load, "--", str(disc)]

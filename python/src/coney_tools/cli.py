@@ -15,6 +15,7 @@ from coney_tools import (
     audio_cli,
     build_cli,
     check_cli,
+    clips,
     issue_cli,
     mcp_serve,
     mission_cli,
@@ -23,6 +24,7 @@ from coney_tools import (
     natives_cli,
     pcsx2_claims_cli,
     pcsx2_cli,
+    pcsx2_clip,
     progress_cli,
     refs_cli,
     stale_processes,
@@ -277,6 +279,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_refs_commands(groups)
     _add_missions_commands(groups)
     _add_pcsx2_commands(groups)
+    _add_clips_commands(groups)
     build_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
@@ -570,8 +573,53 @@ def _add_pcsx2_commands(groups: Any) -> None:
         metavar="NAME=EXPR",
         help="give or replace a name of the scenario's let (a random stream's offset per match); repeatable",
     )
+    clip = commands.add_parser(
+        "clip",
+        help="record a short clip of the original with PCSX2's own capture of its game output (never the screen)",
+    )
+    clip.add_argument("state", type=Path, help="the .p2s state to start from (a copy outside sstates/)")
+    clip.add_argument("--out", type=Path, required=True, help="the clip: <scratch>/<task>/clips/<name>.mp4")
+    clip.add_argument("--seconds", type=int, default=10, help="how long, 1 to the cap of 10 (default 10)")
+    clip.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
+    _add_pcsx2_flags(clip)
     _add_claim_commands(commands)
     _add_pcsx2_flags(record)
+
+
+def _add_clips_commands(groups: Any) -> None:
+    """Register `coney-tools clips ...`."""
+    group = groups.add_parser("clips", help="in-game video clips for issues and pull requests: check, publish, clean")
+    commands = group.add_subparsers(dest="command", required=True)
+    folder = commands.add_parser("folder", help="make and print a task's clips folder (<scratch>/<task>/clips)")
+    folder.add_argument("task", help="the task's scratch folder name (your branch or track)")
+    check = commands.add_parser("check", help="check clips as publish does (place, length, metadata), upload nothing")
+    check.add_argument("clips", nargs="+", type=Path, metavar="CLIP")
+    publish = commands.add_parser(
+        "publish", help="upload clips with gh --attach to a pull request or issue, then delete them"
+    )
+    where = publish.add_mutually_exclusive_group(required=True)
+    where.add_argument("--pr", type=int, help="the pull request's number")
+    where.add_argument("--issue", type=int, help="the issue's number")
+    publish.add_argument("--edit", action="store_true", help="put them into the description instead of a comment")
+    text = publish.add_mutually_exclusive_group()
+    text.add_argument("--body", help="the comment's (or description's) text")
+    text.add_argument("--body-file", type=Path, help="a file with the text; ./clips/<name>.mp4 references are replaced")
+    publish.add_argument("clips", nargs="+", type=Path, metavar="CLIP")
+    clean = commands.add_parser("clean", help="delete clips left in the scratch clips folders past the age limit")
+    clean.add_argument("--older-than", type=float, metavar="HOURS", help="default: workspace.clips.keep_hours (24)")
+    clean.add_argument("--dry-run", action="store_true", help="list what would go, delete nothing")
+
+
+def _run_clips(args: argparse.Namespace) -> int:
+    """Dispatch a `clips` command."""
+    if args.command == "folder":
+        return clips.run_folder(args.task)
+    if args.command == "check":
+        return clips.run_check(args.clips)
+    if args.command == "publish":
+        target = clips.Target("pr" if args.pr is not None else "issue", args.pr or args.issue, args.edit)
+        return clips.run_publish(target, args.body, args.body_file, args.clips)
+    return clips.run_clean(args.older_than, args.dry_run)
 
 
 def _gang_list(text: str) -> list[int]:
@@ -720,6 +768,10 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         return pcsx2_claims_cli.run_keys(args.agent, args.copy, args.keys, args.hold_ms, args.gap_ms)
     if args.command == "screenshot":
         return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
+    if args.command == "clip":
+        return pcsx2_clip.run_clip(
+            args.state, args.seconds, args.out, (args.pcsx2_dir, args.iso, args.scratch), args.agent
+        )
     flags = (args.pcsx2_dir, args.iso, args.scratch)
     return pcsx2_cli.run_record(
         args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let
@@ -769,6 +821,8 @@ def _run(args: argparse.Namespace) -> int:
         return missions_render.run_render(args.check)
     if args.group == "pcsx2":
         return _run_pcsx2(args)
+    if args.group == "clips":
+        return _run_clips(args)
     if args.group == "build":
         return build_cli.run(args)
     if args.group == "trace":

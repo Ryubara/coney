@@ -14,6 +14,7 @@ add_library(coney_core STATIC
     core/input_script.cpp
     core/name_hash.cpp
     core/parse_number.cpp
+    core/clip_recording.cpp
     core/window_display.cpp
     core/options.cpp
     core/pad.cpp

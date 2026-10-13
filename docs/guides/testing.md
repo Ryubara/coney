@@ -189,8 +189,9 @@ What the two sections hold:
   options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
   it again. The `pr-reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
   images ([The description review](how-we-work.md#pr-review)).
-- **Video.** Nothing in Coney or `coney-tools` records video. A short clip is made by hand with a screen recorder; an
-  agent uses a few screenshots of the moment instead.
+- **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
+  `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
+  in [Clips](#clips) below. Never a screen recorder.
 - **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
   text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. The coordinator uploads
   them from that folder, one `--attach` per file, when it opens the pull request:
@@ -212,6 +213,37 @@ What the two sections hold:
   `gh --attach` rewrites to uploads. `check-body` refuses a body with any other such path in its text; code spans and
   code blocks are not looked at. The files are game data: they stay in scratch and are deleted when the pull request is
   merged ([Sharing one machine](how-we-work.md#shared-machine)).
+
+### Clips {#clips}
+
+A short video shows a bug or a fix better than screenshots: a before and after of Coney, and the original from the
+same place. Agents record and publish them themselves (the user's request, 2026-10-12), under five rules. Each is
+kept by the code, not by memory or by this page:
+
+| Rule | How the code keeps it |
+| --- | --- |
+| **Only the game's own picture.** Never a screen, desktop or window capture. | Coney's frames are read back from its own frame buffer (`RenderEngine::setFrameTap()`) and piped to FFmpeg's standard input, its only input (`clips::videoEncodeArguments()`, tested). The original's come from PCSX2's own capture of its GS output (`pcsx2 clip`), re-encoded from that file. Every FFmpeg command `coney-tools` runs goes through `clips.run_ffmpeg`, which refuses any capture device (`gdigrab`, `ddagrab`, `x11grab`, `avfoundation`, `dshow`, `lavfi`, ...) and any input that is not a file; a test checks that `pcsx2 clip` never calls `pcsx2 screenshot`'s window read. |
+| **Nothing private in the frames or the file.** No debug overlay, log, FPS counter, path, user name or window chrome; no metadata. | Coney reads the frame before the debug menus and the developer overlay are drawn and switches the debug lines off while recording; there is no window chrome in a frame buffer. `pcsx2 clip` turns every PCSX2 on-screen display element off for the run. Every encode strips metadata and chapters (`-map_metadata -1`, `-map_chapters -1`), writes bit-exact headers and drops x264's settings note; a clip's name is plain letters, digits, `.`, `_`, `-`. `clips check` and `clips publish` refuse a clip whose ffprobe tags go beyond the fixed ones every MP4 carries. |
+| **Deleted once uploaded.** | `coney-tools clips publish` is the only upload: it posts the comment (or description) with `gh --attach` and deletes each clip only when gh reports success, keeping them and saying so otherwise. `coney-tools clips clean` deletes clips older than 24 hours from every task's clips folder. |
+| **Only in the scratch folder.** `<workspace>/scratch/<task>/clips/`, never in a worktree. | `coney --record`, `pcsx2 clip`, `clips check` and `clips publish` refuse a path inside any git checkout or outside a `clips` folder (`clips::checkClipPath()`, `platform::checkClipLocation()`, `clips.check_clip_path`). |
+| **Short.** 10 seconds by default and at most. | `--record-seconds` and `pcsx2 clip --seconds` refuse more; every encode cuts at the length (`-t`); `clips publish` refuses a longer file. The cap is `workspace.clips.max_seconds` in [.github/conventions.yml](repo:.github/conventions.yml), and a test checks that Coney's `kMaxClipSeconds` equals it. |
+
+The steps, for an agent:
+
+```sh
+CLIPS=$(uv run --project python coney-tools clips folder my-task)   # makes and prints the absolute <workspace>/scratch/my-task/clips
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script walk.txt --record "$CLIPS/after.mp4"
+uv run --project python coney-tools clips check "$CLIPS/after.mp4"
+uv run --project python coney-tools clips publish --pr 123 --body "Coney after the fix" "$CLIPS/after.mp4"
+# the original: --iso and --scratch are needed when coney.local.toml has no game_dir or scratch_dir; --out is absolute, from any checkout
+uv run --project python coney-tools pcsx2 clip STATE --out "$CLIPS/original.mp4" --agent ID --iso /path/to/warriors.iso --scratch /path/to/scratch
+```
+
+An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and
+leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and `clips clean`
+removes any left behind. Never attach a clip with `gh` directly, never commit one, and never reference one in
+`PR.md` (`check-body` refuses the local path): the clip goes in as a comment of its own. The commands:
+[coney-tools clips](coney-tools.md#clips), [Recording a clip](running.md#record).
 
 ## Where the checks run {#where}
 

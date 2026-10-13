@@ -639,3 +639,12 @@ workspace:
   build_idle_hours: 4                            # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
   remove_worktree_when_merged: true
+  # In-game video clips for issues and pull requests (`coney-tools clips`; docs/guides/testing.md#clips): they live
+  # only in scratch/<task>/<folder>/, are at most max_seconds long, warn past warn_mb and are deleted once uploaded
+  # or after keep_hours. Coney's own cap, kMaxClipSeconds in src/core/clip_recording.h, must equal max_seconds (a
+  # test checks it).
+  clips:
+    folder: "clips"
+    max_seconds: 10
+    warn_mb: 10
+    keep_hours: 24

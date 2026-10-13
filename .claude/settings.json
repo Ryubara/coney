@@ -56,7 +56,15 @@
       "PowerShell(git stash *)",
       "PowerShell(taskkill /IM *)",
       "PowerShell(taskkill /im *)",
-      "PowerShell(Stop-Process -Name *)"
+      "PowerShell(Stop-Process -Name *)",
+      "Bash(gh *.mp4*)",
+      "Bash(gh *.webm*)",
+      "Bash(gh *.mov*)",
+      "Bash(gh *.mkv*)",
+      "PowerShell(gh *.mp4*)",
+      "PowerShell(gh *.webm*)",
+      "PowerShell(gh *.mov*)",
+      "PowerShell(gh *.mkv*)"
     ]
   }
 }
