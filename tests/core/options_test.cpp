@@ -493,6 +493,26 @@ TEST_CASE("the start option places the player, and optionally the camera, for th
     CHECK(coney::usageText().find("--start X,Y,Z,HEADING") != std::string_view::npos);
 }
 
+TEST_CASE("the scene option names a scene to play at once in the play option's level", "[options]") {
+    auto scene = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level2", "--scene", "l2_c1"});
+    REQUIRE(scene.has_value());
+    CHECK(scene->scene.value_or("") == "l2_c1");
+    // It follows a level start's other options, in any order.
+    auto after = parse(std::array<std::string_view, 8>{"--disc", "x", "--scene", "l99_c5", "--play-level", "level99",
+                                                       "--checkpoint", "1"});
+    REQUIRE(after.has_value());
+    CHECK(after->scene.value_or("") == "l99_c5");
+    // It needs its value, a level to play in (not a sandbox, not none) and is given once.
+    CHECK_FALSE(parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level2", "--scene"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "sandbox", "--scene", "l2_c1"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--scene", "l2_c1"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level2", "--scene", "l2_c1",
+                                                      "--scene", "l2_c1"})
+                    .has_value());
+    CHECK(coney::usageText().find("--scene NAME") != std::string_view::npos);
+}
+
 TEST_CASE("the camera option pins a view with the camera's quaternion and field of view", "[options]") {
     auto pinned = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--camera",
                                                         "75.5,-41.25,3,0,0,0.7071068,0.7071068"});
