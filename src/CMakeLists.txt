@@ -263,6 +263,7 @@ target_sources(coney_core PRIVATE
     human/locomotion_gate.cpp
     human/jump.cpp
     human/locomotion.cpp
+    human/workout.cpp
     human/pair_placement.cpp
     human/fighter.cpp
     human/fighter_counter.cpp
@@ -387,6 +388,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE
     debug/debug_lines.cpp
     debug/debug_session.cpp
+    debug/fighter_spawn.cpp
     debug/entity_inspect.cpp
     debug/game_tunables.cpp
     debug/human_shapes.cpp
@@ -402,6 +404,7 @@ target_sources(coney_core PRIVATE
     debug/pages_engine.cpp
     debug/pages_entity.cpp
     debug/pages_hud.cpp
+    debug/pages_movies.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
     debug/pages_time.cpp

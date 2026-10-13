@@ -308,7 +308,8 @@ class SceneTask {
             m_tracks.push_back(run);
         }
         // The humans, each at its role's start mark. One in a grab or a mount is skipped (not counted, not reset, no
-        // clip) and the scene plays on without it; the grab goes on (docs/research/scenes.md#humans).
+        // clip) and the scene plays on without it; the grab goes on (docs/research/scenes.md#humans). A script's bind
+        // has broken the pair already (SceneSystem::joinHuman()).
         m_roles.resize(m_slot.roleHandles.size());
         for (std::size_t role = 0; role < m_roles.size(); ++role) {
             RoleRun& run = m_roles[role];
@@ -1146,6 +1147,11 @@ float SceneSystem::length(std::uint32_t id) const {
 }
 
 bool SceneSystem::joinHuman(double human, std::uint32_t id, std::size_t role, int gait) {
+    // The reset comes first and stands even when the bind is refused (`Scene_BindHuman` begins with it), so a human
+    // in a grab is let go before the start's free test (docs/research/scenes.md#join-reset).
+    if (human != 0.0) {
+        host().resetHumanForJoin(human);
+    }
     SceneSlot* slot = m_cache.find(id);
     if (human == 0.0 || slot == nullptr || slot->header == nullptr || role >= slot->roleHandles.size() ||
         inScene(human)) {

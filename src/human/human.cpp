@@ -179,11 +179,15 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
 
 std::vector<HumanSound> Human::takeSounds() {
     std::vector<HumanSound> sounds;
-    // Clip event 11 carries the animation sound's id in its argument (0 plays nothing).
+    // Clip event 11 carries the animation sound's id in its argument (0 plays nothing); 0x45 stops the sound the
+    // human holds (docs/research/sound-events.md#spray-loop).
     for (const anim::ClipEvent& event : m_animator.takeEvents()) {
         if (event.type == kEventAnimSound) {
             sounds.push_back(HumanSound{
                 .kind = HumanSound::Kind::Anim, .animSound = event.argument, .at = {}, .sceneFeet = std::nullopt});
+        } else if (event.type == kEventStopHeldSound) {
+            sounds.push_back(
+                HumanSound{.kind = HumanSound::Kind::StopHeld, .animSound = 0, .at = {}, .sceneFeet = std::nullopt});
         }
     }
     sounds.insert(sounds.end(), m_contactSounds.begin(), m_contactSounds.end());
@@ -313,7 +317,11 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();
-    if (m_animator.state() != AnimState::Idle) {
+    // A working-out human's clips stay, on every spawn (not only a teleport's): workout.StartWorkout teleports the
+    // player onto the station's flag before HuWorkout, but Coney applies a script's teleport of player 1 at the end of
+    // the frame, after the workout may have begun (docs/research/workouts.md#start). Any other spawn of a human that
+    // is working out (a respawn, a character change) keeps them too, until the workout ends.
+    if (m_animator.state() != AnimState::Idle && !m_script.workingOut) {
         m_animator.stopToIdle();
     }
     // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it.
@@ -1361,6 +1369,68 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     noteStrikeEvents(before, beforeId, beforeTime);
     noteReleaseEvent(before, beforeId, beforeTime);
     noteActionEvent(before, beforeId, beforeTime);
+    noteCarriedPropEvents(before, beforeId, beforeTime);
+}
+
+void Human::noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top, or it had not advanced yet: 59's
+    // can is made on its frame 0), else from where it was; the events in their order in the clip.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime && beforeTime > 0.0F;
+    const int from = same ? anim::eventFrame(beforeTime) : -1;
+    const int to = anim::eventFrame(top->time());
+    for (const anim::ClipEvent& event : top->eventClip()->events) {
+        if (event.frame <= from || event.frame > to) {
+            continue;
+        }
+        switch (event.type) {
+        case kEventPropCreate:
+            // Made only when it carries none (`+0x348` empty); whether the type is one to carry (kind 5) is the
+            // level's test, which has the object types.
+            if (!m_carriedProp) {
+                m_carriedProp =
+                    CarriedProp{.typeName = propTypeName(event), .point = kCarryPoint, .place = std::nullopt};
+            }
+            break;
+        case kEventPropPlace:
+            // Message 0xb7: to the attach point in the word, at the event's position scaled as the human is.
+            if (m_carriedProp) {
+                m_carriedProp->point = event.word;
+                m_carriedProp->place =
+                    PropPlace{.position = anim::scale(event.position, m_scale), .rotation = event.rotation};
+            }
+            break;
+        case kEventPropRemove:
+            if (m_carriedProp && m_carriedProp->typeName == propTypeName(event)) {
+                releaseCarriedProps();
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void Human::resetForJoin() {
+    // In the original's order (scenes.md#join-reset): the throw's aim (step 1); the pair broken before the grab, the
+    // wound and the stun end (step 2); the full normal mode's idle (step 4) and the carried props (step 3), which
+    // touch different state, so their order does not matter here.
+    setThrowAiming(false);
+    breakPair();
+    setWounded(false);
+    setNormalMode(true);
+    releaseCarriedProps();
+}
+
+void endAllRage(std::span<Human* const> humans) {
+    for (Human* human : humans) {
+        if (human != nullptr) {
+            human->setRageMode(false);
+        }
+    }
 }
 
 void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

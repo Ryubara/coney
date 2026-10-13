@@ -172,9 +172,20 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
     )
 
 
+#: Python files the docs build imports (mkdocs_hooks.py loads the progress tracker, and its config errors, from
+#: python/src): a name starting with one of these changes what the build produces.
+_DOCS_BUILD_PYTHON = ("python/src/coney_tools/progress", "python/src/coney_tools/config.py")
+
+
 def _docs_changed(changed: list[str], paths: Paths) -> bool:
-    """True when the change touches the documentation build (a file matching `paths.docs_only`)."""
-    return any(paths.is_docs_only(name) for name in changed)
+    """True when the change touches the documentation build: a file matching `paths.docs_only`, or the python that
+    the build imports (the progress tracker)."""
+    return any(paths.is_docs_only(name) or name.startswith(_DOCS_BUILD_PYTHON) for name in changed)
+
+
+def _python_changed(changed: list[str]) -> bool:
+    """True when the change touches what pytest and mypy check: `python/`, and `.claude/`, whose hooks the tests run."""
+    return any(name.startswith(("python/", ".claude/")) for name in changed)
 
 
 def _step_docs(root: Path, changed: list[str]) -> StepResult:
@@ -214,8 +225,8 @@ def _step_docs(root: Path, changed: list[str]) -> StepResult:
 
 
 def _step_python(root: Path, changed: list[str]) -> StepResult:
-    """pytest and mypy over python/, when anything under it changed (ruff runs in pre-commit)."""
-    if not any(name.startswith("python/") for name in changed):
+    """pytest and mypy over python/, when anything under it or under .claude/ changed (ruff runs in pre-commit)."""
+    if not _python_changed(changed):
         return _skipped("python", "no Python changed")
     if not shutil.which("uv"):
         raise ConfigError("uv is not on PATH (docs/guides/building.md#python-tools)")

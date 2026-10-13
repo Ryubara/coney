@@ -1004,7 +1004,9 @@ stance, commands, triangle actions and anim-state choice do not run and the stic
 to have the fight idle put back over 334). When the loop starts, the session runs on pad 1's left stick, the spot gets its
 tagger (message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger,
 tag, flag) and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes
-during the intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with
+during the intro ends it unsprayed (**Coney's reading**), and the tagger still gets event 14 with the tag and 0, as
+`Tag_End` (`0x0022e848`) always gives it, so the script puts the spot's prompt back ([level87's fix
+1](scripting.md#level87-fixes)). Without paint he says 37 `nopaint` and gets event 14 with
 the tag and 0.  At the end the pad is freed, a finish has a crew mate say 83 `tagdone` and the tagger gets event 14
 (the tag and whether it was finished); a snap-back off the pattern has one say 80 `tagcheer` while the tagger's tag
 cheer is on (`HuEnableTagCheer`). The crew mate is picked as [Tag_SayNearbyLine](sound-events.md#tag-lines) does:

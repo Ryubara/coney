@@ -4705,6 +4705,18 @@ subsystem = "Human"
 size = 372
 
 [[function]]
+address = 0x0022d348
+name = "Human_StartWorkout"
+subsystem = "Human"
+size = 52
+
+[[function]]
+address = 0x0022d380
+name = "Human_EndWorkout"
+subsystem = "Human"
+size = 120
+
+[[function]]
 address = 0x0022d3f8
 name = "Uncuff_BeginMash"
 subsystem = "Human"
@@ -4843,8 +4855,14 @@ subsystem = "Human"
 size = 1192
 
 [[function]]
+address = 0x00232538
+name = "Humans_EndAllRage"
+subsystem = "Human"
+size = 168
+
+[[function]]
 address = 0x002325e0
-name = "MiniGame_Abort"
+name = "Human_ResetForMode"
 subsystem = "Human"
 size = 1432
 
@@ -5866,6 +5884,24 @@ address = 0x0024bfc0
 name = "Human_SpawnHat"
 subsystem = "Human"
 size = 476
+
+[[function]]
+address = 0x0024cbb0
+name = "Human_CreateCarriedProp"
+subsystem = "Human"
+size = 384
+
+[[function]]
+address = 0x0024cd30
+name = "Human_AttachCarriedProp"
+subsystem = "Human"
+size = 268
+
+[[function]]
+address = 0x0024ce40
+name = "Human_ReleaseCarriedProps"
+subsystem = "Human"
+size = 176
 
 [[function]]
 address = 0x0024d810

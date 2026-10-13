@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/human.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -13,7 +15,9 @@
 
 #include "characters/anim_set.h"
 #include "human/body.h"
+#include "human/carried_prop.h"
 #include "human/human_animator.h"
+#include "human/human_sounds.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
@@ -487,4 +491,109 @@ TEST_CASE("a human's power meter, stamina, health and rage come from its fighter
             coney::combat::RageClass{.maximum = 120, .gainPercent = 162, .decayPercent = 110, .drainPercent = 168}});
     CHECK(human.health().maximum() == 1530);
     CHECK(human.fighter().combat().rage().maximum() == 120);
+}
+
+namespace {
+
+// A clip event of `type` at `frame` whose text is `name` (the prop events' object name).
+coney::anim::ClipEvent namedEvent(std::uint16_t frame, std::uint16_t type, std::string_view name) {
+    coney::anim::ClipEvent event{.frame = frame, .type = type, .word = 0, .position = {}, .rotation = {}};
+    std::ranges::copy(name, event.text.begin());
+    return event;
+}
+
+// The shape of Rembrandt's 59 `gen_grab_front_power10_p2` (docs/research/combat.md#power-move-props): 70 frames; the
+// can made on frame 0, moved to attach point 19 on frame 1, the spray stopped on frame 27, the can removed on 64.
+coney::anim::AnimClip powerMoveClip() {
+    coney::anim::AnimClip clip;
+    clip.duration = 70.0F / 30.0F;
+    clip.events.push_back(namedEvent(0, coney::human::kEventPropCreate, "s_spraycan"));
+    coney::anim::ClipEvent place{.frame = 1,
+                                 .type = coney::human::kEventPropPlace,
+                                 .word = 19,
+                                 .position = Vec3{0.1F, 0.2F, 0.3F},
+                                 .rotation = coney::anim::Quat{0.0F, 0.0F, 0.6F, 0.8F}};
+    clip.events.push_back(place);
+    clip.events.push_back(coney::anim::ClipEvent{
+        .frame = 27, .type = coney::human::kEventStopHeldSound, .word = 0, .position = {}, .rotation = {}});
+    clip.events.push_back(namedEvent(64, coney::human::kEventPropRemove, "s_spraycan"));
+    return clip;
+}
+
+} // namespace
+
+TEST_CASE("a clip's prop events make the can, move it to the left hand and remove it at its frames", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 0.97F);
+    human.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    REQUIRE_FALSE(human.carriedProp().has_value());
+    const coney::anim::AnimClip clip = powerMoveClip();
+    human.playScripted(clip, 59, 1.0F, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+
+    // Frame 0: the can, `dyn_` + the event's name, at attach point 0x13 with its type's offset (no place yet).
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    REQUIRE(human.carriedProp().has_value());
+    const coney::human::CarriedProp made = human.carriedProp().value_or(coney::human::CarriedProp{});
+    CHECK(made.typeName == "dyn_s_spraycan");
+    CHECK(made.point == coney::human::kCarryPoint);
+    // Frame 1: attach point 19 at the event's pose, the position × the human's scale.
+    int removedAt = 0;
+    for (int update = 2; update <= 70 && removedAt == 0; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        if (update == 3) {
+            REQUIRE(human.carriedProp().has_value());
+            const coney::human::CarriedProp placed = human.carriedProp().value_or(coney::human::CarriedProp{});
+            CHECK(placed.point == 19);
+            REQUIRE(placed.place.has_value());
+            const coney::human::PropPlace place = placed.place.value_or(coney::human::PropPlace{});
+            CHECK(place.position.x == Approx(0.097F));
+            CHECK(place.position.z == Approx(0.291F));
+            CHECK(place.rotation.z == Approx(0.6F));
+        }
+        if (!human.carriedProp().has_value()) {
+            removedAt = update;
+        }
+    }
+    // Frame 64: removed (the update that passes it).
+    CHECK(removedAt >= 64);
+    CHECK(removedAt <= 66);
+}
+
+TEST_CASE("a remove event naming another type leaves the carried prop; a cinematic's reset removes it", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    coney::anim::AnimClip clip;
+    clip.duration = 20.0F / 30.0F;
+    clip.events.push_back(namedEvent(0, coney::human::kEventPropCreate, "s_spraycan"));
+    clip.events.push_back(namedEvent(5, coney::human::kEventPropRemove, "bottle"));
+    human.playScripted(clip, 59, 1.0F, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    for (int update = 0; update < 10; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
+    REQUIRE(human.carriedProp().has_value());
+    human.resetForJoin();
+    CHECK_FALSE(human.carriedProp().has_value());
+}
+
+TEST_CASE("clip event 0x45 reaches the sounds as a stop of the held sound, once", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.reportSounds(true);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    static_cast<void>(human.takeSounds());
+    const coney::anim::AnimClip clip = powerMoveClip();
+    human.playScripted(clip, 59, 1.0F, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    int stops = 0;
+    for (int update = 0; update < 40; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        for (const coney::human::HumanSound& sound : human.takeSounds()) {
+            stops += sound.kind == coney::human::HumanSound::Kind::StopHeld ? 1 : 0;
+        }
+    }
+    CHECK(stops == 1);
 }

@@ -50,7 +50,7 @@ and set `S-needs-info`; do not invent it.
 
 | Check | What to do |
 | --- | --- |
-| `issue.sections`, `issue.placeholder`, `issue.screenshots` | Rewrite the body to the form's shape (`gh issue view N --json body`, then `gh issue edit N --body-file`), moving the author's text under the right headings. Add `Screenshots: none (reason)` only when the reason is plain. If the content is missing, ask. |
+| `issue.sections`, `issue.form`, `issue.placeholder`, `issue.screenshots` | Rewrite the body to the form's shape (`coney-tools issue check` names what differs) (`gh issue view N --json body`, then `gh issue edit N --body-file`), moving the author's text under the right headings. Add `Screenshots: none (reason)` only when the reason is plain. If the content is missing, ask. |
 | `issue.labels` | Set exactly one type, area, priority (after triage) and status label as [Triage](../../../docs/guides/issues.md#triage) says: `gh issue edit N --add-label ... --remove-label ...`. Replace an unknown label with the right one. |
 | `issue.closed-status` | `gh issue edit N --remove-label <S- label>`; the `issue-status` workflow normally does it. |
 | `issue.person-word`, `pr.person-word` | Reword "owner" to "user" for a person who plays or reports, "maintainer" for a person who decides. |

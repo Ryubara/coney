@@ -140,17 +140,19 @@ uv run --project python coney-tools repo check-review <PR.md> --worktree <worktr
 ```
 
 `repo review` runs the agent headlessly (`claude -p`, a throwaway run in the scratch folder) and then
-`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)).
-A failing verdict goes back as a fix to the description or the captures, never as a push. The gate's rules, generated
+`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)). It
+also runs the title and body checks CI runs, so a description CI would refuse never reaches the push. A failing
+verdict goes back as a fix to the description or the captures, never as a push. The gate's rules, generated
 from `pull_requests.review` in [.github/conventions.yml](repo:.github/conventions.yml):
 
 <!-- conventions:begin pr-review -->
 - The `pr-reviewer` agent (`.claude/agents/pr-reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description
   file: `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
   `sha256`) and `findings` (each with `severity` `blocker` or `note`, `where` and `text`).
-- `repo check-review` passes only when the verdict is `pass` with no `blocker` finding, `tip` is the worktree's HEAD,
-  `body_sha256` is the description file's hash now and every local image the description shows is listed with its hash
-  now; any new commit, edit or replaced picture makes the verdict stale.
+- `repo check-review` passes only when the description's title (line 1) and body (the rest) pass `repo check-title` and
+  `repo check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is `pass` with no `blocker`
+  finding, `tip` is the worktree's HEAD, `body_sha256` is the description file's hash now and every local image the
+  description shows is listed with its hash now; any new commit, edit or replaced picture makes the verdict stale.
 - The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading BOM dropped and
   CRLF or CR turned into LF.
 - Two byte-identical images in one description are refused, whatever the verdict.
@@ -218,6 +220,12 @@ Bugs and tasks are tracked as issues, opened from a form and labelled by type, a
 coordinator triages them and is the only one who writes to GitHub; an agent reads an issue (`gh issue view N
 --comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
 closes it. The whole process: [Issues](issues.md).
+
+**Issue rules are enforced, not remembered.** An issue is drafted, checked and filed only with `coney-tools issue
+draft`, `check` and `create` (or `edit` and `link`); the repository's Claude Code hook (`.claude/hooks/issue_guard.py`)
+refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh api` call that writes an issue; and
+the `issue-check` workflow checks every issue opened or edited on the website or through the API and keeps one
+comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
 
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
 CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its

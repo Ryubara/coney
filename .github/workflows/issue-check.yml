@@ -1,0 +1,72 @@
+# Checks every new or edited issue against its form (coney-tools issue check) and keeps ONE comment on it that lists the
+# problems. Later edits update that comment; it is deleted once the issue passes. This covers issues filed on the
+# website or through the API, which skip `coney-tools issue create` (docs/guides/issues.md#filing). Actions only
+# comment in this repository (no labels, no edits), so the job asks for no more than issues: write.
+# Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: issue-check
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+
+# One run per issue at a time: a newer edit replaces a run that is still going.
+concurrency:
+  group: issue-check-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --project python
+      # The title and body are untrusted text: they reach the shell only through the environment, never the script.
+      - name: Check the issue
+        id: check
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The pages and anchors an issue links are looked up in origin/main (offline git).
+          git fetch --no-tags --depth=1 origin main
+          printf '%s' "$BODY" > "$RUNNER_TEMP/body.md"
+          status=0
+          uv run --project python coney-tools issue check --title "$TITLE" --body "$RUNNER_TEMP/body.md" \
+            --online --markdown > "$RUNNER_TEMP/comment.md" || status=$?
+          # Exit 1 is "the issue has problems" (the comment); anything else is a failure of the tool itself.
+          if [ "$status" -gt 1 ]; then
+            echo "coney-tools issue check failed with exit code $status"
+            exit 1
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Post, update or remove the comment
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+          STATUS: ${{ steps.check.outputs.status }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          marker=$(uv run --project python python -c "from coney_tools.issue_cli import COMMENT_MARKER; print(COMMENT_MARKER)")
+          comments="repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments"
+          # The comment this workflow posted before, found by its first line; a comment of a person never matches.
+          existing=$(gh api "$comments" --paginate \
+            --jq ".[] | select(.user.type == \"Bot\" and (.body | startswith(\"$marker\"))) | .id" | head -n 1)
+          if [ "$STATUS" = "0" ]; then
+            if [ -n "$existing" ]; then
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$existing"
+              echo "The issue passes: removed comment $existing"
+            else
+              echo "The issue passes"
+            fi
+          elif [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@"$RUNNER_TEMP/comment.md" > /dev/null
+            echo "Updated comment $existing"
+          else
+            gh issue comment "$NUMBER" --body-file "$RUNNER_TEMP/comment.md"
+          fi

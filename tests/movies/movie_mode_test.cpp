@@ -104,7 +104,11 @@ class WaitingMode final : public coney::GameMode {
         ++updates;
         return coney::ModeResult::Stay;
     }
+    void suspend() override { ++suspends; }
+    void resume() override { ++resumes; }
     int updates = 0;
+    int suspends = 0;
+    int resumes = 0;
 };
 
 // A stack, a device, a fake screen and a movie player over fake movies (`LOGO` 10 frames at 29.97 with sound, the
@@ -257,4 +261,124 @@ TEST_CASE("movie player: only LOGO cannot be skipped", "[movies]") {
     CHECK_FALSE(coney::movies::movieSkippable("LOGO"));
     CHECK(coney::movies::movieSkippable("PLOGO"));
     CHECK(coney::movies::movieSkippable("L99_IN"));
+}
+
+namespace {
+
+// A mono sound of 64 frames of `value`, shared as the mixer takes it: a game sound playing when a movie starts.
+std::shared_ptr<const coney::audio::PcmSound> gameSound(std::int16_t value) {
+    auto sound = coney::audio::PcmSound::create(std::vector<std::int16_t>(64, value), 1, 48'000);
+    REQUIRE(sound.has_value());
+    return std::make_shared<const coney::audio::PcmSound>(std::move(*sound));
+}
+
+// What the movie player asked of the game's sound.
+struct SoundCalls {
+    int holds = 0;
+    int releases = 0;
+    int stops = 0;
+};
+
+// Gives `h`'s player a sound hold and a sound stop that count their calls in `calls`; the hold says it held the
+// sound when `held` (false: it was held already).
+void countSound(Harness& h, SoundCalls& calls, bool held) {
+    coney::movies::SoundHold hold;
+    hold.hold = [&calls, held] {
+        ++calls.holds;
+        return held;
+    };
+    hold.release = [&calls] { ++calls.releases; };
+    h.player->setSoundHold(std::move(hold));
+    h.player->setSoundStop([&calls] { ++calls.stops; });
+}
+
+} // namespace
+
+TEST_CASE("movie player: a game movie stops the game's sound; a debug request holds it and gives it back",
+          "[movies][debug]") {
+    // The game's own movie: Movie_Play stops every sound.
+    Harness game;
+    SoundCalls gameCalls;
+    countSound(game, gameCalls, true);
+    const auto before = game.mixer.play(gameSound(500));
+    game.player->playMovie("PLOGO");
+    game.runToEnd();
+    std::vector<std::int16_t> out(2);
+    game.mixer.mix(out);
+    CHECK(gameCalls.stops == 1);
+    CHECK(gameCalls.holds == 0);
+    CHECK_FALSE(game.mixer.isPlaying(before));
+
+    // The debug menu's request: the game's sound is held, never stopped, and given back once the movie ends.
+    Harness debug;
+    SoundCalls debugCalls;
+    countSound(debug, debugCalls, true);
+    const auto kept = debug.mixer.play(gameSound(500));
+    debug.player->playMovie("PLOGO", coney::movies::MovieRequest{.debug = true, .alwaysCaptions = false});
+    debug.step();
+    CHECK(debugCalls.holds == 1);
+    CHECK(debugCalls.releases == 0);
+    CHECK(debugCalls.stops == 0);
+    CHECK(debug.runToEnd() == 19);
+    debug.mixer.mix(out);
+    CHECK(debug.mixer.isPlaying(kept));
+    CHECK(debugCalls.holds == 1);
+    CHECK(debugCalls.releases == 1);
+    CHECK(debugCalls.stops == 0);
+}
+
+TEST_CASE("movie player: a debug request leaves alone a sound that was already held", "[movies][debug]") {
+    // The pause menu under the movie already holds the game's sound: the movie must not give it back.
+    Harness h;
+    SoundCalls calls;
+    countSound(h, calls, false);
+    h.player->playMovie("PLOGO", coney::movies::MovieRequest{.debug = true, .alwaysCaptions = false});
+    h.runToEnd();
+    CHECK(calls.holds == 1);
+    CHECK(calls.releases == 0);
+}
+
+TEST_CASE("movie player: the mode beneath a debug movie is suspended, frozen and resumed as it was",
+          "[movies][debug]") {
+    // Under --skip-movies a game movie never starts, but the debug menu's request still plays.
+    Harness h({{5, coney::pad::kCross}, {6, coney::pad::kCross}}, true);
+    h.step();
+    h.step();
+    REQUIRE(h.below.updates == 2);
+    h.player->playMovie("PLOGO");
+    CHECK(h.stack.top() == &h.below);
+    h.player->playMovie("PLOGO", coney::movies::MovieRequest{.debug = true, .alwaysCaptions = false});
+    CHECK(h.stack.top() == h.player.get());
+    CHECK(h.below.suspends == 1);
+    CHECK(h.player->stopsGameClock());
+    // Cross at step 5 skips it, as any button skips a game movie; the mode beneath ran no step meanwhile.
+    CHECK(h.runToEnd() == 4);
+    CHECK(h.player->counts().skipped == 1);
+    CHECK(h.below.updates == 2);
+    CHECK(h.below.resumes == 1);
+    h.step();
+    CHECK(h.below.updates == 3);
+}
+
+TEST_CASE("movie player: a debug request can show ordinary captions with the subtitle option off", "[movies][debug]") {
+    // A caption scene `plogo_sub` whose first caption shows at the movie's start.
+    const std::vector<coney::movies::CaptionRecord> records{
+        {.kind = 0, .text = "ENGLISH"}, {.kind = 1, .text = "plogo_sub"}, {.kind = 3, .text = "Hello"}};
+    const auto source = [&records](std::string_view /*movie*/) -> std::optional<coney::movies::MovieCaptions> {
+        coney::movies::MovieCaptions captions{coney::movies::Captions(records, "ENGLISH"),
+                                              coney::movies::CaptionTimeline({{.frame = 0, .command = 0}})};
+        CHECK(captions.captions.selectScene("plogo_sub"));
+        return captions;
+    };
+    for (const bool always : {false, true}) {
+        Harness h;
+        h.player->setCaptionSource(source);
+        h.player->playMovie("PLOGO", coney::movies::MovieRequest{.debug = true, .alwaysCaptions = always});
+        // The timeline first moves on 0.166 s in: the sixth step.
+        for (int step = 0; step < 8; ++step) {
+            h.step();
+        }
+        CHECK((h.player->caption() != nullptr) == always);
+        CHECK(h.player->counts().captionsShown == (always ? 1U : 0U));
+    }
 }

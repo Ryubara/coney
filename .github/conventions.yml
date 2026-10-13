@@ -41,21 +41,60 @@ paths:
   # A change here needs a change under `docs` (the living doc moves with the code) or a `Docs: none` line.
   code: ["src/", "python/src/"]
   docs: ["docs/", "research/"]
-  # A pull request that touches only these skips the engine builds (.github/scripts/ci-scope.sh) and the local gate's
-  # clang-tidy step, and a change to them is what `coney-tools check changed` builds the docs for. A trailing slash
-  # means a folder; `*` matches within one folder level, so "*.md" is the Markdown files at the top level only.
-  # ci-scope.sh reads this list itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / -
-  # and *; `coney-tools repo audit` (files.ci-scope) checks that the script can still read it.
+  # The three CI scope classes below decide what a pull request runs (.github/scripts/ci-scope.sh; the table is in
+  # docs/guides/building.md#what-a-pull-request-runs). A changed file takes the first class it matches, in the order
+  # docs_only, tools_only, engine; a file in none of them runs everything. A trailing slash means a folder; `*` matches
+  # within one folder level, so "*.md" is the Markdown files at the top level only. ci-scope.sh reads these lists
+  # itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / - and *;
+  # `coney-tools repo audit` (files.ci-scope) checks that the script can still read them.
+  #
+  # Read by neither the engine build nor the python package on any one OS in particular: the engine jobs are skipped
+  # and python runs on Linux only (its repository checks compare these files). A change to them is also what
+  # `coney-tools check changed` builds the docs for. The workflows here run on every pull request themselves (docs,
+  # pr) or only on Linux (hygiene, issue-status), and actionlint checks them all.
   docs_only:
     - "docs/"
     - "research/"
     - "*.md"
     - ".github/*.md"
     - ".github/conventions.yml"
+    - ".github/workflows/docs.yml"
+    - ".github/workflows/pr.yml"
+    - ".github/workflows/hygiene.yml"
+    - ".github/workflows/issue-status.yml"
     - "mkdocs.yml"
     - "mkdocs_hooks.py"
     - "requirements-docs.txt"
     - ".markdownlint*"
+  # The tools: never read by the engine's build or tests (CMake reads only src/, tests/, assets/ and cmake/), so the
+  # engine jobs are skipped, but the python package, its tests or its OS-dependent local gate read them, so python
+  # runs on every OS. The docs build imports python/src/coney_tools, but the docs workflow runs on every change anyway.
+  tools_only:
+    - "python/"
+    - ".claude/"
+    - "tools/"
+    - "bootstrap.ps1"
+    - "bootstrap.sh"
+    - "coney.local.example.toml"
+    - ".mcp.json"
+    - ".pre-commit-config.yaml"
+    - ".github/ISSUE_TEMPLATE/"
+    - ".github/workflows/python.yml"
+  # The engine: what the build, sanitizers and clang-tidy jobs read. They run; python runs on Linux only, because its
+  # checks that read C++ files (progress, natives) do not depend on the OS. Not here, so they run everything: the
+  # scripts in .github/scripts/, which the clang-tidy job or every job runs and python's tests run under bash on
+  # every OS.
+  engine:
+    - "src/"
+    - "tests/"
+    - "assets/"
+    - "cmake/"
+    - "CMakeLists.txt"
+    - "CMakePresets.json"
+    - ".clang-format"
+    - ".clang-tidy"
+    - ".github/actions/"
+    - ".github/workflows/build.yml"
   # Written by a generator, never by hand; on a merge conflict take either side and rerun it.
   generated:
     - {path: "docs/references/bindings/", by: "coney-tools natives render"}
@@ -244,6 +283,8 @@ labels:
     - {name: S-in-progress, color: 5319e7, description: "Status: an agent or person is working on it"}
     - {name: S-pending-review, color: 1d76db, description: "Status: a pull request is open"}
     - {name: S-blocked, color: "000000", description: "Status: waiting for another issue or a decision"}
+    - {name: S-conflict, color: e99695, description: "Status: a pull request conflicts with main (set by CI)"}
+    - {name: S-failing, color: b60205, description: "Status: a pull request fails a required check (set by CI)"}
     - {name: good first issue, color: 7057ff, description: "Good for newcomers"}
     - {name: help wanted, color: "008672", description: "Extra attention is needed"}
     - {name: duplicate, color: cfd3d7, description: "This issue already exists"}
@@ -275,8 +316,16 @@ hygiene:
     pr_pending_hours: 3                          # a required check queued or running this long: stuck in CI
   # `coney-tools repo pr-health` calls a failing required check "lint" when it is one of these (the author fixes the
   # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
+  # `repo pr-health --labels` (run by hygiene.yml on every push to main) keeps these labels on the open pull requests:
+  # the label of each cause a pull request has, and none of the others. Only these labels are ever added or removed.
+  # GitHub computes whether a pull request conflicts only on request, so a read right after a push often says UNKNOWN:
+  # the command rereads up to unknown_retries times, unknown_wait_seconds apart, before it leaves those pull requests
+  # as they are.
   pr_health:
     lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
+    labels: {conflict: S-conflict, checks-failed: S-failing}
+    unknown_retries: 4
+    unknown_wait_seconds: 15
     # `coney-tools repo pr-health --rerun` restarts a failed required check only when the failure is stale, never when
     # the code is at fault: (1) title_check / body_check failed but the pull request's current title / description passes
     # `repo check-title` / `check-body` (it was fixed after the run); (2) the check's conclusion is one of `conclusions`,
@@ -376,8 +425,8 @@ hygiene:
       scope: files
       severity: error
       fix: skill
-      keys: [paths.docs_only]
-      summary: ".github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file"
+      keys: [paths.docs_only, paths.tools_only, paths.engine]
+      summary: ".github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file"
     files.large-file-limit:
       scope: files
       severity: error
@@ -396,6 +445,12 @@ hygiene:
       fix: skill
       keys: [issues.forms, issues.cli_uses_form]
       summary: "an open issue lacks a required section of its form (or was filed with other headings)"
+    issue.form:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [issues.forms, issues.cli_uses_form, issues.links]
+      summary: "an open issue is not in its form's exact shape: ### headings, names, order, no extra sections, dropdown values (coney-tools issue check)"
     issue.placeholder:
       scope: github
       severity: error

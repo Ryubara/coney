@@ -928,12 +928,13 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
   reaction** from the [table](#hit-codes) at `0x002671a8`, played before the hit lands.
 - Event type **`0x25`** sends message **`0xa5`** to the clip's own human (`0x00101dd8`). It sits on frames 6-13 of
   616 `gen_duck` (0.20-0.43 s into the 0.7 s duck, the same for Rembrandt and the civilian; read from the disc), so
-  it opens the duck's **counter window**. The handler (`0x00245920`, case `0xa5`), when `0x00225498` allows it and
-  the human is not both in state `0x100000` and flagged `0x8000000` (human `+0xe0`), asks whether to counter: a
-  player when its current command (per-player `+0x20`, `0x00147ef8`) is one of `0xf`, `0x11`, `0x15` (square) or
-  `0x10`, `0x12`, `0x16` (cross) (`0x0027b988`), so square or cross pressed or held during the window; an AI human
-  asks its reaction goal or top goal (`0x0028c6a8`, goal types `0x17`, `0x1b` and `0x85`). Yes sets record `+0x14` =
-  **`0xe`**.
+  it opens the duck's **counter window**. The rise 199 carries the same event, so a downed player counters out of
+  his rise by the same path ([Down and under attack](#ground-escape)). The handler (`0x00245920`, case `0xa5`),
+  when `0x00225498` allows it and the human is not both in state `0x100000` and flagged `0x8000000` (human
+  `+0xe0`), asks whether to counter: a player when its current command (per-player `+0x20`, `0x00147ef8`) is one
+  of `0xf`, `0x11`, `0x15` (square) or `0x10`, `0x12`, `0x16` (cross) (`0x0027b988`), so square or cross pressed or
+  held during the window; an AI human asks its reaction goal or top goal (`0x0028c6a8`, goal types `0x17`, `0x1b`
+  and `0x85`). Yes sets record `+0x14` = **`0xe`**.
 - On its next update `0x00254e78` handles `0xe` (`0x002550f4`): nothing while the human holds an object of class 8
   (`0x00231a38`); `+0x14` cleared and nothing else when `0x00225498` refuses; otherwise it keeps its target
   (`0x002267a0`) if that is within 1.25 × the reach of anim 617 (`0x00254508`), or looks for one in that range
@@ -1082,10 +1083,14 @@ move is the same for every Warrior class's anim ids, and the clips decide what i
   59's first update and `Human_ReleaseCarriedProps(Rembrandt)` from it (return `0x00103938`) 84 updates later.
   Rembrandt held no spray paint in either run.
 
-**Coney** (#223): play Rembrandt's 59 as it is, and act on the clip events above for any human: `0x30` makes the
-named `dyn_` object and attaches it at point `0x13` (kind 5), `0x37` sets its attach point and local pose, `0x31`
-removes it; a scene start also removes it ([Scenes](scenes.md#humans)). Disc test: through lesson 6, Rembrandt has a
-`dyn_s_spraycan` attached from 59's first update to about update 85, and none after.
+**Coney** (#223, implemented): `Human` acts on the clip events above for any human (`repo:src/human/carried_prop.h`,
+`Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's point times its scale), `0x31`
+removes it when the name matches, and a script's bind of the human to a scene role removes it
+([Scenes](scenes.md#humans)). Play mode makes the object (`repo:src/platform/play_level_props.cpp`: the `dyn_` type's
+record, kind 5 only) and hangs it from the bone, drawn with the hats. Stand-ins: a type of another kind is not made
+(the original ignores kind 6 and puts the others in the hand), and the drop of a held kind-`0x27` object by
+`Human_ReleaseCarriedProps` is not modelled. Disc test (`tests/platform/disc_level99_power_lesson_test.cpp`): through
+lesson 6 the can is carried from 59's update 1 to 77 of its 59 and is gone after.
 
 ### Strong grapple {#strong-grapple}
 
@@ -2593,9 +2598,54 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   rose into 356 / 357. Confirmed (runtime). The path is the duck's counter: `Human_UpdateActions` (`0x00254e78`), when
   record `+0x14` is `0xe` and the human is free to react, finds the foe within 1.25 × 617's far range (or the
   nearest one, `Player_FindCounterTarget`), ends the reaction clip and the stun, and calls `Block_DuckCounter`
-  (`0x002617f8`), which plays 617-620 by the target's side ([Block](#block)). Confirmed (code). **Inferred**: 199 sets
-  `+0x14` = `0xe` the way 616 does, through its own event `0x25` window with square or cross pressed (the setter was
-  not traced in 199; see Open questions).
+  (`0x002617f8`), which plays 617-620 by the target's side ([Block](#block)). Confirmed (code).
+- **What opens it: the rise's own `0x25` events.** 199's clip, `gen_face_up_ground_get_up` (21 frames; the generic
+  set's, and no character maps 199 to another clip), carries event **`0x25` on frames 11-18**, the duck's event
+  ([Block](#block)); its other events are `0x43` and 7 at frame 0, `0x44` at 6, `0xb` at 9 and 14, and **`0x48` at frame
+  14**. Inferred: the frames come from the clip's event list read from the disc (numbers only), a file check and not a
+  level of its own; the window they predict is confirmed (runtime) in the table below, which fits them. Only three clips
+  on the disc carry `0x25`: the two ducks of anim 616 (`gen_duck`, frames 6-13; `dest_bo_duck`, 1-13) and this one. So
+  the rise counter is the duck counter's own path, not a code path of its own: each `0x25` sends message `0xa5` to the
+  clip's human (`Anim_FireFrameEvents` `0x00101dd8`), and the handler (`Human_HandleMessage` `0x00245920`, case at
+  `0x00246ae8`) sets record `+0x14` = `0xe` (`0x00246b64`) when `Human_IsFreeToReact` (`0x00225498`) allows it, the
+  human is not both stunned (`0x100000`) and flagged `0x8000000` (human `+0xe0`), and a player's current command is
+  square (`0xf`, `0x11`, `0x15`) or cross (`0x10`, `0x12`, `0x16`) (`0x0027b988`). Confirmed (code).
+- **Why the window ends at frame 13.** Event `0x48` (frame 14) clears the clip's held flags and sets held **`0x40000`**
+  (the recovery phase) on the human and the clip (`Anim_FireFrameEvents`, the `0x48` branch). `Human_IsFreeToReact`
+  refuses every held flag but `0x40089000`, so it lets the rise's `0x8000` through and refuses `0x40000`: from frame
+  14 a `0xa5` is refused, or a `+0x14` = `0xe` it set that update is cleared by `Human_UpdateActions` (its
+  `Human_IsFreeToReact` test fails, `Human_SetAction(h, 0)`). The state flags are no bar: the down state `0x80000`
+  (kept through 199 until its end callback `Human_EndDownState` `0x0025e26c`) and the stun `0x100000` are outside
+  its state mask `0x7bf9e877ff0`. So **only frames 11-13 count**. Confirmed (code); the frame-14 `0x25` being dead is
+  inferred from the event order (`0x25` before `0x48` in the clip's list) and fits the runtime below.
+- **The window at runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-13: `ground_rise_counter` and variants of it,
+  a copy of slot 6 as above with the second kick removed; square tapped at update 80 starts 199 on update 81, then one
+  square or cross tap; k counts updates from 199's first, k = 0 at 81). 199 ran 28 updates (81-108) with no input
+  after it, so it plays at about 0.75 speed, as 616 does. A square tapped at update t reached the record (command
+  `0xf`) on t + 1; the table gives that update.
+
+  | Square's command reached the record on | k | Result |
+  | --- | --- | --- |
+  | updates 90, 91, 93, 94, 95 | 9-14 | nothing; he rises into 356 / 357 |
+  | **96, 97, 98** | **15-17** | **620** on that same update, the puppet at his left |
+  | 99-102, 105-107 | 18 and later | nothing |
+
+  Cross, by the update it was tapped: tapped at 94 or 95, 620 on update 96 (k = 15); tapped at 96, 620 on 97
+  (k = 16); tapped at 98 or 100, nothing. Which cross command (`0x12` press or `0x10` release) was the one taken was
+  not recorded. The counter plays on the update the command arrives: the clip's events fire before
+  `Human_UpdateActions` handles `+0x14` in the same update.
+
+  **The runtime edges, k = 15-17, are the rule; the frame range is only the explanation.** Frames 11-13 at exactly
+  0.75 speed would span k = 15-18, yet k = 18 does nothing, so 199's effective rate is a little above 0.75 (about
+  0.78 from the edges; inferred). The rate was not read from the code or the clip, so a reimplementation that maps
+  frames 11-13 through a 0.75 rate gets k = 18 wrong; it must reproduce k = 15-17.
+- **The AI does not counter from the rise.** The `0xa5` handler asks an AI's brain (`Brain_WantsCounter`
+  `0x0028c6a8`): while its reaction goal is Grounded (`0x17`) the answer is `GroundedGoal_WantsCounter` (`0x002b4aa0`),
+  which is always no, and the Grounded goal lasts while the human is knocked down (`GroundedGoal_Process`
+  `0x002b4aa8` ends it once `Human_IsKnockedDown` (`0x00223b98`: state `0x80000`, with a record) is false). State
+  `0x80000` is cleared only by 199's end callback (`Human_EndDownState` `0x0025e26c` → `Human_GetUp`), so the goal
+  lasts through the whole of 199. Confirmed (code);
+  not seen at runtime.
 - **The AI.** An AI's Grounded goal (`0x17`, `0x002b4aa8`) queues kind 42 on itself about 1.9 s after going down while
   it is attacked ([AI](ai.md#fight-reactions)). `AttackKind_ToCommand` (`0x00231090`, table `0x0055c170`) makes kind
   42 the command `0xf` (square), so it is the AI's mash: one command, which cuts its ground time like a press
@@ -2634,13 +2684,14 @@ mount plays when something **outside** the pair breaks it (a teleport, a hit on 
 [Breaking a pair](#pair-break)): the victim plays 245 then 199. The escapes here are the victim's own and play 246
 (the break) or 242 (the reversal) instead; none of them plays 199.
 
-**Coney today** (read 2026-10-11, `src/combat`, `src/human`, `src/ai`):
+**Coney today** (read 2026-10-11, the rise counter again 2026-10-13, `src/combat`, `src/human`, `src/ai`):
 
 - The ground hit (195), the ground time and the mash's cut are built (`human/victim.*`, `Fighter` victim side).
   Whether a press is counted while 303 or 195 still holds a flag (the original counts none) should be checked.
 - **Missing: the counter from the rise.** Coney opens the duck counter only from 616's own `0x25` events
-  (`combat/being_hit.h`, `fighter_victim.cpp`); a square or cross late in 199 does nothing. Faithful: the counter
-  (617-620 by side, against the foe within 1.25 × 617's reach) when the rise's window is open.
+  (`combat/being_hit.h`, `Fighter::duckCounter` in `fighter_victim.cpp`, which tests that the clip playing is 616),
+  and a player in 199 never reaches that test: `stepVictim` reports him as reacting, so `Fighter::update` returns
+  before step 4. A square or cross late in 199 does nothing.
 - **Missing: the grounded mount.** `Mount_StartOnGrounded` is not built for anyone: circle at a downed human
   neither mounts him (237-240 / 241) nor cuts a rise below 70 %.
 - **Missing: the mounted player's inputs.** No AI grabs, tackles or mounts yet ([Coney's implementation](#coneys-implementation)),
@@ -2651,6 +2702,37 @@ mount plays when something **outside** the pair breaks it (a teleport, a hit on 
 - A disc test: knock the player down with an AI, kick him (195), press square in 196 (he rises next update), press
   square late in 199 (620 / 617-620 by side, the attacker knocked down); and an AI that mounts him from the ground,
   circle until 246, then `S1` hits.
+
+**What an implementer needs for the rise's counter** (#231):
+
+1. **The rule, per clip, not per anim id.** On every update, the `0x25` events of the clip the human is playing that
+   pass this update open the counter when (a) the human is free to react: no held flag but `0x8000`, `0x1000`,
+   `0x80000` or `0x40000000` (so a clip that has reached its `0x48` recovery, held `0x40000`, refuses), and none of
+   the state flags in `0x7bf9e877ff0` (being down, `0x80000`, and stunned, `0x100000`, are allowed); (b) he is not
+   both stunned and flagged `0x8000000`; (c) a player's command that update is square (`0xf`, `0x11`, `0x15`) or cross
+   (`0x10`, `0x12`, `0x16`); an AI's comes from its goals, and a Grounded AI says no. Coney's
+   `combat::asksDuckCounter` already holds (c). For 199 this means the events of frames 11-13 (frame 14's is in the
+   same update as the `0x48` and is refused). **Test against the runtime window, k = 15-17 from 199's first update,
+   not against frames 11-13 through a 0.75 rate** (that gives k = 15-18, and k = 18 does nothing in the original;
+   199's exact rate is not known, see the runtime paragraph above).
+2. **Where it runs.** Before the down state's own update skips the dispatcher: in the original the `+0x14` = `0xe`
+   test comes before `Human_UpdateDown` and before the dispatcher, so being down (`0x80000`) does not stop it. In Coney
+   that means the counter check must run for a human in his rise even though `stepVictim` says he is reacting.
+3. **What it does.** The same as the duck's: the foe if within 1.25 × anim 617's far range, else the nearest human in
+   that range; end the rise clip and the stun; play 617-620 by the target's side (`combat::duckCounterClip`), with the
+   counter's own hit: 50 health points (the damage field of 617-620 in the generic set's
+   [Anim Range List](#damage-table), read from the disc), which knocked the puppet down at runtime. The counter
+   plays on the update the command arrives. Without a target nothing plays (the request lasts, as for the duck,
+   while the window is open).
+4. **Not for AI humans in their rise** (their Grounded goal says no).
+5. **Failing tests to write first.**
+    - Unit (`tests/human`): a player knocked down by a crushing hit, ground time over, rises with 199 at update R
+      (an attacker 0.8 m to his left). Square whose command lands at R + 15, R + 16 or R + 17 plays 620 that update,
+      clears the stun and hits the attacker; at R + 14 or R + 18 (and later) nothing plays and he rises into 356 /
+      357. The same with cross (`0x12` press, `0x10` release). Today all fail at the first case.
+    - Unit: the same for an AI human in 199 with its Grounded goal: no counter whatever its command.
+    - Disc (`tests/platform`): the clip mapped to anim 199 for the generic set carries `0x25` on frames 11-18 and
+      `0x48` on frame 14 (counts only), and Coney's window from it is k = 15-17 (the runtime edges).
 
 ### Knocked out, and the mission failing {#defeat}
 
@@ -4832,9 +4914,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 
 ## Open questions
 
-- **The rise's counter** ([Down and under attack](#ground-escape)): which part of 199 `GROUNDED_RISE` sets record
-  `+0x14` = `0xe` (an event `0x25` window as in 616 is inferred), the window's frames, and whether cross opens it
-  too. Seen once at runtime (square late in 199 → 620).
+- **The rise's counter** ([Down and under attack](#ground-escape)). (Answered: 199's own `0x25` events, frames 11-18,
+  of which 11-13 count because its `0x48` at 14 starts the recovery; square or cross; k = 15-17 at runtime.) Still
+  open: 199's exact play rate (about 0.75-0.78 from the measured edges).
 - **The block**: whether a strength-3 hit can still break a block. (Answered: `+0x14` = `0xe`, message `0xa5`, is
   the duck counter, [Blocking](#block); seen at runtime, and the AI goals' answer traced.) The block goal's byte `+0x14`
   (answered): its Start rolls it against the block chance ([AI](ai.md#block)).

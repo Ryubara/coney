@@ -1,0 +1,51 @@
+# The gang-battle pass (issue #273): who changes a fighter's target and from where, who calls for help and who is sent
+# to help, logged beside the all-humans trace of research/traces/scenarios/gang_battle*.toml.
+# Research: docs/research/gang-fights.md#trace, docs/research/rumble.md#gang-battle-trace.
+# A human pointer maps to its index as (pointer - 0x00640c80) / 0x6d0, a brain as (brain - 0x006d53f0) / 0x2f0.
+
+[hook.set-target]
+description = "Each call of Brain_SetTarget(brain, human, force) (0x0028cfe0): the brain, the new target (a human pointer, 0 for none), the force flag and the caller, which names the cause of a target switch."
+research = "docs/research/gang-fights.md#switches"
+address = 0x0028cfe0
+# addiu sp,sp,-0x70; sq s0,0x50(sp)
+original = [0x27bdff90, 0x7fb00050]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  { value = "a0", name = "brain" },
+  { value = "a1", name = "human" },
+  { value = "a2", name = "force" },
+  # Most calls come through Human_SetTarget (0x00226c30, ra 0x00226cbc), which keeps its own return address at
+  # 0(sp): logged here, it names the goal that set the target.
+  { value = "[sp + 0x0]", name = "ra2" },
+]
+
+[hook.help-call]
+description = "Each call of Gang_BroadcastHelpCall (0x00293640), event 20 to the humans near the caller: the caller (a human pointer), its three arguments and the function that called it."
+research = "docs/research/gang-fights.md#help"
+address = 0x00293640
+# addiu sp,sp,-0x40; move t1,a0
+original = [0x27bdffc0, 0x0080482d]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  { value = "a0", name = "human" },
+  "a1",
+  "a2",
+  "a3",
+]
+
+[hook.send-helper]
+description = "Each call of Gang_SendHelper (0x002b75b8), TacticAttack's 3 s idle check sending an idle member toward the farthest busy mate: its arguments and the caller."
+research = "docs/research/gang-fights.md#help"
+address = 0x002b75b8
+# addiu sp,sp,-0x60; sq s2,0x30(sp)
+original = [0x27bdffa0, 0x7fb20030]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  "a0",
+  "a1",
+  "a2",
+  "a3",
+]

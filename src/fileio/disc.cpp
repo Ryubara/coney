@@ -220,6 +220,19 @@ const Disc::Location* Disc::find(std::string_view name) const {
 
 bool Disc::has(std::string_view name) const { return find(name) != nullptr; }
 
+std::vector<std::string> Disc::filesIn(std::string_view folder) const {
+    std::vector<std::string> names;
+    if (folder.empty()) {
+        return names;
+    }
+    // The keys of a folder's files are `FOLDER/FILE`, and the map is sorted, so they sit together in name order.
+    const std::string prefix = cleanDiscName(folder) + "/";
+    for (auto it = m_files.lower_bound(prefix); it != m_files.end() && it->first.starts_with(prefix); ++it) {
+        names.push_back(it->first.substr(prefix.size()));
+    }
+    return names;
+}
+
 std::expected<std::uint64_t, Error> Disc::fileSize(std::string_view name) const {
     const Location* location = find(name);
     if (location == nullptr) {

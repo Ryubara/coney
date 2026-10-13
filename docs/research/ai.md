@@ -1965,6 +1965,33 @@ The gang record, its events, update and deletion, the tactics (the scripted tact
 fights, spawners, crimes and the police, the Warriors' commands, follow, automatic commands and formations, and the
 gang functions. The section is on [AI gangs, tactics and formations](ai-gangs.md#gangs).
 
+### Gang coordination in a fight {#gang-coordination}
+
+How the members of a gang share out a big fight (issue #273). There is no fight coordinator: nothing owns a brawl or
+hands out targets, and each brain meets five mechanisms on its own. Confirmed (code) on
+[Gang fights](gang-fights.md), and checked at runtime on Rumble's biggest battle
+([Gang fights: runtime checks](gang-fights.md#runtime)):
+
+1. **The target's own limits**: at most 4 attack slots on a man, of which only as many as the attackers' gang allows
+   (`CfgGang` values 2 and 3) may swing at once, with a shared gap between swings
+   ([How many hit one man at once](gang-fights.md#limits), [Attack slots, active places and spacing](#attack-places)).
+2. **A shared score** for choosing among enemies: −999 for a man whose slots are full spreads a gang, +20 for the
+   player and +400 for the gang's shared target focus it ([Who goes for whom](gang-fights.md#targets),
+   [Choosing among enemies](#enemy-score)).
+3. **Waiting**: a slot holder without a place repositions round the man and taunts
+   ([What the waiting ones do](gang-fights.md#waiting), [The reposition](#fight-reposition)); every fight goal ends
+   within 4 s unless its holder still swings, so members re-choose often
+   ([Target switches](gang-fights.md#switches)).
+4. **Help calls** (event 20): a member hit or warned calls within 20 m, and only the idle answer
+   ([Helping a gang-mate](gang-fights.md#help), [Help calls](#help-calls)).
+5. **The gang's tactic and team-ups**: TacticAttack's 3 s idle check and its seven leader orders, drawn by the gang
+   type's strategy weights when `GangEnableAttackStrategies` is set ([The gang as a whole](gang-fights.md#gang)).
+
+Rumble's two CPU sides run different tactics (side 1 the Warrior attack command's, side 2 TacticConfront then
+TacticAttack; [Rumble's CPU-controlled sides](gang-fights.md#rumble)). The step-by-step units an implementer builds
+from are [AI reimplementation, units 1-7](ai-reimpl.md#unit-1); the recordings, their settings and the per-human trace
+are [Rumble: gang battle trace](rumble.md#gang-battle-trace).
+
 ### The first mission's cast {#level99}
 
 From `level99`'s scripts and the `CfgChar` calls (ids and values only). The brain type is the class's `behaviour`
