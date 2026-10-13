@@ -2317,8 +2317,9 @@ spawners and link to their subject pages; the rest are this mission's.
     Next step: find which human hits first in Coney and what makes it hostile. Note: the original's player had 1,170
     health here and Coney's 900; the original state came from a save with progress, so that may be upgrades, not
     a difference (not checked). **Why the original's hits are 90-health knock-downs** (issue #492): every park and
-    fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings the bat's clips (501 at a run, 36, 37 at a man down),
-    and each hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy high reaction
+    fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the
+    unarmed 193 / 194, which deal 25, at a man down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 ×
+    the holder's class float, with the heavy high reaction
     292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
     hit](combat-reactions.md#bat-knockdown)).
 15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`

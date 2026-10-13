@@ -2,13 +2,14 @@
 # and its hooks show which clip each Fury hits with, the damage each hit deals and the reaction it plays. The state is
 # an analyst's own (level34 entered through mode 8 from a level99 state, saved 9 ticks into the level, after the
 # Furies took their bats); pass it with --state. Research: docs/research/combat-reactions.md#bat-knockdown.
-description = "level34 checkpoint 5, no input: the park Furies' first hits on a player standing still"
+description = "level34 checkpoint 5, no input: the park Furies' first hits on a player standing still (slot 7 is level99: record with --state and the level34 state)"
 research = "docs/research/combat-reactions.md#bat-knockdown"
 input = "l34_furies_first_hits.txt"
 updates = 1500
 fields = ["player"]
 
 [original]
+# level99's slot, a placeholder the format needs: without --state this measures level99, not level34.
 slot = 7
 patches = ["strike-contact", "anim-dispatch", "hit-reaction", "deal-damage"]
 
