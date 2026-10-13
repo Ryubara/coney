@@ -5798,6 +5798,11 @@ subsystem = "Human"
 size = 8248
 
 [[function]]
+address = 0x00247a50
+name = "Nav_WalkDistanceTo"
+subsystem = "Human"
+
+[[function]]
 address = 0x00247fc0
 name = "Human_StrikeShapeOn"
 subsystem = "Human"
@@ -7239,6 +7244,11 @@ subsystem = "Human"
 size = 792
 
 [[function]]
+address = 0x00295250
+name = "Formation_RetargetFollowerMoves"
+subsystem = "Human"
+
+[[function]]
 address = 0x002953c8
 name = "Formation_AssignSlots"
 subsystem = "Human"
@@ -7257,6 +7267,11 @@ subsystem = "Human"
 size = 40
 
 [[function]]
+address = 0x00295e38
+name = "Formation_GetFollowPoint"
+subsystem = "Human"
+
+[[function]]
 address = 0x00295ec8
 name = "Formation_SetSlot"
 subsystem = "Human"
@@ -7273,6 +7288,11 @@ address = 0x00296028
 name = "Formation_Leave"
 subsystem = "Human"
 size = 160
+
+[[function]]
+address = 0x002963b0
+name = "Formation_GetAhead"
+subsystem = "Human"
 
 [[function]]
 address = 0x00299238
@@ -8457,6 +8477,11 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x002de540
+name = "FollowPlayerGoal_Resume"
+subsystem = "Human"
+
+[[function]]
 address = 0x002de7c0
 name = "FollowPlayerGoal_Process"
 subsystem = "Human"
@@ -8491,6 +8516,16 @@ address = 0x002dfba8
 name = "Goal_FollowFormation"
 subsystem = "Human"
 size = 136
+
+[[function]]
+address = 0x002dfef8
+name = "FollowFormation_PickSpeed"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e0088
+name = "FollowFormationGoal_Process"
+subsystem = "Human"
 
 [[function]]
 address = 0x002e05a8
@@ -8875,6 +8910,11 @@ address = 0x002fb9e8
 name = "MoveAction_Init"
 subsystem = "Human"
 size = 248
+
+[[function]]
+address = 0x002fbbe8
+name = "MoveAction_SetTarget"
+subsystem = "Human"
 
 [[function]]
 address = 0x002fbd18

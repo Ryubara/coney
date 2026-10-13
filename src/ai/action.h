@@ -43,6 +43,10 @@ class Action {
     /// Whether it has started (`+0x06`).
     [[nodiscard]] bool started() const { return m_started; }
 
+  protected:
+    /// Marks it not started (clears `+0x06`), so the brain runs its start() again on the next update.
+    void restart() { m_started = false; }
+
   private:
     friend class Brain;
 
