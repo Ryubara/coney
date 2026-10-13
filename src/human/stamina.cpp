@@ -11,7 +11,8 @@ StaminaTuning& staminaTuning() {
     return tuning;
 }
 
-Stamina::Stamina(int maximum) : m_value(std::max(maximum, 0)), m_maximum(std::max(maximum, 0)) {}
+Stamina::Stamina(int maximum, float refillPerSecond)
+    : m_value(std::max(maximum, 0)), m_maximum(std::max(maximum, 0)), m_refillPerSecond(refillPerSecond) {}
 
 int Stamina::change(float points) {
     // **Coney's choice**: one fraction carried, as the original keeps one per meter (`+0x158`); it starts again
@@ -49,7 +50,7 @@ void Stamina::refill(const RefillBlocks& blocks, float seconds) {
         m_fraction = 0.0F;
         return;
     }
-    change(staminaTuning().refillPerSecond * seconds);
+    change(m_refillPerSecond * seconds);
 }
 
 void Stamina::fill() {

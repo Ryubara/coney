@@ -143,12 +143,12 @@ TEST_CASE("rage holds 5 s after a gain, then decays at 7.8 a second", "[combat]"
     CHECK(rage.add(25.0F, tuning, 0) == 36);
     // Held for 5 s: 150 updates.
     for (std::uint64_t update = 1; update <= 150; ++update) {
-        rage.update(msAt(update), tuning);
+        rage.update(msAt(update));
     }
     CHECK(rage.value() == 36);
     // Then 2 s of decay take 15 or 16 (7.8 a second).
     for (std::uint64_t update = 151; update <= 210; ++update) {
-        rage.update(msAt(update), tuning);
+        rage.update(msAt(update));
     }
     CHECK(rage.value() >= 20);
     CHECK(rage.value() <= 21);
@@ -156,7 +156,7 @@ TEST_CASE("rage holds 5 s after a gain, then decays at 7.8 a second", "[combat]"
     rage.add(1.0F, tuning, msAt(210));
     const int before = rage.value();
     for (std::uint64_t update = 211; update <= 300; ++update) {
-        rage.update(msAt(update), tuning);
+        rage.update(msAt(update));
     }
     CHECK(rage.value() == before);
 }
@@ -174,13 +174,13 @@ TEST_CASE("rage starts only with a full meter, gains nothing while on and drains
 
     // 9.36 a second: after 2 s the meter has lost 18.
     for (std::uint64_t update = 1; update <= 60; ++update) {
-        rage.update(msAt(update), tuning);
+        rage.update(msAt(update));
     }
     CHECK(rage.value() == 60);
     // Full to empty in about 8.33 s (8.34 s at runtime).
     std::uint64_t update = 60;
     while (rage.raging() && update < 1000) {
-        rage.update(msAt(++update), tuning);
+        rage.update(msAt(++update));
     }
     CHECK_FALSE(rage.raging());
     CHECK(rage.value() == 0);
@@ -189,7 +189,6 @@ TEST_CASE("rage starts only with a full meter, gains nothing while on and drains
 }
 
 TEST_CASE("a forced rage starts with any meter, and an empty one ends at the next update", "[combat]") {
-    const CombatTuning tuning;
     RageMeter rage;
     rage.set(40);
     rage.force(0);
@@ -199,6 +198,33 @@ TEST_CASE("a forced rage starts with any meter, and an empty one ends at the nex
     rage.set(0);
     rage.force(msAt(1));
     CHECK(rage.raging());
-    rage.update(msAt(2), tuning);
+    rage.update(msAt(2));
     CHECK_FALSE(rage.raging());
+}
+
+TEST_CASE("a Warrior class gives the rage meter its maximum, its gain and its decay and drain", "[combat]") {
+    const CombatTuning tuning;
+    // Cleon's class on normal: 120, 162 %, and per 20 s 110 % of the maximum decayed and 168 % drained.
+    RageMeter rage(RageClass{.maximum = 120, .gainPercent = 162, .decayPercent = 110, .drainPercent = 168});
+    CHECK(rage.maximum() == 120);
+    // 10 points x 162 % = 16.2: 16.
+    CHECK(rage.add(10.0F, tuning, 0) == 16);
+    // Past the gain's 5 s hold, 100 decays at 120 x 110 % / 20 s = 6.6 a second: 66 over 10 s.
+    std::uint64_t update = 150;
+    rage.update(msAt(update));
+    rage.set(100);
+    for (int i = 0; i < 300; ++i) {
+        rage.update(msAt(++update));
+    }
+    CHECK(rage.value() >= 33);
+    CHECK(rage.value() <= 35);
+    // Raging, the full meter drains at 120 x 168 % / 20 s = 10.08 a second: about 11.9 s to empty.
+    rage.set(120);
+    REQUIRE(rage.start(msAt(update)));
+    const std::uint64_t started = update;
+    while (rage.raging() && update < started + 1000) {
+        rage.update(msAt(++update));
+    }
+    CHECK(update - started >= 355);
+    CHECK(update - started <= 360);
 }

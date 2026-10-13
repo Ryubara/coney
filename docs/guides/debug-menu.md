@@ -208,8 +208,10 @@ stands, at full health, with the camera behind him, through the play mode's own 
 animation set and moves (their Anim Range List), the speeds its clips give, and his class, taken as the level's
 starting player takes his. That is the class's damage table scaled by his Warrior class's percentage
 ([Damage](../research/combat.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type, else the
-type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, hurt threshold,
-stun and down times. The Player page's *Character* line shows both classes. The AI fighters are made again where they
+type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, stamina, hurt
+threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800 × 85 % =
+1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line
+shows both classes. The AI fighters are made again where they
 stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
 character. In a level whose scripts hold the player (every story level, the hub included) the brains and the scripts
 hold him by his handle, so he is not made again but becomes the type in place (`human::Player::changeCharacter()`):
@@ -219,9 +221,8 @@ where he was with the camera where it was. The scripts' record of him and his br
 (`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the type. The
 new character loads from the disc, so that frame stalls briefly.
 
-Not taken from the configuration yet, because Coney does not model them for a player: the health (he keeps 900, the
-player's maximum read at runtime, which the class's 1800 does not explain), the power class's stamina, the Warrior
-class's rage, mashing, theft and mugging stats, the body scale (Rembrandt's 0.97), the speed class (a fallback the
+Not taken from the configuration yet, because Coney does not model them for a player: the Warrior class's cuffing,
+theft and mugging stats, the gym upgrades, the body scale (Rembrandt's 0.97), the speed class (a fallback the
 original does not use in play, [Speed classes](../research/characters.md#speed-classes)), the attack table, attack
 delays and brain type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim
 slots.
@@ -339,11 +340,11 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | --- | --- |
 | Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8) |
 | Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), contact clear (0.01 m left between the walking sphere and a wall), air radius (0.5 × scale) |
-| Sprint | stamina maximum (135), drain (20/s), refill (40/s) |
+| Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), auto-centre (on; off is the default rule), one player camera `0x0050b19c` (on), leash near and far (4.8 m, 5.3 m), pitch (13°), look-at height (1.4 m) |
-| Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage drain (9.36/s), rage hold (5000 ms), rage decay (7.8/s), the button mash, the mugging and the stereo theft ([Combat](../research/combat.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
+| Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage hold (5000 ms) (the rage's drain and decay are the player's Warrior class's), the button mash, the mugging and the stereo theft ([Combat](../research/combat.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
 | Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen) |
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.

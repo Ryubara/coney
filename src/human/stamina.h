@@ -11,13 +11,16 @@
 
 namespace coney::human {
 
-/// The stamina values the debug menus may edit while the game runs (docs/guides/debug-menu.md#tunables). Each
-/// defaults to Rembrandt's researched value; read through staminaTuning().
+/// The stamina value the debug menus may edit while the game runs (docs/guides/debug-menu.md#tunables), at its
+/// researched value by default; read through staminaTuning(). The maximum and the refill are each human's power
+/// class's (`+0x2c`, `+0x2e`), so they are not tunables.
 struct StaminaTuning {
-    int maximum = 135;             ///< The power class's `+0x2c` (class 64, Rembrandt): a new human starts full.
-    float drainPerSecond = 20.0F;  ///< Lost each second at the sprint gait (`0x005101f4`, CfgBurnRates rate 5).
-    float refillPerSecond = 40.0F; ///< Gained each second otherwise (the power class's `+0x2e`).
+    float drainPerSecond = 20.0F; ///< Lost each second at the sprint gait (`0x005101f4`, CfgBurnRates rate 5).
 };
+
+/// Rembrandt's class 64: 135 points, refilled 40 a second (docs/research/characters.md#power-classes).
+inline constexpr int kPlayerStaminaMax = 135;
+inline constexpr float kPlayerStaminaRefillPerSecond = 40.0F;
 
 /// The one StaminaTuning the game uses; at its defaults unless a debug menu changed it.
 [[nodiscard]] StaminaTuning& staminaTuning();
@@ -33,8 +36,9 @@ struct RefillBlocks {
 /// with the fraction of a point carried from one update to the next.
 class Stamina {
   public:
-    /// Full stamina of `maximum` points.
-    explicit Stamina(int maximum = staminaTuning().maximum);
+    /// Full stamina of `maximum` points refilling `refillPerSecond` (the power class's `+0x2c` and `+0x2e`).
+    /// @orig 0x00223188 Human_StaminaMax (unknown)
+    explicit Stamina(int maximum = kPlayerStaminaMax, float refillPerSecond = kPlayerStaminaRefillPerSecond);
 
     /// The drain: at the sprint gait, with no action flag set (`busy`: record `+0x08` is not 0), stamina loses
     /// `drainPerSecond × seconds`. Returns true when this took it to 0 (the caller then ends the sprint).
@@ -55,6 +59,7 @@ class Stamina {
 
     int m_value;
     int m_maximum;
+    float m_refillPerSecond;
     float m_fraction = 0.0F; // the part of a point carried (`+0x158`), its sign the last change's direction
 };
 
