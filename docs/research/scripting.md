@@ -1987,12 +1987,13 @@ lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping tr
   second spray, the go-to objective), and chapter 2 then sets up and plays its scene; its first spray is cut short
   (fix 2).
 - **Checkpoint 2** (a direct start): no paint; mugging the passers-by near the start paid $0 or $1 eight times and
-  $14 once in 8,900 updates (fix 3).
+  $14 once in 8,900 updates (fix 3, withdrawn: the $1 amounts fit the bums, who hold $1-$3, and the $14 a civilian;
+  inferred, the victims are not logged).
 - **Checkpoint 3**: the order matches the script and the reference: objective `MS_C3_1` (0/3) and the five spots at
   the start, `SPRAYATTACK` once `EConey_Sub5` has loaded (update 354; the reference's 481 after `SetCheckPoint(3)`
   include the original's load). The boozer's sphere calls the missing `ch3.BoozerChallenge` at once, set off by the
   second early Destroyer standing beside him. No paint: three muggings of spawned humans in 6,000 updates paid $0
-  each, so no spot could be sprayed (fixes 3 and 4).
+  each, so no spot could be sprayed (fix 4; fix 3 is withdrawn, the spawned humans hold the money their types roll).
 - **Checkpoint 4**: Poizo's intro path camera, `MS_C4_1` (0/3) at the camera's end (update 335) and `RUNATTACK` 18
   updates later, as the script orders. The course reached none of the three burners: the street one needs paint, and
   on the level's path links the two roof spots are reached only through door links (kind `0x10`; for the roof at
@@ -2032,13 +2033,22 @@ Fixes, in the order to take them (each one implementer unit):
    while a spray runs (intro, loop and restart clips, and the stick game) the player's stance and anim-state choice do
    not run, and 334 holds `0x400`. Test: a player in the fight stance (an enemy 1.5 m away, stick at rest) presses
    triangle at a spot; 334 then 335 play and the stick game starts.
-3. **Spawned humans carry no money.** The original rolls the [starting money](crimes.md#starting-money) in
-   `Human_Init` for every human: `Spawner_MakeHuman` (`0x0016d860`) calls it as `Human_Create` does. Confirmed
-   (code). Coney rolls it only in `HuCreate`, so everyone a spawner makes (the street's civilians of
-   `AddcCivilians`, the bums, the wanderers) has $0, and mugging them pays nothing; the $14 of the checkpoint 2 run
-   came from a scripted human (inferred). This settles the earlier question about the passers-by: $0 is not
-   faithful. Fix: a spawner's human rolls its money and object as a scripted one does, in the same order of draws.
-   Test: a spawner human of a class whose range is 5-20 with no object holds $5-$20.
+3. **Spawned humans carry no money: withdrawn (2026-10-13, issue #354).** The original rolls the [starting
+   money](crimes.md#starting-money) in `Human_Init` for every human: `Spawner_MakeHuman` (`0x0016d860`) calls it as
+   `Human_Create` does. Confirmed (code). The first reading was that Coney rolls it only in `HuCreate`, but Coney's
+   spawners make their human through the scripts' own `HuCreate` (`ScriptSpawnerWorld::spawn`), so a spawner's human
+   rolls its money and object as a scripted one does, in the same order of draws; the test
+   `repo:tests/ai/spawner_money_test.cpp` drives a spawner over the scripted brains and checks a class of $5-$20 gives
+   $5-$20 and that the draws equal `characters::rollStartingCarry()`'s on the same seed. A level87 checkpoint 3 run
+   (`repo:tests/platform/disc_spawner_money_test.cpp`, 1,500 updates) finds the street's civilians (type 395) holding
+   $7-$15 and the bums (types 272-278, the bums among them) $1-$3. The spray and drug sellers (types 428 and 431)
+   and the Destroyer soldier of type 197 hold $0; the Destroyers of type 194 hold the $5 a script gives them. These
+   are figures seen in a Coney run (the disc test prints them; it asserts only the civilians and the bums), with no
+   evidence grade for the original. The $1 muggings above were plausibly of bums (they hold $1-$3), the $0 ones of
+   a seller or a Destroyer soldier, who hold $0 in Coney (inferred; which human was mugged is not logged), so
+   "$0 is not faithful" is not established. The original's sellers (428, 431) hold $0 and a type 197 soldier $5 in
+   21 of 101 rolls and $0 otherwise, as Coney's roll gives
+   ([level87's sellers and soldiers](crimes.md#starting-money)), so Coney needs no fix here.
 4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
    when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
    down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
