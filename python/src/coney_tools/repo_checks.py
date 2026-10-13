@@ -227,17 +227,21 @@ def trailer_models(messages: Iterable[str], rules: Trailers) -> list[str]:
 def branch_trailer_models(worktree: Path, base: str, rules: Trailers) -> list[str]:
     """The models credited by a `Co-Authored-By` trailer on the commits of `worktree` after `base` (`base..HEAD`).
 
+    Sorted by name (without regard to case), not in commit order: `git log` orders the two sides of a merge by commit
+    time, so commits made in the same second (or a clock that steps back) would swap them, and the callers only need
+    the set (the Model line must name each), so the order is fixed instead of left to the timestamps.
+
     ConfigError when git cannot list them (not a worktree, `base` unknown): a branch that cannot be read must not
     pass for one with no trailers.
     """
-    command = ["git", "-C", str(worktree), "log", "--reverse", "--format=%B%x00", f"{base}..HEAD"]
+    command = ["git", "-C", str(worktree), "log", "--format=%B%x00", f"{base}..HEAD"]
     try:
         result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", check=False)
     except OSError as error:
         raise ConfigError(f"git cannot be run ({error})") from error
     if result.returncode != 0:
         raise ConfigError(f"{worktree}: cannot list the commits {base}..HEAD ({result.stderr.strip()})")
-    return trailer_models(result.stdout.split("\0"), rules)
+    return sorted(trailer_models(result.stdout.split("\0"), rules), key=str.casefold)
 
 
 def _check_trailer_models(section: str, rules: PullRequests, models: Sequence[str]) -> list[str]:
