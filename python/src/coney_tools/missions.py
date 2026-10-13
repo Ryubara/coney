@@ -202,7 +202,8 @@ def _levels(root: Path) -> list[dict[str, Any]]:
     path = root / LEVELS_FILE
     if not path.is_file():
         return []
-    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("entries", [])
+    entries: list[dict[str, Any]] = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("entries", [])
+    return entries
 
 
 def _sections(root: Path) -> dict[int, int]:

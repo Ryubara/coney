@@ -453,6 +453,25 @@ def test_python_step_skips_without_python_changes() -> None:
     assert check_cli._step_python(REPO, ["docs/page.md"]).skipped
 
 
+def test_mypy_command_reads_the_projects_strict_config() -> None:
+    """mypy looks for its config in the working directory, and the gate runs from the repository root, where there is
+    none: without `--config-file` the `[tool.mypy] strict = true` of python/pyproject.toml is silently ignored."""
+    command = check_cli.MYPY_COMMAND
+    assert command[command.index("--config-file") + 1] == "python/pyproject.toml"
+    config = (REPO / "python" / "pyproject.toml").read_text(encoding="utf-8")
+    assert "[tool.mypy]\nstrict = true" in config.replace("\r\n", "\n")
+
+
+def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
+    """CI's python job and the guides that name the command agree with `check changed`, so no place checks less."""
+    wanted = " ".join(check_cli.MYPY_COMMAND)
+    workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8")
+    assert f"- run: {wanted}\n" in workflow.replace("\r\n", "\n")
+    for guide in ("building.md", "coney-tools.md"):
+        text = (REPO / "docs" / "guides" / guide).read_text(encoding="utf-8")
+        assert "--config-file python/pyproject.toml python/src python/tests" in text
+
+
 @pytest.mark.parametrize(
     ("changed", "wanted"),
     [

@@ -10,13 +10,13 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
-from test_pcsx2 import PLAYER, PLAYER_INDEX, RECORD, TICK_COUNTER, FakeGame, MemoryOf, _repo
+from test_pcsx2 import PLAYER, PLAYER_INDEX, RECORD, FakeGame, MemoryOf, _repo
 
 from coney_tools import hooks
 from coney_tools.game_memory import GameMemory
 from coney_tools.hooks import CALL_BASE, RING_BASE, HookError, RingReader, build, load_hooks, parse_hook
 from coney_tools.pine import Read, Write
-from coney_tools.recorder import Recorder, entry_step
+from coney_tools.recorder import TICK_COUNTER, Recorder, entry_step
 from coney_tools.scenario import load_scenario
 
 REPO = Path(__file__).resolve().parents[2]

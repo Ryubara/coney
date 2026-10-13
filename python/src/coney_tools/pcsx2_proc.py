@@ -710,7 +710,7 @@ def _key_lparam(vk: int, up: bool) -> int:
     previous-state and transition bits."""
     scan = _user32().MapVirtualKeyW(vk, 0)
     value = 1 | (scan << 16) | ((1 << 24) if vk in _EXTENDED else 0)
-    return value | (0xC0000000 if up else 0)
+    return int(value | (0xC0000000 if up else 0))
 
 
 def post_keys(hwnds: list[int], chords: list[list[int]], hold_ms: int, gap_ms: int) -> None:

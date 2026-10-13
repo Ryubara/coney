@@ -271,7 +271,7 @@ def test_the_run_report_names_the_match_the_gangs_and_with_humans_each_human(fig
 
 
 def runs(*values: dict[str, object]) -> list[dict[str, float | str]]:
-    return [dict(value) for value in values]  # type: ignore[misc, arg-type]
+    return [dict(value) for value in values]  # type: ignore[arg-type]
 
 
 def test_a_metric_inside_the_originals_spread_is_not_flagged_and_one_outside_is() -> None:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -164,7 +165,7 @@ def test_posix_command_lines_are_read_whole(monkeypatch: pytest.MonkeyPatch) -> 
         asked.append(command)
         return subprocess.CompletedProcess(command, 0, f"  42     1  01:02:03 {long_command}\n", "")
 
-    monkeypatch.setattr(stale_processes.sys, "platform", "linux")
-    monkeypatch.setattr(stale_processes.subprocess, "run", fake_run)
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(subprocess, "run", fake_run)
     (found,) = stale_processes.list_processes()
     assert "-ww" in asked[0] and found.command == long_command and found.name == "bash"
