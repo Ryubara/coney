@@ -26,18 +26,21 @@ import json
 import re
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Conventions, Review, load_conventions
-from coney_tools.repo_checks import check_body, check_title, image_targets
+from coney_tools.conventions import Conventions, Review, Trailers, load_conventions
+from coney_tools.repo_checks import branch_trailer_models, check_body, check_title, image_targets
 
 #: Reads a worktree's HEAD commit: the tip a verdict must quote.
 HeadReader = Callable[[Path], str]
+#: Reads the models a branch's commits credit in `Co-Authored-By` trailers, given its worktree, its base and the
+#: conventions' trailer rules (the real one is `branch_trailer_models`).
+ModelReader = Callable[[Path, str, Trailers], list[str]]
 #: Runs a command in a folder and returns its exit code (the real one starts `claude`).
 Launcher = Callable[[list[str], Path], int]
 
@@ -51,6 +54,8 @@ VERDICT_KEYS = ("tip", "body_sha256", "verdict", "images", "findings")
 FINDING_KEYS = ("severity", "where", "text")
 #: The agent definition handed to `claude --agents`, written next to the description for the run and removed after.
 AGENTS_FILE = ".pr-reviewer-agents.json"
+#: What a branch is compared with unless told otherwise.
+DEFAULT_BASE = "origin/main"
 #: How long one review may take before it is stopped.
 DEFAULT_TIMEOUT_MINUTES = 30
 
@@ -186,33 +191,42 @@ def _image_problems(stamp_images: list[dict[str, Any]], reviewed: list[dict[str,
     return problems
 
 
-def description_problems(description: str, conventions: Conventions) -> list[str]:
+def description_problems(description: str, conventions: Conventions, branch_models: Sequence[str] = ()) -> list[str]:
     """What CI's `title` and `body` jobs would refuse in the description file's text, each reason prefixed `title:` or
     `body:`.
 
     The file follows the PR.md convention (the title on line 1, the body after it); the coordinator passes them to
     `gh pr create` as the title and `--body-file`. A local
     image is accepted where CI wants an uploaded one, because `gh --attach` uploads it when the pull request is opened
-    (a missing or identical picture is the verdict check's business).
+    (a missing or identical picture is the verdict check's business). `branch_models` are the models the branch's
+    commits credit in trailers: CI sees only the description and passes none, the local gate passes the branch's.
     """
     text = description.removeprefix("﻿").replace("\r\n", "\n").replace("\r", "\n")
     title, _, body = text.partition("\n")
     rules = conventions.pull_requests
     draft_rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
     return [f"title: {problem}" for problem in check_title(title, conventions.commits.title)] + [
-        f"body: {problem}" for problem in check_body(body, draft_rules)
+        f"body: {problem}" for problem in check_body(body, draft_rules, branch_models)
     ]
 
 
 def check_review(
-    pr_file: Path, worktree: Path, conventions: Conventions, head_of: HeadReader | None = None
+    pr_file: Path,
+    worktree: Path,
+    conventions: Conventions,
+    head_of: HeadReader | None = None,
+    models_of: ModelReader | None = None,
+    base: str = DEFAULT_BASE,
 ) -> list[str]:
     """Why `pr_file` does not release the branch in `worktree`; empty when it does.
 
     Both halves are reported together: the title and body problems CI would find (`description_problems`), then the
-    verdict's. ReviewError when the description itself cannot be read or the worktree has no HEAD.
+    verdict's. The body check also holds the description's Model line to the trailers of the commits after `base`,
+    which only the local gate can read. ReviewError when the description itself cannot be read, the worktree has no
+    HEAD or its commits cannot be listed.
     """
-    problems = description_problems(read_description(pr_file), conventions)
+    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
+    problems = description_problems(read_description(pr_file), conventions, models)
     return problems + _verdict_problems(pr_file, worktree, conventions.pull_requests.review, head_of)
 
 
@@ -318,6 +332,7 @@ def run_review(
     *,
     launch: Launcher | None = None,
     head_of: HeadReader | None = None,
+    models_of: ModelReader | None = None,
     claude: str = "claude",
     model: str | None = None,
     effort: str | None = None,
@@ -333,7 +348,8 @@ def run_review(
     worktree = worktree.resolve()
     folder = pr_file.parent
     # A description CI would refuse is not worth a review run: send it back first.
-    early = description_problems(read_description(pr_file), conventions)
+    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
+    early = description_problems(read_description(pr_file), conventions, models)
     if early:
         return _report(early, folder / rules.report_file)
     definition = agent_definition(root / ".claude" / "agents" / f"{rules.agent}.md")
@@ -352,7 +368,7 @@ def run_review(
     if status != 0:
         print(f"review: {claude} exited with {status}", file=sys.stderr)
         return 1
-    return _report(check_review(pr_file, worktree, conventions, head_of), folder / rules.report_file)
+    return _report(check_review(pr_file, worktree, conventions, head_of, models_of, base), folder / rules.report_file)
 
 
 def _report(problems: list[str], report: Path) -> int:
@@ -375,6 +391,7 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     """Add `repo review`, `repo check-review` and `repo review-stamp` to the `repo` command group."""
     wt_help = "the branch's worktree (its HEAD is the tip the verdict must quote)"
     pr_help = "the description file: the title on line 1, then the body (PR.md in the scratch folder)"
+    base_help = "what the branch is compared with, for the diff and the commits' trailers (default: %(default)s)"
     review = repo_commands.add_parser(
         "review",
         help="run the pr-reviewer agent headlessly on a description, then check its verdict",
@@ -386,7 +403,7 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     )
     review.add_argument("pr_file", type=Path, help=pr_help)
     review.add_argument("--worktree", type=Path, required=True, help=wt_help)
-    review.add_argument("--base", default="origin/main", help="what the branch is compared with (default: %(default)s)")
+    review.add_argument("--base", default=DEFAULT_BASE, help=base_help)
     review.add_argument("--claude", default="claude", help="the Claude Code executable (default: %(default)s)")
     review.add_argument("--model", help="the model (default: the agent file's)")
     review.add_argument("--effort", choices=("low", "medium", "high", "xhigh", "max"), help="the effort level")
@@ -402,6 +419,7 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     )
     check.add_argument("pr_file", type=Path, help=pr_help)
     check.add_argument("--worktree", type=Path, required=True, help=wt_help)
+    check.add_argument("--base", default=DEFAULT_BASE, help=base_help)
     stamp = repo_commands.add_parser(
         "review-stamp", help="print, as JSON, the tip, description hash and image hashes a verdict must quote"
     )
@@ -418,7 +436,7 @@ def run_review_command(args: argparse.Namespace) -> int:
     conventions = load_conventions(root)
     rules = conventions.pull_requests.review
     if args.command == "check-review":
-        problems = check_review(args.pr_file, args.worktree, conventions)
+        problems = check_review(args.pr_file, args.worktree, conventions, base=args.base)
         return _report(problems, args.pr_file.parent / rules.report_file)
     return run_review(
         args.pr_file,

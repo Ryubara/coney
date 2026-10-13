@@ -306,16 +306,22 @@ void ScriptedHub::canFlee(int gang, bool on) {
     if (m_scripted->defer([this, gang, on] { canFlee(gang, on); })) {
         return;
     }
-    const Gang* found = m_scripted->owner().gangs().find(gang);
-    if (found == nullptr) {
-        return;
+    if (Gang* found = m_scripted->owner().gangs().find(gang); found != nullptr) {
+        found->setCanFlee(on);
     }
-    if (!on) {
-        m_flights.erase(gang);
-        return;
-    }
-    const int members = static_cast<int>(found->members().size());
-    m_flights[gang] = Flight{.start = members, .standing = found->standing()};
+}
+
+void ScriptedHub::setLookups(HubLookups lookups) {
+    m_lookups = std::move(lookups);
+    // The gangs' flight reads the same categories and flee shares.
+    m_scripted->owner().gangs().setLookups(
+        GangLookups{.role = [category = m_lookups.category](const Brain& brain) -> std::optional<int> {
+                        if (!category || brain.characterClass() < 0) {
+                            return std::nullopt;
+                        }
+                        return category(characters::characterClassOf(brain.characterClass()).id);
+                    },
+                    .fleeShare = m_lookups.fleePercent});
 }
 
 void ScriptedHub::clearBums() {
@@ -389,7 +395,6 @@ void ScriptedHub::makeNeutralOfType(int gang, int type) {
 void ScriptedHub::update(std::uint64_t nowMs) {
     updateWorkouts(nowMs);
     updateEnemyCounts();
-    updateFlight();
 }
 
 void ScriptedHub::updateWorkouts(std::uint64_t /*nowMs*/) {
@@ -512,49 +517,6 @@ void ScriptedHub::updateEnemyCounts() {
         }
     }
     m_enemyCounts[player] = count;
-}
-
-void ScriptedHub::updateFlight() {
-    Gangs& gangs = m_scripted->owner().gangs();
-    for (auto it = m_flights.begin(); it != m_flights.end();) {
-        Gang* gang = gangs.find(it->first);
-        if (gang == nullptr) {
-            it = m_flights.erase(it);
-            continue;
-        }
-        Flight& flight = it->second;
-        const int standing = gang->standing();
-        const bool wentDown = standing < flight.standing;
-        flight.standing = standing;
-        const int percent = m_lookups.fleePercent ? m_lookups.fleePercent(gang->kind()) : 0;
-        // A member went down and those still standing are no more than the percentage of the start: they flee.
-        if (!wentDown || percent <= 0 || standing * 100 > percent * flight.start) {
-            ++it;
-            continue;
-        }
-        for (Brain* member : gang->members()) {
-            human::Human& body = member->human();
-            if (body.health().depleted() || body.state() != human::TargetState::Standing ||
-                categoryOf(*member) != script::kFleeCategory) {
-                continue;
-            }
-            // The nearest enemy is fled from; the enemies are dropped and the member stops fighting.
-            const Brain* nearest = nullptr;
-            for (const Brain* enemy : member->enemies()) {
-                if (nearest == nullptr || member->distanceTo(*enemy) < member->distanceTo(*nearest)) {
-                    nearest = enemy;
-                }
-            }
-            const anim::Vec3 from = nearest != nullptr ? nearest->human().position() : body.position();
-            const std::vector<Brain*> enemies = member->enemies();
-            for (const Brain* enemy : enemies) {
-                member->forget(*enemy);
-            }
-            member->setThreatResponse(0);
-            member->pushGoal(std::make_unique<PedestrianReactionGoal>(from));
-        }
-        it = m_flights.erase(it);
-    }
 }
 
 } // namespace coney::ai

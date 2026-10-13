@@ -32,8 +32,9 @@ Done:
 
 <!-- For anything a player can see, show it: Coney before, Coney after and, where it applies, the original
      (PCSX2) from the same place. Write each picture as a Markdown image, `![alt](./shots/file.png)`; it is
-     uploaded with `gh pr create --body-file ... --attach ./shots/file.png` (gh 2.99+), or drag a PNG or a short
-     video into this box on GitHub. Never commit it (LEGAL.md). An agent keeps its captures in
+     uploaded with `gh pr create --body-file ... --attach ./shots/file.png` (gh 2.99+), or drag a PNG into this
+     box on GitHub. A short video clip goes up with `coney-tools clips publish`, which deletes it afterwards
+     (docs/guides/testing.md#clips). Never commit it (LEGAL.md). An agent keeps its captures in
      scratch/<branch>/shots/ and writes the image references with paths relative to that folder; the coordinator
      attaches them when opening the pull request. The text never names a path on your machine (no scratch/...,
      ../../..., C:\...): say "the scratch folder"; only these image references may be local.

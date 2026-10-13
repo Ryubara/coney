@@ -301,6 +301,10 @@ class Brain {
     /// The goal of `type` on the stack, nearest the top; null when none.
     /// @orig 0x0028d960 Brain_FindGoal (unknown)
     [[nodiscard]] Goal* findGoal(GoalType type);
+    /// Whether a Melee (8) or LeftTurf (`0x3f`) goal is on the stack: despite the original's name, the fight goal
+    /// (`0xf`) is not tested. Research: docs/research/ai-reimpl.md#unit-2
+    /// @orig 0x00290348 Brain_HasFightGoal (unknown)
+    [[nodiscard]] bool hasFightGoal();
     /// The top goal; null when the stack is empty.
     [[nodiscard]] Goal* topGoal() { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] const Goal* topGoal() const { return m_goals.empty() ? nullptr : m_goals.back().get(); }
@@ -410,6 +414,12 @@ class Brain {
     /// sets it.
     [[nodiscard]] bool hittingBack() const { return m_hittingBack; }
     void setHittingBack(bool on) { m_hittingBack = on; }
+    /// The turf limit (`+0x14d`): set, a gang with a turf may take enemies only inside it; the gang's alert state
+    /// (Gang::setAlertState()) clears it while fighting and sets it again when calm. **Coney stand-ins**: set when a
+    /// brain is made (the original's starting value is not on the page), and nothing reads it yet, as Coney keeps no
+    /// turf-only target test (docs/research/ai.md#enemy-score).
+    [[nodiscard]] bool keepsToTurf() const { return m_keepsToTurf; }
+    void setKeepsToTurf(bool on) { m_keepsToTurf = on; }
     /// The melee ranges (`+0x13c`, `+0x140`, `BrSetMeleeRange`).
     void setMeleeRange(float nearRange, float farRange);
     /// The far and near melee ranges.
@@ -635,6 +645,7 @@ class Brain {
     bool m_mayApproach = true;  // +0x2d3
     bool m_attackable = true;   // +0x11f
     bool m_hittingBack = false; // +0x2e5
+    bool m_keepsToTurf = true;  // +0x14d
 };
 
 /// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through

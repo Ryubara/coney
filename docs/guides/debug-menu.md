@@ -136,6 +136,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
 | AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
+| Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
 | Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
@@ -311,7 +312,7 @@ never a copy of them, so a change to a radius or a rule shows at once:
 
 | Switch | Draws |
 | --- | --- |
-| Wall classes | the collision wireframe (in place of the plain one, same radius and budget) coloured by how the walking sweep classes each triangle (`human::wallClassOf()`, [Walls](../research/characters.md#walls)): **red** a wall, **yellow** a steep face too low or thin to stop a walk (a kerb, a stair's riser), **green** a floor, **blue** a ceiling, **grey** a disabled triangle, **magenta** one with no usable normal |
+| Wall classes | the collision wireframe (in place of the plain one, same radius and budget) coloured by how the walking sweep classes each triangle (`human::wallClassOf()`, through the physics sweep's own wall rules: [Unit 2](../research/physics-bodies.md#unit-2)): **red** a wall, **yellow** a steep face too low or thin to stop a walk (a kerb, a stair's riser), **green** a floor, **blue** a ceiling, **grey** a disabled triangle, **magenta** one with no usable normal |
 | Shapes | on each human: grounded, the walking sphere the wall sweep moves (**cyan**; the player's 0.4704 m, an AI human's 0.35 m, × the scale, its centre that plus 0.05 m above the feet); airborne, the push-out sphere (**magenta**, 0.5 m × the scale); the 2 m upright capsule other humans' sweeps meet (**grey**); the ground snap's ray (**green**); during a climb, the face found, its normal and the top (**orange**) |
 | Shapes on all humans | on (the default): every human's shapes; off: the player's and the Entity inspector's selection's only |
 | Strike shapes | the strike shapes switched on this step (**red** swept spheres) and the spine and head they are tested against (**yellow**) |
@@ -391,6 +392,45 @@ through pad 1 in level99. The flight is `human::Human::setFlight()` with the spe
 `human::noclipFlight()`, stepped at the fixed 1/30 s like everything else, so a scripted run (`--input-script`) flies
 the same path every time.
 
+### Animation player {#animation-player}
+
+The Animation player page plays any clip on the player, to look at the game's animations one at a time. It is Coney's
+own debug tool (the original has none) and changes nothing until a clip is chosen. It works wherever the Player page
+does: in a level (`--play-level`, the story) and in a sandbox.
+
+| Item | Does |
+| --- | --- |
+| Playing | the clip playing for the page: its anim id, name, how far into it he is and its length, `loop` when it loops |
+| Loop | the next clip chosen plays over and over until *Stop* (off: once) |
+| Speed | multiplies the clip's own rate, 0.1 to 4 (default 1) |
+| In place | the next clip's root motion neither moves nor turns him |
+| Stop | ends the clip with his idle |
+| one item per anim set | the set's clips by category, each category tagged with its count |
+
+The sets are, in order: **Player** (his character's clips, with the generic ones his character leaves to them: what he
+plays in the game), **Generic** (the generic character data alone, the `gen_*` clips) and then **every model a player
+can be drawn as** (the models *Change character* offers), each with its own clips only. Every character on the disc has
+the same skeleton ([Characters](../research/characters.md)), so every set can play on him; a clip that animated a bone
+past the 34 pose entries would be left out. A model's set loads from the disc the first time it is opened, which stalls
+that frame briefly; a set that fails to load says why.
+
+A set's page lists its clips by **category**: the first word of each anim id's `ANIM_*` name from `royal.lua`
+([Anim ids](../references/anim-ids.md)), in title case, with a word's forms together (MOUNTING and MOUNTED under
+*Mount*, ARRESTING and ARRESTED under *Arrest*). The research defines no categories, so this grouping is Coney's choice.
+Each clip is one item, `<id> <clip name> <length> s`, its length the clip's own (frames / 30); its help gives the
+`ANIM_*` name, how long it plays at the set's rate (`CfgAnimSpeeds` by the id's Anim Range List flags,
+[Playback rate](../research/formats/animation.md#playback-rate)) and whether it comes from the generic set.
+
+Choosing a clip plays it on the player at once, from its first frame and with no fade, at the set's rate times
+*Speed*, its clip events firing as the game's would (its sounds, for one). Once, it plays to its end, then his idle
+takes over and the game chooses his animation again as usual; looping, it plays until *Stop*, or until something else
+he plays replaces it (a hit, a fall). While it plays, the pad does not move him, as if he were frozen, and a lock onto
+a target (the fight yard's) waits for it to end before his combat walk comes back. The clip is
+played by `human::Human::playDebugClip()` (`HumanAnimator::playDebugClip()`, state `AnimState::Debug`), Coney's own
+entry point, which nothing of the original's calls. Disc test: `tests/platform/disc_anim_player_test.cpp` plays a clip
+in `level99` through the page and checks it ran its full length and that his idle came back, and in the sandbox lists
+every set and plays a loop and clips of the generic set and of another character.
+
 ## Tunables {#tunables}
 
 A tunable is a named, typed value a subsystem lets the menus edit while the game runs. The subsystem keeps the variable;
@@ -402,7 +442,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | Category | Tunables (default) |
 | --- | --- |
 | Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8) |
-| Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), contact clear (0.01 m left between the walking sphere and a wall), air radius (0.5 × scale) |
+| Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), air radius (0.5 × scale) |
 | Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |

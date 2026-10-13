@@ -35,6 +35,7 @@
 #include "human/strike_shapes.h"
 #include "human/target_human.h"
 #include "human/victim.h"
+#include "physics/mesh_sweep.h"
 #include "raycast/collision_mesh.h"
 
 // A human driven through its per-player record, which a pad (the player) or a brain writes: its locomotion,
@@ -317,6 +318,13 @@ class Human final : public Holdable {
     }
     [[nodiscard]] anim::GaitBlendTask* workoutLoop() const { return m_animator.workoutLoop(); }
     void endWorkoutClips(const anim::AnimClip* exit) { m_animator.endWorkout(exit); }
+    /// **Coney's own**: the debug menus' Animation player plays `clip` on the human (HumanAnimator::playDebugClip(),
+    /// docs/guides/debug-menu.md#animation-player); the original has nothing like it.
+    void playDebugClip(const anim::AnimClip& clip, std::uint32_t animId, float rate, bool loop, bool inPlace) {
+        m_animator.playDebugClip(clip, animId, rate, loop, inPlace);
+    }
+    /// **Coney's own**: ends the Animation player's clip (HumanAnimator::stopDebugClip()).
+    void stopDebugClip() { m_animator.stopDebugClip(); }
     /// The name of the idle replacement applied (empty for none).
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// `HuUseAnyAnim`'s replacement for anim `id` other than the idle, `name` loaded as `clip` (null: the own clip
@@ -730,8 +738,9 @@ class Human final : public Holdable {
     /// Whether the spray's clips still play (the intro, the loop or the restart): false once something else took the
     /// body.
     [[nodiscard]] bool tagSprayPlaying() const;
-    /// The spray is over: a spray clip still playing leaves for the idle. **Coney's reading**: what the original
-    /// plays at Tag_End is not on the page.
+    /// The spray is over (finished or let go): a spray clip still playing hands over to 336 and the idle, or the fight
+    /// idle in a fight stance (HumanAnimator::playTagEnd()). A spray cut short does not come here: it plays no end
+    /// clip.
     void endTagSpray();
     /// Whether a pick-up is under way.
     [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
@@ -773,21 +782,19 @@ class Human final : public Holdable {
     void moveOnGround(const raycast::CollisionMesh& mesh);
     // Moves a falling human, landing on a floor it passed on the update before.
     void moveInAir(const raycast::CollisionMesh& mesh);
-    // Slides the velocity along the walls the last sweep met (m_contacts): each takes the velocity's part into it, so a
-    // wall met at a steep angle brakes the human (docs/research/characters.md#walls, #slopes).
-    // @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
-    void slideVelocity();
-    // Where a walking sweep ends: the feet, and the part of the move from them that the corner slide made.
+    // Where a walking sweep ends: the feet, and the velocity the sweep wrote back to the human (the slid one for a
+    // player, zero when the body was stuck), or nothing when it wrote none.
     struct Swept {
         anim::Vec3 feet;
-        anim::Vec3 slide{};
+        std::optional<anim::Vec3> velocity;
     };
-    // Sweeps the walking body from the feet at `from` by `displacement`, sliding along a wall face it already touches
-    // (rising along one that leans back, docs/research/characters.md#slopes), off walls and round a corner its walls
-    // name; returns where it ends, or nothing when it is still blocked after three passes.
+    // Sweeps the walking body from the feet at m_position by `velocity` over the update plus the pending `push`: the
+    // other humans first when `meetOthers`, then the level through the physics world's sweep (physics::sweepBody,
+    // docs/research/physics-bodies.md#u3-sweep), then the world objects' bodies. The body's stuck counter is
+    // m_blockedUpdates.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
-    [[nodiscard]] std::optional<Swept> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
-                                             anim::Vec3 displacement);
+    [[nodiscard]] Swept sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push,
+                              bool meetOthers);
     // The humans the walking capsule meets moving from the feet at `from` by `move` (docs/research/physics.md
     // #human-contacts), up to three passes: the nearest contact stops the capsule at it, the rest of the move slides
     // along the other (code 1), and, unless this capsule strikes (a charge), the other is given half of the pass's move
@@ -795,9 +802,10 @@ class Human final : public Holdable {
     // goes to m_contacts.
     // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
     [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
-    // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
+    // The airborne body's push-out after its move to `feet`: its sphere (a player's larger one) out of the nearest wall
+    // it overlaps, added to the pending push for the next move.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
-    [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
+    void pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
     // The ground snap from the feet at `feet`: on a hit the feet go onto it; a miss starts a fall.
     // @orig 0x0023eab8 Human_SnapToGround (unknown)
     void snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
@@ -975,8 +983,8 @@ class Human final : public Holdable {
     bool m_chargeStopped = false;              // the charge playing met a wall head-on (moveOnGround())
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
-    std::vector<std::uint16_t> m_nearby; // scratch for the wall test
-    std::vector<anim::Vec3> m_contacts;  // the normals of the walls the last walking sweep slid along, for the velocity
+    physics::MeshScratch m_meshScratch;    // the mesh queries' memory, reused between sweeps
+    std::vector<anim::Vec3> m_contacts;    // the normals of the humans and objects the last sweep slid along
     std::span<Human* const> m_otherHumans; // setHumanContacts(), the step's
     anim::Vec3 m_pendingPush{};            // addPush(): others' pushes, for the next move
 };

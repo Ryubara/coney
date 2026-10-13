@@ -26,6 +26,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/ai_config.h"
+#include "animation/anim_clip.h"
 #include "characters/character_types.h"
 #include "core/error.h"
 #include "core/game_random.h"
@@ -39,6 +40,7 @@
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_start.h"
 #include "hud/hud.h"
+#include "human/human_animator.h"
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
@@ -218,8 +220,23 @@ TEST_CASE("the disc's level87 offers its first tag spot, starts the stick game a
     }
     pad.leftX = 0.0F;
     pad.leftY = 0.0F;
-    run(2);
     REQUIRE(gameplay.tagSession() == nullptr);
+    // The spray ends through 336 (Tag_EndSprayClips), played past its event 0x31, which drops the can 334 made
+    // (issue #407, docs/research/crimes.md#tag-look, "The end"); then the idle.
+    const coney::human::HumanAnimator& animator = play->player().human().animator();
+    CHECK(animator.animId() == 336);
+    const coney::anim::AnimClip* end = animator.clip(336);
+    REQUIRE(end != nullptr);
+    const auto drop = std::ranges::find(end->events, std::uint16_t{0x31}, &coney::anim::ClipEvent::type);
+    REQUIRE(drop != end->events.end());
+    int endUpdates = 0;
+    constexpr int kEndFrames = 90;
+    for (int i = 0; i < kEndFrames && animator.animId() == 336; ++i) {
+        run(1);
+        ++endUpdates;
+    }
+    CHECK(animator.animId() != 336);
+    CHECK(static_cast<float>(endUpdates) * animator.anims().rate(336) > static_cast<float>(drop->frame));
 
     // Finished: the spot is fully painted, the script took it off the list of spots to tag, and no script failed.
     bool finished = false;
@@ -237,6 +254,6 @@ TEST_CASE("the disc's level87 offers its first tag spot, starts the stick game a
     CHECK(sprayed->fraction == 1.0F);
     CHECK_FALSE(messages->prompts().contains(spot));
     CHECK(scripts.scripts().errors() == 0);
-    std::printf("  level87 tagging: %zu path points, finished in %d frames, %zu prompts left\n", pathPoints, frames,
-                messages->prompts().size());
+    std::printf("  level87 tagging: %zu path points, finished in %d frames, 336 for %d updates, %zu prompts left\n",
+                pathPoints, frames, endUpdates, messages->prompts().size());
 }

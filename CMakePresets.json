@@ -16,6 +16,16 @@
       }
     },
     {
+      "name": "cacheable",
+      "hidden": true,
+      "description": "Compiles a compiler cache can store (docs/guides/building.md#ci-caches): MSVC debug info inside each object (/Z7, CMP0141) instead of a shared PDB, and no precompiled headers (SDL3's made its 265 sources uncacheable).",
+      "cacheVariables": {
+        "CMAKE_POLICY_DEFAULT_CMP0141": "NEW",
+        "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "Embedded",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": "ON"
+      }
+    },
+    {
       "name": "dev",
       "displayName": "Development (Debug)",
       "inherits": "base",
@@ -34,7 +44,7 @@
     {
       "name": "ci",
       "displayName": "CI (Debug, warnings as errors)",
-      "inherits": "base",
+      "inherits": ["base", "cacheable"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CONEY_WARNINGS_AS_ERRORS": "ON"
@@ -43,7 +53,7 @@
     {
       "name": "asan",
       "displayName": "ASan and UBSan (Debug, warnings as errors; GCC and Clang only)",
-      "inherits": "base",
+      "inherits": ["base", "cacheable"],
       "condition": {
         "type": "notEquals",
         "lhs": "${hostSystemName}",

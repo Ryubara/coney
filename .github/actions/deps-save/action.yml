@@ -1,0 +1,31 @@
+# After the configure step of a job that called ./.github/actions/deps: save the sources it fetched, once per OS and
+# version of cmake/deps.cmake, and never from a pull request (the same rule as the compiler cache:
+# docs/guides/building.md#ci-caches). Several jobs on one OS may try at once; the first wins and the others only log
+# that the key exists.
+name: deps-save
+description: Save the fetched dependency sources when this run fetched them and is not a pull request.
+
+runs:
+  using: composite
+  steps:
+    # Only a complete fetch: cmake/deps.cmake stamps each folder when every fetch succeeded. The git history is not
+    # needed once the stamp exists (the copy is then used as it is), so it is left out to keep the entry small.
+    - id: check
+      if: env.CONEY_DEPS_RESTORED != 'true' && github.event_name != 'pull_request'
+      shell: bash
+      run: |
+        complete=true
+        # The relative path: on Windows CONEY_DEPS_SOURCES has backslashes, which a bash glob would misread.
+        for dir in build/_deps-sources/*/; do
+          if [ ! -f "$dir/.coney-deps-hash" ]; then
+            echo "Not saved: $dir has no stamp, so its fetch did not finish."
+            complete=false
+          fi
+          rm -rf "$dir/.git"
+        done
+        echo "complete=$complete" >> "$GITHUB_OUTPUT"
+    - if: steps.check.outputs.complete == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: build/_deps-sources
+        key: ${{ env.CONEY_DEPS_KEY }}

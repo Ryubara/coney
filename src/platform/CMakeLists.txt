@@ -10,7 +10,7 @@ target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/running.md#playing-a-level), in a level's scenery or a sandbox's.
-target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_inspect.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
+target_sources(coney_platform PRIVATE play_level_anim.cpp play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_inspect.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
 target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
@@ -27,6 +27,8 @@ target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp parti
                                       room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# In-game clips for issues and pull requests (`--record`, docs/guides/testing.md#clips): FFmpeg run as a program.
+target_sources(coney_platform PRIVATE clip_recorder.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
 target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 # The trimmed FFmpeg that decodes the Bink movies (docs/guides/building.md#ffmpeg); only src/platform/ sees it.

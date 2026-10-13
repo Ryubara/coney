@@ -4,8 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -62,6 +64,10 @@ class AudioOutput final : public debug::AudioControls {
     /// device up, it opens the system's default device again, trying once a second (30 frames) until one opens; the
     /// mixer and its voices carry on, so the sound resumes where it was.
     void endFrame(std::uint32_t steps);
+    /// Hands each offline step's mixed frames (interleaved 16-bit stereo at audio::kOutputRate) to `tap`, after
+    /// endFrame() mixes them; empty for none. For `--record` (ClipRecorder), Coney's own debug tooling. The device
+    /// sink mixes on SDL's thread and calls nothing.
+    void setStepTap(std::function<void(std::span<const std::int16_t>)> tap) { m_stepTap = std::move(tap); }
     /// SDL's id of the playback device (0 offline, or while the device is lost). For tests and logs.
     [[nodiscard]] std::uint32_t deviceId() const { return m_device ? m_device->deviceId() : 0; }
     /// How many times the device was lost and opened again.
@@ -90,6 +96,7 @@ class AudioOutput final : public debug::AudioControls {
     audio::SoundPlayer m_sounds;
     audio::GameSound m_game;
     std::optional<audio::OfflineDevice> m_offline;
+    std::function<void(std::span<const std::int16_t>)> m_stepTap; // setStepTap()
     std::unique_ptr<SdlAudioDevice> m_device;
     std::uint32_t m_reopens = 0;    // devices opened again after a loss
     std::uint32_t m_reopenWait = 0; // frames until the next try after a failed reopen

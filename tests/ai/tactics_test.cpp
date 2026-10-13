@@ -88,6 +88,20 @@ TEST_CASE("a tactic starts by marking its AI members' goal bases, and past its t
     CHECK(call.args == std::vector<double>{static_cast<double>(gang), 2.0});
 }
 
+TEST_CASE("a tactic of type 0x12 or above calms its gang when it starts", "[ai][tactics]") {
+    // Tactic_Start passes (type < 0x12) to Gang_SetAlertState: 0 (calm) here (docs/research/ai-reimpl.md#alert-state).
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int gang = makeGang(scene, "Crew", 1, members);
+    coney::ai::Gang& crew = *scene.brains.gangs().find(gang);
+    crew.setAlertState(coney::ai::kGangFighting);
+    REQUIRE_FALSE(members[0]->keepsToTurf());
+    scene.brains.gangs().setTactic(gang, std::make_unique<CountingTactic>("", -1));
+    scene.run(1);
+    CHECK(crew.alertState() == coney::ai::kGangCalm);
+    CHECK(members[0]->keepsToTurf());
+}
+
 TEST_CASE("TacticCrowd seats a cheering crowd idle and fightless, and a watching one spectating", "[ai][tactics]") {
     AiScene scene;
     std::vector<Brain*> cheering;

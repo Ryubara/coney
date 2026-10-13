@@ -110,8 +110,9 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   update after the binding. Every binding a script step makes before that update, such as a `GoalTag` right after
   the `Tactic*` call, has already run. Start does this:
     1. Makes the time limit absolute.
-    2. Sets the gang's alert state when the `+0x3c` flag is 1. Types `0x16`-`0x18` and `0x21` also set gang `+0xd1`
-       = 0 and `+0xd2` = 1.
+    2. Sets the gang's alert state to the `+0x3c` flag: 1 (fighting) when it is 1, else 0 (calm), so a tactic of
+       type `0x12` or above calms its gang ([Alert state](ai-reimpl.md#alert-state)). Types `0x16`-`0x18` and
+       `0x21` also set gang `+0xd1` = 0 and `+0xd2` = 1.
     3. For every member that is not a player (`+0x1b0` = −1): `Brain_MarkGoalBase` (`0x0028d8a0`) and
        `Human_DropTarget` (`0x00226f70`, clears the target). **Nothing is popped.**
     4. Runs the class's Start, then marks the tactic as started.

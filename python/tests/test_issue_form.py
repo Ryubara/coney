@@ -228,6 +228,21 @@ def test_a_required_checkbox_must_be_ticked_in_the_bug_form() -> None:
     )
 
 
+def test_a_dropdown_option_that_starts_with_a_dash_is_accepted_plain_or_in_backticks() -> None:
+    """The bug form's `--play-level` option is rendered by GitHub as plain text, and may be written in backticks."""
+    bug = (
+        "### Coney version or commit\n\nabc123\n\n### How did you start the game?\n\n--play-level\n\n"
+        "### Steps to reproduce\n\n1. Start\n\n### What happens\n\nIt breaks.\n\n"
+        "### How often does it happen?\n\nAlways\n\n### Screenshots\n\nScreenshots: none (a crash)\n\n"
+        "### No game files\n\n"
+        "- [x] I attached no game files: no disc images, BIOS, extracted assets, save files or game text.\n"
+    )
+    options = CheckOptions(tree=TREE)
+    for written in ("--play-level", "`--play-level`", "- --play-level", "- `--play-level`"):
+        text = bug.replace("\n--play-level\n", f"\n{written}\n", 1)
+        assert issue_form.check_issue("A crash", text, BUG, CONVENTIONS, options).problems == [], written
+
+
 # --- links to pages ---------------------------------------------------------------------------------------------
 
 

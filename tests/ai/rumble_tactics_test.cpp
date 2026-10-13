@@ -130,7 +130,7 @@ TEST_CASE("TacticConfront with no target gang does nothing", "[ai][tactics][rumb
     CHECK(codes(scene, "Confront", gang).empty());
 }
 
-TEST_CASE("TacticAttack sends its members at the nearest enemy, and reports when none has an enemy",
+TEST_CASE("TacticAttack's members melee the nearer listed enemy, and it reports when none has an enemy",
           "[ai][tactics][rumble]") {
     AiScene scene;
     std::vector<Brain*> ours;
@@ -139,10 +139,12 @@ TEST_CASE("TacticAttack sends its members at the nearest enemy, and reports when
     const int other = makeGang(scene, 21, "Orphans", {{60.0F, 40.0F, 0.0F}, {50.0F, 40.0F, 0.0F}}, theirs);
     scene.brains.gangs().makeEnemies(gang, other);
     CHECK(coney::ai::nearestGangEnemy(*ours[0], scene.brains.gangs()) == theirs[1]);
+    // The Melee goal picks among the listed enemies (the scan's, out of view here, so listed by hand).
+    ours[0]->addEnemy(*theirs[0]);
+    ours[0]->addEnemy(*theirs[1]);
     scene.brains.gangs().setTactic(gang, std::make_unique<coney::ai::TacticAttack>("Attack"));
     scene.run(1);
-    REQUIRE(ours[0]->topGoal() != nullptr);
-    CHECK(ours[0]->topGoal()->type() == coney::ai::kMeleeGoal);
+    CHECK(ours[0]->findGoal(coney::ai::kMeleeGoal) != nullptr);
     CHECK(ours[0]->threatResponse() == 2);
     scene.run(1);
     CHECK(ours[0]->target() == theirs[1]);

@@ -14,6 +14,7 @@ add_library(coney_core STATIC
     core/input_script.cpp
     core/name_hash.cpp
     core/parse_number.cpp
+    core/clip_recording.cpp
     core/window_display.cpp
     core/options.cpp
     core/pad.cpp
@@ -78,6 +79,10 @@ add_library(coney_core STATIC
     physics/segment_kernels.cpp
     physics/sphere_box_sweep.cpp
     raycast/collision_mesh.cpp
+    physics/body_sweep.cpp
+    physics/contact.cpp
+    physics/mesh_sweep.cpp
+    physics/sphere_triangle.cpp
     gui/bar.cpp
     gui/base_widget.cpp
     gui/global_strings.cpp
@@ -387,6 +392,8 @@ target_sources(coney_core PRIVATE
 # The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
 target_sources(coney_core PRIVATE
     debug/debug_lines.cpp
+    debug/anim_catalog.cpp
+    debug/anim_id_names.cpp
     debug/debug_session.cpp
     debug/fighter_spawn.cpp
     debug/entity_inspect.cpp
@@ -401,6 +408,7 @@ target_sources(coney_core PRIVATE
     debug/native_signatures.cpp
     debug/object_watch.cpp
     debug/pad_menu_input.cpp
+    debug/pages_anim.cpp
     debug/pages_engine.cpp
     debug/pages_entity.cpp
     debug/pages_hud.cpp

@@ -500,9 +500,10 @@ stands.
   ([How many hit one man at once](gang-fights.md#limits)). An enemy list holds 8 or 9 handles most of the fight.
 - **Out of the fight.** A knocked-out fighter keeps health **1** and lies in `ANIM_DEAD_IDLE` (349); a wounded one has
   state `0x10000` and crawls (`ANIM_WOUNDED_IDLE`, 200, then `ANIM_WOUNDED_HIT_REACT_DIE`, 204). Both count as out
-  for the brawl. A knocked-out fighter is **deleted 461 updates** (15.4 s) after it lies down (four of four checked in
-  offset 0's match). At `RumbleOver` the standing fighters of the winning side but the winner are deleted 25 updates
-  after the brains go off (offset 0), as `CreateWinCam` does.
+  for the brawl, and so does the dying state before them (`0x80000000`, from the lethal hit). A knocked-out fighter is
+  **deleted 461 updates** (15.4 s) after it lies down (four of four checked in offset 0's match): 420 knocked out, then
+  41 dead ([Combat: the knocked-out bit](combat.md#knocked-out-bit)). At `RumbleOver` the standing fighters of the
+  winning side but the winner are deleted 25 updates after the brains go off (offset 0), as `CreateWinCam` does.
 
 ### The sides swapped {#gang-battle-swap}
 
@@ -550,9 +551,15 @@ They come from the recordings; where a rule differs from what the report did bef
    first goal pushed) to `RumbleOver`, the first update after which every fighter's `brain_off` is 1 (or every goal
    stack is empty for 30 updates in a row: one update with every stack empty happens mid-fight). Nothing before or
    after counts: the intro is 151-172 updates, and the trace goes on after the end.
-3. **Out of the fight**: clip 349 (`ANIM_DEAD_IDLE`), or state `0x10000` (wounded, clips 200 and 204), or the human
-   gone from the trace (a knocked-out fighter is deleted 461 updates after he lies down). Health stays 1, so health 0
-   is never a knock-out test. **Standing time** is a fighter's updates in the fight while not out; every rate is per
+3. **Out of the fight**: the 64-bit state word holds any of **`0x180050000`**, the mask of `Human_IsDownOrDead`
+   (`0x00227e60`): in the trace's columns, `state & 0x80050000` (dying `0x80000000`, knocked out `0x40000`, wounded
+   `0x10000`) or `state_hi & 0x1` (dead), or the human gone from the trace. A fighter is out from the update of the
+   lethal hit (dying) and never comes back in a brawl: none is revivable, so a knock-out turns into death after 14 s
+   and deletion 41 updates later ([Combat: who sets and clears the knocked-out bit](combat.md#knocked-out-bit), with
+   its runtime timeline). `0x40000` alone is not enough: it comes only with clip 349, after the dying reaction and any
+   wounded crawl, and goes for the last 41 updates. Clip 349 and `0x40000` start on the same update, so either marks
+   the knock-out itself. The attack's recovery `0x40000` is the `phase` column, not `state`. Health stays 1, so health
+   0 is never a knock-out test. **Standing time** is a fighter's updates in the fight while not out; every rate is per
    standing minute at 30 updates a second, per side.
 4. **The winner** is the side with fighters standing at `RumbleOver`; the fighters out of each side are counted then.
 5. **Attacks** are wind-up starts: the `phase` bit `0x1` turning on (the `command` column does not hold an AI's
@@ -563,7 +570,8 @@ They come from the recordings; where a rule differs from what the report did bef
 7. **Target switches** count every change of `target` between two humans or to and from none, and split by kind:
    A to B, set from none, cleared to none. Melee's re-pick clears and sets within one update, so a sample shows it
    as A to B. With the `set-target` hook (or Coney's equivalent), split by cause as in
-   [Gang fights: runtime checks](gang-fights.md#runtime) rule 6.
+   [Gang fights: runtime checks](gang-fights.md#runtime) rule 6, using the return addresses of [What each caller
+   means](gang-fights.md#set-target-causes).
 8. **Goal shares** are the top goal's share of standing time; **fight goals** are runs of Fight on top, a new one
    when `fight_updates` starts again: their length (median, 90th percentile, the share reaching 4 s).
 9. **Fighters on one enemy**: at each update, for each enemy that standing fighters of a side target, how many do (the

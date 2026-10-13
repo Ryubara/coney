@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+import subprocess
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
-from coney_tools.conventions import DocsNone, Paths, PointerFiles, PullRequests, TitleRules
+from coney_tools.config import ConfigError
+from coney_tools.conventions import DocsNone, Paths, PointerFiles, PullRequests, TitleRules, Trailers
 
 # Every rule these checks apply is a key of .github/conventions.yml (coney_tools/conventions.py reads it); nothing
 # below hard-codes an area, a limit, a section name or a path class.
@@ -198,6 +200,66 @@ def _check_ai_use(section: str, rules: PullRequests) -> list[str]:
     return []
 
 
+# --- the models a branch's commits credit -----------------------------------------------------------------------------
+
+
+def trailer_models(messages: Iterable[str], rules: Trailers) -> list[str]:
+    """The model names that the AI co-author trailers (`commits.trailers.ai_co_author`) of `messages` name.
+
+    A trailer counts when its key matches (any case) and its address is one of the model noreply addresses, so a
+    person credited as a co-author is not a model. Each model appears once (compared without regard to case or runs
+    of spaces), in the order first met, spelled as its first trailer spells it.
+    """
+    co_author = rules.ai_co_author
+    pattern = re.compile(
+        rf"^[ \t]*{re.escape(co_author.key)}[ \t]*:[ \t]*(?P<name>[^<\n]*?)[ \t]*<(?P<address>[^>\n]+)>[ \t]*$",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    noreply = {address.casefold() for address in co_author.noreply}
+    found: dict[str, str] = {}
+    for text in messages:
+        for trailer in pattern.finditer(text):
+            name = " ".join(trailer.group("name").split())
+            if name and trailer.group("address").strip().casefold() in noreply:
+                found.setdefault(name.casefold(), name)
+    return list(found.values())
+
+
+def branch_trailer_models(worktree: Path, base: str, rules: Trailers) -> list[str]:
+    """The models credited by a `Co-Authored-By` trailer on the commits of `worktree` after `base` (`base..HEAD`).
+
+    ConfigError when git cannot list them (not a worktree, `base` unknown): a branch that cannot be read must not
+    pass for one with no trailers.
+    """
+    command = ["git", "-C", str(worktree), "log", "--reverse", "--format=%B%x00", f"{base}..HEAD"]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", check=False)
+    except OSError as error:
+        raise ConfigError(f"git cannot be run ({error})") from error
+    if result.returncode != 0:
+        raise ConfigError(f"{worktree}: cannot list the commits {base}..HEAD ({result.stderr.strip()})")
+    return trailer_models(result.stdout.split("\0"), rules)
+
+
+def _check_trailer_models(section: str, rules: PullRequests, models: Sequence[str]) -> list[str]:
+    """One problem per model of `models` that the AI use section's Model line does not name.
+
+    A name is found anywhere on the line, in any case and with any spacing, but not as the start of a longer
+    version (`Claude Opus 5.5` is not in `Claude Opus 5.55`).
+    """
+    label = rules.ai_use.model.label
+    line = " ".join((_label_value(section, label) or "").casefold().split())
+    problems: list[str] = []
+    for model in models:
+        wanted = re.escape(" ".join(model.casefold().split()))
+        if not re.search(rf"(?<!\w){wanted}(?!\w|\.\d)", line):
+            problems.append(
+                f"AI use: '{label}' does not name {model}, which a Co-Authored-By trailer on the branch's commits "
+                "credits"
+            )
+    return problems
+
+
 #: An unchecked task-list item, `- [ ] text`.
 _OPEN_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[ \][ \t]*(?P<text>.*)$")
 
@@ -358,14 +420,16 @@ def _check_screenshots(section: str, rules: PullRequests) -> list[str]:
     return screenshots_problems(section, shots.section, shots.none, shots.uploaded_only, rules.placeholders)
 
 
-def check_body(body: str, rules: PullRequests) -> list[str]:
+def check_body(body: str, rules: PullRequests, branch_models: Sequence[str] = ()) -> list[str]:
     """Check a pull request description against the template's form.
 
     Every section must be present as a `##` heading, the `filled` ones (Summary, Testing) must hold text of their
     own, the Screenshots section must hold an image that is an uploaded URL (not a local path) or a
     `Screenshots: none (<reason>)` line, no text may name a path on the author's machine, and the AI use
     section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and no
-    Checklist item may be left unticked (`- [ ]`).
+    Checklist item may be left unticked (`- [ ]`). With `branch_models` (the models the branch's commits credit in
+    `Co-Authored-By` trailers, see `branch_trailer_models`) the Model line must also name each of them, whoever wrote
+    the commits; a description alone has no branch, so CI passes none.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -383,7 +447,11 @@ def check_body(body: str, rules: PullRequests) -> list[str]:
         problems.extend(_check_screenshots(screenshots, rules))
     ai_use = sections.get(rules.ai_use.section.casefold())
     if ai_use is not None:
-        problems.extend(_check_ai_use(ai_use, rules))
+        ai_problems = _check_ai_use(ai_use, rules)
+        problems.extend(ai_problems)
+        # Only once the AI use lines themselves are usable: a missing Model line is reported once, not twice.
+        if not ai_problems and rules.ai_use.model.names_trailer_models:
+            problems.extend(_check_trailer_models(ai_use, rules, branch_models))
     checklist = sections.get(rules.checklist.section.casefold())
     if checklist is not None:
         problems.extend(_check_checklist(checklist, rules))

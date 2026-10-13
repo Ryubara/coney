@@ -78,6 +78,7 @@ enum class AnimState : std::int8_t {
     CombatWalk =
         105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
     Workout = 106, ///< **Coney's**: a workout's enter clip, then its loop blend, until the workout ends.
+    Debug = 107, ///< **Coney's own**: the debug menus' Animation player plays a clip (HumanAnimator::playDebugClip()).
 };
 
 /// The bits of the human's record `+0x08` a clip task holds while it plays and sets as it starts
@@ -183,6 +184,13 @@ class HumanAnimator {
     /// (docs/research/tasks.md#held-flags), but 389, which holds its own `0x40000000` as at runtime.
     void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade = kCombatFade,
                     HeldFlags held = {});
+    /// A tag spray's end: 336 `ANIM_TAGGING_END` after a 0.05 s fade, then the idle (slot 0); in a fight stance
+    /// (`stance`) 336, the transition 359 and the fight idle 358 looping. 336 holds and sets `0x800000` (a hit gets no
+    /// reaction while it plays), and in a fight stance also `0x80000`, which 359 holds after it. 336's event `0x31` at
+    /// frame 7 drops the can its intro 334 made (docs/research/crimes.md#tag-look, "The end"). Ids the anim set lacks
+    /// are skipped.
+    /// @orig 0x002783b0 Tag_EndSprayClips (unknown)
+    void playTagEnd(bool stance);
     /// Combat, the victim's side of a paired move: plays `clips` in turn from `attacker`'s anim set at its rates (a
     /// grab's victim plays the grabber's reaction clips, authored with the grabber's), then its own `loop`, after a
     /// fade of `fade` (0: the two humans switch on the same update). `state` as for playCombat(). Ids `attacker`
@@ -211,8 +219,20 @@ class HumanAnimator {
     void endWorkout(const anim::AnimClip* exit);
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
     /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
-    /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays.
+    /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays, nor while the Animation
+    /// player's clip plays (playDebugClip()).
     void playCombatWalk(std::uint32_t clip);
+    /// **Coney's own**, for the debug menus' Animation player (docs/guides/debug-menu.md#animation-player); the
+    /// original has nothing like it, and nothing of the original's calls it. Plays `clip` (anim `animId`, which must
+    /// outlive its use) from its first frame at `rate`, at once with no fade, holding no bits of the record `+0x08`:
+    /// once, after which the idle takes over and the controller chooses again, or with `loop` until stopDebugClip() or
+    /// something else the human plays (a hit, a jump) replaces it. With `inPlace` its root motion neither moves nor
+    /// turns the body. AnimState::Debug while it plays.
+    void playDebugClip(const anim::AnimClip& clip, std::uint32_t animId, float rate, bool loop, bool inPlace);
+    /// Ends the clip playDebugClip() plays with the idle (its usual fade); nothing when none plays.
+    void stopDebugClip();
+    /// Whether a clip playDebugClip() started is still playing.
+    [[nodiscard]] bool debugClipPlaying() const;
     /// Leaves the combat walk for the idle (the lock is gone); nothing in any other state.
     void leaveCombatWalk();
     /// Leaves a held combat pose (AnimState::Hold) for the controller's own choice, keeping what plays; nothing in
@@ -326,6 +346,7 @@ class HumanAnimator {
     Speeds m_speeds;
     anim::AnimTaskStack m_tasks;
     AnimState m_state = AnimState::None;
+    const anim::AnimTask* m_debugTask = nullptr; // playDebugClip()'s task while AnimState::Debug; only compared
 };
 
 } // namespace coney::human

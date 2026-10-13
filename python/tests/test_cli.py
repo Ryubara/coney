@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from conventions_support import changed, write_checkout
+from git_support import make_branch, message
 
 from coney_tools.cli import main
 
@@ -255,3 +256,44 @@ def test_check_body_with_unusable_rules_exits_2(
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
     assert main(["repo", "check-body"]) == 2
     assert "conventions.yml" in capsys.readouterr().err
+
+
+def branch_with_opus(root: Path) -> Path:
+    """A synthetic branch (under `root`) whose one commit after `main~1` credits Claude Opus 5.5."""
+    branch = root / "branch"
+    branch.mkdir()
+    return make_branch(
+        branch, [message("tools: Add a thing", "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")]
+    )
+
+
+def test_check_body_with_a_worktree_refuses_a_model_the_line_does_not_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    branch = branch_with_opus(tmp_path)
+    (tmp_path / "body.md").write_text(GOOD_BODY, encoding="utf-8")
+    argv = ["repo", "check-body", "--body", "body.md", "--worktree", str(branch), "--base", "main~1"]
+    assert main(argv) == 1
+    out = capsys.readouterr().out
+    assert "Claude Opus 5.5" in out and "Co-Authored-By" in out
+    (tmp_path / "body.md").write_text(GOOD_BODY.replace("Sonnet", "Opus"), encoding="utf-8")
+    assert main(argv) == 0
+
+
+def test_check_body_without_a_worktree_does_not_read_the_commits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # What CI's `body` job runs: the description alone.
+    monkeypatch.chdir(body_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
+    assert main(["repo", "check-body"]) == 0
+
+
+def test_check_body_with_a_worktree_git_cannot_read_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
+    assert main(["repo", "check-body", "--worktree", str(tmp_path / "missing")]) == 2
+    assert "origin/main" in capsys.readouterr().err

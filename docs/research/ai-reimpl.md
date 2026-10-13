@@ -111,9 +111,10 @@ lock-on (`ScriptedStory::startWarriorCommand`). Tests: `repo:tests/ai/threats_te
 
 ## Unit 2: TacticAttack in full, without team-ups {#unit-2}
 
-Gang-fight needs 2, 3, 9 and 10. Today `repo:src/ai/tactic_attack.h` gives members a stand-in melee goal on the
-nearest gang enemy; this unit gives them the real Melee goal (`repo:src/ai/melee_goal.h`, already built), the
-idle pass toward the farthest busy mate, the violence event, flight and the gang's alert state.
+Gang-fight needs 2, 3, 9 and 10. Before this unit `repo:src/ai/tactic_attack.h` gave members a stand-in melee goal
+on the nearest gang enemy; the unit gives them the real Melee goal (`repo:src/ai/melee_goal.h`), the idle pass
+toward the farthest busy mate, the violence event, flight and the gang's alert state (Coney status at the end of
+this section).
 
 **The record** (`AttackTactic_Construct` `0x003075c8`, vtable `0x00543320`; confirmed (code)):
 
@@ -177,7 +178,12 @@ Returns the tactic code for `Tactic_Process` (0 = carry on). Confirmed (code). I
    empty (*brain* `+0x2c` = −1): pop to base, mark it, `Goal_Melee(him, −1)`; then the **farthest** other resolving
    member whose stack is **not** empty (squared distance strictly greater than the best so far, starting from 0) is
    chosen, and when there is one the idle member gets `Goal_HelpRespond(him, that mate, 0, −1)` (`0x002b75b8`, see
-   below). Players are not excluded.
+   below). Players are not excluded. The stacks are read **as the pass goes**: the search runs right after this
+   member's Melee is pushed, inside the same loop, so a member given Melee earlier in the pass counts as busy for
+   the later ones (the member himself is skipped by handle). The distance is **3-D**: `Vec_DistSq` (`0x00336ce0`)
+   subtracts x, y and z, sets w to 0 and sums x² + y² + z² (`vaddy.x`, `vaddz.x`), between the two transforms'
+   positions (`0x00714b00` + index × `0x20`); the flat variant `Vec_DistSq2D` (`0x00336c98`) is not the one called.
+   Confirmed (code) at `0x003081a8`.
 3. **The team-up timer.** Only with no order running (`+0x10` = 0) and not fled: when `+0x28` is 0 it is set to
    *now* + 7000; else when *now* > `+0x28`, `+0x28` = 0 and `AttackTactic_StartSubTactic` runs ([Unit 3](#unit-3)).
    An attempt that starts nothing re-arms the timer on the next update, so attempts come every 7 s.
@@ -188,8 +194,8 @@ Returns the tactic code for `Tactic_Process` (0 = carry on). Confirmed (code). I
 The name is misleading: it is the HelpRespond **pusher**. Arguments (helper handle, target handle, *flag*, time
 limit); both handles must resolve to humans; it allocates a goal, initialises HelpRespond
 (`HelpRespondGoal_Init` `0x002b7670`, [HelpRespond](ai-goals.md#goal-help-respond)) on the helper's brain toward the
-target with the flag and limit, and pushes it. Confirmed (code). Coney's `giveMelee` carries this tag but only gives
-Melee: the tag belongs on Coney's HelpRespond push.
+target with the flag and limit, and pushes it. Confirmed (code). The tag is on Coney's HelpRespond push
+(`sendHelper`, `repo:src/ai/brain_events.h`).
 
 ### `AttackTactic_OnViolence` (`0x00307878`, 408 bytes) {#attack-on-violence}
 
@@ -225,6 +231,18 @@ calls); the fight goal `0xf` is not tested. Confirmed (code).
 members number at most round(v9 × `+0xe0` / 100), every standing member of class role 11 (`CharClass` `+0x11b`)
 gets threat response 0, Melee and a PedReaction (type 9) away from his nearest enemy, and `+0x32` is set.
 
+Details settled from the code (confirmed (code) at `0x00307d40`):
+
+- A member who already has a PedReaction (`0x6b`, `Brain_FindGoal` ≥ 0) is skipped. Each other fleeing member is
+  **popped to his goal base and the base marked** (`Brain_PopToGoalBase`, `Brain_MarkGoalBase`) before
+  `Goal_Melee(him, −1)` and `PedReactionGoal_Push(him, nearest enemy, 9)`, exactly as `GiveMelee` does; the
+  nearest enemy is taken from his enemy list (*brain* `+0x164`) before the pushes. `+0x32` is set only when at
+  least one member was sent.
+- The check **does not test `+0x32`**: every later event `0x12` runs it again. Members still holding their
+  PedReaction are skipped; one whose PedReaction has ended (or a member newly meeting the count test) gets the
+  flight again. Only kind 6 with team-ups (`+0xd9`) returns at once; `+0xe0` must be above 0 (signed byte), the
+  share (`GangConfig_GetField72`) not 0 and the rounded threshold not 0.
+
 `AttackTactic_End` (`0x003080c8`, 132 bytes): releases clip group `0x29c` (`GangClips_ReleaseGroup`) under the same
 condition Start used to install it (can flee and v9 ≠ 0, or kind 6 with `+0xd9`). Confirmed (code).
 
@@ -242,14 +260,67 @@ differs from *gang* `+0x32`. It stores *state*, then:
   exceptions. Every AI member's *brain* `+0x14d` = 1.
 - Any other value: no clip change, AI members' `+0x14d` = 1.
 
-`+0x14d` = 1 keeps the turf limit on whom a member may take ([The gang](ai-gangs.md#gang-record)). Callers: the Melee goal
-when the gang has no tactic, and a tactic's Start for tactic types below `0x12`.
+`+0x14d` = 1 keeps the turf limit on whom a member may take ([The gang](ai-gangs.md#gang-record)). A new brain starts
+at **1**: `Brain_Init` (`0x0028a570`, from `Human_Init`) stores 1 at `+0x14d`. Confirmed (code). Callers: the Melee
+goal when the gang has no tactic, and `Tactic_Start` (below).
+
+**What `Tactic_Start` passes** (`0x00306690`, confirmed (code)): `Gang_SetAlertState(gang, flag == 1)`, where *flag*
+is the tactic's vtable slot `+0x3c`. It always calls, so the value is **1 (fighting)** for a tactic whose flag is 1
+and **0 (calm)** otherwise, never another value. The base slot (`0x004ef350`) returns *type* < `0x12` from slot
+`+0x34`; TacticAttack's type slot (`0x004ef348`) returns 0, so TacticAttack's Start sets **1**. A tactic of type
+`0x12` or above puts its gang back to calm (0) when it starts.
+
+**The clip names** (confirmed (code); pointer tables read in `SLUS_212.15`):
+
+| Group | Installed by | Clips |
+| --- | --- | --- |
+| `0x25b` | `Gang_AddCombatFidgetClips` (table `0x0050cab8`) | `combat_fidget_call_front`, `combat_fidget_shift`, `combat_fidget_boxersdance`, `combat_fidget_shuffle` |
+| `0x253` | `Gang_AddFightTauntClips` (`0x0050caf0`) | `taunt1_adv` to `taunt5_adv` |
+| `0x257` | the same (`0x0050cb08`, a random three of the five) | `gen_tnt_point`, `gen_tnt_cheer`, `gen_tnt_spit`, `gen_tnt_wave`, `gen_tnt_pointdwn` |
+| `0x256` | the same (`0x0050cb20`) | `gen_tnt_cheer1`, `gen_tnt_cheer2`, `gen_tnt_cheer3` |
+| `0x29c` | `AttackTactic_Start`, kind 6 with `+0xd9` (`0x005110c8`) | `punk_grab_struggle`, `punk_grab_struggle_react` |
+| `0x29c` | `AttackTactic_Start`, can flee and v9 ≠ 0 | `gen_cower_plead` |
+
+Each name is an `.anm` file name without the extension. How a longer list fills a group with a random subset in
+order: `GangClips_Set` (`0x00164178`, [Gang functions](ai-code.md#gang-functions)).
 
 **Tests (synthetic):** a gang of four with one PedReaction holder (no Melee, response unchanged); the 1 s check with
 one member listing an enemy (returns 0 and the idle pass waits for the next update) and with none (returns 9);
 the idle pass with three idle and two busy mates at known distances (each idle one gets HelpRespond toward the same
 farthest busy one); event `0x14` with and without a picked side; event 1 for a member of another gang (ignored);
 event 2 after flight (no callback); the alert state set twice to 1 (clips installed once) and to 2.
+
+**Coney status (implemented).** `repo:src/ai/tactic_attack.h` (`TacticAttack`, `tacticAttack`, every tag above but
+the team-up ones), the real `MeleeGoal` in place of the stand-in (Coney's story and scout tactics give it too),
+`Brain::hasFightGoal` and the turf-limit byte `Brain::keepsToTurf` (`repo:src/ai/brain.h`), and the gang's alert state,
+clip groups, `canFlee` and flee count (`repo:src/ai/gangs.h`). `Tactic_Start` puts a gang tactic's gang in the
+fighting state and calms the gang of a tactic of type `0x12` or above. The flight moved from the hub's per-update
+check (`ScriptedHub`) into the attack tactic's event 18; the hub hands the gangs its categories and flee shares
+(tested in `repo:tests/ai/scripted_hub_test.cpp`). The living count of Start and the spacing is `Gang::living()`:
+every member, the dead included, since a Coney member's handle resolves until the human is deleted. That is not the
+script binding's living head count (`ScriptedBrains::gangHeadCount`, members with health left, Coney's reading) nor
+the HUD's gang counter, which also counts health. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins left:
+
+- "Cuffed" in the flight is the human's scripted arrested state.
+- The clip groups keep only their clip counts, and nothing plays the groups yet; the random three of five taunts is
+  not drawn. The names are now in the [alert state](#alert-state) table.
+- The spot line at Start is not built: `Gang_SaySpotLine` (`0x00165d40`) is specified in
+  [Gang functions](ai-code.md#gang-functions) and its sound in [Sound events](sound-events.md).
+- The music mood update is not built. `SystemMusic_UpdateMood` (`0x0041a060`) is the game's mood judge (it ends in
+  `GameState_SetMusicMood`); Coney's system music judges the mood every frame with its own stand-in rule
+  ([Sound](sound.md), the System music entry of the Coney status), so the call from the alert state adds nothing
+  until that judge is built from the code.
+
+Answered for this unit (2026-10-13, from the code; each against Coney's choice):
+
+- `Tactic_Start` passes 1 for TacticAttack (its type is 0, below `0x12`), and 0 for a tactic of type `0x12` or above
+  ([alert state](#alert-state)). Coney's 1 matches for TacticAttack; a Coney tactic of type ≥ `0x12` now passes 0.
+- The idle pass reads the stacks as it goes, and the distance is 3-D ([Process](#attack-process)). Both match Coney.
+- The flight pops and marks before its pushes, and runs again on every event 18, skipping members that still have
+  a PedReaction ([flight](#attack-flight)). Both match Coney. Three details of Coney's check differed from the code
+  and are now fixed: it skips a member who already has a PedReaction, skips a cuffed member in the sending loop, and
+  does nothing when the share or the rounded threshold is 0, setting "fled" only when a member was sent.
+- A new brain's `+0x14d` is 1 (`Brain_Init`). Matches Coney.
 
 ## Unit 3: team-up framework, the sub-tactic pool and the draw {#unit-3}
 

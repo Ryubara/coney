@@ -209,7 +209,7 @@ float movedOn(const Run& run, int index) {
 
 // The player's walking sphere (0.4704 m), and the 0.01 m the sweep leaves between it and a wall.
 const float kBodyRadius = coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale);
-const float kContactClear = coney::human::bodyTuning().contactClear;
+const float kContactClear = 0.01F; // the sweep's back-off (docs/research/physics-bodies.md#u3-codes)
 
 TEST_CASE("Rembrandt sprints along the parkour lane while L2 and stamina last", "[disc][player][sandbox][traversal]") {
     const char* discPath = discOrSkip();

@@ -388,6 +388,8 @@ std::string_view animStateName(human::AnimState state) {
         return "combat walk";
     case human::AnimState::Workout:
         return "workout";
+    case human::AnimState::Debug:
+        return "debug clip";
     }
     return "?";
 }
@@ -475,6 +477,8 @@ std::string_view goalTypeName(ai::GoalType type) {
         return "HoldPosition";
     case TravelPath:
         return "TravelPath";
+    case LeftTurf:
+        return "LeftTurf";
     case FindEnemy:
         return "FindEnemy";
     case AreaWalker:

@@ -799,3 +799,54 @@ TEST_CASE("a player in the fight stance sprays: 334 then 335 play, the stance's 
     fight.run("", 10);
     CHECK_FALSE(fight.human().tagSprayPlaying());
 }
+
+TEST_CASE("a finished spray ends through 336, holding 0x800000, then the idle", "[human][combat]") {
+    // Tag_EndSprayClips (docs/research/crimes.md#tag-look, "The end"): 336, whose event 0x31 drops the can, then the
+    // idle; 336 holds 0x800000, so a hit gets no reaction while it plays.
+    const FightCharacter character;
+    Fight fight(character, 6.0F);
+    REQUIRE(fight.human().startTagSpray(Vec3{42.0F, 40.0F, 1.0F}));
+    fight.run("", 40);
+    REQUIRE(fight.human().tagSprayLooping());
+    fight.human().endTagSpray();
+    std::vector<std::uint32_t> played;
+    bool heldDuringEnd = true;
+    fight.run("", 30, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (now == 336 && (fight.human().animator().flags() & 0x800000U) == 0) {
+            heldDuringEnd = false;
+        }
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+    });
+    REQUIRE(played.size() == 2);
+    CHECK(played[0] == 336);
+    CHECK(played[1] == 388);
+    CHECK(heldDuringEnd);
+    CHECK((fight.human().animator().flags() & 0x800000U) == 0);
+    CHECK_FALSE(fight.human().tagSprayPlaying());
+}
+
+TEST_CASE("a spray ended in a fight stance plays 336, the transition 359 and the fight idle", "[human][combat]") {
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    animator.playTagEnd(true);
+    std::vector<std::uint32_t> played;
+    std::vector<std::uint32_t> held;
+    for (int i = 0; i < 40; ++i) {
+        animator.advance(1.0F / 30.0F);
+        const std::uint32_t now = animator.animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+            held.push_back(animator.flags() & 0x880000U);
+        }
+    }
+    REQUIRE(played.size() == 3);
+    CHECK(played[0] == 336);
+    CHECK(played[1] == 359);
+    CHECK(played[2] == coney::human::kAnimFightIdle);
+    CHECK(held[0] == 0x880000U);
+    CHECK(held[1] == 0x80000U);
+    CHECK(held[2] == 0U);
+}

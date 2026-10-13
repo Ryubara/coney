@@ -30,11 +30,70 @@ std::string_view Gang::handler(int message) const {
     return found == m_handlers.end() ? std::string_view{} : std::string_view(found->second);
 }
 
+bool downOrDead(const Brain& brain) {
+    return brain.human().fighter().health().depleted() || brain.human().state() == human::TargetState::Grounded;
+}
+
 int Gang::standing() const {
-    return static_cast<int>(std::ranges::count_if(m_members, [](const Brain* member) {
-        return !member->human().fighter().health().depleted() &&
-               member->human().state() != human::TargetState::Grounded;
-    }));
+    return static_cast<int>(std::ranges::count_if(m_members, [](const Brain* member) { return !downOrDead(*member); }));
+}
+
+void Gang::setAlertState(int state) {
+    if (state == m_alertState) {
+        return;
+    }
+    m_alertState = state;
+    // The clips by state, each under its kind's exception; the turf limit off only while fighting, for the AI only.
+    if (state == kGangFighting) {
+        if (m_kind != kNoAlertClipsKind) {
+            if (m_kind != kNoFidgetsKind) {
+                addCombatFidgetClips();
+            }
+            if (m_kind != kPoliceLikeKind) {
+                addFightTauntClips();
+            }
+        }
+    } else if (state == kGangCalm && m_kind != kNoAlertClipsKind) {
+        if (m_kind != kNoFidgetsKind) {
+            removeCombatFidgetClips();
+        }
+        if (m_kind != kPoliceLikeKind) {
+            removeFightTauntClips();
+        }
+    }
+    for (Brain* member : m_members) {
+        if (member->type() != BrainType::Player) {
+            member->setKeepsToTurf(state != kGangFighting);
+        }
+    }
+}
+
+int Gang::clipGroup(int group) const {
+    const auto found = m_clipGroups.find(group);
+    return found != m_clipGroups.end() ? found->second : 0;
+}
+
+void Gang::setClipGroup(int group, int clips) { m_clipGroups[group] = clips; }
+
+void Gang::releaseClipGroup(int group) { m_clipGroups.erase(group); }
+
+// The four combat fidgets.
+void Gang::addCombatFidgetClips() { setClipGroup(kCombatFidgetClips, 4); }
+
+void Gang::removeCombatFidgetClips() { releaseClipGroup(kCombatFidgetClips); }
+
+// Five advancing taunts, a random three of five taunts (**Coney stand-in**: which three is not drawn, as only the
+// counts are kept) and three cheers.
+void Gang::addFightTauntClips() {
+    setClipGroup(kTauntAdvanceClips, 5);
+    setClipGroup(kTauntClips, 3);
+    setClipGroup(kCheerClips, 3);
+}
+
+void Gang::removeFightTauntClips() {
+    releaseClipGroup(kTauntAdvanceClips);
+    releaseClipGroup(kTauntClips);
+    releaseClipGroup(kCheerClips);
 }
 
 bool Gang::onEvent(Brain& member, const BrainEvent& event) {
@@ -116,6 +175,10 @@ int Gangs::create(int kind, std::string_view name) {
     gang.m_members.clear();
     gang.m_tactic.reset();
     gang.m_handlers.clear();
+    gang.m_clipGroups.clear();
+    gang.m_alertState = kGangCalm;
+    gang.m_fleeCount = -1;
+    gang.m_canFlee = true;
     return gang.m_id;
 }
 
@@ -283,6 +346,12 @@ bool Gangs::enemies(const Gang* a, const Gang* b) {
     // 3. The bit of b's id in a's mask.
     return (a->m_enemies & bitOf(b->m_id)) != 0;
 }
+
+std::optional<int> Gangs::roleOf(const Brain& brain) const {
+    return m_lookups.role ? m_lookups.role(brain) : std::nullopt;
+}
+
+int Gangs::fleeShare(int kind) const { return m_lookups.fleeShare ? m_lookups.fleeShare(kind) : 0; }
 
 void Gangs::setTruce(std::uint64_t ms) { m_truceEndMs = ms == 0 ? 0 : m_nowMs + ms; }
 

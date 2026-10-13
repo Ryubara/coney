@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "core/error.h"
+#include "debug/anim_catalog.h"
 #include "debug/entity_inspect.h"
 #include "sandbox/sandbox_layout.h"
 
@@ -61,6 +62,24 @@ struct Spawnable {
 struct CharacterChoice {
     int type = 0;
     std::string model;
+};
+
+/// How the Animation player plays a clip on the player (docs/guides/debug-menu.md#animation-player).
+struct AnimPlayOptions {
+    bool loop = false;    ///< Loop until stopped, rather than once.
+    float speed = 1.0F;   ///< Multiplies the clip's own rate.
+    bool inPlace = false; ///< The clip's root motion neither moves nor turns him.
+};
+
+/// What the Animation player is playing on the player.
+struct AnimPlayback {
+    bool playing = false;  ///< A clip the Animation player started still plays.
+    std::uint32_t id = 0;  ///< Its anim id.
+    std::string clip;      ///< Its name.
+    std::string set;       ///< The anim set it came from.
+    float time = 0.0F;     ///< Seconds into the clip (clip time).
+    float duration = 0.0F; ///< The clip's length, seconds.
+    bool loop = false;     ///< Whether it loops.
 };
 
 /// What the debug menus can reach in a mode where the player plays (the play mode, `--play-level`): the player, the
@@ -171,6 +190,30 @@ class PlayControls {
     virtual std::expected<void, Error> changeCharacter(int /*type*/) {
         return std::unexpected(Error{ErrorCode::InvalidArgument, "no character types here"});
     }
+
+    // The Animation player (docs/guides/debug-menu.md#animation-player): **Coney's own**, the original has nothing like
+    // it. A mode without anim sets keeps the defaults.
+
+    /// The anim sets clips can be played from, by name: the player's own first (his character's clips with the
+    /// generic ones it leaves to them), then the others his skeleton can play. Empty when there are none here.
+    [[nodiscard]] virtual std::vector<std::string> animSets() const { return {}; }
+    /// The clips of anim set `set` (an index into animSets()), in id order; a set not loaded yet is loaded from the
+    /// disc. Fails with ErrorCode::InvalidArgument for a set that does not exist, and as loading it does.
+    virtual std::expected<std::vector<AnimClipChoice>, Error> animClips(std::size_t /*set*/) {
+        return std::unexpected(Error{ErrorCode::InvalidArgument, "no anim sets here"});
+    }
+    /// Plays anim `id` of set `set` on the player from its first frame, as `options` say, then gives him his own
+    /// animation back (HumanAnimator::playDebugClip()); the pad does not move him while it plays. Fails with
+    /// ErrorCode::InvalidArgument where nothing can play, ErrorCode::NotFound for an id the set has no clip for, and as
+    /// animClips() does.
+    virtual std::expected<void, Error> playAnim(std::size_t /*set*/, std::uint32_t /*id*/,
+                                                const AnimPlayOptions& /*options*/) {
+        return std::unexpected(Error{ErrorCode::InvalidArgument, "no anim sets here"});
+    }
+    /// Stops the clip playAnim() plays, with the idle; nothing when none plays.
+    virtual void stopAnim() {}
+    /// What playAnim() plays now.
+    [[nodiscard]] virtual AnimPlayback animPlayback() const { return {}; }
 
     /// The in-game HUD the mode draws, for the HUD page; null when it has none.
     [[nodiscard]] virtual hud::Hud* hud() { return nullptr; }

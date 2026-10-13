@@ -252,6 +252,8 @@ class ModelLine:
     label: str
     #: What a person writes when no model applies; not enough when an AI took part.
     none: str
+    #: Whether the line must also name every model that a `Co-Authored-By` trailer on the branch's commits names.
+    names_trailer_models: bool
 
 
 @dataclass(frozen=True)
@@ -585,6 +587,20 @@ class Hygiene:
 
 
 @dataclass(frozen=True)
+class Clips:
+    """The in-game video clips' rules (`coney-tools clips`, `pcsx2 clip`)."""
+
+    #: The folder name the clips of a task live in: `<scratch>/<task>/<folder>/`.
+    folder: str
+    #: The longest clip, in seconds (also Coney's `--record-seconds` cap).
+    max_seconds: int
+    #: A clip bigger than this many megabytes is reported.
+    warn_mb: int
+    #: `clips clean` deletes clips older than this many hours.
+    keep_hours: int
+
+
+@dataclass(frozen=True)
 class Workspace:
     """The local workspace rules (`workspace clean|disk`); hosted checks ignore them."""
 
@@ -604,6 +620,7 @@ class Workspace:
     game_capture_suffixes: tuple[str, ...]
     #: Scratch folders that belong to the workspace, not to a branch (the emulator's, the save states', the downloads').
     shared_scratch: tuple[str, ...]
+    clips: Clips
 
 
 @dataclass(frozen=True)
@@ -916,7 +933,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     written_where = _at(ai_where, "written_by")
     written = _table(ai_use["written_by"], written_where, ("label", "choices", "no_ai"))
     model_where = _at(ai_where, "model")
-    model = _table(ai_use["model"], model_where, ("label", "none"))
+    model = _table(ai_use["model"], model_where, ("label", "none", "names_trailer_models"))
     choices = _texts(written["choices"], _at(written_where, "choices"))
     no_ai = _text(written["no_ai"], _at(written_where, "no_ai"))
     _names_in((no_ai,), choices, _at(written_where, "no_ai"), "one of the choices")
@@ -965,6 +982,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             model=ModelLine(
                 label=_text(model["label"], _at(model_where, "label")),
                 none=_text(model["none"], _at(model_where, "none")),
+                names_trailer_models=_flag(model["names_trailer_models"], _at(model_where, "names_trailer_models")),
             ),
         ),
         review=Review(
@@ -1345,8 +1363,11 @@ def _read_workspace(data: object, where: str) -> Workspace:
         "remove_worktree_when_merged",
         "game_capture_suffixes",
         "shared_scratch",
+        "clips",
     )
     table = _table(data, where, keys)
+    clips_where = _at(where, "clips")
+    clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours"))
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
@@ -1359,6 +1380,12 @@ def _read_workspace(data: object, where: str) -> Workspace:
         ),
         game_capture_suffixes=_texts(table["game_capture_suffixes"], _at(where, "game_capture_suffixes")),
         shared_scratch=_texts(table["shared_scratch"], _at(where, "shared_scratch")),
+        clips=Clips(
+            folder=_text(clips["folder"], _at(clips_where, "folder")),
+            max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),
+            warn_mb=_count(clips["warn_mb"], _at(clips_where, "warn_mb")),
+            keep_hours=_count(clips["keep_hours"], _at(clips_where, "keep_hours")),
+        ),
     )
 
 

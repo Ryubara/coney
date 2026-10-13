@@ -148,7 +148,7 @@ const MenuItem& itemOn(const MenuPage& page, std::string_view label) {
 TEST_CASE("the play pages say so when no player plays", "[debug]") {
     TunableRegistry tunables;
     DebugSession session(tunables, servicesOver(nullptr), nullptr);
-    for (const std::string_view title : {"Player", "Camera", "Spawner", "AI fighters"}) {
+    for (const std::string_view title : {"Player", "Camera", "Spawner", "AI fighters", "Animation player"}) {
         INFO(title);
         const auto page = session.model().openPage(title);
         REQUIRE(page != nullptr);
@@ -158,8 +158,9 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
     // The pages come after Levels, and Debug draw needs no player.
     const auto titles = session.model().pageTitles();
     CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels",
-                                             "Missions", "Movies", "Player", "Camera", "Spawner", "AI fighters", "HUD",
-                                             "Debug draw", "Entity inspector", "Display", "Audio", "Input"});
+                                             "Missions", "Movies", "Player", "Camera", "Spawner", "AI fighters",
+                                             "Animation player", "HUD", "Debug draw", "Entity inspector", "Display",
+                                             "Audio", "Input"});
     CHECK(session.model().openPage("Debug draw")->items().size() == 11);
 }
 
