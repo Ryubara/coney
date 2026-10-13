@@ -81,6 +81,15 @@ def test_answer_keeps_the_content_lines() -> None:
     assert answer("- [x] I confirm\n\n_No response_\n") == "I confirm"
 
 
+def test_answer_strips_a_list_marker_only_when_a_space_follows_it() -> None:
+    """A dash that starts a word (the option `--play-level`, a `-5` or `*bold*`) is content, not a bullet."""
+    assert answer("--play-level") == "--play-level"
+    assert answer("-5 degrees") == "-5 degrees"
+    assert answer("*bold* text") == "*bold* text"
+    assert answer("- --play-level") == "--play-level"
+    assert answer("-\n- item") == "item"
+
+
 # --- wording ------------------------------------------------------------------------------------------------------
 
 

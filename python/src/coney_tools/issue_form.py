@@ -421,6 +421,10 @@ def _check_field(
         return
     if item.kind == "dropdown":
         value = said.splitlines()[0].strip() if said else ""
+        # An option written as code (`--play-level`) is the same option. A bare `` stays as written, so it is
+        # refused as an unknown option rather than read as an empty answer.
+        if len(value) > 2 and value.startswith("`") and value.endswith("`"):
+            value = value.strip("`").strip()
         if not value:
             if item.required:
                 found.append(

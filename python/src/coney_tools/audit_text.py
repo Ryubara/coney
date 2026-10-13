@@ -18,8 +18,9 @@ _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _HEADING = re.compile(r"^(?P<hashes>#{2,3})[ \t]+(?P<name>\S.*?)[ \t]*#*[ \t]*$")
 #: A fence line (``` or ~~~) that opens or closes a code block.
 _FENCE = re.compile(r"^[ \t]*(```|~~~)")
-#: What a list item starts with, which is not content (`- `, `- [ ] `, `* [x] `).
-_LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\])?[ \t]*")
+#: What a list item starts with, which is not content (`- `, `- [ ] `, `* [x] `, a lone `-`). A marker is followed by
+#: a space or ends the line, so a word that starts with a dash (the option `--play-level`, `-5`) is content.
+_LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\][ \t]*|[ \t]+|$)")
 #: What a form writes for a field the reporter left empty.
 _NO_RESPONSE = "_no response_"
 #: A fenced block or an inline code span.
