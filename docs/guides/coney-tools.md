@@ -706,10 +706,9 @@ to its folder.
   --dangerously-skip-permissions` (a throwaway run, in `PR.md`'s folder) with a task naming `PR.md`, the worktree and
   `--base` (default `origin/main`), and then runs `check-review`. Its task has the agent stamp with the same `--base`.
   It removes an old `REVIEW.json` and `REVIEW.md` first, so a run that writes no verdict cannot leave an earlier pass
-  behind. `--model` overrides the agent file's model,
-  `--effort` sets the effort level, `--claude` names the executable and `--timeout-minutes` (default 30) stops a run
-  that hangs. Exit 0 when the verdict releases the branch, 1 when it does not or `claude` failed, 2 when the review
-  cannot run (no description, no agent file, not a worktree).
+  behind. `--model` overrides the agent file's model, `--effort` sets the effort level, `--claude` names the
+  executable and `--timeout-minutes` (default 30) stops a run that hangs. Exit 0 when the verdict releases the branch,
+  1 when it does not or `claude` failed, 2 when the review cannot run (no description, no agent file, not a worktree).
 * `repo check-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
   `check-body` on the rest (`PR.md`'s convention: title on line 1, body after it), except that a local image counts as an
   upload, since `gh --attach` uploads it when the pull request is opened. Each reason is printed with a `title:` or
@@ -727,6 +726,8 @@ to its folder.
   after `--base`, default `origin/main`) and, when they fail, prints the reasons with their `title:` or `body:` prefix on
   stderr, prints no stamp and exits 1, so a reviewer launched as a subagent cannot review a description that
   `check-review` would refuse at release. Exit 2 when `PR.md` cannot be read or the worktree's commits cannot be listed.
+  It takes the rules from the checkout the tool is installed in, so it runs from any folder (the agent runs it in
+  the scratch folder).
 
 The file names, the agent and the hash rule are `pull_requests.review` in `.github/conventions.yml`; the rules in full
 are the generated list in [The description review](how-we-work.md#pr-review).

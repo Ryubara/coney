@@ -126,14 +126,14 @@ coordinator, who pushes them when CI has room.
 ### The description review {#pr-review}
 
 `coney-tools repo check-body` (and CI) only checks a description's structure, and the review itself starts only on a
-description that passes it (below). On 2026-10-12 a pull request was
-released whose screenshots did not match it: three of its four pictures showed a letterboxed scene instead of
-gameplay, and its before and after pair were the same file. So a second reader goes over every description before it
-is pushed: the `pr-reviewer` agent ([Running agents](agents.md#setup)). It reads the description, the branch's diff and
-the logs the description cites, opens every picture, and writes a verdict: whether each picture shows what the text
-says (gameplay, not a scene, loading screen or menu; the right level; before and after that differ), whether each
-claim in Summary and Testing is backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later,
-that `Docs: none` is allowed and that AI use is filled.
+description that passes it (below). On 2026-10-12 a pull request was released whose screenshots did not match it:
+three of its four pictures showed a letterboxed scene instead of gameplay, and its before and after pair were the same
+file. So a second reader goes over every description before it is pushed: the `pr-reviewer` agent
+([Running agents](agents.md#setup)). It reads the description, the branch's diff and the logs the description cites,
+opens every picture, and writes a verdict: whether each picture shows what the text says (gameplay, not a scene,
+loading screen or menu; the right level; before and after that differ), whether each claim in Summary and Testing is
+backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later, that `Docs: none` is allowed and
+that AI use is filled.
 The gate also holds the `Model:` line to the branch's commits: `repo check-review` (or `repo check-body --worktree`)
 refuses a line that does not name every model a `Co-Authored-By` trailer on them credits; CI cannot, having no commits
 ([the Model line](coney-tools.md#repo-model-line)).

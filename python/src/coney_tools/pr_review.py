@@ -452,9 +452,10 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
 
 def run_review_command(args: argparse.Namespace) -> int:
     """Run `repo review`, `check-review` or `review-stamp`."""
-    root = find_repo_root(Path.cwd())
-    conventions = load_conventions(root)
     if args.command == "review-stamp":
+        # The agent runs this in the description's folder (the scratch folder), outside any checkout, so the rules
+        # come from the checkout this tool is installed in (the one `review` started it from), never the current folder.
+        conventions = load_conventions(find_repo_root(Path(__file__)))
         # Refuse before the reviewer has a stamp to copy: no stamp on stdout, the reasons on stderr.
         problems = precheck(args.pr_file, args.worktree, conventions, base=args.base)
         if problems:
@@ -464,6 +465,8 @@ def run_review_command(args: argparse.Namespace) -> int:
             return 1
         print(json.dumps(make_stamp(args.pr_file, args.worktree), indent=2))
         return 0
+    root = find_repo_root(Path.cwd())
+    conventions = load_conventions(root)
     rules = conventions.pull_requests.review
     if args.command == "check-review":
         problems = check_review(args.pr_file, args.worktree, conventions, base=args.base)

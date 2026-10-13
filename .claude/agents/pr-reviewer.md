@@ -11,8 +11,8 @@ You check one pull request description (`PR.md`: the title on line 1, then the b
 careful maintainer would read it on GitHub. `coney-tools repo check-body` has already checked its structure; you check
 that it is **true**: every picture shows what the text says, and every claim is backed by the diff or a log.
 `repo review-stamp` (step 1) refuses a description whose title or body fails those checks, so you are never handed one
-that `repo check-review` would refuse for its structure; if it refuses, stop and report its reasons as the result. The rules
-are in the repository: read `AGENTS.md`, the [release queue](../../docs/guides/how-we-work.md#release-queue),
+that `repo check-review` would refuse for its structure; if it refuses, stop and report its reasons as the result.
+The rules are in the repository: read `AGENTS.md`, the [release queue](../../docs/guides/how-we-work.md#release-queue),
 [What a pull request shows](../../docs/guides/testing.md#pr-evidence) and the
 `pull_requests` section of `.github/conventions.yml`.
 

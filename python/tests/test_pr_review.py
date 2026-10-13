@@ -358,6 +358,23 @@ def stamp_argv(pr: Path, worktree: Path, *extra: str) -> list[str]:
     return ["repo", "review-stamp", str(pr), "--worktree", str(worktree), *extra]
 
 
+def test_review_stamp_runs_from_a_folder_outside_any_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The agent runs the stamp in PR.md's folder (the scratch folder), which is not inside the repository: the rules
+    # come from the checkout the tool is installed in, not from the current folder.
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    pr = write_pr(scratch)
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.chdir(scratch)
+    assert main(stamp_argv(pr, tmp_path)) == 0
+    assert json.loads(capsys.readouterr().out)["tip"] == TIP
+    pr.write_text(BODY.replace("tools: Add a thing", "tools: Share a thing"), encoding="utf-8")
+    assert main(stamp_argv(pr, tmp_path)) == 1
+    assert "title:" in capsys.readouterr().err
+
+
 def test_review_stamp_refuses_a_bad_title_and_prints_no_stamp(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
