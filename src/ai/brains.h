@@ -20,9 +20,19 @@
 
 namespace coney::ai {
 
+/// `seed` moved by a run's `variation` (`--ai-seed`): the same seed for variation 0, else the seed plus the variation
+/// times an odd constant (the golden ratio's 32 bits), so two slots' seeds stay apart. **Coney's own**: the original's
+/// brains draw from the one shared stream (docs/research/scripting.md, `0x006eb880`), which a recording varies by its
+/// starting index; Coney's brains each roll their own generator, so a run varies them through their seeds.
+[[nodiscard]] constexpr std::uint32_t variedSeed(std::uint32_t seed, std::uint32_t variation) {
+    return seed + (variation * 0x9e3779b9U);
+}
+
 /// The brains of a scene, in slot order (the original's 60 brains, `0x006d53f0 + i × 0x2f0`).
 class Brains {
   public:
+    /// No brains; every brain's and the gangs' rolls seeded through variedSeed() with `variation` (0: as always).
+    explicit Brains(std::uint32_t variation = 0);
     /// Adds a brain for `human` (not owned; it must outlive the brain, or be removed first) as the next slot, of
     /// `type`, fighting by `settings`, its rolls seeded with `seed`.
     Brain& add(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed);
@@ -59,6 +69,8 @@ class Brains {
     [[nodiscard]] const Gangs& gangs() const { return m_gangs; }
     [[nodiscard]] Formations& formations() { return m_formations; }
 
+    /// The variation the seeds are moved by (variedSeed()).
+    [[nodiscard]] std::uint32_t variation() const { return m_variation; }
     /// Steps run.
     [[nodiscard]] std::uint64_t steps() const { return m_steps; }
     /// The game time of the last step, ms.
@@ -82,6 +94,7 @@ class Brains {
     Formations m_formations;
     std::vector<std::unique_ptr<Brain>> m_brains;
     std::uint64_t m_steps = 0;
+    std::uint32_t m_variation = 0;
     RoutePlanner* m_planner = nullptr;
     const raycast::CollisionMesh* m_collision = nullptr;
 };

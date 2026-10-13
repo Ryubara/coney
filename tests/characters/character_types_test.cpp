@@ -178,3 +178,80 @@ TEST_CASE("a player takes his class's damage, his Warrior's power class and its 
     CHECK(snow.damagePercent == 0);
     CHECK_FALSE(types.playerTraitsOf(5).has_value());
 }
+
+TEST_CASE("a CfgPowerClass call gives the stamina maximum and refill and the byte +0x40", "[characters]") {
+    // Arguments 4 and 5 are `+0x2c` and `+0x2e`; argument 29 is the byte `+0x40`, clamped to 0-100.
+    std::vector<Value> call = cfgPowerClass(2, 200, 0.35);
+    call.resize(29, Value(0.0));
+    call[3] = Value(95.0);
+    call[4] = Value(20.0);
+    call[28] = Value(55.0);
+    const coney::combat::PowerClass power =
+        coney::characters::parseCfgPowerClass(call, coney::combat::kPlayerPowerClass);
+    CHECK(power.staminaMax == 95);
+    CHECK(power.staminaRefillPerSecond == 20);
+    CHECK(power.ringByte == 55);
+    call[28] = Value(250.0);
+    CHECK(coney::characters::parseCfgPowerClass(call, coney::combat::kPlayerPowerClass).ringByte == 100);
+    // A call too short to give them keeps the base's: Rembrandt's 135 and 40.
+    const coney::combat::PowerClass partial = coney::characters::parseCfgPowerClass(
+        std::vector<Value>{Value(2.0), Value(150.0)}, coney::combat::kPlayerPowerClass);
+    CHECK(partial.staminaMax == 135);
+    CHECK(partial.staminaRefillPerSecond == 40);
+    CHECK(partial.ringByte == coney::combat::kPlayerPowerClass.ringByte);
+}
+
+namespace {
+
+// Cleon's `CfgWarriorClass` call on normal (class 1): health 85 %, damage 145 %, rage 120, gain 162 %, decay 110 %,
+// drain 168 %, then the six context-game bytes and `+0x0d`.
+std::vector<Value> cleonWarriorClass() {
+    std::vector<Value> call;
+    for (const double value : {1.0, 85.0, 145.0, 120.0, 162.0, 110.0, 168.0, 1.0, 3.0, 2.0, 2.0, 3.0, 2.0, 2.0}) {
+        call.emplace_back(value);
+    }
+    return call;
+}
+
+} // namespace
+
+TEST_CASE("a player's health is his type's times his Warrior class's percentage, and his rage is the class's",
+          "[characters]") {
+    coney::script::RecordedCalls recorded;
+    recorded.add("CfgChar", cfgChar(1, 1800, "warr_cl"));
+    recorded.add("CfgChar", cfgChar(2, 1800, "warr_cl_gen"));
+    recorded.add("CfgChar", cfgChar(417, 601, "civ", {}, 1.0, {}, 4.0, 2.0));
+    recorded.add("CfgWarriorClass", cleonWarriorClass());
+    std::vector<Value> others = cleonWarriorClass();
+    others[0] = Value(9.0);
+    recorded.add("CfgWarriorClass", others);
+    const CharacterTypes types = CharacterTypes::fromRecorded(recorded);
+
+    // Cleon (type 2, Warrior class 1): 1800 x 85 % = 1530, his rage 120 at 162 %, decaying 110 % and draining 168 % of
+    // its maximum per 20 s.
+    const coney::characters::PlayerTraits cleon = types.playerTraitsOf(2).value_or(coney::characters::PlayerTraits{});
+    CHECK(cleon.warriorClass == 1);
+    CHECK(cleon.healthPercent == 85);
+    CHECK(cleon.health == 1530);
+    REQUIRE(cleon.rage.has_value());
+    const coney::combat::RageClass rage = cleon.rage.value_or(coney::combat::RageClass{});
+    CHECK(rage.maximum == 120);
+    CHECK(rage.gainPercent == 162);
+    CHECK(rage.decayPercent == 110);
+    CHECK(rage.drainPercent == 168);
+    CHECK(cleon.damagePercent == 145);
+
+    // A civilian as a player takes class 9's percentage: 601 x 85 % = 510.85, rounded to 511.
+    const coney::characters::PlayerTraits civilian =
+        types.playerTraitsOf(417).value_or(coney::characters::PlayerTraits{});
+    CHECK(civilian.health == 511);
+
+    // Without a Warrior class the type's health stands unscaled, and the rage is left to the player's default.
+    coney::script::RecordedCalls bare;
+    bare.add("CfgChar", cfgChar(1, 1800, "warr_cl"));
+    const coney::characters::PlayerTraits unscaled =
+        CharacterTypes::fromRecorded(bare).playerTraitsOf(1).value_or(coney::characters::PlayerTraits{});
+    CHECK(unscaled.healthPercent == 0);
+    CHECK(unscaled.health == 1800);
+    CHECK_FALSE(unscaled.rage.has_value());
+}

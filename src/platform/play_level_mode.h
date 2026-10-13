@@ -244,6 +244,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void resetCamera() override { m_player->resetCamera(); }
     [[nodiscard]] bool freeCamera() const override { return m_freeCamera.has_value(); }
     void setFreeCamera(bool on) override;
+    /// The collision mesh the player and the AI stand on: the level's or the sandbox's, with any spawned objects in it.
+    [[nodiscard]] const raycast::CollisionMesh& collision() const { return m_scenery->collision(); }
     [[nodiscard]] bool canSpawn() const override { return m_scenery->canSpawn(); }
     std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
     [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }
@@ -315,6 +317,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.
     [[nodiscard]] PromptOffer promptOffer() const override;
     [[nodiscard]] bool combatFraming() const override { return m_player->combatFraming(); }
+    /// ScriptedPlayer: `Human_ReleasePlayer` on the human the pad drives, with no one taking the pad
+    /// (ai::AiHumans::releasePlayer()): he fights on as his class's brain. False with no cast or no player left.
+    bool releasePlayerToAi() override;
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 

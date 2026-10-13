@@ -323,7 +323,11 @@ tall or more).
   checks as a level's. Shared corners become one vertex. The grid's cells are the size asked for; the matrix maps the
   bounds onto them with z left out (one layer). Each triangle is listed in every cell its bounding box covers, plus one
   cell on each side. The checked set is sized by the header rule. Unit tests cast rays through a built mesh against a
-  brute-force cast.
+  brute-force cast. Beside it, `CollisionMesh::addExtraTriangles` (also Coney's own; the original never changes a
+  loaded mesh's geometry) adds triangles after a loaded mesh's own for the debug menus'
+  [Spawner](../guides/debug-menu.md): each listed the same way through the mesh's own matrix, in a new list per cell
+  that copies the cell's old entries first, so the disc's triangles, indices and list order are unchanged, and
+  `clearExtraTriangles` restores the mesh as loaded.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][collision]"` loads all 64 `.lev` files
 through the chunk system with the `0x03` handler: none fails; 150,567 triangles and 94,294 vertices, 39,531 facing up,

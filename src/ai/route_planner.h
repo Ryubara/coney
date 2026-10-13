@@ -185,6 +185,14 @@ class RoutePlanner {
     [[nodiscard]] std::expected<RoutePlan, MoveFailure> request(anim::Vec3 from, anim::Vec3 to,
                                                                 std::uint16_t mask = edge_flag::kDefaultMask);
 
+    /// How far a human at `from` walks to `to` (docs/research/ai-gangs.md#warrior-follow, step 5): the straight
+    /// distance when the walkable line passes, else the length of the route request() plans (from `from` through its
+    /// nodes to `to`, the route freed at once); nothing when the request fails (no area under an end, no route between
+    /// them, the pool full). **Coney choice**: lengths are 3D (the page names the straight distance and the route's
+    /// length without saying which).
+    /// @orig 0x00247a50 Nav_WalkDistanceTo (unknown)
+    [[nodiscard]] std::optional<float> walkDistance(anim::Vec3 from, anim::Vec3 to);
+
     /// The cost of the step over `edge`, a record of node `from` (the node the search expands; in walking order the
     /// step runs from `edge.to` into `from`), in 1/16 m: its 3D length × 16 truncated; when the extra costs are on and
     /// `mask` lacks `0x100`, one of 200 (flag 8), else 320 (`0x80`), else 80 (4, but not with `0x40` and the avoid

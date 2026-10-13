@@ -14,6 +14,7 @@ add_library(coney_core STATIC
     core/input_script.cpp
     core/name_hash.cpp
     core/parse_number.cpp
+    core/window_display.cpp
     core/options.cpp
     core/pad.cpp
     core/pad_handlers.cpp
@@ -73,6 +74,9 @@ add_library(coney_core STATIC
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
     graphics/texture_lod.cpp
+    physics/overlaps.cpp
+    physics/segment_kernels.cpp
+    physics/sphere_box_sweep.cpp
     raycast/collision_mesh.cpp
     gui/bar.cpp
     gui/base_widget.cpp
@@ -407,6 +411,7 @@ target_sources(coney_core PRIVATE
     debug/story_missions.cpp
     debug/time_control.cpp
     debug/time_series.cpp
+    debug/ui_scale.cpp
     debug/tunables.cpp)
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE

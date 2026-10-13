@@ -10,6 +10,17 @@ about: |
   Speeds are what the game uses in play: each clip's root displacement over its length, for the clip the
   type's character data plays in the walk, jog, run and sprint slots (the generic clip when it has none of
   its own). The [speed class](speed-classes.md) is only a fallback.
+
+  **Stats** come from four tables ([Characters: stats](../research/characters.md#stats)): the type's own `CfgChar`
+  record (this list), the [power class](power-classes.md) it names, and for a player the
+  [Warrior class](warrior-classes.md) and power class his type picks. *Stats (normal)* joins them on normal
+  difficulty, the one set at boot: the power class an AI human of the type fights with (`v11d`) and its power and
+  stamina maxima; a player's own class when it differs (a Warriors type plays with his Warrior's class, 58-66, or 7
+  without one); and for the nine Warriors their Warrior class's **Strength** (damage %, the pause Stats screen's
+  bar), **Health %** (with the health a player of the type has) and rage maximum. A gym upgrade raises a player's
+  power and stamina maxima further ([`CfgWarriorUpgrade`](bindings/config.md#cfgwarriorupgrade)). *Combat* is the
+  damage table times the damage scale, the attack table and the range table; *Drop* the object or `grp_` group the
+  human may carry and the `+0xb4` value used with it (-1: the class money range).
 complete: |
   Every type `CfgChar` configures ({count}) is listed with every argument. The labels (who a type is)
   are hand-written and still sparse; the meaning of `flag_14b` is not traced.

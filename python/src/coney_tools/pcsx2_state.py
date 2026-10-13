@@ -6,7 +6,7 @@ A PCSX2 save state (`.p2s`) is a zip whose `eeMemory.bin` is the Emotion Engine'
 `0x02000000` is its offset in that file. A code edit has to be in RAM before the recompiler first compiles the block,
 which is why it is made in a copy of the state and PCSX2 is started on that copy
 (docs/guides/research-workflow.md#driving-pcsx2). The edits are declared in a TOML file
-(`research/traces/patches.toml`):
+(the files of `research/traces/patches/`, one per pass):
 
 ```toml
 [patch.scripted-pad]
@@ -101,20 +101,38 @@ def _edit(raw: object, where: str) -> Edit:
     return edit
 
 
+def patch_files(path: Path) -> list[Path]:
+    """The TOML files that declare patches and hooks: `path` itself, or, when it is a folder
+    (`research/traces/patches/`), every `*.toml` in it by name. One file per research pass keeps two passes from
+    editing the same lines, so their branches merge without conflicts. Raises StateError for an empty folder."""
+    if not path.is_dir():
+        return [path]
+    files = sorted(path.glob("*.toml"))
+    if not files:
+        raise StateError(f"{path}: holds no .toml file")
+    return files
+
+
 def load_patches(path: Path) -> dict[str, Patch]:
-    """Every patch of the TOML file at `path`, by name. Raises StateError for a missing file or a bad entry."""
-    try:
-        with path.open("rb") as handle:
-            data = tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
-        raise StateError(f"{path}: {error}") from error
+    """Every patch of the TOML file at `path`, or of every file of the folder `path`, by name. Raises StateError for
+    a missing file, a bad entry or a name two files both declare."""
     patches: dict[str, Patch] = {}
-    for name, raw in data.get("patch", {}).items():
-        where = f"{path}: patch {name}"
-        if not isinstance(raw, dict) or not isinstance(raw.get("edits"), list) or not raw["edits"]:
-            raise StateError(f"{where}: needs a non-empty list of edits")
-        edits = tuple(_edit(edit, f"{where} edit {i + 1}") for i, edit in enumerate(raw["edits"]))
-        patches[name] = Patch(name, str(raw.get("description", "")), str(raw.get("research", "")), edits)
+    origin: dict[str, Path] = {}
+    for file in patch_files(path):
+        try:
+            with file.open("rb") as handle:
+                data = tomllib.load(handle)
+        except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
+            raise StateError(f"{file}: {error}") from error
+        for name, raw in data.get("patch", {}).items():
+            where = f"{file}: patch {name}"
+            if name in origin:
+                raise StateError(f"{where}: also declared in {origin[name]}")
+            if not isinstance(raw, dict) or not isinstance(raw.get("edits"), list) or not raw["edits"]:
+                raise StateError(f"{where}: needs a non-empty list of edits")
+            edits = tuple(_edit(edit, f"{where} edit {i + 1}") for i, edit in enumerate(raw["edits"]))
+            patches[name] = Patch(name, str(raw.get("description", "")), str(raw.get("research", "")), edits)
+            origin[name] = file
     return patches
 
 

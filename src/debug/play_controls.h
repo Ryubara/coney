@@ -133,7 +133,7 @@ class PlayControls {
     /// Switches the free camera on (at the follow camera's eye, looking where it looks) or off.
     virtual void setFreeCamera(bool on) = 0;
 
-    /// Whether objects can be spawned here (a sandbox can; a level cannot yet).
+    /// Whether objects can be spawned here (a sandbox and a level can).
     [[nodiscard]] virtual bool canSpawn() const = 0;
     /// Adds `primitive` to the scene, solid and drawn. Fails with ErrorCode::InvalidArgument where nothing can be
     /// spawned, and as the scene's rebuild does.

@@ -23,6 +23,7 @@
 #include "platform/sandbox_renderer.h"
 #include "platform/world_renderer.h"
 #include "platform/world_viewer_mode.h"
+#include "raycast/collision_builder.h"
 #include "raycast/collision_mesh.h"
 #include "sandbox/sandbox_world.h"
 #include "world/path_map.h"
@@ -92,10 +93,10 @@ class PlayScenery {
     /// (world_objects::ObjectWorld); null where the scenery has no such objects (a sandbox).
     [[nodiscard]] virtual raycast::CollisionMesh* objectCollision() { return nullptr; }
     [[nodiscard]] virtual world::PathMap* objectPaths() { return nullptr; }
-    /// Whether the debug menus' Spawner can add objects (a sandbox can).
+    /// Whether the debug menus' Spawner can add objects (a sandbox and a level can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
     /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
-    /// ErrorCode::InvalidArgument where nothing can be added (a level), and as the rebuild does; the scenery is then
+    /// ErrorCode::InvalidArgument where nothing can be added, and as the rebuild does; the scenery is then
     /// unchanged.
     virtual std::expected<void, Error> setExtras(const RenderEngine& engine,
                                                  const std::vector<sandbox::Primitive>& extra);
@@ -131,6 +132,16 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }
     [[nodiscard]] raycast::CollisionMesh* objectCollision() override { return m_scenery.level->collision.get(); }
     [[nodiscard]] world::PathMap* objectPaths() override { return m_paths ? &*m_paths : nullptr; }
+    /// A level can take the Spawner's objects: they join its collision mesh and are drawn among its scenery.
+    [[nodiscard]] bool canSpawn() const override { return true; }
+    /// Puts `extra` in the level in place of the objects added before: their solid triangles (the sandbox's,
+    /// sandbox::sandboxCollisionTriangles()) are added to the level's collision mesh after its own
+    /// (raycast::CollisionMesh::addExtraTriangles()), so the player, the AI, the climbs and the cameras meet them
+    /// through the queries they use for the level, and they are drawn by a SandboxRenderer of their own with the
+    /// sandbox's baked light and tints. None leaves the mesh as the disc has it. Fails as building them or adding the
+    /// triangles does; the level is then unchanged.
+    std::expected<void, Error> setExtras(const RenderEngine& engine,
+                                         const std::vector<sandbox::Primitive>& extra) override;
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
@@ -149,6 +160,8 @@ class LevelPlayScenery final : public PlayScenery {
     std::uint32_t m_loads = 0;
     std::uint32_t m_unloads = 0;
     std::uint32_t m_failures = 0;
+    std::vector<raycast::BuildTriangle> m_extraSolid; // the spawned objects' triangles in the collision mesh
+    std::unique_ptr<SandboxRenderer> m_extraRenderer; // draws the spawned objects; null with none
 };
 
 /// A sandbox for the play mode (docs/guides/sandbox.md): its collision mesh to stand on, drawn by the sandbox
