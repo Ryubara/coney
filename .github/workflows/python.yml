@@ -55,8 +55,9 @@ jobs:
           fetch-depth: 2
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uv sync --project python
-      - run: uv run --project python ruff check python
-      - run: uv run --project python ruff format --check python
+      # The same ruff commands as `check changed` (check_cli.RUFF_COMMANDS): the package and the hook scripts.
+      - run: uv run --project python ruff check python .claude/hooks
+      - run: uv run --project python ruff format --check python .claude/hooks
       - run: uv run --project python mypy --config-file python/pyproject.toml python/src python/tests
       - run: uv run --project python pytest python/tests
       # The local gate (docs/guides/testing.md#local-gate) is run by hand on one machine at a time, so this runs it on

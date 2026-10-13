@@ -1,0 +1,3 @@
+# Ruff for the Claude Code hook scripts: the settings of the coney_tools package (python/pyproject.toml), so one
+# set of rules covers both (check_cli.RUFF_PATHS). Ruff reads the nearest config file of each file it lints.
+extend = "../../python/pyproject.toml"

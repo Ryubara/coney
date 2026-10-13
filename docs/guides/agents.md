@@ -22,7 +22,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
-| `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call | Claude Code |
+| `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call, and their `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -178,16 +178,17 @@ that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent tw
 Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
 each other. A hook (`.claude/hooks/trailer_guard.py`, registered in `.claude/settings.json` for `PostToolUse` on Bash
 and PowerShell commands that start `git commit` or `git -C ... commit`, and `git -c ... commit` on Bash) now checks
-every commit once it exists. Claude Code gives a hook no model, but it does give the main session's `transcript_path`
-and, inside a subagent, an `agent_id`; that agent's own transcript (`<session>/subagents/agent-<id>.jsonl`, [Checking
-a run](#check)) names the model on every assistant entry (`claude-sonnet-5-5`), and the hook derives the trailer's
-name from it (`Claude Sonnet 5.5`) instead of keeping a table. A trailer with the vendor's address that names a
-different model exits 2, and the agent sees the reason and amends the commit with the one trailer it should have. A
-commit that printed nothing (`git commit -q`) is judged from the HEAD of the working directory and of the directories
-the command names, if it was made in the last two minutes. Other command shapes are not checked: `git --no-pager
-commit`, `git --git-dir=... commit`, `git.exe commit` and a full path to git. The hook fails open when it cannot tell
-(no transcript, an id that is not a Claude model, no trailer, another vendor, a commit it cannot find), and a person
-committing outside Claude Code never runs it.
+every commit once it exists. Claude Code gives a hook no model, but it does give the main session's
+`transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `implementer`; the
+hook does not use it, because the role does not name the model). The agent's own transcript
+(`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every assistant entry
+(`claude-sonnet-5-5`), and the hook derives the trailer's name from it (`Claude Sonnet 5.5`) instead of keeping a
+table. A trailer with the vendor's address that names a different model exits 2, and the agent sees the reason and
+amends the commit with the one trailer it should have. A commit that printed nothing (`git commit -q`) is judged from
+the HEAD of the working directory and of the directories the command names, if it was made in the last two minutes.
+Other command shapes are not checked: `git --no-pager commit`, `git --git-dir=... commit`, `git.exe commit`
+and a full path to git. The hook fails open when it cannot tell (no transcript, an id that is not a Claude model, no
+trailer, another vendor, a commit it cannot find), and a person committing outside Claude Code never runs it.
 
 ## Running without losing the cache {#cache}
 

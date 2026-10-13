@@ -24,17 +24,19 @@ repos:
     hooks:
       - id: clang-format
         types_or: [c++, c]
-  # Ruff covers the coney_tools package only, under python/pyproject.toml's settings. The maintainers' local
-  # tooling is maintained upstream, and ruff 0.16 would otherwise also format Python blocks in Markdown.
+  # Ruff covers the coney_tools package and the Claude Code hook scripts (check_cli.RUFF_PATHS, which CI's python
+  # job repeats), under python/pyproject.toml's settings (the hooks reach them through .claude/hooks/ruff.toml). The
+  # maintainers' local tooling is maintained upstream, and ruff 0.16 would otherwise also format Python blocks in
+  # Markdown.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.10                       # matches the ruff that python/uv.lock pins
     hooks:
       - id: ruff-check                  # the hook `ruff` is now a legacy alias of this id
         args: ["--fix"]
-        files: ^python/
+        files: ^(python|\.claude/hooks)/
         types_or: [python, pyi]
       - id: ruff-format
-        files: ^python/
+        files: ^(python|\.claude/hooks)/
         types_or: [python, pyi]
   # The same rules as CI's markdownlint job (.markdownlint.yaml, with the files skipped in .markdownlint-cli2.yaml),
   # so a long line is refused before the commit. The hook installs markdownlint-cli2 through Node.js (language: node);

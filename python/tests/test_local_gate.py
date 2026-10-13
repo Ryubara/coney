@@ -478,6 +478,47 @@ def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
     assert "`--config-file python/pyproject.toml`" in conventions
 
 
+def test_ruff_covers_the_hook_scripts() -> None:
+    """The hook scripts under .claude/hooks run in every session on a machine, so they are linted like the package."""
+    assert check_cli.RUFF_PATHS == ("python", ".claude/hooks")
+    assert all((REPO / path).is_dir() for path in check_cli.RUFF_PATHS)
+    # Ruff reads the nearest config of each file: the hooks' own file must inherit the package's rules.
+    hook_config = tomllib.loads((REPO / ".claude" / "hooks" / "ruff.toml").read_text(encoding="utf-8"))
+    assert hook_config == {"extend": "../../python/pyproject.toml"}
+    assert (REPO / ".claude" / "hooks" / hook_config["extend"]).resolve() == (
+        REPO / "python" / "pyproject.toml"
+    ).resolve()
+
+
+def test_ci_and_the_gate_run_ruff_over_the_same_paths() -> None:
+    """CI's python job runs the commands of `check changed` word for word, so the two cannot lint different folders."""
+    workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert len(check_cli.RUFF_COMMANDS) == 2  # check and format --check
+    for command in check_cli.RUFF_COMMANDS:
+        assert f"- run: {' '.join(command)}\n" in workflow
+        assert command[-len(check_cli.RUFF_PATHS) :] == check_cli.RUFF_PATHS
+    # No other ruff line may lint fewer paths (an old `ruff check python` left behind would pass the check above).
+    ruff_lines = [line.strip() for line in workflow.splitlines() if "ruff" in line and "- run:" in line]
+    assert sorted(ruff_lines) == sorted(f"- run: {' '.join(command)}" for command in check_cli.RUFF_COMMANDS)
+
+
+def test_pre_commit_runs_ruff_over_the_same_paths_as_the_gate() -> None:
+    """pre-commit lints the changed files of exactly the gate's folders."""
+    config = yaml.safe_load((REPO / ".pre-commit-config.yaml").read_text(encoding="utf-8"))
+    hooks = {
+        hook["id"]: hook
+        for repo_entry in config["repos"]
+        if "ruff-pre-commit" in repo_entry["repo"]
+        for hook in repo_entry["hooks"]
+    }
+    assert set(hooks) == {"ruff-check", "ruff-format"}
+    inside = [f"{path}/some_file.py" for path in check_cli.RUFF_PATHS]
+    for hook in hooks.values():
+        pattern = re.compile(hook["files"])
+        assert all(pattern.search(name) for name in inside), hook["id"]
+        assert not any(pattern.search(name) for name in ("src/x.py", "mkdocs_hooks.py", ".claude/other/x.py"))
+
+
 @pytest.mark.parametrize(
     ("changed", "wanted"),
     [
