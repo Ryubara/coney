@@ -2761,12 +2761,71 @@ addresses:
 - gives the push weight 1e9;
 - turns a player's slow motion off;
 - unless the human is dead or wounded (`0x100050000`), sets state **`0x40000`** (knocked out;
-  `Human_IsKnockedOut`, `0x00227dd8`; `Human_WakeUp` clears it) and tells the brain (`0x0028c3b0`);
+  `Human_IsKnockedOut`, `0x00227dd8`; `Human_WakeUp` clears it) and tells the brain (`0x0028c3b0`); it then sets
+  `0x40000` again at its end whatever the state (`0x00230554`), so a dead or wounded human gets the bit too, without
+  the brain call ([Who sets and clears it](#knocked-out-bit));
 - for a member of a player's gang outside Armies and Rumble levels, shows the **`dyn_cross`** icon over it
   (`Human_ShowOverheadIcon`, argument 3), the mark a partner revives with a flash
   ([Crimes](crimes.md#triangle); inferred).
 
 The flash clip 665 keeps a player alive ([Damage](#damage), step 4).
+
+#### Who sets and clears the knocked-out bit {#knocked-out-bit}
+
+State `0x40000` is the record's state word (`+0x00`), which only `Human_SetStateFlag` (`0x002265d0`) and
+`Human_ClearStateFlag` (`0x00226620`) change bit by bit. Their 135 and 161 call sites were read for the mask they
+pass (confirmed (code); only the eight sites below clear `0x40000`); every 64-bit read-modify-write at offset 0
+elsewhere in the executable is on another record (the game state), and a whole-word zeroing happens only when the
+record is set up or released (`Human_ReleaseInstance`, `0x00217dd8`), so the lists below are complete (inferred:
+the scan matched `ld`/`sd` pairs, not every store).
+
+**Set** only by `Human_KnockOut` (`0x00230328`, calls at `0x0023048c` and `0x00230554`), whose callers are:
+
+| Caller | When |
+| --- | --- |
+| `Human_OnHealthOut` (`0x002674c0`) | health out, a human without flag `0x8` or already wounded ([above](#defeat)) |
+| `Human_SetConscious` (`0x00237778`) | `HuSetConscious(h, false)` |
+| `Human_Destroy` (`0x0021c7c8`) | a human deleted while not dead: knocked out (his brain drops its goals and target), then made dead (`0x100000000`) and the bit cleared, in the same call |
+| `Human_ReleaseInstance` (`0x00217dd8`) | from `Human_Destroy` only, with argument 1; the state word is zeroed a few instructions later |
+
+**Cleared** by:
+
+| Site | Function | When |
+| --- | --- | --- |
+| `0x0023067c`, `0x00230694` | `Human_WakeUp` (`0x00230598`; argument 1 clears `0x40000` only, 0 clears `0x1c8007` and resumes the brain) | from `Human_EndDownState` (`0x0025e250`, the end callback of the rise 199, [Grounded](#ground-escape)), `Human_Heal` (`0x0022eb40`, a revive or flash), `Human_SetConscious` (`HuSetConscious(h, true)`) and `Human_AttachInstance` (`0x00217a98`, argument 1, a model attached) |
+| `0x00249818` | `Humans_Update` (`0x00249108`) | a knocked-out human **without** flag `0x4` (not revivable) whose `+0xf0` has passed (14 s after `Human_KnockOut`) and no held flag: when no camera sees him (`Cameras_CanSeePointExcept`), he is made **dead** (`0x100000000`), his body freed, `+0xf0` = now + 500 ms; when one does, `+0xf0` moves another 14 s on (`0x00510794`) |
+| `0x00249ab4` | `Humans_Update` | a knocked-out **player** with flags `0x1` and `0x4` whose gang has no conscious player left: dead once `+0xf0` has passed |
+| `0x002676c4` | `Human_OnHealthOut` | the last hit came from an object of kind 29: dead instead |
+| `0x0022faa8` | `Human_StartWounded` | mask `0x14800f` |
+| `0x00234df0` | `Human_MakeBeatUp` | mask `0x180040000` |
+| `0x0021c9a4` | `Human_Destroy` | see above |
+
+So a knocked-out human gets up only through `Human_WakeUp`: a heal or revive, the script, or a rise 199 that runs to
+its end while he is still knocked out. `Human_UpdateDown` (`0x00256a60`) starts the rise for any knocked-**down**
+human (`0x80000`) whose get-up time has come, and its state mask (`0x1c18003ff0`) does not hold `0x40000`, so it
+never starts the rise for a knocked-out human. A tackled victim's end hook (`Tackle_OnVictimRiseEnd`, `0x00270028`)
+starts it when he is not dead (`0x100000000`), not dying (`0x80000000`) and his pair link (`+0xc4`) is empty, with
+no test of `0x40000`: it ends the tackle if one still holds him and plays the rise (`Human_PlayRise`, `0x0025e2d8`,
+clip 199 with the end callback `Human_EndDownState`), whose end calls `Human_WakeUp(h, 0)` when `0x40000` is
+set. So **this path wakes a knocked-out tackled victim**, which `Human_UpdateDown` cannot (confirmed (code)); whether a
+tackled victim is ever knocked out when the hook fires was not checked. Through all of 199 the bit stays set: it
+goes at the clip's end (inferred: no code path was found that knocks out a human who is down with `0x80000` and then
+lets `Human_UpdateDown` reach him, so this may not happen in play).
+
+**Not the same bit:** the attack's **recovery** phase `0x40000` lives in record `+0x08` (held flags), not in the
+state word: event `0x48` sets it with `Human_SetHeldFlag` (`0x00226640`, the call at `0x001023a4`;
+[Tasks](tasks.md#locomotion-gate)). A stun is `0x100000` and a knock-down `0x80000`; neither touches `0x40000`.
+
+**In a Rumble brawl** (confirmed (runtime), PCSX2 2.9.94, the five recordings of [Rumble: gang battle
+trace](rumble.md#gang-battle-results) that ran the hooks: offsets 100 and 500, and the three with [the sides
+swapped](rumble.md#gang-battle-swap); 51 fighters knocked out): the fighters are not revivable, so none
+gets up. Each goes through **dying** (state `0x80000000`, from the update of the lethal hit, health 1, the lethal
+reaction such as 292, about 45-90 updates, brain still on), sometimes a **wounded** crawl (`0x10000`, clips 200 and
+204, up to some 400 updates), then **knocked out** (`0x40000`, from the first update of 349) for exactly 420 or 421
+updates, or a multiple of 420 when a camera saw him, then **dead** (`0x0` in the low half, `state_hi` `0x41` and then
+`0x43`: `0x100000000`, `0x4000000000` and the fade `0x200000000`) for 40-41 updates until he is deleted. No fighter's
+`0x80000000` run ended in anything but `0x10000` or `0x40000`. The 461 updates from 349 to deletion on
+[Rumble](rumble.md#gang-battle-results) are these 420 + 41.
 
 **The mission failing.** The engine decides this; `global.lua` does not. `GameState_CheckGameOver` (`0x004197a8`)
 runs every game-state update (`0x0041a370`), while three things hold:
@@ -4403,7 +4462,7 @@ alignment helpers and revives.
 | `0x00269b18` | `HitReact_WhileMounted` | Pending damage while held down (state 0x10000000000): ends the hold for the holder; no reaction. | confirmed (code) |
 | `0x00269b80` | `Hit_PlayBegReaction` | A hit on a knocked-down, cuffed or wounded human: the beg reaction; says 73 beg. | confirmed (code) |
 | `0x00269dc8` | `Human_MoveAlongAxisOver` | Moves the human over a time along its own axis (forward, side or back by the argument), for the block dodge and the early block. | confirmed (code) |
-| `0x0026a1f8` | `HitReact_OnSpecialEnd` | End hook: sends message 0x15 and points an AI foe back at its target. | confirmed (code) |
+| `0x0026a1f8` | `HitReact_OnSpecialEnd` | End hook: sends message 0x15; when the human's foe is the player (brain type 0) and the player's target is this human, clears the player's target (`Brain_SetTarget`, force 0). | confirmed (code) |
 | `0x0026a298` | `Human_PlayRecoilClip` | Blends into a recoil clip chained to the fight idle, holding 0x400 (629 BAT_BLOCK_REACT on a bat block). | confirmed (code) |
 | `0x0026a408` | `Pair_PlayPairedReaction` | Both humans play a paired reaction (clip n and n + 1) holding 0x2000, then the stance idle. | confirmed (code) |
 | `0x0026adf0` | `Block_OnDodgeEnd` | End hook of the block dodge: clears the foe when no damage is pending. | confirmed (code) |
@@ -4421,7 +4480,7 @@ alignment helpers and revives.
 | `0x0026f2c8` | `Grab_PullOffTackler` | Grabs a tackler off its victim: 214 on the grabber, 215 on the tackler, the victim gets up with 199. | confirmed (code) |
 | `0x0026f760` | `Tandem_OnAttackerEnd` | End hook of the tandem attacker's end clip: unlinks it. | confirmed (code) |
 | `0x0026f840` | `Tandem_OnEnd` | End hook of a tandem clip: unlinks the three quietly. | confirmed (code) |
-| `0x00270028` | `Tackle_OnVictimRiseEnd` | End hook on a tackled victim left alone: ends the tackle and plays the rise, unless it is dead or out. | confirmed (code) |
+| `0x00270028` | `Tackle_OnVictimRiseEnd` | End hook on a tackled victim left alone: unless he is dead or dying or his pair link `+0xc4` is still set, ends the tackle and plays the rise 199, whose end wakes him if he is knocked out ([the knocked-out bit](#knocked-out-bit)). | confirmed (code) |
 | `0x002700a8` | `Mount_OnStrikeEnd` | End hook of a mount strike or the grounded mount: gets off when the victim is over 0.2 m up or down, beyond max(reach + 0.34, reach x 1.2) or not clear; else re-places the mounter at clip 210's offset, scores the move, and may let a player victim reverse it. | confirmed (code) |
 | `0x00270560` | `Tackle_OnIntroEnd` | End of the tackle's run-in: a target in front with human flag 0x20000 (or a player that counters) plays the counter (Attack_StartPaired kind 9); otherwise the mount starts from front or behind ([Grab and tackle](#grab)). | confirmed (code) |
 | `0x00270a70` | `Mount_CheckVictim` | During a mount strike: gets off when the victim is no longer tackled, or is dead or out; clears record +0xb8 and +0xbc. | confirmed (code) |
