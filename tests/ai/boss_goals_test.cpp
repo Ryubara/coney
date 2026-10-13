@@ -111,8 +111,7 @@ TEST_CASE("TacticBossScenarioA caps Diego's health until he is tired, then answe
     CHECK(codesOf(scene, "P1.Boss") == std::vector<int>{coney::ai::kTacAnimStart, 1});
 }
 
-TEST_CASE("hits a capped boss takes still count, so six of them tire him and the next starts his break",
-          "[ai][boss]") {
+TEST_CASE("hits a capped boss takes still count, so six of them tire him and the next starts his break", "[ai][boss]") {
     // Held at the cap, a boss loses health to each hit and the tactic puts it back on its next update: the hit must
     // still reach his BigBrawler (event 1), or he never tires and the stage can never end
     // (docs/research/ai-gangs.md#boss-diego-vargas). Found when the level5 boss fight's Vargas stood at 67 % for
