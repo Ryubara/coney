@@ -808,11 +808,12 @@ copied into the code.
   the `From:` line. The form is `task` unless you name `bug`.
 * `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
   (`title`, `headings`, `empty`, `choices`, `screenshots`, `from`, `links`, `wording`, `status`); exit 0 when there is
-  none, 1 otherwise. The form comes from `--form`, else the title prefix, else the headings. Docs and research pages
-  and their `{#anchor}`s are looked up in `origin/main` of the checkout with git, offline; a missing `origin/main` is
-  a note, not a pass. `--leftover` wants the `From:` line. `--online` reads the state of each cited `#N` with `gh`
-  and compares it with the words "open", "merged" and "closed" beside it. `--attach` says local screenshots will be
-  uploaded, so a local image in the Screenshots section is accepted.
+  none, 1 otherwise. A dropdown answer is the option as written under its heading, with or without a list bullet or
+  backticks (`--play-level` is an option, not a bullet). The form comes from `--form`, else the title prefix, else
+  the headings. Docs and research pages and their `{#anchor}`s are looked up in `origin/main` of the checkout with
+  git, offline; a missing `origin/main` is a note, not a pass. `--leftover` wants the `From:` line. `--online` reads
+  the state of each cited `#N` with `gh` and compares it with the words "open", "merged" and "closed" beside it.
+  `--attach` says local screenshots will be uploaded, so a local image in the Screenshots section is accepted.
 * `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
   the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
   form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
