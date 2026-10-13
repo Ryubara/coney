@@ -1,0 +1,17 @@
+# The revive pass (combat.md#revive-runtime): who starts and who finishes a flash revive, and when.
+
+[hook.revive-start]
+description = "Each call of Revive_Start (0x002752a0, from Player_TryRevive or an AI's revive): the reviver and the downed human."
+research = "docs/research/combat.md#revive"
+address = 0x002752a0
+# addiu sp,sp,-0xb0; lui v0,0x59
+original = [0x27bdff50, 0x3c020059]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "reviver" }, { value = "a1", name = "downed" }]
+
+[hook.revive-finish]
+description = "Each call of Revive_Finish (0x00274ee0, the callback of clip 351's task): the reviver, and whether 351 ran to its end or was cut short (the caller)."
+research = "docs/research/combat.md#revive"
+address = 0x00274ee0
+# addiu sp,sp,-0xa0; sq s0,0x80(sp)
+original = [0x27bdff60, 0x7fb00080]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "reviver" }, { value = "a1", name = "a1" }]

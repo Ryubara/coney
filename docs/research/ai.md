@@ -543,12 +543,13 @@ limited to the gang: it is event `0x14` (20, violence) sent to everyone nearby. 
       `ScoutTactic_OnViolence`). So `HelpRespondGoal_Process` always takes the "ends once the brain lists enemies"
       branch. Confirmed (code).
     - **HelpRespond's Start** (`0x002b76a0`), with the side still a valid target: within 1.1 × the brain's range
-      `+0x140` **and** walkable in a straight line (`Human_CanWalkStraightToHuman`) → a turn to him and a 3 s look,
-      nothing more. Within that range but **not** walkable → 60 % (`Random_Int(100)` < 60) a **LookAround** action
-      first (type 10, `LookAroundAction_Init` `0x002fe248`: clip `0x29e` with the field of view widened to 4.71 rad
-      while it plays, [AI code: actions](ai-code.md#actions)), then, as beyond the range, a move action to him (gait
-      2, or 4 beyond 10 m; with an empty enemy list he leaves the fight stance and goes at gait 4, 5 on level
-      `0x53`). Confirmed (code).
+      `+0x140` **and** walkable in a straight line (`Human_CanWalkStraightToHuman`) → a turn to him and a 3 s head look,
+      nothing more: the look is not an action, so the goal ends when the turn does
+      ([HelpRespond](ai-goals.md#goal-help-respond)). Within that range but **not** walkable → 60 % (`Random_Int(100)` <
+      60) a **LookAround** action first (type 10, `LookAroundAction_Init` `0x002fe248`: clip `0x29e` with the field of
+      view widened to 4.71 rad while it plays, [AI code: actions](ai-code.md#actions)), then, as beyond the range, a
+      move action to him (gait 2, or 4 beyond 10 m; with an empty enemy list he leaves the fight stance and goes at gait
+      4, 5 on level `0x53`). Confirmed (code).
 
 6. **The new-enemy flag** (`+0x0c`) has one reader, the cop's handler (`0x00302340`, at its event `0x14`). There, a
    cop victim gives crime 2 (assault on a cop) only when the side picked is not the caller and `+0x0c` is 0. So when a
@@ -933,6 +934,9 @@ no target, duckable)`, [Speech](../references/speech.md#speech-command-146)). Th
 ### Starting a fight and choosing the target {#targets}
 
 - `GoalFight(human, target, …)` is `Brain_StartFight` (`0x002b2b90`): clear the actions, then `Brain_Fight`.
+  The target is not kept: once the first fight goal ends (at once for a target beyond 5.5 m), Melee picks by score
+  like any fight, the old target getting only the +3 of [the score](#enemy-score). Confirmed (code); seen at
+  level80's last fight ([After the order](scripting.md#level80-after-order)), confirmed (runtime).
 - **`Brain_Fight`** (`0x0028d2e8`) needs a threat response (`+0x21c` ≠ 0). It adds the target to the enemy list
   (`Brain_AddEnemy`, `0x0028d538`, which tells the gang's tactic with event `0xb`), takes it as the target
   (`Brain_SetTarget`, `0x0028cfe0`) and calls `Brain_PushFightGoal` (`0x0028d190`) with its duration argument.
@@ -2082,7 +2086,7 @@ Build in this order; each step is testable without the game.
 
 All five were run (2026-10-05, PCSX2 2.9.94) with the scenarios `civ_fight`, `civ_block`, `civ_block_fov`,
 `civ_approach`, `civ_knockdown` and `tick_split` in `repo:research/traces/scenarios/` and the call hooks in
-`repo:research/traces/patches.toml`. Brain *i* is at `0x006d53f0 + i × 0x2f0`, its per-player record at `0x00660f50 + i
+`repo:research/traces/patches/`. Brain *i* is at `0x006d53f0 + i × 0x2f0`, its per-player record at `0x00660f50 + i
 × 0x2c`. The results are in the body: [the fight and attack action](#attack-action), [think staggering](#update), [the
 block](#block), [moving](ai-moving.md#moving) and [reaction goals](#reaction-goals).
 
@@ -2664,11 +2668,21 @@ attack strategies are kept for readers not built. **Warrior commands** (`src/ai/
 [Warrior commands](ai-gangs.md#warrior-commands), [follow](ai-gangs.md#warrior-follow)): 0 follow gives the crew's gang
 the follow tactic (`WarriorFollowTactic`: nine slots on the chief's formation, each AI member that can act flushed and given
 `GoalFollowPlayer(9 m, chief, 3)`,
-which joins the formation, walks back to its slot every 31 updates through `FollowFormation` (0.75 m), turns to the
-chief's heading when more than 60° off it every 2-4 s, and in fight mode turns to or moves to (3 s) the nearest
-attacker of the crew within 20 m or the chief's target, never attacking). **Stand-ins** there: the slot walk runs
-beyond 3 m and walks nearer; "someone's enemy" is any fightable brain holding the follower among its enemies; the
-straight-line test, fight stance, pick-ups, idle clips, the 8 s reshuffle, banter and lines are not built. 2 defend
+which joins the formation, stands while the chief is within 9 m in a walkable straight line and otherwise pushes
+`FollowFormation` (0.75 m; after a failed walk it waits 31 updates), turns to the chief's heading when more than 60° off
+it every 2-4 s (1-2 s after it takes up again), and in fight mode turns to or moves to (3 s) the nearest attacker of the
+crew within 20 m or the chief's target, never attacking). `FollowFormation` walks to its slot, or with no usable slot
+behind the human ahead in the queue (2.5 m), by the walk distance (straight, else the planned route's length) at
+`FollowFormation_PickSpeed`'s speed; every formation plan retargets the running moves ([follow
+retarget](ai-gangs.md#follow-retarget)), and `MoveAction::retarget` keeps a route whose last node sees the new point,
+else starts the move again (or, in a jump, drop or fence climb, ends it on its next update). A move with no route slows
+for the turn onto its point (the circle part of [the corner speed](ai-moving.md#corner-speed)), and arrival is in 3D, in
+plan within 1 m. **Stand-ins** there: "someone's enemy" is any fightable brain holding the follower among its enemies;
+the `+0x2d5` match, the trains' part of the straight line, fight stance, pick-ups, idle clips, the vandalising while the
+walk fails, the 8 s reshuffle, banter and lines are not built; a move with no route has only the corner speed's turn
+limit (the trial walk over the polygons and the 11-update period are [fix list](ai-pathing.md#pathing-fixes) item 7) and
+its arrival does not take one update's travel off (item 5); `FollowFormation`'s time limit is read as "done once that
+long has passed". 2 defend
 still tracks the chief (2 m) (**stand-in** for the defend tactic). 1 attack gives the gang the attack tactic
 (`WarriorAttackTactic`, type 1): each AI member that can act is flushed and given `FollowAndAttackGoal` on the chief,
 which joins his formation and fights the best enemy within 60 m of him: a fight goal (4000 ms) within 1.1 × the far
@@ -2701,6 +2715,14 @@ The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gam
 `repo:src/scripting/story_bindings.cpp`), which hands the tactic to `ScriptedStory::startWarriorCommand`
 (`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](ai-gangs.md#warrior-commands) and
 [the lines](ai-gangs.md#warrior-command-lines).
+
+The menu's "???" (user playtest, `level80` checkpoint 2) is `GSTRING.COMMAND` entry 7, the text the original shows for
+a **disabled** highlighted command ([HUD](hud.md#warrior-command-menu)). That checkpoint's script switches every command
+off and follow back on (`WCEnableCommand` on the player's human) as its first calls, before the level has made his
+brain; Coney found no player for the handle then and dropped the switch, so follow too stayed off, greyed and labelled
+"???", and the level start's forced follow was refused. Fixed (2026-10-11): the player index comes from the human's
+creation until his brain exists (`playerOf`, `repo:src/scripting/story_bindings.cpp`); a command the script leaves off
+still shows "???", as in the original.
 
 | Command (menu slot) | Original tactic and members' goal | Chief's line / answer | Coney | Where |
 | --- | --- | --- | --- | --- |

@@ -37,9 +37,9 @@ constexpr float kAirborneScale = 0.25F;
 // The body along `n` to 0.01 m short of where the swept shape touched, when that is more than 0.01 m away: the codes'
 // advance. Only the normal part is made; the next pass covers the rest.
 void advance(BodyOwner& owner, const Contact& contact, Vec3 pass) {
-    const float d = contact.fraction * dot3(pass, contact.normal);
+    const float d = contact.fraction * dot3(pass, xyz(contact.halves[1].normal));
     if (d < -kBackOff) {
-        owner.setPosition(owner.position() + (contact.normal * (d + kBackOff)));
+        owner.setPosition(owner.position() + (xyz(contact.halves[1].normal) * (d + kBackOff)));
     }
 }
 
@@ -201,7 +201,7 @@ int resolveContacts(const SweepWorld& world, Body& body, const std::vector<Conta
         if (body.owner == nullptr) {
             continue;
         }
-        if (contact->otherOwner != nullptr && contact->otherOwner->body() == nullptr) {
+        if (contact->halves[1].owner != nullptr && contact->halves[1].owner->body() == nullptr) {
             continue;
         }
         BodyOwner& owner = *body.owner;
@@ -218,18 +218,18 @@ int resolveContacts(const SweepWorld& world, Body& body, const std::vector<Conta
             continue;
         }
         // 4. Codes 1 to 4.
-        const Vec3 n = contact->normal;
+        const Vec3 n = xyz(contact->halves[1].normal);
         std::uint32_t act = code;
         if (act == kCodePush) {
-            Body* other = contact->otherOwner->body();
+            Body* other = contact->halves[1].owner->body();
             if ((other->flags & kBodyNotPushable) == 0) {
                 Vec3 push = n * (kPushShare * dot3(pass, n));
                 const float ownWeight = owner.attribute(kAttributeWeight);
-                const float otherWeight = contact->otherOwner->attribute(kAttributeWeight);
-                const float otherPushWeight = contact->otherOwner->attribute(kAttributePushWeight);
+                const float otherWeight = contact->halves[1].owner->attribute(kAttributeWeight);
+                const float otherPushWeight = contact->halves[1].owner->attribute(kAttributePushWeight);
                 push = push * (ownWeight / (otherWeight * otherPushWeight));
                 other->pushOut = other->pushOut + push;
-                contact->otherOwner->onPushed(*contact, push, pass);
+                contact->halves[1].owner->onPushed(*contact, push, pass);
             }
             act = kCodeSlide;
         }
@@ -246,21 +246,21 @@ int resolveContacts(const SweepWorld& world, Body& body, const std::vector<Conta
             state.velocity = Vec3{};
         }
         // 5. The tail: the write-back, unless a level triangle with bit 8 or two airborne humans.
-        const bool quietTriangle = contact->otherOwner == nullptr && contact->triangle &&
+        const bool quietTriangle = contact->halves[1].owner == nullptr && contact->triangle &&
                                    (world.triangleFlags(*contact->triangle) & kTriangleNoWriteBack) != 0;
-        if (!quietTriangle && !bothAirborneHumans(owner, contact->otherOwner)) {
+        if (!quietTriangle && !bothAirborneHumans(owner, contact->halves[1].owner)) {
             state.flags |= kMoveWriteBack;
         }
         if ((contact->flags & kContactAddSlide) != 0) {
             // The corner slide joins the move velocity only, less any part against the pass; no scale rule.
             if (!owner.inPairOrBlock() && (body.flags & kBodyNoCornerSlide) == 0) {
-                Vec3 slide = contact->slide;
+                Vec3 slide = xyz(contact->slide);
                 removeNormalPart(slide, direction);
                 state.move = state.move + slide;
             }
         } else {
             if ((contact->flags & kContactStoreSlide) != 0) {
-                Vec3 slide = contact->slide;
+                Vec3 slide = xyz(contact->slide);
                 removeNormalPart(slide, direction);
                 if ((state.flags & kMoveSlideStored) == 0) {
                     state.flags |= kMoveSlideStored;
@@ -329,7 +329,7 @@ float contactScale(const Body& body, const Contact& contact) {
     if (body.scaleKind == ContactScale::Human) {
         return body.owner != nullptr && body.owner->airborne() ? kAirborneScale : 1.0F;
     }
-    return contact.otherShape ? 1.0F : kLevelScale;
+    return contact.halves[1].shape ? 1.0F : kLevelScale;
 }
 
 std::optional<Contact> landingContact(const raycast::CollisionMesh& mesh, Vec3 feet, Vec3 upper, Vec3 move, float raise,
@@ -355,7 +355,7 @@ std::optional<Contact> landingContact(const raycast::CollisionMesh& mesh, Vec3 f
     }
     // The fraction is measured on the part of the segment beyond `reach` from the origin.
     Contact contact;
-    contact.normal = Vec3{hit->normal.x, hit->normal.y, hit->normal.z};
+    setXyz(contact.halves[1].normal, Vec3{hit->normal.x, hit->normal.y, hit->normal.z});
     contact.triangle = hit->triangle;
     contact.fraction = hit->t < reach ? 0.0F : (hit->t - reach) / (length - reach);
     return contact;

@@ -67,6 +67,10 @@ struct RumbleLaunch {
     std::uint16_t gameType = 0; ///< The mode's `RM_*` number (RumbleSetup::kGameType).
     int arena = 0;              ///< The arena's level number (`101` for `level101`).
     std::uint16_t gangSize = 0; ///< Fighters per side (RumbleSetup::kGangSize).
+    /// `--ai-player`: player 1 is handed to the AI when the countdown ends (ai::AiHumans::releasePlayer()), as the
+    /// original's `Human_ReleasePlayer` (`0x0022a2a8`) does to the human it takes the pad from, so every fighter is
+    /// AI-driven: the matched gang-fight scenario of docs/guides/research-workflow.md#comparing-with-coney.
+    bool aiPlayer = false;
 };
 
 /// One mode `--rumble` knows: its name on the command line, its `RM_*` number and the arena and gang size it plays in
@@ -153,6 +157,10 @@ struct Options {
     /// this file, to compare a gang fight with the original's (docs/guides/running.md#tracing). Requires playLevel
     /// or rumble.
     std::optional<std::string> humansTraceFile;
+    /// `--ai-seed N`: vary the AI's random draws by N (0 to 2,147,483,647): the game's random stream starts at index N
+    /// (GameRandom::startAt()) and every brain's and the gangs' generator is seeded through ai::variedSeed(). Unset is
+    /// 0, the usual run; the same N plays the same run. Requires playLevel or rumble.
+    std::optional<std::uint32_t> aiSeed;
     /// `--script-trace`: write every binding call the level's scripts make, and every call into them by name, to this
     /// file, one line each with its arguments (script::ScriptSystem::traceCalls()), to see where a mission's scripts
     /// wait. Requires playLevel with a level.
@@ -232,6 +240,12 @@ struct Options {
     /// `--no-activate`: the window opens without taking the keyboard focus from the one in use, so a run started by
     /// an agent or a tool never interrupts the person typing (activatesWindow()).
     bool noActivate = false;
+    /// `--window-display VALUE`: the display the window opens on, centred (core/window_display.h): a 1-based index in
+    /// the window system's list, part of a display's name, or `portrait`. Unset: the `CONEY_WINDOW_DISPLAY`
+    /// environment variable, else the window system's own placement. Either one set also keeps the window from taking
+    /// the keyboard focus (as --no-activate does). A debug aid that keeps agents' runs off the
+    /// display a person works on (docs/guides/running.md#window-display).
+    std::optional<std::string> windowDisplay;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;
     /// `--no-audio`: no sound output at all: no mixer, no device (the debug menu's Audio page says so).

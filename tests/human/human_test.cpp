@@ -467,3 +467,38 @@ TEST_CASE("a clip's action event (0x41) is reported in the update that passes it
     CHECK(firedAt >= 19);
     CHECK(firedAt <= 20);
 }
+
+TEST_CASE("a human's power meter, stamina, health and rage come from its fighter profile", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    // By default the player's class 64 (Rembrandt in the street): 400 power, 135 stamina, 900 health, rage 78.
+    CHECK(human.fighter().combat().power().maximum() == 400);
+    CHECK(human.stamina().maximum() == 135);
+    CHECK(human.health().maximum() == 900);
+    CHECK(human.fighter().combat().rage().maximum() == 78);
+
+    // A street civilian's class: 200 power, 95 stamina, its type's 600 health.
+    coney::combat::PowerClass civilian = coney::combat::kCivilianPowerClass;
+    civilian.staminaMax = 95;
+    civilian.staminaRefillPerSecond = 20;
+    human.setFighterProfile(coney::human::FighterProfile{.player = false, .powerClass = civilian, .health = 600});
+    CHECK(human.fighter().combat().power().maximum() == 200);
+    CHECK(human.stamina().maximum() == 95);
+    CHECK(human.stamina().value() == 95);
+    CHECK(human.health().maximum() == 600);
+    // Spawned again it keeps them: a spawn fills the class's stamina, not the player's.
+    human.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    CHECK(human.stamina().maximum() == 95);
+
+    // Cleon as a player: his health scaled to 1530 and his Warrior class's rage of 120.
+    human.setFighterProfile(coney::human::FighterProfile{
+        .player = true,
+        .powerClass = coney::combat::kPlayerPowerClass,
+        .health = 1530,
+        .bossClass = false,
+        .rage =
+            coney::combat::RageClass{.maximum = 120, .gainPercent = 162, .decayPercent = 110, .drainPercent = 168}});
+    CHECK(human.health().maximum() == 1530);
+    CHECK(human.fighter().combat().rage().maximum() == 120);
+}

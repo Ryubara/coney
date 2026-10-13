@@ -15,6 +15,7 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
+    core/window_display_test.cpp
     effects/effect_culling_test.cpp
     effects/glints_test.cpp
     effects/ground_fog_test.cpp
@@ -98,10 +99,13 @@ add_executable(coney_tests
     platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
+    platform/disc_hub_cutscene_audio_test.cpp
     platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
+    platform/disc_level80_end_test.cpp
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
+    platform/disc_crew_commands_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
@@ -119,7 +123,9 @@ add_executable(coney_tests
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_noclip_test.cpp
     platform/disc_sprint_attacks_test.cpp
+    platform/disc_tandem_test.cpp
     platform/disc_bat_cross_test.cpp
+    platform/disc_level99_spawner_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
@@ -130,6 +136,7 @@ add_executable(coney_tests
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
+    platform/disc_level93_molotov_test.cpp
     platform/disc_level99_fence_dealer_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
@@ -145,6 +152,7 @@ add_executable(coney_tests
     platform/disc_world_streaming_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/imgui_model_view_test.cpp
+    platform/imgui_ui_scale_test.cpp
     platform/profile_folder_test.cpp
     platform/room_smoke_overlay_test.cpp
     platform/scene_stage_test.cpp
@@ -160,6 +168,8 @@ add_executable(coney_tests
     platform/placed_objects_test.cpp
     platform/world_renderer_test.cpp
     platform/world_set_test.cpp
+    physics/overlaps_test.cpp
+    physics/sphere_box_sweep_test.cpp
     raycast/collision_mesh_test.cpp
     physics/body_sweep_test.cpp
     physics/mesh_sweep_test.cpp
@@ -278,6 +288,7 @@ target_sources(coney_tests PRIVATE
     human/moving_attacks_test.cpp
     human/being_hit_test.cpp
     human/human_grab_test.cpp
+    human/human_tandem_test.cpp
     human/script_state_test.cpp
     human/jump_test.cpp
     human/locomotion_test.cpp
@@ -310,6 +321,7 @@ target_sources(coney_tests PRIVATE
     combat/revive_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
+    combat/tandem_test.cpp
     combat/throw_aim_test.cpp
     combat/throw_velocity_test.cpp
     debug/combat_tunables_test.cpp)
@@ -321,6 +333,7 @@ target_sources(coney_tests PRIVATE
 # The sandbox and the collision writer it uses (docs/guides/sandbox.md).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
+    raycast/collision_extras_test.cpp
     sandbox/disc_sandbox_combat_test.cpp
     sandbox/disc_throw_direction_test.cpp
     sandbox/disc_sandbox_player_test.cpp
@@ -343,6 +356,7 @@ target_sources(coney_tests PRIVATE
     debug/play_pages_test.cpp
     debug/story_missions_test.cpp
     debug/time_scale_test.cpp
+    debug/ui_scale_test.cpp
     debug/tunables_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
@@ -398,7 +412,9 @@ target_compile_definitions(coney_tests PRIVATE CONEY_TEST_SUPPORT_DIR="${CMAKE_C
 target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
-catch_discover_tests(coney_tests)
+# A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)
+# the tests that need the disc and `-LE disc` leaves them out. Every test that opens the disc carries the tag.
+catch_discover_tests(coney_tests ADD_TAGS_AS_LABELS)
 
 # The debug C runtime's checks must fail a run on stderr, not open a dialog nobody will click (platform/error_dialogs.h).
 # Only MSVC's debug runtime has those dialogs and those checks.

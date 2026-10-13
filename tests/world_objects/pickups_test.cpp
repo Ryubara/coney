@@ -47,6 +47,7 @@ TEST_CASE("weapons and pickup items are picked up by triangle, power-ups and mos
     CHECK(wo::pickable("melee_weapon", 1));
     CHECK(wo::pickable("thrown_weapon", 1));
     CHECK(wo::pickable("overhead_weapon", 1));
+    CHECK(wo::pickable("dyn_molotv", 1)); // the Molotov's own class: its init sets 0x8000 too
     CHECK_FALSE(wo::pickable("powerup_item", 1));
     CHECK_FALSE(wo::pickable("simple_object", 1));
     // The hashes the classes' inits treat apart.

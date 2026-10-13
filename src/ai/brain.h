@@ -643,4 +643,11 @@ class Brain {
 /// @orig 0x0021d4e8 Human_OnEvent (unknown)
 bool deliverEvent(Brain& brain, const BrainEvent& event);
 
+/// The brain side of `Human_ReleasePlayer(human, 0, 1)` (docs/research/characters.md#players): the
+/// player's `brain` goes back to `leftAs` (its class's type, as `Human_Init` chose it), its goals and actions are
+/// cleared, it loses the pad's switch (Brain::setType()) and its human takes the flags releasedFlags() gives. The pad,
+/// the panel and the player list are the caller's (ai::AiHumans::releasePlayer()).
+/// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
+void releaseToAi(Brain& brain, BrainType leftAs);
+
 } // namespace coney::ai

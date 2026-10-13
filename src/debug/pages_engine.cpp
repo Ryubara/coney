@@ -15,6 +15,7 @@
 #include "core/pad.h"
 #include "debug/audio_controls.h"
 #include "debug/debug_session.h"
+#include "debug/ui_scale.h"
 
 namespace coney::debug {
 
@@ -158,6 +159,14 @@ void addDisplayPage(DebugSession& session) {
                          "Logical screen", [&display] { return display.logicalBounds; },
                          [&display](bool on) { display.logicalBounds = on; }))
                 .withHelp("The edges of the original's 640 x 448 screen.");
+            // The developer overlay's size: Auto follows the window's height; a fixed scale overrides it.
+            page.add(choiceItem(
+                         "Debug UI scale", uiScaleLabels(), [&display] { return display.uiScaleChoice; },
+                         [&display](std::size_t choice) { display.uiScaleChoice = choice; }))
+                .withHelp("The developer overlay's size (F1): Auto keeps it the same physical size at any resolution "
+                          "(the window's height over 1080); a fixed scale overrides that. The pad menu is unchanged.");
+            page.add(watchItem("Debug UI scale now", [&display] { return uiScaleText(display.uiScaleApplied); }))
+                .withHelp("The scale the overlay is drawn at now.");
         },
         "Overlays over the game's screen.");
 }

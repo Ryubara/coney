@@ -151,8 +151,20 @@ PlayerClass playerClassOf(const characters::CharacterTypes& types, int type) {
     if (!traits) {
         return {};
     }
-    return PlayerClass{
-        .damage = std::move(traits->damage), .damagePercent = traits->damagePercent, .powerClass = traits->powerClass};
+    return PlayerClass{.damage = std::move(traits->damage),
+                       .damagePercent = traits->damagePercent,
+                       .powerClass = traits->powerClass,
+                       .health = traits->health,
+                       .rage = traits->rage};
+}
+
+FighterProfile playerProfileOf(const PlayerClass& playerClass) {
+    FighterProfile profile;
+    profile.player = true;
+    profile.powerClass = playerClass.powerClass.value_or(combat::kPlayerPowerClass);
+    profile.health = playerClass.health;
+    profile.rage = playerClass.rage.value_or(combat::kPlayerRageClass);
+    return profile;
 }
 
 Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start,
@@ -160,9 +172,7 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     : m_start(start), m_human(character.anims(), AnimSlots::player(), anim::referenceRotations(), kPlayerBodyScale,
                               &character.ranges(), playerClass.damage, playerClass.damagePercent),
       m_camera(start.position, 0.0F) {
-    if (playerClass.powerClass) {
-        m_human.setFighterProfile(FighterProfile{.player = true, .powerClass = *playerClass.powerClass});
-    }
+    m_human.setFighterProfile(playerProfileOf(playerClass));
     m_human.setSkeleton(&character.skeleton());
     m_humans.add(m_human, true);
     m_human.spawn(mesh, start.position, start.headingDegrees);
@@ -173,11 +183,8 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
 
 void Player::changeCharacter(const PlayerCharacter& character, const raycast::CollisionMesh* mesh,
                              const PlayerClass& playerClass) {
-    // The constructor's profile: the player's own unless the class names a power class.
-    FighterProfile profile;
-    if (playerClass.powerClass) {
-        profile = FighterProfile{.player = true, .powerClass = *playerClass.powerClass};
-    }
+    // The constructor's profile: the player's own where the class gives nothing.
+    const FighterProfile profile = playerProfileOf(playerClass);
     const anim::Vec3 feet = m_human.position();
     const float headingDegrees = m_human.heading() * 180.0F / std::numbers::pi_v<float>;
     m_human.changeCharacter(character.anims(), &character.ranges(), playerClass.damage, playerClass.damagePercent,

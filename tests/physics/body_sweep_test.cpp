@@ -72,8 +72,8 @@ class FakeWorld final : public coney::physics::SweepWorld {
         }
         for (const Contact& contact : script[pass]) {
             list.pool.push_back(contact);
-            coney::physics::insertSorted(list.pool.back(), list.sorted, body.owner, contact.otherOwner,
-                                         contact.otherOwner != nullptr);
+            coney::physics::insertSorted(list.pool.back(), list.sorted, body.owner, contact.halves[1].owner,
+                                         contact.halves[1].owner != nullptr);
         }
     }
     [[nodiscard]] std::uint16_t triangleFlags(std::uint32_t index) const override {
@@ -85,11 +85,11 @@ class FakeWorld final : public coney::physics::SweepWorld {
 // A level contact with `normal` at `fraction`, triangle 0.
 Contact level(Vec3 normal, float fraction, std::uint32_t flags = 0, Vec3 slide = {}) {
     Contact contact;
-    contact.normal = normal;
+    setXyz(contact.halves[1].normal, normal);
     contact.fraction = fraction;
     contact.triangle = 0;
     contact.flags = flags;
-    contact.slide = slide;
+    setXyz(contact.slide, slide);
     return contact;
 }
 
@@ -330,7 +330,7 @@ TEST_CASE("the contact scale: the largest met, v.z only when rising, not the pos
     other.own = &otherBody;
     Contact withBody = level(Vec3{0, 1, 0}, 0.5F);
     withBody.triangle.reset();
-    withBody.otherOwner = &other;
+    withBody.halves[1].owner = &other;
     FakeWorld world;
     world.script = {{level(Vec3{-0.6F, 0.8F, 0}, 0.5F)}, {withBody}};
     REQUIRE(coney::physics::sweepBody(kDt, world, body, Vec3{3, 0, 0}).has_value());
@@ -349,7 +349,7 @@ TEST_CASE("code 4 pushes the other body by half the move into it over the weight
         other.own = &otherBody;
         Contact contact = level(Vec3{-1, 0, 0}, 0.5F);
         contact.triangle.reset();
-        contact.otherOwner = &other;
+        contact.halves[1].owner = &other;
         FakeWorld world;
         world.script = {{contact}};
         REQUIRE(coney::physics::sweepBody(kDt, world, body, Vec3{3, 0, 0}).has_value());
@@ -366,7 +366,7 @@ TEST_CASE("code 4 pushes the other body by half the move into it over the weight
     other.own = &otherBody;
     Contact contact = level(Vec3{-1, 0, 0}, 0.5F);
     contact.triangle.reset();
-    contact.otherOwner = &other;
+    contact.halves[1].owner = &other;
     FakeWorld world;
     world.script = {{contact}};
     REQUIRE(coney::physics::sweepBody(kDt, world, body, Vec3{3, 0, 0}).has_value());
@@ -420,7 +420,7 @@ TEST_CASE("the landing segment's fraction is measured beyond 1 m from its top", 
     // value_or after the REQUIRE: clang-tidy cannot see that REQUIRE ends the test on an empty optional.
     const coney::physics::Contact found = hit.value_or(coney::physics::Contact{});
     CHECK(found.fraction == Approx(0.18F / 0.38F).margin(1e-4));
-    checkVec(found.normal, Vec3{0, 0, 1});
+    checkVec(xyz(found.halves[1].normal), Vec3{0, 0, 1});
     const auto near = coney::physics::landingContact(**ground, Vec3{0, 0, 0.05F}, Vec3{0, 0, 0.93F}, Vec3{0, 0, -0.2F});
     REQUIRE(near.has_value());
     coney::physics::Contact missing;

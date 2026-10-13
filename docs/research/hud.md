@@ -652,7 +652,7 @@ Two plays of `level99` checkpoint 1 (2026-10-11, PCSX2 2.9.94, the state copy `l
 `level99-tutorial` course of [Differential playthroughs](../guides/research-workflow.md#differential-playthroughs),
 3,600 updates each, through lesson 9's set-up), with the hooks `hint-queue` (`HintBox_Queue`), `hint-clear`
 (`MessageHUD_Shutdown` on the box `0x00609250`), `hint-withdraw`, `hint-flush`, `event-hint` (`0x001cdf7c`),
-`tutorial-callback`, `anim-dispatch` and `anim-callback-match` of `repo:research/traces/patches.toml`. Times are taken
+`tutorial-callback`, `anim-dispatch` and `anim-callback-match` of `repo:research/traces/patches/`. Times are taken
 from the tick count each hook logs (`0x005104f4`, two ticks an update). Confirmed (runtime):
 
 - **A text set on a free box shows in the same tick.** All `HintBox_Queue` calls (87 and 89 in the two runs) came

@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <vector>
 
 #include "animation/anim_math.h"
 
-// The physics world's contact: what a sweep or overlap found, and what the moving body's resolution reads. The fields
-// are the original's 0xc0-byte record's, named; the original's offset is given for each.
-// Research: docs/research/physics.md#contacts, docs/research/physics-bodies.md#u3-records
+// The contact record the shape-pair tests and sweeps fill (0xc0 bytes in the original): two halves, one per shape,
+// then the fraction, depth, point, slide, flags and triangle. A test writes only the fields its research section
+// names; the others keep what the record held, as the original's uncleared stack record does, so the tests can check
+// what was written. The moving body's resolution reads the same record.
+// Research: docs/research/physics.md#contacts, docs/research/physics.md#u4-summary-for-the-implementer,
+// docs/research/physics.md#u4b-summary-for-the-implementer, docs/research/physics-bodies.md#u2-mapping-into-the-c0-contact
 
 namespace coney::physics {
 
@@ -23,25 +27,64 @@ inline constexpr std::uint32_t kContactAway = 0x20;      ///< Sphere sweep, opti
 inline constexpr std::uint32_t kContactAlong = 0x40;     ///< Sphere sweep, option 0x40: the move runs along it.
 inline constexpr std::uint32_t kContactLanding = 0x80;   ///< An airborne human's landing segment.
 
-/// One contact (the original's 0xc0-byte record). A mesh contact has no other owner and a triangle; a body contact
-/// has both owners and no triangle.
+/// A 16-byte vector as the contact holds it; `w` matters only where a test writes it (1 for a point or most normals,
+/// 0 for a sphere-box feature normal).
+struct Vec4 {
+    float x = 0.0F;
+    float y = 0.0F;
+    float z = 0.0F;
+    float w = 0.0F;
+
+    friend bool operator==(const Vec4&, const Vec4&) = default;
+};
+
+/// The x, y and z of a contact vector.
+[[nodiscard]] inline anim::Vec3 xyz(const Vec4& v) { return anim::Vec3{v.x, v.y, v.z}; }
+
+/// Writes x, y and z of a contact vector and keeps its `w`, for the fields whose `w` the research does not name.
+inline void setXyz(Vec4& v, const anim::Vec3& value) {
+    v.x = value.x;
+    v.y = value.y;
+    v.z = value.z;
+}
+
+/// A contact point: the position with `w` 1, as the sweeps write it.
+[[nodiscard]] inline Vec4 pointW1(const anim::Vec3& p) { return Vec4{p.x, p.y, p.z, 1.0F}; }
+
+/// One 0x40-byte half of a contact. The owner and shape words are written by whoever runs the test (`insertSorted`
+/// for the body sweep, the overlap query, the strike loop).
+struct ContactHalf {
+    BodyOwner* owner = nullptr; ///< `+0x00`: this shape's owner; null for the level.
+    bool shape = false;         ///< `+0x04` non-zero: this half has a body's shape (the level's word is 0).
+    /// `+0x10`: this half's normal, pointing from this half's shape towards the other one. The mesh sweeps write the
+    /// unit move into the own half's (docs/research/physics-bodies.md#u2-mapping-into-the-c0-contact); the other
+    /// half's is the surface normal, out of the surface toward the mover.
+    Vec4 normal;
+    Vec4 localPoint;      ///< `+0x20`: the point in this half's box frame (sphere-box sweeps only).
+    int featureType = 0;  ///< `+0x30`: the box feature: 0 face, 2 edge, 1 corner, 4 start inside.
+    int featureIndex = 0; ///< `+0x34`: which face, edge or corner (docs/research/physics.md#the-normal-tables).
+
+    friend bool operator==(const ContactHalf&, const ContactHalf&) = default;
+};
+
+/// A contact between the querying (own, half 0) shape and another (half 1). A mesh contact has no other owner and a
+/// triangle; a body contact has both owners and no triangle.
 struct Contact {
-    BodyOwner* ownOwner = nullptr;   ///< `+0x00`: the moving body's owner.
-    BodyOwner* otherOwner = nullptr; ///< `+0x40`: the other body's owner; null for the level.
-    bool otherShape = false;         ///< `+0x44` non-zero: met another body's shape (the level's is 0).
-    anim::Vec3 moveDirection;        ///< `+0x10`: the unit move (sweeps).
-    anim::Vec3 normal;               ///< `+0x50`: unit, out of the surface toward the mover.
-    float fraction = 0.0F;           ///< `+0x80`: the fraction of the pass's move (an overlap's depth).
-    float startDistance = 0.0F;      ///< `+0x88`: the sphere sweep's signed start distance from the plane.
-    anim::Vec3 point;                ///< `+0x90`: the shape's position at the contact (sweeps).
-    anim::Vec3 slide;                ///< `+0xa0`: a slide vector, read with kContactAddSlide or kContactStoreSlide.
-    std::uint32_t flags = 0;         ///< `+0xb0`: kContact* bits.
+    std::array<ContactHalf, 2> halves{}; ///< `+0x00` own, `+0x40` other.
+    float fraction = 0.0F;               ///< `+0x80`: the fraction of the move at first contact (an overlap's depth).
+    /// `+0x88`: a penetration depth (overlap tests that say so); the sphere sweep writes its signed start distance from
+    /// the plane here.
+    float depth = 0.0F;
+    Vec4 point;                            ///< `+0x90`: the contact point in the world.
+    Vec4 slide;                            ///< `+0xa0`: a slide vector, read with kContactAddSlide or kContactStoreSlide.
+    std::uint32_t flags = 0;               ///< `+0xb0`: kContact* bits.
     std::optional<std::uint32_t> triangle; ///< `+0xb4`: the level triangle met, nothing for a body.
+
+    friend bool operator==(const Contact&, const Contact&) = default;
 };
 
 /// Puts `contact` into `sorted` before the first contact whose fraction is strictly greater (so after any of equal
-/// fraction), after writing its owners and whether the other is a body's shape. No cap is checked (the callers keep to
-/// their 50).
+/// fraction), after writing its owners and shape words. No cap is checked (the callers keep to their 50).
 /// @orig 0x0033d718 Contact_InsertSorted (unknown)
 void insertSorted(Contact& contact, std::vector<Contact*>& sorted, BodyOwner* ownOwner, BodyOwner* otherOwner,
                   bool otherShape);

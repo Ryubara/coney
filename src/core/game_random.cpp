@@ -17,6 +17,13 @@ void GameRandom::setTable(std::span<const std::uint32_t> table) {
     m_table.assign(table.begin(), table.end());
 }
 
+void GameRandom::startAt(std::uint32_t offset) {
+    m_index = offset & kIndexMask;
+    // xorshift32 never leaves 0, so a state that lands there takes the power-on one.
+    const std::uint32_t moved = kStandInStart + (offset * 0x9e3779b9U);
+    m_standIn = moved != 0 ? moved : kStandInStart;
+}
+
 std::uint32_t GameRandom::next() {
     m_index = (m_index + 1) & kIndexMask;
     if (!m_table.empty()) {

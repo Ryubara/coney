@@ -447,6 +447,15 @@ class Human final : public Holdable {
         m_fighter.heldInGrab(grabber, fromRear);
     }
     [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
+    void holdSide(bool rearGrab) override { m_fighter.setRearHeld(rearGrab); }
+    [[nodiscard]] bool heldFromRear() const override { return m_fighter.heldFromRear(); }
+    [[nodiscard]] std::uint32_t heldFlags() const override { return m_animator.flags(); }
+    /// The tandem's victim side (Fighter::startTandemVictim()); cuffed is its arrest (state `0x20000`), which
+    /// `Human_IsDamageDefeating` triples the damage for.
+    bool startTandem(const TandemStart& start) override {
+        return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
+    }
+    [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.
@@ -683,8 +692,10 @@ class Human final : public Holdable {
     void turnToFace(anim::Vec3 point, float seconds);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
+    /// 334 holds the busy bit `0x400`, so the stance's movement sets no velocity while it plays; and while any spray
+    /// clip plays (tagSprayPlaying()) the stance, the commands and the anim-state choice wait.
     /// Returns false when the intro clip is not loaded (he then turns to the tag at once).
-    /// docs/research/crimes.md#tag-look
+    /// docs/research/crimes.md#tag-look, docs/research/scripting.md#level87-fixes (fix 2)
     /// @orig 0x00278018 Tag_StartSprayClips (unknown)
     bool startTagSpray(anim::Vec3 point);
     /// A pause of the stick game began (a slip or a new charge): 337, then the loop 335 again.

@@ -87,9 +87,10 @@ TEST_CASE("a wall stops a fast capsule where it first touches, once per triangle
     const auto contacts = capsuleContacts(*mesh, Vec3{-2, 0, 0}, Vec3{10, 0, 0});
     REQUIRE(contacts.size() == 1);
     CHECK(contacts[0].fraction == Approx(0.15F).margin(kTolerance));
-    checkVec(contacts[0].normal, Vec3{-1, 0, 0});
-    checkVec(contacts[0].point, Vec3{-0.5F, 0, 0});
-    checkVec(contacts[0].moveDirection, Vec3{1, 0, 0});
+    checkVec(xyz(contacts[0].halves[1].normal), Vec3{-1, 0, 0});
+    checkVec(xyz(contacts[0].point), Vec3{-0.5F, 0, 0});
+    CHECK(contacts[0].point.w == 1.0F);
+    checkVec(xyz(contacts[0].halves[0].normal), Vec3{1, 0, 0});
     REQUIRE(contacts[0].triangle.has_value());
 }
 
@@ -98,7 +99,7 @@ TEST_CASE("a capsule starting behind a one-sided wall passes it, a two-sided one
     const auto contacts = capsuleContacts(*meshOf(wallFacingMinusX(0.0F, coney::raycast::kTriangleTwoSided)),
                                           Vec3{1, 0, 0}, Vec3{-3, 0, 0});
     REQUIRE(contacts.size() == 1);
-    checkVec(contacts[0].normal, Vec3{1, 0, 0});
+    checkVec(xyz(contacts[0].halves[1].normal), Vec3{1, 0, 0});
     CHECK(contacts[0].fraction == Approx(0.5F / 3.0F).margin(kTolerance));
 }
 
@@ -147,7 +148,7 @@ TEST_CASE("the side is decided from the centre at the start", "[physics][mesh_sw
     const auto turned = capsuleContacts(*meshOf(wallFacingMinusX(x, coney::raycast::kTriangleTwoSided)),
                                         Vec3{0.5F, 0, 0}, Vec3{-0.3F, 0, 0});
     REQUIRE(turned.size() == 1);
-    checkVec(turned[0].normal, Vec3{1, 0, 0});
+    checkVec(xyz(turned[0].halves[1].normal), Vec3{1, 0, 0});
 }
 
 TEST_CASE("a disabled triangle is never met", "[physics][mesh_sweep]") {
@@ -208,14 +209,14 @@ TEST_CASE("the corner slide points outward past the flagged end of a wall", "[ph
     // Met past that end (the centre's path at y = −0.3): S is −y, max(0.5, |move|) long, and flagged.
     const auto contacts = capsuleContacts(*meshOf(end(2)), Vec3{1, -0.3F, -0.3F}, Vec3{-1, 0, 0});
     REQUIRE(contacts.size() == 1);
-    checkVec(contacts[0].slide, Vec3{0, -1, 0});
+    checkVec(xyz(contacts[0].slide), Vec3{0, -1, 0});
     CHECK(contacts[0].flags == coney::physics::kContactAddSlide);
     // Airborne, no edge named, or a face hit: no slide.
     for (const auto& none : {capsuleContacts(*meshOf(end(2)), Vec3{1, -0.3F, -0.3F}, Vec3{-1, 0, 0}, true),
                              capsuleContacts(*meshOf(end(3)), Vec3{1, -0.3F, -0.3F}, Vec3{-1, 0, 0}),
                              capsuleContacts(*meshOf(end(2)), Vec3{1, 0.5F, -0.3F}, Vec3{-1, 0, 0})}) {
         REQUIRE(none.size() == 1);
-        checkVec(none[0].slide, Vec3{0, 0, 0});
+        checkVec(xyz(none[0].slide), Vec3{0, 0, 0});
         CHECK(none[0].flags == 0);
     }
     // The mirrored end: an edge running up at y = 1 gives +y.
@@ -223,7 +224,7 @@ TEST_CASE("the corner slide points outward past the flagged end of a wall", "[ph
         BuildTriangle{.corners = {Rv{0, 1, 0}, Rv{0, 1, 1}, Rv{0, 0, 0}}, .flags = 1U}};
     const auto mirrored = capsuleContacts(*meshOf(other), Vec3{1, 1.3F, -0.3F}, Vec3{-1, 0, 0});
     REQUIRE(mirrored.size() == 1);
-    checkVec(mirrored[0].slide, Vec3{0, 1, 0});
+    checkVec(xyz(mirrored[0].slide), Vec3{0, 1, 0});
 }
 
 TEST_CASE("the sphere sweep's max, options and n.z range", "[physics][mesh_sweep]") {
@@ -239,7 +240,7 @@ TEST_CASE("the sphere sweep's max, options and n.z range", "[physics][mesh_sweep
     REQUIRE(coney::physics::sweepSphereMesh(*twoWalls, sweptBox(Vec3{-2, 0, 1}, 0.5F, sweep.move), sweep, scratch,
                                             out) == 1);
     CHECK(out[0].fraction == Approx(1.5F / 4.0F).margin(kTolerance));
-    CHECK(out[0].startDistance == Approx(2.0F).margin(kTolerance));
+    CHECK(out[0].depth == Approx(2.0F).margin(kTolerance));
 
     // Behind a one-sided wall with option 0x40: kept, flagged behind, normal not turned.
     const auto wall = meshOf(wallFacingMinusX(0.0F));
@@ -251,7 +252,7 @@ TEST_CASE("the sphere sweep's max, options and n.z range", "[physics][mesh_sweep
     REQUIRE(coney::physics::sweepSphereMesh(*wall, sweptBox(Vec3{0.3F, 0, 1}, 0.5F, sweep.move), sweep, scratch, out) >=
             1);
     CHECK((out[0].flags & coney::physics::kContactBehind) != 0);
-    checkVec(out[0].normal, Vec3{-1, 0, 0});
+    checkVec(xyz(out[0].halves[1].normal), Vec3{-1, 0, 0});
 
     // Two coplanar triangles both reached at once: one per plane keeps one.
     out.clear();

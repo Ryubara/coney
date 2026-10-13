@@ -27,6 +27,8 @@ request's Testing and Screenshots sections ([What a pull request shows](#pr-evid
   They are written first.
 - **Smoke tests** run the `coney` executable itself under `ctest`: start-up, argument errors, scripted input.
 - **Disc tests** need the player's own disc, found through `coney.local.toml` or `CONEY_DISC`. They skip without it.
+  Every one carries the ctest label `disc` (the Catch2 tag `[disc]`), so `coney-tools build --test -L disc` runs them
+  and nothing else ([`build`](coney-tools.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
@@ -105,6 +107,12 @@ the centre, so a byte mapped linearly over 0-255 reads back smaller than meant. 
 reads about 0.86, under the run's 0.95, and the player only walks (found when the level3 chase driver walked instead
 of running).
 
+A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
+player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
+rest ([Targets](../research/combat-moves.md#targeting)). A driver that rests the stick once in reach strikes whoever
+the player happens to face; the level5 boss fight's driver did, and lost once the AI's enemy scan changed who the
+crew fought.
+
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
 reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
@@ -176,6 +184,11 @@ What the two sections hold:
   options.
 - **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
   [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
+- **Look at each picture before using it.** Open every capture and check that it shows what its caption says:
+  gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
+  options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
+  it again. The `pr-reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
+  images ([The description review](how-we-work.md#pr-review)).
 - **Video.** Nothing in Coney or `coney-tools` records video. A short clip is made by hand with a screen recorder; an
   agent uses a few screenshots of the moment instead.
 - **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
@@ -214,8 +227,8 @@ uv run --project python coney-tools check changed
 It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files CI's pull-request job
 would check (a changed header through the `.cpp` files that include it), `mkdocs build --strict` when docs changed,
 pytest and mypy when `python/` changed, and `repo check`; it needs a `build/dev` that was configured once
-(`cmake --preset dev`, no build). It catches what MSVC lets through: a designated initializer that skips a field
-(`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
+(`coney-tools build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets through: a
+designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
 (`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not
 replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
@@ -227,8 +240,10 @@ finds a difference fixes it forward.
 
 The whole gate:
 
-- **Engine changes:** the `ci` preset build and `ctest --preset ci` with the disc configured (Windows: from a shell
-  with the MSVC environment).
+- **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
+  `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
+  [build slot](coney-tools.md#build) and loads the MSVC environment itself; agents never run `cmake --build` or `ctest`
+  directly).
 - **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`;
   `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
   generator's `--check` (`natives render`, `natives coney`, `natives cpp`, `refs render`, `missions render`). Rerun a
@@ -237,6 +252,11 @@ The whole gate:
   `mkdocs build --strict` passes.
 
 Commands and presets: [Building and testing](building.md).
+
+The whole gate runs once per unit, as its final check before the unit is reported ready for release. While working,
+check with the `dev` preset and only the tests the change touches (`ctest --preset dev -R <pattern>`, disc tests
+included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
+suite holds one for 20 to 40 minutes, so running it for every step makes everyone else wait.
 
 ### Continuous integration {#ci}
 

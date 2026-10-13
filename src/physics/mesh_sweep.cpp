@@ -98,7 +98,7 @@ bool lowOrThin(const WorkingTriangle& t, float minHeight) {
 // A contact's common fields from a mesh hit: the normal, the key as the fraction, the triangle.
 Contact contactFrom(const MeshContact& hit) {
     Contact contact;
-    contact.normal = hit.working.normal;
+    setXyz(contact.halves[1].normal, hit.working.normal);
     contact.fraction = hit.key;
     contact.triangle = hit.triangle;
     return contact;
@@ -218,9 +218,9 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, co
     for (const std::size_t i : scratch.order) {
         const MeshContact& hit = scratch.found[i];
         Contact contact = contactFrom(hit);
-        contact.moveDirection = direction;
-        contact.point = sweep.feet + (sweep.move * hit.key);
-        contact.slide = slide;
+        setXyz(contact.halves[0].normal, direction);
+        contact.point = pointW1(sweep.feet + (sweep.move * hit.key));
+        setXyz(contact.slide, slide);
         contact.flags = sliding ? kContactAddSlide : 0;
         out.push_back(contact);
     }
@@ -298,10 +298,10 @@ int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, con
     for (std::size_t i = 0; i < count; ++i) {
         const MeshContact& hit = scratch.found[scratch.order[i]];
         Contact contact = contactFrom(hit);
-        contact.moveDirection = direction;
-        contact.point = sphere.centre + (sweep.move * hit.key);
+        setXyz(contact.halves[0].normal, direction);
+        contact.point = pointW1(sphere.centre + (sweep.move * hit.key));
         contact.flags = hit.flags;
-        contact.startDistance = hit.startDistance;
+        contact.depth = hit.startDistance;
         out.push_back(contact);
     }
     return static_cast<int>(count);

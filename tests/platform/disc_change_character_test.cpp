@@ -86,6 +86,13 @@ TEST_CASE("Change character rebuilds the player as another type where he stands"
     // The level's own player takes his class as a changed one does: one path (human::playerClassOf()).
     const int startS1 = punchDamage(mode);
     const int startPower = mode.player().human().fighterProfile().powerClass.powerMax;
+    // His stats from level99's configuration (normal, docs/research/characters.md#stats): Rembrandt's power class 64
+    // (400 power, 135 stamina) and Warrior class 6 (1800 health x 50 % = 900, a rage of 78).
+    const coney::human::Human& start = mode.player().human();
+    CHECK(start.health().maximum() == 900);
+    CHECK(start.stamina().maximum() == 135);
+    CHECK(start.fighter().combat().power().maximum() == 400);
+    CHECK(start.fighter().combat().rage().maximum() == 78);
 
     // A few steps of play, a fighter in front of him, then Ash (type 40) where he stands.
     coney::GameModeStack modes;
@@ -119,6 +126,16 @@ TEST_CASE("Change character rebuilds the player as another type where he stands"
     CHECK(punchDamage(mode) == startS1);
     CHECK(mode.player().human().fighterProfile().powerClass.powerMax == startPower);
     std::printf("change character: type 32's square plays %d damage, power maximum %d\n", startS1, startPower);
+    // Cleon (type 1) plays with his power class 59 (500 power, 100 stamina) and Warrior class 1: 1800 x 85 % = 1530
+    // health and a rage of 120, all full.
+    REQUIRE(mode.changeCharacter(1));
+    const coney::human::Human& cleon = mode.player().human();
+    CHECK(cleon.health().maximum() == 1530);
+    CHECK(cleon.health().value() == 1530);
+    CHECK(cleon.fighter().combat().power().maximum() == 500);
+    CHECK(cleon.stamina().maximum() == 100);
+    CHECK(cleon.stamina().value() == 100);
+    CHECK(cleon.fighter().combat().rage().maximum() == 120);
     REQUIRE(mode.changeCharacter(31));
     // A type the configuration lacks leaves him as he was.
     CHECK_FALSE(mode.changeCharacter(100000));

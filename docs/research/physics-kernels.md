@@ -430,7 +430,7 @@ mask is `*t0`.
 ### Seen at runtime (issue #348) {#u1-runtime}
 
 Checked 2026-10-12 in PCSX2 2.9.94 (portable, PINE), from quick-save slots 1 and 6 copied with the patches and hooks
-of `repo:research/traces/patches.toml`.
+of `repo:research/traces/patches/physics-runtime.toml`.
 
 **The kernel on synthetic triangles.** Through the `call-brains` call hook, the game itself called
 `Sweep_SphereTriangle` (`0x0034ee60`) on the triangle `T` of [Test ideas](#u1-tests) (written into free EE memory at

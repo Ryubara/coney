@@ -64,13 +64,9 @@ void registerGameTunables(TunableRegistry& registry) {
         .units("m")
         .describe("The player's push-out sphere while airborne, before the scale");
 
-    // Sprint and stamina: read every update.
+    // Sprint: read every update. Stamina's maximum and refill are each human's power class's.
     human::StaminaTuning& stamina = human::staminaTuning();
-    registry.add("Sprint", "Stamina maximum", &stamina.maximum)
-        .range(1, 1000, 5)
-        .describe("Full stamina; applies when the player is next spawned");
     registry.add("Sprint", "Drain", &stamina.drainPerSecond).range(0, 200, 1).units("/s");
-    registry.add("Sprint", "Refill", &stamina.refillPerSecond).range(0, 200, 1).units("/s");
 
     // The jump.
     human::JumpTuning& jump = human::jumpTuning();

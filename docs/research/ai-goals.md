@@ -568,9 +568,26 @@ A gang member answering a help call: he turns to or walks to the caller's enemy 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002b7670` | `HelpRespondGoal_Init` | init | vtable `0x0053fd90`; `+0x10` the target handle, `+0x14` a flag, `+0x08` the time limit | confirmed (code) |
-| `0x002b76a0` | `HelpRespondGoal_Start` | Start | the caller's target: within 1.1 x far and walkable straight: turn to him and look 3 s (else 60 % a look-around); otherwise a move action to him (gait 2, 4 beyond 10 m; with an empty enemy list 4, or 5 on level `0x53`) | confirmed (code) |
+| `0x002b76a0` | `HelpRespondGoal_Start` | Start | the caller's target: within 1.1 x far and walkable straight: a turn action to him (`TurnToPointAction_Init`) and a 3 s **head look** at him (`Brain_LookAtTarget` `0x0029a000`, weight 1.0, on the human's look-at `+0x284`: no action, it does not hold the goal), nothing more (else 60 % a look-around); otherwise a move action to him (gait 2, 4 beyond 10 m; with an empty enemy list 4, or 5 on level `0x53`) | confirmed (code) |
 | `0x002b78e0` | `HelpRespondGoal_End` | End | clears the actions | confirmed (code) |
 | `0x002b7900` | `HelpRespondGoal_Process` | Process | refreshes the gang's wanted timer on the target (Brain_RefreshWanted); with `+0x14` clear, every 30 updates ends once the brain lists enemies (a fight takes over); ends when its actions are done | confirmed (code) |
+
+So the goal lasts as long as its turn: `TurnAction_Update` (`0x002fdd08`) ends within 15° of the heading, or at the
+3 s limit `TurnAction_Start` (`0x002fdc68`) sets, and then the action count (brain `+0x2e`) is 0 and Process ends the
+goal; the head look runs on by itself. Confirmed (code). At runtime (level80's last fight, 866 goals, PCSX2 2.9.94)
+the median goal lasted 2 updates and the longest 51 (1.7 s); it was pushed over a Spectate or Fight goal, which
+carried on afterwards ([level80](scripting.md#level80-after-order)). Confirmed (runtime).
+
+The median is short because most goals start with the soldier already facing the caller's enemy. A standing soldier
+asks no speed, so a turn of more than 15° is a **turn on the spot**: one turn clip, the rest of the angle spread over
+the clip's length ([Characters](characters.md#ai-locomotion), `0x0025c240`); there is no per-update rate. Over 732
+goals in four level80 runs (PCSX2 2.9.94, every human read once per update), the 214 that needed more than 15° lasted
+a median of **10 updates** whatever the angle (15-30°: 10; 30-60°: 10; 60-90°: 10; ranges 1-50), and the 518 within
+15° a median of 2. Confirmed (runtime). While the goal is on top nothing under it runs
+([Brain_UpdateGoals](ai.md#update-goals)), so a soldier whose target was cleared keeps none until it ends: only an
+event can give him one (a hit, event 1: `Brain_SetTarget(hitter, forced)`; a violence event, `0x14`: with no target he
+retries `Brain_SetTarget(side)`, not forced), and `HelpRespondGoal_Process` also ends it on a brain-counter update
+divisible by 30 when his enemy list is not empty. Confirmed (code) at `0x00304fa8`, `0x00291960`, `0x002b7900`.
 
 ### GuardFlag (type 0x2b) {#goal-guard-flag}
 
@@ -695,11 +712,15 @@ tactic (inferred: a fighting ring's spectators).
 ### ObjectPile (type 0x60) {#goal-object-pile}
 
 Take objects from a pile and throw them at the nearest human until a time.
+Step by step, with Process: [AI plan: the ObjectPile goal](ai-reimpl.md#object-pile).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002bada8` | `Goal_ObjectPile` | pusher | resolves the human and pushes an ObjectPile goal on a world object with an end time | confirmed (code) |
 | `0x002bae38` | `ObjectPileGoal_Init` | init | vtable `0x0053faf0`; `+0x10` the object pile's handle, `+0x14` the target (none), `+0x18` the end time | confirmed (code) |
+| `0x002bae80` | `ObjectPileGoal_Start` | Start | `+0x18` = 0 for −1, else made an end time (+ now); brain `+0x21c` = 0 | confirmed (code) |
+| `0x002baec0` | `ObjectPileGoal_Resume` | Resume | clears `+0x1c` (walking to the pile) | confirmed (code) |
+| `0x002baf08` | `ObjectPileGoal_Suspend` | Suspend | unless `+0x1c` is set, sets `+0x1d`: covered by any goal but its own GetItem walk, it ends | confirmed (code) |
 | `0x002baec8` | `ObjectPileGoal_End` | End | clears the target and sets brain `+0x21c` = 2 | confirmed (code) |
 | `0x002baf20` | `ObjectPileGoal_PickTarget` | helper | `+0x14` = the nearest human: from the brain's list `+0x164`, or when it is empty the visible humans in sight range (filter `0x0029c0d8`) | confirmed (code) |
 | `0x002bb010` | `ObjectPileGoal_Process` | Process | done when the pile is gone or the end time passed; empty-handed: picks up from the pile within 1 m (PickUpItem) or walks to it with a GetItem-type goal (`0x002dc7a0`); holding a throwable: picks a target every 10 updates, closes to reach (2000 ms) or every 30 updates turns and throws (attack kind 0) | confirmed (code) |

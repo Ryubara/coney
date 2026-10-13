@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    build_cli,
     check_cli,
     mcp_serve,
     mission_cli,
@@ -23,6 +24,7 @@ from coney_tools import (
     pcsx2_cli,
     progress_cli,
     refs_cli,
+    stale_processes,
     trace_cli,
     wad_cli,
     workspace,
@@ -36,12 +38,13 @@ from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
 from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
 from coney_tools.pr_health import add_pr_health_parser, run_pr_health
+from coney_tools.pr_review import add_review_parsers, run_review_command
 from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
 from coney_tools.repo_labels import apply_labels, gh_script
 
 
 def _config_show() -> int:
-    """Print every path key with whether it exists."""
+    """Print every path key with whether it exists, then the number keys."""
     config = load_config(find_repo_root(Path.cwd()))
     for key in PATH_KEYS:
         path = config.paths[key]
@@ -49,6 +52,8 @@ def _config_show() -> int:
             print(f"{key} = unset")
         else:
             print(f"{key} = {path} ({'found' if path.exists() else 'missing'})")
+    for key, number in config.numbers.items():
+        print(f"{key} = {number}")
     return 0
 
 
@@ -166,15 +171,30 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
-        "clean", help="remove merged worktrees and old build folders (a dry run unless --apply)"
+        "clean",
+        help="remove merged worktrees and old build folders (all idle ones when the drive is low), stop stale waits "
+        "and orphaned test runs (a dry run unless --apply)",
     )
     clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
     clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")
     clean.add_argument(
         "--build-hours",
         type=float,
-        default=workspace_clean.DEFAULT_BUILD_HOURS,
-        help="delete build/ folders of worktrees untouched this many hours (default: %(default)g)",
+        default=None,
+        help="delete build/ folders of worktrees untouched this many hours (default: workspace.build_idle_hours)",
+    )
+    clean.add_argument(
+        "--min-gb",
+        type=float,
+        default=None,
+        help="disk pressure: under this much free space, delete idle build/ folders "
+        "(default: workspace.disk_min_free_gb)",
+    )
+    clean.add_argument(
+        "--margin-gb",
+        type=float,
+        default=None,
+        help="... until this much more than --min-gb is free (default: workspace.disk_margin_gb)",
     )
     clean.add_argument(
         "--worktree-hours",
@@ -183,6 +203,18 @@ def _build_parser() -> argparse.ArgumentParser:
         help="remove merged worktrees only when untouched this many hours (default: %(default)g)",
     )
     clean.add_argument("--fetch", action="store_true", help="git fetch origin main first, so merges are current")
+    clean.add_argument(
+        "--shell-hours",
+        type=float,
+        default=stale_processes.DEFAULT_SHELL_HOURS,
+        help="a shell waiting in a loop is stale only when older than this many hours (default: %(default)g)",
+    )
+    clean.add_argument(
+        "--log-idle-hours",
+        type=float,
+        default=stale_processes.DEFAULT_IDLE_HOURS,
+        help="... and every file its loop reads is unchanged this many hours (default: %(default)g)",
+    )
     disk = workspace_commands.add_parser(
         "disk", help="print the free space of the workspace drive; exit 1 below --min-gb"
     )
@@ -224,6 +256,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_audit_parser(repo_commands)
     add_pr_health_parser(repo_commands)
+    add_review_parsers(repo_commands)
     add_hygiene_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
@@ -242,6 +275,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_refs_commands(groups)
     _add_missions_commands(groups)
     _add_pcsx2_commands(groups)
+    build_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
 
@@ -506,9 +540,7 @@ def _add_pcsx2_commands(groups: Any) -> None:
     prepare = commands.add_parser("prepare-state", help="copy a save state with patches applied to its EE memory")
     prepare.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
     prepare.add_argument("out", type=Path, help="the patched copy (outside the repository and sstates/)")
-    prepare.add_argument(
-        "--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches.toml"
-    )
+    prepare.add_argument("--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches/")
     prepare.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
     repack = commands.add_parser("repack-state", help="copy a save state with plain deflate in place of zstd")
     repack.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
@@ -733,6 +765,8 @@ def _run(args: argparse.Namespace) -> int:
         return missions_render.run_render(args.check)
     if args.group == "pcsx2":
         return _run_pcsx2(args)
+    if args.group == "build":
+        return build_cli.run(args)
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
@@ -762,7 +796,16 @@ def _run(args: argparse.Namespace) -> int:
         return _config_show()
     if args.group == "workspace" and args.command == "clean":
         return workspace_clean.run_clean(
-            Path.cwd(), args.workspace, args.apply, args.build_hours, args.worktree_hours, args.fetch
+            Path.cwd(),
+            args.workspace,
+            args.apply,
+            args.build_hours,
+            args.worktree_hours,
+            args.fetch,
+            min_gb=args.min_gb,
+            margin_gb=args.margin_gb,
+            shell_hours=args.shell_hours,
+            idle_hours=args.log_idle_hours,
         )
     if args.group == "workspace" and args.command == "disk":
         return workspace_clean.run_disk(Path.cwd(), args.workspace, args.min_gb)
@@ -772,6 +815,8 @@ def _run(args: argparse.Namespace) -> int:
         return mcp_serve.run_serve(args.name)
     if args.command == "audit":
         return run_audit(args)
+    if args.command in ("review", "check-review", "review-stamp"):
+        return run_review_command(args)
     if args.command == "pr-health":
         return run_pr_health(args)
     if args.command == "hygiene":
@@ -800,6 +845,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigError as error:
         print(f"coney-tools: {error}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        # Whatever the command held (a build slot) is released by its own `finally` on the way here.
+        print("coney-tools: interrupted", file=sys.stderr)
+        return 130
     except (BrokenPipeError, wad_cli.OutputClosedError):
         # The reader went away (`wad list | head`): stop quietly, as Unix tools do. Point stdout at devnull so the
         # interpreter's final flush does not fail again on exit.
