@@ -2773,10 +2773,11 @@ The flash clip 665 keeps a player alive ([Damage](#damage), step 4).
 #### Who sets and clears the knocked-out bit {#knocked-out-bit}
 
 State `0x40000` is the record's state word (`+0x00`), which only `Human_SetStateFlag` (`0x002265d0`) and
-`Human_ClearStateFlag` (`0x00226620`) change bit by bit. Their 135 and 157 call sites were read for the mask they
-pass (confirmed (code)); every 64-bit read-modify-write at offset 0 elsewhere in the executable is on another record
-(the game state), and a whole-word zeroing happens only when the record is set up or released (`Human_ReleaseInstance`,
-`0x00217dd8`), so the lists below are complete (inferred: the scan matched `ld`/`sd` pairs, not every store).
+`Human_ClearStateFlag` (`0x00226620`) change bit by bit. Their 135 and 161 call sites were read for the mask they
+pass (confirmed (code); only the eight sites below clear `0x40000`); every 64-bit read-modify-write at offset 0
+elsewhere in the executable is on another record (the game state), and a whole-word zeroing happens only when the
+record is set up or released (`Human_ReleaseInstance`, `0x00217dd8`), so the lists below are complete (inferred:
+the scan matched `ld`/`sd` pairs, not every store).
 
 **Set** only by `Human_KnockOut` (`0x00230328`, calls at `0x0023048c` and `0x00230554`), whose callers are:
 
@@ -2801,10 +2802,15 @@ pass (confirmed (code)); every 64-bit read-modify-write at offset 0 elsewhere in
 
 So a knocked-out human gets up only through `Human_WakeUp`: a heal or revive, the script, or a rise 199 that runs to
 its end while he is still knocked out. `Human_UpdateDown` (`0x00256a60`) starts the rise for any knocked-**down**
-human (`0x80000`) whose get-up time has come, and its state mask (`0x1c18003ff0`) does not hold `0x40000`; a tackled
-victim's end hook (`Tackle_OnVictimRiseEnd`, `0x00270028`) starts it unless he is dead or dying. Through all of 199
-the bit stays set: it goes at the clip's end (inferred: no code path was found that knocks out a human who is down
-with `0x80000` and then lets `Human_UpdateDown` reach him, so this may not happen in play).
+human (`0x80000`) whose get-up time has come, and its state mask (`0x1c18003ff0`) does not hold `0x40000`, so it
+never starts the rise for a knocked-out human. A tackled victim's end hook (`Tackle_OnVictimRiseEnd`, `0x00270028`)
+starts it when he is not dead (`0x100000000`), not dying (`0x80000000`) and his pair link (`+0xc4`) is empty, with
+no test of `0x40000`: it ends the tackle if one still holds him and plays the rise (`Human_PlayRise`, `0x0025e2d8`,
+clip 199 with the end callback `Human_EndDownState`), whose end calls `Human_WakeUp(h, 0)` when `0x40000` is
+set. So **this path wakes a knocked-out tackled victim**, which `Human_UpdateDown` cannot (confirmed (code)); whether a
+tackled victim is ever knocked out when the hook fires was not checked. Through all of 199 the bit stays set: it
+goes at the clip's end (inferred: no code path was found that knocks out a human who is down with `0x80000` and then
+lets `Human_UpdateDown` reach him, so this may not happen in play).
 
 **Not the same bit:** the attack's **recovery** phase `0x40000` lives in record `+0x08` (held flags), not in the
 state word: event `0x48` sets it with `Human_SetHeldFlag` (`0x00226640`, the call at `0x001023a4`;
@@ -4456,7 +4462,7 @@ alignment helpers and revives.
 | `0x00269b18` | `HitReact_WhileMounted` | Pending damage while held down (state 0x10000000000): ends the hold for the holder; no reaction. | confirmed (code) |
 | `0x00269b80` | `Hit_PlayBegReaction` | A hit on a knocked-down, cuffed or wounded human: the beg reaction; says 73 beg. | confirmed (code) |
 | `0x00269dc8` | `Human_MoveAlongAxisOver` | Moves the human over a time along its own axis (forward, side or back by the argument), for the block dodge and the early block. | confirmed (code) |
-| `0x0026a1f8` | `HitReact_OnSpecialEnd` | End hook: sends message 0x15 and points an AI foe back at its target. | confirmed (code) |
+| `0x0026a1f8` | `HitReact_OnSpecialEnd` | End hook: sends message 0x15; when the human's foe is the player (brain type 0) and the player's target is this human, clears the player's target (`Brain_SetTarget`, force 0). | confirmed (code) |
 | `0x0026a298` | `Human_PlayRecoilClip` | Blends into a recoil clip chained to the fight idle, holding 0x400 (629 BAT_BLOCK_REACT on a bat block). | confirmed (code) |
 | `0x0026a408` | `Pair_PlayPairedReaction` | Both humans play a paired reaction (clip n and n + 1) holding 0x2000, then the stance idle. | confirmed (code) |
 | `0x0026adf0` | `Block_OnDodgeEnd` | End hook of the block dodge: clears the foe when no damage is pending. | confirmed (code) |
@@ -4474,7 +4480,7 @@ alignment helpers and revives.
 | `0x0026f2c8` | `Grab_PullOffTackler` | Grabs a tackler off its victim: 214 on the grabber, 215 on the tackler, the victim gets up with 199. | confirmed (code) |
 | `0x0026f760` | `Tandem_OnAttackerEnd` | End hook of the tandem attacker's end clip: unlinks it. | confirmed (code) |
 | `0x0026f840` | `Tandem_OnEnd` | End hook of a tandem clip: unlinks the three quietly. | confirmed (code) |
-| `0x00270028` | `Tackle_OnVictimRiseEnd` | End hook on a tackled victim left alone: ends the tackle and plays the rise, unless it is dead or out. | confirmed (code) |
+| `0x00270028` | `Tackle_OnVictimRiseEnd` | End hook on a tackled victim left alone: unless he is dead or dying or his pair link `+0xc4` is still set, ends the tackle and plays the rise 199, whose end wakes him if he is knocked out ([the knocked-out bit](#knocked-out-bit)). | confirmed (code) |
 | `0x002700a8` | `Mount_OnStrikeEnd` | End hook of a mount strike or the grounded mount: gets off when the victim is over 0.2 m up or down, beyond max(reach + 0.34, reach x 1.2) or not clear; else re-places the mounter at clip 210's offset, scores the move, and may let a player victim reverse it. | confirmed (code) |
 | `0x00270560` | `Tackle_OnIntroEnd` | End of the tackle's run-in: a target in front with human flag 0x20000 (or a player that counters) plays the counter (Attack_StartPaired kind 9); otherwise the mount starts from front or behind ([Grab and tackle](#grab)). | confirmed (code) |
 | `0x00270a70` | `Mount_CheckVictim` | During a mount strike: gets off when the victim is no longer tackled, or is dead or out; clears record +0xb8 and +0xbc. | confirmed (code) |
