@@ -8,6 +8,7 @@ import pytest
 from conventions_support import REPO, conventions_with
 from git_support import git, make_branch, message
 
+from coney_tools import audit_text, repo_checks
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.repo_checks import (
@@ -701,3 +702,40 @@ def test_a_merge_of_main_counts_main_s_trailers_only_while_origin_main_is_stale(
     # After a fetch, origin/main holds the merged commits and only the branch's own trailer is left.
     git(clone, "fetch", "-q", "origin")
     assert branch_trailer_models(clone, "origin/main", TRAILERS) == [SONNET]
+
+
+# --- list bullets: one definition, shared with the audit's text reader ----------------------------------------------
+
+
+def test_the_description_and_the_audit_read_bullets_with_one_pattern() -> None:
+    """`repo_checks` has no copy of the bullet or task-item pattern; it uses the audit text reader's."""
+    assert repo_checks.LIST_MARKER is audit_text.LIST_MARKER
+    assert repo_checks.OPEN_ITEM is audit_text.OPEN_ITEM
+
+
+@pytest.mark.parametrize("marker", ["-", "*", "+", "- [ ]", "* [x]", "+ [X]"])
+def test_a_real_bullet_is_stripped_so_a_placeholder_item_is_still_blank(marker: str) -> None:
+    assert check_body(body(summary=f"{marker} ..."), BODY_RULES) != []
+    assert check_body(body(testing=f"{marker} <reason>"), BODY_RULES) != []
+
+
+@pytest.mark.parametrize("line", ["-...", "*...", "+<reason>", "--flag", "*emphasis*", "-5 degrees"])
+def test_a_line_that_starts_with_a_dash_or_star_is_content_not_a_bullet(line: str) -> None:
+    """Without a space after it, `-` or `*` is part of the word, so the first character is not dropped.
+
+    The old copy stripped it, which turned `-...` into the placeholder `...` and called a section with content empty.
+    """
+    assert check_body(body(summary=line), BODY_RULES) == []
+    assert check_body(body(testing=line), BODY_RULES) == []
+
+
+@pytest.mark.parametrize("wrapped", ["-5 degrees", "*x* too", "--play-level 3", "+1 more"])
+def test_a_wrapped_line_that_starts_with_a_dash_continues_the_item(wrapped: str) -> None:
+    """An indented line is a new item only when a bullet marker and a space start it; `--play-level` is a word."""
+    text = checklist_body(f"- [ ] Play the level with\n  {wrapped}\n")
+    assert unfinished_items(text, BODY_RULES) == [f"Play the level with {wrapped}"]
+
+
+def test_an_indented_real_bullet_still_ends_the_item_above() -> None:
+    text = checklist_body("- [ ] First\n  - a nested note\n  wrapped?\n- [ ] Second\n")
+    assert unfinished_items(text, BODY_RULES) == ["First", "Second"]

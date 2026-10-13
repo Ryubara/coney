@@ -8,6 +8,7 @@ import subprocess
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 
+from coney_tools.audit_text import LIST_MARKER, NUMBER_REFERENCE, OPEN_ITEM
 from coney_tools.config import ConfigError
 from coney_tools.conventions import DocsNone, Paths, PointerFiles, PullRequests, TitleRules, Trailers
 
@@ -117,8 +118,6 @@ def check_docs(changed: list[str], body: str, paths: Paths, docs_none: DocsNone)
 _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 #: A second-level Markdown heading; a deeper one (`###`) is part of the section above it.
 _HEADING = re.compile(r"^##[ \t]+(?P<name>\S.*?)[ \t]*$")
-#: What a list item or a task-list item starts with, which is not content (`- `, `- [ ] `, `* [x] `).
-_LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\])?[ \t]*")
 #: A Markdown image: its target is the angle-bracketed text (which may hold spaces) or the text up to the first space
 #: or `)`; an optional title after the target is ignored.
 _MARKDOWN_IMAGE = re.compile(r"!\[[^\]\n]*\]\(\s*(?:<(?P<angle>[^>\n]*)>|(?P<plain>[^\s)]*))[^)\n]*\)")
@@ -163,7 +162,7 @@ def _split_sections(text: str) -> dict[str, str]:
 def _is_blank(text: str, rules: PullRequests) -> bool:
     """Whether `text` holds nothing but empty lines and the template's placeholders (`- [ ] ...`)."""
     for line in text.splitlines():
-        content = _LIST_MARKER.sub("", line.strip()).strip()
+        content = LIST_MARKER.sub("", line.strip()).strip()
         if content and content not in rules.placeholders:
             return False
     return True
@@ -260,14 +259,8 @@ def _check_trailer_models(section: str, rules: PullRequests, models: Sequence[st
     return problems
 
 
-#: An unchecked task-list item, `- [ ] text`.
-_OPEN_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[ \][ \t]*(?P<text>.*)$")
-
 #: A line that opens a labelled list (`Done:`, `Remaining (later units):`), which ends the list before it.
 _LIST_LABEL = re.compile(r"^[ \t]*\**[A-Za-z][^:\n]*:\**[ \t]*$")
-
-#: A reference to an issue or pull request, `#123` (also what the audit looks for in issues).
-NUMBER_REFERENCE = re.compile(r"(?<![\w&/])#\d+\b")
 
 
 def _open_items(section: str, label: str | None = None) -> list[str]:
@@ -288,11 +281,11 @@ def _open_items(section: str, label: str | None = None) -> list[str]:
             continue
         if not inside:
             continue
-        item = _OPEN_ITEM.match(line)
+        item = OPEN_ITEM.match(line)
         if item:
             items.append([item.group("text").strip()])
             continuing = True
-        elif continuing and stripped and line[:1] in (" ", "\t") and not _LIST_MARKER.match(stripped):
+        elif continuing and stripped and line[:1] in (" ", "\t") and not LIST_MARKER.match(stripped):
             # A wrapped line belongs to the item above it.
             items[-1].append(stripped)
         else:

@@ -20,11 +20,11 @@ from typing import Any, Protocol
 
 from coney_tools import audit_text
 from coney_tools.audit import Problem, check
+from coney_tools.audit_text import NUMBER_REFERENCE
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, IssueForm
 from coney_tools.log_scan import ScanResult
 from coney_tools.repo_checks import (
-    NUMBER_REFERENCE,
     check_body,
     check_title,
     legacy_remaining_items,
