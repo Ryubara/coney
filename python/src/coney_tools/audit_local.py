@@ -48,6 +48,8 @@ class ScratchFolder:
     #: needed judging), `open` (a branch of the name exists and is
     #: not merged: work to come), `merged` (its branch is in origin/main) or `gone` (no branch of the name is left).
     state: str
+    #: The first few of the files (sorted, relative to the scratch folder), so a person can look before deleting.
+    game_paths: tuple[str, ...] = ()
 
 
 @dataclass
@@ -67,29 +69,71 @@ class LocalContext:
     notices: list[str] = field(default_factory=list)
 
 
-def _game_files(folder: Path, suffixes: frozenset[str]) -> tuple[int, int]:
-    """How many game-derived files `folder` holds (at any depth, by file type) and their total size.
+#: How many offending paths the finding's message lists before it counts the rest.
+LISTED_PATHS = 5
+
+
+@dataclass(frozen=True)
+class CaptureRules:
+    """What counts as a file taken from the original (`workspace` in the conventions file), names lower-cased."""
+
+    #: File types that count, in any folder.
+    suffixes: frozenset[str]
+    #: Folder names never walked into (build and tool trees).
+    skip: frozenset[str]
+
+    @classmethod
+    def from_conventions(cls, conventions: Conventions) -> CaptureRules:
+        """The rules the conventions file states."""
+        workspace = conventions.workspace
+        return cls(
+            frozenset(suffix.lower() for suffix in workspace.game_capture_suffixes),
+            frozenset(name.lower() for name in workspace.scratch_skip_folders),
+        )
+
+
+@dataclass(frozen=True)
+class Captures:
+    """What `_game_files` found in a scratch folder."""
+
+    count: int
+    size: int
+    #: The first `LISTED_PATHS` of the files by name, relative to the folder, with `/` separators.
+    paths: tuple[str, ...]
+
+
+def _game_files(folder: Path, rules: CaptureRules) -> Captures:
+    """The game-derived files `folder` holds (at any depth, by file type), their size and the first paths.
 
     A scratch folder can hold hundreds of thousands of files, so this walks with `os.scandir`, whose entries know
-    whether they are files without a call of their own, and asks for the size of the matching files only.
+    whether they are files without a call of their own, and asks for the size of the matching files only. Build and
+    tool trees (`rules.skip`) are not entered: nothing in them came from the original.
     """
     count = size = 0
-    pending = [str(folder)]
+    paths: list[str] = []
+    # Each pending folder carries its path relative to `folder`.
+    pending = [(str(folder), "")]
     while pending:
+        path, relative = pending.pop()
         try:
-            with os.scandir(pending.pop()) as entries:
+            with os.scandir(path) as entries:
                 for entry in entries:
                     try:
+                        lowered = entry.name.lower()
                         if entry.is_dir(follow_symlinks=False):
-                            pending.append(entry.path)
-                        elif PurePath(entry.name).suffix.lower() in suffixes and entry.is_file():
+                            if lowered not in rules.skip:
+                                pending.append((entry.path, f"{relative}{entry.name}/"))
+                        elif PurePath(lowered).suffix in rules.suffixes and entry.is_file():
                             count += 1
                             size += entry.stat().st_size
+                            paths.append(f"{relative}{entry.name}")
+                            if len(paths) > LISTED_PATHS:
+                                paths = sorted(paths)[:LISTED_PATHS]
                     except OSError:
                         continue
         except OSError:
             continue
-    return count, size
+    return Captures(count, size, tuple(sorted(paths)))
 
 
 def has_origin_main(checkout: Path) -> bool:
@@ -180,15 +224,16 @@ def build_context(
         context.loose = sorted(child for child in folder.iterdir() if child.resolve() not in known)
     names = {tree.path.name for tree in trees[1:]} | {tree.branch for tree in trees[1:] if tree.branch}
     branches = _local_branches(checkout)
-    suffixes = frozenset(suffix.lower() for suffix in conventions.workspace.game_capture_suffixes)
+    rules = CaptureRules.from_conventions(conventions)
     shared = set(conventions.workspace.shared_scratch)
     scratch = layout.workspace / "scratch"
     if scratch.is_dir():
         folders = sorted(child for child in scratch.iterdir() if child.is_dir())
         # The folders are walked side by side: the walk waits on the disk.
         with ThreadPoolExecutor(max_workers=max(1, min(SCRATCH_WORKERS, len(folders)))) as pool:
-            counted = list(pool.map(lambda folder: _game_files(folder, suffixes), folders))
-        for child, (count, size) in zip(folders, counted, strict=True):
+            counted = list(pool.map(lambda folder: _game_files(folder, rules), folders))
+        for child, captures in zip(folders, counted, strict=True):
+            count = captures.count
             if child.name in shared:
                 state = "shared"  # the emulator's, the save states', the downloads': never a branch's leftovers
             elif not count or child.name in names:
@@ -197,7 +242,7 @@ def build_context(
                 state = "gone"
             else:
                 state = "merged" if _branch_merged(checkout, child.name) else "open"
-            context.scratch.append(ScratchFolder(child.name, count, size, state))
+            context.scratch.append(ScratchFolder(child.name, count, captures.size, state, captures.paths))
     return context
 
 
@@ -248,8 +293,11 @@ def finished_scratch(context: LocalContext) -> Iterator[Problem]:
         if folder.game_files and folder.state in ("merged", "gone"):
             why = "its branch is merged" if folder.state == "merged" else "no branch of that name is left"
             size = f"{folder.game_bytes / 1024 / 1024:.1f} MB"
+            listed = ", ".join(folder.game_paths)
+            if folder.game_files > len(folder.game_paths):
+                listed += f" (and {folder.game_files - len(folder.game_paths)} more)"
             yield Problem(
                 f"scratch/{folder.name}",
                 f"{folder.game_files} game-derived file(s) (traces, dumps, save states), {size}, and {why}: "
-                "delete them (the research page holds what they showed)",
+                f"{listed}; look, then delete them (the research page holds what they showed)",
             )

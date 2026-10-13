@@ -618,6 +618,8 @@ class Workspace:
     #: File types taken from the original (traces, memory dumps, save states); `repo audit --local` finds them in the
     #: scratch folder of merged or abandoned work.
     game_capture_suffixes: tuple[str, ...]
+    #: Folder names (any case) the scratch check never walks into, at any depth: build, dependency and tool trees.
+    scratch_skip_folders: tuple[str, ...]
     #: Scratch folders that belong to the workspace, not to a branch (the emulator's, the save states', the downloads').
     shared_scratch: tuple[str, ...]
     clips: Clips
@@ -1363,6 +1365,7 @@ def _read_workspace(data: object, where: str) -> Workspace:
         "busy_marker",
         "remove_worktree_when_merged",
         "game_capture_suffixes",
+        "scratch_skip_folders",
         "shared_scratch",
         "clips",
     )
@@ -1380,6 +1383,7 @@ def _read_workspace(data: object, where: str) -> Workspace:
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")
         ),
         game_capture_suffixes=_texts(table["game_capture_suffixes"], _at(where, "game_capture_suffixes")),
+        scratch_skip_folders=_texts(table["scratch_skip_folders"], _at(where, "scratch_skip_folders")),
         shared_scratch=_texts(table["shared_scratch"], _at(where, "shared_scratch")),
         clips=Clips(
             folder=_text(clips["folder"], _at(clips_where, "folder")),

@@ -157,6 +157,91 @@ def test_a_shared_scratch_folder_is_never_reported(space: Space) -> None:
     assert items(found(al.finished_scratch, context(space, plain))) == ["scratch/pcsx2-states"]
 
 
+def captured(space: Space, conventions: Conventions = CONVENTIONS, folder: str = "old-track") -> al.ScratchFolder:
+    """What the scratch check found in the scratch folder `folder`."""
+    (folder_found,) = [item for item in context(space, conventions).scratch if item.name == folder]
+    return folder_found
+
+
+def test_game_files_are_counted_at_any_depth_by_suffix(space: Space) -> None:
+    for name, size in (
+        ("top.P2S", 10),
+        ("a/run.trace", 100),
+        ("a/b/deep.dump", 1000),
+        ("a/b/slot8.bin", 10000),
+        ("card/ReSave1.ps2", 100000),
+        ("a/sq.raw", 1000000),
+        ("a/b/shot.png", 1),
+        ("a/b/state.p2s.txt", 1),
+    ):
+        scratch_file(space, "old-track", name, size)
+    found_files = captured(space)
+    assert (found_files.game_files, found_files.game_bytes) == (6, 1111110)
+
+
+def test_an_empty_scratch_folder_has_no_game_files(space: Space) -> None:
+    (space.root / "scratch" / "empty").mkdir(parents=True)
+    assert captured(space, folder="empty").game_files == 0
+
+
+def test_a_cmake_probe_file_is_not_a_game_capture(space: Space) -> None:
+    scratch_file(space, "old-track", "build/dev/CMakeFiles/3.30.0/CMakeDetermineCompilerABI_C.bin")
+    scratch_file(space, "old-track", "x/CMakeFiles/CMakeDetermineCompilerABI_CXX.bin")
+    scratch_file(space, "old-track", "x/_deps/lib-build/probe.bin")
+    assert captured(space).game_files == 0
+
+
+def test_gradle_caches_are_not_game_captures(space: Space) -> None:
+    scratch_file(space, "old-track", "ghidra/.gradle/8.5/fileHashes.bin")
+    scratch_file(space, "old-track", "ghidra/.gradle/8.5/abcdef/last-build.bin")
+    assert captured(space).game_files == 0
+
+
+@pytest.mark.parametrize(
+    "tree", [".venv", "venv", "tool/site-packages", ".git/objects", "node_modules/pkg", "Build", "CMAKEFILES"]
+)
+def test_tool_trees_are_not_walked_in_any_case(space: Space, tree: str) -> None:
+    scratch_file(space, "old-track", f"{tree}/cache.bin")
+    scratch_file(space, "old-track", f"{tree}/deeper/state.p2s")
+    assert captured(space).game_files == 0
+
+
+def test_a_bin_file_counts_in_any_folder_so_raw_dumps_and_wad_entries_are_found(space: Space) -> None:
+    for name in ("re-objects/slot8.bin", "mission1/wad/0123abcd.bin", "raw/shut/a.bin", "xbox-assets/cache/b.bin"):
+        scratch_file(space, "old-track", name)
+    assert captured(space).game_files == 4
+
+
+def test_terminal_captures_count_and_the_message_lists_them_to_look_at(space: Space) -> None:
+    scratch_file(space, "old-track", "mods/test/raw-session.bin")
+    (problem,) = found(al.finished_scratch, context(space))
+    assert "1 game-derived file(s)" in problem.message and "mods/test/raw-session.bin;" in problem.message
+
+
+def test_the_message_lists_the_first_paths_and_counts_the_rest(space: Space) -> None:
+    for name in ("states/b.p2s", "states/a.p2s", "c.trace", "d.trace", "e.trace", "f.trace", "g.dump"):
+        scratch_file(space, "old-track", name)
+    scratch_file(space, "old-track", "build/CMakeFiles/CMakeDetermineCompilerABI_C.bin")
+    (problem,) = found(al.finished_scratch, context(space))
+    assert "7 game-derived file(s)" in problem.message
+    assert "c.trace, d.trace, e.trace, f.trace, g.dump (and 2 more)" in problem.message
+
+
+def test_a_message_with_few_paths_lists_them_all(space: Space) -> None:
+    scratch_file(space, "old-track", "states/a.p2s")
+    scratch_file(space, "old-track", "trace/memory.bin")
+    (problem,) = found(al.finished_scratch, context(space))
+    assert "states/a.p2s, trace/memory.bin;" in problem.message and "more)" not in problem.message
+
+
+def test_the_skipped_folders_are_the_ones_in_the_conventions(space: Space) -> None:
+    scratch_file(space, "old-track", "dumps/a.bin")
+    scratch_file(space, "old-track", "build/b.bin")
+    custom = conventions_with(("workspace.scratch_skip_folders", ["dumps"]))
+    (problem,) = found(al.finished_scratch, context(space, custom))
+    assert "1 game-derived file(s)" in problem.message and "build/b.bin" in problem.message
+
+
 def test_the_game_capture_types_are_the_ones_in_the_conventions(space: Space) -> None:
     scratch_file(space, "old-track", "state.p2s")
     custom = conventions_with(("workspace.game_capture_suffixes", [".dmp"]))
@@ -224,22 +309,6 @@ def test_worktrees_are_judged_side_by_side_with_the_same_answers(space: Space) -
     assert [(entry.name, entry.why, entry.remove, entry.delete_build) for entry in parallel] == [
         (entry.name, entry.why, entry.remove, entry.delete_build) for entry in serial
     ]
-
-
-def test_game_files_are_counted_at_any_depth_by_suffix(tmp_path: Path) -> None:
-    suffixes = frozenset({".p2s", ".trace", ".dump"})
-    (tmp_path / "a" / "b").mkdir(parents=True)
-    (tmp_path / "top.P2S").write_bytes(b"\0" * 10)
-    (tmp_path / "a" / "run.trace").write_bytes(b"\0" * 100)
-    (tmp_path / "a" / "b" / "deep.dump").write_bytes(b"\0" * 1000)
-    (tmp_path / "a" / "b" / "shot.png").write_bytes(b"\0")
-    (tmp_path / "a" / "b" / "state.p2s.txt").write_text("not a game file\n", encoding="utf-8")
-    assert al._game_files(tmp_path, suffixes) == (3, 1110)
-
-
-def test_an_empty_or_unreadable_scratch_folder_has_no_game_files(tmp_path: Path) -> None:
-    assert al._game_files(tmp_path, frozenset({".p2s"})) == (0, 0)
-    assert al._game_files(tmp_path / "gone", frozenset({".p2s"})) == (0, 0)
 
 
 def test_scratch_folders_are_read_side_by_side_with_the_same_answers(space: Space) -> None:
