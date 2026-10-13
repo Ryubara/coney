@@ -68,7 +68,7 @@ def return_address(word: Word, function: int) -> int | None:
     words = [word(function + 4 * i) for i in range(3)]
     if None in words:
         return None
-    high, ret, low = words  # type: ignore[misc]
+    high, ret, low = words
     if high >> 16 != 0x3C02 or ret != JR_RA or low >> 16 != 0x2442:  # type: ignore[operator]
         return None
     return ((high & 0xFFFF) << 16) + _signed(low & 0xFFFF)  # type: ignore[operator]

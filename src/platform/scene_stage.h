@@ -130,13 +130,18 @@ class SceneStage final : public scenes::SceneHost {
     using Skin = std::function<void(const human::PlayerCharacter&, const anim::Pose&, anim::Vec3, float,
                                     std::vector<anim::Vec3>&, std::vector<anim::Vec3>&)>;
     void skinPuppets(float alpha, const Skin& skin);
-    /// Draws the puppets (the caller has set the lights and render states).
-    void drawPuppets() const;
+    /// Draws each puppet the scene has posed through `draw`, which must light it as the play mode lights a human
+    /// (PlayLighting::drawHumanPasses): a puppet's atomic belongs to no world, so rendering it bare crashes librw's
+    /// lit pipeline (the `--scene` crash of issue 446). The caller has set the render states.
+    using DrawPuppet = std::function<void(CharacterMesh&)>;
+    void drawPuppets(const DrawPuppet& draw);
     /// Draws the letterbox and the fade over the window, at game time `nowMs` (inside the frame).
     void drawOverlay(RenderEngine& engine, std::uint64_t nowMs) const;
     /// The fade level at `nowMs` (0 clear, 1 black) and the bars' height (a fraction of the screen's).
     [[nodiscard]] float fadeLevel() const { return m_fade.level(); }
     [[nodiscard]] float barHeight(std::uint64_t nowMs) const { return m_letterbox.barHeight(nowMs); }
+    /// How many puppets the stage holds (humans the play mode does not draw, loaded as characters).
+    [[nodiscard]] std::size_t puppetCount() const { return m_puppets.size(); }
     /// One line of counts for the summary.
     [[nodiscard]] std::string summary() const;
 

@@ -729,8 +729,10 @@ def test_the_branch_models_do_not_depend_on_which_side_of_a_merge_is_newer(tmp_p
 
 def test_the_description_and_the_audit_read_bullets_with_one_pattern() -> None:
     """`repo_checks` has no copy of the bullet or task-item pattern; it uses the audit text reader's."""
-    assert repo_checks.LIST_MARKER is audit_text.LIST_MARKER
-    assert repo_checks.OPEN_ITEM is audit_text.OPEN_ITEM
+    # `vars` reads the names off the module's dict: mypy --strict refuses `repo_checks.LIST_MARKER` because
+    # repo_checks imports it without re-exporting it, and the test is exactly about that import.
+    assert vars(repo_checks)["LIST_MARKER"] is audit_text.LIST_MARKER
+    assert vars(repo_checks)["OPEN_ITEM"] is audit_text.OPEN_ITEM
 
 
 @pytest.mark.parametrize("marker", ["-", "*", "+", "- [ ]", "* [x]", "+ [X]"])

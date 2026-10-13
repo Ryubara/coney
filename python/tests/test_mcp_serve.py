@@ -3,6 +3,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -129,7 +130,7 @@ def test_serve_passes_the_servers_exit_status_through(tmp_path: Path, monkeypatc
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     (tmp_path / "coney.local.toml").write_text('pcsx2_mcp_dir = "server"\n', encoding="utf-8")
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
-    monkeypatch.setattr(mcp_serve.shutil, "which", which_all)
+    monkeypatch.setattr(shutil, "which", which_all)
     ran: list[list[str]] = []
 
     def fake_run(command: list[str], env: dict[str, str]) -> int:
@@ -154,7 +155,7 @@ def test_serve_from_a_worktree_uses_the_main_checkouts_config(tmp_path: Path, mo
                  ["worktree", "add", "-q", "--detach", str(worktree)]):  # fmt: skip
         subprocess.run(["git", "-C", str(main_checkout), *args], check=True, capture_output=True, env=env)
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(worktree))
-    monkeypatch.setattr(mcp_serve.shutil, "which", which_all)
+    monkeypatch.setattr(shutil, "which", which_all)
     ran: list[list[str]] = []
 
     def fake_run(command: list[str], env: dict[str, str]) -> int:

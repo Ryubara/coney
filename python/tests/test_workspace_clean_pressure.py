@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 from conventions_support import changed, write_checkout
-from test_workspace_clean import BUSY_FILE, OLD, Space, git
+from test_workspace_clean import OLD, Space, git
 
 from coney_tools import stale_processes, workspace_clean
 from coney_tools.cli import main
-from coney_tools.workspace_clean import run_clean
+from coney_tools.workspace_clean import BUSY_FILE, run_clean
 
 GIB = 1024**3
 Usage = namedtuple("Usage", "total used free")

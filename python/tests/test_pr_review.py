@@ -25,9 +25,10 @@ from coney_tools.pr_review import (
     review_command,
     run_review,
 )
+from coney_tools.repo_checks import branch_trailer_models
 
 #: The real reader of a branch's trailer models, which the fixture below replaces for all but the tests that use it.
-REAL_BRANCH_MODELS = pr_review.branch_trailer_models
+REAL_BRANCH_MODELS = branch_trailer_models
 
 CONVENTIONS = load_conventions(REPO)
 RULES = CONVENTIONS.pull_requests.review

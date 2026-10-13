@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -451,6 +452,30 @@ def test_docs_build_runs_only_for_docs(changed: list[str], wanted: bool) -> None
 
 def test_python_step_skips_without_python_changes() -> None:
     assert check_cli._step_python(REPO, ["docs/page.md"]).skipped
+
+
+def test_mypy_command_reads_the_projects_strict_config() -> None:
+    """mypy looks for its config in the working directory, and the gate runs from the repository root, where there is
+    none: without `--config-file` the `[tool.mypy] strict = true` of python/pyproject.toml is silently ignored."""
+    command = check_cli.MYPY_COMMAND
+    assert command[command.index("--config-file") + 1] == "python/pyproject.toml"
+    config = tomllib.loads((REPO / "python" / "pyproject.toml").read_text(encoding="utf-8"))
+    assert config["tool"]["mypy"]["strict"] is True
+
+
+def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
+    """CI's python job and the guides that name the command agree with `check changed`, so no place checks less."""
+    wanted = " ".join(check_cli.MYPY_COMMAND)
+    workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8")
+    assert f"- run: {wanted}\n" in workflow.replace("\r\n", "\n")
+    # building.md shows the whole command; coney-tools.md's table shows it after `uv run --project python`.
+    short = " ".join(check_cli.MYPY_COMMAND[4:])
+    for guide, words in (("building.md", wanted), ("coney-tools.md", f"`{short}`")):
+        text = (REPO / "docs" / "guides" / guide).read_text(encoding="utf-8")
+        assert words in text, guide
+    # conventions.md only names the flag, but it must be the one the command uses.
+    conventions = (REPO / "docs" / "guides" / "conventions.md").read_text(encoding="utf-8")
+    assert "`--config-file python/pyproject.toml`" in conventions
 
 
 @pytest.mark.parametrize(

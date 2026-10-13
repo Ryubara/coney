@@ -20,6 +20,7 @@ from coney_tools.audit import Finding, Report, registered
 from coney_tools.audit_github import GithubContext, parse_snapshot
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
+from coney_tools.conventions import load_conventions
 from coney_tools.hygiene_cli import run_hygiene
 from coney_tools.hygiene_comments import (
     Action,
@@ -387,7 +388,7 @@ def test_events_can_be_switched_off(
 ) -> None:
 
     off = type(COMMENTS)(**{**COMMENTS.__dict__, "on_events": False})
-    real = hygiene_cli.load_conventions
+    real = load_conventions
     monkeypatch.setattr(
         hygiene_cli,
         "load_conventions",
@@ -439,7 +440,7 @@ def test_with_on_sweep_the_sweep_comments_on_items_up_to_the_limit(
 ) -> None:
 
     on = type(COMMENTS)(**{**COMMENTS.__dict__, "on_sweep": True, "max_per_sweep": 2})
-    real = hygiene_cli.load_conventions
+    real = load_conventions
     monkeypatch.setattr(hygiene_cli, "load_conventions", lambda root: _with_comments(real(root), on))
     remote = FakeRemote(report_issue=3)
     run_hygiene(namespace(snapshot_file(tmp_path, issues=[broken_issue(n) for n in (7, 8, 9)])), remote, NOW)
@@ -472,7 +473,8 @@ def workflow() -> dict[Any, Any]:
 
 def triggers(data: dict[Any, Any]) -> dict[str, Any]:
     """The `on` table."""
-    return data.get("on") or data[True]
+    on: dict[str, Any] = data.get("on") or data[True]
+    return on
 
 
 def test_the_workflow_may_only_read_the_code_and_write_issues_and_pull_requests() -> None:

@@ -107,7 +107,8 @@ def header_size(data: bytes) -> int:
     """How many bytes `parse_header` needs for a file starting with `data` (at least the fixed part)."""
     if len(data) < HEADER:
         return HEADER
-    frames, tracks = struct.unpack_from("<I", data, 8)[0], struct.unpack_from("<I", data, 40)[0]
+    frames: int = struct.unpack_from("<I", data, 8)[0]
+    tracks: int = struct.unpack_from("<I", data, 40)[0]
     return HEADER + _TRACK * min(tracks, 256) + 4 * (min(frames, _MAX_FRAMES) + 1)
 
 
