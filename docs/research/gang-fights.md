@@ -108,8 +108,11 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
    when he is beyond the middle of his melee ranges, his next attack delayed by twice the taunt): [The shared event
    handler](ai.md#shared-events). **It is sent to a man when he is put on the ground**, so his attackers gloat over
    him. Two senders, each writing id `0x15` at record `+0x20` and the downed man at `+0x24`, and passing the record to
-   his own human's event slot (vtable `0x0053f088` `+0x44`, `Human_OnEvent` `0x0021d480`, which runs the gang's
-   `Gang_OnEvent` `0x00164c20` and then `Brain_OnEvent`):
+   his own human's event slot (vtable `0x0053f088` `+0x44`, `Human_OnEvent` `0x0021d480`). That offers the event
+   first to the man's own script handlers (human `+0xe8`, `0x00384c38`), which can consume it, and only then to the
+   gang's `Gang_OnEvent` `0x00164c20` and `Brain_OnEvent` ([Gang events](ai-gangs.md#gang-events),
+   [Messages and events](tasks.md#messages)); so a script handler on the downed man that consumes event `0x15`
+   stops the taunts (inferred from that order):
    - `HitReact_OnSpecialEnd` (`0x0026a1f8`), the end callback of the **knock-down** clip that `Human_PlayReaction`
      (`0x0026a6d0`, its knock-down branch, after `Human_KnockDown`) and `HitReact_InSpecial` (`0x0026860c`) chain on
      a man knocked down by a hit;
@@ -119,8 +122,8 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
      and mount reversal and throw ends).
 
    Confirmed (code). No other human or AI code loads `0x15` as an event id (the 164 `li ..., 0x15` of the executable
-   checked; the rest are anim ids, lines, sizes and the world objects' own message `0x15`, which is not a brain
-   event).
+   and the 86 delay-slot `_li ..., 0x15` matches, some of them `0x15x`, checked; the rest are anim ids, lines,
+   sizes, call arguments and the world objects' own message `0x15`, which is not a brain event).
 
 ## Target switches and what interrupts a fight {#switches}
 
@@ -238,25 +241,41 @@ on results 1, 5 or 6. Under TacticAttack:
    his base and gets Melee with no time limit (`AttackTactic_GiveMelee` `0x00307788`); the gang says `spot`; the
    flight count is noted (gang type 19 has v9 0, so side 2 never flees). `AttackTactic_ComputeSpacing` (`0x00307668`)
    stores an interval (halfwords `+0x30` = 1000 ms, or 50 ms when the first member's nearest enemy runs, and `+0x2c`
-   = that divided by the living members; `+0x2c` = 300 with no enemy) that **nothing reads**: no halfword load of
-   `+0x2c` or `+0x30` anywhere in the executable is on a tactic (every `lh` and `lhu` at those offsets checked; the
-   word loads at `+0x2c` in the tactic code, `0x00306600`-`0x00308400`, are of vtables, brains and gangs). Confirmed
-   (code) by that search; so it is write-only and Coney needs no behaviour from it.
+   = that divided by the living members; `+0x2c` = 300 with no enemy) that **nothing else reads**: apart from
+   ComputeSpacing reading its own `+0x30` back to divide it (`lhu` at `0x00307710`), no halfword load of `+0x2c` or
+   `+0x30` anywhere in the executable is on a tactic (every `lh`, `lhu` and delay-slot `_lh`, `_lhu` at those offsets
+   checked; `0x0030c5a0` is a Luther goal's byte at `+0x30`; the word loads at `+0x2c` in the tactic code,
+   `0x00306600`-`0x00308400`, are of vtables, brains and gangs). Confirmed (code) by that search; so it is
+   write-only and Coney needs no behaviour from it.
 2. **Each second** with no member listing an enemy, code 9 (`TacNoEnemies`).
 3. **Every 3 s**, idle members melee and go toward the farthest busy mate ([helping](#help) rule 4).
 4. **Events**: 1 and 11 (a member hit or spotting someone) give Melee to a member with no fight goal while no team-up
    runs; 2 (a member died) fires `TacMemberDied` unless fled; 18 runs the flight check; 19 and 22 give everyone Melee
    again; 20 runs `AttackTactic_OnViolence`.
-5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`). **Rumble does not.** The flag has two
-   writers, `Gang_Reset` (`0x001649c0`, 0) and `Gang_EnableAttackStrategiesById` (`0x0016a2a8`, store at
-   `0x0016a2d0`), whose only caller is the script binding `GangEnableAttackStrategies` (`0x00373308`) (confirmed
-   (code), every `sb` to `+0xd9`). None of Rumble's 46 chunks on the disc names that binding: the 13 rules chunks
-   (`brawl.lua`, `kinghill.lua`, `survival.lua`, `wchair.lua` and the rest) and the 33 arena scripts
-   `level101.lua`-`level137.lua` (a string search of each compiled chunk, 2026-10-13). `global.lua` names it once,
-   among the constants of its gang class's constructor, beside a key `AttackStratsOff` (inferred from the chunk's
-   constant order, not disassembled); Rumble makes its sides with `GangCreate` directly (`AddRumbleGang1` and `2`,
-   named by the arena chunks and `brawl.lua`, never by `global.lua`; [Rumble: the sides](rumble.md#sides)), not
-   through that class.
+5. **Team-ups** only if the gang's scripts enable them (gang `+0xd9`). **Rumble's two sides never get them.** The
+   flag has two writers, `Gang_Reset` (`0x00164808`, 0, the store at `0x001649c0`) and
+   `Gang_EnableAttackStrategiesById` (`0x0016a2a8`, store at `0x0016a2d0`), whose only caller is the script binding
+   `GangEnableAttackStrategies` (`0x00373308`) (confirmed (code), every `sb` to `+0xd9`). In the scripts it is set
+   in two ways:
+   - **`GangSetup`**, the strategy library's gang constructor in `global.lua`, calls
+     `GangEnableAttackStrategies(gang, true)` for every gang it makes unless the gang's table sets `AttackStratsOff`
+     ([The strategy library](ai-scripting.md#script-strategies), read from the compiled scripts; the call, with
+     `true`, is in `GangSetup`'s code). So in the story every gang made through `GangSetup` gets the team-ups unless
+     it opts out; 11 chunks besides `global.lua` name `AttackStratsOff`.
+   - **Directly**, in three story chunks only: `level2_clinic.lua` and `level55_punkfight.lua` turn them on for
+     some gangs, `level93_chapter3.lua` off for four of its fights.
+
+   That covers every compiled chunk on the disc: of all 467 (the 356 with a recovered name and the 111 without,
+   so also any flag chunk `level<n>_<type>_init.lua` of the four arenas whose mode script names are not recovered),
+   only `global.lua` and those three name `GangEnableAttackStrategies` (a string search of each chunk's bytes,
+   2026-10-13). No Rumble chunk names it: not the rules chunks (`brawl.lua`, `kinghill.lua`, ...), not the arena
+   scripts `level101.lua`-`level137.lua`, not the 56 named flag chunks. Rumble makes its two sides with
+   `GangCreate` directly (`AddRumbleGang1` and `2` in the arena scripts; [Rumble: the sides](rumble.md#sides)),
+   not through `GangSetup` (inferred from the chunks' calls).
+   The one Rumble gang made through `GangSetup` is level 105's Red Devil band (`brawl.lua`'s `AddRedDevilBand`, no
+   `AttackStratsOff`), so its flag is set; but it is set dressing that never fights: halted, threat, damage and
+   investigate responses 0, no reaction to violence, and its hit handler only changes its music and animations
+   (inferred from the chunk's calls).
    At runtime `+0xd9` stayed 0 for both sides in every recorded match and no order ran ([Runtime
    checks](#runtime)), confirmed (runtime).
 
@@ -462,7 +481,16 @@ is the target hiding in shadow, not his being down) and `Human_DropTarget` from 
   at someone else. In a brawl those are the block's punishing attack at the man whose blow he blocked
   (`Block_QueuePunish` `0x002b5718`, [Blocking](ai.md#block)) and the grab and mount goals' attacks on their partner
   (`Brain_QueueAttack` from `0x002b643c`, `0x002b67ec`, `0x002b6b4c`, `0x002b6d90`); the fight goal, Melee and the
-  tackle attack their own target, and the Grounded get-up attack is aimed at himself. So a switch here is mostly an
+  tackle attack their own target, and the Grounded get-up attack is aimed at himself. `Brain_QueueAttack`
+  (`0x0028e248`) has 38 calling functions (46 call sites); the rest are left out because they belong to goals a
+  brawl's TacticAttack does not push: the bosses' and set pieces' goals (BigBrawler, BigFighter, Boxer, the HTL
+  goals, ObjectThrower, ...), civilians', cops' and item and object goals, and the crew's FollowAndDefend and
+  SaveHuman, which only the Defend tactic or the defend command push ([helping](#help) rule 3; their attacks would
+  also be at a man attacking the defended mate). `PedReactionGoal_Process` can run in a brawl (the flight check
+  pushes PedReaction type 9 under TacticAttack, [the gang](#gang) rule 3), but its one attack (`0x002aa9d0`, the
+  kind 15 shove at the enemy) is only for a civilian, brain type 4 ([PedReaction](ai-goals.md#goal-ped-reaction)
+  step 5), not a gang member.
+  Inferred from the goal lists, not traced per call site. So a switch here is mostly an
   answer to the man who attacked him (inferred: the hook cannot tell which goal queued the attack); a trace that
   logged the queuing goal could split it from the reactions.
 - **Orders**: the item sites `0x002dce08` and `0x002dcb08`. `GetItemGoal_Process` fights for the item it was sent
@@ -555,8 +583,10 @@ minute by kind.
 
 None left from issue #298: what fills game state `+0x280` / `+0x284` ([targets](#targets) rule 4), who reads
 TacticAttack's interval (nothing, [Rumble](#rumble) rule 1), what sends event `0x15` ([waiting](#waiting) rule 5)
-and whether Rumble enables the team-ups (it does not, [Rumble](#rumble) rule 5) are answered on the page.
+and whether Rumble enables the team-ups (its sides never get them, [Rumble](#rumble) rule 5) are answered on the
+page. Where the team-ups are on in the story is known from the scripts (`GangSetup` unless `AttackStratsOff`, and
+three chunks directly, [Rumble](#rumble) rule 5).
 
-- What `global.lua`'s gang-class constructor passes to `GangEnableAttackStrategies` (does `AttackStratsOff` turn the
-  team-ups off for a story gang that sets it, and on for every other?), which decides where the team-ups run in the
-  story ([Rumble](#rumble) rule 5). Needs the constructor's bytecode or the `g_teamups` column in a story fight.
+- Not yet seen at runtime: a story gang with `+0xd9` set giving team-up orders in a fight. The `g_teamups` column of
+  a trace in a story fight against a `GangSetup` gang would confirm rule 5's script reading and show how often the
+  orders run.
