@@ -34,10 +34,30 @@ addresses cited unless marked; the per-gang values are confirmed (disc) from `co
 4. **The shared target** (gang `+0x10`) has one writer besides the reset: the Warrior-command dispatcher
    (`WarriorCommand_Dispatch` `0x0041c4e0`). Every command first clears it; an **unforced attack command** (the
    player's menu) then sets it to the chief's lock-on target when he is locked on (`Human_IsLocked`) and that target is
-   an AI (pad `+0x1b0` = −1) and not friendly, else to the AI held in game state `+0x280` or, failing that, `+0x284`
-   (two handles; what fills them is not traced). `Gang_SetSharedTarget` (`0x00165b70`) accepts it only when it passes
-   `Brain_ValidateEnemy` for the gang's leader and is not of a friendly gang, and then **adds it to every AI member's
-   enemy list**. With +400 in the score (and the scan always re-adding it) the whole crew converges on him. A forced
+   an AI (pad `+0x1b0` = −1) and not friendly, else to the human held in game state `+0x280` or, failing that,
+   `+0x284`, when he resolves and is not friendly (these two are not tested for being an AI):
+   - **`+0x280` is the crime reporter**, the one human at a time phoning the police or calling a gang over a crime
+     (`GameState_SetCrimeReporter` `0x0041cfe8`; [Crimes](crimes.md) lists it with `GameState_CanReportCrime`). A
+     civilian sets himself there when he sees a crime and pushes CallPolice or CallGang
+     (`CivilianBrain_OnCrimeSeen` `0x002ff660`, `0x002ff72c`; also `CivilianBrain_OnEvent` and
+     `PedReactionGoal_Process`), `CallPoliceGoal_Start` (`0x002a7ed0`) sets him and `CallPoliceGoal_End`
+     (`0x002a7f94`) clears it.
+   - **`+0x284` is the human calling his gang for backup or running off with the player's money**, one at a time
+     (`GameState_SetDealerCustomer` `0x0041d080`, set only while `GameState_IsDealerFree` `0x0041d088` finds it
+     empty): a scout who has spotted an enemy and pushes CallGang (`ScoutTactic_OnEvent` `0x0031ab28`, then
+     `Goal_CallGang`), or a dirty dealer who has just ripped off the buyer and runs off (`DealerGoal_OnBuy`
+     `0x002c7910`, [Buying](ai-scripting.md#dealer-buy) rule 3). `CallGangGoal_Destroy` (`0x002d606c`) and
+     `DealerGoal_End` (`0x002c70fc`, when it is him) clear it.
+
+   Both are set to the null handle (`0x006ebd30`) by the level's reset (`GameState_ResetForLevel`, `0x00418d0c` and
+   `0x00418d24`) and first written at construction. So with no lock-on, **the attack command sends the crew after the snitch** (the civilian
+   phoning the police), else after the scout calling his gang or the dealer who cheated the player. Confirmed (code)
+   at the writers cited, each of which passes the brain's own human; `GameState_SetCrimeReporter` and
+   `GameState_SetDealerCustomer` are their only writers apart from `GameState_Construct` (`0x00418708`, every
+   `sw` to `+0x280` and the setter's callers checked).
+
+   `Gang_SetSharedTarget` (`0x00165b70`) accepts the target only when it passes `Brain_ValidateEnemy` for the
+   gang's leader and is not of a friendly gang, and then **adds it to every AI member's enemy list**. With +400 in the score (and the scan always re-adding it) the whole crew converges on him. A forced
    command (`WCIssueCommand(..., true)`, as Rumble uses) never sets it. No other gang sets one.
 
 ## How many hit one man at once {#limits}
@@ -85,7 +105,21 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
    sides, when the target faces away ([EngageEnemy](ai.md#engage-enemy) step 12).
 5. **Event `0x15`** makes every slot holder whose top goal is Fight taunt (kind 4 at his own target, kind 3 otherwise
    when he is beyond the middle of his melee ranges, his next attack delayed by twice the taunt): [The shared event
-   handler](ai.md#shared-events). What sends it is not traced (open question).
+   handler](ai.md#shared-events). **It is sent to a man when he is put on the ground**, so his attackers gloat over
+   him. Two senders, each writing id `0x15` at record `+0x20` and the downed man at `+0x24`, and passing the record to
+   his own human's event slot (vtable `0x0053f088` `+0x44`, `Human_OnEvent` `0x0021d480`, which runs the gang's
+   `Gang_OnEvent` `0x00164c20` and then `Brain_OnEvent`):
+   - `HitReact_OnSpecialEnd` (`0x0026a1f8`), the end callback of the **knock-down** clip that `Human_PlayReaction`
+     (`0x0026a6d0`, its knock-down branch, after `Human_KnockDown`) and `HitReact_InSpecial` (`0x0026860c`) chain on
+     a man knocked down by a hit;
+   - `Throw_ClearVictimLink` (`0x0022bdc0`, the store at `0x0022becc`), when a throw, a grab or a mount lets go of
+     its victim and puts him down (`Human_GoDown`, when he is not knocked out, wounded or dying and the clip's
+     knock-down value says so; its callers are `Throw_ClearLink`, `Human_BreakPair`, `Pair_OnVictimClipEnd`, the grab
+     and mount reversal and throw ends).
+
+   Confirmed (code). No other human or AI code loads `0x15` as an event id (the 164 `li ..., 0x15` of the executable
+   checked; the rest are anim ids, lines, sizes and the world objects' own message `0x15`, which is not a brain
+   event).
 
 ## Target switches and what interrupts a fight {#switches}
 
@@ -202,15 +236,28 @@ on results 1, 5 or 6. Under TacticAttack:
 1. **Start** (`0x00307fe0`): every standing member without a PedReaction goal gets threat response 2, is popped to
    his base and gets Melee with no time limit (`AttackTactic_GiveMelee` `0x00307788`); the gang says `spot`; the
    flight count is noted (gang type 19 has v9 0, so side 2 never flees). `AttackTactic_ComputeSpacing` (`0x00307668`)
-   stores an interval (1000 ms, or 50 ms when the first member's nearest enemy runs, divided by the living members)
-   whose reader was not found.
+   stores an interval (halfwords `+0x30` = 1000 ms, or 50 ms when the first member's nearest enemy runs, and `+0x2c`
+   = that divided by the living members; `+0x2c` = 300 with no enemy) that **nothing reads**: no halfword load of
+   `+0x2c` or `+0x30` anywhere in the executable is on a tactic (every `lh` and `lhu` at those offsets checked; the
+   word loads at `+0x2c` in the tactic code, `0x00306600`-`0x00308400`, are of vtables, brains and gangs). Confirmed
+   (code) by that search; so it is write-only and Coney needs no behaviour from it.
 2. **Each second** with no member listing an enemy, code 9 (`TacNoEnemies`).
 3. **Every 3 s**, idle members melee and go toward the farthest busy mate ([helping](#help) rule 4).
 4. **Events**: 1 and 11 (a member hit or spotting someone) give Melee to a member with no fight goal while no team-up
    runs; 2 (a member died) fires `TacMemberDied` unless fled; 18 runs the flight check; 19 and 22 give everyone Melee
    again; 20 runs `AttackTactic_OnViolence`.
-5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`). Rumble does not: `+0xd9` stayed 0 for both
-   sides in every recorded match and no order ran ([Runtime checks](#runtime)).
+5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`). **Rumble does not.** The flag has two
+   writers, `Gang_Reset` (`0x001649c0`, 0) and `Gang_EnableAttackStrategiesById` (`0x0016a2a8`, store at
+   `0x0016a2d0`), whose only caller is the script binding `GangEnableAttackStrategies` (`0x00373308`) (confirmed
+   (code), every `sb` to `+0xd9`). None of Rumble's 46 chunks on the disc names that binding: the 13 rules chunks
+   (`brawl.lua`, `kinghill.lua`, `survival.lua`, `wchair.lua` and the rest) and the 33 arena scripts
+   `level101.lua`-`level137.lua` (a string search of each compiled chunk, 2026-10-13). `global.lua` names it once,
+   among the constants of its gang class's constructor, beside a key `AttackStratsOff` (inferred from the chunk's
+   constant order, not disassembled); Rumble makes its sides with `GangCreate` directly (`AddRumbleGang1` and `2`,
+   named by the arena chunks and `brawl.lua`, never by `global.lua`; [Rumble: the sides](rumble.md#sides)), not
+   through that class.
+   At runtime `+0xd9` stayed 0 for both sides in every recorded match and no order ran ([Runtime
+   checks](#runtime)), confirmed (runtime).
 
 Side 1's AI members (with the player as chief) get the forced attack command, `WCIssueCommand(player, 1, true)`:
 FollowAndAttack on the player, best enemy within 60 m of him, and no shared target. Their gang type 3 lets one of
@@ -335,7 +382,7 @@ The functions and conditions are confirmed (code) at the call sites (each call i
 | `0x00166370` | | `Gang_AddMember` (`0x00166308`) | joining a gang (the match's set-up, before the fight) | 0 | 5 clears |
 | `0x00226cbc` | `0x00226f5c` | `Human_SetTarget` from `Human_SyncTargetFromBrain` (`0x00226ee8`) | the human copying the brain's own target back: never a change | 0 | none (about 330,000 calls) |
 | `0x00292dfc` | | `Brain_DefaultOnEvent` (`0x00292d80`) | event 2, the brain's reset ([shared events](ai.md#shared-events)) | 0 | none |
-| `0x002b6160`, `0x002b6974`, `0x002b69e8` | | `GrabbingGoal_Process`, `GrabbedGoal_Process` | a grab's reaction goals | 0 | none |
+| `0x002b6160`, `0x002b6974`, `0x002b69e8` | | `GrabbingGoal_Process`, `GrabbedGoal_Process` | a grab's reaction goals: the grabber takes the man he holds (his pair link `+0xc4`) as target, the held man his grabber, as the mount goals do | 0 | none |
 
 **The other 80 sites**, none of which any of the five recordings logged (confirmed (runtime)). Set or clear and the
 force are read at each call (confirmed (code)); the conditions of the first group are confirmed (code) in the
@@ -403,7 +450,30 @@ So the causes rule 7 of [Rumble's comparison](rumble.md#gang-battle-metrics) nee
 `0x002b4bdc`, `0x002b52fc`, `0x002b4af4` (Grounded, never logged: it runs only while he is down, but the clear's cause
 is the target hiding in shadow, not his being down) and `Human_DropTarget` from `0x0028fb30` and
 `0x0028c414`; **orders** (tactic start, Melee's end, an item) `Human_DropTarget` from `0x0030678c`, `0x002ade80` and
-`0x002dc884`. The sites a brawl could reach but the recordings never logged (Melee's no-slot clear `0x002aec88`,
+`0x002dc884`. The rows this list left out, with their bucket:
+
+- **Reactions**: the grab's goals `0x002b6160`, `0x002b6974` and `0x002b69e8`. They make the pair partner the
+  target, as the mount goals (`0x002b66cc`, `0x002b6cb8`) do, and run only while he grabs or is grabbed (confirmed
+  (code), the calls at `0x002b6158`, `0x002b696c` and `0x002b69e0`; the held man only when the grabber is not
+  friendly and he has a threat response, the second call a 60 % repeat of the first).
+- **Hit back**: `AttackAction_Start` `0x002fad04`. It makes the victim of every attack action that starts the
+  target (`if victim != self`, confirmed (code) at `0x002fa9a8`), so it changes the target only for an attack queued
+  at someone else. In a brawl those are the block's punishing attack at the man whose blow he blocked
+  (`Block_QueuePunish` `0x002b5718`, [Blocking](ai.md#block)) and the grab and mount goals' attacks on their partner
+  (`Brain_QueueAttack` from `0x002b643c`, `0x002b67ec`, `0x002b6b4c`, `0x002b6d90`); the fight goal, Melee and the
+  tackle attack their own target, and the Grounded get-up attack is aimed at himself. So a switch here is mostly an
+  answer to the man who attacked him (inferred: the hook cannot tell which goal queued the attack); a trace that
+  logged the queuing goal could split it from the reactions.
+- **Orders**: the item sites `0x002dce08` and `0x002dcb08`. `GetItemGoal_Process` fights for the item it was sent
+  for, as its Start's drop (`0x002dc884`) already counts there.
+- **Pick**: Spectate `0x002b437c` and `0x002b4310`. In a brawl the Spectate goal is pushed by Melee when its pick
+  found no target ([The Melee goal](ai.md#melee-goal) step 3), so its clears belong to the same outcome as the pick
+  (inferred: of `SpectateGoal_Init`'s five callers, `0x002b4098`, the others are `AttackTargetGoal_Process`, the
+  riot cop, the dealer's wary scan and the crowd tactic, none of which a brawl fighter runs).
+- **Orders**: the reset `0x00292dfc` (event 2, which empties the brain from outside: the brain's goals, actions,
+  enemies and target), inferred from what it does; no recording logged it.
+
+The sites a brawl could reach but the recordings never logged (Melee's no-slot clear `0x002aec88`,
 FollowAndAttack's 60 m clear `0x002bc278`, TacticAttack's violence handler `0x0030797c`, the grab and mount
 reactions) are in the second table; a comparison that meets one should count it under its cause there. Two causes
 the brief of issue #273 names have no site of their own:
@@ -434,13 +504,15 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
    `GangEnableAttackStrategies`, the seven orders, their weights, counts, lines, gestures and the leader order's two
    temporary changes.
 5. **The shared target**: the field exists (`Gang::chosenTarget`) but nothing sets it; the unforced attack command
-   sets it from the chief's lock-on target and adds it to every AI member's list.
+   sets it from the chief's lock-on target, else from the crime reporter or the gang caller ([targets](#targets) rule
+   4), and adds it to every AI member's list.
 6. **The re-target forces the slot** and does not require the enemy list or validity (Coney's `retargetFromSectors`
    checks both, and its threat test is a stand-in).
 7. **Waiting attackers circle and taunt**: Coney's ring only steps out to the outer radius and turns to face; the
    original's move-to-human holds them inside 4-4.75 m (they keep moving), and the taunt every 1-2 s is not called.
    Wait reasons 4, 6 and 8 are never raised (their inputs are not computed).
-8. **Event `0x15`'s slot-holder taunts** are not built (needs its sender, an open question).
+8. **Event `0x15`'s slot-holder taunts** are not built: sent to a man as he is knocked down by a hit or put down by a
+   throw or grab ([waiting](#waiting) rule 5).
 9. **The gang's alert state** (`+0x32`): built (Unit 2) as state, clip-group counts and the members' `+0x14d`;
    nothing plays the clip groups or reads `+0x14d` yet (Coney has no turf-only target test).
 10. **Flight**: TacticAttack's flee check (v9 × the starting count, class 11 only) under `GangCanFlee`: built (Unit 2).
@@ -480,6 +552,10 @@ minute by kind.
 
 ## Open questions {#open-questions}
 
-- What fills game state `+0x280` / `+0x284`, the attack command's fallback for the shared target.
-- Who reads TacticAttack's interval `+0x2c` / `+0x30` (`AttackTactic_ComputeSpacing` `0x00307668`).
-- What sends event `0x15` (the slot holders' taunts).
+None left from issue #298: what fills game state `+0x280` / `+0x284` ([targets](#targets) rule 4), who reads
+TacticAttack's interval (nothing, [Rumble](#rumble) rule 1), what sends event `0x15` ([waiting](#waiting) rule 5)
+and whether Rumble enables the team-ups (it does not, [Rumble](#rumble) rule 5) are answered on the page.
+
+- What `global.lua`'s gang-class constructor passes to `GangEnableAttackStrategies` (does `AttackStratsOff` turn the
+  team-ups off for a story gang that sets it, and on for every other?), which decides where the team-ups run in the
+  story ([Rumble](#rumble) rule 5). Needs the constructor's bytecode or the `g_teamups` column in a story fight.

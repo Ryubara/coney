@@ -493,7 +493,7 @@ inferred from the readers below.
 | `0xf` | "use this flag" (a free tag spot nearby; inferred) | sent by the gang think to itself |
 | `0x10` | the [attack warning](#block) | every type |
 | `0x14` | violence seen (`+0x00` the aggressor, `+0x24` the victim; `+0x04` 0 for a fight between humans) | cop, gang, civilian, Warrior, shopkeeper; the player drops it |
-| `0x15` | a fight lull: his attackers answer with a taunt (inferred) | shared |
+| `0x15` | he has been put on the ground (a knock-down clip ended, or a throw or grab put him down; `+0x24` himself): his attackers taunt ([Gang fights](gang-fights.md#waiting) rule 5) | shared |
 | `0x17` | a crime seen (`+0x04` the crime object, which gives its position) | cop, gang, civilian |
 | `0x18` | danger near (a fire, a car; `Brain_OnDangerNear` `0x00291728`) | Warrior |
 
@@ -608,7 +608,9 @@ not something `Brain_PickSideInFight` returns.
    (`TauntAction_Init`); a non-target also delays his next attack by twice the taunt clip's length (anim 598 or 599).
    Under the Moe boss tactic (`0xc`), a BigFighter's taunt tells the tactic (`BossMoeTactic_FireAnimDone`).
 
-What sends event `0x15` is not traced.
+Event `0x15` is sent to a man as he is put on the ground: by `HitReact_OnSpecialEnd` (`0x0026a1f8`, the end of a
+knock-down clip) and by `Throw_ClearVictimLink` (`0x0022bdc0`, a throw, grab or mount putting its victim down).
+Confirmed (code); the detail is in [Gang fights](gang-fights.md#waiting) rule 5.
 
 #### Cops (type 1) {#think-cop}
 
@@ -2248,7 +2250,7 @@ workers) that belong to this page, by address.
 | `0x0041c2b0` / `0x0041c2d0` | `GameState_TurnWarriorCommands` / `GameState_IssueWarriorCommand` | the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1) | confirmed (code) |
 | `0x0041c338` | `WarChief_CheckCrewInRange` | for a war chief: when the nearest crew member is within 50 m clears byte `+0x414 + player` and returns 0; otherwise (unless told to be quiet) says command `0x12`, or `0x5c` when a member is cuffed or out, sets the byte and returns 1; from `WarriorCommand_Dispatch` and `PlayerBrain_Update`; `GameState_CheckGameOver` reads the byte | confirmed (code) |
 | `0x0041c4c8` | `GameState_StoreWarriorCommand` | a player's last command (`+0x41a`) and its argument (`+0x42c`) | confirmed (code) |
-| `0x0041d080` / `0x0041d088` | `GameState_SetDealerCustomer` / `GameState_IsDealerFree` | the handle at `+0x284` (set by the dealer goal and the scout tactic) / whether it no longer resolves | confirmed (code); role inferred |
+| `0x0041d080` / `0x0041d088` | `GameState_SetDealerCustomer` / `GameState_IsDealerFree` | the handle at `+0x284`, one human at a time: a scout calling his gang (`ScoutTactic_OnEvent`) or a dirty dealer running off after a rip-off (`DealerGoal_OnBuy`); cleared by `CallGangGoal_Destroy`, `DealerGoal_End` and the level reset; the Warrior attack command's second fallback target ([Gang fights](gang-fights.md#targets) rule 4) / whether it no longer resolves | confirmed (code) |
 | `0x0041d738` / `0x0041d748` | `Cfg_SetEnemySpotting` / `Cfg_SetWarriorSpotting` | `CfgSetEnemySpotting`: `+0x56f8`; `CfgSetWarriorSpotting` clears `+0x56fc` whatever its argument | confirmed (code) |
 | `0x0041d758` / `0x0041d770` | `GameState_SetWarriorVandalize` / `GameState_SetWarriorWeapons` | `CfgSetWarriorVandalize` (`+0x5700`) and `CfgWarriorWeapons` (`+0x5704`) | confirmed (code) |
 | `0x0041d978` | `Cfg_SetExcludedVandalizeZone` | `CfgExcludedVandalizeZone`: `0x005148bc` (`0xffff` at set-up) | confirmed (code) |
@@ -2884,8 +2886,9 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 - Movement and world use: MoveToUseFlag's clip states once he is on the flag; the pedestrian's flag re-use timer
   (goal `+0x6c`, 65 s inferred); the gait AvoidEnemies keeps in its `+0x3c`; why ChaseSupport jogs within 3 m;
   ManWeaponPile's Process (`0x002a3498`, not read).
-- Who sends events `0x15`, 6, 9, 10 and `0x11`, and who reads event `0xf` (the tag-spot message); what reads the
-  tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
+- Who sends events 6, 9, 10 and `0x11` (`0x15`: [Gang fights](gang-fights.md#waiting)), and who reads event `0xf`
+  (the tag-spot message); what reads the tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f`
+  controls.
 - The target's pattern bytes `+0x5d0` / `+0x5d1`. Gang fights: [its page](gang-fights.md#open-questions).
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
