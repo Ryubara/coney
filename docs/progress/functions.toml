@@ -1888,6 +1888,12 @@ subsystem = "GameModes"
 size = 276
 
 [[function]]
+address = 0x00166158
+name = "Gang_CountLiving"
+subsystem = "GameModes"
+size = 196
+
+[[function]]
 address = 0x00166220
 name = "Gang_StandingCount"
 subsystem = "GameModes"

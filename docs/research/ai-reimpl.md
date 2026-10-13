@@ -293,9 +293,14 @@ event 2 after flight (no callback); the alert state set twice to 1 (clips instal
 the team-up ones), the real `MeleeGoal` in place of the stand-in (Coney's story and scout tactics give it too),
 `Brain::hasFightGoal` and the turf-limit byte `Brain::keepsToTurf` (`repo:src/ai/brain.h`), and the gang's alert state,
 clip groups, `canFlee` and flee count (`repo:src/ai/gangs.h`). `Tactic_Start` puts a gang tactic's gang in the
-fighting state. The flight moved from the hub's per-update check (`ScriptedHub`) into the attack tactic's event 18;
-the hub hands the gangs its categories and flee shares. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins
-left:
+fighting state and calms the gang of a tactic of type `0x12` or above. The flight moved from the hub's per-update
+check (`ScriptedHub`) into the attack tactic's event 18; the hub hands the gangs its categories and flee shares
+(tested in `repo:tests/ai/scripted_hub_test.cpp`). The living count of Start and the spacing is `Gang::living()`:
+every member, the dead included, since a Coney member's handle resolves until the human is deleted. That is not the
+script binding's living head count (`ScriptedBrains::gangHeadCount`, members with health left, Coney's reading) nor
+the HUD's gang counter, which also counts health. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins left:
+
+- "Cuffed" in the flight is the human's scripted arrested state.
 
 - The clip groups keep only their clip counts, and nothing plays the groups yet; the random three of five taunts is
   not drawn. The names are now in the [alert state](#alert-state) table.
@@ -309,13 +314,12 @@ left:
 Answered for this unit (2026-10-13, from the code; each against Coney's choice):
 
 - `Tactic_Start` passes 1 for TacticAttack (its type is 0, below `0x12`), and 0 for a tactic of type `0x12` or above
-  ([alert state](#alert-state)). Coney's 1 matches for TacticAttack; a Coney tactic of type ≥ `0x12` must pass 0.
+  ([alert state](#alert-state)). Coney's 1 matches for TacticAttack; a Coney tactic of type ≥ `0x12` now passes 0.
 - The idle pass reads the stacks as it goes, and the distance is 3-D ([Process](#attack-process)). Both match Coney.
 - The flight pops and marks before its pushes, and runs again on every event 18, skipping members that still have
-  a PedReaction ([flight](#attack-flight)). Both match Coney. Three details of Coney's check differ from the code:
-  it does not skip a member who already has a PedReaction (so a rerun stacks a second one), it does not skip a
-  cuffed member in the sending loop, and it sets "fled" even when nobody was sent or the threshold rounds to 0 (the
-  original then does nothing).
+  a PedReaction ([flight](#attack-flight)). Both match Coney. Three details of Coney's check differed from the code
+  and are now fixed: it skips a member who already has a PedReaction, skips a cuffed member in the sending loop, and
+  does nothing when the share or the rounded threshold is 0, setting "fled" only when a member was sent.
 - A new brain's `+0x14d` is 1 (`Brain_Init`). Matches Coney.
 
 ## Unit 3: team-up framework, the sub-tactic pool and the draw {#unit-3}

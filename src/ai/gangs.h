@@ -126,6 +126,12 @@ class Gang {
     [[nodiscard]] std::uint32_t tacticsSet() const { return m_tacticsSet; }
     /// The Lua handler of message `message` (`+0xe4 + message × 4`); empty for none.
     [[nodiscard]] std::string_view handler(int message) const;
+    /// The living members (`Gang_CountLiving(gang, 0)`): the member slots whose handle still resolves, the dead
+    /// included until they are deleted. Every Coney member resolves (a deleted human leaves its gang), so it is the
+    /// member count. **Not** ScriptedBrains::gangHeadCount()'s "living" (health left), which is Coney's reading of the
+    /// script binding. Research: docs/research/ai-reimpl.md#purpose (its shared conventions)
+    /// @orig 0x00166158 Gang_CountLiving (unknown)
+    [[nodiscard]] int living() const { return static_cast<int>(m_members.size()); }
     /// The members still on their feet (`0x00166220`): health left and not on the ground. **Coney choice** for the
     /// three state tests (`0x00227dd8`, `0x00227eb0`, `0x00227d98`: down, dead and a third state, not traced).
     /// @orig 0x00166220 Gang_StandingCount (unknown)

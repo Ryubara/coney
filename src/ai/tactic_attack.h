@@ -81,10 +81,12 @@ class TacticAttack final : public Tactic {
     /// help (ai::sendHelper()) unless a HelpRespond goal is above his goal base.
     /// @orig 0x00307878 AttackTactic_OnViolence (unknown)
     void onViolence(Gang& gang, const BrainEvent& event);
-    /// A member down (event 18): when the gang can flee, noted a count (not kind 6 with team-ups), and its standing,
-    /// uncuffed members number at most round(flee share × that count / 100), every standing member of the fleeing role
-    /// (kFleeRole) gets threat response 0, the Melee goal and a PedReaction away from his nearest enemy, and the gang
-    /// has fled. **Coney stand-ins**: the PedReaction's speech line 9 is not said; "standing" is ai::downOrDead().
+    /// A member down (event 18): when the gang can flee, noted a count (not kind 6 with team-ups), has a flee share,
+    /// the threshold round(flee share × that count / 100) is not 0 and its standing, uncuffed members number at most
+    /// that, every standing, uncuffed member of the fleeing role (kFleeRole) without a PedReaction already gets threat
+    /// response 0, the Melee goal and a PedReaction away from his nearest enemy; the gang has fled once one was sent.
+    /// It reruns on every event 18, fled or not. **Coney stand-ins**: the PedReaction's speech line 9 is not said;
+    /// "standing" is ai::downOrDead(); "cuffed" is the script's arrested state.
     /// @orig 0x00307d40 GangTactic_CheckFlee (unknown)
     void checkFlee(Gang& gang);
 

@@ -385,6 +385,132 @@ TEST_CASE("flight: Start notes the living count once; beaten down, the role-11 m
     CHECK(furies.clipGroup(coney::ai::kCowerClips) == 0);
 }
 
+TEST_CASE("flight: a share or threshold of 0 never flees, and fled is set only when a member was sent",
+          "[ai][tactics][attack]") {
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    int share = 0;
+    bool fleeingRole = true;
+    gangs.setLookups(coney::ai::GangLookups{.role = [&fleeingRole](const Brain&) -> std::optional<int> {
+                                                return fleeingRole ? std::optional<int>(coney::ai::kFleeRole)
+                                                                   : std::nullopt;
+                                            },
+                                            .fleeShare = [&share](int) { return share; }});
+
+    // A share of 0: every member down still sends nobody and leaves the gang unfled.
+    std::vector<Brain*> zero;
+    const int zeroGang = makeGang(scene, 19, "Zeroes", {{44.0F, 40.0F, 0.0F}, {45.0F, 40.0F, 0.0F}}, zero);
+    coney::ai::tacticAttack(gangs, zeroGang, "");
+    gangs.update(0);
+    for (Brain* member : zero) {
+        member->human().fighter().health().set(0);
+    }
+    Gang& zeroes = *gangs.find(zeroGang);
+    static_cast<void>(attackOf(gangs, zeroGang).event(zeroes, *zero[0], BrainEvent{.id = coney::ai::kEventDown}));
+    CHECK_FALSE(attackOf(gangs, zeroGang).fled());
+
+    // A threshold that rounds to 0 (10 % of 3): the check does nothing, so the cuffed member left on his feet is not
+    // sent either.
+    share = 10;
+    std::vector<Brain*> few;
+    const int fewGang =
+        makeGang(scene, 19, "Few", {{50.0F, 40.0F, 0.0F}, {51.0F, 40.0F, 0.0F}, {52.0F, 40.0F, 0.0F}}, few);
+    coney::ai::tacticAttack(gangs, fewGang, "");
+    gangs.update(16);
+    few[0]->human().fighter().health().set(0);
+    few[1]->human().fighter().health().set(0);
+    few[2]->human().script().arrested = true;
+    Gang& fewest = *gangs.find(fewGang);
+    static_cast<void>(attackOf(gangs, fewGang).event(fewest, *few[0], BrainEvent{.id = coney::ai::kEventDown}));
+    CHECK_FALSE(attackOf(gangs, fewGang).fled());
+    CHECK(few[2]->findGoal(GoalType::PedestrianReaction) == nullptr);
+
+    // Beaten, but nobody of the fleeing role: nobody is sent, the gang has not fled and the 1 s check still reports 9,
+    // so a script waiting for it is not left hanging.
+    share = 40;
+    fleeingRole = false;
+    std::vector<Brain*> beaten;
+    std::vector<Brain*> theirs;
+    const int beatenGang = makeGang(scene, 19, "Beaten", {{60.0F, 40.0F, 0.0F}, {61.0F, 40.0F, 0.0F}}, beaten);
+    makeGang(scene, 21, "Orphans", {{70.0F, 40.0F, 0.0F}}, theirs);
+    coney::ai::tacticAttack(gangs, beatenGang, "Beaten");
+    gangs.update(32);
+    beaten[0]->human().fighter().health().set(0);
+    Gang& beatenOnes = *gangs.find(beatenGang);
+    static_cast<void>(
+        attackOf(gangs, beatenGang).event(beatenOnes, *beaten[0], BrainEvent{.id = coney::ai::kEventDown}));
+    CHECK_FALSE(attackOf(gangs, beatenGang).fled());
+    gangs.update(2000);
+    CHECK(codes(scene, "Beaten", beatenGang) == std::vector<int>{coney::ai::kTacNoEnemies});
+}
+
+TEST_CASE("flight skips a member holding a PedReaction and a cuffed one, and a rerun stacks no second PedReaction",
+          "[ai][tactics][attack]") {
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    std::vector<Brain*> ours;
+    std::vector<Brain*> theirs;
+    const int gang =
+        makeGang(scene, 19, "Furies",
+                 {{44.0F, 40.0F, 0.0F}, {45.0F, 40.0F, 0.0F}, {46.0F, 40.0F, 0.0F}, {47.0F, 40.0F, 0.0F}}, ours);
+    makeGang(scene, 21, "Orphans", {{60.0F, 40.0F, 0.0F}}, theirs);
+    gangs.setLookups(coney::ai::GangLookups{.role = [](const Brain&) -> std::optional<int> { return 11; },
+                                            .fleeShare = [](int) { return 50; }});
+    for (Brain* member : ours) {
+        member->addEnemy(*theirs[0]);
+    }
+    coney::ai::tacticAttack(gangs, gang, "");
+    gangs.update(0);
+    Gang& furies = *gangs.find(gang);
+    REQUIRE(furies.fleeCount() == 4);
+    TacticAttack& tactic = attackOf(gangs, gang);
+
+    // Member 1 already runs (a PedReaction, response 1); member 2 is cuffed; member 3 is down. Two standing (0 and 1)
+    // are at most round(50 × 4 / 100) = 2.
+    ours[1]->pushGoal(std::make_unique<coney::ai::PedestrianReactionGoal>(Vec3{}));
+    ours[1]->setThreatResponse(1);
+    const std::size_t holderGoals = ours[1]->goalCount();
+    ours[2]->human().script().arrested = true;
+    ours[3]->human().fighter().health().set(0);
+    static_cast<void>(tactic.event(furies, *ours[3], BrainEvent{.id = coney::ai::kEventDown}));
+    CHECK(tactic.fled());
+    // Member 0 flees.
+    REQUIRE(ours[0]->goalCount() == 2);
+    CHECK(ours[0]->goalAt(0)->type() == GoalType::Melee);
+    CHECK(top(*ours[0]) == GoalType::PedestrianReaction);
+    CHECK(ours[0]->threatResponse() == 0);
+    // The holder keeps his goals and response; the cuffed one is not sent.
+    CHECK(ours[1]->goalCount() == holderGoals);
+    CHECK(ours[1]->threatResponse() == 1);
+    CHECK(ours[2]->findGoal(GoalType::PedestrianReaction) == nullptr);
+    CHECK(ours[2]->threatResponse() == 2);
+
+    // Event 18 again: member 0 still holds his PedReaction, so he is skipped (his response, changed since, stays).
+    ours[0]->setThreatResponse(1);
+    static_cast<void>(tactic.event(furies, *ours[3], BrainEvent{.id = coney::ai::kEventDown}));
+    CHECK(ours[0]->goalCount() == 2);
+    CHECK(ours[0]->threatResponse() == 1);
+}
+
+TEST_CASE("Start's living count takes every member whose handle resolves, the dead included", "[ai][tactics][attack]") {
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    std::vector<Brain*> ours;
+    std::vector<Brain*> theirs;
+    const int gang = makeGang(scene, 19, "Furies", {{44.0F, 40.0F, 0.0F}, {45.0F, 40.0F, 0.0F}}, ours);
+    makeGang(scene, 21, "Orphans", {{60.0F, 40.0F, 0.0F}}, theirs);
+    gangs.setLookups(coney::ai::GangLookups{.role = {}, .fleeShare = [](int) { return 40; }});
+    // A dead member is still a member (his handle resolves until he is deleted): Gang_CountLiving(g, 0) counts him.
+    ours[1]->human().fighter().health().set(0);
+    ours[0]->addEnemy(*theirs[0]);
+    Gang& furies = *gangs.find(gang);
+    CHECK(furies.living() == 2);
+    coney::ai::tacticAttack(gangs, gang, "");
+    gangs.update(0);
+    CHECK(furies.fleeCount() == 2);
+    CHECK(attackOf(gangs, gang).spacing() == 500);
+}
+
 TEST_CASE("a gang that cannot flee notes no count, takes no cower clip and never flees", "[ai][tactics][attack]") {
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();

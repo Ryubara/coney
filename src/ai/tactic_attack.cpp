@@ -74,6 +74,9 @@ Brain* nearestListed(const Brain& brain) {
     return nearest;
 }
 
+// Whether `brain`'s human is cuffed. **Coney's reading**: the script's arrested state stands for the cuffs.
+bool cuffed(const Brain& brain) { return brain.human().script().arrested; }
+
 } // namespace
 
 Brain* nearestGangEnemy(Brain& brain, Gangs& gangs) {
@@ -117,9 +120,10 @@ void TacticAttack::start(Gang& gang) {
     if (const int clips = cowerClips(gang); clips != 0) {
         gang.setClipGroup(kCowerClips, clips);
     }
-    // 4. The living count the flight compares with, noted once.
+    // 4. The living count the flight compares with (`Gang_CountLiving(gang, 0)`: the dead count until deleted), noted
+    // once.
     if (gang.canFlee() && gang.fleeCount() == -1) {
-        gang.setFleeCount(static_cast<int>(gang.members().size()));
+        gang.setFleeCount(gang.living());
     }
 }
 
@@ -143,7 +147,8 @@ void TacticAttack::computeSpacing(Gang& gang) {
         return;
     }
     m_spacingBase = static_cast<int>(enemy->human().gait()) > kFastGait ? kFastEnemySpacing : kSlowEnemySpacing;
-    m_spacing = static_cast<std::uint16_t>(m_spacingBase / gang.members().size());
+    // Over the living count (`Gang_CountLiving(gang, 0)`), at least 1 here: the member listing the enemy is one.
+    m_spacing = static_cast<std::uint16_t>(m_spacingBase / gang.living());
 }
 
 void TacticAttack::giveMelee(Gang& gang) {
@@ -254,25 +259,34 @@ void TacticAttack::onViolence(Gang& gang, const BrainEvent& event) {
 }
 
 void TacticAttack::checkFlee(Gang& gang) {
-    // 1. Only a gang that may flee and noted its count; never kind 6 with team-ups.
+    // 1. Only a gang that may flee and noted its count, with a flee share; never kind 6 with team-ups.
     const int count = gang.fleeCount();
-    if (!gang.canFlee() || count <= 0 || (gang.kind() == kTeamUpCowerKind && gang.orders().attackStrategies)) {
+    const int share = gang.owner().fleeShare(gang.kind());
+    if (!gang.canFlee() || count <= 0 || share == 0 ||
+        (gang.kind() == kTeamUpCowerKind && gang.orders().attackStrategies)) {
         return;
     }
-    // 2. Beaten: the standing, uncuffed members no more than the kind's share of the count.
+    // 2. Beaten: the standing, uncuffed members no more than the kind's share of the count. A share that rounds to 0
+    // never flees.
+    const auto limit = std::lround(static_cast<double>(share) * count / 100.0);
+    if (limit == 0) {
+        return;
+    }
     int standing = 0;
     for (const Brain* member : gang.members()) {
-        if (!downOrDead(*member) && !member->human().script().arrested) {
+        if (!downOrDead(*member) && !cuffed(*member)) {
             ++standing;
         }
     }
-    const auto limit = std::lround(static_cast<double>(gang.owner().fleeShare(gang.kind())) * count / 100.0);
     if (standing > limit) {
         return;
     }
-    // 3. The fleeing role stops fighting and runs from his nearest enemy (from where he stands with none).
+    // 3. Each standing, uncuffed member of the fleeing role not already running (a PedReaction, kept on a rerun) stops
+    // fighting and runs from his nearest enemy (from where he stands with none).
+    bool sent = false;
     for (Brain* member : membersOf(gang)) {
-        if (downOrDead(*member) || gang.owner().roleOf(*member) != std::optional<int>(kFleeRole)) {
+        if (downOrDead(*member) || cuffed(*member) || gang.owner().roleOf(*member) != std::optional<int>(kFleeRole) ||
+            member->findGoal(GoalType::PedestrianReaction) != nullptr) {
             continue;
         }
         const Brain* enemy = nearestListed(*member);
@@ -280,8 +294,12 @@ void TacticAttack::checkFlee(Gang& gang) {
         member->setThreatResponse(kFleeThreatResponse);
         pushMelee(*member);
         static_cast<void>(member->pushGoal(std::make_unique<PedestrianReactionGoal>(from)));
+        sent = true;
     }
-    m_fled = true;
+    // 4. Fled only once someone ran: a gang that sent nobody keeps reporting 9 when its enemies are gone.
+    if (sent) {
+        m_fled = true;
+    }
 }
 
 void tacticAttack(Gangs& gangs, int gang, std::string callback) {

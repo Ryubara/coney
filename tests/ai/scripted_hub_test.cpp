@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -13,8 +14,13 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
+#include "ai/brain_events.h"
+#include "ai/gangs.h"
+#include "ai/goal.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_hub.h"
+#include "ai/tactic_attack.h"
+#include "characters/character_class.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
 #include "human/human_flags.h"
@@ -123,6 +129,48 @@ TEST_CASE("The hub's human switches reach the humans", "[ai][hub]") {
     CHECK(level.call("HuIsDead", {handle}).isNil());
     CHECK_FALSE(level.call("HuIsDead", {Value(99.0)}).isNil());
     CHECK(level.call("ObjIsAlive", {handle}).number() == 1.0);
+}
+
+TEST_CASE("The hub's lookups reach the gangs, so a beaten gang's fleeing role runs in a level", "[ai][hub]") {
+    // The level hands the hub its CfgChar categories and CfgGang flee percents (gameplay_mode.cpp); the attack
+    // tactic's flight reads them through the gangs (docs/research/ai-reimpl.md#attack-flight).
+    Level level;
+    coney::ai::HubLookups lookups;
+    lookups.workout = &level.state.hub.workout;
+    lookups.category = [](int type) -> std::optional<int> {
+        return type == coney::characters::characterClassOf(31).id ? std::optional<int>(coney::ai::kFleeRole)
+                                                                  : std::optional<int>(3);
+    };
+    lookups.fleePercent = [](int kind) { return kind == 19 ? 50 : 0; };
+    level.scripted->hubHost().setLookups(std::move(lookups));
+
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    Brain& runner = level.add({44.0F, 40.0F, 0.0F});
+    runner.setCharacterClass(31); // class 30, the fleeing category
+    Brain& fighter = level.add({45.0F, 40.0F, 0.0F});
+    fighter.setCharacterClass(1);
+    Brain& unknown = level.add({46.0F, 40.0F, 0.0F}); // no class: no role
+    CHECK(gangs.roleOf(runner) == std::optional<int>(coney::ai::kFleeRole));
+    CHECK(gangs.roleOf(fighter) == std::optional<int>(3));
+    CHECK_FALSE(gangs.roleOf(unknown).has_value());
+    CHECK(gangs.fleeShare(19) == 50);
+    CHECK(gangs.fleeShare(21) == 0);
+
+    // A gang of the two attacks; the fighter goes down (one standing of round(50 × 2 / 100) = 1), and the runner flees.
+    const int gang = gangs.create(19, "Furies");
+    gangs.addMember(gang, runner);
+    gangs.addMember(gang, fighter);
+    coney::ai::tacticAttack(gangs, gang, "");
+    gangs.update(0);
+    coney::ai::Gang& furies = *gangs.find(gang);
+    REQUIRE(furies.fleeCount() == 2);
+    fighter.human().fighter().health().set(0);
+    auto* tactic = dynamic_cast<coney::ai::TacticAttack*>(furies.tactic());
+    REQUIRE(tactic != nullptr);
+    static_cast<void>(tactic->event(furies, fighter, coney::ai::BrainEvent{.id = coney::ai::kEventDown}));
+    CHECK(tactic->fled());
+    REQUIRE(runner.topGoal() != nullptr);
+    CHECK(runner.topGoal()->type() == coney::ai::GoalType::PedestrianReaction);
 }
 
 TEST_CASE("A workout begins within reach of its equipment, repeats and ends with its callbacks", "[ai][hub]") {

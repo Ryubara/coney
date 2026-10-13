@@ -36,7 +36,8 @@ class Tactic {
 
     /// Its type id (vtable `+0x34`).
     [[nodiscard]] int type() const { return m_type; }
-    /// The vtable `+0x3c` flag, true for the types below kFirstGangTactic: its start puts the gang on alert, and while
+    /// The vtable `+0x3c` flag, true for the types below kFirstGangTactic: its start puts the gang in the fighting
+    /// state (any other tactic's start calms it), and while
     /// it is false a new enemy is offered to the tactic (event `0xb`). It gates no goal handling.
     [[nodiscard]] bool alertsGang() const { return m_type < kFirstGangTactic; }
     /// Whether it has started (`+0x04`).
@@ -45,8 +46,8 @@ class Tactic {
     [[nodiscard]] const std::string& callback() const { return m_callback; }
 
     /// One gang update (`Tactic_Process`): starts it on the first (Tactic_Start: the time limit made absolute, the gang
-    /// put on alert (Gang::setAlertState(), fighting) when alertsGang(), every AI member's goal base marked and his
-    /// target dropped, then start()); past the time limit 2; else what update() returns.
+    /// in the fighting state when alertsGang() and calm otherwise (Gang::setAlertState()), every AI member's goal base
+    /// marked and his target dropped, then start()); past the time limit 2; else what update() returns.
     /// @orig 0x003067d8 Tactic_Process (unknown)
     /// @orig 0x00306690 Tactic_Start (unknown)
     int process(Gang& gang);

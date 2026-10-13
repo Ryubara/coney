@@ -17,11 +17,9 @@ int Tactic::process(Gang& gang) {
     if (!m_started) {
         m_endsAtMs = m_timeLimitMs < 0 ? std::numeric_limits<std::uint64_t>::max()
                                        : now + static_cast<std::uint64_t>(m_timeLimitMs);
-        // A gang tactic (type below 0x12) puts the gang on alert. **Coney's reading**: "on alert" is the fighting
-        // state, the page naming no value (docs/research/ai-gangs.md#tactics).
-        if (alertsGang()) {
-            gang.setAlertState(kGangFighting);
-        }
+        // The alert state from the vtable `+0x3c` flag, always set: a gang tactic (type below 0x12) puts the gang in
+        // the fighting state, any other calms it (docs/research/ai-reimpl.md#alert-state).
+        gang.setAlertState(alertsGang() ? kGangFighting : kGangCalm);
         for (Brain* member : gang.members()) {
             if (member->type() != BrainType::Player) {
                 member->markGoalBase();
