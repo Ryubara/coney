@@ -121,7 +121,9 @@ changes the command with it ([Repository conventions](repo-conventions.md)). The
    text instead of `[docs/x.md](../blob/main/docs/x.md)`, or linked to a file or `{#anchor}` that is not on `main`
    (read from `origin/main` in your checkout, no network; `git fetch origin` first); a Screenshots section with
    neither an uploaded image nor the `none (<reason>)` line; a leftover without its `From:` line; "owner" for the
-   user; the repository's address. A page that exists only on a branch stays plain text with a note such as
+   user; the repository's address. The form is the one the body's headings belong to (a "Bug:" title on a task-form
+   body is checked as a task); `--form` overrides it. The bug form's "How often does it happen?" also allows
+   `Unknown`. A page that exists only on a branch stays plain text with a note such as
    "not on `main` yet". With `--online`, the words that call `#N` open, merged or closed are compared with
    `gh` ([State the status as it is](#writing)).
 3. **File.** `coney-tools issue create --title "..." --body FILE [--label L ...] [--parent N] [--leftover] [--attach F]`
@@ -291,9 +293,10 @@ A pull request merges only when every task in it is finished. Its Checklist list
 and CI's `body` check refuses a description with an unticked `- [ ]` item, the template's `...` placeholder included
 (`coney-tools repo check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no
 "Remaining" list: work the pull request does not finish is not part of it and is not named in it, and a pull request
-that finishes an issue says `Fixes #N` in its Summary. Pull requests merged before 2026-10-12 keep the Remaining lists
-they were written with; their items are open issues and go through the normal queue, and the audit still holds those
-lists to the older rule (each unchecked item names an issue as `#N`).
+that finishes an issue says `Fixes #N` in its Summary. Pull requests merged before the rule's own pull request did
+(2026-10-12 at 10:39 UTC) keep the Remaining lists they were written with; their items are open issues and go
+through the normal queue, and the audit still holds those lists to the older rule (each unchecked item names an
+issue as `#N`).
 
 - **The author** finishes the task it was given. Work it finds on the way that is not part of the task (a bug, a gap, an
   open question) is written up as the issue it would be: title, area, research page and "done" test, in the shape of
