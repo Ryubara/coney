@@ -1036,8 +1036,9 @@ brain `+0x124`; only a follower whose brain is of type 3, a Warrior, can be in i
 4. **On** when a member of its gang has attackers (`Gang_AnyMemberHasAttackers` `0x00169658`) and its own brain
    `+0x152` is not 0, else off. `+0x152` counts the brains that have put this one in their enemy lists:
    `Brain_CountHostile` (`0x0028ef20`) raises it, called by `Brain_AddEnemy` (`0x0028d538`, unless a player adds a
-   player) and by [the enemy scan](ai.md#enemy-scan) (`0x0028b9e8` / `0x0028b7d0`); `Brain_UncountHostile`
-   (`0x0028ef30`) lowers it, called by the enemy scan, `Brain_UncountEnemy` (`0x0028d6a0`) and
+   player) and by [the enemy scan](ai.md#enemy-scan) (`Brain_ScanEnemies` `0x0028b358`, its call at `0x0028b9e8`);
+   `Brain_UncountHostile` (`0x0028ef30`) lowers it, called by the enemy scan (its call at `0x0028b7d0`),
+   `Brain_UncountEnemy` (`0x0028d6a0`) and
    `Brain_UncountAllEnemies` (`0x0028ef48`). A player's `+0x152` is raised and lowered the same way and also
    recounted every 300 updates, which overwrites it ([The player](ai.md#think-player)).
 

@@ -2339,9 +2339,9 @@ spawners and link to their subject pages; the rest are this mission's.
     14) and saved as the park's humans appeared, before `l34_c4` started; then
     [`l34_warriors_meet_furies`](repo:research/traces/scenarios/l34_warriors_meet_furies.toml) recorded every human
     every update with no input (hooks `event-call` and `event-callback`; two runs, identical step for step counted
-from the scene's end, which came at update 717 in one and 716 in the other). The
-    scene's end is the update that runs `P3.EndParkScene` (its `tfence_shake_01` emitter); times are updates after
-    it. Vermin is the player, at (−207.97, −269.50); Ash and Snow are the AI Warriors.
+    from the scene's end, which came at update 717 in one and 716 in the other). The scene's end is the update that
+    runs `P3.EndParkScene` (its `tfence_shake_01` emitter); times are updates after it. Vermin is the player, at
+    (−207.97, −269.50); Ash and Snow are the AI Warriors.
 
     | After the scene's end | Ash and Snow |
     | --- | --- |
@@ -2395,7 +2395,8 @@ from the scene's end, which came at update 717 in one and 716 in the other). The
        the scene's end to the first hit on the player, neither AI Warrior is ever above gait 2 nor more than 5 m from
        where the scene left him, and his top goal is `FollowPlayer`; the first hit lands on the player, not a Warrior;
        neither attacks before he is first hit himself (each answers his first hit with an attack action), and neither
-       follows the attack command before it comes, after the player's first hit.
+       has the `FollowAndAttack` (`0x34`) or `Fight` (`0x0f`) goal before the attack tactic (`0x00544160`) is queued
+       for him, which comes after the player's first hit.
 
     The fight-mode stand distance, 10 m instead of the goal's 9 m, is already Coney's (`kCrewFightFollowDistance`,
     `repo:src/ai/crew.h`); keep it.
