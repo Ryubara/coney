@@ -252,6 +252,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::expected<void, Error> clearSpawned() override;
     [[nodiscard]] bool canSpawnFighter() const override { return true; }
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees) override;
+    [[nodiscard]] std::vector<std::string> fighterModels() const override;
+    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model) override;
     [[nodiscard]] std::size_t fighterCount() const override { return m_ai->count(); }
     void clearFighters() override;
     [[nodiscard]] bool fightersEngage() const override { return m_ai->engaging(); }
@@ -408,8 +410,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const ai::AiHuman* castHumanOf(double handle);
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
-    // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
-    void addFighter(anim::Vec3 spot, float headingDegrees);
+    // Spawns a fighter dropped onto the ground below `spot`, with its mesh, as the character of `model` (empty: the
+    // scene's own).
+    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {});
     // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
     // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
@@ -739,6 +742,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;
+        std::string model;   // the model it was spawned as; empty: the scene's character
         bool hidden = false; // its human was deleted
     };
     std::vector<FighterMesh> m_fighterMeshes;

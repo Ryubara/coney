@@ -387,6 +387,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE
     debug/debug_lines.cpp
     debug/debug_session.cpp
+    debug/fighter_spawn.cpp
     debug/entity_inspect.cpp
     debug/game_tunables.cpp
     debug/human_shapes.cpp

@@ -96,6 +96,7 @@ add_executable(coney_tests
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
     platform/disc_change_character_test.cpp
+    platform/disc_fighter_models_test.cpp
     platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
@@ -344,6 +345,7 @@ target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURC
 target_sources(coney_tests PRIVATE
     debug/audio_page_test.cpp
     debug/debug_session_test.cpp
+    debug/fighter_spawn_test.cpp
     debug/entity_inspector_test.cpp
     debug/human_shapes_test.cpp
     debug/input_gate_test.cpp

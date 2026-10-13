@@ -134,7 +134,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
-| AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
+| AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
 | Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
@@ -202,9 +202,18 @@ Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the 
 there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him again.
 Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
-does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns a fighter
+does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
 ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
 *Engaging* off keeps idle fighters from taking him on.
+
+*Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
+row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
+list *Change character* below draws on, sorted, with its distinct models) or *Random*, which draws a model for each
+fighter from the whole list (a generator of the menu's own with a fixed seed, so it never moves the game's random
+numbers and a run with the same clicks spawns the same models). A model is loaded from the disc the first time it is
+used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a disc) only
+*Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change character*
+makes the fighters again.
 
 **Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
 way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by
