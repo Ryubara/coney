@@ -2597,8 +2597,9 @@ returning true when it runs (Coney's script system does not hand back the result
 next step after the health runs out, with no attacker. **Stand-in:** event 1 (damage taken, whose sender is not
 traced) is sent at the brains' step after a human's health falls, with the nearest other human that can fight as the
 attacker and the damage as its value. The fall is measured before the gangs' tactics run, since a tactic can give the
-health back at once: `TacticBossScenarioA` holds a boss above his cap, and every hit he takes there must still reach
-his BigBrawler, or he never tires and the stage never ends ([the boss fight](ai-gangs.md#boss-diego-vargas)). A
+health back at once (Coney's choice, inferred from the fight: the original's sender is untraced): `TacticBossScenarioA`
+holds a boss above his cap, and every hit he takes there must still reach his BigBrawler, or he never tires and the
+stage never ends ([the boss fight](ai-gangs.md#boss-diego-vargas)). A
 formation slot is usable when the leader's planner finds the line to it walkable (always without a planner) and keeps
 the leader's height. The idle goal stands still (its Process is
 not traced); the spectate goal follows [its research](#spectate) for Melee and the dealer's wary goal, the crowd's

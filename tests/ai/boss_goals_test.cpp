@@ -138,7 +138,8 @@ TEST_CASE("hits a capped boss takes still count, so six of them tire him and the
     scene.run(30);
     REQUIRE(brawler->state() == coney::ai::BigBrawlerGoal::State::Fight);
 
-    // Five hits at the cap: each is put back above it, and each is counted.
+    // Five hits are counted: the first is the fall from full health onto the cap (the old code counted it too), the
+    // other four land at the cap, where each is put back above it and must still be counted.
     diego.human().setHealthPercent(50.0F);
     scene.run(1);
     REQUIRE(diego.human().healthPercent() == Catch::Approx(67.0F).margin(0.5F));

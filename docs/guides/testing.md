@@ -113,17 +113,17 @@ rest ([Targets](../research/combat-moves.md#targeting)). A driver that rests the
 the player happens to face; the level5 boss fight's driver did, and lost once the AI's enemy scan changed who the
 crew fought.
 
-A fight is chaotic: a change of 0.1 mm in one update can send it down another course, so the commit a bisect of a
-failing fight names may only have nudged it. Before blaming that commit, print the positions, health and goal states
-every update on both sides of it and find the first update that differs: if the two runs agree until a difference in
-the last digit, the fault is in the course the fight took after it. The level5 boss fight bisected to the physics
-sweep (#434), which moved a boss 0.0001 m; the real fault was a capped boss whose hits were never counted.
-
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
 reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
 survives those changes, and a failure means the mission really cannot be finished. Like every disc test, it skips
 without a disc and prints only aggregates.
+
+A fight is chaotic: a change of 0.1 mm in one update can send it down another course, so the commit a bisect of a
+failing fight names may only have nudged it. Before blaming that commit, print the positions, health and goal states
+every update on both sides of it and find the first update that differs: if the two runs agree until a difference in
+the last digit, the fault is in the course the fight took after it. The level5 boss fight bisected to the physics
+sweep (#434), which moved a boss 0.0001 m; the real fault was a capped boss whose hits were never counted.
 
 ### Diff against the original {#diff-against-the-original}
 
