@@ -10,7 +10,7 @@
 // The rage a hit gives its attacker. The stats system turns each attack into awards of an event's points × a count
 // (event 2 1 point, event 1 4, event 0 6, event 3 7, event 5 3), each passed through the rage formula and truncated on
 // its own; a blocked hit halves each award's points with a shift. Being hit gives nothing.
-// Research: docs/research/combat.md#rage, docs/research/combat.md#being-hit-runtime
+// Research: docs/research/combat-rage.md#rage, docs/research/combat-reactions.md#being-hit-runtime
 
 namespace coney::combat {
 
@@ -22,7 +22,7 @@ inline constexpr int kRageEvent3Points = 7;
 inline constexpr int kRageEvent5Points = 3;
 
 /// The points of a throw's two awards (147-161). **Coney's choice**, back-derived from the runtime rage: a throw gave
-/// 8 and 7 rage at gain 144 and 13 and 11 with a throw bonus of 1.54 (docs/research/combat.md#rage), which
+/// 8 and 7 rage at gain 144 and 13 and 11 with a throw bonus of 1.54 (docs/research/combat-rage.md#rage), which
 /// `trunc(points × 1.44 × bonus)` gives for 6 and 5 points; the events the throws map to (`0x00264fa0`) are not traced.
 inline constexpr std::array<int, 2> kThrowAwardPoints{6, 5};
 
@@ -36,12 +36,12 @@ struct RageCounts {
     bool halvable = true; ///< Whether a blocked hit halves the awards (`0xfa`'s is not).
 };
 
-/// The counts attack `animId` awards (docs/research/combat.md#rage): the chain attacks 11-20 and the moving attacks
-/// 21-24, the weapon sets' attacks (a bat's square 34 gives 2 rage, its cross 36 and its grounded and mounting strikes
-/// 37 and 38 11 each), the armed run attack 501 (event 1 × 1), the grab strikes, escapes and the other ids of "The
-/// other attacks"; **Coney's choice** for the
-/// two grab moves seen at runtime but not mapped to events: the counter 76 (7 points, 10 rage at runtime) and the
-/// strike back 104 (1 point, 1 rage). Every other id awards nothing. **Not yet**: `0x269`-`0x26c`'s table-2 award.
+/// The counts attack `animId` awards (docs/research/combat-rage.md#rage): the chain attacks 11-20 and the moving
+/// attacks 21-24, the weapon sets' attacks (a bat's square 34 gives 2 rage, its cross 36 and its grounded and mounting
+/// strikes 37 and 38 11 each), the armed run attack 501 (event 1 × 1), the grab strikes, escapes and the other ids of
+/// "The other attacks"; **Coney's choice** for the two grab moves seen at runtime but not mapped to events: the counter
+/// 76 (7 points, 10 rage at runtime) and the strike back 104 (1 point, 1 rage). Every other id awards nothing. **Not
+/// yet**: `0x269`-`0x26c`'s table-2 award.
 [[nodiscard]] RageCounts rageCounts(int animId);
 
 /// The points of one award: `count × value`, halved with a shift for a blocked hit (`0x004ed9c8`).

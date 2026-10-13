@@ -414,7 +414,7 @@ class Human final : public Holdable {
     void applyDamageModifier(float factor);
 
     // Being attacked: the entry points another human and the tests use. Each is acted on at the human's next step
-    // (docs/research/combat.md#being-hit-runtime).
+    // (docs/research/combat-reactions.md#being-hit-runtime).
 
     /// A hit on the human (Fighter::takeHit()): the update keeps its largest.
     void takeHit(const IncomingHit& hit) { m_fighter.takeHit(hit); }
@@ -431,7 +431,7 @@ class Human final : public Holdable {
     [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
     /// The anim whose action event (type `0x41`, which `Anim_FireEvents` sends as message `0xc1`) the clip playing
     /// passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door ahead opens and
-    /// for 668 the dealer's goal is served (docs/research/combat.md#rage).
+    /// for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
     [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
@@ -543,7 +543,7 @@ class Human final : public Holdable {
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
     void breakPair() { m_fighter.breakPair(); }
     /// The prop its clips made it carry (events `0x30`, `0x37`, `0x31`): Rembrandt's spray can in his power move 59;
-    /// nothing when it carries none (docs/research/combat.md#power-move-props).
+    /// nothing when it carries none (docs/research/combat-grabs.md#power-move-props).
     [[nodiscard]] const std::optional<CarriedProp>& carriedProp() const { return m_carriedProp; }
     /// The carried prop goes (human `+0x348` and `+0x34c` emptied); the level removes its object. **Coney's
     /// stand-in**: the original also drops a held object of kind `0x27`, which no Coney human holds yet.
@@ -598,7 +598,8 @@ class Human final : public Holdable {
     /// The grabber lets go (Fighter::releaseFromGrab()).
     void releaseFromGrab() { m_fighter.releaseFromGrab(m_animator); }
 
-    // Triangle's context action and the pick-up (docs/research/crimes.md#triangle, docs/research/combat.md#breakables).
+    // Triangle's context action and the pick-up (docs/research/crimes.md#triangle,
+    // docs/research/combat-targets.md#breakables).
 
     /// What triangle tries after a climb (step 4 and 5 of `Player_TriangleAction`): the level's search for a context
     /// record or a loose object, which starts what it found on the human (or drops what he holds) and returns true.
@@ -705,10 +706,10 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
-    /// The reviver's half of a revive (docs/research/combat.md#revive): the led steer turns him to `downed`'s head and
-    /// slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and he
-    /// plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance, the
-    /// fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    /// The reviver's half of a revive (docs/research/combat-rage.md#revive): the led steer turns him to `downed`'s head
+    /// and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and
+    /// he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance,
+    /// the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
     void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
     [[nodiscard]] bool reviveBeginPlaying() const;
@@ -854,7 +855,7 @@ class Human final : public Holdable {
     void noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Acts on the carried prop's events of the clip playing that this step's animation passed, as noteStrikeEvents()
     // finds its own: 0x30 makes the prop when it carries none, 0x37 moves it to the event's attach point and pose
-    // (message 0xb7), 0x31 removes it when it is of the named type (docs/research/combat.md#power-move-props).
+    // (message 0xb7), 0x31 removes it when it is of the named type (docs/research/combat-grabs.md#power-move-props).
     // @orig 0x00101dd8 Anim_FireEvents (unknown)
     void noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.

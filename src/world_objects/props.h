@@ -14,7 +14,7 @@
 
 // The breakable street props (newsstands, crate stacks, benches) and the other world objects a strike can land on:
 // the two hit counters every world object keeps, what a strike does to them, and how a `dyn_masks` prop breaks and
-// goes. Research: docs/research/objects.md#breakable-props, docs/research/combat.md#targets
+// goes. Research: docs/research/objects.md#breakable-props, docs/research/combat-targets.md#targets
 
 namespace coney::world_objects {
 

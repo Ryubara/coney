@@ -53,7 +53,7 @@ anim::Vec3 pairPoint(const combat::AnimRangeList* ranges, std::uint32_t id, anim
 }
 
 float alignSeconds(const anim::AnimClip& clip, float rate) {
-    // A share of the time to the first contact event (docs/research/combat.md#grab-posing); none without a rate.
+    // A share of the time to the first contact event (docs/research/combat-grabs.md#grab-posing); none without a rate.
     return rate > 0.0F ? kAlignShare * firstContactTime(clip, rate) : 0.0F;
 }
 

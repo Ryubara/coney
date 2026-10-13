@@ -2,9 +2,9 @@
 # does, the player standing still with health held at 600 of 900 every update (so he is never knocked out) and 3
 # flashes. The AI is not the same from run to run, so d-pad right is pressed by a setup write only while the player
 # reacts, lies down, is stunned or held; the flash-use hook says whether Flash_Use ran at once (ra 0x00284820) or
-# from clip 665's event (ra 0x002473c4). Research: docs/research/combat.md#flash-mid-move.
+# from clip 665's event (ra 0x002473c4). Research: docs/research/combat-rage.md#flash-mid-move.
 description = "slot 6: PoizoCiv as a type-2 fighter hits a still player, no input in the script; d-pad right pressed by setup only while he reacts, is down, stunned or held"
-research = "docs/research/combat.md#flash-mid-move"
+research = "docs/research/combat-rage.md#flash-mid-move"
 input = "flash_hit.txt"
 updates = 330
 fields = ["player", "held", "enemy"]

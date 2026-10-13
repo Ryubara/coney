@@ -33,7 +33,8 @@
 // player's victim side: the hits, warnings and grabs another human aims at it.
 // The work is split by subject: fighter.cpp (the update, the attacks and the targets), fighter_grab.cpp (posing and
 // playing a grab the player holds) and fighter_victim.cpp (the player hit, warned and grabbed).
-// Research: docs/research/combat.md, docs/research/combat.md#grab-posing (the pair's placement: human/pair_placement.h)
+// Research: docs/research/combat.md, docs/research/combat-grabs.md#grab-posing (the pair's placement:
+// human/pair_placement.h)
 
 namespace coney::raycast {
 class CollisionMesh;
@@ -41,7 +42,7 @@ class CollisionMesh;
 
 namespace coney::human {
 
-/// How a grab's two bodies are held together (docs/research/combat.md#grab-posing).
+/// How a grab's two bodies are held together (docs/research/combat-grabs.md#grab-posing).
 enum class PairStage : std::uint8_t {
     None,     ///< No grab, or a tackle's intro.
     Intro,    ///< The grab's intro (71) plays; the victim waits.
@@ -68,8 +69,8 @@ inline constexpr float kPickConeDegrees = 54.0F;
 inline constexpr float kPickConeScale = 1.1F;
 inline constexpr float kPickAnyScale = 0.9F;
 inline constexpr float kPickWideScale = 0.7F;
-/// The player's fight stance each update (`0x0027ce90`, docs/research/combat.md#fight-stance): the nearest enemy is
-/// tracked within this many metres, ...
+/// The player's fight stance each update (`0x0027ce90`, docs/research/combat-targets.md#fight-stance): the nearest
+/// enemy is tracked within this many metres, ...
 inline constexpr float kStanceTrackRange = 6.0F;
 /// ... one within this many metres is taken as the target (and locked with the street's `CfgAutoLockAndCombat`), ...
 inline constexpr float kStanceEnterRange = 2.0F;
@@ -146,7 +147,7 @@ struct FighterProfile {
     combat::RageClass rage = combat::kPlayerRageClass;
 };
 
-/// A grab another human has caught the player in, at the end of its intro (docs/research/combat.md#grabbed).
+/// A grab another human has caught the player in, at the end of its intro (docs/research/combat-grabs.md#grabbed).
 struct GrabCatch {
     const characters::AnimSet* grabberAnims = nullptr; ///< The grabber's set: the player plays its reaction clips.
     bool fromRear = false;                             ///< The grabber holds the player from behind.
@@ -196,16 +197,16 @@ class Fighter {
     [[nodiscard]] TurnAndSlideStep takeSteer(float dt) { return m_steer.step(dt); }
     /// The attack's steer still under way.
     [[nodiscard]] const TurnAndSlide& steering() const { return m_steer; }
-    /// The revive's led steer (`Revive_Start` calls `Attack_SteerLed` for clip 351, docs/research/combat.md#revive):
-    /// from `position` and `heading`, a turn to the line to `downed`'s head (less 351's direction) and a slide to the
-    /// point 351's reach (the Anim Range List's `+0x04`) short of it, both over 351's time to its first event + 0.1 s.
-    /// Without a reach for 351 he only turns.
+    /// The revive's led steer (`Revive_Start` calls `Attack_SteerLed` for clip 351,
+    /// docs/research/combat-rage.md#revive): from `position` and `heading`, a turn to the line to `downed`'s head (less
+    /// 351's direction) and a slide to the point 351's reach (the Anim Range List's `+0x04`) short of it, both over
+    /// 351's time to its first event + 0.1 s. Without a reach for 351 he only turns.
     /// @orig 0x00275678 Attack_SteerLed (unknown)
     void steerRevive(const Combatant& downed, anim::Vec3 position, float heading, const HumanAnimator& animator);
 
     /// This human, thrown, is carried round its thrower: from `position` and `heading` it turns to `targetHeading` and
     /// slides to `goal`, each at a constant rate over `seconds` (TurnAndSlide), on top of its clip's root motion, as
-    /// the steer of an attack does (Holdable::carryOver(), docs/research/combat.md#throw-direction).
+    /// the steer of an attack does (Holdable::carryOver(), docs/research/combat-throws.md#throw-direction).
     void carryOver(anim::Vec3 position, float heading, anim::Vec3 goal, float targetHeading, float seconds);
     /// The target human the search would pick for an attack of `range` metres with `current` as the current target
     /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
@@ -245,7 +246,7 @@ class Fighter {
     /// body with shapes only where one of its shapes touches the body's spine or head (Human::testStrikes()), so its
     /// hit has no fixed update and can miss; a target without shapes takes it at its hit update
     /// (docs/research/combat-moves.md#timing). So does a thrown victim's flight and the extreme reaction it knocks a
-    /// bystander into (clips::carriesStrike(), docs/research/combat.md#throws).
+    /// bystander into (clips::carriesStrike(), docs/research/combat-throws.md#throws).
     [[nodiscard]] bool strikesWithShapes(int animId) const;
     /// The human this one threw last (its throw clip's victim), which that victim's flight does not strike.
     /// **Coney's choice**: what keeps the thrower out of the original's strike test is not traced.
@@ -260,7 +261,7 @@ class Fighter {
     /// The object an object attack's hit struck this update (its handle); nothing otherwise.
     [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
     /// Starts the stereo theft (mode 3) at game time `nowMs`, a stage `stageTurns` turns of the stick: 683
-    /// `STEREO_STEAL_INTRO`, then the loop 684 while the game runs (docs/research/combat.md#stereo-theft).
+    /// `STEREO_STEAL_INTRO`, then the loop 684 while the game runs (docs/research/combat-targets.md#stereo-theft).
     /// @orig 0x0022dd98 StereoTheft_Start (unknown)
     void startStereoTheft(HumanAnimator& animator, std::uint64_t nowMs, float stageTurns);
     /// The held object's anim set from now on (0 for none), which square and cross branch on (combat::armedAttack()).
@@ -475,8 +476,8 @@ class Fighter {
     // update (m_steer), the target led by its velocity x (`toEvent` + 0.1 s). The attack's flag 0x8 (ledSteer())
     // picks the steer: the led one takes `toEvent` + 0.1 s, the other `seconds`, cut to `toEvent` + 0.1 s. The led
     // one aims at the target's head (Combatant::ledPoint()) read as the attack starts, the other at its position
-    // (docs/research/combat.md#led-steer). With `ledAllowed` false the other steer is taken whatever the flag (the
-    // dive).
+    // (docs/research/combat-targets.md#led-steer). With `ledAllowed` false the other steer is taken whatever the flag
+    // (the dive).
     // @orig 0x00275678 Attack_SteerLed (unknown)
     // @orig 0x002761c8 Attack_SteerToTarget (unknown)
     void steerOnto(int animId, const Combatant& target, const FighterInput& input, float toEvent, float seconds,
@@ -522,7 +523,7 @@ class Fighter {
     // The victim held is gone from the targets (removed from the level), or something other than this grab freed it
     // (a script's normal mode, a hit that knocked it down, a placement that broke the pair): the hold ends without
     // touching a victim that is gone; after a broken pair this side plays its reaction (138 or 106, or 244 from the
-    // mount; docs/research/combat.md#pair-break).
+    // mount; docs/research/combat-grabs.md#pair-break).
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
     // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
@@ -531,7 +532,7 @@ class Fighter {
     // The grabber's connecting clip for the side the grab is on; the victim plays the next id.
     [[nodiscard]] std::uint32_t connectClip() const { return static_cast<std::uint32_t>(m_connect + (m_rear ? 2 : 0)); }
     // A strong grapple's connect has ended in the hold: the victim takes the strike's damage, reported as the hold's
-    // id (docs/research/combat.md#strong-grapple).
+    // id (docs/research/combat-grabs.md#strong-grapple).
     void landGrapple(const FighterInput& input);
     // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
     // the hold ends, the victim plays the counter (76 or 9) and this human the reaction from the victim's set (77 or
@@ -540,7 +541,7 @@ class Fighter {
     // @orig 0x00262ac8 Attack_StartPaired (unknown)
     bool answerCounter(const FighterInput& input, HumanAnimator& animator, float heading);
     // A power move in a grab (57, 63 and their extensions) has played out: the grab ends, the grabber settling through
-    // 389 as queued, the victim on the ground, to get up after its time (docs/research/combat.md#grabbing).
+    // 389 as queued, the victim on the ground, to get up after its time (docs/research/combat-grabs.md#grabbing).
     void endPowerMove();
     // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
     // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
@@ -571,15 +572,15 @@ class Fighter {
     void playMountAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // The grab's mount or the tackle has played (210 started): the mounter turns and slides over 0.1 s to stand with
     // the victim at clip 210's offset (0.120 m left, 0.032 m ahead), facing it; the victim does not move
-    // (docs/research/combat.md#mount). **Coney's choice**: Mount_OnStrikeEnd's get-off (the victim more than 0.2 m
-    // above or below, too far, or no clear line) is not built.
+    // (docs/research/combat-grabs.md#mount). **Coney's choice**: Mount_OnStrikeEnd's get-off (the victim more than 0.2
+    // m above or below, too far, or no clear line) is not built.
     // @orig 0x00277248 Human_AlignToVictimFacing (unknown)
     // @orig 0x0026ef68 Grab_MountClipEnd (unknown)
     void seatMount(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The seat's slide is over: the victim is attached where it lies.
     void attachSeat(const FighterInput& input, float heading);
     // Whether a victim escapes when the grab's power runs out (`Human_UpdateMeters` `0x002562d0`): it has flag 0x4000
-    // or 0x20000, or the grabber is hurt and it lacks 0x2000000000 (docs/research/combat.md#grabbed).
+    // or 0x20000, or the grabber is hurt and it lacks 0x2000000000 (docs/research/combat-grabs.md#grabbed).
     [[nodiscard]] bool powerOutEscape(const Combatant& victim) const;
     // The grab broke at 0 power and the victim escapes (powerOutEscape()), or it won its escape roll
     // (applyHeldReport()): the victim escapes (100 / 112), the player is knocked down and stunned (101 / 113 from the
@@ -593,9 +594,9 @@ class Fighter {
     // @orig 0x00244e78 Human_MoveAttached (unknown)
     void placeAttached(anim::Vec3 position, float heading) const;
     // Held or mounted, but the grabber has stopped driving the hold (removed, out of the update): the human frees
-    // itself with the victim's side of a broken pair (docs/research/combat.md#pair-break) rather than stay in the held
-    // loop. **Coney's choice**: in the original every way a grabber leaves breaks the pair; Coney's grabber may stop
-    // updating without that, so the victim's side makes sure.
+    // itself with the victim's side of a broken pair (docs/research/combat-grabs.md#pair-break) rather than stay in the
+    // held loop. **Coney's choice**: in the original every way a grabber leaves breaks the pair; Coney's grabber may
+    // stop updating without that, so the victim's side makes sure.
     void freeFromLostGrabber(HumanAnimator& animator);
 
     // --- fighter_tandem.cpp: the tandem.
@@ -663,9 +664,10 @@ class Fighter {
     // (takeHeldReport()); nothing is played here. **Coney's choice**: the reversal (R1) is not offered this way.
     // @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
     void struggleInHold(const FighterInput& input, const HumanAnimator& animator);
-    // The wall a throw to the stick's side would meet (`Player_Throw` `0x0026dd08`, docs/research/combat.md#throws):
-    // a ray 1.4 m up along the side's body axis for the side's wall-throw far range + 0.2 m, then along the stick's
-    // own direction; a steep face (normal · up below cos 80°) within the far range gives the wall throw.
+    // The wall a throw to the stick's side would meet (`Player_Throw` `0x0026dd08`,
+    // docs/research/combat-throws.md#throws): a ray 1.4 m up along the side's body axis for the side's wall-throw far
+    // range + 0.2 m, then along the stick's own direction; a steep face (normal · up below cos 80°) within the far
+    // range gives the wall throw.
     struct WallThrow {
         anim::Vec3 vector;   // the ray's direction × the distance to the wall (the victim's +0x5c0)
         anim::Vec3 normal;   // the face's normal
@@ -683,12 +685,12 @@ class Fighter {
     [[nodiscard]] int spinToFrontUpdates(const HumanAnimator& animator, float stepSeconds) const;
     // A front hold's plain throw (147-153) turns the pair onto the stick over 1/6 s: the thrower so the throw's side
     // points along the stick, the victim carried round him at its offset and turned to face him.
-    // Research: docs/research/combat.md#throw-direction
+    // Research: docs/research/combat-throws.md#throw-direction
     // @orig 0x0026dd08 Player_Throw (unknown)
     void turnThrow(Holdable& victim, int animId, const FighterInput& input, float heading);
     // The spin in front of a rear hold's throw has handed over to the throw's clip: the victim plays its side of the
     // throw and is let go. (The spin and the throw are started by playGrabAction().)
-    // Research: docs/research/combat.md#throw-direction
+    // Research: docs/research/combat-throws.md#throw-direction
     // @orig 0x00263380 Grab_StartPairedMove (unknown)
     void throwAfterSpin(const HumanAnimator& animator);
     // The grabber's numbers its victim's struggle reads (power, hurt, rage, flag 0x40, its class's divisor).

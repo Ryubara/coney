@@ -1,9 +1,9 @@
 # slot 6: PoizoCiv, a passive civilian, is kept 4 m in front of the player, facing him, until the press; the player
 # sprints (L2, the stick at 98 % straight ahead) and presses cross: the charge (anim 0) strikes him. The trace shows
 # whether the charger plays his clip out or reacts when the flung civilian's extreme reaction (all strike shapes on)
-# meets him, and what either loses. Research: docs/research/combat.md#protected-moves.
+# meets him, and what either loses. Research: docs/research/combat-reactions.md#protected-moves.
 description = "slot 6: sprint and charge into PoizoCiv standing 4 m ahead; does the charger react or lose health"
-research = "docs/research/combat.md#protected-moves"
+research = "docs/research/combat-reactions.md#protected-moves"
 input = "charge_human.txt"
 updates = 120
 fields = ["player", "enemy"]

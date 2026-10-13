@@ -5,8 +5,9 @@
 // of player 1, who sprints at him (L2 held, the left stick at 98 % toward him through the camera, as a pad would) and
 // presses cross (the charge, clip 0) or square (the dive, clip 1) within 3 m of him. The fighter takes the crushing
 // hit and is flung; the attacker's clip plays to its end with no reaction of his own, as the original's held flags
-// `0x1c16a40` keep any hit from making a charger or a diver react (docs/research/combat.md#protected-moves). It runs
-// only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
+// `0x1c16a40` keep any hit from making a charger or a diver react (docs/research/combat-reactions.md#protected-moves).
+// It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
+// (LEGAL.md).
 
 #include <algorithm>
 #include <cmath>

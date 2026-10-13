@@ -1,9 +1,9 @@
 # A lethal hit from a third human during a paired move: the player grabs PoizoCiv (a puppet at 60 health) from the
 # front and starts the power strike 57; Ash (the player's ally, a puppet) stands behind PoizoCiv and is given X1 at
 # him while 57 / 58 plays. Does the victim die at once or only when the paired clip ends?
-# Research: docs/research/combat.md#protected-moves ("A lethal hit waits").
+# Research: docs/research/combat-reactions.md#protected-moves ("A lethal hit waits").
 description = "slot 6: power strike 57 on PoizoCiv at 60 health while Ash's X1 lands on him: when the lethal hit plays"
-research = "docs/research/combat.md#protected-moves"
+research = "docs/research/combat-reactions.md#protected-moves"
 input = "moves_finisher_lethal.txt"
 updates = 200
 fields = ["player", "held"]

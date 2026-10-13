@@ -1981,8 +1981,8 @@ Kills a human through the damage path: unless it is already dead or flagged `0x8
 `+0x5d2`), so the next damage update finishes it with the usual death.
 
 **Notes.** The handle is not checked for being a human. That the pending damage is applied on the next update is from
-the damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
-(inferred).
+the damage page ([Combat](../../research/combat-reactions.md#damage)); the outcome (knock-out or death) follows the
+usual rules (inferred).
 
 - **Evidence:** confirmed (code) at `0x00237e70`; detail: traced
 - **Wrapper** `0x00358640` (registered by `RegisterBindings`); **calls** `0x00237e70` `Human_Kill`
@@ -2080,8 +2080,9 @@ set. Finally human flag `+0xe0` 0x10 and state flag 0x40000000 are set.
 
 **Notes.** The AI stays held until something releases brain `+0x09` (not traced which binding). State flag 0x40000000 is
 the down latch (HuMakeGrounded false clears it; confirmed (runtime): 196 at once, health 1, then 199 on the update after
-the latch was cleared, combat.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human flag 0x10 (also set
-by a hit stopped at a health floor) are not named yet. Bit meanings: characters.md#the-record, combat.md#state-flags.
+the latch was cleared, combat-reactions.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human flag 0x10
+(also set by a hit stopped at a health floor) are not named yet. Bit meanings: characters.md#the-record,
+combat.md#state-flags.
 
 - **Evidence:** confirmed (code) at `0x00234d70`, `0x0022f100`; detail: traced
 - **Wrapper** `0x003593e0` (registered by `RegisterBindings`); **calls** `0x00234d70` `Human_MakeBeatUp`, `0x0022f100`
@@ -2107,7 +2108,7 @@ With true, a human that is not already down or dead is knocked down (Human_Knock
 `0x80000`, grounded) and lies in 196 at once, with no fall clip; its state code is set to 3 and state flags `0x20000000`
 and `0x40000000` (the down latch) set. While latched it never rises. With false the latch is cleared, and the human
 rises (199) on its next update if its down time has run out, else when it does
-([Combat](../../research/combat.md#scripted-knockdowns)).
+([Combat](../../research/combat-reactions.md#scripted-knockdowns)).
 
 **Notes.** The latch is read by Human_UpdateDown (0x00256a60), which skips the rise and the stun's end while it is set,
 by Humans_Update (no removal, no bleed-out mark) and by CullCorpses (which spares latched humans). False does not itself
@@ -2718,7 +2719,7 @@ HuSetDamage(human, amount, attacker, react, useHeld)
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human to hurt; a bad handle does nothing. |
 | 2 | `amount` | number, truncated to an integer | Damage in hitpoints (16 bits; the sign is kept, the size compared). |
 | 3 | `attacker` | number, truncated to an unsigned integer | Handle of the human credited with the hit, or 0 for none (0 is tested, not NilHandle). |
-| 4 | `react` | number, truncated to an unsigned integer | Stored in record `+0x11a`, read only when the victim is in a grab: 2 or more plays the heavier paired reaction. It does not decide whether the victim reacts ([Combat](../../research/combat.md#scripted-knockdowns)). |
+| 4 | `react` | number, truncated to an unsigned integer | Stored in record `+0x11a`, read only when the victim is in a grab: 2 or more plays the heavier paired reaction. It does not decide whether the victim reacts ([Combat](../../research/combat-reactions.md#scripted-knockdowns)). |
 | 5 | `useHeld` | boolean (nil or 0 is false) | With no attacker, true records the human's own held object as what hit it; ignored with an attacker. |
 
 **Returns** nothing.
@@ -2731,7 +2732,7 @@ real hits.
 
 **Notes.** A smaller hit in the same update is dropped, not added. Also written: human `+0x5d2` (last damage). Scripts
 pass attacker 0 to hurt without blame; the victim is then its own foe, and a standing victim plays 275 (hit code 10 from
-its own side 3), confirmed (runtime) ([Combat](../../research/combat.md#scripted-knockdowns)).
+its own side 3), confirmed (runtime) ([Combat](../../research/combat-reactions.md#scripted-knockdowns)).
 
 - **Evidence:** confirmed (code) at `0x002358c8`, `0x00264bd8`; detail: traced
 - **Wrapper** `0x0035b8a0` (registered by `RegisterBindings`); **calls** `0x002358c8` `Human_SetDamage`, `0x00264bd8`
@@ -2930,7 +2931,7 @@ Sets the human's current health (`+0x144` of its record at human `+0xd4`) to `he
 value.
 
 **Notes.** No lower bound: 0 or a negative value is stored as given; what the damage code then does with it is not
-traced (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat.md#damage).
+traced (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat-reactions.md#damage).
 
 - **Evidence:** confirmed (code) at `0x00237848`; detail: traced
 - **Wrapper** `0x0035bad8` (registered by `RegisterBindings`); **calls** `0x00237848` `Human_SetHealth`
@@ -3171,7 +3172,7 @@ object of anim set 4 or 6 (the two-handed props, the ghetto blasters) is dropped
 **Notes.** Bit set at 0x00237328 and read at five places (0x00257ce8, 0x00257d70, 0x00257e38, 0x0026a7bc, 0x0022ed14).
 It does not stop the drop of an object whose throw a hit interrupts, nor of a kind-39 object (Human_ApplyPendingDamage,
 0x00265f70). Rage's SetRageMode sets it. Details: [Combat: dropping what is held when
-hit](../../research/combat.md#keep-weapon).
+hit](../../research/combat-rage.md#keep-weapon).
 
 - **Evidence:** confirmed (code) at `0x00237328`; detail: traced
 - **Wrapper** `0x003597e0` (registered by `RegisterBindings`); **calls** `0x00237328` `Human_SetKeepWeapon`
@@ -3193,8 +3194,8 @@ HuSetKillerMode(human, on)
 **Returns** nothing.
 
 Sets or clears bit 0x20 of the human's flag word (`+0xe0`). With it set, every strike the human lands deals the victim's
-whole remaining health (`Strike_Contact`, [Combat](../../research/combat.md#damage)), so one hit knocks out or kills;
-scripts give it to a few scripted killers.
+whole remaining health (`Strike_Contact`, [Combat](../../research/combat-reactions.md#damage)), so one hit knocks out or
+kills; scripts give it to a few scripted killers.
 
 **Notes.** Only melee strikes read the bit as far as traced; thrown objects and HuSetDamage are not affected.
 
@@ -3778,7 +3779,7 @@ the flag.
 **Notes.** The Lua function is the first name given to CfgRageHandlers (copied to 0x006b6830 by Cfg_SetRageHandlers);
 global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction, ungrabbable,
 ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears them ([Scripts:
-level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat.md#rage).
+level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage).
 
 - **Evidence:** confirmed (code) at `0x00237128`; detail: traced
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`
@@ -4007,9 +4008,9 @@ human flag `+0xe0` 0x8000000 is set the stun lasts until ended by script. With f
 
 **Notes.** A human with flag `0x100` (`+0xe1` bit 0, as `HuSetUnstunnable` sets; `Human_Stun` tests it at 0x0022f68c)
 ignores the stun unless it has the endless-stun flag 0x8000000; confirmed (runtime): with `0x100` nothing happened,
-without it 355/356 for the class's 750 ms, then 357 ([Combat](../../research/combat.md#scripted-knockdowns)). Humans in
-movement styles 7-10 or 0xf, knocked down, or flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or
-grabbed human only clears the flag. What state flag 0x20000000 means is open. Used on Luther in level 64.
+without it 355/356 for the class's 750 ms, then 357 ([Combat](../../research/combat-reactions.md#scripted-knockdowns)).
+Humans in movement styles 7-10 or 0xf, knocked down, or flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead,
+downed or grabbed human only clears the flag. What state flag 0x20000000 means is open. Used on Luther in level 64.
 
 - **Evidence:** confirmed (runtime); detail: traced
 - **Wrapper** `0x0035ac80` (registered by `RegisterBindings`); **calls** `0x002354b8` `Human_SetStunned`, `0x0022f658`

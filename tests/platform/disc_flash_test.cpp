@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that a flash is used as the original uses it (docs/research/combat.md#rage,
+// Checks against the player's own disc that a flash is used as the original uses it (docs/research/combat-rage.md#rage,
 // "The flash clip's events"; issue #234): `level80` checkpoint 2 played in the game session as `coney --play-level
 // level80 --checkpoint 2` plays it (support/disc_session.h), player 1 hurt and carrying a flash, and a pad driver that
 // taps d-pad right for one frame. The clip 665 `gen_flash_use` must play (it is in the player's animation set), the
@@ -47,7 +47,7 @@ namespace {
 
 // The flash's clip: 665 SPECIAL_FLASH, `gen_flash_use`.
 constexpr std::uint32_t kFlashClip = 665;
-// The update of the clip its action event falls on: frame 19 of 30 per second (docs/research/combat.md#rage).
+// The update of the clip its action event falls on: frame 19 of 30 per second (docs/research/combat-rage.md#rage).
 constexpr int kEventUpdate = 19;
 // The interface cue `Flash_Use` plays: 23, `vags/misc/flash`.
 constexpr std::size_t kFlashCue = 23;

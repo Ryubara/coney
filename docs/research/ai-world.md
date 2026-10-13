@@ -18,7 +18,7 @@ here, not repeated.
 | Hiding, cars and trains in brief | [AI: Cover, cars and trains](ai.md#ai-hazards) |
 | Route links: climbs, jumps, doors, charges | [AI: Following a route](ai-moving.md#route-follow), [Jump legs](ai-moving.md#route-jump) |
 | How the scripts drive the AI | [AI: How the scripts drive the AI](ai-scripting.md#script-control) |
-| An AI's attacks and the held object's effect | [Combat: An AI's attacks](combat.md#ai-attacks) |
+| An AI's attacks and the held object's effect | [Combat: An AI's attacks](combat-targets.md#ai-attacks) |
 | Each weapon set's swings, throws and blocks | [Combat moves: Weapons](combat-moves.md#weapons) |
 | Steps and giving way | [Characters: Step control](characters.md#step-control), [AI: Giving way](ai-moving.md#giving-way) |
 
@@ -69,7 +69,7 @@ addresses cited.
    writes command `0x33`.
 3. The dispatcher runs `Player_OnCommand33` (`0x00281188`). It does nothing while the human holds any flag of
    `0x2fefefff` or has any state bit of `0x7bf9e9f7ff0`; otherwise it runs the player's pick-up search
-   (`Human_PickUpSearch`, `0x0024d810`; [Combat: Breakables](combat.md#breakables),
+   (`Human_PickUpSearch`, `0x0024d810`; [Combat: Breakables](combat-targets.md#breakables),
    [World objects: Pickable objects](objects.md#pickable)).
 4. **Update** (`0x002fb0a8`) reports running on its first update, then while held flag `0x4000` (a pick-up playing)
    is set, then done.
@@ -78,7 +78,7 @@ addresses cited.
 (`0x0024d810`) as for a player; but a human with an **object target** (the action's Start sets it) skips the 1.5 m
 search and its sight rays and takes that object at once, so the only glass test on an AI's take is GetItem's ray
 above. The object then gets message 0 and plays the player's clip by height (463 at or below 0.8 m above the feet,
-464 above; [Combat: breakables](combat.md#breakables)), and `Human_PickUpObject` runs at the clip's event. Confirmed
+464 above; [Combat: breakables](combat-targets.md#breakables)), and `Human_PickUpObject` runs at the clip's event. Confirmed
 (code) at `0x0024d810`, `0x002faf98`.
 
 Two goals look for a weapon themselves, besides those listed in [AI: Objects in an AI's hands](ai.md#ai-objects).
@@ -174,7 +174,7 @@ already holds, if any.
      12 (`0x37`, the grounded strike 193) when lower, and 0 (cross) whenever an object is held, so an armed AI
      swings its weapon at the car;
    - drop the human target, make the car the object target, and copy the part's position into the record's
-     `+0xe0`-`+0xec`, where a player's target search puts a car target ([Combat: Target selection](combat.md#targets));
+     `+0xe0`-`+0xec`, where a player's target search puts a car target ([Combat: Target selection](combat-targets.md#targets));
    - queue the attack at himself (`Brain_QueueAttack`);
    - every 8 s, when he may gesture: say line `0x8e` (30 %) or `0x8f` (70 %).
 
@@ -217,7 +217,7 @@ confirmed (code):
   2. turns the body to face the point **at once** (`Human_SetRotation`), and sets its velocity to **8 m/s** toward it;
   3. writes the command of attack kind 19 (`0x20`, the running charge) into the per-player record.
 
-  The player's charge then breaks the object ([Combat: Breakables](combat.md#breakables)).
+  The player's charge then breaks the object ([Combat: Breakables](combat-targets.md#breakables)).
 - **The climb** (`Route_ClimbLeg` `0x0029b848`, and `Route_TryClimbNear` `0x0029b9b0` for a fast climber, human flag
   `0x2`, at a gait above 3 within 4.5 m) calls the player's `Climb_TryStart`
   ([Characters: Climbing](characters.md#climb)). The executable has no separate vault (no such function or

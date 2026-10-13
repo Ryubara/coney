@@ -3109,8 +3109,8 @@ Overrides the tuning of the mugging's stick game (every mugging, interrogations 
 milliseconds, two angles in degrees and a byte, stored in one of two global override sets (0x00510a18, 0x00510a38).
 While a set's `timeA` is non-zero every mugging uses it instead of the per-class values; calling again with all zeros
 restores them, which is what the mission-1 tutorial (`level99_lesson1`) does after its mugging lesson ([Combat:
-mugging](../../research/combat.md#mugging)). It does not make anyone interrogable: that is HuSetInterrogation's field
-`+0x5a0` ([Crimes: interrogation](../../research/crimes.md#interrogation)).
+mugging](../../research/combat-throws.md#mugging)). It does not make anyone interrogable: that is HuSetInterrogation's
+field `+0x5a0` ([Crimes: interrogation](../../research/crimes.md#interrogation)).
 
 **Notes.** Storage and the default/override switch are confirmed (code) at 0x002854b0, 0x00284ca0 and 0x002853a8; the
 fields' uses at 0x002856b8 (Player_UpdateMugging). Bytes +0x00 and +0x01 have no reader found.

@@ -1,8 +1,8 @@
 # The mount's power strike (cross held, square): grab PoizoCiv 1.0 m ahead (circle), mount from the front hold
-# (circle), then cross held and square. Research: docs/research/combat.md#mount-power. The hooks log
+# (circle), then cross held and square. Research: docs/research/combat-grabs.md#mount-power. The hooks log
 # Attack_StartPaired and the anim ids each human takes, so the clips of both bodies are seen in order.
 description = "slot 6: grab and mount PoizoCiv 1.0 m ahead, then cross held + square: the mount's power strike ends the mount"
-research = "docs/research/combat.md#mount-power"
+research = "docs/research/combat-grabs.md#mount-power"
 input = "moves_mount_power.txt"
 updates = 330
 fields = ["player", "held"]

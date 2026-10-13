@@ -139,7 +139,7 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
         if (input.stick.magnitude() > kThrowStick) {
             // Only a front hold's plain throw (147-153, `Attack_StartPaired`) checks the place: not a wall throw, and
             // not the rear hold's path (`Grab_StartPairedMove`), which spins to the front first
-            // (docs/research/combat.md#throw-direction, items 4 and 5).
+            // (docs/research/combat-throws.md#throw-direction, items 4 and 5).
             if (!placed && !input.rearThrow && !input.wallInReach) {
                 break;
             }

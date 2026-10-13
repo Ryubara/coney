@@ -10,11 +10,11 @@
 // The player held in another human's grab: the struggle strike that costs the grabber power, the strike back, the
 // escape and the reversal (both a roll against the grabber's power), and the counter at the catch. These are pure
 // decisions over what the grabber shows; the human plays the clips and the grabber applies what it is told.
-// Research: docs/research/combat.md#grabbed
+// Research: docs/research/combat-grabs.md#grabbed
 
 namespace coney::combat {
 
-/// The grabbed player's clips, front then rear; the grabber plays each id + 1 (docs/research/combat.md#grabbed).
+/// The grabbed player's clips, front then rear; the grabber plays each id + 1 (docs/research/combat-grabs.md#grabbed).
 inline constexpr int kGrabStruggleFront = 96;
 inline constexpr int kGrabStruggleRear = 108;
 inline constexpr int kGrabStrikeBackFront = 104;

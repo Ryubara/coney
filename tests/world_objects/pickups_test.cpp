@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The triangle pick-up search and its clip (docs/research/combat.md#breakables), and a level's placed objects file
-// (docs/research/objects.md#objs-file) read into spawn records.
+// The triangle pick-up search and its clip (docs/research/combat-targets.md#breakables), and a level's placed objects
+// file (docs/research/objects.md#objs-file) read into spawn records.
 #include "world_objects/pickups.h"
 
 #include <array>

@@ -87,7 +87,8 @@ SteerGoal attackSteerGoal(anim::Vec3 from, anim::Vec3 target, anim::Vec3 targetV
     // kSteerLeadCut (docs/research/combat-moves.md#reach).
     anim::Vec3 lead{targetVelocity.x * (seconds + kSteerLeadExtraSeconds),
                     targetVelocity.y * (seconds + kSteerLeadExtraSeconds), 0.0F};
-    // Farther: the led point lies no nearer the attacker than the target itself (docs/research/combat.md#led-steer).
+    // Farther: the led point lies no nearer the attacker than the target itself
+    // (docs/research/combat-targets.md#led-steer).
     const float now = std::hypot(target.x - from.x, target.y - from.y);
     const float led = std::hypot(target.x + lead.x - from.x, target.y + lead.y - from.y);
     if (const float leadLength = std::hypot(lead.x, lead.y); leadLength > kSteerLeadHalveBeyond && led >= now) {

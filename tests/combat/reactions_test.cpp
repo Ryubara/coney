@@ -111,7 +111,7 @@ TEST_CASE("the combo ids are 13-15 and 17-20: SS2 (16) is never one", "[combat]"
 
 TEST_CASE("the being-hit table of the runtime, from all four sides, on the player (flag 0x400)", "[combat]") {
     // The civilian's codes on the player: front, the victim's left, behind, the victim's right
-    // (docs/research/combat.md#being-hit-runtime).
+    // (docs/research/combat-reactions.md#being-hit-runtime).
     struct Row {
         int animId;
         int code;

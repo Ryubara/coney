@@ -117,7 +117,7 @@ itself ends it: the clip that starts it also stops it. Clip event **`0x45`** sen
 (`0x8e` / `0xc7`) on the same human stop it before starting their own; a cinematic's start stops every human's held
 sound ([Scenes](scenes.md#playing)); `Human_StopVoice` (`0x0021f058`).
 
-In Rembrandt's power move 59 (`gen_grab_front_power10_p2`, rate 0.75, [Combat](combat.md#power-move-props)) the loop
+In Rembrandt's power move 59 (`gen_grab_front_power10_p2`, rate 0.75, [Combat](combat-grabs.md#power-move-props)) the loop
 starts at frame 14 and event `0x45` stops it at frame 27: **17 updates (0.57 s)** of spray. Confirmed (runtime),
 PCSX2 2.9.94, level99 lesson 6: `+0x168` held a live handle from 59's update 19 to its update 36 and was empty from
 then on.

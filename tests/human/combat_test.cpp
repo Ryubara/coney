@@ -696,7 +696,7 @@ TEST_CASE("the grab's mount leaves the victim where its clip put it and slides t
           "[human][combat]") {
     // Grab, then circle with the stick at rest mounts (118 / 119). At 210 the mounter, never the victim, turns and
     // slides over 0.1 s (3 updates) to stand with the victim 0.120 m to his left and 0.032 m ahead, facing him
-    // (docs/research/combat.md#mount).
+    // (docs/research/combat-grabs.md#mount).
     const FightCharacter character;
     Fight fight(character, 1.5F);
     std::optional<std::uint64_t> seated;

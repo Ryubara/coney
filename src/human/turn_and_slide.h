@@ -7,7 +7,7 @@
 // A turn and a slide spread over a time at a constant rate, as an attack steers onto its target: the turn's rate
 // (angle / T) and the slide's velocity ((goal - position) / T) are stored when the attack starts, and each character
 // step applies one step's worth of them until their time runs out, the last step only for the time left. No easing.
-// Research: docs/research/combat.md#targets ("The steer in detail")
+// Research: docs/research/combat-targets.md#targets ("The steer in detail")
 
 namespace coney::human {
 

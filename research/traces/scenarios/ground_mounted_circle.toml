@@ -1,7 +1,7 @@
-# The downed player under attack (docs/research/combat.md#ground-escape): PoizoCiv, a puppet, knocks the player
+# The downed player under attack (docs/research/combat-reactions.md#ground-escape): PoizoCiv, a puppet, knocks the player
 # down with the special 653, is put beside him, then mounts him on the ground (circle held, command 0xe); the player taps circle every 3 updates from 150, then square.
 description = "slot 6: the player knocked down by a puppet's 653; mounts him on the ground (circle held, command 0xe); the player taps circle every 3 updates from 150, then square"
-research = "docs/research/combat.md#ground-escape"
+research = "docs/research/combat-reactions.md#ground-escape"
 input = "ground_mounted_circle.txt"
 updates = 300
 fields = ["player", "enemy", "down"]

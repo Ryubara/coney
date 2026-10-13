@@ -319,7 +319,7 @@ TEST_CASE("on the disc, the led steer's head point leans as the game's does at r
     const Yard yard = loadYard(path);
     // The head (bone 6) in the model's frame over the idle 388 and the fight idle 358: at runtime x (right) -0.004 to
     // 0.025 and y (forward) 0.019 to 0.041 m in 388, x 0.024 to 0.051 and y 0.075 to 0.165 m in 358
-    // (docs/research/combat.md#led-steer).
+    // (docs/research/combat-targets.md#led-steer).
     for (const std::uint32_t id : {388U, 358U, 275U, 389U}) {
         const coney::anim::AnimClip* clip = yard.character->anims().clip(id);
         REQUIRE(clip != nullptr);

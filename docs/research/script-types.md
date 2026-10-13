@@ -336,8 +336,8 @@ the next update turns both off. It ends after 240 ticks or on message `0x13`.
 ### Blood {#blood}
 
 The blood types: `sub_blo`, `sub_pch` and `sub_punch_flash` make `sub_blood_effect`, which makes the pieces. Which
-hits and clip events start them, and with what count, is on [Combat: hit blood](combat.md#hit-blood). Colours are
-`0x7a0015` (`0x9a1616` for sprays, `0x280606` for the ground drops, `0x801010` for the decal) unless the colour
+hits and clip events start them, and with what count, is on [Combat: hit blood](combat-reactions.md#hit-blood). Colours
+are `0x7a0015` (`0x9a1616` for sprays, `0x280606` for the ground drops, `0x801010` for the decal) unless the colour
 swap above is on. Every piece below is a camera-facing square of `part_page1` drawn by the particle draw, which
 blends each update's colour and size from the previous ones over the update interval ([Particles](particles.md#fog));
 ticks are 1/60 s ([Tasks](tasks.md#tick)). Confirmed (code) at each address unless marked.
@@ -362,7 +362,7 @@ times to the contact, it:
    distances come from the sound list);
 2. lies flat on the surface (its rotation turns −y onto the contact normal `n`), drops flags `0x20000000` and
    `0x4000000` and sets `0x2000001`, so it no longer falls, and does not land again (confirmed (runtime): one
-   landing per blob, [Combat](combat.md#hit-blood));
+   landing per blob, [Combat](combat-reactions.md#hit-blood));
 3. makes `blood_splat_ground` drops, each lying on the surface with the blob's new rotation:
     - on a floor (`n.z` 0.9 or more): 17; drop *i* (0-16) at the blob plus `(sx · dx, sy · dy, 0)`, `sx` and `sy`
       each random in [−k, k] with `k` = 0.1-0.4 + 0.15 *i* and `(dx, dy)` the blob's direction `0.7 d`: a spatter
@@ -571,7 +571,7 @@ object. Confirmed (code) at the addresses in the table.
   [pick-up search](objects.md#pickable) sends it **message 0**: unless broken or busy (`0x100000`) it marks itself
   busy and sends the human message **`0x14`** with itself; in every case its drawer is deleted at once (message `0x15`,
   `+0x1c` cleared). The human's `0x14` (`Human_HandleMessage` `0x00245920`, [the pick-up
-  clip](combat.md#breakables)) plays its `TwoHandPickUp` clip, **503** `ANIM_BARREL_PICK_UP`, or **504** when the
+  clip](combat-targets.md#breakables)) plays its `TwoHandPickUp` clip, **503** `ANIM_BARREL_PICK_UP`, or **504** when the
   register is more than 0.8 m above his feet, with anim set 4 (`OVERHEAD_WEAPON_SET`). The clip's take event sends it
   message **`0x1b`** (`DynCashreg_OnPickUp` `0x003c0108`): velocity and spin zeroed, attached to his hand at the bone
   (flag `0x10`), the hand offset from type properties 11 and 12, its `CfgObj` `holdPos` / `holdRot` (the event's in
@@ -2134,7 +2134,7 @@ record's type is `0x33` and game state `+0x33a` is 6 (inferred: one level's bus 
 ### `melee_weapon` {#melee-weapon}
 
 The class of hand-held weapons (`CfgObj` class `melee_weapon`; [Held objects](objects.md#held), [Breakables and
-pick-ups](combat.md#breakables)). The message handler (`MeleeWeapon_OnMessage`) and the break (`MeleeWeapon_Break`)
+pick-ups](combat-targets.md#breakables)). The message handler (`MeleeWeapon_OnMessage`) and the break (`MeleeWeapon_Break`)
 are documented there. Data: `+0x10` state (2 thrown, −5 broken), `+0x14` the update interval, `+0x1c` a linked
 object's handle, `+0x20` / `+0x24` a counter and its limit.
 

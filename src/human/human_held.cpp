@@ -3,7 +3,8 @@
 // victim's side of each paired move on it, aligns it and, once the hold is attached, places it every update at the
 // hold's offset (the original's `Human_MoveAttached`, `0x00244e78`). The held human's fighter keeps the hold's state
 // (Fighter::enterHold()), which Human::state() reports, holds its movement and keeps it from acting.
-// Research: docs/research/combat.md#grab, docs/research/combat.md#grab-posing, docs/research/combat.md#grab-turn
+// Research: docs/research/combat-grabs.md#grab, docs/research/combat-grabs.md#grab-posing,
+// docs/research/combat-grabs.md#grab-turn
 #include <cmath>
 
 #include "human/human.h"

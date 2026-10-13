@@ -356,8 +356,8 @@ TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", 
 namespace {
 
 // Square at a car (its window breaks), triangle (the theft starts) and the left stick turned anticlockwise at 0.9,
-// 30 degrees an update, for 400 updates (docs/research/combat.md#stereo-theft: four stages of three turns), from
-// update `from`.
+// 30 degrees an update, for 400 updates (docs/research/combat-targets.md#stereo-theft: four stages of three turns),
+// from update `from`.
 std::string stereoTheft(int from) {
     std::string script = std::format("{} tap square\n{} tap triangle\n", from + 40, from + 120);
     constexpr int kTurnUpdates = 400;
@@ -503,7 +503,7 @@ TEST_CASE("the disc's level34 muggings bonus counts a mugging done with the stic
     // docs/research/scripting.md#level34: the bonus counts the players' successful muggings (HuSetMugCallback, here
     // F.PedMugged). From checkpoint 2, player 1 is placed in front of the nearest pedestrian (Coney's --start test
     // aid stands for the walk), grabs him with circle, starts the mugging with triangle and holds the stick, 80 %
-    // deflected, on the mug meter's target as a player reading the HUD does (docs/research/combat.md#mugging).
+    // deflected, on the mug meter's target as a player reading the HUD does (docs/research/combat-throws.md#mugging).
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

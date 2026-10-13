@@ -1,7 +1,7 @@
-# The downed player under attack (docs/research/combat.md#ground-escape): PoizoCiv, a puppet, knocks the player
+# The downed player under attack (docs/research/combat-reactions.md#ground-escape): PoizoCiv, a puppet, knocks the player
 # down with the special 653, is put beside him, then kicks him on the ground (command 0x37, clip 193) at 64 and 100; the player does nothing.
 description = "slot 6: the player knocked down by a puppet's 653; kicks him on the ground (command 0x37, clip 193) at 64 and 100; no input (the player does nothing)"
-research = "docs/research/combat.md#ground-escape"
+research = "docs/research/combat-reactions.md#ground-escape"
 input = "ground_kicked.txt"
 updates = 300
 fields = ["player", "enemy", "down"]

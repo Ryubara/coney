@@ -294,7 +294,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// The scene stage: what the playing scene shows.
     [[nodiscard]] const SceneStage& stage() const { return *m_stage; }
     /// The object of the prop `human` carries (its handle), made from his clip's event `0x30`; nothing when he carries
-    /// none (docs/research/combat.md#power-move-props).
+    /// none (docs/research/combat-grabs.md#power-move-props).
     [[nodiscard]] std::optional<double> carriedPropOf(const human::Human& human) const;
 
     /// Skins `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
@@ -457,7 +457,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepObjects();
     // Player 1's object attack under way (Player_ObjectAttack's clip, 661 or 662, with its object): whether its hit
     // lands on the object this step. It lands when the clip's strike shapes come on (a car or other object) or strike
-    // it (a pane or door, through strikeObjects()), not at the attack's start (docs/research/combat.md#breakables).
+    // it (a pane or door, through strikeObjects()), not at the attack's start
+    // (docs/research/combat-targets.md#breakables).
     // @orig 0x0021b290 Strike_Contact (unknown)
     [[nodiscard]] std::optional<double> objectAttackLands(const human::Human& human);
     // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
@@ -510,9 +511,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Each dealer whose money clip (`money_take`, his 668) passed its action event completes the sale its pair
     // started (`DealerGoal_FinishPair`, docs/research/ai-scripting.md#dealer-buy).
     void stepDealerPairs();
-    // The game-over check each update (GameState_CheckGameOver, docs/research/combat.md#defeat) with player 1 as it
-    // sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once cross
-    // is newly pressed) the mission-failed mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a
+    // The game-over check each update (GameState_CheckGameOver, docs/research/combat-reactions.md#defeat) with player 1
+    // as it sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once
+    // cross is newly pressed) the mission-failed mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a
     // player at 0 health counts as knocked out and none as dead; no player frees himself (Coney has no uncuffing);
     // `+0x414` never blocks the wait; a held member is one attached to his holder; the route check is a route request
     // (no blocked links in Coney); the failed camera, the tint, the blur and the music's fade are not built.
@@ -520,7 +521,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
-    // Player 1's flash (command 0x28, d-pad right, docs/research/combat.md#rage): with a flash carried and health
+    // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#rage): with a flash carried and health
     // below its maximum, 665 SPECIAL_FLASH plays when nothing blocks a move, and its action event 19 updates in uses
     // the flash (a clip cut first spends nothing); when something blocks a move (a grab, which stays) the flash is used
     // at once, unless 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
@@ -667,7 +668,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Places this frame's worn hats and carried props among the world objects (before PlacedObjects::draw()).
     void drawAttachedObjects();
 
-    // --- play_level_props.cpp: the props the humans' clips make them carry (docs/research/combat.md#power-move-props).
+    // --- play_level_props.cpp: the props the humans' clips make them carry
+    // (docs/research/combat-grabs.md#power-move-props).
 
     // One human's carried prop as the mode keeps it: its object (0 for none), type and where it hangs.
     struct Carrier {

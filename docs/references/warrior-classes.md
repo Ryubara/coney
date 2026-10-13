@@ -14,17 +14,17 @@ Confirmed (code) at each address:
 
 | Byte | Field | Read by | What it does |
 | --- | --- | --- | --- |
-| `+0x00` (16-bit) | Rage max | `0x00223260` | the rage maximum ([Combat: rage](../research/combat.md#rage)) |
-| `+0x02` | Rage gain % | `0x00264cf8` | the rage gain percentage ([Combat: rage](../research/combat.md#rage)) |
+| `+0x00` (16-bit) | Rage max | `0x00223260` | the rage maximum ([Combat: rage](../research/combat-rage.md#rage)) |
+| `+0x02` | Rage gain % | `0x00264cf8` | the rage gain percentage ([Combat: rage](../research/combat-rage.md#rage)) |
 | `+0x03`, `+0x04` | Rage decay, drain | `0x002562d0` | idle decay and drain while raging, percent of the maximum per 20 s |
 | `+0x05` | Health % | `0x00229c40`, `0x0022a2a8` | health and its maximum (human record `+0x144`, `+0x146`) times n %, rounded, when the human becomes a player; divided back when he stops being one |
 | `+0x06` | Damage % | `0x00229c40`, `0x00217a98`, `0x00236038`, `0x001e5618` | his attack damages times n %; the Strength bar of the pause [Stats screen](../research/pause.md) |
-| `+0x07` | Cuffing | `0x00282b68`, `0x00283078` | the [cuffing hold](../research/combat.md#cuffing-hold)'s times, for a player holding or held: 2, 3 or any other |
-| `+0x08` | Mash | `0x0027e6d8` | the uncuff mash's gain per alternation: 1 × 1.5, 3 × 0.7, any other × 1 ([Combat](../research/combat.md#stereo-theft)) |
+| `+0x07` | Cuffing | `0x00282b68`, `0x00283078` | the [cuffing hold](../research/combat-throws.md#cuffing-hold)'s times, for a player holding or held: 2, 3 or any other |
+| `+0x08` | Mash | `0x0027e6d8` | the uncuff mash's gain per alternation: 1 × 1.5, 3 × 0.7, any other × 1 ([Combat](../research/combat-targets.md#stereo-theft)) |
 | `+0x09` | Tagging | `0x002739d8` | the [tagging](../research/crimes.md#tagging) game's tuning row 1-3 (0 counts as 1, above 3 as 3) |
 | `+0x0a` | Lock pick | `0x0022d790` | the [lock-pick dial](../research/crimes.md#lockpick)'s difficulty, n − 1 (0-2) |
-| `+0x0b` | Stereo | `0x0022dd08` | the [stereo theft](../research/combat.md#stereo-theft)'s turns per stage: 1 when n ≤ 1, else 3 × (n − 1) |
-| `+0x0c` | Mugging | `0x00284ca0` | the [mugging](../research/combat.md#mugging) game's times, for the mugging player: 2, 3 or any other |
+| `+0x0b` | Stereo | `0x0022dd08` | the [stereo theft](../research/combat-targets.md#stereo-theft)'s turns per stage: 1 when n ≤ 1, else 3 × (n − 1) |
+| `+0x0c` | Mugging | `0x00284ca0` | the [mugging](../research/combat-throws.md#mugging) game's times, for the mugging player: 2, 3 or any other |
 | `+0x0d` | `+0x0d` | none | stored, never read |
 
 The lock-pick difficulty on normal: 0 for Cowboy, Fox and Rembrandt, 1 for Cleon, Cochise and Snow, 2 for Ajax,

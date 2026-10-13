@@ -1,5 +1,5 @@
 description = "slot 6: the knife grab kill of moves_knife_grab, logging every hit effect, clip effect event and blood_splatter blob, and each blob's landing"
-research = "docs/research/combat.md#hit-blood"
+research = "docs/research/combat-reactions.md#hit-blood"
 input = "moves_knife_grab.txt"
 updates = 400
 fields = ["player", "enemy"]

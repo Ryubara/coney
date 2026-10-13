@@ -199,7 +199,7 @@ TEST_CASE("a strike, power strike or throw is refused while the victim is out of
 }
 
 TEST_CASE("exactly 45 degrees from the facing is a side, not the front; exactly 135 is still a side", "[combat]") {
-    // The original's test is `0.785 <= |d|` for a side (docs/research/combat.md#throw-direction, item 2).
+    // The original's test is `0.785 <= |d|` for a side (docs/research/combat-throws.md#throw-direction, item 2).
     CHECK(sideOf(44.9F) == Side::Front);
     CHECK(sideOf(-44.9F) == Side::Front);
     CHECK(sideOf(45.0F) == Side::Right);
@@ -213,7 +213,8 @@ TEST_CASE("exactly 45 degrees from the facing is a side, not the front; exactly 
 TEST_CASE("only a front hold's plain throw needs the victim in its place; a rear hold's throw spins first",
           "[combat]") {
     // `Pair_CheckPlace` runs for 147-153 from the front hold only: not for the wall throws, and not on the rear hold's
-    // path (`Grab_StartPairedMove`), which plays the spin to the front first (docs/research/combat.md#throw-direction).
+    // path (`Grab_StartPairedMove`), which plays the spin to the front first
+    // (docs/research/combat-throws.md#throw-direction).
     CombatRandom random(1);
     GrabInput input;
     input.command = command::kCirclePressed;

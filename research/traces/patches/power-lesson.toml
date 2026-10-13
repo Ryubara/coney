@@ -1,8 +1,8 @@
-# The level99 power-lesson pass of 2026-10-11 (docs/research/combat.md#power-move-props, docs/research/scenes.md#humans).
+# The level99 power-lesson pass of 2026-10-11 (docs/research/combat-grabs.md#power-move-props, docs/research/scenes.md#humans).
 
 [hook.pair-break]
 description = "Each call of Human_BreakPair (0x00258a88): the human, the caller and the tick count."
-research = "docs/research/combat.md#pair-break"
+research = "docs/research/combat-grabs.md#pair-break"
 address = 0x00258a88
 # addiu sp,sp,-0x40; sq s1,0x20(sp)
 original = [0x27bdffc0, 0x7fb10020]
@@ -10,7 +10,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.throw-clear-link]
 description = "Each call of Throw_ClearLink (0x0022bce0): the attacker, the victim, the caller and the tick count."
-research = "docs/research/combat.md#pair-break"
+research = "docs/research/combat-grabs.md#pair-break"
 address = 0x0022bce0
 # addiu sp,sp,-0x30; sq s0,0x20(sp)
 original = [0x27bdffd0, 0x7fb00020]
@@ -18,7 +18,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.prop-create]
 description = "Each call of Human_CreateCarriedProp (0x0024cbb0, clip event 0x30): the human, the object's name and the caller."
-research = "docs/research/combat.md#power-move-props"
+research = "docs/research/combat-grabs.md#power-move-props"
 address = 0x0024cbb0
 # addiu sp,sp,-0xa0; sq s3,0x60(sp)
 original = [0x27bdff60, 0x7fb30060]
@@ -26,14 +26,14 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.prop-release]
 description = "Each call of Human_ReleaseCarriedProps (0x0024ce40): the human, the caller and the tick count."
-research = "docs/research/combat.md#power-move-props"
+research = "docs/research/combat-grabs.md#power-move-props"
 address = 0x0024ce40
 # addiu sp,sp,-0x30; sq s0,0x20(sp)
 original = [0x27bdffd0, 0x7fb00020]
 
 [hook.flash-use]
 description = "Each call of Flash_Use (0x00284280): the caller (Player_UseItemCommand's at-once use, or Human_HandleMessage's answer to clip 665's 0x41 event) and the human."
-research = "docs/research/combat.md#flash-mid-move"
+research = "docs/research/combat-rage.md#flash-mid-move"
 address = 0x00284280
 # addiu sp,sp,-0x30; li a2,0x1
 original = [0x27bdffd0, 0x24060001]

@@ -12,7 +12,7 @@
 // messages an attack sends it (the clip's warning and the hit). The player fights the sandbox's passive targets
 // (TargetHuman) and other humans (Human, an AI's or a second player's) through this one view, and so does an AI human,
 // so a strike, its warning and its reaction work the same whoever gives or takes them.
-// Research: docs/research/combat.md#block, docs/research/combat.md#damage, docs/research/ai.md#attack-action
+// Research: docs/research/combat.md#block, docs/research/combat-reactions.md#damage, docs/research/ai.md#attack-action
 
 namespace coney::human {
 
@@ -78,7 +78,7 @@ class Combatant {
     [[nodiscard]] virtual bool struckByShapes() const { return false; }
     /// Where an attack's led steer aims (slot point 0, `Human_GetLedSlotPoint(target, 0)` `0x00226aa0`): a human's head
     /// (bone 6) in the world, a few centimetres off its position at rest and up to 0.28 m in a reel
-    /// (docs/research/combat.md#led-steer). The position by default.
+    /// (docs/research/combat-targets.md#led-steer). The position by default.
     [[nodiscard]] virtual anim::Vec3 ledPoint() const { return position(); }
     /// Whether it is in state `0x20`: held attached in a grab from its rear, by anyone (a tandem's victim,
     /// docs/research/combat-moves.md#tandem). False by default.

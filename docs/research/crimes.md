@@ -10,10 +10,10 @@ What the player does with **triangle** besides grabbing: the **context actions**
 uncuff a partner, mug, tag a wall, take an item), the timed **mini-games** behind them, what each one gives and what
 it costs, and how the game turns these into **crimes**, **wanted** time and police. The pieces already documented are
 linked rather than repeated: the mugging's stick game and the stereo's stick rotation are on
-[Combat: mugging](combat.md#mugging) and [Combat: the stereo theft](combat.md#stereo-theft); the crime report and the
-police response on [AI: crimes](ai-gangs.md#crimes) with the types in [Crime types](../references/crime-types.md); breakable
-glass and doors on [World objects](objects.md); store flags on [World flags](flags.md#groups); the inventory and the
-scores on [Inventory, unlockables and statistics](player-state.md) and [Statistics](../references/statistics.md).
+[Combat: mugging](combat-throws.md#mugging) and [Combat: the stereo theft](combat-targets.md#stereo-theft); the crime
+report and the police response on [AI: crimes](ai-gangs.md#crimes) with the types in [Crime
+types](../references/crime-types.md); breakable glass and doors on [World objects](objects.md); store flags on [World
+flags](flags.md#groups); the inventory and the scores on [Inventory, unlockables and statistics](player-state.md) and [Statistics](../references/statistics.md).
 
 ## Original structure
 
@@ -35,13 +35,13 @@ map](source-map.md)). Names are ours.
 | `0x0027bcd8` / `0x0027bc48` | `Mash_IsAlternation` / `Mash_IsQuitCommand` | the mash's input tests | confirmed (code) |
 | `0x00278018` | `Tag_StartSprayClips` | the spray clips and the turn to the tag | confirmed (code) |
 | `0x00255f08` | `MiniGame_Update` | each update: success, failure or the meter | confirmed (code) |
-| `0x0027e6d8` | `Player_UpdateTheft` | each update: the mode's input ([Combat](combat.md#stereo-theft)) | confirmed (code) |
+| `0x0027e6d8` | `Player_UpdateTheft` | each update: the mode's input ([Combat](combat-targets.md#stereo-theft)) | confirmed (code) |
 | `0x0022d790` / `0x0022d908` | `LockPick_Start` / `LockPick_End` | the lock-picking set-up and outcome | confirmed (code) |
 | `0x002878b8` | `LockPick_JudgePress` | a cross press against the dial | confirmed (code) |
 | `0x001b8d38` / `0x001b8530` / `0x001b7a18` | `LockPickDial_Judge` / `_Draw` / `_SetDifficulty` | the HUD dial (HUD `+0xf420` + player × `0x540`) | confirmed (code) |
 | `0x0022dd98` / `0x0022e020` | `StereoTheft_Start` / `StereoTheft_End` | the stereo's set-up and outcome | confirmed (code) |
 | `0x00225ff0` | `Mug_CanMugVictim` | whether the held human can be mugged | confirmed (code) |
-| `0x002856b8` | `Player_UpdateMugging` | the mugging ([Combat](combat.md#mugging)) and its payout | confirmed (code) |
+| `0x002856b8` | `Player_UpdateMugging` | the mugging ([Combat](combat-throws.md#mugging)) and its payout | confirmed (code) |
 | `0x00238db0` | `Human_Tag` | `HuTag`: starts tagging | confirmed (code) |
 | `0x00273c60` / `0x0022e848` | `Tag_UpdatePlayer` / `Tag_End` | the player's tag each update; its end | confirmed (code) |
 | `0x002741d8` / `0x002748a8` / `0x00274710` | `TagGame_Init` / `_Update` / `_SpendPaint` | the tag's stick game | confirmed (code) |
@@ -72,7 +72,7 @@ fetched by number through `0x0019ee70`.
 
 ### The mini-game record {#mini-game-record}
 
-The fields `+0x40`-`+0x4c` of the per-player record that `0x00222b18` returns ([Combat](combat.md#stereo-theft)
+The fields `+0x40`-`+0x4c` of the per-player record that `0x00222b18` returns ([Combat](combat-targets.md#stereo-theft)
 gives its address), shared by every timed action; confirmed (code):
 
 | Offset | Meaning |
@@ -81,7 +81,7 @@ gives its address), shared by every timed action; confirmed (code):
 | `+0x42` | s16 lock picking: good presses in a row; −1 asks to abandon |
 | `+0x44` | s16 lock picking: perfect presses in a row |
 | `+0x46` | u16 **mode**: 0 none, 1 uncuff mash, 2 lock picking, 3 car stereo, 4 a mash on an object, 5 `HuButtonMiniGame` |
-| `+0x48`, `+0x4c` | the stereo's angle and stage ([Combat](combat.md#stereo-theft)) |
+| `+0x48`, `+0x4c` | the stereo's angle and stage ([Combat](combat-targets.md#stereo-theft)) |
 
 While a mode runs, human state `0x4000000` is set ([state flags](combat.md#state-flags)). Combat's "theft mode 1"
 is the **uncuff** mash and "mode 2" is **lock picking**. No code was found that sets mode 4 (its start
@@ -131,9 +131,9 @@ Confirmed (code) at `0x0027c120`, `0x002811f0`:
    the subject); a true result ends the press. Confirmed (code), and at runtime for a kind-1 bat.
 5. Otherwise the pick-up search (`0x0024d810`, objects within 1.5 m; only while `0x005109a0` is set). It too sends
    message 0 to every object it gathers, before its filters, and a true result ends it; then it takes one
-   ([Breakables](combat.md#breakables), [A bat in hand](combat.md#bat)). With something in hand and an object to
-   take, it drops what is held (`0x00257f38`) and sets human `+0x5b8`, so the triangle hold takes the new one. With
-   nothing to take, only an AI drops here; a pad-controlled human gets 0 and the dispatcher goes on to the jump, then
+   ([Breakables](combat-targets.md#breakables), [A bat in hand](combat-throws.md#bat)). With something in hand and an
+   object to take, it drops what is held (`0x00257f38`) and sets human `+0x5b8`, so the triangle hold takes the new one.
+   With nothing to take, only an AI drops here; a pad-controlled human gets 0 and the dispatcher goes on to the jump, then
    the drop (`0x0024d810`, confirmed (code); an earlier reading had every human drop here).
 
 **The prompt** (two text widgets per player at HUD `+0x6b40`, `0x590` each;
@@ -241,7 +241,7 @@ The cuffed human's kind-0 record stays registered during the mash; only `Human_U
   to 0 or below, and it does not run before the first alternation: the flag `0x005109a8` starts at 1.
 
 The executable's defaults are a target of 1000, a decay of 10 and a press gain of 100 (`0x005102b8`-`0x005102c0`).
-The script values in force are on [Combat](combat.md#stereo-theft).
+The script values in force are on [Combat](combat-targets.md#stereo-theft).
 
 **The outcome** (`MiniGame_Update` mode 1, `0x00255f08`, each update):
 
@@ -317,7 +317,7 @@ items](../references/inventory.md)).
 ### The car stereo {#stereo}
 
 `CarSpawnRadio` puts a `dyn_carstereo` in a car; breaking the car window (glass type 12, [panes](objects.md#pane))
-frees it and it registers a kind-3 record. The game itself is [Combat: the stereo theft](combat.md#stereo-theft);
+frees it and it registers a kind-3 record. The game itself is [Combat: the stereo theft](combat-targets.md#stereo-theft);
 its set-up and end, confirmed (code) at `0x0022dd98`, `0x0022e020`:
 
 - Start: mode 3, meter at twice `CfgButtonMash`'s gain, stage and angle 0; a camera change on the player's camera
@@ -328,7 +328,7 @@ its set-up and end, confirmed (code) at `0x0022dd98`, `0x0022e020`:
 
 ### Mugging {#mugging}
 
-The stick game and its timings are on [Combat: mugging](combat.md#mugging). **Who can be mugged**
+The stick game and its timings are on [Combat: mugging](combat-throws.md#mugging). **Who can be mugged**
 (`Mug_CanMugVictim`, `0x00225ff0`), confirmed (code): the player must be holding the human from the front or the rear
 with no move playing, and either the human has an **interrogation** set (`+0x5a0`, [below](#interrogation)), or it may
 be mugged (`+0x5b0`, `HuSetMug`; `Human_Init` sets it to 1 at `0x002180ec`, so every new human may be) and:
@@ -428,13 +428,13 @@ state `0x01fd8400`):
 
 **`PoizoCiv` (type 417)**, confirmed (runtime) from the same state: category 4, `+0x14b` 0, `v16` -1, `str15`
 `grp_male_ped`. Step 2 always gives `none` (`noObject` is 100), and the money is `rand(5, 20)`, times 5 when the
-second roll is 0 or 1 (2 in 101): $5-$20, rarely $25-$100. The $18 seen at runtime ([Combat](combat.md#mugging)) is
-in range. His pocket is empty (item 0, count 0), so the mugging pays money only. A seeded reimplementation draws, in
+second roll is 0 or 1 (2 in 101): $5-$20, rarely $25-$100. The $18 seen at runtime ([Combat](combat-throws.md#mugging))
+is in range. His pocket is empty (item 0, count 0), so the mugging pays money only. A seeded reimplementation draws, in
 this order: the object roll, the money, the bonus roll, then `Random_Int(100)` for `+0x26c`.
 
 #### Dropped when down {#down-drop}
 
-A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat.md#defeat))
+A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat-reactions.md#defeat))
 calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded or knocked out, unless he has human flag
 `0x4` (the players and the crew, [Human flags](combat.md#human-flags)). Every human goes through it, so a spawner's
 human drops his money as a scripted one does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the
@@ -475,7 +475,7 @@ true), the mugger an invalid handle when there is none, then clears `+0x5a0` and
 succeeds once). Non-zero means "can be interrogated": `Mug_CanMugVictim` accepts the human whatever it carries and
 whatever `+0x5b0` says, the prompt reads "interrogate", and the mugging plays the set lines and pays nothing.
 **`SetInterrogateParam` does not touch it**: it only overrides the stick game's tuning for every mugging
-([Combat: mugging](combat.md#mugging)). No level99 script calls `HuSetInterrogation` (levels 2, 11 and 83 do), so
+([Combat: mugging](combat-throws.md#mugging)). No level99 script calls `HuSetInterrogation` (levels 2, 11 and 83 do), so
 the lesson's mugging of `PoizoCiv` is a plain mugging.
 
 The scores (crime events 4-5 to 4-7) are on [Statistics](../references/statistics.md). The mugging itself reports
@@ -575,7 +575,7 @@ pause begins (a slip or a new charge; `TagGame_IsPaused` `0x002745e8` turns on d
 
 **The end** (issue #407). Confirmed (code) at the addresses unless marked. `Tag_EndSprayClips` (`0x002783b0`) plays
 336 `ANIM_TAGGING_END`, whose event `0x31` at frame 7 removes the can that 334's event `0x30` made at frame 10
-([props of a clip](combat.md#power-move-props), human `+0x348`). Its callers:
+([props of a clip](combat-grabs.md#power-move-props), human `+0x348`). Its callers:
 
 - `Tag_UpdatePlayer` (`0x00273c60`, a player's spray, after the stick game's update), at `0x00273f10`: a **finished**
   tag (`Tag_IsComplete`), **any other command** (`PlayerCmd_IsOtherInput`: the player lets go), or **no cans** left;

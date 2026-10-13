@@ -227,8 +227,8 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
         break;
     case GrabAction::Throw:
         // A rear hold's throw plays the spin to the front first (`Grab_StartPairedMove`,
-        // docs/research/combat.md#throw-direction): its hit is timed from the throw's own clip, the spin's updates
-        // later. **Coney's reading**: the research times the throw's hit from its clip, not from the press.
+        // docs/research/combat-throws.md#throw-direction): its hit is timed from the throw's own clip, the spin's
+        // updates later. **Coney's reading**: the research times the throw's hit from its clip, not from the press.
         startAttack(outcome.animId, tuning, out, outcome.spinFirst ? input.rearThrowSpinUpdates : 0);
         break;
     case GrabAction::Spin:

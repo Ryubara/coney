@@ -62,7 +62,7 @@ inline constexpr int kObjectKindKnife = 11;
 inline constexpr int kBodyBox = 1;
 inline constexpr int kBodySphere = 2;
 
-/// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).
+/// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat-targets.md#breakables).
 inline constexpr int kObjectKindSpecial = 12;
 /// The power-up kinds a player takes by walking over them (docs/research/player-state.md#walk-over): `TYPE_KEY` (a
 /// handcuff key), `TYPE_REVIVAL` (a flash), `TYPE_SPRAYCAN` (one spray-paint charge) and `TYPE_MONEY` (its object's

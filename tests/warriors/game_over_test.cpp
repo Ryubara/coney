@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The game-over check and its hand-off (docs/research/combat.md#defeat): the cases in their order, the wait for help
-// with its route checks, and the 180-update countdown to the mission-failed screen.
+// The game-over check and its hand-off (docs/research/combat-reactions.md#defeat): the cases in their order, the wait
+// for help with its route checks, and the 180-update countdown to the mission-failed screen.
 #include "warriors/game_over.h"
 
 #include <array>

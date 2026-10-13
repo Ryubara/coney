@@ -314,7 +314,7 @@
     Deals a one-off blast of damage around a human, as an explosion does (Explosion_DamageHumansInRadius): up to 60
     humans within the radius of his centre are found, and each one with a clear line from the centre (a world ray
     cast) gets the damage as pending damage from him, with a hit reaction, through the normal damage path
-    ([Combat: damage](../../research/combat.md#damage)). Used once, in a boss fight.
+    ([Combat: damage](../../research/combat-reactions.md#damage)). Used once, in a boss fight.
   evidence: confirmed-code
   depth: thorough
   notes: >-

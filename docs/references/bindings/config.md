@@ -417,8 +417,8 @@ CfgBurnRates(rate1, rate2, rate3, rate4, rate5)
 Stores five whole-number rates as floats; 0x00223280 picks one of them by the human's current movement state (and
 returns 0 otherwise).
 
-**Notes.** The first four are the power meter's drain per second (combat.md#power-meter), confirmed (runtime) for 0, 15
-and 15; rate5's state is not traced.
+**Notes.** The first four are the power meter's drain per second (combat-rage.md#power-meter), confirmed (runtime) for
+0, 15 and 15; rate5's state is not traced.
 
 - **Evidence:** confirmed (code) at `0x0023a658`; detail: traced
 - **Wrapper** `0x0035dc90` (registered by `RegisterBindings`); **calls** `0x0023a658` `Cfg_SetBurnRates`

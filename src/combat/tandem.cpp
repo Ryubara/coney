@@ -8,8 +8,8 @@ namespace coney::combat {
 
 namespace {
 
-// The held objects' anim sets that pick a set of their own (docs/research/combat.md#bat): 1 the knife, 2 the baton,
-// 3 the bat.
+// The held objects' anim sets that pick a set of their own (docs/research/combat-throws.md#bat): 1 the knife, 2 the
+// baton, 3 the bat.
 constexpr int kKnifeSet = 1;
 constexpr int kBatonSet = 2;
 constexpr int kBatSet = 3;

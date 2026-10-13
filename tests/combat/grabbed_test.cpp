@@ -6,7 +6,7 @@
 #include "combat/commands.h"
 
 // The player in another human's grab: the struggle's conditions and cost, the break-free roll, the strike back, the
-// escape and the reversal, and the counter at the catch (docs/research/combat.md#grabbed).
+// escape and the reversal, and the counter at the catch (docs/research/combat-grabs.md#grabbed).
 
 using namespace coney::combat;
 

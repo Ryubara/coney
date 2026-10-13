@@ -516,8 +516,8 @@ coney::anim::ClipEvent namedEvent(std::uint16_t frame, std::uint16_t type, std::
     return event;
 }
 
-// The shape of Rembrandt's 59 `gen_grab_front_power10_p2` (docs/research/combat.md#power-move-props): 70 frames; the
-// can made on frame 0, moved to attach point 19 on frame 1, the spray stopped on frame 27, the can removed on 64.
+// The shape of Rembrandt's 59 `gen_grab_front_power10_p2` (docs/research/combat-grabs.md#power-move-props): 70 frames;
+// the can made on frame 0, moved to attach point 19 on frame 1, the spray stopped on frame 27, the can removed on 64.
 coney::anim::AnimClip powerMoveClip() {
     coney::anim::AnimClip clip;
     clip.duration = 70.0F / 30.0F;

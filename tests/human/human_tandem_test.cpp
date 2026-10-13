@@ -333,8 +333,8 @@ TEST_CASE("a lethal tandem lets the victim finish his end clip before he dies", 
 }
 
 TEST_CASE("a hit from a fourth human on the tandem's victim takes health but plays no reaction", "[human][tandem]") {
-    // The victim holds 0x400000 and the other two 0x800000 (docs/research/combat.md#protected-moves): a fourth human's
-    // hit is taken with no reaction, so the tandem plays on.
+    // The victim holds 0x400000 and the other two 0x800000 (docs/research/combat-reactions.md#protected-moves): a
+    // fourth human's hit is taken with no reaction, so the tandem plays on.
     const FightCharacter character;
     TandemFight fight(character);
     fight.allyHoldsFromBehind();

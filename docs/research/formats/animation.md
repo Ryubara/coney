@@ -110,7 +110,7 @@ are 0 in these events). Confirmed (code) for the layout at `0x00101dd8` (the cur
 the type meanings are open, except type 8, the **partner's place** in a paired clip ([Paired tasks](#paired-tasks)),
 read by `0x00101558`, types 9 and 10, effects, and type `0x21`, a **named effect**: `+0x06` the bone, the position
 and rotation as above, and `+0x14` a three-letter code (`bld`, `pch`, `blo`, `dus` ...) that `0x00101dd8` makes
-into the type name `sub_` + code for `Human_SpawnAnimEffect` (`0x0021de48`, [Combat: hit blood](../combat.md#hit-blood)).
+into the type name `sub_` + code for `Human_SpawnAnimEffect` (`0x0021de48`, [Combat: hit blood](../combat-reactions.md#hit-blood)).
 Survey: type 11 is the most common (4,287 events); 344 distinct type-`0x21` events, 122 of them `bld`.
 
 **Event types documented elsewhere.** `Anim_FireFrameEvents` (`0x00101dd8`) compares the type against a chain of
@@ -340,7 +340,7 @@ never move the character by their root**; start and stop clips have no flags and
 its human (the combat state word at record `+0x08`, [Combat](../combat.md#state-flags)): the caller sets them on the
 human as it pushes the task, and the task clears them from record `+0x08` when it ends or is cut off; `+0x28` the
 handle of the human the task plays on; `+0x2c` a callback called with that human when the clip ends (the hook the
-combat code chains on, [Combat](../combat.md#grab-posing)).
+combat code chains on, [Combat](../combat-grabs.md#grab-posing)).
 
 ### Paired tasks {#paired-tasks}
 
@@ -363,12 +363,12 @@ couples the two stacks while they play. What makes a task "paired" is only **whe
   is, each body in its own frame. The task flags are those the caller gives (none for the grab's connecting clips, so
   their root motion moves both bodies). The two bodies are put in place by the combat code, not by the task:
   turned and slid together before the clip, snapped to the hold's offset at its end and then attached
-  ([Combat: posing a grab](../combat.md#grab-posing)).
+  ([Combat: posing a grab](../combat-grabs.md#grab-posing)).
 - **The clips record the pairing**: an attacker's paired clip carries an event of type 8 at frame 0 whose position is
   where the partner stands in the attacker's frame (`x` right, `y` forward; read by `0x00101558`), and its Anim Range
   List record holds the same point as a direction and a reach (for the hold 82: event `(0.380, 1.012)`, record
   direction `(0.351, 0.936)` × 1.081 m). Inferred from the match on every grab clip checked; the code that uses it reads
-  the range record ([Combat](../combat.md#grab-posing)).
+  the range record ([Combat](../combat-grabs.md#grab-posing)).
 
 Events of type 9, 10 and `0x22` are not pair placements: `0x00101dd8` hands them to the effects system with their
 position and rotation (confirmed (code)); type `0x40` starts a move of the human (`0x0023d2b8`, not traced further);
@@ -536,7 +536,8 @@ first update showing the id to the first showing the next one, all match the rul
 The lengths measured before agree as well: 12 `S1` 20 ([Tasks](../tasks.md#held-flags)), 34 37 and 36 35 (a tie,
 25.5 / 0.75 = 34, one late) ([Cross with a bat in hand](../combat-moves.md#bat-cross)), 69 16, the fence climb's 440
 11, 441 15 (both ties) and 442 13 ([Characters](../characters.md#climb)), the dive 1 61
-([Combat](../combat.md#protected-moves)). The rule with the time summed in single precision rounded toward zero (the
+([Combat](../combat-reactions.md#protected-moves)). The rule with the time summed in single precision rounded toward
+zero (the
 inferred rounding mode, above) gives every one of them; ceil(F / *r*) is one too many for 19, 20, 389, 34 and the
 dive, and the rule without the late tie one too few for 36, 440 and 441. The idle loop 388 (60 frames,
 2.0 s, at 0.75) wrapped every 79 updates, its time after each wrap 0.0249, 0.0166, 0.0083 s: each pass 1.9833 s of
@@ -601,7 +602,7 @@ the rate is applied: 149 −89.9°, 151 −180.0°, 153 +86.4°, 155 +150.0°, 1
 152 −269.4°); unscaled they would be −119.9°, −240.0° and +115.1°.
 
 **At runtime** the thrower's turns on the side throws were −90° (149), 180° (151) and +86.5° (153), and 3.2° and
-2.7° per update off and onto the 1/6 s turn ([Combat: where a throw goes](../combat.md#throw-direction), PCSX2
+2.7° per update off and onto the 1/6 s turn ([Combat: where a throw goes](../combat-throws.md#throw-direction), PCSX2
 2.9.94). They match the scaled totals above, not the unscaled ones, so the runtime agrees with the code.
 
 What changes with the rule, by kind (generic set; ids at rate 1.0 are unchanged):
@@ -663,7 +664,7 @@ the clip and its rate from the attacker's anim set ([Paired tasks](#paired-tasks
 the side": Coney's bind rotation for bone 2 (from the model's HAnim frame) is the identity in every model, 120° from
 the reference pose's `(-0.5, 0.5, -0.5, 0.5)`. With the reference pose the grab clips stand upright, and the disc test
 `[disc][combat]` finds the model-space pelvis of the holds 82-85 within 2.5° and a millimetre of the values read at
-runtime ([Combat](../combat.md#grab-pose-runtime)); the walk, run and attack clips, which animate bone 2, are unchanged.
+runtime ([Combat](../combat-grabs.md#grab-pose-runtime)); the walk, run and attack clips, which animate bone 2, are unchanged.
 
 **Disc test** (`[anim]`, counts only): 5,127 resources, 31,274 occurrences, 1,875 distinct clips, none failing,
 unpaired or sampling to a non-finite pose; 957 clips have no section A, none lacks B; 9,468 events.
@@ -739,7 +740,7 @@ In the task system:
 - **Draw from the pelvis**: bone 1 takes the root translation and its own rotation in model space; bone 0's rotation
   is the turn per frame and is never applied to the skeleton ([Bone transforms](#bone-transforms)).
 - **A paired clip comes from the attacker's set**: look the victim's id up in the attacker's character, at the
-  attacker's rate ([Paired tasks](#paired-tasks)); place the two bodies as [Combat](../combat.md#grab-posing) says.
+  attacker's rate ([Paired tasks](#paired-tasks)); place the two bodies as [Combat](../combat-grabs.md#grab-posing) says.
 
 ## Open questions
 

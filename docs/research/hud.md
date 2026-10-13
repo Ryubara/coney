@@ -244,7 +244,7 @@ A `HudBar` (`0x001a1008`, the first `0x70` bytes of the player panel). Its field
 | `+0x5c` | right to left |
 
 **Values** (`0x00214138`): fill = min(rage, rage maximum) / 150 and capacity = rage maximum / 150, each clamped to
-0-1. Rage is human `+0x650` and the maximum the Warrior class's s16 `+0x00` ([Combat](combat.md#rage)); 150 is the
+0-1. Rage is human `+0x650` and the maximum the Warrior class's s16 `+0x00` ([Combat](combat-rage.md#rage)); 150 is the
 constant `0.0066667`. So a Warrior with maximum 78 has a white strip over 52 % of the meter, and the red fill grows
 along it. Confirmed (code); 40 of 78 confirmed (runtime): red to 27 %, white to 52 %, grey to the end.
 
@@ -705,12 +705,12 @@ the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
   (`0x00265f70`) runs on the victim's pending hit when the attacker is pad-controlled (player record `+0x1b`): with
   `landed` 1 for a hit that lands and 0 for one a block stops (both call the callback). `0x002653d8` returns first when
   the attacker's brain `+0x4` is not 0 or the two are allies (`0x00290230`), then calls the callback only when the
-  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat.md#rage)). The anim id
-  is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
+  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat-rage.md#rage)). The anim
+  id is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
 - The id is read when the **victim** applies the pending damage, not when the hit was dealt. For a hit dealt as a
   clip ends, the attacker has already moved on: the strong grapple's damage is added at the end of 657 and applied as
   the hold 82 starts, so the callback gets **82** (84 from the rear). Confirmed (runtime)
-  ([Strong grapple](combat.md#strong-grapple)).
+  ([Strong grapple](combat-grabs.md#strong-grapple)).
 - So it fires **once per hit, every hit**, for as long as it is set; nothing in the engine clears it after a call. It is
   cleared by `HUDSetTutorialCallback(nil)` and when the HUD is released at `UnloadLevel` (`0x001607b8` →
   `0x001ae980` → `0x001cdc20`, which zeroes `+0x3a0`).
@@ -879,7 +879,7 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       flag `+0xe0` bit `0x4` (`Human_Init` sets it on every player and every Warrior, brain types 0 and 3;
       `Human_MakePlayer` on a player too; scripts set or clear it with `HuSetRevivable`; [Combat: human
       flags](combat.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash, string
-      4 showed ([Combat: revive at runtime](combat.md#revive-runtime)).
+      4 showed ([Combat: revive at runtime](combat-rage.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
@@ -1182,7 +1182,7 @@ otherwise `(158, 24 + int(h × 1.1571), 24)` with `h` the health % (`h × 0.0133
 - **low health**: above 0.1 % and at or below 25 % (`0x00510514`) the fill **blinks**: black for 232 ms
   (`0x00510510`), its colour for the next 232 ms, and again (one clock for all players, read from the clock at
   `0x0050b8b8`, inferred: the real-time clock); seen at runtime at 25 %;
-- **rage full**: when rage reaches the Warrior class's maximum (`0x00223260`, [Combat](combat.md#rage)) after being
+- **rage full**: when rage reaches the Warrior class's maximum (`0x00223260`, [Combat](combat-rage.md#rage)) after being
   below it, the whole outer ring turns gold `(128, 100, 0, 255)` for 200 ms (`0x00510528`), then shows normally for
   200 ms, three times;
 - **raging**, once those flashes are done: the fill is light grey `(191, 191, 191)` (runtime: confirmed).
@@ -1221,7 +1221,7 @@ last); the value is the band's fill, not the health. Not seen at runtime.
   fog off, and the blend and Z states as the world pass left them; the legs hid the ring behind them at runtime (Z
   test on).
 
-**Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat.md#targets))
+**Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat-targets.md#targets))
 at a non-player target, a sprite of `part_page1` rectangle 0 lies under the target at 0.041 m, size 0.9 × `s`, white
 at the ring's alpha (black in Rumble), human `+0x66c` = 1 (only while the per-player `+0x1b` is set). With two players
 on one screen (not Rumble), each player also gets an icon above the head (`0x0024b2a8`, `Human_AttachSpinningIcon`).
@@ -2355,7 +2355,7 @@ second record (`+0x90`); its x values are in the last column.
   100, 0), bar 2 red (170, 43, 43), arcs red, prompt `0x180`; 1 `0x00286550` (being mugged by the other player): the
   bar colours swapped, prompt `0x181`; 2 `0x002833c0` and 3 `Player_UpdateMugHold` (`0x00283a30`), the two sides of a
   hold (`Player_UpdateHold` picks by state flag `0x8000000000`): as 0 and 1 with blue (35, 83, 188) for red; what
-  each game does and what its bars show is on [Combat: the other stick games](combat.md#other-stick-games). The
+  each game does and what its bars show is on [Combat: the other stick games](combat-throws.md#other-stick-games). The
   prompt's texts are `GSTRING.HUD` entries `0x180` and `0x181` (not reproduced here).
 - The prompt is a `MessageHUD` (`MessageHUD_Setup(1.0, 1.0, …, font slot 3)`) whose alignment byte is never set
   (inferred: left, 0), so at x −0.01 it starts at the screen's left edge (inferred, not checked at run time).
@@ -2454,7 +2454,7 @@ timing, which `TextProgressHud` shares). Behaviour: [Objectives](#objectives-hud
 ### After `GUI/ScrollInHUD.cpp` (no path string): spray counter and the stereo-theft panel {#fn-after-scrollinhud}
 
 The spray-paint counter, then the stereo-theft panel (two at HUD `+0xfea0`, `0xb10` bytes each, vtable `0x0053ab28`;
-the game is [Combat: the stereo theft](combat.md#stereo-theft)).
+the game is [Combat: the stereo theft](combat-targets.md#stereo-theft)).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2509,7 +2509,7 @@ With the anchor `A = (0.12, 0.57)` (player 1: x = 0.88) and `S = 0.08`:
   (`Math_MapRange(value, 0, target, 0.025, 0.05)`), angle = −value. The value is the stick angle turned in the current
   stage, in radians, from 0 up to the stage target (`Theft_UpdateStereo` `0x0027e908`, clamped there), and the target
   is the one `StereoHud_Start` was given: the player class's turn per stage (`Human_GetClassSpinAngle`, 6π or 2π,
-  [Combat](combat.md#stereo-theft)). So the gauge grows from half size to full size and spins once per radian turned.
+  [Combat](combat-targets.md#stereo-theft)). So the gauge grows from half size to full size and spins once per radian turned.
 - **The pop**: while value ≥ target (the 250 ms pause after a stage is complete, while the value stays at the
   target), the gauge's **y** grows by a step each update and the step doubles (from 0.001: 0.001, 0.002, 0.004, ...,
   so 0.127 after 7 updates). The gauge falls down the screen and accelerates; below the target the step is reset to
@@ -2789,7 +2789,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
 - **The prompt beside a downed Warrior** (user item 8, "no revive prompt"): Coney's revive step read only a script's
   knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
-  needed, and d-pad left revives him ([Combat: revive](combat.md#revive)). He must also be revivable (flag `0x4`),
+  needed, and d-pad left revives him ([Combat: revive](combat-rage.md#revive)). He must also be revivable (flag `0x4`),
   which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat.md#human-flags)), in
   Coney too (`ai::startingFlags`). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior
   with a strike (no script call), walks player 1 to him with the stick at 60 % and sees no prompt without a flash,
