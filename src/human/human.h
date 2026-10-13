@@ -310,6 +310,13 @@ class Human final : public Holdable {
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
         m_animator.playScripted(clip, animId, rate, fade, held);
     }
+    /// A workout's clips (HumanAnimator::playWorkout()), its loop blend once playing, and its exit
+    /// (HumanAnimator::endWorkout()).
+    void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
+        m_animator.playWorkout(enter, loops);
+    }
+    [[nodiscard]] anim::GaitBlendTask* workoutLoop() const { return m_animator.workoutLoop(); }
+    void endWorkoutClips(const anim::AnimClip* exit) { m_animator.endWorkout(exit); }
     /// The name of the idle replacement applied (empty for none).
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// `HuUseAnyAnim`'s replacement for anim `id` other than the idle, `name` loaded as `clip` (null: the own clip

@@ -275,6 +275,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/workout_test.cpp
     human/human_revive_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
