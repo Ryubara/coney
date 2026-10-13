@@ -253,7 +253,7 @@ TEST_CASE("rumble intro: closing it ends it without onDone", "[rumble]") {
 }
 
 TEST_CASE("rumble intro: the prompt is a grey usage line at (0.5, 0.88) whose <X> draws the cross button", "[rumble]") {
-    // Owner item 24b ("press  to start" with a gap): the prompt is a UsageInfo in part_page0 (Coney's text slot) at
+    // User item 24b ("press  to start" with a gap): the prompt is a UsageInfo in part_page0 (Coney's text slot) at
     // size 1.0, not a big_font line; big_font here has no rectangle for the cross character 0x9e, as on the disc.
     Intro intro;
     intro.strings.set(RumbleIntro::kPromptString, "pr<X>s");

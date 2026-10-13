@@ -27,7 +27,7 @@ def test_the_skill_has_a_name_that_matches_its_folder_and_a_description() -> Non
     assert len(fields["description"]) > 40 and "Coordinator" in fields["description"]
 
 
-@pytest.mark.parametrize("fix", ["auto", "skill", "owner"])
+@pytest.mark.parametrize("fix", ["auto", "skill", "maintainer"])
 def test_every_check_is_covered_by_its_fix_class(fix: str) -> None:
     body = text()
     missing = [
@@ -43,7 +43,7 @@ def test_the_skill_names_no_check_that_does_not_exist() -> None:
 
 def test_the_three_fix_classes_each_have_a_section() -> None:
     body = text()
-    for heading in ("### `auto`", "### `skill`", "### `owner`"):
+    for heading in ("### `auto`", "### `skill`", "### `maintainer`"):
         assert heading in body
 
 

@@ -189,7 +189,7 @@ jump and fall.
 
 ## Pathing: status and fixes {#pathing-fixes}
 
-The owner's play-test (2026-10) found that Warriors lose the player across alleys and that AI humans walk into walls
+The user's play-test (2026-10) found that Warriors lose the player across alleys and that AI humans walk into walls
 where the original takes a climb. Comparing Coney's `repo:src/ai/route_planner.cpp`, `route_follower.cpp`,
 `move_action.cpp`, `crew.cpp` and `formations.cpp` with the sections above gives the list below. Each item is one
 small pull request, in the order to do them: the first three are the likely causes of what was seen. Each names the

@@ -592,7 +592,7 @@ cross`, which must play 653 and no tandem.
 
 #### Who starts a tandem, and how an AI chooses it {#tandem-ai}
 
-Owner checklist item 18 (a gang member holds an enemy; the teammates stand by). Confirmed (code) at the addresses
+User checklist item 18 (a gang member holds an enemy; the teammates stand by). Confirmed (code) at the addresses
 cited unless marked:
 
 1. **An AI teammate starts it through the grab.** The fight goal's attack pick (`Brain_PickAttack`, `0x0028e708`,

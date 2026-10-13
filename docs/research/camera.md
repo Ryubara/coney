@@ -904,7 +904,7 @@ update's value; whether the clip time has already been advanced in this step whe
 
 ### Long falls {#long-fall}
 
-Owner checklist item 48 asked what the follow camera does when the player falls from a great height. **There is no
+User checklist item 48 asked what the follow camera does when the player falls from a great height. **There is no
 long-fall camera for a plain fall**: the long-fall state flag `0x1000000000` (aim lag 0.6, update step 19's wider hard
 band) is set only when a fall starts limp or while the drop's held flag `0x400000` is still set, and a 40 m fall
 does not set it. What keeps the view on the player is the [aim point](#aim-point)'s lag, which climbs from 0.06 toward
@@ -941,7 +941,7 @@ Inferred, from `repo:src/camera/follow_camera.cpp` (`stepAim()`) and `repo:src/h
 under the walk speed, and the ×2.5 needs `!stickOwned` and a horizontal speed above walk + 18% of (run − walk), with no
 overshoot test. In a straight fall the horizontal speed is about 0, so the lag stays **0.06**, and at 35 m/s the aim
 point settles about 1.167 × 0.94 / 0.06 ≈ **18 m** above the look-at point (11 m at 20 m/s) instead of under 5 m. With
-the camera 3.5-5 m from the look-at point the view then faces nearly straight up: the owner's "camera flies up".
+the camera 3.5-5 m from the look-at point the view then faces nearly straight up: the user's "camera flies up".
 Coney's `longFall` (airborne while not counting or grounded) is not the cause: the original does not set it on a plain
 fall either. (Coney's headless `--trace` could not show this: with the release build of 2026-10-10 the trace's camera
 columns stayed constant even in the `walk60` scenario.)
@@ -1922,7 +1922,7 @@ So, with `h`, `p`, `r` the script's angles:
   `(x, y, z) = (right · (P − eye), forward · (P − eye), up · (P − eye))`, with +y the depth; the lens is on
   [The streamed world](world.md#player-camera).
 
-**Runtime check** (confirmed (runtime), PCSX2 2026-10-07, a copy of the owner's slot 10 in `level99` checkpoint 3,
+**Runtime check** (confirmed (runtime), PCSX2 2026-10-07, a copy of the user's slot 10 in `level99` checkpoint 3,
 every locked camera object read from the handle table `0x006ebd38` slots `0x3c`-`0x6b`). The angles at
 `+0x200`-`+0x208` are the script's; `+0x20` equals the formula above to 5 decimals for all eight, and each
 camera made current (player 1's current-camera word `0x005d9150` pointed at it) showed its shot:

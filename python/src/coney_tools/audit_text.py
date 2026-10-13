@@ -101,7 +101,7 @@ def prose(text: str) -> str:
 
 def word_uses(text: str, words: Iterable[str]) -> list[str]:
     """Each use of one of `words` (as a whole word, plural or possessive too) in the prose of `text`, with a few words
-    around it. A name like `owner/repo`, `{owner}` or `owner_decisions` is not a use."""
+    around it. A name like `owner/repo`, `{owner}` or `owner_name` is not a use."""
     alternatives = "|".join(re.escape(word) for word in words)
     pattern = re.compile(rf"(?<![\w/{{.$-])\b(?:{alternatives})(?:'s|s)?\b(?![/}}_])", re.IGNORECASE)
     plain = prose(text)

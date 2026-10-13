@@ -94,7 +94,7 @@ def test_the_same_findings_give_the_same_text() -> None:
 
 
 def test_a_maintainer_decision_is_said() -> None:
-    assert "(a maintainer decides)" in render_item(COMMENTS, [finding(fix="owner")])
+    assert "(a maintainer decides)" in render_item(COMMENTS, [finding(fix="maintainer")])
 
 
 def test_a_hostile_title_in_a_message_cannot_break_out_of_the_comment() -> None:
@@ -137,7 +137,7 @@ def test_the_report_issue_body_passes_the_audit() -> None:
     body = report_issue_body()
     raw = raw_snapshot(issues=[issue(3, title=CONVENTIONS.hygiene.report_issue.title, body=body, labels=tuple(labels))])
     context = GithubContext(CONVENTIONS, parse_snapshot(raw))
-    for name in ("issue.sections", "issue.placeholder", "issue.screenshots", "issue.labels", "issue.owner-word"):
+    for name in ("issue.sections", "issue.placeholder", "issue.screenshots", "issue.labels", "issue.person-word"):
         assert not list(audit_github_check(name)(context)), name
 
 

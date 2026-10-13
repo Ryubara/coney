@@ -1005,7 +1005,7 @@ Points a playthrough test needs:
 
 #### The state hints, and what lesson 6 counts {#level99-state-hints}
 
-The analyst question "`P1.PowerMove`: `TT_19a` or `TT_24e`?" and owner checklist item 33's hint order. Inferred from
+The analyst question "`P1.PowerMove`: `TT_19a` or `TT_24e`?" and user checklist item 33's hint order. Inferred from
 the disassembly of `level99.lua` (main/29-main/34) and `level99_combat.lua` (main/30, main/31): names, ids and
 the order of calls only.
 
@@ -1039,7 +1039,7 @@ extension 59): the standing cross + square (653, lesson 5's special), the mount'
 strike from the rear hold (scored as 80, [the power strike](combat.md#grabbing)) never count. The texts that read like
 a standing move are only ever shown while the player holds someone, and a player who lets go is told to grab.
 
-**What the owner saw in Coney** (item 33, steps 1-7): standing he got the power-move text; grabbing, the grab hint;
+**What the user saw in Coney** (item 33, steps 1-7): standing he got the power-move text; grabbing, the grab hint;
 mounted, the power-move text; picked up again, the pick-up hint; let go, the power-move text; grabbed, the grab
 hint; after 57 standing, `TT_24e`. Every one is the text of the state he had just **left**. Coney runs the script
 itself (`src/scripting/anim_callbacks.h`), so the lag is in what reaches `PlayerState`: an anim callback fired one
@@ -1162,9 +1162,9 @@ Points an implementer needs:
   reports a broken barrier and `WorldObject_Remove` (`0x00391c10`) sends message 2, up to 1 s after the breaking hit
   ([Barriers](objects.md#barriers), confirmed (code) and (runtime) there).
 
-#### Player 2, Vermin's runs and the fence (owner checklist 41-44) {#level99-p2-vermin-fence}
+#### Player 2, Vermin's runs and the fence (user checklist 41-44) {#level99-p2-vermin-fence}
 
-What the original does where Coney was seen to differ (owner checklist items 41-44, 2026-10-08). The script facts
+What the original does where Coney was seen to differ (user checklist items 41-44, 2026-10-08). The script facts
 are read from the disassembly of `level99.lua`, `level99_lesson1.lua` and `level99_lesson2.lua` (names, ids and
 values only) and are inferred unless marked; the engine facts are cited.
 
@@ -1225,7 +1225,7 @@ Nothing on the way slows him for the jump, confirmed (code):
   landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai-moving.md#path-planning)).
 
 **At runtime** (2026-10-11, PCSX2, confirmed (runtime); scenario `vermin_window_jump` in
-`repo:research/traces/scenarios/`, the owner's slot 9 copied, hook `event-call`). The player runs at the window with the
+`repo:research/traces/scenarios/`, the user's slot 9 copied, hook `event-call`). The player runs at the window with the
 stick at 100 % straight ahead and taps triangle 59 updates in, as in `glass_jump`, lands at x 44.5, then stands still.
 Vermin's human `+0x1a8` (gait), `+0x1ac` (speed), position and top goal were read every update:
 
@@ -1314,7 +1314,7 @@ same update as the teleports and `TT_9`. What the player sees in the gap (captur
 frames): the fence is gone at the hit (hidden, its three boards and dust thrown), the player stands at the gap where
 the charge stopped him and then plays a short recovery animation (clip 388 from about 17 updates after the hit), the
 follow camera stays put, the fence lesson's hint stays until `P3.FenceBroken` clears it, and the next frame is the
-dealer camera. The owner's "almost at once" is not borne out; a short phase (3 updates) gives an 18-update (0.6 s) gap,
+dealer camera. The user's "almost at once" is not borne out; a short phase (3 updates) gives an 18-update (0.6 s) gap,
 which may be what was seen. Ruled out: no `ScreenQueueEffect`, `HideHud` or camera binding between the hit and
 `P3.DealerPoizo`.
 
@@ -1744,9 +1744,9 @@ Points a playthrough test needs:
   strike or a break sends message 6, and the step waits on message 7 alone), while the player taking stock himself with
   triangle runs the same `Item_TakeOwned` and so should count (inferred from the code path; not seen at runtime).
 
-#### The arrest scene and the opening fire (owner checklist 28, 36) {#level80-arrest-fire}
+#### The arrest scene and the opening fire (user checklist 28, 36) {#level80-arrest-fire}
 
-What the original does where Coney was seen to differ (owner checklist items 28 and 36, 2026-10-08). Script facts
+What the original does where Coney was seen to differ (user checklist items 28 and 36, 2026-10-08). Script facts
 from the disassembly of `level80.lua`, `level80_chapter1.lua` and `level80_chapter2.lua` (names, ids and values
 only) are inferred; scene data is read from the disc's `l80_c5` records (numbers only); engine facts are cited.
 
@@ -2131,7 +2131,7 @@ which prop counts how often: [Breakable props](objects.md#breakable-props).
 #### The riot's crowd, and what Coney lacks {#level34-start}
 
 Why Coney's riot fills the subway the player starts in with humans, and what the mission needs to look like the
-original's (owner checklist item 17). The script facts are inferred from the disassembly of `level34.lua` and
+original's (user checklist item 17). The script facts are inferred from the disassembly of `level34.lua` and
 `level34_riot.lua`, `level34_gate.lua` and `level34_park.lua`; the engine facts are confirmed (code) where an address
 is given.
 
@@ -2790,7 +2790,7 @@ handler component, as for `TriggerSphereEnable`).
   which are written through computed addresses with no reader found yet (`CfgWarriorClass`'s are all traced:
   [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
-- **Hint texts set twice in one frame** (owner checklist item 33b). (Answered by the original's runtime trace,
+- **Hint texts set twice in one frame** (user checklist item 33b). (Answered by the original's runtime trace,
   [The queue at runtime](hud.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither of the
   two places where Coney's `level99` course run queued two texts in one step backs up in the original.
   **Lesson 5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update
@@ -2802,10 +2802,10 @@ handler component, as for `TriggerSphereEnable`).
   nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
   `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
   behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
-- **The stale throw hint** (owner checklist item 38). (Answered for Coney: the owner saw `level80`'s `TT_25` (lure the
+- **The stale throw hint** (user checklist item 38). (Answered for Coney: the user saw `level80`'s `TT_25` (lure the
   cops with a bottle) stay through step 3.4 until the Wreck'em order. The likely cause was the hint box's backlog: a
   lesson text queued behind another, then shown after the next clear. The box no longer queues on a nil-then-text set
-  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the owner's path.
+  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the user's path.
   `repo:tests/platform/disc_level80_story_test.cpp` starts the story and jumps to checkpoint 3. It walks into Fox's box
   and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
   the next hint and no lesson text comes back. The original was not traced for this; the order is the one in

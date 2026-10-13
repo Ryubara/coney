@@ -761,7 +761,7 @@ only within its parent's `ObjShow` distance ([Drawing](#tint)).
 
 #### A weapon given to a Warrior {#given-weapon}
 
-What a crew member does with a weapon the player hands him by triangle (the "Give Weapon" prompt, owner item 37).
+What a crew member does with a weapon the player hands him by triangle (the "Give Weapon" prompt, user item 37).
 The hand-over itself is [AI: the weapon swap](ai.md#warrior-swap); this is what follows. Confirmed (code) at the
 addresses cited unless marked.
 
@@ -797,7 +797,7 @@ addresses cited unless marked.
    he is grabbed holding a bat; all but the throw case are stopped by `HuSetKeepWeapon`
    ([Combat: dropping what is held when hit](combat.md#keep-weapon)).
 
-**Coney fixes** (owner item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
+**Coney fixes** (user item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
 
 1. Draw every human's held object, not only player 1's: Coney's world-object draw places just

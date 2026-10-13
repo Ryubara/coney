@@ -258,7 +258,7 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 - **Decide and keep going.** The coordinator approves its own designs and plans, and when one item ends it takes the
   next from the state file instead of asking whether to start. It stops only when a maintainer says so.
-- **Escalate only maintainer decisions**, the list in [AGENTS.md](repo:AGENTS.md) (`repo.owner_decisions` in
+- **Escalate only maintainer decisions**, the list in [AGENTS.md](repo:AGENTS.md) (`repo.maintainer_decisions` in
   [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
 - **Tidy after every merge round and once a week.** Run the `/repo-hygiene` skill: it audits the issues, pull requests,
   labels and workspace and fixes each finding by its class ([Merging safely](#merging)).

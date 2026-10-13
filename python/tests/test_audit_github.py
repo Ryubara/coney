@@ -267,24 +267,30 @@ def test_the_closed_status_rule_can_be_switched_off_in_the_conventions() -> None
 # --- wording --------------------------------------------------------------------------------------------------------
 
 
-def test_owner_in_an_issue_or_pull_request_is_found_and_user_is_fine() -> None:
+def test_banned_word_in_an_issue_or_pull_request_is_found_and_user_is_fine() -> None:
     bad = task_body(summary="The owner decides what ships.")
     ctx = context(
         issues=[issue(1, body=bad), issue(2), issue(3, title="Ask the owner", body=task_body())],
         pulls=[pull(4, body=PR_BODY.replace("Adds a check.", "The owner asked for this.")), pull(5)],
     )
-    assert items(found(gh.issue_owner_word, ctx)) == ["#1", "#3"]
-    assert items(found(gh.pr_owner_word, ctx)) == ["#4"]
+    assert items(found(gh.issue_person_word, ctx)) == ["#1", "#3"]
+    assert items(found(gh.pr_person_word, ctx)) == ["#4"]
 
 
-def test_owner_in_code_or_a_closed_issue_is_not_found() -> None:
+def test_the_banned_word_finding_names_the_user_and_the_maintainer() -> None:
+    ctx = context(issues=[issue(1, body=task_body(summary="The owner decides what ships."))])
+    message = found(gh.issue_person_word, ctx)[0].message
+    assert "'owner'" in message and "'user'" in message and "'maintainer'" in message
+
+
+def test_banned_word_in_code_or_a_closed_issue_is_not_found() -> None:
     ctx = context(
         issues=[
-            issue(1, body=task_body(summary="Rename `owner_decisions`; see owner/repo.")),
+            issue(1, body=task_body(summary="Rename `owner_name`; see owner/repo.")),
             issue(2, state="CLOSED", body=task_body(summary="the owner")),
         ]
     )
-    assert found(gh.issue_owner_word, ctx) == []
+    assert found(gh.issue_person_word, ctx) == []
 
 
 # --- leftovers and statuses -----------------------------------------------------------------------------------------

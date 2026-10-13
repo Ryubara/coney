@@ -66,9 +66,12 @@ and are deleted once uploaded.
 
 ### Wording {#wording}
 
-Issues and pull requests call the person who play-tests and decides "the user", never "the owner": "From: user
-playtest of the preview build, 2026-10-11", "the user says", "the user's screenshot". The word "owner" stays for what
-it means in the code and the research (an object's owner) and in GitHub's own fields.
+Issues, pull requests and guides call whoever tested, was affected by a problem or created the issue or pull request
+"the user" ("From: user playtest of the preview build, 2026-10-11", "the user says", "the user's screenshot"), and
+whoever decides "the maintainer" or "the maintainers" ("a maintainer decides", "maintainer decisions"). Never "the
+owner" for a person: whoever owns the repository on GitHub is one of the maintainers. The word "owner" stays for what
+it means in the code and the research (an object's owner) and in GitHub's own fields. The rule is
+`repo.wording` in the [conventions file](repo-conventions.md), and `coney-tools repo audit` finds the banned word.
 
 ### What may be attached {#media}
 

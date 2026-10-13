@@ -144,7 +144,7 @@ the point the AI turns to and strikes at. Confirmed (code) at `0x0038da08` and `
 | 9 | 12, back side panel (`0x1000`) | position + 0.8 × row 2 | same |
 
 The part names are [Cars](cars.md#type-record)' reading of the part ids. Read from three parked cars in a state
-file (a coupe and two sedans; the owner's quick-save 5, read from a copy), confirmed (runtime):
+file (a coupe and two sedans; the user's quick-save 5, read from a copy), confirmed (runtime):
 
 - each bumper's row 1 points into the car, so spots 0 and 1 stand 0.8 m beyond the bumpers;
 - each side part's row 2 points straight out of its side, so spots 2-9 stand 0.8 m out from the side;
@@ -297,7 +297,7 @@ reinforcement does next is its spawn callback's business (`level34`'s give a rio
 **In Coney** (`repo:src/ai/spawners.cpp`, `Spawners::spawnOne`): state 7 is placed as state 8 with a value of 0, by
 the outward route search from the player's node. With a value of 0, any node outside the view cone qualifies,
 however close, so the human appears beside the player on whatever route graph the player stands on. In `level34`
-that is the subway the mission starts in (owner checklist item 17).
+that is the subway the mission starts in (user checklist item 17).
 
 **Coney fixes (state 7).**
 

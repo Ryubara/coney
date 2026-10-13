@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools pcsx2 claim | release | status | keys | screenshot` commands (the claims are in pcsx2_claims.py,
 the Win32 calls in pcsx2_proc.py). Nothing here focuses a window: keys are posted to a window's handle and screenshots
-read it by handle, so the machine's owner keeps the keyboard."""
+read it by handle, so the user keeps the keyboard."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def _warn_sdl(copies: list[claims.Copy]) -> None:
     if on:
         print(
             f"warning: SDL = true in the ini of {', '.join(on)}: a physical gamepad would drive the game; "
-            "the owner turns it on only to test by hand, so set it false in [InputSources] unless told otherwise",
+            "the user turns it on only to test by hand, so set it false in [InputSources] unless told otherwise",
         )
 
 

@@ -1309,7 +1309,7 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
 
 #### The hold walk: clips, speed and turning {#hold-walk}
 
-What plays while the grabber walks the pair, from the front or from behind (owner item 21). Confirmed (code) at the
+What plays while the grabber walks the pair, from the front or from behind (user item 21). Confirmed (code) at the
 addresses cited unless marked.
 
 1. **Refused while busy.** `Human_MoveGrabbing` (`0x00245310`) runs for a grabbing or mugging human with a player's
@@ -1355,7 +1355,7 @@ addresses cited unless marked.
    it is the grabber's rotation × the stored relative rotation, so it swings round the grabber on the hold's offset
    (from behind 0.24 m, 23.5° to the left; from the front 1.08 m, 20.6° to the right, [the offsets](#grab-posing)).
 
-**Coney fixes** (owner item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
+**Coney fixes** (user item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
 
 1. Give the grabber movement style 7 (front) or 9 (rear) and the victim 8 or 10 for the whole hold, and switch them
    on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8), as the table says.
@@ -1453,7 +1453,7 @@ receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.B
 
 #### The mount's power strike ends the mount {#mount-power}
 
-Cross held and square pressed in the mount (owner checklist item 32) is **not** a mount strike: it ends the mount
+Cross held and square pressed in the mount (user checklist item 32) is **not** a mount strike: it ends the mount
 and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
 cited, and (runtime) as below; the clip events read from the disc (numbers only).
 
@@ -2039,12 +2039,12 @@ classes](../references/warrior-classes.md)). Confirmed (code) at `0x00284ca0`, `
    first). So the **slack** is the limit minus the required time, and the target angle jumps (at least 80° away) each
    period of progress: a dealer gives **1.75-2.25 s of slack and a new angle every 0.75 s** (three to four jumps to
    catch in 2.75 s), a civilian with byte 2 gives 6 s of slack and a jump every 1.25 s, and a bum 9 s. That is the
-   "dealers are hard" of the owner's report: the victim's bar (bar 1, amber) fills over 4.5 s.
+   "dealers are hard" of the user's report: the victim's bar (bar 1, amber) fills over 4.5 s.
 4. **The other player as victim** (`+0x1b0` set) has no limit: the race is mode 1 against his own record
    (`Mug_GetPlayerVictimParams`, `0x002853a8`, [the other stick games](#other-stick-games)).
 5. **The payout** is the same for all (the victim's money, × 1.5 for a dealer brain, [Crimes](crimes.md#mugging)).
 
-**Coney fixes** (owner item 27; Coney runs every mugging with one record, `CombatTuning`'s 5000 / 2500 / 50000, and
+**Coney fixes** (user item 27; Coney runs every mugging with one record, `CombatTuning`'s 5000 / 2500 / 50000, and
 no victim limit):
 
 1. Build the record per mugging from the table above, by the victim's `CfgChar` category and `flag_14b` and the
@@ -2332,7 +2332,7 @@ armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
 
 No "in a sync move" flag exists. What protects a human in a dive, a charge, a power move, a finisher or a tandem is
 the record `+0x08` **held flags** those moves' clip tasks hold ([Held flags](tasks.md#held-flags)), read in three
-places. Confirmed (code) at the addresses cited; owner checklist items 25 and 29.
+places. Confirmed (code) at the addresses cited; user checklist items 25 and 29.
 
 **Who holds what** (each bit is held by the clip task for the clip's whole length, then cleared with it):
 
@@ -2461,7 +2461,7 @@ the same 20 by the same code (inferred: the dive holds `0x400000`, in the same m
    drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
    into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
    strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
-   (owner report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
+   (user report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
    the run above). The dive escaped only by chance (inferred; no strike back in the run above): its crushing high hit
    gives 300-303, which strike with the spine and head alone.
    Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
@@ -3677,7 +3677,7 @@ Every Warrior and every player is made revivable: `ai::startingFlags` gives a hu
 table in [Human flags](#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
 handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
 as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and
-d-pad left revives him, with no script call (owner item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
+d-pad left revives him, with no script call (user item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
 downs a `level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22
 updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25
 and 72), the steer turned him over 25 updates to 8.8° left of the
@@ -3743,7 +3743,7 @@ Open questions (research needed):
 
 #### Teammates: what the player may do to his own crew {#teammates}
 
-Owner item 10 asks what the original allows against the player's own Warriors outside the hangout. Confirmed (code)
+User item 10 asks what the original allows against the player's own Warriors outside the hangout. Confirmed (code)
 at the addresses cited unless marked; "teammate" is a human friendly to the player (`Human_IsFriendly`, `0x00222a90`,
 `Brain_IsFriendly`) and in his gang (brain `+0x20c`).
 
@@ -3852,7 +3852,7 @@ brain read every update:
   `say-command`) on the same update. Vermin's health stayed 1800. Whether the line is heard (the speech system may
   drop it) was not checked.
 
-**Coney fixes** (owner item 10; the blocking itself is owner item 40, physics.md#human-contacts):
+**Coney fixes** (user item 10; the blocking itself is user item 40, physics.md#human-contacts):
 
 1. Run the strike test against every human body, not only the opposed ones: Coney's `Humans::opposed` (the
    `AiHumans` opposition, `!Gangs::friends`) currently gates the strike test as well as the targets, which is why the
@@ -4036,7 +4036,7 @@ addresses cited):
   (`Human_IsThreatTo`, `0x00222a48`: `Brain_IsThreat`, the two gangs are enemies or both are players), and neither
   down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40` (`0x00223c10`). A neutral
   civilian, whose gang is no enemy of the Warriors, is refused, so **walking past a civilian never enters the stance
-  or locks** (owner item 14); one does once his gang has been made an enemy (a civilian of kind 3 who fights back,
+  or locks** (user item 14); one does once his gang has been made an enemy (a civilian of kind 3 who fights back,
   `Hostile_Attack`, [AI goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and
   `0x00279568` skip only allies and the same gang, so square still picks and hits a civilian, without locking.
 
