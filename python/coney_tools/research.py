@@ -770,8 +770,8 @@ def gate_pages(role, gate, outbox):
         raise GateError(f"no gate folder at {gate}")
     out = []
     for folder in sorted(gate.iterdir()):
-        if not folder.is_dir() or folder.name.startswith(DRILL):
-            continue
+        if not folder.is_dir() or folder.name.startswith((DRILL, ".")):
+            continue  # a drill, or a tool's hidden folder (the reviewers' sessions start in the gate)
         if not PAGE_ID.match(folder.name):
             if role == COORDINATOR:
                 out.append((folder.name, "invalid-name", None))
