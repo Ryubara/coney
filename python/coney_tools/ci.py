@@ -44,6 +44,8 @@ PYPROJECT = ("python", "pyproject.toml")
 DOCKERFILE = ("containers", "Dockerfile")
 DOCS_IN, DOCS_LOCK = ("requirements-docs.in",), ("requirements-docs.txt",)
 GROUNDWORK = (".github", "scripts", "groundwork.py")
+RUFF_HOOK = "https://github.com/astral-sh/ruff-pre-commit"
+RUFF_PATHS = ("python",)  # what the ruff hook checks (its files: ^python/)
 GROUNDWORK_LOCK = (".github", "scripts", "requirements.txt")
 MODS = ("mods",)
 PLUGIN_MARK = ".claude-plugin"  # a folder under mods/ holding this is a mod
@@ -152,6 +154,14 @@ def markdownlint_version(repo):
         raise CiError(str(e)) from None
 
 
+def ruff_version(repo):
+    """ruff's version: the rev of the ruff hook in .pre-commit-config.yaml, so CI and the commit hook run the same."""
+    try:
+        return lint.pinned_version(read(repo, (lint.HOOKS,)), "the working tree", RUFF_HOOK)
+    except lint.LintError as e:
+        raise CiError(str(e)) from None
+
+
 def versions(repo):
     """Every pinned tool version a workflow needs, by output name."""
     return {
@@ -160,6 +170,7 @@ def versions(repo):
         "uv": uv_version(repo),
         "claude_code": release(dockerfile_arg(repo, "CLAUDE_CODE_VERSION"), "Claude Code"),
         "markdownlint_cli2": markdownlint_version(repo),
+        "ruff": ruff_version(repo),
     }
 
 
@@ -530,6 +541,18 @@ def markdownlint_steps(ctx):
     return [Step(f"{lint.PACKAGE} {version}", argv, cwd=ctx.repo, env=NODE_ENV, counted=LINTED)]
 
 
+def ruff_steps(ctx):
+    version = ruff_version(ctx.repo)
+    uv = uv_program()
+    if not uv:
+        raise CiError("the ruff job needs uv on PATH (it runs the pinned ruff with `uv tool run`)")
+    ruff = [uv, "tool", "run", f"ruff@{version}"]
+    return [
+        Step(f"ruff {version} check", [*ruff, "check", *RUFF_PATHS], cwd=ctx.repo, tool=True),
+        Step(f"ruff {version} format --check", [*ruff, "format", "--check", *RUFF_PATHS], cwd=ctx.repo, tool=True),
+    ]
+
+
 def mod_steps(ctx):
     mods = sorted(p for p in ctx.repo.joinpath(*MODS).glob("*") if (p / PLUGIN_MARK).is_dir())
     if not mods:
@@ -601,6 +624,7 @@ JOBS = {
         Job("tests", "the coney-tools unit tests", tests_steps),
         Job("disclosure", "commit messages (and given texts) in neutral words", disclosure_steps),
         Job("markdownlint", "every Markdown file, with the commit hook's version and rules", markdownlint_steps),
+        Job("ruff", "the Python lints and formatting, with the commit hook's ruff version", ruff_steps),
         Job("conventions", "conventions.yml is well formed; the templates and issue forms match it", conventions_steps),
         Job("site", "the documentation site builds with --strict, from hash-locked requirements", site_steps),
         Job("mod", "every mod under mods/ validates and passes its tests on the pinned Claude Code", mod_steps),

@@ -19,7 +19,10 @@ from coney_tools import ci, cli
 SHA = "0123456789abcdef0123456789abcdef01234567"
 DIGEST = "ab" * 32
 PYPROJECT = '[project]\nname = "x"\nrequires-python = ">=3.42"\n'
-HOOKS = "repos:\n  - repo: https://github.com/DavidAnson/markdownlint-cli2\n    rev: v9.8.7\n"
+HOOKS = (
+    "repos:\n  - repo: https://github.com/DavidAnson/markdownlint-cli2\n    rev: v9.8.7\n"
+    "  - repo: https://github.com/astral-sh/ruff-pre-commit\n    rev: v0.6.5\n"
+)
 
 
 def dockerfile(node="1.2.3", node_sha=DIGEST, claude="4.5.6", uv="7.8.9"):
@@ -72,7 +75,14 @@ class Versions(unittest.TestCase):
         repo = checkout(self.tmp.name)
         self.assertEqual(
             ci.versions(repo),
-            {"python": "3.42", "node": "1.2.3", "uv": "7.8.9", "claude_code": "4.5.6", "markdownlint_cli2": "9.8.7"},
+            {
+                "python": "3.42",
+                "node": "1.2.3",
+                "uv": "7.8.9",
+                "claude_code": "4.5.6",
+                "markdownlint_cli2": "9.8.7",
+                "ruff": "0.6.5",
+            },
         )
 
     def test_lowest_python_of_a_range(self):
@@ -87,6 +97,7 @@ class Versions(unittest.TestCase):
             ({"containers/Dockerfile": dockerfile(node="lts")}, "not a release"),
             ({"containers/Dockerfile": dockerfile().replace("@sha256:", ":latest@x:")}, "uv image"),
             ({".pre-commit-config.yaml": "repos: []\n"}, "markdownlint-cli2"),
+            ({".pre-commit-config.yaml": HOOKS.split("  - repo: https://github.com/astral")[0]}, "ruff-pre-commit"),
         ]
         for files, words in cases:
             with self.subTest(words), tempfile.TemporaryDirectory() as d:
@@ -279,8 +290,8 @@ class Jobs(unittest.TestCase):
         self.addCleanup(out.stop)
 
     def test_every_job_has_steps_and_a_description(self):
-        self.assertEqual(list(ci.JOBS), ["workflow", "tests", "disclosure", "markdownlint", "conventions", "site",
-                                         "mod", "verify", "orig-check", "commit-sigs"])  # fmt: skip
+        self.assertEqual(list(ci.JOBS), ["workflow", "tests", "disclosure", "markdownlint", "ruff", "conventions",
+                                         "site", "mod", "verify", "orig-check", "commit-sigs"])  # fmt: skip
         for job in ci.JOBS.values():
             self.assertTrue(job.what)
 
