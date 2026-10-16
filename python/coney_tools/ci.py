@@ -3,7 +3,8 @@
 The jobs are listed here, once (JOBS). Every workflow job under .github/workflows/ that runs one calls
 `coney-tools ci --job <name>` under the same name, so a workflow and a local run cannot drift; the `workflow` job
 checks that it stays so, that every action is pinned to a full commit SHA and that every workflow sets its
-`permissions:`, with a write scope only on a job that does nothing but deploy to GitHub Pages.
+`permissions:`, with a write scope only on a job that does nothing but deploy to GitHub Pages, or on a job that
+writes to issues in a workflow no pull request or push can start.
 
 Tool versions are read from the files that already pin them, one source each (`--versions` prints them for a
 workflow): Python's from python/pyproject.toml (the lowest `requires-python` allows), Node's, uv's and Claude Code's
@@ -35,6 +36,10 @@ GATHER = "build-ok"  # the required check of ci.yml: it needs every other job of
 # The one kind of job that may get a write scope: it deploys what an earlier job built, and runs nothing else.
 DEPLOY_ACTIONS = ("actions/deploy-pages",)
 DEPLOY_WRITES = ("id-token", "pages")
+# The other: a job that writes to issues only (Groundwork's hygiene sweep and issue-status), in a workflow that only a
+# schedule, a maintainer's dispatch or an issue event starts, so no pull request's or push's code runs with the token.
+ISSUE_WRITES = ("issues",)
+ISSUE_TRIGGERS = ("schedule", "workflow_dispatch", "issues")
 PYPROJECT = ("python", "pyproject.toml")
 DOCKERFILE = ("containers", "Dockerfile")
 DOCS_IN, DOCS_LOCK = ("requirements-docs.in",), ("requirements-docs.txt",)
@@ -285,25 +290,51 @@ def writes(granted):
     return sorted(scope for scope, access in (granted or {}).items() if access == "write")
 
 
-def deploy_problems(fname, job, info):
-    """A job granted a write scope must be a deploy job: it gets DEPLOY_WRITES at most, runs no script and uses
-    DEPLOY_ACTIONS only."""
+def triggers(text):
+    """The events a workflow file's top-level `on:` names (inline, as a list, or as a block of keys)."""
+    out, block = set(), False
+    for line in text.splitlines():
+        if line.lstrip().startswith("#") or not line.strip():
+            continue
+        if block:
+            if not line.startswith(" "):
+                break
+            m = re.match(r"^  ([A-Za-z_]+):", line)
+            if m:
+                out.add(m.group(1))
+            continue
+        m = re.match(r"^[\"']?on[\"']?:\s*(.*?)\s*$", line.split(" #", 1)[0])
+        if m:
+            value = m.group(1).strip("[]")
+            if not value:
+                block = True
+                continue
+            return {x.strip() for x in value.split(",") if x.strip()}
+    return out
+
+
+def write_problems(fname, job, info, events):
+    """A job granted a write scope is a deploy job (DEPLOY_WRITES at most, no script, DEPLOY_ACTIONS only), or an
+    issue job (ISSUE_WRITES only) in a workflow that only ISSUE_TRIGGERS start."""
     granted = writes(info["permissions"])
     if not granted:
         return []
     actions = {ref.partition("@")[0] for ref in info["uses"]}
     if set(granted) <= set(DEPLOY_WRITES) and not info["runs"] and actions <= set(DEPLOY_ACTIONS):
         return []
+    if set(granted) <= set(ISSUE_WRITES) and events and events <= set(ISSUE_TRIGGERS):
+        return []
     return [
         f"{fname}: job {job} gets {', '.join(f'{s}: write' for s in granted)}; only a job that runs nothing but "
-        f"{', '.join(DEPLOY_ACTIONS)} may get a write scope, and {', '.join(DEPLOY_WRITES)} at most"
+        f"{', '.join(DEPLOY_ACTIONS)} may get a write scope ({', '.join(DEPLOY_WRITES)} at most), or one that gets "
+        f"{', '.join(ISSUE_WRITES)} only in a workflow started by {', '.join(ISSUE_TRIGGERS)} alone"
     ]
 
 
 def workflow_problems(files, names):
     """Problems with the workflows ({file name: text}) against the job names: each workflow sets top-level
-    permissions that grant no write and pins every action to a commit SHA; only a deploy job gets a write scope
-    (deploy_problems); a job that runs `ci --job X` is named X and X is a job; every job runs in some workflow; the
+    permissions that grant no write and pins every action to a commit SHA; only a deploy or issue job gets a write
+    scope (write_problems); a job that runs `ci --job X` is named X and X is a job; every job runs in some workflow; the
     GATHER job needs every other job of its workflow."""
     problems, called, gathered = [], set(), False
     for fname, text in sorted(files.items()):
@@ -318,8 +349,9 @@ def workflow_problems(files, names):
             action, _, pin = ref.partition("@")
             if not SHA40.match(pin):
                 problems.append(f"{fname}:{n}: {action} is not pinned to a full commit SHA")
+        events = triggers(text)
         for job, info in jobs.items():
-            problems += deploy_problems(fname, job, info)
+            problems += write_problems(fname, job, info, events)
             for name in info["calls"]:
                 called.add(name)
                 if name not in names:

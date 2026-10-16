@@ -19,7 +19,7 @@ environments under `build/ci/` and make them again only when a lock file changes
 
 | Job | Workflow | What it checks |
 | --- | --- | --- |
-| `workflow` | `ci.yml` | every workflow runs each job under its own name, pins every action to a full commit SHA and sets `permissions:`, with a write scope only on a Pages deploy job |
+| `workflow` | `ci.yml` | every workflow runs each job under its own name, pins every action to a full commit SHA and sets `permissions:`, with a write scope only on a Pages deploy job or on an issue job no pull request or push can start |
 | `tests` | `ci.yml` | the `coney-tools` unit tests |
 | `markdownlint` | `ci.yml` | every Markdown file, with the version and rules the commit hook uses |
 | `conventions` | `ci.yml` | `.github/conventions.yml` is well formed, and the pull request template and issue forms match it |
@@ -32,10 +32,17 @@ environments under `build/ci/` and make them again only when a lock file changes
 
 `ci.yml` runs on every pull request and every push to `main`; its `build-ok` job needs every other job, so it is the
 one check of `ci.yml` that branch protection requires. `pr.yml` runs on pull requests only, again whenever the
-description is edited, and adds two checks from [Groundwork](https://github.com/Ryubara/groundwork)'s checker:
-`body` (the description follows the template) and `docs` (a change to code changes the docs too, or the description
-says `Docs: none`). Coney's titles are a short imperative summary with no area ([AGENTS.md](../AGENTS.md)), so
-Groundwork's title check is not used.
+description is edited, and adds three checks from [Groundwork](https://github.com/Ryubara/groundwork)'s checker:
+`title` (the title is `area: Verb the rest`, with an area of `.github/conventions.yml`), `body` (the description
+follows the template) and `docs` (a change to code changes the docs too, or the description says `Docs: none`). A
+commit on a branch gets the same title check from the commit-msg hook (`.pre-commit-config.yaml`).
+
+Two more of Groundwork's workflows keep issues in order. `hygiene.yml` runs every Monday at 06:00 UTC (and by hand)
+and keeps one comment on the "Repo hygiene" issue listing idle or malformed issues and pull requests, and checks that
+the generated files still match the conventions; it never edits an issue. `issue-status.yml` removes the `S-` labels
+of a closed issue and gives a reopened one `S-needs-triage`. Neither is a required check. Both get `issues: write`
+on the one job that needs it, and only a schedule, a dispatch or an issue event starts them, so no pull request's
+code runs with that token.
 
 Locally, `disclosure` and `commit-sigs` check the commits from `main` to `HEAD`; give `--range A..B` for others, and
 `--text FILE` for a pull request's title or description. The `markdownlint` job fails when markdownlint-cli2 reports
@@ -86,27 +93,33 @@ command that regenerates it.
 the `workflow` job when a workflow or `ci.py` changes, and a pre-push check that runs the `verify` job when
 research pages change.
 
-## Going public
+## Repository settings
 
-The repository's settings live as files and are applied on GitHub when the repository is made public (a private
-repository may not offer rulesets), from the root of a checkout, with `gh` logged in as a maintainer. Each command
-shows the change first; run it again with `--apply` to make it.
+The repository's settings live as files and are applied on GitHub with Groundwork's checker, from the root of a
+checkout, with `gh` logged in as a maintainer. Each command shows the change first; run it again with `--apply` to
+make it. Apply them again after any change to `.github/conventions.yml` that touches labels, merging or the required
+checks, once its pull request has merged.
 
 ```sh
 gw="uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/groundwork.py"
 $gw labels -R Ryubara/coney      # the labels in conventions.yml
 $gw settings -R Ryubara/coney    # squash merge only, PR title and body as the commit, delete merged branches
 $gw ruleset -R Ryubara/coney     # main: no deletion or force-push, pull requests only, linear history, checks
+$gw check -R Ryubara/coney       # any drift of files, labels, settings or ruleset from conventions.yml
 ```
+
+The ruleset names the required checks (`title`, `body`, `docs`, `disclosure`, `build-ok`); GitHub offers a check
+only after a pull request has run it, so a new required check is added to the ruleset after its first run.
+
+## Going public
 
 1. Before the repository is made public, check every commit message of its history:
    `coney-tools ci --job disclosure --range HEAD`.
-2. Make it public, then apply the labels and the settings.
-3. Once a pull request has run the required checks (`body`, `docs`, `disclosure`, `build-ok`), apply the ruleset.
-4. In the repository's Actions settings: the default token read-only, and approval required before workflows run
+2. Make it public, then run `$gw check` and apply anything it reports.
+3. In the repository's Actions settings: the default token read-only, and approval required before workflows run
    for outside contributors.
-5. Publish the documentation site: in the repository's Pages settings, set the source to "GitHub Actions"; set
+4. Publish the documentation site: in the repository's Pages settings, set the source to "GitHub Actions"; set
    the repository variable `gh variable set PAGES_ENABLED --body true -R Ryubara/coney`; run the workflow once,
    `gh workflow run pages.yml -R Ryubara/coney`, and check <https://ryubara.github.io/coney/>; then show the site on
    the repository's page: `gh repo edit Ryubara/coney --homepage https://ryubara.github.io/coney/`.
-6. `groundwork.py check -R Ryubara/coney` reports any drift from `conventions.yml` afterwards.
+5. `$gw check` reports any drift from `conventions.yml` afterwards.

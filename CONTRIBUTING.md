@@ -57,8 +57,9 @@ from scratch. Two independent reviewers sign every page before it can enter the 
 - Keep each pull request to one change, with a summary of what changed and why.
 - Run the local checks first: `python -I python/coney-tools.py ci` runs every check CI runs, the same way
   ([Checks and CI](docs/ci.md)), and the page check covers any research page.
-- Pull requests are squash-merged: the title is a short imperative summary, and the description follows the
-  template. Issues are filed through the issue forms.
+- Pull requests are squash-merged: the title is `area: Verb the rest` with an area from
+  [`.github/conventions.yml`](.github/conventions.yml) (for example `tools: Add the withdrawn list to research
+  import`), and the description follows the template. Issues are filed through the issue forms.
 - Never attach or commit anything from the game: no game files, saves, dumps or disc images. Screenshots and short
   clips that show a bug may go in an issue ([LEGAL.md](LEGAL.md)).
 - Follow the [Code of Conduct](CODE_OF_CONDUCT.md).

@@ -1,0 +1,59 @@
+# The weekly sweep (Groundwork's): reports stale or malformed issues and pull requests as one comment on the "Repo
+# hygiene" issue (created when missing), and checks that the generated files still match the conventions. It only
+# comments; it never edits an issue's title, body, labels or state, and it is not a required check. Only a schedule
+# or a maintainer's dispatch starts it, so it checks out main only, never a pull request's code; the sweep job alone
+# gets issues: write (`coney-tools ci --job workflow` holds it to that). The cron must equal hygiene.sweep in
+# .github/conventions.yml. Actions are pinned to a full commit SHA; the tag is in the comment.
+name: hygiene
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
+jobs:
+  versions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.v.outputs.python }}
+      uv: ${{ steps.v.outputs.uv }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: v
+        run: python3 -I python/coney-tools.py ci --versions | tee -a "$GITHUB_OUTPUT"
+
+  sweep:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Report
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          uv venv --python "$PY" "$RUNNER_TEMP/gw"
+          uv pip install --python "$RUNNER_TEMP/gw" --require-hashes -r .github/scripts/requirements.txt
+          "$RUNNER_TEMP/gw/bin/python" -I .github/scripts/groundwork.py hygiene --apply
+      - name: Files follow the conventions
+        run: '"$RUNNER_TEMP/gw/bin/python" -I .github/scripts/groundwork.py render --check'

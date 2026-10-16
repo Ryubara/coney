@@ -1,12 +1,12 @@
 # Checks that only make sense on a pull request, run again whenever its description is edited. A pull request is
 # squash-merged, so its title and description become the one commit on main.
+#   title       the title is `area: Verb the rest` with an area of .github/conventions.yml (Groundwork's checker)
 #   body        the description follows the template (Groundwork's checker, driven by .github/conventions.yml)
 #   docs        a change to code changes the docs too, or the description says `Docs: none` (the same checker)
 #   disclosure  the title, the description and every commit message describe the process in neutral words
 #               (`coney-tools ci --job disclosure`, as a local run)
 # A title and a description are text anyone can write: they reach a checker only through an environment variable and
-# a file, never expanded into a script's text. Coney's titles are a short imperative summary with no area (AGENTS.md),
-# so Groundwork's title check is not used. Actions are pinned to a full commit SHA; the tag is in the comment.
+# a file, never expanded into a script's text. Actions are pinned to a full commit SHA; the tag is in the comment.
 name: pr
 
 on:
@@ -37,6 +37,27 @@ jobs:
           persist-credentials: false
       - id: v
         run: python3 -I python/coney-tools.py ci --versions | tee -a "$GITHUB_OUTPUT"
+
+  title:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Check the title against the commit conventions
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          uv venv --python "$PY" "$RUNNER_TEMP/gw"
+          uv pip install --python "$RUNNER_TEMP/gw" --require-hashes -r .github/scripts/requirements.txt
+          printf '%s\n' "$PR_TITLE" > "$RUNNER_TEMP/pr-title.txt"
+          "$RUNNER_TEMP/gw/bin/python" -I .github/scripts/groundwork.py check-title "$RUNNER_TEMP/pr-title.txt"
 
   body:
     needs: versions
