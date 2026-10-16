@@ -458,12 +458,12 @@ class FullMode(Base):
             ex + "from-ana": sddl("O:BAD:AI(A;;0x1200af;;;{ana})(A;OICIID;FA;;;SY)"),
             ex + "to-tst": sddl("O:BAD:AI(A;OICI;0x1200a9;;;{tst})"),
             ex + "from-tst": sddl("O:BAD:AI(A;;0x1200af;;;{tst})"),
-            os.path.join(pub, "repo"):sddl("O:BAD:AI(A;OICI;0x1200a9;;;{ana})"),
+            os.path.join(pub, "repo"): sddl("O:BAD:AI(A;OICI;0x1200a9;;;{ana})"),
             ana: sddl(
                 "O:BAD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1301bf;;;{ana})"
                 "(A;OICI;0x1200a9;;;{rev})(A;OICI;0x1301bf;;;OW)"
             ),
-            os.path.join(ana, "gate"):sddl("O:BAD:AI(A;CI;0x1200af;;;{rev})"),
+            os.path.join(ana, "gate"): sddl("O:BAD:AI(A;CI;0x1200af;;;{rev})"),
             tst: sddl("O:BAD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1301bf;;;{tst})(A;OICI;0x1301bf;;;OW)"),
             mach: "O:BAD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)",
             str(self.tmp / "manual"): sddl("O:S-1-5-21-1-2-3-1005D:PAI(A;OICI;FA;;;{mnt})(A;OICI;FA;;;SY)"),

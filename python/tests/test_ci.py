@@ -177,7 +177,8 @@ class Workflows(unittest.TestCase):
     def test_an_issue_job_in_a_workflow_no_pull_request_starts(self):
         base = {"ci.yml": workflow([("alpha", "alpha"), ("beta", "beta")])}
         self.assertEqual(self.problems({**base, "hygiene.yml": self.SWEEP}), [])
-        inline = self.SWEEP.replace("on:\n  schedule:\n    - cron: \"0 6 * * 1\"\n  workflow_dispatch:\n", "on: [issues]\n")
+        block = 'on:\n  schedule:\n    - cron: "0 6 * * 1"\n  workflow_dispatch:\n'
+        inline = self.SWEEP.replace(block, "on: [issues]\n")
         self.assertEqual(self.problems({**base, "hygiene.yml": inline}), [])
         refused = self.REFUSED.replace("pages.yml: job deploy", "hygiene.yml: job sweep").format("issues: write")
         for on in ("  pull_request:\n", "  push:\n", "  pull_request_target:\n"):
