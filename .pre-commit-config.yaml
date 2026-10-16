@@ -63,7 +63,7 @@ repos:
         stages: [commit-msg]
       # A commit's summary line is `area: Verb the rest`, as pr.yml's title check holds a pull request's title.
       - id: commit-title
-        name: commit summary is area: Verb the rest
+        name: "commit summary is area: Verb the rest"
         language: python
         additional_dependencies: ["pyyaml==6.0.3"]
         entry: python -I .github/scripts/groundwork.py check-title

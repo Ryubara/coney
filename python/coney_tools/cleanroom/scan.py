@@ -25,7 +25,7 @@ import bz2
 import codecs
 import collections
 import concurrent.futures as cf
-import concurrent.futures.process
+import concurrent.futures.process  # noqa: F401 -- loads cf.process, which the pool code uses
 import hashlib
 import io
 import json

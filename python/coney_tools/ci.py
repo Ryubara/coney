@@ -324,11 +324,12 @@ def write_problems(fname, job, info, events):
         return []
     if set(granted) <= set(ISSUE_WRITES) and events and events <= set(ISSUE_TRIGGERS):
         return []
-    return [
+    message = (
         f"{fname}: job {job} gets {', '.join(f'{s}: write' for s in granted)}; only a job that runs nothing but "
         f"{', '.join(DEPLOY_ACTIONS)} may get a write scope ({', '.join(DEPLOY_WRITES)} at most), or one that gets "
         f"{', '.join(ISSUE_WRITES)} only in a workflow started by {', '.join(ISSUE_TRIGGERS)} alone"
-    ]
+    )
+    return [message]
 
 
 def workflow_problems(files, names):
@@ -564,7 +565,29 @@ def conventions_steps(ctx):
         Step("groundwork environment", call=environment("groundwork", GROUNDWORK_LOCK)),
         Step("conventions.yml is well formed", [py, "-I", script, "validate"], cwd=ctx.repo, tool=True),
         Step("templates and forms match it", [py, "-I", script, "render", "--check"], cwd=ctx.repo, tool=True),
+        Step("every tracked YAML file parses", [py, "-I", "-c", YAML_PARSE], cwd=ctx.repo, tool=True),
     ]
+
+
+# Run with the groundwork environment's Python (it has PyYAML): every tracked .yml/.yaml file must load. Tags such as
+# mkdocs.yml's Python names are accepted as plain values; only the YAML's structure is checked.
+YAML_PARSE = """
+import subprocess, sys, yaml
+class Loader(yaml.SafeLoader):
+    pass
+Loader.add_multi_constructor("", lambda loader, tag, node: None)
+names = subprocess.run(["git", "ls-files", "-z", "*.yml", "*.yaml"], capture_output=True, check=True).stdout
+names, bad = [n for n in names.decode("utf-8").split("\\0") if n], 0
+for name in names:
+    try:
+        with open(name, encoding="utf-8") as f:
+            list(yaml.load_all(f, Loader=Loader))
+    except yaml.YAMLError as e:
+        bad += 1
+        print(f"{name}: {str(e).splitlines()[0]} (line {getattr(getattr(e, 'problem_mark', None), 'line', -1) + 1})")
+print(f"{bad} of {len(names)} YAML files do not parse" if bad else f"{len(names)} YAML files: ok")
+sys.exit(1 if bad else 0)
+"""
 
 
 def workflow_steps(ctx):
