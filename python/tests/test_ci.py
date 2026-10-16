@@ -152,9 +152,46 @@ class Workflows(unittest.TestCase):
         f"      - uses: actions/deploy-pages@{SHA} # v1\n"
     )
     REFUSED = (
-        "pages.yml: job deploy gets {}; only a job that runs nothing but actions/deploy-pages may get a write scope, "
-        "and id-token, pages at most"
+        "pages.yml: job deploy gets {}; only a job that runs nothing but actions/deploy-pages may get a write scope "
+        "(id-token, pages at most), or one that gets issues only in a workflow started by schedule, "
+        "workflow_dispatch, issues alone"
     )
+    SWEEP = (
+        "name: hygiene\n"
+        "on:\n"
+        "  schedule:\n"
+        '    - cron: "0 6 * * 1"\n'
+        "  workflow_dispatch:\n"
+        "permissions:\n"
+        "  contents: read\n"
+        "jobs:\n"
+        "  sweep:\n"
+        "    permissions:\n"
+        "      contents: read\n"
+        "      issues: write\n"
+        "    steps:\n"
+        f"      - uses: actions/checkout@{SHA} # v7\n"
+        "      - run: python groundwork.py hygiene --apply\n"
+    )
+
+    def test_an_issue_job_in_a_workflow_no_pull_request_starts(self):
+        base = {"ci.yml": workflow([("alpha", "alpha"), ("beta", "beta")])}
+        self.assertEqual(self.problems({**base, "hygiene.yml": self.SWEEP}), [])
+        inline = self.SWEEP.replace("on:\n  schedule:\n    - cron: \"0 6 * * 1\"\n  workflow_dispatch:\n", "on: [issues]\n")
+        self.assertEqual(self.problems({**base, "hygiene.yml": inline}), [])
+        refused = self.REFUSED.replace("pages.yml: job deploy", "hygiene.yml: job sweep").format("issues: write")
+        for on in ("  pull_request:\n", "  push:\n", "  pull_request_target:\n"):
+            text = self.SWEEP.replace("  workflow_dispatch:\n", f"  workflow_dispatch:\n{on}")
+            self.assertEqual(self.problems({**base, "hygiene.yml": text}), [refused], on)
+        both = self.SWEEP.replace("      issues: write\n", "      issues: write\n      contents: write\n")
+        want = self.REFUSED.replace("pages.yml: job deploy", "hygiene.yml: job sweep")
+        self.assertEqual(self.problems({**base, "hygiene.yml": both}), [want.format("contents: write, issues: write")])
+
+    def test_triggers(self):
+        self.assertEqual(ci.triggers("on: push\n"), {"push"})
+        self.assertEqual(ci.triggers('"on": [issues, schedule]  # x\n'), {"issues", "schedule"})
+        self.assertEqual(ci.triggers(self.SWEEP), {"schedule", "workflow_dispatch"})
+        self.assertEqual(ci.triggers("name: x\n"), set())
 
     def deploying(self, deploy, top="  contents: read\n"):
         """ci.yml with the gathering job, and pages.yml with the alpha and beta jobs, then the given deploy job."""

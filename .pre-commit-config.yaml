@@ -61,6 +61,13 @@ repos:
         language: python
         entry: python -I python/coney-tools.py cleanroom disclosure-check --commit-msg
         stages: [commit-msg]
+      # A commit's summary line is `area: Verb the rest`, as pr.yml's title check holds a pull request's title.
+      - id: commit-title
+        name: commit summary is area: Verb the rest
+        language: python
+        additional_dependencies: ["pyyaml==6.0.3"]
+        entry: python -I .github/scripts/groundwork.py check-title
+        stages: [commit-msg]
       # The workflows run every job of `coney-tools ci` under its name, pin every action and set permissions.
       - id: ci-workflow
         name: workflows match coney-tools ci

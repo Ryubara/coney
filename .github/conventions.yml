@@ -27,16 +27,16 @@ paths:
          "mods/coney-zone/README.md"]
 
 commits:
-  # Coney's titles, and so its squash commits, are a short imperative summary with no area (AGENTS.md), so the
-  # title check is not run (pr.yml); this block stays because the checker's schema requires it.
+  # A pull request's title, and so its squash commit on main, is `area: Verb the rest` (pr.yml's title check); a
+  # commit on a branch follows the same form (the commit-msg hook in .pre-commit-config.yaml).
   title:
-    form: "Verb the rest"
+    form: "area: Verb the rest"
     max_length: 72
     trailing_period: false
     breaking_suffix: "(BREAKING)"
     areas:
       engine: "the engine and its tests"
-      tools: "coney-tools, hooks and the mod"
+      tools: "coney-tools, hooks, the mod and the implementer containers"
       research: "research pages and verdicts"
       ci: "GitHub Actions workflows and repository settings"
       docs: "README, guides and other documentation"
@@ -71,14 +71,14 @@ pull_requests:
 
 merge:
   # Mirrors the GitHub ruleset and the repository settings (`groundwork.py ruleset`, `settings`). The required
-  # checks: pr.yml's three jobs, and ci.yml's build-ok, which needs every other job of ci.yml.
+  # checks: pr.yml's four jobs, and ci.yml's build-ok, which needs every other job of ci.yml.
   methods: [squash]
   squash_title: PR_TITLE
   squash_message: PR_BODY                        # the description, so its Co-Authored-By trailer stays
   auto_merge: true
   delete_branch_on_merge: true
   linear_history: true
-  required_checks: [body, docs, disclosure, build-ok]
+  required_checks: [title, body, docs, disclosure, build-ok]
 
 issues:
   # Issues are filed only through a form (AGENTS.md): no blank issues.
@@ -119,6 +119,18 @@ issues:
   labels:
     type: exactly-one
     status: exactly-one
+
+hygiene:
+  # The weekly sweep (hygiene.yml) keeps one comment on this issue listing idle or malformed issues and pull requests.
+  report_issue:
+    title: "Repo hygiene"
+    labels: [task, P-low, S-in-progress]
+  sweep: "0 6 * * 1"                             # weekly, Monday 06:00 UTC; must equal the cron in hygiene.yml
+  thresholds:
+    needs_triage_days: 7
+    needs_info_days: 21
+    in_progress_idle_days: 30
+    pull_request_idle_days: 30
 
 labels:
   description_max: 100                           # GitHub's limit

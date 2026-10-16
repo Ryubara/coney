@@ -68,7 +68,9 @@ Exit status of every command: 0 passed, 1 a check failed, 2 the command could no
 
 ## Commits and pull requests
 
-- Write commit messages as a short imperative summary line, a blank line, then what changed and why.
+- Write commit messages as a summary line `area: Verb the rest`, a blank line, then what changed and why. The areas
+  are in `.github/conventions.yml` (`engine`, `tools`, `research`, `ci`, `docs`, `agents`); the commit-msg hook and
+  the pull request's `title` check enforce the form.
 - A commit an agent writes names it in one `Co-Authored-By:` trailer with the model's name and the vendor's noreply
   address. No other trailers, no personal email addresses, no session or site links.
 - Agents commit locally and run every local check; only a coordinator pushes to GitHub. An implementer container
