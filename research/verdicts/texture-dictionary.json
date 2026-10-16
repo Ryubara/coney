@@ -1,0 +1,123 @@
+{
+  "checker_sha256": "6eacc4853fff744d1fe0dc700c530fce38754dae6e8fa250e0b90f68efb00cd5",
+  "images": [],
+  "page": "texture-dictionary",
+  "page_sha256": "9a9ee47a7dd3c07d06e5c01b7c8a00027fa642c7f54e5b5f5ae0f48d52178785",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-texture-dictionaries-and-texture-natives",
+      "kind": "fact",
+      "sha256": "23c86335592317c7bfb945b166531bbb8fbf522535a2b3f8be0377b2778864b4",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "c0084fd31a62dd8943c70d5e437d8d780f7660d15511ddc760b61027bd4f55f2",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-the-dictionaries-are",
+      "kind": "fact",
+      "sha256": "92a529bd22e71994828c150dcfeb29d81275ef01df9619e7bb962eb8adb3f085",
+      "verdict": "keep"
+    },
+    {
+      "id": "section-header",
+      "kind": "fact",
+      "sha256": "49c23cea59232e8a53ba5dceaa216003e481b0d48c8a99f2f6ff33be81df645b",
+      "verdict": "keep"
+    },
+    {
+      "id": "texture-dictionary-section-0x16",
+      "kind": "fact",
+      "sha256": "3240f81b1310ecb701828722daae444dabb34d5e841611dd657f039a521daf3e",
+      "verdict": "keep"
+    },
+    {
+      "id": "texture-native-section-0x15",
+      "kind": "fact",
+      "sha256": "0947e39e7d4db824c0bdc96bca3a799551975ee9d68901d2da4aa1ed61a520e0",
+      "verdict": "keep"
+    },
+    {
+      "id": "raster-header",
+      "kind": "fact",
+      "sha256": "7377f6d28739d07d39f58a416202dd82bde208ad7a25712eb0ab4bbe9fe8aff5",
+      "verdict": "keep"
+    },
+    {
+      "id": "tex0-fields",
+      "kind": "fact",
+      "sha256": "e146162990ba6260c5f535be8edbbd468c1bc84996f30f24d2823562bba6f710",
+      "verdict": "keep"
+    },
+    {
+      "id": "gs-memory-placement-values",
+      "kind": "fact",
+      "sha256": "45492e0920f8dbf9f978a2b5d772bb285ff24b623cf5159e66fd2868ff94c0d2",
+      "verdict": "keep"
+    },
+    {
+      "id": "transfer-packets",
+      "kind": "fact",
+      "sha256": "a05eb477c89f9fd762b02ee3a6b5feba4df0fcd181022649aa1cc858b1376a6d",
+      "verdict": "keep"
+    },
+    {
+      "id": "texel-rectangles",
+      "kind": "fact",
+      "sha256": "ea5d2b024cdaf9c573060257477bb730c9e0ca2adfb5a533189a128287de7529",
+      "verdict": "keep"
+    },
+    {
+      "id": "gs-memory-layouts",
+      "kind": "fact",
+      "sha256": "cc48bcd5c6230fb3ad0ccb0bc65927721a5cefbc9412f69f8835229394e35b2c",
+      "verdict": "keep"
+    },
+    {
+      "id": "palettes",
+      "kind": "fact",
+      "sha256": "8f2fd70f52364ab174988c26d65a8ccdf46e227121d4b8f366a259f142482180",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-older-streams",
+      "kind": "fact",
+      "sha256": "a717cb3cd56d7c3aa63bed46b6fb4202a2d436ae08ce1fc63f2c0310bcf777f5",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "fact",
+      "sha256": "2fea6d0ba88252f06afbb805b0af94567b7ceebc5501c9a7e332821633b55a6e",
+      "verdict": "keep"
+    },
+    {
+      "id": "chunk-types-read",
+      "kind": "fact",
+      "sha256": "32428befdb4097382f2ffbd47c9868313494f57bb5d9d89e91e7f222bea58cae",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "4fae31bcea401d192dbf3ce25d28e753fa5cfd10c25ebd084e88bc8959ea71bc",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "3a307f9ecc9e721d2d34232851b046deadb61f3596719119fd80c098fb6e19a9",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "c29a16f11af5259fe7532293160d768672c290a30144261a96d2e017a26adc0e",
+      "verdict": "keep"
+    }
+  ]
+}

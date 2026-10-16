@@ -1,0 +1,117 @@
+{
+  "checker_sha256": "6eacc4853fff744d1fe0dc700c530fce38754dae6e8fa250e0b90f68efb00cd5",
+  "images": [],
+  "page": "chunk-container",
+  "page_sha256": "faee63b6b6ca1a8546b471ff3dd8ee07878f600f42bbde6ee705389929dbc3b0",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "chunk-container",
+      "kind": "fact",
+      "sha256": "22a4d0d6d5f83145fd223f46722eaf8e0a78ac9d6432a75b0d48455278cff6cc",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-it-is-used",
+      "kind": "fact",
+      "sha256": "c1ab9ec477963b2cfcba9406e3a66bdd174ceb2f1257b64ed41195fa96d61916",
+      "verdict": "keep"
+    },
+    {
+      "id": "layout",
+      "kind": "fact",
+      "sha256": "e2a2738d25046ba7ee930657c1fc917dcb7d1d84a95da45fc4499837c1dd21c8",
+      "verdict": "keep"
+    },
+    {
+      "id": "resource-header",
+      "kind": "fact",
+      "sha256": "1ee91a75cee64d8a72435fd033db7efa720d274d0b6662ca6b86ff17210854d6",
+      "verdict": "keep"
+    },
+    {
+      "id": "chunk-record",
+      "kind": "fact",
+      "sha256": "70f8bdf54843fdf6b6b784f46581c19a8f323386e449f878026187f47b333de0",
+      "verdict": "keep"
+    },
+    {
+      "id": "pack-header",
+      "kind": "fact",
+      "sha256": "14ad824d4dfe2fa23e6a1783f780ae6f7be538ae7a0d2d691076fd046f68bc6b",
+      "verdict": "keep"
+    },
+    {
+      "id": "examples-from-the-disc",
+      "kind": "fact",
+      "sha256": "6fbc06b76d87489c84f927a663c8b502ae9229cfb4c571e16613af5e0010a802",
+      "verdict": "keep"
+    },
+    {
+      "id": "alignment",
+      "kind": "fact",
+      "sha256": "58ea7255d8aa7c0387a2e2b480baf1aba15fde0a333f244756d0a8cb44371e0f",
+      "verdict": "keep"
+    },
+    {
+      "id": "nesting",
+      "kind": "fact",
+      "sha256": "42c706489b99a13fc36ac97415d8f4ee9a3483e40c933012a33f536138aa3856",
+      "verdict": "keep"
+    },
+    {
+      "id": "chunk-types",
+      "kind": "fact",
+      "sha256": "74bbdaa6e851e5aab92a0d6389dd6203d758612cedaaf80c5fade0fc0b80ce6a",
+      "verdict": "keep"
+    },
+    {
+      "id": "payload-kinds",
+      "kind": "fact",
+      "sha256": "85135d4240c2521491e317ae94ec8761a3c100a666f3cac1d14c119c52adfeb3",
+      "verdict": "keep"
+    },
+    {
+      "id": "resource-shapes",
+      "kind": "fact",
+      "sha256": "f09d943869c6921921bb3525943080d623b65d9454ff9d8bb105fc16243aa704",
+      "verdict": "keep"
+    },
+    {
+      "id": "hashes",
+      "kind": "fact",
+      "sha256": "408608811a95d6ae8e9f803c2c17c245d357c934384b212b81658caa719cdf4f",
+      "verdict": "keep"
+    },
+    {
+      "id": "fix-ups",
+      "kind": "fact",
+      "sha256": "e5121f9084486f58d5ac3fca24e8d4cfe8405e981db9218acc833181a0ac0213",
+      "verdict": "keep"
+    },
+    {
+      "id": "behaviour",
+      "kind": "behaviour",
+      "sha256": "3c35bc58d2fe1f47f571b4bbd6c24875c0f2351b7ec9ed8e48a92a26a24ef969",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "24ae70d4a47e71ff66b98a7fbb7041fbc6612eba00ba46b9b6591b72a39f9e56",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "9e8b0a4ff11d79e650e9c77a321f5f8ef69574baa9013477cc0349279629b2fd",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "9e6a9efe0a1ce6f6a5a70b0736ba80240f4cbe6520ce8e4a83928ecada9d4340",
+      "verdict": "keep"
+    }
+  ]
+}

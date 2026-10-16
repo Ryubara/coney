@@ -1,0 +1,117 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "xbox-disc-layout",
+  "page_sha256": "d65913d88e43820bf4a3ab3fc7ebec58ce1235b1c6107d8b63d60e6bb5a27b70",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "xbox-disc-layout",
+      "kind": "fact",
+      "sha256": "33552f9403613d17586fc3b5b1d3e29d0747d359cbe2f4652756f351779497c5",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "aecd515a8f56c21ce3ebf911f16546d56f984e5a98b3fa14695a6a6155ee6e02",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-disc-image",
+      "kind": "fact",
+      "sha256": "ae83e0fbcbf4f90ffc4024e14a437efb9f63392823886c220f1a27ba2ffcec46",
+      "verdict": "keep"
+    },
+    {
+      "id": "volume-descriptor-partition-sector-32",
+      "kind": "fact",
+      "sha256": "5c9e30302913d53c51dc237d6a22ae9482cf1612040f48c4c567ff6acbf070da",
+      "verdict": "keep"
+    },
+    {
+      "id": "directory-records",
+      "kind": "fact",
+      "sha256": "4ca06896698562afe198b5b04f0944a69a7fa584a7646552ce49d92aabad98ce",
+      "verdict": "keep"
+    },
+    {
+      "id": "files-on-the-disc",
+      "kind": "fact",
+      "sha256": "d422a90d94499983db6a514b9471a09c5dc1b0adb53745188c08e542c8baa393",
+      "verdict": "keep"
+    },
+    {
+      "id": "root-directory",
+      "kind": "fact",
+      "sha256": "658637dbb126101af064c3655ae78aba435a5c75b04ebb25d16570677a4ac268",
+      "verdict": "keep"
+    },
+    {
+      "id": "audio-directory-373-files",
+      "kind": "fact",
+      "sha256": "3c97b2d9412d86631f4f57a1c2233ee25c52a186571c9b2fdcbcbc20bdd64afd",
+      "verdict": "keep"
+    },
+    {
+      "id": "bik-directory-48-files",
+      "kind": "fact",
+      "sha256": "ef8a8e70552e1a61da8c37139e2a4ac60e1113fc146d178f276c483fa4210257",
+      "verdict": "keep"
+    },
+    {
+      "id": "how-the-xbox-disc-relates-to-the-ps2-disc",
+      "kind": "fact",
+      "sha256": "bc1e985903752eb716afa67d1f11bf92a5fff72f1357d051cc6cfbfda5f720d7",
+      "verdict": "keep"
+    },
+    {
+      "id": "executable-container-default-xbe",
+      "kind": "fact",
+      "sha256": "37bf3af2839bb5eca865cdf5b9f40a07918177efee95974002ad9b85abacf431",
+      "verdict": "keep"
+    },
+    {
+      "id": "image-header",
+      "kind": "fact",
+      "sha256": "bbc7154be494af1f7bf5fd8d51bcdcf845ffa221e92095e23f8ae251bf363089",
+      "verdict": "keep"
+    },
+    {
+      "id": "certificate-file-offset-0x184",
+      "kind": "fact",
+      "sha256": "1a5591614450f38b2cf66b1122c51f0cf4b3ed9225ac5aea07b5b3d323796304",
+      "verdict": "keep"
+    },
+    {
+      "id": "section-table",
+      "kind": "fact",
+      "sha256": "840010a9dcf58ee6dbc4e54615e56ea36e32f0a763447d78e91f1c5826dbb2b0",
+      "verdict": "keep"
+    },
+    {
+      "id": "library-versions",
+      "kind": "fact",
+      "sha256": "7f899d2d0cd2de550106dbef7ec68eb59601ec92c6e8e2a15f72056dce2d60ca",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "cfaac32c4bfebedf402b0195798190310eaf2dec7403d0320ede37988984b199",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "042266885b545b124ec978cc63246cdf1d23414c258cbd9426bdf918411fa24c",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "79231568f94fdb2dcf183f3326deefff2d83f3de5791ec43bad81d426055ef9d",
+      "verdict": "keep"
+    }
+  ]
+}

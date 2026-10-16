@@ -1,0 +1,93 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ps2-disc-layout",
+  "page_sha256": "3063bd0d619b816a3c9db62d51e2e368fa8f1eca503da1cbe3a0370ab89b0cdd",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-disc-layout",
+      "kind": "fact",
+      "sha256": "25d941c59492f1cd950b3276aa777fc2b40363e53bf07ba6a6472e1ff7b4be0c",
+      "verdict": "keep"
+    },
+    {
+      "id": "volume",
+      "kind": "fact",
+      "sha256": "293f459c213cfbacd2af58975e1b9f920b21ddf271a5c7afa30ae840e623b78c",
+      "verdict": "keep"
+    },
+    {
+      "id": "file-list",
+      "kind": "fact",
+      "sha256": "8b50f2cfa9a14e7f61a777e9ae8a1a3c0015aa54a2e7f593389cca67dd7823dd",
+      "verdict": "keep"
+    },
+    {
+      "id": "share-of-the-disc",
+      "kind": "fact",
+      "sha256": "1243dfe41b0618b9497f31e8641310cfb14ff95ac7273d3e2ad9ad49458383a7",
+      "verdict": "keep"
+    },
+    {
+      "id": "boot-file",
+      "kind": "fact",
+      "sha256": "9abf17c4566b5a287a0792938cc65d44ea05587b946df8ed6a90c073d14bc2f9",
+      "verdict": "keep"
+    },
+    {
+      "id": "iop-modules",
+      "kind": "fact",
+      "sha256": "2c6e72f7e08c0d51e347631d1590b51bbd5747937fe0c34e1c43934e41c9a1f5",
+      "verdict": "keep"
+    },
+    {
+      "id": "archive-pair",
+      "kind": "fact",
+      "sha256": "6c4692252476d00863816a89da8772ee20b00cb46787b89af3a50afc18a8ddc7",
+      "verdict": "keep"
+    },
+    {
+      "id": "audio-banks",
+      "kind": "fact",
+      "sha256": "88f6014ebc8b60846fd4065c17245d04026b9ef534ce7931b3273563c37f3371",
+      "verdict": "keep"
+    },
+    {
+      "id": "movies",
+      "kind": "fact",
+      "sha256": "a94c8588422740dabc1185861f4711d4107734b97e4e098ef36778881e1f6114",
+      "verdict": "keep"
+    },
+    {
+      "id": "differences-from-the-xbox-disc",
+      "kind": "fact",
+      "sha256": "1854a58988181dd20a7f524f0b27d1b93cc6c65743102e8b8ac0f35a40bfc643",
+      "verdict": "keep"
+    },
+    {
+      "id": "behaviour",
+      "kind": "behaviour",
+      "sha256": "c155811031e209298f8326ce3dc8705152f95443e62683d14227fa6453993a0d",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "7689874829f1aba4965e0b29c9e0d9876b135bd44ce03e1d8f4b5f67d463fb70",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "6bcc7cf8e618e67589f9e3128eef8f68cb0b8e2cb09fa9ca864665eeb369b64b",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "44b09b15b80797cebf4e9afe2af050d34a6ef7c23ec097a93d0f2a39c85ad9b9",
+      "verdict": "keep"
+    }
+  ]
+}

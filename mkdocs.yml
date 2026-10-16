@@ -1,0 +1,56 @@
+site_name: Coney
+site_description: A clean-room reimplementation of The Warriors
+site_url: https://ryubara.github.io/coney/
+repo_url: https://github.com/Ryubara/coney
+# No edit links: the research pages are added from research/pages/ by the hook, so an edit link would be wrong.
+edit_uri: ""
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  custom_dir: overrides
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+
+extra_css:
+  - assets/coney.css
+
+# Mermaid with the ELK layout (docs/assets/diagrams.js).
+extra_javascript:
+  - path: assets/diagrams.js
+    type: module
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: coney-diagram
+          format: !!python/name:pymdownx.superfences.fence_div_format
+
+# The research pages stay in research/pages/<id>/page.md; the hook adds them to the site as research/<id>.md.
+hooks:
+  - mkdocs_hooks.py

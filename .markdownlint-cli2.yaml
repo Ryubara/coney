@@ -1,0 +1,5 @@
+# Which files markdownlint-cli2 reads; the rules are in .markdownlint.yaml. Run it as CI does with:
+#   python -I python/coney-tools.py ci --job markdownlint
+gitignore: true    # skip everything .gitignore keeps out of the repository (tool installs, game files, caches)
+ignores:
+  - "CODE_OF_CONDUCT.md"     # the Contributor Covenant's text, kept as published

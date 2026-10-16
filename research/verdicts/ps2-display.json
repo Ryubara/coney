@@ -1,0 +1,117 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ps2-display",
+  "page_sha256": "7aa312f9c23a6d93151d8e5793a9e66c8fea4c531b0209de6ff1952ad5d75c4c",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-display-and-frame-layers",
+      "kind": "fact",
+      "sha256": "1e2e0202116644162cca8bb141685dbef3c60e2da54405c11a968b277645e574",
+      "verdict": "keep"
+    },
+    {
+      "id": "sources",
+      "kind": "fact",
+      "sha256": "160385b9eb2a8fef029f14398d087134924f8108ee5b114c3b6104544ff3c5de",
+      "verdict": "keep"
+    },
+    {
+      "id": "video-mode-and-output",
+      "kind": "fact",
+      "sha256": "2a05011757ff9e8f1246f2f8e7f80d9994d1f486ff55e0c07b3e637e1419422b",
+      "verdict": "keep"
+    },
+    {
+      "id": "gs-memory-layout",
+      "kind": "fact",
+      "sha256": "c1cdb93a9981ac8c174e7b782a2143074c6da091be4bf62d70f5e22667c4a5b8",
+      "verdict": "keep"
+    },
+    {
+      "id": "drawing-area",
+      "kind": "fact",
+      "sha256": "7d7a45331baa74bf96c8a0dcfc8c8bc52be3c2e4274a131597547d4692740de9",
+      "verdict": "keep"
+    },
+    {
+      "id": "render-settings",
+      "kind": "fact",
+      "sha256": "31dd1aa8ac87165a0a9940d40618c5146c1409589bfc0b86d6e429106f383770",
+      "verdict": "keep"
+    },
+    {
+      "id": "blend-modes",
+      "kind": "fact",
+      "sha256": "97e2560e953a553eb33b90fea05584d3b792af4b5ec1ec2d582eb1aa5f924666",
+      "verdict": "keep"
+    },
+    {
+      "id": "alpha-test",
+      "kind": "fact",
+      "sha256": "e6f0bf5fce36982404fc3897b1c37c1b38db6f9a4c141cb75ff7145b2852cce2",
+      "verdict": "keep"
+    },
+    {
+      "id": "depth",
+      "kind": "fact",
+      "sha256": "6f3af8cb5f66e927f94a5a22223addc56920f3c95b670236a59c0e67ce062b74",
+      "verdict": "keep"
+    },
+    {
+      "id": "settings-seen-in-the-frame",
+      "kind": "fact",
+      "sha256": "f8052f1f15a7887e67f81a352a8b04e4d24e25edeb0c11134ff720cadc6994db",
+      "verdict": "keep"
+    },
+    {
+      "id": "texture-filtering",
+      "kind": "fact",
+      "sha256": "935aaeef319933e1cc85e2e67059fc285d56cc3309b8d23e49ca17dd28221e79",
+      "verdict": "keep"
+    },
+    {
+      "id": "fog",
+      "kind": "behaviour",
+      "sha256": "90348a88c08b2e03943ed780b4ae87b4f430d4b12c812a43fa0291601f0d1ebd",
+      "verdict": "keep"
+    },
+    {
+      "id": "frame-layers",
+      "kind": "behaviour",
+      "sha256": "e3066827bed3f5560e83161b2bc78ab1c94497962cd6db4160a642be54f9d88d",
+      "verdict": "keep"
+    },
+    {
+      "id": "video-option",
+      "kind": "behaviour",
+      "sha256": "7f278a8408f2a7f662e49f4653c694b532f452c7be9b2143c4393cfb5aa9031e",
+      "verdict": "keep"
+    },
+    {
+      "id": "lighting-option",
+      "kind": "behaviour",
+      "sha256": "8895938da144dee4008659fd1b3718b957d088fbbee0ebfe8c45535820a86e56",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "f1579dc6080c1fbaf582384845c851bd87a8b4a5580b09d64cf83b0a8331b8f3",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "d3ce4628d593141ed0a0f9f68debcb9c5973aa819f94271bfe3081ca6cf6a771",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "da02b2037fe4d80ff7c9cc1cdeabb2548f9d648dfc634bb0dd0298aa791f7157",
+      "verdict": "keep"
+    }
+  ]
+}

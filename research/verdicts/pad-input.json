@@ -1,0 +1,117 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "pad-input",
+  "page_sha256": "fc735b1d298bb99910bddbcac0a264d63f957d8298a501e639bef9897e85ee1c",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "controller-input",
+      "kind": "fact",
+      "sha256": "8b97732236cf73933cbb7dda04031a17d07cc69617b5ba9bcbc1aaba81cebce7",
+      "verdict": "keep"
+    },
+    {
+      "id": "sources",
+      "kind": "fact",
+      "sha256": "4e54b95594ceb431b989af3e86fdc2971146c9334fbc9196accc0b13d9c45bbf",
+      "verdict": "keep"
+    },
+    {
+      "id": "ports-and-controllers",
+      "kind": "fact",
+      "sha256": "06957450722372d574687ea79501eb292a4a65b6602dc2787527807ac61a0e0d",
+      "verdict": "keep"
+    },
+    {
+      "id": "button-word",
+      "kind": "fact",
+      "sha256": "fb7ee12f581d10551625783d9371f707585c4b7c84a17b6b0179b488058361c8",
+      "verdict": "keep"
+    },
+    {
+      "id": "analogue-sticks",
+      "kind": "fact",
+      "sha256": "941d34f365491f1d7d91871fd1c03774d9538187978e00f53026d67611aea671",
+      "verdict": "keep"
+    },
+    {
+      "id": "left-stick-on-foot",
+      "kind": "behaviour",
+      "sha256": "56d4558db07e00539d331b3dd7c26a2734bfa566efea05aa11c1c4f5cc51f638",
+      "verdict": "keep"
+    },
+    {
+      "id": "right-stick-and-camera",
+      "kind": "behaviour",
+      "sha256": "f03832dfdb56a48af91a4efe4e628f274b617a6d0a1cc1ca745e4811b3179f2b",
+      "verdict": "keep"
+    },
+    {
+      "id": "trigger-kinds",
+      "kind": "behaviour",
+      "sha256": "73cfcf97564aeaaab1731d547cb9f4080726a4a85c0c876d5651510e0a0afa27",
+      "verdict": "keep"
+    },
+    {
+      "id": "command-table",
+      "kind": "fact",
+      "sha256": "576fa1f093e698593e44fd7ae1dc5b784f9fed1f16814e052803df10446131ca",
+      "verdict": "keep"
+    },
+    {
+      "id": "commands-in-play",
+      "kind": "behaviour",
+      "sha256": "1bb80ae85ed5b12164e70d206402833ee01ee2782861e3790f54867a75b3d791",
+      "verdict": "keep"
+    },
+    {
+      "id": "buttons-by-context",
+      "kind": "behaviour",
+      "sha256": "cec37437d7cfc8f632ad16ff76a86181e58809434a210df77ac3b6eb3af624c4",
+      "verdict": "keep"
+    },
+    {
+      "id": "cheat-sequences",
+      "kind": "fact",
+      "sha256": "ce8602821d4c890c77a340f789996cb3400dd1ac93b7e48e1514f128aa9c737e",
+      "verdict": "keep"
+    },
+    {
+      "id": "pulled-controller",
+      "kind": "behaviour",
+      "sha256": "14d95c848a852df85b9dcc650978d8effd7dde9a7727bcac5ba95088d15b19f5",
+      "verdict": "keep"
+    },
+    {
+      "id": "vibration-and-pressure",
+      "kind": "behaviour",
+      "sha256": "2acfd2194feeb9d966042ab0749b6138b17d58ead5dc67161a24deb7b5877ec9",
+      "verdict": "keep"
+    },
+    {
+      "id": "platform-differences",
+      "kind": "fact",
+      "sha256": "ed5c1a933c80b1d0d6e66570a1225312a2cce30cd1c66164a785bccf9f4494bc",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "0a7b11753286cca35fdb66fc551d09ece5de4e23f2f90a5e13a855415d656465",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "37827c6fa56a2ce5dda4a6a8911413438c0e060832be0e05bd81fff6d0339e60",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "99c89fb613e148cb36e7cb6f09f5e39c278aa8bc2fcbf60672d009b751906422",
+      "verdict": "keep"
+    }
+  ]
+}

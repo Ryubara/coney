@@ -1,0 +1,153 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "save-data",
+  "page_sha256": "590dee5baa48060d7153e0d263e21ae017d096d475f6fad77e26604163ae6893",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-save-data-on-the-memory-card",
+      "kind": "fact",
+      "sha256": "1ea31e75b6b61aa3bcf5b28fad947c86f6cc81baf0128d92a0d11ee5bc46db54",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "175042556774e499758916a37ed7bc3b605debb3d27ea53abe27b55fd28eb996",
+      "verdict": "keep"
+    },
+    {
+      "id": "files-on-the-card",
+      "kind": "fact",
+      "sha256": "ef99132cb51a1614b17e75097285f0c85a2e8b82b744cca2ba9673cb1cd66c68",
+      "verdict": "keep"
+    },
+    {
+      "id": "save-file-layout",
+      "kind": "fact",
+      "sha256": "e1e34c27bba7ab0214651ad860825e4c51d1cbe2a234cee5c8d0217f5a1fb253",
+      "verdict": "keep"
+    },
+    {
+      "id": "profile-record",
+      "kind": "fact",
+      "sha256": "d8a5b2fc0126f47a4b5651154bcf521f884345c4673c7f76b97933704879d59c",
+      "verdict": "keep"
+    },
+    {
+      "id": "mission-best-record",
+      "kind": "fact",
+      "sha256": "0474aa6830dad0efbb39d05301d48d3039b2cf22cd9448ad8c22fc15619ca430",
+      "verdict": "keep"
+    },
+    {
+      "id": "rumble-gang-block",
+      "kind": "fact",
+      "sha256": "cc7b1499434148bbae7faf88edc228254bb1b531f13491b69f6b454ce9c5d911",
+      "verdict": "keep"
+    },
+    {
+      "id": "difficulty-values",
+      "kind": "fact",
+      "sha256": "edb5068fbf14b845be8c7c9a5c9420e42894e65d13d965a2af0f0b6a6b20aee9",
+      "verdict": "keep"
+    },
+    {
+      "id": "options",
+      "kind": "fact",
+      "sha256": "79f1a2a096d726cd478d4db7ee9de58a7a6ce0af5623747b9854f4b41b92baab",
+      "verdict": "keep"
+    },
+    {
+      "id": "new-profile",
+      "kind": "behaviour",
+      "sha256": "643d20cf36a7a3ce95ff2dfc14cfdedf8c1a24d06e6ea8d4d706ed388e479044",
+      "verdict": "keep"
+    },
+    {
+      "id": "when-the-game-saves",
+      "kind": "behaviour",
+      "sha256": "9763dd9cda2b683f585c66adb7103e6a3a76646391e891fa4425f5036843524c",
+      "verdict": "keep"
+    },
+    {
+      "id": "card-dialogs",
+      "kind": "behaviour",
+      "sha256": "5a275d59abc23cee2ca6d2342c93f3fef970dea3d4a88e3bd94b70b78313ece5",
+      "verdict": "keep"
+    },
+    {
+      "id": "progress-messages",
+      "kind": "behaviour",
+      "sha256": "be988e02cf7127523452dd74168e0b6380c0752fb97b41813f8f68befebef4ab",
+      "verdict": "keep"
+    },
+    {
+      "id": "no-card",
+      "kind": "behaviour",
+      "sha256": "9df01890ea354f30f51a86b30525c0d414d6a78997327967d79949189318fda4",
+      "verdict": "keep"
+    },
+    {
+      "id": "card-not-formatted",
+      "kind": "behaviour",
+      "sha256": "dcd9554ebfaf06792a4546e04a2c45435ceccf3de4cb1f55c4a9fdf9c34939a7",
+      "verdict": "keep"
+    },
+    {
+      "id": "no-save-on-the-card",
+      "kind": "behaviour",
+      "sha256": "c266b089e23fedcaad82b9cc97f35b869feced57d148f078917600d4ace0cf22",
+      "verdict": "keep"
+    },
+    {
+      "id": "corrupt-save",
+      "kind": "behaviour",
+      "sha256": "9a3e18d65b00ae7e6d69bfb028fd57dde25d708c6e941a1da085764f838e76c8",
+      "verdict": "keep"
+    },
+    {
+      "id": "overwrite-and-card-change",
+      "kind": "behaviour",
+      "sha256": "8365a2fa8d6dd22165402ecb771a72cd9eb253d558dad11a6e7126c59af29eb8",
+      "verdict": "keep"
+    },
+    {
+      "id": "failures",
+      "kind": "behaviour",
+      "sha256": "eb34e146db59d7431fa7570997132ae32a8d8cbd25ac3aefab9714b40bb92dd7",
+      "verdict": "keep"
+    },
+    {
+      "id": "choice-labels",
+      "kind": "fact",
+      "sha256": "23e143ebe75bf040628adc275debed9d9c2ed2fbcf029c59810bbcb924099e64",
+      "verdict": "keep"
+    },
+    {
+      "id": "differences-from-the-xbox-version",
+      "kind": "fact",
+      "sha256": "cceba9355e3f6591d3bf406c13a6a8bc4ebb9e5896c06a442ec2f2219f75b400",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "76d2ec9588d920ef7cc09381dfd8ac6b115c820c99472ae27310b2ebac8ca80e",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "0631303263acdf745f3afb1b0ffae44b9f4ec800233692040025e5b6d02d9247",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "06be7a11ae0e6f9b063c94bddd9408783fa84fa9b7632399cdf724f95428792f",
+      "verdict": "keep"
+    }
+  ]
+}

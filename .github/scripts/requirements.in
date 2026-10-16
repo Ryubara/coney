@@ -1,0 +1,3 @@
+# groundwork.py's one dependency. requirements.txt beside it pins it with its hashes; its header names the command
+# that regenerates it (from the repository's root) after a change here.
+pyyaml==6.0.3

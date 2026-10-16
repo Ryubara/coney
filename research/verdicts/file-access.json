@@ -1,0 +1,93 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "file-access",
+  "page_sha256": "a46981113f4ae3231055ed68cf6a3b7de2d84adc1839b3e73379f2e4df5c1d61",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-file-access",
+      "kind": "fact",
+      "sha256": "0b6a99888a45e49401b086d94a88f5e40ad7e4b5fa358d762373e8919f048dd4",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "1a69696378979128e346a84a6e5d9826f01fbfa8031a6f658d23c6d6c41d9c0d",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-archive-at-start-up",
+      "kind": "fact",
+      "sha256": "2e1a7520c0cf215a5e7a2287056cc8e8639344b2b02e102595b5d55aaf6940aa",
+      "verdict": "keep"
+    },
+    {
+      "id": "name-lookup",
+      "kind": "fact",
+      "sha256": "72634066b20235e586d5723344de4fcd4d207446be78f7fd6987d8f3abda6720",
+      "verdict": "keep"
+    },
+    {
+      "id": "reads-and-buffers",
+      "kind": "fact",
+      "sha256": "0182000ebc569d2e81093c3ba49dcc190b7d275f59b4be13fae7e6c55e467696",
+      "verdict": "keep"
+    },
+    {
+      "id": "reads-in-flight",
+      "kind": "behaviour",
+      "sha256": "a2dae5fc833e215cb42d631eac4daf2e3f54932c0b9619018d78c4dd010fd92f",
+      "verdict": "keep"
+    },
+    {
+      "id": "blocking-waits",
+      "kind": "behaviour",
+      "sha256": "ee5da9ffc36cde2f49c838e18f9a0dec39b9035e82944bc2f04799b309c345d3",
+      "verdict": "keep"
+    },
+    {
+      "id": "files-read-outside-the-archive",
+      "kind": "fact",
+      "sha256": "c423275e52aac11ca0f4250f2603962c14b68d5e70fe605dd3b1ee171848dab6",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-errors",
+      "kind": "behaviour",
+      "sha256": "09da7b908ccd11866c07742c9920937c93a3ea165a3ccce89f925de33128a5a6",
+      "verdict": "keep"
+    },
+    {
+      "id": "controller-messages",
+      "kind": "behaviour",
+      "sha256": "12292fbe33e075d21c85ac54c9efc4d68febe63868d054475602f1bcc7a84be4",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "fact",
+      "sha256": "407641510b7e3edae6f82a67112c176bb76e657b72045d6edf2357eacd51ab26",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "a0f418ea18aa68e6339c791464af67a9486652f9610f9e3b2fee0b911a5643c5",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "b4f48681c7c53546e958206230d436e1145d4f1a29a8a5cda07873b57690bfb9",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "5c1851b6db78530472cb97740843b71ad03bc9b7f15e11d80699b93aa8c8989f",
+      "verdict": "keep"
+    }
+  ]
+}

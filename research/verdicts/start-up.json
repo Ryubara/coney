@@ -1,0 +1,81 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "start-up",
+  "page_sha256": "3dccef02cbb2cdeb094914131127591b42a9efb1bca33d05685b3a77d24dc707",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-start-up",
+      "kind": "fact",
+      "sha256": "7744916f6d7690c36c0345db329a4f48d39e59f154510178e1da39a1806a1717",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "d5b583da5a814ce94c6313980df93adab776e44ea775f225bee28e2db44a2ebd",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-the-player-sees",
+      "kind": "behaviour",
+      "sha256": "c4b1f127a3c8ff7bc15b91573f3cb3810162c5ea432abe7522374e219554f52e",
+      "verdict": "keep"
+    },
+    {
+      "id": "start-up-movies",
+      "kind": "fact",
+      "sha256": "411644eae7a9b57e29923c023c98be7c86030a7c5e35a37bda05d4c0bf108537",
+      "verdict": "keep"
+    },
+    {
+      "id": "legal-screen",
+      "kind": "fact",
+      "sha256": "c84a10cee791f8d8ede726100d1039719cb839818fdd97965c8be240125c1745",
+      "verdict": "keep"
+    },
+    {
+      "id": "loaded-at-start-up",
+      "kind": "fact",
+      "sha256": "bb8bc2a802435ae3ce6c9eae5bfac09a1fda63d974d5f3fcef142d924f9b8daf",
+      "verdict": "keep"
+    },
+    {
+      "id": "clocks-and-frame-rate",
+      "kind": "fact",
+      "sha256": "aa5f2080301f19a10eef6078e1e3fdfed6d5bfdd3a76d9cc49cbbbc164fb5a8d",
+      "verdict": "keep"
+    },
+    {
+      "id": "game-modes",
+      "kind": "fact",
+      "sha256": "d3e1358862b3f1e3d0522e0c5d020f888e0fcf1e0b3e672ba48127dee95446e9",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "fact",
+      "sha256": "06257d474841bf9b56e40873ba89310cafe1749880f8f65f92a169e52c5c6514",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "140b1fef4a84fa266a1f8549ff31a65478586fe2ca11377c46845f4fdc1cd0bd",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "ff14f9ab57da031949e9c2e7832c6a152bbc2331db092168f07f565987157e4d",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "f4d568c83f6b28e818f6edaed83f36d5fa5c4630f876166c6c1a9156c5cc6ddc",
+      "verdict": "keep"
+    }
+  ]
+}

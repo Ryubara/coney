@@ -1,0 +1,69 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ref-levels",
+  "page_sha256": "75a122b1804578b18087a4b3f074d177b6badde4f7615b8beecbaa9a6dcf158e",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "level-list",
+      "kind": "fact",
+      "sha256": "905bb7c7b2f45f9a4c340bb3d4d0c0752d97b814e97151102d484138e682e026",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "fact",
+      "sha256": "2ab8e8918441bf43130262046ec1f0d2db6e8ae20c989720c16e1cc6de4ae500",
+      "verdict": "keep"
+    },
+    {
+      "id": "record-layout",
+      "kind": "fact",
+      "sha256": "eee2da1f48f9655e3ddf6c0228d702bf8d2fa411f791921650d89f0416f17bb3",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-constants",
+      "kind": "fact",
+      "sha256": "9cb110b149b66e3169c8355c02cf61917dc183b3146166c3b09d04496879dbba",
+      "verdict": "keep"
+    },
+    {
+      "id": "groups-by-order",
+      "kind": "fact",
+      "sha256": "d27ca4137866bbb309e998e14e0395f4ff95303e21d4a2510f34429ebb1bdbd0",
+      "verdict": "keep"
+    },
+    {
+      "id": "level-table",
+      "kind": "fact",
+      "sha256": "2ea4bba2721fc8f0b623f68053e93f69dbda3d8acb9e2ae62ae2965637de6a4c",
+      "verdict": "keep"
+    },
+    {
+      "id": "story-level-starts",
+      "kind": "fact",
+      "sha256": "568eb44ab445d404a8ceda782ac487cdb61f9a21565a7d24cbcdba9d19226f26",
+      "verdict": "keep"
+    },
+    {
+      "id": "rumble-arena-starts",
+      "kind": "fact",
+      "sha256": "1e3ced6bfe8122ad69ded9a6baa67d6249a52689a1b00d2ff690d73f65d2fcc7",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "4e7201c2684f09d609d908955556d527379889c3b4446345efc03076f7c5fae2",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "ccbb36afd98abdc644a75ee721a8f54d3d60ee1a1f8c96d151ecb76ecaa5e507",
+      "verdict": "keep"
+    }
+  ]
+}

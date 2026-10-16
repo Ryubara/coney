@@ -1,0 +1,78 @@
+# Formatting and hygiene on every commit. Run locally with: uvx pre-commit run --all-files
+# Every rev is a release tag.
+
+# Never rewritten by a hook: the licence text, which stays verbatim.
+exclude: ^LICENSE$
+
+# `pre-commit install` sets up all three: the file hooks, the commit message check and the pre-push check.
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+# A hook runs before a commit unless it names its stages (the commit message check, the pre-push check).
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Syntax only: mkdocs.yml names Python objects with a tag a plain YAML loader refuses.
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-toml
+      - id: check-merge-conflict
+      # A large file is usually game data by mistake (LEGAL.md). --enforce-all checks every file given, not only
+      # newly staged ones, so `run --all-files` and CI see files that are already committed.
+      - id: check-added-large-files
+        args: ["--maxkb=512", "--enforce-all"]
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.5
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+        files: ^python/
+        types_or: [python, pyi]
+      - id: ruff-format
+        files: ^python/
+        types_or: [python, pyi]
+  # The same version and rules as CI's markdownlint job (`coney-tools ci --job markdownlint` reads this rev), so a
+  # long line is refused before the commit.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+  # The simulation runs on a fixed step (60 Hz), so only the frame pacer reads the real clock or sleeps: everything
+  # else uses the step's time, and the game behaves the same at any frame rate and in test mode.
+  - repo: local
+    hooks:
+      - id: no-real-clock
+        name: only the frame pacer reads the real clock
+        language: pygrep
+        entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
+        files: ^(src|tests)/.*\.(h|cpp)$
+        exclude: ^src/platform/frame_pacer\.cpp$
+      # Commit messages describe the process in neutral words (AGENTS.md): the same rules as for pull request bodies.
+      - id: disclosure-check
+        name: commit message in neutral words
+        language: python
+        entry: python -I python/coney-tools.py cleanroom disclosure-check --commit-msg
+        stages: [commit-msg]
+      # The workflows run every job of `coney-tools ci` under its name, pin every action and set permissions.
+      - id: ci-workflow
+        name: workflows match coney-tools ci
+        language: python
+        entry: python -I python/coney-tools.py ci --job workflow
+        files: ^(\.github/workflows/|python/coney_tools/ci\.py$)
+        pass_filenames: false
+      # Before research pages leave the machine: every page's verdict, signatures and hashes, as CI checks them.
+      - id: verify
+        name: research pages verify
+        language: python
+        entry: python -I python/coney-tools.py ci --job verify
+        files: ^research/
+        pass_filenames: false
+        stages: [pre-push]

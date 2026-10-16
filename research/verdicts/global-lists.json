@@ -1,0 +1,81 @@
+{
+  "checker_sha256": "6eacc4853fff744d1fe0dc700c530fce38754dae6e8fa250e0b90f68efb00cd5",
+  "images": [],
+  "page": "global-lists",
+  "page_sha256": "eac856b95befad7a7461f5059a925d7e88cfd2555f158d6bd6615fdce02ada5f",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "global-lists-warriors-glr",
+      "kind": "fact",
+      "sha256": "4dafb92e20266d727e5529a1721e50b6bbe6e0763a7d039657f8f33b680589db",
+      "verdict": "keep"
+    },
+    {
+      "id": "finding-the-file",
+      "kind": "fact",
+      "sha256": "30a00e8e549f25e17538a4673b96c01204a3a4d220f2a4e9ce882420ce8193fd",
+      "verdict": "keep"
+    },
+    {
+      "id": "hashes-in-the-lists",
+      "kind": "fact",
+      "sha256": "b113ad9e2fc0e069e0dda62d2ebe60ebf895d0e951938143e446737ebae9d1da",
+      "verdict": "keep"
+    },
+    {
+      "id": "character-list-chunk-0x44",
+      "kind": "fact",
+      "sha256": "844018b12c0015beafc2a09aea7185df56840116daf9809c7f5ac427123e3cb6",
+      "verdict": "keep"
+    },
+    {
+      "id": "object-list-chunk-0x46",
+      "kind": "fact",
+      "sha256": "b721d3a23a0a43de8aaf4dc09be0e9b1809d59a5e1adbe7462a3dd14a488b6df",
+      "verdict": "keep"
+    },
+    {
+      "id": "dependency-list-chunk-0x4f",
+      "kind": "fact",
+      "sha256": "5e4effcc31f7fcb5193b2ea242b0600fda586739ecf328ccc0de6d87621e7baa",
+      "verdict": "keep"
+    },
+    {
+      "id": "behaviour",
+      "kind": "behaviour",
+      "sha256": "b2c36b06244a81a6b14b82721db886381c6942b4dcc41002bb67fe9522a032a1",
+      "verdict": "keep"
+    },
+    {
+      "id": "lookups",
+      "kind": "behaviour",
+      "sha256": "ed77a959707644732bace6a3c5f6434ae7934d4243f4ae05efec880e51f26848",
+      "verdict": "keep"
+    },
+    {
+      "id": "when-groups-are-wanted",
+      "kind": "behaviour",
+      "sha256": "6d8a92ccc7d94507f1fb2fd73cffa8d94480e930d7836f38acf65bb5eafc44a6",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "33b5e789712100af0e69131ce60cdb2ba71420bb83a844a985087c176ca4608d",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "4611bc88b579744175a40fbabecdbea34c946bc7473c4aaa76f216713dcdd674",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "327c9ce941f38356cda786d34132f018fe8154555e8f6523d2d0db058e9b3b07",
+      "verdict": "keep"
+    }
+  ]
+}

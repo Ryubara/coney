@@ -1,0 +1,111 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "audio-data",
+  "page_sha256": "d95a12c4f9fa9a1835ed1d37eeb355686284478c7440f2a84e8b1bb9c97de272",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "audio-data-formats",
+      "kind": "fact",
+      "sha256": "3fb19f080fbdfe2c487d3ba58c1aab40fcb795cb0b9695a8db523a06dfe723cf",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-the-audio-lives",
+      "kind": "fact",
+      "sha256": "e34fbb8171f3e4ffc37f2f841564ef95c2e4e09af4c5e8119145ced129f2d41a",
+      "verdict": "keep"
+    },
+    {
+      "id": "sound-names-and-hashes",
+      "kind": "fact",
+      "sha256": "57a6c1fb3d19c9941d86cef5921c074c54b2188d9aedc424f4166bcff47d66c4",
+      "verdict": "keep"
+    },
+    {
+      "id": "sound-list-chunk-0x29",
+      "kind": "fact",
+      "sha256": "c1abe5920712a26e342b6e1f862a695ec6b1e6fd13d210bdcb7fc5c72426b9f9",
+      "verdict": "keep"
+    },
+    {
+      "id": "sample-rates",
+      "kind": "fact",
+      "sha256": "38192dde267f4ef705540c856519304b968fe150877f10f5bf881a52e31dd942",
+      "verdict": "keep"
+    },
+    {
+      "id": "sound-classes-chunk-0x48",
+      "kind": "fact",
+      "sha256": "c37f7d010e09a07645ef78f1f7d1bb28a072c1a3af0726b84d9ec5cfa46f8ca2",
+      "verdict": "keep"
+    },
+    {
+      "id": "stereo-table-chunk-0x49",
+      "kind": "fact",
+      "sha256": "04a1c61fc9f82b63883fd03e7a50fea340adecc62e37fbd96fadda58c60e90cc",
+      "verdict": "keep"
+    },
+    {
+      "id": "sound-banks",
+      "kind": "fact",
+      "sha256": "3df9a189502d82565aa5fd8e03a4cb634880938af00d64812fbfd478f5b005b5",
+      "verdict": "keep"
+    },
+    {
+      "id": "streamed-sounds",
+      "kind": "fact",
+      "sha256": "4da75c0ac0668a252387f4c126e3ec8df36aec4babbf465e092f3a791b299fbb",
+      "verdict": "keep"
+    },
+    {
+      "id": "music-list-chunk-0x31",
+      "kind": "fact",
+      "sha256": "3f2ef2287c6352b2932db005fd10769d76243fed39b2abefef180f3178c0c98d",
+      "verdict": "keep"
+    },
+    {
+      "id": "music-file",
+      "kind": "fact",
+      "sha256": "dd5fd22202fbae109f36fe7f7d0f56a3b13752285f1fab800a8f8e7c67d7db5a",
+      "verdict": "keep"
+    },
+    {
+      "id": "adpcm-encoding",
+      "kind": "fact",
+      "sha256": "99b193b5d03337faf71c19545527ca7a539314cac454f3e017e80960bf01942e",
+      "verdict": "keep"
+    },
+    {
+      "id": "annotated-list-file",
+      "kind": "fact",
+      "sha256": "9de32e27b01d7f8f9cd0f0e5f8f674466da7776dcab31d7ccddc1fa97d1ab9db",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-audio",
+      "kind": "fact",
+      "sha256": "e9dd02d12ae76bdbdcaa9d9f321fde2eb1b0dc7621264750d7bf408c0a4e37b2",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "57ea154c32f723a4179db692da7407341398cad123d220fb1714c9273b7ce1a1",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "79be84b1181353ec5dba8686ac4021b3a69ed4dad96f329a9b39b64cb4bd98d7",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "377013f2ed60573a099aa3526aeb9e40f1eff04b7c12f4fcd974b8ba4504600f",
+      "verdict": "keep"
+    }
+  ]
+}

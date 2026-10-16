@@ -1,0 +1,81 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ref-characters",
+  "page_sha256": "7aa6d09bc2f83f4592f98e3b7cb0710ade7b7e09043d233ce3e16e034d9c4898",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "character-list",
+      "kind": "fact",
+      "sha256": "f786f4792b8779b25b5ac87efb10591b5f5cf3a1cfe9af881df6df0ab79b04dc",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "fact",
+      "sha256": "d89975057c82fa1c9d733f906ba6208388519e8cc45083835a52da3ae35e9de2",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-layout",
+      "kind": "fact",
+      "sha256": "0661cf2ac5113ed85a2b0204aa35fb5e7093d76ce314b6c9b1cffa52c15c8275",
+      "verdict": "keep"
+    },
+    {
+      "id": "named-tables",
+      "kind": "fact",
+      "sha256": "c99e1e03999f02692142d6a66b7903e2ac82a698b299952c430f0e6c535ba955",
+      "verdict": "keep"
+    },
+    {
+      "id": "names",
+      "kind": "fact",
+      "sha256": "2590214a0acc88634722b2f50748614db6ddf9eb383f542c5fc79d15a2aa2347",
+      "verdict": "keep"
+    },
+    {
+      "id": "characters",
+      "kind": "fact",
+      "sha256": "53143d429db3200e8c78b64c7389048e86a4156c2e352cbea21e5eb91d3b4856",
+      "verdict": "keep"
+    },
+    {
+      "id": "difficulty-files",
+      "kind": "fact",
+      "sha256": "c9690f3d358d449e4a3437d9bdd384c294a1ad174bd11fd9adc0304a780e7d86",
+      "verdict": "keep"
+    },
+    {
+      "id": "fury-models",
+      "kind": "fact",
+      "sha256": "169bc482711f68074063103c85076df787cc691ac2aad345b578114537d1c99f",
+      "verdict": "keep"
+    },
+    {
+      "id": "models-on-the-disc",
+      "kind": "fact",
+      "sha256": "24fd07223124bf68180b25bb185b6143a578c880cdc0720bb20fdd0119135270",
+      "verdict": "keep"
+    },
+    {
+      "id": "story-level-types",
+      "kind": "fact",
+      "sha256": "6cff13062557d3921ce3bba091bea4e119659b3b6e3c23d2662ef8b658d05226",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "de534974cfc45a151265bb50267be1a560459f9f0f0bb739eec46f5251fc99af",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "d6bc728334644467c278c49c606595329486da2e28a417b6ab22cc81c3d13a77",
+      "verdict": "keep"
+    }
+  ]
+}

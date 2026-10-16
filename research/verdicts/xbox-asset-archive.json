@@ -1,0 +1,123 @@
+{
+  "checker_sha256": "6eacc4853fff744d1fe0dc700c530fce38754dae6e8fa250e0b90f68efb00cd5",
+  "images": [],
+  "page": "xbox-asset-archive",
+  "page_sha256": "25916e32edf3fc9c6ff843d731e650f170b3ef29dd68c6e90cc16c57419d4e37",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "xbox-asset-archive",
+      "kind": "fact",
+      "sha256": "a3502002fd226abe1d97096febaaa283db213e112d9e5529849113067aba0bc2",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "fc9fc34de4735a70675f87914acf6e16ac3977449ea9fedbf82776166bdf7e4d",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-resource-index-xboxwad-idx",
+      "kind": "fact",
+      "sha256": "50d85a00c4b2b96df60e868b63c2673d36dfb4bb3ec66375be35fa3e16adbcfe",
+      "verdict": "keep"
+    },
+    {
+      "id": "header",
+      "kind": "fact",
+      "sha256": "0681669f23202e5bd58baa61e2c4702dd34efe94be14b8c021065b44c67c45bd",
+      "verdict": "keep"
+    },
+    {
+      "id": "volume-records-36-bytes-each-from-offset-0x14",
+      "kind": "fact",
+      "sha256": "57245a8ae62e4bc197b63b627cb39ce4082a1d654a06bb16aef1b986f0e50d5e",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-records-16-bytes-each-from-offset-0x134",
+      "kind": "fact",
+      "sha256": "d23b056c3d3584b0db107181f9d39558dbcbee66b8a906bb70cc5e8387c8a85d",
+      "verdict": "keep"
+    },
+    {
+      "id": "name-hash",
+      "kind": "fact",
+      "sha256": "6b1a969c25f7610e63db342085bf497c3fafbaa8c2016c29defba04b3599618c",
+      "verdict": "keep"
+    },
+    {
+      "id": "recovered-names",
+      "kind": "fact",
+      "sha256": "8dc34a0975695b4f4fd31bfe3fa6d4f2b831be4428433528944dfdfd87cf151a",
+      "verdict": "keep"
+    },
+    {
+      "id": "kinds-of-entry",
+      "kind": "fact",
+      "sha256": "d8d3bfdbaf2b848d19134f8a7fa197003aa928b3992dc21b8a0b27babefe3a27",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-chunk-container",
+      "kind": "fact",
+      "sha256": "a1be3fb0c615f7a72d0f8c929f860ba2846cfa6e24ee61d3301287a01ccc91cd",
+      "verdict": "keep"
+    },
+    {
+      "id": "resource-images",
+      "kind": "fact",
+      "sha256": "9b5c1cf259bc404801710f7495966d16276d7cb895814f0348afd73b5b38b5bd",
+      "verdict": "keep"
+    },
+    {
+      "id": "textures-chunk-0x2a",
+      "kind": "fact",
+      "sha256": "5b2e45d3ff7f6cf195013132b925cbd8d6b0ae0267301f69491f34151ee92aae",
+      "verdict": "keep"
+    },
+    {
+      "id": "models-chunk-0x47",
+      "kind": "fact",
+      "sha256": "b166755332aa4a07327b08ac9e2ed420dc94f2c1f0f14780a4471578156389a8",
+      "verdict": "keep"
+    },
+    {
+      "id": "props-and-scene-models-kind-2-1-318-chunks",
+      "kind": "fact",
+      "sha256": "2280d9fcc4c523f9c26cad87741282ba7d109069eeb1a2aba51ed64cea5691e0",
+      "verdict": "keep"
+    },
+    {
+      "id": "skinned-models-kind-1-153-chunks",
+      "kind": "fact",
+      "sha256": "443080458d4f19b845caf685a0aacaa03696a94ef99ad526a3591a97a7908731",
+      "verdict": "keep"
+    },
+    {
+      "id": "multi-part-models-kind-3-6-chunks",
+      "kind": "fact",
+      "sha256": "2db90cc5322aa730f9c0c3d446a1e959b416a2db5f5c05d28c7207ccee48d0c5",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "ba01b16146ea307c8a32d535355e0cfce2c9705adcbb15ecc4f16bb2fbdef40e",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "0f92dca3282e4d86465754e2ac9d95f5cb43d8adf8a75d4e6675f57a44e0b0ac",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "03c996e8e3c9116a1c096e88356abf2e5829857b50a784172875e9042f919313",
+      "verdict": "keep"
+    }
+  ]
+}

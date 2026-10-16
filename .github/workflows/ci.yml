@@ -1,0 +1,240 @@
+# Coney's checks on every pull request and every push to main. Each job runs one job of `coney-tools ci` under the
+# same name, so `python -I python/coney-tools.py ci` runs exactly these checks locally (docs/ci.md); its `workflow`
+# job refuses a workflow that drifts from the job list, an action not pinned to a full commit SHA, or a workflow
+# without `permissions:`. Tool versions come from the files that pin them (`ci --versions`), never from here. The
+# `disclosure` job runs in pr.yml, on a pull request's commits, title and body, again on every edit.
+# `build-ok` is the one required check: it needs every other job, so a job can change without editing the ruleset.
+#
+# The gate jobs (verify, orig-check, commit-sigs) run coney-tools from the base branch, never from the pull request,
+# so a pull request cannot loosen the check it is judged by; they read allowed_signers, pages and settings from the
+# base branch too (`--ref origin/<base>`).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Python from uv's own builds only, so the uv version pins the exact Python too.
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The pinned versions, read by the runner's own Python (coney-tools needs nothing installed for this).
+  versions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.v.outputs.python }}
+      uv: ${{ steps.v.outputs.uv }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: v
+        run: python3 -I python/coney-tools.py ci --versions | tee -a "$GITHUB_OUTPUT"
+
+  workflow:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job workflow
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
+  tests:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job tests
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
+  markdownlint:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Node, checked against the Dockerfile's SHA-256
+        run: python3 -I python/coney-tools.py ci --install-node "$RUNNER_TEMP/node" >> "$GITHUB_PATH"
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job markdownlint
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
+  # The package downloads are cached by setup-uv, keyed on the lock files.
+  conventions:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+          enable-cache: true
+          cache-dependency-glob: .github/scripts/requirements.txt
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job conventions
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
+  site:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+          enable-cache: true
+          cache-dependency-glob: requirements-docs.txt
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job site
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
+  # Claude Code from npm at the version the implementer image pins; the tests need no login.
+  mod:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Node, checked against the Dockerfile's SHA-256
+        run: python3 -I python/coney-tools.py ci --install-node "$RUNNER_TEMP/node" >> "$GITHUB_PATH"
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job mod
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
+  verify:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: The pull request (or the pushed commit)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The checker, from the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref || github.event.repository.default_branch }}
+          path: trusted
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Node, checked against the base branch's Dockerfile
+        run: python3 -I trusted/python/coney-tools.py ci --install-node "$RUNNER_TEMP/node" >> "$GITHUB_PATH"
+      - run: >-
+          uv run --no-project --python "$PY" python -I trusted/python/coney-tools.py ci --job verify
+          --repo pr --ref "origin/$BASE"
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          BASE: ${{ github.base_ref || github.event.repository.default_branch }}
+
+  orig-check:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: The pull request (or the pushed commit)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The checker, from the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref || github.event.repository.default_branch }}
+          path: trusted
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - run: >-
+          uv run --no-project --python "$PY" python -I trusted/python/coney-tools.py ci --job orig-check
+          --repo pr --ref "origin/$BASE"
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          BASE: ${{ github.base_ref || github.event.repository.default_branch }}
+
+  # The pull request's own commits (HEAD^1..HEAD^2 of the merge commit GitHub checks out). Not on a push: main's
+  # commits are squash merges GitHub makes, checked before the merge.
+  commit-sigs:
+    if: github.event_name == 'pull_request'
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: The pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The checker, from the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref }}
+          path: trusted
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - run: >-
+          uv run --no-project --python "$PY" python -I trusted/python/coney-tools.py ci --job commit-sigs
+          --repo pr --ref "origin/$BASE" --range HEAD^1..HEAD^2
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          BASE: ${{ github.base_ref }}
+
+  build-ok:
+    if: always()
+    needs: [versions, workflow, tests, markdownlint, conventions, site, mod, verify, orig-check, commit-sigs]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          case " $RESULTS " in *" failure "* | *" cancelled "*) exit 1 ;; esac

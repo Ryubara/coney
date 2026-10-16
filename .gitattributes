@@ -1,0 +1,4 @@
+* text=auto
+*.sh text eol=lf
+# Research pages, their images and verdicts are hashed as committed: git never converts their line ends.
+research/** -text

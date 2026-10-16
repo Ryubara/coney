@@ -1,0 +1,94 @@
+/* The landing page (overrides/home.html). The banner, assets/home/background.jpg, is blurred a little and faded into
+   the page below; a dark gradient shows while it loads. */
+
+.coney-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 70% 20%, #5a1418 0%, transparent 60%),
+    linear-gradient(160deg, #1d1416 0%, #0d0b0c 70%);
+}
+
+.coney-hero::before {
+  position: absolute;
+  inset: -12px;
+  content: "";
+  background-image: url("background.jpg");
+  background-position: center 30%;
+  background-size: cover;
+  filter: blur(3px) saturate(1.1);
+  transform: scale(1.03);
+}
+
+/* Darkens the banner on the left, where the text sits, and fades it into the page at the bottom. */
+.coney-hero::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(180deg, transparent 70%, var(--md-default-bg-color) 100%),
+    linear-gradient(90deg, rgb(10 8 9 / 85%) 0%, rgb(10 8 9 / 55%) 45%, rgb(10 8 9 / 20%) 100%);
+}
+
+.coney-hero__inner {
+  position: relative;
+  z-index: 1;
+  padding: 7rem 0.8rem 7rem;
+}
+
+.coney-hero__inner.md-typeset h1 {
+  margin: 0 0 0.6rem;
+  font-size: 3.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 60%);
+}
+
+.coney-hero__lead {
+  max-width: 34rem;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 60%);
+}
+
+.coney-hero__inner.md-typeset .coney-hero__note {
+  max-width: 34rem;
+  margin-bottom: 1.6rem;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.coney-hero__inner.md-typeset .md-button {
+  margin: 0 0.6rem 0.6rem 0;
+  color: #fff;
+  border-color: #fff;
+}
+
+.coney-hero__inner.md-typeset .md-button--primary {
+  color: #fff;
+  background-color: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+}
+
+.coney-hero__inner.md-typeset .md-button:hover {
+  color: #fff;
+  background-color: var(--coney-red-dark);
+  border-color: var(--coney-red-dark);
+}
+
+/* The page's own title is the hero's; hide the Markdown one (this file loads on the landing page only). */
+.md-content__inner > h1:first-child {
+  display: none;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .coney-hero__inner {
+    padding: 4rem 0.8rem 4.5rem;
+  }
+
+  .coney-hero__inner.md-typeset h1 {
+    font-size: 2.4rem;
+  }
+}

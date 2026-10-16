@@ -1,0 +1,147 @@
+# How this repository is run on GitHub: pull requests, issues, labels and merging. Groundwork's base (0.2.0), adapted
+# to Coney; AGENTS.md and CONTRIBUTING.md say the same in words. This file is the one source of truth for every rule
+# a program can check: .github/scripts/groundwork.py reads it and refuses an unknown key or a wrong type. The pull
+# request template and the issue forms are generated from it (`groundwork.py render`; `coney-tools ci --job
+# conventions` refuses a hand edit), and the labels, merge settings and branch ruleset are applied from it on GitHub
+# (`labels`, `settings`, `ruleset`; docs/ci.md). Change a rule here, then render and apply.
+# YAML traps: quote a colour made only of digits ("000000") and any text YAML could read as a number or a boolean.
+version: 1
+
+repo:
+  default_branch: main
+  # What an issue or a pull request calls the person who tested, was affected or filed something (AGENTS.md).
+  wording: {person: user, avoid: [owner]}
+  # Decisions only a maintainer makes: an agent stops and reports instead of acting.
+  maintainer_decisions:
+    - add or remove a key in allowed_signers
+    - change the clean-room rules, the page rules or a gate
+    - tag a release
+    - force-push main or someone else's branch
+    - legal or licence questions
+    - change these conventions
+
+paths:
+  # A change under `code` needs a change under `docs` (the living doc moves with the code) or a `Docs: none` line.
+  code: ["src/", "tests/", "python/coney_tools/", "mods/", "containers/", ".github/workflows/"]
+  docs: ["docs/", "README.md", "AGENTS.md", "CONTRIBUTING.md", "python/README.md", "containers/README.md",
+         "mods/coney-zone/README.md"]
+
+commits:
+  # Coney's titles, and so its squash commits, are a short imperative summary with no area (AGENTS.md), so the
+  # title check is not run (pr.yml); this block stays because the checker's schema requires it.
+  title:
+    form: "Verb the rest"
+    max_length: 72
+    trailing_period: false
+    breaking_suffix: "(BREAKING)"
+    areas:
+      engine: "the engine and its tests"
+      tools: "coney-tools, hooks and the mod"
+      research: "research pages and verdicts"
+      ci: "GitHub Actions workflows and repository settings"
+      docs: "README, guides and other documentation"
+      agents: "agent instructions (AGENTS.md, CLAUDE.md)"
+    verbs: [Add, Fix, Update, Remove, Rebuild, Rework, Improve, Document]
+
+pull_requests:
+  template: .github/pull_request_template.md
+  # `##` headings of the description, in the template's order; the squash commit takes the pull request's title.
+  sections: [Summary, Checklist, Testing, AI use]
+  filled: [Summary, Testing]                     # must hold text of their own, not just a comment or a placeholder
+  placeholders: ["...", "<reason>"]              # template text that counts as empty when left unchanged
+  local_paths: false                             # no scratch/, ../../ or C:\ in the text (images are the exception)
+  docs_none: {line: "Docs: none", when_changed: code, unless_changed: docs}
+  closing: {keyword: "Fixes", form: "Fixes #N", one_per_line: true, section: Summary}
+  # Every task a pull request lists is finished: an unticked `- [ ]` item is refused. Work it does not finish lives in
+  # its own issue.
+  checklist: {section: Checklist, unchecked: refused}
+  ai_use:
+    section: "AI use"
+    written_by:
+      label: "Commits written by:"
+      choices: ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"]
+      no_ai: "a person"
+    model: {label: "Model:", none: "n/a"}
+  # Each line of guidance becomes a comment in the template: short enough for markdownlint's 120 columns.
+  guidance:
+    Summary: "What this changes and why, in neutral words. Add `Docs: none` or `Fixes #<number>` lines as needed."
+    Checklist: "What this pull request finishes, each item ticked. Unfinished work lives in its own issue."
+    Testing: "What was run and what came out: commands, tests added or changed, results."
+    "AI use": "Who wrote the work in this pull request's commits, not who opened the pull request."
+
+merge:
+  # Mirrors the GitHub ruleset and the repository settings (`groundwork.py ruleset`, `settings`). The required
+  # checks: pr.yml's three jobs, and ci.yml's build-ok, which needs every other job of ci.yml.
+  methods: [squash]
+  squash_title: PR_TITLE
+  squash_message: PR_BODY                        # the description, so its Co-Authored-By trailer stays
+  auto_merge: true
+  delete_branch_on_merge: true
+  linear_history: true
+  required_checks: [body, docs, disclosure, build-ok]
+
+issues:
+  # Issues are filed only through a form (AGENTS.md): no blank issues.
+  blank_issues: false
+  placeholders: ["x", "xx", "xxx", "tbd", "todo", "wip", "...", "n/a", "na", "?"]
+  forms:
+    bug:
+      name: Bug
+      description: Something in Coney is broken or behaves unlike the original
+      file: .github/ISSUE_TEMPLATE/bug.yml
+      title_prefix: "Bug: "
+      labels: [bug, S-needs-triage]
+      intro: >-
+        Describe what you see, never how the original does it inside: no code, disassembly or decompiler output from
+        the original. Never attach game files, saves, dumps or disc images; a screenshot or a short clip that shows
+        the bug is fine.
+      sections:
+        version: ["Coney version or commit", true]
+        steps: ["Steps to reproduce", true]
+        expected: ["What you expected (what the original does, as you saw it)", true]
+        actual: ["What happens in Coney", true]
+        log: ["Log", false]
+    task:
+      name: Task
+      description: A piece of work for a maintainer or an agent
+      file: .github/ISSUE_TEMPLATE/task.yml
+      title_prefix: "Task: "
+      labels: [task, S-needs-triage]
+      intro: >-
+        A task is written so that someone with no other context can do it: start with the problem. It holds
+        behaviour, acceptance checks and links to research pages only.
+      sections:
+        summary: ["Summary", true]
+        done: ["What \"done\" means", true]
+        steps: ["Fix list or steps", false]
+        blocked-by: ["Blocked by", false]
+  # How many of each label family an open issue carries.
+  labels:
+    type: exactly-one
+    status: exactly-one
+
+labels:
+  description_max: 100                           # GitHub's limit
+  # A label belongs to the family named by its prefix; `type` has no prefix and lists its names.
+  families:
+    type: {prefix: "", names: [bug, task, docs, enhancement]}
+    priority: {prefix: "P-"}
+    status: {prefix: "S-"}
+  list:
+    - {name: bug, color: d73a4a, description: "Something is broken"}
+    - {name: task, color: 0e8a16, description: "A piece of work for a maintainer or an agent"}
+    - {name: docs, color: 0075ca, description: "Documentation"}
+    - {name: enhancement, color: a2eeef, description: "A new feature or an improvement"}
+    - {name: P-high, color: e11d21, description: "Priority: blocks other work"}
+    - {name: P-medium, color: fbca04, description: "Priority: next in line"}
+    - {name: P-low, color: 0e8a16, description: "Priority: when there is room"}
+    - {name: S-needs-triage, color: ededed, description: "Status: not yet looked at"}
+    - {name: S-ready-to-start, color: 0e8a16, description: "Status: triaged and accepted; waiting for someone"}
+    - {name: S-needs-info, color: d4c5f9, description: "Status: waiting for the user who filed it"}
+    - {name: S-in-progress, color: 5319e7, description: "Status: someone is working on it"}
+    - {name: S-pending-review, color: 1d76db, description: "Status: a pull request is open"}
+    - {name: S-blocked, color: "000000", description: "Status: waiting for another issue or a decision"}
+    - {name: good first issue, color: 7057ff, description: "Good for newcomers"}
+    - {name: help wanted, color: "008672", description: "Extra attention is needed"}
+    - {name: duplicate, color: cfd3d7, description: "This already exists"}
+    - {name: wontfix, color: ffffff, description: "This will not be worked on"}

@@ -1,0 +1,153 @@
+# The implementer pool (playbook 7). Driven by `coney-tools impl`, which reads this file from the checkout, passes it
+# to `docker compose -f -` in the WSL2 distro and fills in, from the workspace:
+#   CONEY_ROOT    the distro folder holding the outboxes, artifacts, transcripts and task files (containers.wsl_root)
+#   CONEY_CPUS    CPUs per implementer container (containers.cpus)
+#   CONEY_MEMORY  memory per implementer container (containers.memory)
+#   CONEY_UID     the implementer's user id (the image's org.coney.impl-uid label)
+# `coney-tools impl up` checks every service's hardening against this definition before it starts any of them.
+#
+# Each implementer is two containers. impl-N-net holds the network namespace: it alone has NET_ADMIN and NET_RAW,
+# sets the egress wall (init-firewall.sh), checks it and only then reports healthy. impl-N joins that namespace once
+# it does, runs as the user impl with no capabilities at all, and is where the session works.
+
+name: coney-impl
+
+x-net: &net
+  image: coney-impl:local
+  init: true
+  read_only: true
+  restart: "no"
+  cap_drop: [ALL]
+  cap_add: [NET_ADMIN, NET_RAW]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: ["/run:size=1m", "/tmp:size=1m"]
+  command: ["/bin/sh", "-c", "/usr/local/sbin/coney-firewall && exec sleep infinity"]
+  cpus: 0.25
+  mem_limit: 128m
+  pids_limit: 64
+  healthcheck:
+    test: ["CMD", "test", "-f", "/run/coney/firewall-ok"]
+    interval: 2s
+    timeout: 2s
+    retries: 30
+    start_period: 60s
+
+# Claude Code's telemetry, error reporting and update checks off: the firewall lets it reach the API only.
+x-env: &env
+  HOME: /home/impl
+  CLAUDE_CONFIG_DIR: /home/impl/.claude # its config file too, not only transcripts, outlives a restart
+  DISABLE_TELEMETRY: "1"
+  DISABLE_ERROR_REPORTING: "1"
+  DISABLE_AUTOUPDATER: "1"
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+
+x-impl: &impl
+  image: coney-impl:local
+  init: true
+  user: impl
+  read_only: true
+  restart: "no"
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs:
+    - /tmp:size=2g
+    - /home/impl:size=512m,mode=0700,uid=${CONEY_UID:?},gid=${CONEY_UID:?}
+  command: ["sleep", "infinity"]
+  working_dir: /work
+  cpus: ${CONEY_CPUS:?}
+  mem_limit: ${CONEY_MEMORY:?}
+  pids_limit: 4096
+
+services:
+  impl-1-net:
+    <<: *net
+    container_name: impl-1-net
+    hostname: impl-1
+    networks: [impl-1]
+  impl-1:
+    <<: *impl
+    container_name: impl-1
+    network_mode: service:impl-1-net
+    depends_on: {impl-1-net: {condition: service_healthy}}
+    environment: {<<: *env, CONEY_IMPL: impl-1}
+    volumes:
+      - {type: volume, source: impl-1-coney, target: /work/coney}
+      - {type: volume, source: impl-1-ssh, target: /home/impl/.ssh}
+      - {type: bind, source: "${CONEY_ROOT:?}/tasks/impl-1", target: /work/task, read_only: true}
+      - {type: bind, source: "${CONEY_ROOT:?}/artifacts/impl-1", target: /work/artifacts}
+      - {type: bind, source: "${CONEY_ROOT:?}/archive/impl-1", target: /home/impl/.claude}
+      - {type: bind, source: "${CONEY_ROOT:?}/outbox/impl-1.git", target: /outbox}
+
+  impl-2-net:
+    <<: *net
+    container_name: impl-2-net
+    hostname: impl-2
+    networks: [impl-2]
+  impl-2:
+    <<: *impl
+    container_name: impl-2
+    network_mode: service:impl-2-net
+    depends_on: {impl-2-net: {condition: service_healthy}}
+    environment: {<<: *env, CONEY_IMPL: impl-2}
+    volumes:
+      - {type: volume, source: impl-2-coney, target: /work/coney}
+      - {type: volume, source: impl-2-ssh, target: /home/impl/.ssh}
+      - {type: bind, source: "${CONEY_ROOT:?}/tasks/impl-2", target: /work/task, read_only: true}
+      - {type: bind, source: "${CONEY_ROOT:?}/artifacts/impl-2", target: /work/artifacts}
+      - {type: bind, source: "${CONEY_ROOT:?}/archive/impl-2", target: /home/impl/.claude}
+      - {type: bind, source: "${CONEY_ROOT:?}/outbox/impl-2.git", target: /outbox}
+
+  impl-3-net:
+    <<: *net
+    container_name: impl-3-net
+    hostname: impl-3
+    networks: [impl-3]
+  impl-3:
+    <<: *impl
+    container_name: impl-3
+    network_mode: service:impl-3-net
+    depends_on: {impl-3-net: {condition: service_healthy}}
+    environment: {<<: *env, CONEY_IMPL: impl-3}
+    volumes:
+      - {type: volume, source: impl-3-coney, target: /work/coney}
+      - {type: volume, source: impl-3-ssh, target: /home/impl/.ssh}
+      - {type: bind, source: "${CONEY_ROOT:?}/tasks/impl-3", target: /work/task, read_only: true}
+      - {type: bind, source: "${CONEY_ROOT:?}/artifacts/impl-3", target: /work/artifacts}
+      - {type: bind, source: "${CONEY_ROOT:?}/archive/impl-3", target: /home/impl/.claude}
+      - {type: bind, source: "${CONEY_ROOT:?}/outbox/impl-3.git", target: /outbox}
+
+  impl-4-net:
+    <<: *net
+    container_name: impl-4-net
+    hostname: impl-4
+    networks: [impl-4]
+  impl-4:
+    <<: *impl
+    container_name: impl-4
+    network_mode: service:impl-4-net
+    depends_on: {impl-4-net: {condition: service_healthy}}
+    environment: {<<: *env, CONEY_IMPL: impl-4}
+    volumes:
+      - {type: volume, source: impl-4-coney, target: /work/coney}
+      - {type: volume, source: impl-4-ssh, target: /home/impl/.ssh}
+      - {type: bind, source: "${CONEY_ROOT:?}/tasks/impl-4", target: /work/task, read_only: true}
+      - {type: bind, source: "${CONEY_ROOT:?}/artifacts/impl-4", target: /work/artifacts}
+      - {type: bind, source: "${CONEY_ROOT:?}/archive/impl-4", target: /home/impl/.claude}
+      - {type: bind, source: "${CONEY_ROOT:?}/outbox/impl-4.git", target: /outbox}
+
+# One network per implementer: they cannot see each other, and each one's wall stands on its own.
+networks:
+  impl-1: {}
+  impl-2: {}
+  impl-3: {}
+  impl-4: {}
+
+volumes:
+  impl-1-coney: {}
+  impl-1-ssh: {}
+  impl-2-coney: {}
+  impl-2-ssh: {}
+  impl-3-coney: {}
+  impl-3-ssh: {}
+  impl-4-coney: {}
+  impl-4-ssh: {}

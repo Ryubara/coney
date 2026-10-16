@@ -1,0 +1,69 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ref-character-classes",
+  "page_sha256": "3ec15ef9498706b16cd0af60bf94d9ea4877da4bf73bf9872841329e53d80b92",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "character-classes",
+      "kind": "fact",
+      "sha256": "ee8f41b3a621370e2efe13aad389841f55ad3e06df39439e741b4d8854df2c2f",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "fact",
+      "sha256": "04241290837bb6f66681545e19efef720f004d23337480e0aad77091651001a9",
+      "verdict": "keep"
+    },
+    {
+      "id": "class-sets",
+      "kind": "fact",
+      "sha256": "64aa256450f0eacf80acdc7928d31b19549dd02600621d9502d3afdc20a5d8cc",
+      "verdict": "keep"
+    },
+    {
+      "id": "speed-classes",
+      "kind": "fact",
+      "sha256": "30d975a0ca524be37e28607e7da800c830b6282ca7e1b5e9e8ffd9598074b30e",
+      "verdict": "keep"
+    },
+    {
+      "id": "warrior-classes",
+      "kind": "fact",
+      "sha256": "5e5ab3bd0893aff3fd65dd54831ff9cc30db556825c84f405864ad00f2a64c6d",
+      "verdict": "keep"
+    },
+    {
+      "id": "power-classes",
+      "kind": "fact",
+      "sha256": "a2965aa153c0d79a6e6c846cf9315a19438c4cadd66aad9a50f3fae5ed5299fa",
+      "verdict": "keep"
+    },
+    {
+      "id": "power-class-changes",
+      "kind": "fact",
+      "sha256": "981a00a1d45665480616080cf220215cc6207bd419efcc74427e29032302f7ce",
+      "verdict": "keep"
+    },
+    {
+      "id": "repeated-power-class",
+      "kind": "fact",
+      "sha256": "5eb01f7fcb968f8a66f91882e65dfb93a8b554b115f63ba583ffd95a88769cd4",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "be593e2f0d3f1cb12fb81f7864eb2ffca5c3b2af476160bdd70d56d95ebb70e1",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "c47e29933c9c28c9dc2caa135968a42e0d820970ed06513fc8a5834d4ad54182",
+      "verdict": "keep"
+    }
+  ]
+}

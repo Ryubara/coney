@@ -1,0 +1,3 @@
+# The only hosts an implementer container may reach (HTTPS, port 443), resolved when its firewall starts.
+# Claude Code's telemetry and error reporting are switched off (compose.yml), so the API is all it needs.
+api.anthropic.com

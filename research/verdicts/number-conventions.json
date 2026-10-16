@@ -1,0 +1,81 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "number-conventions",
+  "page_sha256": "b068cbb323870a7d675f8c4ed16740973e6ad8ad7ec99306144624027d113545",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "number-conventions",
+      "kind": "fact",
+      "sha256": "944ae5d75ada99026aab90b6a559e6eddbc95b0ca5aa50a029b515e10bb5cdfb",
+      "verdict": "keep"
+    },
+    {
+      "id": "world-axes-and-units",
+      "kind": "fact",
+      "sha256": "469ab57499e79ea89bb83b70a176be86421ab37b1b7ae50a67cec09d15598713",
+      "verdict": "keep"
+    },
+    {
+      "id": "angles-and-headings",
+      "kind": "fact",
+      "sha256": "155d9faaa7369970861536b2f8e0b097923a739eace0e5c34b279bf91bf90fba",
+      "verdict": "keep"
+    },
+    {
+      "id": "quaternions-and-matrices",
+      "kind": "fact",
+      "sha256": "e67a9cd431da9e099ee5c35f1bcf33748b5688285f4a243ba526a1bf4bb0de46",
+      "verdict": "keep"
+    },
+    {
+      "id": "colours",
+      "kind": "fact",
+      "sha256": "d571ec16d8ab1db633dcf00ab221111858a3cfa83b3ae8eb664cf9d0a3aa4a8c",
+      "verdict": "keep"
+    },
+    {
+      "id": "random-sequences",
+      "kind": "fact",
+      "sha256": "3e7999c2f8d77338bed59e3da1ff5cabf994ff94a3ebe97aaf3cbd99c7af283e",
+      "verdict": "keep"
+    },
+    {
+      "id": "starting-positions",
+      "kind": "behaviour",
+      "sha256": "941b9cb4b0c2d9040abe96acda76c2667cbcdeb190007b6d51b8b36438e26a8d",
+      "verdict": "keep"
+    },
+    {
+      "id": "first-draws",
+      "kind": "fact",
+      "sha256": "c4838125fa1a9e460abfac4b54055f87efec27ea15a2f6f3e1f9113923d71d19",
+      "verdict": "keep"
+    },
+    {
+      "id": "precision-effects",
+      "kind": "behaviour",
+      "sha256": "5b2f4d9f6eabf4ddcb53e99b37301ce5b3d19bad75f0d0436867393bad7662ad",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "540ef744bc083122bda7d2607703066931f166cebed69b417e1a093c9164e130",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "c086e86ff78458f99e4f5d80b7e6454f2a19331df899784b198a486647cb0d7e",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "905e1520043da56db37da43212882be349bc3364e68ef0ad244d1816b441eb4a",
+      "verdict": "keep"
+    }
+  ]
+}

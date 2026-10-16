@@ -1,0 +1,5 @@
+# The documentation site's direct dependencies. requirements-docs.txt pins them and everything they pull in, with
+# hashes; its header names the command that regenerates it after a change here. `coney-tools ci --job docs` refuses
+# a lock whose direct pins differ from these.
+mkdocs==1.6.1
+mkdocs-material==9.7.7

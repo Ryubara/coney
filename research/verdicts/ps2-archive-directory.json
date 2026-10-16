@@ -1,0 +1,99 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ps2-archive-directory",
+  "page_sha256": "3ce5353aa2363058bd407e17cda9bb456f088e2c1ddf8e46cfefcde5cf1ccab9",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-archive-directory",
+      "kind": "fact",
+      "sha256": "7313847df793e40b95906c79940aea1ca92ec68a15be3b1b324a314f642afbb1",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-two-files",
+      "kind": "fact",
+      "sha256": "7f5c4e0206c7c071cbe11a8672faa7eafe7a44f26796ba061594c8e58c28c1f7",
+      "verdict": "keep"
+    },
+    {
+      "id": "directory-layout",
+      "kind": "fact",
+      "sha256": "27c56ece3ca5561ef7c4077427bc8ee6812949d1dd73b2b24e86c0ca85637d2e",
+      "verdict": "keep"
+    },
+    {
+      "id": "header",
+      "kind": "fact",
+      "sha256": "7c09ca2418cae7d1ee318ea876ee3bf57ce40fe5017a098ccbac2d601a20e547",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-record",
+      "kind": "fact",
+      "sha256": "a9fb18fb526d21b0a5fac145913f7e87b58302cb056eee22d9baba6c3bcbe7e5",
+      "verdict": "keep"
+    },
+    {
+      "id": "ordering",
+      "kind": "fact",
+      "sha256": "e40eccc6beb9dda009c1ae83bd2d8c5706e6523c78f3dd6f23d8e55a171e3b64",
+      "verdict": "keep"
+    },
+    {
+      "id": "how-the-directory-maps-onto-the-data-file",
+      "kind": "fact",
+      "sha256": "67836fd3bc286ac62c939b906472f888971548a5cac61a400ed78c693c84deb3",
+      "verdict": "keep"
+    },
+    {
+      "id": "name-hash",
+      "kind": "fact",
+      "sha256": "4577c94428d6d29330cb09717593ecb6731313ffd18c6a5109d582a8119678a8",
+      "verdict": "keep"
+    },
+    {
+      "id": "example-entries",
+      "kind": "fact",
+      "sha256": "3f18598caa30848490323cfd44370c5c39eae9d9268bd8704aeb5f6ee1b7e934",
+      "verdict": "keep"
+    },
+    {
+      "id": "entries-per-extension",
+      "kind": "fact",
+      "sha256": "3bf4e62675448fcbfcb3f60e6ccf0afb21c2ac31c0c132d03326e958aaa2293d",
+      "verdict": "keep"
+    },
+    {
+      "id": "differences-from-the-xbox-disc",
+      "kind": "fact",
+      "sha256": "893be9b4b91a0914de41b2851395293c8fd67c230ce828396c1a79f34e314082",
+      "verdict": "keep"
+    },
+    {
+      "id": "behaviour",
+      "kind": "behaviour",
+      "sha256": "9ebf438e5226ad2ca0e791f7b6f606d882e3a6bd6dd3bb1b5dfe42d5ff26a203",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "abfa50adbcef9d3be710b3401c61c872f248f78ba4fa33b9a4f14accae686867",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "3eb9e0cd963f51fb86559546ca16352bde22763f7b0be6805b86bfdd93379572",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "c5f2929376cb6b5efaba4eb81d37e347a08de2eae09d3b357111bce6ebedec0c",
+      "verdict": "keep"
+    }
+  ]
+}

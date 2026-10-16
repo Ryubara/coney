@@ -1,0 +1,81 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "pause-menu",
+  "page_sha256": "bcc10a9b18f7af526f31f3f066d8ac125cba3fa0f3104972ce950b93fa2e7bd9",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "pause-menu",
+      "kind": "fact",
+      "sha256": "f8b33048c032aba2d49f7e91f524a9ff3541330d4201520f2e0dd05873fd1bb9",
+      "verdict": "keep"
+    },
+    {
+      "id": "sources",
+      "kind": "fact",
+      "sha256": "2b63e3e01aca4cd443751db624fd1ef0c350ea74a5948b07685be5a8ee64e6f3",
+      "verdict": "keep"
+    },
+    {
+      "id": "menu-layout",
+      "kind": "fact",
+      "sha256": "167eeb1c7ffdb5d2ff729feeceec832cd36203d2f603f1cb2698c85ce49ee97a",
+      "verdict": "keep"
+    },
+    {
+      "id": "items",
+      "kind": "behaviour",
+      "sha256": "af16af18a584e828df5c2782800ca9cf869f9fa8d9a64136089cdc64c2dee539",
+      "verdict": "keep"
+    },
+    {
+      "id": "objectives-panels",
+      "kind": "fact",
+      "sha256": "eaa48d2a25d661e893caad276cafa078be51fe9fedd8db44c70b375e9ca93536",
+      "verdict": "keep"
+    },
+    {
+      "id": "restart-choices",
+      "kind": "fact",
+      "sha256": "06383ff40f9e16f511c247474a5b8939756c536be2acd02f951fa02d002037a8",
+      "verdict": "keep"
+    },
+    {
+      "id": "quit-choices",
+      "kind": "behaviour",
+      "sha256": "d1d076aeb18c4ab3bb5894197ac10150eabf420c88bd26502f7deed349510625",
+      "verdict": "keep"
+    },
+    {
+      "id": "confirmation-box",
+      "kind": "behaviour",
+      "sha256": "2ba4a04eddabb025ec0390db867ffc8006e0ccca0321c44c663a3f52007c785f",
+      "verdict": "keep"
+    },
+    {
+      "id": "platform-differences",
+      "kind": "fact",
+      "sha256": "aaf85de39c2593adbc3e475b26161d595f6720dd3d203dcd7724ae98a6f283bf",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "5a388f02175cc32cc0c83d0f8584efa1195cb4cee6cc98799f7fb49740c0afab",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "0cc871e15aa6f3cf405f07b09ddb3c513b70e32bb0d244e35e9da18644fb7e92",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "47835ff6245b19c4c4529d131a1f3537750783f2700886ff621cfa9e80221218",
+      "verdict": "keep"
+    }
+  ]
+}
