@@ -140,7 +140,10 @@ class Status(Fixture):
         v = fake_verdict("p-published")
         self.page("p-published", v, both)
         (self.outbox / f"p-published-{research.sha256(v)[:12]}").mkdir()
-        # Left out: drills, folders without a page, files.
+        # Left out: drills, folders without a page, files, and a hidden folder a tool keeps there (a reviewer's
+        # session starts in the gate, and Claude Code may make its .claude folder there).
+        (self.gate / ".claude").mkdir()
+        (self.gate / ".claude" / "scheduled_tasks.lock").write_text("x", encoding="utf-8")
         self.page("gate-drill-1")
         self.page("gate-drill-2", fake_verdict("gate-drill-2"), both)
         self.page("p-no-page", page=False)
