@@ -1,0 +1,99 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "archive-contents",
+  "page_sha256": "6a6f510b9ae7a5d44173595603e73fa79428df27663e916e25f254249a2259c4",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "archive-contents",
+      "kind": "fact",
+      "sha256": "044a62623defc63677110742e145fa024889bf5bcb360a48451c37eea5ab5467",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-archive-in-brief",
+      "kind": "fact",
+      "sha256": "0f4878c260506b6862e7662e5824861940c94447172be04f6784e70ef003021b",
+      "verdict": "keep"
+    },
+    {
+      "id": "file-kinds",
+      "kind": "fact",
+      "sha256": "9bb2b9123dc42694b9ee3c78d486fbb7078dad8effeafae7d6d64f4dc8de044e",
+      "verdict": "keep"
+    },
+    {
+      "id": "flat-resources-by-shape",
+      "kind": "fact",
+      "sha256": "1072d2b510c60bf88c33d90d61f1b1d961cefae5d9819c92fd944f0c867a5f89",
+      "verdict": "keep"
+    },
+    {
+      "id": "sector-files-and-world-streams",
+      "kind": "fact",
+      "sha256": "e66604dff7901d009a40722e4c797e36c9a92b597e5360d8932324e61bffb6ab",
+      "verdict": "keep"
+    },
+    {
+      "id": "sound-banks",
+      "kind": "fact",
+      "sha256": "d474276e9e0ec144159438a5ccd4e3a0f00b1fe35ed7b9979835e1451c88c9e4",
+      "verdict": "keep"
+    },
+    {
+      "id": "notable-named-files",
+      "kind": "fact",
+      "sha256": "c4705761e3f4b8d5e65a0ae21394dc34189a4ede93eaae2adbd7978f35ceec54",
+      "verdict": "keep"
+    },
+    {
+      "id": "global-files",
+      "kind": "fact",
+      "sha256": "3dff03ba3763db2947a2df100ffd164bebe8e7b691e18cbea7ce06b11e8db67d",
+      "verdict": "keep"
+    },
+    {
+      "id": "level-files",
+      "kind": "fact",
+      "sha256": "d46420cfa6d565d630d95605fbf97fccadb3f47dac8b582c6ebee3b60aebfc91",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-files",
+      "kind": "fact",
+      "sha256": "4d21cd78ba3d6a1e8dd1552857a25dcee8b2b669c84ea28e37f2b0f974372a58",
+      "verdict": "keep"
+    },
+    {
+      "id": "scene-packs",
+      "kind": "fact",
+      "sha256": "96abc3a6c156dbbed203d5a9d8c74264b71b2c3358404679b278ece0b42278c6",
+      "verdict": "keep"
+    },
+    {
+      "id": "behaviour",
+      "kind": "behaviour",
+      "sha256": "66b4eaf61d1b19506cd6fdfa40733bd2ca34d921196e8323e7d0a29cc9a5d09b",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "1e14401934abf8dedd7f2546a1715e404e9bbcb4531b7db8bf5a5987bfea6751",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "b212520898a79a4363be3d1869485090fddffe2b6ce00843bc9bda9d5f53e04a",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "268ddbee919e7cb13538371628cff7348537385c4112b94051043148a24cbf89",
+      "verdict": "keep"
+    }
+  ]
+}

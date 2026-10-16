@@ -1,0 +1,123 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "memory-budgets",
+  "page_sha256": "8232ce8a1bcb3a4e3edfe9dde9a2020dee9883b68339e73492a91276a9f1d316",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "memory-budgets-and-the-resource-cache",
+      "kind": "fact",
+      "sha256": "294e76db628f66e9dae746a2d96addd3fbbe2ff24e9db9be2bf40ed25b13da8e",
+      "verdict": "keep"
+    },
+    {
+      "id": "sources",
+      "kind": "fact",
+      "sha256": "d05b308c2cb9b3070a85c1b84875571398c3ca0691c9b6cc39107fc34d794841",
+      "verdict": "keep"
+    },
+    {
+      "id": "console-memory",
+      "kind": "fact",
+      "sha256": "34a765b1d6fd5de96e4aed24dd0ada8cd3a9ea197463cc6606113312d7699b8b",
+      "verdict": "keep"
+    },
+    {
+      "id": "budgets",
+      "kind": "fact",
+      "sha256": "830fbb6322e8b90572bb6edc1a016b15601dfe4e1da1cb313d637b1c7fe7debe",
+      "verdict": "keep"
+    },
+    {
+      "id": "budget-sizes-from-file-sizes",
+      "kind": "fact",
+      "sha256": "01439955398d0e22a103b49a98e28ae4a8d0d8f555c6ea51d746c85b3e180d60",
+      "verdict": "keep"
+    },
+    {
+      "id": "world-memory-manifest",
+      "kind": "fact",
+      "sha256": "6c43e715575db72e9ef99e7b50725ba3fa02c158f79ef127a46dcdc22107850c",
+      "verdict": "keep"
+    },
+    {
+      "id": "measured-use-on-the-tutorial",
+      "kind": "fact",
+      "sha256": "5cd242254d84a3be8c696b810eff66d8f67a66893203cbcf83bb2a462e94a751",
+      "verdict": "keep"
+    },
+    {
+      "id": "budgets-for-every-level",
+      "kind": "fact",
+      "sha256": "9a7fccacabb50ee96d7704a7386589a3edcf6837f73791036b23fe93266f0644",
+      "verdict": "keep"
+    },
+    {
+      "id": "when-the-sector-budget-has-no-room",
+      "kind": "behaviour",
+      "sha256": "5ac12672e802b6f3a84a5f0c026bf3fa094a2328f4940871a291a0713d5f1fa1",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-is-not-loaded",
+      "kind": "behaviour",
+      "sha256": "c23e6564529f41df2ebc54a47133dd77bdfafff0ba46f10617c212fba78fc731",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-is-given-up-for-room",
+      "kind": "behaviour",
+      "sha256": "9bfdf741333a1164d789a48cd4ec9ea30577609c345032eefee62b464297c571",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-is-always-kept",
+      "kind": "behaviour",
+      "sha256": "c8b5c2eae06ce497393aadfb76f49168d1e65f28cf15d9972128610a94c3e59a",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-the-player-sees",
+      "kind": "behaviour",
+      "sha256": "64c462e22e1455d919ffe2f23ef290e7ab22e3706603ca1bab22de12b6951ce5",
+      "verdict": "keep"
+    },
+    {
+      "id": "shortage-on-the-disc-and-in-the-savestates",
+      "kind": "fact",
+      "sha256": "1ef81237d819e2752664c556b21beb2fa67c3d5903f3cb8421229c270ee0398e",
+      "verdict": "keep"
+    },
+    {
+      "id": "when-memory-is-released",
+      "kind": "behaviour",
+      "sha256": "8a99f07696fd8eb38183db280d1c34bd6b894b198f5a7e0ee106d30dd1ba2a68",
+      "verdict": "keep"
+    },
+    {
+      "id": "name-hashing",
+      "kind": "fact",
+      "sha256": "f09949e3bd887344124d1e63092e1087e8059f89d89cced09258b2cbe70e97ec",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "accd053de687bf3267804b5a63d65b0070c265e890e2fcae90b2d7fa2787dd8e",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "d85dcb4cdc3ecbc972cbb4669ac486ff6773320a3b277ebe27df9639acf5c782",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "36a4334fb1513af1a54105de99aa22dee203da47c3f1fb6c9a3d2be9a15ce2de",
+      "verdict": "keep"
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "animation-format",
+  "page_sha256": "36d780a7cc52b4b1789625d01fa1d0f22ecda2987289354d342cd926185d8ed7",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "animation-data-format-ps2-disc",
+      "kind": "fact",
+      "sha256": "6add6af84ccdab20c73590cdaf6e069d3d921e0af65a79636a2a8871c463faa0",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "f05ea85d71ccc9de518ac801312c47b8c3912592d8142617bee63abf1cb67cf1",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-clips-are-stored",
+      "kind": "fact",
+      "sha256": "57d1bcedb1e84cf4d42375717ebacd597067db016a48762a747bef4037ad6dd3",
+      "verdict": "keep"
+    },
+    {
+      "id": "archive-directory-only-what-is-needed-to-find-entries",
+      "kind": "fact",
+      "sha256": "a685ea757490abc8c14905d6011692401414a12c5f8840f683687a03bb4629f6",
+      "verdict": "keep"
+    },
+    {
+      "id": "resource-and-chunk-headers",
+      "kind": "fact",
+      "sha256": "3984fd803545bfee3a1fcbf1b67f12813f89b9e05c655b4812b7812484695dd5",
+      "verdict": "keep"
+    },
+    {
+      "id": "containers-that-hold-clips",
+      "kind": "fact",
+      "sha256": "617e1e600c065c02b49da8b044e5a15b07e912bc9cfd3897c9ffb2e10dbb9c21",
+      "verdict": "keep"
+    },
+    {
+      "id": "names-and-hashes",
+      "kind": "fact",
+      "sha256": "913d9db2f148b35d8441a7fb758ede1c86d394c8c4c94780070edb8a996ffd5f",
+      "verdict": "keep"
+    },
+    {
+      "id": "clip-descriptor-chunk-0x02-80-bytes",
+      "kind": "fact",
+      "sha256": "3cc3b916b25fb743a9c5a42e9ef96ddf3cb8a606ae1911f3d07d83698076542b",
+      "verdict": "keep"
+    },
+    {
+      "id": "keyframe-chunk-chunk-0x00",
+      "kind": "fact",
+      "sha256": "84f1c8fbb4dc0ae9c7bbbe7061f30080a4591dc130c594fa96f14cee0cd6da40",
+      "verdict": "keep"
+    },
+    {
+      "id": "layout",
+      "kind": "fact",
+      "sha256": "24a36beeb3ff323d25b1743dc8ba446a40b2b376ca5bab7776bb23f3c74920c6",
+      "verdict": "keep"
+    },
+    {
+      "id": "key-record-8-bytes",
+      "kind": "fact",
+      "sha256": "3b25ee61bde5d2fbe881cb404c9156dd339df6f60d70bbbce77f1f13006b72bc",
+      "verdict": "keep"
+    },
+    {
+      "id": "encodings-and-scales",
+      "kind": "fact",
+      "sha256": "8aaae29385c9a2fbb061815cc479e9aa1e7b0cc4696969c29662c81289a85dc9",
+      "verdict": "keep"
+    },
+    {
+      "id": "event-record-24-bytes",
+      "kind": "fact",
+      "sha256": "f3189f72fa94f0dc51fd2c1ff2c29696cd36689aebbe37a5960cf6f00275066f",
+      "verdict": "keep"
+    },
+    {
+      "id": "bones-and-the-pose",
+      "kind": "fact",
+      "sha256": "ae2b12e7c1185964cd8fae8d7c6da32eefb7d3afce03c89d289745cb682b9949",
+      "verdict": "keep"
+    },
+    {
+      "id": "bone-numbering-and-hierarchy-executable",
+      "kind": "fact",
+      "sha256": "50fbe2e447aca5a9b478f133cc01c855a5762821827aebb4fde5706935ef0c7f",
+      "verdict": "keep"
+    },
+    {
+      "id": "bone-mask-frequencies-copies-out-of-31-274",
+      "kind": "fact",
+      "sha256": "9ebb4716b552da0fda885dcd0ce6ae1efa9a4c7af2b3a0d6791ae4f553483f83",
+      "verdict": "keep"
+    },
+    {
+      "id": "reference-pose-executable",
+      "kind": "fact",
+      "sha256": "dbdfe77f9ca9994644ffc815c2641d31c4189196fbb2fc1bbb766aee93061737",
+      "verdict": "keep"
+    },
+    {
+      "id": "bone-transforms",
+      "kind": "fact",
+      "sha256": "09b65a46c991ca6f6da8d7c2c24c13bf1a7fd06d8025e649b96f491839c34a95",
+      "verdict": "keep"
+    },
+    {
+      "id": "character-clip-table-chunk-0x08-2-912-bytes",
+      "kind": "fact",
+      "sha256": "86e1da6a59f0f2105a639886dc91ed7453aaca392ef6ad55926433dcf91cfcbe",
+      "verdict": "keep"
+    },
+    {
+      "id": "anim-range-list-chunk-0x45-11-568-bytes",
+      "kind": "fact",
+      "sha256": "f11bec60bf163edbe983525fbdad9baec544a236ee5eca737e7cf693ce81cda3",
+      "verdict": "keep"
+    },
+    {
+      "id": "value-ranges-across-the-disc-1-875-distinct-clips",
+      "kind": "fact",
+      "sha256": "e2a34a2b2663dd9077b192ae6a00bfa2eb2f2bcd413db84bf9d98750ce668f7d",
+      "verdict": "keep"
+    },
+    {
+      "id": "sampled-pose-between-keys",
+      "kind": "behaviour",
+      "sha256": "e362009741f3a6da29a85a46b0608116fc9ec1fee8bb53791e58e578e70deea4",
+      "verdict": "keep"
+    },
+    {
+      "id": "keys-a-moment-draws-on",
+      "kind": "behaviour",
+      "sha256": "e0667b560e415699289d510142c93b48681ffb1abb73530d258048a75f4f997f",
+      "verdict": "keep"
+    },
+    {
+      "id": "in-between-values",
+      "kind": "behaviour",
+      "sha256": "c87afd6cca0b3a5d7ec048d0ca67b2a93119f6fb1bf321d89d9edad43c9e1be8",
+      "verdict": "keep"
+    },
+    {
+      "id": "worked-examples",
+      "kind": "fact",
+      "sha256": "53caf06cb1de613483fb9cf391ace4e2fc46f5038aa8b480f3a90c5a78fa44d0",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-a-viewer-sees",
+      "kind": "behaviour",
+      "sha256": "64735daa7e88d3abf6b34f0b12a136943f207cd373d88546de65333127fa81b8",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "adce2f0d8184f0a82c61dca1d36640c35dead8577fb72b0063f22673b229f657",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "d7b0cb4cf09795c3664843b826bb66a4d607a8c5b152b26d5c69caecf7914c4c",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "6591a1e57dc6e42070f312da0365f7509988e6d17c604afe0e129f6b6cb1bf01",
+      "verdict": "keep"
+    }
+  ]
+}

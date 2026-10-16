@@ -1,0 +1,93 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "memory-card-icon",
+  "page_sha256": "1ac2645b57c6ff18552e88c9fff5ddfa7c25efc4c588b98a865c8def34517e5c",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "ps2-memory-card-icon-and-icon-sys",
+      "kind": "fact",
+      "sha256": "c35116421a5c57ac4cfcf2d4d20530396aa9c439d12fdbb69572df3e005a9700",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "4722005c9a770de95b3b5d66fb1f335e42226d57c224fa6af2b450d0487e1fc6",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-the-files-come-from",
+      "kind": "fact",
+      "sha256": "8ed90713a0c18f25042a58a26ac5be71acf5d181007bd7c34af18ee6e6d7b557",
+      "verdict": "keep"
+    },
+    {
+      "id": "icon-file-layout",
+      "kind": "fact",
+      "sha256": "df56c0e0542e97be20c0284c78bddc5cd51b9a82b4d0b0037b0ba0a7c64c1b20",
+      "verdict": "keep"
+    },
+    {
+      "id": "header",
+      "kind": "fact",
+      "sha256": "d9848f77e7ae30485e7cc0cfecb7fe13b9e52184de710ab0ecdb30e61bcca4b1",
+      "verdict": "keep"
+    },
+    {
+      "id": "vertex-record",
+      "kind": "fact",
+      "sha256": "7b4854a19640d712d5aa81fe3bc8c3f88230990ac85242d66bd331a08a7220a2",
+      "verdict": "keep"
+    },
+    {
+      "id": "animation-header",
+      "kind": "fact",
+      "sha256": "7871aac8aaf7abb9a71140c4c6b7c9e9250ab60f7c3dde2de7701cc914cd627a",
+      "verdict": "keep"
+    },
+    {
+      "id": "frame-records",
+      "kind": "fact",
+      "sha256": "af33a53816f289b42bcb1d210cd1de9bfc0f25825582ab1fdc37b1b421a8a1a5",
+      "verdict": "keep"
+    },
+    {
+      "id": "texture",
+      "kind": "fact",
+      "sha256": "97fb080dcf2523a29e953dcfbde90e7f8e690660eba997254ed6c0dc8518662e",
+      "verdict": "keep"
+    },
+    {
+      "id": "icon-sys-layout",
+      "kind": "fact",
+      "sha256": "3f24139c91b66535b9f5435a7a95dc178c2d0c7d4ed5bab31b3afe52dff60505",
+      "verdict": "keep"
+    },
+    {
+      "id": "differences-from-the-xbox-version",
+      "kind": "fact",
+      "sha256": "556f3ec85cecfd7c5c0819430e8c8e0838c882da6529b6e9b63c0dea40b64e71",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "531836378c28366de1edc82cbb498c369eb958d6af9b8549b34f6bf98bee53b7",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "62f7cad17be8e235965d212d6017f1429f098cfb84fb39894d5a0b9f12d15165",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "6d1f092ec99586caae99c2057bc538adc03658d242622d652cd660258a7b95f7",
+      "verdict": "keep"
+    }
+  ]
+}

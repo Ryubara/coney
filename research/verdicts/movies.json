@@ -1,0 +1,93 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "movies",
+  "page_sha256": "f2813d06c1f8ed97b7130a09ccdcedcc8364ca9d9d62bc0f85b7799ea36160c0",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "movies-and-captions",
+      "kind": "fact",
+      "sha256": "191e8cd4bbd8d8e74b6a396eb467cea700ae75be1ebdb3fd342cdd1f349e7e4c",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "37d20ae73a4c7ed864f56226dae96e3324095b7dff2549314f1be789831c82c9",
+      "verdict": "keep"
+    },
+    {
+      "id": "movie-files",
+      "kind": "fact",
+      "sha256": "4ca9ab014c3d651b0684f69fddb63cd28fce987c5f63a58fac56244b81695d7c",
+      "verdict": "keep"
+    },
+    {
+      "id": "when-each-movie-plays",
+      "kind": "behaviour",
+      "sha256": "99e4d88a9fa25b31d366290c00b9a95e159e47e5be05a6eda7690c400b6e2856",
+      "verdict": "keep"
+    },
+    {
+      "id": "playing-a-movie",
+      "kind": "behaviour",
+      "sha256": "fe836f4f8490e80ba1100b6d343efcf24b0b68493b2b0fc7837e79a80afc2928",
+      "verdict": "keep"
+    },
+    {
+      "id": "caption-text",
+      "kind": "fact",
+      "sha256": "b401ac26f3dba0f09f0c44fcccc0d35def02ff7999438ef4071964f9c1c87cd8",
+      "verdict": "keep"
+    },
+    {
+      "id": "movie-caption-groups",
+      "kind": "fact",
+      "sha256": "532bc333a09d7a4b54f1e0d074c14d2a5cb98555597053fb2da1a9b518122e46",
+      "verdict": "keep"
+    },
+    {
+      "id": "caption-cues",
+      "kind": "fact",
+      "sha256": "58844e54e3aaab908fa5d5dab7abd567cc5cef3372b96f12c439486a7a454036",
+      "verdict": "keep"
+    },
+    {
+      "id": "example-timeline",
+      "kind": "fact",
+      "sha256": "f4f54d3ae734543b458cb307f0b91fcad2acbd99cc25252509d0dbc68b2528b6",
+      "verdict": "keep"
+    },
+    {
+      "id": "caption-look",
+      "kind": "fact",
+      "sha256": "479cbf3021644ca69f834059a1ec3b52665dbd9a91b4ea087bdd6e005b5203eb",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "fact",
+      "sha256": "f0cbfca060f42862e413c9c99712c945683569934f2935487f156943a87dd02c",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "b76ee7374474b453b613682e6a6f57ec83af7b1117e4eb77beaf5391daa31b53",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "ea3253a7b0fe07b4c51fe11b5ed6c307d9f5c1dcc1e2bbf355e7860f0228af34",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "b68fab31bd52a1c4b643896fed5c12a58a4e4e2f1b8f97ffaa21f452f59df794",
+      "verdict": "keep"
+    }
+  ]
+}

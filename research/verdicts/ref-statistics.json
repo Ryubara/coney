@@ -1,0 +1,57 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "ref-statistics",
+  "page_sha256": "2ad6c20f0660ac271b07702d7b1072fe10307c825e173eaf66c42544ac843701",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "statistics-values",
+      "kind": "fact",
+      "sha256": "68f2d087488cb0d41f78c3b750bc9ddda840b7f709213d9a960da40f0bf64aeb",
+      "verdict": "keep"
+    },
+    {
+      "id": "source-files",
+      "kind": "fact",
+      "sha256": "705b8f5d752d6d52c1dc0a69e3c13737d5d52004ac45da87f45cea29f9342372",
+      "verdict": "keep"
+    },
+    {
+      "id": "categories",
+      "kind": "fact",
+      "sha256": "b82e860a1d1261d9a82dcddc478109bde6e038a5d87e64deb2ea67864f7b8ca9",
+      "verdict": "keep"
+    },
+    {
+      "id": "event-points",
+      "kind": "fact",
+      "sha256": "717e175d170f5cb23bfd12c4e62bd09455c8614e430a68d78f9afe9496498ae4",
+      "verdict": "keep"
+    },
+    {
+      "id": "maximum-tiers",
+      "kind": "fact",
+      "sha256": "11e3a29ca1a43c95f9997594feebe9125c0f9356c83ef112abd7f0af2d4e022f",
+      "verdict": "keep"
+    },
+    {
+      "id": "level-maxima",
+      "kind": "fact",
+      "sha256": "780a667d95f419272acc217ab476d7bfdaf039766e567a65f6c8b2a3a407ac72",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "875e007a04a96c8be20345b1c7bf7984ed1f197a37682ecab9dfffde6754c5a0",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "cacc2b4983dae07679c34dabd4976dfac8862d808acaa5525970924b98f2ef68",
+      "verdict": "keep"
+    }
+  ]
+}

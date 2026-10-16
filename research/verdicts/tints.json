@@ -1,0 +1,69 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "tints",
+  "page_sha256": "fecf24fe12aa18edc174ab3249f6ee11304f5f64b2c01c4c85bf7fc9c3960af4",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "object-and-character-tints",
+      "kind": "fact",
+      "sha256": "c38b8f80707019098ac1d9febe1176efe9da1292c7e6443b2a3c76f9b13d7da2",
+      "verdict": "keep"
+    },
+    {
+      "id": "tint-colour-word",
+      "kind": "fact",
+      "sha256": "14e3c1222b37c46550699759907808b2f7209b314e7191ead6e2aa3010c1225c",
+      "verdict": "keep"
+    },
+    {
+      "id": "spawn-tints",
+      "kind": "fact",
+      "sha256": "1b038c849254f17b7b893c295a977a1f6cb499c413b6d22de604248de71aeff8",
+      "verdict": "keep"
+    },
+    {
+      "id": "object-colour-changes",
+      "kind": "behaviour",
+      "sha256": "ac2d77acf33c0dad936bf2eddcf1ea45eb0cb3848de424310fb813a644fc090f",
+      "verdict": "keep"
+    },
+    {
+      "id": "character-colours",
+      "kind": "behaviour",
+      "sha256": "ddff476319f29f81736fac148b0739ed0105189e4590ad6e607905cec14f3ca9",
+      "verdict": "keep"
+    },
+    {
+      "id": "level-colour",
+      "kind": "behaviour",
+      "sha256": "fb1807731324f9a8af194485415a66c154596a045b26dca620c5663e20813607",
+      "verdict": "keep"
+    },
+    {
+      "id": "spinning-icon-colour",
+      "kind": "fact",
+      "sha256": "2276f792d861167ca9b5e9b64f7e17f18da388630da3e588c5e27cb031aa4fb3",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "5204bfe94b83f7a5a16992b91759a3aee490f981514ab48531bad8470d6d3a20",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "ce8f6549f8dbedebb7b81e458e35a00c0b5fe3925337cdcf7613b278091d4099",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "58bfd065441191af55fcd7f14e18a7b462f9c95afd32bbfb92240a2c2e600fea",
+      "verdict": "keep"
+    }
+  ]
+}

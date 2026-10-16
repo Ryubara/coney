@@ -1,0 +1,43 @@
+# Generated from .github/conventions.yml by `groundwork.py render`; edit the conventions, not this file.
+name: Bug
+description: Something in Coney is broken or behaves unlike the original
+title: 'Bug: '
+labels:
+- bug
+- S-needs-triage
+body:
+- type: markdown
+  attributes:
+    value: 'Describe what you see, never how the original does it inside: no code, disassembly or decompiler output
+      from the original. Never attach game files, saves, dumps or disc images; a screenshot or a short clip that
+      shows the bug is fine.
+
+      '
+- type: textarea
+  id: version
+  attributes:
+    label: Coney version or commit
+  validations:
+    required: true
+- type: textarea
+  id: steps
+  attributes:
+    label: Steps to reproduce
+  validations:
+    required: true
+- type: textarea
+  id: expected
+  attributes:
+    label: What you expected (what the original does, as you saw it)
+  validations:
+    required: true
+- type: textarea
+  id: actual
+  attributes:
+    label: What happens in Coney
+  validations:
+    required: true
+- type: textarea
+  id: log
+  attributes:
+    label: Log

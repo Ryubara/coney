@@ -1,0 +1,69 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "radar",
+  "page_sha256": "f3ac2654f42dd7d76c59fb17bd208390f52e04ff85e684f5523dd9c26e1179d2",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "in-game-radar",
+      "kind": "fact",
+      "sha256": "7f79a6c8f58c3fe78990e6be71c773ec0c49683391ce4783561f6312f9405805",
+      "verdict": "keep"
+    },
+    {
+      "id": "radar-on-screen",
+      "kind": "fact",
+      "sha256": "06504090f1f84769edff5d0049e4b6768cc4b95467ef1a0e61f4b2a4076a16ab",
+      "verdict": "keep"
+    },
+    {
+      "id": "map-sheets",
+      "kind": "fact",
+      "sha256": "89f48ac64fc9c2c756ad4c602fc36148f3e073f18c1e3ee5ed512c2d6313ba1f",
+      "verdict": "keep"
+    },
+    {
+      "id": "map-placement",
+      "kind": "fact",
+      "sha256": "29181e4b2a2bab034de9edbc4dd0976730302f2a106249b8266db65fc1ef78cc",
+      "verdict": "keep"
+    },
+    {
+      "id": "range-and-zoom",
+      "kind": "behaviour",
+      "sha256": "35a1e68e8cdc1860e3c1ffdeda1cdd5e45215089c2d6ad8b470176cb368df4f3",
+      "verdict": "keep"
+    },
+    {
+      "id": "blips",
+      "kind": "fact",
+      "sha256": "920b1ee05d1f8857685fbd56920eaf0855746763848b180f8b7af05aacf3c5b1",
+      "verdict": "keep"
+    },
+    {
+      "id": "radar-tint",
+      "kind": "fact",
+      "sha256": "f737380d5d474a7fa633fd799474b7b1cb400773d26beffc018cedaa20dc8cb7",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "5d3be3fbfb2afede7aeb2c74349a97f762279c108c8b359128d99de5a70de77d",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "1b3c15eac1708ef01869b6428fc578ffc991b58c7c481d6c0787081c12e200b9",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "c2c90ff0db38db3f0a92804184ce0dde3a49d629b1717dfd2e14652e1f8f55b2",
+      "verdict": "keep"
+    }
+  ]
+}

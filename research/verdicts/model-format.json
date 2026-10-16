@@ -1,0 +1,123 @@
+{
+  "checker_sha256": "6eacc4853fff744d1fe0dc700c530fce38754dae6e8fa250e0b90f68efb00cd5",
+  "images": [],
+  "page": "model-format",
+  "page_sha256": "9a31dd05cd5be2db65c030609b32e869eebefbe10a408e640fed411d7d65e2a6",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "model-format-ps2-renderware-clumps",
+      "kind": "fact",
+      "sha256": "ef72bfb277df4d05b6a49e7b9f189a8fc2aec589e7a49be5c99d6beefc11eead",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-the-models-are",
+      "kind": "fact",
+      "sha256": "fa274f4bdea73e7498d93bcf398265b7854ac084d79d5e95a459c643ed633b6a",
+      "verdict": "keep"
+    },
+    {
+      "id": "section-headers",
+      "kind": "fact",
+      "sha256": "30866b49a5c52736010d7769ccf0cedbc24f39acfb2ca61d4e1f3f9782eab107",
+      "verdict": "keep"
+    },
+    {
+      "id": "clump-section-0x10",
+      "kind": "fact",
+      "sha256": "1929d8ba3962660530db15ef79fb4f0168ede2846110d7e3f280038b7f8ea5cf",
+      "verdict": "keep"
+    },
+    {
+      "id": "frame-list-section-0x0e",
+      "kind": "fact",
+      "sha256": "1f99a07640fd8e7d956705eaa6992f094b4de9a863c1bc487908c138c9ced9a0",
+      "verdict": "keep"
+    },
+    {
+      "id": "hanim-plugin-0x11e",
+      "kind": "fact",
+      "sha256": "03251729d5091d8fb1c4dd7aaf8c71240a41b1dd7051f4acca8afa77be6d1b56",
+      "verdict": "keep"
+    },
+    {
+      "id": "geometry-list-and-geometry-sections-0x1a-and-0x0f",
+      "kind": "fact",
+      "sha256": "58937e21bc1ec040065fb0180c30e6c4411da3902548a92c93516ed54ec5cf0e",
+      "verdict": "keep"
+    },
+    {
+      "id": "geometry-extension",
+      "kind": "fact",
+      "sha256": "9a1366ab99ec3ae1816380cdfb22f309335740748a9336a4c37882bfeba3d88e",
+      "verdict": "keep"
+    },
+    {
+      "id": "materials",
+      "kind": "fact",
+      "sha256": "15c3a55d77c00e7554a9ec7564a7efb0b1e2d09d3bd4e95d2c81bf1f44b58bda",
+      "verdict": "keep"
+    },
+    {
+      "id": "atomic-section-0x14",
+      "kind": "fact",
+      "sha256": "eb9ca9df36bf2b7c1b38a59d4d89eedebf6b4cab6a3e3ef08a52194533361795",
+      "verdict": "keep"
+    },
+    {
+      "id": "game-atomic-plugin-0x3f0",
+      "kind": "fact",
+      "sha256": "8d15d0932e22ef506ecdf1e02239ea96dcdf7a5727aadecadcfbf55b638e7425",
+      "verdict": "keep"
+    },
+    {
+      "id": "ps2-native-geometry-plugin-0x510",
+      "kind": "fact",
+      "sha256": "6e3b95347af3bdb13185ff1344e262083fbfa4b6c25fe38be1b77ba2331d5456",
+      "verdict": "keep"
+    },
+    {
+      "id": "skin-plugin-0x116",
+      "kind": "fact",
+      "sha256": "77af6e8f5d90aa22814ad8b57186b592ec13655310f568fc430b2ef9dd0f076f",
+      "verdict": "keep"
+    },
+    {
+      "id": "chunk-0x28-beside-a-skinned-model",
+      "kind": "fact",
+      "sha256": "0a6b5c983da7c55f21dbb3bc6d2a5fc4ee7a137821e2519b73886f0dff367933",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-totals-for-the-standalone-models",
+      "kind": "fact",
+      "sha256": "b824d63f94fa57801cf8fe9a47b6e01783897f53b865d62a6d69eb80bb3ab208",
+      "verdict": "keep"
+    },
+    {
+      "id": "chunk-types-read",
+      "kind": "fact",
+      "sha256": "b78be26997f9db8b8cf948d30ac9f62eb8eca5e5b1cdb1df7a98f920cfd32426",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "22aa9fb8c89b05082e09414d26d465d1190cf7fc22b9fab111b58b83fe7ae916",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "002ee1fdeef8e0d719a02428090cec8573ea2f419fd724f7a1e905c64beb97ab",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "baca9c9a3738876b7a9fac32634aec0534d38fa56f3d648f482bef39c10c3964",
+      "verdict": "keep"
+    }
+  ]
+}

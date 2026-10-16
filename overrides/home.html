@@ -1,0 +1,23 @@
+{#- The landing page: a full-width hero over a background, then the page's own Markdown. docs/index.md uses it. -#}
+{% extends "main.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ 'assets/home/home.css' | url }}">
+{% endblock %}
+
+{% block tabs %}
+  {{ super() }}
+  <section class="coney-hero">
+    <div class="coney-hero__inner md-grid md-typeset">
+      <h1 class="coney-hero__title">Coney</h1>
+      <p class="coney-hero__lead">{{ page.meta.lead }}</p>
+      <p class="coney-hero__note">{{ page.meta.note }}</p>
+      <div class="coney-hero__actions">
+        {%- for action in page.meta.actions %}
+        <a href="{{ action.link | url }}" class="md-button{% if loop.first %} md-button--primary{% endif %}">{{ action.label }}</a>
+        {%- endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

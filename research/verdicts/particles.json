@@ -1,0 +1,147 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "particles",
+  "page_sha256": "4bff155b0badcd7f18df9ad11a35c8502d4f1255f76a4513be5f396170b52ce6",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "particle-effects",
+      "kind": "fact",
+      "sha256": "b9d5f6407cb004df965769a74a6f7c8b50d8af8bcd0513d4eab5e989f0bb459d",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "fact",
+      "sha256": "2513ed1e84a6a6861fea1376c5bbc6ec06cf669f04be75e19f80470e0dd2f1c7",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-type-table",
+      "kind": "fact",
+      "sha256": "583e81e695c957a523a46792826efedcb9b3b40b5042a02460547e20e1faca71",
+      "verdict": "keep"
+    },
+    {
+      "id": "particle-pages-on-the-disc",
+      "kind": "fact",
+      "sha256": "4b4d47a27393e3647d386579f022037f55dc3a0c94fe8d42e88a77127c7e6948",
+      "verdict": "keep"
+    },
+    {
+      "id": "sheet-table",
+      "kind": "fact",
+      "sha256": "6f3b7c329702fabd1f0952c298313d6d1c50457c8708347f45dcfb5fbb0f15b0",
+      "verdict": "keep"
+    },
+    {
+      "id": "sprite-batches",
+      "kind": "fact",
+      "sha256": "91892f330d5697977b29acc951c189214eadaf0b2fab25c63ba4c5b055a4e977",
+      "verdict": "keep"
+    },
+    {
+      "id": "sprite-words",
+      "kind": "fact",
+      "sha256": "08e0dc1046fdb58923f3c25909bc0451c762bf5b3e4fa719e2c37e9346a27e93",
+      "verdict": "keep"
+    },
+    {
+      "id": "colour-and-size",
+      "kind": "behaviour",
+      "sha256": "917831b1579b309d81cbf74565538f66fbe427dfe114e5c043e2885b4cb2faa1",
+      "verdict": "keep"
+    },
+    {
+      "id": "particle-pool",
+      "kind": "behaviour",
+      "sha256": "57be65004ebec2371ef53a19f2b1d8d34efde3bc86a272f60db33ac656f9b587",
+      "verdict": "keep"
+    },
+    {
+      "id": "types-named-by-the-scripts",
+      "kind": "fact",
+      "sha256": "c0f8f1bffca4b03546dcae60174f1deffdc094fa599ae19ebaf6ad4c0bb984bf",
+      "verdict": "keep"
+    },
+    {
+      "id": "spawning-from-scripts",
+      "kind": "fact",
+      "sha256": "278c8896a74ad1a1933cec0130de1939eb383023bc88eb209fcb230a77ba3d41",
+      "verdict": "keep"
+    },
+    {
+      "id": "steam",
+      "kind": "behaviour",
+      "sha256": "a1f91a6711fc8bc24ee69fceec38c66ab86d3a4ff41cc028392f561bd669d705",
+      "verdict": "keep"
+    },
+    {
+      "id": "fog",
+      "kind": "behaviour",
+      "sha256": "cbb4df1d3d56b6688a24e67ae5eb9e020b22e734a197c3b6e6134bdd2b39bcf6",
+      "verdict": "keep"
+    },
+    {
+      "id": "garbage-flies",
+      "kind": "behaviour",
+      "sha256": "0c4bcde78c52e6b26414b7ca2e644a81aba0e9fac0826d4606fc4b22a8189727",
+      "verdict": "keep"
+    },
+    {
+      "id": "blowing-litter",
+      "kind": "behaviour",
+      "sha256": "d86cb3731359dc8ddb41bcb6a7f3025811ab298a0a8c69424fc8954611b64d02",
+      "verdict": "keep"
+    },
+    {
+      "id": "glints",
+      "kind": "behaviour",
+      "sha256": "51441da1ce52b4819d05bd4ff5553beb70ab5bd817c0ca3fa817294f31e70795",
+      "verdict": "keep"
+    },
+    {
+      "id": "blood",
+      "kind": "behaviour",
+      "sha256": "7873f238749e95fdfaf785d01dbcc3bd6468a959fb7ca0734478e94bff8e679b",
+      "verdict": "keep"
+    },
+    {
+      "id": "sparks",
+      "kind": "behaviour",
+      "sha256": "d7d9a4d35c38425ff3f946b8862f1f323cc5eea2f4aa1286fffcdb3d829c8f93",
+      "verdict": "keep"
+    },
+    {
+      "id": "wall-flames-and-fires",
+      "kind": "fact",
+      "sha256": "8366ac1ba2ba5b4bfe679bb8b9e7c5ed9015e81a612af4b7541b7e34d5fa914b",
+      "verdict": "keep"
+    },
+    {
+      "id": "landing",
+      "kind": "behaviour",
+      "sha256": "320d7ef43341d7f450da3e3a966b892af7366dd4eb62ccb1dbba6a1e2b028dd8",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "fba46374e67113feb584f0076ae87cd79ac015cc963cad3d815370cfcc7d7823",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "244e904862ec5b5f0f9fe1eed586d2ca627edd0391b92ddba0ff0532f3cadaaa",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "ee73e74eac72562bb96a8bdcdf024f60b1e0431bb7a885d021f2713f100f8d85",
+      "verdict": "keep"
+    }
+  ]
+}

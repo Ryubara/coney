@@ -1,0 +1,87 @@
+{
+  "checker_sha256": "a8f37586e17ad780e2cc75962239ea4c3dc979a705f1182175a481cedea88ae8",
+  "images": [],
+  "page": "hud",
+  "page_sha256": "eba3ce23c48fa63d421b075cd53a88c9c304b8e117ffb4895ca921ac8e42ea6e",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "in-game-hud",
+      "kind": "fact",
+      "sha256": "d0c4bb118faa2e3cbfbaf2cd07d922ffaabba4f01d9b242a8adf2990687d4392",
+      "verdict": "keep"
+    },
+    {
+      "id": "screen-layout-in-level-99",
+      "kind": "fact",
+      "sha256": "24222810ac71e8234bdaac65ffdb50ff739eda9079f37e5e82b879d2f4d3905f",
+      "verdict": "keep"
+    },
+    {
+      "id": "hud-colour-slots",
+      "kind": "fact",
+      "sha256": "ac0787772f31fa3ad96aced39cf88af852b21cc82a76a4474c9010a0d23ee865",
+      "verdict": "keep"
+    },
+    {
+      "id": "hud-message-texts",
+      "kind": "fact",
+      "sha256": "88ac9d91c89c0c8ee546fa2bd3bee598023372936f3e610cbb47fbf7b3e88eb2",
+      "verdict": "keep"
+    },
+    {
+      "id": "hints",
+      "kind": "behaviour",
+      "sha256": "697f96447605fad7f51eafc793978e927d334f8d4d1a62f19137ba23e5557f11",
+      "verdict": "keep"
+    },
+    {
+      "id": "objectives",
+      "kind": "behaviour",
+      "sha256": "e175679bdd6218513e0dcd1fb41fab11e840647aa819894d032f9d75e8bddc01",
+      "verdict": "keep"
+    },
+    {
+      "id": "player-panel",
+      "kind": "behaviour",
+      "sha256": "77a1fcbab4a4633b7792b20de16b8a77c3744d4e33a2baeb00aa0da9b6128e12",
+      "verdict": "keep"
+    },
+    {
+      "id": "visibility-rules",
+      "kind": "behaviour",
+      "sha256": "2477c48adc9bd17d17e4b94ec0268ea02ee286f763d160517b2ab182259da7f5",
+      "verdict": "keep"
+    },
+    {
+      "id": "sprite-sheets",
+      "kind": "fact",
+      "sha256": "39b97f6d77ac98b8e9cd6e810a3a06345587473e4526eecd46a01c7b629289cb",
+      "verdict": "keep"
+    },
+    {
+      "id": "sprite-page-layout",
+      "kind": "fact",
+      "sha256": "a618e380f8b299be4a7aca96c2526e0354c4e972f029a534757dbba3cf2a4640",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "c991a319ee007ab257bd7e7e271ee8775ba5a4256963559fa290409fe4d99f0b",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "4158fc14f2ff0da5a21c42af33b65498351b0e7365e12928f8fe4104944f5324",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "0de0b7a7c985fc56e329910d790920661710bbf68ba74bcf1960aa200e0661f9",
+      "verdict": "keep"
+    }
+  ]
+}

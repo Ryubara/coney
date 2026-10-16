@@ -1,0 +1,35 @@
+[project]
+name = "coney-tools"
+version = "0.1.0"
+description = "Coney's command-line tool: clean-room checks, research gate, zones, progress"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+dependencies = []
+
+[project.scripts]
+coney-tools = "coney_tools.cli:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["coney_tools*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Long lines fail the check too, not only the formatter.
+extend-select = ["E501"]
+
+# The code gate (docs/clean-room.md, section 7). The checks read this table from main, never from the change being
+# checked, so a branch cannot move its own code out of the gate's reach. Paths are relative to the repository's root.
+[tool.coney-tools.code-gate]
+# Coney's engine: commits that touch it must carry an implementer's signature, and its sources are read for @orig tags.
+engine_root = "engine"
+# The files under engine_root that are source code.
+source_extensions = [".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl", ".ipp"]
+# Folders under engine_root holding game-behaviour code: every function defined in them carries an @orig tag.
+game_behaviour = ["engine/src/game"]

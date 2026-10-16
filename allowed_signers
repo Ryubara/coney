@@ -1,0 +1,18 @@
+# Coney's allowed signers: the only keys whose signatures count (docs/clean-room.md, section 5).
+#
+# Every check reads this file from main, never from the change being checked, so a change cannot add its own key
+# and sign with it. Changing it needs maintainer review.
+#
+# One key per line, limited to one purpose by its namespaces option:
+#
+#   <principal> namespaces="coney-verdict" ssh-ed25519 AAAA...   a verdict key (page-reviewer-<n>, pr-analyst-<n>)
+#   <principal> namespaces="git" ssh-ed25519 AAAA...             a commit key
+#
+# Principals are lower-case letters, digits and hyphens. Only page-reviewer-* verdict keys count toward a research
+# page, and a page needs two of them, from two different principals with two different keys.
+page-reviewer-1 namespaces="coney-verdict" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOAbySCo3X/3SljPUyNK9HanOhLlDopLKtcceF7naDs9
+page-reviewer-2 namespaces="coney-verdict" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB9HZp9OUY9dBCkzjdfFfVLjgag73bicXTPFRriooLhw
+impl-1 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJPVkVCTLKUTbr/Pt8psukZmaOXugG+iqgXJ/DbuFx/+
+impl-2 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXm8cI4JMV3dkQ/x/z/AFeGzGa626/nrFmjOJvSZdDB
+impl-3 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJkoyD7ErrzOyvEXtwNo+UAYRSwmYltw8ulKcIKciHRa
+impl-4 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJBJ99hVFgKlC9k62mVYVITivKGUSeoweOWTUYE6E37u

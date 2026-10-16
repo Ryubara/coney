@@ -1,0 +1,19 @@
+# git's system configuration in an implementer container (on its read-only root filesystem). Every commit and tag
+# is signed with the container's own key, made by `coney-tools impl up` on the container's first start; the
+# maintainers list its public key in allowed_signers under the container's name (namespaces="git"). The session
+# sets the author and committer to the container's name, which is the principal git matches the key against.
+[init]
+	defaultBranch = main
+[gpg]
+	format = ssh
+[user]
+	signingkey = /home/impl/.ssh/id_ed25519
+	useConfigOnly = true
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+[push]
+	autoSetupRemote = true
+[advice]
+	detachedHead = false

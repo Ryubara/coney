@@ -1,0 +1,46 @@
+/* Coney's colours on every page: black like the Warriors' leather, red like their headbands. */
+
+:root {
+  --coney-red: #c8202c;
+  --coney-red-dark: #9e1620;
+}
+
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: #141112;
+  --md-primary-fg-color--light: #2a2425;
+  --md-primary-fg-color--dark: #000;
+  --md-primary-bg-color: #fff;
+  --md-primary-bg-color--light: rgb(255 255 255 / 70%);
+}
+
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: var(--coney-red);
+  --md-accent-fg-color--transparent: rgb(200 32 44 / 10%);
+  --md-accent-bg-color: #fff;
+  --md-accent-bg-color--light: rgb(255 255 255 / 70%);
+}
+
+/* Links in red, a little lighter on the dark scheme so they read on it. */
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: var(--coney-red-dark);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #e5484f;
+}
+
+/* Diagrams (docs/assets/diagrams.js): the Mermaid source stays hidden until it is drawn; wide ones scroll. */
+.coney-diagram {
+  margin: 1em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.coney-diagram:not([data-source]) {
+  color: transparent;
+}
+
+.coney-diagram svg {
+  max-width: 100%;
+  height: auto;
+}

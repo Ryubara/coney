@@ -1,0 +1,35 @@
+# Builds and tool output
+/build/
+/out/
+/site/
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Editors and OS
+.vs/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local settings (coney.local.example.toml shows the format)
+coney.local.toml
+
+# Game files and anything taken from them never enter the repo
+*.iso
+*.chd
+*.cso
+*.zso
+*.mdf
+*.nrg
+*.p2s
+*.pnach
+*.mcd
+*.ps2
+
+# Agent worktrees
+/.claude/worktrees/

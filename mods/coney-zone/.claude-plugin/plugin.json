@@ -1,0 +1,6 @@
+{
+  "name": "coney-zone",
+  "version": "0.1.0",
+  "description": "Coney's zone pane: this zone's role, inbox, gate states and walls, live; wakes the session when work arrives",
+  "types": "./types/index.d.ts"
+}

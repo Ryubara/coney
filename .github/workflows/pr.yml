@@ -1,0 +1,109 @@
+# Checks that only make sense on a pull request, run again whenever its description is edited. A pull request is
+# squash-merged, so its title and description become the one commit on main.
+#   body        the description follows the template (Groundwork's checker, driven by .github/conventions.yml)
+#   docs        a change to code changes the docs too, or the description says `Docs: none` (the same checker)
+#   disclosure  the title, the description and every commit message describe the process in neutral words
+#               (`coney-tools ci --job disclosure`, as a local run)
+# A title and a description are text anyone can write: they reach a checker only through an environment variable and
+# a file, never expanded into a script's text. Coney's titles are a short imperative summary with no area (AGENTS.md),
+# so Groundwork's title check is not used. Actions are pinned to a full commit SHA; the tag is in the comment.
+name: pr
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
+# An edit gets its own group, so it never cancels the run of a push that is still going.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'edited' }}
+  cancel-in-progress: true
+
+jobs:
+  versions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.v.outputs.python }}
+      uv: ${{ steps.v.outputs.uv }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: v
+        run: python3 -I python/coney-tools.py ci --versions | tee -a "$GITHUB_OUTPUT"
+
+  body:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Check the description against the template
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          uv venv --python "$PY" "$RUNNER_TEMP/gw"
+          uv pip install --python "$RUNNER_TEMP/gw" --require-hashes -r .github/scripts/requirements.txt
+          printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          "$RUNNER_TEMP/gw/bin/python" -I .github/scripts/groundwork.py check-body --body "$RUNNER_TEMP/pr-body.md"
+
+  # The checkout of a pull request is a merge commit whose parents are the branch it merges into (HEAD^1) and the
+  # pull request's last commit (HEAD^2), so HEAD^1...HEAD^2 is what the pull request changes.
+  docs:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Check that the docs change with the code
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          uv venv --python "$PY" "$RUNNER_TEMP/gw"
+          uv pip install --python "$RUNNER_TEMP/gw" --require-hashes -r .github/scripts/requirements.txt
+          printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          git diff --name-only HEAD^1...HEAD^2 > "$RUNNER_TEMP/changed.txt"
+          "$RUNNER_TEMP/gw/bin/python" -I .github/scripts/groundwork.py check-docs \
+            --body "$RUNNER_TEMP/pr-body.md" --changed "$RUNNER_TEMP/changed.txt"
+
+  disclosure:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: The title, the description and the pull request's commits
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$PR_TITLE" > "$RUNNER_TEMP/pr-title.txt"
+          printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job disclosure \
+            --range HEAD^1..HEAD^2 --text "$RUNNER_TEMP/pr-title.txt" --text "$RUNNER_TEMP/pr-body.md"
