@@ -616,21 +616,23 @@ tool).
 python -I python/coney-tools.py cleanroom commit-sigs main..HEAD [--repo R] [--ref main] [--ssh-keygen PATH] [--json]
 ```
 
-For every commit in the range that touches the engine root (against any parent): it carries an SSH signature
-(`gpgsig`), made in git's namespace over the commit as git verifies it, by a key that `allowed_signers` at `--ref`
-lists with `namespaces="git"` under an implementer's principal, `impl-<n>`. An unsigned commit, a verdict key, a
-commit key under another principal, a key without a namespace and a key only the branch adds all fail. Its message
-must also name the model that wrote it in exactly one trailer, `Co-Authored-By: Claude <model> <noreply@anthropic.com>`
-(AGENTS.md); a missing, second or other co-author fails. It prints `PASS <commit> <principal>, <model>` or
-`FAIL <commit>: <why>` per checked commit and counts the commits it skipped. Exit status: 0 every engine commit is
-signed by an implementer and names its model, 1 one does not, 2 could not run.
+For every commit in the range that touches the engine root: it carries an SSH signature (`gpgsig`), made in git's
+namespace over the commit as git verifies it, by a key that `allowed_signers` at `--ref` lists with `namespaces="git"`
+under an implementer's principal, `impl-<n>`. A merge of two parents touches it only when its engine root differs from
+git's own clean merge of them (`git merge-tree --write-tree`, git 2.38 or later), so merging `main` into a branch needs
+no implementer's key; a conflicted merge, an edit made in the merge and a merge of more parents are checked. An
+unsigned commit, a verdict key, a commit key under another principal, a key without a namespace and a key only the
+branch adds all fail. Its message must also name the model that wrote it in exactly one trailer,
+`Co-Authored-By: Claude <model> <noreply@anthropic.com>` (AGENTS.md); a missing, second or other co-author fails. It prints
+`PASS <commit> <principal>, <model>` or `FAIL <commit>: <why>` per checked commit and counts the commits it skipped.
+Exit status: 0 every engine commit is signed by an implementer and names its model, 1 one does not, 2 could not run.
 
 ### `cleanroom code-verdict` and `code-verdict-sign`
 
 ```sh
 python -I python/coney-tools.py cleanroom code-verdict main..HEAD [--repo R] [--ref main] [--ssh-keygen PATH] [--json]
-python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> --out DIR \
-    --prefilter RESULT
+python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> \
+    (--out DIR | --handover [--workspace W]) --prefilter RESULT
 ```
 
 A PR analyst's verdict is `research/code-verdicts/<name>.json` (schema `coney-code-verdict/1`: `commit`, `files` as
@@ -653,11 +655,14 @@ passing verdict is ever signed. `--prefilter` (required) is the result `cleanroo
 change; the verdict is refused with exit 1 unless that result is a well-formed `coney-prefilter/1` result for the
 verdict's `commit`, with the verdict's `prefilter` as its outcome and exactly the verdict's functions (path and
 address). Since only a passing verdict is signed, that is a passing result covering exactly the verdict's functions.
+`--handover` writes into the workspace's hand-over folder instead, `<from_analyst>\code-verdicts`, the folder the
+`code-verdicts` station reads (`--workspace`, else `$CONEY_WORKSPACE`, else `%ProgramData%\Coney\`), so a fenced
+session names no path outside its zone; the folder must exist already.
 
 ### `cleanroom prefilter`
 
 ```sh
-python -I python/coney-tools.py cleanroom prefilter A..B --facts FACTS --out RESULT [--repo R] [--json]
+python -I python/coney-tools.py cleanroom prefilter A..B --facts FACTS --out RESULT [--repo R | --outbox [--workspace W]] [--json]
 ```
 
 The code gate's scripted pre-filter, which the PR analyst runs on the analysis side before judging a change. Like
@@ -665,6 +670,8 @@ The code gate's scripted pre-filter, which the PR analyst runs on the analysis s
 engine source files the range changes (from the merge base of A and B), as they are at B, finding each function's
 body the way `orig-check` attaches a tag to its function. Its settings are `[tool.coney-tools.code-gate]` in
 `python/pyproject.toml` at B, not at `main`: the analyst runs it in the collecting outbox, whose `main` may be behind.
+`--outbox` takes that repository from the workspace (`outbox\coney.git` under its `containers` folder, the one `impl`
+fetches into), so a fenced session names no path outside its zone.
 
 The facts file is the analyst's own, from their own tools, and never leaves the analysis zone. It is checked
 strictly:
@@ -796,6 +803,7 @@ runs it. Exit status: 0 in order, 1 a problem, 2 the command could not run.
 ```sh
 python -I python/coney-tools.py impl build | up [impl-N...] | down | status | check
 python -I python/coney-tools.py impl run impl-N --task task.md --branch <new-branch> [--base impl-N/<branch>]
+python -I python/coney-tools.py impl reauthor impl-N --branch impl-N/<branch> --new <new-branch> [--base main]
 python -I python/coney-tools.py impl collect [impl-N] | reset impl-N
 python -I python/coney-tools.py impl log [impl-N] [--tail N] [--json]
 ```
@@ -809,11 +817,17 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   start anything that falls short; on a container's first start it makes its commit key and prints its `allowed_signers`
   line (`impl-N namespaces="git" ssh-ed25519 ...`). `down` stops containers (volumes and keys stay); `reset` removes
   one with all its volumes and its key (its line must then leave `allowed_signers`).
+- `reauthor` makes a collected branch's commits since its base again in the named container, with the maintainer
+  as author and committer and that container's key signing, pushes them to its outbox as `--new` and collects
+  them; it checks that every commit's tree is unchanged. Use it for commits made before sessions named the
+  maintainer.
 - `run` streams `main` of the collecting repository in, makes a fresh worktree on a new branch, copies the task file
   in read-only and runs Claude Code on it until it ends, at the model and effort the workspace pins
   (`containers.model`, `containers.effort`; every session the same). With `--base`, a branch of the collecting
   repository stands in for `main`, so a task can build on work still waiting for its verdict; its pull request
-  then carries that work too until it merges, after which `main` is merged in. The Claude login comes from the file
+  then carries that work too until it merges, after which `main` is merged in. Every commit names the maintainer
+  as its author and committer (the public checkout's `user.name` and `user.email`; `run` refuses without them);
+  the signature is the container's key, which `commit-sigs` checks. The Claude login comes from the file
   `containers.auth_file`
   names (`CLAUDE_CODE_OAUTH_TOKEN=...` from `claude setup-token`, or `ANTHROPIC_API_KEY=...`), passed in on
   standard input, never written into the image, a command line or a log; without it `run` refuses. While the
@@ -832,7 +846,10 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   `zones.json`) and show their logs; the zone mod's pane always has an Implementers section, which says when no log
   exists yet or the account may not read the folder (`readable` in `--json`), and `/coney-impl impl-N` picks whose
   log it shows.
-- `status` shows each container's state, firewall, key fingerprint, caps and task. `check` tests running containers
+- `status` shows each container's state, firewall, key fingerprint, caps and task, and fails (exit 1) when an
+  implementer key in `allowed_signers` is not an SSH signing key on the maintainer's GitHub account, since GitHub
+  then shows its commits as Unverified; it prints the `gh ssh-key add` command (`gh` needs the
+  `admin:ssh_signing_key` scope). `check` tests running containers
   from inside: no route to any host but the API, none to the Windows host's analyst ports, no Docker socket, no
   capabilities, a seccomp filter, no new user namespaces, a read-only root filesystem.
 

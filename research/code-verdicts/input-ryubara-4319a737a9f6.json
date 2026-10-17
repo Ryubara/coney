@@ -1,0 +1,168 @@
+{
+  "commit": "4319a737a9f67ed7a158e713a66fbbc91a12ef12",
+  "files": [
+    {
+      "blob": "0994257ae3a8f1fbbcfbbde999d97542deb0c8d6",
+      "path": "engine/app/main.cpp"
+    },
+    {
+      "blob": "9ffa0b6778f09ca40239047c17d9df3cafd8dbaa",
+      "path": "engine/src/core/clock.hpp"
+    },
+    {
+      "blob": "02af4d2f7d78f06b4cfcb05178b1ade8c8a9f1a1",
+      "path": "engine/src/core/command_line.cpp"
+    },
+    {
+      "blob": "63b239afae7dc85e23dc92d2a65d460e9812926d",
+      "path": "engine/src/core/command_line.hpp"
+    },
+    {
+      "blob": "d9b1450735ce330eff8bd57b8c454ed21d1236cb",
+      "path": "engine/src/core/frame_pacer.cpp"
+    },
+    {
+      "blob": "6c3b1b6e8d64929357c73b0bacfa2dad7a6ee559",
+      "path": "engine/src/core/frame_pacer.hpp"
+    },
+    {
+      "blob": "84b7a7095b77299670c003239b23811aaaa4481c",
+      "path": "engine/src/core/log.cpp"
+    },
+    {
+      "blob": "37d91ec987ae69e4c1b237d3ef515cebd5b059bc",
+      "path": "engine/src/core/log.hpp"
+    },
+    {
+      "blob": "b930afb9fcfe9282f58a3ecfde0cee280df8b2d3",
+      "path": "engine/src/core/main_loop.cpp"
+    },
+    {
+      "blob": "e659863676452b6310635724bac46ce68070a61c",
+      "path": "engine/src/core/main_loop.hpp"
+    },
+    {
+      "blob": "39332771b21294b8a260bcaa3b583a9a26242612",
+      "path": "engine/src/core/settings.hpp"
+    },
+    {
+      "blob": "c613181138545e3a238e50e360c5953728381344",
+      "path": "engine/src/formats/chunk_container.cpp"
+    },
+    {
+      "blob": "be4085fe58a0576e48c7d869e77cbd80a19539a3",
+      "path": "engine/src/formats/chunk_container.hpp"
+    },
+    {
+      "blob": "50e7a0c19524c653ada5bb463dbcc26d525567c9",
+      "path": "engine/src/game/pad.cpp"
+    },
+    {
+      "blob": "94a017d5a3d56363bdac66b73d4409d04972e82e",
+      "path": "engine/src/game/pad.hpp"
+    },
+    {
+      "blob": "e2717dcd86a5f8de7ee87ca4ac7d3dbacbc38695",
+      "path": "engine/src/input/bindings.cpp"
+    },
+    {
+      "blob": "f58c19f18c0afdc73031c563c6a5e022fbb711a3",
+      "path": "engine/src/input/bindings.hpp"
+    },
+    {
+      "blob": "6d5ff87f200ee53a8a5deca48e81a68b580df84d",
+      "path": "engine/src/input/input_system.cpp"
+    },
+    {
+      "blob": "a86cc21b5b4aea28e62972a25e3d17eba3a6eed3",
+      "path": "engine/src/input/input_system.hpp"
+    },
+    {
+      "blob": "bf19e69d39485275b9f2be8180c3314f5cbd21d2",
+      "path": "engine/src/platform/device_events.hpp"
+    },
+    {
+      "blob": "be6d10da022f46362978e7bfa17f307786177b0f",
+      "path": "engine/src/platform/gpu.cpp"
+    },
+    {
+      "blob": "97373502a4dc922db69b5bf6d41224a21c59f5f4",
+      "path": "engine/src/platform/platform.cpp"
+    },
+    {
+      "blob": "1aa8b9c9d62cd9a482e18763a332705379562c07",
+      "path": "engine/src/platform/platform.hpp"
+    },
+    {
+      "blob": "0e3ba70799577908e667a5be91594503b644e55c",
+      "path": "engine/src/platform/window.cpp"
+    },
+    {
+      "blob": "83b5e679d577e087a68bdab17da37151ed908ca0",
+      "path": "engine/src/result.hpp"
+    },
+    {
+      "blob": "e537a2b4ad5b0bd554478d8a51c654cda9af824e",
+      "path": "engine/tests/bindings_tests.cpp"
+    },
+    {
+      "blob": "59958628303848391fd135673684fe2a6c87233b",
+      "path": "engine/tests/chunk_container_tests.cpp"
+    },
+    {
+      "blob": "d6dfaf87f25b2cbbe80440edc052be85ec8b7b9f",
+      "path": "engine/tests/command_line_tests.cpp"
+    },
+    {
+      "blob": "07e495653d60644e70dcf7d79746aa81a3cc56de",
+      "path": "engine/tests/frame_pacer_tests.cpp"
+    },
+    {
+      "blob": "1d58a5d15f7beb8f75c3b8aa47c94d34d6693a8c",
+      "path": "engine/tests/gamepad_hotplug_tests.cpp"
+    },
+    {
+      "blob": "e0a8e890ef97e871339e38908f0c49c03496e8a2",
+      "path": "engine/tests/input_system_tests.cpp"
+    },
+    {
+      "blob": "d94bc9dd4ae86a1bbd7943713654e60150c956cd",
+      "path": "engine/tests/log_tests.cpp"
+    },
+    {
+      "blob": "c67e090de0894eb7260a8a7bb42dd9f36a083ab8",
+      "path": "engine/tests/main_loop_tests.cpp"
+    },
+    {
+      "blob": "e8db938f8d245022453a712f0123b565d88dd1b1",
+      "path": "engine/tests/pad_commands_tests.cpp"
+    },
+    {
+      "blob": "e34d3e7c833f9d0a269a4c728de2b1dd84f5598d",
+      "path": "engine/tests/pad_sticks_tests.cpp"
+    },
+    {
+      "blob": "054b035e2346bc881eeb42d80934370852e21b6f",
+      "path": "engine/tests/platform_tests.cpp"
+    }
+  ],
+  "functions": [
+    {
+      "address": "0x00144180",
+      "path": "engine/src/formats/chunk_container.cpp",
+      "verdict": "independent"
+    },
+    {
+      "address": "0x001454a8",
+      "path": "engine/src/game/pad.cpp",
+      "verdict": "independent"
+    },
+    {
+      "address": "0x00146078",
+      "path": "engine/src/game/pad.cpp",
+      "verdict": "independent"
+    }
+  ],
+  "prefilter": "pass",
+  "schema": "coney-code-verdict/1"
+}

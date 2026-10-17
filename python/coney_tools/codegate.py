@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
 from coney_tools import research, signing
-from coney_tools.cleanroom import page_check
+from coney_tools.cleanroom import page_check, scan
 
 SETTINGS = "python/pyproject.toml"  # relative to the repository's root, read from the ref
 SECTION = ("tool", "coney-tools", "code-gate")
@@ -590,8 +590,30 @@ def split_signed(raw):
     return data, (b"\n".join(sig) + b"\n" if sig is not None else None)
 
 
+# The oldest git with `merge-tree --write-tree`, which tells a merge's own engine changes from its parents'.
+MERGE_TREE_GIT = (2, 38)
+
+
+def entry(exe, repo, tree, root):
+    """The object id at the root in the tree or commit, or None when it has none."""
+    r = signing.git(exe, repo, "rev-parse", "--verify", "-q", f"{tree}:{root}", ok=(0, 1))
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
 def touches(exe, repo, commit, root):
-    r = signing.git(exe, repo, "diff-tree", "-r", "-m", "--root", "--name-only", "--no-commit-id", commit, "--", root)
+    """True when the commit changes the engine root. A merge of two parents counts only when its engine root differs
+    from git's own clean merge of them, so a merge of main that brings in nothing of its own is not checked; a
+    conflicted merge or one of more parents always counts."""
+    parents = signing.git(exe, repo, "rev-parse", f"{commit}^@").stdout.split()
+    if len(parents) == 2:
+        merged = signing.git(exe, repo, "merge-tree", "--write-tree", *(p.decode() for p in parents), ok=(0, 1))
+        if merged.returncode == 0:
+            tree = merged.stdout.split()[0].decode()
+            return entry(exe, repo, tree, root) != entry(exe, repo, commit, root)
+        return True
+    if len(parents) > 2:
+        return True
+    r = signing.git(exe, repo, "diff-tree", "-r", "--root", "--name-only", "--no-commit-id", commit, "--", root)
     return bool(r.stdout.strip())
 
 
@@ -652,6 +674,8 @@ def commit_sigs(rng, repo=None, ref=research.MAIN, ssh_keygen=None, as_json=Fals
         s = settings(tools.git, repo, ref)
         tools.load_allowed(repo)
         keys = signing.listed_keys(tools.allowed.read_bytes())
+        if scan.git_version(tools.git) < MERGE_TREE_GIT:
+            raise CodeGateError(f"git older than {MERGE_TREE_GIT[0]}.{MERGE_TREE_GIT[1]} (no merge-tree --write-tree)")
         commits = signing.git(tools.git, repo, "rev-list", "--reverse", rng, "--").stdout.decode().split()
         for c in commits:
             if not touches(tools.git, repo, c, s.engine_root):

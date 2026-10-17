@@ -652,12 +652,18 @@ class Auth(Base):
 
     def test_session_command_carries_no_secret(self):
         auth = {"CLAUDE_CODE_OAUTH_TOKEN": SECRET}
-        argv = impl.session_argv("impl-1", "task/one", auth, "claude-opus-5-5", "medium")
+        author = ("Maintainer", "m@example.invalid")
+        argv = impl.session_argv("impl-1", "task/one", auth, "claude-opus-5-5", "medium", author)
         self.assertNotIn(SECRET, " ".join(argv))
         self.assertIn("CLAUDE_CODE_OAUTH_TOKEN", argv)
-        self.assertEqual(argv[-5:], ["impl-1", impl.SESSION, "task/one", "claude-opus-5-5", "medium"])
+        self.assertEqual(argv[-7:], ["impl-1", impl.SESSION, "task/one", "claude-opus-5-5", "medium", *author])
         self.assertIn(SECRET.encode(), impl.auth_input(auth))
         self.assertTrue(impl.auth_input(auth).endswith(b"\n\n"))  # an empty line ends the variables
+
+    def test_commits_name_the_maintainer_as_committer(self):
+        session = (Path(__file__).resolve().parents[2] / "containers" / "session.sh").read_text(encoding="utf-8")
+        self.assertIn('GIT_COMMITTER_NAME="$author_name" GIT_COMMITTER_EMAIL="$author_email"', session)
+        self.assertIn('GIT_COMMITTER_NAME="$2" GIT_COMMITTER_EMAIL="$3"', impl.REAUTHOR)
 
     def test_run_refuses_without_auth_file(self):
         task = self.tmp / "task.md"
@@ -681,6 +687,7 @@ class Auth(Base):
         extra = ["--base=" + kw["base"]] if "base" in kw else []
         with (
             mock.patch.object(impl, "main_bundle", bundle),
+            mock.patch.object(impl, "author_of", lambda git, repo: ("Maintainer", "m@example.invalid")),
             mock.patch.object(impl.signing, "program", lambda name, given=None: "git"),
         ):
             branch = "--branch=" + kw.get("branch", "task/one")
@@ -725,7 +732,7 @@ class Auth(Base):
         self.assertEqual((state["model"], state["effort"]), ("claude-opus-5-5", "medium"))
         self.assertEqual(state["served"], {"claude-opus-5-5": 1})  # as the API reported it
         session = next(c for c, _ in fake.streamed if impl.SESSION in c)
-        self.assertEqual(session[-3:], ["task/one", "claude-opus-5-5", "medium"])
+        self.assertEqual(session[-5:], ["task/one", "claude-opus-5-5", "medium", "Maintainer", "m@example.invalid"])
 
     def test_run_on_a_base_branch(self):
         fake = FakeDistro(containers=self.running(), outbox={"impl-1": {"refs/heads/task/one": "a" * 40}})
@@ -761,6 +768,18 @@ class Auth(Base):
                 self.assertEqual(heads, [want.decode(), "refs/heads/main"])
         with tempfile.TemporaryDirectory() as tmp, self.assertRaises(impl.ImplError):
             impl.main_bundle(pool, git, tmp, "impl-1/engine/none")
+
+    @unittest.skipUnless(shutil.which("git"), "needs git on PATH")
+    def test_author_comes_from_the_checkout(self):
+        git, repo = shutil.which("git"), self.tmp / "who"
+        repo.mkdir()
+        subprocess.run([git, "-C", str(repo), "init", "-q"], check=True)
+        for k, v in (("user.name", "Maintainer"), ("user.email", "m@example.invalid")):
+            subprocess.run([git, "-C", str(repo), "config", k, v], check=True)
+        self.assertEqual(impl.author_of(git, repo), ("Maintainer", "m@example.invalid"))
+        subprocess.run([git, "-C", str(repo), "config", "user.email", "x <y>"], check=True)
+        with self.assertRaises(impl.ImplError):
+            impl.author_of(git, repo)
 
     def test_run_branch_not_pushed_fails(self):
         fake = FakeDistro(containers=self.running())
@@ -888,6 +907,44 @@ class Collect(Base):
         rm = next(c for c in cmds if c[:2] == ["rm", "-rf"])
         self.assertIn(f"{ROOT}/outbox/impl-1.git", rm)
         self.assertIn("allowed_signers", out)
+
+
+class GitHubKeys(unittest.TestCase):
+    KEY1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    KEY2 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
+    def setUp(self):
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        self.repo = Path(d.name)
+        (self.repo / "allowed_signers").write_text(
+            f'# keys\nimpl-1 namespaces="git" {self.KEY1}\nimpl-2 namespaces="git" {self.KEY2}\n'
+            f'pr-analyst-1 namespaces="coney-verdict" {self.KEY1}\n',
+            encoding="utf-8",
+        )
+
+    def test_implementer_keys_come_from_allowed_signers(self):
+        self.assertEqual(impl.implementer_keys(self.repo), {"impl-1": self.KEY1, "impl-2": self.KEY2})
+
+    def test_a_key_missing_on_github_is_named(self):
+        with mock.patch.object(impl, "github_signing_keys", lambda: {self.KEY1}):
+            problems = impl.github_key_problems(self.repo)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("impl-2's key is not a signing key", problems[0])
+        self.assertIn('--type signing --title "coney impl-2"', problems[0])
+
+    def test_all_keys_on_github_pass(self):
+        with mock.patch.object(impl, "github_signing_keys", lambda: {self.KEY1, self.KEY2}):
+            self.assertEqual(impl.github_key_problems(self.repo), [])
+
+    def test_no_gh_access_names_the_scope(self):
+        def fail():
+            raise impl.signing.SigningError("gh not found on PATH")
+
+        with mock.patch.object(impl, "github_signing_keys", fail):
+            problems = impl.github_key_problems(self.repo)
+        self.assertEqual(len(problems), 1)
+        self.assertIn(impl.GITHUB_SCOPE, problems[0])
 
 
 class Check(Base):
