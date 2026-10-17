@@ -23,6 +23,17 @@ from coney_tools.cli import main
 
 SECRET = "sk-test-" + "0123456789abcdef" * 2  # a made-up token: it must never show
 ROOT = "/srv/test-coney"
+# A made-up session's stream-json output, as the container's Claude Code prints it.
+SESSION_EVENTS = [
+    b'{"type":"system","subtype":"init","model":"m","cwd":"/work/coney/.worktrees/task-one"}',
+    (
+        b'{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash",'
+        b'"input":{"command":"ctest","description":"run the tests"}}]}}'
+    ),
+    b'{"type":"user","message":{"content":[{"type":"tool_result","content":"100% tests passed"}]}}',
+    b"not json",
+    b'{"type":"result","result":"All done.","num_turns":3,"duration_ms":12000}',
+]
 POOL = ["impl-1", "impl-2"]
 
 
@@ -211,6 +222,15 @@ class FakeDistro:
         if impl.SESSION in cmd:
             return self.session_exit
         return 0
+
+    def lines(self, cmd, data=None, each=None):
+        self.calls.append(("lines", cmd, data))
+        self.streamed.append((cmd, data))
+        if impl.SESSION not in cmd:
+            return 0
+        for raw in SESSION_EVENTS:
+            each(raw)
+        return self.session_exit
 
     def reader(self, cmd):
         self.calls.append(("reader", cmd, None))
@@ -669,6 +689,18 @@ class Auth(Base):
         bundle = [d for k, c, d in fake.calls if impl.BUNDLE in c]
         self.assertEqual(bundle, [b"BUNDLE"])
         self.assertIn("task/one pushed to its outbox", out)
+
+    def test_run_writes_the_live_log_and_prints_the_final_message(self):
+        fake = FakeDistro(containers=self.running(), outbox={"impl-1": {"refs/heads/task/one": "a" * 40}})
+        code, out, err = self.run_session(fake)
+        self.assertEqual(code, 0, err)
+        self.assertIn("All done.", out)
+        code, out, _ = self.cli(fake, "log", "impl-1")
+        self.assertEqual(code, 0)
+        self.assertIn("impl-1: exit 0, task.md on task/one", out)
+        self.assertIn("Bash     run the tests (ctest)", out)
+        self.assertIn("done     ok after 3 turns, 12 s", out)
+        self.assertEqual(self.cli(fake, "log", "x; rm")[0], 2)
 
     def test_run_branch_not_pushed_fails(self):
         fake = FakeDistro(containers=self.running())

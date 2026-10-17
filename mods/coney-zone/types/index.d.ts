@@ -45,6 +45,19 @@ export type Watch = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'coney-zone': { status: ZoneStatus | null; watch: Watch }
+    'coney-zone': { status: ZoneStatus | null; watch: Watch; impls: ImplLog | null; picked: string | null }
   }
 }
+
+/** One implementer's live state, as `coney-tools impl log --json` lists it. */
+export type ImplState = {
+  name: string
+  task?: string
+  branch?: string
+  started?: string
+  ended?: string
+  exit?: number
+}
+
+/** What `coney-tools impl log --json` answers: the implementers, the one shown and the last lines of its log. */
+export type ImplLog = { implementers: ImplState[]; shown: string | null; lines: string[] }

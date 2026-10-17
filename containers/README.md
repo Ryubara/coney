@@ -10,8 +10,8 @@ Engine code is written in containers that never see the original game or the ana
 | `init-firewall.sh` | The egress wall: default deny, DNS, and HTTPS to the hosts in `allowed-domains` only. It checks itself before reporting healthy. |
 | `allowed-domains` | The only hosts an implementer may reach: the Anthropic API. |
 | `managed-settings.json` | Claude Code's settings inside: telemetry, error reporting and updates off. |
-| `session.sh` | Starts one task's session inside a container, with Tether loaded. |
-| `system-prompt.txt` | The fixed instructions every implementer session starts with. |
+| `session.sh` | Starts one task's session inside a container, with Tether loaded; its events stream out as stream-json, which `impl run` turns into the live log. |
+| `system-prompt.txt` | The fixed instructions every implementer session starts with: the task file, any gated page, `@orig` citing its page, gaps written to `/work/artifacts/needs.json`. |
 | `gitconfig` | Commit signing with the container's own key. |
 
 What makes a container a wall, each checked by `impl up` before anything starts and by `impl check` on running

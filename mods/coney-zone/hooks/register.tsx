@@ -10,15 +10,22 @@
 // items (the status names its idle_wake_minutes) is also woken once it has sat that long idle, its turn ended and no
 // subagent of it at work. A failed read is shown and told, never taken for an empty inbox. It reads only; it never
 // writes and never sends anything to another zone.
+//
+// Its Implementers section lists the implementer containers' sessions from `coney-tools impl log --json` (their live
+// logs, which hold only public material, so every zone that may read them shows them) and the last lines of one log,
+// with their times: the one started last, or the one `/coney-impl impl-N` picks.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Watch, ZoneStatus } from '../types'
+import type { ImplLog, Watch, ZoneStatus } from '../types'
 
 const PANE = 'coney-zone'
 const POLL_MS = 15_000
 const REWAKE_MS = 30 * 60_000
 const status = atom({ plugin: 'coney-zone', key: 'status' } as const, null)
+const impls = atom({ plugin: 'coney-zone', key: 'impls' } as const, null as ImplLog | null)
+const picked = atom({ plugin: 'coney-zone', key: 'picked' } as const, null as string | null)
+const IMPL_LINES = 40
 const watch = atom({ plugin: 'coney-zone', key: 'watch' } as const, {
   readAt: null,
   failure: null,
@@ -127,6 +134,22 @@ async function poll($: EngineInterface, where: Paths): Promise<void> {
     }
   }
   await update($, watch, () => ({ readAt: now, failure, ...woken }))
+  await pollImpls($, where)
+}
+
+// The implementers' live logs; a zone that may not read them, or a read that fails, shows none.
+async function pollImpls($: EngineInterface, where: Paths): Promise<void> {
+  const name = await read($, picked)
+  try {
+    const argv = [where.python, '-I', where.tools, 'impl', 'log', '--json', '--tail', String(IMPL_LINES)]
+    const r = await $.process.run([...argv, '--workspace', where.workspace, ...(name ? [name] : [])], {
+      timeoutMs: 30_000,
+    })
+    const doc = r.exitCode === 0 ? (JSON.parse(r.stdout) as ImplLog) : null
+    await update($, impls, () => (doc && Array.isArray(doc.implementers) ? doc : null))
+  } catch {
+    await update($, impls, () => null)
+  }
 }
 
 export const register: Register = on => {
@@ -149,6 +172,10 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     main.idleSince = await $.clock.now()
     await $.command.register({ name: 'coney', description: "Show this zone's Coney pane" })
+    await $.command.register({
+      name: 'coney-impl',
+      description: "Show an implementer's live log in the Coney pane: /coney-impl impl-N (no name: the latest)",
+    })
     void $.ui.open({ id: PANE, title: 'Coney zone' })
     void (async () => {
       try {
@@ -169,10 +196,19 @@ export const register: Register = on => {
     return { text: 'Coney zone pane opened.' }
   })
 
+  on('command.run', { command: 'coney-impl' }, async ($, e) => {
+    const name = String((e as { args?: string }).args ?? '').trim()
+    if (name && !/^impl-\d+$/.test(name)) return { text: 'Give an implementer as impl-N, or nothing for the latest.' }
+    await update($, picked, () => name || null)
+    await $.ui.open({ id: PANE, title: 'Coney zone' })
+    return { text: name ? `Showing ${name}'s live log.` : 'Showing the latest live log.' }
+  })
+
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const s = await read($, status)
     const w = await read($, watch)
+    const log = await read($, impls)
     const room = Math.max(3, (e.viewport?.rows ?? 24) - 12)
     if (!s) {
       return (
@@ -230,6 +266,22 @@ export const register: Register = on => {
           <Text dimColor>Last woken: {w.wokenAt ? `${w.wokenAt.slice(11, 19)} UTC for ${w.wokenFor.length}` : 'not yet'}</Text>
           {w.failure && <Text color="red">Last read failed: {w.failure}</Text>}
         </Box>
+        {log && log.implementers.length > 0 && (
+          <Box marginTop={1} flexDirection="column">
+            <Text bold>Implementers</Text>
+            {log.implementers.map(i => (
+              <Text bold={i.name === log.shown}>
+                {i.name === log.shown ? '> ' : '  '}
+                {i.name}: {i.exit !== undefined ? `exit ${i.exit}` : i.ended ? 'ended' : 'running'} · {i.task ?? '?'} on{' '}
+                {i.branch ?? '?'} · started {i.started?.slice(11, 19) ?? '-'} UTC
+              </Text>
+            ))}
+            <Text dimColor>{log.shown} (UTC) · /coney-impl impl-N to switch</Text>
+            {log.lines.slice(-Math.max(5, room)).map(l => (
+              <Text>{l}</Text>
+            ))}
+          </Box>
+        )}
       </Box>
     )
   })
