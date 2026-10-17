@@ -922,11 +922,25 @@ def main_bundle(pool, git, tmp, base=None):
     return out.read_bytes()
 
 
-def session_argv(name, branch, auth, model, effort):
-    """The command that starts a session at the workspace's model and effort: the auth variables come from standard
-    input, never the command line."""
+def session_argv(name, branch, auth, model, effort, author):
+    """The command that starts a session at the workspace's model and effort, its commits authored by author (name,
+    email): the auth variables come from standard input, never the command line."""
     env = [x for k in sorted(auth) for x in ("-e", k)]
-    return ["sh", "-c", WITH_AUTH, "sh", "docker", "exec", "-u", "impl", *env, name, SESSION, branch, model, effort]
+    return ["sh", "-c", WITH_AUTH, "sh", "docker", "exec", "-u", "impl", *env, name, SESSION, branch, model, effort,
+            *author]  # fmt: skip
+
+
+def author_of(git, repo):
+    """(name, email): the git identity of the public checkout, which names the maintainer as every engine commit's
+    author. The implementer is the committer and signer."""
+    out = []
+    for key in ("user.name", "user.email"):
+        r = signing.git(git, repo, "config", "--get", key, ok=(0, 1))
+        value = r.stdout.decode("utf-8", "replace").strip()
+        if not value or any(c in value for c in "<>\n"):
+            raise ImplError(f"{repo} has no usable git {key}: set it, since it names the author of engine commits")
+        out.append(value)
+    return tuple(out)
 
 
 def auth_input(auth):
@@ -955,6 +969,7 @@ def run(ws, name, task, branch, distro=None, base=None):
     if not (worker and worker["State"].get("Running") and healthy):
         raise ImplError(f"{name} is not running behind a healthy firewall: start it with `coney-tools impl up {name}`")
     git = signing.program("git")
+    author = author_of(git, pool.s.repo)
     with tempfile.TemporaryDirectory(prefix="coney-impl-") as tmp:
         bundle = main_bundle(pool, git, tmp, base)
     pool.exec(name, "sh", "-c", 'cat >"$1"', "sh", BUNDLE, data=bundle)
@@ -966,7 +981,8 @@ def run(ws, name, task, branch, distro=None, base=None):
     live = implog.LiveLog(pool.s.public, name, st)
     print(f"{name}: session on branch {branch} started; live log in {live.f.name}", flush=True)
     try:
-        code = pool.d.lines(session_argv(name, branch, auth, pool.s.model, pool.s.effort), auth_input(auth), live.feed)
+        argv = session_argv(name, branch, auth, pool.s.model, pool.s.effort, author)
+        code = pool.d.lines(argv, auth_input(auth), live.feed)
     finally:
         live.close(ended=now())
     st.update(ended=now(), exit=code, served=live.served())
@@ -982,6 +998,75 @@ def run(ws, name, task, branch, distro=None, base=None):
     if pushed:
         lines.append(f"collect it with `coney-tools impl collect {name}`")
     return (0 if code == 0 and pushed else 1), lines
+
+
+REAUTHOR_BUNDLE = "/tmp/coney-reauthor.bundle"
+# Run in the container as impl: $1 the new branch, $2 and $3 the author. The bundle holds `work` (the commits) and
+# `base` (where they start from). Each commit is made again with the author reset and the container's key signing
+# it; the tree of every commit stays as it was.
+REAUTHOR = r"""set -eu
+repo=/work/coney w=/tmp/coney-reauthor
+git -C "$repo" fetch -q --no-tags "$0" \
+    +refs/heads/work:refs/coney/reauthor/work +refs/heads/base:refs/coney/reauthor/base
+rm -f "$0"
+git -C "$repo" worktree remove --force "$w" 2>/dev/null || true
+git -C "$repo" worktree add -q --detach "$w" refs/coney/reauthor/work
+cd "$w"
+base=$(git merge-base HEAD refs/coney/reauthor/base)
+[ -z "$(git rev-list --merges "$base..HEAD")" ] || { echo "the branch holds merge commits" >&2; exit 3; }
+export GIT_AUTHOR_NAME="$2" GIT_AUTHOR_EMAIL="$3" GIT_COMMITTER_NAME="$CONEY_IMPL" GIT_COMMITTER_EMAIL="$CONEY_IMPL"
+git -c core.hooksPath=/dev/null rebase -q --exec 'git commit -q --amend --no-edit --reset-author' "$base" >/dev/null
+git push -q outbox "HEAD:refs/heads/$1"
+cd /
+git -C "$repo" worktree remove --force "$w"
+"""
+
+
+def reauthor(ws, name, branch, new, base="main", distro=None):
+    """(code, lines): the collecting repo's branch made again in the implementer's container with the maintainer as
+    every commit's author, signed by that container's key, pushed to its outbox as new and collected. Only the
+    author, committer and signatures change: each commit's tree is checked to be the same."""
+    pool = Pool(ws, distro)
+    names_arg([name], pool.s)
+    for b in (branch, new, base):
+        if not BRANCH.match(b) or ".." in b or b.endswith((".lock", ".")):
+            raise ImplError(f"not a branch name coney-tools takes: {b!r}")
+    git = signing.program("git")
+    ensure_collecting(git, pool.s.collecting)
+    author = author_of(git, pool.s.repo)
+    signing.git(
+        git, pool.s.collecting, "fetch", "--quiet", "--no-tags", str(pool.s.repo), "+refs/heads/main:refs/heads/main"
+    )
+    with tempfile.TemporaryDirectory(prefix="coney-reauthor-") as tmp:
+        src = Path(tmp) / "r.git"
+        signing.git(git, tmp, "init", "--quiet", "--bare", str(src))
+        for ref, as_ in ((branch, "work"), (base, "base")):
+            r = signing.git(git, pool.s.collecting, "rev-parse", "--verify", "--quiet", f"refs/heads/{ref}", ok=(0, 1))
+            if r.returncode:
+                raise ImplError(f"no branch {ref} in the collecting repo")
+            refspec = f"+refs/heads/{ref}:refs/heads/{as_}"
+            signing.git(git, src, "fetch", "--quiet", "--no-tags", str(pool.s.collecting), refspec)
+        out = Path(tmp) / "r.bundle"
+        signing.git(git, src, "bundle", "create", "--quiet", str(out), "refs/heads/work", "refs/heads/base")
+        data = out.read_bytes()
+    pool.exec(name, "sh", "-c", 'cat >"$1"', "sh", REAUTHOR_BUNDLE, data=data)
+    r = pool.exec(name, "bash", "-c", REAUTHOR, REAUTHOR_BUNDLE, new, *author, ok=(0, 1, 2, 3, 128))
+    if r.returncode:
+        detail = r.stderr.decode("utf-8", "replace").strip().splitlines()
+        raise ImplError(f"{name}: re-authoring {branch} failed" + (f": {detail[-1]}" if detail else ""))
+    lines = [collect_outbox(pool, git, name)]
+    old, made = f"refs/heads/{branch}", f"refs/heads/{name}/{new}"
+
+    def trees(ref):
+        start = signing.git(git, pool.s.collecting, "merge-base", ref, "refs/heads/main").stdout.decode().strip()
+        r = signing.git(git, pool.s.collecting, "log", "--format=%T", f"{start}..{ref}")
+        return r.stdout.decode().split()
+
+    if trees(old) != trees(made):
+        raise ImplError(f"{name}/{new} does not hold the same trees as {branch}: do not use it")
+    n = len(trees(made))
+    lines.append(f"{name}/{new}: {n} commits authored by {author[0]} <{author[1]}>, signed by {name}; trees unchanged")
+    return 0, lines
 
 
 def log(ws, name=None, tail=implog.TAIL, as_json=False):

@@ -1004,6 +1004,19 @@ def main(argv=None):
         "--base",
         help="a branch of the collecting repo (impl-N/<branch>) to stand in for main: build on work not merged yet",
     )
+    ra = impl_parser(
+        "reauthor",
+        "make a collected branch's commits again with the maintainer as their author",
+        "Streams a branch of the collecting repo into the container, makes each of its commits since its base again "
+        "with the public checkout's git identity as author and the container as committer, signed by the container's "
+        "key, pushes the result to its outbox as --new and collects it. Every commit's tree is checked to be "
+        "unchanged. Exit 0 done, 2 could not run.",
+        lambda a, ws: impl.reauthor(ws, a.name, a.branch, a.new, a.base),
+    )
+    ra.add_argument("name", metavar="impl-N", help="the container whose key signs the new commits")
+    ra.add_argument("--branch", required=True, help="the collecting repo's branch (impl-N/<branch>)")
+    ra.add_argument("--new", required=True, help="the new branch's name in the container's outbox")
+    ra.add_argument("--base", default="main", help="where the commits start (default: main)")
     impl_parser(
         "collect",
         "copy outboxes, artifacts and transcripts out to the public zone",

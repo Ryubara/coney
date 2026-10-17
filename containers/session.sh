@@ -1,6 +1,7 @@
 #!/bin/bash
-# coney-session BRANCH MODEL EFFORT: one implementer session, started by `coney-tools impl run` as the user impl,
-# at the model and effort the workspace's containers table names.
+# coney-session BRANCH MODEL EFFORT AUTHOR_NAME AUTHOR_EMAIL: one implementer session, started by `coney-tools impl
+# run` as the user impl, at the model and effort the workspace's containers table names. Commits name the
+# maintainer as their author (from the public checkout's git identity) and the container as their committer.
 #
 # Refreshes the container's clone from the bundle of main that coney-tools streamed to /tmp, makes a fresh worktree
 # on a new branch BRANCH from it, checks the egress wall once more and runs Claude Code on the task, without a
@@ -8,10 +9,12 @@
 # the live log. Exit status: Claude Code's, or 10 to 13 when the session could not start.
 set -euo pipefail
 
-usage="usage: coney-session BRANCH MODEL EFFORT"
+usage="usage: coney-session BRANCH MODEL EFFORT AUTHOR_NAME AUTHOR_EMAIL"
 branch=${1:?$usage}
 model=${2:?$usage}
 effort=${3:?$usage}
+author_name=${4:?$usage}
+author_email=${5:?$usage}
 repo=/work/coney
 bundle=/tmp/coney-main.bundle
 task=/work/task/task.md
@@ -48,8 +51,9 @@ fi
 work="$repo/.worktrees/${branch//\//-}"
 git -C "$repo" worktree add --quiet --no-track -b "$branch" "$work" refs/remotes/origin/main
 
-# The container's name is its signing principal in allowed_signers.
-export GIT_AUTHOR_NAME="$CONEY_IMPL" GIT_AUTHOR_EMAIL="$CONEY_IMPL"
+# The author is the maintainer; the committer is the container, whose name is its signing principal in
+# allowed_signers (the signature check itself goes by the key).
+export GIT_AUTHOR_NAME="$author_name" GIT_AUTHOR_EMAIL="$author_email"
 export GIT_COMMITTER_NAME="$CONEY_IMPL" GIT_COMMITTER_EMAIL="$CONEY_IMPL"
 rm -f "$bundle"
 cd "$work"
