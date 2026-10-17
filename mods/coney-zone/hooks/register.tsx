@@ -13,7 +13,8 @@
 //
 // Its Implementers section lists the implementer containers' sessions from `coney-tools impl log --json` (their live
 // logs, which hold only public material, so every zone that may read them shows them) and the last lines of one log,
-// with their times: the one started last, or the one `/coney-impl impl-N` picks.
+// with their times: the one started last, or the one `/coney-impl impl-N` picks. The section is always there: with no
+// log to show, it says whether none exists yet, the zone may not read them, or the read failed.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
@@ -266,7 +267,18 @@ export const register: Register = on => {
           <Text dimColor>Last woken: {w.wokenAt ? `${w.wokenAt.slice(11, 19)} UTC for ${w.wokenFor.length}` : 'not yet'}</Text>
           {w.failure && <Text color="red">Last read failed: {w.failure}</Text>}
         </Box>
-        {log && log.implementers.length > 0 && (
+        {!log || !log.readable || log.implementers.length === 0 ? (
+          <Box marginTop={1} flexDirection="column">
+            <Text bold>Implementers</Text>
+            <Text dimColor>
+              {!log
+                ? 'The live logs could not be read.'
+                : !log.readable
+                  ? 'This zone may not read the live logs.'
+                  : 'No implementer has a live log yet.'}
+            </Text>
+          </Box>
+        ) : (
           <Box marginTop={1} flexDirection="column">
             <Text bold>Implementers</Text>
             {log.implementers.map(i => (

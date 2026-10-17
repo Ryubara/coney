@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -60,7 +61,14 @@ class Files(unittest.TestCase):
         self.assertIn("Edit     engine/a.cpp", doc["lines"][0])
         self.assertIn("output   some plain output", doc["lines"][1])
         self.assertEqual(implog.read_log(self.root, "impl-2", tail=1)["lines"][0][9:13], "done")
-        self.assertEqual(implog.read_log(self.root / "none"), {"implementers": [], "shown": None, "lines": []})
+        none = {"implementers": [], "shown": None, "lines": []}
+        self.assertEqual(implog.read_log(self.root / "none"), {**none, "readable": True})
+
+    def test_a_live_folder_this_account_may_not_read(self):
+        implog.LiveLog(self.root, "impl-1", {"started": "2026-10-17T01:00:00Z"}).close()
+        with mock.patch.object(implog.os, "listdir", side_effect=PermissionError):
+            doc = implog.read_log(self.root)
+        self.assertEqual(doc, {"implementers": [], "shown": None, "lines": [], "readable": False})
 
     def test_transcripts(self):
         session = self.root / "projects" / "-work" / "abc.jsonl"

@@ -10,6 +10,7 @@ they come) and `<impl-N>.json` (task, branch, started, ended, exit code).
 """
 
 import json
+import os
 import time
 from pathlib import Path
 
@@ -164,11 +165,19 @@ def write_transcripts(archive):
 
 
 def read_log(public, name=None, tail=TAIL):
-    """{"implementers": [{name, state..., lines}], "shown": name}: every implementer with a live log, its state, and
-    the last `tail` lines of the named one (else the one most recently started)."""
+    """{"implementers": [{name, state..., lines}], "shown": name, "readable": bool}: every implementer with a live log,
+    its state, and the last `tail` lines of the named one (else the one most recently started). readable is False when
+    this account may not list the live folder, so a reader can tell that from no implementer having a log."""
     folder = Path(public, LIVE)
+    try:
+        names = sorted(os.listdir(folder))
+        readable = True
+    except FileNotFoundError:
+        names, readable = [], True
+    except OSError:
+        names, readable = [], False
     found = []
-    for p in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+    for p in (folder / n for n in names if n.endswith(".json")):
         try:
             state = json.loads(p.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError, UnicodeDecodeError):
@@ -181,4 +190,4 @@ def read_log(public, name=None, tail=TAIL):
             lines = (folder / f"{shown}.log").read_text(encoding="utf-8").splitlines()[-tail:]
         except (OSError, UnicodeDecodeError):
             lines = []
-    return {"implementers": found, "shown": shown, "lines": lines}
+    return {"implementers": found, "shown": shown, "lines": lines, "readable": readable}

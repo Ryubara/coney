@@ -978,7 +978,9 @@ def log(ws, name=None, tail=implog.TAIL, as_json=False):
         lines.append(
             f"{s['name']}: {state}, {s.get('task', '?')} on {s.get('branch', '?')}, started {s.get('started')}"
         )
-    if not doc["implementers"]:
+    if not doc["readable"]:
+        lines.append("this account may not read the implementers' live logs")
+    elif not doc["implementers"]:
         lines.append("no implementer has a live log yet")
     if doc["shown"]:
         lines += [f"== {doc['shown']}", *doc["lines"]]

@@ -724,8 +724,10 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   `run` refuse when it is missing. It also writes each session transcript as Markdown into
   `containers\archive\impl-N\transcripts\`.
 - `log` lists every implementer with a live log and prints the last lines of one (the named one, else the one started
-  last). Implementers see only public material, so any zone allowed to read `containers\live\` may show their logs;
-  the zone mod's pane does, and `/coney-impl impl-N` picks whose log it shows.
+  last). Implementers see only public material, so every zone may read `containers\live\` (the machine's
+  `zones.json`) and show their logs; the zone mod's pane always has an Implementers section, which says when no log
+  exists yet or the account may not read the folder (`readable` in `--json`), and `/coney-impl impl-N` picks whose
+  log it shows.
 - `status` shows each container's state, firewall, key fingerprint, caps and task. `check` tests running containers
   from inside: no route to any host but the API, none to the Windows host's analyst ports, no Docker socket, no
   capabilities, a seccomp filter, no new user namespaces, a read-only root filesystem.
