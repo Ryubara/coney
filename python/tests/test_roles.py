@@ -140,10 +140,42 @@ class Roles(unittest.TestCase):
             roles.table(ws)
 
     def test_every_known_provider_serves_a_role_of_the_real_table(self):
-        # the four page-gate inboxes exist for the roles the workspace names
+        # the page-gate inboxes and the code gate's exist for the roles the workspace names
         self.assertEqual(
-            set(roles.PROVIDERS), {"engine-coordinator", "research-coordinator", "page-reviewer-1", "page-reviewer-2"}
+            set(roles.PROVIDERS),
+            {"engine-coordinator", "research-coordinator", "page-reviewer-1", "page-reviewer-2", "pr-analyst"},
         )
+
+    def dispatched(self, **over):
+        (self.dir / "aide.md").write_text("# brief\n", encoding="utf-8")
+        self.table["helper"]["active"] = True
+        aide = {"zone": "analyst", "dispatched_by": "helper", "loop_minutes": None, "active": True, **over}
+        providers = {**self.providers, "helper": [("pages", lambda ws: doc("h-1"))],
+                     "aide": [("branches", lambda ws: doc("b-1"))]}  # fmt: skip
+        return self.ws(aide=aide), providers
+
+    def test_a_dispatched_role_fills_its_dispatchers_inbox(self):
+        ws, providers = self.dispatched()
+        self.assertEqual(roles.check(ws, providers), [])
+        self.assertEqual(roles.inbox(ws, "helper", providers)["action"], ["pages:h-1", "branches:b-1"])
+        self.assertEqual(roles.inbox(ws, "aide", providers)["action"], ["branches:b-1"])
+        self.assertEqual(roles.looping_role(ws, "analyst"), "helper")  # the dispatcher still wakes alone
+        ws.data["roles"]["aide"]["active"] = False
+        self.assertEqual(roles.inbox(ws, "helper", providers)["action"], ["pages:h-1"])
+
+    def test_a_dispatched_role_is_checked(self):
+        for over, want in (
+            ({"dispatched_by": "lead"}, "must name a role of its own zone"),
+            ({"dispatched_by": "nobody"}, "must name a role of its own zone"),
+            ({"loop_minutes": 5}, "never loops or wakes"),
+            ({"idle_wake_minutes": 30}, "never loops or wakes"),
+        ):
+            with self.subTest(over):
+                ws, providers = self.dispatched(**over)
+                self.assertIn(want, "\n".join(roles.check(ws, providers)))
+        ws, providers = self.dispatched()
+        ws.data["roles"]["helper"]["active"] = False
+        self.assertIn("aide: active, but its dispatcher 'helper' is not", roles.check(ws, providers))
 
     def test_inbox_lines(self):
         station = {"role": "x", "pages": [{"id": "p-1", "state": "new", "verdict": "abc"}], "counts": {"new": 1}}

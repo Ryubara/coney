@@ -902,10 +902,12 @@ def status(role, ws, repo=None):
 
 
 def status_lines(doc):
-    """One line per page, `<state> <id> [<verdict hash prefix>]`, then the counts."""
+    """One line per page, `<state> <id> [<verdict hash prefix>]`, then the counts. Other stations shaped like this
+    one name what they list in `noun`."""
     lines = [" ".join(x for x in (p["state"], p["id"], p["verdict"]) if x) for p in doc["pages"]]
     counts = ", ".join(f"{n} {s}" for s, n in doc["counts"].items() if n)
-    lines.append(f"{len(doc['pages'])} pages{': ' + counts if counts else ''}; {len(doc['action'])} need {doc['role']}")
+    head = f"{len(doc['pages'])} {doc.get('noun', 'pages')}{': ' + counts if counts else ''}"
+    lines.append(f"{head}; {len(doc['action'])} need {doc['role']}")
     return lines
 
 
