@@ -859,6 +859,37 @@ class Collect(Base):
         self.assertFalse((self.tmp / "escape.txt").exists())
         self.assertGreaterEqual(skipped, 3)
 
+    def test_collect_reports_each_needs_file_and_does_not_fail_on_a_malformed_one(self):
+        good = {"schema": "coney-needs/1", "questions": [{"id": "q-1", "page": None, "topic": "t", "question": "q?"}]}
+        files = {"impl-1": json.dumps(good).encode(), "impl-2": b'{"schema": "coney-needs/1"}'}
+
+        def copy_out(pool, src, dest):
+            dest = Path(dest)
+            dest.mkdir(parents=True, exist_ok=True)
+            if dest.parent.name == "artifacts":
+                (dest / "needs.json").write_bytes(files[dest.name])
+            return 1, 0
+
+        with (
+            mock.patch.object(impl, "collect_outbox", lambda pool, git, name: f"{name}: outbox empty"),
+            mock.patch.object(impl, "copy_out", copy_out),
+            mock.patch.object(impl.implog, "write_transcripts", lambda folder: 0),
+        ):
+            code, out, err = self.cli(FakeDistro(), "collect")
+        self.assertEqual(code, 0, err)
+        self.assertIn("page ids checked for form only", out)  # the made-up repo folder is no git repository
+        self.assertIn("impl-1: needs: 1 questions", out)
+        self.assertIn("impl-2: needs.json malformed: not an object with exactly questions, schema", out)
+        files["impl-2"] = b"[]"  # the bare list task files asked for before the schema
+        with (
+            mock.patch.object(impl, "collect_outbox", lambda pool, git, name: f"{name}: outbox empty"),
+            mock.patch.object(impl, "copy_out", copy_out),
+            mock.patch.object(impl.implog, "write_transcripts", lambda folder: 0),
+        ):
+            code, out, err = self.cli(FakeDistro(), "collect")
+        self.assertEqual(code, 0, err)
+        self.assertIn("impl-2: needs: 0 questions", out)
+
     def test_reset_refuses_uncollected_work(self):
         fake = FakeDistro(outbox={"impl-1": {"refs/heads/task/one": "a" * 40}})
         with mock.patch.object(impl.signing, "program", lambda name, given=None: "git"):

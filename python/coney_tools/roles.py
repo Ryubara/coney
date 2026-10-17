@@ -2,7 +2,7 @@
 
 Sessions in different zones never message each other: each role that runs continuously polls its own inbox on a
 timer and acts on what it lists. `inbox` gathers that role's items from every station it takes part in (today the
-page gate; the queue, the containers, the code gate and the tester add theirs as they are built). Output is ids,
+page gate, the code gate and the research requests; the tester adds its own once it is built). Output is ids,
 states and counts only, never page text.
 
 The roles, their zones, loop intervals and whether their tools exist yet live in the workspace's `roles` table; each
@@ -21,7 +21,7 @@ are part of the dispatcher's inbox, so one session per zone account wakes for al
 
 import json
 
-from coney_tools import codeverdict, research
+from coney_tools import codeverdict, needs, research
 from coney_tools.workspace import WorkspaceError
 
 CONTAINER = "container"  # roles started per task by the engine coordinator: no zone account, no loop
@@ -32,8 +32,12 @@ PROVIDERS = {
     "engine-coordinator": [
         ("pages", lambda ws: research.status(research.PUBLIC, ws, ws.where("repo"))),
         ("code-verdicts", lambda ws: codeverdict.public_status(ws, ws.where("repo"))),
+        ("requests", lambda ws: needs.public_status(ws, ws.where("repo"))),
     ],
-    "research-coordinator": [("pages", lambda ws: research.status(research.COORDINATOR, ws))],
+    "research-coordinator": [
+        ("pages", lambda ws: research.status(research.COORDINATOR, ws)),
+        ("requests", needs.analyst_status),
+    ],
     "page-reviewer-1": [("pages", lambda ws: research.status(research.REVIEWER_1, ws))],
     "page-reviewer-2": [("pages", lambda ws: research.status(research.REVIEWER_2, ws))],
     "pr-analyst": [("engine-branches", codeverdict.analyst_status)],
