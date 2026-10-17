@@ -386,5 +386,84 @@ class Repo(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
 
 
+class FakeWs:
+    def __init__(self, root):
+        self.paths = {"from_analyst": root / "from-analyst", "containers": root / "containers"}
+
+    def where(self, key):
+        return self.paths[key]
+
+
+def git(repo, *args):
+    who = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x"}
+    env = signing.git_env(**who)
+    r = subprocess.run([GIT, "-C", str(repo), *args], env=env, capture_output=True, check=True)
+    return r.stdout.decode().strip()
+
+
+@unittest.skipUnless(GIT, "needs git on PATH")
+class Inboxes(unittest.TestCase):
+    """The PR analyst's and the engine coordinator's stations, on made-up repositories and verdicts."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.ws = FakeWs(self.root)
+        self.handover = self.root / "from-analyst" / codeverdict.HANDOVER
+        self.repo = self.root / "repo"
+        self.repo.mkdir()
+        git(self.repo, "init", "-q", "-b", "main")
+        (self.repo / "a.txt").write_text("a\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "base")
+        self.head = git(self.repo, "rev-parse", "HEAD")
+
+    def hand_over(self, name, commit, signed=True):
+        self.handover.mkdir(parents=True, exist_ok=True)
+        data = research.canonical(verdict({"engine/a.cpp": "1" * 40}, [], commit=commit))
+        (self.handover / f"{name}.json").write_bytes(data)
+        if signed:
+            (self.handover / f"{name}.pr-analyst-1.sig").write_bytes(b"made-up signature\n")
+        return data
+
+    def test_analyst_station(self):
+        outbox = self.ws.where("containers") / "outbox" / "coney.git"
+        git(self.root, "clone", "-q", "--bare", str(self.repo), str(outbox))
+        for ref in ("impl-1/engine/store", "impl-2/engine/shelf", "impl-1/smoke"):
+            git(outbox, "branch", ref, "main")
+        doc = codeverdict.analyst_status(self.ws)
+        self.assertEqual([(p["id"], p["state"]) for p in doc["pages"]],
+                         [("impl-1/engine/store", "to-judge"), ("impl-2/engine/shelf", "to-judge")])  # fmt: skip
+        self.hand_over("store", self.head)
+        doc = codeverdict.analyst_status(self.ws)
+        self.assertEqual(doc["counts"], {"to-judge": 0, "judged": 2})  # both branches stand at the judged commit
+        self.assertEqual(doc["action"], [])
+
+    def test_no_outbox_is_an_empty_station(self):
+        self.assertEqual(codeverdict.analyst_status(self.ws)["pages"], [])
+
+    def test_public_station(self):
+        data = self.hand_over("store", "cd" * 20)
+        self.hand_over("unsigned", "cd" * 20, signed=False)
+        (self.handover / "stray.json").write_bytes(b"{}")
+        (self.handover / "stray.pr-analyst-1.sig").write_bytes(b"x")
+        doc = codeverdict.public_status(self.ws, self.repo)
+        self.assertEqual(doc["pages"], [{"id": "store", "state": "new", "verdict": "cd" * 6}])
+        self.assertEqual(doc["action"], ["store"])
+        target = self.repo / "research" / "code-verdicts"
+        target.mkdir(parents=True)
+        (target / "store.json").write_bytes(data)
+        git(self.repo, "switch", "-q", "-c", "engine/store")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "verdict")
+        self.assertEqual(codeverdict.public_status(self.ws, self.repo)["pages"][0]["state"], "copied")
+        git(self.repo, "switch", "-q", "main")
+        git(self.repo, "merge", "-q", "--ff-only", "engine/store")
+        doc = codeverdict.public_status(self.ws, self.repo)
+        self.assertEqual((doc["pages"][0]["state"], doc["action"]), ("merged", []))
+        self.assertIn("1 verdicts: 1 merged", research.status_lines(doc)[-1])
+
+
 if __name__ == "__main__":
     unittest.main()

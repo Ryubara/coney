@@ -13,11 +13,15 @@ the zone shortcut's first prompt names) lie outside its own zone or, for a fence
 A role whose own work goes on between inbox items (the research coordinator works down its research list) names
 `idle_wake_minutes`: its zone's mod wakes it again after that long idle with no subagent running, so the session
 never stops for good while nothing lands in its inbox. Roles that only answer their inbox leave it out.
+
+A role another role's session dispatches as a subagent (the research coordinator dispatches the PR analyst) names it
+in `dispatched_by`: it shares that role's zone, never loops and keeps no notes, and its stations, while it is active,
+are part of the dispatcher's inbox, so one session per zone account wakes for all of them.
 """
 
 import json
 
-from coney_tools import research
+from coney_tools import codeverdict, research
 from coney_tools.workspace import WorkspaceError
 
 CONTAINER = "container"  # roles started per task by the engine coordinator: no zone account, no loop
@@ -25,10 +29,14 @@ CONTAINER = "container"  # roles started per task by the engine coordinator: no 
 # role -> the stations that fill its inbox: (station name, function(ws) -> research.status-like document)
 PROVIDERS = {
     # the public role reads the repository the workspace names: the installed tools are not a checkout
-    "engine-coordinator": [("pages", lambda ws: research.status(research.PUBLIC, ws, ws.where("repo")))],
+    "engine-coordinator": [
+        ("pages", lambda ws: research.status(research.PUBLIC, ws, ws.where("repo"))),
+        ("code-verdicts", lambda ws: codeverdict.public_status(ws, ws.where("repo"))),
+    ],
     "research-coordinator": [("pages", lambda ws: research.status(research.COORDINATOR, ws))],
     "page-reviewer-1": [("pages", lambda ws: research.status(research.REVIEWER_1, ws))],
     "page-reviewer-2": [("pages", lambda ws: research.status(research.REVIEWER_2, ws))],
+    "pr-analyst": [("engine-branches", codeverdict.analyst_status)],
 }
 
 
@@ -89,7 +97,16 @@ def check(ws, providers=PROVIDERS):
             out.append(f"{role}: zone '{zone}' is not a zone of the workspace (or '{CONTAINER}')")
         if not isinstance(active, bool):
             out.append(f"{role}: 'active' must be true or false")
-        if zone == CONTAINER:
+        by = r.get("dispatched_by")
+        if by is not None:
+            lead = table(ws).get(by)
+            if not isinstance(lead, dict) or lead.get("dispatched_by") is not None or lead.get("zone") != zone:
+                out.append(f"{role}: dispatched_by must name a role of its own zone that is not dispatched itself")
+            elif active is True and not lead.get("active"):
+                out.append(f"{role}: active, but its dispatcher '{by}' is not")
+            if zone == CONTAINER or minutes is not None or r.get("notes") is not None or r.get("idle_wake_minutes"):
+                out.append(f"{role}: a dispatched role has a zone, never loops or wakes and keeps no notes")
+        elif zone == CONTAINER:
             if minutes is not None:
                 out.append(f"{role}: a container role never loops (loop_minutes must be null)")
         elif not isinstance(minutes, int) or minutes < 1:
@@ -111,14 +128,16 @@ def check(ws, providers=PROVIDERS):
 
 
 def inbox(ws, role, providers=PROVIDERS):
-    """The role's inbox: {"role", "active", "stations": {name: document}, "action": [ids]}."""
+    """The role's inbox: {"role", "active", "stations": {name: document}, "action": [ids]}, with the stations of the
+    active roles it dispatches."""
     roles = table(ws)
     if role not in roles:
         raise RoleError(f"--role must be one of {', '.join(roles)}")
     if not roles[role].get("active"):
         return {"role": role, "active": False, "stations": {}, "action": []}
     stations, action = {}, []
-    for name, fn in providers.get(role, []):
+    served = [role] + [r for r, v in roles.items() if v.get("dispatched_by") == role and v.get("active")]
+    for name, fn in [p for r in served for p in providers.get(r, [])]:
         doc = fn(ws)
         stations[name] = doc
         action += [f"{name}:{i}" for i in doc["action"]]

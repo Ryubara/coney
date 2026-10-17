@@ -339,3 +339,84 @@ def sign(verdict, key, principal, out, prefilter, ssh_keygen=None):
         research.write_new(target, data)
     research.write_new(out / f"{stem}.{principal}.sig", sig)
     return 0, [f"signed {stem} as {principal}: {len(doc['files'])} files, {len(doc['functions'])} functions"]
+
+
+# --- the inboxes (roles.PROVIDERS) ------------------------------------------------------------------------------
+
+HANDOVER = "code-verdicts"  # under the workspace's from_analyst: the PR analyst's signed verdicts, for the public side
+ENGINE_BRANCH = re.compile(r"^refs/heads/(impl-[0-9]+/engine/[A-Za-z0-9._/-]+)$")  # in the collecting outbox
+
+
+def handed_over(ws):
+    """{name: (bytes, doc)} of each well-formed verdict in the handover folder with a signature beside it. Whether the
+    signature verifies is code-verdict's to say; a missing folder is an empty handover."""
+    folder = ws.where("from_analyst") / HANDOVER
+    try:
+        names = sorted(p.name for p in folder.iterdir() if p.is_file())
+    except FileNotFoundError:
+        return {}
+    signed = {m.group(1) for m in map(SIG.match, names) if m}
+    out = {}
+    for base in names:
+        stem = base.removesuffix(".json")
+        if base != stem and NAME.match(stem) and stem in signed:
+            data = (folder / base).read_bytes()
+            doc, bad = parse(data)
+            if not bad:
+                out[stem] = (data, doc)
+    return out
+
+
+def station(role, noun, items, states, needs):
+    """An inbox station's document, shaped like research.status's: items are (id, state, short hash)."""
+    counts = {s: 0 for s in states}
+    for _, state, _ in items:
+        counts[state] += 1
+    return {
+        "role": role,
+        "noun": noun,
+        "pages": [{"id": i, "state": s, "verdict": v} for i, s, v in items],
+        "counts": counts,
+        "action": [i for i, s, _ in items if s in needs],
+    }
+
+
+def analyst_status(ws):
+    """The PR analyst's station: each engine branch in the collecting outbox (<impl-N>/engine/<name>), to-judge until
+    a handed-over verdict names its head commit, then judged."""
+    from coney_tools import impl
+
+    outbox, items = ws.where("containers").joinpath(*impl.COLLECTING), []
+    if outbox.is_dir():
+        r = signing.git(signing.program("git"), outbox, "for-each-ref", "--format=%(objectname) %(refname)")
+        judged = {doc["commit"] for _, doc in handed_over(ws).values()}
+        for line in r.stdout.decode().splitlines():
+            commit, _, ref = line.partition(" ")
+            m = ENGINE_BRANCH.match(ref)
+            if m:
+                items.append((m.group(1), "judged" if commit in judged else "to-judge", commit[:12]))
+    return station("pr-analyst", "branches", sorted(items), ("to-judge", "judged"), ("to-judge",))
+
+
+def public_status(ws, repo):
+    """The engine coordinator's station: each handed-over verdict, new until a local branch holds its exact bytes at
+    research/code-verdicts/<name>.json (copied), then merged once main does."""
+    exe, verdicts = signing.program("git"), handed_over(ws)
+    r = signing.git(exe, repo, "for-each-ref", "--format=%(refname)", "refs/heads/")
+    refs = r.stdout.decode().split()
+    found = research.read_objects(exe, repo, [f"{ref}:{FOLDER}/{n}.json" for n in verdicts for ref in refs])
+
+    def holds(ref, name):
+        blob = found.get(f"{ref}:{FOLDER}/{name}.json")
+        return blob is not None and blob[1] == verdicts[name][0]
+
+    items = []
+    for name, (_, doc) in sorted(verdicts.items()):
+        if holds(f"refs/heads/{research.MAIN}", name):
+            state = "merged"
+        elif any(holds(ref, name) for ref in refs):
+            state = "copied"
+        else:
+            state = "new"
+        items.append((name, state, doc["commit"][:12]))
+    return station("engine-coordinator", "verdicts", items, ("new", "copied", "merged"), ("new",))
