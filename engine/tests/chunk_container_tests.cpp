@@ -1,76 +1,15 @@
+#include "chunk_builders.hpp"
 #include "formats/chunk_container.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <cstring>
+#include <algorithm>
+#include <span>
 #include <string>
+#include <vector>
 
 using namespace coney::formats;
-
-namespace {
-
-using Buffer = std::vector<std::byte>;
-
-void put_u32(Buffer& out, std::uint32_t value) {
-    for (int i = 0; i < 4; ++i) {
-        out.push_back(static_cast<std::byte>((value >> (8 * i)) & 0xFF));
-    }
-}
-
-struct ChunkSpec {
-    std::uint32_t type;
-    std::uint32_t hash;
-    std::size_t size;
-    std::uint8_t fill = 0xAB;
-};
-
-Buffer make_resource(std::uint32_t hash, const std::vector<ChunkSpec>& chunks) {
-    std::uint32_t sum = 0;
-    for (const auto& c : chunks) {
-        sum += static_cast<std::uint32_t>(c.size);
-    }
-    Buffer out;
-    put_u32(out, static_cast<std::uint32_t>(chunks.size()));
-    put_u32(out, sum);
-    put_u32(out, 0);
-    put_u32(out, hash);
-    for (const auto& c : chunks) {
-        put_u32(out, c.type);
-        put_u32(out, static_cast<std::uint32_t>(c.size));
-        put_u32(out, 0);
-        put_u32(out, c.hash);
-        out.insert(out.end(), c.size, static_cast<std::byte>(c.fill));
-    }
-    return out;
-}
-
-Buffer make_pack(const std::vector<Buffer>& resources) {
-    Buffer body;
-    for (const auto& r : resources) {
-        body.insert(body.end(), r.begin(), r.end());
-    }
-    Buffer out;
-    put_u32(out, static_cast<std::uint32_t>(resources.size()));
-    put_u32(out, static_cast<std::uint32_t>(body.size()));
-    put_u32(out, 0);
-    put_u32(out, kPackHash);
-    out.insert(out.end(), body.begin(), body.end());
-    return out;
-}
-
-void poke_u32(Buffer& b, std::size_t offset, std::uint32_t value) {
-    Buffer tmp;
-    put_u32(tmp, value);
-    std::memcpy(b.data() + offset, tmp.data(), 4);
-}
-
-Buffer sample_flat() {
-    return make_resource(0x11223344, {{chunk_type::kAnimationData, 0x11223344, 32},
-                                      {chunk_type::kClipDescriptor, 0x55, 80, 0x02},
-                                      {chunk_type::kTextureDictionary, 0x66, 0, 0}});
-}
-
-} // namespace
+using namespace coney::test;
 
 TEST_CASE("a flat container with several chunk types parses") {
     const Buffer data = sample_flat();
@@ -240,5 +179,89 @@ TEST_CASE("errors give the offset of the fault") {
     }
     SECTION("the description names the offset") {
         CHECK(describe(ParseError{ErrorKind::TrailingBytes, 0x40}) == "bytes left over at offset 0x40");
+    }
+}
+
+TEST_CASE("edge sizes parse") {
+    SECTION("the highest type id, empty payloads and a payload that ends at the last byte") {
+        const Buffer data = make_resource(1, {{chunk_type::kHighest, 1, 0}, {chunk_type::kAnimationData, 2, 0},
+                                              {chunk_type::kModel, 3, 4096}});
+        const auto resource = parse_flat(data);
+        REQUIRE(resource.has_value());
+        CHECK(resource->chunks[0].type == chunk_type::kHighest);
+        CHECK(resource->chunks[0].payload.empty());
+        CHECK(resource->chunks[2].payload.data() + 4096 == data.data() + data.size());
+    }
+    SECTION("1,190 chunks, the most in one resource on the disc") {
+        std::vector<ChunkSpec> chunks;
+        for (std::uint32_t i = 0; i < 1190; ++i) {
+            chunks.push_back({i % 2 == 0 ? chunk_type::kAnimationData : chunk_type::kClipDescriptor, i, 16 * (i % 3)});
+        }
+        const auto resource = parse_flat(make_resource(5, chunks));
+        REQUIRE(resource.has_value());
+        REQUIRE(resource->chunks.size() == 1190);
+        CHECK(resource->chunks[1189].hash == 1189);
+        CHECK(resource->chunks[1189].payload.size() == 16);
+    }
+    SECTION("351 resources, the most in one pack on the disc") {
+        std::vector<Buffer> resources;
+        for (std::uint32_t i = 0; i < 351; ++i) {
+            resources.push_back(make_resource(i, {{chunk_type::kTextureDictionary, i, 16}}));
+        }
+        const auto pack = parse_pack(make_pack(resources));
+        REQUIRE(pack.has_value());
+        REQUIRE(pack->resources.size() == 351);
+        CHECK(pack->resources[350].hash == 350);
+    }
+    SECTION("input that does not start on an aligned address") {
+        const Buffer flat = sample_flat();
+        Buffer shifted(1);
+        shifted.insert(shifted.end(), flat.begin(), flat.end());
+        const auto resource = parse_flat(std::span(shifted).subspan(1));
+        REQUIRE(resource.has_value());
+        CHECK(resource->hash == 0x11223344);
+    }
+}
+
+TEST_CASE("a pack's resources and chunks view the right bytes") {
+    const Buffer first = make_resource(0xA, {{chunk_type::kAnimationData, 0xA0, 32, 0x10},
+                                             {chunk_type::kClipDescriptor, 0xA1, 80, 0x11}});
+    const Buffer second = make_resource(0xB, {{chunk_type::kBoneOffsets, 0xB0, 16, 0x20},
+                                              {chunk_type::kModel, 0xB1, 48, 0x21},
+                                              {chunk_type::kParticlePage, 0xB2, 0, 0}});
+    const Buffer data = make_pack({first, second, first});
+    const auto pack = parse_pack(data);
+    REQUIRE(pack.has_value());
+    REQUIRE(pack->resources.size() == 3);
+
+    // The same resource may appear twice in a pack; the reader keeps both.
+    CHECK(pack->resources[0].hash == 0xA);
+    CHECK(pack->resources[2].hash == 0xA);
+
+    const std::byte* second_start = data.data() + 16 + first.size();
+    const Resource& middle = pack->resources[1];
+    CHECK(middle.hash == 0xB);
+    REQUIRE(middle.chunks.size() == 3);
+    CHECK(middle.chunks[0].payload.data() == second_start + 32);
+    CHECK(middle.chunks[1].payload.data() == second_start + 32 + 16 + 16);
+    CHECK(middle.chunks[1].hash == 0xB1);
+    CHECK(middle.chunks[1].payload.front() == std::byte{0x21});
+    CHECK(middle.chunks[1].payload.back() == std::byte{0x21});
+    CHECK(middle.chunks[2].payload.data() == second_start + second.size());
+    CHECK(pack->resources[2].chunks[1].payload.data() + 80 == data.data() + data.size());
+}
+
+TEST_CASE("every error kind has its own description") {
+    const std::vector<ErrorKind> kinds{
+        ErrorKind::TruncatedHeader, ErrorKind::PayloadPastEnd,   ErrorKind::BadPackHash,
+        ErrorKind::TrailingBytes,   ErrorKind::MisalignedSize,   ErrorKind::NonZeroReserved,
+        ErrorKind::UnknownChunkType, ErrorKind::ChunkSumMismatch, ErrorKind::PackSizeMismatch,
+        ErrorKind::CountExceedsBytes, ErrorKind::CountTooLow};
+    std::vector<std::string> seen;
+    for (const ErrorKind kind : kinds) {
+        const std::string text = describe(kind);
+        CHECK(text != "unknown error");
+        CHECK(std::ranges::find(seen, text) == seen.end());
+        seen.push_back(text);
     }
 }

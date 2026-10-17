@@ -18,6 +18,7 @@ set(CONEY_ENGINE_SOURCES
     src/formats/chunk_container.cpp
 )
 set(CONEY_TEST_SOURCES
+    tests/chunk_container_fuzz_tests.cpp
     tests/chunk_container_tests.cpp
 )
 
