@@ -1,0 +1,135 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "level-loading",
+  "page_sha256": "44ade991a782015f03e6c1ddfa87d3ac2f7be1b95c6b237fc2c14faad091ef0f",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "level-loading",
+      "kind": "reference",
+      "sha256": "908aec38d8223d617eefa088b13b6d8ecae94855022dfcc23c45079af30cbe6f",
+      "verdict": "keep"
+    },
+    {
+      "id": "sources",
+      "kind": "reference",
+      "sha256": "65c2012e02572f82e87de91662d6bf03447668e15c1df9cbf8eb65015730f5cd",
+      "verdict": "keep"
+    },
+    {
+      "id": "files-a-level-uses",
+      "kind": "fact",
+      "sha256": "54513a7a04a775d02c3008bcfa181abfa1e0aa84feacb1366ae52ff358532361",
+      "verdict": "keep"
+    },
+    {
+      "id": "files-per-level",
+      "kind": "fact",
+      "sha256": "7221b1b03e4a7c57d10eb07024c1b2fc45134525aaedfc06f148dd72adb58401",
+      "verdict": "keep"
+    },
+    {
+      "id": "worlds",
+      "kind": "fact",
+      "sha256": "450cb007875737e9644815822d581fd192119608463ab27ea9f5b8dd5054715c",
+      "verdict": "keep"
+    },
+    {
+      "id": "records-with-worlds-but-no-level-file",
+      "kind": "fact",
+      "sha256": "696ae3c27c160a65dbd59c14c9da1be642eedd6d579f6dbd98b801d4b1dd2013",
+      "verdict": "keep"
+    },
+    {
+      "id": "checkpoints-and-sections",
+      "kind": "behaviour",
+      "sha256": "586bd406ed9a8ab5cde8dcc4fbad1cd9aadc22fabf8c17ab9fd2d3182a794e9e",
+      "verdict": "keep"
+    },
+    {
+      "id": "entering-a-level",
+      "kind": "behaviour",
+      "sha256": "163611a762704246849feb7bd3d8e03e3c26a8e86cadb2bfa8640e9089df0a25",
+      "verdict": "keep"
+    },
+    {
+      "id": "sound-at-level-start",
+      "kind": "fact",
+      "sha256": "17b9d31ac55004692791de86dd2884c444a0dbd44b8cade0afabe72c06a07f78",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-load-screen",
+      "kind": "behaviour",
+      "sha256": "9e4eb44bd62ff5e0582f466a72d53f575255415b96aa35447c92df88cbcbf6ca",
+      "verdict": "keep"
+    },
+    {
+      "id": "load-screen-timings",
+      "kind": "behaviour",
+      "sha256": "d99b3676ae30ee0ae7f856a6f16fdf88fc86e7253e205c5309d42470205eae3f",
+      "verdict": "keep"
+    },
+    {
+      "id": "load-screen-images",
+      "kind": "behaviour",
+      "sha256": "5130815dabb1175d51279d2a17088e6b47a6a792e6ade6fa4066c0137136bfce",
+      "verdict": "keep"
+    },
+    {
+      "id": "load-screen-sound",
+      "kind": "behaviour",
+      "sha256": "490398f5966eba440e233dec9dcc631d3e41599ccbd70d774055537e56b21eaf",
+      "verdict": "keep"
+    },
+    {
+      "id": "memory-card-load-screen",
+      "kind": "behaviour",
+      "sha256": "920ebe3566f1ee23f3f6e17f766e66fb4b56407ce8c0949166763c3099264124",
+      "verdict": "keep"
+    },
+    {
+      "id": "waits-during-play",
+      "kind": "behaviour",
+      "sha256": "6956553bfe22228d75664cd3670ead2e9bffd9c27c86bd0261aa7ed0141f5ccc",
+      "verdict": "keep"
+    },
+    {
+      "id": "movies-around-a-level",
+      "kind": "behaviour",
+      "sha256": "bea079d29be2d2df08c3642aa766d8dc5e2fcb1211e397b5fb607914340e06d1",
+      "verdict": "keep"
+    },
+    {
+      "id": "leaving-a-level",
+      "kind": "behaviour",
+      "sha256": "f5fb9dc9a694a63f33def7e9e7b614495778c7fd0a0da12aad53a6adc086f141",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "reference",
+      "sha256": "ae21db3d5546abb5d76c0e5a6b6234102c8ed76f6959a85329894d8277211aac",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "59c6312718597282215cc2647c9a1526352e61b08015bf9608124ccfbe377ebe",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "8aa28067d37426503484becf1e3ff75ebb9f797a8275bb3bc53a695fe7b09304",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "f9edb5466f4da441b3ede49cee5f1bba50ff4496e2628d248a09dd66b0d627ea",
+      "verdict": "keep"
+    }
+  ]
+}
