@@ -729,36 +729,50 @@ def main(argv=None):
     pf.add_argument("range", help="the change to judge, as A..B (main..HEAD)")
     pf.add_argument("--facts", required=True, help=f"the facts file ({prefilter.FACTS_SCHEMA})")
     pf.add_argument("--out", help=f"write the result ({prefilter.RESULT_SCHEMA}) to this new file")
-    pf.add_argument("--repo", help="the repository (default: the checkout coney-tools runs from)")
-    pf.add_argument("--json", action="store_true", help="the result with each function's rules")
-    pf.set_defaults(
-        run=gate(
-            "cleanroom prefilter",
-            lambda a: prefilter.prefilter(a.range, a.facts, a.out, a.repo, a.json),
-        )
+    ws_default = f"workspace file (default: ${workspace.ENV}, else %%ProgramData%%\\Coney\\)"
+    pf_repo = pf.add_mutually_exclusive_group()
+    pf_repo.add_argument("--repo", help="the repository (default: the checkout coney-tools runs from)")
+    pf_repo.add_argument(
+        "--outbox", action="store_true", help="the repository is the workspace's collecting outbox (names no path)"
     )
+    pf.add_argument("--workspace", help=f"with --outbox: {ws_default}")
+    pf.add_argument("--json", action="store_true", help="the result with each function's rules")
+
+    def prefilter_action(a):
+        repo = codeverdict.outbox(workspace.load(a.workspace)) if a.outbox else a.repo
+        return prefilter.prefilter(a.range, a.facts, a.out, repo, a.json)
+
+    pf.set_defaults(run=gate("cleanroom prefilter", prefilter_action))
 
     cvs = cl.add_parser(
         "code-verdict-sign",
         help="a PR analyst signs a passing code verdict (the analysis side)",
         description=f"Checks the verdict file ({codeverdict.SCHEMA}) and writes it in canonical form with the "
-        "principal's signature into --out (add-only). A malformed verdict, or one with any function not "
-        "independent or a flagged pre-filter, is refused: only a passing verdict is signed. So is one the "
+        "principal's signature into --out, or with --handover into the workspace's hand-over folder (add-only). A "
+        "malformed verdict, or one with any function not independent or a flagged pre-filter, is refused: only a "
+        "passing verdict is signed. So is one the "
         f"pre-filter's result ({codeverdict.PREFILTER_SCHEMA}, from cleanroom prefilter --out) does not match: "
         "the same commit, outcome and functions. Exit 0 signed, 1 refused, 2 could not run.",
     )
     cvs.add_argument("verdict", help="the verdict, <name>.json")
     cvs.add_argument("--key", required=True, help="the PR analyst's private verdict key")
     cvs.add_argument("--principal", required=True, help=f"the key's principal ({signing.PR_ANALYST}<n>)")
-    cvs.add_argument("--out", required=True, help="the folder the verdict and its signature go into")
+    cvs_out = cvs.add_mutually_exclusive_group(required=True)
+    cvs_out.add_argument("--out", help="the folder the verdict and its signature go into")
+    cvs_out.add_argument(
+        "--handover",
+        action="store_true",
+        help=f"the folder is the workspace's hand-over, <from_analyst>\\{codeverdict.HANDOVER} (names no path)",
+    )
+    cvs.add_argument("--workspace", help=f"with --handover: {ws_default}")
     cvs.add_argument("--prefilter", required=True, help="the pre-filter's result for the verdict's commit")
     cvs.add_argument("--ssh-keygen", help="ssh-keygen to use (default: the first on PATH)")
-    cvs.set_defaults(
-        run=gate(
-            "cleanroom code-verdict-sign",
-            lambda a: codeverdict.sign(a.verdict, a.key, a.principal, a.out, a.prefilter, a.ssh_keygen),
-        )
-    )
+
+    def sign_action(a):
+        out = codeverdict.handover(workspace.load(a.workspace)) if a.handover else a.out
+        return codeverdict.sign(a.verdict, a.key, a.principal, out, a.prefilter, a.ssh_keygen)
+
+    cvs.set_defaults(run=gate("cleanroom code-verdict-sign", sign_action))
 
     rg = top.add_parser("research", help="the page gate: verdicts, publish, import (clean-room page, section 6)")
     rc = rg.add_subparsers(dest="command", required=True)

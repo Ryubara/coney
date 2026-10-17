@@ -629,8 +629,8 @@ signed by an implementer and names its model, 1 one does not, 2 could not run.
 
 ```sh
 python -I python/coney-tools.py cleanroom code-verdict main..HEAD [--repo R] [--ref main] [--ssh-keygen PATH] [--json]
-python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> --out DIR \
-    --prefilter RESULT
+python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> \
+    (--out DIR | --handover [--workspace W]) --prefilter RESULT
 ```
 
 A PR analyst's verdict is `research/code-verdicts/<name>.json` (schema `coney-code-verdict/1`: `commit`, `files` as
@@ -653,11 +653,14 @@ passing verdict is ever signed. `--prefilter` (required) is the result `cleanroo
 change; the verdict is refused with exit 1 unless that result is a well-formed `coney-prefilter/1` result for the
 verdict's `commit`, with the verdict's `prefilter` as its outcome and exactly the verdict's functions (path and
 address). Since only a passing verdict is signed, that is a passing result covering exactly the verdict's functions.
+`--handover` writes into the workspace's hand-over folder instead, `<from_analyst>\code-verdicts`, the folder the
+`code-verdicts` station reads (`--workspace`, else `$CONEY_WORKSPACE`, else `%ProgramData%\Coney\`), so a fenced
+session names no path outside its zone; the folder must exist already.
 
 ### `cleanroom prefilter`
 
 ```sh
-python -I python/coney-tools.py cleanroom prefilter A..B --facts FACTS --out RESULT [--repo R] [--json]
+python -I python/coney-tools.py cleanroom prefilter A..B --facts FACTS --out RESULT [--repo R | --outbox [--workspace W]] [--json]
 ```
 
 The code gate's scripted pre-filter, which the PR analyst runs on the analysis side before judging a change. Like
@@ -665,6 +668,8 @@ The code gate's scripted pre-filter, which the PR analyst runs on the analysis s
 engine source files the range changes (from the merge base of A and B), as they are at B, finding each function's
 body the way `orig-check` attaches a tag to its function. Its settings are `[tool.coney-tools.code-gate]` in
 `python/pyproject.toml` at B, not at `main`: the analyst runs it in the collecting outbox, whose `main` may be behind.
+`--outbox` takes that repository from the workspace (`outbox\coney.git` under its `containers` folder, the one `impl`
+fetches into), so a fenced session names no path outside its zone.
 
 The facts file is the analyst's own, from their own tools, and never leaves the analysis zone. It is checked
 strictly:

@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -337,6 +338,27 @@ class Repo(unittest.TestCase):
         files = {f"{codeverdict.FOLDER}/{p.name}": p.read_bytes() for p in out.iterdir()}
         self.commit(files)
         self.assertEqual(self.check()[0], 0)
+
+    def test_sign_into_the_workspace_handover(self):
+        doc = self.covered()
+        src, root = self.tmp / "in" / "v7.json", self.tmp / f"ws-{self._testMethodName}"
+        src.parent.mkdir(exist_ok=True)
+        src.write_text(json.dumps(doc), encoding="utf-8")
+        ws = FakeWs(root)
+        args = ("cleanroom", "code-verdict-sign", src, "--key", self.key["pa"], "--principal", "pr-analyst-1")
+        args += ("--prefilter", self.result(doc), "--handover", "--workspace", "made-up.json")
+        with mock.patch("coney_tools.workspace.load", return_value=ws) as load:
+            self.assertEqual(run_cli(*args)[0], 2)  # the hand-over folder must exist already
+            codeverdict.handover(ws).mkdir(parents=True)
+            code, text, err = run_cli(*args)
+            self.assertEqual(code, 0, text + err)
+            self.assertEqual(run_cli(*args)[0], 2)  # add-only
+        load.assert_called_with("made-up.json")
+        self.assertEqual(list(codeverdict.handed_over(ws)), ["v7"])
+        self.assertEqual(codeverdict.handed_over(ws)["v7"][0], research.canonical(doc))
+        for extra in (("--out", root), ()):
+            with self.subTest(extra), self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+                main([str(a) for a in (*args[:-3], *(("--handover",) if extra else ()), *extra)])
 
     def test_sign_refuses_a_verdict_that_does_not_pass(self):
         src, out = self.tmp / "in" / "bad.json", self.tmp / f"out-{self._testMethodName}"
