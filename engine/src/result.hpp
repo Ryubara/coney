@@ -6,13 +6,14 @@
 namespace coney {
 
 // A value or an error. std::expected is not usable with every supported toolchain (Clang 18 on libstdc++ 13 does
-// not provide it), so the engine carries this small stand-in.
+// not provide it), so the engine carries this small stand-in. Dropping a Result unread is a warning, so an error
+// cannot be ignored by accident.
 template <typename E> struct Failure {
     E error;
 };
 template <typename E> Failure(E) -> Failure<E>;
 
-template <typename T, typename E> class Result {
+template <typename T, typename E> class [[nodiscard]] Result {
   public:
     Result(T value) : state_(std::in_place_index<0>, std::move(value)) {}
     template <typename F> Result(Failure<F> failure) : state_(std::in_place_index<1>, std::move(failure.error)) {}
