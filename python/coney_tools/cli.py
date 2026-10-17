@@ -278,15 +278,17 @@ def zones_ports_cmd(a):
         if not a.remove:
             ws = workspace.load(a.workspace)
         if a.apply:
-            allowed = {s: zones.sid_of(s) for s in sorted(ws.analyst_side_accounts())}
-            specs = wfp.expected([p["port"] for p in ws.ports], allowed.values())
+            allowed = zones.wall_allowed(ws, zones.sid_of)
+            specs = zones.wall_specs(allowed)
             programs = zones.program_specs(ws, zones.sid_of, wfp.app_id)
             specs += [s for *_, ps in programs for s in ps]
         with wfp.Engine() as eng:
             if a.apply:
                 removed, added = wfp.apply(eng, specs)
                 print(f"removed {len(removed)} old filters; added {len(added)} filters (persistent)")
-                print(f"allowed through: {', '.join(f'{n} ({s})' for n, s in allowed.items()) or 'no account'}")
+                for port, accts in sorted(allowed.items()):
+                    through = ", ".join(f"{n} ({s})" for n, s in sorted(accts.items())) or "no account"
+                    print(f"allowed through port {port}: {through}")
                 walled = ", ".join(f"{a} ({path})" for a, _, path, _ in programs)
                 print(f"programs taking no loopback connection: {walled or 'none found'}")
                 for s in added:

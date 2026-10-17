@@ -152,6 +152,11 @@ class Workspace(Base):
             ({"version": 2}, "version"),
             ({"check": {"cache_minutes": 0, "schedule_minutes": 5}}, "cache_minutes"),
             ({"analyst_ports": [{"port": 70000}]}, "analyst_ports"),
+            ({"analyst_ports": [{"port": 5000, "accounts": []}]}, r"analyst_ports\[0\]\.accounts must be a non-empty"),
+            ({"analyst_ports": [{"port": 5000, "accounts": ANA}]}, r"accounts must be a non-empty list"),
+            ({"analyst_ports": [{"port": 5000, "accounts": [ANA, ""]}]}, r"accounts must be a non-empty list"),
+            ({"analyst_ports": [{"port": 5000, "accounts": [ANA, PUB]}]}, f"{PUB} is not an analyst-side account"),
+            ({"analyst_ports": [{"port": 5000, "accounts": ["zt-nobody"]}]}, "not an analyst-side account"),
             ({"listener_exceptions": {}}, "listener_exceptions"),
             ({"listener_exceptions": [{"port": 5000}]}, r"listener_exceptions\[0\]"),
             ({"zones": {"x": {"account": "a", "folder": "elsewhere:"}}}, "unknown role"),
@@ -287,6 +292,29 @@ class Ports(Base):
             (c,) = zones.port_checks(ws, who)
             self.assertTrue(c.ok)
             self.assertIn("not checked", c.got)
+
+    def test_port_accounts_check_the_other_analyst_side_accounts(self):
+        port = {"name": "made-up port", "port": self.port, "accounts": [ANA.upper()]}
+        ws = self.load(analyst_ports=[port])
+        (c,) = zones.port_checks(ws, ANA)
+        self.assertTrue(c.ok)
+        self.assertEqual(c.got, "not checked: one of the port's accounts")
+        for who in (REV, PUB):
+            (c,) = zones.port_checks(ws, who)
+            self.assertFalse(c.ok)
+            self.assertTrue(c.widens)
+            self.assertIn("connected", c.got)
+        outcomes = {"127.0.0.1": "own listener: blocked", "::1": "own listener: blocked"}
+        state = lambda p: zones.port_state(p, probe=lambda h, q: outcomes[h])
+        (c,) = zones.port_checks(ws, REV, state)
+        self.assertTrue(c.ok, c)
+
+    def test_wall_allowed(self):
+        ports = [{"port": 4001}, {"port": 4002, "accounts": [ANA]}, {"port": 4003, "accounts": [REV]}]
+        ws = self.load(analyst_ports=[*ports, {"port": 4003, "accounts": [ANA]}])
+        got = zones.wall_allowed(ws, SIDS.__getitem__)
+        both = {ANA: SIDS[ANA], REV: SIDS[REV]}
+        self.assertEqual(got, {4001: both, 4002: {ANA: SIDS[ANA]}, 4003: both})
 
     def test_port_in_use_that_accepts_is_a_breach(self):
         srv = socket.socket()

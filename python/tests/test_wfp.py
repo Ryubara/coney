@@ -42,6 +42,12 @@ class Specs(unittest.TestCase):
             self.assertTrue(all(s.persistent for s in mine))
             self.assertGreater(permits[0].weight, max(b.weight for b in blocks))
 
+    def test_expected_per_port(self):
+        specs = wfp.expected_per_port({PORTS[1]: [ANA.lower()], PORTS[0]: [ANA, REV]})
+        self.assertEqual(specs[:6], wfp.expected(PORTS[:1], [ANA, REV]))
+        self.assertEqual(specs[6:], wfp.expected(PORTS[1:], [ANA]))
+        self.assertEqual({s.action for s in wfp.expected_per_port({PORTS[0]: []})}, {"block"})
+
     def test_no_allowed_account_means_no_permit(self):
         self.assertEqual({s.action for s in wfp.expected(PORTS, [])}, {"block"})
 
@@ -350,6 +356,16 @@ class WallChecks(unittest.TestCase):
         bad, _ = self.run_checks([replace(s, users=None) if n == k else s for n, s in enumerate(self.want)])
         self.assertEqual([c.widens for c in bad], [True])
 
+    def test_port_accounts_narrow_the_permit(self):
+        self.ws.ports = [{"port": PORTS[0]}, {"port": PORTS[1], "accounts": ["ZT-Analyst"]}]
+        want = wfp.expected_per_port({PORTS[0]: [ANA, REV], PORTS[1]: [ANA]})
+        bad, checks = self.run_checks(want)
+        self.assertEqual(bad, [])
+        self.assertEqual(len(checks), 13)
+        # The filters written before the port named its accounts let the reviewer in too: that widens.
+        bad, _ = self.run_checks(list(self.want))
+        self.assertEqual([(c.path.endswith(f"port {PORTS[1]}"), c.widens) for c in bad], [(True, True)] * 2)
+
     def test_changed_block_is_a_breach(self):
         have = list(self.want)
         i = next(i for i, s in enumerate(have) if s.layer == "accept-v6")
@@ -504,6 +520,27 @@ class Cli(unittest.TestCase):
         code, out, _ = self.ports("--remove", engine=e)
         self.assertEqual(code, 0)
         self.assertIn("removed 12 filters", out)
+
+    def test_apply_honours_port_accounts(self):
+        e, ws = FakeEngine(), mock.Mock()
+        ws.analyst_side_accounts.return_value = {"zt-analyst", "zt-reviewer"}
+        ws.ports = [{"port": PORTS[0]}, {"port": PORTS[1], "accounts": ["zt-analyst"]}]
+        ws.claude_program.return_value = None
+        sids = {"zt-analyst": ANA, "zt-reviewer": REV}
+        out = io.StringIO()
+        with (
+            redirect_stdout(out),
+            redirect_stderr(io.StringIO()),
+            mock.patch.object(zones, "is_elevated", return_value=True),
+            mock.patch.object(zones, "sid_of", sids.__getitem__),
+            mock.patch("coney_tools.workspace.load", return_value=ws),
+            mock.patch.object(wfp, "Engine", return_value=e),
+        ):
+            self.assertEqual(main(["zones", "ports", "--apply"]), 0)
+        self.assertIn(f"allowed through port {PORTS[0]}: zt-analyst ({ANA}), zt-reviewer ({REV})", out.getvalue())
+        self.assertIn(f"allowed through port {PORTS[1]}: zt-analyst ({ANA})\n", out.getvalue())
+        permits = {s.port: s.users for s in e.filters_.values() if s.action == "permit"}
+        self.assertEqual(permits, {PORTS[0]: {ANA, REV}, PORTS[1]: {ANA}})
 
     def test_apply_walls_the_program(self):
         e = FakeEngine()
