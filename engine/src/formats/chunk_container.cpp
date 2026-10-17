@@ -1,5 +1,7 @@
 #include "formats/chunk_container.hpp"
 
+#include <format>
+
 namespace coney::formats {
 
 namespace {
@@ -20,12 +22,16 @@ struct ResourceHeader {
     std::uint32_t hash;
 };
 
+Failure<ParseError> fail(ErrorKind kind, std::size_t offset) {
+    return Failure(ParseError{kind, offset});
+}
+
 Result<ResourceHeader, ParseError> read_resource_header(Bytes bytes) {
     if (bytes.size() < kHeaderSize) {
-        return Failure(ParseError::TruncatedHeader);
+        return fail(ErrorKind::TruncatedHeader, 0);
     }
     if (load_u32(bytes, 0x08) != 0) {
-        return Failure(ParseError::NonZeroReserved);
+        return fail(ErrorKind::NonZeroReserved, 0);
     }
     return ResourceHeader{load_u32(bytes, 0x00), load_u32(bytes, 0x04), load_u32(bytes, 0x0C)};
 }
@@ -42,7 +48,7 @@ Result<ResourceRead, ParseError> read_resource(Bytes bytes) {
     Bytes rest = bytes.subspan(kHeaderSize);
     // Every chunk takes at least its header, so a larger count cannot be true.
     if (header->chunk_count > rest.size() / kHeaderSize) {
-        return Failure(ParseError::CountExceedsBytes);
+        return fail(ErrorKind::CountExceedsBytes, 0);
     }
 
     ResourceRead result;
@@ -54,21 +60,21 @@ Result<ResourceRead, ParseError> read_resource(Bytes bytes) {
     for (std::uint32_t index = 0; index < header->chunk_count; ++index) {
         Bytes at = bytes.subspan(position);
         if (at.size() < kHeaderSize) {
-            return Failure(ParseError::TruncatedHeader);
+            return fail(ErrorKind::TruncatedHeader, position);
         }
         const std::uint32_t type = load_u32(at, 0x00);
         const std::uint32_t size = load_u32(at, 0x04);
         if (type > chunk_type::kHighest) {
-            return Failure(ParseError::UnknownChunkType);
+            return fail(ErrorKind::UnknownChunkType, position);
         }
         if (load_u32(at, 0x08) != 0) {
-            return Failure(ParseError::NonZeroReserved);
+            return fail(ErrorKind::NonZeroReserved, position);
         }
         if (size % kPayloadAlignment != 0) {
-            return Failure(ParseError::MisalignedSize);
+            return fail(ErrorKind::MisalignedSize, position);
         }
         if (size > at.size() - kHeaderSize) {
-            return Failure(ParseError::PayloadPastEnd);
+            return fail(ErrorKind::PayloadPastEnd, position);
         }
         result.resource.chunks.push_back({type, load_u32(at, 0x0C), at.subspan(kHeaderSize, size)});
         payload_total += size;
@@ -76,7 +82,7 @@ Result<ResourceRead, ParseError> read_resource(Bytes bytes) {
     }
 
     if (payload_total != header->payload_sum) {
-        return Failure(ParseError::ChunkSumMismatch);
+        return fail(ErrorKind::ChunkSumMismatch, 0);
     }
     result.consumed = position;
     return result;
@@ -88,70 +94,74 @@ Result<Resource, ParseError> parse_flat(Bytes bytes) {
         return Failure(read.error());
     }
     if (read->consumed != bytes.size()) {
-        return Failure(ParseError::TrailingBytes);
+        return fail(ErrorKind::TrailingBytes, read->consumed);
     }
     return std::move(read->resource);
 }
 
 Result<Pack, ParseError> parse_pack(Bytes bytes) {
     if (bytes.size() < kHeaderSize) {
-        return Failure(ParseError::TruncatedHeader);
+        return fail(ErrorKind::TruncatedHeader, 0);
     }
-    if (load_u32(bytes, 0x0C) != kPackEndMarker) {
-        return Failure(ParseError::BadEndMarker);
+    if (load_u32(bytes, 0x0C) != kPackHash) {
+        return fail(ErrorKind::BadPackHash, 0);
     }
     if (load_u32(bytes, 0x08) != 0) {
-        return Failure(ParseError::NonZeroReserved);
+        return fail(ErrorKind::NonZeroReserved, 0);
     }
     const std::uint32_t count = load_u32(bytes, 0x00);
-    Bytes body = bytes.subspan(kHeaderSize);
-    if (load_u32(bytes, 0x04) != body.size()) {
-        return Failure(ParseError::PackSizeMismatch);
+    if (load_u32(bytes, 0x04) != bytes.size() - kHeaderSize) {
+        return fail(ErrorKind::PackSizeMismatch, 0);
     }
-    if (count > body.size() / kHeaderSize) {
-        return Failure(ParseError::CountExceedsBytes);
+    if (count > (bytes.size() - kHeaderSize) / kHeaderSize) {
+        return fail(ErrorKind::CountExceedsBytes, 0);
     }
 
     Pack pack;
     pack.resources.reserve(count);
+    std::size_t position = kHeaderSize;
     for (std::uint32_t index = 0; index < count; ++index) {
-        auto read = read_resource(body);
+        auto read = read_resource(bytes.subspan(position));
         if (!read) {
-            return Failure(read.error());
+            return fail(read.error().kind, position + read.error().offset);
         }
-        body = body.subspan(read->consumed);
+        position += read->consumed;
         pack.resources.push_back(std::move(read->resource));
     }
-    if (!body.empty()) {
-        return Failure(ParseError::TrailingBytes);
+    if (position != bytes.size()) {
+        return fail(ErrorKind::TrailingBytes, position);
     }
     return pack;
 }
 
-const char* describe(ParseError error) noexcept {
-    switch (error) {
-    case ParseError::TruncatedHeader:
+const char* describe(ErrorKind kind) noexcept {
+    switch (kind) {
+    case ErrorKind::TruncatedHeader:
         return "truncated header";
-    case ParseError::PayloadPastEnd:
+    case ErrorKind::PayloadPastEnd:
         return "chunk payload runs past the end";
-    case ParseError::BadEndMarker:
-        return "wrong pack end marker";
-    case ParseError::TrailingBytes:
+    case ErrorKind::BadPackHash:
+        return "pack header does not end with the hash of \"package\"";
+    case ErrorKind::TrailingBytes:
         return "bytes left over";
-    case ParseError::MisalignedSize:
+    case ErrorKind::MisalignedSize:
         return "payload size is not a multiple of 16";
-    case ParseError::NonZeroReserved:
+    case ErrorKind::NonZeroReserved:
         return "reserved word is not zero";
-    case ParseError::UnknownChunkType:
+    case ErrorKind::UnknownChunkType:
         return "unknown chunk type";
-    case ParseError::ChunkSumMismatch:
+    case ErrorKind::ChunkSumMismatch:
         return "payload sum does not match the chunks";
-    case ParseError::PackSizeMismatch:
+    case ErrorKind::PackSizeMismatch:
         return "pack size does not match the bytes after the header";
-    case ParseError::CountExceedsBytes:
+    case ErrorKind::CountExceedsBytes:
         return "count does not fit in the bytes present";
     }
     return "unknown error";
+}
+
+std::string describe(const ParseError& error) {
+    return std::format("{} at offset {:#x}", describe(error.kind), error.offset);
 }
 
 } // namespace coney::formats

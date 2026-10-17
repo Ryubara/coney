@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 
 #include "result.hpp"
@@ -47,12 +48,13 @@ inline constexpr std::uint32_t kHighest = 0x53;
 
 inline constexpr std::size_t kHeaderSize = 16;
 inline constexpr std::size_t kPayloadAlignment = 16;
-inline constexpr std::uint32_t kPackEndMarker = 0xDE686795;
+// The last word of every pack header: the CRC-32 of the text `package`.
+inline constexpr std::uint32_t kPackHash = 0xDE686795;
 
-enum class ParseError {
+enum class ErrorKind {
     TruncatedHeader,    // fewer bytes than a header needs
     PayloadPastEnd,     // a chunk payload runs beyond the available bytes
-    BadEndMarker,       // the pack header's last word is not kPackEndMarker
+    BadPackHash,        // the pack header's last word is not kPackHash
     TrailingBytes,      // bytes remain after the last chunk or resource
     MisalignedSize,     // a payload size is not a multiple of 16
     NonZeroReserved,    // a header's always-zero word is not zero
@@ -60,6 +62,15 @@ enum class ParseError {
     ChunkSumMismatch,   // the resource header's payload sum differs from the chunks' sizes
     PackSizeMismatch,   // the pack header's size differs from the bytes after it
     CountExceedsBytes,  // a declared count cannot fit in the bytes present
+};
+
+// What was wrong and where: `offset` counts from the start of the bytes given to parse_flat, parse_pack or
+// read_resource. It is the start of the header at fault, or for TrailingBytes the first byte left over.
+struct ParseError {
+    ErrorKind kind;
+    std::size_t offset = 0;
+
+    friend bool operator==(const ParseError&, const ParseError&) = default;
 };
 
 struct Chunk {
@@ -77,6 +88,9 @@ struct Pack {
     std::vector<Resource> resources;
 };
 
+// The parsed structures view the input: every payload span points into the bytes that were parsed, so those bytes
+// must outlive the result. Nothing is copied.
+
 // Reads a resource from the start of `bytes`; `consumed` is how many bytes it occupies. Bytes after it are left
 // alone (they belong to the next resource of a pack).
 struct ResourceRead {
@@ -92,6 +106,9 @@ struct ResourceRead {
 // A grouped container: a pack header and its resources, filling `bytes` exactly.
 [[nodiscard]] Result<Pack, ParseError> parse_pack(std::span<const std::byte> bytes);
 
-[[nodiscard]] const char* describe(ParseError error) noexcept;
+[[nodiscard]] const char* describe(ErrorKind kind) noexcept;
+
+// The error's description and its offset, for logs: "<description> at offset 0x<hex>".
+[[nodiscard]] std::string describe(const ParseError& error);
 
 } // namespace coney::formats
