@@ -1,0 +1,117 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "world-geometry",
+  "page_sha256": "fa75cfb47d4a24f0e38451f7f01f13d30208e8225d35a7b29d9d1dd1b0be7e41",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "world-geometry",
+      "kind": "reference",
+      "sha256": "e0b62dd8dd245c025845c3a4b8858cd7762317c71b8b202c4b5e284d7803e470",
+      "verdict": "keep"
+    },
+    {
+      "id": "sources",
+      "kind": "reference",
+      "sha256": "7833895770e08727fd00ce05561bc641b3889775ae647d624f9e099085eea006",
+      "verdict": "keep"
+    },
+    {
+      "id": "geometry-piece",
+      "kind": "fact",
+      "sha256": "a238aaf6f976c0c03aecd1a31b7350e5929b04645e9cfcbab93a9d73b6074d6c",
+      "verdict": "keep"
+    },
+    {
+      "id": "geometry-section",
+      "kind": "fact",
+      "sha256": "8927eeb6026534b13ecd326e6eb68b7c56ab98d48acd79ed056030d56c5688e9",
+      "verdict": "keep"
+    },
+    {
+      "id": "materials",
+      "kind": "fact",
+      "sha256": "9ec66dee5ebb2cdf29e3d26828f976c460bc55c3754882eca74a42606ba3ee2a",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-the-textures-are",
+      "kind": "fact",
+      "sha256": "a9c2af3b586375e8603e280828a9240da7ccfc6454b784c1924fcc31bc83e60d",
+      "verdict": "keep"
+    },
+    {
+      "id": "second-texture-layer",
+      "kind": "fact",
+      "sha256": "c0a2db35ffcbeebdcf5fdad09dbb114c777a6e2f78ca8428c2df01d24def64f1",
+      "verdict": "keep"
+    },
+    {
+      "id": "pipeline-ids",
+      "kind": "fact",
+      "sha256": "c310834f2281b9b4721d0c6ca6072b56b77314bcbfcc28451dd2c9ab0e3f3611",
+      "verdict": "keep"
+    },
+    {
+      "id": "pipeline-per-material",
+      "kind": "behaviour",
+      "sha256": "0184c2433f96ca3c7e1d08b49eb7e02434ae8b2425178c9f9e222d2fcf9fde7e",
+      "verdict": "keep"
+    },
+    {
+      "id": "second-texture-coordinate-set",
+      "kind": "fact",
+      "sha256": "1824a570b28b30d1e24bd47075dc3e67e86203b5ac4557121f0201d911313fe2",
+      "verdict": "keep"
+    },
+    {
+      "id": "meshes-and-native-data",
+      "kind": "fact",
+      "sha256": "ca4bbeb6c3a8584968cd3ffd8955cebd77adab6f998594c9c8d2e636c5731aa7",
+      "verdict": "keep"
+    },
+    {
+      "id": "courtyard-and-objarena",
+      "kind": "fact",
+      "sha256": "497b13baeeb8506ad16bfa0b4136851555146f7eb43ed0d70a484c4e8d37edc0",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-counts",
+      "kind": "fact",
+      "sha256": "1b4c91a1601d37ad01b21835173774675ae6b58222908edb17110053df6cfe92",
+      "verdict": "keep"
+    },
+    {
+      "id": "the-tutorial",
+      "kind": "fact",
+      "sha256": "1b29f9886d3e34184e466af8cebb0210edf86319dbc5a6098b23a493918b21f7",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "reference",
+      "sha256": "1e0357fbe6b15434e17d24838c1a39416409a1abeb0560def0a70176cec2aaf8",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "6c26e590e3be92ca1b7c8fb0abc3843174dace39e976d3240cfc1bc932dc4ab1",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "75186fa2770d91d2ce3da408f0487bb726747cf78bbb43968dbb57acca3650f0",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "d5085a2bebf7b29e42b55562c6a4d9ab1c126886a8d42209ea46d5c8028f20de",
+      "verdict": "keep"
+    }
+  ]
+}
