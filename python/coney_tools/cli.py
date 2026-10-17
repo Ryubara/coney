@@ -885,7 +885,7 @@ def main(argv=None):
 
     tt = top.add_parser("tether", help="Tether's per-zone settings (docs/workflow.md)")
     ttc = tt.add_subparsers(dest="command", required=True)
-    ws_help = rf"workspace file (default: ${workspace.ENV}, else %%ProgramData%%\\Coney\\)"
+    ws_help = rf"workspace file (default: ${workspace.ENV}, else %%ProgramData%%\Coney\)"
     tk = ttc.add_parser(
         "check",
         help="check the workspace's tether table (and the installed copy)",
