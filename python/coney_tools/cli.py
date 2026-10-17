@@ -13,6 +13,7 @@ from coney_tools import (
     impl,
     implog,
     lint,
+    needs,
     prefilter,
     research,
     roles,
@@ -835,7 +836,8 @@ def main(argv=None):
     ib = top.add_parser(
         "inbox",
         help="what waits for a role, from every station it takes part in (for a session polling on a timer)",
-        description="The role's items from every station that serves it (today the page gate), as the role may see "
+        description="The role's items from every station that serves it (the page gate, the code gate, research "
+        "requests), as the role may see "
         "them: ids, states and counts only, never page text. A role whose tools are not built yet is reported as "
         "inactive. Exit 0 nothing needs this role, 1 something does, 2 could not run.",
     )
@@ -843,6 +845,52 @@ def main(argv=None):
     ib.add_argument("--json", action="store_true", help='{"role", "active", "stations": {...}, "action": [...]}')
     ib.add_argument("--workspace", help=f"workspace file (default: ${workspace.ENV}, else %%ProgramData%%\\Coney\\)")
     ib.set_defaults(run=gate("inbox", inbox_action))
+
+    rq = top.add_parser("request", help="research requests: an implementer's question and its answer's state")
+    rqc = rq.add_subparsers(dest="command", required=True)
+    rf = rqc.add_parser(
+        "file",
+        help="file an implementer's questions (needs.json) as research requests (public side)",
+        description=f"Checks the needs file ({needs.NEEDS}) and writes each chosen question as a canonical "
+        f"{needs.REQUEST} file into <to_analyst>\\{needs.FOLDER}\\<id>-<8 hex>.json, the hex from the SHA-256 of "
+        "the canonical question. Add-only: a question filed before is left as it is. Whether a question asks for "
+        "behaviour only is for the one filing it to judge. Exit 0 filed, 1 refused (a malformed needs file or an "
+        "--id it does not hold; nothing is filed), 2 could not run.",
+    )
+    rf.add_argument("needs", metavar="needs.json", help="an implementer's needs file, as impl collect copied it")
+    rf.add_argument(
+        "--id",
+        action="append",
+        default=[],
+        dest="ids",
+        metavar="ID",
+        help="a question to file (repeatable; default: every question)",
+    )
+    rf.add_argument("--task", help="the name of the task file the questions came from")
+    rf.add_argument("--repo", help="the repository whose main holds the pages the questions name (default: repo)")
+    rf.add_argument("--workspace", help=f"workspace file (default: ${workspace.ENV}, else %%ProgramData%%\\Coney\\)")
+    rf.set_defaults(
+        run=gate("request file", lambda a: needs.file(workspace.load(a.workspace), a.needs, a.ids, a.task, a.repo))
+    )
+    rt = rqc.add_parser(
+        "status",
+        help="record a research request's new state (analysis side)",
+        description=f"Writes a canonical {needs.STATUS} file, <from_analyst>\\{needs.FOLDER}\\<request>.<state>"
+        ".json: ids, a state and a time, no free text. A request moves from new to accepted, then to answered "
+        "(naming the page that answers it) or declined; add-only, one file per change. Exit 0 written (or the same "
+        "state again: nothing written), 1 refused (no such request, or a state that does not move it on), 2 could "
+        "not run.",
+    )
+    rt.add_argument("request", help="the request id, <id>-<8 hex>")
+    rt.add_argument("--state", required=True, choices=list(needs.STATES))
+    rt.add_argument("--page", help="--state answered: the id of the page that answers it")
+    rt.add_argument("--workspace", help=f"workspace file (default: ${workspace.ENV}, else %%ProgramData%%\\Coney\\)")
+    rt.set_defaults(
+        run=gate(
+            "request status",
+            lambda a: needs.set_status(workspace.load(a.workspace), a.request, a.state, a.page),
+        )
+    )
 
     zn = top.add_parser("zone", help="this account's zone, as its Claude Code mod shows it")
     znc = zn.add_subparsers(dest="command", required=True)

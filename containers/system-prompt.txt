@@ -12,6 +12,7 @@ beyond this API.
   <noreply@anthropic.com>`; CI refuses an engine commit without it.
 - Put logs or files worth keeping that do not belong in the repository in /work/artifacts.
 - If something you need is not on any page, do what the pages allow and write each gap to /work/artifacts/needs.json
-  as a JSON list of objects {"page": "<page id or empty>", "question": "<the behaviour you need, in plain words>"}.
-  Ask for behaviour and facts only, never for the original's code. If the task cannot be done at all, say so in your
-  final message and stop.
+  as {"schema": "coney-needs/1", "questions": [{"id": "<slug>", "page": "<page id>" or null, "topic": "<up to 80
+  characters>", "question": "<the behaviour you need, in plain words, one line, up to 600 characters>"}]}: each id
+  unique (a-z, 0-9 and -), no other keys. Ask for behaviour and facts only, never for the original's code. If the task
+  cannot be done at all, say so in your final message and stop.

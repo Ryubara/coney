@@ -26,7 +26,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-from coney_tools import implog, signing, workspace
+from coney_tools import implog, needs, signing, workspace
 from coney_tools.cleanroom import scan
 
 COMPOSE = "compose.yml"
@@ -1067,6 +1067,11 @@ def collect(ws, names=(), distro=None):
     names = names_arg(names, pool.s)
     git = signing.program("git")
     lines = []
+    try:  # the pages a needs file may name; when main cannot be read, only the form of a page id is checked
+        pages = needs.pages_on_main(pool.s.repo)
+    except (signing.SigningError, OSError):
+        pages = None
+        lines.append(f"needs files: page ids checked for form only (cannot read main in {pool.s.repo})")
     for n in names:
         lines.append(collect_outbox(pool, git, n))
         b = pool.binds(n)
@@ -1078,6 +1083,8 @@ def collect(ws, names=(), distro=None):
             copied, skipped = copy_out(pool, b[target], pool.s.public / folder / n)
             extra = f", {skipped} skipped (not a plain file, or a name Windows refuses)" if skipped else ""
             lines.append(f"{n}: {copied} {folder} files copied to {pool.s.public / folder / n}{extra}")
+            if target == ARTIFACTS:
+                lines.append(needs.collect_line(n, pool.s.public / folder / n, pages))
             if target == ARCHIVE:
                 made = implog.write_transcripts(pool.s.public / folder / n)
                 lines.append(f"{n}: {made} readable transcripts in {pool.s.public / folder / n / implog.TRANSCRIPTS}")

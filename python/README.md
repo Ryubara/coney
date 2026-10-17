@@ -715,7 +715,8 @@ queue, the containers and the tester add theirs as they are built. The code gate
 for the PR analyst (each `<impl-N>/engine/<name>` branch in the collecting outbox, `to-judge` until a handed-over
 verdict names its head commit, then `judged`) and `code-verdicts` for the engine coordinator (each signed verdict in
 `<from_analyst>/code-verdicts/`, `new` until a local branch holds it at `research/code-verdicts/`, `copied`, then
-`merged` once `main` does). It prints ids, states and counts, never page text. A role whose tools are not built yet
+`merged` once `main` does). Both coordinators also have a `requests` station ([`request`](#request)). It prints ids,
+states and counts, never page text. A role whose tools are not built yet
 is reported as inactive. Exit status: 0 nothing needs this role, 1 something does, 2 the command could not run.
 
 The roles live in the workspace's `roles` table: each role's zone (or `container` for roles the engine coordinator
@@ -729,6 +730,44 @@ brief, has a zone the workspace does not know, a looping role lacks its interval
 number of minutes (or sits on a container role), an active role has no inbox, or a dispatched role loops, keeps
 notes, or names a dispatcher outside its zone or inactive; the installer runs it, so a role is never installed
 half-wired. Exit status: 0 every role wired, 1 something missing, 2 the command could not run.
+
+## `request`
+
+```sh
+python -I python/coney-tools.py request file needs.json [--id ID ...] [--task NAME] [--repo R] [--workspace W]
+python -I python/coney-tools.py request status <request-id> --state accepted|answered|declined [--page PAGE_ID] \
+    [--workspace W]
+```
+
+How an implementer's question becomes a research request and its answer comes back. An implementer writes what no
+page answers into `/work/artifacts/needs.json` in this form (`coney-needs/1`; task files point here):
+`{"schema": "coney-needs/1", "questions": [{"id", "page", "topic", "question"}]}`, where `id` is a slug
+(`a-z`, `0-9` and `-`, up to 48 characters) unique in the file, `page` an existing research page id or `null`,
+`topic` up to 80 characters and `question` up to 600, each one line of printable text, and no other key. The questions
+ask for behaviour only, never for the original's code: the tool checks the shape, the engine coordinator judges the
+content before filing. `impl collect` reports each collected file as `needs: N questions` or
+`needs.json malformed: <what is wrong>` (a malformed file does not fail the collect); a bare `[]`, the form used
+before the schema, counts as no questions.
+
+`file` (public side) checks the needs file (each `page` must be on `main`) and writes each chosen question (`--id`,
+repeatable; default every question) as `<to_analyst>/requests/<request-id>.json` (`coney-research-request/1`:
+`schema`, `id`, `task`, `page`, `topic`, `question`, `filed` as a UTC time), where the request id is
+`<id>-<first 8 hex of the SHA-256 of the canonical question>`. Add-only: a question filed before is left as it is and
+the command says so. Exit status: 0 filed, 1 refused (a malformed needs file, or an `--id` it does not hold; nothing
+is filed), 2 the command could not run.
+
+`status` (analysis side) writes `<from_analyst>/requests/<request-id>.<state>.json` (`coney-research-status/1`:
+`schema`, `request`, `state`, `page`, `time`; no free text). A request moves from new to `accepted`, then to
+`answered` (with `--page`, the page that answers it) or `declined`; each change is a new file, and a state that does
+not move the request on is refused. It refuses a request id with no request in `<to_analyst>/requests/`. Exit status:
+0 written (or the same state again, which writes nothing), 1 refused, 2 the command could not run. Every file is in
+`research.canonical` form.
+
+The `requests` stations list each request by id with its latest state, looking each status file up by name (one
+counts only when well formed and canonical; a file in the requests folder that is not a request is `invalid`). The
+research coordinator's: `new` and `accepted` need it, then `answered` (with its page) or `declined`. The engine
+coordinator's: `open` (new or accepted), `answered` (it needs it: import the page and plan the task), `declined` (it
+needs it: re-plan) and `closed` once `main` holds the answering page at `research/pages/<page>/`.
 
 ## `tether`
 
@@ -783,7 +822,8 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   branch, model, effort, start, end, exit, and `served`: each model id the API answered with and how often, the
   record of which model wrote the work). When the session ends it prints the session's final message.
 - `collect` fetches each outbox's branches into the collecting repository `containers\outbox\coney.git` as
-  `impl-N/<branch>` and copies artifacts and transcripts to `containers\artifacts\` and `containers\archive\`. The
+  `impl-N/<branch>` and copies artifacts and transcripts to `containers\artifacts\` and `containers\archive\`,
+  reporting each implementer's `needs.json` ([`request`](#request)). The
   collecting repository is a zone sub-folder with its own permissions, so a maintainer creates it; `collect` and
   `run` refuse when it is missing. It also writes each session transcript as Markdown into
   `containers\archive\impl-N\transcripts\`.

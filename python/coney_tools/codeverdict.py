@@ -367,20 +367,6 @@ def handed_over(ws):
     return out
 
 
-def station(role, noun, items, states, needs):
-    """An inbox station's document, shaped like research.status's: items are (id, state, short hash)."""
-    counts = {s: 0 for s in states}
-    for _, state, _ in items:
-        counts[state] += 1
-    return {
-        "role": role,
-        "noun": noun,
-        "pages": [{"id": i, "state": s, "verdict": v} for i, s, v in items],
-        "counts": counts,
-        "action": [i for i, s, _ in items if s in needs],
-    }
-
-
 def analyst_status(ws):
     """The PR analyst's station: each engine branch in the collecting outbox (<impl-N>/engine/<name>), to-judge until
     a handed-over verdict names its head commit, then judged."""
@@ -395,7 +381,7 @@ def analyst_status(ws):
             m = ENGINE_BRANCH.match(ref)
             if m:
                 items.append((m.group(1), "judged" if commit in judged else "to-judge", commit[:12]))
-    return station("pr-analyst", "branches", sorted(items), ("to-judge", "judged"), ("to-judge",))
+    return research.station("pr-analyst", "branches", sorted(items), ("to-judge", "judged"), ("to-judge",))
 
 
 def public_status(ws, repo):
@@ -419,4 +405,4 @@ def public_status(ws, repo):
         else:
             state = "new"
         items.append((name, state, doc["commit"][:12]))
-    return station("engine-coordinator", "verdicts", items, ("new", "copied", "merged"), ("new",))
+    return research.station("engine-coordinator", "verdicts", items, ("new", "copied", "merged"), ("new",))

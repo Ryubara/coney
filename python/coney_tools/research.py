@@ -901,6 +901,21 @@ def status(role, ws, repo=None):
     }
 
 
+def station(role, noun, items, states, needs):
+    """An inbox station's document, shaped like `status`'s (other stations than the page gate use it): items are
+    (id, state, short hash or None), and `noun` names what they are in `status_lines`."""
+    counts = {s: 0 for s in states}
+    for _, state, _ in items:
+        counts[state] += 1
+    return {
+        "role": role,
+        "noun": noun,
+        "pages": [{"id": i, "state": s, "verdict": v} for i, s, v in items],
+        "counts": counts,
+        "action": [i for i, s, _ in items if s in needs],
+    }
+
+
 def status_lines(doc):
     """One line per page, `<state> <id> [<verdict hash prefix>]`, then the counts. Other stations shaped like this
     one name what they list in `noun`."""
