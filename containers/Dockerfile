@@ -44,6 +44,7 @@ RUN rm -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list \
         g++ \
         gcc \
         git \
+        glslang-tools \
         ipset \
         iptables \
         less \
