@@ -61,20 +61,22 @@ def snapshot_dir():
     return package.parent.parent / SNAPSHOT
 
 
-def pinned_version(hooks, where):
-    """The markdownlint-cli2 version from the hooks file's text: the rev of its repo entry, without a leading v."""
+def pinned_version(hooks, where, repo=None):
+    """A hook's version from the hooks file's text: the rev of its repo entry (markdownlint-cli2's unless another
+    repo URL is given), without a leading v."""
+    repo = repo or HOOK_REPO
     revs, inside = [], False
     for line in hooks.splitlines():
         m = re.match(r"^\s*-\s*repo:\s*['\"]?([^'\"\s#]+)['\"]?\s*(?:#.*)?$", line)
         if m:
-            inside = m.group(1) == HOOK_REPO
+            inside = m.group(1) == repo
             continue
         m = re.match(r"^\s*rev:\s*['\"]?v?([^'\"\s#]+)['\"]?\s*(?:#.*)?$", line)
         if inside and m:
             revs.append(m.group(1))
             inside = False
     if len(revs) != 1 or not VERSION.match(revs[0]):
-        raise LintError(f"no single release rev for {HOOK_REPO} in {HOOKS} at {where}")
+        raise LintError(f"no single release rev for {repo} in {HOOKS} at {where}")
     return revs[0]
 
 

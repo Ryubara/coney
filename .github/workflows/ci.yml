@@ -88,6 +88,21 @@ jobs:
         env:
           PY: ${{ needs.versions.outputs.python }}
 
+  ruff:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job ruff
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
   # The package downloads are cached by setup-uv, keyed on the lock files.
   conventions:
     needs: versions
@@ -229,7 +244,7 @@ jobs:
 
   build-ok:
     if: always()
-    needs: [versions, workflow, tests, markdownlint, conventions, site, mod, verify, orig-check, commit-sigs]
+    needs: [versions, workflow, tests, markdownlint, ruff, conventions, site, mod, verify, orig-check, commit-sigs]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

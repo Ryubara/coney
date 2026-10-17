@@ -22,6 +22,7 @@ environments under `build/ci/` and make them again only when a lock file changes
 | `workflow` | `ci.yml` | every workflow runs each job under its own name, pins every action to a full commit SHA and sets `permissions:`, with a write scope only on a Pages deploy job or on an issue job no pull request or push can start |
 | `tests` | `ci.yml` | the `coney-tools` unit tests |
 | `markdownlint` | `ci.yml` | every Markdown file, with the version and rules the commit hook uses |
+| `ruff` | `ci.yml` | the Python lints and formatting under `python/`, with the ruff version the commit hook pins |
 | `conventions` | `ci.yml` | `.github/conventions.yml` is well formed, the pull request template and issue forms match it, and every tracked YAML file parses |
 | `site` | `ci.yml`, `pages.yml` | the documentation site builds with `--strict`, from the hash-locked `requirements-docs.txt` |
 | `mod` | `ci.yml` | every mod under `mods/` validates and passes its tests, on the Claude Code version the implementer image pins |
