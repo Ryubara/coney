@@ -452,6 +452,61 @@ class Repo(unittest.TestCase):
         self.assertEqual(code, 1, err)
         self.assertIn("does not verify for impl-1", out)
 
+    def merge_main(self, main_files, branch_files, edit=None, conflict=False):
+        """A main with its own engine commit, a branch with a signed one, and main merged into the branch unsigned,
+        as a coordinator merges it; edit is written in the merge commit. The main's id."""
+        base = self.git("rev-parse", "HEAD")
+        self.git("checkout", "-q", "-B", f"m-{self._testMethodName}", base)
+        main = self.commit(main_files, "i2")
+        self.git("checkout", "-q", f"t-{self._testMethodName}")
+        self.commit(branch_files, "i1")
+        r = subprocess.run(
+            [GIT, "-C", str(self.repo), "merge", "-q", "--no-ff", "--no-commit", main],
+            capture_output=True,
+            env=signing.git_env(),
+            creationflags=scan.NO_WINDOW,
+            check=False,
+        )
+        self.assertEqual(r.returncode, 1 if conflict else 0, r.stderr)
+        if edit:
+            self.write(*edit)
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "Merge main")
+        return main
+
+    def test_a_clean_merge_of_main_is_not_checked(self):
+        main = self.merge_main({"engine/src/m.cpp": "int m() { }\n"}, {"engine/src/b.cpp": "int b() { }\n"})
+        code, out, err = self.sigs(f"{main}..HEAD", "--json")
+        self.assertEqual(code, 0, out + err)
+        doc = json.loads(out)
+        self.assertEqual([c["principal"] for c in doc["commits"]], ["impl-1"])
+        self.assertEqual(doc["skipped"], 1)
+
+    def test_a_merge_that_edits_the_engine_fails(self):
+        main = self.merge_main(
+            {"engine/src/m.cpp": "int m() { }\n"},
+            {"engine/src/b.cpp": "int b() { }\n"},
+            ("engine/src/b.cpp", "int b() { return 1; }\n"),
+        )
+        code, out, err = self.sigs(f"{main}..HEAD", "--json")
+        self.assertEqual(code, 1, err)
+        doc = json.loads(out)
+        merge = self.git("rev-parse", "HEAD")
+        self.assertEqual([(c["commit"], c["problem"]) for c in doc["commits"]][-1], (merge, "not signed"))
+
+    def test_a_conflicted_merge_resolved_by_hand_fails(self):
+        main = self.merge_main(
+            {"engine/src/c.cpp": "int c() { return 1; }\n"},
+            {"engine/src/c.cpp": "int c() { return 2; }\n"},
+            ("engine/src/c.cpp", "int c() { return 3; }\n"),
+            conflict=True,
+        )
+        code, out, err = self.sigs(f"{main}..HEAD", "--json")
+        self.assertEqual(code, 1, err)
+        doc = json.loads(out)
+        merge = self.git("rev-parse", "HEAD")
+        self.assertEqual([(c["commit"], c["problem"]) for c in doc["commits"]][-1], (merge, "not signed"))
+
     def test_a_bad_range_cannot_run(self):
         self.assertEqual(run_cli("cleanroom", "commit-sigs", "--repo", self.repo, "--", "--all")[0], 2)
         self.assertEqual(self.sigs("nothing..HEAD")[0], 2)

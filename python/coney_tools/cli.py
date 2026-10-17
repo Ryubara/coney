@@ -673,7 +673,8 @@ def main(argv=None):
         help="check that every commit touching the engine is signed by an implementer (code gate, 8.4)",
         description="For every commit in the revision range that touches the engine root: it carries an SSH "
         "signature made in git's namespace by a key that allowed_signers (read from --ref) lists with "
-        f'namespaces="git" under an implementer\'s principal ({signing.IMPLEMENTER}<n>). Prints commit ids and '
+        f'namespaces="git" under an implementer\'s principal ({signing.IMPLEMENTER}<n>). A two-parent merge '
+        "counts only when its engine root differs from git's clean merge of its parents. Prints commit ids and "
         "principals. Exit 0 every such commit is signed, 1 one is not, 2 could not run.",
     )
     cs.add_argument("range", help="the commits to check, as git rev-list takes them (main..HEAD)")
