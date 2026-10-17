@@ -1,7 +1,9 @@
 # The implementer image: a toolchain for Coney's engine (C++23 with GCC and Clang, CMake, Ninja, Catch2 3) and Claude
-# Code, nothing else. SDL3 joins with the engine's platform layer (Ubuntu 24.04 does not package it).
+# Code, nothing else. SDL3 is built from source (Ubuntu 24.04 does not package it) for a headless container: its
+# offscreen and dummy video drivers, Vulkan and the GPU API, with Mesa's lavapipe as the Vulkan device.
 # Built by `coney-tools impl build`. Everything is fixed here so a rebuild gives the same image: the base image and
-# uv by digest, Ubuntu packages from one dated snapshot of the archive, Node by its checksum, Claude Code by version.
+# uv by digest, Ubuntu packages from one dated snapshot of the archive, Node and SDL3 by their checksums, Claude Code
+# by version.
 # Nothing is fetched when a container runs: its firewall lets it reach the Anthropic API only.
 
 ARG UBUNTU=ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55
@@ -16,6 +18,8 @@ ARG SNAPSHOT=20261001T000000Z
 ARG NODE_VERSION=24.21.0
 ARG NODE_SHA256=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
 ARG CLAUDE_CODE_VERSION=2.1.292
+ARG SDL_VERSION=3.4.18
+ARG SDL_SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3
 # The implementer's user id; coney-tools reads it from the label below.
 ARG IMPL_UID=1500
 
@@ -58,6 +62,20 @@ RUN rm -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=uv /uv /uvx /usr/local/bin/
+
+# SDL3 from its release archive, checked against its SHA-256, installed in /usr/local (CMake finds it as SDL3).
+# Without X11 or Wayland: a container has no display, so windows are offscreen and a test reads its frames back.
+RUN curl -fsSLo /tmp/sdl.tar.gz \
+        "https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL3-${SDL_VERSION}.tar.gz" \
+    && echo "${SDL_SHA256}  /tmp/sdl.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/sdl.tar.gz -C /tmp \
+    && cmake -S "/tmp/SDL3-${SDL_VERSION}" -B /tmp/sdl-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF \
+        -DSDL_UNIX_CONSOLE_BUILD=ON -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_OFFSCREEN=ON -DSDL_DUMMYVIDEO=ON -DSDL_VULKAN=ON -DSDL_GPU=ON \
+    && cmake --build /tmp/sdl-build \
+    && cmake --install /tmp/sdl-build \
+    && ldconfig \
+    && rm -rf /tmp/sdl.tar.gz "/tmp/SDL3-${SDL_VERSION}" /tmp/sdl-build
 
 # Node (for npm, which installs Claude Code) from nodejs.org, checked against its published SHA-256.
 RUN curl -fsSLo /tmp/node.tar.xz "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \

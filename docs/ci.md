@@ -81,6 +81,7 @@ Nothing is installed at "latest". Each version is read from the one file that al
 | uv, and through it the exact Python build | `containers/Dockerfile` (`ARG UV`) |
 | Node.js, checked against its SHA-256 | `containers/Dockerfile` (`ARG NODE_VERSION`, `ARG NODE_SHA256`) |
 | Claude Code | `containers/Dockerfile` (`ARG CLAUDE_CODE_VERSION`) |
+| SDL3, built from source and checked against its SHA-256 | `containers/Dockerfile` (`ARG SDL_VERSION`, `ARG SDL_SHA256`) |
 | markdownlint-cli2 | `.pre-commit-config.yaml` (the hook's `rev`) |
 | MkDocs, Material and everything they pull in | `requirements-docs.in`, locked with hashes in `requirements-docs.txt` |
 | PyYAML for Groundwork's checker | `.github/scripts/requirements.in`, locked in `.github/scripts/requirements.txt` |
