@@ -7,10 +7,12 @@ with CONEY_TEST_DOCKER=1 (and the workspace from CONEY_WORKSPACE or the default 
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+import types
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -670,11 +672,19 @@ class Auth(Base):
         self.write(f"CLAUDE_CODE_OAUTH_TOKEN={SECRET}\n")
         task = self.tmp / "task.md"
         task.write_bytes(b"# Task\n\nDo one thing.\n")
+        self.bases = []
+
+        def bundle(pool, git, tmp, base=None):
+            self.bases.append(base)
+            return b"BUNDLE"
+
+        extra = ["--base=" + kw["base"]] if "base" in kw else []
         with (
-            mock.patch.object(impl, "main_bundle", lambda pool, git, tmp: b"BUNDLE"),
+            mock.patch.object(impl, "main_bundle", bundle),
             mock.patch.object(impl.signing, "program", lambda name, given=None: "git"),
         ):
-            return self.cli(fake, "run", "impl-1", "--task", str(task), "--branch=" + kw.get("branch", "task/one"))
+            branch = "--branch=" + kw.get("branch", "task/one")
+            return self.cli(fake, "run", "impl-1", "--task", str(task), branch, *extra)
 
     def running(self):
         w, n = inspect_pair("impl-1")
@@ -717,6 +727,41 @@ class Auth(Base):
         session = next(c for c, _ in fake.streamed if impl.SESSION in c)
         self.assertEqual(session[-3:], ["task/one", "claude-opus-5-5", "medium"])
 
+    def test_run_on_a_base_branch(self):
+        fake = FakeDistro(containers=self.running(), outbox={"impl-1": {"refs/heads/task/one": "a" * 40}})
+        code, _out, err = self.run_session(fake, base="impl-1/engine/store")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(self.bases, ["impl-1/engine/store"])
+        state = json.loads((self.tmp / "pub" / "containers" / "live" / "impl-1.json").read_text(encoding="utf-8"))
+        self.assertEqual(state.get("base"), "impl-1/engine/store")
+
+    @unittest.skipUnless(shutil.which("git"), "needs git on PATH")
+    def test_main_bundle_takes_a_base_as_main(self):
+        git = shutil.which("git")
+
+        def g(repo, *args):
+            env = impl.signing.git_env(GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@x", GIT_COMMITTER_NAME="t",
+                                       GIT_COMMITTER_EMAIL="t@x")  # fmt: skip
+            return subprocess.run([git, "-C", str(repo), *args], env=env, capture_output=True, check=True).stdout
+
+        repo, collecting = self.tmp / "repo", self.tmp / "collecting.git"
+        repo.mkdir()
+        g(repo, "init", "-q", "-b", "main")
+        g(repo, "commit", "-q", "--allow-empty", "-m", "main")
+        g(self.tmp, "init", "-q", "--bare", str(collecting))
+        g(collecting, "fetch", "-q", str(repo), "main:refs/heads/impl-1/engine/store")
+        g(repo, "commit", "-q", "--allow-empty", "-m", "later")
+        wip = g(collecting, "rev-parse", "impl-1/engine/store").strip()
+        pool = types.SimpleNamespace(s=types.SimpleNamespace(collecting=collecting, repo=repo))
+        for base, want in ((None, g(repo, "rev-parse", "main").strip()), ("impl-1/engine/store", wip)):
+            with self.subTest(base=base), tempfile.TemporaryDirectory() as tmp:
+                data = impl.main_bundle(pool, git, tmp, base)
+                (Path(tmp) / "b.bundle").write_bytes(data)
+                heads = g(self.tmp, "bundle", "list-heads", str(Path(tmp) / "b.bundle")).decode().split()
+                self.assertEqual(heads, [want.decode(), "refs/heads/main"])
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(impl.ImplError):
+            impl.main_bundle(pool, git, tmp, "impl-1/engine/none")
+
     def test_run_branch_not_pushed_fails(self):
         fake = FakeDistro(containers=self.running())
         code, out, _err = self.run_session(fake)
@@ -729,6 +774,9 @@ class Auth(Base):
             with self.subTest(branch=branch):
                 code, _out, _err = self.run_session(fake, branch=branch)
                 self.assertEqual(code, 2)
+        for base in ("-x", "a..b", "x;y"):
+            with self.subTest(base=base):
+                self.assertEqual(self.run_session(fake, base=base)[0], 2)
         w, n = inspect_pair("impl-1")
         n["State"]["Health"]["Status"] = "unhealthy"
         code, _out, err = self.run_session(FakeDistro(containers={"impl-1": w, "impl-1-net": n}))

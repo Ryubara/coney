@@ -900,14 +900,25 @@ def ensure_collecting(git, path):
         )
 
 
-def main_bundle(pool, git, tmp):
-    """main of the public repository, through the collecting repo, as a bundle file."""
+def main_bundle(pool, git, tmp, base=None):
+    """main of the public repository, through the collecting repo, as a bundle file. With base, that branch of the
+    collecting repo stands in for main, so a task can build on work that waits for its verdict: a scratch bare repo
+    holds it as main, and the container sees no difference."""
     ensure_collecting(git, pool.s.collecting)
     signing.git(
         git, pool.s.collecting, "fetch", "--quiet", "--no-tags", str(pool.s.repo), "+refs/heads/main:refs/heads/main"
     )
+    src = pool.s.collecting
+    if base is not None:
+        r = signing.git(git, src, "rev-parse", "--verify", "--quiet", f"refs/heads/{base}^{{commit}}", ok=(0, 1))
+        if r.returncode:
+            raise ImplError(f"no branch {base} in the collecting repo")
+        src = Path(tmp) / "base.git"
+        signing.git(git, tmp, "init", "--quiet", "--bare", str(src))
+        refspec = f"+refs/heads/{base}:refs/heads/main"
+        signing.git(git, src, "fetch", "--quiet", "--no-tags", str(pool.s.collecting), refspec)
     out = Path(tmp) / "main.bundle"
-    signing.git(git, pool.s.collecting, "bundle", "create", "--quiet", str(out), "refs/heads/main")
+    signing.git(git, src, "bundle", "create", "--quiet", str(out), "refs/heads/main")
     return out.read_bytes()
 
 
@@ -926,11 +937,12 @@ def now():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-def run(ws, name, task, branch, distro=None):
+def run(ws, name, task, branch, distro=None, base=None):
     pool = Pool(ws, distro)
     names_arg([name], pool.s)
-    if not BRANCH.match(branch) or ".." in branch or branch.endswith((".lock", ".")):
-        raise ImplError(f"not a branch name coney-tools takes: {branch!r} (letters, digits, . _ - and up to 3 /)")
+    for b in (branch, base):
+        if b is not None and (not BRANCH.match(b) or ".." in b or b.endswith((".lock", "."))):
+            raise ImplError(f"not a branch name coney-tools takes: {b!r} (letters, digits, . _ - and up to 3 /)")
     auth = read_auth(pool.s.auth_file)
     try:
         data = Path(task).read_bytes()
@@ -944,10 +956,12 @@ def run(ws, name, task, branch, distro=None):
         raise ImplError(f"{name} is not running behind a healthy firewall: start it with `coney-tools impl up {name}`")
     git = signing.program("git")
     with tempfile.TemporaryDirectory(prefix="coney-impl-") as tmp:
-        bundle = main_bundle(pool, git, tmp)
+        bundle = main_bundle(pool, git, tmp, base)
     pool.exec(name, "sh", "-c", 'cat >"$1"', "sh", BUNDLE, data=bundle)
     pool.put(f"{pool.binds(name)[TASK_DIR]}/{TASK_FILE}", data)
     st = {"task": Path(task).name, "branch": branch, "model": pool.s.model, "effort": pool.s.effort, "started": now()}
+    if base is not None:
+        st["base"] = base
     pool.put(pool.state_file(name), json.dumps(st).encode(), mode="0644")
     live = implog.LiveLog(pool.s.public, name, st)
     print(f"{name}: session on branch {branch} started; live log in {live.f.name}", flush=True)
