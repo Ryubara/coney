@@ -194,13 +194,29 @@ TEST_CASE("malformed packs are rejected") {
         CHECK(parse_pack(data).error().kind == ErrorKind::CountExceedsBytes);
     }
     SECTION("a bad resource inside") {
-        Buffer data = make_pack({make_resource(1, {{chunk_type::kModel, 1, 24}})});
+        Buffer data = make_pack({sample_flat(), make_resource(1, {{chunk_type::kModel, 1, 24}})});
         CHECK(parse_pack(data).error().kind == ErrorKind::MisalignedSize);
     }
 }
 
 TEST_CASE("every error has a description") {
     CHECK(std::string(describe(ErrorKind::BadPackHash)) == "pack header does not end with the hash of \"package\"");
+}
+
+TEST_CASE("counts below the format's minimum are rejected") {
+    SECTION("a resource with no chunks") {
+        const Buffer empty = make_resource(1, {});
+        CHECK(parse_flat(empty).error() == ParseError{ErrorKind::CountTooLow, 0});
+        const Buffer pack = make_pack({sample_flat(), empty});
+        CHECK(parse_pack(pack).error() == ParseError{ErrorKind::CountTooLow, 16 + sample_flat().size()});
+    }
+    SECTION("a resource with one chunk is the smallest") {
+        CHECK(parse_flat(make_resource(1, {{chunk_type::kModel, 1, 0}})).has_value());
+    }
+    SECTION("packs of no or one resource") {
+        CHECK(parse_pack(make_pack({})).error() == ParseError{ErrorKind::CountTooLow, 0});
+        CHECK(parse_pack(make_pack({sample_flat()})).error() == ParseError{ErrorKind::CountTooLow, 0});
+    }
 }
 
 TEST_CASE("errors give the offset of the fault") {

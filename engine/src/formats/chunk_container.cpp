@@ -46,6 +46,9 @@ Result<ResourceRead, ParseError> read_resource(Bytes bytes) {
         return Failure(header.error());
     }
     Bytes rest = bytes.subspan(kHeaderSize);
+    if (header->chunk_count < kMinChunks) {
+        return fail(ErrorKind::CountTooLow, 0);
+    }
     // Every chunk takes at least its header, so a larger count cannot be true.
     if (header->chunk_count > rest.size() / kHeaderSize) {
         return fail(ErrorKind::CountExceedsBytes, 0);
@@ -113,6 +116,9 @@ Result<Pack, ParseError> parse_pack(Bytes bytes) {
     if (load_u32(bytes, 0x04) != bytes.size() - kHeaderSize) {
         return fail(ErrorKind::PackSizeMismatch, 0);
     }
+    if (count < kMinPackResources) {
+        return fail(ErrorKind::CountTooLow, 0);
+    }
     if (count > (bytes.size() - kHeaderSize) / kHeaderSize) {
         return fail(ErrorKind::CountExceedsBytes, 0);
     }
@@ -156,6 +162,8 @@ const char* describe(ErrorKind kind) noexcept {
         return "pack size does not match the bytes after the header";
     case ErrorKind::CountExceedsBytes:
         return "count does not fit in the bytes present";
+    case ErrorKind::CountTooLow:
+        return "count is below the format's minimum";
     }
     return "unknown error";
 }

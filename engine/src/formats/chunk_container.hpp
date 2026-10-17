@@ -50,6 +50,10 @@ inline constexpr std::size_t kHeaderSize = 16;
 inline constexpr std::size_t kPayloadAlignment = 16;
 // The last word of every pack header: the CRC-32 of the text `package`.
 inline constexpr std::uint32_t kPackHash = 0xDE686795;
+// The fewest chunks in a resource and resources in a pack that the page's layout describes. Smaller counts are
+// rejected until the page says the game accepts them.
+inline constexpr std::uint32_t kMinChunks = 1;
+inline constexpr std::uint32_t kMinPackResources = 2;
 
 enum class ErrorKind {
     TruncatedHeader,    // fewer bytes than a header needs
@@ -62,6 +66,7 @@ enum class ErrorKind {
     ChunkSumMismatch,   // the resource header's payload sum differs from the chunks' sizes
     PackSizeMismatch,   // the pack header's size differs from the bytes after it
     CountExceedsBytes,  // a declared count cannot fit in the bytes present
+    CountTooLow,        // fewer than kMinChunks chunks in a resource or kMinPackResources resources in a pack
 };
 
 // What was wrong and where: `offset` counts from the start of the bytes given to parse_flat, parse_pack or
