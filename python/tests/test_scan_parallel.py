@@ -72,7 +72,24 @@ def unreadable(path):
             path.chmod(stat.S_IRUSR | stat.S_IWUSR)
 
 
+def left_running(before=()):
+    """The worker processes still alive that were not in `before`, after waiting up to ten seconds for them to end
+    (a loaded runner can be slow to reap a worker that was stopped)."""
+    for _ in range(100):
+        procs = [p for p in multiprocessing.active_children() if p not in before]
+        if not procs:
+            return []
+        procs[0].join(0.1)
+    return [p for p in multiprocessing.active_children() if p not in before]
+
+
 class Parallel(ts.Base):
+    def setUp(self):
+        super().setUp()
+        # Every test leaves no worker of its own behind, so a leak fails in the test that made it, not in a later one.
+        before = multiprocessing.active_children()
+        self.addCleanup(lambda: self.assertEqual(left_running(before), [], "a worker outlived the scan"))
+
     def fixture(self):
         """A tree with a hit of every kind, archives, a git repository, an allowed file, excludes and excepts."""
         for i in range(120):
@@ -182,6 +199,7 @@ class Parallel(ts.Base):
         for i in range(200):
             self.put(f"d{i % 20}/f{i}.txt", f"text {i}\n")
         real, calls = scan.is_git_dir, []
+        before = multiprocessing.active_children()  # workers of an earlier module's scan are not this test's
 
         def interrupt(path):
             calls.append(path)
@@ -193,7 +211,7 @@ class Parallel(ts.Base):
             code, out, err = ts.run("scan", str(self.root), "--data", str(self.data), "--jobs", "4")
         self.assertEqual((code, out), (2, ""))
         self.assertIn("stopped", err)
-        self.assertEqual(multiprocessing.active_children(), [])
+        self.assertEqual([p for p in multiprocessing.active_children() if p not in before], [])
 
     def test_progress_lines_hold_counts_and_root_names_only(self):
         self.put(f"a/{WORD}.txt", f"{WORD}\n")
