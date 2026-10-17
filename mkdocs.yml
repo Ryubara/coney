@@ -2,6 +2,7 @@ site_name: Coney
 site_description: A clean-room reimplementation of The Warriors
 site_url: https://ryubara.github.io/coney/
 repo_url: https://github.com/Ryubara/coney
+repo_name: Ryubara/coney
 # No edit links: the research pages are added from research/pages/ by the hook, so an edit link would be wrong.
 edit_uri: ""
 docs_dir: docs
