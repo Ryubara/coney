@@ -1,7 +1,7 @@
 #!/bin/bash
 # coney-session BRANCH MODEL EFFORT AUTHOR_NAME AUTHOR_EMAIL: one implementer session, started by `coney-tools impl
 # run` as the user impl, at the model and effort the workspace's containers table names. Commits name the
-# maintainer as their author (from the public checkout's git identity) and the container as their committer.
+# maintainer as their author and committer (from the public checkout's git identity); the container's key signs them.
 #
 # Refreshes the container's clone from the bundle of main that coney-tools streamed to /tmp, makes a fresh worktree
 # on a new branch BRANCH from it, checks the egress wall once more and runs Claude Code on the task, without a
@@ -51,10 +51,10 @@ fi
 work="$repo/.worktrees/${branch//\//-}"
 git -C "$repo" worktree add --quiet --no-track -b "$branch" "$work" refs/remotes/origin/main
 
-# The author is the maintainer; the committer is the container, whose name is its signing principal in
-# allowed_signers (the signature check itself goes by the key).
+# The maintainer is author and committer; the container is named by its key, whose signature commit-sigs checks
+# against allowed_signers.
 export GIT_AUTHOR_NAME="$author_name" GIT_AUTHOR_EMAIL="$author_email"
-export GIT_COMMITTER_NAME="$CONEY_IMPL" GIT_COMMITTER_EMAIL="$CONEY_IMPL"
+export GIT_COMMITTER_NAME="$author_name" GIT_COMMITTER_EMAIL="$author_email"
 rm -f "$bundle"
 cd "$work"
 exec claude -p "Do the task in $task. You are on branch $branch in a fresh worktree of the repository." \

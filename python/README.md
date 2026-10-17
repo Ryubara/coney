@@ -772,15 +772,16 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   line (`impl-N namespaces="git" ssh-ed25519 ...`). `down` stops containers (volumes and keys stay); `reset` removes
   one with all its volumes and its key (its line must then leave `allowed_signers`).
 - `reauthor` makes a collected branch's commits since its base again in the named container, with the maintainer
-  as author and that container's key signing, pushes them to its outbox as `--new` and collects them; it checks
-  that every commit's tree is unchanged. Use it for commits made before sessions named the maintainer.
+  as author and committer and that container's key signing, pushes them to its outbox as `--new` and collects
+  them; it checks that every commit's tree is unchanged. Use it for commits made before sessions named the
+  maintainer.
 - `run` streams `main` of the collecting repository in, makes a fresh worktree on a new branch, copies the task file
   in read-only and runs Claude Code on it until it ends, at the model and effort the workspace pins
   (`containers.model`, `containers.effort`; every session the same). With `--base`, a branch of the collecting
   repository stands in for `main`, so a task can build on work still waiting for its verdict; its pull request
   then carries that work too until it merges, after which `main` is merged in. Every commit names the maintainer
-  as its author (the public checkout's `user.name` and `user.email`; `run` refuses without them) and the container
-  as its committer; the signature is the container's key, which `commit-sigs` checks. The Claude login comes from the file
+  as its author and committer (the public checkout's `user.name` and `user.email`; `run` refuses without them);
+  the signature is the container's key, which `commit-sigs` checks. The Claude login comes from the file
   `containers.auth_file`
   names (`CLAUDE_CODE_OAUTH_TOKEN=...` from `claude setup-token`, or `ANTHROPIC_API_KEY=...`), passed in on
   standard input, never written into the image, a command line or a log; without it `run` refuses. While the

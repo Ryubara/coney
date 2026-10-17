@@ -660,6 +660,11 @@ class Auth(Base):
         self.assertIn(SECRET.encode(), impl.auth_input(auth))
         self.assertTrue(impl.auth_input(auth).endswith(b"\n\n"))  # an empty line ends the variables
 
+    def test_commits_name_the_maintainer_as_committer(self):
+        session = (Path(__file__).resolve().parents[2] / "containers" / "session.sh").read_text(encoding="utf-8")
+        self.assertIn('GIT_COMMITTER_NAME="$author_name" GIT_COMMITTER_EMAIL="$author_email"', session)
+        self.assertIn('GIT_COMMITTER_NAME="$2" GIT_COMMITTER_EMAIL="$3"', impl.REAUTHOR)
+
     def test_run_refuses_without_auth_file(self):
         task = self.tmp / "task.md"
         task.write_text("# Task\n", encoding="utf-8")

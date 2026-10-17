@@ -932,7 +932,7 @@ def session_argv(name, branch, auth, model, effort, author):
 
 def author_of(git, repo):
     """(name, email): the git identity of the public checkout, which names the maintainer as every engine commit's
-    author. The implementer is the committer and signer."""
+    author and committer. The implementer's key signs."""
     out = []
     for key in ("user.name", "user.email"):
         r = signing.git(git, repo, "config", "--get", key, ok=(0, 1))
@@ -1014,7 +1014,7 @@ git -C "$repo" worktree add -q --detach "$w" refs/coney/reauthor/work
 cd "$w"
 base=$(git merge-base HEAD refs/coney/reauthor/base)
 [ -z "$(git rev-list --merges "$base..HEAD")" ] || { echo "the branch holds merge commits" >&2; exit 3; }
-export GIT_AUTHOR_NAME="$2" GIT_AUTHOR_EMAIL="$3" GIT_COMMITTER_NAME="$CONEY_IMPL" GIT_COMMITTER_EMAIL="$CONEY_IMPL"
+export GIT_AUTHOR_NAME="$2" GIT_AUTHOR_EMAIL="$3" GIT_COMMITTER_NAME="$2" GIT_COMMITTER_EMAIL="$3"
 git -c core.hooksPath=/dev/null rebase -q --exec 'git commit -q --amend --no-edit --reset-author' "$base" >/dev/null
 git push -q outbox "HEAD:refs/heads/$1"
 cd /
