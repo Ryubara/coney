@@ -1,0 +1,75 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "ref-text-labels-global",
+  "page_sha256": "4870964691aea00fa95f3dfd2f5e2981b51f8bf8537e493af9b4256d2b7837c4",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "text-labels-global-tables",
+      "kind": "reference",
+      "sha256": "d5e17844fe4bc85951afaf57074d956194e513dd9c23dd2ab4e45e62b1ad328c",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "fact",
+      "sha256": "7b176044e37bc385527396857b9567c664ecb3d7bb8907304290427a082e5087",
+      "verdict": "keep"
+    },
+    {
+      "id": "language-copies",
+      "kind": "fact",
+      "sha256": "0ccec3b4df959eb3fab854a153308122ca18e239f6ecb5b8005f5e77447a8f02",
+      "verdict": "keep"
+    },
+    {
+      "id": "numbered-and-name-keyed-lists",
+      "kind": "fact",
+      "sha256": "1750f1a7254c14a709e5cbf7460115f1c7c4d953c242f757096028cc8c5d19a4",
+      "verdict": "keep"
+    },
+    {
+      "id": "ids-by-language",
+      "kind": "fact",
+      "sha256": "581303da41f68bb44fc3f76fe409f2223a99c2027985e76bc53c2723e1ae9855",
+      "verdict": "keep"
+    },
+    {
+      "id": "level-name-keys",
+      "kind": "fact",
+      "sha256": "dbcc988b376f12b544dd234b3de18d668ea241ee7e637221ce08e7aca00ed3be",
+      "verdict": "keep"
+    },
+    {
+      "id": "gstring-keys",
+      "kind": "fact",
+      "sha256": "cadd4f5305682ef7f62d7c6bea069fcde13217a022f25813f683520fad9caad6",
+      "verdict": "keep"
+    },
+    {
+      "id": "label-keys",
+      "kind": "fact",
+      "sha256": "9d022b28650d182110342e6811f189dcd3d8c6187a31f6ce2d81f1adec66ba1c",
+      "verdict": "keep"
+    },
+    {
+      "id": "rumble-keys",
+      "kind": "fact",
+      "sha256": "df2ed20d993ca19f8aa2ebc7bf937399017197a6e4439bd3b1b536ad923cb20a",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "341c89032b80367328d0703e9465f5a44b8acc9b4c8c42788f1b3996074d878f",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "7a62140b6cee81fa7f004da9e29f93237b2a159cbb17e3d1eda494af75a512b9",
+      "verdict": "keep"
+    }
+  ]
+}
