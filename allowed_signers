@@ -16,3 +16,4 @@ impl-1 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJPVkVCTLKUTbr/Pt8ps
 impl-2 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXm8cI4JMV3dkQ/x/z/AFeGzGa626/nrFmjOJvSZdDB
 impl-3 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJkoyD7ErrzOyvEXtwNo+UAYRSwmYltw8ulKcIKciHRa
 impl-4 namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJBJ99hVFgKlC9k62mVYVITivKGUSeoweOWTUYE6E37u
+pr-analyst-1 namespaces="coney-verdict" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOL/+nIvdJjcXnz0B6RdU/t1n57G1Vv5pkJ8r6kTvWv+
