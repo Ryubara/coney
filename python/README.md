@@ -616,14 +616,16 @@ tool).
 python -I python/coney-tools.py cleanroom commit-sigs main..HEAD [--repo R] [--ref main] [--ssh-keygen PATH] [--json]
 ```
 
-For every commit in the range that touches the engine root (against any parent): it carries an SSH signature
-(`gpgsig`), made in git's namespace over the commit as git verifies it, by a key that `allowed_signers` at `--ref`
-lists with `namespaces="git"` under an implementer's principal, `impl-<n>`. An unsigned commit, a verdict key, a
-commit key under another principal, a key without a namespace and a key only the branch adds all fail. Its message
-must also name the model that wrote it in exactly one trailer, `Co-Authored-By: Claude <model> <noreply@anthropic.com>`
-(AGENTS.md); a missing, second or other co-author fails. It prints `PASS <commit> <principal>, <model>` or
-`FAIL <commit>: <why>` per checked commit and counts the commits it skipped. Exit status: 0 every engine commit is
-signed by an implementer and names its model, 1 one does not, 2 could not run.
+For every commit in the range that touches the engine root: it carries an SSH signature (`gpgsig`), made in git's
+namespace over the commit as git verifies it, by a key that `allowed_signers` at `--ref` lists with `namespaces="git"`
+under an implementer's principal, `impl-<n>`. A merge of two parents touches it only when its engine root differs from
+git's own clean merge of them (`git merge-tree --write-tree`, git 2.38 or later), so merging `main` into a branch needs
+no implementer's key; a conflicted merge, an edit made in the merge and a merge of more parents are checked. An
+unsigned commit, a verdict key, a commit key under another principal, a key without a namespace and a key only the
+branch adds all fail. Its message must also name the model that wrote it in exactly one trailer,
+`Co-Authored-By: Claude <model> <noreply@anthropic.com>` (AGENTS.md); a missing, second or other co-author fails. It prints
+`PASS <commit> <principal>, <model>` or `FAIL <commit>: <why>` per checked commit and counts the commits it skipped.
+Exit status: 0 every engine commit is signed by an implementer and names its model, 1 one does not, 2 could not run.
 
 ### `cleanroom code-verdict` and `code-verdict-sign`
 
