@@ -230,3 +230,36 @@ test('the wake says why: only the new items, at most eight named, or the repeat 
     'Woken because 11 waiting items are still in your inbox 30 minutes after the last wake.',
   )
 })
+
+test('polls the implementers live logs, and /coney-impl picks whose log it reads', async ($, on) => {
+  const clock = mock.clock(on, { now: 1_000_000 })
+  const runs: string[][] = []
+  on('process.run', async (_$: unknown, e: any) => {
+    runs.push(e.argv)
+    const isLog = e.argv.includes('log')
+    const out = e.argv[0] === 'cmd.exe'
+      ? 'C:\\PD\r\n'
+      : isLog
+        ? JSON.stringify({ implementers: [{ name: 'impl-1' }, { name: 'impl-2' }], shown: 'impl-1', lines: [] })
+        : JSON.stringify(status([]))
+    return { value: { exitCode: 0, stdout: out, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('fs.read', async () => ({ value: JSON.stringify({ python: 'py.exe' }) }))
+  on('command.register', async (_$: unknown, e: any) => ({ value: { command: e.name } }))
+  on('ui.open', async () => ({ value: { isPlaced: true } }))
+  on('ui.status', async () => ({ value: undefined }))
+  on('ui.toast', async () => ({ value: undefined }))
+  on('session.start', async () => ({ cwd: 'C:/Work' }))
+
+  await $.session.start({ source: 'startup', cwd: 'C:/Work' })
+  await clock.settle()
+  const logs = () => runs.filter(r => r.includes('log'))
+  expect(logs().at(-1)?.slice(-4)).toEqual(['--tail', '40', '--workspace', 'C:\\PD\\Coney\\coney.workspace.json'])
+
+  const bad: any = await $.command.run({ command: 'coney-impl', args: 'x; rm' } as any)
+  expect(bad.text).toContain('impl-N')
+  const ok: any = await $.command.run({ command: 'coney-impl', args: 'impl-2' } as any)
+  expect(ok.text).toBe("Showing impl-2's live log.")
+  await clock.advance(15_000)
+  expect(logs().at(-1)?.at(-1)).toBe('impl-2')
+})

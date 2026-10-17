@@ -10,6 +10,7 @@ from coney_tools import (
     ci,
     codegate,
     impl,
+    implog,
     lint,
     research,
     roles,
@@ -936,6 +937,17 @@ def main(argv=None):
         lambda a, ws: impl.collect(ws, a.names),
         names="containers to collect from (default: the whole pool)",
     )
+    lg = impl_parser(
+        "log",
+        "show the implementers' live logs (any zone that may read the live folder)",
+        "Lists every implementer with a live log in <containers>\\live (its task, branch, start, end and exit) and "
+        "prints the last lines of one: the named implementer's, else the one started last. Each line is a UTC time, "
+        "a kind (text, a tool's name, result, done) and a one-line summary.",
+        lambda a, ws: impl.log(ws, a.name, a.tail, a.json),
+    )
+    lg.add_argument("name", nargs="?", metavar="impl-N", help="whose log (default: the one started last)")
+    lg.add_argument("--tail", type=int, default=implog.TAIL, help=f"lines to show (default {implog.TAIL})")
+    lg.add_argument("--json", action="store_true", help="the implementers, the one shown and its lines, as JSON")
     impl_parser(
         "check",
         "check the hardening and isolation of running containers, live",

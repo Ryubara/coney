@@ -674,6 +674,7 @@ runs it. Exit status: 0 in order, 1 a problem, 2 the command could not run.
 python -I python/coney-tools.py impl build | up [impl-N...] | down | status | check
 python -I python/coney-tools.py impl run impl-N --task task.md --branch <new-branch>
 python -I python/coney-tools.py impl collect [impl-N] | reset impl-N
+python -I python/coney-tools.py impl log [impl-N] [--tail N] [--json]
 ```
 
 Drives the implementer containers ([containers/README.md](../containers/README.md)) in the WSL2 distro the workspace
@@ -688,11 +689,18 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
 - `run` streams `main` of the collecting repository in, makes a fresh worktree on a new branch, copies the task file
   in read-only and runs Claude Code on it until it ends. The Claude login comes from the file `containers.auth_file`
   names (`CLAUDE_CODE_OAUTH_TOKEN=...` from `claude setup-token`, or `ANTHROPIC_API_KEY=...`), passed in on
-  standard input, never written into the image, a command line or a log; without it `run` refuses.
+  standard input, never written into the image, a command line or a log; without it `run` refuses. While the
+  session works, `run` writes its live log, `containers\live\impl-N.log`: one line per event (a UTC time, a kind
+  such as `text`, a tool's name, `result` or `done`, and a one-line summary), with `impl-N.json` beside it (task,
+  branch, start, end, exit). When the session ends it prints the session's final message.
 - `collect` fetches each outbox's branches into the collecting repository `containers\outbox\coney.git` as
   `impl-N/<branch>` and copies artifacts and transcripts to `containers\artifacts\` and `containers\archive\`. The
   collecting repository is a zone sub-folder with its own permissions, so a maintainer creates it; `collect` and
-  `run` refuse when it is missing.
+  `run` refuse when it is missing. It also writes each session transcript as Markdown into
+  `containers\archive\impl-N\transcripts\`.
+- `log` lists every implementer with a live log and prints the last lines of one (the named one, else the one started
+  last). Implementers see only public material, so any zone allowed to read `containers\live\` may show their logs;
+  the zone mod's pane does, and `/coney-impl impl-N` picks whose log it shows.
 - `status` shows each container's state, firewall, key fingerprint, caps and task. `check` tests running containers
   from inside: no route to any host but the API, none to the Windows host's analyst ports, no Docker socket, no
   capabilities, a seccomp filter, no new user namespaces, a read-only root filesystem.

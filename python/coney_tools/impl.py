@@ -26,7 +26,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-from coney_tools import signing, workspace
+from coney_tools import implog, signing, workspace
 from coney_tools.cleanroom import scan
 
 COMPOSE = "compose.yml"
@@ -276,6 +276,29 @@ class Distro:
                 p.stdin.close()
             except OSError:
                 pass
+        return p.wait()
+
+    def lines(self, cmd, data=None, each=None):
+        """Runs with each line of its standard output handed to `each` as it comes (its standard error goes to this
+        console); the exit status. data goes to its standard input."""
+        sys.stdout.flush()
+        try:
+            p = subprocess.Popen(
+                self.argv(cmd),
+                stdin=subprocess.PIPE if data is not None else subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                creationflags=scan.NO_WINDOW,
+            )
+        except OSError as e:
+            raise ImplError(f"cannot run wsl.exe: {e.__class__.__name__}") from None
+        if data is not None:
+            try:
+                p.stdin.write(data)
+                p.stdin.close()
+            except OSError:
+                pass
+        for raw in p.stdout:
+            each(raw.rstrip(b"\r\n"))
         return p.wait()
 
     def reader(self, cmd):
@@ -921,18 +944,45 @@ def run(ws, name, task, branch, distro=None):
     pool.put(f"{pool.binds(name)[TASK_DIR]}/{TASK_FILE}", data)
     st = {"task": Path(task).name, "branch": branch, "started": now()}
     pool.put(pool.state_file(name), json.dumps(st).encode(), mode="0644")
-    print(f"{name}: session on branch {branch} started", flush=True)
-    code = pool.d.stream(session_argv(name, branch, auth), auth_input(auth))
+    live = implog.LiveLog(pool.s.public, name, st)
+    print(f"{name}: session on branch {branch} started; live log in {live.f.name}", flush=True)
+    try:
+        code = pool.d.lines(session_argv(name, branch, auth), auth_input(auth), live.feed)
+    finally:
+        live.close(ended=now())
     st.update(ended=now(), exit=code)
+    live.state.update(exit=code)
+    live.write_state()
     pool.put(pool.state_file(name), json.dumps(st).encode(), mode="0644")
     pushed = pool.outbox_refs(name).get(f"refs/heads/{branch}")
-    lines = [f"{name}: the session ended (exit {code})"]
+    lines = [live.final.rstrip()] if live.final else []
+    lines.append(f"{name}: the session ended (exit {code})")
     lines.append(
         f"{name}: {branch} pushed to its outbox at {pushed[:12]}" if pushed else f"{name}: {branch} not in its outbox"
     )
     if pushed:
         lines.append(f"collect it with `coney-tools impl collect {name}`")
     return (0 if code == 0 and pushed else 1), lines
+
+
+def log(ws, name=None, tail=implog.TAIL, as_json=False):
+    """(code, lines): the implementers' live states and the last lines of one's live log."""
+    if name is not None and not re.match(r"^impl-\d+$", name):
+        raise ImplError(f"not an implementer's name: {name!r}")
+    doc = implog.read_log(ws.where("containers"), name, max(1, tail))
+    if as_json:
+        return 0, [json.dumps(doc, indent=2)]
+    lines = []
+    for s in doc["implementers"]:
+        state = f"exit {s['exit']}" if "exit" in s else ("ended" if s.get("ended") else "running")
+        lines.append(
+            f"{s['name']}: {state}, {s.get('task', '?')} on {s.get('branch', '?')}, started {s.get('started')}"
+        )
+    if not doc["implementers"]:
+        lines.append("no implementer has a live log yet")
+    if doc["shown"]:
+        lines += [f"== {doc['shown']}", *doc["lines"]]
+    return 0, lines
 
 
 # --- collect -------------------------------------------------------------------------------------------------------
@@ -1007,6 +1057,9 @@ def collect(ws, names=(), distro=None):
             copied, skipped = copy_out(pool, b[target], pool.s.public / folder / n)
             extra = f", {skipped} skipped (not a plain file, or a name Windows refuses)" if skipped else ""
             lines.append(f"{n}: {copied} {folder} files copied to {pool.s.public / folder / n}{extra}")
+            if target == ARCHIVE:
+                made = implog.write_transcripts(pool.s.public / folder / n)
+                lines.append(f"{n}: {made} readable transcripts in {pool.s.public / folder / n / implog.TRANSCRIPTS}")
     return 0, lines
 
 

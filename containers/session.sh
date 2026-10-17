@@ -3,7 +3,8 @@
 #
 # Refreshes the container's clone from the bundle of main that coney-tools streamed to /tmp, makes a fresh worktree
 # on a new branch BRANCH from it, checks the egress wall once more and runs Claude Code on the task, without a
-# terminal, until it ends. Exit status: Claude Code's, or 10 to 13 when the session could not start.
+# terminal, until it ends. Its events go to standard output as stream-json, one per line, which `impl run` turns into
+# the live log. Exit status: Claude Code's, or 10 to 13 when the session could not start.
 set -euo pipefail
 
 branch=${1:?usage: coney-session BRANCH}
@@ -51,4 +52,5 @@ cd "$work"
 exec claude -p "Do the task in $task. You are on branch $branch in a fresh worktree of the repository." \
     --append-system-prompt "$(cat /etc/coney/system-prompt.txt)" \
     --plugin-dir /opt/tether \
-    --permission-mode bypassPermissions
+    --permission-mode bypassPermissions \
+    --output-format stream-json --verbose
