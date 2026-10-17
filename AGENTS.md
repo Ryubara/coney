@@ -29,12 +29,15 @@ read the original from the public side, and never sends free-text messages to an
 
 | Path | What it holds |
 | --- | --- |
-| `python/` | `coney-tools`, the command-line tool: clean-room checks, gates, zones, progress |
-| `docs/` | documentation, starting with the [clean-room page](docs/clean-room.md) |
+| `python/` | `coney-tools`, the command-line tool: clean-room checks, gates, zones, implementers, CI |
+| `research/` | gated research pages (`pages/`) and their signed verdicts (`verdicts/`): the engine's only source |
+| `engine/` | the engine, C++23 with CMake and Catch2 (once its first pull request lands) |
+| `containers/` | the implementer image: its Dockerfile, session script, system prompt and firewall |
+| `mods/` | the zone mod: each zone's pane and its waking |
+| `docs/` | documentation, starting with the [clean-room page](docs/clean-room.md); `overrides/` styles the site |
 | `.github/` | CI workflows, the repository's conventions, the pull request template and issue forms ([CI](docs/ci.md)) |
+| `allowed_signers` | the only keys whose signatures count: implementers' commit keys, reviewers' and PR analysts' verdict keys |
 | `AGENTS.md` | these instructions (`CLAUDE.md` imports them) |
-
-The engine, documentation site and containers arrive during the current phase; this table grows with them.
 
 ## Commands
 
@@ -45,7 +48,9 @@ Python with `-I`, so nothing from the current folder or the environment is impor
 python -I python/coney-tools.py cleanroom page-check --json page.md   # check a research page
 python -I python/coney-tools.py cleanroom page-check --rules          # list the page rules
 python -I python/coney-tools.py cleanroom orig-check                  # check the engine's @orig tags
-python -I python/coney-tools.py cleanroom commit-sigs main..HEAD      # check engine commits are signed
+python -I python/coney-tools.py cleanroom commit-sigs main..HEAD      # check engine commits are signed, name a model
+python -I python/coney-tools.py cleanroom code-verdict main..HEAD     # check engine changes carry a code verdict
+python -I python/coney-tools.py impl status                           # the implementer containers and their tasks
 python -I python/coney-tools.py zones check                           # check this account's zone walls
 python -I python/coney-tools.py zones ports --list                    # show the port wall's filters
 cd python && python -I -B -m unittest discover -s tests               # the tool's tests
@@ -70,12 +75,18 @@ Exit status of every command: 0 passed, 1 a check failed, 2 the command could no
 
 - Write commit messages as a summary line `area: Verb the rest`, a blank line, then what changed and why. The areas
   are in `.github/conventions.yml` (`engine`, `tools`, `research`, `ci`, `docs`, `agents`); the commit-msg hook and
-  the pull request's `title` check enforce the form.
+  the pull request's `title` check enforce the form. The verbs are Add, Fix, Update, Remove, Rebuild, Rework, Improve
+  and Document.
 - A commit an agent writes names it in one `Co-Authored-By:` trailer with the model's name and the vendor's noreply
-  address. No other trailers, no personal email addresses, no session or site links.
+  address. No other trailers, no personal email addresses, no session or site links. For engine commits
+  `cleanroom commit-sigs` enforces it, and an engine pull request's AI use section names the model it lists.
+- Implementers run at the model and effort the machine's workspace pins for them (`containers.model`,
+  `containers.effort`); each session's record in `containers\live\` names the models the API served.
+- An engine pull request merges only with a code verdict a PR analyst signed (`cleanroom code-verdict`).
 - Agents commit locally and run every local check; only a coordinator pushes to GitHub. An implementer container
   pushes its branch to its own outbox, which is how its work reaches the coordinator. Pull requests are
-  squash-merged once their checks pass.
+  squash-merged once their checks pass; a branch is brought up to date by merging `main` into it, never by
+  rewriting it.
 - In issues, pull requests and documentation, "user" is whoever tested, was affected or filed something, and
   "maintainers" are whoever decides.
 - Public text describes the process in neutral words: what Coney does, never incidents, dates of problems or what
