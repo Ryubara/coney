@@ -308,6 +308,20 @@ class Repo(unittest.TestCase):
 
     # --- code-verdict-sign ----------------------------------------------------------------------------------------
 
+    def result(self, doc, **change):
+        """A pre-filter result file matching the verdict, with any field changed."""
+        result = {
+            "schema": codeverdict.PREFILTER_SCHEMA,
+            "commit": doc["commit"],
+            "outcome": doc["prefilter"],
+            "functions": [{"path": f["path"], "address": f["address"], "outcome": "pass"} for f in doc["functions"]],
+        }
+        result.update(change)
+        p = self.tmp / "in" / f"result-{self._testMethodName}-{len(list(self.tmp.glob('in/result-*')))}.json"
+        p.parent.mkdir(exist_ok=True)
+        p.write_bytes(research.canonical(result))
+        return p
+
     def test_sign_writes_canonical_bytes_and_a_signature_that_passes(self):
         doc = self.covered()
         src, out = self.tmp / "in" / "v9.json", self.tmp / f"out-{self._testMethodName}"
@@ -315,6 +329,7 @@ class Repo(unittest.TestCase):
         out.mkdir()
         src.write_text(json.dumps(doc), encoding="utf-8")
         args = ("cleanroom", "code-verdict-sign", src, "--key", self.key["pa"], "--principal", "pr-analyst-1")
+        args += ("--prefilter", self.result(doc))
         code, text, err = run_cli(*args, "--out", out)
         self.assertEqual(code, 0, text + err)
         self.assertEqual((out / "v9.json").read_bytes(), research.canonical(doc))
@@ -330,11 +345,45 @@ class Repo(unittest.TestCase):
         doc = verdict({"engine/a.cpp": "1" * 40}, [("engine/a.cpp", "0x00aa11bb", "parallel")])
         src.write_text(json.dumps(doc), encoding="utf-8")
         args = ("cleanroom", "code-verdict-sign", src, "--key", self.key["pa"], "--out", out)
+        args += ("--prefilter", self.result(doc))
         code, text, _ = run_cli(*args, "--principal", "pr-analyst-1")
         self.assertEqual(code, 1)
         self.assertIn("not signed: only a passing verdict is", text)
         self.assertEqual(list(out.iterdir()), [])
         self.assertEqual(run_cli(*args, "--principal", "page-reviewer-1")[0], 2)
+
+    def test_sign_refuses_a_prefilter_result_that_does_not_match(self):
+        src, out = self.tmp / "in" / "v8.json", self.tmp / f"out-{self._testMethodName}"
+        src.parent.mkdir(exist_ok=True)
+        out.mkdir()
+        doc = verdict({"engine/a.cpp": "1" * 40}, [("engine/a.cpp", "0x00aa11bb", "independent")])
+        src.write_text(json.dumps(doc), encoding="utf-8")
+        flagged = [{"path": "engine/a.cpp", "address": "0x00aa11bb", "outcome": "flag"}]
+        other = [{"path": "engine/a.cpp", "address": "0x00aa11cc", "outcome": "pass"}]
+        cases = {
+            "another commit": (self.result(doc, commit="cd" * 20), "for another commit"),
+            "flagged": (self.result(doc, outcome="flag", functions=flagged), "outcome is not the verdict's"),
+            "other functions": (self.result(doc, functions=other), "judged other functions"),
+            "fewer functions": (self.result(doc, functions=[]), "judged other functions"),
+            "bad schema": (self.result(doc, schema="coney-prefilter/2"), "schema is not"),
+            "extra key": (self.result(doc, note="x"), "not an object with exactly"),
+            "outcome without a flag": (self.result(doc, outcome="flag"), "outcome is not flag exactly when"),
+        }
+        bad = self.tmp / "in" / "bad-result.json"
+        bad.write_text("{", encoding="utf-8")
+        cases["not json"] = (bad, "not UTF-8 JSON")
+        args = ("cleanroom", "code-verdict-sign", src, "--key", self.key["pa"], "--out", out)
+        for name, (result, want) in cases.items():
+            with self.subTest(name):
+                code, text, _ = run_cli(*args, "--principal", "pr-analyst-1", "--prefilter", result)
+                self.assertEqual(code, 1, text)
+                self.assertIn(want, text)
+                self.assertEqual(list(out.iterdir()), [])
+        missing = self.tmp / "in" / "missing.json"
+        self.assertEqual(run_cli(*args, "--principal", "pr-analyst-1", "--prefilter", missing)[0], 2)
+        with self.assertRaises(SystemExit) as raised, redirect_stderr(io.StringIO()):
+            main([str(a) for a in (*args, "--principal", "pr-analyst-1")])  # --prefilter is required
+        self.assertEqual(raised.exception.code, 2)
 
 
 class FakeWs:

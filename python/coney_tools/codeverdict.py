@@ -15,7 +15,8 @@ the ref) lists under a PR analyst's principal; any other file in the folder, or 
 fails. Each changed source file must be listed with its exact blob by an added verdict, and each `@orig` address in it
 must have an `independent` entry there. Verdicts merged earlier are not checked again.
 
-`code-verdict-sign` is the analyst side's: it signs a verdict that passes, and refuses one that does not.
+`code-verdict-sign` is the analyst side's: it signs a verdict that passes, and refuses one that does not or that the
+scripted pre-filter's result (`cleanroom prefilter`, in prefilter.py) does not match.
 """
 
 import json
@@ -34,6 +35,8 @@ ADDRESS = re.compile(r"^0x[0-9a-f]{8}$")
 NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 SIG = re.compile(r"^([A-Za-z0-9][A-Za-z0-9_-]{0,63})\.([a-z0-9][a-z0-9-]{0,63})\.sig$")
 KEYS = {"schema", "commit", "files", "functions", "prefilter"}
+PREFILTER_SCHEMA = "coney-prefilter/1"  # the scripted pre-filter's result (cleanroom prefilter --out)
+PREFILTER_KEYS = {"schema", "commit", "outcome", "functions"}
 
 
 class VerdictError(codegate.CodeGateError):
@@ -238,9 +241,73 @@ def tags_of(path, data):
 # --- signing (the analyst side) ---------------------------------------------------------------------------------
 
 
-def sign(verdict, key, principal, out, ssh_keygen=None):
+def prefilter_problems(doc):
+    """Why a parsed pre-filter result (cleanroom prefilter --out) is malformed, as lines; empty when well formed."""
+    if not isinstance(doc, dict) or set(doc) != PREFILTER_KEYS:
+        return [f"not an object with exactly {', '.join(sorted(PREFILTER_KEYS))}"]
+    out = []
+    if doc["schema"] != PREFILTER_SCHEMA:
+        out.append(f"schema is not {PREFILTER_SCHEMA}")
+    if not isinstance(doc["commit"], str) or not SHA1.match(doc["commit"]):
+        out.append("commit is not a 40-digit lower-case commit id")
+    if doc["outcome"] not in PREFILTER:
+        out.append(f"outcome is not one of {', '.join(PREFILTER)}")
+    functions = doc["functions"] if isinstance(doc["functions"], list) else None
+    if functions is None:
+        return [*out, "functions is not a list"]
+    keys = []
+    for f in functions:
+        if not isinstance(f, dict) or set(f) != {"path", "address", "outcome"}:
+            out.append("a functions entry is not an object with exactly path, address, outcome")
+        elif (
+            not research.image_path_ok(f["path"])
+            or not isinstance(f["address"], str)
+            or not ADDRESS.match(f["address"])
+        ):
+            out.append("a functions entry has a bad path or address")
+        elif f["outcome"] not in PREFILTER:
+            out.append(f"a functions entry's outcome is not one of {', '.join(PREFILTER)}")
+        else:
+            keys.append((f["path"], f["address"]))
+    if keys != sorted(set(keys)):
+        out.append("functions is not sorted by path then address, each listed once")
+    if not out and (doc["outcome"] == "flag") != any(f["outcome"] == "flag" for f in functions):
+        out.append("outcome is not flag exactly when a function is flagged")
+    return out
+
+
+def prefilter_mismatch(doc, result):
+    """Why a well-formed pre-filter result does not belong to a well-formed verdict, as lines."""
+    out = []
+    if result["commit"] != doc["commit"]:
+        out.append("the pre-filter result is for another commit")
+    if result["outcome"] != doc["prefilter"]:
+        out.append("the pre-filter result's outcome is not the verdict's prefilter")
+    if {(f["path"], f["address"]) for f in result["functions"]} != {
+        (f["path"], f["address"]) for f in doc["functions"]
+    }:
+        out.append("the pre-filter result judged other functions than the verdict lists")
+    return out
+
+
+def read_prefilter(path):
+    """(result, problems) for a pre-filter result file; a file that cannot be read could not run (exit 2)."""
+    try:
+        data = Path(path).read_bytes()
+    except OSError as e:
+        raise VerdictError(f"cannot read {path}: {e.__class__.__name__}") from None
+    try:
+        result = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None, ["the pre-filter result is not UTF-8 JSON"]
+    return result, [f"the pre-filter result: {b}" for b in prefilter_problems(result)]
+
+
+def sign(verdict, key, principal, out, prefilter, ssh_keygen=None):
     """(code, lines): writes the verdict in canonical form and the principal's signature over it into out. A verdict
-    that is malformed or does not pass is refused (exit 1), so only a passing verdict is ever signed."""
+    that is malformed or does not pass is refused (exit 1), so only a passing verdict is ever signed; so is one the
+    pre-filter result (cleanroom prefilter --out) does not match: its commit, its outcome and the functions it
+    judged must be the verdict's."""
     if not signing.PRINCIPAL.match(principal) or not principal.startswith(signing.PR_ANALYST):
         raise VerdictError(f"--principal must be {signing.PR_ANALYST}<n>")
     verdict, out = Path(verdict), Path(out)
@@ -254,6 +321,9 @@ def sign(verdict, key, principal, out, ssh_keygen=None):
     except (UnicodeDecodeError, json.JSONDecodeError):
         return 1, [f"FAIL {stem}: not UTF-8 JSON"]
     bad = problems(doc) or failing(doc)
+    if not bad:
+        result, bad = read_prefilter(prefilter)
+        bad = bad or prefilter_mismatch(doc, result)
     if bad:
         return 1, [f"FAIL {stem}: {b}" for b in bad] + [f"{stem}: not signed: only a passing verdict is"]
     data = research.canonical(doc)

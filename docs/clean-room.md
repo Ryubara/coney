@@ -338,6 +338,16 @@ the scripted pre-filter's outcome (`pass` or `flag`). It is signed in the verdic
 `allowed_signers` lists under a PR analyst's name, and `coney-tools cleanroom code-verdict-sign` signs only a verdict
 that passes.
 
+The scripted pre-filter is `coney-tools cleanroom prefilter`, which the PR analyst runs on the analysis side before
+judging. It reads every tagged function the change adds or modifies, and a facts file the analyst writes from their
+own tools about each original function: its callees in call order and its number of conditional branches. That file
+stays in the analysis zone. A function is flagged when its body holds a number its page does not give, when its
+calls to other tagged functions follow the original's callees in the same order, or when its branch points number
+the original's branches. The thresholds and the numbers too common to ask a page for are settings. The output names
+rules, files and the judged addresses only. `code-verdict-sign` signs a verdict only beside the pre-filter's result
+for the same commit, with the same outcome and exactly the same functions. A comparison of the code's text with the
+original's for overlap is a separate step of the analyst's review, not part of this command.
+
 - `coney-tools cleanroom code-verdict main..HEAD` passes only when every engine source file the change adds or
   modifies is listed, with its exact content, by a verdict the change adds, every `@orig` address in it is judged
   `independent`, the pre-filter passed, and the verdict carries a valid PR analyst signature. Any change to the code
