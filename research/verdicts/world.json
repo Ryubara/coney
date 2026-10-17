@@ -1,0 +1,153 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "world",
+  "page_sha256": "eb5b42a572bf3fdc98ac7a7e44ed0bcdea78841d8edc4e3ff3135b8045a4033a",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "streamed-world",
+      "kind": "reference",
+      "sha256": "a42871f2f463f1519e17f66cf19ba4ee8d3a60e19634095b60a666dc1bfb5caa",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "reference",
+      "sha256": "6ffcb0b645dd1a2cef91535eb3360a04dfcd263f1b2844f306a176ca1828f525",
+      "verdict": "keep"
+    },
+    {
+      "id": "two-worlds-per-level",
+      "kind": "fact",
+      "sha256": "8d8d14393ccefe521eda745cfc7eda7564f559008fa5ad8148eb22880494d3d4",
+      "verdict": "keep"
+    },
+    {
+      "id": "world-stream",
+      "kind": "fact",
+      "sha256": "9aa8d62322b00dc53bcc8f183a77f0aa3928395a97a46415090a7d2b32312b32",
+      "verdict": "keep"
+    },
+    {
+      "id": "sectors",
+      "kind": "fact",
+      "sha256": "cac5a41a8ecebbfe8e01948f4dc603020f7f5f681ad83e18356759f6bef268da",
+      "verdict": "keep"
+    },
+    {
+      "id": "sector-record",
+      "kind": "fact",
+      "sha256": "f647a008ab1425e2a651012ca741d718551bed20dbba7648f77d636e9cec458f",
+      "verdict": "keep"
+    },
+    {
+      "id": "part-file",
+      "kind": "fact",
+      "sha256": "6aac9f71dc9858a2f0a2b679d0bb90f5a87b67959881e2c53c4d234bd69cfaad",
+      "verdict": "keep"
+    },
+    {
+      "id": "geometry-plugin-0x3f0",
+      "kind": "fact",
+      "sha256": "b95ced248ec959146a39747d2b3fd3846d9a89eccad4d8163e75f17aa4cfe941",
+      "verdict": "keep"
+    },
+    {
+      "id": "part-files-no-world-lists",
+      "kind": "fact",
+      "sha256": "c741af1184d7e511b89e7d70176f044e674d90bf450be25f655a235fbe1a7b73",
+      "verdict": "keep"
+    },
+    {
+      "id": "coordinates",
+      "kind": "fact",
+      "sha256": "b5dc81d83a300e18af87c4043780214294b2753ab95f0c62d7c77ba572321992",
+      "verdict": "keep"
+    },
+    {
+      "id": "streaming",
+      "kind": "behaviour",
+      "sha256": "a307509dd5efde87948f669d9578e2cdc8756a210641dbe6720ac0a6c4da810e",
+      "verdict": "keep"
+    },
+    {
+      "id": "visibility",
+      "kind": "behaviour",
+      "sha256": "258bb6f9fa1f0fc0db6371da03f3c109ac9aff7151fb2bb8060724f36989e47c",
+      "verdict": "keep"
+    },
+    {
+      "id": "draw-distance",
+      "kind": "behaviour",
+      "sha256": "2f1a354288fff9fe369df58e223fba0965277138b3c9c7fbe44faf14164ccc33",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-is-drawn-where",
+      "kind": "fact",
+      "sha256": "2a26220815b012c2394f70cde9f04717efd3f0914ce90acb33d4760696ba4e57",
+      "verdict": "keep"
+    },
+    {
+      "id": "sector-regions",
+      "kind": "fact",
+      "sha256": "a030b524947683ee9878e56f522913a1706daae5a35cac4844481ba082c83ce5",
+      "verdict": "keep"
+    },
+    {
+      "id": "visibility-map",
+      "kind": "fact",
+      "sha256": "7d3991c044557e8d2cfd25443f76449cd3ed0b47d2761d6fc762ffa164dca28d",
+      "verdict": "keep"
+    },
+    {
+      "id": "seen-per-level",
+      "kind": "fact",
+      "sha256": "7d101d95850e94ce692a56838eb6d4fe40f6e724b9d62954f9316cab47817980",
+      "verdict": "keep"
+    },
+    {
+      "id": "seen-from-the-story-starts",
+      "kind": "fact",
+      "sha256": "5289ea151badaa0348dd203a4fdd67d5d997baebaeab8f1fb15aa464321efce8",
+      "verdict": "keep"
+    },
+    {
+      "id": "fog-colour",
+      "kind": "fact",
+      "sha256": "1c3d662a351f4ac1b9595a90f3ccdb5303bcab683668cca6b0f4f485a6b8cc5e",
+      "verdict": "keep"
+    },
+    {
+      "id": "rain",
+      "kind": "fact",
+      "sha256": "dbeaef3b4a4315b6ccd923ce6dc471b58d9556772c45c6dca4ef9716ee8f5610",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-version",
+      "kind": "reference",
+      "sha256": "e42b27a478da10de8c6f2ce89ae9166c0e21f8df2f3c6104c1254233b96d9044",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "6639344fd2eb7c65d65b3e28a932da9850dc3845f21e86abc08ff5972cc09d2a",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "cacca7b72a75720c65ad784cd66781ddc61113f722d684c7804a7c2b00073508",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "a88799586fdacd320d9b5483936a76654ab0f3b6c89805d4bb5acb7f319003a1",
+      "verdict": "keep"
+    }
+  ]
+}
