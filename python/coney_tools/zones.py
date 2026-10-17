@@ -216,16 +216,44 @@ def port_state(port, probe=port_probe):
     return "; ".join(f"{h} {g}" for h, g in zip(LOOPBACKS, got, strict=True))
 
 
+def port_accounts(entry, sides):
+    """The accounts (lower-case) one analyst_ports entry lets through: its own `accounts` when it names them, else
+    every analyst-side account (`sides`)."""
+    named = entry.get("accounts")
+    return {a.lower() for a in named} if named is not None else {a.lower() for a in sides}
+
+
+def wall_allowed(ws, sid_of):
+    """{port: {account: SID}} of the accounts the wall lets through each analyst port, as `zones ports --apply`
+    writes it and the full check expects it. A port listed twice lets through either entry's accounts. Raises
+    OSError for an account without a SID."""
+    sides = ws.analyst_side_accounts()
+    sids, out = {}, {}
+    for p in ws.ports:
+        for a in sorted(port_accounts(p, sides)):
+            if a not in sids:
+                sids[a] = sid_of(a)
+            out.setdefault(int(p["port"]), {})[a] = sids[a]
+    return out
+
+
+def wall_specs(allowed):
+    """The port filters of the wall for wall_allowed's result."""
+    return wfp.expected_per_port({port: set(accts.values()) for port, accts in allowed.items()})
+
+
 def port_checks(ws, me, state=None):
-    """Every analyst port must turn this account away, unless it is on the analyst side."""
+    """Every analyst port must turn this account away, unless the port lets it through: every analyst-side account,
+    or only the port's own `accounts` when it names them."""
     state = state or port_state
-    exempt = me.lower() in ws.analyst_side_accounts()
+    sides = ws.analyst_side_accounts()
     out, todo = [], []
     want = "no connection"
     for p in ws.ports:
         where = f"localhost:{p['port']} ({p.get('name', 'analyst port')})"
-        if exempt:
-            out.append(Check("analyst port", where, want, "not checked: analyst-side account", True))
+        if me.lower() in port_accounts(p, sides):
+            why = "one of the port's accounts" if p.get("accounts") is not None else "analyst-side account"
+            out.append(Check("analyst port", where, want, f"not checked: {why}", True))
         else:
             todo.append((where, p["port"]))
     if todo:
@@ -751,10 +779,9 @@ def wall_filter_checks(ws, sid_of, read_state, read_others=list, read_overriding
     program_specs: the program filters expected besides the ports'."""
     where = "Windows Filtering Platform"
     try:
-        allowed = {sid_of(a) for a in sorted(ws.analyst_side_accounts())}
+        want = wall_specs(wall_allowed(ws, sid_of))
     except OSError as e:
         return [Check("port wall", where, "every analyst-side account resolves", f"error: {e}", False)]
-    want = wfp.expected([p["port"] for p in ws.ports], allowed)
     want += [s for *_, specs in programs for s in specs]
     try:
         weight, have = read_state()

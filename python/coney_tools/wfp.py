@@ -191,10 +191,15 @@ def users_from_sddl(sddl):
 
 
 def expected(ports, allowed_sids):
-    """Every filter of the wall for these ports, the analyst-side accounts' SIDs allowed through."""
-    allowed = frozenset(s.upper() for s in allowed_sids)
+    """Every filter of the wall for these ports, the same SIDs allowed through each."""
+    return expected_per_port({int(p): allowed_sids for p in ports})
+
+
+def expected_per_port(allowed_by_port):
+    """Every filter of the wall: {port: SIDs allowed through it}. A port with no SID gets no permit."""
     out = []
-    for port in sorted({int(p) for p in ports}):
+    for port in sorted(allowed_by_port):
+        allowed = frozenset(s.upper() for s in allowed_by_port[port])
         for v in ("v4", "v6"):
             if allowed:
                 out.append(FilterSpec(f"connect-{v}", "permit", port, users=allowed, weight=PERMIT_WEIGHT))

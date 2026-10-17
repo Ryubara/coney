@@ -942,12 +942,27 @@ python -I python/coney-tools.py zones ports --remove   # elevated: remove the fi
 For each analyst port in the workspace:
 
 - **Connections to the port** (the ALE connect layers, IPv4 and IPv6) are blocked for every account except the
-  analyst-side ones, the accounts whose zone folder lies in the analyst root. A permit whose user condition grants
-  only those accounts' SIDs sits above a block that matches everyone. The engine tests a user condition with an
-  access check against its security descriptor, and the condition holds only when access is granted; any other
-  account, or a token the check refuses for any reason, falls through to the block.
+  port's accounts: the analyst-side ones, the accounts whose zone folder lies in the analyst root, or only those the
+  entry names in its own `accounts`. A permit whose user condition grants only those accounts' SIDs sits above a
+  block that matches everyone. The engine tests a user condition with an access check against its security
+  descriptor, and the condition holds only when access is granted; any other account, or a token the check refuses
+  for any reason, falls through to the block.
 - **Connections from outside this machine** (the ALE receive/accept layers) are blocked for everyone: only loopback
   traffic reaches the port, so a container network or another host never does.
+
+Each `analyst_ports` entry is an object:
+
+| Field | What it holds |
+| --- | --- |
+| `port` | the TCP port, 1 to 65535 |
+| `name` | what listens there, for reports |
+| `accounts` | optional: the only accounts let through, a non-empty list of analyst-side accounts (the workspace is refused otherwise); without it, every analyst-side account is |
+
+`--apply` writes each port's permit for its accounts and prints them per port; a port listed twice lets through
+either entry's accounts. The full check expects the same filters, and a permit granting any account beyond the
+port's is a breach. The port check (both modes) is skipped only for an account the port lets through: an
+analyst-side account a port's `accounts` leaves out is checked like any other and must be turned away. The
+unlisted-listener check below still covers every analyst-side account.
 
 Coney's sublayer asks for the highest weight, so no permit in another sublayer is evaluated before its block, and a
 block cannot be overridden by a later permit. Another product (a VPN client, for example) may already hold that

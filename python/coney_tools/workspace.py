@@ -337,6 +337,15 @@ def _validate_zones(z, where):
     return by_role
 
 
+def _port_accounts(ws, accounts, where):
+    """An analyst port's own `accounts`: a non-empty list of analyst-side accounts, the only ones it lets through."""
+    ok = isinstance(accounts, list) and accounts and all(isinstance(a, str) and a for a in accounts)
+    _want(ok, f"{where} must be a non-empty list of account names")
+    sides = ws.analyst_side_accounts()
+    others = sorted({a for a in accounts if a.lower() not in sides})
+    _want(not others, f"{where}: {', '.join(others)} is not an analyst-side account (zone folder in the analyst root)")
+
+
 def load(arg=None):
     """Loads and validates the workspace and its zones file. Raises WorkspaceError."""
     path = locate(arg)
@@ -359,6 +368,8 @@ def load(arg=None):
     for i, p in enumerate(data["analyst_ports"]):
         ok = isinstance(p, dict) and isinstance(p.get("port"), int) and 0 < p["port"] < 65536
         _want(ok, f"{w}: analyst_ports[{i}] needs a 'port' from 1 to 65535")
+        if "accounts" in p:
+            _port_accounts(ws, p["accounts"], f"{w}: analyst_ports[{i}].accounts")
     exceptions = data.get("listener_exceptions", [])
     _want(isinstance(exceptions, list), f"{w}: 'listener_exceptions' must be a list")
     for i, x in enumerate(exceptions):
