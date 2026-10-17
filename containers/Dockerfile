@@ -1,4 +1,5 @@
-# The implementer image: a toolchain for Coney's engine (C++23, SDL3, CMake, Catch2) and Claude Code, nothing else.
+# The implementer image: a toolchain for Coney's engine (C++23 with GCC and Clang, CMake, Ninja, Catch2 3) and Claude
+# Code, nothing else. SDL3 joins with the engine's platform layer (Ubuntu 24.04 does not package it).
 # Built by `coney-tools impl build`. Everything is fixed here so a rebuild gives the same image: the base image and
 # uv by digest, Ubuntu packages from one dated snapshot of the archive, Node by its checksum, Claude Code by version.
 # Nothing is fetched when a container runs: its firewall lets it reach the Anthropic API only.
@@ -31,6 +32,7 @@ RUN rm -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list \
     && apt-get -o Acquire::https::Verify-Peer=false install -y --no-install-recommends ca-certificates \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
+        catch2 \
         clang \
         cmake \
         curl \
