@@ -28,7 +28,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import lint
+from coney_tools import codegate, lint
 from coney_tools.cleanroom import scan
 
 WORKFLOWS = (".github", "workflows")
@@ -54,6 +54,9 @@ CLAUDE_PACKAGE = "@anthropic-ai/claude-code"
 NODE_URL = "https://nodejs.org/dist/v{v}/node-v{v}-linux-x64.tar.xz"
 NODE_TIMEOUT = 300  # seconds for the download
 STAMP = "coney-ci.stamp"  # in a job's virtual environment: the hash of what it was built from
+# The compilers the engine must build and pass its tests with (the implementer image has both), by build folder name.
+ENGINE_COMPILERS = {"gcc": "g++", "clang": "clang++"}
+ENGINE_TOOLS = ("cmake", "ctest", "ninja")
 
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -613,6 +616,47 @@ sys.exit(1 if bad else 0)
 """
 
 
+def engine_root(repo):
+    """The engine's folder: engine_root of the code gate's settings in the working tree's python/pyproject.toml."""
+    try:
+        doc = tomllib.loads(read(repo, PYPROJECT))
+    except tomllib.TOMLDecodeError:
+        raise CiError(f"{'/'.join(PYPROJECT)} is not valid TOML") from None
+    for key in codegate.SECTION:
+        doc = doc.get(key) if isinstance(doc, dict) else None
+    value = doc.get("engine_root") if isinstance(doc, dict) else None
+    try:
+        return codegate.rel_path(value, "engine_root")
+    except codegate.CodeGateError as e:
+        raise CiError(str(e)) from None
+
+
+def engine_steps(ctx):
+    """Configures, builds and tests the engine once per compiler of ENGINE_COMPILERS, each in its own build folder
+    made fresh. Passes with a note while the engine has no CMakeLists.txt."""
+    root = engine_root(ctx.repo)
+    source = ctx.repo.joinpath(*root.split("/"))
+    if not (source / "CMakeLists.txt").is_file():
+        note = f"no {root}/CMakeLists.txt yet: nothing to build"
+        return [Step(f"{root}/CMakeLists.txt", call=lambda ctx, run: (0, [note]))]
+    found = {name: scan.find_program(name) for name in (*ENGINE_TOOLS, *ENGINE_COMPILERS.values())}
+    missing = [name for name, path in found.items() if not path]
+    if missing:
+        raise CiError(f"the engine job needs {', '.join(missing)} on PATH")
+    cmake, ctest = found["cmake"], found["ctest"]
+    steps = []
+    for name, cxx in ENGINE_COMPILERS.items():
+        build = str(ctx.work() / f"engine-{name}")
+        configure = [cmake, "--fresh", "-S", str(source), "-B", build, "-G", "Ninja"]
+        steps += [
+            Step(f"configure with {cxx}", configure, cwd=ctx.repo, env={"CXX": found[cxx]}),
+            Step(f"build with {cxx}", [cmake, "--build", build], cwd=ctx.repo),
+            Step(f"tests built with {cxx}", [ctest, "--test-dir", build, "--output-on-failure", "--no-tests=error"],
+                 cwd=ctx.repo),
+        ]  # fmt: skip
+    return steps
+
+
 def workflow_steps(ctx):
     return [Step("workflows run every job, pinned", call=check_workflows)]
 
@@ -631,6 +675,7 @@ JOBS = {
         Job("verify", "every research page's verdict, two signatures and hashes", verify_steps),
         Job("orig-check", "every @orig tag names an address and job on a gated page", orig_check_steps),
         Job("commit-sigs", "every engine commit is signed by an allowed implementer key", commit_sigs_steps),
+        Job("engine", "the engine builds and passes its tests with each compiler", engine_steps),
     )
 }
 

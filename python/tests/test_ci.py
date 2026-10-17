@@ -291,7 +291,7 @@ class Jobs(unittest.TestCase):
 
     def test_every_job_has_steps_and_a_description(self):
         self.assertEqual(list(ci.JOBS), ["workflow", "tests", "disclosure", "markdownlint", "ruff", "conventions",
-                                         "site", "mod", "verify", "orig-check", "commit-sigs"])  # fmt: skip
+                                         "site", "mod", "verify", "orig-check", "commit-sigs", "engine"])  # fmt: skip
         for job in ci.JOBS.values():
             self.assertTrue(job.what)
 
@@ -362,6 +362,59 @@ class Jobs(unittest.TestCase):
         ci.run_job(self.ctx, ci.JOBS["commit-sigs"], run)
         self.assertEqual(run.calls[0][0][-1], "main..HEAD")
         self.assertEqual(ci.run_job(self.ctx, ci.JOBS["commit-sigs"], Runner({"commit-sigs": 2})), 2)
+
+    def engine_checkout(self, root="eng", cmake=True):
+        files = {"python/pyproject.toml": PYPROJECT + f'[tool.coney-tools.code-gate]\nengine_root = "{root}"\n'}
+        if cmake:
+            files[f"{root}/CMakeLists.txt"] = "project(x)\n"
+        checkout(self.repo, files)
+
+    def test_engine_without_cmakelists_passes_with_a_note(self):
+        self.engine_checkout(cmake=False)
+        run = Runner()
+        self.assertEqual(ci.run_job(self.ctx, ci.JOBS["engine"], run), 0)
+        self.assertEqual(run.calls, [])
+        self.assertIn("no eng/CMakeLists.txt yet: nothing to build", self.out.getvalue())
+
+    def test_engine_builds_and_tests_with_each_compiler(self):
+        self.engine_checkout()
+        run = Runner()
+        with mock.patch.object(ci.scan, "find_program", side_effect=lambda name: f"/bin/{name}"):
+            self.assertEqual(ci.run_job(self.ctx, ci.JOBS["engine"], run), 0)
+        work = self.repo / "build" / "ci"
+        source, gcc, clang = str(self.repo / "eng"), str(work / "engine-gcc"), str(work / "engine-clang")
+        self.assertEqual(
+            [c[0] for c in run.calls],
+            [
+                ["/bin/cmake", "--fresh", "-S", source, "-B", gcc, "-G", "Ninja"],
+                ["/bin/cmake", "--build", gcc],
+                ["/bin/ctest", "--test-dir", gcc, "--output-on-failure", "--no-tests=error"],
+                ["/bin/cmake", "--fresh", "-S", source, "-B", clang, "-G", "Ninja"],
+                ["/bin/cmake", "--build", clang],
+                ["/bin/ctest", "--test-dir", clang, "--output-on-failure", "--no-tests=error"],
+            ],
+        )
+        self.assertEqual(run.calls[0][1]["env"]["CXX"], "/bin/g++")
+        self.assertEqual(run.calls[3][1]["env"]["CXX"], "/bin/clang++")
+
+    def test_engine_stops_at_a_failing_test(self):
+        self.engine_checkout()
+        run = Runner({"ctest": 8})
+        with mock.patch.object(ci.scan, "find_program", side_effect=lambda name: f"/bin/{name}"):
+            self.assertEqual(ci.run_job(self.ctx, ci.JOBS["engine"], run), 1)
+        self.assertEqual(len(run.calls), 3)
+
+    def test_engine_could_not_run(self):
+        self.engine_checkout()
+        with mock.patch.object(ci.scan, "find_program", side_effect=lambda name: None if name == "ninja" else name):
+            self.assertEqual(ci.run_job(self.ctx, ci.JOBS["engine"], Runner()), 2)
+        self.assertIn("the engine job needs ninja on PATH", self.out.getvalue())
+        for root in ("../out", "/abs", "."):
+            with self.subTest(root):
+                self.engine_checkout(root, cmake=False)
+                self.assertEqual(ci.run_job(self.ctx, ci.JOBS["engine"], Runner()), 2)
+        checkout(self.repo, {"python/pyproject.toml": PYPROJECT})
+        self.assertEqual(ci.run_job(self.ctx, ci.JOBS["engine"], Runner()), 2)
 
     def test_a_missing_tool_could_not_run(self):
         with mock.patch.object(ci.lint, "npx_program", side_effect=ci.lint.LintError("npx not found on PATH")):
