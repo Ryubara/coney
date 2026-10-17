@@ -60,4 +60,4 @@ export type ImplState = {
 }
 
 /** What `coney-tools impl log --json` answers: the implementers, the one shown and the last lines of its log. */
-export type ImplLog = { implementers: ImplState[]; shown: string | null; lines: string[] }
+export type ImplLog = { implementers: ImplState[]; shown: string | null; lines: string[]; readable: boolean }

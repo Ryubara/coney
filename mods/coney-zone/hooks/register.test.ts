@@ -240,7 +240,7 @@ test('polls the implementers live logs, and /coney-impl picks whose log it reads
     const out = e.argv[0] === 'cmd.exe'
       ? 'C:\\PD\r\n'
       : isLog
-        ? JSON.stringify({ implementers: [{ name: 'impl-1' }, { name: 'impl-2' }], shown: 'impl-1', lines: [] })
+        ? JSON.stringify({ implementers: [{ name: 'impl-1' }, { name: 'impl-2' }], shown: 'impl-1', lines: [], readable: true })
         : JSON.stringify(status([]))
     return { value: { exitCode: 0, stdout: out, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
