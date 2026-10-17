@@ -1907,12 +1907,13 @@ class Scan:
         pools = self.pools()
         self.pool = self.solo = None
         self.dying = []
-        procs = []
+        procs, threads = [], []
         for pool in pools:
             # A broken pool shut down earlier has forgotten its processes; its `left` still lists them.
             procs += list((getattr(pool, "_processes", None) or {}).values())
             procs += list(getattr(pool, "left", (None, []))[1])
             pool.shutdown(wait=False, cancel_futures=True)
+            threads.append(getattr(pool, "left", (None, []))[0])
         procs = list(dict.fromkeys(procs))
         for p in procs:
             if p.is_alive():
@@ -1922,6 +1923,10 @@ class Scan:
             if p.is_alive():  # a worker that ignored the request (still starting up, say) is made to stop
                 p.kill()
                 p.join(5)
+        # Each pool's manager thread also waits for its workers. On POSIX, whichever wait comes second can briefly see
+        # a worker the other has just reaped as still running, so stopping ends only when those threads have ended.
+        for t in dict.fromkeys(t for t in threads if t is not None):
+            t.join(5)
 
     def progress(self):
         """At most every PROGRESS_EVERY seconds, one line of counts and the root being scanned on standard error:
