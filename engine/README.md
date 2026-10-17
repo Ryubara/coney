@@ -20,7 +20,7 @@ a new file is one line in one list. The engine and its tests are built twice:
 | Targets | Built with | CTest names |
 | --- | --- | --- |
 | `coney_engine`, `coney_tests` | the build type's flags | the test case names |
-| `coney_engine_sanitized`, `coney_tests_sanitized` | `-fsanitize=address,undefined`, any finding fatal | `sanitized:` then the name |
+| `coney_engine_sanitized`, `coney_tests_sanitized` | `-fsanitize=address,undefined`, any finding fatal | `sanitized/` then the name |
 
 `CONEY_SANITIZED_TESTS` picks the second build: `AUTO` (the default) builds it when the compiler can link the
 sanitizers and warns when it cannot, `ON` makes a missing sanitizer runtime an error, `OFF` leaves it out. Clang
