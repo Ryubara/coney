@@ -5,7 +5,7 @@ Engine code is written in containers that never see the original game or the ana
 
 | File | What it is |
 | --- | --- |
-| `Dockerfile` | The image: a pinned Ubuntu snapshot, the C++ toolchain (gcc, clang, CMake, Ninja), Mesa for software rendering, ffmpeg, Python with uv, Node, a pinned Claude Code and Tether with the containers' locked config (`impl build` adds both from the machine folder and refuses to build without them). Everything is baked in at build time: containers have no network beyond the API. |
+| `Dockerfile` | The image: a pinned Ubuntu snapshot, the C++ toolchain (gcc, clang, CMake, Ninja, Catch2 3 for the engine's tests), Mesa for software rendering, ffmpeg, Python with uv, Node, a pinned Claude Code and Tether with the containers' locked config (`impl build` adds both from the machine folder and refuses to build without them). Everything is baked in at build time: containers have no network beyond the API. |
 | `compose.yml` | The pool, two containers per implementer: `impl-N-net` sets the egress wall and alone holds the network capabilities; `impl-N` joins its network once the wall reports healthy and runs as the user `impl` with no capabilities at all. |
 | `init-firewall.sh` | The egress wall: default deny, DNS, and HTTPS to the hosts in `allowed-domains` only. It checks itself before reporting healthy. |
 | `allowed-domains` | The only hosts an implementer may reach: the Anthropic API. |
