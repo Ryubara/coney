@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -286,6 +287,21 @@ class Repo(unittest.TestCase):
         self.assertEqual(self.run_pf()[0], 0)  # the engine is elsewhere at B: nothing judged
 
     # --- could not run --------------------------------------------------------------------------------------------
+
+    def test_outbox_judges_in_the_workspaces_collecting_repo(self):
+        self.commit({PATH: tagged("return x;")})
+        containers = self.tmp / f"containers-{self._testMethodName}"
+        ws = mock.Mock(where=lambda key: {"containers": containers}[key])
+        outbox = codeverdict.outbox(ws)
+        self.git("clone", "-q", "--bare", str(self.repo), str(outbox))  # HEAD is this test's branch
+        argv = ("cleanroom", "prefilter", "main..HEAD", "--facts", self.facts(), "--outbox", "--workspace", "w.json")
+        with mock.patch("coney_tools.workspace.load", return_value=ws) as load:
+            code, out, err = run_cli(*argv)
+        self.assertEqual(code, 0, out + err)
+        self.assertIn(f"PASS {PATH} {JUDGED}\n", out)
+        load.assert_called_once_with("w.json")
+        with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+            main([str(a) for a in (*argv, "--repo", self.repo)])  # one repository or the other
 
     def test_a_missing_address_could_not_run(self):
         self.commit({PATH: tagged("return x;")})

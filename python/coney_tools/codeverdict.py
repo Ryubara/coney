@@ -347,10 +347,22 @@ HANDOVER = "code-verdicts"  # under the workspace's from_analyst: the PR analyst
 ENGINE_BRANCH = re.compile(r"^refs/heads/(impl-[0-9]+/engine/[A-Za-z0-9._/-]+)$")  # in the collecting outbox
 
 
+def handover(ws):
+    """The hand-over folder: <from_analyst>/code-verdicts, where the PR analyst's signed verdicts go."""
+    return ws.where("from_analyst") / HANDOVER
+
+
+def outbox(ws):
+    """The collecting outbox, the bare repo under the workspace's containers folder the implementers' branches reach."""
+    from coney_tools import impl
+
+    return ws.where("containers").joinpath(*impl.COLLECTING)
+
+
 def handed_over(ws):
     """{name: (bytes, doc)} of each well-formed verdict in the handover folder with a signature beside it. Whether the
     signature verifies is code-verdict's to say; a missing folder is an empty handover."""
-    folder = ws.where("from_analyst") / HANDOVER
+    folder = handover(ws)
     try:
         names = sorted(p.name for p in folder.iterdir() if p.is_file())
     except FileNotFoundError:
@@ -384,11 +396,9 @@ def station(role, noun, items, states, needs):
 def analyst_status(ws):
     """The PR analyst's station: each engine branch in the collecting outbox (<impl-N>/engine/<name>), to-judge until
     a handed-over verdict names its head commit, then judged."""
-    from coney_tools import impl
-
-    outbox, items = ws.where("containers").joinpath(*impl.COLLECTING), []
-    if outbox.is_dir():
-        r = signing.git(signing.program("git"), outbox, "for-each-ref", "--format=%(objectname) %(refname)")
+    repo, items = outbox(ws), []
+    if repo.is_dir():
+        r = signing.git(signing.program("git"), repo, "for-each-ref", "--format=%(objectname) %(refname)")
         judged = {doc["commit"] for _, doc in handed_over(ws).values()}
         for line in r.stdout.decode().splitlines():
             commit, _, ref = line.partition(" ")
