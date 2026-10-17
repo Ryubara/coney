@@ -14,6 +14,7 @@ namespace coney::core {
 struct CommandLine {
     Settings settings;
     std::optional<std::uint64_t> frames; // --frames N: stop after N frames
+    std::string write_bindings;          // --write-bindings PATH: write the bindings in use to PATH and stop
     bool help = false;
 };
 

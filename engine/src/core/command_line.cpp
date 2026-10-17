@@ -27,6 +27,8 @@ std::string_view command_line_help() noexcept {
            "  --max-catch-up N    most logic ticks run in one frame after a stall\n"
            "  --log-level LEVEL   debug, info, warning, error or off\n"
            "  --log-file PATH     also append the log to PATH\n"
+           "  --bindings PATH     read key and gamepad bindings from PATH\n"
+           "  --write-bindings PATH  write the bindings in use to PATH and stop\n"
            "  --help              show this text\n";
 }
 
@@ -75,6 +77,10 @@ Result<CommandLine, std::string> parse_command_line(std::span<const std::string_
             out.settings.log.level = *level;
         } else if (option == "--log-file") {
             out.settings.log.file = std::string(value);
+        } else if (option == "--bindings") {
+            out.settings.input.bindings_file = std::string(value);
+        } else if (option == "--write-bindings") {
+            out.write_bindings = std::string(value);
         } else {
             return Failure{std::format("unknown option: {}", option)};
         }

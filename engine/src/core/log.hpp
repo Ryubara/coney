@@ -27,6 +27,7 @@ inline constexpr std::string_view kLoop = "loop";
 inline constexpr std::string_view kPlatform = "platform";
 inline constexpr std::string_view kWindow = "window";
 inline constexpr std::string_view kGpu = "gpu";
+inline constexpr std::string_view kInput = "input";
 inline constexpr std::string_view kApp = "app";
 } // namespace log_category
 

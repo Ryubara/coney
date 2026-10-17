@@ -35,8 +35,13 @@ struct LogSettings {
     std::string file; // empty: standard error only
 };
 
+struct InputSettings {
+    std::string bindings_file; // empty: the default bindings (src/input/bindings.cpp)
+};
+
 struct Settings {
     WindowSettings window;
+    InputSettings input;
     LoopSettings loop;
     LogSettings log;
     Colour clear_colour{0.08f, 0.06f, 0.12f, 1.0f};

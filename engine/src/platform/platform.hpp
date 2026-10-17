@@ -3,6 +3,7 @@
 // The platform layer: the only part of the engine that talks to SDL. Nothing outside src/platform/ includes SDL
 // headers (the engine_sdl_confined test checks this); SDL types appear here only as opaque forward declarations.
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
@@ -10,6 +11,7 @@
 
 #include "core/log.hpp"
 #include "core/settings.hpp"
+#include "platform/device_events.hpp"
 #include "result.hpp"
 
 struct SDL_Window;
@@ -24,9 +26,10 @@ struct Resized {
     int width = 0;
     int height = 0;
 };
-using Event = std::variant<CloseRequested, Resized>;
+using Event = std::variant<CloseRequested, Resized, KeyChanged, GamepadAdded, GamepadRemoved, GamepadButtonChanged,
+                           GamepadAxisMoved>;
 
-// Starts SDL's video subsystem and routes SDL's log output to `logger` (category "sdl.<SDL category>"). One at a
+// Starts SDL's video and gamepad subsystems and routes SDL's log output to `logger` (category "sdl.<SDL category>"). One at a
 // time; everything else in the platform layer needs it alive.
 class Platform {
   public:
@@ -40,9 +43,14 @@ class Platform {
 
     [[nodiscard]] core::Logger& logger() noexcept { return logger_; }
 
+    // How many gamepads are open: each is opened when SDL reports it added, and closed when removed.
+    [[nodiscard]] std::size_t open_gamepads() const noexcept;
+
   private:
-    explicit Platform(core::Logger& logger) : logger_(logger) {}
+    struct Gamepads;
+    explicit Platform(core::Logger& logger);
     core::Logger& logger_;
+    std::unique_ptr<Gamepads> gamepads_;
 };
 
 class Window {

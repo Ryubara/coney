@@ -21,13 +21,16 @@ TEST_CASE("no options give the default settings") {
 
 TEST_CASE("options override the settings") {
     const auto parsed = parse({"--frames", "12", "--width", "320", "--height", "240", "--title", "t",
-                               "--max-catch-up", "2", "--log-level", "debug", "--log-file", "out.log"});
+                               "--max-catch-up", "2", "--log-level", "debug", "--log-file", "out.log",
+                               "--bindings", "keys.ini", "--write-bindings", "all.ini"});
     REQUIRE(parsed);
     CHECK(parsed->frames == 12u);
     CHECK(parsed->settings.window.width == 320);
     CHECK(parsed->settings.window.height == 240);
     CHECK(parsed->settings.window.title == "t");
     CHECK(parsed->settings.loop.max_catch_up_ticks == 2);
+    CHECK(parsed->settings.input.bindings_file == "keys.ini");
+    CHECK(parsed->write_bindings == "all.ini");
     CHECK(parsed->settings.log.level == LogLevel::Debug);
     CHECK(parsed->settings.log.file == "out.log");
 }
