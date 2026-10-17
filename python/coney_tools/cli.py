@@ -995,11 +995,15 @@ def main(argv=None):
         "(itself fetched from the workspace's repo), makes a fresh worktree on a new branch and runs Claude Code on "
         "the task without a terminal; returns when it ends. Needs the auth file (containers.auth_file). Exit 0 the "
         "session ended well and the branch is in the outbox, 1 it did not, 2 could not run.",
-        lambda a, ws: impl.run(ws, a.name, a.task, a.branch),
+        lambda a, ws: impl.run(ws, a.name, a.task, a.branch, base=a.base),
     )
     ru.add_argument("name", metavar="impl-N")
     ru.add_argument("--task", required=True, help="the task file (Markdown)")
     ru.add_argument("--branch", required=True, help="a new branch name for the work")
+    ru.add_argument(
+        "--base",
+        help="a branch of the collecting repo (impl-N/<branch>) to stand in for main: build on work not merged yet",
+    )
     impl_parser(
         "collect",
         "copy outboxes, artifacts and transcripts out to the public zone",

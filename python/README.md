@@ -756,7 +756,7 @@ runs it. Exit status: 0 in order, 1 a problem, 2 the command could not run.
 
 ```sh
 python -I python/coney-tools.py impl build | up [impl-N...] | down | status | check
-python -I python/coney-tools.py impl run impl-N --task task.md --branch <new-branch>
+python -I python/coney-tools.py impl run impl-N --task task.md --branch <new-branch> [--base impl-N/<branch>]
 python -I python/coney-tools.py impl collect [impl-N] | reset impl-N
 python -I python/coney-tools.py impl log [impl-N] [--tail N] [--json]
 ```
@@ -772,7 +772,9 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   one with all its volumes and its key (its line must then leave `allowed_signers`).
 - `run` streams `main` of the collecting repository in, makes a fresh worktree on a new branch, copies the task file
   in read-only and runs Claude Code on it until it ends, at the model and effort the workspace pins
-  (`containers.model`, `containers.effort`; every session the same). The Claude login comes from the file
+  (`containers.model`, `containers.effort`; every session the same). With `--base`, a branch of the collecting
+  repository stands in for `main`, so a task can build on work still waiting for its verdict; its pull request
+  then carries that work too until it merges, after which `main` is merged in. The Claude login comes from the file
   `containers.auth_file`
   names (`CLAUDE_CODE_OAUTH_TOKEN=...` from `claude setup-token`, or `ANTHROPIC_API_KEY=...`), passed in on
   standard input, never written into the image, a command line or a log; without it `run` refuses. While the
