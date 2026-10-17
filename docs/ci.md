@@ -29,6 +29,7 @@ environments under `build/ci/` and make them again only when a lock file changes
 | `verify` | `ci.yml` | every research page's verdict, two signatures and hashes (`cleanroom verify`) |
 | `orig-check` | `ci.yml` | every `@orig` tag in the engine names an address and job on a gated page (`cleanroom orig-check`) |
 | `commit-sigs` | `ci.yml`, pull requests only | every engine commit of the pull request is signed by an allowed implementer key (`cleanroom commit-sigs`) |
+| `engine` | `ci.yml` | the engine (the code gate's `engine_root`) configures, builds and passes its CTest suite with GCC and with Clang, through CMake and Ninja; it passes with a note while the engine has no `CMakeLists.txt` |
 | `disclosure` | `pr.yml` | the pull request's title, description and commit messages describe the process in neutral words |
 
 `ci.yml` runs on every pull request and every push to `main`; its `build-ok` job needs every other job, so it is the

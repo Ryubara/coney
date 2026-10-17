@@ -242,9 +242,27 @@ jobs:
           PY: ${{ needs.versions.outputs.python }}
           BASE: ${{ github.base_ref }}
 
+  # The runner has CMake, GCC and Clang; Ninja and Catch2 3 come from Ubuntu's archive, as in the implementer image.
+  engine:
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - name: Ninja and Catch2
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ninja-build catch2
+      - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job engine
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+
   build-ok:
     if: always()
-    needs: [versions, workflow, tests, markdownlint, ruff, conventions, site, mod, verify, orig-check, commit-sigs]
+    needs: [versions, workflow, tests, markdownlint, ruff, conventions, site, mod, verify, orig-check, commit-sigs, engine]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
