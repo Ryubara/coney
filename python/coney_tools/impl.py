@@ -139,6 +139,8 @@ class Settings:
     memory: int  # bytes
     memory_text: str
     auth_file: Path
+    model: str  # every session's model and effort (containers.model, containers.effort)
+    effort: str
     public: Path  # the workspace's containers folder, in the public zone
     repo: Path  # the public repository, whose main the sessions start from
 
@@ -162,6 +164,8 @@ def settings(ws):
         memory=workspace.size_bytes(c["memory"]),
         memory_text=str(c["memory"]),
         auth_file=ws.resolve(c["auth_file"], "containers.auth_file"),
+        model=c["model"],
+        effort=c["effort"],
         public=ws.where("containers"),
         repo=ws.where("repo"),
     )
@@ -907,10 +911,11 @@ def main_bundle(pool, git, tmp):
     return out.read_bytes()
 
 
-def session_argv(name, branch, auth):
-    """The command that starts a session: the auth variables come from standard input, never the command line."""
+def session_argv(name, branch, auth, model, effort):
+    """The command that starts a session at the workspace's model and effort: the auth variables come from standard
+    input, never the command line."""
     env = [x for k in sorted(auth) for x in ("-e", k)]
-    return ["sh", "-c", WITH_AUTH, "sh", "docker", "exec", "-u", "impl", *env, name, SESSION, branch]
+    return ["sh", "-c", WITH_AUTH, "sh", "docker", "exec", "-u", "impl", *env, name, SESSION, branch, model, effort]
 
 
 def auth_input(auth):
@@ -942,16 +947,16 @@ def run(ws, name, task, branch, distro=None):
         bundle = main_bundle(pool, git, tmp)
     pool.exec(name, "sh", "-c", 'cat >"$1"', "sh", BUNDLE, data=bundle)
     pool.put(f"{pool.binds(name)[TASK_DIR]}/{TASK_FILE}", data)
-    st = {"task": Path(task).name, "branch": branch, "started": now()}
+    st = {"task": Path(task).name, "branch": branch, "model": pool.s.model, "effort": pool.s.effort, "started": now()}
     pool.put(pool.state_file(name), json.dumps(st).encode(), mode="0644")
     live = implog.LiveLog(pool.s.public, name, st)
     print(f"{name}: session on branch {branch} started; live log in {live.f.name}", flush=True)
     try:
-        code = pool.d.lines(session_argv(name, branch, auth), auth_input(auth), live.feed)
+        code = pool.d.lines(session_argv(name, branch, auth, pool.s.model, pool.s.effort), auth_input(auth), live.feed)
     finally:
         live.close(ended=now())
-    st.update(ended=now(), exit=code)
-    live.state.update(exit=code)
+    st.update(ended=now(), exit=code, served=live.served())
+    live.state.update(exit=code, served=live.served())
     live.write_state()
     pool.put(pool.state_file(name), json.dumps(st).encode(), mode="0644")
     pushed = pool.outbox_refs(name).get(f"refs/heads/{branch}")

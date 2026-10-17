@@ -619,9 +619,11 @@ python -I python/coney-tools.py cleanroom commit-sigs main..HEAD [--repo R] [--r
 For every commit in the range that touches the engine root (against any parent): it carries an SSH signature
 (`gpgsig`), made in git's namespace over the commit as git verifies it, by a key that `allowed_signers` at `--ref`
 lists with `namespaces="git"` under an implementer's principal, `impl-<n>`. An unsigned commit, a verdict key, a
-commit key under another principal, a key without a namespace and a key only the branch adds all fail. It prints
-`PASS <commit> <principal>` or `FAIL <commit>: <why>` per checked commit and counts the commits it skipped. Exit
-status: 0 every engine commit is signed by an implementer, 1 one is not, 2 could not run.
+commit key under another principal, a key without a namespace and a key only the branch adds all fail. Its message
+must also name the model that wrote it in exactly one trailer, `Co-Authored-By: Claude <model> <noreply@anthropic.com>`
+(AGENTS.md); a missing, second or other co-author fails. It prints `PASS <commit> <principal>, <model>` or
+`FAIL <commit>: <why>` per checked commit and counts the commits it skipped. Exit status: 0 every engine commit is
+signed by an implementer and names its model, 1 one does not, 2 could not run.
 
 ### `cleanroom code-verdict` and `code-verdict-sign`
 
@@ -712,12 +714,15 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   line (`impl-N namespaces="git" ssh-ed25519 ...`). `down` stops containers (volumes and keys stay); `reset` removes
   one with all its volumes and its key (its line must then leave `allowed_signers`).
 - `run` streams `main` of the collecting repository in, makes a fresh worktree on a new branch, copies the task file
-  in read-only and runs Claude Code on it until it ends. The Claude login comes from the file `containers.auth_file`
+  in read-only and runs Claude Code on it until it ends, at the model and effort the workspace pins
+  (`containers.model`, `containers.effort`; every session the same). The Claude login comes from the file
+  `containers.auth_file`
   names (`CLAUDE_CODE_OAUTH_TOKEN=...` from `claude setup-token`, or `ANTHROPIC_API_KEY=...`), passed in on
   standard input, never written into the image, a command line or a log; without it `run` refuses. While the
   session works, `run` writes its live log, `containers\live\impl-N.log`: one line per event (a UTC time, a kind
   such as `text`, a tool's name, `result` or `done`, and a one-line summary), with `impl-N.json` beside it (task,
-  branch, start, end, exit). When the session ends it prints the session's final message.
+  branch, model, effort, start, end, exit, and `served`: each model id the API answered with and how often, the
+  record of which model wrote the work). When the session ends it prints the session's final message.
 - `collect` fetches each outbox's branches into the collecting repository `containers\outbox\coney.git` as
   `impl-N/<branch>` and copies artifacts and transcripts to `containers\artifacts\` and `containers\archive\`. The
   collecting repository is a zone sub-folder with its own permissions, so a maintainer creates it; `collect` and

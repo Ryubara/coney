@@ -186,6 +186,8 @@ SIZE_UNITS = {"": 1, "b": 1, "k": 1 << 10, "m": 1 << 20, "g": 1 << 30}
 DISTRO = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 POSIX_DIR = re.compile(r"^(/[A-Za-z0-9._-]+)+$")
 POOL_NAME = re.compile(r"^impl-[1-9][0-9]{0,2}$")
+MODEL = re.compile(r"^claude-[a-z0-9]+(-[a-z0-9]+)*$")  # a model id as Claude Code's --model takes it
+EFFORTS = ("low", "medium", "high", "xhigh", "max")  # Claude Code's --effort levels
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 WITHDRAWN_KEYS = ("verdict_sha256", "page_sha256")
 
@@ -230,7 +232,8 @@ def _subset_problems(got, want, where):
 
 
 def _validate_containers(ws, c, w):
-    """The implementer containers' table: the WSL2 distro, the folder inside it, the pool, caps and the auth file."""
+    """The implementer containers' table: the WSL2 distro, the folder inside it, the pool, caps, the auth file, and
+    the model and effort every session runs at."""
     _want(isinstance(c, dict), f"{w}: 'containers' must be an object")
     _want(isinstance(c.get("distro"), str) and DISTRO.match(c["distro"]), f"{w}: containers.distro must be a name")
     root = c.get("wsl_root")
@@ -252,6 +255,9 @@ def _validate_containers(ws, c, w):
     except WorkspaceError:
         raise WorkspaceError(f"{w}: containers.memory must be a size such as 5g") from None
     ws.split(c.get("auth_file"), f"{w}: containers.auth_file")
+    model = c.get("model")
+    _want(isinstance(model, str) and MODEL.match(model), f"{w}: containers.model must be a model id claude-...")
+    _want(c.get("effort") in EFFORTS, f"{w}: containers.effort must be one of {', '.join(EFFORTS)}")
 
 
 def _validate_legacy_scan(ws, c, w):

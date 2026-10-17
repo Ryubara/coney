@@ -554,16 +554,35 @@ def touches(exe, repo, commit, root):
     return bool(r.stdout.strip())
 
 
+# The trailer naming the model that wrote an engine commit (AGENTS.md: one Co-Authored-By trailer, the model's name
+# and the vendor's noreply address).
+MODEL_TRAILER = re.compile(
+    r"^Co-Authored-By: (Claude [A-Z][a-z]+ [0-9]+(?:\.[0-9]+)*) <noreply@anthropic\.com>$", re.MULTILINE
+)
+ANY_COAUTHOR = re.compile(r"^Co-Authored-By:", re.MULTILINE | re.IGNORECASE)
+
+
+def commit_model(data):
+    """(model, None) when the commit's message names the model that wrote it in exactly one Co-Authored-By trailer,
+    else (None, why)."""
+    message = data.split(b"\n\n", 1)[1].decode("utf-8", "replace") if b"\n\n" in data else ""
+    found = MODEL_TRAILER.findall(message)
+    if len(ANY_COAUTHOR.findall(message)) != 1 or len(found) != 1:
+        return None, "its message does not name its model in one 'Co-Authored-By: Claude <model> <noreply@...>' trailer"
+    return found[0], None
+
+
 def commit_problem(tools, repo, commit, keys):
-    """(principal, None) when the commit is signed by an implementer's commit key, else (None, why)."""
+    """(principal, model, None) when the commit is signed by an implementer's commit key and names the model that
+    wrote it, else (None, None, why)."""
     raw = signing.git(tools.git, repo, "cat-file", "commit", commit).stdout
     data, sig = split_signed(raw)
     if sig is None:
-        return None, "not signed"
+        return None, None, "not signed"
     try:
         fingerprint = signing.key_fingerprint(sig)
     except signing.BadSignature as e:
-        return None, str(e)
+        return None, None, str(e)
     principals = sorted(
         p
         for names, spaces, fp in keys
@@ -572,16 +591,18 @@ def commit_problem(tools, repo, commit, keys):
         if p.startswith(signing.IMPLEMENTER) and signing.PRINCIPAL.match(p)
     )
     if not principals:
-        return None, f"its key is not an implementer's commit key in {signing.ALLOWED_SIGNERS}"
+        return None, None, f"its key is not an implementer's commit key in {signing.ALLOWED_SIGNERS}"
     try:
         signing.verify(tools.ssh_keygen, tools.allowed, data, sig, principals[0], tools.tmp, signing.COMMIT_NAMESPACE)
     except signing.BadSignature as e:
-        return None, str(e)
-    return principals[0], None
+        return None, None, str(e)
+    model, why = commit_model(data)
+    return (principals[0], model, None) if why is None else (None, None, why)
 
 
 def commit_sigs(rng, repo=None, ref=research.MAIN, ssh_keygen=None, as_json=False):
-    """(code, lines): every commit in the range that touches the engine root, signed by an implementer."""
+    """(code, lines): every commit in the range that touches the engine root, signed by an implementer and naming the
+    model that wrote it."""
     if not rng or rng.startswith("-"):
         raise CodeGateError(f"not a revision range: {rng!r}")
     repo = Path(repo) if repo else research.own_checkout()
@@ -595,18 +616,21 @@ def commit_sigs(rng, repo=None, ref=research.MAIN, ssh_keygen=None, as_json=Fals
             if not touches(tools.git, repo, c, s.engine_root):
                 skipped += 1
                 continue
-            principal, why = commit_problem(tools, repo, c, keys)
-            results.append({"commit": c, "ok": why is None, "principal": principal, "problem": why})
+            principal, model, why = commit_problem(tools, repo, c, keys)
+            results.append({"commit": c, "ok": why is None, "principal": principal, "model": model, "problem": why})
     failed = any(not r["ok"] for r in results)
     if as_json:
         doc = {"ok": not failed, "range": rng, "ref": ref, "skipped": skipped, "commits": results}
         return (1 if failed else 0), [json.dumps(doc, indent=2)]
     lines = [
-        f"PASS {r['commit'][:12]} {r['principal']}" if r["ok"] else f"FAIL {r['commit'][:12]}: {r['problem']}"
+        f"PASS {r['commit'][:12]} {r['principal']}, {r['model']}"
+        if r["ok"]
+        else f"FAIL {r['commit'][:12]}: {r['problem']}"
         for r in results
     ]
     lines.append(
         f"{'FAIL' if failed else 'PASS'}: {len(results)} commits touch {s.engine_root}/, "
-        f"{sum(not r['ok'] for r in results)} not signed by an implementer; {skipped} others not checked"
+        f"{sum(not r['ok'] for r in results)} not signed by an implementer or naming no model; "
+        f"{skipped} others not checked"
     )
     return (1 if failed else 0), lines

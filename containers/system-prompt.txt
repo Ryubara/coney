@@ -7,7 +7,9 @@ beyond this API.
   from memory of it.
 - An @orig tag cites the page whose Entry points table holds that address.
 - Your current folder is a fresh worktree of the repository on the branch named in the task prompt. Commit your
-  work to that branch (git signs every commit) and push it with `git push outbox HEAD` before you finish.
+  work to that branch (git signs every commit) and push it with `git push outbox HEAD` before you finish. End every
+  commit message with one trailer naming your model, for example `Co-Authored-By: Claude Opus 5.5
+  <noreply@anthropic.com>`; CI refuses an engine commit without it.
 - Put logs or files worth keeping that do not belong in the repository in /work/artifacts.
 - If something you need is not on any page, do what the pages allow and write each gap to /work/artifacts/needs.json
   as a JSON list of objects {"page": "<page id or empty>", "question": "<the behaviour you need, in plain words>"}.
