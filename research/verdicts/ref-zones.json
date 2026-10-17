@@ -1,0 +1,51 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "ref-zones",
+  "page_sha256": "5403c7590075c75396492425c0845185538e35350fb09e03652fab01bdc0baf9",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "zone-list",
+      "kind": "reference",
+      "sha256": "ac401d7c8e151b2ce8865730bbf628fce41db56c79a4d99305773659d73bddac",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "reference",
+      "sha256": "94ba6f36f1acaa414af31a877e3307a7d66730122e63aefc5d6a6c33117db37a",
+      "verdict": "keep"
+    },
+    {
+      "id": "columns",
+      "kind": "reference",
+      "sha256": "2ce4fc757b8ab3733a406fddb434c1068e197f9c01e42ba55e5d320f26392970",
+      "verdict": "keep"
+    },
+    {
+      "id": "totals",
+      "kind": "fact",
+      "sha256": "7768c54f44e4490006fed4846f6daef72274d2bab108da9974db3bb1e921b55b",
+      "verdict": "keep"
+    },
+    {
+      "id": "zones-by-level",
+      "kind": "fact",
+      "sha256": "6055e0ac2904daf788b1fa6d0d29ee4f1c4f3f2aee3d486893ca538a802d128e",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "3df1f9d12d7db8f3ef75603ad8b92773d9f8add7ff91c0f11f2e61ed5c30a49d",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "c24bb402c6378becb90aea66783576ee046a8b230b62d07b9353314a45335861",
+      "verdict": "keep"
+    }
+  ]
+}
