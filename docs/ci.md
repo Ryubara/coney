@@ -29,7 +29,7 @@ environments under `build/ci/` and make them again only when a lock file changes
 | `verify` | `ci.yml` | every research page's verdict, two signatures and hashes (`cleanroom verify`) |
 | `orig-check` | `ci.yml` | every `@orig` tag in the engine names an address and job on a gated page (`cleanroom orig-check`) |
 | `commit-sigs` | `ci.yml`, pull requests only | every engine commit of the pull request is signed by an allowed implementer key (`cleanroom commit-sigs`) |
-| `engine` | `ci.yml` | the engine (the code gate's `engine_root`) configures, builds and passes its CTest suite with GCC and with Clang, through CMake and Ninja; it passes with a note while the engine has no `CMakeLists.txt` |
+| `engine` | `ci.yml` | the engine (the code gate's `engine_root`) configures, builds and passes its CTest suite with GCC and with Clang, through CMake and Ninja, against SDL3 built by `containers/build-sdl.sh` as in the implementer image; it passes with a note while the engine has no `CMakeLists.txt` |
 | `disclosure` | `pr.yml` | the pull request's title, description and commit messages describe the process in neutral words |
 
 `ci.yml` runs on every pull request and every push to `main`; its `build-ok` job needs every other job, so it is the
@@ -81,6 +81,7 @@ Nothing is installed at "latest". Each version is read from the one file that al
 | uv, and through it the exact Python build | `containers/Dockerfile` (`ARG UV`) |
 | Node.js, checked against its SHA-256 | `containers/Dockerfile` (`ARG NODE_VERSION`, `ARG NODE_SHA256`) |
 | Claude Code | `containers/Dockerfile` (`ARG CLAUDE_CODE_VERSION`) |
+| SDL3, built from source and checked against its SHA-256 | `containers/Dockerfile` (`ARG SDL_VERSION`, `ARG SDL_SHA256`) |
 | markdownlint-cli2 | `.pre-commit-config.yaml` (the hook's `rev`) |
 | MkDocs, Material and everything they pull in | `requirements-docs.in`, locked with hashes in `requirements-docs.txt` |
 | PyYAML for Groundwork's checker | `.github/scripts/requirements.in`, locked in `.github/scripts/requirements.txt` |
