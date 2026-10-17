@@ -113,8 +113,9 @@ $gw ruleset -R Ryubara/coney     # main: no deletion or force-push, pull request
 $gw check -R Ryubara/coney       # any drift of files, labels, settings or ruleset from conventions.yml
 ```
 
-The ruleset names the required checks (`title`, `body`, `docs`, `disclosure`, `build-ok`); GitHub offers a check
-only after a pull request has run it, so a new required check is added to the ruleset after its first run.
+The ruleset names the required checks (`title`, `body`, `docs`, `disclosure`, `build-ok`, `code-verdict`); GitHub
+offers a check only after a pull request has run it, so a new required check is added to the ruleset after its first
+run.
 
 ## Going public
 

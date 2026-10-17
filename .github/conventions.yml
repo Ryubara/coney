@@ -71,14 +71,15 @@ pull_requests:
 
 merge:
   # Mirrors the GitHub ruleset and the repository settings (`groundwork.py ruleset`, `settings`). The required
-  # checks: pr.yml's four jobs, and ci.yml's build-ok, which needs every other job of ci.yml.
+  # checks: pr.yml's four jobs, ci.yml's build-ok, which needs every other job of ci.yml, and code-verdict by name,
+  # so a pull request whose last run predates that job cannot merge on an older build-ok.
   methods: [squash]
   squash_title: PR_TITLE
   squash_message: PR_BODY                        # the description, so its Co-Authored-By trailer stays
   auto_merge: true
   delete_branch_on_merge: true
   linear_history: true
-  required_checks: [title, body, docs, disclosure, build-ok]
+  required_checks: [title, body, docs, disclosure, build-ok, code-verdict]
 
 issues:
   # Issues are filed only through a form (AGENTS.md): no blank issues.
