@@ -1,0 +1,111 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "game-flags",
+  "page_sha256": "5077cd56e61a9762781d4fbc20515d133d0d4177e2b5f047926b55edaf5ecff8",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "game-flags",
+      "kind": "reference",
+      "sha256": "42896dde279dfa7b6637e46a4b92c37d314d86c260173196ccf27f06db679019",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "reference",
+      "sha256": "e34e6921402b0d90e415edf3c892887e01803605103beb23e53f453a761f482e",
+      "verdict": "keep"
+    },
+    {
+      "id": "two-kinds-of-flag",
+      "kind": "fact",
+      "sha256": "c154ab5c52c9a3226f93fa0bfbac78905381e32c38e6e935b40ab9e5080bed61",
+      "verdict": "keep"
+    },
+    {
+      "id": "world-flags",
+      "kind": "fact",
+      "sha256": "29ab6c70e1f0098b98e1265bec8614dc4cad4d21798806d5350fd6a016afe64a",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-a-flag-holds",
+      "kind": "fact",
+      "sha256": "c2ad0d485311fa8128582bf95d2f1e16e95205dd94db381a72acf9c0596ece6e",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-flags-come-from",
+      "kind": "fact",
+      "sha256": "46c6ec6eb566eedd93c21135d7a6fa2a7f033940d2cf9952a6c9d73c2fb71820",
+      "verdict": "keep"
+    },
+    {
+      "id": "flag-room",
+      "kind": "fact",
+      "sha256": "67feb603b7d1cafdf43b897545ca7f33fbc6e901154cc2f250b43c851a6c9f6c",
+      "verdict": "keep"
+    },
+    {
+      "id": "finding-flags",
+      "kind": "behaviour",
+      "sha256": "cedeb5f75f5c98c24a6db3e72075c64d6d1e343fab84a2e82a9daa328716eb69",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-scripts-do-with-flags",
+      "kind": "fact",
+      "sha256": "8c547f92463b74a9396014345274072a80ba780f4d4936d135b3be6fca5e54b6",
+      "verdict": "keep"
+    },
+    {
+      "id": "activity-values",
+      "kind": "fact",
+      "sha256": "d53c4b7270fe41541ef721dddab5db2085c3ea64646d03051cb70448f8823015",
+      "verdict": "keep"
+    },
+    {
+      "id": "group-values",
+      "kind": "fact",
+      "sha256": "5ba8c49510bf140abbbfe846d5577d84faff1808a21ce53e2711e86a4623bab2",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-flags",
+      "kind": "fact",
+      "sha256": "e167ada916c94aea24440b80e53d9b62fabd47129f4dabd278527593d2773368",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-flag-storage",
+      "kind": "fact",
+      "sha256": "3493a644882e653f6cad66f8218b7df03dee3cdc354de54b8f21e0eff72eb0d5",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-flags-in-use",
+      "kind": "behaviour",
+      "sha256": "e6b1a7164b2a606e30fd338d1077ea856b2b07aeb754b08c5523058b02e56ad9",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "a8dba4b804badaaa8119ab4562f0c71924a86b2d999defde02650921ba348bbe",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "a42f3ed59a51673ac8dc037df90aa8701618fd20c638db711d6af3cc641c5c51",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "37005b81d687b6c77b06acfb5acca7f0d3d289b185218eea4300612c169d1f0b",
+      "verdict": "keep"
+    }
+  ]
+}
