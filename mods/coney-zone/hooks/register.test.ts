@@ -263,3 +263,18 @@ test('polls the implementers live logs, and /coney-impl picks whose log it reads
   await clock.advance(15_000)
   expect(logs().at(-1)?.at(-1)).toBe('impl-2')
 })
+
+test('/coney-impl raises the pane in front of another pane, and says why when it is not drawn', async ($, on) => {
+  const opens: any[] = []
+  let placed = true
+  on('ui.open', async (_$: unknown, e: any) => {
+    opens.push(e)
+    return { value: placed ? { isPlaced: true } : { isPlaced: false, reason: 'no surface is attached' } }
+  })
+  const ok: any = await $.command.run({ command: 'coney-impl' } as any)
+  expect(ok.text).toBe('Showing the latest live log.')
+  expect(opens.at(-1)).toMatchObject({ id: 'coney-zone', focus: true })
+  placed = false
+  const waiting: any = await $.command.run({ command: 'coney' } as any)
+  expect(waiting.text).toBe('The Coney pane is open but not drawn: no surface is attached')
+})

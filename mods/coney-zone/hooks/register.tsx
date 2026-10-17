@@ -153,6 +153,13 @@ async function pollImpls($: EngineInterface, where: Paths): Promise<void> {
   }
 }
 
+// Opens the pane for the person's command and brings it in front of any other pane's tab (another mod's pane may be
+// the one shown): `focus` raises it. Returns why it is not drawn, or null when it is.
+async function raise($: EngineInterface): Promise<string | null> {
+  const opened = await $.ui.open({ id: PANE, title: 'Coney zone', focus: true })
+  return opened.isPlaced ? null : `The Coney pane is open but not drawn: ${opened.reason}`
+}
+
 export const register: Register = on => {
   on('turn.start', async ($, e, next) => {
     if (e.agentId === undefined) {
@@ -193,16 +200,16 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'coney' }, async $ => {
-    await $.ui.open({ id: PANE, title: 'Coney zone' })
-    return { text: 'Coney zone pane opened.' }
+    const why = await raise($)
+    return { text: why ?? 'Coney zone pane opened.' }
   })
 
   on('command.run', { command: 'coney-impl' }, async ($, e) => {
     const name = String((e as { args?: string }).args ?? '').trim()
     if (name && !/^impl-\d+$/.test(name)) return { text: 'Give an implementer as impl-N, or nothing for the latest.' }
     await update($, picked, () => name || null)
-    await $.ui.open({ id: PANE, title: 'Coney zone' })
-    return { text: name ? `Showing ${name}'s live log.` : 'Showing the latest live log.' }
+    const why = await raise($)
+    return { text: why ?? (name ? `Showing ${name}'s live log.` : 'Showing the latest live log.') }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
