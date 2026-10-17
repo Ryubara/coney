@@ -254,8 +254,12 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version: ${{ needs.versions.outputs.uv }}
-      - name: Ninja and Catch2
-        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ninja-build catch2
+      - name: Ninja, Catch2 and Mesa's Vulkan driver
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ninja-build catch2 libvulkan1 mesa-vulkan-drivers
+      - name: SDL3, as pinned in containers/Dockerfile
+        run: sudo sh containers/build-sdl.sh
       - run: uv run --no-project --python "$PY" python -I python/coney-tools.py ci --job engine
         env:
           PY: ${{ needs.versions.outputs.python }}

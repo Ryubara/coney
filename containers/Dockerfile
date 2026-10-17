@@ -63,19 +63,9 @@ RUN rm -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list \
 
 COPY --from=uv /uv /uvx /usr/local/bin/
 
-# SDL3 from its release archive, checked against its SHA-256, installed in /usr/local (CMake finds it as SDL3).
-# Without X11 or Wayland: a container has no display, so windows are offscreen and a test reads its frames back.
-RUN curl -fsSLo /tmp/sdl.tar.gz \
-        "https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL3-${SDL_VERSION}.tar.gz" \
-    && echo "${SDL_SHA256}  /tmp/sdl.tar.gz" | sha256sum -c - \
-    && tar -xzf /tmp/sdl.tar.gz -C /tmp \
-    && cmake -S "/tmp/SDL3-${SDL_VERSION}" -B /tmp/sdl-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr/local -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF \
-        -DSDL_UNIX_CONSOLE_BUILD=ON -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_OFFSCREEN=ON -DSDL_DUMMYVIDEO=ON -DSDL_VULKAN=ON -DSDL_GPU=ON \
-    && cmake --build /tmp/sdl-build \
-    && cmake --install /tmp/sdl-build \
-    && ldconfig \
-    && rm -rf /tmp/sdl.tar.gz "/tmp/SDL3-${SDL_VERSION}" /tmp/sdl-build
+# SDL3 in /usr/local, by the same script CI's engine job runs: windows are offscreen and a test reads frames back.
+COPY --chmod=0755 build-sdl.sh /tmp/build-sdl.sh
+RUN /tmp/build-sdl.sh "${SDL_VERSION}" "${SDL_SHA256}" && rm /tmp/build-sdl.sh
 
 # Node (for npm, which installs Claude Code) from nodejs.org, checked against its published SHA-256.
 RUN curl -fsSLo /tmp/node.tar.xz "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
