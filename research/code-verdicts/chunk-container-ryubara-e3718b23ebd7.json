@@ -1,0 +1,38 @@
+{
+  "commit": "e3718b23ebd769a51264f9b9083e445fadf61d72",
+  "files": [
+    {
+      "blob": "2fc99ea7cc8d5f41d8c4a23c4b4f7e29b4123058",
+      "path": "engine/src/formats/chunk_container.cpp"
+    },
+    {
+      "blob": "261f7354ae8a332d5e82f35ef195b5e202adeeb2",
+      "path": "engine/src/formats/chunk_container.hpp"
+    },
+    {
+      "blob": "50051639a102dfa8aff744a88ad93465b4becc1f",
+      "path": "engine/src/result.hpp"
+    },
+    {
+      "blob": "5ccccec81587fcc8cfba03ae23507cf4d8bebf3c",
+      "path": "engine/tests/chunk_builders.hpp"
+    },
+    {
+      "blob": "cf282fe8922f624a0bdfbd2794f07666a0f15b90",
+      "path": "engine/tests/chunk_container_fuzz_tests.cpp"
+    },
+    {
+      "blob": "3b633566b3ba7ed446ff740f192c0ca1ac22852f",
+      "path": "engine/tests/chunk_container_tests.cpp"
+    }
+  ],
+  "functions": [
+    {
+      "address": "0x00144180",
+      "path": "engine/src/formats/chunk_container.cpp",
+      "verdict": "independent"
+    }
+  ],
+  "prefilter": "pass",
+  "schema": "coney-code-verdict/1"
+}
