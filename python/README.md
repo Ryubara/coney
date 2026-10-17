@@ -659,19 +659,25 @@ python -I python/coney-tools.py roles check [--workspace W]
 
 Each role of the pipeline ([how the roles run](../docs/workflow.md)) that runs continuously is woken by its zone's
 mod when its inbox changes, and acts on what it lists. `inbox` gathers the role's
-items from every station that serves it: today the page gate (`research status` for that role); the queue, the
-containers, the code gate and the tester add theirs as they are built. It prints ids, states and counts, never page
-text. A role whose tools are not built yet is reported as inactive. Exit status: 0 nothing needs this role, 1
-something does, 2 the command could not run.
+items from every station that serves it: the page gate (`research status` for that role) and the code gate; the
+queue, the containers and the tester add theirs as they are built. The code gate's stations are `engine-branches`
+for the PR analyst (each `<impl-N>/engine/<name>` branch in the collecting outbox, `to-judge` until a handed-over
+verdict names its head commit, then `judged`) and `code-verdicts` for the engine coordinator (each signed verdict in
+`<from_analyst>/code-verdicts/`, `new` until a local branch holds it at `research/code-verdicts/`, `copied`, then
+`merged` once `main` does). It prints ids, states and counts, never page text. A role whose tools are not built yet
+is reported as inactive. Exit status: 0 nothing needs this role, 1 something does, 2 the command could not run.
 
 The roles live in the workspace's `roles` table: each role's zone (or `container` for roles the engine coordinator
 starts per task), its loop interval in minutes (`null` for container roles) and whether its tools exist yet
 (`active`). A role whose own work goes on between inbox items also names `idle_wake_minutes`: its zone's mod wakes it
-after that long idle with no subagent at work. Each role's brief is `<roles path>/<role>.md`, installed where every
-account can read it. `roles check` fails when a role lacks its brief, has a zone the workspace does not know, a
-looping role lacks its interval, `idle_wake_minutes` is not a whole number of minutes (or sits on a container role),
-or an active role has no inbox; the installer runs it, so a role is never installed half-wired. Exit status: 0 every
-role wired, 1 something missing, 2 the command could not run.
+after that long idle with no subagent at work. A role another role's session dispatches as a subagent names it in
+`dispatched_by`: it shares that role's zone, never loops and keeps no notes, and while it is active its stations are
+part of the dispatcher's inbox, so one session per zone account wakes for all of them. Each role's brief is
+`<roles path>/<role>.md`, installed where every account can read it. `roles check` fails when a role lacks its
+brief, has a zone the workspace does not know, a looping role lacks its interval, `idle_wake_minutes` is not a whole
+number of minutes (or sits on a container role), an active role has no inbox, or a dispatched role loops, keeps
+notes, or names a dispatcher outside its zone or inactive; the installer runs it, so a role is never installed
+half-wired. Exit status: 0 every role wired, 1 something missing, 2 the command could not run.
 
 ## `tether`
 

@@ -68,7 +68,7 @@ flowchart TB
 | Research coordinator | analysis | research requests, pages back from the reviewers | dispatching analysts, placing pages in the gate, publishing signed pages |
 | Page reviewer 1 and 2 | analysis (read only) | pages waiting for their signature | signing, countersigning or declining |
 | Engine coordinator | public | new page bundles, tester reports, verdicts, finished tasks | importing pages, filing requests, starting containers, staging builds, opening pull requests |
-| PR analyst | analysis | engine branches waiting for a verdict | signing a similarity verdict |
+| PR analyst (dispatched by the research coordinator) | analysis | engine branches waiting for a verdict | signing a similarity verdict |
 | Tester | tester | builds waiting to be tested | running the acceptance checks and filing a checked report |
 | Implementer, code reviewer | container | the one task they were started for | writing and reviewing that task's code |
 
