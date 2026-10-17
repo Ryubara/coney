@@ -13,6 +13,7 @@ from coney_tools import (
     impl,
     implog,
     lint,
+    prefilter,
     research,
     roles,
     signing,
@@ -713,23 +714,49 @@ def main(argv=None):
         )
     )
 
+    pf = cl.add_parser(
+        "prefilter",
+        help="the code gate's scripted pre-filter on a change's tagged functions (the analysis side)",
+        description="For every @orig-tagged function in the engine source files the range A..B changes (git objects "
+        "only), three rules: constant-not-on-page (a numeric literal whose value is not on the linked page at B, "
+        "trivial constants aside), same-call-order (its calls to tagged functions, in order, are the original's "
+        "tagged callees) and same-branch-count (its branch points number the original's conditional branches). "
+        f"The facts file ({prefilter.FACTS_SCHEMA}) holds each judged address's callees and branch count; it is the "
+        "analyst's and stays in the analysis zone. Settings are [tool.coney-tools.code-gate] in python/pyproject.toml "
+        "at B. Prints rule names, paths and judged addresses, never a constant, a callee or a count. Exit 0 pass, "
+        "1 flag, 2 could not run.",
+    )
+    pf.add_argument("range", help="the change to judge, as A..B (main..HEAD)")
+    pf.add_argument("--facts", required=True, help=f"the facts file ({prefilter.FACTS_SCHEMA})")
+    pf.add_argument("--out", help=f"write the result ({prefilter.RESULT_SCHEMA}) to this new file")
+    pf.add_argument("--repo", help="the repository (default: the checkout coney-tools runs from)")
+    pf.add_argument("--json", action="store_true", help="the result with each function's rules")
+    pf.set_defaults(
+        run=gate(
+            "cleanroom prefilter",
+            lambda a: prefilter.prefilter(a.range, a.facts, a.out, a.repo, a.json),
+        )
+    )
+
     cvs = cl.add_parser(
         "code-verdict-sign",
         help="a PR analyst signs a passing code verdict (the analysis side)",
         description=f"Checks the verdict file ({codeverdict.SCHEMA}) and writes it in canonical form with the "
         "principal's signature into --out (add-only). A malformed verdict, or one with any function not "
-        "independent or a flagged pre-filter, is refused: only a passing verdict is signed. Exit 0 signed, "
-        "1 refused, 2 could not run.",
+        "independent or a flagged pre-filter, is refused: only a passing verdict is signed. So is one the "
+        f"pre-filter's result ({codeverdict.PREFILTER_SCHEMA}, from cleanroom prefilter --out) does not match: "
+        "the same commit, outcome and functions. Exit 0 signed, 1 refused, 2 could not run.",
     )
     cvs.add_argument("verdict", help="the verdict, <name>.json")
     cvs.add_argument("--key", required=True, help="the PR analyst's private verdict key")
     cvs.add_argument("--principal", required=True, help=f"the key's principal ({signing.PR_ANALYST}<n>)")
     cvs.add_argument("--out", required=True, help="the folder the verdict and its signature go into")
+    cvs.add_argument("--prefilter", required=True, help="the pre-filter's result for the verdict's commit")
     cvs.add_argument("--ssh-keygen", help="ssh-keygen to use (default: the first on PATH)")
     cvs.set_defaults(
         run=gate(
             "cleanroom code-verdict-sign",
-            lambda a: codeverdict.sign(a.verdict, a.key, a.principal, a.out, a.ssh_keygen),
+            lambda a: codeverdict.sign(a.verdict, a.key, a.principal, a.out, a.prefilter, a.ssh_keygen),
         )
     )
 

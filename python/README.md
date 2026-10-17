@@ -629,7 +629,8 @@ signed by an implementer and names its model, 1 one does not, 2 could not run.
 
 ```sh
 python -I python/coney-tools.py cleanroom code-verdict main..HEAD [--repo R] [--ref main] [--ssh-keygen PATH] [--json]
-python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> --out DIR
+python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> --out DIR \
+    --prefilter RESULT
 ```
 
 A PR analyst's verdict is `research/code-verdicts/<name>.json` (schema `coney-code-verdict/1`: `commit`, `files` as
@@ -648,7 +649,57 @@ passed, 1 a check failed, 2 could not run.
 
 `code-verdict-sign`, on the analysis side, checks the verdict, writes it in canonical form and the principal's
 signature into `--out` (add-only). A malformed verdict, or one that does not pass, is refused with exit 1: only a
-passing verdict is ever signed.
+passing verdict is ever signed. `--prefilter` (required) is the result `cleanroom prefilter --out` wrote for the
+change; the verdict is refused with exit 1 unless that result is a well-formed `coney-prefilter/1` result for the
+verdict's `commit`, with the verdict's `prefilter` as its outcome and exactly the verdict's functions (path and
+address). Since only a passing verdict is signed, that is a passing result covering exactly the verdict's functions.
+
+### `cleanroom prefilter`
+
+```sh
+python -I python/coney-tools.py cleanroom prefilter A..B --facts FACTS --out RESULT [--repo R] [--json]
+```
+
+The code gate's scripted pre-filter, which the PR analyst runs on the analysis side before judging a change. Like
+`code-verdict` it reads git objects only, never the working tree: it judges every `@orig`-tagged function in the
+engine source files the range changes (from the merge base of A and B), as they are at B, finding each function's
+body the way `orig-check` attaches a tag to its function. Its settings are `[tool.coney-tools.code-gate]` in
+`python/pyproject.toml` at B, not at `main`: the analyst runs it in the collecting outbox, whose `main` may be behind.
+
+The facts file is the analyst's own, from their own tools, and never leaves the analysis zone. It is checked
+strictly:
+
+```json
+{"schema": "coney-prefilter-facts/1",
+ "functions": {"0x00aa11bb": {"callees": ["0x00aa0001", "0x00aa0002"], "branches": 3}}}
+```
+
+`callees` are the original function's callee addresses in call order and `branches` its count of conditional
+branches. Each key and callee is `0x` and 8 lower-case hex digits, and `branches` a whole number of 0 or more. A
+judged address the facts file lacks, a malformed facts file, a tag that is not above a function or has no page link,
+or a linked page missing at B: the command cannot run (exit 2).
+
+Each function is checked against three rules:
+
+| Rule | Flags when |
+| --- | --- |
+| `constant-not-on-page` | a numeric literal in the body (comments and strings aside; decimal, hex, binary, octal and floating, with C++ suffixes and digit separators) has a value its linked page at B does not write, in hex or decimal, with or without thousands commas; the sign does not matter, and `prefilter_trivial_constants` are ignored |
+| `same-call-order` | its calls to functions tagged anywhere in the engine at B, as their addresses in the order the calls finish (an argument's call first), number at least `prefilter_min_calls` and equal the original's callees with every callee no Coney function is tagged with left out |
+| `same-branch-count` | its branch points (`if`, `case`, `default`, `for`, `while`, `do`, `?`, `&&`, `\|\|`, `catch`; `else if` counts once) number at least `prefilter_min_branches` and equal the original's `branches` |
+
+A call counts when the name it calls names exactly one function defined in the engine at B, and that function is
+tagged; a name defined more than once, or only untagged, is left out. The thresholds and the trivial set are
+`prefilter_trivial_constants` (default `[0, 1, -1, 2]`), `prefilter_min_calls` (default 2) and
+`prefilter_min_branches` (default 4) in the same table.
+
+It prints `PASS <path> <address>` or `FLAG <path> <address>: <rule>, ...` per function, then a summary: rule names,
+paths and the judged addresses only, never a constant's value, a callee address or a branch count. `--out` writes
+the result (never over an existing file) in `research.canonical` form: `{"schema": "coney-prefilter/1", "commit":
+<B's commit id>, "outcome": "pass" or "flag", "functions": [{"path", "address", "outcome"}]}`, sorted by path then
+address. The outcome is `flag` when any function flags. Exit status: 0 pass, 1 flag, 2 could not run.
+
+Comparing the code's text with the original's for overlap is a separate step of the analyst's review, not part of
+this command.
 
 ## `inbox` and `roles check`
 

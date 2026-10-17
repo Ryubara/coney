@@ -46,11 +46,23 @@ class CodeGateError(research.GateError):
 # --- settings -----------------------------------------------------------------------------------------------------
 
 
+REQUIRED = ("engine_root", "source_extensions", "game_behaviour")
+# The scripted pre-filter's keys (cleanroom prefilter), each with the value it takes when the table leaves it out.
+PREFILTER_DEFAULTS = {
+    "prefilter_trivial_constants": (0, 1, -1, 2),
+    "prefilter_min_calls": 2,
+    "prefilter_min_branches": 4,
+}
+
+
 @dataclass
 class Settings:
     engine_root: str
     extensions: tuple
     behaviour: tuple  # folders, relative to the repository's root
+    trivial: tuple = PREFILTER_DEFAULTS["prefilter_trivial_constants"]  # constants the pre-filter ignores
+    min_calls: int = PREFILTER_DEFAULTS["prefilter_min_calls"]
+    min_branches: int = PREFILTER_DEFAULTS["prefilter_min_branches"]
 
 
 def rel_path(value, where):
@@ -73,8 +85,11 @@ def settings(exe, repo, ref):
     for key in SECTION:
         doc = doc.get(key) if isinstance(doc, dict) else None
     name = f"[{'.'.join(SECTION)}]"
-    if not isinstance(doc, dict) or set(doc) != {"engine_root", "source_extensions", "game_behaviour"}:
-        raise CodeGateError(f"{SETTINGS} at {ref} has no {name} with engine_root, source_extensions, game_behaviour")
+    if not isinstance(doc, dict) or not set(REQUIRED) <= set(doc) or set(doc) - set(REQUIRED) - set(PREFILTER_DEFAULTS):
+        raise CodeGateError(
+            f"{SETTINGS} at {ref} has no {name} with {', '.join(REQUIRED)} (and optionally "
+            f"{', '.join(PREFILTER_DEFAULTS)}) and nothing else"
+        )
     root = rel_path(doc["engine_root"], "engine_root")
     exts = doc["source_extensions"]
     if not isinstance(exts, list) or not exts or not all(isinstance(e, str) and re.match(r"^\.\w+$", e) for e in exts):
@@ -88,7 +103,20 @@ def settings(exe, repo, ref):
         if not under(f, root):
             raise CodeGateError(f"a game_behaviour folder in {SETTINGS} is not under engine_root")
         behaviour.append(f)
-    return Settings(root, tuple(e.lower() for e in exts), tuple(behaviour))
+    trivial = doc.get("prefilter_trivial_constants", PREFILTER_DEFAULTS["prefilter_trivial_constants"])
+    if not isinstance(trivial, list | tuple) or not all(is_number(v) for v in trivial):
+        raise CodeGateError(f"prefilter_trivial_constants in {SETTINGS} is not a list of numbers")
+    counts = []
+    for key in ("prefilter_min_calls", "prefilter_min_branches"):
+        v = doc.get(key, PREFILTER_DEFAULTS[key])
+        if not isinstance(v, int) or isinstance(v, bool) or v < 1:
+            raise CodeGateError(f"{key} in {SETTINGS} is not a whole number of 1 or more")
+        counts.append(v)
+    return Settings(root, tuple(e.lower() for e in exts), tuple(behaviour), tuple(trivial), *counts)
+
+
+def is_number(v):
+    return isinstance(v, int | float) and not isinstance(v, bool)
 
 
 def under(path, folder):
@@ -446,6 +474,19 @@ def check_tag(path, t, pages, findings):
         findings.append(Finding(path, t.line, "orig-job", f"the job differs from page {page_id}'s job for {t.address}"))
 
 
+def owner_of(fns, tag):
+    """The function a tag is attached to (the tag sits in the head before its body), or None."""
+    return next((f for f in fns if f.head_start <= tag.offset < f.body), None)
+
+
+def name_of(code, f):
+    """A listed function's name as its definition writes it, spaces taken out (Store::open, ~Store, operator==)."""
+    head = plain_head(code[f.head_start : f.body])
+    k = function_name(head)
+    m = NAME.search(head[:k]) if k is not None else None
+    return re.sub(r"\s+", "", m.group(1)) if m else ""
+
+
 def check_source(path, data, behaviour, pages):
     """(findings, tags) for one source file's bytes."""
     findings = []
@@ -461,7 +502,7 @@ def check_source(path, data, behaviour, pages):
     fns = functions(code)
     tagged = set()
     for t in tags:
-        owner = next((f for f in fns if f.head_start <= t.offset < f.body), None)
+        owner = owner_of(fns, t)
         if owner is None:
             where = f"{t.address or 'the tag'} is not just above a function"
             findings.append(Finding(path, t.line, "orig-placement", where))

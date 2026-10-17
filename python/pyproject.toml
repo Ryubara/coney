@@ -33,3 +33,10 @@ engine_root = "engine"
 source_extensions = [".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl", ".ipp"]
 # Folders under engine_root holding game-behaviour code: every function defined in them carries an @orig tag.
 game_behaviour = ["engine/src/game"]
+# The scripted pre-filter (cleanroom prefilter), which reads this table from the change it judges. Numeric literals
+# it never asks a page for:
+prefilter_trivial_constants = [0, 1, -1, 2]
+# A function flags when its calls to tagged functions, at least this many, are in the original's order,
+prefilter_min_calls = 2
+# or when its branch points, at least this many, number the original's conditional branches.
+prefilter_min_branches = 4
