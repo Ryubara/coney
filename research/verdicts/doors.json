@@ -1,0 +1,87 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "doors",
+  "page_sha256": "68c26f093b703ae132ec3af71c5c06cbe9e93d998e7edb66233f3ed32b609a10",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "doors-and-gates",
+      "kind": "reference",
+      "sha256": "cbafc517dad15d57b6fcf64a875346182f624f59e301c89736ba33f1f99aa289",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "reference",
+      "sha256": "500c734b2caddb5588db354ae2f21080a715910271602e01e696e5a3a11a25e2",
+      "verdict": "keep"
+    },
+    {
+      "id": "door-counts",
+      "kind": "fact",
+      "sha256": "120c6b6c1e1dafd9e7ef983469e623917f39f0b318182847ac2e9202d116541d",
+      "verdict": "keep"
+    },
+    {
+      "id": "object-records",
+      "kind": "fact",
+      "sha256": "a9a5cc96d64a8158975d021ea5ed50c9e0e5743cd2287e29473eb22a484e02eb",
+      "verdict": "keep"
+    },
+    {
+      "id": "door-kinds",
+      "kind": "fact",
+      "sha256": "710e194590cdb74934ac380c9991a28e3282029cb716c11a3f983aedb7acdfb0",
+      "verdict": "keep"
+    },
+    {
+      "id": "sliding-leaves",
+      "kind": "fact",
+      "sha256": "70cd662ce510cd38a39dc7621e7b56e10ced2e9ca73da3d6a9227087836661da",
+      "verdict": "keep"
+    },
+    {
+      "id": "placed-door-types",
+      "kind": "fact",
+      "sha256": "c294117feb95f5e5e07406f72d87cb5892c19c2507c7a187bb0018055b049b44",
+      "verdict": "keep"
+    },
+    {
+      "id": "placing-a-door",
+      "kind": "behaviour",
+      "sha256": "7c564b3d472abbb94cc11e221981318e64480ea680682bece88049a194b25cef",
+      "verdict": "keep"
+    },
+    {
+      "id": "door-commands",
+      "kind": "behaviour",
+      "sha256": "79855186e6993a923d5703d4188ef4df0a42d2c14f98538fd0d3681e9ccf1f53",
+      "verdict": "keep"
+    },
+    {
+      "id": "differences-between-ps2-and-xbox",
+      "kind": "fact",
+      "sha256": "217799ce5424eecba5e230bf5e6dd58fa00d17288330e99e22bac2e480ee6cce",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "ae940405ff981f28e4f3a47a232eec2b7a6821a676ff7259009a9942834d9eca",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "ea074ddba0a84f8e41f34496c9624b6ab101be33ec677d3d4df61ae602e2f58c",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "19262a61644a2a1d6e5b77094d1f05b8b53d4eaa9566d1056bf3ce949f339598",
+      "verdict": "keep"
+    }
+  ]
+}
