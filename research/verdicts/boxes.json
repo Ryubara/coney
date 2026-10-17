@@ -1,0 +1,93 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "boxes",
+  "page_sha256": "07d164afc04e2fb5dae86a811142b36f9dd43555d54aeca8528bf65752e798e8",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "level-boxes",
+      "kind": "reference",
+      "sha256": "c3177f4d16b489052b1f5985668e59395a7102a9c77afe7c61d70b0477d806cb",
+      "verdict": "keep"
+    },
+    {
+      "id": "where-boxes-live",
+      "kind": "fact",
+      "sha256": "9f31e0f0e0ad29842fc2a6ae7168c875e6226d6d2fd00306cf05e17999b06673",
+      "verdict": "keep"
+    },
+    {
+      "id": "box-values",
+      "kind": "fact",
+      "sha256": "edac0308f263f69020d7b05dfd5236b4268758af89b3445734db092621129f3a",
+      "verdict": "keep"
+    },
+    {
+      "id": "box-kinds",
+      "kind": "fact",
+      "sha256": "6cbac33158bc7a207d6a4df2d7a1c66739a1791fc305f7ce02d8f7360b607391",
+      "verdict": "keep"
+    },
+    {
+      "id": "inside-test",
+      "kind": "behaviour",
+      "sha256": "8444ca9a5543f7e4723088d2e14d462a62e52483d17d9bfa61a3b1be1ce42648",
+      "verdict": "keep"
+    },
+    {
+      "id": "timing",
+      "kind": "behaviour",
+      "sha256": "ff4ca33b2b6764d1fcd0e638a5be5e50f2dbf9a74a617b0898e7fb6c75d37d23",
+      "verdict": "keep"
+    },
+    {
+      "id": "enter-and-leave",
+      "kind": "behaviour",
+      "sha256": "4ad9ea2839257a996708ef6344a9f66e7432e5099635f5cda9e319479038e279",
+      "verdict": "keep"
+    },
+    {
+      "id": "hit-and-theft-reports",
+      "kind": "behaviour",
+      "sha256": "a5dc3f600f20e081bf80f4a9aa7aabeeeab06d190ebc211ef52726adf7fbbed3",
+      "verdict": "keep"
+    },
+    {
+      "id": "script-commands",
+      "kind": "behaviour",
+      "sha256": "8cf072819d9d29a9d12638ebcb518574dba29e1f22822acd3524d0dde6f04d57",
+      "verdict": "keep"
+    },
+    {
+      "id": "turf-boxes",
+      "kind": "behaviour",
+      "sha256": "e88420fc5f1136afac412d93b8c3285c125554c0fa8daafff7f761577d292a63",
+      "verdict": "keep"
+    },
+    {
+      "id": "boxes-in-play",
+      "kind": "behaviour",
+      "sha256": "ae138f893f10e51ffd032d0da91cf16f4adda198aa677d92b73ea3d427a4aeb0",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "3d57dc8f9388749885a7bbee684b48efde5e04bb7acf87f2960a0fec952c98bd",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "9b9433a00019540913cb248eb074959335985459ca5e8f8e02bde6cbe2ab4013",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "256aaa0c74e077e42266cb80235d7f3a8a76296b9da3a04e945fe23f542e65b8",
+      "verdict": "keep"
+    }
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "ref-doors",
+  "page_sha256": "3c1fc930a4517a8cd70976f70484882f365c63a140c1b1e5119b2de02c44d120",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "door-list",
+      "kind": "reference",
+      "sha256": "141226cb6edabe2499dba78c2068e0963939c078273e0aab67123ca32b3ef5aa",
+      "verdict": "keep"
+    },
+    {
+      "id": "disc-sources",
+      "kind": "reference",
+      "sha256": "cf5a07872af6abea82f6f032fdf02fa886f230595073ef9095229071f2acb460",
+      "verdict": "keep"
+    },
+    {
+      "id": "columns",
+      "kind": "fact",
+      "sha256": "e3cae963403680cd79fb807f2b58826021b14e898f2d27278391a4fdf07e8ae0",
+      "verdict": "keep"
+    },
+    {
+      "id": "summary-by-script",
+      "kind": "fact",
+      "sha256": "a4578a402c79d04f1c270a1c75a9bc348fd503df3d8986ec6c1eb557c13d5759",
+      "verdict": "keep"
+    },
+    {
+      "id": "doors-by-script",
+      "kind": "reference",
+      "sha256": "87462508bb0bb19f41cb391c7673b6b5c8bd8416802fe685517220e6b019cf7f",
+      "verdict": "keep"
+    },
+    {
+      "id": "level2",
+      "kind": "fact",
+      "sha256": "b53c2cd887d9ccc30ae3eeffa2d8161237e77953c16e0b9c5294e7d50d772069",
+      "verdict": "keep"
+    },
+    {
+      "id": "level3",
+      "kind": "fact",
+      "sha256": "7b0eb7dc5ab6a67d9416f30c49c0ec3f7b00ddc22b0dbb55b1d3c672f9cd3040",
+      "verdict": "keep"
+    },
+    {
+      "id": "level5",
+      "kind": "fact",
+      "sha256": "07c249535aae6204eb336e8e4a925099dfbdc07d4bdaaff061a8fb8c8c80b621",
+      "verdict": "keep"
+    },
+    {
+      "id": "level9",
+      "kind": "fact",
+      "sha256": "f1fdb8fafeea1921e606863625445cb98464081d35e0119ff235bc3136be1365",
+      "verdict": "keep"
+    },
+    {
+      "id": "level11",
+      "kind": "fact",
+      "sha256": "b7534c96eef831dc57ecb61b46a512f6c765f5a55dfcd7835d7156da10a5f88c",
+      "verdict": "keep"
+    },
+    {
+      "id": "level14",
+      "kind": "fact",
+      "sha256": "b2876cded39edcbbbe948daaf82a18627be878f6ed69445286a9917249c23ed3",
+      "verdict": "keep"
+    },
+    {
+      "id": "level20",
+      "kind": "fact",
+      "sha256": "bed4e9df824c2fbc10796cf274302440c7482f9cec98233887a1d68ed36399cb",
+      "verdict": "keep"
+    },
+    {
+      "id": "level31",
+      "kind": "fact",
+      "sha256": "fcb6c86156eb4e51999905d94803273324d97c0cd85b524d10a436a57881e08e",
+      "verdict": "keep"
+    },
+    {
+      "id": "level34",
+      "kind": "fact",
+      "sha256": "aca6e28aa820bbcde87403b75e652e63add020c82d07b5336fb031c7619b4392",
+      "verdict": "keep"
+    },
+    {
+      "id": "level51",
+      "kind": "fact",
+      "sha256": "db95efcadd847d97a8fba3adef193c4e632a47b3b165d747b29b1145ca52e36b",
+      "verdict": "keep"
+    },
+    {
+      "id": "level52",
+      "kind": "fact",
+      "sha256": "73aa29f765ad37614412aeebd7108dc5d9f9d39176448f14b3270d5baf62f874",
+      "verdict": "keep"
+    },
+    {
+      "id": "level54",
+      "kind": "fact",
+      "sha256": "de0f936eb0bdd94dbb7a44f1796076b94076a717d4ad980383c5e1324321ae4e",
+      "verdict": "keep"
+    },
+    {
+      "id": "level55",
+      "kind": "fact",
+      "sha256": "c972dcb754da47f8e41fc9760959222845d00a267df880d28f5478cf39c2369c",
+      "verdict": "keep"
+    },
+    {
+      "id": "level60",
+      "kind": "fact",
+      "sha256": "26164914482b76fafb8c5e6a4843c12f2b94f57dcec5004cd48c03e140a9d931",
+      "verdict": "keep"
+    },
+    {
+      "id": "level61",
+      "kind": "fact",
+      "sha256": "177dd5fbfac5e630b1f2471b03a6e25dca6ba432d9e902a747072340fe9a893f",
+      "verdict": "keep"
+    },
+    {
+      "id": "level62",
+      "kind": "fact",
+      "sha256": "06d71686c58ddbfdb31eeeb594e79df5e55bd627444ed0d3795148a1c550abcd",
+      "verdict": "keep"
+    },
+    {
+      "id": "level64",
+      "kind": "fact",
+      "sha256": "dba0330649f3f05308cad894a133b9daa70867a4d70700fe331bfda1b69a9c30",
+      "verdict": "keep"
+    },
+    {
+      "id": "level80",
+      "kind": "fact",
+      "sha256": "248442bc2fa8d89b797e5675ebfab90d13f194d5b471cbd2e725f1ac6784f4b0",
+      "verdict": "keep"
+    },
+    {
+      "id": "level81",
+      "kind": "fact",
+      "sha256": "dcaab491b383ae09922da37547aa83df89b1701f4a54a9b7ca97df4fddb37821",
+      "verdict": "keep"
+    },
+    {
+      "id": "level82",
+      "kind": "fact",
+      "sha256": "d4ac500e90dd12967200d26adc9d2a31254512375b1b8b8d767c02d18042518d",
+      "verdict": "keep"
+    },
+    {
+      "id": "level83",
+      "kind": "fact",
+      "sha256": "e63f34f44951d7a75ced18ff9b0cabf6c633194db695d72c457c51402c89957d",
+      "verdict": "keep"
+    },
+    {
+      "id": "level84",
+      "kind": "fact",
+      "sha256": "844d1256fc7c463354192167b6cd35f58a37de9503f787dcd7a2636e61cf6857",
+      "verdict": "keep"
+    },
+    {
+      "id": "level86",
+      "kind": "fact",
+      "sha256": "895cd700b6924828d49826ce1ae2cd9a762df9156f909ff20554e3780d00de9c",
+      "verdict": "keep"
+    },
+    {
+      "id": "level86-chapter1-reg",
+      "kind": "fact",
+      "sha256": "7a10c22de1ed74080611f97bc74ef22ebe91fb0ae8bc56b075c588d5d3a7ebb7",
+      "verdict": "keep"
+    },
+    {
+      "id": "level87",
+      "kind": "fact",
+      "sha256": "0af247c226c8b6b0abf2699770344f289d021b6c02e4ed8a02b7f2c3fe63c54f",
+      "verdict": "keep"
+    },
+    {
+      "id": "level92",
+      "kind": "fact",
+      "sha256": "be03b1b96f6fc9b9f29d12a868abc4c8117785daed81af3396df2b07ee481109",
+      "verdict": "keep"
+    },
+    {
+      "id": "level93",
+      "kind": "fact",
+      "sha256": "c70ced4c6d9d142de68c2b879f1e85a2cac92ea16529bdd9f6187ae15e2da87d",
+      "verdict": "keep"
+    },
+    {
+      "id": "level95",
+      "kind": "fact",
+      "sha256": "5dbb09675c6f8780291476376a69da781501bc80e6bc8f24abaa87892b4225ed",
+      "verdict": "keep"
+    },
+    {
+      "id": "level99",
+      "kind": "fact",
+      "sha256": "e35dd53895707a4224fe619e53b8506917119f6c5415ce683a5ae6d3c785520e",
+      "verdict": "keep"
+    },
+    {
+      "id": "level103",
+      "kind": "fact",
+      "sha256": "9cd9d705e5e67720780a00fd43004ea10d64979ff65b73dedf7e0c6376ee67d1",
+      "verdict": "keep"
+    },
+    {
+      "id": "level107",
+      "kind": "fact",
+      "sha256": "994d7f3db03a4b9b743b924c7f6dd5eac2ff91981c9121fc20da3b78249f7ce1",
+      "verdict": "keep"
+    },
+    {
+      "id": "level109",
+      "kind": "fact",
+      "sha256": "2da7586f89d854761ccdaf2ea25b27ea9212b8fee7d1021edeb859a383183242",
+      "verdict": "keep"
+    },
+    {
+      "id": "level111",
+      "kind": "fact",
+      "sha256": "f9e0f3f60461ea24c5734c9cb856a1668e9faa46680df355178123d6133fee0c",
+      "verdict": "keep"
+    },
+    {
+      "id": "level112",
+      "kind": "fact",
+      "sha256": "29683dc311f005bd8352df0e78fabbeb29228cd65db4bd702e0b49f7cb00e311",
+      "verdict": "keep"
+    },
+    {
+      "id": "level114",
+      "kind": "fact",
+      "sha256": "4cc5ecb5c79d3cfd500029f48ae16b89e478ee01d4a79d451de66c3e8e2abc69",
+      "verdict": "keep"
+    },
+    {
+      "id": "level115",
+      "kind": "fact",
+      "sha256": "b54c3dd1df36746da7415471b6d5d63a5827123ff74ed3af0ce1ed8974c5b087",
+      "verdict": "keep"
+    },
+    {
+      "id": "level121",
+      "kind": "fact",
+      "sha256": "e09945235a4b7bf2bb52a097fcb1f45923dfa5d84f057d7506b77891c1c387ca",
+      "verdict": "keep"
+    },
+    {
+      "id": "level123",
+      "kind": "fact",
+      "sha256": "7ff43cec641d3ad4b1dd8c70ed17a3b2722d536de6c3c94b39e12c4d98b97c9e",
+      "verdict": "keep"
+    },
+    {
+      "id": "level124",
+      "kind": "fact",
+      "sha256": "f74167d305f8cbdcf2d890dc27fe894476aeb2926c909101747325e8f8bccaea",
+      "verdict": "keep"
+    },
+    {
+      "id": "level126",
+      "kind": "fact",
+      "sha256": "74c945ceb94b75b012ea9825589e04286f5731e6e5c80ec5aa342fb86dc63a08",
+      "verdict": "keep"
+    },
+    {
+      "id": "level128",
+      "kind": "fact",
+      "sha256": "ff05cf149fa73dec0698bafadaa91fb83af2cd8214c700c42c5658ee807e3318",
+      "verdict": "keep"
+    },
+    {
+      "id": "level131",
+      "kind": "fact",
+      "sha256": "e77c86804f69d47af4ecb744039daab316a6e1a54b395e506a61bef4e6fc3412",
+      "verdict": "keep"
+    },
+    {
+      "id": "level133",
+      "kind": "fact",
+      "sha256": "f7b300d27b98fdd3dc112a1f15d046dc021357feac44ffa8378e25bbde17211b",
+      "verdict": "keep"
+    },
+    {
+      "id": "level134",
+      "kind": "fact",
+      "sha256": "348a02c187a23cc03c7f3987d4700d763b7513a4ffe7266434dc2423ad57fd0c",
+      "verdict": "keep"
+    },
+    {
+      "id": "level136",
+      "kind": "fact",
+      "sha256": "0b0506d1d8c66244f4fee387f083f13e02fef540eb48a4b2306faa5e596b85df",
+      "verdict": "keep"
+    },
+    {
+      "id": "level137",
+      "kind": "fact",
+      "sha256": "35ee480766bdc931c51ecd569f85c032b51f3432e2e9c689f86d9f937752c4c6",
+      "verdict": "keep"
+    },
+    {
+      "id": "xbox-only-doors",
+      "kind": "fact",
+      "sha256": "eca3918449cb8c31b56b61bfadd251ad2232ff16b31525434be5de3ce3611e75",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "94fa8265ccf5d52f9cb9e1176dc48962a23388a648141f4e58c2002bd3f0f245",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "e7d523206daed70bcd37204111a5a2c6fa6af2452552d26f3a6bab083dd74870",
+      "verdict": "keep"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "player-state",
+  "page_sha256": "3feda1ecb974a4865daef47844ee55e38030fa3bd111dc6d3c39da90659d81da",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "player-state",
+      "kind": "reference",
+      "sha256": "dbb8afb4bbdd16494a00f153cc7847704cb8852e33b8fe6dbcbbaf49d2098d83",
+      "verdict": "keep"
+    },
+    {
+      "id": "scope-and-sources",
+      "kind": "reference",
+      "sha256": "79aa48d6c3702e59839ed12fea8216e494c6e7d5dd9dbe969bcbb88f833912f3",
+      "verdict": "keep"
+    },
+    {
+      "id": "players",
+      "kind": "fact",
+      "sha256": "9b2a2d072c7f3713580168d348c5080f48d48b9312ff3253e7dacb792bd27066",
+      "verdict": "keep"
+    },
+    {
+      "id": "health",
+      "kind": "behaviour",
+      "sha256": "2a59cc32f62bc97deec913e792ebc0c186f41603bc304a213f6e45d3de9e0856",
+      "verdict": "keep"
+    },
+    {
+      "id": "flashes-and-revives",
+      "kind": "fact",
+      "sha256": "49c19705763d2b59cac5b7da6a77368954ac7d0e2137eec2b0b1943e96594987",
+      "verdict": "keep"
+    },
+    {
+      "id": "using-a-flash",
+      "kind": "behaviour",
+      "sha256": "9133fb67045e2f267dae9353749770a00006bb9590e0788dfb70061a0c36910d",
+      "verdict": "keep"
+    },
+    {
+      "id": "reviving-a-partner",
+      "kind": "behaviour",
+      "sha256": "7b01c39ea5167a953c0c7ecd1d2fa46d2b3cb0c8a86db558b4879dd750075df1",
+      "verdict": "keep"
+    },
+    {
+      "id": "rage",
+      "kind": "fact",
+      "sha256": "ad4608323538eac2898776451c0262cc354d021476cc0a2ae9d6648dd8eabf51",
+      "verdict": "keep"
+    },
+    {
+      "id": "arrest-and-handcuffs",
+      "kind": "behaviour",
+      "sha256": "ecfca56021659973baecee5842d3787db808b4ad7f2e273764ec89b57f7fca17",
+      "verdict": "keep"
+    },
+    {
+      "id": "money",
+      "kind": "behaviour",
+      "sha256": "0d7cfabdfaf62b09b6e02d9c37f355261d4872bd4c14ba540d6d9174577c3b69",
+      "verdict": "keep"
+    },
+    {
+      "id": "what-carries-over",
+      "kind": "behaviour",
+      "sha256": "99352a51a4356376fe4223d477b9904b0ac10d1dbce612280b67ada5453dfa2c",
+      "verdict": "keep"
+    },
+    {
+      "id": "difficulty",
+      "kind": "fact",
+      "sha256": "51e4dca8dc22fbce0be34b62435ec1eacaacd3e0d3599284a958d76a92a1d955",
+      "verdict": "keep"
+    },
+    {
+      "id": "differences-from-the-xbox-version",
+      "kind": "reference",
+      "sha256": "6d767db1aefc5ba4e00a15d96a51b65c71ac451f29c4df85c785eeebaec8a35c",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "d245c9fdf8565203d7967840af5775dcc52880351cf78bff24ad26851701c8b7",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "behaviour",
+      "sha256": "1bbb3958fa7651f0ce2fc5f7a77ad734e3858817247e8bc68e620aee82a447a5",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "reference",
+      "sha256": "cd26bec9aa2751375f86c334c159e36801706f41459d083eb171ab9bcc62dacd",
+      "verdict": "keep"
+    }
+  ]
+}
