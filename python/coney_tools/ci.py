@@ -518,6 +518,14 @@ def commit_sigs_steps(ctx):
     return [Step(f"engine commits in {rng}, allowed_signers from {ctx.ref}", argv, cwd=ctx.repo, tool=True)]
 
 
+def code_verdict_steps(ctx):
+    rng = commits(ctx)
+    argv = [ctx.python, "-I", ctx.script(), "cleanroom", "code-verdict", "--repo", str(ctx.repo), "--ref", ctx.ref, rng]
+    return [
+        Step(f"engine changes in {rng} covered by signed verdicts, keys from {ctx.ref}", argv, cwd=ctx.repo, tool=True)
+    ]
+
+
 def disclosure_steps(ctx):
     rng = commits(ctx)
     base = [ctx.python, "-I", ctx.script(), "cleanroom", "disclosure-check"]
@@ -675,6 +683,11 @@ JOBS = {
         Job("verify", "every research page's verdict, two signatures and hashes", verify_steps),
         Job("orig-check", "every @orig tag names an address and job on a gated page", orig_check_steps),
         Job("commit-sigs", "every engine commit is signed by an allowed implementer key", commit_sigs_steps),
+        Job(
+            "code-verdict",
+            "every changed engine source file is covered by a PR analyst's signed verdict",
+            code_verdict_steps,
+        ),
         Job("engine", "the engine builds and passes its tests with each compiler", engine_steps),
     )
 }

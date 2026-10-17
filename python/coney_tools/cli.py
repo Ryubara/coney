@@ -9,6 +9,7 @@ from coney_tools import (
     __version__,
     ci,
     codegate,
+    codeverdict,
     impl,
     implog,
     lint,
@@ -685,6 +686,50 @@ def main(argv=None):
         run=gate(
             "cleanroom commit-sigs",
             lambda a: codegate.commit_sigs(a.range, a.repo, a.ref, a.ssh_keygen, a.json),
+        )
+    )
+
+    cv = cl.add_parser(
+        "code-verdict",
+        help="check that a PR analyst's signed verdict covers every changed engine source file (code gate, 8.4)",
+        description="Every engine source file the range adds or changes (from the merge base of its ends) must be "
+        f"listed with its exact blob by a verdict the range adds under {codeverdict.FOLDER}/, and every @orig "
+        "address in it must be judged independent there. Each added verdict must be well formed, canonical, pass, "
+        f"and be signed in the verdict namespace by a key allowed_signers (read from --ref) lists under "
+        f"{signing.PR_ANALYST}<n>. Reads git objects only. Prints paths, addresses, verdict names and principals. "
+        "Exit 0 passed, 1 a check failed, 2 could not run.",
+    )
+    cv.add_argument("range", help="the change to check, as A..B (main..HEAD)")
+    cv.add_argument("--repo", help="the repository (default: the checkout coney-tools runs from)")
+    cv.add_argument(
+        "--ref", default=research.MAIN, help="the git ref allowed_signers and settings are read from (main)"
+    )
+    cv.add_argument("--ssh-keygen", help="ssh-keygen to use (default: the first on PATH)")
+    cv.add_argument("--json", action="store_true", help="the changed files, the verdicts and every problem")
+    cv.set_defaults(
+        run=gate(
+            "cleanroom code-verdict",
+            lambda a: codeverdict.code_verdict(a.range, a.repo, a.ref, a.ssh_keygen, a.json),
+        )
+    )
+
+    cvs = cl.add_parser(
+        "code-verdict-sign",
+        help="a PR analyst signs a passing code verdict (the analysis side)",
+        description=f"Checks the verdict file ({codeverdict.SCHEMA}) and writes it in canonical form with the "
+        "principal's signature into --out (add-only). A malformed verdict, or one with any function not "
+        "independent or a flagged pre-filter, is refused: only a passing verdict is signed. Exit 0 signed, "
+        "1 refused, 2 could not run.",
+    )
+    cvs.add_argument("verdict", help="the verdict, <name>.json")
+    cvs.add_argument("--key", required=True, help="the PR analyst's private verdict key")
+    cvs.add_argument("--principal", required=True, help=f"the key's principal ({signing.PR_ANALYST}<n>)")
+    cvs.add_argument("--out", required=True, help="the folder the verdict and its signature go into")
+    cvs.add_argument("--ssh-keygen", help="ssh-keygen to use (default: the first on PATH)")
+    cvs.set_defaults(
+        run=gate(
+            "cleanroom code-verdict-sign",
+            lambda a: codeverdict.sign(a.verdict, a.key, a.principal, a.out, a.ssh_keygen),
         )
     )
 

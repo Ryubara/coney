@@ -29,6 +29,7 @@ environments under `build/ci/` and make them again only when a lock file changes
 | `verify` | `ci.yml` | every research page's verdict, two signatures and hashes (`cleanroom verify`) |
 | `orig-check` | `ci.yml` | every `@orig` tag in the engine names an address and job on a gated page (`cleanroom orig-check`) |
 | `commit-sigs` | `ci.yml`, pull requests only | every engine commit of the pull request is signed by an allowed implementer key (`cleanroom commit-sigs`) |
+| `code-verdict` | `ci.yml`, pull requests only | every engine source file the pull request adds or changes is covered, with its exact content, by a verdict it adds that a PR analyst signed, and every `@orig` function in it is judged independent (`cleanroom code-verdict`) |
 | `engine` | `ci.yml` | the engine (the code gate's `engine_root`) configures, builds and passes its CTest suite with GCC and with Clang, through CMake and Ninja, against SDL3 built by `containers/build-sdl.sh` as in the implementer image; it passes with a note while the engine has no `CMakeLists.txt` |
 | `disclosure` | `pr.yml` | the pull request's title, description and commit messages describe the process in neutral words |
 
@@ -61,8 +62,9 @@ top-level `permissions:` that grant a write. Until the repository variable `PAGE
 
 ### The checker comes from the base branch
 
-A pull request cannot loosen the check it is judged by: the gate jobs (`verify`, `orig-check`, `commit-sigs`) run
-`coney-tools` from the branch the pull request merges into, not from the pull request, and read `allowed_signers`,
+A pull request cannot loosen the check it is judged by: the gate jobs (`verify`, `orig-check`, `commit-sigs`,
+`code-verdict`) run `coney-tools` from the branch the pull request merges into, not from the pull request, and read
+`allowed_signers`,
 the pages, the code gate's settings and markdownlint's version and rules from that branch too (`--ref
 origin/<base>`). Every workflow gets a read-only token, and no job uses a secret.
 

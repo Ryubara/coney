@@ -21,6 +21,7 @@ from coney_tools.cleanroom import scan
 NAMESPACE = "coney-verdict"
 COMMIT_NAMESPACE = "git"  # the namespace git signs commits in
 IMPLEMENTER = "impl-"  # commit keys count only under these principals: impl-N, the implementer containers' names
+PR_ANALYST = "pr-analyst-"  # code verdicts count only under these principals: pr-analyst-N
 ALLOWED_SIGNERS = "allowed_signers"  # at the repository's root
 PRINCIPAL = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 TIMEOUT = 120  # seconds one ssh-keygen or git call may take
