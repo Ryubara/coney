@@ -242,6 +242,35 @@ jobs:
           PY: ${{ needs.versions.outputs.python }}
           BASE: ${{ github.base_ref }}
 
+  # Every engine source file the pull request changes is covered by a verdict it adds (from the fork point).
+  code-verdict:
+    if: github.event_name == 'pull_request'
+    needs: versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: The pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The checker, from the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref }}
+          path: trusted
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ needs.versions.outputs.uv }}
+      - run: >-
+          uv run --no-project --python "$PY" python -I trusted/python/coney-tools.py ci --job code-verdict
+          --repo pr --ref "origin/$BASE" --range HEAD^1..HEAD^2
+        env:
+          PY: ${{ needs.versions.outputs.python }}
+          BASE: ${{ github.base_ref }}
+
   # The runner has CMake, GCC and Clang; Ninja and Catch2 3 come from Ubuntu's archive, as in the implementer image.
   engine:
     needs: versions
@@ -266,7 +295,7 @@ jobs:
 
   build-ok:
     if: always()
-    needs: [versions, workflow, tests, markdownlint, ruff, conventions, site, mod, verify, orig-check, commit-sigs, engine]
+    needs: [versions, workflow, tests, markdownlint, ruff, conventions, site, mod, verify, orig-check, commit-sigs, code-verdict, engine]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

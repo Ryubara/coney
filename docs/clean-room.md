@@ -331,6 +331,18 @@ its source files, its game-behaviour folders) and `allowed_signers` from `main`,
   game-behaviour folder must carry a tag, so a reimplemented function cannot skip the PR analyst's comparison by
   leaving its address out.
 
+The third point is checked on the public side too. The PR analyst's verdict is a file in
+`research/code-verdicts/`, with no free text: the commit judged, every source file judged with its exact git
+content, one entry per tagged function (its file, its address and `independent`, `parallel` or `transcribed`), and
+the scripted pre-filter's outcome (`pass` or `flag`). It is signed in the verdict namespace by a key
+`allowed_signers` lists under a PR analyst's name, and `coney-tools cleanroom code-verdict-sign` signs only a verdict
+that passes.
+
+- `coney-tools cleanroom code-verdict main..HEAD` passes only when every engine source file the change adds or
+  modifies is listed, with its exact content, by a verdict the change adds, every `@orig` address in it is judged
+  `independent`, the pre-filter passed, and the verdict carries a valid PR analyst signature. Any change to the code
+  after the verdict needs a new one.
+
 ## 8. Channels that carry text
 
 Anything that carries text between roles is checked:

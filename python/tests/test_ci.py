@@ -291,7 +291,8 @@ class Jobs(unittest.TestCase):
 
     def test_every_job_has_steps_and_a_description(self):
         self.assertEqual(list(ci.JOBS), ["workflow", "tests", "disclosure", "markdownlint", "ruff", "conventions",
-                                         "site", "mod", "verify", "orig-check", "commit-sigs", "engine"])  # fmt: skip
+                                         "site", "mod", "verify", "orig-check", "commit-sigs", "code-verdict",
+                                         "engine"])  # fmt: skip
         for job in ci.JOBS.values():
             self.assertTrue(job.what)
 

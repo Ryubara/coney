@@ -623,6 +623,31 @@ commit key under another principal, a key without a namespace and a key only the
 `PASS <commit> <principal>` or `FAIL <commit>: <why>` per checked commit and counts the commits it skipped. Exit
 status: 0 every engine commit is signed by an implementer, 1 one is not, 2 could not run.
 
+### `cleanroom code-verdict` and `code-verdict-sign`
+
+```sh
+python -I python/coney-tools.py cleanroom code-verdict main..HEAD [--repo R] [--ref main] [--ssh-keygen PATH] [--json]
+python -I python/coney-tools.py cleanroom code-verdict-sign <name>.json --key KEY --principal pr-analyst-<n> --out DIR
+```
+
+A PR analyst's verdict is `research/code-verdicts/<name>.json` (schema `coney-code-verdict/1`: `commit`, `files` as
+path and git blob, `functions` as path, `@orig` address and `independent`, `parallel` or `transcribed`, and
+`prefilter` `pass` or `flag`; no other field), in `research.canonical` form with `files` sorted by path and
+`functions` by path then address. Its signatures sit beside it as `<name>.<principal>.sig`.
+
+`code-verdict` reads git objects only. The range `A..B` starts at the merge base of A and B, so work merged into the
+base meanwhile is not counted. Every engine source file the range adds or modifies (deleted files need nothing) must
+be listed with its blob at B by a verdict the range adds, and every `@orig` address in it must be judged
+`independent` there. Each added verdict must be well formed, canonical, pass (every function independent, the
+pre-filter `pass`) and carry at least one signature that verifies in the verdict namespace by a key `allowed_signers`
+at `--ref` lists under `pr-analyst-<n>`. A signature by anyone else, one that does not verify, a signature without
+its verdict and any other file in the folder fail. Verdicts merged earlier are not checked again. Exit status: 0
+passed, 1 a check failed, 2 could not run.
+
+`code-verdict-sign`, on the analysis side, checks the verdict, writes it in canonical form and the principal's
+signature into `--out` (add-only). A malformed verdict, or one that does not pass, is refused with exit 1: only a
+passing verdict is ever signed.
+
 ## `inbox` and `roles check`
 
 ```sh
