@@ -611,7 +611,7 @@ def commit_page(tools, repo, b):
     signing.git(exe, repo, "update-index", "-z", "--index-info", data="".join(entries).encode("utf-8"), env=env)
     tree = signing.git(exe, repo, "write-tree", env=env).stdout.decode().strip()
     verb = "Update" if f"{pages}{PAGE_FILE}" in old else "Add"
-    message = f"{verb} research page {b.id}\n\nVerdict: {b.verdict_sha256}\n"
+    message = f"research: {verb} the {b.id} page\n\nVerdict: {b.verdict_sha256}\n"
     commit = signing.git(exe, repo, "commit-tree", tree, "-p", base, "-F", "-", data=message.encode(), env=env)
     commit = commit.stdout.decode().strip()
     r = signing.git(

@@ -476,8 +476,9 @@ and the current branch are never touched. The commit holds `main`'s tree with th
 | `research/verdicts/<id>.json` | the verdict |
 | `research/verdicts/<id>.<principal>.sig` | the two signatures |
 
-Its message is `Add research page <id>` (or `Update research page <id>` when the page is on `main` already), a blank
-line and `Verdict: <verdict SHA-256>`. An existing `page/<id>` branch is refused. Exit status: 0 committed, 1 the
+Its message is `research: Add the <id> page` (or `research: Update the <id> page` when the page is on `main`
+already), a blank line and `Verdict: <verdict SHA-256>`, so the branch's commit is already in the form pull request
+titles take. An existing `page/<id>` branch is refused. Exit status: 0 committed, 1 the
 bundle failed a check, 2 could not run or refused.
 
 ```sh

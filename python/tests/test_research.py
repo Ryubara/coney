@@ -285,7 +285,7 @@ class Gate(unittest.TestCase):
         self.assertEqual(self.git("status", "--porcelain"), status)
         self.assertEqual(self.git("symbolic-ref", "--short", "HEAD"), "work")
         msg = self.git("log", "-1", "--format=%B", f"page/{folder.name}")
-        self.assertEqual(msg, f"Add research page {folder.name}\n\nVerdict: {sha}")
+        self.assertEqual(msg, f"research: Add the {folder.name} page\n\nVerdict: {sha}")
         files = self.git("ls-tree", "-r", "--name-only", f"page/{folder.name}").splitlines()
         pid = folder.name
         for want in (
@@ -330,7 +330,7 @@ class Gate(unittest.TestCase):
         self.assertEqual(self.second(folder)[0], 0)
         self.assertEqual(self.publish(folder)[0], 0)
         self.assertEqual(self.run_cli("research", "import", self.bundle_of(folder), "--repo", self.repo)[0], 0)
-        self.assertTrue(self.git("log", "-1", "--format=%s", f"page/{pid}").startswith("Update research page"))
+        self.assertTrue(self.git("log", "-1", "--format=%s", f"page/{pid}").startswith("research: Update the "))
         files = self.git("ls-tree", "-r", "--name-only", f"page/{pid}").splitlines()
         self.assertNotIn(f"research/pages/{pid}/img/shot.png", files)
         self.assertEqual(self.run_cli("cleanroom", "verify", "--repo", self.worktree(f"page/{pid}"))[0], 0)
