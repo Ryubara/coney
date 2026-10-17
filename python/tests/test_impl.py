@@ -878,6 +878,44 @@ class Collect(Base):
         self.assertIn("allowed_signers", out)
 
 
+class GitHubKeys(unittest.TestCase):
+    KEY1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    KEY2 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
+    def setUp(self):
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        self.repo = Path(d.name)
+        (self.repo / "allowed_signers").write_text(
+            f'# keys\nimpl-1 namespaces="git" {self.KEY1}\nimpl-2 namespaces="git" {self.KEY2}\n'
+            f'pr-analyst-1 namespaces="coney-verdict" {self.KEY1}\n',
+            encoding="utf-8",
+        )
+
+    def test_implementer_keys_come_from_allowed_signers(self):
+        self.assertEqual(impl.implementer_keys(self.repo), {"impl-1": self.KEY1, "impl-2": self.KEY2})
+
+    def test_a_key_missing_on_github_is_named(self):
+        with mock.patch.object(impl, "github_signing_keys", lambda: {self.KEY1}):
+            problems = impl.github_key_problems(self.repo)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("impl-2's key is not a signing key", problems[0])
+        self.assertIn('--type signing --title "coney impl-2"', problems[0])
+
+    def test_all_keys_on_github_pass(self):
+        with mock.patch.object(impl, "github_signing_keys", lambda: {self.KEY1, self.KEY2}):
+            self.assertEqual(impl.github_key_problems(self.repo), [])
+
+    def test_no_gh_access_names_the_scope(self):
+        def fail():
+            raise impl.signing.SigningError("gh not found on PATH")
+
+        with mock.patch.object(impl, "github_signing_keys", fail):
+            problems = impl.github_key_problems(self.repo)
+        self.assertEqual(len(problems), 1)
+        self.assertIn(impl.GITHUB_SCOPE, problems[0])
+
+
 class Check(Base):
     def test_check_reports_probe_results(self):
         w, n = inspect_pair("impl-1")

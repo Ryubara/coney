@@ -804,7 +804,10 @@ distro folder for outboxes, artifacts and transcripts come from the workspace's 
   `zones.json`) and show their logs; the zone mod's pane always has an Implementers section, which says when no log
   exists yet or the account may not read the folder (`readable` in `--json`), and `/coney-impl impl-N` picks whose
   log it shows.
-- `status` shows each container's state, firewall, key fingerprint, caps and task. `check` tests running containers
+- `status` shows each container's state, firewall, key fingerprint, caps and task, and fails (exit 1) when an
+  implementer key in `allowed_signers` is not an SSH signing key on the maintainer's GitHub account, since GitHub
+  then shows its commits as Unverified; it prints the `gh ssh-key add` command (`gh` needs the
+  `admin:ssh_signing_key` scope). `check` tests running containers
   from inside: no route to any host but the API, none to the Windows host's analyst ports, no Docker socket, no
   capabilities, a seccomp filter, no new user namespaces, a read-only root filesystem.
 

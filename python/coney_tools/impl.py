@@ -768,7 +768,11 @@ def up(ws, names=(), distro=None):
         failed |= bool(problems)
         lines += problems
         if fresh:
-            lines += [f"{n}: up, with a new signing key. Add this line to allowed_signers (a maintainer):", f"  {line}"]
+            lines += [
+                f"{n}: up, with a new signing key. Add this line to allowed_signers (a maintainer):",
+                f"  {line}",
+                "  and add the key to the maintainer's GitHub account as a signing key (`impl status` checks it)",
+            ]
         else:
             lines.append(f"{n}: up; its signing key: {line}")
     return (1 if failed else 0), lines
@@ -842,7 +846,51 @@ def status(ws, distro=None):
             if "ended" in st:
                 task += f", ended {st['ended']} (exit {st.get('exit')})"
         lines.append(f"{n}: {state}, firewall {health}, key {key}, {caps}, task: {task}")
-    return 0, lines
+    problems = github_key_problems(pool.s.repo)
+    return (1 if problems else 0), lines + (problems or ["GitHub: every implementer key is a signing key there"])
+
+
+GITHUB_SCOPE = "admin:ssh_signing_key"  # what `gh` needs to list the account's signing keys
+
+
+def implementer_keys(repo):
+    """{impl-N: "<type> <base64>"}: the implementers' commit keys allowed_signers lists."""
+    path = Path(repo) / signing.ALLOWED_SIGNERS
+    keys = {}
+    for line in signing.lf(path.read_bytes()).decode("utf-8", "replace").split("\n"):
+        m = signing.KEY_LINE.match(line.strip())
+        if not m or line.strip().startswith("#"):
+            continue
+        for p in m.group(1).split(","):
+            if p.startswith(signing.IMPLEMENTER):
+                keys[p] = f"{m.group(3)} {m.group(4)}"
+    return keys
+
+
+def github_signing_keys():
+    """The "<type> <base64>" keys the maintainer's GitHub account (gh's login) holds as SSH signing keys."""
+    gh = signing.program("gh")
+    r = signing.run([gh, "api", "--paginate", "user/ssh_signing_keys", "--jq", ".[].key"])
+    if r.returncode:
+        detail = r.stderr.decode("utf-8", "replace").strip().splitlines()
+        raise signing.SigningError(f"gh could not list the signing keys ({detail[-1] if detail else 'no reason'})")
+    return {" ".join(x.split()[:2]) for x in r.stdout.decode().splitlines() if x.strip()}
+
+
+def github_key_problems(repo):
+    """Lines naming each implementer key in allowed_signers that is not a signing key on the maintainer's GitHub
+    account, so its commits would show as Unverified there; [] when there is none."""
+    keys = implementer_keys(repo)
+    try:
+        on_github = github_signing_keys()
+    except signing.SigningError as e:
+        return [f"GitHub: {e}: run `gh auth refresh -h github.com -s {GITHUB_SCOPE}` (a maintainer)"]
+    return [
+        f"GitHub: {n}'s key is not a signing key on the maintainer's account, so its commits show as Unverified: "
+        f'save "{key}" as {n}.pub and run `gh ssh-key add {n}.pub --type signing --title "coney {n}"`'
+        for n, key in sorted(keys.items())
+        if key not in on_github
+    ]
 
 
 def uncollected(pool, name):
@@ -882,7 +930,10 @@ def reset(ws, name, force=False, distro=None):
     gone = f"its signing key ({key}) is gone" if key else "its signing key is gone"
     return 0, [
         f"{name}: container, volumes ({', '.join(vols)}) and its folders in the distro removed",
-        f"{gone}: remove the {name} line from allowed_signers (a maintainer); the next `impl up` makes a new key",
+        (
+            f"{gone}: remove the {name} line from allowed_signers and its `coney {name}` signing key from the "
+            "maintainer's GitHub account (a maintainer); the next `impl up` makes a new key"
+        ),
         *release(pool),
     ]
 
