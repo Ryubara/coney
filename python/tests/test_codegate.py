@@ -289,7 +289,7 @@ class Repo(unittest.TestCase):
         self.git("checkout", "-q", "--force", "work")
         self.git("clean", "-q", "-f", "-d", "-x")
 
-    def commit(self, files, key=None, message="Change"):
+    def commit(self, files, key=None, message="Change\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"):
         for rel, text in files.items():
             self.write(rel, text)
         self.git("add", "-A")
@@ -384,12 +384,34 @@ class Repo(unittest.TestCase):
         b = self.commit({"engine/src/b.cpp": "int b() { }\n"}, "i2")
         code, out, err = self.sigs(f"{base}..HEAD")
         self.assertEqual(code, 0, out + err)
-        self.assertEqual(out.splitlines()[:2], [f"PASS {a[:12]} impl-1", f"PASS {b[:12]} impl-2"])
+        self.assertEqual(
+            out.splitlines()[:2], [f"PASS {a[:12]} impl-1, Claude Opus 5.5", f"PASS {b[:12]} impl-2, Claude Opus 5.5"]
+        )
         self.assertIn("1 others not checked", out)
         code, out, err = self.sigs(f"{base}..HEAD", "--json")
         doc = json.loads(out)
         self.assertEqual([(c["commit"], c["principal"]) for c in doc["commits"]], [(a, "impl-1"), (b, "impl-2")])
+        self.assertEqual({c["model"] for c in doc["commits"]}, {"Claude Opus 5.5"})
         self.assertEqual(doc["skipped"], 1)
+
+    def test_a_signed_engine_commit_must_name_its_model(self):
+        base = self.git("rev-parse", "HEAD")
+        trailer = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+        messages = [
+            "Change",  # no trailer
+            "Change\n\nCo-Authored-By: Someone <someone@example.com>",  # not a model
+            f"Change\n\n{trailer}\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>",  # two
+            f"Change\n\n{trailer}\nCo-authored-by: A Person <person@example.com>",  # another co-author
+        ]
+        for n, message in enumerate(messages):
+            self.commit({f"engine/src/m{n}.cpp": f"int m{n}() {{ }}\n"}, "i1", message)
+        code, out, err = self.sigs(f"{base}..HEAD", "--json")
+        self.assertEqual(code, 1, err)
+        doc = json.loads(out)
+        self.assertEqual(len(doc["commits"]), len(messages))
+        for c in doc["commits"]:
+            self.assertFalse(c["ok"])
+            self.assertIn("does not name its model", c["problem"])
 
     def test_every_other_signature_fails(self):
         base = self.git("rev-parse", "HEAD")

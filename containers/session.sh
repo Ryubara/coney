@@ -1,5 +1,6 @@
 #!/bin/bash
-# coney-session BRANCH: one implementer session, started by `coney-tools impl run` as the user impl.
+# coney-session BRANCH MODEL EFFORT: one implementer session, started by `coney-tools impl run` as the user impl,
+# at the model and effort the workspace's containers table names.
 #
 # Refreshes the container's clone from the bundle of main that coney-tools streamed to /tmp, makes a fresh worktree
 # on a new branch BRANCH from it, checks the egress wall once more and runs Claude Code on the task, without a
@@ -7,7 +8,10 @@
 # the live log. Exit status: Claude Code's, or 10 to 13 when the session could not start.
 set -euo pipefail
 
-branch=${1:?usage: coney-session BRANCH}
+usage="usage: coney-session BRANCH MODEL EFFORT"
+branch=${1:?$usage}
+model=${2:?$usage}
+effort=${3:?$usage}
 repo=/work/coney
 bundle=/tmp/coney-main.bundle
 task=/work/task/task.md
@@ -52,5 +56,6 @@ cd "$work"
 exec claude -p "Do the task in $task. You are on branch $branch in a fresh worktree of the repository." \
     --append-system-prompt "$(cat /etc/coney/system-prompt.txt)" \
     --plugin-dir /opt/tether \
+    --model "$model" --effort "$effort" \
     --permission-mode bypassPermissions \
     --output-format stream-json --verbose

@@ -27,7 +27,7 @@ ROOT = "/srv/test-coney"
 SESSION_EVENTS = [
     b'{"type":"system","subtype":"init","model":"m","cwd":"/work/coney/.worktrees/task-one"}',
     (
-        b'{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash",'
+        b'{"type":"assistant","message":{"model":"claude-opus-5-5","content":[{"type":"tool_use","name":"Bash",'
         b'"input":{"command":"ctest","description":"run the tests"}}]}}'
     ),
     b'{"type":"user","message":{"content":[{"type":"tool_result","content":"100% tests passed"}]}}',
@@ -52,6 +52,8 @@ def write_workspace(tmp, containers=None, drop=(), **extra):
         "cpus": 3,
         "memory": "5g",
         "auth_file": "public:containers\\secrets\\auth.env",
+        "model": "claude-opus-5-5",
+        "effort": "medium",
     }
     if containers is not None:
         c = containers
@@ -278,6 +280,8 @@ class WorkspaceContainers(unittest.TestCase):
             "cpus": 3,
             "memory": "5g",
             "auth_file": "public:containers\\secrets\\auth.env",
+            "model": "claude-opus-5-5",
+            "effort": "medium",
         }
         c.update(change)
         return workspace.load(write_workspace(self.tmp, {k: v for k, v in c.items() if v is not ...}))
@@ -288,6 +292,7 @@ class WorkspaceContainers(unittest.TestCase):
         s = impl.settings(ws)
         self.assertEqual(s.memory, 5 << 30)
         self.assertEqual(s.auth_file, self.tmp / "pub" / "containers" / "secrets" / "auth.env")
+        self.assertEqual((s.model, s.effort), ("claude-opus-5-5", "medium"))
         self.assertEqual(
             s.env("1500"), {"CONEY_ROOT": ROOT, "CONEY_CPUS": "3", "CONEY_MEMORY": "5g", "CONEY_UID": "1500"}
         )
@@ -323,6 +328,11 @@ class WorkspaceContainers(unittest.TestCase):
             {"auth_file": "nowhere:auth.env"},
             {"auth_file": "public:..\\auth.env"},
             {"auth_file": "C:\\auth.env"},
+            {"model": ...},
+            {"model": "opus"},
+            {"model": "claude-opus-5-5 --dangerous"},
+            {"effort": ...},
+            {"effort": "huge"},
         ]
         for change in bad:
             with self.subTest(change=change), self.assertRaises(workspace.WorkspaceError):
@@ -640,10 +650,10 @@ class Auth(Base):
 
     def test_session_command_carries_no_secret(self):
         auth = {"CLAUDE_CODE_OAUTH_TOKEN": SECRET}
-        argv = impl.session_argv("impl-1", "task/one", auth)
+        argv = impl.session_argv("impl-1", "task/one", auth, "claude-opus-5-5", "medium")
         self.assertNotIn(SECRET, " ".join(argv))
         self.assertIn("CLAUDE_CODE_OAUTH_TOKEN", argv)
-        self.assertEqual(argv[-3:], ["impl-1", impl.SESSION, "task/one"])
+        self.assertEqual(argv[-5:], ["impl-1", impl.SESSION, "task/one", "claude-opus-5-5", "medium"])
         self.assertIn(SECRET.encode(), impl.auth_input(auth))
         self.assertTrue(impl.auth_input(auth).endswith(b"\n\n"))  # an empty line ends the variables
 
@@ -701,6 +711,11 @@ class Auth(Base):
         self.assertIn("Bash     run the tests (ctest)", out)
         self.assertIn("done     ok after 3 turns, 12 s", out)
         self.assertEqual(self.cli(fake, "log", "x; rm")[0], 2)
+        state = json.loads((self.tmp / "pub" / "containers" / "live" / "impl-1.json").read_text(encoding="utf-8"))
+        self.assertEqual((state["model"], state["effort"]), ("claude-opus-5-5", "medium"))
+        self.assertEqual(state["served"], {"claude-opus-5-5": 1})  # as the API reported it
+        session = next(c for c, _ in fake.streamed if impl.SESSION in c)
+        self.assertEqual(session[-3:], ["task/one", "claude-opus-5-5", "medium"])
 
     def test_run_branch_not_pushed_fails(self):
         fake = FakeDistro(containers=self.running())

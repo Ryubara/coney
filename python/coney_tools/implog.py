@@ -93,7 +93,8 @@ def line(entry):
 
 class LiveLog:
     """The live log of one implementer's session: written line by line, flushed at each, so a reader sees it as it
-    grows. A new session starts the file again."""
+    grows. A new session starts the file again. It also counts the models the API answered with, by id, so a session's
+    record says which model wrote its work as the API reported it, not as the session claims."""
 
     def __init__(self, public, name, state):
         folder = Path(public, LIVE)
@@ -103,6 +104,7 @@ class LiveLog:
         self.write_state()
         self.f = open(folder / f"{name}.log", "w", encoding="utf-8", newline="\n")  # noqa: SIM115 -- closed in close()
         self.final = None
+        self.models = {}
 
     def write_state(self):
         tmp = self.state_path.with_suffix(".tmp")
@@ -118,6 +120,9 @@ class LiveLog:
             if text.strip():
                 self.write([(clock(), "output", one_line(text))])
             return
+        message = event.get("message") if isinstance(event, dict) else None
+        if isinstance(message, dict) and event.get("type") == "assistant" and isinstance(message.get("model"), str):
+            self.models[message["model"]] = self.models.get(message["model"], 0) + 1
         if isinstance(event, dict) and event.get("type") == "result" and isinstance(event.get("result"), str):
             self.final = event["result"]
         self.write(describe(event))
@@ -126,6 +131,10 @@ class LiveLog:
         for e in entries:
             self.f.write(line(e) + "\n")
         self.f.flush()
+
+    def served(self):
+        """{model id: responses} for every model the API answered this session with."""
+        return dict(sorted(self.models.items()))
 
     def close(self, **ended):
         self.state.update(ended)
