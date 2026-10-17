@@ -1,0 +1,99 @@
+{
+  "checker_sha256": "85ccf1f5ab0fec0c7d4155c7f51e9d6cf59748dcffe6e3469a7090f371fb9743",
+  "images": [],
+  "page": "physics-bodies",
+  "page_sha256": "ad19f35e6626f223c50a63e0cea6f1501af1872ffba4be39e0956ea69649f69a",
+  "schema": "coney-verdict/1",
+  "sections": [
+    {
+      "id": "physics-bodies-and-props",
+      "kind": "fact",
+      "sha256": "4f6ba7e0fa2043ada87933cdeb98aa6a18faa6e2301b55b474a3ca717a46825a",
+      "verdict": "keep"
+    },
+    {
+      "id": "source-files",
+      "kind": "fact",
+      "sha256": "7b82d41e07ca46645346c63943ab09704631857a9c3e387a7d935d97ba66a965",
+      "verdict": "keep"
+    },
+    {
+      "id": "object-records",
+      "kind": "fact",
+      "sha256": "d94449effe271731b1d3ba6a808f790453fffc55186e656593ca1e23322bc585",
+      "verdict": "keep"
+    },
+    {
+      "id": "enum-tables",
+      "kind": "fact",
+      "sha256": "cd85aef3909dfddb22704fe0eafbfc3a347514a784a9a9206de10a216d380319",
+      "verdict": "keep"
+    },
+    {
+      "id": "records-by-kind",
+      "kind": "fact",
+      "sha256": "238d03c35d432d00b8901f284f7a203bb0a0574f058a3adb2c6791df17c84784",
+      "verdict": "keep"
+    },
+    {
+      "id": "body-shapes",
+      "kind": "fact",
+      "sha256": "acbb8ec41c02769639de392e59511b65cb9870a5c6f2e58a719e217172e327a1",
+      "verdict": "keep"
+    },
+    {
+      "id": "weapons-and-thrown-objects",
+      "kind": "fact",
+      "sha256": "87e0475be4a355a68c5e3cff5e758fdbed9d01324d67c40f1cf5a8562f5a883e",
+      "verdict": "keep"
+    },
+    {
+      "id": "breaking",
+      "kind": "behaviour",
+      "sha256": "bc511e0c13e2d583650ecb64f7c38f0c5b17e5a59ba0d5a8e291d9c323e2cdd8",
+      "verdict": "keep"
+    },
+    {
+      "id": "vehicles",
+      "kind": "fact",
+      "sha256": "350be2a0c7fe8a7ae08f4174afecd06f0ec5dcedfc8aa1879532fa55ea778db6",
+      "verdict": "keep"
+    },
+    {
+      "id": "glass-types",
+      "kind": "fact",
+      "sha256": "037b701c5118139f0822fddb180f9c6cba6a97c62c6d413447a08cb783db19e5",
+      "verdict": "keep"
+    },
+    {
+      "id": "other-settings",
+      "kind": "fact",
+      "sha256": "eade509819927fe9ad62766e2fd6995da821863f882c175125d356798f7e9d30",
+      "verdict": "keep"
+    },
+    {
+      "id": "data-quirks",
+      "kind": "fact",
+      "sha256": "ff0f01e84e5e9420f25e383bf13279a1ca97211a432b9554b0cd5daaab0636c3",
+      "verdict": "keep"
+    },
+    {
+      "id": "entry-points",
+      "kind": "reference",
+      "sha256": "bfcbd901143dc0596cd78dca7977aa75a2ba83a061d04f04a8e44d9202c20ae9",
+      "verdict": "keep"
+    },
+    {
+      "id": "acceptance-checks",
+      "kind": "fact",
+      "sha256": "c62bf5bb8f0ce66387740c0ede35a6fe30fadea1f89473e12fffd88ccd5fbe90",
+      "verdict": "keep"
+    },
+    {
+      "id": "open-questions",
+      "kind": "fact",
+      "sha256": "bb94e39148edfa8b5b15ff8fdab99c5a96fac2b7bef0d6e1bcd1749c3399bb55",
+      "verdict": "keep"
+    }
+  ]
+}
