@@ -19,7 +19,7 @@ it covers.
   which reads its title and commits (see [Commits](commits.md)).
 - **The reviewer reports and never edits.** It does not fix a finding, not even a typo; the author does, in a
   follow-up commit. A reviewer that fixes things hides what was wrong from the next reader and from the history.
-- **The reviewer reads the diff and the files it touches**, not the implementer's summary of them. Run the checks
+- **The reviewer reads the diff and the files it touches**, not the author's summary of them. Run the checks
   the change calls for (`mkdocs build --strict`, the tests) rather than trusting a reported result.
 - **Every checklist item is answered**: it passes, or it produces a finding. A review that lists only problems
   cannot be told apart from one that skipped half the list, so the report says which checklists it applied and
@@ -65,6 +65,5 @@ Review of research, and of any other reverse-engineering work (Ghidra, disassemb
 drawn from the binary), runs on Opus 5.5, as AGENTS.md says. Simple changes (docs, tooling) may be reviewed on a
 smaller model.
 
-A research reviewer may consult the original binary to check an address or a claim. A code reviewer never needs to:
-code is checked against the research page it cites, and a code reviewer who opens the original code can no longer
-review or implement that function under the [clean-room rule](../research-workflow.md#clean-room).
+A research reviewer consults the original binary to check an address or a claim. A code reviewer checks code against
+the research page it cites, and may open the original too where the page does not settle a question.

@@ -1321,7 +1321,7 @@ effect yet), no string empty. Rerun 2026-10-11 with `<MONEYFONT>` built: the swa
 `part_page0` rectangle 73 (the triangle) once each, the revive prompt 4 one `big_font` stick picture (256-261), and
 the rumble prompt `0x25` in `part_page0` one cross.
 
-TODO for the analysts, found while implementing:
+TODO for research, found while implementing:
 
 - **Sprite colours** (answered, 2026-10-04): 0-255 with 255 opaque ([Sprite colours](#sprite-colours)), as Coney
   takes them; nothing to change.

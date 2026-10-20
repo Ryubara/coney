@@ -82,7 +82,7 @@ the game's options screens.
 ## Options
 
 Feasibility: **yes**, **partly** (possible with limits or with a visible trade-off), **no**. Cost: **S** about a
-week of one implementer, **M** 1-3 weeks, **L** 1-2 months, **XL** more. **Xbox** marks options that need the
+week of one engineer, **M** 1-3 weeks, **L** 1-2 months, **XL** more. **Xbox** marks options that need the
 player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 
 ### Screen and timing
@@ -133,7 +133,7 @@ Realtime shadows, per-pixel lighting and reflections have their own design page:
 | Chromatic aberration | Not in the original; purely cosmetic | **yes** | One post pass, off by default | F2 | S |
 | Colour grading | The game tints through looks (`SetLevelColour`, stores) and the brightness option; PCSX2 shows the picture about 70% bright, the game's own colours ([Graphics](../research/graphics.md#open-questions)) | **yes** | A 3D LUT after the game's own looks; presets *Faithful TV* (the measured brightness) and *Neutral* | F2; the display-brightness research | S |
 | Depth of field | No focus data. Cutscene cameras have targets, the follow camera has a look-at point 1.4 m above the player | **partly** | Cutscenes only: focus on the scene camera's target; gameplay off (it would blur the street) | F2 | S-M |
-| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured by the graphics analysts) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains | F5 | S after F5 |
+| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured in the graphics research) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains | F5 | S after F5 |
 
 ## AI upscaling {#ai-upscaling}
 
@@ -231,7 +231,7 @@ Maintainer decisions (2026-10-07):
 
 ## Research this plan needs
 
-One line each; owned by the graphics and HUD analysts.
+One line each; owned by the graphics and HUD engineers.
 
 - The 16:9 mode's 3D camera constants: **done** ([Graphics: video mode](../research/graphics.md#video-mode)). Still
   open: the HUD and menu 16:9 tables (`0x00211ef8`, `0x001af010`, `0x001cdc80`).

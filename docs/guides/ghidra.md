@@ -1,6 +1,6 @@
 # Ghidra + ghidra-mcp
 
-How to install, start and use the shared Ghidra project that analysts read the PS2 executable in. Paths below are
+How to install, start and use the shared Ghidra project that engineers read the PS2 executable in. Paths below are
 `coney.local.toml` keys or workspace-relative; see [Local workspace](workspace.md). `coney-tools workspace init
 --fetch ghidra` downloads Ghidra and the Emotion Engine extension ([Bootstrap](workspace.md#bootstrap)); the steps
 below are what is left to do by hand.

@@ -453,7 +453,7 @@ Written from this page:
 - `FrameTime` also carries the ticks the step advanced (`stepTicks`), so a mode can time itself from the moment it
   was entered, as mode 5 does.
 
-TODO for the analysts, found while implementing:
+TODO for research, found while implementing:
 
 - Whether `GameTimer` honours its pause in real-time mode, and what the time scale at `+0x50` does there
   (answered): the pause stops both clocks in both modes and the base is resynchronised on unpause, so Coney's

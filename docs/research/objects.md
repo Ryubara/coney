@@ -1056,7 +1056,7 @@ shape `OBB` 0.52 × 0.52 × 2, `PHYFLAG.THROWNWEAPONTARGET`), so it can be aimed
 `ShowDistractCopObjective` shows (`ObjShow`). `C3.TargetCheck`, every 200 ms while the player holds a bottle
 (`HuWhatAmIHolding` 4) and his control is `throwControl`, shows `TT_29` ("Press X to throw") once
 `HuIsAimingAt(C3.throwPlayer1, C3.throwObjective)`; `C3.ThrowCheck` goes back to `TT_28` when it stops being true.
-Confirmed (runtime), PCSX2 2.9.94, an analyst run of `level80` (re-mission-ref, 2026-10-08): `+0x634` stayed 0 while
+Confirmed (runtime), PCSX2 2.9.94, an engineer's run of `level80` (re-mission-ref, 2026-10-08): `+0x634` stayed 0 while
 the stick pitched the aim down from 0.304 rad and became the marker (`0x00ef97c0`) at pitch 0.139 rad; `TT_29` was set
 13 updates later. The bottle then **passes through the marker** and breaks beyond it (inferred: a flying world
 object's sweep meets only bodies with `BLOCKOBJECTS` ([Sweeping a body](physics.md#sweep), confirmed (code)) and the

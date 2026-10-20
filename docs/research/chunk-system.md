@@ -361,7 +361,7 @@ Run over every entry of the NTSC-U disc (2026-10-04; counts only): 6,183 load as
 described above (which parse as one chunk of type `0x16` or `0x01`); the disc check above counts 6,184 flat
 containers. Neither difference of one has been looked into.
 
-TODO for the analysts, found while implementing:
+TODO for research, found while implementing:
 
 - What the original does with a `readFromStream` handler that reads past its chunk (`h.size - consumed` is then
   negative); Coney fails the load.

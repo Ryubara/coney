@@ -73,7 +73,7 @@ prerequisites are missing, 2 for a usage error, 0 otherwise.
 
 ### Fetching the research tools {#fetch}
 
-Analysts need Ghidra and PCSX2 (implementers need neither). `--fetch TOOL` (repeatable, or `--fetch all`) downloads
+Engineers studying the original need Ghidra and PCSX2. `--fetch TOOL` (repeatable, or `--fetch all`) downloads
 each from its own project's GitHub releases at the version below, checks it against the SHA-256 pinned in
 `python/src/coney_tools/workspace_fetch.py` and unpacks it; downloads are kept in `scratch/downloads/`. Every file
 of a tool is downloaded and checked before any is unpacked, and the tool's folder appears only once it is complete,

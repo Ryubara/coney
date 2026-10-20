@@ -36,25 +36,16 @@ be attached to issues, to show a bug. Still never asset files, save files, dumps
 images, the game's text or script source; they are not committed to the repository either (a research page describes
 what they show).
 
-## Clean room
+## Studying the original
 
-Ghidra pseudocode and disassembly are for reading, by analyst agents and by humans doing research. Analysts read the
-original and write what they learn into `docs/research/`.
-
-Implementers write engine code from `docs/research/` only. The result has the same observable behaviour but our own
-structure, names and control flow. The agent definitions in `.claude/agents` enforce this where platforms allow: the
-implementer agent has no Ghidra or emulator tools.
-
-Facts may be reproduced: data layouts, constants, file formats and interoperability algorithms.
-
-The split is per function, for people and agents alike: whoever has read a function's original code (its decompiler
-output or its disassembly) never implements that function; someone else does, from the research page. How we keep
-this is in [docs/guides/research-workflow.md](docs/guides/research-workflow.md#clean-room).
+Engineers study the original game, in Ghidra and running in PCSX2, to reimplement it. What they learn goes into
+`docs/research/` and into Coney's own code; none of the game's data does ([No game data](#no-game-data)). Ghidra
+databases and emulator saves stay outside the repository.
 
 ## Research limits
 
-Research documents describe; they don't reproduce. They hold addresses and short explanatory snippets only, never a
-whole function.
+Research documents describe the original in our own words. They hold addresses and short explanatory snippets, never
+a listing long enough to carry the game's code or data into the repository.
 
 ## Licences
 
@@ -82,8 +73,7 @@ By contributing you agree that:
 
 - your contribution is licensed under the project's licences: GPL-3.0-or-later for code, CC-BY-SA-4.0 for
   documentation in `docs/` (see [Licences](#licences));
-- it contains no game data ([No game data](#no-game-data));
-- it respects the clean room ([Clean room](#clean-room)).
+- it contains no game data ([No game data](#no-game-data)).
 
 A commit an AI agent writes names the agent in a `Co-Authored-By:` line: the model's name and the vendor's noreply
 address (for Claude, `<noreply@anthropic.com>`), never a personal email address. The maintainer who merges the

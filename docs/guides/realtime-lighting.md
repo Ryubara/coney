@@ -149,7 +149,7 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 ## Research this design needs
 
-For the graphics analysts, one line each. None is started.
+For the graphics engineers, one line each. None is started.
 
 - What the Xbox build's `GraphicsShadowXBox.cpp` draws (**Xbox**, optional; shared with the plan).
 - How the environment-map pipeline gets its texture and matrix (`0x00428410`, `0x00428260`), and which materials

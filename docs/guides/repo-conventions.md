@@ -14,7 +14,7 @@ arguments.
 | A rule a program checks (a title, a description, a label, a limit, a path class) | `.github/conventions.yml` | `coney-tools` reads it; nothing hard-codes the value; AGENTS.md and the guides show a [generated block](#generated-blocks) of the lists |
 | A rule that GitHub reads from its own file (the issue forms, the pull request template, the ruleset) | Its own file | [`repo audit`](#audit-checks) checks it against `conventions.yml`, so a change to one without the other fails |
 | Tool configuration (`.clang-format`, `.pre-commit-config.yaml`, `mkdocs.yml`, `CMakePresets.json`, ...) | Its own file, in its own format | `repo.tools` names the file; its values are never copied |
-| Judgement and reasons (the clean room, evidence levels, roles, how to write a good issue) | The guide that owns the topic | Prose explains why; where it needs a value it names the key |
+| Judgement and reasons (evidence levels, roles, how to write a good issue) | The guide that owns the topic | Prose explains why; where it needs a value it names the key |
 
 The file is the answer when two places disagree: the old rule files (`commit-conventions.json`, `pr-body-rules.json`
 and `labels.yml`) are gone, and so are the constants that repeated their values in the Python code.

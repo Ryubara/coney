@@ -188,7 +188,7 @@ def run_sizes(disc_arg: str | None, fill: bool) -> int:
 def run_ghidra(url: str | None, check_only: bool) -> int:
     """Re-export the Ghidra listing from a running ghidra-mcp; with `check_only`, 1 when the committed one differs.
 
-    Only reading endpoints are called, so this is safe on the server the analysts share.
+    Only reading endpoints are called, so this is safe on the server the engineers share.
     """
     root = find_repo_root(Path.cwd())
     path = root / progress_research.LISTING_FILE

@@ -31,7 +31,7 @@ block allocator, so `0x0033c288`-`0x003418f8` is `Physics/` too (inferred; no pa
 or a ragdoll, and the linked libraries ([Source map](source-map.md#middleware)) include no physics library.
 
 Every function of `Physics/` (`0x0033c288`-`0x0034f740`), by area; the sections below say what each does. Names are
-ours (some set by the [Combat](combat.md) analyst) and match the local Ghidra project; all confirmed (code) at the
+ours (some set by the [Combat](combat.md) research) and match the local Ghidra project; all confirmed (code) at the
 address unless a section says otherwise.
 
 | Area | Functions | Evidence |
@@ -898,7 +898,7 @@ code:
   reads its normals, six of which point the wrong way ([The normal tables](physics-kernels.md#the-normal-tables)); how a
   held weapon's
   strike sphere reaches `Car_OnHit` as kind 1 (its hit goes to the held object's contact handler).
-- **Names that do not fit** (kept, as other analysts gave them): `CollTri_ComputeEdgeNormals` (`0x00343b20`)
+- **Names that do not fit** (kept, as other engineers gave them): `CollTri_ComputeEdgeNormals` (`0x00343b20`)
   normalises the edges; `Ray_InfiniteCylinder` (`0x0034d938`) is a capsule; `SphereBox_SweepCorner` (`0x0034b040`) is
   the face-region step, `SphereBox_SweepFaceEdges` (`0x0034b7b0`) the corner-region step and `SphereBox_ToBoxSpace`
   (`0x0034baf0`) goes from the box to the world. The plate comments say what each does.

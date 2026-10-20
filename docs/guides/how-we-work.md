@@ -9,49 +9,46 @@ you are about to do that step.
 
 Every feature goes through the same steps:
 
-1. **Read the code.** Before starting, an analyst checks `docs/research/` and the open pull requests for existing or
-   in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)). Then the analyst studies
+1. **Read the code.** Before starting, an engineer checks `docs/research/` and the open pull requests for existing or
+   in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)). Then the engineer studies
    the original executable `SLUS_212.15` in Ghidra: names the functions, writes plate comments and works out what
    each one does.
-2. **Watch it run.** Where the code alone is unclear, the analyst checks it in the original game running in PCSX2:
+2. **Watch it run.** Where the code alone is unclear, the engineer checks it in the original game running in PCSX2:
    memory reads and writes, scripted input, per-update traces and reference frames.
 3. **Write it down.** The finding goes on a research page in `docs/research/`, in prose, with the address it comes
    from and an [evidence level](research-workflow.md#evidence-levels) on every claim.
-4. **Build it fresh.** An implementer, who has not read the original's code, writes Coney's version from the page
-   and cites the original with `@orig` plus the page link ([Conventions](conventions.md)).
+4. **Implement it.** The engineer writes Coney's version in Coney's own code and cites the original with `@orig`
+   plus the page link ([Conventions](conventions.md)).
 5. **Compare.** The same scenario runs on both games, and traces or frames are compared
    ([Comparing with Coney](research-workflow.md#comparing-with-coney)). A difference goes back to step 1 or 4 as a
    question or a fix.
 6. **Merge.** Finished work goes to `main` after the full set of checks.
 
-## Two roles: the clean room
+## One role: the engineer {#engineer}
 
-An analyst reads the original (Ghidra, disassembly, PCSX2) and writes research pages; an implementer writes engine
-code and tests from those pages and Coney's own code, and never opens Ghidra or PCSX2. The split is per function:
-whoever has read a function's original code never implements that function
-([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md#clean-room)).
-
-An implementer who needs more asks a question; a coordinator routes it to the analyst who owns that area, and the
-answer lands on the page, not in a private message. Neither role ever puts game data in the repository.
+An engineer studies the original (Ghidra through ghidra-mcp, the running game through the pcsx2 MCP server), writes
+research pages where they help and implements the result in engine code and tests
+([Studying the original](research-workflow.md#studying-the-original)). An answer worth keeping lands on the page, not
+in a private message, and no game data ever goes in the repository ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 What a page must hold to be coded from, with three real features traced to the merged result, is in
 [From research to code](research-to-code.md).
 
 ## The tools
 
 - **Ghidra, shared.** One Ghidra project of the PS2 executable (with the Emotion Engine extension), kept open by a
-  headless ghidra-mcp server on port 8090. Every analyst works in that one project at once, so a name given by one
-  is seen by all; never undo another analyst's names. Setup: [Ghidra + ghidra-mcp](ghidra.md).
+  headless ghidra-mcp server on port 8090. Every engineer works in that one project at once, so a name given by one
+  is seen by all; never undo another engineer's names. Setup: [Ghidra + ghidra-mcp](ghidra.md).
 - **The Xbox build as a reading aid.** The same function in the Xbox executable can read faster (inline strings,
   named library calls). It is only read; evidence is always cited at PS2 addresses
   ([Xbox executable](../research/xbox-executable.md)).
 - **PCSX2, several copies with claims.** Portable PCSX2 copies (`pcsx2`, `pcsx2-b`, ...) each have their own
-  settings, states and PINE port, so several analysts can run the game at once. A copy is used only inside a claim:
+  settings, states and PINE port, so several engineers can run the game at once. A copy is used only inside a claim:
   `coney-tools pcsx2 claim --agent <id>` hands out a free copy, `pcsx2 release` frees it, `pcsx2 status` shows who
   holds what, and a claim whose process died is taken over ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
 - **Input over PINE only.** The game is driven by writing pad state into its memory (the `scripted-pad`,
   `right-stick` and `puppet` patches), with analog sticks at realistic partial deflections. No tool brings PCSX2 to
   the front or types into it, so the machine stays usable; a maintainer's quick-save slots are read-only,
-  and analysts save states to files.
+  and engineers save states to files.
 - **Traces and frames.** `coney-tools pcsx2 record` and `coney-tools trace` record the same scripted scenario on the
   original and on Coney and diff them; Coney's `--camera`, `--freeze-world` and `--screenshot` flags reproduce a
   reference frame ([coney-tools](coney-tools.md)).
@@ -120,8 +117,8 @@ coordinator, who pushes them when CI has room.
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
   trivial, otherwise to a small fresh agent ([When a pull request fails checks](agents.md#ci-failures)); never back
   to the agent that wrote the unit.
-- **A description is public:** the clean-room rules of a research page apply (addresses and short findings, no
-  decompiler output).
+- **A description is public:** the rules of a research page apply (addresses and short findings, no game data and
+  no decompiler output).
 
 ### The description review {#pr-review}
 
@@ -209,7 +206,7 @@ something:
   a hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of slots is `build_slots` in
   `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tracks that only read, write docs or drive
   the emulator need no slot.
-- **Share the long-lived tools, one user per copy.** One Ghidra server serves every analyst: use it as it is, never
+- **Share the long-lived tools, one user per copy.** One Ghidra server serves every engineer: use it as it is, never
   restart or stop it, and start it only if it is down ([Ghidra + ghidra-mcp](ghidra.md)). An emulator copy has one
   user at a time, through a claim that is released when done ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
 - **Keep Python out of the tree.** Use a private virtual environment in your scratch folder
@@ -347,7 +344,7 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 ## Starting on another game {#another-game}
 
-The process, not the game, is what carries over. Reuse unchanged: the clean-room split, the evidence levels, the
+The process, not the game, is what carries over. Reuse unchanged: the evidence levels, the
 research database and page layout, the trace-and-diff method, the workspace layout, and every rule on this page and
 in [Lessons learned](research-workflow.md#lessons-learned). Replace: the executable and its address base, the
 emulator and its remote-memory interface, the patches and hook caves (they are found per game from unused memory),

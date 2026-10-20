@@ -12,7 +12,7 @@ Three committed inputs feed it, none of them game data:
   (coney_tools.progress_research).
 
 It also checks that functions.toml agrees with the `@orig` tags in `src/` (docs/guides/conventions.md), so an
-implementer cannot add a tag without counting it, or the other way round.
+engineer cannot add a tag without counting it, or the other way round.
 """
 
 from __future__ import annotations

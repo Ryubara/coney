@@ -1,9 +1,9 @@
 # Research workflow
 
-Research turns the original game into documents that someone can implement from **without opening Ghidra**. A
-research page says what a part of the game does, what its data looks like and how sure we are of each claim; the
-engine code is then written from that page. This guide covers who does what, how claims are graded, where findings
-go and how to write them up.
+Research turns what engineers learn about the original game into documents. A research page says what a part of the
+game does, what its data looks like and how sure we are of each claim, so the next engineer does not have to work it
+out again. This guide covers how we study the original, how claims are graded, where findings go and how to write
+them up.
 
 The pages themselves live in `docs/research/`, one living page per subsystem or file format. How to lay a page out
 is in [Writing these docs](writing-docs.md#subsystem-page).
@@ -21,52 +21,28 @@ Check what already exists before starting a question, in the merged pages and in
 
 Only a question that nothing covers starts new research.
 
-## Clean room {#clean-room}
+## Studying the original {#studying-the-original}
 
-Coney is a clean-room reimplementation: the code has the same observable behaviour as the original but its own
-structure, names and control flow. The rule is set in
-[LEGAL.md](repo:LEGAL.md#clean-room); this section is how we work within it.
+Coney is a reimplementation: its code has the same observable behaviour as the original. There is one role, the
+engineer, for people and agents alike. An engineer studies the original (`SLUS_212.15` in Ghidra through
+ghidra-mcp, the game running in PCSX2 through the pcsx2 MCP server, the game's data files), writes up what is worth
+keeping on a research page and in `research/*.yaml`, and implements it in `src/`, tools and tests.
 
-The work splits into two roles.
-
-| | Analyst | Implementer |
-| --- | --- | --- |
-| Reads | Ghidra's decompiler output and disassembly of `SLUS_212.15`, the running game in PCSX2, the game's data files, plus everything the implementer reads | `docs/research/`, the research database (`research/*.yaml`), Coney's own code and tests |
-| Writes | research pages in `docs/research/`, entries in `research/*.yaml` | engine code in `src/`, tools, tests |
-| Never | implements a function whose original code they have read | reads decompiler output or disassembly, opens the Ghidra project or the emulator's debugger |
-
-The split is per function, and it binds people and agents alike: **whoever has read a function's original code
-(its decompiler output or its disassembly) never implements that function. Someone else implements it, from the
-research page.** The reason is evidence, not trust. Code written by someone who has never seen the original can only
-have come from the page, so its independence can be shown; code written by someone who has seen it cannot, however
-carefully they worked. You may analyse one function and implement a different one, as long as you have never read
-the original code of the one you implement.
-
-For agents, the agent definitions in `.claude/agents` enforce the split where the platform allows: the analyst agent
-and the implementer agent are separate, and the implementer agent has no Ghidra or emulator tools at all. People keep
-it by discipline: before implementing a function, check that you haven't read the original code of the functions
-involved, and hand the work on if you have.
-
-What crosses from analyst to implementer is **facts and behaviour**, never code: data layouts, constants, file
-formats, algorithms needed to read the game's data (the CRC-32 name hash, for example), and prose descriptions of
-what a function does. Short pseudocode is fine when it explains behaviour; a function's control flow copied line by
-line is not (see [Writing up a finding](#writing-up-a-finding)).
+A page is worth writing where the next engineer would otherwise have to work the same thing out again: data
+layouts, constants, file formats, what a subsystem does and the questions still open. Nothing from the game goes into
+the repository on the way ([LEGAL.md](repo:LEGAL.md#no-game-data)): a page holds facts and behaviour, with short
+pseudocode or a short snippet where it explains a point (see [Writing up a finding](#writing-up-a-finding)).
 
 ### When a research page isn't enough
 
-Sooner or later an implementer needs something the page doesn't say. Don't look at the original to fill the gap,
-not even briefly: once you have read a function's original code, you can no longer implement that function (see
-above), and the work has to go to someone else.
-
-Instead:
+Sooner or later you need something the page doesn't say. Look at the original to answer it, and put the answer on
+the page, which is how it reaches every later reader too. If it can't be answered now:
 
 1. Add the question to the page's **Open questions** section, saying what you need and why (what decision in the
    code depends on it).
-2. Raise it with an analyst: as a GitHub issue, or, for an agent, in its report as a blocker.
+2. Raise it as a GitHub issue or, for an agent, in its report as a blocker.
 3. Carry on with whatever doesn't depend on the answer, or stop and say so. A guess written into code without a note
    is worse than a gap, because nobody knows to come back to it.
-
-An analyst answers by updating the page, which is how the answer reaches every later reader too.
 
 ## Evidence levels {#evidence-levels}
 
@@ -245,17 +221,17 @@ in the levels list (`GSTRING.MISSIONNAME` of the English string file, filled by 
 the page heading and the overview. The five statuses are Not Started, In Progress, Pending Gameplay Approval, Needs
 Fixes and Approved, for missions and checkpoints alike.
 
-**Whose job:** an implementer (human or agent) updates `missions.yaml` in the same commit as mission work: In Progress
+**Whose job:** the engineer (human or agent) updates `missions.yaml` in the same commit as mission work: In Progress
 when a checkpoint is started, each checkpoint to Pending Gameplay Approval when it plays to its end, the mission to
 Pending when every checkpoint does, and re-runs `missions render`. Only a maintainer moves a mission to Needs Fixes or
 Approved after play-testing it against the original, listing what was off under `issues`; the commit that merges the
-fix moves it back to Pending. An analyst's finding that changes what a mission needs goes on the research page, which
+fix moves it back to Pending. A research finding that changes what a mission needs goes on the research page, which
 the entry links.
 
 ## Tools
 
 - **Ghidra with ghidra-mcp.** Static analysis of `SLUS_212.15`, with the Emotion Engine processor extension; the
-  ghidra-mcp server lets analyst agents drive it. Setup: [Ghidra + ghidra-mcp](ghidra.md). The Ghidra project holds
+  ghidra-mcp server lets agents drive it. Setup: [Ghidra + ghidra-mcp](ghidra.md). The Ghidra project holds
   the game's code, so it stays on your machine and is never committed.
 - **PCSX2.** For runtime evidence: memory reads and writes on the game as it runs. `coney-tools pcsx2` makes patched
   state copies, starts PCSX2 on one and records a scripted run as a per-update trace
@@ -765,8 +741,8 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
   claim it with the tool, release it when done, and close what you started.
 - **Keep other people's slots read-only.** Quick-save slots, settings and files someone else made are never overwritten;
   save your own states to files in scratch, and put patched words back before reusing a saved state.
-- **Add names, never undo them.** The shared Ghidra project is written by many analysts: rename and annotate freely,
-  but do not revert another analyst's names; a disagreement goes on the page as an open question.
+- **Add names, never undo them.** The shared Ghidra project is written by many engineers: rename and annotate freely,
+  but do not revert another engineer's names; a disagreement goes on the page as an open question.
 - **Do not guess in code.** A gap in a page becomes an open question on the page and a marked stand-in in code, never
   a silent guess ([When a research page isn't enough](#when-a-research-page-isnt-enough)).
 - **Research is done when a reader can implement from it:** a name and plate comment in Ghidra, and a page that cites
@@ -789,7 +765,7 @@ A finding is done when someone else can use it without asking you. For each one:
    with the same disc can check any claim.
 5. **Describe, don't reproduce.** Explain behaviour in prose, with short pseudocode or a short snippet where it
    makes the point clearer. Never paste a whole function, decompiled or disassembled, and never paste a long
-   stretch of one: it puts the original's code in the repository and hands the implementer something to copy. See
+   stretch of one: it puts the original's code in the repository. See
    [LEGAL.md](repo:LEGAL.md#research-limits).
 6. **No game data.** Tables of offsets, constants and counts are facts and belong on the page; the bytes of a game
    file, a dump or an extracted asset never do.

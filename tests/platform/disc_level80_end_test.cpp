@@ -277,7 +277,7 @@ TEST_CASE("the disc's level80 checkpoint 4: the last Destroyer down ends the mis
     REQUIRE(until(padded, kWait));
     REQUIRE(until([&shown] { return shown.objective == "MS_C4_1"; }, kWait));
     step(30);
-    // Teleported to 3 m short of the meeting's volume, as the analyst's run teleported to each objective, then walked
+    // Teleported to 3 m short of the meeting's volume, as the reference run teleported to each objective, then walked
     // to its middle.
     const std::optional<double> volume =
         session.flow().scripts().vm().global(std::string("vCochiseSwanTrigger")).number();

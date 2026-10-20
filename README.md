@@ -10,9 +10,8 @@ Status: early research. Nothing playable yet.
 ## What Coney is
 
 Coney aims to run the whole of *The Warriors* natively on Windows, Linux and macOS, from a disc you own. It is a
-functional reimplementation: new C++ code that behaves like the original, not a decompilation and not a port of the
-original code. It is built clean room. Analysts study the original game and write down what they learn, and engine
-code is written from those notes alone. The rules are in [LEGAL.md](LEGAL.md).
+functional reimplementation: new C++ code that behaves like the original. Engineers study the original game, write
+down what they learn and implement it. The rules are in [LEGAL.md](LEGAL.md).
 
 ## Progress
 

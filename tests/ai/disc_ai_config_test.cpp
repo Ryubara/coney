@@ -14,7 +14,7 @@
 #include "scripting/config_strings.h"
 
 // Against the player's own disc: the AI fighters' configuration read from the calls `level99`'s scripts make, run alone
-// as the sandbox runs them, matches what the analyst read at runtime for the sparring Warriors (class 58, power class
+// as the sandbox runs them, matches what was read at runtime for the sparring Warriors (class 58, power class
 // 40; docs/research/ai.md#level99). Runs only when CONEY_DISC names the disc; prints counts only (LEGAL.md).
 
 namespace {

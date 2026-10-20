@@ -284,7 +284,7 @@ labels:
     - {name: S-needs-triage, color: ededed, description: "Status: not yet looked at"}
     - {name: S-ready-to-start, color: 0e8a16, description: "Status: triaged and accepted; waiting for someone to pick it up"}
     - {name: S-needs-info, color: d4c5f9, description: "Status: waiting for the reporter"}
-    - {name: S-needs-research, color: d4c5f9, description: "Status: an analyst must study the original first"}
+    - {name: S-needs-research, color: d4c5f9, description: "Status: the original must be studied first"}
     - {name: S-in-progress, color: 5319e7, description: "Status: an agent or person is working on it"}
     - {name: S-pending-review, color: 1d76db, description: "Status: a pull request is open"}
     - {name: S-blocked, color: "000000", description: "Status: waiting for another issue or a decision"}

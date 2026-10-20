@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The mission status list: `research/missions.yaml` loaded, checked and joined with the bindings coverage.
 
-The list is hand-kept (an implementer updates it in the same commit as mission work). `missions_render` turns it into
+The list is hand-kept (an engineer updates it in the same commit as mission work). `missions_render` turns it into
 `docs/missions/`. Each mission's checkpoint count is checked against the Sections column of the levels list, and its
 status against its checkpoints', so the page cannot claim more than the checklist shows.
 

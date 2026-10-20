@@ -233,7 +233,7 @@ def http_fetch(base_url: str) -> Fetch:
 def export_listing(fetch: Fetch, batch: int = 200) -> list[ListedFunction]:
     """Every function of the open program, with its size and whether it has a plate comment, read through `fetch`.
 
-    Uses only reading endpoints, so it is safe on the shared server while other analysts work in it.
+    Uses only reading endpoints, so it is safe on the shared server while other engineers work in it.
     """
     listed = fetch("/list_functions_enhanced?limit=100000&offset=0")["functions"]
     entries = [item for item in listed if not item.get("isExternal")]

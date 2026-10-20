@@ -9,13 +9,9 @@ the [format on the index page](index.md#finding-format).
 
 - [ ] **No game data.** Look at every added file and every test fixture: no executable, BIOS, asset, extracted
   file or dump, and no byte array that is a copy of one. Fixtures are synthetic, written by hand (Critical).
-- [ ] **No transcribed decompiler output.** Look for Ghidra's habits: variables named `iVar1`, `uVar2`,
-  `param_1`, `local_20`; `undefined4` types; `goto` ladders or `LAB_` labels; `(code *)` casts; expressions
-  nobody would write by hand. One such sign is a finding; several make it Critical.
-- [ ] **Clean room per function.** For each reimplemented function (each `@orig` tag), the author's report (the
-  pull request description, or the agent's report) says the author never read its original code, decompiler output
-  or disassembly ([clean room](../research-workflow.md#clean-room)). A function whose implementer is also its
-  analyst is Critical.
+- [ ] **No raw Ghidra artifacts.** Engine code reads as Coney's own: no variables named `iVar1`, `uVar2`,
+  `param_1`, `local_20`; no `undefined4` types; no `goto` ladders or `LAB_` labels; no `(code *)` casts or
+  expressions nobody would write by hand. One such sign is a finding; several make it Critical.
 - [ ] **SPDX header.** Each file of ours starts with `// SPDX-License-Identifier: GPL-3.0-or-later` (`#` in Python,
   CMake and scripts), as the first line, or after a `#!` line. Check the exceptions against the
   [licence-header table](../conventions.md#licence-header): `docs/`, generated documents, JSON and small config
@@ -74,7 +70,7 @@ The test: could someone write their own version of this subsystem from the code 
 
 ## Severity examples
 
-- **Critical:** engine code transcribed from Ghidra output; a game file or extracted asset staged for commit; a
+- **Critical:** engine code full of raw Ghidra artifacts; a game file or extracted asset staged for commit; a
   format parser that silently accepts truncated data.
 - **Important:** a reimplemented function without `@orig` or a research link; a research claim with no evidence
   level; a commit title outside the areas in `.github/conventions.yml` (`commits.title`).

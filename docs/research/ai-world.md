@@ -29,7 +29,7 @@ here, not repeated.
 An AI human uses the world through the same functions as a player. Its actions write a **command** into its
 per-player record (`PlayerRecord_SetCommand`, `0x00147ef0`), and `Player_UpdateActions` (`0x0027c120`) runs that
 command for every human whose per-player `+0x1e` is 0, AI humans included ([Combat: The dispatcher](combat.md#dispatch)).
-So the world use is the player's code, and a clean-room engine needs no second copy of it. Confirmed (code) at the
+So the world use is the player's code, and Coney needs no second copy of it. Confirmed (code) at the
 addresses cited.
 
 | World use | How the AI asks | What runs | Commands |
