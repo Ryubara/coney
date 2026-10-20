@@ -75,10 +75,12 @@ struct RepositionInput {
 [[nodiscard]] RepositionRing repositionRing(const RepositionInput& input);
 
 /// Whether the waiting attacker taunts this time (its 1-2 s timer having run): T at least 2.75 m off, fewer than two
-/// humans holding slots on A, A not close in and not in a tactic ring, T empty-handed, gestures allowed; for reason 7
-/// only when `roll100` < 11.
-[[nodiscard]] bool repositionTaunts(const RepositionInput& input, float distance, int slotsOnMe, bool gesturesAllowed,
-                                    int roll100);
+/// humans holding slots on A, A not close in and not in a tactic ring, T empty-handed, and then `mayGesture`
+/// (`Ambient_MayGesture`, which takes a gesture slot, so it is asked only when the rest holds); for reason 7 only when
+/// `roll100` (drawn last) is below 11.
+/// @orig 0x002b2fc8 FightGoal_Reposition (unknown)
+[[nodiscard]] bool repositionTaunts(const RepositionInput& input, float distance, int slotsOnMe,
+                                    const std::function<bool()>& mayGesture, const std::function<int()>& roll100);
 
 /// The tackle meter (brain `+0x148`): it fills while the target keeps running off or swings a weapon, and the fight
 /// goal's tackle try fires once it passes the gang's threshold.

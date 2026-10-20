@@ -1263,8 +1263,23 @@ queues a fidget now and then, and always a move-to-human action that **holds A i
     - A is not close-in, not in a tactic ring, and T is empty-handed;
     - gestures are allowed.
 
-   For reason 7 it happens only 11 % of the time. It is a fidget action on anim `0x25b` with speech line `0x11`. A
-   Warrior uses line `0xc3` instead 31 % of the time, when the game flag `0x56e1` is set.
+   For reason 7 it happens only 11 % of the time. It is a fidget action on anim `0x25b` with speech line `0x11`
+   (`cheer2`). A Warrior uses line `0xc3` (`turf_defend`) instead 31 % of the time, when the game flag `0x56e1` is
+   set (`CfgEnableTurfInvasion`, [Game-state functions](#warriors-functions)).
+
+   **The timer and the order** (confirmed (code), `0x002b2fc8` and `FightGoal_Init` `0x002b2c20`, read 2026-10-20):
+   the fight goal's Init sets `+0x20` to now + a random 750-1000 ms. Each reposition call with now past `+0x20`
+   first re-arms it (now + 1000-2000 ms, `Random_IntRange` on stream `0x006eb880`), whether or not the taunt then
+   happens; the tests run in the order above, `Ambient_MayGesture` (`0x00291ed0`, which takes a gesture slot) after
+   the others and the 11 % roll after it. The fidget action is queued **before** the move-to-human action, so the
+   waiter plays it standing and moves on once it ends.
+
+   **Which clip** (confirmed (code)): the fidget plays anim `0x25b` (`Human_PlayHeldIdle` `0x00231ac8`), whose clip
+   the lookup (`Human_GetDynamicAnim` `0x00221a00`) takes, with no override, from the gang's group `0x25b` at a
+   random variant: `GangClips_Get` (`0x00163fc0`) draws `Random_Int(8)`, 0 to 8 inclusive, and returns nothing for
+   8 or for an empty slot. The fighting gang fills slots 0-3 with the four `combat_fidget_*` clips
+   ([alert state](ai-reimpl.md#alert-state)), so each of them plays 1 time in 9 and the character's own clip for the
+   id 5 times in 9; a calm gang's group is empty and the character's own clip always plays.
 5. **The move-to-human action** (inner, outer, the limit above).
 
 So waiting attackers circle in a band of 4-4.75 m (5 m far range), and the one T is fighting stays close. The

@@ -9181,6 +9181,30 @@ subsystem = "Human"
 size = 104
 
 [[function]]
+address = 0x002f9f48
+name = "FidgetAction_Init"
+subsystem = "Human"
+size = 48
+
+[[function]]
+address = 0x002f9f78
+name = "FidgetAction_Start"
+subsystem = "Human"
+size = 360
+
+[[function]]
+address = 0x002fa0e0
+name = "FidgetAction_Abort"
+subsystem = "Human"
+size = 256
+
+[[function]]
+address = 0x002fa1e0
+name = "FidgetAction_Update"
+subsystem = "Human"
+size = 64
+
+[[function]]
 address = 0x002fa5a0
 name = "PlayAnimAction_Init"
 subsystem = "Human"

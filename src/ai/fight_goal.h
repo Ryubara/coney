@@ -44,14 +44,16 @@ class FightGoal final : public Goal {
     /// 7. while actions are queued, wait; once they end, give up the place;
     /// 8. past the deadline, done unless it still holds an attack slot;
     /// 9. pick a kind when none is chosen (ai::pickAttackFor(), `Human_CanUseAttackKind`);
-    /// 10. may it attack now (ai::checkAttack())? If not, hold the reposition ring; out of the kind's reach, move in;
+    /// 10. may it attack now (ai::checkAttack())? If not, the reposition: once its taunt timer (first 750-1000 ms
+    ///     after the start, then every 1000-2000 ms) has run, a taunt (a FidgetAction on anim `0x25b` saying `cheer2`)
+    ///     when ai::repositionTaunts() allows, and then hold the ring; out of the kind's reach, move in;
     ///     in reach, the grab and snap try (tryGrab()), the start test (picking again with `Human_CanStartAttack` when
     ///     it refuses), and the press (queueAttack(), with the stick angle the try set).
     ///
     /// **Coney stand-ins**: the fight stance is not built (19 and 20 are the kinds out of it); the rows of
     /// Brain_CheckAttack about held objects (4, 6, 8) never apply, as an AI holds none; the police row applies when
-    /// the target's own target is a cop; the reposition is a move to the ring's outer edge, standing within it turned
-    /// to him (ai-core's band-keeping move replaces it, which circles him facing him), with no taunt.
+    /// the target's own target is a cop; the reposition's move is a move to the ring's outer edge, standing within it
+    /// turned to him (the original's band-keeping move circles him facing him).
     /// @orig 0x002b3ab0 FightGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Gives up the active-attacker place (the goal's suspend, docs/research/ai.md#attack-places).
@@ -85,6 +87,7 @@ class FightGoal final : public Goal {
     std::uint32_t m_updates = 0;      // +0x18
     std::uint64_t m_deadlineMs = 0;   // +0x24
     std::uint64_t m_retargetAtMs = 0; // +0x14
+    std::uint64_t m_tauntAtMs = 0;    // +0x20
     bool m_place = false;             // +0x28
 };
 

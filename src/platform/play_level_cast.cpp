@@ -55,6 +55,15 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
                                                   {}));
         }
     });
+    // The AI's gestures (the waiting attackers' taunts) take the game's sound's gesture slots, when there is one.
+    cast.scripted->setGestureTest([this](const ai::Brain& brain) {
+        if (m_sound == nullptr) {
+            return true;
+        }
+        const anim::Vec3 feet = brain.human().position();
+        return m_sound->mayGesture(script::HumanSoundCall{
+            .human = brain.handle(), .characterType = brain.characterClass(), .position = {feet.x, feet.y, feet.z}});
+    });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
                         cast.humans != nullptr ? cast.humans->all().size() : 0, m_ai->count(), m_castCharacters.size(),

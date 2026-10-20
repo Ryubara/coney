@@ -699,6 +699,12 @@ one holding a knife with idle 0 (plays `0x25a`); a line said at 1.0 and at 1.5 (
 idle 0 (line, then done); an AI Warrior's idle fidget cleared while the chief stands with command 1 (refused) and
 with command 4 (stopped); a normal end (stopped).
 
+**Coney status (implemented, 2026-10-20).** `repo:src/ai/fidget_action.h` (`FidgetAction`), queued by the fight
+goal's reposition taunt (`repo:src/ai/fight_goal.cpp`) with the gang's combat fidgets (`combatFidgetClip`). Stand-ins:
+"free to fidget" is no held record flag, alive, up, not held and empty-handed (the state-flag word is not built), the
+line is said at one volume, the clip is a scripted clip rather than an overlay, and Abort's refusal for an idle
+Warrior is not built (no caller queues an idle fidget yet).
+
 ### The taunt action (`Taunt`, type 29) {#taunt-action}
 
 Confirmed (code) at each address; read in Ghidra on 2026-10-13. This corrects the class table of

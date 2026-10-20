@@ -292,6 +292,7 @@ PlayLevelMode::~PlayLevelMode() {
     if (m_cast.scripted != nullptr) {
         m_cast.scripted->setClipSource({});
         m_cast.scripted->setSpeech({});
+        m_cast.scripted->setGestureTest({});
     }
     m_levelEffects.reset();
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by

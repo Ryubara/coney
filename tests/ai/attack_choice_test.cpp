@@ -218,8 +218,27 @@ TEST_CASE("may A attack now, and the ring he waits in", "[ai]") {
     // The taunt: not close in, and T far enough.
     ring.reason = check::kNoKind;
     ring.targetFacesMe = false;
-    CHECK(coney::ai::repositionTaunts(ring, 3.0F, 0, true, 50));
-    CHECK_FALSE(coney::ai::repositionTaunts(ring, 2.0F, 0, true, 50));
+    int asked = 0;
+    const auto mayGesture = [&asked] {
+        ++asked;
+        return true;
+    };
+    const auto roll = [] { return 50; };
+    CHECK(coney::ai::repositionTaunts(ring, 3.0F, 0, mayGesture, roll));
+    CHECK(asked == 1);
+    // Too near, or two humans holding slots on him: the gesture slot is not asked for.
+    CHECK_FALSE(coney::ai::repositionTaunts(ring, 2.0F, 0, mayGesture, roll));
+    CHECK_FALSE(coney::ai::repositionTaunts(ring, 3.0F, 2, mayGesture, roll));
+    CHECK(asked == 1);
+    // No gesture slot; an armed man.
+    CHECK_FALSE(coney::ai::repositionTaunts(ring, 3.0F, 0, [] { return false; }, roll));
+    ring.targetEmptyHanded = false;
+    CHECK_FALSE(coney::ai::repositionTaunts(ring, 3.0F, 0, mayGesture, roll));
+    // Reason 7 (the boss held by the player): 11 % of the time.
+    ring.targetEmptyHanded = true;
+    ring.reason = check::kBossHeld;
+    CHECK_FALSE(coney::ai::repositionTaunts(ring, 3.0F, 0, mayGesture, roll));
+    CHECK(coney::ai::repositionTaunts(ring, 3.0F, 0, mayGesture, [] { return 10; }));
 }
 
 TEST_CASE("the tackle meter fills on a fleeing target and fires past the gang's threshold", "[ai]") {

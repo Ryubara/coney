@@ -537,9 +537,11 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
    4), and adds it to every AI member's list.
 6. **The re-target forces the slot** and does not require the enemy list or validity (Coney's `retargetFromSectors`
    checks both, and its threat test is a stand-in).
-7. **Waiting attackers circle and taunt**: Coney's ring only steps out to the outer radius and turns to face; the
-   original's move-to-human holds them inside 4-4.75 m (they keep moving), and the taunt every 1-2 s is not called.
-   Wait reasons 4, 6 and 8 are never raised (their inputs are not computed).
+7. **Waiting attackers circle and taunt**: the taunt every 1-2 s is built (2026-10-20: `FightGoal`'s timer, the
+   fidget action on anim `0x25b` with the gang's combat fidgets, `cheer2`, and the voices' gesture slots;
+   `repo:src/ai/fidget_action.h`); a Warrior's `turf_defend` line is not. Coney's ring only steps out to the outer
+   radius and turns to face; the original's move-to-human holds them inside 4-4.75 m (they keep moving). Wait reasons
+   4, 6 and 8 are never raised (their inputs are not computed).
 8. **Event `0x15`'s slot-holder taunts** are not built: sent to a man as he is knocked down by a hit or put down by a
    throw or grab ([waiting](#waiting) rule 5).
 9. **The gang's alert state** (`+0x32`): built (Unit 2) as state, clip-group counts and the members' `+0x14d`;

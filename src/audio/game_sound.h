@@ -87,6 +87,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void setPitchFactor(float factor) override;
     /// The human's animation or hit sound (HumanSoundEvents), with his type's traits.
     void humanSound(const script::HumanSoundCall& call) override;
+    /// The voices' gesture test (Voices::mayGesture()), for the AI's taunts.
+    [[nodiscard]] bool mayGesture(const script::HumanSoundCall& who) override { return m_humanVoices.mayGesture(who); }
     /// HumanSoundEvents::humanRemoved().
     void humanRemoved(double human) override { m_humanSounds.humanRemoved(human); }
     /// The humans' animation and hit sounds, for tests and logs.

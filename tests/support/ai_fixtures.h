@@ -79,6 +79,10 @@ class KeepingServices final : public ai::ScriptServices {
         return 0U;
     }
     [[nodiscard]] bool clipAvailable(std::string_view /*name*/) const override { return clipsAvailable; }
+    [[nodiscard]] bool mayGesture(ai::Brain& /*human*/) override {
+        ++gesturesAsked;
+        return gesturesAllowed;
+    }
     void say(ai::Brain& human, int command, bool /*interrupt*/, double /*target*/) override {
         said.emplace_back(&human, static_cast<std::uint32_t>(command));
     }
@@ -108,6 +112,8 @@ class KeepingServices final : public ai::ScriptServices {
     std::vector<std::tuple<ai::Brain*, int, std::string>> namedClips; // (human, anim id, clip) played by name
     bool clipsAvailable = false;                                      // what clipAvailable() answers
     std::vector<std::pair<ai::Brain*, std::uint32_t>> said;           // (human, speech command)
+    bool gesturesAllowed = true;                                      // what mayGesture() answers
+    int gesturesAsked = 0;
 };
 
 /// Humans on a floor, each with a brain; slot 0 is the pad's player at (40, 40) facing +y.
