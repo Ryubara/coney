@@ -1,13 +1,14 @@
 # From research to code
 
-This page is the hand-over between the two roles of the [clean room](how-we-work.md#two-roles-the-clean-room): what
-an analyst puts on a research page so that an implementer can write the code from it alone, what the implementer
-does with it, and three real features traced from the page to the merged result. The rules behind it are in
-[Research workflow](research-workflow.md#clean-room) and [Testing](testing.md); this page shows them working.
+This page follows a finding from the original to Coney's code: what an engineer puts on a research page so that the
+code (and the next engineer) can be built from it, what the implementation does with it, and three real features
+traced from the page to the merged result. The rules behind it are in
+[Research workflow](research-workflow.md#studying-the-original) and [Testing](testing.md); this page shows them
+working.
 
-## What the analyst prepares
+## What goes on the page
 
-The analyst writes a research page in `docs/research/`. Every claim on it carries an
+The engineer writes a research page in `docs/research/`. Every claim on it carries an
 [evidence level](research-workflow.md#evidence-levels) and a cited address. A page meant to be coded from contains:
 
 - **What each function does, in prose.** Its inputs and outputs, and when it is called; its branches and
@@ -15,24 +16,24 @@ The analyst writes a research page in `docs/research/`. Every claim on it carrie
   without".
 - **Data layouts.** Each structure's fields as offset, size, meaning and who reads or writes them, such as "human
   `+0xd0` is the character type".
-- **Short snippets only.** A line or two of disassembly next to an address, never a whole function, so nobody can
-  transcribe it ([Writing up a finding](research-workflow.md#writing-up-a-finding)).
-- **Runtime numbers from the real game.** The analyst hooks addresses in PCSX2 and logs values per update
+- **Short snippets only.** A line or two of disassembly next to an address, never a whole function
+  ([Writing up a finding](research-workflow.md#writing-up-a-finding)).
+- **Runtime numbers from the real game.** The engineer hooks addresses in PCSX2 and logs values per update
   ([Recording a trace](research-workflow.md#recording-a-trace)). The fence work's "the cut comes 15-44 updates
-  after the hit" is one example. These become the implementer's test values.
-- **A fix list.** Numbered, ordered units, each with "done" spelled out, so an implementer can take one at a time.
+  after the hit" is one example. These become the test values.
+- **A fix list.** Numbered, ordered units, each with "done" spelled out, so an engineer can take one at a time.
 
-## What the implementer does with it
+## What the implementation does with it
 
-The implementer writes fresh code from the page and tags each function `@orig 0x<addr>` with a link to the page
+The engineer writes Coney's code and tags each function `@orig 0x<addr>` with a link to the page
 ([Conventions](conventions.md#comments-and-orig)). Tests are written first, from the page's numbers; that is how
 "correctly" gets checked ([Testing](testing.md#done)). For whole behaviours we also run both games through the same
 scenario and diff their traces ([Comparing with Coney](research-workflow.md#comparing-with-coney), and
 [Diff against the original](testing.md#diff-against-the-original)); the trace tooling records the same columns from
 each game and `coney-tools trace diff` reports the first update where they part.
 
-If a page doesn't say enough, the implementer writes the question down and an analyst answers it; the implementer
-never opens the disassembly
+If a page doesn't say enough, the engineer goes back to the original and puts the answer on the page, or writes the
+question down when it can't be answered yet
 ([When a research page isn't enough](research-workflow.md#when-a-research-page-isnt-enough)).
 Where the code must go on without the answer, it uses a marked [stand-in](testing.md#stand-ins).
 
@@ -100,14 +101,14 @@ is not handed out again until its 5 s run out.
 
 **The result.** Pull request #168 made mission 2 (`level80`) get past its store checkpoint: the ten thefts the mission
 script waits for now happen. It also left a short list of "Remaining" questions (message 7's receivers, clustering
-details, the pick-up animation), each of them a request to an analyst rather than a hole filled with a guess.
+details, the pick-up animation), each of them an open question rather than a hole filled with a guess.
 
 ### From a runtime trace to a fix list: the fence and the dealer
 
-This one shows the analyst's half in detail, because its numbers were measured rather than read.
+This one shows the research half in detail, because its numbers were measured rather than read.
 
 **The page.** In [Player 2, Vermin's runs and the fence](../research/scripting.md#level99-p2-vermin-fence), item 44,
-the analyst hooked the fence's hit, its removal and the scripted cut to the dealer's camera in PCSX2 and ran the
+the engineer hooked the fence's hit, its removal and the scripted cut to the dealer's camera in PCSX2 and ran the
 scenario twice, putting the update number of each moment in a table. The result is a range, not a single figure: the
 removal comes 0-29 updates after the breaking hit (the fence's 60-tick phase), the cut comes a fixed 14-15 updates
 after the removal, so the hit-to-cut gap is **15-44 updates**, and nothing (no fade, no letterbox, no camera change)
@@ -117,23 +118,23 @@ happens in between. The scenario that produced it is checked in as
 **The fix list.** The page ends with numbered fixes (`Coney fixes (item 44)`) in the order to take them, the last of
 them a test with its pass condition spelled out: with the hit at update H, the fence is removed at an update between H
 and H + 30, and the dealer camera is current 14 or 15 updates after that, so the cut lands within H + 14 ... H + 45.
-An implementer takes that item as it stands: the test is the bounds, written first, and the fix is whatever makes it
+An engineer takes that item as it stands: the test is the bounds, written first, and the fix is whatever makes it
 pass.
 
 **Why this is the model.** A report that said "the cut is about a second after the hit" could not be tested; a range
 with a cause (the barrier's phase) and the exact moment it is measured from can. And when the first reading of the
 timing was corrected by the second run (3-17 became 0-29), the page changed in place, so the test value an
-implementer reads is always the current one.
+engineer reads is always the current one.
 
 ## Writing the page so it can be coded from
 
-A checklist for the analyst, before calling a page ready:
+A checklist before calling a page ready:
 
-1. Could someone write the function without the disassembly? If a branch, a constant or a unit is missing, add it.
+1. Could someone write the function from the page alone? If a branch, a constant or a unit is missing, add it.
 2. Is every number's unit stated, and is it clear whether a time is in updates, ticks or seconds?
 3. For each structure field the code reads, is there an offset, a size and a meaning?
 4. Is there a runtime number for every behaviour that has a duration, a distance or an order? Those are the tests.
-5. Are the unknowns listed as open questions, so the implementer's stand-ins have a page to point at?
+5. Are the unknowns listed as open questions, so the code's stand-ins have a page to point at?
 6. Are the fixes numbered, in order, each with how to tell it is done?
 
 The page kinds and the skeleton are in [Writing these docs](writing-docs.md#subsystem-page).

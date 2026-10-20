@@ -92,7 +92,7 @@ the objective marker, which callbacks are armed, where the NPCs stand. The test 
 - scenes play in order;
 - the run reaches the next checkpoint.
 
-The reference order comes from an analyst's recording of the original, written on the research page. A mission
+The reference order comes from a recording of the original, written on the research page. A mission
 checkpoint is not done until its playthrough test passes. Two drivers are the examples. The level3 chase's `RouteDriver`
 (`repo:tests/platform/disc_story_playthrough_test.cpp`): route legs (run to a point, climb, sprint jump, sprint charge)
 followed by reading where the player stands, through the game session (`DiscSession` takes a driver). Level 99's

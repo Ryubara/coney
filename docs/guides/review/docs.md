@@ -11,7 +11,7 @@ Report findings in the [format on the index page](index.md#finding-format) and n
 - [ ] **One subject per page, and the subject has one home.** For every rule, command, list or figure the diff adds,
   search the docs (`grep -rn` for a distinctive phrase). If another page already says it, the new copy is a finding:
   it should be a link to that page's heading. A copy that already differs from the original is Important.
-- [ ] **Link, do not restate.** Where the diff mentions something another page owns (the checks to run, a clean-room
+- [ ] **Link, do not restate.** Where the diff mentions something another page owns (the checks to run, a legal
   rule, a merge rule), it gives one line and a link, not a second version.
 - [ ] **Generated text is untouched.** No edit between `<!-- conventions:begin ... -->` and `<!-- conventions:end -->`
   markers, and none under `docs/references/`, `docs/missions/` or the progress tables, unless the diff also changes
@@ -29,7 +29,7 @@ Report findings in the [format on the index page](index.md#finding-format) and n
 - [ ] **A living doc moves with its change.** A change to behaviour, a command or what we know updates its page in
   the same commit; a pull request that changes `src/` or `python/src/` has a change under `docs/` or a `Docs: none`
   line.
-- [ ] **No game data and no clean-room breach.** No file bytes, game text or script source, and no decompiler output
+- [ ] **No game data.** No file bytes, game text or script source, and no decompiler output
   ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 - [ ] **`mkdocs build --strict` passes.** Run it (`.venv/Scripts/python -m mkdocs build --strict`) and
   `uvx pre-commit run --files <changed files>`.

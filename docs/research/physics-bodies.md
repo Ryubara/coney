@@ -2439,7 +2439,7 @@ and a zero normal. Unit 4's kernel quirks (absolute parallel threshold) apply.
 `0x0033d498`, 0x280 bytes. `void (IPhysics* phys, const AABB* box, Body* body, Shape* shape, Contact* contacts,
 Contact** sorted, int* count, const vec4* D)`, the same arguments as `IPhysics_SweepBodyVsMesh` ([Unit 3](#u3-mesh));
 called by `PhysicsBody_Sweep` when body flag `0x1` is set and by `PhysicsBody_Update` (`0x00341c10`). The name is
-another analyst's and is kept; the function is the whole body pass, not only its mask.
+another engineer's and is kept; the function is the whole body pass, not only its mask.
 
 1. **Mask** (`0x0033d4d4`-`0x0033d578`): `2` when the body's type mask `+0x44` lacks `0x40`. For a human: `4`;
    `0x44` when the owner's state (slot `+0x50`) has `0x4000000` (airborne) or `0x00226660(owner, 0x800)` is true

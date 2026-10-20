@@ -436,7 +436,7 @@ Written from this page and [WARRIORS.DIR / .WAD](formats/wad-dir.md), in `src/fi
 Not done yet: the file-system interface (`Exists`, `GetSize`, `Open` by name for the game's own callers), the
 `BufferedStream` and the asynchronous `FileManager` queue. None is needed until a subsystem loads files by itself.
 
-TODO for the analysts, found while implementing: the `FS_MemoryFile` functions have no names on this page, so
+TODO for research, found while implementing: the `FS_MemoryFile` functions have no names on this page, so
 Coney's equivalents carry no `@orig` tag; `Stream_SkipBytes` is cited with file `(unknown)` (answered: the names and
 `Stream_SkipBytes`'s file, `FileIO/FS_MemoryFile.cpp` (inferred), are in [FS_MemoryFile](#fs_memoryfile)). The WAD
 opener at `0x0040c5e0` is named `Wad_Open` here (our name; no string names it). It opens `cdrom0:\WARRIORS.DIR;1` through

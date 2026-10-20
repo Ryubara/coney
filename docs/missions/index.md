@@ -68,10 +68,10 @@ to run it.
 
 ## Lifecycle {#lifecycle}
 
-A mission starts Not Started and becomes In Progress when its first checkpoint is being built. The implementer moves it
-to Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the user, after play-testing it
-against the original, moves it to Needs Fixes (the play-test found something; the known issues are listed on its page)
-or to Approved. A merged fix moves a Needs Fixes mission back to Pending Gameplay Approval for another play-test. Each
+A mission starts Not Started and becomes In Progress when its first checkpoint is being built. The engineer moves it to
+Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the user, after play-testing it against
+the original, moves it to Needs Fixes (the play-test found something; the known issues are listed on its page) or to
+Approved. A merged fix moves a Needs Fixes mission back to Pending Gameplay Approval for another play-test. Each
 checkpoint carries the same states, and a mission's state never claims more than its checkpoints show: Pending, Needs
 Fixes and Approved need every checkpoint built, and Approved needs every checkpoint approved.
 

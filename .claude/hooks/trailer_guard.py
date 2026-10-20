@@ -12,7 +12,7 @@ command (the fields it reads or ignores are listed in docs/guides/agents.md#trai
 * every hook gets `transcript_path`, always the *main* session's transcript;
 * inside a subagent it also gets `agent_id`, and that agent's own transcript is
   `<transcript_path without .jsonl>/subagents/agent-<agent_id>.jsonl` (reading the main one would name the wrong
-  model, which is the very mistake being caught), and `agent_type`, the agent's role (`implementer`), which this hook
+  model, which is the very mistake being caught), and `agent_type`, the agent's role (`engineer`), which this hook
   does not need: the transcript names the model, the role does not;
 * every assistant entry of a transcript has `message.model`, such as `claude-sonnet-5-5`; the latest one is the model
   running now. The display name (`Claude Sonnet 5.5`) is derived from the id, so no table drifts when a model ships.

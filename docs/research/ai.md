@@ -2155,7 +2155,7 @@ Warriors, as read at runtime ([the cast while the scene plays](#level99-scene-st
   ([Closing on the target](#fight-approach)). Nothing else in the lesson gates them: brain type 2, threat response
   2, no tactic, the player reachable (`+0x11e` = 1) and no wanted timer on the gang. Confirmed (runtime), PCSX2
   2.9.94, the `warriors_passive` state with each Warrior's goal stack, position and `+0x140` read every update over
-  PINE (an analyst run, not a committed scenario): 490 updates after the state, all three had **FindEnemy, Melee,
+  PINE (an engineer's run, not a committed scenario): 490 updates after the state, all three had **FindEnemy, Melee,
   EngageEnemy** (top) at 8.96, 8.59 and 8.77 m, far range 5.0. They ran in at up to **7.80 m/s** (the run gait;
   one slowed to about 2 m/s for some 20 updates while steering round another). The first reached the player and
   stayed at 0.71 m with an action running (inferred: the run-in's charge, step 11); its EngageEnemy ended at update
@@ -2174,7 +2174,7 @@ Warriors, as read at runtime ([the cast while the scene plays](#level99-scene-st
   and 2.49 m, the player flung farther meanwhile. Then the stop's turn to face (0.3 s), EngageEnemy ends, and the
   fight goal walks them in with the combat-walk clips (380, 387; 3.43 m/s) while he is still down. So the 2.1-2.6 m
   is not a distance of its own: it is where a 3.75 m test, sampled every 250 ms and started when the player became
-  busy, leaves a 0.83 m stop. Analyst run (not a committed scenario), from 470 updates after the state.
+  busy, leaves a 0.83 m stop. Engineer's run (not a committed scenario), from 470 updates after the state.
 - The fence gangs (5, 6) get the **crowd tactic** and no `GoalFight`: they cheer from the fence
   ([TacticCrowd](ai-gangs.md#tactics)). They are friends of the Warriors' gang.
 - **Which wins**, confirmed (code) at `0x0028d2e8` and `0x0028d190`: a threat response of 0 stops `GoalFight`

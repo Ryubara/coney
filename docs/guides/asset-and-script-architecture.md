@@ -225,7 +225,7 @@ Scheduler       when scripts run: level entry, update function, schedule, messag
 **Script source.** A `ScriptCatalog` maps a script's name (`level99.lua`) to a provider:
 
 - *original*: the compiled chunk from the store (today's only path);
-- *Coney*: a clean-room rewrite of that level's script, written from the level walks on
+- *Coney*: Coney's own rewrite of that level's script, written from the level walks on
   [Scripting](../research/scripting.md#level99). Recommended form: **Lua 4.0 source text** that Coney compiles with
   its own compiler into the same `LuaProto` the VM runs. Then there is one runtime, one binding table and one
   scheduler, and a rewrite can be compared call for call with the original chunk;
@@ -368,7 +368,7 @@ An honest list: what each modernisation buys, what has to exist first, and what 
 These are open. This page assumes the first option of each, and a maintainer decides. Sharing texture packs is
 decided ([Enhancements plan: Decided](enhancements.md#decided)).
 
-1. **Clean-room level scripts in the repository.** Coney's Lua rewrites are written from research walks, not copied.
+1. **Coney's level scripts in the repository.** Coney's Lua rewrites are written from research walks, not copied.
    May they ship under GPL-3.0-or-later, and how closely may their structure follow the original's (function
    names, order of calls)? [LEGAL.md](repo:LEGAL.md#no-game-data) forbids the game's script source, and a rewrite
    is not that source, but where the line falls is a legal call.
@@ -383,9 +383,9 @@ decided ([Enhancements plan: Decided](enhancements.md#decided)).
 
 ### Now {#now}
 
-Each item is one implementer, one feature commit, and engine behaviour does not change: the same bytes reach the
+Each item is one engineer, one feature commit, and engine behaviour does not change: the same bytes reach the
 same parsers. Order: N1, then N2-N5 in any order, then N6-N7. Coordinate platform files with "main", since other
-implementers are working in `src/platform/` now.
+engineers are working in `src/platform/` now.
 
 | Id | Item | Files | Size |
 | --- | --- | --- | --- |
@@ -411,7 +411,7 @@ says):
 2. **Overrides** for presentation kinds, with PNG and WAV loaders; test mode stays PS2-only.
 3. **Xbox source**: textures via the `ResourceResolver` (F4) and HD movies ([Xbox assets](../research/xbox-assets.md)).
 4. **Native list** (`buildNatives`), the `ScriptScheduler` as the one entry, and the call tracer.
-5. **Lua 4.0 source compiler**, then the console on it, then clean-room level scripts, one level at a time, each
+5. **Lua 4.0 source compiler**, then the console on it, then Coney's level scripts, one level at a time, each
    behind its parity test.
 6. **Simulation out of `src/platform/`** (`PlayLevelMode::update` into a core gameplay mode; platform keeps the
    drawing), and simulation snapshots.
@@ -422,7 +422,7 @@ says):
 
 ### Risks {#risks}
 
-- **Merge conflicts** with the implementers active today. Change the core directories first and `src/platform/`
+- **Merge conflicts** with the engineers active today. Change the core directories first and `src/platform/`
   last, one directory per commit, and agree each platform step with "main".
 - **Behaviour drift from a source.** An override or an Xbox file reaching the simulation would change play. The
   split into simulation and presentation kinds, PS2-only test mode and the simulation digest guard against it.
@@ -433,4 +433,4 @@ says):
 - **Rewritten scripts drifting from the original.** No level switches to a rewrite without a passing parity trace
   under the same input script.
 - **The compiler's size.** Lua 4.0's grammar is small, but a compiler with correct code generation is still an
-  M-to-L item. It is the gate for every clean-room script, so schedule it first among the script items.
+  M-to-L item. It is the gate for every Coney level script, so schedule it first among the script items.

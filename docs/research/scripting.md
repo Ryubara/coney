@@ -1005,7 +1005,7 @@ Points a playthrough test needs:
 
 #### The state hints, and what lesson 6 counts {#level99-state-hints}
 
-The analyst question "`P1.PowerMove`: `TT_19a` or `TT_24e`?" and user checklist item 33's hint order. Inferred from
+The research question "`P1.PowerMove`: `TT_19a` or `TT_24e`?" and user checklist item 33's hint order. Inferred from
 the disassembly of `level99.lua` (main/29-main/34) and `level99_combat.lua` (main/30, main/31): names, ids and
 the order of calls only.
 

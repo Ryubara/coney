@@ -576,7 +576,7 @@ and the rows of every level loaded go into it, numbered by step from the first r
 build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 6000 --rumble warparty --arena 102 --gang-size 5 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight.csv
 ```
 
-Two options make Coney's run match the analysts' recordings of the original, where every fighter is AI-driven and each
+Two options make Coney's run match the reference recordings of the original, where every fighter is AI-driven and each
 recording draws different random numbers:
 
 - `--ai-player` (with `--rumble`) hands player 1 to the AI when the countdown ends, once the arena script's

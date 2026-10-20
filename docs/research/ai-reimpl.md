@@ -7,8 +7,8 @@ yet; each claim states its evidence level.
 ## Purpose
 
 The AI's goal, tactic and action engine is mostly named and cited ([AI humans](ai.md), [AI code index](ai-code.md),
-[AI goals](ai-goals.md)), but a citation is not something an implementer can code from. This page splits what Coney
-has not reimplemented yet into **units** an implementer can finish with tests in one sitting (about 5 to 15
+[AI goals](ai-goals.md)), but a citation is not something to code from. This page splits what Coney
+has not reimplemented yet into **units** an engineer can finish with tests in one sitting (about 5 to 15
 functions each), ordered by dependency and payoff, and gives the first units a full specification: inputs and
 outputs, the fields read and written with their offsets, constants, branches and edge cases. Later units point at
 the sections that describe them, which get the same treatment before their unit starts.
@@ -22,7 +22,7 @@ particles, cars, scenes. On 2026-10-12 the AI stretch holds 2,008 functions, of 
 units.
 
 **Already tagged is not finished.** Several functions in the gang-fight units carry an `@orig` tag in Coney but are
-built as stand-ins (for example, TacticAttack's melee goal). A unit lists those under "to correct": the implementer
+built as stand-ins (for example, TacticAttack's melee goal). A unit lists those under "to correct": the engineer
 replaces the stand-in, and the function stays in `functions.toml`.
 
 Shared conventions on this page: *brain* `+n` is the AI brain record ([The brain](ai.md#brain)), *human* `+n` the
@@ -103,7 +103,7 @@ and `Gang::setSharedTarget` (`repo:src/ai/gangs.h`); the scan runs from `Brain::
 scan's step 2 (the gang's shared target) is in; the fight goal's re-target forces the slot, and a displaced holder
 loses his target ([Attack slots](ai.md#attack-places)); the attack command sets the shared target from the chief's
 lock-on (`ScriptedStory::startWarriorCommand`). Tests: `repo:tests/ai/threats_test.cpp` and the dispatcher case in
-`repo:tests/ai/scripted_story_test.cpp`. Stand-ins and questions left for an analyst:
+`repo:tests/ai/scripted_story_test.cpp`. Stand-ins and open questions:
 
 - The hit-back flag `+0x2e5` exists on Coney's brain but nothing sets it until `WarriorBrain_OnHitByChief` is built.
 - The fallbacks `+0x280` / `+0x284` are not filled, so with no lock-on the attack command leaves the shared target

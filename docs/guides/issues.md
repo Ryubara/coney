@@ -196,7 +196,7 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | Status | `S-needs-triage` | Status: not yet looked at |
 | | `S-ready-to-start` | Status: triaged and accepted; waiting for someone to pick it up |
 | | `S-needs-info` | Status: waiting for the reporter |
-| | `S-needs-research` | Status: an analyst must study the original first |
+| | `S-needs-research` | Status: the original must be studied first |
 | | `S-in-progress` | Status: an agent or person is working on it |
 | | `S-pending-review` | Status: a pull request is open |
 | | `S-blocked` | Status: waiting for another issue or a decision |
@@ -219,7 +219,7 @@ The coordinator reads each new issue and:
 1. sets the type (`bug` or `parity`, or `task`, `docs`, `enhancement`), the area and the priority;
 2. moves an accepted issue from `S-needs-triage` to `S-ready-to-start`: it is understood, has a priority and can be
    picked up as written. Otherwise it asks for what is missing with a comment and sets `S-needs-info`, sets
-   `S-needs-research` when an analyst must study the original first ([Research workflow](research-workflow.md)), or
+   `S-needs-research` when the original must be studied first ([Research workflow](research-workflow.md)), or
    sets `S-blocked` when it waits for another issue or a decision;
 3. closes a repeat as `duplicate` (pointing at the first), and a request outside the project as `wontfix`;
 4. turns a vague report into a task that an agent can take, with a research page link and an acceptance test.

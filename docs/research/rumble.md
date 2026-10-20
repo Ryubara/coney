@@ -434,7 +434,7 @@ human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-huma
 `attacking`, `active`, `space_up`, `space_down`, `fight_updates`, `fight_active`, `g_alert`, `g_teamups`, `g_order`
 and `brain_off`, which those rules use, and writes `g_tactic` as a flag where the original has the tactic's vtable.
 The scenarios are `repo:research/traces/scenarios/gang_battle.toml` and its mirror `gang_battle_swap.toml`
-([The sides swapped](#gang-battle-swap)); the traces are measurements of the game and stay in the analyst's scratch
+([The sides swapped](#gang-battle-swap)); the traces are measurements of the game and stay in the engineer's scratch
 folder.
 
 ### The set-up {#gang-battle-setup}

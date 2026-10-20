@@ -54,7 +54,7 @@ def test_worktree_isolation_is_blocked(isolation: str) -> None:
         {"prompt": "y", "isolation": ""},
         {"prompt": "y", "isolation": "remote"},
         {"prompt": "isolation: worktree is mentioned in the text only"},
-        {"prompt": "y", "model": "sonnet", "subagent_type": "implementer"},
+        {"prompt": "y", "model": "sonnet", "subagent_type": "engineer"},
     ],
 )
 def test_other_agent_calls_pass(tool_input: dict[str, object]) -> None:

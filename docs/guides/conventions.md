@@ -4,9 +4,8 @@ These are the rules for code in Coney: the C++ engine under `src/`, the asset to
 package under `python/`. They exist so that anyone can open a file, understand what it does and why, and find the
 part of the original game it replaces. Reviewers check code against this page.
 
-Coney is written from the research in `docs/research/`, never from decompiler output (see
-[the clean room](research-workflow.md#clean-room) and
-[LEGAL.md](repo:LEGAL.md#clean-room)). Several rules below, `@orig` tags and
+Coney is a reimplementation: engineers study the original and write Coney's own code
+([Studying the original](research-workflow.md#studying-the-original)). Several rules below, `@orig` tags and
 research links above all, are there to keep the path from a line of our code back to its research visible.
 
 The examples below are abridged or simplified from the real code (`src/fileio/wad_index.h`,
@@ -148,7 +147,7 @@ file access). Macros carry the `CONEY_` prefix because they ignore namespaces an
 librw or the platform headers.
 
 Names describe what the thing is in **our** design. They may match the original's name when that is the clearest
-choice, but they don't have to: the clean room asks for our own names and structure, and the `@orig` tag (below)
+choice, but they don't have to: Coney has its own names and structure, and the `@orig` tag (below)
 records the original name, so nothing is lost. For example, the original `DVDWadIndex` becomes `WadIndex`, since
 nothing in Coney reads from a DVD drive directly.
 

@@ -177,7 +177,7 @@ def make_payload(
     }
     if agent:
         payload["agent_id"] = AGENT
-        payload["agent_type"] = "implementer"
+        payload["agent_type"] = "engineer"
         write_transcript(main.parent / SESSION / "subagents" / f"agent-{AGENT}.jsonl", [None, model])
     elif model is not None:
         write_transcript(main, [model])

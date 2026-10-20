@@ -484,7 +484,7 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
 namespace {
 
 // The hints and objectives checkpoint 3 shows, by their keys in the level's text (docs/research/scripting.md#level80):
-// the reference order of the analyst's run, steps 3.1 to 4.1.
+// the order of the reference run, steps 3.1 to 4.1.
 constexpr std::array<std::string_view, 7> kHintKeys{"TT_5", "TT_25", "TT_26", "TT_27", "TT_28", "TT_29", "TT_7"};
 constexpr std::array<std::string_view, 6> kObjectiveKeys{"MS_C3_1", "MS_C3_1a", "MS_C3_2",
                                                          "MS_C3_3", "MS_C3_4",  "MS_C4_1"};
@@ -654,7 +654,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
         return reached;
     };
 
-    // 3.1: from Fox's gate (the analyst's run teleported to each objective too), walked into his box with the stick;
+    // 3.1: from Fox's gate (the reference run teleported to each objective too), walked into his box with the stick;
     // his scene plays and is skipped.
     const coney::anim::Vec3 fox = flagAt("fFoxTrigger");
     // The chapter's Setup fades in and places the crew first: the teleport waits for its objective.
@@ -683,7 +683,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     level.run(5);
     CHECK(level.scripts->state().characters.lastWarriorCommand.at(0) == 3);
 
-    // 3.3: up on the roof by the bottles (teleported, as the analyst's run), walked into the throw lesson's box; the
+    // 3.3: up on the roof by the bottles (teleported, as the reference run), walked into the throw lesson's box; the
     // script walks him to his spot and locks the stick.
     const coney::anim::Vec3 bottles = flagAt("fBottles");
     level.play()->teleportPlayer(
@@ -857,7 +857,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     const auto stockBefore = stock();
     CHECK(stockBefore >= kThefts);
 
-    // 3.5: at the front door (teleported to its marker's flag, as the analyst's run), the lock is picked.
+    // 3.5: at the front door (teleported to its marker's flag, as the reference run), the lock is picked.
     const coney::anim::Vec3 front = flagAt("fStoreFront");
     level.play()->teleportPlayer(
         coney::world_objects::Placement{.position = {front.x, front.y, front.z}, .headingDegrees = 183.0F});
@@ -866,7 +866,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     CHECK(level.logged("lock pick: picked"));
     // FrontDoorPicked issues the wreck order again: at the store front the crew steals (WarriorSteal), and the tenth
     // theft (message 7 on vStealTrigger) brings MS_C3_4 and the back door. The player only waits at the door, as in
-    // the analyst's run.
+    // the reference run.
     level.run(30);
     CHECK(level.scripts->state().characters.lastWarriorCommand.at(0) == 5);
     const bool stolen = level.runUntil([&shown] { return shown.objective == "MS_C3_4"; }, kWait);
@@ -897,7 +897,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     }
     REQUIRE(chapter4);
 
-    // In order, as the analyst's run showed them (docs/research/scripting.md#level80); each counted the first time.
+    // In order, as the reference run showed them (docs/research/scripting.md#level80); each counted the first time.
     const std::vector<std::string> expected{"MS_C3_1",  "l80_c6", "TT_5",    "MS_C3_1a", "TT_25",
                                             "MS_C3_2",  "TT_26",  "TT_27",   "TT_28",    "TT_29",
                                             "l80_c6_b", "TT_7",   "MS_C3_3", "MS_C3_4",  "MS_C4_1"};

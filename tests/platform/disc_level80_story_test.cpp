@@ -442,7 +442,7 @@ TEST_CASE("the disc's level80 from the story: the hints at each checkpoint, walk
     REQUIRE(run.until([&] { return run.shown.objective == "MS_C3_1"; }));
     const coney::anim::Vec3 fox = run.flagAt("fFoxTrigger");
     // **Known gap**: the walk along the street to his gate stalls at (-225.5, 241) and at (-204.7, 245.5), where no
-    // collision triangle, door, object or human stands, so he is put at the gate (as the analyst's reference run and
+    // collision triangle, door, object or human stands, so he is put at the gate (as the reference run and
     // the checkpoint 3 test put him at each objective) and walks in from there.
     const coney::anim::Vec3 gate = run.flagAt("fFoxGate");
     run.play()->teleportPlayer(
@@ -543,7 +543,7 @@ TEST_CASE("the disc's level80 from the story: the hints at each checkpoint, walk
     CHECK_FALSE(run.hud().hints().showing().has_value());
     CHECK(run.hud().hints().queued().empty());
 
-    // Checkpoint 3 in order, as the analyst's run showed it; each counted the first time.
+    // Checkpoint 3 in order, as the reference run showed it; each counted the first time.
     const std::vector<std::string> expected{"MS_C3_1", "l80_c6", "TT_5",  "MS_C3_1a", "TT_25", "MS_C3_2", "TT_26",
                                             "TT_27",   "TT_28",  "TT_29", "l80_c6_b", "TT_7",  "MS_C3_3"};
     std::vector<std::string> seen;

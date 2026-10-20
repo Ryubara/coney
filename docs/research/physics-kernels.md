@@ -229,7 +229,7 @@ parallel to it, so either choice is rare in play.
 ### Ray_InfiniteCylinder (a capsule) {#u1-capsule}
 
 `0x0034d938`, 0x6c0 bytes. **The name is wrong: it is the move against a capsule** (radius `r`, axis from `A` to
-`A + E`, rounded ends), as the plate comment from another analyst already says. **Arguments**: `f12` = `r`, `a0` =
+`A + E`, rounded ends), as the plate comment from another engineer already says. **Arguments**: `f12` = `r`, `a0` =
 centre `c`, `a1` = `M`, `a2` = `A`, `a3` = `E`, `t0` = `float roots[2]` out. **Return** the root count, 0-2, with
 each root a fraction of `M`. Confirmed (code) at `0x0034d938`.
 

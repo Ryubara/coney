@@ -1922,10 +1922,10 @@ What is still to do:
 **The throw-aim arc** is drawn while player 1 aims a throw with L1, with the page's model, colours, alpha and texture
 ([Coney's implementation](#throw-arc)); its stand-ins are the Z write, fog and place in the frame.
 
-The implementers' TODOs from the runtime answers (2026-10-04) are done: the overlay camera's view window is
+The implementation TODOs from the runtime answers (2026-10-04) are done: the overlay camera's view window is
 0.725 × 0.5 and the legal screen overfills the screen as above; its colour was already white.
 
-Still for the analysts:
+Still for research:
 
 - **Names for device slots `+0x90` and `+0x98`:** the `@orig` tags call them `RwDevice::GuiToOverlay`
   (`0x00195238`) and `RwDevice::GuiWidthToOverlay` (`0x00195330`) until the research database names them.

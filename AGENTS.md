@@ -14,8 +14,8 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 
 ## How we work
 
-Read `docs/guides/how-we-work.md` before starting: the pipeline, the analyst and implementer roles, the coordinator,
-sharing one machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model,
+Read `docs/guides/how-we-work.md` before starting: the pipeline, the engineer role, the coordinator, sharing one
+machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model,
 briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the automated tests
 are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the
 player's path, gamepad input, playthrough tests, the checks to run before reporting).
@@ -36,9 +36,9 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   reference lists (names, ids, values, our own short descriptions) and small reference screenshots of models;
   never asset files, game text or script source, per `LEGAL.md`. Issues may also hold gameplay screenshots and
   short videos of Coney or the original (a maintainer decision, 2026-10-11), never files, saves, dumps or text.
-- **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
-  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed, and never by
-  someone who has read that function's original code (`docs/guides/research-workflow.md#clean-room`).
+- **One role:** engineers study the original game (Ghidra through ghidra-mcp, the running game through the pcsx2 MCP
+  server), write `docs/research/` pages where they help, citing addresses and short snippets, and implement the
+  behaviour in Coney's own code (`docs/guides/research-workflow.md`).
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
   or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-workflow.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.

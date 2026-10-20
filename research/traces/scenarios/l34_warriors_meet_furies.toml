@@ -1,6 +1,6 @@
 # level34 checkpoint 5 (the park), no input: every human on every update from the level's start, through the scene
 # l34_c4, to the Furies' first hits, to see how the AI Warriors (Snow and Ash) meet the Furies: where they go, at which
-# gait and under which goal and tactic. The state is an analyst's own (level34 checkpoint 5 entered through mode 8
+# gait and under which goal and tactic. The state is an engineer's own (level34 checkpoint 5 entered through mode 8
 # from a level99 state, saved as the park's humans appeared, before l34_c4 starts); pass it with --state.
 # Research: docs/research/scripting.md#level34-fixes (item 16).
 description = "level34 checkpoint 5, no input: every human from the level's start to the Furies' first hits (record with --state and the level34 state)"

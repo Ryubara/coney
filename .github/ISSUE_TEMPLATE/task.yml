@@ -43,7 +43,7 @@ body:
     id: research
     attributes:
       label: Research page
-      description: The page under docs/research that covers this, with the section, as a relative link that works from an issue page, or "none yet" when an analyst must study the original first. A page that exists only on an unreleased branch is named in plain text and marked as such.
+      description: The page under docs/research that covers this, with the section, as a relative link that works from an issue page, or "none yet" when the original must be studied first. A page that exists only on an unreleased branch is named in plain text and marked as such.
       placeholder: "for example [docs/research/physics.md#human-contacts](../blob/main/docs/research/physics.md#human-contacts)"
   - type: textarea
     id: done

@@ -41,7 +41,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 
 | Kind | Where | Rules |
 | --- | --- | --- |
-| Research | `docs/research/` | Living; one page per subsystem or format; evidence levels; implementable without Ghidra |
+| Research | `docs/research/` | Living; one page per subsystem or format; evidence levels; implementable from the page alone |
 | Progress | `docs/progress/` | The tables at the `progress:generated` marker are produced by the docs build, never committed; edit the data files beside the page instead |
 | Game references: lists | `docs/references/` | Generated from `research/references/` by `coney-tools refs render`; edit the YAML instead. `entities.md` is written by hand |
 | Game references: script bindings | `docs/references/bindings/` | Generated from `research/bindings/` by `coney-tools natives render`; edit the YAML instead |
@@ -55,7 +55,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
    subject; if one does, extend it.
 2. Add it to `nav:` in `mkdocs.yml`. The strict build fails on a page that is missing from the navigation
    (`mkdocs.yml` sets `validation: nav: omitted_files: warn`, and `--strict` turns that warning into a failure).
-3. Link files outside `docs/` (such as `LEGAL.md`) as `repo:<file>`, e.g. `[LEGAL.md](repo:LEGAL.md#clean-room)`:
+3. Link files outside `docs/` (such as `LEGAL.md`) as `repo:<file>`, e.g. `[LEGAL.md](repo:LEGAL.md#no-game-data)`:
    the strict build rejects relative links that leave `docs/`, and `mkdocs_hooks.py` turns these into links to the
    file on GitHub. Never write the repository's or the site's address into a file, code comment or commit message;
    the README is the one exception. Name roles, not people or accounts: "a maintainer decision", not who made it.
@@ -85,9 +85,9 @@ subject, updated in place, so a reader never has to work out which of two pages 
 ## Subsystem page
 
 A research page for an engine subsystem covers six things, in this order, so that someone can write their own
-implementation from it without Ghidra. Copy the skeleton below and fill it in; a section with nothing known yet
-says so in one line rather than disappearing, so the gap stays visible. File-format pages follow the same order,
-with the data section doing most of the work.
+implementation from it without working it out again from the original. Copy the skeleton below and fill it in; a
+section with nothing known yet says so in one line rather than disappearing, so the gap stays visible. File-format
+pages follow the same order, with the data section doing most of the work.
 
 ````markdown
 # <Subsystem name>

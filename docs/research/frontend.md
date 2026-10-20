@@ -2374,7 +2374,7 @@ so the game's precompiled scripts run unchanged:
   have yet.
 - The string load that uses it is on [GUI](gui.md#coneys-implementation).
 
-TODO for the analysts, found while implementing:
+TODO for research, found while implementing:
 
 - **The level script entry and `Menu.onStart`** (answered, 2026-10-04): the preloads (four scripts, at the legal
   screen), then `global.lua`, then `level100.lua`, all in one Lua state; what each needs is on

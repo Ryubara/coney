@@ -19,7 +19,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
-| `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
+| `.claude/agents/` | The roles: `engineer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call, and their `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
@@ -36,17 +36,17 @@ Code asks once whether to use the project's servers. A server of the same name r
 (`claude mcp add -s local`) takes precedence over the project's; one in your user scope does not.
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
-guides that role reads; it holds no rules of its own. The analyst and the research reviewer are set to Opus, which
-AGENTS.md requires for reverse engineering; the others take whatever model the coordinator names
-([Which model](#models)). The `pr-reviewer` is set to Sonnet: it is the release gate on a pull request description
-([The description review](how-we-work.md#pr-review)), reads the description, the diff, the logs and every picture,
-and writes only its verdict (`REVIEW.json`) and report (`REVIEW.md`) next to `PR.md`. Its tools are Read, Glob, Grep,
-Bash and Write; its instructions keep Bash to read-only commands and Write to those two files. The coordinator runs
-it headlessly with `coney-tools repo review` ([repo review](coney-tools.md#repo-review)), or starts it as an agent on
-a `PR.md`, a worktree and a base branch. The implementer and the code reviewer have the Ghidra and PCSX2 MCP tools withheld
-(`disallowedTools` names each server, which removes all of its tools). That is a guard against reaching for them,
-not the clean room itself: they still have a shell, and the rule that keeps them out of the original's code is
-AGENTS.md's. Effort, turn and token limits are each user's own settings and stay out of the repository.
+guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which
+AGENTS.md requires for reverse engineering (a coordinator may name Sonnet for an engineer whose task needs none, per
+[Which model](#models)); the others take whatever model the coordinator names. The `pr-reviewer` is set to Sonnet:
+it is the release gate on a pull request description ([The description review](how-we-work.md#pr-review)), reads
+the description, the diff, the logs and every picture, and writes only its verdict (`REVIEW.json`) and report
+(`REVIEW.md`) next to `PR.md`. Its tools are Read, Glob, Grep, Bash and Write; its instructions keep Bash to
+read-only commands and Write to those two files. The coordinator runs it headlessly with `coney-tools repo review`
+([repo review](coney-tools.md#repo-review)), or starts it as an agent on a `PR.md`, a worktree and a base branch.
+The engineer uses the Ghidra and PCSX2 MCP tools and writes `src/`; the code and research reviewers report and never
+edit (`disallowedTools` withholds Edit, Write and NotebookEdit). Effort, turn and token limits are each user's own
+settings and stay out of the repository.
 
 **The permissions.** The allowed commands are the project's own read-mostly ones: `coney-tools config show`, the
 `repo` checks, the generators, pytest, ruff, mypy, pre-commit and `coney-tools build`. Commands that start or drive
@@ -90,7 +90,7 @@ A cache is lost, and the next request re-writes everything, when:
 4. **Anything before the conversation changes:** the tool list (an MCP server connecting or dropping), the
    instruction files, the model or its settings.
 
-Measured on this project (2026-10-08): an implementer that ran three Windows builds of 6-10 minutes with a five-minute
+Measured on this project (2026-10-08): an agent that ran three Windows builds of 6-10 minutes with a five-minute
 cache re-wrote its 266 000-282 000-token context after each one; those three writes were about three quarters of
 everything it wrote. With the hour-long setting (2026-10-09), a test agent waited 6.5 minutes inside one command and
 then read its 40 600-token context from the cache, writing only 157 new tokens. A fresh agent starts at about 38 000
@@ -117,7 +117,7 @@ sends a branch through CI three times, costs more than a stronger one that gets 
 
 | Model | Use it for | Examples |
 | --- | --- | --- |
-| **Claude Opus** | Reverse engineering of any kind, and implementation that needs judgement: reimplementing a system faithfully from a research page (numeric fidelity, timing, AI, physics, rendering, combat), work across several subsystems, diagnosing a failure whose cause is unknown | Analysts in Ghidra or the emulator; the combat, physics and renderer implementers; fixing a red CI with unknown causes |
+| **Claude Opus** | Reverse engineering of any kind, and implementation that needs judgement: reimplementing a system faithfully from a research page (numeric fidelity, timing, AI, physics, rendering, combat), work across several subsystems, diagnosing a failure whose cause is unknown | Engineers in Ghidra or the emulator; combat, physics and renderer work; fixing a red CI with unknown causes |
 | **Claude Sonnet** | Well-specified implementation and upkeep, where the research page or an existing pattern says exactly what to write | Wiring a documented script binding, a HUD panel built to its spec, a new test following an existing one, generators, doc upkeep |
 | **Claude Haiku** | Mechanical work with a clear check and nothing to decide | Running a command and reporting the result, measurements, renames, regenerating pages, simple searches |
 
@@ -133,7 +133,7 @@ table above follows evidence.
 A brief is part of the context the agent carries on every request, so it is short and points at the repository
 instead of repeating it:
 
-- the role (analyst, implementer or support), the model, the worktree and the scratch folder;
+- the role (engineer or support), the model, the worktree and the scratch folder;
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
   ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
@@ -179,7 +179,7 @@ Model line followed the wrong trailer, and `coney-tools repo check-body` passed 
 each other. A hook (`.claude/hooks/trailer_guard.py`, registered in `.claude/settings.json` for `PostToolUse` on Bash
 and PowerShell commands that start `git commit` or `git -C ... commit`, and `git -c ... commit` on Bash) now checks
 every commit once it exists. Claude Code gives a hook no model, but it does give the main session's
-`transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `implementer`; the
+`transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`; the
 hook does not use it, because the role does not name the model). The agent's own transcript
 (`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every assistant entry
 (`claude-sonnet-5-5`), and the hook derives the trailer's name from it (`Claude Sonnet 5.5`) instead of keeping a

@@ -35,7 +35,7 @@ is in [Writing these docs](../writing-docs.md#subsystem-page). This page says wh
 - [ ] **The subsystem page has all six parts, in order:** Purpose, Original structure, Data, Behaviour, Coney's
   implementation, Open questions. A part with nothing known says so in one line. File-format pages follow the same
   order.
-- [ ] **An implementer could write the code from the page alone.** Imagine writing the code with only this page.
+- [ ] **An engineer could write the code from the page alone.** Imagine writing the code with only this page.
   For every point where you would have to look at the original, the report names what is missing: a field offset,
   a unit, a byte order, a constant, the order of two steps, an edge case. Each gap is a finding: Important when
   code cannot be written without it, Minor otherwise.
@@ -54,6 +54,6 @@ is in [Writing these docs](../writing-docs.md#subsystem-page). This page says wh
   build that fails.
 - **Important:** a claim with no evidence level; a level used wrongly (a file check graded as confirmed
   (runtime)); an address that does not resolve to what the page says; a missing part of the subsystem page; a gap
-  that stops an implementer.
+  that stops an engineer.
 - **Minor:** unclear wording; a page that says "Confidence: confirmed from code" instead of the current wording;
   an open question that does not say how to find the answer out.
