@@ -5,6 +5,7 @@
 #include <array>
 
 #include "animation/anim_clip.h"
+#include "combat/attacks.h"
 #include "combat/being_hit.h"
 
 namespace coney::human {
@@ -16,6 +17,9 @@ constexpr std::uint32_t kGroundedIdle = 196;
 constexpr std::uint32_t kGroundedRise = 199;
 // The clip event type that knocks a victim down (docs/research/combat-reactions.md#reactions).
 constexpr std::uint16_t kKnockdownEvent = 7;
+// The rise holds 0x8000 on the record +0x08 (`Human_PlayRise`), which its recovery event (0x48, frame 14 on the disc)
+// replaces with 0x40000: from then on the rise's counter is refused (docs/research/combat-reactions.md#ground-escape).
+constexpr HeldFlags kRiseHolds{.held = combat::kPhaseRise, .set = combat::kPhaseRise};
 
 // The one clip `clip` as an array.
 std::array<std::uint32_t, 1> one(std::uint32_t clip) { return {clip}; }
@@ -116,9 +120,10 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
     if (m_grounded && canRise && nowMs >= m_riseAtMs) {
         m_grounded = false;
         if (stunned()) {
-            animator.playCombat(one(kGroundedRise), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
+            animator.playCombat(one(kGroundedRise), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold,
+                                kCombatFade, kRiseHolds);
         } else {
-            animator.playCombat(one(kGroundedRise), idle, AnimState::Attack);
+            animator.playCombat(one(kGroundedRise), idle, AnimState::Attack, kCombatFade, kRiseHolds);
         }
         return true;
     }

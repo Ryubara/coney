@@ -110,6 +110,7 @@ add_executable(coney_tests
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_revive_test.cpp
+    platform/disc_rise_counter_test.cpp
     platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
@@ -297,6 +298,7 @@ target_sources(coney_tests PRIVATE
     human/combat_timing_test.cpp
     human/moving_attacks_test.cpp
     human/being_hit_test.cpp
+    human/rise_counter_test.cpp
     human/human_grab_test.cpp
     human/human_tandem_test.cpp
     human/script_state_test.cpp

@@ -506,8 +506,11 @@ TEST_CASE("square in the duck's window counters with 617 at an attacker in front
     fight.human().warn(coney::human::AttackNotice{
         .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = kInFront});
     ClipLog log;
-    // The duck plays at 0.75: its frames 6-13 fall 8 to 17 updates in; square pressed at 10.
-    fight.run("0 press r1\n10 tap square\n", 20, [&](std::uint64_t) { log.note(fight.human().animator().animId()); });
+    // The duck plays at 0.75: its frames 6-13 fire 8 to 17 updates in, but not on every update (a frame on a half
+    // falls to the update after, as the task stack rounds); square held for two updates from 10, as the runtime's
+    // presses were, meets one of them.
+    fight.run("0 press r1\n10 press square\n12 release square\n", 20,
+              [&](std::uint64_t) { log.note(fight.human().animator().animId()); });
     CHECK(log.has(static_cast<std::uint32_t>(combat::kBlockDodge)));
     CHECK(log.has(617));
     CHECK(fight.human().fighter().duckCounters() == 1);

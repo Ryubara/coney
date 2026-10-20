@@ -445,8 +445,60 @@ void Fighter::releaseFromGrab(HumanAnimator& animator) {
     m_reacting = true;
 }
 
+void Fighter::playCounter(const FighterInput& input, HumanAnimator& animator, anim::Vec3 target) {
+    const int counter = combat::duckCounterClip(combat::victimSide(input.position, input.heading, target));
+    m_combat.startCounter(counter, combat::combatTuning());
+    animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                        clips::kCounterHolds);
+}
+
+bool Fighter::riseCounter(const FighterInput& input, HumanAnimator& animator) {
+    const std::uint32_t playing = animator.animId();
+    const anim::AnimTask* top = animator.tasks().top();
+    const anim::AnimClip* clip = animator.clip(playing);
+    // 1. Free to react: no held bit but the duck's, the rise's, a step's or 389's, and not both stunned and in the
+    // endless stun. A request made earlier lapses with it. The rise holds 0x8000 until its event 0x48 (frame 14 on the
+    // disc) swaps it for the recovery's 0x40000, which is refused: the clip's events fire before this runs, so a
+    // request on frame 14's update is refused too.
+    // The stun's state lasts until its end clip (357) plays, after the stun's time and the clip playing.
+    const bool stunState = m_victim.stunned() || m_victim.stunExitPending();
+    const bool free = (animator.flags() & ~combat::kFreeToReactHeld) == 0 &&
+                      !(stunState && hasFlag(flag::kManualStun)) && !m_health.depleted() && !grabbed() &&
+                      !m_holdState.has_value() && m_tandemRole == TandemRole::None;
+    // Only a player asks: an AI's Grounded goal answers no while it is down, and that lasts through the rise.
+    if (!m_player || !free) {
+        m_riseCounterAsked = false;
+        return false;
+    }
+    // 2. The request (record +0x14 = 0xe): square or cross this update while the clip playing fires its own 0x25.
+    if (!m_riseCounterAsked && top != nullptr && clip != nullptr && m_clipSeen == playing &&
+        combat::eventBetween(*clip, combat::kDuckCounterEvent, m_clipTimeSeen, top->time()) &&
+        combat::asksDuckCounter(input.command)) {
+        m_riseCounterAsked = true;
+    }
+    if (!m_riseCounterAsked) {
+        return false;
+    }
+    // 3. The target: **Coney's stand-in** for the foe (the human who knocked him down, not kept by Coney's victim
+    // side) is the target search's pick within 1.25 x 617's reach, which finds the nearest when there is one.
+    const combat::AnimRange* range =
+        m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(combat::kDuckCounterFront)) : nullptr;
+    const float reach =
+        combat::kDuckCounterReachScale * (range != nullptr && range->reach > 0.0F ? range->reach : 1.0F);
+    const Combatant* found = pickTarget(input, reach, m_target);
+    if (found == nullptr) {
+        return false;
+    }
+    // 4. The counter cuts the rise and ends the stun (and the ground, already left): the player acts again.
+    m_riseCounterAsked = false;
+    m_victim.clear();
+    m_reacting = false;
+    playCounter(input, animator, found->position());
+    ++m_riseCounters;
+    return true;
+}
+
 bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
-    const combat::CombatTuning& tuning = combat::combatTuning();
     const std::uint32_t duck = clips::clipOf(combat::kBlockDodge);
     const bool ducking = animator.animId() == duck && animator.drivingClipPlaying();
     // 1. Asked for on an earlier update: the counter by the side its target stands on, once one is in reach (the
@@ -463,10 +515,7 @@ bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
             target = found->position();
         }
         if (target.has_value()) {
-            const int counter = combat::duckCounterClip(combat::victimSide(input.position, input.heading, *target));
-            m_combat.startCounter(counter, tuning);
-            animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack, kCombatFade,
-                                clips::kCounterHolds);
+            playCounter(input, animator, *target);
             m_counterAsked = false;
             ++m_duckCounters;
             return true;

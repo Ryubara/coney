@@ -27,13 +27,20 @@ inline constexpr std::uint32_t kPhaseEnd = anim::kFlagAttackEnd;
 inline constexpr std::uint32_t kPhaseGrabStart = 0x10; ///< Held by a grab's or tackle's clips, and object attacks.
 inline constexpr std::uint32_t kPhaseTackling = 0x200;
 inline constexpr std::uint32_t kPhaseRecovery = anim::kFlagRecovery;
-inline constexpr std::uint32_t kPhaseDuck = 0x1000;         ///< Ducking under an attack (616).
-inline constexpr std::uint32_t kPhaseCounter = 0x2000;      ///< The duck's counter (617-620).
+inline constexpr std::uint32_t kPhaseDuck = 0x1000;    ///< Ducking under an attack (616).
+inline constexpr std::uint32_t kPhaseCounter = 0x2000; ///< The duck's counter (617-620).
+/// The rise from the ground (199, `Human_PlayRise`). The same held bit as the revived's `kRevivedHeld` (revive.h,
+/// 354).
+inline constexpr std::uint32_t kPhaseRise = 0x8000;
 inline constexpr std::uint32_t kPhaseRunAttack = 0x1000000; ///< The run attack (24), for its whole length.
 /// The dive (1), for its whole length: it makes the human busy, so the stick does nothing until it ends
 /// (docs/research/combat.md#charge-aim).
 inline constexpr std::uint32_t kPhaseDive = 0x400000;
 inline constexpr std::uint32_t kPhaseNormalFromFight = 0x40000000; ///< 389, which nothing refuses.
+/// The held bits under which a human is still free to react to a counter message (`Human_IsFreeToReact`,
+/// `0x00225498`): the duck's, the rise's, a step's and 389's; any other held bit (the recovery `0x40000` above all)
+/// refuses it (docs/research/combat-reactions.md#ground-escape).
+inline constexpr std::uint32_t kFreeToReactHeld = kPhaseNormalFromFight | 0x80000 | kPhaseRise | kPhaseDuck;
 /// The bits an attack's clip holds while the attack is under way: its phases and recovery, the counter's and the
 /// moving attacks'. The chain ends once none is left (the clip has given them back).
 inline constexpr std::uint32_t kAttackUnderWay =

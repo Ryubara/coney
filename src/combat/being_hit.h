@@ -40,7 +40,8 @@ enum class AttackWarning : std::uint8_t {
 [[nodiscard]] std::optional<AttackWarning> warningBetween(const anim::AnimClip& clip, float fromSeconds,
                                                           float toSeconds);
 
-/// The event type in the duck's own clip (616, frames 6-13) that opens its counter window (message `0xa5`).
+/// The event type in the duck's own clip (616, frames 6-13) and the rise (199, frames 11-18) that opens the counter's
+/// window (message `0xa5`).
 inline constexpr std::uint16_t kDuckCounterEvent = 0x25;
 /// The duck counters, by where the target stands: 617 front, 618 right, 619 back, 620 left
 /// (`BLOCK_COUNTER_FRONT` ... `_LEFT`).
@@ -48,7 +49,9 @@ inline constexpr int kDuckCounterFront = 617;
 /// The counter keeps a target within this many times the reach of 617.
 inline constexpr float kDuckCounterReachScale = 1.25F;
 
-/// Whether an event of `type` in `clip` fires in (`fromSeconds`, `toSeconds`] of clip time (its frame / 30 s).
+/// Whether an event of `type` in `clip` fires as the cursor goes from `fromSeconds` to `toSeconds` of clip time: its
+/// frame is past the first time's frame and at or before the second's, each rounded as the task stack rounds them
+/// (anim::eventFrame()).
 [[nodiscard]] bool eventBetween(const anim::AnimClip& clip, std::uint16_t type, float fromSeconds, float toSeconds);
 
 /// Whether `command` asks for the duck's counter (`0x0027b988`): square or cross pressed or held (`0xf`, `0x11`,

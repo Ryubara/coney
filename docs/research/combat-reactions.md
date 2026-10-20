@@ -459,10 +459,17 @@ play 246 (the break) or 242 (the reversal) instead; none of them plays 199.
 
 - The ground hit (195), the ground time and the mash's cut are built (`human/victim.*`, `Fighter` victim side).
   Whether a press is counted while 303 or 195 still holds a flag (the original counts none) should be checked.
-- **Missing: the counter from the rise.** Coney opens the duck counter only from 616's own `0x25` events
-  (`combat/being_hit.h`, `Fighter::duckCounter` in `fighter_victim.cpp`, which tests that the clip playing is 616),
-  and a player in 199 never reaches that test: `stepVictim` reports him as reacting, so `Fighter::update` returns
-  before step 4. A square or cross late in 199 does nothing.
+- **Built (2026-10-13): the counter from the rise** (`Fighter::riseCounter` in `fighter_victim.cpp`, run in
+  `Fighter::update` while the player still reacts). 199 holds `0x8000` (`Victim::step`), so its `0x48` at frame 14
+  holds the recovery `0x40000` and refuses the window from there; the `0x25` events are read with the task stack's
+  frame rounding (`combat::eventBetween`, `anim::eventFrame`), which at 0.75 fires frames 11, 12 and 13 on k = 15,
+  16 and 17, none on k = 18 and frame 14 on k = 19: the runtime's edges. The duck's `0x25` (616) goes through the
+  same event dispatcher, so its window is read with the same rounding ([Reading the tables](combat-moves.md#reading)).
+  Tests: `repo:tests/human/rise_counter_test.cpp` (square at k = 15-17 plays 620 that update, the stun ends and the
+  attacker takes 50 and is knocked down; k = 9-14 and 18-24 nothing, he rises into 357; cross pressed at 14 counters
+  at 15 on its release; 618 to the right; no target, an AI, or the manual stun: nothing) and
+  `repo:tests/platform/disc_rise_counter_test.cpp` (the disc's 199 events and window; `level99` with a spawned
+  fighter beside the player, a square at k = 16 counters and one at 18 does not).
 - **Missing: the grounded mount.** `Mount_StartOnGrounded` is not built for anyone: circle at a downed human
   neither mounts him (237-240 / 241) nor cuts a rise below 70 %.
 - **Missing: the mounted player's inputs.** No AI grabs, tackles or mounts yet ([Coney's implementation](combat.md#coneys-implementation)),
