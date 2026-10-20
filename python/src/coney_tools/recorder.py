@@ -150,7 +150,7 @@ class Recorder:
         scenario: Scenario,
         clock: Callable[[], float] = time.monotonic,
         hooks: list[Hook] | None = None,
-        started: Callable[[], None] | None = None,
+        started: Callable[[], object] | None = None,
     ) -> None:
         """Record `scenario` over `game`; `clock` (seconds) bounds how long it waits for the game. `hooks` are the
         hooks installed in the state, in the order build() gave them their ids; their ring is read every poll.

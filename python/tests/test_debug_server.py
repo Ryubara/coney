@@ -29,6 +29,7 @@ from coney_tools.debug_server import (
 )
 from coney_tools.pcsx2_state import Edit, Patch
 from coney_tools.pine import PineClient
+from coney_tools.recorder import Recorder
 from coney_tools.scenario import load_scenario
 
 Handler = Callable[[dict[str, Any]], dict[str, Any]]
@@ -227,7 +228,12 @@ def test_a_savestate_recording_is_staged_with_its_patched_state(
     source.write_bytes(make_p2m2())
     savestate_of(source).write_bytes(b"state")
     made: list[tuple[Path, Path, list[Patch]]] = []
-    monkeypatch.setattr(pcsx2_cli, "_make_copy", lambda s, o, p, d: made.append((s, o, p)) or o.write_bytes(b"patched"))
+
+    def make_copy(source: Path, out: Path, patches: list[Patch], pcsx2_dir: Path | None) -> int:
+        made.append((source, out, patches))
+        return out.write_bytes(b"patched")
+
+    monkeypatch.setattr(pcsx2_cli, "_make_copy", make_copy)
     copy = tmp_path / "pcsx2"
     patch = Patch("x", "", "", (Edit(0x100, b"\1\0\0\0", None),))
     staged = pcsx2_cli._stage_recording(source, read_p2m2(source), copy, [patch])
@@ -348,8 +354,8 @@ def test_a_recording_shorter_than_the_scenario_says_so(
 
     server = debug_server(never_resume)
     scenario = load_scenario(_repo(tmp_path, ""), tmp_path)
-    original = pcsx2_cli.Recorder.record
-    monkeypatch.setattr(pcsx2_cli.Recorder, "record", lambda self, timeout=None: original(self, timeout=0.5))
+    original = Recorder.record
+    monkeypatch.setattr(Recorder, "record", lambda self, timeout=None: original(self, timeout=0.5))
     for port in _pine_game(game):
         with PineClient(port) as client:
             emulator = FakeEmulator(pcsx2_cli.Paths(tmp_path, tmp_path / "x.iso", tmp_path), client, server.port)
