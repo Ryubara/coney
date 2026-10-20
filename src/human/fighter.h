@@ -421,6 +421,8 @@ class Fighter {
     [[nodiscard]] int hitsShrugged() const { return m_hitsShrugged; }
     /// Duck counters played (617-620).
     [[nodiscard]] int duckCounters() const { return m_duckCounters; }
+    /// Counters played from the rise (617-620 out of 199, riseCounter()).
+    [[nodiscard]] int riseCounters() const { return m_riseCounters; }
     /// The repeat tracker of the player's hits.
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
     /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
@@ -648,6 +650,17 @@ class Fighter {
     // went to it.
     // @orig 0x002617f8 Block_DuckCounter (unknown)
     bool duckCounter(const FighterInput& input, HumanAnimator& animator);
+    // The counter from the rise (or from any reaction clip carrying 0x25): a player free to react whose square or
+    // cross arrives while the clip's own 0x25 events fire asks for it (record +0x14 = 0xe), and it plays at once at
+    // the target within 1.25 x 617's reach, ending the clip and the stun; without a target the request lasts while he
+    // stays free to react. Run while he is still reacting, before the ground's update skips the dispatcher. Returns
+    // whether the counter played. An AI's Grounded goal says no through the whole rise, so only a player counters.
+    // Research: docs/research/combat-reactions.md#ground-escape
+    // @orig 0x00254e78 Human_UpdateBlockState (unknown)
+    bool riseCounter(const FighterInput& input, HumanAnimator& animator);
+    // Plays the counter 617-620 at `target` (by its side) and starts it as the dispatcher's attack.
+    // @orig 0x002617f8 Block_DuckCounter (unknown)
+    void playCounter(const FighterInput& input, HumanAnimator& animator, anim::Vec3 target);
     // The reaction's frame of the player now.
     [[nodiscard]] VictimFrame frame(const FighterInput& input) const;
     // The timers of a reaction (the stun's end, the rise) and the mash while down; returns whether the player is
@@ -734,6 +747,7 @@ class Fighter {
     int m_turnUpdates = 0;         // updates of turn left
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
+    int m_riseCounters = 0;        // the counters played from the rise
     int m_hitsLanded = 0;
     int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
     std::vector<int> m_strikes;                 // a player's struck hits' anim ids in the last update
@@ -784,13 +798,14 @@ class Fighter {
     bool m_rear = false;     // the hold is from the victim's rear
     bool m_rearHeld = false; // held: its grabber holds it from its rear in a grab (setRearHeld())
     PairStage m_pair = PairStage::None;
-    bool m_reacting = false;        // a hit's reaction (or an escape, a let-go) holds the player until it is over
-    bool m_justCaught = false;      // the grab caught the player this update
-    bool m_holdAttached = false;    // placed by that grabber each update
-    bool m_rageStarted = false;     // rage started in the last update
-    bool m_counterAsked = false;    // the duck's counter was asked for (record +0x14 = 0xe)
-    bool m_counterPressed = false;  // command 3 pressed on the last update while free to counter (an AI's)
-    bool m_hitReactionsOff = false; // human +0xe0 0x800
+    bool m_reacting = false;         // a hit's reaction (or an escape, a let-go) holds the player until it is over
+    bool m_justCaught = false;       // the grab caught the player this update
+    bool m_holdAttached = false;     // placed by that grabber each update
+    bool m_rageStarted = false;      // rage started in the last update
+    bool m_counterAsked = false;     // the duck's counter was asked for (record +0x14 = 0xe)
+    bool m_riseCounterAsked = false; // the counter was asked for from the rise, with no target in reach yet
+    bool m_counterPressed = false;   // command 3 pressed on the last update while free to counter (an AI's)
+    bool m_hitReactionsOff = false;  // human +0xe0 0x800
 };
 
 } // namespace coney::human

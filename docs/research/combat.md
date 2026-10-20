@@ -1773,6 +1773,12 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - The duck's counter is asked for once per duck and the command that asks is spent (no attack starts from it); it
   plays on the next update with no steering, against the attacker that made the player duck, else the nearest target
   within 1.25 × 617's reach, and hits once.
+- The rise's counter ([Down and under attack](combat-reactions.md#ground-escape)) is the duck's played out of 199:
+  square or cross on an update whose clip fires its own `0x25` while the player is free to react (held bits only
+  within `0x40089000`, not stunned with the manual stun `0x8000000`) plays 617-620 that update, ends the rise and
+  the stun, and spends the command. **Coney's stand-in** for the foe (the human that knocked him down, not kept):
+  the target search's pick within 1.25 × 617's reach; with none the request lasts while he stays free to react.
+  Only a player counters (an AI's Grounded goal says no through the rise).
 - Held: the counter at the catch costs the grabber a quarter of its maximum; a reversed hold has no victim behind it
   (the grabber is an entry point, not a `Holdable`).
 - The player's grab or tackle holds any `Holdable`: the sandbox's passive target or another human without flag `0x40`.

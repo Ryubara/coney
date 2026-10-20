@@ -299,7 +299,16 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_deathPending.has_value() && (animator.flags() & combat::kTandemRefusingHeld) == 0) {
         dieNow(*m_deathPending, input, animator);
     }
-    const bool reacting = stepVictim(input, animator);
+    // The counter from the rise comes before the ground's update would skip the dispatcher: a counter played frees
+    // the player, and the dispatcher takes no command this update (as for the duck's).
+    bool riseCountered = false;
+    bool reacting = stepVictim(input, animator);
+    if (reacting) {
+        riseCountered = riseCounter(input, animator);
+        reacting = !riseCountered;
+    } else {
+        m_riseCounterAsked = false;
+    }
     // An AI's counter press (command 3) is kept for the grabber or tackler whose intro it answers. A tackle holds its
     // victim from the intro's start (Coney's stand-in), so a human held only that way may still press it.
     const bool waitingForTackle = m_holdState == TargetState::Held && !m_holdAttached;
@@ -337,7 +346,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     // 4. The duck's counter takes a square or cross in its window; then the dispatcher decides, and the fighter plays
     // what it decided.
     combat::CombatInput in = combatInput(input, animator, false);
-    if (duckCounter(input, animator)) {
+    if (riseCountered || duckCounter(input, animator)) {
         in.command = combat::command::kNone;
     }
     // **Coney's choice**: the attacker and the grabber take no command until their tandem clips are over (the

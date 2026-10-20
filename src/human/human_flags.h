@@ -54,6 +54,10 @@ inline constexpr std::uint64_t kIncreasedReact = 0x200000;
 inline constexpr std::uint64_t kRageAllowed = 0x2000000;
 /// Stamina and power stay full: no sprint drain, no power spent (`HuSetTireless`, `0x00226448`).
 inline constexpr std::uint64_t kTireless = 0x4000000;
+/// The endless stun (`HuSetManualStun`): a stun without an attacker skips the stun-immune test, and a stunned human
+/// with it refuses the counter message `0xa5` (docs/research/combat-reactions.md#ground-escape). **Coney stand-in**: no
+/// binding sets it yet, so only the counter's test reads it.
+inline constexpr std::uint64_t kManualStun = 0x8000000;
 /// Its movement locked (`HuLockMovement`, `0x00234ef8`). **Coney stand-in**: what reads the bit is not on the page, so
 /// a locked human is moved neither by its stick nor by its brain, as an arrested one is; it still fights and acts.
 inline constexpr std::uint64_t kMovementLocked = 0x200000000;

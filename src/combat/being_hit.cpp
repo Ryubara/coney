@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/being_hit.h"
 
+#include "animation/anim_task.h"
+
 namespace coney::combat {
 
 namespace {
@@ -38,9 +40,15 @@ std::optional<AttackWarning> warningBetween(const anim::AnimClip& clip, float fr
 }
 
 bool eventBetween(const anim::AnimClip& clip, std::uint16_t type, float fromSeconds, float toSeconds) {
+    // The frames the cursor passed, rounded as the task stack fires a clip's events (anim::eventFrame()). The duck's
+    // and the rise's 0x25 both reach the human through that one event dispatcher (`Anim_FireFrameEvents`, 0x00101dd8),
+    // so its rounding holds for both (docs/research/combat-moves.md#reading,
+    // docs/research/combat-reactions.md#ground-escape): at rate 0.75 the rise's frames 11-13 fire on its updates 15, 16
+    // and 17, and none on 18, as at runtime.
+    const int from = anim::eventFrame(fromSeconds);
+    const int to = anim::eventFrame(toSeconds);
     for (const anim::ClipEvent& event : clip.events) {
-        const float at = static_cast<float>(event.frame) / kEventFramesPerSecond;
-        if (event.type == type && at > fromSeconds && at <= toSeconds) {
+        if (event.type == type && event.frame > from && event.frame <= to) {
             return true;
         }
     }

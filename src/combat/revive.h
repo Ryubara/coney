@@ -18,7 +18,7 @@ inline constexpr std::uint32_t kReviveEndAnim = 353;
 inline constexpr std::uint32_t kRevivedAnim = 354;
 /// The record bits the reviver's clips hold (`0x8000000`) and the revived's 354 holds (`0x8000`).
 inline constexpr std::uint32_t kReviverHeld = 0x8000000;
-inline constexpr std::uint32_t kRevivedHeld = 0x8000;
+inline constexpr std::uint32_t kRevivedHeld = 0x8000; ///< The same bit as the rise's `kPhaseRise` (attacks.h).
 /// The fade the reviver's chain starts with: a blend over 0.01 s.
 inline constexpr float kReviveFadeSeconds = 0.01F;
 /// The speech commands (docs/references/speech.md): the reviver's 76 `revive_reasure` as he starts, the revived's
