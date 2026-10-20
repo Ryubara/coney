@@ -311,6 +311,13 @@ class Human final : public Holdable {
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
         m_animator.playScripted(clip, animId, rate, fade, held);
     }
+    /// Ends the scripted clip of anim `animId` with the idle while it still plays holding any of `held` (an AI's
+    /// fidget or taunt cut short, `Human_StopFidget`); nothing otherwise.
+    void stopScripted(std::uint32_t animId, std::uint32_t held) {
+        if ((m_animator.flags() & held) != 0 && m_animator.animId() == animId) {
+            m_animator.stopToIdle();
+        }
+    }
     /// A workout's clips (HumanAnimator::playWorkout()), its loop blend once playing, and its exit
     /// (HumanAnimator::endWorkout()).
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {

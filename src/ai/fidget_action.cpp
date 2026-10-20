@@ -85,10 +85,8 @@ ActionStatus FidgetAction::update(Brain& brain) {
 }
 
 bool FidgetAction::abort(Brain& brain) {
-    human::HumanAnimator& animator = brain.human().animator();
-    if (m_heldFlags != 0 && (animator.flags() & m_heldFlags) != 0 &&
-        animator.animId() == static_cast<std::uint32_t>(m_playing)) {
-        animator.stopToIdle();
+    if (m_heldFlags != 0) {
+        brain.human().stopScripted(static_cast<std::uint32_t>(m_playing), m_heldFlags);
     }
     m_heldFlags = 0;
     return true;
