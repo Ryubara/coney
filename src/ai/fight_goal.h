@@ -31,14 +31,21 @@ class FightGoal final : public Goal {
     /// A fight goal whose deadline is `durationMs` after its start (kNoFightLimit: already past, as `GoalFight`'s).
     explicit FightGoal(int durationMs = kNoFightLimit) : Goal(GoalType::Fight), m_durationMs(durationMs) {}
 
-    /// Sets the deadline (`+0x24`, now + the duration) and the re-target's second.
+    /// Sets the deadline (`+0x24`, now + the duration) and the first taunt time (`+0x20`, now + 750-1000 ms), then
+    /// resumes.
+    /// @orig 0x002b2cd8 FightGoal_Start (unknown)
     void start(Brain& brain) override;
+    /// With a valid target (validEnemy()), picks a kind for him (`Human_CanUseAttackKind`, ai::pickAttackFor()) and
+    /// makes the re-target due at once (`+0x14` = now), so it runs on the next update; without one, both are left.
+    /// @orig 0x002b2d00 FightGoal_Resume (unknown)
+    void resume(Brain& brain) override;
     /// One update, in the original's order (`FightGoal_Process`):
     /// 1. done when the target is not a valid enemy or holds no attack slot for this brain;
     /// 2. the tackle try (tryTackle());
     /// 3. done beyond the far melee range × 1.1 (it never closes a distance: the Melee goal beneath does);
     /// 4. every 30 updates, done without a walkable straight line to the target (the route planner's, when it has one);
-    /// 5. once a second, the re-target to the nearest human straight ahead in the sector record when he is a threat
+    /// 5. once a second (the first on the update after a start or a resume), the re-target to the nearest human
+    ///    straight ahead in the sector record when he is a threat
     ///    (ai::isThreat()), his slot forced;
     /// 6. the block try, giving up the active-attacker place;
     /// 7. while actions are queued, wait; once they end, give up the place;

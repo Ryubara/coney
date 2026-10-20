@@ -232,3 +232,28 @@ TEST_CASE("the fight goal's re-target takes the threat straight ahead, forcing a
     CHECK(player.attackSlots().size() == 1);
     CHECK(mate.target() == nullptr);
 }
+
+TEST_CASE("the fight goal's first re-target runs on the update after it starts", "[ai][threat]") {
+    coney::test::AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int players = gangs.create(0, "Players");
+    const int rogues = gangs.create(2, "Rogues");
+    Brain& player = scene.player();
+    // The fighter 1.1 m behind the player, facing past him at his target 2.6 m off.
+    Brain& fighter = scene.add(Vec3{40.0F, 38.9F, 0.0F}, 0.0F, BrainType::Gang);
+    Brain& target = scene.add(Vec3{40.0F, 41.5F, 0.0F}, 180.0F, BrainType::Gang);
+    gangs.addMember(players, player);
+    gangs.addMember(players, target);
+    gangs.addMember(rogues, fighter);
+    gangs.makeEnemies(players, rogues);
+    for (Brain* calm : {&player, &target}) {
+        calm->setThreatResponse(0);
+    }
+    fighter.setTarget(&target);
+    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>()));
+    // The start makes it due at once: the second update re-targets, not one a second later.
+    scene.run(1);
+    CHECK(fighter.target() == &target);
+    scene.run(1);
+    CHECK(fighter.target() == &player);
+}

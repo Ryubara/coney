@@ -8078,6 +8078,18 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x002b2cd8
+name = "FightGoal_Start"
+subsystem = "Human"
+size = 40
+
+[[function]]
+address = 0x002b2d00
+name = "FightGoal_Resume"
+subsystem = "Human"
+size = 112
+
+[[function]]
 address = 0x002b2e28
 name = "FightGoal_TryTackle"
 subsystem = "Human"

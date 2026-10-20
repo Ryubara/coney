@@ -1001,6 +1001,12 @@ a class-13 fighter without `+0x29` ends at once ([GoalRiot](ai-scripting.md#riot
 −1, so its deadline (now − 1, unsigned) is already past and these checks run from the first update. This corrects the
 earlier reading of these checks as attack pacing.
 
+**Start and Resume** (`FightGoal_Start` `0x002b2cd8` calls `FightGoal_Resume` `0x002b2d00`, confirmed (code)): with a
+target that passes `Brain_ValidateEnemy`, a kind is picked at once (`Brain_PickAttack` with `Human_CanUseAttackKind`)
+and the re-target is made due (`+0x14` = now; step 6 runs when `+0x14` < now, so on the next update). Without one
+both are left (`+0x14` starts at 0, also due). So every fight goal re-targets on its second update, and again one
+second apart, and a resumed one (after a block or a reaction) picks its kind afresh.
+
 #### The fight goal in order {#fight-order}
 
 `FightGoal_Process` (`0x002b3ab0`), every update. Confirmed (code); this corrects an earlier reading that put the

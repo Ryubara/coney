@@ -194,11 +194,22 @@ void maybeTaunt(Brain& brain, const RepositionInput& ring, float distance) {
 
 void FightGoal::start(Brain& brain) {
     m_deadlineMs = m_durationMs < 0 ? brain.nowMs() : brain.nowMs() + static_cast<std::uint64_t>(m_durationMs);
-    m_retargetAtMs = brain.nowMs() + kRetargetMs;
     m_tauntAtMs =
         brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kFirstTauntLowMs, kFirstTauntHighMs));
     m_kind = kNoAttackKind;
     m_angle.reset();
+    resume(brain);
+}
+
+void FightGoal::resume(Brain& brain) {
+    // With a valid target, a kind for him and the re-target due at once.
+    Brain* target = brain.target();
+    if (target == nullptr || !validEnemy(brain, *target)) {
+        return;
+    }
+    m_kind = pickAttackFor(brain, *target, PickFilter::CanUse).value_or(kNoAttackKind);
+    m_angle.reset();
+    m_retargetAtMs = brain.nowMs();
 }
 
 void FightGoal::suspend(Brain& brain) { releasePlace(brain); }
@@ -233,7 +244,7 @@ GoalStatus FightGoal::process(Brain& brain) {
         return GoalStatus::Done;
     }
     // 5. Once a second, the re-target.
-    if (brain.nowMs() >= m_retargetAtMs) {
+    if (brain.nowMs() > m_retargetAtMs) {
         m_retargetAtMs = brain.nowMs() + kRetargetMs;
         Brain* before = target;
         retargetFromSectors(brain);
