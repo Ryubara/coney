@@ -218,18 +218,18 @@ TEST_CASE("may A attack now, and the ring he waits in", "[ai]") {
     // The taunt: not close in, and T far enough.
     ring.reason = check::kNoKind;
     ring.targetFacesMe = false;
-    int asked = 0;
-    const auto mayGesture = [&asked] {
-        ++asked;
+    int gestureAsks = 0;
+    const auto mayGesture = [&gestureAsks] {
+        ++gestureAsks;
         return true;
     };
     const auto roll = [] { return 50; };
     CHECK(coney::ai::repositionTaunts(ring, 3.0F, 0, mayGesture, roll));
-    CHECK(asked == 1);
+    CHECK(gestureAsks == 1);
     // Too near, or two humans holding slots on him: the gesture slot is not asked for.
     CHECK_FALSE(coney::ai::repositionTaunts(ring, 2.0F, 0, mayGesture, roll));
     CHECK_FALSE(coney::ai::repositionTaunts(ring, 3.0F, 2, mayGesture, roll));
-    CHECK(asked == 1);
+    CHECK(gestureAsks == 1);
     // No gesture slot; an armed man.
     CHECK_FALSE(coney::ai::repositionTaunts(ring, 3.0F, 0, [] { return false; }, roll));
     ring.targetEmptyHanded = false;
