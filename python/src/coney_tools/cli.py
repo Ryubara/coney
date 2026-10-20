@@ -16,6 +16,7 @@ from coney_tools import (
     build_cli,
     check_cli,
     clips,
+    coord_cli,
     issue_cli,
     mcp_serve,
     mission_cli,
@@ -303,6 +304,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_pcsx2_commands(groups)
     _add_clips_commands(groups)
     build_cli.add_parser(groups)
+    coord_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
 
@@ -847,6 +849,8 @@ def _run(args: argparse.Namespace) -> int:
         return _run_clips(args)
     if args.group == "build":
         return build_cli.run(args)
+    if args.group == "coord":
+        return coord_cli.run(args)
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
