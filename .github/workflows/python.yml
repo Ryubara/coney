@@ -114,3 +114,4 @@ jobs:
           case " $RESULTS " in
             *" failure "* | *" cancelled "*) exit 1 ;;
           esac
+# Re-registered after the repository was restored.
