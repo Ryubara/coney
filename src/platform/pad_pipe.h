@@ -37,7 +37,8 @@ struct PipeView {
 };
 
 /// One observation line's JSON (no newline) for `view` at `frame`: the player (feet, heading in degrees), the camera
-/// (eye and target), the other humans (`[x, y, alive, standing, enemy]`, enemy meaning of a gang hostile to player
+/// (eye and target), the other humans (`[x, y, alive, standing, enemy]`, standing meaning not grounded, so a held or
+/// mounted victim stands, as the original's state bits read; enemy meaning of a gang hostile to player
 /// 1's) and the world objects whose type name starts with one of `objectPrefixes` (`[type, x, y, shown]`, shown 1, 0,
 /// or -1 when no script said; objects removed, hidden or in a hand are left out). A car stereo still in or at its car
 /// is listed as a `dyn_carstereo` object, as the original keeps it among the world objects (docs/research/cars.md).

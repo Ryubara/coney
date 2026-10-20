@@ -19,7 +19,10 @@ from coney_tools.course import (
     Level99Street,
     Level99Tutorial,
     Observation,
+    RouteFollower,
+    RoutePoint,
     Seen,
+    load_route,
     pad_of,
     stick_towards,
 )
@@ -44,7 +47,7 @@ from coney_tools.events import (
 )
 from coney_tools.hooks import RING_BASE, HookError, RingReader, decode_text, entry_row, parse_hook
 from coney_tools.input_script import PadState
-from coney_tools.mission import load_mission, pad_line, parse_event_line, parse_observation, play
+from coney_tools.mission import load_mission, pad_line, parse_event_line, parse_observation, play, route_csv
 from coney_tools.pine import Read, Write
 
 REPO = Path(__file__).resolve().parents[2]
@@ -401,6 +404,40 @@ def test_the_street_course_tries_a_stereo_from_another_side_after_a_miss() -> No
     assert pad.sticks[2] < 0x80
 
 
+def test_a_route_is_cut_into_walks_and_actions_played_pad_for_pad() -> None:
+    rest = PadState(0, [0x80] * 4)
+    walk = [RoutePoint(i, 0.0, 0.1 * i, 0.0, rest) for i in range(21)]  # 2 m up +y
+    strike = [RoutePoint(21, 0.0, 2.0, 90.0, PadState(SQUARE, [0x80] * 4))] * 3
+    circle = [RoutePoint(24, 0.0, 2.0, 90.0, PadState(0, [0x80, 0x80, 0xFF, 0x80]))] * 2
+    course = RouteFollower(walk + strike + circle)
+    assert [kind for kind, _, _ in course.plan] == ["walk"] * 5 + ["act"]
+    assert len(course.plan[-1][2]) == 5
+    # At the action's start, facing its heading: the recorded pads come back in order.
+    course.index = len(course.plan) - 1
+    course.see(_seen(player=(0.0, 2.0, 0.0, 90.0)), [])
+    pads = [course.pad() for _ in range(5)]
+    assert [pad.buttons for pad in pads] == [SQUARE] * 3 + [0, 0] and pads[-1].sticks[2] == 0xFF
+    assert len(load_route("step,x,y,z,heading,buttons,lx,ly\n0,1.0,2.0,0.0,45.0,0080,128,0\n")) == 1
+
+
+def test_the_route_follower_walks_to_the_next_waypoint() -> None:
+    rest = PadState(0, [0x80] * 4)
+    course = RouteFollower([RoutePoint(0, 0.0, 0.0, 0.0, rest), RoutePoint(1, 0.0, 3.0, 0.0, rest)])
+    course.index = 1
+    course.see(_seen(), [])
+    assert course.pad().sticks[3] < 0x80  # up, away from the camera
+
+
+def test_the_route_follower_lets_its_lead_play_until_the_start_event() -> None:
+    rest = PadState(0, [0x80] * 4)
+    lead = Level99Street()
+    course = RouteFollower([RoutePoint(0, 0.0, 3.0, 0.0, rest)], lead.objects, lead, ("call", "CarSpawnRadio"))
+    course.see(_seen(), [])
+    assert course.status().startswith("lead:")
+    course.see(_seen(), [Event(1, "call", "CarSpawnRadio", "141")])
+    assert course.status().startswith("route item 0")
+
+
 # --- the playthrough ----------------------------------------------------------------------------------------------
 
 
@@ -444,6 +481,14 @@ def test_a_playthrough_stops_a_little_after_its_end_event() -> None:
     assert result.finished and result.updates == 60
     unfinished = play(FakeGame(done=5000), Level99Tutorial(), _rules(), 100, ("checkpoint", "SetCheckPoint:2"))
     assert not unfinished.finished and unfinished.updates == 100
+
+
+def test_a_playthrough_keeps_the_route_of_each_update_in_play() -> None:
+    result = play(FakeGame(done=5000), Level99Tutorial(), _rules(), 3, None)
+    assert [row.step for row in result.route] == [0, 1, 2]
+    lines = route_csv(result.route).splitlines()
+    assert lines[0] == "step,x,y,z,heading,buttons,lx,ly" and len(lines) == 4
+    assert lines[1].startswith("0,")
 
 
 def test_the_repository_mission_scenarios_load() -> None:

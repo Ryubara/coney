@@ -692,7 +692,8 @@ the Coney side of a [differential playthrough](research-workflow.md#differential
 `--pad-pipe` lets a driver program play player 1 by what it sees, in lock step: before each update Coney
 writes one line `@obs {json}` to standard output (the update before's observation: `play`, then while a level is in
 play the player's feet and heading, the camera's eye and target, the other humans as `[x, y, alive, standing,
-enemy]` and the observed world objects as `[type, x, y, shown]`, with car stereos among them), then reads lines from
+enemy]` (standing: not on the ground, so a held or mounted human stands, as the original's state bits say) and the
+observed world objects as `[type, x, y, shown]`, with car stereos among them), then reads lines from
 standard input until a pad: `observe PREFIX...` chooses the world object types observed from then on, and `pad
 BUTTONS RX RY LX LY` (the buttons in hexadecimal, as an input script's masks, then the four stick bytes, 0x80
 centred) is the pad of the update. With `--play-level` the first observation is of the level's first update of

@@ -752,6 +752,16 @@ def _add_trace_commands(groups: Any) -> None:
     mission.add_argument("--state", help="the original: another state file (or slot:N) to start from")
     mission.add_argument("--agent", help="the original: your id; runs under your PCSX2 claim")
     mission.add_argument("--updates", type=int, help="play at most this many updates (default: the scenario's)")
+    mission.add_argument(
+        "--follow",
+        type=Path,
+        help="Coney: follow this recorded route (an original run's .route.csv) instead of the scenario's course",
+    )
+    mission.add_argument(
+        "--follow-from",
+        metavar="EVENT",
+        help='with --follow: the course plays up to this event ("kind name", "call CarSpawnRadio"), then the route',
+    )
     _add_pcsx2_flags(mission)
     events = commands.add_parser("events-diff", help="compare two event logs in order; exit 1 when Coney lacks some")
     events.add_argument("original", type=Path, help="the original's event log (trace mission --side original)")
@@ -924,7 +934,9 @@ def _run(args: argparse.Namespace) -> int:
             )
         if args.command == "mission":
             if args.side == "coney":
-                return mission_cli.run_mission_coney(args.scenario, args.out, args.coney, args.disc, args.updates)
+                return mission_cli.run_mission_coney(
+                    args.scenario, args.out, args.coney, args.disc, args.updates, args.follow, args.follow_from
+                )
             flags = (args.pcsx2_dir, args.iso, args.scratch)
             return mission_cli.run_mission_original(
                 args.scenario, args.out, args.state, flags, args.agent, args.updates

@@ -13,10 +13,15 @@ walks into the objective markers of the first lesson, then to the nearest enemy 
 the bats of lesson 9 included, until checkpoint 2. It is the policy of Coney's own CourseDriver
 (tests/support/level99_course.h), written again over the observation; a lesson's moves are the play-through
 script's.
+
+`follow` (RouteFollower) plays another run's recorded route instead: the original's, so that Coney's player goes
+where the original's went and what is heard on the way can be compared.
 """
 
 from __future__ import annotations
 
+import csv
+import io
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -496,6 +501,173 @@ class Level99Street(Course):
             return pad_of()
         self.angle += math.radians(self.TURN)
         return pad_of(0, round(100 * math.cos(self.angle)), round(100 * math.sin(self.angle)))
+
+
+@dataclass(frozen=True)
+class RoutePoint:
+    """One update of a recorded route (a playthrough's `.route.csv`): the player's feet and heading, and the pad."""
+
+    step: int
+    x: float
+    y: float
+    heading: float
+    pad: PadState
+
+
+def load_route(text: str) -> list[RoutePoint]:
+    """A route from its CSV (coney_tools.mission.route_csv())."""
+    points = []
+    for row in csv.DictReader(io.StringIO(text)):
+        pad = PadState(int(row["buttons"], 16), [0x80, 0x80, int(row["lx"]), int(row["ly"])])
+        points.append(RoutePoint(int(row["step"]), float(row["x"]), float(row["y"]), float(row["heading"]), pad))
+    return points
+
+
+class RouteFollower(Course):
+    """Another run's route, followed on this game, so where the player goes (and so what is heard on the way) matches
+    it. The route is cut into walks and actions: a walk is a waypoint each WAYPOINT metres of the recorded travel,
+    reached with the stick at WALK; an action is a stretch of updates in which the recorded player pressed a button
+    or turned the stick without moving (a strike, a theft's stick circles), played back pad for pad once the player
+    stands within AT of where it began and has turned to its heading. Updates out of play hold the pad at rest, so a
+    scene or a load does not use up the route. With a `lead` course and a `start` event (kind and name), the lead
+    plays until that event, and the route (cut to start where the recorded run saw it) from then on: the stretch
+    before it, such as a store's loot that one game's start state has half done, is played by the course."""
+
+    name = "follow"
+    #: Plan metres between waypoints, close enough to one, and to an action's start; the headway that counts as a move.
+    WAYPOINT, REACH, AT, STILL = 0.5, 0.35, 0.25, 0.02
+    #: Stick percentages: walking and turning. Updates without headway before a waypoint counts as reached; degrees of
+    #: heading close enough before an action; updates of turning at most; neutral updates an action may contain.
+    WALK, AIM, STUCK, FACING, TURNS, GAP = 60, 25, 40, 15.0, 30, 60
+
+    def __init__(
+        self,
+        route: Sequence[RoutePoint],
+        objects: Sequence[str] = (),
+        lead: Course | None = None,
+        start: tuple[str, str] | None = None,
+    ) -> None:
+        """Follow `route`, observing `objects` (the scenario's course's, so the observations stay alike); `lead`
+        plays until the event `start`."""
+        self.objects = tuple(objects)
+        self.lead = lead
+        self.start = start
+        self.following = lead is None or start is None
+        self.observation = Observation(0)
+        self.frame = 0
+        self.plan = self._cut(list(route))
+        self.index = 0
+        self.playing: list[PadState] = []
+        self.turned = 0
+        self.walk_from: tuple[float, float, int] | None = None
+
+    @classmethod
+    def _cut(cls, route: list[RoutePoint]) -> list[tuple[str, RoutePoint, list[PadState]]]:
+        """The route as ("walk", waypoint, []) and ("act", start, pads) items in order."""
+
+        def still(i: int) -> bool:
+            # The player does not move between update i and the next.
+            if i + 1 >= len(route):
+                return True
+            return math.hypot(route[i + 1].x - route[i].x, route[i + 1].y - route[i].y) < cls.STILL
+
+        def stick_out(i: int) -> bool:
+            # The left stick away from rest.
+            sticks = route[i].pad.sticks
+            return abs(sticks[2] - 0x80) > 32 or abs(sticks[3] - 0x80) > 32
+
+        def acting(i: int) -> bool:
+            # A button, or the stick out while standing still: an action, not a walk.
+            return bool(route[i].pad.buttons) or (stick_out(i) and still(i))
+
+        def walking(i: int) -> bool:
+            # The stick out and the player moving: a walk, which ends an action.
+            return not route[i].pad.buttons and stick_out(i) and not still(i)
+
+        plan: list[tuple[str, RoutePoint, list[PadState]]] = []
+        last: RoutePoint | None = None
+        i = 0
+        while i < len(route):
+            if acting(i):
+                # The action runs on through the pads at rest after it (a strike's lunge moves the player with the
+                # stick at rest) until a walk starts or GAP updates pass at rest.
+                start, end, quiet = i, i, 0
+                while end + 1 < len(route) and quiet < cls.GAP and not walking(end + 1):
+                    end += 1
+                    quiet = 0 if acting(end) else quiet + 1
+                end -= quiet
+                plan.append(("act", route[start], [p.pad for p in route[start : end + 1]]))
+                last = route[end]
+                i = end + 1
+                continue
+            point = route[i]
+            if last is None or math.hypot(point.x - last.x, point.y - last.y) >= cls.WAYPOINT:
+                plan.append(("walk", point, []))
+                last = point
+            i += 1
+        return plan
+
+    def see(self, observation: Observation, events: Sequence[Event]) -> None:
+        """Take in the update; the lead's turn ends with the start event."""
+        self.observation = observation
+        self.frame += 1
+        if self.lead is not None and (not self.following or self.index >= len(self.plan)):
+            self.lead.see(observation, events)
+        if not self.following and self.lead is not None:
+            self.following = any((event.kind, event.name) == self.start for event in events)
+
+    def status(self) -> str:
+        """How far along the route (or the lead's status)."""
+        if not self.following and self.lead is not None:
+            return f"lead: {self.lead.status()}"
+        feet = self.observation.player
+        return f"route item {self.index} of {len(self.plan)}; feet {feet[0]:.1f},{feet[1]:.1f}"
+
+    def _arrived(self, to: tuple[float, float], reach: float) -> bool:
+        """Within `reach` of `to`, or no headway for STUCK updates of walking (a wall, a car)."""
+        feet = self.observation.player
+        if math.hypot(to[0] - feet[0], to[1] - feet[1]) <= reach:
+            self.walk_from = None
+            return True
+        anchor = self.walk_from
+        if anchor is None or math.hypot(feet[0] - anchor[0], feet[1] - anchor[1]) > 0.2:
+            self.walk_from = (feet[0], feet[1], self.frame)
+        elif self.frame - anchor[2] > self.STUCK:
+            self.walk_from = None
+            return True
+        return False
+
+    def pad(self) -> PadState:
+        """The pad for the next update: the lead's, an action's next pad, or a step towards the next item."""
+        if not self.following and self.lead is not None:
+            return self.lead.pad()
+        if not self.observation.play:
+            return pad_of()
+        if self.playing:
+            return self.playing.pop(0)
+        if self.index >= len(self.plan):
+            # The route is done: the lead, when there is one, plays on to the scenario's end.
+            return self.lead.pad() if self.lead is not None else pad_of()
+        kind, point, pads = self.plan[self.index]
+        to = (point.x, point.y)
+        if kind == "walk":
+            if self._arrived(to, self.REACH):
+                self.index += 1
+                return self.pad()
+            return pad_of(0, *stick_towards(self.observation, to, self.WALK))
+        if not self._arrived(to, self.AT):
+            return pad_of(0, *stick_towards(self.observation, to, self.WALK))
+        # Turn to the recorded heading (0 degrees faces +y), a few updates at most, then play the action.
+        turn = (point.heading - self.observation.player[3] + 180.0) % 360.0 - 180.0
+        if abs(turn) > self.FACING and self.turned < self.TURNS:
+            self.turned += 1
+            feet = self.observation.player
+            ahead = (feet[0] - math.sin(math.radians(point.heading)), feet[1] + math.cos(math.radians(point.heading)))
+            return pad_of(0, *stick_towards(self.observation, ahead, self.AIM))
+        self.turned = 0
+        self.index += 1
+        self.playing = list(pads)
+        return self.playing.pop(0)
 
 
 #: The courses by name.
