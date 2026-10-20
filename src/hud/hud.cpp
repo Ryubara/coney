@@ -347,7 +347,7 @@ void Hud::update(const HudFrame& frame) {
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;
     // The credits scroll in the overlay pass, whatever the HUD's visibility and the letterbox.
-    m_credits.update();
+    m_credits->update();
     // 0. The letterbox's step: a move (in or out) arms the restore, the first step with the bars out stamps it, the
     // next shows both panels and the HUD (docs/research/hud.md#who-shows-the-hud-again).
     m_letterbox = frame.letterbox;
@@ -587,7 +587,7 @@ void Hud::renderWarCommands(const HudCanvas& canvas) const {
 }
 
 void Hud::render(const HudCanvas& canvas) const {
-    m_credits.render(canvas.text);
+    m_credits->render(canvas.text);
     if (!m_visible || m_letterbox) {
         return;
     }

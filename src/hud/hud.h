@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -230,8 +231,8 @@ class Hud {
     [[nodiscard]] const HintBox& hints() const { return m_hints; }
     /// The end credits (HUD `+0xea30`, docs/research/frontend.md#fn-credits): stepped by update() and drawn by
     /// render() even while the HUD is hidden or letterboxed, as the overlay pass draws them.
-    [[nodiscard]] Credits& credits() { return m_credits; }
-    [[nodiscard]] const Credits& credits() const { return m_credits; }
+    [[nodiscard]] Credits& credits() { return *m_credits; }
+    [[nodiscard]] const Credits& credits() const { return *m_credits; }
     /// `HUDSetTutorialCallback(name)`: the Lua function the combat tutorial wants called, with the attacker's anim id,
     /// for every hit player 1 lands or has blocked (`Tutorial_CallCallback`, `0x001ce9a8`, called from combat, which
     /// reads it here); empty for none. Only nil (and unloading the level) clears it.
@@ -467,7 +468,8 @@ class Hud {
     Checklist m_checklist;
     ScrollInQueue m_scrollIn;
     HintBox m_hints;
-    Credits m_credits;
+    // On the heap: its widgets cannot move, and the HUD is moved whole when a level resets it.
+    std::unique_ptr<Credits> m_credits = std::make_unique<Credits>();
     std::string m_tutorialCallback;
     std::optional<Announcement> m_announcement; // HUD +0xe340
     std::optional<Announcement> m_centred;      // HUD +0xe150
