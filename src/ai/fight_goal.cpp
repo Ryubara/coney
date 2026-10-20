@@ -150,6 +150,7 @@ void retargetFromSectors(Brain& brain) {
         brain.findGoal(GoalType::GrabTarget) != nullptr) {
         return;
     }
+    const TargetCauseScope cause(brain, TargetCause::Front);
     brain.setTarget(ahead, true);
 }
 

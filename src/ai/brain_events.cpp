@@ -53,6 +53,7 @@ bool fightHitter(Brain& brain, Brain& hitter) {
     if (busy(brain)) {
         return true;
     }
+    const TargetCauseScope cause(brain, TargetCause::HitBack);
     if (brain.findGoal(GoalType::Fight) != nullptr) {
         brain.addEnemy(hitter);
         brain.setTarget(&hitter);
@@ -125,7 +126,10 @@ bool sharedEvent(Brain& brain, const BrainEvent& event) {
         if (brain.type() == BrainType::Cop) {
             return false;
         }
-        brain.setTarget(nullptr);
+        {
+            const TargetCauseScope cause(brain, TargetCause::Order); // the original buckets the reset as an order
+            brain.setTarget(nullptr);
+        }
         brain.clearActions();
         brain.clearGoals();
         brain.clearEnemies();
@@ -189,6 +193,8 @@ bool answerEvent(Brain& brain, const BrainEvent& event) {
 }
 
 void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value, bool newEnemy) {
+    // Counted for the trace at the call, as the original's hook on the function's entry logs it, however many hear.
+    caller.countHelpCall();
     const std::vector<std::unique_ptr<Brain>>* peers = caller.peers();
     if (peers == nullptr) {
         return;
@@ -257,6 +263,7 @@ void onViolenceSeen(Brain& brain, const BrainEvent& event) {
     if (side == nullptr || side == &brain || !Brain::fightable(*side)) {
         return;
     }
+    const TargetCauseScope cause(brain, TargetCause::Help);
     if (brain.findGoal(GoalType::Fight) != nullptr) {
         brain.setTarget(side);
     } else {
@@ -278,6 +285,7 @@ void makeGangsEnemies(const Brain& brain, const Brain& other) {
 }
 
 void sendHelper(Brain& brain, Brain& side) {
+    brain.countHelperSent();
     static_cast<void>(brain.pushGoal(std::make_unique<HelpRespondGoal>(side)));
 }
 

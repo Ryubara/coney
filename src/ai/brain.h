@@ -50,6 +50,31 @@ enum class BrainType : std::uint8_t {
     CivilianDi = 6, ///< The `civl_co_di` kind.
 };
 
+/// Why a brain's target changed, as the original's `Brain_SetTarget` callers tell apart
+/// (docs/research/gang-fights.md#set-target-causes), counted per brain for the all-humans trace (ai::FightTracer).
+/// Coney's own bookkeeping: the original keeps no such count; its recordings log each call's return address.
+enum class TargetCause : std::uint8_t {
+    Other,     ///< Any other caller (scripts, a tactic's own answer to an event, a target that left the scene).
+    Pick,      ///< The AI pick of the best enemy (`Brain_PickBestEnemy`, its clear and its set), Melee's own clear,
+               ///< Spectate's end and FollowAndAttack's clear of a pick beyond 60 m of the leader.
+    Front,     ///< The fight goal's forced re-target to the man in front (`FightGoal_Process`).
+    HitBack,   ///< Hit back at the attacker (`GangBrain_OnEvent` event 1, directly or through `Brain_Fight`).
+    Help,      ///< A help call answered (`Brain_OnViolenceSeen`, event 20) or TacticAttack's violence handler.
+    Engage,    ///< The engage goal's re-target (`EngageEnemyGoal_Process`).
+    Displaced, ///< Lost to a closer attacker taking the last attack slot (`Brain_ClaimAttackSlot`).
+    Reaction,  ///< Its own state (stunned, wounded, knocked out, down) or a grab's or mount's partner.
+    Order,     ///< A tactic starting, the reset (event 2) or going for an item (`Human_DropTarget` from
+               ///< `Tactic_Start`, `GetItemGoal_Start`). The original's drop at Melee's end counts here too; Coney's
+               ///< keeps the target.
+};
+/// The number of TargetCause values.
+inline constexpr std::size_t kTargetCauseCount = 9;
+static_assert(static_cast<std::size_t>(TargetCause::Order) + 1 == kTargetCauseCount,
+              "kTargetCauseCount must follow TargetCause's last value");
+/// A TargetCause's name in the trace (`other`, `pick`, `front`, `hit_back`, `help`, `engage`, `displaced`,
+/// `reaction`, `order`).
+[[nodiscard]] const char* targetCauseName(TargetCause cause);
+
 /// The brain type of behaviour byte `behaviour` (`CfgChar`'s second argument, class `+0x11a`); a value outside 0-6
 /// gives Gang (**Coney choice**).
 [[nodiscard]] BrainType brainTypeOf(int behaviour);
@@ -320,6 +345,16 @@ class Brain {
     [[nodiscard]] const Goal* reactionGoal() const { return m_reaction.get(); }
     /// Times the goals ran out (event `0xd`).
     [[nodiscard]] int goalsRanOut() const { return m_goalsRanOut; }
+    /// Help calls its human made (broadcastHelpCall()) and HelpRespond goals sent to it (sendHelper()), counted for the
+    /// all-humans trace (ai::FightTracer). Coney's own counts: the original keeps none; its recordings log the same
+    /// calls with hooks (docs/research/rumble.md#gang-battle-metrics rule 11).
+    [[nodiscard]] int helpCalls() const { return m_helpCalls; }
+    /// Counts one help call its human made (broadcastHelpCall() calls it on entry, however many hear it).
+    void countHelpCall() { ++m_helpCalls; }
+    /// The HelpRespond goals sent to it so far (helpCalls() above).
+    [[nodiscard]] int helpersSent() const { return m_helpersSent; }
+    /// Counts one HelpRespond goal sent to it (sendHelper() calls it).
+    void countHelperSent() { ++m_helpersSent; }
 
     // --- The action queue.
 
@@ -390,6 +425,13 @@ class Brain {
     /// (docs/research/ai.md#attack-places).
     /// @orig 0x0028cfe0 Brain_SetTarget (unknown)
     void setTarget(Brain* target, bool force = false);
+    /// The cause a target change is counted under (targetChanges()); TargetCause::Other unless a TargetCauseScope
+    /// names one.
+    [[nodiscard]] TargetCause targetCause() const { return m_targetCause; }
+    /// Makes `cause` the one later target changes are counted under; TargetCauseScope sets it and puts it back.
+    void setTargetCause(TargetCause cause) { m_targetCause = cause; }
+    /// The changes of target so far by cause (a call that keeps the same target is not one), for the trace.
+    [[nodiscard]] const std::array<int, kTargetCauseCount>& targetChanges() const { return m_targetChanges; }
     /// The target (`+0x124`); null when none.
     [[nodiscard]] Brain* target() { return m_target; }
     [[nodiscard]] const Brain* target() const { return m_target; }
@@ -629,6 +671,10 @@ class Brain {
     float m_meleeNear = kDefaultMeleeNear;         // +0x13c
     float m_meleeFar = kDefaultMeleeFar;           // +0x140
     int m_goalsRanOut = 0;
+    int m_helpCalls = 0;                                  // Coney's count for the trace
+    int m_helpersSent = 0;                                // Coney's count for the trace
+    std::array<int, kTargetCauseCount> m_targetChanges{}; // Coney's count for the trace
+    TargetCause m_targetCause = TargetCause::Other;
     anim::Vec3 m_moveAim;                     // +0x90
     float m_moveAimRadius = 0.0F;             // +0x118
     std::optional<std::uint32_t> m_routeNode; // RouteState_CurrentNode of +0xe0
@@ -650,6 +696,24 @@ class Brain {
     bool m_attackable = true;   // +0x11f
     bool m_hittingBack = false; // +0x2e5
     bool m_keepsToTurf = true;  // +0x14d
+};
+
+/// Names the cause of the target changes `brain` makes while it lives (Brain::targetChanges()), and puts the cause
+/// before it back when it ends, so a nested cause (a hit back inside a pick) wins only for its own changes.
+class TargetCauseScope {
+  public:
+    TargetCauseScope(Brain& brain, TargetCause cause) : m_brain(brain), m_before(brain.targetCause()) {
+        brain.setTargetCause(cause);
+    }
+    ~TargetCauseScope() { m_brain.setTargetCause(m_before); }
+    TargetCauseScope(const TargetCauseScope&) = delete;
+    TargetCauseScope& operator=(const TargetCauseScope&) = delete;
+    TargetCauseScope(TargetCauseScope&&) = delete;
+    TargetCauseScope& operator=(TargetCauseScope&&) = delete;
+
+  private:
+    Brain& m_brain;
+    TargetCause m_before;
 };
 
 /// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through

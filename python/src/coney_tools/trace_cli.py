@@ -183,10 +183,10 @@ def _gang_labels(order: list[int] | None, analysis: fight_report.Analysis) -> di
 def _fight_runs(
     paths: list[Path], order: list[int] | None, settings: fight_report.Settings
 ) -> list[dict[str, fight_report.Metric]]:
-    """The metrics of each trace in `paths`, the gangs labelled in `order`."""
+    """The metrics of each trace in `paths`, the sides being the gangs of `order` (labelled in that order)."""
     runs = []
     for path in paths:
-        analysis = fight_report.analyse(fight_report.load_fight_trace(path), *settings)
+        analysis = fight_report.analyse(fight_report.load_fight_trace(path), *settings, sides=order)
         runs.append(fight_report.scalars(analysis, _gang_labels(order, analysis)))
     return runs
 
@@ -203,16 +203,18 @@ def _name_goals() -> None:
 
 def run_fight_report(
     traces: list[Path],
-    original: list[Path],
-    coney: list[Path],
+    original: list[list[Path]],
+    coney: list[list[Path]],
     options: tuple[fight_report.Settings, bool, float],
     gangs: tuple[list[int] | None, list[int] | None],
 ) -> int:
     """`trace fight-report`: the metrics of each trace, or (with `original` and `coney`) the two sets compared.
 
-    `options` is analyse()'s settings (updates a second, the humans to leave out, the engage distance, the first
-    step), whether to print each human, and the comparison's margin. Returns 1 when a compared metric is outside the
-    original's spread, else 0.
+    `original` and `coney` hold one group of runs per orientation (which gang is side 1), paired in order: each
+    orientation of Coney's is compared against the original's spread over its own orientation
+    (docs/research/rumble.md#gang-battle-metrics). `options` is analyse()'s settings (updates a second, the humans to
+    leave out, the engage distance, the first step), whether to print each human, and the comparison's margin.
+    Returns 1 when a compared metric is outside the original's spread, else 0.
     """
     settings, per_human, margin = options
     try:
@@ -222,15 +224,25 @@ def run_fight_report(
         if original:
             if traces:
                 raise ConfigError("name either traces to report or --original and --coney to compare, not both")
-            runs_original = _fight_runs(original, gangs[0], settings)
-            runs_coney = _fight_runs(coney, gangs[1], settings)
-            comparisons = fight_report.compare_runs(runs_original, runs_coney, margin)
-            print(fight_report.report_compare(comparisons, (len(original), len(coney))))
-            return 1 if any(c.flag for c in comparisons) else 0
+            if len(original) != len(coney):
+                raise ConfigError(
+                    f"{len(original)} --original groups and {len(coney)} --coney groups: "
+                    "give one of each per orientation"
+                )
+            flagged = False
+            for index, (theirs, ours) in enumerate(zip(original, coney, strict=True), start=1):
+                runs_original = _fight_runs(theirs, gangs[0], settings)
+                runs_coney = _fight_runs(ours, gangs[1], settings)
+                comparisons = fight_report.compare_runs(runs_original, runs_coney, margin)
+                if len(original) > 1:
+                    print(f"orientation {index}:")
+                print(fight_report.report_compare(comparisons, (len(theirs), len(ours))))
+                flagged = flagged or any(c.flag for c in comparisons)
+            return 1 if flagged else 0
         if not traces:
             raise ConfigError("name a trace to report, or --original and --coney to compare")
         for path in traces:
-            analysis = fight_report.analyse(fight_report.load_fight_trace(path), *settings)
+            analysis = fight_report.analyse(fight_report.load_fight_trace(path), *settings, sides=gangs[0])
             print(fight_report.report_run(analysis, per_human, _gang_labels(gangs[0], analysis) if gangs[0] else None))
     except fight_report.FightTraceError as error:
         raise ConfigError(str(error)) from error
