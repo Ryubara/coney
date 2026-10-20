@@ -1,6 +1,7 @@
-# Keep the dependencies' sources (SDL3, librw, Catch2, Dear ImGui, FFmpeg) between runs: one cache entry per OS and
-# version of cmake/deps.cmake, shared by every job and preset on that OS. CONEY_DEPS_SOURCES tells cmake/deps.cmake
-# to fetch into build/_deps-sources/<name> and to use a complete copy found there without downloading.
+# Keep the dependencies' sources (SDL3, librw, Catch2, Dear ImGui, ENet, FFmpeg) between runs: one cache entry per OS
+# and version of cmake/deps.cmake, shared by every job and preset on that OS. CONEY_DEPS_SOURCES tells
+# cmake/deps.cmake to fetch into build/_deps-sources/<name> and to use a complete copy found there without
+# downloading.
 #
 # Only the sources: build/<preset>/_deps also holds the dependencies' build trees, compiled by one job's compiler and
 # flags, which a fresh job rebuilds anyway (Ninja has no log of them), and that made eight ~400 MB entries of one

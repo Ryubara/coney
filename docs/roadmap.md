@@ -22,7 +22,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Script mods](#script-mods) | not started |
 | [Xbox assets (optional)](#xbox-assets-optional) | in progress |
 | [The whole game](#the-whole-game) | not started |
-| [Online multiplayer](#online-multiplayer) | not started |
+| [Online multiplayer](#online-multiplayer) | in progress |
 
 ## Current priorities {#priorities}
 
@@ -247,9 +247,15 @@ from Not Started to Approved (the user's play-test).
 
 ## Online multiplayer {#online-multiplayer}
 
-After the whole game: online play, from a few friends to large brawls with dozens of players on one server. Nothing
-in the faithful game changes for it, but the engine is built so that it stays possible. The direction below is the
-current thinking, decided only when the milestone starts.
+Online play, from a few friends to large brawls with dozens of players on one server. Nothing in the faithful game
+changes for it. Planned for after the whole game, it was started early by a maintainer decision on 2026-10-20, with
+ENet as its UDP transport (approved the same day; [Licences](repo:LEGAL.md#licences)). The design and its steps are
+[Network multiplayer](guides/multiplayer.md): a listen server in the host's game, server-authoritative, input
+commands up and snapshots down, clients interpolating. The thinking below set that direction.
+
+- Done: the network library `coney_net` (bit stream, transports, link conditioner, protocol, the server and client
+  sessions with their handshake and timeouts) and the ENet transport, tested over an in-memory loopback and over UDP
+  on 127.0.0.1.
 
 - **Client and server.** The server runs the one true simulation at a fixed tick and never waits for a slow or
   lagging client. Clients send inputs, which are exactly what a pad or a brain writes to a human's per-player record
