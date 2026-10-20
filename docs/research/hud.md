@@ -1021,11 +1021,11 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **The gang-count indicator** (`repo:src/hud/num_indicator.h`) as [the
   indicator](hud-functions-lua.md#gang-count-indicator) says: the
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record
-  `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's living members as
-  tally marks from x 0.125, turned 3.3 rad, recounted each update; German's layout moves both. **Coney's readings**:
-  living is health left, which differs from the original: it counts standing members, `Gang_CountLiving(gang, 1)`,
-  not down or dead and regardless of health ([what the count counts](hud-functions-lua.md#gang-count-what), issue #456);
-  at most nine marks; the shadows sort at the banners' shadow depth. Players 0 and 1's go to their [panel
+  `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's standing members as
+  tally marks from x 0.125, turned 3.3 rad, recounted each update; German's layout moves both. Its count is the
+  standing members, `Gang_CountLiving(gang, 1)` (`hudGangCount()`, `repo:src/ai/gangs.h`; [what the count
+  counts](hud-functions-lua.md#gang-count-what)), where dead and dying are Coney's no health left. **Coney's
+  readings**: at most nine marks; the shadows sort at the banners' shadow depth. Players 0 and 1's go to their [panel
   tallies](hud-functions-lua.md#panel-tally) (`PlayerPanel::tallyMarkPlace()`): the same marks from the panel's base in
   the rage colour at the panel's fade, dropped below the money and counters.
 - **In play**: the play mode steps the HUD with player 1's rage, score, money and item counts (flash, spray paint,

@@ -2050,6 +2050,12 @@ subsystem = "GameModes"
 size = 80
 
 [[function]]
+address = 0x0016a458
+name = "Gang_GetHeadCountById"
+subsystem = "GameModes"
+size = 80
+
+[[function]]
 address = 0x0016a4e8
 name = "Gang_IsGoodToGoById"
 subsystem = "GameModes"
@@ -4786,6 +4792,12 @@ size = 72
 [[function]]
 address = 0x00227d28
 name = "Human_IsInSceneState"
+subsystem = "Human"
+size = 80
+
+[[function]]
+address = 0x00227e60
+name = "Human_IsDownOrDead"
 subsystem = "Human"
 size = 80
 

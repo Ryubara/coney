@@ -302,9 +302,12 @@ clip groups, `canFlee` and flee count (`repo:src/ai/gangs.h`). `Tactic_Start` pu
 fighting state and calms the gang of a tactic of type `0x12` or above. The flight moved from the hub's per-update
 check (`ScriptedHub`) into the attack tactic's event 18; the hub hands the gangs its categories and flee shares
 (tested in `repo:tests/ai/scripted_hub_test.cpp`). The living count of Start and the spacing is `Gang::living()`:
-every member, the dead included, since a Coney member's handle resolves until the human is deleted. That is not the
-script binding's living head count (`ScriptedBrains::gangHeadCount`, members with health left, Coney's reading) nor
-the HUD's gang counter, which also counts health. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins left:
+every member, the dead included, since a Coney member's handle resolves until the human is deleted. The script
+binding's head count (`ScriptedBrains::gangHeadCount`, its `living` the second argument of `Gang_CountLiving`) reads
+`Gangs::countLiving()`; its `living` true form and every HUD gang count (`hudGangCount()`, passing 1) count the
+members for whom `humanIsDownOrDead()` is false: not dead, dying, knocked out or wounded (the last two with health
+left too), while a member only knocked down stays ([HUD](hud-functions-lua.md#gang-count-what)). Tests:
+`repo:tests/ai/tactic_attack_test.cpp`, `repo:tests/ai/gangs_test.cpp`. Stand-ins left:
 
 - "Cuffed" in the flight is the human's scripted arrested state.
 - The clip groups keep only their clip counts, and nothing plays the groups yet; the random three of five taunts is

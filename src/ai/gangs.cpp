@@ -34,6 +34,22 @@ bool downOrDead(const Brain& brain) {
     return brain.human().fighter().health().depleted() || brain.human().state() == human::TargetState::Grounded;
 }
 
+bool humanIsDownOrDead(const Brain& brain) {
+    // The mask 0x180050000 as Coney models it: dead and dying are no health left, knocked out and wounded are the
+    // script's states. Knocked down alive (on the ground, 0x80000) and arrested (0x20000) are not in the mask, so
+    // those members stand.
+    const human::Human& human = brain.human();
+    return human.fighter().health().depleted() || human.script().knockedOut || human.script().wounded;
+}
+
+int Gang::countLiving(bool standingOnly) const {
+    if (!standingOnly) {
+        return static_cast<int>(m_members.size());
+    }
+    return static_cast<int>(
+        std::ranges::count_if(m_members, [](const Brain* member) { return !humanIsDownOrDead(*member); }));
+}
+
 int Gang::standing() const {
     return static_cast<int>(std::ranges::count_if(m_members, [](const Brain* member) { return !downOrDead(*member); }));
 }
@@ -209,6 +225,16 @@ Gang* Gangs::find(int id) {
 }
 
 const Gang* Gangs::find(int id) const { return const_cast<Gangs*>(this)->find(id); }
+
+int Gangs::countLiving(int id, bool standingOnly) const {
+    const Gang* gang = find(id);
+    return gang != nullptr ? gang->countLiving(standingOnly) : 0;
+}
+
+std::function<int(int gang)> hudGangCount(const Gangs& gangs) {
+    // Every HUD count of a gang passes 1: the standing members (docs/research/hud-functions-lua.md#gang-count-what).
+    return [&gangs](int gang) { return gangs.countLiving(gang, true); };
+}
 
 void Gangs::addMember(int id, Brain& brain) {
     Gang* gang = find(id);

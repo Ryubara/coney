@@ -51,8 +51,8 @@ struct HudFrame {
     /// Whether each player's camera ignores the right stick: a fixed, locked, transition or rail camera, or camera
     /// switch 0 off (the fixed-camera icon, docs/research/hud.md#hud-fixed-cam-icon).
     std::array<bool, kPlayers> cameraIgnoresStick{};
-    /// How many of gang `gang`'s members are alive (`0x00166158`), which the gang-count indicators show; empty counts
-    /// none.
+    /// How many of gang `gang`'s members are standing (`Gang_CountLiving(gang, 1)`), which the gang-count
+    /// indicators show; empty counts none.
     std::function<int(int gang)> gangLiving;
 };
 

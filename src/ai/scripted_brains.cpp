@@ -659,17 +659,12 @@ void ScriptedBrains::gangSuspend(int gang, bool suspended) {
 }
 
 int ScriptedBrains::gangHeadCount(int gang, bool living) {
-    const Gang* found = m_owner->gangs().find(gang);
-    if (found == nullptr) {
+    // `GangGetHeadCount(gang, living)` is `Gang_CountLiving(gang, living)`: every member whose handle resolves, or
+    // only the standing ones (Gang::countLiving()); the humans created for the gang during a hold count either way.
+    if (m_owner->gangs().find(gang) == nullptr) {
         return 0;
     }
-    const int held = heldMembers(gang);
-    if (!living) {
-        return static_cast<int>(found->members().size()) + held;
-    }
-    return held + static_cast<int>(std::ranges::count_if(found->members(), [](const Brain* member) {
-               return !member->human().fighter().health().depleted();
-           }));
+    return m_owner->gangs().countLiving(gang, living) + heldMembers(gang);
 }
 
 int ScriptedBrains::gangStandingCount(int gang) {

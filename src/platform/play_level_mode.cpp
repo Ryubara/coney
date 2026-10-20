@@ -638,18 +638,10 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
             cameras->current().kind == camera::CameraKind::Locked || !cameras->enabled(camera::Cameras::kSwitchStick);
     }
     hudFrame.levelNumber = m_levelNumber;
-    // The gang-count indicators' counts: the members with health left (**Coney's reading** of the living-member count
-    // `0x00166158`, whose test is not described).
+    // The gang-count indicators' counts: the standing members, `Gang_CountLiving(gang, 1)`
+    // (docs/research/hud-functions-lua.md#gang-count-what).
     if (m_ai) {
-        hudFrame.gangLiving = [brains = &m_ai->brains()](int gang) {
-            const ai::Gang* found = brains->gangs().find(gang);
-            if (found == nullptr) {
-                return 0;
-            }
-            return static_cast<int>(std::ranges::count_if(found->members(), [](const ai::Brain* member) {
-                return !member->human().fighter().health().depleted();
-            }));
-        };
+        hudFrame.gangLiving = ai::hudGangCount(m_ai->brains().gangs());
     }
     // A scene's letterbox in or moving hides the HUD.
     hudFrame.letterbox = m_stage->barHeight(hudFrame.nowMs) > 0.0F;
