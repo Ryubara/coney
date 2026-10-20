@@ -150,13 +150,17 @@ class Recorder:
         scenario: Scenario,
         clock: Callable[[], float] = time.monotonic,
         hooks: list[Hook] | None = None,
+        started: Callable[[], None] | None = None,
     ) -> None:
         """Record `scenario` over `game`; `clock` (seconds) bounds how long it waits for the game. `hooks` are the
-        hooks installed in the state, in the order build() gave them their ids; their ring is read every poll."""
+        hooks installed in the state, in the order build() gave them their ids; their ring is read every poll.
+        `started` runs once, right after the sample of step 0: a run that holds the game paused at its start (an
+        input recording's replay) resumes it there, so step 0 is the start itself."""
         self.game = game
         self.scenario = scenario
         self.clock = clock
         self.hooks = hooks or []
+        self.started = started
         if not game.goal_types:
             game.goal_types = dict(scenario.goal_types)
         # With rows = "humans": each human's fixed reads, and the handle index they were worked out for.
@@ -362,6 +366,10 @@ class Recorder:
                     recording.torn.append(step)
             else:
                 recording.rows.append(_row([step], fields, self._sample(reads, values[1:], bound)))
+            if self.started is not None:
+                started, self.started = self.started, None
+                started()
+                last_progress = self.clock()
             # The pad for frame `step`, read by the next update; then the setup writes due now.
             state = pad.advance(step).raw()
             if state != written:

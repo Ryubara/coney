@@ -15,7 +15,18 @@ from pathlib import Path
 import pytest
 
 from coney_tools.config import ConfigError
-from coney_tools.workspace_fetch import PINS, PLATFORMS, TOOLS, Pin, fetch_file, fetch_tool, tool_destination, unpack
+from coney_tools.workspace_fetch import (
+    CLONED,
+    PINS,
+    PLATFORMS,
+    TOOLS,
+    Pin,
+    fetch_file,
+    fetch_tool,
+    newest_release,
+    tool_destination,
+    unpack,
+)
 
 
 def make_zip(files: dict[str, bytes]) -> bytes:
@@ -142,7 +153,7 @@ def test_every_pin_is_an_upstream_release_with_a_hash() -> None:
         for platform in PLATFORMS:
             for pin in PINS[tool](platform):
                 assert pin.url.startswith("https://github.com/"), pin
-                assert len(pin.digest) == 40 if tool == "ghidra-mcp" else len(pin.digest) == 64, pin
+                assert len(pin.digest) == 40 if tool in CLONED else len(pin.digest) == 64, pin
                 # LEGAL.md: the bootstrapper never fetches firmware or game files.
                 assert "bios" not in pin.url.lower()
 
@@ -180,37 +191,28 @@ def test_a_failed_unpack_leaves_nothing_in_the_destination(tmp_path: Path) -> No
     assert list((tmp_path / "tools").iterdir()) == []
 
 
-def test_pcsx2_on_macos_keeps_its_app_bundle(tmp_path: Path) -> None:
-    data = make_tar_xz({"PCSX2-v2.app/Contents/MacOS/PCSX2": b"bin"})
-    pins = [pin_for("pcsx2-macos-Qt.tar.xz", data)]
-    dest = tmp_path / "emulators" / "pcsx2"
-    fetch_tool("pcsx2", dest, "macos", tmp_path / "cache", FakeWeb({pins[0].url: data}), pins)
-    assert (dest / "PCSX2-v2.app" / "Contents" / "MacOS" / "PCSX2").read_bytes() == b"bin"
+def test_pcsx2_is_not_fetched_but_built_from_the_fork() -> None:
+    # The copies run the PCSX2-MCP fork's own build (pcsx2 setup-copies), not a stock release.
+    assert "pcsx2" not in TOOLS
+    assert [pin.url for pin in PINS["pcsx2-mcp"]("windows")] == ["https://github.com/Ryubara/PCSX2-MCP"]
 
 
-def test_pcsx2_on_linux_is_an_executable_appimage(tmp_path: Path) -> None:
-    data = b"\x7fELF"
-    pins = [pin_for("pcsx2-x64-Qt.AppImage", data)]
-    dest = tmp_path / "emulators" / "pcsx2"
-    fetch_tool("pcsx2", dest, "linux", tmp_path / "cache", FakeWeb({pins[0].url: data}), pins)
-    appimage = dest / "pcsx2-x64-Qt.AppImage"
-    assert appimage.read_bytes() == data
-    if os.name != "nt":
-        assert os.access(appimage, os.X_OK)
-    # Nothing but the emulator: the player dumps their own BIOS (LEGAL.md).
-    assert not (dest / "bios").exists()
+def test_the_newest_fork_build_is_found_by_version_then_build(tmp_path: Path) -> None:
+    assert newest_release(tmp_path) is None
+    for name in (
+        "PCSX2-MCP-coney-v2.9.129.7-win64",
+        "PCSX2-MCP-coney-v2.9.129.10-win64",
+        "PCSX2-MCP-coney-v2.9.94.20-win64",
+        "PCSX2-MCP-coney-v2.9.200.1-win64.sha256",
+        "something-else",
+    ):
+        (tmp_path / "release" / name).mkdir(parents=True)
+    (tmp_path / "release" / "PCSX2-MCP-coney-v2.9.300.1-win64").write_text("a file", encoding="utf-8")
+    assert newest_release(tmp_path) == tmp_path / "release" / "PCSX2-MCP-coney-v2.9.129.10-win64"
 
 
-def test_pcsx2_mcp_keeps_only_the_node_server(tmp_path: Path) -> None:
-    data = make_zip({"pcsx2-qt.exe": b"exe", "pcsx2-mcp-server/dist/index.js": b"js"})
-    pins = [pin_for("mcp.zip", data)]
-    dest = tmp_path / "tools" / "pcsx2-mcp"
-    fetch_tool("pcsx2-mcp", dest, "macos", tmp_path / "cache", FakeWeb({pins[0].url: data}), pins)
-    assert (dest / "dist" / "index.js").is_file()
-    assert not (dest / "pcsx2-qt.exe").exists()
-
-
-def test_ghidra_mcp_is_cloned_at_the_pinned_commit(tmp_path: Path) -> None:
+@pytest.mark.parametrize("tool", sorted(CLONED))
+def test_a_cloned_tool_is_checked_out_at_the_pinned_commit(tmp_path: Path, tool: str) -> None:
     upstream = tmp_path / "upstream"
     upstream.mkdir()
     env = {
@@ -233,14 +235,13 @@ def test_ghidra_mcp_is_cloned_at_the_pinned_commit(tmp_path: Path) -> None:
     (upstream / "pom.xml").write_text("second", encoding="utf-8")
     git("commit", "-q", "-am", "second")
 
-    dest = tmp_path / "tools" / "ghidra-mcp"
-    pins = [Pin("ghidra-mcp", "test", str(upstream), pinned)]
-    fetch_tool("ghidra-mcp", dest, "linux", tmp_path / "cache", FakeWeb({}), pins)
+    dest = tmp_path / "tools" / tool
+    pins = [Pin(tool, "test", str(upstream), pinned)]
+    fetch_tool(tool, dest, "linux", tmp_path / "cache", FakeWeb({}), pins)
     assert (dest / "pom.xml").read_text(encoding="utf-8") == "first"
 
 
 def test_destinations_match_the_workspace_layout(tmp_path: Path) -> None:
     assert tool_destination("ghidra", tmp_path) == tmp_path / "tools" / "ghidra_12.1.4_PUBLIC"
-    assert tool_destination("pcsx2", tmp_path) == tmp_path / "emulators" / "pcsx2"
     assert tool_destination("ghidra-mcp", tmp_path) == tmp_path / "tools" / "ghidra-mcp"
     assert tool_destination("pcsx2-mcp", tmp_path) == tmp_path / "tools" / "pcsx2-mcp"

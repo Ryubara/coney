@@ -6,6 +6,10 @@ worktree sits at a different depth from the main checkout. So `.mcp.json` runs t
 through `coney.local.toml` (a worktree reads the main checkout's file) and runs it with stdin and stdout passed
 through. A server that is not installed stops with one line on stderr: the agent tool shows it as failed and every
 other tool keeps working. See docs/guides/agents.md#setup.
+
+`mcp serve pcsx2 --copy NAME` also hands the server that PCSX2 copy's ports (PCSX2_DEBUG_PORT, PCSX2_PINE_PORT),
+which the PCSX2-MCP fork's server takes as `pcsx2_connect`'s defaults, so an agent's connect reaches the copy it
+claimed and never the first copy's ports (docs/guides/research-workflow.md#several-at-once).
 """
 
 from __future__ import annotations
@@ -17,6 +21,7 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+from coney_tools import pcsx2_claims
 from coney_tools.config import ConfigError, find_repo_root, load_config
 
 #: The servers `.mcp.json` registers, by the name agents see them under.
@@ -67,14 +72,30 @@ def _pcsx2_command(paths: Mapping[str, Path | None], which: Which) -> list[str]:
     return [node, str(script)]
 
 
+def copy_ports(copy: pcsx2_claims.Copy) -> dict[str, str]:
+    """The environment that points the PCSX2 server at `copy`: its debug server and PINE ports. Raises ConfigError
+    when the copy's ini turns either off."""
+    if copy.debug is None or copy.port is None:
+        off = " and ".join(what for what, port in (("the debug server", copy.debug), ("PINE", copy.port)) if not port)
+        raise ConfigError(f"{copy.name}: {off} is off in its PCSX2.ini (`coney-tools pcsx2 setup-copies` sets both)")
+    return {"PCSX2_DEBUG_PORT": str(copy.debug), "PCSX2_PINE_PORT": str(copy.port)}
+
+
 def server_command(
-    name: str, paths: Mapping[str, Path | None], which: Which, env: Mapping[str, str]
+    name: str,
+    paths: Mapping[str, Path | None],
+    which: Which,
+    env: Mapping[str, str],
+    copy: pcsx2_claims.Copy | None = None,
 ) -> tuple[list[str], dict[str, str]]:
     """The command line that starts server `name` and the variables to add to its environment.
 
     `paths` is the configuration's path table, `which` finds a program on PATH and `env` is the current environment
-    (both passed in so tests run without the tools). Raises ConfigError when the server is not installed.
+    (both passed in so tests run without the tools); `copy`, for the PCSX2 server only, is the PCSX2 copy whose
+    ports it connects to by default. Raises ConfigError when the server is not installed.
     """
+    if copy is not None and name != "pcsx2":
+        raise ConfigError(f"--copy is for the pcsx2 server, not {name}")
     if name == "ghidra-mcp":
         extra = {
             "GHIDRA_MCP_URL": env.get("GHIDRA_MCP_URL", GHIDRA_MCP_URL),
@@ -83,21 +104,28 @@ def server_command(
         }
         return _ghidra_command(paths, which, env), extra
     if name == "pcsx2":
-        return _pcsx2_command(paths, which), {}
+        return _pcsx2_command(paths, which), copy_ports(copy) if copy is not None else {}
     raise ConfigError(f"unknown server {name!r}; known: {', '.join(SERVERS)}")
 
 
-def run_serve(name: str) -> int:
-    """Start server `name` with stdin and stdout passed through and return its exit status.
+def run_serve(name: str, copy: str | None = None) -> int:
+    """Start server `name` with stdin and stdout passed through and return its exit status; `copy` names the PCSX2
+    copy whose ports the pcsx2 server defaults to.
 
     The checkout is the agent tool's project folder (`CLAUDE_PROJECT_DIR`) when set, else the current folder.
     """
     start = Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path.cwd())
     config = load_config(find_repo_root(start))
-    command, extra = server_command(name, config.paths, shutil.which, os.environ)
+    chosen = _find_copy(start, copy) if copy is not None else None
+    command, extra = server_command(name, config.paths, shutil.which, os.environ, chosen)
     # Nothing may reach stdout before the server starts: it carries the protocol.
     sys.stdout.flush()
     return _run_server(command, {**os.environ, **extra})
+
+
+def _find_copy(start: Path, name: str) -> pcsx2_claims.Copy:
+    """The PCSX2 copy `name` of this machine's registry, looked up from the checkout at `start`."""
+    return pcsx2_claims.default_registry(start).copy(name)
 
 
 def _run_server(command: list[str], env: dict[str, str]) -> int:

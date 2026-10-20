@@ -26,6 +26,7 @@ from coney_tools import (
     pcsx2_claims_cli,
     pcsx2_cli,
     pcsx2_clip,
+    pcsx2_copies,
     progress_cli,
     refs_cli,
     stale_processes,
@@ -247,6 +248,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "serve", help="run a server found through coney.local.toml, over stdin and stdout"
     )
     serve.add_argument("name", choices=mcp_serve.SERVERS)
+    serve.add_argument(
+        "--copy", help="pcsx2 only: the PCSX2 copy (pcsx2, pcsx2-b, ...) whose ports pcsx2_connect defaults to"
+    )
     repo = groups.add_parser("repo", help="repository checks")
     repo_commands = repo.add_subparsers(dest="command", required=True)
     repo_commands.add_parser("check", help="check .github/conventions.yml and the agent pointer files")
@@ -560,6 +564,21 @@ def _add_claim_commands(commands: Any) -> None:
     shot = commands.add_parser("screenshot", help="write a copy's window as a PNG, read by handle (no focus change)")
     shot.add_argument("--copy", required=True, help="the copy")
     shot.add_argument("--out", type=Path, required=True, help="the PNG (outside the repository)")
+    setup = commands.add_parser(
+        "setup-copies", help="make or update the PCSX2 copies from the PCSX2-MCP fork build pcsx2_mcp_dir names"
+    )
+    setup.add_argument("--count", type=int, help="how many copies: pcsx2, pcsx2-b, ... (default: pcsx2_copies, 5)")
+    setup.add_argument("--dry-run", action="store_true", help="print what would change, change nothing")
+    recordings = commands.add_parser(
+        "recordings", help="move an input recording (.p2m2 and its savestate) between scratch and a claimed copy"
+    )
+    recordings.add_argument(
+        "direction", choices=("push", "pull"), help="push: scratch to the copy's recordings/; pull: back"
+    )
+    recordings.add_argument("name", help="the recording below recordings/, such as fights/rumble-1.p2m2")
+    recordings.add_argument("--agent", required=True, help="your id (must hold the claim)")
+    recordings.add_argument("--copy", required=True, help="the copy")
+    recordings.add_argument("--force", action="store_true", help="replace a different file of that name")
 
 
 def _add_pcsx2_commands(groups: Any) -> None:
@@ -590,6 +609,11 @@ def _add_pcsx2_commands(groups: Any) -> None:
     record.add_argument("--attach", action="store_true", help="record a PCSX2 already running a patched state")
     record.add_argument("--keep-open", action="store_true", help="leave PCSX2 running afterwards")
     record.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
+    record.add_argument(
+        "--recording",
+        type=Path,
+        help="an input recording (.p2m2, its savestate beside it) to replay through the debug server as the pad",
+    )
     record.add_argument(
         "--let",
         action="append",
@@ -792,13 +816,17 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         return pcsx2_claims_cli.run_keys(args.agent, args.copy, args.keys, args.hold_ms, args.gap_ms)
     if args.command == "screenshot":
         return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
+    if args.command == "setup-copies":
+        return pcsx2_copies.run_setup_copies(args.count, args.dry_run)
+    if args.command == "recordings":
+        return pcsx2_copies.run_recordings(args.direction, args.agent, args.copy, args.name, args.force)
     if args.command == "clip":
         return pcsx2_clip.run_clip(
             args.state, args.seconds, args.out, (args.pcsx2_dir, args.iso, args.scratch), args.agent
         )
     flags = (args.pcsx2_dir, args.iso, args.scratch)
     return pcsx2_cli.run_record(
-        args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let
+        args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let, args.recording
     )
 
 
@@ -896,7 +924,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "workspace":
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
-        return mcp_serve.run_serve(args.name)
+        return mcp_serve.run_serve(args.name, args.copy)
     if args.command == "audit":
         return run_audit(args)
     if args.command in ("review", "check-review", "review-stamp"):

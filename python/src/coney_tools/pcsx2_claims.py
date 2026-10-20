@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Claims on the portable PCSX2 copies, so several agents never share one.
 
-Each copy (a `pcsx2*` folder with its own `PCSX2.ini` and PINE port) is held through a claim: a folder
-`<claims dir>/<copy>.claim/` holding `owner.json`, built complete in a private folder and renamed into place, which
-succeeds for exactly one caller and never shows a half-made claim. The
+Each copy (a `pcsx2*` folder with its own `PCSX2.ini`, PINE port and debug server port) is held through a claim: a
+folder `<claims dir>/<copy>.claim/` holding `owner.json`, built complete in a private folder and renamed into place,
+which succeeds for exactly one caller and never shows a half-made claim. The
 claims dir is one shared place every worktree sees (docs/guides/research-workflow.md#several-at-once). Everything
 reported (`status`) is rebuilt from the claim folders and the live processes each time; no cached state file exists
 to go stale, and nobody maintains one by hand.
 
 A claim is stale, and may be taken over, when no process of it lives (the recorded PCSX2 and holder pids are dead and
-nothing serves its PINE port) and it either names pids (all dead) or is older than the maximum age.
+nothing serves its PINE or debug server port) and it either names pids (all dead) or is older than the maximum age.
 """
 
 from __future__ import annotations
@@ -30,6 +30,9 @@ from coney_tools import claim_files, pcsx2_proc
 from coney_tools.claim_files import OWNER_FILE, TAKEOVER_ATTEMPTS
 from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
 from coney_tools.pine import DEFAULT_PORT
+
+#: The debug server's port when a copy's ini enables it without naming one (the fork's own default).
+DEFAULT_DEBUG_PORT = 21512
 
 #: A claim with no process to show for it is stale after this many seconds (4 hours).
 DEFAULT_MAX_AGE = 4 * 3600.0
@@ -52,6 +55,8 @@ class Copy:
     port: int | None
     #: Whether its ini lets the SDL gamepad source drive it (the user's pad would then move the game).
     sdl: bool = False
+    #: The PCSX2-MCP fork's debug server port (`[EmuCore]` `DebugServerPort`); None when it is off in the ini.
+    debug: int | None = None
 
 
 @dataclass(frozen=True)
@@ -65,6 +70,9 @@ class Claim:
     port: int
     holder_pid: int | None = None
     pcsx2_pid: int | None = None
+    #: The copy's debug server port when the claim was made (None when it was off; owner files written before the
+    #: debug server existed have no such key and load with None).
+    debug_port: int | None = None
 
     def age(self, now: float) -> float:
         """Seconds since the claim was made."""
@@ -82,18 +90,31 @@ class Row:
     pids: tuple[int, ...]
 
 
-def read_pine_port(pcsx2_dir: Path) -> int | None:
-    """The PINE port of a copy's ini (`[EmuCore]` `PINESlot`), None when PINE is not enabled. Raises ConfigError for
-    an unreadable ini."""
+def _port_setting(pcsx2_dir: Path, switch: str, key: str, default: int) -> int | None:
+    """The port `[EmuCore]` `key` of a copy's ini when `[EmuCore]` `switch` is on, else None. Raises ConfigError for
+    an unreadable ini or a value that is not a number."""
     ini = pcsx2_dir / "inis" / "PCSX2.ini"
     parser = configparser.ConfigParser(interpolation=None, strict=False)
     try:
         parser.read(ini, encoding="utf-8")
-    except configparser.Error as error:
+        if not parser.getboolean("EmuCore", switch, fallback=False):
+            return None
+        return parser.getint("EmuCore", key, fallback=default)
+    except (configparser.Error, ValueError) as error:
         raise ConfigError(f"{ini}: {error}") from error
-    if not parser.getboolean("EmuCore", "EnablePINE", fallback=False):
-        return None
-    return parser.getint("EmuCore", "PINESlot", fallback=DEFAULT_PORT)
+
+
+def read_pine_port(pcsx2_dir: Path) -> int | None:
+    """The PINE port of a copy's ini (`[EmuCore]` `PINESlot`), None when PINE is not enabled. Raises ConfigError for
+    an unreadable ini."""
+    return _port_setting(pcsx2_dir, "EnablePINE", "PINESlot", DEFAULT_PORT)
+
+
+def read_debug_port(pcsx2_dir: Path) -> int | None:
+    """The debug server port of a copy's ini (`[EmuCore]` `DebugServerPort`, a setting of the PCSX2-MCP fork), None
+    when `EnableDebugServer` is off or missing (a stock PCSX2 has neither). Raises ConfigError for an unreadable
+    ini."""
+    return _port_setting(pcsx2_dir, "EnableDebugServer", "DebugServerPort", DEFAULT_DEBUG_PORT)
 
 
 def reads_gamepad(pcsx2_dir: Path) -> bool:
@@ -116,26 +137,53 @@ def port_open(port: int) -> bool:
 
 
 def discover_copies(root: Path) -> list[Copy]:
-    """The `pcsx2*` folders of `root` that hold a PCSX2.ini, in name order (`pcsx2` first)."""
+    """The `pcsx2*` folders of `root` that hold a PCSX2.ini, in name order (`pcsx2` first).
+
+    Raises ConfigError when two copies would listen on one port (PINE or debug server, in any mix): the second
+    PCSX2 could not open it, or an agent would drive another agent's copy. `pcsx2 setup-copies` gives each copy
+    its own ports."""
     found = [
-        Copy(folder.name, folder.resolve(), read_pine_port(folder), reads_gamepad(folder))
+        Copy(folder.name, folder.resolve(), read_pine_port(folder), reads_gamepad(folder), read_debug_port(folder))
         for folder in sorted(root.glob("pcsx2*"))
         if (folder / "inis" / "PCSX2.ini").is_file()
     ]
+    owners: dict[int, str] = {}
+    for copy in found:
+        for kind, port in (("PINE", copy.port), ("debug server", copy.debug)):
+            if port is None:
+                continue
+            if port in owners:
+                raise ConfigError(
+                    f"{copy.name}: its {kind} port {port} is also used by {owners[port]}; every copy needs its own "
+                    "ports (`coney-tools pcsx2 setup-copies` sets them)"
+                )
+            owners[port] = copy.name
     return sorted(found, key=lambda copy: (copy.name != "pcsx2", copy.name))
 
 
-def default_registry() -> Registry:
+def _serves(copy: Copy) -> bool:
+    """Whether something listens on one of the copy's ports (a PCSX2 started by hand records no pid)."""
+    return any(port is not None and port_open(port) for port in (copy.port, copy.debug))
+
+
+def default_registry(start: Path | None = None) -> Registry:
     """The registry for this machine: the copies in `pcsx2_root` and the claims in `pcsx2_claims_dir` from
     coney.local.toml (this checkout's, else the main checkout's), else the main checkout's folder and
     `pcsx2-claims` in the shared scratch (`../../scratch` beside the main checkout). The default ignores
     `scratch_dir`: a worktree may point that at its own folder, and its claims would then be invisible to every
-    other agent, which would take over a copy another one holds."""
-    root = find_repo_root(Path.cwd())
+    other agent, which would take over a copy another one holds. `start` is a folder of the checkout (default: the
+    current one)."""
+    root = find_repo_root(start or Path.cwd())
     main = main_checkout(root)
     paths: dict[str, Path | None] = load_config(root).paths if local_config_file(root) else {}
     claims = paths.get("pcsx2_claims_dir") or (main / ".." / ".." / "scratch" / "pcsx2-claims").resolve()
-    return Registry(paths.get("pcsx2_root") or main, claims)
+    return Registry(paths.get("pcsx2_root") or default_pcsx2_root(main), claims)
+
+
+def default_pcsx2_root(main: Path) -> Path:
+    """Where the copies live when coney.local.toml names no `pcsx2_root`: the workspace's `emulators/` folder, two
+    levels above the main checkout (docs/guides/workspace.md#the-layout)."""
+    return (main / ".." / ".." / "emulators").resolve()
 
 
 class Registry:
@@ -217,7 +265,7 @@ class Registry:
         if claim.agent == "?":
             return not claim.time or claim.age(now) > INCOMPLETE_SECONDS
         holder = claim.holder_pid is not None and pcsx2_proc.pid_alive(claim.holder_pid)
-        if pids or holder or (copy.port is not None and port_open(copy.port)):
+        if pids or holder or _serves(copy):
             return False
         return claim.holder_pid is not None or claim.pcsx2_pid is not None or claim.age(now) > self.max_age
 
@@ -228,7 +276,7 @@ class Registry:
         for copy in self.copies():
             claim = self.read(copy.name)
             pids = self.pids_of(copy, claim, processes)
-            running = bool(pids) or (copy.port is not None and port_open(copy.port))
+            running = bool(pids) or _serves(copy)
             stale = claim is not None and self.is_stale(copy, claim, pids)
             rows.append(Row(copy, claim, stale, running, pids))
         return rows
@@ -282,6 +330,7 @@ class Registry:
             str(copy.path),
             port,
             holder_pid,
+            debug_port=copy.debug,
         )
         for _ in range(TAKEOVER_ATTEMPTS):
             if self._publish(claim):

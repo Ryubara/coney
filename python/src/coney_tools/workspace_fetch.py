@@ -1,15 +1,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The optional downloads of `coney-tools workspace init --fetch`: the research tools at pinned versions.
 
-Every tool comes from its own project's GitHub releases (or, for ghidra-mcp, its repository at a fixed commit) and
-every archive is checked against the SHA-256 written here before it is unpacked. Nothing here fetches firmware or
-game files: the player supplies their own disc, and PCSX2's BIOS is dumped from their own console (LEGAL.md). See
-docs/guides/workspace.md#bootstrap.
+Every tool comes from its own project's GitHub releases (or, for ghidra-mcp and PCSX2-MCP, its repository at a fixed
+commit) and every archive is checked against the SHA-256 written here before it is unpacked. PCSX2 itself is not
+fetched: Coney's copies run the PCSX2-MCP fork's own build, which is made from that repository by hand and spread
+over the copies by `coney-tools pcsx2 setup-copies`. Nothing here fetches firmware or game files: the player supplies
+their own disc, and PCSX2's BIOS is dumped from their own console (LEGAL.md). See docs/guides/workspace.md#bootstrap.
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 import shutil
 import subprocess
 import sys
@@ -27,7 +29,10 @@ from coney_tools.config import ConfigError
 PLATFORMS: tuple[str, ...] = ("windows", "linux", "macos")
 
 #: The tools `--fetch` accepts, in the order they are fetched.
-TOOLS: tuple[str, ...] = ("ghidra", "pcsx2", "ghidra-mcp", "pcsx2-mcp")
+TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp")
+
+#: The tools installed as a git clone at a pinned commit rather than from a release archive.
+CLONED: frozenset[str] = frozenset({"ghidra-mcp", "pcsx2-mcp"})
 
 #: Downloads `url` to the file given.
 Downloader = Callable[[str, Path], None]
@@ -42,6 +47,22 @@ class Pin:
     url: str
     #: The file's SHA-256 (hex); for a git repository, the commit to check out.
     digest: str
+
+
+#: A fork build's release folder, `release/PCSX2-MCP-coney-v<PCSX2 version>.<build>-win64` in the PCSX2-MCP clone.
+RELEASE_FOLDER = re.compile(r"^PCSX2-MCP-coney-v(\d+)\.(\d+)\.(\d+)\.(\d+)-win64$")
+
+
+def newest_release(clone: Path) -> Path | None:
+    """The newest fork build in the PCSX2-MCP clone's `release/` folder (highest version, then build number), or None
+    when there is none."""
+    folder = clone / "release"
+    found = [
+        (tuple(int(part) for part in match.groups()), entry)
+        for entry in (folder.iterdir() if folder.is_dir() else [])
+        if entry.is_dir() and (match := RELEASE_FOLDER.match(entry.name))
+    ]
+    return max(found)[1] if found else None
 
 
 _GH = "https://github.com"
@@ -61,44 +82,21 @@ GHIDRA_EE = Pin(
     "ghidra_12.1.4_PUBLIC_20261004_ghidra-emotionengine-reloaded.zip",
     "e389ff3e921d9f7d4db2ece9906f808545ce4ff519d9e25a019b72ea509f240b",
 )
-_PCSX2_RELEASE = f"{_GH}/PCSX2/pcsx2/releases/download/v2.9.94"
-PCSX2 = {
-    "windows": Pin(
-        "PCSX2",
-        "2.9.94",
-        f"{_PCSX2_RELEASE}/pcsx2-v2.9.94-windows-x64-Qt.7z",
-        "83a638187933b66e27779c32067100e1995d24ab76f1a48bb460971cea09d601",
-    ),
-    "linux": Pin(
-        "PCSX2",
-        "2.9.94",
-        f"{_PCSX2_RELEASE}/pcsx2-v2.9.94-linux-appimage-x64-Qt.AppImage",
-        "7777976bbb55fb5f0d5c9f53a92bd45c403d8b163cb2bc1524701b485172a2aa",
-    ),
-    "macos": Pin(
-        "PCSX2",
-        "2.9.94",
-        f"{_PCSX2_RELEASE}/pcsx2-v2.9.94-macos-Qt.tar.xz",
-        "153dd1ec0b554bfd2c629986b9994cdd5b49e2d5a273a081cc73b3c559cb5269",
-    ),
-}
 #: ghidra-mcp is built from source (Maven or Gradle, against the Ghidra above); the commit Coney was set up with.
 GHIDRA_MCP = Pin(
     "ghidra-mcp", "7.0.0 (pre-release)", f"{_GH}/bethington/ghidra-mcp", "d66702c63b7149453d0686e58f7fb29f3140d5d3"
 )
-#: PCSX2-MCP's release is a Windows build of a modified PCSX2 plus a Node.js server. Only the server is kept: it is
-#: plain JavaScript and runs on every platform; the modified emulator is not used (docs/guides/workspace.md).
+#: The maintainer's PCSX2-MCP fork (a per-copy debug server port, screenshots, controller input, frame advance,
+#: capture, GS dumps, input recordings) has no release archive: the clone holds the PCSX2 patch and the Node.js
+#: server's source, and its README builds PCSX2 2.9.129 with the patch into release/PCSX2-MCP-coney-v2.9.129.N-win64
+#: (docs/guides/workspace.md#pcsx2-copies).
 PCSX2_MCP = Pin(
-    "PCSX2-MCP",
-    "1.0.0",
-    f"{_GH}/hkmodd/PCSX2-MCP/releases/download/v1.0.0/PCSX2-MCP-v1.0.0-win64.zip",
-    "e8a375e0a3cb2042abc096c8584249f96bd08c3d8fb4af0f598f29f1bccc500d",
+    "PCSX2-MCP (fork, source)", "2.9.129", f"{_GH}/Ryubara/PCSX2-MCP", "974cf222e0104a93facf8f70d4e5f4f64a7a23e5"
 )
 
 #: The pins of each tool for a platform.
 PINS: dict[str, Callable[[str], list[Pin]]] = {
     "ghidra": lambda platform: [GHIDRA, GHIDRA_EE],
-    "pcsx2": lambda platform: [PCSX2[platform]],
     "ghidra-mcp": lambda platform: [GHIDRA_MCP],
     "pcsx2-mcp": lambda platform: [PCSX2_MCP],
 }
@@ -107,7 +105,6 @@ PINS: dict[str, Callable[[str], list[Pin]]] = {
 #: coney.local.toml's defaults point at.
 _DESTINATIONS = {
     "ghidra": f"tools/ghidra_{GHIDRA_VERSION}_PUBLIC",
-    "pcsx2": "emulators/pcsx2",
     "ghidra-mcp": "tools/ghidra-mcp",
     "pcsx2-mcp": "tools/pcsx2-mcp",
 }
@@ -158,7 +155,7 @@ def fetch_file(pin: Pin, cache: Path, download: Downloader) -> Path:
 
 
 def _extract(archive: Path, into: Path) -> None:
-    """Extract `archive` (zip, tar.xz or 7z) into the empty folder `into`, refusing paths that leave it."""
+    """Extract `archive` (zip, tar.xz/gz or 7z) into the empty folder `into`, refusing paths that leave it."""
     name = archive.name.lower()
     if name.endswith(".zip"):
         with zipfile.ZipFile(archive) as zipped:
@@ -174,8 +171,8 @@ def _extract(archive: Path, into: Path) -> None:
             except tarfile.FilterError as error:
                 raise ConfigError(f"{archive}: an entry points outside the folder or is unsafe ({error})") from error
     elif name.endswith(".7z"):
-        # Python cannot read 7z. Only the Windows PCSX2 is a 7z, and Windows 11's `tar` (bsdtar) reads it; an older
-        # Windows 10 tar may not, and then the user extracts it by hand (docs/guides/workspace.md#fetch).
+        # Python cannot read 7z; Windows 11's `tar` (bsdtar) reads it, an older Windows 10 tar may not, and then the
+        # user extracts it by hand (docs/guides/workspace.md#fetch).
         done = subprocess.run(
             ["tar", "-xf", str(archive), "-C", str(into)], capture_output=True, text=True, check=False
         )
@@ -229,7 +226,7 @@ def fetch_tool(
     unpacked, the tool is built in a hidden folder beside `dest`, and that folder is renamed to `dest` at the end.
     """
     pins = list(pins) if pins is not None else PINS[tool](platform)
-    files = [] if tool == "ghidra-mcp" else [fetch_file(pin, cache, download) for pin in pins]
+    files = [] if tool in CLONED else [fetch_file(pin, cache, download) for pin in pins]
     dest.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=dest.parent, prefix=f".{dest.name}-") as temp:
         staging = Path(temp) / dest.name
@@ -239,26 +236,14 @@ def fetch_tool(
 
 def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, platform: str) -> None:
     """Build `tool` in the new folder `dest` from its checked downloads `files` (one per pin)."""
-    if tool == "ghidra-mcp":
+    if tool in CLONED:
         _clone(pins[0], dest)
         return
-    first = files[0]
     if tool == "ghidra":
-        unpack(first, dest)
+        unpack(files[0], dest)
         unpack(files[1], dest / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded")
-    elif tool == "pcsx2-mcp":
-        unpack(first, dest, subfolder="pcsx2-mcp-server")
-    elif first.name.endswith(".AppImage"):
-        dest.mkdir(parents=True)
-        appimage = dest / first.name
-        shutil.copyfile(first, appimage)
-        appimage.chmod(0o755)
-    else:
-        unpack(first, dest)
-        if platform == "windows":
-            # PCSX2 keeps its settings, memory cards and states beside itself when this file exists, as the
-            # workspace's portable copies need (docs/guides/research-workflow.md#driving-pcsx2).
-            (dest / "portable.txt").write_text("", encoding="utf-8")
+        return
+    raise ConfigError(f"unknown tool {tool!r} on {platform}")
 
 
 def describe(tool: str, platform: str) -> str:

@@ -159,6 +159,10 @@ def plan(layout: Layout, repo_url: str | None, fetch: Sequence[str], platform: s
     for key, tool in (("ghidra_mcp_repo", "ghidra-mcp"), ("pcsx2_mcp_dir", "pcsx2-mcp")):
         if tool in fetch or workspace_fetch.tool_destination(tool, layout.workspace).exists():
             values[key] = "../../" + workspace_fetch.tool_destination(tool, Path()).as_posix()
+    # The PCSX2-MCP fork's newest build, when one was made: it is both the copies' PCSX2 and the MCP server.
+    release = workspace_fetch.newest_release(workspace_fetch.tool_destination("pcsx2-mcp", layout.workspace))
+    if release is not None:
+        values["pcsx2_mcp_dir"] = "../../" + release.relative_to(layout.workspace).as_posix()
     config = checkout / LOCAL_FILE
     if config.is_file():
         steps.append(Step("keep", f"{_relative(layout, config)} (already there)", None))
@@ -193,10 +197,11 @@ def _print_next(layout: Layout, fetch: Sequence[str]) -> None:
     print(
         f"  - Build and test from {layout.checkout}: docs/guides/building.md. Install the hooks: uvx pre-commit install"
     )
-    if "pcsx2" in fetch or (layout.workspace / "emulators" / "pcsx2").exists():
+    if "pcsx2-mcp" in fetch or workspace_fetch.tool_destination("pcsx2-mcp", layout.workspace).exists():
         print(
-            "  - PCSX2 needs a BIOS dumped from your own console, and PINE enabled in its settings; Coney never "
-            "downloads a BIOS (docs/guides/research-workflow.md#driving-pcsx2)."
+            "  - Build the PCSX2-MCP fork as its README says into its release/ folder, point pcsx2_mcp_dir at the "
+            "build and run `coney-tools pcsx2 setup-copies`; each copy needs a BIOS dumped from your own console, "
+            "and Coney never downloads one (docs/guides/workspace.md#pcsx2-copies)."
         )
     if "ghidra" in fetch:
         print("  - Compile the Emotion Engine language once (the release has no r5900.sla): docs/guides/ghidra.md.")

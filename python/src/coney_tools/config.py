@@ -25,11 +25,21 @@ PATH_KEYS: tuple[str, ...] = (
 )
 
 #: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at
-#: once; `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane).
-INT_KEYS: dict[str, int] = {"build_slots": 2, "build_fast_lane_steps": 50, "build_fast_lane_tests": 20}
+#: once; `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
+#: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
+#: PINE and debug server ports of the first copy, each next copy taking the next port).
+INT_KEYS: dict[str, int] = {
+    "build_slots": 2,
+    "build_fast_lane_steps": 50,
+    "build_fast_lane_tests": 20,
+    "pcsx2_copies": 5,
+    "pcsx2_pine_base": 28011,
+    "pcsx2_debug_base": 21512,
+}
 
-#: The smallest value a number key accepts (default 0): `build_slots` needs a slot, and 0 turns a fast lane off.
-INT_MINIMUM: dict[str, int] = {"build_slots": 1}
+#: The smallest value a number key accepts (default 0): `build_slots` needs a slot, 0 turns a fast lane off, and a
+#: port is above the privileged range.
+INT_MINIMUM: dict[str, int] = {"build_slots": 1, "pcsx2_copies": 1, "pcsx2_pine_base": 1024, "pcsx2_debug_base": 1024}
 
 LOCAL_FILE = "coney.local.toml"
 EXAMPLE_FILE = "coney.local.example.toml"

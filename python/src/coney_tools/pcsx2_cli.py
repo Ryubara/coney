@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import sys
 import time
 from collections.abc import Callable, Sequence
@@ -20,11 +21,12 @@ from pathlib import Path
 from coney_tools import hooks as hook_tools
 from coney_tools import pcsx2_claims, pcsx2_proc, pcsx2_state
 from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file
+from coney_tools.debug_server import DebugClient, DebugServerError, P2m2Header, read_p2m2, savestate_of
 from coney_tools.game_memory import GAME_TIME_OFFSET, GAME_TIMER_POINTER, GameMemory
 from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
 from coney_tools.pine import PineClient, PineError, Read
-from coney_tools.recorder import Recorder, RecordError
+from coney_tools.recorder import Recorder, RecordError, Recording
 from coney_tools.scenario import PATCHES_DIR, Scenario, ScenarioError, load_scenario, with_let
 from coney_tools.wad import refuse_inside_repo
 
@@ -187,6 +189,15 @@ def _wait_for_pine(port: int, deadline: float) -> PineClient:
     raise PineError(f"PCSX2 did not open PINE within {LAUNCH_TIMEOUT:.0f} s")
 
 
+def _wait_for_port(port: int, what: str, deadline: float) -> None:
+    """Return once something listens on `port`; PineError naming `what` at the deadline."""
+    while time.monotonic() < deadline:
+        if _port_open(port):
+            return
+        time.sleep(0.25)
+    raise PineError(f"PCSX2 did not open its {what} on port {port} within {LAUNCH_TIMEOUT:.0f} s")
+
+
 class Emulator:
     """PCSX2 started on a state file (or a plain boot of the disc), never taking the focus; close() ends it and
     warns about new files in its sstates/ folder."""
@@ -203,13 +214,17 @@ class Emulator:
         """Start PCSX2 on `state` and wait until its game runs (no state: boot the disc and wait for PINE); `on_start`
         gets the process id as soon as it exists (the claim records it). `speed` below 1 runs the emulation slower
         (the copy's `[Framerate]` `NominalScalar`); `ini` gives more settings of the copy's ini for this run, each
-        (section, key, value). close() puts the ini back as it was. Raises ConfigError when PCSX2 already runs
-        (one PINE client at a time, and a run needs a fresh start for its patches) or PineError when it never
-        answers."""
+        (section, key, value). close() puts the ini back as it was. When the copy's ini enables the PCSX2-MCP
+        fork's debug server, the start also waits for its port (`debug_port`; None when it is off). Raises
+        ConfigError when PCSX2 already runs (one PINE client at a time, and a run needs a fresh start for its
+        patches) or PineError when it never answers."""
         self.paths = paths
         self.port = pine_port(paths.pcsx2_dir)
+        self.debug_port = pcsx2_claims.read_debug_port(paths.pcsx2_dir)
         if _port_open(self.port):
             raise ConfigError(f"something already serves PINE on port {self.port}; close PCSX2 first (or --attach)")
+        if self.debug_port is not None and _port_open(self.debug_port):
+            raise ConfigError(f"something already serves port {self.debug_port} (this copy's debug server); close it")
         self.before = _slot_states(paths.pcsx2_dir)
         self.ini = paths.pcsx2_dir / "inis" / "PCSX2.ini"
         self.ini_text: str | None = None
@@ -242,6 +257,9 @@ class Emulator:
                 if state is not None
                 else _wait_for_pine(self.port, deadline)
             )
+            if self.debug_port is not None:
+                # The fork starts its debug server with the game (PINE opens at the same time).
+                _wait_for_port(self.debug_port, "debug server", deadline)
         except PineError:
             self.close()
             raise
@@ -341,6 +359,77 @@ def run_repack_state(source: str, out: Path, pcsx2_dir: Path | None) -> int:
     return 0
 
 
+#: Where `pcsx2 record --recording` puts the recording it replays, below the copy's folder (the debug server plays
+#: only files inside PCSX2's data folder).
+REPLAY_FOLDER = Path("recordings") / "coney-record"
+
+
+def _recording_header(path: Path) -> P2m2Header:
+    """The header of the input recording at `path`, or ConfigError."""
+    if not path.is_file():
+        raise ConfigError(f"{path}: no such input recording")
+    try:
+        return read_p2m2(path)
+    except (OSError, ValueError) as error:
+        raise ConfigError(str(error)) from error
+
+
+def _stage_recording(source: Path, header: P2m2Header, pcsx2_dir: Path, patches: list[Patch]) -> list[Path]:
+    """Copy the recording into the copy's REPLAY_FOLDER, its start savestate patched as the scenario says; returns
+    the recording's copy and, when it starts from a savestate, the savestate's. Raises ConfigError for a savestate
+    recording without its savestate, and for patches on a power-on recording (it loads no state to patch)."""
+    folder = pcsx2_dir / REPLAY_FOLDER
+    target = folder / (re.sub(r"[^A-Za-z0-9._-]", "_", source.stem) + ".p2m2")
+    state = savestate_of(source)
+    if header.from_savestate and not state.is_file():
+        raise ConfigError(f"{source} starts from a savestate, and {state} is missing")
+    if not header.from_savestate and patches:
+        raise ConfigError(f"{source} starts from power-on: it loads no state the scenario's patches could go into")
+    folder.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, target)
+    if not header.from_savestate:
+        return [target]
+    if patches:
+        _make_copy(state, savestate_of(target), patches, pcsx2_dir)
+    else:
+        shutil.copyfile(state, savestate_of(target))
+    return [target, savestate_of(target)]
+
+
+def _record_replay(emulator: Emulator, staged: Path, scenario: Scenario, hooks: list[Hook]) -> Recording:
+    """Replay the staged recording through the copy's debug server while the Recorder samples the game.
+
+    Emulation is paused before `play`, which loads the recording's savestate (or resets the game), so the Recorder's
+    step 0 is the recording's first frame; it resumes right after that sample. A recording shorter than the
+    scenario ends with PCSX2 paused at its last frame, and the error says so."""
+    if emulator.debug_port is None:
+        raise ConfigError(
+            f"{emulator.paths.pcsx2_dir}: its debug server is off; --recording needs the PCSX2-MCP fork's "
+            "(`coney-tools pcsx2 setup-copies`)"
+        )
+    with DebugClient(emulator.debug_port) as debug:
+        debug.emulation("pause")
+        status = debug.input_recording("play", staged.relative_to(emulator.paths.pcsx2_dir).as_posix())
+        if status.mode != "replaying":
+            raise ConfigError(f"{staged}: PCSX2 did not start replaying it (mode {status.mode})")
+        recorder = Recorder(
+            GameMemory(emulator.client), scenario, hooks=hooks, started=lambda: debug.emulation("resume")
+        )
+        try:
+            recording = recorder.record()
+        except RecordError as error:
+            ended = debug.input_recording("status")
+            if ended.replay_ended:
+                raise ConfigError(
+                    f"the recording ended at its frame {ended.total_frames} (PCSX2 paused there) before the "
+                    f"scenario's {scenario.updates} updates were recorded; record fewer updates or a longer recording"
+                ) from error
+            raise
+        if debug.input_recording("status").mode == "replaying":
+            debug.input_recording("stop")
+    return recording
+
+
 def run_launch(
     state: Path | None, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None, agent: str | None = None
 ) -> int:
@@ -356,7 +445,10 @@ def run_launch(
             registry.release(claim.agent, claim.copy)
         raise ConfigError(str(error)) from error
     emulator.client.close()
-    print(f"PCSX2 runs {state or 'the disc'} (pid {emulator.pid}) on {claim.copy}; PINE on port {emulator.port}")
+    debug = f"debug server on port {emulator.debug_port}" if emulator.debug_port is not None else "no debug server"
+    print(
+        f"PCSX2 runs {state or 'the disc'} (pid {emulator.pid}) on {claim.copy}; PINE on port {emulator.port}, {debug}"
+    )
     print(f"{claim.agent} keeps the claim on {claim.copy}; `coney-tools pcsx2 release --agent {claim.agent}` ends it")
     return 0
 
@@ -370,15 +462,19 @@ def run_record(
     flags: tuple[Path | None, Path | None, Path | None],
     agent: str | None = None,
     lets: list[str] | None = None,
+    recording: Path | None = None,
 ) -> int:
     """`pcsx2 record`: play a scenario on the original and write its trace, under `agent`'s claim: the one it holds
     (kept for it afterwards), else one made here and released at the end, also on an error or Ctrl-C (unless
-    `keep_open`). `lets` (`NAME=EXPRESSION`) give or replace names of the scenario's `let`."""
+    `keep_open`). `lets` (`NAME=EXPRESSION`) give or replace names of the scenario's `let`. With `recording` (a
+    `.p2m2` input recording), the pad comes from replaying it through the debug server, from its own start."""
     refuse_inside_repo(out)
+    if recording is not None and (attach or state is not None):
+        raise ConfigError("--recording starts from the recording's own savestate: drop --attach and --state")
     registry = pcsx2_claims.default_registry()
     claim, created = registry.claim_for_run(agent, flags[0], os.getpid())
     try:
-        return _record(scenario_path, out, state, attach, keep_open, flags, registry, claim, lets or [])
+        return _record(scenario_path, out, state, attach, keep_open, flags, registry, claim, lets or [], recording)
     finally:
         if created and not keep_open:
             registry.release(claim.agent, claim.copy)
@@ -394,6 +490,7 @@ def _record(
     registry: pcsx2_claims.Registry,
     claim: pcsx2_claims.Claim,
     lets: list[str],
+    replay: Path | None = None,
 ) -> int:
     """The recording of `run_record`, on the copy of `claim`."""
     try:
@@ -402,9 +499,25 @@ def _record(
         raise ConfigError(str(error)) from error
     emulator: Emulator | None = None
     client: PineClient | None = None
+    staged: list[Path] = []
     try:
         patches, hooks = _patches(list(scenario.patches))
-        if attach:
+        if replay is not None:
+            paths = resolve_paths(Path(claim.path), flags[1], flags[2])
+            header = _recording_header(replay)
+            if scenario.events:
+                print("warning: the scenario has input lines; with --recording the pad comes from the recording")
+            staged = _stage_recording(replay, header, paths.pcsx2_dir, patches)
+            emulator = Emulator(
+                paths,
+                staged[1] if header.from_savestate else None,
+                patches if header.from_savestate else [],
+                on_start=lambda pid: registry.record_pid(claim, pid),
+                speed=scenario.speed,
+            )
+            client = emulator.client
+            recording = _record_replay(emulator, staged[0], scenario, hooks)
+        elif attach:
             if scenario.speed != 1.0:
                 print("warning: --attach records PCSX2 at the speed it runs; the scenario's speed is not set")
             client = PineClient(claim.port)
@@ -417,8 +530,9 @@ def _record(
                 paths, copy, patches, on_start=lambda pid: registry.record_pid(claim, pid), speed=scenario.speed
             )
             client = emulator.client
-        recording = Recorder(GameMemory(client), scenario, hooks=hooks).record()
-    except (PineError, RecordError, StateError) as error:
+        if replay is None:
+            recording = Recorder(GameMemory(client), scenario, hooks=hooks).record()
+    except (PineError, RecordError, StateError, DebugServerError) as error:
         raise ConfigError(str(error)) from error
     finally:
         # PINE serves one client at a time: always let go of it; end PCSX2 unless asked to keep it.
@@ -426,6 +540,13 @@ def _record(
             client.close()
         if emulator is not None and not keep_open:
             emulator.close()
+        if not keep_open:
+            # The replayed copy of a recording is only this run's: remove it once PCSX2 has let go of it.
+            for path in staged:
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError as error:
+                    print(f"warning: could not remove {path} ({error})", file=sys.stderr)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(recording.csv(), encoding="utf-8")
     if recording.hooks is not None:
