@@ -24,17 +24,22 @@ def _registry(max_age_hours: float | None = None) -> claims.Registry:
 
 
 def run_claim(agent: str, copy: str | None, as_json: bool, max_age_hours: float | None) -> int:
-    """`pcsx2 claim`: claim a free copy (or the named one) and print its folder and PINE port."""
+    """`pcsx2 claim`: claim a free copy (or the named one) and print its folder, PINE port and debug server port
+    (the ports `pcsx2_connect` of the PCSX2 MCP server takes). The ports are the copy's ini's now: a claim held from
+    before `pcsx2 setup-copies` changed them still prints the ports PCSX2 will use."""
     registry = _registry(max_age_hours)
     claim, took_over = registry.claim(agent, copy)
+    held = registry.copy(claim.copy)
     if as_json:
-        print(json.dumps({**asdict(claim), "took_over": asdict(took_over) if took_over else None}))
+        current = {**asdict(claim), "port": held.port, "debug_port": held.debug}
+        print(json.dumps({**current, "took_over": asdict(took_over) if took_over else None}))
         return 0
     if took_over is not None:
         print(f"took over a stale claim of {took_over.agent} (since {took_over.time}) on {claim.copy}")
-    print(f"{agent} holds {claim.copy}: folder {claim.path}, PINE port {claim.port}")
-    print(f"pcsx2-dir={claim.path} port={claim.port}")
-    _warn_sdl([registry.copy(claim.copy)])
+    debug = held.debug if held.debug is not None else "off"
+    print(f"{agent} holds {claim.copy}: folder {claim.path}, PINE port {held.port}, debug server port {debug}")
+    print(f"pcsx2-dir={claim.path} port={held.port} debug-port={debug}")
+    _warn_sdl([held])
     return 0
 
 
@@ -69,6 +74,7 @@ def status_json(rows: list[claims.Row]) -> list[dict[str, object]]:
             "copy": r.copy.name,
             "path": str(r.copy.path),
             "port": r.copy.port,
+            "debug_port": r.copy.debug,
             "state": _state(r),
             "claim": asdict(r.claim) if r.claim else None,
             "running": r.running,
@@ -90,7 +96,7 @@ def run_status(as_json: bool, max_age_hours: float | None) -> int:
     if as_json:
         print(json.dumps(status_json(rows)))
         return 0
-    table = [("copy", "state", "agent", "since", "port", "running")]
+    table = [("copy", "state", "agent", "since", "port", "debug", "running")]
     for r in rows:
         table.append(
             (
@@ -99,6 +105,7 @@ def run_status(as_json: bool, max_age_hours: float | None) -> int:
                 r.claim.agent if r.claim else "-",
                 r.claim.time if r.claim else "-",
                 str(r.copy.port or "off"),
+                str(r.copy.debug or "off"),
                 ("yes (pid " + ",".join(map(str, r.pids)) + ")") if r.pids else ("port" if r.running else "no"),
             )
         )

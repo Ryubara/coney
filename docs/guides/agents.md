@@ -18,7 +18,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | File | What it holds | Read by |
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
-| `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
+| `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `engineer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
@@ -34,6 +34,17 @@ naming the missing key or program; the agent tool shows it as failed and everyth
 needs its headless server running ([Ghidra + ghidra-mcp](ghidra.md)), and `pcsx2` needs Node.js 18 or newer. Claude
 Code asks once whether to use the project's servers. A server of the same name registered in your local scope
 (`claude mcp add -s local`) takes precedence over the project's; one in your user scope does not.
+
+**The PCSX2 server and your copy.** The `pcsx2` server connects to no PCSX2 when it starts, and several agents run
+their own copies at once, so connect it to the copy you claimed and to no other. `coney-tools pcsx2 claim --agent
+<id>` prints the copy's `port` (PINE) and `debug-port`; start PCSX2 with `pcsx2 launch --agent <id>`, then call
+`pcsx2_connect` with `debug_port` and `pine_port` set to those and `mode: "debug"`. Debug mode is the default to use:
+the debug server serves several clients, but PCSX2's PINE serves one, and an MCP server holding it blocks
+`pcsx2 record` and every other PINE client of that copy. Use `mode: "auto"` or `"pine"` only when you need PINE's
+own calls and nothing else uses the copy, and never leave the ports out: the defaults (21512, 28011) are copy
+`pcsx2`'s, someone else's game. An agent tool that starts one server per agent can run
+`coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's ports to the server as `pcsx2_connect`'s defaults
+([`mcp`](coney-tools.md#mcp)). What the tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
 guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which

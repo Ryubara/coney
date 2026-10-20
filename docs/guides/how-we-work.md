@@ -41,12 +41,15 @@ What a page must hold to be coded from, with three real features traced to the m
 - **The Xbox build as a reading aid.** The same function in the Xbox executable can read faster (inline strings,
   named library calls). It is only read; evidence is always cited at PS2 addresses
   ([Xbox executable](../research/xbox-executable.md)).
-- **PCSX2, several copies with claims.** Portable PCSX2 copies (`pcsx2`, `pcsx2-b`, ...) each have their own
-  settings, states and PINE port, so several engineers can run the game at once. A copy is used only inside a claim:
-  `coney-tools pcsx2 claim --agent <id>` hands out a free copy, `pcsx2 release` frees it, `pcsx2 status` shows who
-  holds what, and a claim whose process died is taken over ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
-- **Input over PINE only.** The game is driven by writing pad state into its memory (the `scripted-pad`,
-  `right-stick` and `puppet` patches), with analog sticks at realistic partial deflections. No tool brings PCSX2 to
+- **PCSX2, several copies with claims.** Portable PCSX2 copies (`pcsx2`, `pcsx2-b`, ...) run the maintainer's
+  PCSX2-MCP fork build (`coney-tools pcsx2 setup-copies`) and each have their own settings, states, PINE port and
+  debug server port, so several engineers can run the game at once. A copy is used only inside a claim:
+  `coney-tools pcsx2 claim --agent <id>` hands out a free copy and its two ports, `pcsx2 release` frees it, `pcsx2
+  status` shows who holds what, and a claim whose process died is taken over; an agent connects the `pcsx2` MCP server
+  to its own copy's ports only ([Driving PCSX2](research-workflow.md#driving-pcsx2), [Agents](agents.md#setup)).
+- **Input without the keyboard.** The game is driven by writing pad state into its memory over PINE (the
+  `scripted-pad`, `right-stick` and `puppet` patches), with analog sticks at realistic partial deflections, or by the
+  debug server's pad and PCSX2's own input recordings, which replay a run exactly. No tool brings PCSX2 to
   the front or types into it, so the machine stays usable; a maintainer's quick-save slots are read-only,
   and engineers save states to files.
 - **Traces and frames.** `coney-tools pcsx2 record` and `coney-tools trace` record the same scripted scenario on the

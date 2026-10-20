@@ -399,13 +399,24 @@ way. Run `natives render` first when bindings changed.
 
 ## pcsx2 {#pcsx2}
 
-The `pcsx2` commands drive the original in PCSX2 over PINE, for runtime research and parity checks. What they do and
-why, the scenario format and the address expressions are in [Recording a trace](research-workflow.md#recording-a-trace).
-The folders come from `coney.local.toml` (`pcsx2_dir`, `game_dir`, `scratch_dir`) unless `--pcsx2-dir`, `--iso` and
-`--scratch` give them; PINE must be enabled in PCSX2's `inis/PCSX2.ini`. Problems print one line and exit with code 2.
+The `pcsx2` commands drive the original in PCSX2 over PINE and the PCSX2-MCP fork's debug server, for runtime research
+and parity checks. What they do and why, the scenario format and the address expressions are in
+[Recording a trace](research-workflow.md#recording-a-trace). The folders come from `coney.local.toml` (`pcsx2_dir`,
+`game_dir`, `scratch_dir`) unless `--pcsx2-dir`, `--iso` and `--scratch` give them; PINE must be enabled in PCSX2's
+`inis/PCSX2.ini`. Problems print one line and exit with code 2.
 
-Several agents share the portable copies of PCSX2 (`pcsx2`, `pcsx2-b`, ...) through claims
-([Several at once](research-workflow.md#driving-pcsx2)); any command that starts PCSX2 needs one.
+```sh
+uv run --project python coney-tools pcsx2 setup-copies [--count N] [--dry-run]
+```
+
+Makes or updates the portable copies `pcsx2`, `pcsx2-b`, ... (`--count`, default `pcsx2_copies`, 5) under
+`pcsx2_root` from the fork build `pcsx2_mcp_dir` names: the build's program files only, `portable.txt`, and in each
+copy's ini PINE on `pcsx2_pine_base` + *i*, the debug server on `pcsx2_debug_base` + *i* and `SDL = false`. A copy's
+settings, BIOS, memory cards, states and recordings stay; a copy whose PCSX2 runs is refused (exit code 1).
+`--dry-run` prints what would change. Details: [PCSX2 copies](workspace.md#pcsx2-copies).
+
+Several agents share the copies through claims ([Several at once](research-workflow.md#several-at-once)); any
+command that starts PCSX2 needs one.
 
 ```sh
 uv run --project python coney-tools pcsx2 claim --agent ID [--copy NAME] [--json]
@@ -413,13 +424,16 @@ uv run --project python coney-tools pcsx2 release --agent ID [--copy NAME] [--fo
 uv run --project python coney-tools pcsx2 status [--json]
 ```
 
-`claim` takes a free copy (or the named one) atomically and prints its folder and PINE port; it hands back your own
+`claim` takes a free copy (or the named one) atomically and prints its folder, PINE port and debug server port (a line
+`pcsx2-dir=... port=... debug-port=...`; `--json` has `port` and `debug_port`, which is `null` for a copy without the
+debug server); it hands back your own
 claim when you hold one, and takes over a stale one (its processes gone, or older than `--max-age-hours`, default 4,
 with no process) saying so. A copy running PCSX2 without a claim is never handed out. `release` closes the PCSX2 it
 recorded (only while that process is still a PCSX2) and drops the claim; another agent's claim needs `--force`.
-`status` lists every copy with its holder, the time, the port, whether PCSX2 runs (by pid or port) and stale claims;
-it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an
-`inis/PCSX2.ini` under `pcsx2_root` (default: the main checkout), the claims are under `pcsx2_claims_dir` (default:
+`status` lists every copy with its holder, the time, the PINE and debug ports, whether PCSX2 runs (by pid or by either
+port) and stale claims; it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*`
+folders with an `inis/PCSX2.ini` under `pcsx2_root` (default: `../../emulators`); two copies on one port (PINE or
+debug server) are refused, naming both. The claims are under `pcsx2_claims_dir` (default:
 `pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`, whatever a worktree's
 `scratch_dir` says, so every worktree sees the same claims).
 
@@ -458,16 +472,19 @@ uv run --project python coney-tools pcsx2 launch [STATE] --agent ID
 
 Starts PCSX2 on a state file (`-fastboot -statefile`, the disc through a hard link in the scratch folder when its path
 holds commas or parentheses), waits until the game runs, and leaves it running; with no state it boots the disc and
-returns once PINE answers. It is the only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
+returns once PINE answers; when the copy runs the debug server, it also waits for that port, and prints both. It is the
+only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
 process outside the agent's process tree; why: [Driving PCSX2](research-workflow.md#driving-pcsx2)). With
 `CONEY_WINDOW_DISPLAY` set ([Which display](running.md#window-display)), it moves each PCSX2 window onto that
 display as it appears, without activating it; `pcsx2 record` does the same. It refuses to
-start when something already serves PINE. It runs under `--agent`'s claim (made, and kept, if you hold none) and records
+start when something already serves PINE or the copy's debug server port. It runs under `--agent`'s claim (made, and
+kept, if you hold none) and records
 PCSX2's pid in it;
 `--pcsx2-dir` must be that claim's copy.
 
 ```sh
 uv run --project python coney-tools pcsx2 record SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
+                                     [--recording P2M2]
 ```
 
 Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
@@ -478,6 +495,23 @@ PCSX2 running; the claim is released at the end when `record` made it. The CSV i
 refused inside the repository. With
 hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
 makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
+
+`--recording P2M2` takes the pad from a PCSX2 input recording instead of the scenario's input script, so a runtime
+trace can be repeated exactly: the recording (and its start savestate `<P2M2>_SaveState.p2s`, patched as the
+scenario says) is copied into the copy's `recordings/coney-record/`, PCSX2 starts on that savestate, and through the
+debug server `record` pauses emulation, plays the recording (which loads its savestate again), samples step 0 and
+resumes. The trace's steps then count from the recording's first frame. A recording that ends before the scenario's
+`updates` stops with PCSX2 paused at its last frame and an error saying so; a power-on recording (no savestate) takes
+no patches. It cannot be combined with `--attach` or `--state`, and needs the copy's debug server.
+
+```sh
+uv run --project python coney-tools pcsx2 recordings push|pull NAME --agent ID --copy NAME [--force]
+```
+
+Copies an input recording (`NAME.p2m2` below `recordings/`, such as `fights/rumble-1.p2m2`) and its start savestate
+between the shared scratch folder's `recordings/` and the claimed copy's `recordings/` (`push` to the copy, `pull`
+back), checking each copy's SHA-256. A different file already there needs `--force`. Recordings are made and played
+in the copy with the MCP server's `pcsx2_input_recording` ([Input recordings](research-workflow.md#input-recordings)).
 
 ```sh
 uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
@@ -1185,16 +1219,19 @@ reader that mixes the two kinds of read (the mod does) keeps those from its last
 ## mcp {#mcp}
 
 ```sh
-uv run --project python coney-tools mcp serve ghidra-mcp|pcsx2
+uv run --project python coney-tools mcp serve ghidra-mcp|pcsx2 [--copy NAME]
 ```
 
 Runs one of the debugging servers that the repository's `.mcp.json` registers for agent tools, with stdin and stdout
 passed through to it: `ghidra-mcp` is ghidra-mcp's Python bridge from `ghidra_mcp_repo` (run by uv, talking to the
-headless server on port 8090 unless `GHIDRA_MCP_URL` says otherwise), `pcsx2` is PCSX2-MCP's Node.js server from
-`pcsx2_mcp_dir`. The checkout is `CLAUDE_PROJECT_DIR` when the agent tool sets it, else the current folder; a worktree
-reads the main checkout's `coney.local.toml`. A missing key, folder or program (`uv`, `node`) prints one line on
-stderr and exits with code 2, so a server that is not installed fails without affecting the others. Why and how it is
-set up: [Setting up an agent tool](agents.md#setup).
+headless server on port 8090 unless `GHIDRA_MCP_URL` says otherwise), `pcsx2` is the PCSX2-MCP fork's Node.js server
+from `pcsx2_mcp_dir` (its `pcsx2-mcp-server/`). The server connects to nothing until `pcsx2_connect`; with
+`--copy NAME` it starts with that copy's ports in `PCSX2_DEBUG_PORT` and `PCSX2_PINE_PORT`, which a fork server from
+the `env-default-ports` change on takes as `pcsx2_connect`'s defaults (an older build ignores them, so pass the ports
+to `pcsx2_connect` anyway). The checkout is `CLAUDE_PROJECT_DIR` when the agent tool sets it, else the current
+folder; a worktree reads the main checkout's `coney.local.toml`. A missing key, folder or program (`uv`, `node`)
+prints one line on stderr and exits with code 2, so a server that is not installed fails without affecting the
+others. Why and how it is set up: [Setting up an agent tool](agents.md#setup).
 
 ## workspace {#workspace}
 
@@ -1204,7 +1241,8 @@ uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url
 
 Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
 (`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
-`--fetch ghidra|pcsx2|ghidra-mcp|pcsx2-mcp|all`, downloads the research tools at pinned versions, checked by SHA-256.
+`--fetch ghidra|ghidra-mcp|pcsx2-mcp|all`, downloads the research tools at pinned versions, checked by SHA-256 (the
+two MCP projects are cloned at a pinned commit; PCSX2 comes from the fork's own build, `pcsx2 setup-copies`).
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
 `bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each

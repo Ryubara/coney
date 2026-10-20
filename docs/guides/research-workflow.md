@@ -281,12 +281,16 @@ leave the focus alone:
 
 ### Driving PCSX2 {#driving-pcsx2}
 
-How the first runtime pass (2026-10-04, official portable PCSX2 2.9.94) was done; it needs nothing but PCSX2, its
-PINE server and the `pcsx2` MCP server (or any PINE client).
+How the runtime passes are done. The first ones (from 2026-10-04) ran the official portable PCSX2 2.9.94 over PINE
+alone; since 2026-10-20 every copy runs the maintainer's PCSX2-MCP fork, a build of PCSX2 2.9.129 with a debug
+server built in, beside PINE. Both are reached through `coney-tools pcsx2` and the `pcsx2` MCP server.
 
-- **Set-up.** Enable PINE in `inis/PCSX2.ini` (`[EmuCore]` `EnablePINE = true`, `PINESlot = 28011`) before launching.
-  PCSX2 2.9.94 fails to open an ISO whose path holds commas and parentheses ("Requested filename ... does not
-  exist"), so the launcher boots an NTFS hard link with a plain name in the scratch folder (it copies nothing).
+- **Set-up.** `coney-tools pcsx2 setup-copies` puts the fork's build (`pcsx2_mcp_dir`) into every copy and sets its
+  ini: `[EmuCore]` `EnablePINE = true` with `PINESlot` 28011 + *i*, `EnableDebugServer = true` with
+  `DebugServerPort` 21512 + *i* for copy *i* (`pcsx2` is 0, `pcsx2-b` 1, ...), and `[InputSources]` `SDL = false`
+  ([PCSX2 copies](workspace.md#pcsx2-copies)). PCSX2 2.9.94 failed to open an ISO whose path holds commas and
+  parentheses ("Requested filename ... does not exist"), so the launcher boots an NTFS hard link with a plain name in
+  the scratch folder (it copies nothing).
 - **PCSX2 is started only by `coney-tools pcsx2 launch` or `pcsx2 record`, never by hand** (no `pcsx2-qt.exe` from
   a shell, a script or `Start-Process`). The launcher is what keeps PCSX2 from taking the keyboard focus, which
   interrupts whoever is typing. `pcsx2 launch --agent <id> [<state.p2s>]` starts it on a state file, or with no
@@ -309,14 +313,18 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   Windows lists it. A value that matches nothing prints one warning listing the displays, and PCSX2 opens where it
   last was (its own `PCSX2.ini` keeps that place, `[UI]` `MainWindowGeometry`; the launcher does not edit it).
   `repo:python/src/coney_tools/pcsx2_proc.py` (`WindowPlacer`).
-- **Several at once.** A portable PCSX2 keeps its settings, states and memory cards in its own folder, so each copy of
-  the folder (`pcsx2`, `pcsx2-b`, ..., each with its own `PINESlot` 28011, 28012, ...) is an independent instance, and
-  `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. Every PCSX2 use starts with
-  `coney-tools pcsx2 claim --agent <your id>` (it prints the copy's folder and port; `--json` for scripts) and ends
-  with `pcsx2 release --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
+- **Several at once.**{#several-at-once} A portable PCSX2 keeps its settings, states and memory cards in its own
+  folder, so each copy of the folder (`pcsx2`, `pcsx2-b`, ..., each with its own `PINESlot` 28011, 28012, ... and
+  `DebugServerPort` 21512, 21513, ...) is an independent instance, and `coney-tools pcsx2` reads both ports from
+  that copy's `PCSX2.ini`; two copies on one port are refused. The fork binds its debug server port exclusively, so a
+  second PCSX2 on a port in use logs `[DebugServer] Failed to bind on port N` rather than sharing it (stock
+  PCSX2-MCP let every instance listen on 21512 and connections landed in any of them). Every PCSX2 use starts with
+  `coney-tools pcsx2 claim --agent <your id>` (it prints the copy's folder and both ports; `--json` for scripts) and
+  ends with `pcsx2 release --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
   from the live claims and processes; a claim whose process is gone is stale and the next `claim` takes it over.
-  `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none). Input to the
-  game is over PINE only (scripted pad input, the stick table below); no tool takes the keyboard focus. When a hotkey is
+  `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none), and wait for
+  both ports. Input to the game is over PINE (scripted pad input, the stick table below) or through the debug server
+  (the pad, frame by frame, and input recordings: below); no tool takes the keyboard focus. When a hotkey is
   unavoidable (Space to pause), `pcsx2 keys --agent <id> --copy <name> space` posts the key to that copy's window by
   handle, and `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only
   and leave the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL =
@@ -324,9 +332,37 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   and `status` warn when it is on. Claims live in `pcsx2-claims/` of the main checkout's shared scratch folder
   (`../../scratch`), never a worktree's own `scratch_dir`, so every worktree sees them (`pcsx2_root` and
   `pcsx2_claims_dir` in `coney.local.toml` move the copies and the claims).
-- **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
-  pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
-  while the MCP server is connected.
+- **What PINE gives.** Memory reads and writes, game info, the emulator's status and save/load state slots; no
+  breakpoints, registers, pause or frame capture. PCSX2 serves **one PINE client at a time**: a second client (`pcsx2
+  record`, a script of your own) blocks while another is connected, so the MCP server connects in `mode: "debug"`,
+  which leaves PINE free.
+- **What the debug server gives** (the fork's, newline-delimited JSON over TCP on the copy's `DebugServerPort`; it
+  starts with a game and serves several clients at once). Everything the `pcsx2` MCP server's tools do: memory reads,
+  writes and pattern searches, all registers at 128 bits, PCSX2's own disassembly and expressions, breakpoints with
+  conditions, watchpoints (read, write, change), stepping and the debugger's pause, plus `pcsx2_emulation` (pause or
+  resume emulation as a whole), `pcsx2_frame_advance` (run N frames, then pause), `pcsx2_controller` (a DualShock 2's
+  whole state, held until the next call), `pcsx2_screenshot` (a PNG at internal resolution in the copy's `snaps/`),
+  `pcsx2_capture` (PCSX2's video capture), `pcsx2_gs_dump` (a GS dump of N frames), save and load state, and
+  `pcsx2_input_recording` (below). The MCP server connects to nothing at start: `pcsx2_connect` with your claim's
+  `debug_port` and `pine_port` picks the copy ([Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
+  speaks the same protocol itself (`repo:python/src/coney_tools/debug_server.py`).
+- **Input recordings.**{#input-recordings} PCSX2's own `.p2m2` files hold every frame's pad state from a start
+  savestate (`<file>.p2m2_SaveState.p2s` beside it) or from power-on, so a run's input repeats exactly.
+  `pcsx2_input_recording` drives them as PCSX2's "Input Recording" menu does: `new` (with `author`, `from`
+  `savestate` or `power_on`, `path`) records from now on, `play` loads the start and replays, `stop` closes the file,
+  `status` reports the mode and frames. At a replay's last frame PCSX2 pauses and the fork stops the replay there, so
+  playing never adds to the file. A `play` sent while emulation is paused (`pcsx2_emulation`) loads the start at once
+  and stays paused until resumed, which is how `pcsx2 record --recording` makes its step 0 the recording's first frame
+  (checked 2026-10-20 on copy `pcsx2`: a 181-frame recording made in the front end, played while paused, put PCSX2's
+  frame counter back to the recording's start at recording frame 0, ran on resume, and ended paused with
+  `replay_ended`). Paths are relative to the copy's folder and must stay inside it, so recordings live
+  in the copy's `recordings/`; `coney-tools pcsx2 recordings push | pull` moves them (with the savestate, SHA-256
+  checked) to and from the shared scratch folder's `recordings/`, where they are kept like any capture. `pcsx2 record
+  --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same input
+  ([`pcsx2`](coney-tools.md#pcsx2)). A recording is game data: never committed.
+- **States across versions.** The copies keep the states their stock PCSX2 2.9.94 saved in `sstates/`, but PCSX2
+  2.9.129 may refuse them (a state is tied to the version that saved it): make the states a task needs again on the
+  fork build, as files in your scratch folder.
 - **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 keys`, `WM_KEYDOWN`) reach
   the hotkeys in `[Hotkeys]` (verified: a posted Space paused and resumed the game with the window unfocused) and the
   pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; not yet checked with posted
@@ -405,7 +441,8 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   ([Recording a trace](#recording-a-trace)). (The first recorder counted updates by the game time in milliseconds,
   `*(0x0050b734) + 0x48`; its rounding skipped and repeated steps after the frame that catches a tick up, about every
   33 s.)
-- **Hooks: a call log without breakpoints** (2026-10-05, the runtime-checks pass). PINE has no breakpoints, so "who
+- **Hooks: a call log without breakpoints** (2026-10-05, the runtime-checks pass). PINE has no breakpoints (the debug
+  server's do stop the game, which a recording cannot afford), so "who
   writes this" and "which objects does this run" are answered by patching code in the state copy: a hook replaces two
   instructions with a jump to a cave in memory the game leaves empty (`0x000a0000`; zeros from `0x00095100` to the
   ELF at `0x00100000` in every state checked), which writes chosen registers and loads into a ring buffer

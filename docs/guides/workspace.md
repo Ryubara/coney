@@ -13,7 +13,7 @@ Coney/                          the workspace (a plain folder, not a repository)
   worktrees/coney/<branch>/     every worktree, and nowhere else
   scratch/                      captures, dumps, tool output, leftovers; never committed
   game/                         your disc image and files extracted from it
-  emulators/pcsx2/              portable PCSX2 (plus BIOS)
+  emulators/pcsx2, pcsx2-b, ... portable PCSX2 copies of the PCSX2-MCP fork build (plus BIOS), one per agent
   tools/                        local installs: Ghidra (with the EE extension), RenderDoc, a JDK if needed
   ghidra/                       local Ghidra projects (rebuildable caches)
 ```
@@ -57,7 +57,8 @@ the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Insi
 2. clones the repository into `repos/coney` when run outside a checkout (`--repo-url`);
 3. downloads the research tools you ask for with `--fetch` (below);
 4. writes `repos/coney/coney.local.toml` from the example when there is none, filling in `jdk_home` when it finds a
-   JDK 21, and `ghidra_mcp_repo` and `pcsx2_mcp_dir` when those tools are in `tools/`;
+   JDK 21, and `ghidra_mcp_repo` and `pcsx2_mcp_dir` when those tools are in `tools/` (`pcsx2_mcp_dir` names the
+   newest fork build, `tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.N-win64`, when one is there);
 5. checks the prerequisites ([Building and testing](building.md#what-you-need)): Git, the C++ compiler, CMake 3.28+
    and Ninja, which the engine needs, and a JDK 21 and Node.js 18+, which only the research tools need. It prints what
    is missing and what to install; it installs none of it.
@@ -68,13 +69,14 @@ around the checkout (a checkout must sit in a workspace's `repos/` folder). The 
 prerequisites are missing, 2 for a usage error, 0 otherwise.
 
 **Never your game or firmware.** The bootstrapper never downloads or asks for game files or a BIOS
-([LEGAL.md](repo:LEGAL.md)). Put your own disc image in `game/`, and the BIOS dumped from your own console in PCSX2's
-`bios/` folder.
+([LEGAL.md](repo:LEGAL.md)). Put your own disc image in `game/`, and the BIOS dumped from your own console in each
+PCSX2 copy's `bios/` folder.
 
 ### Fetching the research tools {#fetch}
 
 Engineers studying the original need Ghidra and PCSX2. `--fetch TOOL` (repeatable, or `--fetch all`) downloads
-each from its own project's GitHub releases at the version below, checks it against the SHA-256 pinned in
+each from its own project's GitHub releases (or clones its repository) at the version below, checks it against the
+SHA-256 pinned in
 `python/src/coney_tools/workspace_fetch.py` and unpacks it; downloads are kept in `scratch/downloads/`. Every file
 of a tool is downloaded and checked before any is unpacked, and the tool's folder appears only once it is complete,
 so a failed or interrupted fetch leaves nothing half-installed: run the command again to retry it. An archive entry
@@ -83,26 +85,46 @@ that would land outside the tool's folder is refused.
 | `--fetch` | What | Into | Licence |
 | --- | --- | --- | --- |
 | `ghidra` | Ghidra 12.1.4, with the Emotion Engine extension v2.1.38 (built for 12.1.4) in its `Ghidra/Extensions/` | `tools/ghidra_12.1.4_PUBLIC` | Apache-2.0 both |
-| `pcsx2` | PCSX2 2.9.94: the Windows build (made portable with `portable.txt`), the Linux AppImage or the macOS app | `emulators/pcsx2` | GPL-3.0 |
 | `ghidra-mcp` | ghidra-mcp's repository at the commit Coney was set up with (7.0.0 pre-release) | `tools/ghidra-mcp` | Apache-2.0 |
-| `pcsx2-mcp` | PCSX2-MCP 1.0.0's Node.js server only (plain JavaScript, so it runs on every platform) | `tools/pcsx2-mcp` | GPL-3.0 |
+| `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source | `tools/pcsx2-mcp` | GPL-3.0 |
+
+PCSX2 itself is not downloaded: every copy runs the fork's own build ([PCSX2 copies](#pcsx2-copies)).
 
 What is left to do by hand, which the command reminds you of:
 
 * **Ghidra:** compile the extension's `r5900.sla` once, as [Ghidra + ghidra-mcp](ghidra.md) shows.
 * **ghidra-mcp:** build its headless server (`target/GhidraMCPHeadless.jar`) as its README says; the agent bridge
   runs from the source as it is.
-* **PCSX2:** your BIOS, and PINE enabled in its settings ([Driving PCSX2](research-workflow.md#driving-pcsx2)). The
-  PCSX2-MCP release also holds a modified PCSX2 for Windows; Coney does not use it and the bootstrapper does not
-  install it.
-
-The Windows PCSX2 is a 7z archive, which Python cannot read; the command extracts it with the `tar` that Windows 11
-ships. An older Windows 10 `tar` may not read 7z: then the fetch stops with tar's error, and you extract the archive
-from `scratch/downloads/` into `emulators/pcsx2` by hand (with 7-Zip) and create an empty `portable.txt` beside
-`pcsx2-qt.exe`.
+* **PCSX2-MCP:** build the fork as its README says (`pcsx2-plugin\prepare.ps1`, then CMake, then `npm ci` and
+  `npm run build` in `pcsx2-mcp-server/`), into a release folder `release/PCSX2-MCP-coney-v2.9.129.N-win64` that
+  holds PCSX2's program with `pcsx2-mcp-server/` beside it; point `pcsx2_mcp_dir` at it and run
+  `coney-tools pcsx2 setup-copies` ([PCSX2 copies](#pcsx2-copies)). Each copy needs your BIOS.
 
 To move to newer versions, change the pins (URL and SHA-256, or the commit) in `workspace_fetch.py`; GitHub shows
 each release asset's SHA-256.
+
+### PCSX2 copies {#pcsx2-copies}
+
+Several agents run the original at once, each in its own portable PCSX2 copy under `pcsx2_root`
+(`../../emulators`): `pcsx2`, `pcsx2-b`, `pcsx2-c`, ... (`pcsx2_copies`, 5 by default). Every copy runs the
+PCSX2-MCP fork's build named by `pcsx2_mcp_dir` and listens on its own two ports, copy *i* (`pcsx2` is 0) on:
+
+| Setting in `inis/PCSX2.ini` | Value | Port of `pcsx2` .. `pcsx2-e` |
+| --- | --- | --- |
+| `[EmuCore]` `EnablePINE`, `PINESlot` | `true`, `pcsx2_pine_base` + *i* | 28011 .. 28015 |
+| `[EmuCore]` `EnableDebugServer`, `DebugServerPort` | `true`, `pcsx2_debug_base` + *i* | 21512 .. 21516 |
+| `[InputSources]` `SDL` | `false`: the user's gamepad never drives an agent's game | |
+
+`coney-tools pcsx2 setup-copies [--count N] [--dry-run]` makes the copies that are missing and updates the rest
+([`pcsx2`](coney-tools.md#pcsx2)). It copies only the build's program files over a copy (and removes old program
+files the build no longer has, such as a stock PCSX2's `updater.exe`), writes `portable.txt`, and sets the keys above
+in the copy's ini, leaving every other setting as it was. A copy's own `inis/`, `bios/`, `memcards/`, `sstates/`,
+`recordings/` and the other folders PCSX2 writes are never replaced. A new copy starts from the first copy's ini and
+`bios/`. A copy whose PCSX2 runs is refused (exit code 1); close it and run the command again. Run it again after
+every new fork build.
+
+Save states made by another PCSX2 version (the copies ran a stock PCSX2 2.9.94 until 2026-10-20) stay in each copy's
+`sstates/`, but PCSX2 2.9.129 may refuse to load them: make the states a task needs again on the new build.
 
 ## Creating the folders by hand
 
@@ -118,7 +140,8 @@ git clone <the Coney repository URL> repos/coney
 Then put your own files in place:
 
 * `game/`: your disc image and the files you extract from it. Coney never ships these and you never commit them.
-* `emulators/pcsx2/`: a portable PCSX2 with the PINE slot enabled.
+* `emulators/pcsx2/`, `pcsx2-b/`, ...: the PCSX2 copies, made by `coney-tools pcsx2 setup-copies`
+  ([PCSX2 copies](#pcsx2-copies)), each with your BIOS.
 * `tools/`: Ghidra 12.1.4 with the Emotion Engine extension (setup in [Ghidra + ghidra-mcp](ghidra.md)) and a
   JDK 21 if you do not have one elsewhere.
 
@@ -141,7 +164,10 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `ghidra_install` | `../../tools/ghidra_12.1.4_PUBLIC` | Ghidra 12.1.4 with the Emotion Engine extension |
 | `ghidra_projects` | `../../ghidra` | local Ghidra projects |
 | `pcsx2_dir` | `../../emulators/pcsx2` | portable PCSX2 with PINE enabled |
-| `pcsx2_root` | the main checkout | folder holding the `pcsx2`, `pcsx2-b`, ... copies that `coney-tools pcsx2 claim` hands out |
+| `pcsx2_root` | `../../emulators` | folder holding the `pcsx2`, `pcsx2-b`, ... copies that `coney-tools pcsx2 claim` hands out |
+| `pcsx2_copies` | `5` | a number: how many copies `pcsx2 setup-copies` makes |
+| `pcsx2_pine_base` | `28011` | a number: the PINE port of copy `pcsx2`; copy *i* uses this + *i* |
+| `pcsx2_debug_base` | `21512` | a number: the debug server port of copy `pcsx2`; copy *i* uses this + *i* |
 | `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
@@ -150,10 +176,10 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `scratch_dir` | `../../scratch` | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
-| `pcsx2_mcp_dir` | none | PCSX2-MCP's Node.js server (`dist/index.js`) or the release folder holding it; only for the `pcsx2` agent server |
+| `pcsx2_mcp_dir` | none | a PCSX2-MCP fork build (`release/PCSX2-MCP-coney-v2.9.129.N-win64`): the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
 | `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 
-Each line is `key = "value"` (the `build_*` number keys are written without quotes: `build_slots = 2`); a `#` starts a
+Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
 comment. A tool that needs a folder that does not exist stops with an
 error naming the key, the path it resolved and the config file it used, so a wrong entry is easy to find.
 

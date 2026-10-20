@@ -174,3 +174,15 @@ def test_a_missing_required_tool_fails_after_the_work(
     assert main(["workspace", "init"]) == 1
     assert (tmp_path / "ws" / "scratch").is_dir()
     assert "install it" in capsys.readouterr().out
+
+
+def test_init_points_pcsx2_mcp_dir_at_the_newest_fork_build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    checkout = make_upstream(tmp_path / "ws" / "repos" / "coney")
+    for build in (3, 7, 12):
+        (tmp_path / "ws" / "tools" / "pcsx2-mcp" / "release" / f"PCSX2-MCP-coney-v2.9.129.{build}-win64").mkdir(
+            parents=True
+        )
+    monkeypatch.chdir(checkout)
+    assert main(["workspace", "init"]) == 0
+    config = tomllib.loads((checkout / "coney.local.toml").read_text(encoding="utf-8"))
+    assert config["pcsx2_mcp_dir"] == "../../tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.12-win64"

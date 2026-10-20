@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import mcp_serve
+from coney_tools import mcp_serve, pcsx2_claims
 from coney_tools.cli import main
 from coney_tools.config import PATH_KEYS, ConfigError
 from coney_tools.mcp_serve import GHIDRA_MCP_URL, SERVERS, server_command
@@ -123,6 +123,53 @@ def make_pcsx2_server(folder: Path) -> Path:
     script = folder / "dist" / "index.js"
     script.write_text("", encoding="utf-8")
     return script
+
+
+def test_pcsx2_with_a_copy_passes_its_ports(tmp_path: Path) -> None:
+    make_pcsx2_server(tmp_path)
+    copy = pcsx2_claims.Copy("pcsx2-c", tmp_path / "pcsx2-c", 28013, debug=21514)
+    _, extra = server_command("pcsx2", paths(pcsx2_mcp_dir=tmp_path), which_all, {}, copy)
+    assert extra == {"PCSX2_DEBUG_PORT": "21514", "PCSX2_PINE_PORT": "28013"}
+
+
+def test_pcsx2_with_a_copy_without_a_debug_server_says_so(tmp_path: Path) -> None:
+    make_pcsx2_server(tmp_path)
+    copy = pcsx2_claims.Copy("pcsx2", tmp_path / "pcsx2", 28011)
+    with pytest.raises(ConfigError, match="pcsx2: the debug server is off"):
+        server_command("pcsx2", paths(pcsx2_mcp_dir=tmp_path), which_all, {}, copy)
+
+
+def test_a_copy_is_only_for_the_pcsx2_server(tmp_path: Path) -> None:
+    copy = pcsx2_claims.Copy("pcsx2", tmp_path / "pcsx2", 28011, debug=21512)
+    with pytest.raises(ConfigError, match="--copy is for the pcsx2 server"):
+        server_command("ghidra-mcp", paths(ghidra_mcp_repo=tmp_path), which_all, {}, copy)
+
+
+def test_serve_with_a_copy_runs_the_server_with_its_ports(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    make_pcsx2_server(tmp_path / "server")
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (tmp_path / "coney.local.toml").write_text('pcsx2_mcp_dir = "server"\n', encoding="utf-8")
+    copy = pcsx2_claims.Copy("pcsx2-b", tmp_path / "pcsx2-b", 28012, debug=21513)
+
+    class FakeRegistry:
+        """Knows one copy."""
+
+        def copy(self, name: str) -> pcsx2_claims.Copy:
+            assert name == "pcsx2-b"
+            return copy
+
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda start=None: FakeRegistry())
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setattr(shutil, "which", which_all)
+    seen: list[dict[str, str]] = []
+
+    def fake_run(command: list[str], env: dict[str, str]) -> int:
+        seen.append(env)
+        return 0
+
+    monkeypatch.setattr(mcp_serve, "_run_server", fake_run)
+    assert main(["mcp", "serve", "pcsx2", "--copy", "pcsx2-b"]) == 0
+    assert (seen[0]["PCSX2_DEBUG_PORT"], seen[0]["PCSX2_PINE_PORT"]) == ("21513", "28012")
 
 
 def test_serve_passes_the_servers_exit_status_through(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

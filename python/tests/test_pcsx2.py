@@ -637,3 +637,23 @@ def test_the_repository_scenarios_load() -> None:
         # Input is played through the scripted pad; a run with no input needs no patch for it.
         if scenario.events:
             assert "scripted-pad" in scenario.patches, path
+
+
+def test_a_paused_start_is_step_0_and_resumes_once(tmp_path: Path, fake_pine: tuple[FakeGame, int]) -> None:
+    # pcsx2 record --recording: emulation is paused at the recording's first frame until step 0 is sampled.
+    game, port = fake_pine
+    scenario = load_scenario(_repo(tmp_path, ""), tmp_path)
+    game.polls_per_update = 10**9
+    resumed: list[int] = []
+
+    def resume() -> None:
+        resumed.append(game.updates)
+        game.polls_per_update = 2
+
+    with PineClient(port) as client:
+        recording = Recorder(GameMemory(client), scenario, started=resume).record(timeout=5)
+    assert resumed == [0]
+    assert [row[0] for row in recording.rows] == [0, 1, 2, 3, 4, 5, 6]
+    # Step 0 is the paused start: no update had run when it was sampled.
+    assert recording.rows[0][2] == 0
+    assert recording.missed == []

@@ -44,12 +44,13 @@ def procs(monkeypatch: pytest.MonkeyPatch) -> FakeProcesses:
     return fake
 
 
-def make_copy(root: Path, name: str, port: int, sdl: bool = False) -> Path:
-    """A fake portable copy: a folder with an ini enabling PINE on `port`."""
+def make_copy(root: Path, name: str, port: int, sdl: bool = False, debug: int | None = None) -> Path:
+    """A fake portable copy: a folder with an ini enabling PINE on `port` (and the debug server on `debug`)."""
     ini = root / name / "inis" / "PCSX2.ini"
     ini.parent.mkdir(parents=True)
+    server = f"EnableDebugServer = true\nDebugServerPort = {debug}\n" if debug is not None else ""
     ini.write_text(
-        f"[EmuCore]\nEnablePINE = true\nPINESlot = {port}\n[InputSources]\nSDL = {str(sdl).lower()}\n",
+        f"[EmuCore]\nEnablePINE = true\nPINESlot = {port}\n{server}[InputSources]\nSDL = {str(sdl).lower()}\n",
         encoding="utf-8",
     )
     return root / name
@@ -228,7 +229,7 @@ def test_status_is_built_from_the_claim_folders(
     monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: registry)
     assert pcsx2_claims_cli.run_status(False, None) == 0
     lines = capsys.readouterr().out.splitlines()
-    assert lines[0].split() == ["copy", "state", "agent", "since", "port", "running"]
+    assert lines[0].split() == ["copy", "state", "agent", "since", "port", "debug", "running"]
     assert lines[1].split()[:3] == ["pcsx2", "held", "alice"]
     assert lines[2].split()[:3] == ["pcsx2-b", "held", "bob"]
 
@@ -384,7 +385,8 @@ def test_a_worktree_with_its_own_scratch_still_shares_the_claims_folder(
 
     # `../../scratch` beside the main checkout, never the worktree's scratch_dir: every worktree sees one place.
     assert registry.claims_dir == (main / ".." / ".." / "scratch" / "pcsx2-claims").resolve()
-    assert registry.root == main
+    # No pcsx2_root: the workspace's emulators/ folder, beside the repos/ folder that holds the main checkout.
+    assert registry.root == (main / ".." / ".." / "emulators").resolve()
 
 
 def test_a_worktree_without_a_config_file_shares_the_claims_folder(
@@ -402,3 +404,95 @@ def test_an_explicit_claims_folder_is_honoured(tmp_path: Path, monkeypatch: pyte
     )
 
     assert pcsx2_claims.default_registry().claims_dir == (worktree / "somewhere" / "claims").resolve()
+
+
+def test_discovery_reads_the_debug_server_port(tmp_path: Path) -> None:
+    make_copy(tmp_path, "pcsx2", 28011, debug=21512)
+    make_copy(tmp_path, "pcsx2-b", 28012)
+    (tmp_path / "pcsx2-c" / "inis").mkdir(parents=True)
+    (tmp_path / "pcsx2-c" / "inis" / "PCSX2.ini").write_text(
+        "[EmuCore]\nEnablePINE = true\nPINESlot = 28013\nEnableDebugServer = false\nDebugServerPort = 21514\n",
+        encoding="utf-8",
+    )
+    by_name = {c.name: c for c in pcsx2_claims.discover_copies(tmp_path)}
+    assert (by_name["pcsx2"].port, by_name["pcsx2"].debug) == (28011, 21512)
+    # A stock PCSX2's ini has no debug server; one turned off reads as off whatever its port.
+    assert by_name["pcsx2-b"].debug is None
+    assert by_name["pcsx2-c"].debug is None
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [((28011, 21512), (28011, 21513)), ((28011, 21512), (28012, 21512)), ((28011, 21512), (21512, 21513))],
+)
+def test_discovery_refuses_two_copies_on_one_port(
+    tmp_path: Path, first: tuple[int, int], second: tuple[int, int]
+) -> None:
+    make_copy(tmp_path, "pcsx2", first[0], debug=first[1])
+    make_copy(tmp_path, "pcsx2-b", second[0], debug=second[1])
+    with pytest.raises(ConfigError, match=r"pcsx2-b: its .* port .* also used by pcsx2"):
+        pcsx2_claims.discover_copies(tmp_path)
+
+
+def test_a_claim_records_the_debug_port_and_old_owner_files_still_load(tmp_path: Path, procs: FakeProcesses) -> None:
+    make_copy(tmp_path / "root", "pcsx2", 28011, debug=21512)
+    registry = Registry(tmp_path / "root", tmp_path / "claims", clock=lambda: NOW)
+    claim, _ = registry.claim("alice")
+    assert claim.debug_port == 21512
+    owner = registry.claims_dir / "pcsx2.claim" / "owner.json"
+    assert json.loads(owner.read_text(encoding="utf-8"))["debug_port"] == 21512
+    # An owner file written before the debug server existed has no debug_port.
+    old = {"copy": "pcsx2", "agent": "alice", "time": claim.time, "path": claim.path, "port": 28011}
+    owner.write_text(json.dumps(old), encoding="utf-8")
+    loaded = registry.read("pcsx2")
+    assert loaded is not None
+    assert (loaded.agent, loaded.debug_port) == ("alice", None)
+
+
+def test_a_listening_debug_server_keeps_an_old_claim(
+    tmp_path: Path, procs: FakeProcesses, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    make_copy(tmp_path / "root", "pcsx2", 28011, debug=21512)
+    registry = Registry(tmp_path / "root", tmp_path / "claims", clock=lambda: NOW)
+    registry.claim("alice")
+    registry.clock = lambda: NOW + 10 * 24 * 3600
+    monkeypatch.setattr(pcsx2_claims, "port_open", lambda port: port == 21512)
+    row = registry.status()[0]
+    assert row.running
+    assert not row.stale
+
+
+def test_claim_and_status_print_both_ports(
+    tmp_path: Path, procs: FakeProcesses, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    make_copy(tmp_path / "root", "pcsx2", 28011, debug=21512)
+    make_copy(tmp_path / "root", "pcsx2-b", 28012)
+    registry = Registry(tmp_path / "root", tmp_path / "claims", clock=lambda: NOW)
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: registry)
+    assert pcsx2_claims_cli.run_claim("alice", None, False, None) == 0
+    assert "port=28011 debug-port=21512" in capsys.readouterr().out
+    assert pcsx2_claims_cli.run_claim("bob", None, True, None) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert (printed["copy"], printed["port"], printed["debug_port"]) == ("pcsx2-b", 28012, None)
+    assert pcsx2_claims_cli.run_status(True, None) == 0
+    rows = json.loads(capsys.readouterr().out)
+    assert [(r["copy"], r["debug_port"]) for r in rows] == [("pcsx2", 21512), ("pcsx2-b", None)]
+
+
+def test_a_claim_held_across_setup_prints_the_new_ports(
+    tmp_path: Path, procs: FakeProcesses, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    copy = make_copy(tmp_path / "root", "pcsx2", 28011)
+    registry = Registry(tmp_path / "root", tmp_path / "claims", clock=lambda: NOW)
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: registry)
+    registry.claim("alice")
+    # pcsx2 setup-copies turns the debug server on while alice holds the copy.
+    ini = copy / "inis" / "PCSX2.ini"
+    ini.write_text(
+        pcsx2_cli.set_ini_value(ini.read_text(encoding="utf-8"), "EmuCore", "EnableDebugServer", "true"),
+        encoding="utf-8",
+    )
+    assert pcsx2_claims_cli.run_claim("alice", None, False, None) == 0
+    assert "debug-port=21512" in capsys.readouterr().out
+    assert pcsx2_claims_cli.run_claim("alice", None, True, None) == 0
+    assert json.loads(capsys.readouterr().out)["debug_port"] == 21512
