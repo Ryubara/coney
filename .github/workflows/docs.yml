@@ -81,3 +81,4 @@ jobs:
           https://raw.githubusercontent.com/rhysd/actionlint/914e7df21a07ef503a81201c76d2b11c789d3fca/scripts/download-actionlint.bash)
           1.7.12
       - run: ./actionlint -color .github/workflows/*.yml
+# Re-registered after the repository was restored.

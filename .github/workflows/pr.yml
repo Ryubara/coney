@@ -71,3 +71,4 @@ jobs:
         run: |
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
           uv run --project python coney-tools repo check-body --body "$RUNNER_TEMP/pr-body.md"
+# Re-registered after the repository was restored.
