@@ -111,8 +111,11 @@ TEST_CASE("a cop, a dealer and a man not free to fidget do not fidget", "[ai]") 
 TEST_CASE("a waiting attacker taunts every 1-2 s, the one his man is fighting never does", "[ai]") {
     AiScene scene;
     Brain& player = scene.player();
-    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F);
-    Brain& back = scene.add({40.0F, 35.6F, 0.0F}, 0.0F);
+    // Neither has a kind to attack with, so both always wait (Brain_CheckAttack's "no kind").
+    coney::ai::FightSettings unarmed;
+    unarmed.attackWeights = coney::ai::AttackWeights{};
+    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, unarmed);
+    Brain& back = scene.add({40.0F, 35.6F, 0.0F}, 0.0F, BrainType::Gang, unarmed);
     for (Brain* brain : {&front, &back}) {
         brain->setServices(&scene.services);
         brain->setTarget(&player);
@@ -122,9 +125,9 @@ TEST_CASE("a waiting attacker taunts every 1-2 s, the one his man is fighting ne
     REQUIRE(player.attackSlots().front() == &front);
     scene.run(300); // 10 s
     CHECK(saidBy(scene, front, 0x11) == 0);
-    // The other waits for the one active place, 4-4.75 m off: a taunt at most each second.
+    // The other waits 4.4 m off: a taunt each 1-2 s after the first at 0.75-1 s, so 5 to 10 in 10 s.
     const int taunts = saidBy(scene, back, 0x11);
-    CHECK(taunts >= 2);
+    CHECK(taunts >= 5);
     CHECK(taunts <= 10);
 }
 

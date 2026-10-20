@@ -132,9 +132,10 @@ struct AiScene {
         brains.gangs().setScripts(&services);
     }
 
-    /// A human with its feet at `feet` facing `headingDegrees` (0 faces +y), with a brain of `type`; its handle is its
-    /// slot + 1, known to the services.
-    ai::Brain& add(anim::Vec3 feet, float headingDegrees, ai::BrainType type = ai::BrainType::Gang) {
+    /// A human with its feet at `feet` facing `headingDegrees` (0 faces +y), with a brain of `type` and `settings`; its
+    /// handle is its slot + 1, known to the services.
+    ai::Brain& add(anim::Vec3 feet, float headingDegrees, ai::BrainType type = ai::BrainType::Gang,
+                   const ai::FightSettings& settings = {}) {
         humans.push_back(std::make_unique<human::Human>(character.anims, human::AnimSlots::player(), identityBind(),
                                                         1.0F, &character.ranges));
         human::Human& made = *humans.back();
@@ -143,7 +144,7 @@ struct AiScene {
             human::FighterProfile{.player = player, .powerClass = ai::kWarriorPowerClass, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
         step.add(made, player);
-        ai::Brain& brain = brains.add(made, type, ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
+        ai::Brain& brain = brains.add(made, type, settings, static_cast<std::uint32_t>(humans.size()));
         brain.setHandle(static_cast<double>(humans.size()));
         services.brains[brain.handle()] = &brain;
         return brain;
