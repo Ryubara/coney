@@ -1207,6 +1207,14 @@ Coney fixes (item 41):
    start) leaves Ash at z −8.5 with his brain suspended, off the radar and out of `l99_c2`; with a second pad joined,
    `F.Player2Join` puts him beside Rembrandt.
 
+Status (2026-10-20): fix 1 was the cause, on a direct start only. There `P2.SetupLesson1` runs while the level's
+humans are still being made, and Coney answered `HuIsAPlayer(Ash)` true from his player argument 2, so the set-up kept
+him on the radar and awake and cast him in `l99_c2`, which left him on the street at (46.4, 46.5). Now only argument 1
+answers as a player. The hand-over from checkpoint 1 already asked his live brain and was right. Fix 2 needed nothing:
+Coney leaves him at (66.2, 52.7, −8.5), as the original keeps Ash at `fAshTeleport1` (−287.80, 124.80, −8.53) on the
+checkpoint 1 state, standing and not falling (confirmed (runtime), PCSX2, 2026-10-20). Fix 3 does not arise: Coney has
+no second pad. Test: `repo:tests/platform/disc_level99_player2_test.cpp`, both ways into checkpoint 2.
+
 **Item 42: Vermin runs to both jumps.** After the player's window jump, `P3.Player2Jumps` sends Vermin from
 `fVerminWait` (62.8, −3.3, 4.3) to `fStop[3]` (41.3, 2.8, 4.3) with `GoalMoveToFlag(Vermin, fStop[3], 4, 0, 0, 0.3,
 0, true)`: **gait 4, run**, arrival 0.3 m, then the flag's heading (127°). That leg crosses the window (the panes at

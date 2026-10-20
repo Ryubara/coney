@@ -54,9 +54,11 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
     const Brain* brain = m_scripted->brain(handle);
     if (brain == nullptr) {
         // A human the scripts made before the level's humans exist answers as standing (ScriptedBrains::heldHuman()).
+        // Only HuCreate's player argument 1 makes a player; any other (Ash's 2) is the hand-over priority, so he is no
+        // player until a second pad joins, which Coney never has (docs/research/scripting.md#level99-p2-vermin-fence).
         if (const std::optional<ScriptedBrains::HeldHuman> held = m_scripted->heldHuman(handle)) {
             return script::HumanStatus{.alive = true,
-                                       .player = held->playerIndex > 0,
+                                       .player = held->playerIndex == 1,
                                        .arrested = false,
                                        .healthPercent = 100.0F,
                                        .gangType = 0xffff,
