@@ -29,6 +29,7 @@ bool CountingNumber::update(int value, std::uint64_t nowMs) {
         m_value = value;
         changed = true;
     }
+    m_moved = m_shown != m_value;
     m_shown += countStep(m_shown, m_value);
     return changed;
 }

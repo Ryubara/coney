@@ -27,7 +27,10 @@ struct Sounds {
     std::vector<std::string> played;
     coney::hud::HudSound sound() {
         coney::hud::HudSound s;
-        s.play = [this](std::string_view name) { played.emplace_back(name); };
+        s.play = [this](std::string_view name) {
+            played.emplace_back(name);
+            return coney::hud::HudSoundHandle{0};
+        };
         s.cueName = [](int cue) { return cue == coney::hud::kWarCommandCue ? std::string("move") : std::string(); };
         return s;
     }

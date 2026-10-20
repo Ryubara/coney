@@ -125,6 +125,7 @@ add_executable(coney_tests
     platform/disc_level99_snaps_test.cpp
     platform/disc_level99_course_test.cpp
     platform/disc_level99_powerups_test.cpp
+    platform/disc_level99_money_sound_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
     platform/disc_scene_option_test.cpp

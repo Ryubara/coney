@@ -29,6 +29,8 @@ class CountingNumber {
     [[nodiscard]] int value() const { return m_value; }
     /// Whether the shown number is still moving.
     [[nodiscard]] bool counting() const { return m_shown != m_value; }
+    /// Whether the last update moved the shown number: a counting frame (the frames the money's sound plays).
+    [[nodiscard]] bool moved() const { return m_moved; }
     /// The latest change's popup, if one was made.
     [[nodiscard]] const std::optional<Popup>& popup() const { return m_popup; }
     /// Forgets the popup (its time is over).
@@ -38,6 +40,7 @@ class CountingNumber {
     int m_shown = 0;
     int m_value = 0;
     bool m_started = false;
+    bool m_moved = false; // the last update stepped m_shown
     std::optional<Popup> m_popup;
 };
 

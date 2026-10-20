@@ -163,8 +163,15 @@ class Hud {
     void setServices(HudServices services) { m_services = std::move(services); }
     /// The services.
     [[nodiscard]] const HudServices& services() const { return m_services; }
-    /// Connects the sound output: `play` plays a sound by name (audio::SoundPlayer::play); empty for silence.
-    void setSoundOutput(std::function<void(std::string_view name)> play) { m_services.sound.play = std::move(play); }
+    /// Connects the sound output: `play` plays a sound by name and returns its handle (audio::SoundPlayer::play),
+    /// `stop` stops one and `playing` says whether one still plays (HudSound); empty for silence.
+    void setSoundOutput(std::function<HudSoundHandle(std::string_view name)> play,
+                        std::function<void(HudSoundHandle sound)> stop = {},
+                        std::function<bool(HudSoundHandle sound)> playing = {}) {
+        m_services.sound.play = std::move(play);
+        m_services.sound.stop = std::move(stop);
+        m_services.sound.playing = std::move(playing);
+    }
 
     /// `HUD_AttachPlayer(slot, type)`: attaches panel `slot` (0 or 1) to a player of character type `type` once,
     /// hidden again while the HUD is hidden. Returns the slot, or -1 for a bad or taken slot.

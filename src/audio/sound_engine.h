@@ -136,6 +136,8 @@ class SoundEngine {
     void stopAll();
     /// Whether the sound is still live (playing, virtually or for real, or fading).
     [[nodiscard]] bool isPlaying(SoundHandle sound) const;
+    /// How many live sounds play the sound `hash` (for the tests that check a sound has ended).
+    [[nodiscard]] std::size_t liveCount(std::uint32_t hash) const;
     /// Whether the sound plays virtually (no voice).
     [[nodiscard]] bool isVirtual(SoundHandle sound) const;
     /// The game voice the sound plays on (1-12 a stream channel, 13-47 an SPU2 voice), or -1.
