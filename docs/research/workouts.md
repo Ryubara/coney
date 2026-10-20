@@ -370,8 +370,9 @@ when stopped more than 15° off, not at all within 15° ([AI: Speed control and 
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
 the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
 the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
-`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and
-`TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a
+flag's degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag,
+and Coney turned the player to face away from it until the flags' headings were negated (2026-10-20).
 
 **The cause, found and fixed** (Coney, 2026-10-11): `DeactivateWarchief` sets the player's brain dead, so the pad is
 given up and the goal runs, but the player stands in the fight stance locked on a foe (the bag, or any fighter near),
@@ -383,8 +384,9 @@ when stopped more than 15° off, not at all within 15° ([AI: Speed control and 
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
 the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
 the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
-`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and
-`TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a
+flag's degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag,
+and Coney turned the player to face away from it until the flags' headings were negated (2026-10-20).
 
 **The cycle games in Coney** (2026-10-11): `HuWorkout` follows [The engine side](#engine). A workout begins once all
 five clips load (the level's clip source, by the names the script gives) and, for the player who is his own target,

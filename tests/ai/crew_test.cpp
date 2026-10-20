@@ -155,7 +155,8 @@ TEST_CASE("a follower whose crewmate is attacked faces the attacker and never at
     CHECK(enemy.human().fighter().health().value() == 1400);
 }
 
-TEST_CASE("the chief's automatic commands: attack 1.5 s after an attacker is close, follow 1.5 s after the fight",
+TEST_CASE("the chief's automatic commands: attack 1.5 s after his target is close while he has attackers, follow "
+          "1.5 s after the fight",
           "[ai][crew]") {
     AiScene scene;
     std::vector<Brain*> members;
@@ -166,9 +167,18 @@ TEST_CASE("the chief's automatic commands: attack 1.5 s after an attacker is clo
     // Nothing while no one is close.
     CHECK_FALSE(orders.update(chief, coney::ai::kCrewFollow, 0).has_value());
 
+    // An attacker close while the chief has no target of his own (WarChief_IsTargetInRange reads human +0xc8): nothing,
+    // however long it lasts.
     Brain& enemy = scene.add({41.0F, 40.0F, 0.0F}, 0.0F);
     enemy.setTarget(&chief);
     REQUIRE(chief.attackSlots().size() == 1);
+    REQUIRE(chief.human().fighter().target() == nullptr);
+    CHECK_FALSE(orders.update(chief, coney::ai::kCrewFollow, 100).has_value());
+    CHECK_FALSE(orders.update(chief, coney::ai::kCrewFollow, 900).has_value());
+
+    // His stance takes the enemy 1 m from him as his target: the attack follows 1.5 s later.
+    scene.run(2);
+    REQUIRE(chief.human().fighter().target() == &enemy.human());
     CHECK_FALSE(orders.update(chief, coney::ai::kCrewFollow, 1000).has_value());
     CHECK_FALSE(orders.update(chief, coney::ai::kCrewFollow, 2400).has_value());
     CHECK(orders.update(chief, coney::ai::kCrewFollow, 2500) == coney::ai::kCrewAttack);

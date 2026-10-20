@@ -196,7 +196,8 @@ TEST_CASE("quick rumble: the Rumble menu starts the arena and the start callback
     REQUIRE(player.teleported.has_value());
     const coney::world_objects::Placement placed = player.teleported.value_or(coney::world_objects::Placement{});
     CHECK(placed.position == std::array<float, 3>{5.0F, 6.0F, 7.0F});
-    CHECK(placed.headingDegrees == 128.0F);
+    // The flag's 128 turn clockwise seen from above, so the placement's heading (about +z) is -128.
+    CHECK(placed.headingDegrees == -128.0F);
     // The level's flag and InitLevel's two; the callback was called once and cleared.
     CHECK(run.flow->flags().all().size() == 3);
     CHECK(run.flow->state().startGameCallback.empty());

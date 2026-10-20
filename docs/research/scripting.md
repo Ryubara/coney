@@ -1285,6 +1285,13 @@ Coney fixes (item 43):
 3. Test (level99 checkpoint 3): during the point, Vermin's heading is 273° ± 5° (the game's sense); after his walk,
    139° ± 15° at `fStop[6]`.
 
+Status (2026-10-20): fix 1 was the cause. Coney took every flag's heading, and `Teleport`'s and `TeleportToFlag`'s, in
+`HuCreate`'s anticlockwise sense, so Vermin faced +x, away from the camera, and every goal that turns a human to a flag
+turned him the mirror way; the sense is now confirmed (code) and (runtime) on [Flags](flags.md#position), and Coney
+negates those headings. Fix 2 needed nothing more. Test: `repo:tests/platform/disc_level99_fence_lesson_test.cpp`
+(Vermin within 5° of 273 after the teleport, the player within 5° of `fBreakFencePoizo`'s 184, Vermin within 15° of
+139 at `fStop[6]`).
+
 **Item 44: what waits for the fence.** Nothing in 3.5 fades the screen. `P3.WoodenFences` letterboxes in
 (`ScreenQueueEffect(2, 1)`) and `P3.BreakFence` letterboxes out (`ScreenQueueEffect(3, 1)`) before the player can
 move; from then on only the fences' message 2 goes on: `P3.FenceBroken` (either fence) clears the hint, Vermin's blip

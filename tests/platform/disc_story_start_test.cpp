@@ -249,7 +249,8 @@ TEST_CASE("the disc's hub and Rumble arenas put player 1 on their flags", "[disc
     CHECK(warchief.headingDegrees == 222.0F);
     const coney::world_objects::Placement door = warchief.teleported.value_or(coney::world_objects::Placement{});
     CHECK(samePlace(door.position, {-185.2F, 112.7F, -193.7F}));
-    CHECK(door.headingDegrees == 182.0F);
+    // A flag's heading turns clockwise seen from above, a placement's the other way (docs/research/flags.md#position).
+    CHECK(door.headingDegrees == -182.0F);
     std::printf("  level95 checkpoint 1: %zu humans, %zu flags, %llu script errors, %llu skipped calls\n", hub.humans,
                 hub.flags, static_cast<unsigned long long>(hub.scriptErrors),
                 static_cast<unsigned long long>(hub.skippedCalls));
@@ -276,7 +277,7 @@ TEST_CASE("the disc's hub and Rumble arenas put player 1 on their flags", "[disc
         CHECK(player.headingDegrees == 270.0F);
         const coney::world_objects::Placement placed = player.teleported.value_or(coney::world_objects::Placement{});
         CHECK(samePlace(placed.position, arena.flag));
-        CHECK(placed.headingDegrees == arena.heading);
+        CHECK(placed.headingDegrees == coney::world_objects::placementHeading(arena.heading));
         CHECK(run.scriptErrors == 0);
         std::printf("  %.*s brawl: %zu humans, %zu flags, %llu script errors, %llu skipped calls\n",
                     static_cast<int>(arena.level.size()), arena.level.data(), run.humans, run.flags,
@@ -432,11 +433,11 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     }
     CHECK(play->sceneName() == "level102");
     CHECK(play->model() == "fury_so1");
-    // P11 stands on fP1[1], facing its heading (128 degrees), on the ground.
+    // P11 stands on fP1[1], facing its heading (128 degrees clockwise seen from above: Coney's -128), on the ground.
     const coney::anim::Vec3 feet = play->player().human().position();
     CHECK(std::abs(feet.x - -9.1F) < 0.01F);
     CHECK(std::abs(feet.y - 8.9F) < 0.01F);
-    CHECK(std::abs(play->playerHeadingDegrees() - 128.0F) < 0.01F);
+    CHECK(std::abs(play->playerHeadingDegrees() - -128.0F) < 0.01F);
     CHECK(!play->player().human().airborne());
 
     // The intro names the two gangs; accepting its prompt runs the countdown, which hands the match to the script.

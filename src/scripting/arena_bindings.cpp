@@ -126,7 +126,8 @@ NativeFunction makeGetGameMode(const BindingContext& context) {
 
 // `Teleport(object, {x, y, z}, heading)`: moves a human the scripts made, as `TeleportToFlag` does (a running level
 // moves it, the player too), or a spawned object (its spawn record, which the trigger spheres and the drawing read);
-// heading -1 (the default) keeps its facing. **Coney stand-in**: the human is placed at the point as given (the
+// heading -1 (the default) keeps its facing; another turns it about -z, clockwise seen from above, as `TeleportToFlag`
+// does (docs/research/flags.md#position). **Coney stand-in**: the human is placed at the point as given (the
 // original lowers it onto what a short ray down finds).
 // @orig 0x00385bb8 Object_Teleport (unknown)
 NativeFunction makeTeleport(const BindingContext& context) {
@@ -145,14 +146,14 @@ NativeFunction makeTeleport(const BindingContext& context) {
         HumanCreation* human = context->humans != nullptr ? context->humans->find(handle) : nullptr;
         if (human == nullptr) {
             // Another object (a prop, an effect) takes the transform as given: its spawn record's position, and a
-            // rotation about z unless the heading is -1.
+            // rotation about -z (Quat_FromAxisAngle with the axis (0, 0, -1)) unless the heading is -1.
             world_objects::SpawnRecord* record =
                 context->spawnRecords != nullptr ? context->spawnRecords->find(handle) : nullptr;
             if (record != nullptr && !record->removed) {
                 record->position = placement.position;
                 if (heading != kKeepHeading) {
                     const float half = static_cast<float>(heading) * std::numbers::pi_v<float> / 360.0F;
-                    record->rotation = {0.0F, 0.0F, std::sin(half), std::cos(half)};
+                    record->rotation = {0.0F, 0.0F, -std::sin(half), std::cos(half)};
                 }
             }
             return binding::none();
@@ -166,7 +167,7 @@ NativeFunction makeTeleport(const BindingContext& context) {
             }
             placement.headingDegrees = now ? now->headingDegrees : 0.0F;
         } else {
-            placement.headingDegrees = static_cast<float>(heading);
+            placement.headingDegrees = world_objects::placementHeading(static_cast<float>(heading));
         }
         human->teleported = placement;
         ++human->teleports;

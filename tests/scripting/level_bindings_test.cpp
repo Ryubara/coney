@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The level scripts' bindings (docs/research/flags.md, docs/research/scripting.md#errors-in-a-fresh-state): the flags
-// and their handles, GetFlagPos's M_Vector4, TeleportToFlag with and without the flag's heading, the saved script
-// numbers, the start callback, the Rumble set-up, the game's random numbers and the model HuCreate's type names.
+// and their handles, GetFlagPos's M_Vector4, TeleportToFlag with and without the flag's heading and which way it turns,
+// the saved script numbers, the start callback, the Rumble set-up, the game's random numbers and the model HuCreate's
+// type names.
 #include "scripting/level_bindings.h"
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,6 +22,7 @@
 #include "core/error.h"
 #include "core/game_random.h"
 #include "gui/global_strings.h"
+#include "human/locomotion.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
@@ -147,18 +151,40 @@ TEST_CASE("TeleportToFlag puts a human on the flag with the flag's heading for -
     const auto placed = [player] {
         return player->teleported.value_or(coney::world_objects::Placement{.position = {}, .headingDegrees = -1.0F});
     };
-    CHECK(placed().headingDegrees == 128.0F);
+    // The flag's degrees turn clockwise seen from above (about -z), so the placement's (about +z) is their negative.
+    CHECK(placed().headingDegrees == -128.0F);
     CHECK(placed().position == std::array<float, 3>{-9.1F, 8.9F, -11.1F});
     CHECK(player->teleports == 1);
-    // A given heading is used as whole degrees; no heading is the flag's.
+    // A given heading is used as whole degrees, turned the same way; no heading is the flag's.
     h.call("TeleportToFlag", {Value(human), Value(flag), Value(45.7)});
-    CHECK(placed().headingDegrees == 45.0F);
+    CHECK(placed().headingDegrees == -45.0F);
     h.call("TeleportToFlag", {Value(human), Value(flag)});
-    CHECK(placed().headingDegrees == 128.0F);
+    CHECK(placed().headingDegrees == -128.0F);
     CHECK(player->teleports == 3);
     // Anything but a human and a flag is left alone.
     h.call("TeleportToFlag", {Value(flag), Value(human)});
     CHECK(player->teleports == 3);
+}
+
+TEST_CASE("TeleportToFlag to a flag of 89 degrees faces +x, as the original turned Ash at level99",
+          "[level_bindings]") {
+    // fAshTeleport1's heading is 89; in the original the teleported Ash's rotation read (0, 0, -0.701, 0.713), a turn
+    // of -89 degrees about +z, facing +x (confirmed (runtime), docs/research/flags.md#position).
+    Harness h;
+    const double flag =
+        h.first("AddFlag", {str("fAshTeleport1"), position(-287.8, 124.8, -8.5), Value(89.0)}).number().value_or(0.0);
+    const double human =
+        h.first("HuCreate", {str("Ash"), Value(40.0), position(0, 0, 0), Value(235.0), Value(), Value(2.0)})
+            .number()
+            .value_or(0.0);
+    h.call("TeleportToFlag", {Value(human), Value(flag), Value(-1.0)});
+    const coney::HumanCreation* ash = h.humans.find(human);
+    REQUIRE(ash != nullptr);
+    REQUIRE(ash->teleported.has_value());
+    const float heading = ash->teleported.value_or(coney::world_objects::Placement{}).headingDegrees;
+    const coney::anim::Vec3 ahead = coney::human::facing(heading * std::numbers::pi_v<float> / 180.0F);
+    CHECK(ahead.x > 0.99F);
+    CHECK(std::abs(ahead.y) < 0.02F);
 }
 
 TEST_CASE("the saved script numbers read 0 until written, and only slots 1 to 8 exist", "[level_bindings]") {

@@ -312,10 +312,10 @@ class WarriorHoldTactic final : public Tactic {
 };
 
 /// The chief's automatic commands (`WarChief_AutoCommand`), run every update of his brain: what to dispatch, forced,
-/// given his last command. Under follow: attack 1.5 s after his target came within his far melee range while he has
-/// attackers. Under attack or defend: follow again 1.5 s after no member of his gang has an enemy. **Coney
-/// stand-ins**: Coney's player brain keeps no target, so his nearest attacker stands in for it; defend while he mugs,
-/// tags or grabs from behind, the player modes 2 and 3, steal at a store flag and the cuffed test are not built.
+/// given his last command. Under follow: attack 1.5 s after his target (the one his fighter keeps, human `+0xc8`) came
+/// within his far melee range while he has attackers. Under attack or defend: follow again 1.5 s after no member of
+/// his gang has an enemy. **Coney stand-ins**: defend while he mugs, tags or grabs from behind, the player modes 2 and
+/// 3, steal at a store flag and the cuffed test are not built.
 /// @orig 0x00303988 WarChief_AutoCommand (unknown)
 class CrewOrders {
   public:
@@ -323,6 +323,10 @@ class CrewOrders {
     [[nodiscard]] std::optional<int> update(const Brain& chief, int last, std::uint64_t nowMs);
 
   private:
+    // Whether `chief`'s target is within his far melee range and not a Warrior hitting back at him.
+    // @orig 0x00303db8 WarChief_IsTargetInRange (unknown)
+    [[nodiscard]] static bool chiefTargetInRange(const Brain& chief);
+
     std::optional<std::uint64_t> m_attackSince; // when the attack condition began to hold
     std::optional<std::uint64_t> m_calmSince;   // when the gang last had no enemy
 };

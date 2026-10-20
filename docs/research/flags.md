@@ -204,10 +204,22 @@ characters, so a longer name given to `FindFlag` never matches (inferred from th
 - **Heading:** `Flag_Heading` (`0x00416258`) returns the parent's heading (from its transform, `0x00335f48`) when the
   parent exists, else `+0x44`, in **degrees**.
 - **`TeleportToFlag(object, flag, heading)`** (`0x00385db0`): heading −1 takes the flag's heading, any other value is
-  used as whole degrees; the rotation is about `z` (degrees × 0.0174533, `0x00335ea0`); the position is the flag's
-  (`Flag_Position`), set through the object's vtable slot `+0x6c`; a human also gets its vtable slot `+0x14c` (its
-  movement reset). There is **no ground snap**, unlike `HuCreate` ([Characters](characters.md#creation)). Confirmed
-  (code).
+  used as whole degrees; the rotation is about **−z** (degrees × 0.0174533 to `Quat_FromAxisAngle` `0x00335ea0`, whose
+  axis is the constant (0, 0, −1) at `0x00511710`); the position is the flag's (`Flag_Position`), set through the
+  object's vtable slot `+0x6c`; a human also gets its vtable slot `+0x14c` (its movement reset). There is **no ground
+  snap**, unlike `HuCreate` ([Characters](characters.md#creation)). Confirmed (code). `Teleport(object, {x, y, z},
+  heading)` (`Object_Teleport`, `0x00385bb8`) builds its rotation the same way, about −z.
+- **Which way a heading turns.** A flag's heading, and `Teleport`'s and `TeleportToFlag`'s, grows **clockwise** seen
+  from above: heading `h` faces `(sin h, cos h)`, the sense of `Vec_Heading` and `Quat_Heading` (`0x00335f48`), so
+  90 faces +x. The goals that turn a human to a flag compare its rotation's `Quat_Heading` with `Flag_Heading` and
+  turn with `TurnAction_Init`, which takes a heading in the same sense (`MoveToFlagGoal_Process` `0x002da588`; the
+  guard goal `0x002b7c18` and `ActTurnToDir` `0x00364708` pass the script's degrees to it). `HuCreate`'s heading is
+  the other way: `Human_Create` (`0x00233d60`) turns about **+z** (the constant (0, 0, 1) at `0x00511740`), so it is
+  anticlockwise and 90 faces −x. Confirmed (code); confirmed (runtime) on the level99 checkpoint 1 state (PCSX2,
+  2026-10-20): `GenWarrior`, made with `HuCreate` heading 75 and never moved, has the rotation (0, 0, −0.609, −0.793),
+  a turn of +75° about +z; Ash, teleported to `fAshTeleport1` (heading 89) with heading −1, has (0, 0, −0.701, 0.713),
+  a turn of −89°, facing +x. Coney keeps a human's heading in `HuCreate`'s sense, so it takes the negative of a flag's
+  or a teleport's (`world_objects::placementHeading()`, `repo:src/world_objects/flags.h`).
 
 ### Player starts at flags {#player-starts}
 

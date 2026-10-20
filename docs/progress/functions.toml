@@ -9186,6 +9186,11 @@ subsystem = "Human"
 size = 1072
 
 [[function]]
+address = 0x00303db8
+name = "WarChief_IsTargetInRange"
+subsystem = "Human"
+
+[[function]]
 address = 0x00304fa8
 name = "GangBrain_OnEvent"
 subsystem = "Human"
