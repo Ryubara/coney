@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -36,11 +37,38 @@ int saidBy(const AiScene& scene, const Brain& brain, std::uint32_t line) {
 
 } // namespace
 
-TEST_CASE("the combat fidget group's four clips fill its first four of eight slots", "[ai]") {
-    CHECK(coney::ai::combatFidgetClip(0) == "combat_fidget_call_front");
-    CHECK(coney::ai::combatFidgetClip(3) == "combat_fidget_shuffle");
-    CHECK(coney::ai::combatFidgetClip(4).empty());
-    CHECK(coney::ai::combatFidgetClip(-1).empty());
+TEST_CASE("a gang's clip groups fill their slots, a longer list by a random subset in order", "[ai]") {
+    AiScene scene;
+    const int id = scene.brains.gangs().create(19, "Furies");
+    coney::ai::Gang& gang = *scene.brains.gangs().find(id);
+    gang.setAlertState(coney::ai::kGangFighting);
+    // The combat fidgets: four names in the first four of eight slots.
+    CHECK(gang.clip(coney::ai::kCombatFidgetClips, 0) == "combat_fidget_call_front");
+    CHECK(gang.clip(coney::ai::kCombatFidgetClips, 3) == "combat_fidget_shuffle");
+    CHECK(gang.clip(coney::ai::kCombatFidgetClips, 4).empty());
+    CHECK(gang.clip(coney::ai::kCombatFidgetClips, 8).empty());
+    // The taunts: three of five, in the list's order.
+    const std::vector<std::string_view> order{"gen_tnt_point", "gen_tnt_cheer", "gen_tnt_spit", "gen_tnt_wave",
+                                              "gen_tnt_pointdwn"};
+    std::size_t last = 0;
+    for (int slot = 0; slot < 3; ++slot) {
+        const std::string_view name = gang.clip(coney::ai::kTauntClips, slot);
+        const auto at = std::ranges::find(order, name);
+        REQUIRE(at != order.end());
+        const auto index = static_cast<std::size_t>(at - order.begin());
+        CHECK((slot == 0 || index > last));
+        last = index;
+    }
+    // A random variant: 0 to the slot count inclusive, so a free slot or the last draw gives none.
+    int found = 0;
+    for (int i = 0; i < 90; ++i) {
+        found += gang.randomClip(coney::ai::kCombatFidgetClips).empty() ? 0 : 1;
+    }
+    CHECK(found > 10);
+    CHECK(found < 70);
+    gang.setAlertState(coney::ai::kGangCalm);
+    CHECK(gang.randomClip(coney::ai::kCombatFidgetClips).empty());
+    CHECK(gang.clipGroup(coney::ai::kTauntClips) == 0);
 }
 
 TEST_CASE("a fight fidget says its line and plays a gang clip or the character's own", "[ai]") {

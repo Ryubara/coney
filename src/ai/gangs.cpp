@@ -3,9 +3,13 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
+#include <span>
+#include <string_view>
 #include <utility>
 #include <vector>
 
+#include "ai/attack_kinds.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
 #include "human/human_flags.h"
@@ -84,26 +88,86 @@ void Gang::setAlertState(int state) {
     }
 }
 
-int Gang::clipGroup(int group) const {
-    const auto found = m_clipGroups.find(group);
-    return found != m_clipGroups.end() ? found->second : 0;
+int clipGroupSlots(int group) {
+    switch (group) {
+    case kCombatFidgetClips:
+        return 8;
+    case kTauntAdvanceClips:
+        return 5;
+    case kIdleFidgetClips:
+    case kCowerClips:
+        return 4;
+    case kTauntClips:
+    case kCheerClips:
+        return 3;
+    default:
+        return 0;
+    }
 }
 
-void Gang::setClipGroup(int group, int clips) { m_clipGroups[group] = clips; }
+int Gang::clipGroup(int group) const {
+    const auto found = m_clipGroups.find(group);
+    if (found == m_clipGroups.end()) {
+        return 0;
+    }
+    return static_cast<int>(std::ranges::count_if(found->second, [](std::string_view name) { return !name.empty(); }));
+}
+
+std::string_view Gang::clip(int group, int slot) const {
+    const auto found = m_clipGroups.find(group);
+    if (found == m_clipGroups.end() || slot < 0 || static_cast<std::size_t>(slot) >= found->second.size()) {
+        return {};
+    }
+    return found->second[static_cast<std::size_t>(slot)];
+}
+
+void Gang::setClipGroup(int group, std::span<const std::string_view> names) {
+    const auto slots = static_cast<std::size_t>(clipGroupSlots(group));
+    if (slots == 0) {
+        return;
+    }
+    std::vector<std::string_view>& filled = m_clipGroups[group];
+    filled.assign(slots, std::string_view{});
+    // All of them in order when they fit; else each kept on a 1-in-2 draw while more are left than free slots.
+    std::size_t next = 0;
+    for (std::size_t i = 0; i < names.size() && next < slots; ++i) {
+        const bool take = slots - next >= names.size() - i || rollRange(m_owner->random(), 0, 1) == 1;
+        if (take) {
+            filled[next++] = names[i];
+        }
+    }
+}
+
+std::string_view Gang::randomClip(int group) {
+    const int slots = clipGroupSlots(group);
+    if (slots == 0) {
+        return {};
+    }
+    return clip(group, rollRange(m_owner->random(), 0, slots));
+}
 
 void Gang::releaseClipGroup(int group) { m_clipGroups.erase(group); }
 
-// The four combat fidgets.
-void Gang::addCombatFidgetClips() { setClipGroup(kCombatFidgetClips, 4); }
+// The four combat fidgets (table `0x0050cab8`).
+void Gang::addCombatFidgetClips() {
+    static constexpr std::array<std::string_view, 4> kClips{"combat_fidget_call_front", "combat_fidget_shift",
+                                                            "combat_fidget_boxersdance", "combat_fidget_shuffle"};
+    setClipGroup(kCombatFidgetClips, kClips);
+}
 
 void Gang::removeCombatFidgetClips() { releaseClipGroup(kCombatFidgetClips); }
 
-// Five advancing taunts, a random three of five taunts (**Coney stand-in**: which three is not drawn, as only the
-// counts are kept) and three cheers.
+// Five advancing taunts, a random three of five taunts and three cheers (tables `0x0050caf0`, `0x0050cb08`,
+// `0x0050cb20`).
 void Gang::addFightTauntClips() {
-    setClipGroup(kTauntAdvanceClips, 5);
-    setClipGroup(kTauntClips, 3);
-    setClipGroup(kCheerClips, 3);
+    static constexpr std::array<std::string_view, 5> kAdvance{"taunt1_adv", "taunt2_adv", "taunt3_adv", "taunt4_adv",
+                                                              "taunt5_adv"};
+    static constexpr std::array<std::string_view, 5> kTaunts{"gen_tnt_point", "gen_tnt_cheer", "gen_tnt_spit",
+                                                             "gen_tnt_wave", "gen_tnt_pointdwn"};
+    static constexpr std::array<std::string_view, 3> kCheers{"gen_tnt_cheer1", "gen_tnt_cheer2", "gen_tnt_cheer3"};
+    setClipGroup(kTauntAdvanceClips, kAdvance);
+    setClipGroup(kTauntClips, kTaunts);
+    setClipGroup(kCheerClips, kCheers);
 }
 
 void Gang::removeFightTauntClips() {

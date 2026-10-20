@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/tactic_attack.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -28,26 +31,24 @@ constexpr std::uint16_t kSlowEnemySpacing = 1000;
 constexpr std::uint16_t kFastEnemySpacing = 50;
 // The enemy's stored gait (human `+0x1a8`) above which he counts as fast.
 constexpr int kFastGait = 2;
-// The cower clips: kind 6 with team-ups takes two, a gang that may flee the one `gen_cower_plead`.
-constexpr int kTeamUpCowerClips = 2;
-constexpr int kFleeCowerClips = 1;
-
 // The member slots in order (a copy: a goal pushed may tell a tactic, which may change the members).
 std::vector<Brain*> membersOf(const Gang& gang) { return gang.members(); }
 
 // Pops `brain` to its goal base, marks it and pushes the Melee goal with no time limit (`Goal_Melee(him, −1)`).
 void pushMelee(Brain& brain) { static_cast<void>(brain.pushTacticGoal(std::make_unique<MeleeGoal>(kNoFightLimit))); }
 
-// Whether the gang takes cower clips: kind 6 with team-ups, or a gang that can flee with a flee share. Start and End
-// read the same rule.
-int cowerClips(const Gang& gang) {
+// The cower clips the gang takes (table `0x005110c8` for kind 6 with team-ups, `gen_cower_plead` for a gang that can
+// flee with a flee share), none otherwise. Start and End read the same rule.
+std::span<const std::string_view> cowerClips(const Gang& gang) {
+    static constexpr std::array<std::string_view, 2> kTeamUp{"punk_grab_struggle", "punk_grab_struggle_react"};
+    static constexpr std::array<std::string_view, 1> kFlee{"gen_cower_plead"};
     if (gang.kind() == kTeamUpCowerKind && gang.orders().attackStrategies) {
-        return kTeamUpCowerClips;
+        return kTeamUp;
     }
     if (gang.canFlee() && gang.owner().fleeShare(gang.kind()) != 0) {
-        return kFleeCowerClips;
+        return kFlee;
     }
-    return 0;
+    return {};
 }
 
 // The squared distance between two members' positions.
@@ -117,7 +118,7 @@ void TacticAttack::start(Gang& gang) {
     computeSpacing(gang);
     giveMelee(gang);
     // 2. The spot line is not built (stand-in). 3. The cower clips.
-    if (const int clips = cowerClips(gang); clips != 0) {
+    if (const std::span<const std::string_view> clips = cowerClips(gang); !clips.empty()) {
         gang.setClipGroup(kCowerClips, clips);
     }
     // 4. The living count the flight compares with (`Gang_CountLiving(gang, 0)`: the dead count until deleted), noted
@@ -128,7 +129,7 @@ void TacticAttack::start(Gang& gang) {
 }
 
 void TacticAttack::end(Gang& gang) {
-    if (cowerClips(gang) != 0) {
+    if (!cowerClips(gang).empty()) {
         gang.releaseClipGroup(kCowerClips);
     }
 }

@@ -34,6 +34,12 @@ subsystem = "Animation"
 size = 328
 
 [[function]]
+address = 0x00101a00
+name = "Anim_GetPlayTime"
+subsystem = "Animation"
+size = 96
+
+[[function]]
 address = 0x00101c58
 name = "Scene_FindClipSoundtrack"
 subsystem = "Animation"
@@ -1834,10 +1840,22 @@ subsystem = "GameModes"
 size = 896
 
 [[function]]
+address = 0x00163f10
+name = "GangClips_GetGroup"
+subsystem = "GameModes"
+size = 176
+
+[[function]]
 address = 0x00163fc0
 name = "GangClips_Get"
 subsystem = "GameModes"
 size = 320
+
+[[function]]
+address = 0x00164178
+name = "GangClips_Set"
+subsystem = "GameModes"
+size = 312
 
 [[function]]
 address = 0x001647e0
@@ -9286,6 +9304,30 @@ address = 0x002faf20
 name = "SetCommandAction_Update"
 subsystem = "Human"
 size = 76
+
+[[function]]
+address = 0x002fb0f0
+name = "TauntAction_Init"
+subsystem = "Human"
+size = 56
+
+[[function]]
+address = 0x002fb128
+name = "TauntAction_Start"
+subsystem = "Human"
+size = 336
+
+[[function]]
+address = 0x002fb278
+name = "TauntAction_Abort"
+subsystem = "Human"
+size = 120
+
+[[function]]
+address = 0x002fb2f0
+name = "TauntAction_Update"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x002fb9e8

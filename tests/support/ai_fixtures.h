@@ -83,6 +83,7 @@ class KeepingServices final : public ai::ScriptServices {
         ++gesturesAsked;
         return gesturesAllowed;
     }
+    [[nodiscard]] float playTime(ai::Brain& /*human*/, int /*animId*/) override { return clipSeconds; }
     void say(ai::Brain& human, int command, bool /*interrupt*/, double /*target*/) override {
         said.emplace_back(&human, static_cast<std::uint32_t>(command));
     }
@@ -112,6 +113,7 @@ class KeepingServices final : public ai::ScriptServices {
     std::vector<std::tuple<ai::Brain*, int, std::string>> namedClips; // (human, anim id, clip) played by name
     bool clipsAvailable = false;                                      // what clipAvailable() answers
     std::vector<std::pair<ai::Brain*, std::uint32_t>> said;           // (human, speech command)
+    float clipSeconds = 0.0F;                                         // what playTime() answers
     bool gesturesAllowed = true;                                      // what mayGesture() answers
     int gesturesAsked = 0;
 };

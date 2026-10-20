@@ -82,6 +82,7 @@ void Brains::update() {
     }
     reportDamage();
     reportDowns();
+    reportPutDowns();
 }
 
 void Brains::noteDamage() {
@@ -134,6 +135,22 @@ void Brains::reportDowns() {
         } else if (!down) {
             brain->setDownReported(false);
             brain->wakeUp();
+        }
+    }
+}
+
+void Brains::reportPutDowns() {
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        const human::Human& body = brain->human();
+        if (body.state() != human::TargetState::Grounded) {
+            brain->setLyingReported(false);
+            continue;
+        }
+        const bool lying =
+            !body.fighter().health().depleted() && !body.attached() && !body.animator().drivingClipPlaying();
+        if (lying && !brain->lyingReported()) {
+            brain->setLyingReported(true);
+            deliverEvent(*brain, BrainEvent{.id = kEventPutDown, .other = brain.get()});
         }
     }
 }

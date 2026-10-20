@@ -92,6 +92,10 @@ class ScriptServices {
                                                                      std::string_view /*name*/, float /*fade*/) {
         return std::nullopt;
     }
+    /// How long anim `animId` plays on `human`, seconds (`Anim_GetPlayTime`: the clip his lookup gives, which for a
+    /// gang group is a random variant, its length over its rate); 0 when he has none. 0 by default.
+    /// @orig 0x00101a00 Anim_GetPlayTime (unknown)
+    [[nodiscard]] virtual float playTime(Brain& /*human*/, int /*animId*/) { return 0.0F; }
     /// Whether the level-loaded clip `name` is available (the level's animation cache, `0x0016f980`). False by
     /// default.
     [[nodiscard]] virtual bool clipAvailable(std::string_view /*name*/) const { return false; }
