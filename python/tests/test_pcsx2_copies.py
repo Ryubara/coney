@@ -4,6 +4,7 @@ push | pull`. No PCSX2, no BIOS and no game data: every file here is a few made-
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -56,7 +57,9 @@ def make_old_copy(folder: Path) -> Path:
         "resources/stale.txt",
         "resources/shaders/a.glsl",
     ):
-        write(folder / name, f"old {name}")
+        # Years older than the build's files: "old" and "new" contents are the same size, and Windows can give two
+        # files written back to back the same modification time, which setup reads as an up-to-date copy.
+        os.utime(write(folder / name, f"old {name}"), (1_000_000_000, 1_000_000_000))
     write(folder / "inis" / "PCSX2.ini", OLD_INI)
     for name in ("bios/scph.bin", "memcards/Mcd001.ps2", "sstates/a.p2s", "crash.dmp", "logs/emulog.txt"):
         write(folder / name, f"mine {name}")
