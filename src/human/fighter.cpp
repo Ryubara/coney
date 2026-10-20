@@ -754,14 +754,41 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
     animator.playCombat(clips::kNoClips, wanted, AnimState::Hold);
 }
 
+void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) const {
+    // The charge warns the target it already has or, for a player with none, the one its search finds; it takes none
+    // (docs/research/combat.md#charge-aim).
+    if (animId == id::kRunningAttackCharge) {
+        Combatant* target = m_target != nullptr ? m_target
+                            : m_player          ? attackTargetOf(animId, input, chainStep)
+                                                : nullptr;
+        if (target != nullptr) {
+            target->announceAttack(input.position);
+        }
+        return;
+    }
+    // **Coney choice**: the dive warns the human its own search dives at (diveTargetOf(), the same search steerDive()
+    // makes next), none when it finds none; the research does not list the dive's warning
+    // (docs/research/combat.md#attack-warnings).
+    if (animId == id::kRunningAttackDive) {
+        if (Combatant* target = diveTargetOf(input); target != nullptr) {
+            target->announceAttack(input.position);
+        }
+        return;
+    }
+    // Every other start warns the target it takes: a player's pad path warns the one it picked wherever he stands,
+    // an AI's attack only one within the clip's far range (out of range it only turns).
+    Combatant* target = attackTargetOf(animId, input, chainStep);
+    if (target != nullptr && (m_player || flatDistance(input.position, target->position()) <= reachOf(animId))) {
+        target->announceAttack(input.position);
+    }
+}
+
 void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading,
                          bool chainStep) {
     const float fade = chainStep ? kCombatFade : kAttackFade;
-    // The start announces the attack to the humans around (event 0x10, `0x0021d5c0`); each one's brain decides
-    // whether its range and field of view take it in. **Coney choice**: it goes to everyone this human can fight.
-    for (Combatant* other : input.targets) {
-        other->announceAttack(input.position);
-    }
+    // The start warns the attack's one target (event 0x10), whose brain then decides whether its range and field of
+    // view take it in; no one else hears of it (docs/research/combat.md#attack-warnings).
+    warnTarget(animId, input, chainStep);
     // The special's id adds 2 when the attacker stands on its target's rear (`Player_SpecialAttack` `0x00263c90`,
     // after its target search): 655, 647 in rage (docs/research/combat.md#attacks).
     if (animId == id::kSpecial || animId == id::kSpecialRage) {
@@ -849,7 +876,7 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     steerOnto(animId, *target, input, toEvent, toEvent, heading);
 }
 
-void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator, float heading) {
+Combatant* Fighter::diveTargetOf(const FighterInput& input) const {
     // Attack_FindNearestInReach: the standing humans between the dive's reach and its far range, within 54° of the
     // stick (or the facing), nearest first; no any-angle or wide pass.
     const int dive = id::kRunningAttackDive;
@@ -870,6 +897,12 @@ void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator
             bestDistance = distance;
         }
     }
+    return found;
+}
+
+void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator, float heading) {
+    const int dive = id::kRunningAttackDive;
+    Combatant* found = diveTargetOf(input);
     // The result is the target; none found clears it, unless the player is locked on.
     if (found != nullptr || lockTarget() == nullptr) {
         m_target = found;

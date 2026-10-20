@@ -77,7 +77,7 @@ class TandemFight {
                                                    .actionPressed = false,
                                                    .command = command,
                                                    .buttons = frame.buttons,
-                                                   .targets = m_enemyOnly},
+                                                   .targets = m_playerTargets},
                           m_mesh.get());
             m_ally.step(coney::human::HumanInput{.stickX = 0.0F,
                                                  .stickY = 0.0F,
@@ -112,6 +112,14 @@ class TandemFight {
         run("", 40);
     }
 
+    // Adds a bystander the player could fight too, at `at`, facing +y. Returns it.
+    coney::human::TargetHuman& addBystander(const FightCharacter& character, Vec3 at) {
+        m_bystanders.push_back(std::make_unique<coney::human::TargetHuman>(
+            character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 600, at, 0.0F));
+        m_playerTargets.push_back(m_bystanders.back().get());
+        return *m_bystanders.back();
+    }
+
     Human& player() { return m_player; }
     Human& ally() { return m_ally; }
     Human& enemy() { return m_enemy; }
@@ -126,6 +134,8 @@ class TandemFight {
     Human m_ally;
     Human m_enemy;
     std::array<coney::human::Combatant*, 1> m_enemyOnly{&m_enemy};
+    std::vector<std::unique_ptr<coney::human::TargetHuman>> m_bystanders;
+    std::vector<coney::human::Combatant*> m_playerTargets{&m_enemy}; // the enemy and the bystanders
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     std::uint64_t m_frame = 0;
@@ -251,6 +261,21 @@ TEST_CASE("square at an enemy an ally holds from behind plays the tandem: the th
     CHECK(tandem.groundedAfter);
     CHECK_FALSE(fight.enemy().fighter().inPair());
     CHECK_FALSE(fight.player().fighter().holdsMovement(fight.player().animator()));
+}
+
+TEST_CASE("the tandem's start warns its victim alone, not a bystander", "[human][tandem]") {
+    // docs/research/combat.md#attack-warnings: the tandem start passes its victim to Human_WarnOfAttack; a bystander
+    // the player could fight, 3 m to the side, hears nothing of it.
+    const FightCharacter character;
+    TandemFight fight(character);
+    const coney::human::TargetHuman& bystander =
+        fight.addBystander(character, Vec3{TandemFight::kEnemy.x + 3.0F, TandemFight::kEnemy.y + 1.8F, 0.0F});
+    fight.allyHoldsFromBehind();
+    static_cast<void>(fight.enemy().takeAttackAnnouncements());
+    const TandemRecord tandem = recordTandem(fight, "2 tap square\n", 60);
+    REQUIRE(tandem.start >= 0);
+    CHECK(fight.enemy().takeAttackAnnouncements().size() == 1);
+    CHECK(bystander.attacksAnnounced() == 0);
 }
 
 TEST_CASE("cross, circle tapped and circle held start the tandem as square does", "[human][tandem]") {

@@ -19,7 +19,7 @@ enemies and wrecked cars.
 | 2 | 🚧 In Progress | The rioters roam their gang's turf, decide, pick fights and leave as the original does; their smashing and looting find nothing to act on yet. The radio objective plays: square breaks a radio car's window, triangle starts the theft and anticlockwise stick turns steal the stereo; the three cars' stereos complete it (disc test: the level34 radio objective). A mugging (circle, triangle, the stick held on the mug meter's target) counts toward the muggings bonus through F.PedMugged (disc test: the level34 muggings bonus). |
 | 3 | 🚧 In Progress | The riot waves and the wrecked car run; the forced crime level holds the police's interest. The gangs' spawners stay under SetSpawnMax(45) and the police's under the cop cap, as the original's do (disc test: level34 checkpoint 3 keeps its spawned humans under SetSpawnMax). The three objectives play to their end from the pad: three stereos stolen, $350 of store loot taken and the riot meter filled by hitting cars and street props, after which the scripts run P1.HeadToGate and SetCheckPoint(4) (disc test: level34 checkpoint 3, the stereos, the loot and the riot meter). |
 | 4 | 🚧 In Progress | Plays to its end with a waypoint driver: through DblGt00, over the alley's chain-link fence with triangle, a wait at fFinalGate until both Warriors are within 15 m, then SetCheckPoint(5) at vNearFuries. The AI Warriors follow late (about 1,200 updates). |
-| 5 | 🚧 In Progress | Plays to HUDLaunchMissionComplete with a sprint route to vSubwayExit; the Furies hit about 90 updates after the scene, before the script sets them attacking (the original: 276-294). |
+| 5 | 🚧 In Progress | Plays to HUDLaunchMissionComplete with a sprint route to vSubwayExit; the Furies wait for P3.FuryTimeout: the first hit on the player comes at +281 updates after the scene (the original: 276-294), but as small reactions, not the original's 90-health knock-downs, as Coney's Furies have no bats (disc test: disc_level34_furies_test.cpp). |
 
 ## What it needs {#needs}
 
@@ -67,6 +67,5 @@ coney_tests "[disc][story]"
 ## Open questions {#questions}
 
 - How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page).
-- Which human hits the player first at checkpoint 5 in Coney, before the Furies are made enemies (fix list item 14).
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

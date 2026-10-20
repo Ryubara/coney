@@ -2345,7 +2345,7 @@ spawners and link to their subject pages; the rest are this mission's.
 
 13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
     (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
-14. **Coney's Furies hit too early** (measured; the cause is open). The original, confirmed (runtime), PCSX2 2.9.94,
+14. **Coney's Furies hit too early** (settled, issue #372). The original, confirmed (runtime), PCSX2 2.9.94,
     checkpoint 5 loaded through mode 8, the scene's end taken as the moment `SubwayScene` is set (`P3.EndParkScene`,
     which also schedules `P3.FuryTimeout` 5 s on through `P3.ReachFence`), the player left standing at (−207.97,
     −269.5) with no input, two runs: he turned to a fight stance (anim 359) at update 161, and the **first hit came
@@ -2358,14 +2358,22 @@ spawners and link to their subject pages; the rest are this mission's.
     three functions); the hits were small reactions (anims 272, 275, 280), the first time on the ground at update
     368, health 900 to 216 by update 785. Done: no Fury hits a Warrior before `P3.FuryTimeout`, `P3.MoveFromFence` or
     `P3.EnterDiamond` runs, and the first hit comes about 270-300 updates after the scene for a player standing still.
-    Next step: find which human hits first in Coney and what makes it hostile. Note: the original's player had 1,170
-    health here and Coney's 900; the original state came from a save with progress, so that may be upgrades, not
-    a difference (not checked). **Why the original's hits are 90-health knock-downs** (issue #492): every park and
-    fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the
-    unarmed 193 / 194, which deal 25, at a man down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 ×
-    the holder's class float, with the heavy high reaction
-    292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
-    hit](combat-reactions.md#bat-knockdown)).
+    The cause: Coney announced each attack start to every human the attacker could fight, where the original warns
+    the attack's one target ([Attack warnings](combat.md#attack-warnings)). Warned of a hurt `SceneRogue2`'s swing at
+    a Fury about 20 m off, the player's shared handler made the Warriors enemies of the Rogues and called his crew
+    over; AI Warrior Snow walked onto the fence box (`P3.MoveFromFence`), which turned the Furies early. Since the
+    fix (`Fighter::warnTarget`, the target alone), measured with a dev build, `--play-level level34 --checkpoint 5
+    --headless`, no input, the scene's end at step 722: `P3.FuryTimeout` at +149, the first hit on a Warrior at +275
+    (before the fix +239), on the player at +281 (anim 275, 27 health), the first knock-down of the player at +474
+    (anim 289); test `disc_level34_furies_test.cpp`. Still different: Coney's first hits are small reactions (18-54
+    health) where the original's are knock-downs of 90. **Why the original's hits are 90-health knock-downs** (issue
+    #492): every park and fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings the bat's clips (501 at a run,
+    36, and 37 or the unarmed 193 / 194, which deal 25, at a man down), and each bat-clip hit is the bat's own
+    contact, `dyn_bat`'s 90 × the holder's class float, with the heavy high reaction 292-295 of the clips' code
+    `0x2a`; Coney's Furies have no bats ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Open: whether the
+    original's AI Warriors run out to meet the Furies (Coney's do, under `FollowPlayer`). Note: the original's player
+    had 1,170 health here and Coney's 900; the original state came from a save with progress, so that may be
+    upgrades, not a difference (not checked).
 15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
     (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
     `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held

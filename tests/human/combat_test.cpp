@@ -26,6 +26,7 @@
 #include "combat/combat_tuning.h"
 #include "combat/commands.h"
 #include "combat/player_combat.h"
+#include "combat/power_class.h"
 #include "combat/stick_games.h"
 #include "core/pad.h"
 #include "human/fighter.h"
@@ -200,6 +201,38 @@ TEST_CASE("an attack turns to a target off to the side within its range", "[huma
     const float expected = std::atan2(-0.6F, 0.9F);
     CHECK(fight.human().heading() == Approx(expected).margin(0.05F));
     CHECK(fight.target().damageTaken() == 17);
+}
+
+TEST_CASE("an attack's start warns its target alone, never a bystander", "[human][combat]") {
+    // docs/research/combat.md#attack-warnings: Human_WarnOfAttack (event 0x10) goes to the one target an attack takes.
+    // A bystander that saw a stranger's swing would otherwise answer it (the gangs made enemies, a help call): the
+    // level34 park's Warriors joined a fight that was not theirs (issue #372).
+    const FightCharacter character;
+    Fight fight(character);
+    const coney::human::TargetHuman& bystander = fight.addTarget(character, 3.0F, 4.0F);
+    fight.run("5 tap square\n", 20);
+    CHECK(fight.target().damageTaken() == 17);
+    // Once: Coney's standing square warns once where the original warns twice (Fighter::warnTarget()).
+    CHECK(fight.target().attacksAnnounced() == 1);
+    CHECK(bystander.attacksAnnounced() == 0);
+}
+
+TEST_CASE("an attack a human no player controls starts warns its target only within the clip's far range",
+          "[human][combat]") {
+    // docs/research/combat.md#attack-warnings: Attack_Start warns its target only within the far range (1.25 m here);
+    // beyond it the attack only turns and warns no one. A bystander behind is never warned.
+    const FightCharacter character;
+    for (const float ahead : {3.0F, 1.0F}) {
+        INFO("target " << ahead << " m ahead");
+        Fight fight(character, ahead);
+        fight.human().setFighterProfile(
+            coney::human::FighterProfile{.player = false, .powerClass = coney::combat::kCivilianPowerClass, .health = 600});
+        const coney::human::TargetHuman& bystander = fight.addTarget(character, -2.0F, 2.0F);
+        fight.run("5 tap square\n", 20);
+        REQUIRE(fight.human().fighter().target() == &fight.target());
+        CHECK(fight.target().attacksAnnounced() == (ahead < 1.25F ? 1 : 0));
+        CHECK(bystander.attacksAnnounced() == 0);
+    }
 }
 
 TEST_CASE("an attack turns and slides onto its target at a constant rate up to its first event", "[human][combat]") {

@@ -892,6 +892,10 @@ humans to warn them: every one of its 23 call sites passes a single human, the m
   and tackles (`Player_GrabOrTackle`, `Player_UpdateGrabbing`), the mug, the tandem and mount starts, the melee throw
   and the throw's release.
 
+**Coney choice, not a finding:** the running dive is not among the call sites above, so whether the original's dive
+warns anyone is not known; Coney's dive warns the one human its own search dives at (`Fighter::diveTargetOf`,
+`repo:src/human/fighter.h`), and no one when it finds none.
+
 **What others hear.** Only indirectly: the warned human's shared handler (`0x00292d80`) makes the gangs enemies and
 sends a **help call** within 20 m (`Gang_BroadcastHelpCall`, `0x00293640`: event `0x14` through `AI_AlertNearby`,
 naming the attacker) when the warning passes its own sight test ([AI: events](ai-code.md#brain-events)). A human
@@ -903,10 +907,13 @@ one is of type 1 (`MoveTo`) or 2, **clears the action queue**; counters an escap
 enemy (command 3); makes the attacker his target when he has no enemy or his enemy is an AI human (a player enemy is
 kept); and, with the attacker within 1.5 m, 10 % health or more, no held flag `0x2000` and the queue cleared, sets the
 no-reaction flag `0x800`, says line 11 or 14 and plays 653 (the shove). Confirmed (code). So in the original only the
-boss being attacked does any of this. Inferred, for Coney's broadcast: every attack the player starts at one boss
-also reaches the other, clearing the other's queued move each time, so the boss who
-is not being hit rarely closes in; a test that wins only with the broadcast depends on that, and should win the
-original's way, with the second boss free to attack.
+boss being attacked does any of this. Coney once announced every attack start to everyone the attacker could fight;
+then every attack the player started at one boss also reached the other, clearing the other's queued move each
+time, so the boss who was not being hit rarely closed in (inferred). Since issue #372 Coney warns the one target
+(`Fighter::warnTarget`, `repo:src/human/fighter.h`), so the second boss is free to attack, as in the original.
+That broadcast also made a bystander answer a stranger's swing: at `level34` checkpoint 5 the player, warned of a
+hurt Rogue's swing at a Fury 20 m off, made the Warriors enemies of the Rogues and called his crew over
+([level34 fix 14](scripting.md#level34-fixes)).
 
 ### Block (and no dodge) {#block}
 

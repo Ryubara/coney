@@ -68,6 +68,8 @@ class TargetHuman final : public Holdable {
     void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
     [[nodiscard]] bool bossClass() const override { return m_bossClass; }
     void setBossClass(bool boss) { m_bossClass = boss; }
+    /// Counts the attack starts announced on it (attacksAnnounced()); it has no brain to act on them.
+    void announceAttack(anim::Vec3 /*attacker*/) override { ++m_announced; }
     /// The target itself: it can be grabbed and tackled.
     [[nodiscard]] Holdable* holdable() override { return this; }
     /// Plays the victim's `clips`, then `loop`, in `state` (AnimState::Attack returns to the idle afterwards,
@@ -115,6 +117,8 @@ class TargetHuman final : public Holdable {
     [[nodiscard]] int reactions() const { return m_victim.reactions(); }
     [[nodiscard]] int stuns() const { return m_victim.stuns(); }
     [[nodiscard]] int knockdowns() const { return m_victim.knockdowns(); }
+    /// Attack starts announced on it so far (event `0x10`, announceAttack()).
+    [[nodiscard]] int attacksAnnounced() const { return m_announced; }
     /// The last reaction clip it played (-1 before any).
     [[nodiscard]] int lastReaction() const { return m_victim.lastReaction(); }
     [[nodiscard]] const TargetSnapshot& current() const { return m_current; }
@@ -147,6 +151,7 @@ class TargetHuman final : public Holdable {
     std::uint64_t m_flags = 0;
     int m_characterClass = -1;
     bool m_bossClass = false;
+    int m_announced = 0; // announceAttack() calls
     TargetSnapshot m_previous;
     TargetSnapshot m_current;
 };
