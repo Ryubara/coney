@@ -7,8 +7,8 @@
 // at the fences on his left. The player is put at `fBreakFencePoizo` (184), facing the fences (-y). After
 // `P3.BreakFence` Vermin walks to `fStop[6]` and turns to its 139, facing the fence `dyn_door_fence02` (south-east).
 // The level plays in the game session as `--play-level level99 --checkpoint 3` plays it (support/disc_session.h); the
-// test calls `P3.WoodenFences` itself once the chapter's scene is skipped, as the hand-over test calls the course's end.
-// It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and
+// test calls `P3.WoodenFences` itself once the chapter's scene is skipped, as the hand-over test calls the course's
+// end. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and
 // headings only (LEGAL.md).
 
 #include <array>

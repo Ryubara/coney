@@ -166,7 +166,8 @@ TEST_CASE("TeleportToFlag puts a human on the flag with the flag's heading for -
     CHECK(player->teleports == 3);
 }
 
-TEST_CASE("TeleportToFlag to a flag of 89 degrees faces +x, as the original turned Ash at level99", "[level_bindings]") {
+TEST_CASE("TeleportToFlag to a flag of 89 degrees faces +x, as the original turned Ash at level99",
+          "[level_bindings]") {
     // fAshTeleport1's heading is 89; in the original the teleported Ash's rotation read (0, 0, -0.701, 0.713), a turn
     // of -89 degrees about +z, facing +x (confirmed (runtime), docs/research/flags.md#position).
     Harness h;
