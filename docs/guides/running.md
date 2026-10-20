@@ -31,6 +31,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
       [--record FILE [--record-seconds N]]
+      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
@@ -172,6 +173,23 @@ tone ([The debug menus](debug-menu.md#pages)).
 ```sh
 build/dev/src/platform/coney --audio-test
 build/dev/src/platform/coney --headless --frames 60 --audio-test
+```
+
+### Network play {#network-play}
+
+Coney's [network play](multiplayer.md) is in progress: a game can host and others can join it, with the ping and
+loss on the debug menus' Network page, but nothing of the game is shared yet. `--host` hosts from the start, on UDP
+port 27615 of every interface unless told otherwise: `--host 30000` picks the port, `--host 127.0.0.1:0` listens on
+this machine only on any free port (the tests do), and the run prints the port it got. `--join ADDR[:PORT]` joins the
+game at a host name or IPv4 address. `--net-name NAME` is the name the other players see (1 to 32 printable ASCII
+characters). A port that cannot be opened, a bad name, or `--host` with `--join`, ends the run with exit code 1. In
+test mode each step passes the network a fixed 1/30 s, so a run is the same every time; with `--host` or `--join` a
+run prints one `net:` line at the end with the state and the bytes sent and received.
+
+```sh
+build/dev/src/platform/coney --host --net-name Cleon            # the host
+build/dev/src/platform/coney --join 192.168.1.20 --net-name Swan # another machine on the network
+build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
 ```
 
 ### Loading entries from your disc

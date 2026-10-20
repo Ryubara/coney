@@ -97,9 +97,15 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
             }
             // The pads are read once per step, after the window's events; a held step reads them too, for the menus.
             samplePads(m_samples++);
+            if (hooks.beforeStep) {
+                hooks.beforeStep();
+            }
             if (m_stepGate && !m_stepGate()) {
                 m_holding = true;
                 ++counts.held;
+                if (hooks.afterStep) {
+                    hooks.afterStep();
+                }
                 continue;
             }
             ++ran;
@@ -111,6 +117,9 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
             updateTop(FrameTime{m_steps, seconds, timer.ticks(), advanced});
             ++m_steps;
             ++counts.steps;
+            if (hooks.afterStep) {
+                hooks.afterStep();
+            }
         }
 
         // One render between the last two steps, by alpha (exactly the newest step at alpha 1); then the last step's

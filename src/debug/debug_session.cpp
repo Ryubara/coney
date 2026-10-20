@@ -45,6 +45,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addEntityInspectorPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);
+    addNetworkPage(*this);
     addInputPage(*this);
 }
 

@@ -5,6 +5,7 @@
 #include <array>
 #include <charconv>
 #include <cstddef>
+#include <cstdint>
 #include <format>
 #include <optional>
 #include <string>
@@ -38,6 +39,7 @@ constexpr std::string_view kUsage =
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies]\n"
     "             [--record FILE [--record-seconds N]]\n"
+    "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -118,6 +120,12 @@ constexpr std::string_view kUsage =
     "                     fit if need be, never taking the keyboard focus. Default:\n"
     "                     CONEY_WINDOW_DISPLAY, else the system's choice\n"
     "  --no-audio         run with no sound output (no audio device is opened)\n"
+    "  --host [[ADDR:]PORT]\n"
+    "                     host a network game from the start: listen on UDP PORT (default 27615; 0 for\n"
+    "                     any free one) of the local address ADDR (default every interface)\n"
+    "  --join ADDR[:PORT] join the network game at ADDR (a host name or IPv4 address), port 27615 unless\n"
+    "                     given\n"
+    "  --net-name NAME    the player name a network game shows (1 to 32 printable ASCII characters)\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
     "  --audio-test       play a synthesised tone sweep, looping, and print what was mixed at the end;\n"
@@ -350,6 +358,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     if (auto pacing = checkPacing(options); !pacing) {
         return pacing;
     }
+    if (options.netHost.has_value() && options.netJoin.has_value()) {
+        return invalidArgument("--host and --join cannot be combined: a game either hosts or joins");
+    }
     if (options.audioTest && (options.noAudio || !options.loads.empty() || options.renderReferences.has_value())) {
         return invalidArgument("--audio-test plays through the sound output, so it cannot be combined with "
                                "--no-audio, --load or --render-references");
@@ -479,6 +490,33 @@ std::expected<int, Error> parseRange(std::string_view option, std::string_view t
         }
     }
     return invalidArgument(std::format("{} needs a whole number from {} to {}, got \"{}\"", option, low, high, text));
+}
+
+// Parses the value of `--host` or `--join`: `PORT` (host only), `ADDR` or `ADDR:PORT`, the port a whole number from
+// `lowestPort` to 65535. IPv4 and host names only: ENet 1.3 speaks IPv4, so an address has no colon of its own.
+std::expected<NetEndpoint, Error> parseEndpoint(std::string_view option, std::string_view text, bool portAlone,
+                                                int lowestPort) {
+    NetEndpoint endpoint;
+    std::string_view portText;
+    if (portAlone && isAllDigits(text)) {
+        portText = text;
+    } else if (const auto colon = text.find(':'); colon != std::string_view::npos) {
+        endpoint.address = std::string(text.substr(0, colon));
+        portText = text.substr(colon + 1);
+    } else {
+        endpoint.address = std::string(text);
+    }
+    if (endpoint.address.empty() && !portAlone) {
+        return invalidArgument(std::format("{} needs an address, got \"{}\"", option, text));
+    }
+    if (!portText.empty() || text.ends_with(':')) {
+        auto port = parseRange(option, portText, lowestPort, 65535);
+        if (!port) {
+            return std::unexpected(std::move(port.error()));
+        }
+        endpoint.port = static_cast<std::uint16_t>(*port);
+    }
+    return endpoint;
 }
 
 // Parses the value after `--checkpoint`: a whole number from 1 to kMaxCheckpoint, written with decimal digits only.
@@ -842,6 +880,35 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--line-blend needs on or off, got \"{}\"", setting));
             }
             options.lineBlend = setting == "on";
+        } else if (arg == "--host") {
+            // The value is optional: without one (the end, or another option next) the default port on every interface.
+            if (options.netHost.has_value()) {
+                return invalidArgument("--host given twice");
+            }
+            options.netHost = NetEndpoint{};
+            if (i + 1 < args.size() && !args[i + 1].empty() && !args[i + 1].starts_with("--")) {
+                auto endpoint = parseEndpoint("--host", args[++i], true, 0);
+                if (!endpoint) {
+                    return std::unexpected(std::move(endpoint.error()));
+                }
+                options.netHost = std::move(*endpoint);
+            }
+        } else if (arg == "--join") {
+            if (options.netJoin.has_value()) {
+                return invalidArgument("--join given twice");
+            }
+            if (i + 1 == args.size() || args[i + 1].empty()) {
+                return invalidArgument("--join needs a server address, ADDR or ADDR:PORT");
+            }
+            auto endpoint = parseEndpoint("--join", args[++i], false, 1);
+            if (!endpoint) {
+                return std::unexpected(std::move(endpoint.error()));
+            }
+            options.netJoin = std::move(*endpoint);
+        } else if (arg == "--net-name") {
+            if (auto value = takeValue(args, i, options.netName, "--net-name", "a player name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--no-audio") {
             options.noAudio = true;
         } else if (arg == "--skip-movies") {

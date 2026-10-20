@@ -410,6 +410,7 @@ target_sources(coney_core PRIVATE
     debug/pad_menu_input.cpp
     debug/pages_anim.cpp
     debug/pages_engine.cpp
+    debug/pages_net.cpp
     debug/pages_entity.cpp
     debug/pages_hud.cpp
     debug/pages_movies.cpp

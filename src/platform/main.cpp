@@ -75,6 +75,7 @@
 #include "platform/game_session.h"
 #include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
+#include "platform/net_play.h"
 #include "platform/pad_pipe.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
@@ -692,6 +693,26 @@ int main(int argc, char** argv) {
     // The debug menus (docs/guides/debug-menu.md), Coney's own tools: a session over the game's services whose input
     // gate sits between the pads and the game, drawn over every frame by the pad menu overlay.
     coney::debug::DebugServices debugServices;
+    // Network play (docs/guides/multiplayer.md): hosted or joined from the Network page, or from the start with
+    // `--host` or `--join`; a port that cannot be opened ends the run, as any bad argument does.
+    coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
+    debugServices.net = [&netPlay]() -> coney::debug::NetControls* { return &netPlay; };
+    if (const std::optional<std::string> name = options->netName; name && !netPlay.setPlayerName(*name)) {
+        return 1;
+    }
+    if (const std::optional<coney::NetEndpoint> host = options->netHost; host) {
+        netPlay.setPort(host->port);
+        if (!netPlay.hostOn(host->address)) {
+            return 1;
+        }
+    }
+    if (const std::optional<coney::NetEndpoint> join = options->netJoin; join) {
+        netPlay.setAddress(join->address);
+        netPlay.setPort(join->port);
+        if (!netPlay.join()) {
+            return 1;
+        }
+    }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
     // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it
     // into fixed steps, rendering blended between them; a cap of 30 is the original's rhythm, one step per frame,
@@ -1072,12 +1093,13 @@ int main(int argc, char** argv) {
     if (pacer) {
         coney::platform::FramePacer& paced = *pacer;
         // The pacer's measure of each frame is also the debug menus' frame time.
-        hooks.waitForFrame = [&paced, &frameMilliseconds, &clock, &debugSession] {
+        hooks.waitForFrame = [&paced, &frameMilliseconds, &clock, &debugSession, &netPlay] {
             // The Time page's scale above 1x makes more fixed steps due per real second (below 1x the time controls
             // hold steps instead). Only a real clock is sped up: test mode stays one step a frame.
             clock.setSpeed(debugSession.time().dueSpeedPercent());
             const std::uint64_t nanoseconds = paced.waitForFrame();
             frameMilliseconds = static_cast<double>(nanoseconds) / 1'000'000.0;
+            netPlay.advance(nanoseconds);
             return nanoseconds;
         };
         hooks.endFrame = [&paced, &audio](std::uint32_t steps) {
@@ -1089,6 +1111,16 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
+    // Network play receives before each step and sends after it. Test mode has no real clock, so there each step
+    // passes the network a fixed step's time, keeping a run the same every time.
+    const bool netRealTime = pacer.has_value();
+    hooks.beforeStep = [&netPlay, netRealTime] {
+        if (!netRealTime) {
+            netPlay.advance(coney::FrameClock::kNanosecondsPerSecond / kStepsPerSecond);
+        }
+        netPlay.beforeStep();
+    };
+    hooks.afterStep = [&netPlay] { netPlay.afterStep(); };
     // `--record`: a clip of the frames as the game draws them (read back before the menus above are drawn) and of
     // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
     // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.
@@ -1194,6 +1226,9 @@ int main(int argc, char** argv) {
     }
     if (audio && options->audioTest) {
         printText(audio->summary());
+    }
+    if (options->netHost || options->netJoin) {
+        printText(netPlay.summary());
     }
     // A game played in test mode, from the story or a level: what its humans asked to be heard and what the glass and
     // doors played (counts only).

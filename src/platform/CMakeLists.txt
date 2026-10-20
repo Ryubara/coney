@@ -43,8 +43,9 @@ target_sources(coney_platform PRIVATE game_session.cpp)
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
 target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp imgui_ui_scale.cpp)
-# Network play over UDP with ENet; the sessions themselves are coney_net (docs/guides/multiplayer.md#enet).
-target_sources(coney_platform PRIVATE enet_transport.cpp)
+# Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
+# themselves are coney_net (docs/guides/multiplayer.md).
+target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net SDL3::SDL3-static librw::librw
                                             imgui)
@@ -196,3 +197,12 @@ set_tests_properties(coney.audio_test_offline PROPERTIES TIMEOUT 30
                      PASS_REGULAR_EXPRESSION "audio: offline, 96000 frames mixed .2.00 s at 48000 Hz., peak [1-9]")
 add_test(NAME coney.audio_test_refuses_no_audio COMMAND coney --headless --frames 1 --audio-test --no-audio)
 set_tests_properties(coney.audio_test_refuses_no_audio PROPERTIES WILL_FAIL TRUE)
+# Network play from the command line (docs/guides/multiplayer.md). The host listens on 127.0.0.1 only, so no desktop
+# firewall asks about the test program; the port is any free one.
+add_test(NAME coney.hosts_headless COMMAND coney --headless --frames 3 --host 127.0.0.1:0 --net-name Tester)
+set_tests_properties(coney.hosts_headless PROPERTIES TIMEOUT 30
+                     PASS_REGULAR_EXPRESSION "net: hosting on port [1-9][0-9]* as Tester")
+add_test(NAME coney.host_and_join_refused COMMAND coney --headless --frames 3 --host 0 --join 127.0.0.1)
+set_tests_properties(coney.host_and_join_refused PROPERTIES WILL_FAIL TRUE)
+add_test(NAME coney.bad_net_name_refused COMMAND coney --headless --frames 3 --net-name 0123456789012345678901234567890123)
+set_tests_properties(coney.bad_net_name_refused PROPERTIES WILL_FAIL TRUE)

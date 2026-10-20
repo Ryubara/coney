@@ -73,6 +73,10 @@ void addDisplayPage(DebugSession& session);
 /// The Audio page: the master and bus volumes, a test tone and the voices playing. Over AudioControls; says so when
 /// the run has no sound.
 void addAudioPage(DebugSession& session);
+/// The Network page (src/debug/pages_net.cpp): status, player name, port, address, Host, Join and Disconnect, the
+/// round trip, loss and bytes, the players, a Simulate network submenu and the log. Over NetControls; says so when the
+/// run has no network play.
+void addNetworkPage(DebugSession& session);
 /// The Input page: port 1's buttons, sticks and pressures live, with channels to plot the sticks.
 void addInputPage(DebugSession& session);
 

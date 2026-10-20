@@ -15,6 +15,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "support/optional_value.h"
 
 using Catch::Approx;
 using coney::ErrorCode;
@@ -829,4 +830,51 @@ TEST_CASE("the ai-seed option varies the AI's random draws of a played level or 
         parse(std::array<std::string_view, 8>{"--disc", "x", "--rumble", "1", "--ai-seed", "3", "--ai-seed", "4"})
             .has_value());
     CHECK(coney::usageText().find("--ai-seed") != std::string_view::npos);
+}
+
+TEST_CASE("the network flags take a port, an address or both", "[options]") {
+    const auto bare = parse(std::array<std::string_view, 2>{"--host", "--headless"});
+    REQUIRE(bare.has_value());
+    const coney::NetEndpoint everywhere = coney::test::got(bare->netHost);
+    CHECK(everywhere.address.empty());
+    CHECK(everywhere.port == coney::kDefaultNetPort);
+    CHECK(bare->headless);
+
+    const auto port = parse(std::array<std::string_view, 2>{"--host", "0"});
+    REQUIRE(port.has_value());
+    CHECK(coney::test::got(port->netHost).port == 0);
+
+    const auto local = parse(std::array<std::string_view, 2>{"--host", "127.0.0.1:7777"});
+    REQUIRE(local.has_value());
+    const coney::NetEndpoint loopback = coney::test::got(local->netHost);
+    CHECK(loopback.address == "127.0.0.1");
+    CHECK(loopback.port == 7777);
+
+    const auto join = parse(std::array<std::string_view, 4>{"--join", "example.lan", "--net-name", "Swan"});
+    REQUIRE(join.has_value());
+    const coney::NetEndpoint server = coney::test::got(join->netJoin);
+    CHECK(server.address == "example.lan");
+    CHECK(server.port == coney::kDefaultNetPort);
+    CHECK(join->netName == "Swan");
+
+    const auto joinPort = parse(std::array<std::string_view, 2>{"--join", "10.0.0.2:30000"});
+    REQUIRE(joinPort.has_value());
+    CHECK(coney::test::got(joinPort->netJoin).port == 30000);
+}
+
+TEST_CASE("bad network flags are refused", "[options]") {
+    const auto refused = [](auto args) {
+        const auto result = parse(args);
+        REQUIRE_FALSE(result.has_value());
+        CHECK(result.error().code == ErrorCode::InvalidArgument);
+    };
+    refused(std::array<std::string_view, 1>{"--join"});
+    refused(std::array<std::string_view, 2>{"--join", "server:0"});
+    refused(std::array<std::string_view, 2>{"--join", ":27615"});
+    refused(std::array<std::string_view, 2>{"--join", "server:"});
+    refused(std::array<std::string_view, 2>{"--host", "70000"});
+    refused(std::array<std::string_view, 2>{"--host", "a:b"});
+    refused(std::array<std::string_view, 4>{"--host", "1", "--host", "2"});
+    refused(std::array<std::string_view, 3>{"--host", "--join", "server"});
+    refused(std::array<std::string_view, 1>{"--net-name"});
 }

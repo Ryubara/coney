@@ -142,6 +142,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
+| Network | [network play](multiplayer.md): status, player name, port, address, Host, Join, Disconnect, the ping (plotted), loss, bytes and packets, the players, a Simulate network submenu (latency, jitter, loss, duplicates, reordering), the log |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
 **Time.** The game always advances by whole fixed 1/30 s steps, never a variable step. Paused, no step runs; *Step

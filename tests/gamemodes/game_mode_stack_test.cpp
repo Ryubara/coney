@@ -356,3 +356,23 @@ TEST_CASE("while the gate holds, the render shows the newest step and does not d
     REQUIRE(mode.alphas.size() == 4);
     CHECK(std::vector<float>(mode.alphas.begin() + 1, mode.alphas.end()) == std::vector<float>(3, 1.0F));
 }
+
+TEST_CASE("the step hooks run around every due step, held ones too", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode mode("mode", 1, log, 100);
+    GameModeStack stack;
+    stack.push(mode);
+    // The second step is held, as a pause holds it: the hooks still run, the update does not.
+    int gateCalls = 0;
+    stack.setStepGate([&gateCalls] { return ++gateCalls != 2; });
+    coney::FrameHooks hooks;
+    hooks.beforeStep = [&log] { log.emplace_back("before"); };
+    hooks.afterStep = [&log] { log.emplace_back("after"); };
+    GameTimer timer;
+    coney::FrameClock lockstep(coney::FramePacing::Lockstep);
+    const coney::LoopCounts counts = stack.runUntilEmpty(timer, lockstep, hooks, 3);
+    CHECK(counts.steps == 2);
+    CHECK(counts.held == 1);
+    CHECK(log == std::vector<std::string>{"before", "mode.enter", "mode.update", "after", "mode.render", "before",
+                                          "after", "mode.render", "before", "mode.update", "after", "mode.render"});
+}

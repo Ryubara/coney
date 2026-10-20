@@ -18,6 +18,7 @@
 #include "debug/menu_model.h"
 #include "debug/menu_navigator.h"
 #include "debug/native_caller.h"
+#include "debug/net_controls.h"
 #include "debug/play_controls.h"
 #include "debug/time_control.h"
 #include "debug/tunables.h"
@@ -84,6 +85,8 @@ struct DebugServices {
     std::function<bool(std::string_view name)> loadSandbox;
     /// The sound output (its volumes and test tone, for the Audio page); null in a run without sound.
     std::function<AudioControls*()> audio;
+    /// Network play (host, join and their figures, for the Network page); null in a run without it.
+    std::function<NetControls*()> net;
     /// The movies on the disc (`LOGO`, `L99_IN`: discMovies()), for the Movies page; empty: no movies in this run.
     std::function<std::vector<std::string>()> movies;
     /// Plays the movie `name` over the game at the start of the next frame, showing ordinary captions whatever the
@@ -98,8 +101,8 @@ struct DebugServices {
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
 /// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Missions,
-/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Display, Audio, Input. Adding a feature is adding a
-/// page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
+/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Display, Audio, Network, Input. Adding a feature is
+/// adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
     /// A session over `tunables` (which must outlive it) and `services`; `inner` is the input source the gate wraps

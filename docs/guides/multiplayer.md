@@ -11,9 +11,9 @@ servers), what every subsystem must sync and the checklist every engineer follow
 architecture](network-architecture.md).
 
 **Built:** the platform-neutral library `coney_net` (bit stream, transport interface, loopback and link conditioner,
-protocol, the server and client sessions with their handshake, keep-alive and timeouts) and the ENet transport.
-**Next:** the Network page of the debug menus and the `--host` and `--join` flags, then the layers under
-[The plan](#plan).
+protocol, the server and client sessions with their handshake, keep-alive and timeouts), the ENet transport, and the
+game's side: hosting and joining from the debug menus' Network page or the command line ([In the game](#in-the-game)).
+Nothing of the game itself is shared yet. **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
 
@@ -178,6 +178,29 @@ channels, fragmentation, resends and its own connection timeouts.
 play Coney does not feed; `advance()` is ignored. A server listens on every interface by default; the tests listen
 on 127.0.0.1 only, so no desktop firewall asks about the test program. The default port is **27615** (UDP).
 
+## In the game {#in-the-game}
+
+`NetPlay` (`src/platform/net_play.h`) is network play in the running game: it owns the session (a `NetServer` when
+hosting, a `NetClient` when joining), a fresh transport per session with a link conditioner in front, and the
+settings. It implements `debug::NetControls` (`src/debug/net_controls.h`), which the Network page
+(`src/debug/pages_net.cpp`, [The debug menus](debug-menu.md#pages)) is defined over, so the page needs no platform
+code, as the Audio page over `AudioControls`.
+
+**The main loop.** `FrameHooks` (`src/gamemodes/game_mode_stack.h`) has `beforeStep` and `afterStep`, called around
+every due step, a step the pause holds included, so a paused host keeps its players. Network play receives in
+`beforeStep` and sends and flushes in `afterStep`, so a step's result leaves in the same frame. Its time is the
+frame time the frame pacer measured, passed on once a frame; in test mode, which has no clock, each step passes a
+fixed 1/30 s, so a run is the same every time.
+
+**The Network page:** the status line; Player name (also the server's name when hosting), Port (default 27615; 0 is
+any free port) and Address (`ADDR` or `ADDR:PORT`); Host (every interface), Join and Disconnect; the ping (plotted
+as `Network/Ping (ms)`; a host shows its slowest player's), the loss, bytes and packets sent and received; the
+players with their ping and loss; a **Simulate network** submenu (latency, jitter, loss, duplicates, reordering on
+what this game sends, live); and a log of what happened, also printed as `net:` lines.
+
+**The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` and `--net-name NAME`
+([Running Coney](running.md#network-play)).
+
 ## Testing {#testing}
 
 Everything above `EnetTransport` is tested on the loopback, frame by frame with no real time, in `tests/net/`: the
@@ -185,16 +208,17 @@ bit stream's encodings and refusals, the loopback, the link conditioner's contra
 round trips, pinned bytes and refusals, link quality, and the sessions (handshake, slots, refusals, leaving, every
 timeout, protocol errors, and the round trip and loss through a conditioned link). `tests/platform/
 enet_transport_test.cpp` connects two ENet transports on a free port of 127.0.0.1, sends every delivery kind and a
-fragmented packet, closes, and runs the sessions' handshake over real UDP.
+fragmented packet, closes, and runs the sessions' handshake over real UDP. `tests/platform/net_play_test.cpp` hosts
+and joins between two `NetPlay`s on the loopback (by address, the figures, the simulated latency in the ping,
+leaving and stopping, refusals); `tests/debug/net_page_test.cpp` drives the Network page over a fake
+`NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
 
 ## The plan {#plan}
 
 Each step is a pull request that builds and is tested on its own.
 
 1. **Foundation** (built): this page, ENet, `coney_net` and its tests.
-2. **The Network page and flags:** a host and join from the debug menus (status, player name, port, address, Host,
-   Join, Disconnect, round trip, loss and bytes, a Simulate network submenu feeding the link conditioner) and
-   `--host [PORT]`, `--join ADDR[:PORT]`, `--net-name NAME`; the main loop's hooks before and after each step.
+2. **The Network page and flags** (built): [In the game](#in-the-game).
 3. **A second player** joining on pad port 2 of the host's game.
 4. **Input commands:** the client's pad samples, tagged with the step, with the last few steps repeated in every
    packet; the server's buffer that applies each on its step.
