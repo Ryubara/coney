@@ -670,13 +670,16 @@ walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05
 **Gang fights are compared by behaviour, not by step.** The two games draw different random numbers, so a big fight
 (a Rumble gang battle) never plays out alike twice, even in the original. Record several matches of the original and
 several of Coney with the all-humans trace (one row per human per update; Coney's `--trace-humans`, the original's
-`[[humans]]` field set of `research/traces/fields.toml`), then `coney-tools trace fight-report --original ... --coney
-...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
-one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
-times, the match's length and winner) and flags each metric where Coney is outside the original's spread
-([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository. Match the
-original's set-up on Coney's side: where the recording hands player 1 to the AI after the countdown, run Coney with
-`--ai-player`, and give each Coney match its own `--ai-seed` ([Running: tracing](running.md#tracing)).
+`[[humans]]` field set of `research/traces/fields.toml`, with its hook logs beside it), then `coney-tools trace
+fight-report --original ... --coney ...` computes rates, shares and distributions per side by the rules of
+[Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics) (attacks, blocks, reactions and
+target changes per standing minute, goal shares and fight goals, fighters on one enemy and active places, waiting
+distances, help, each side's tactic, the match's length and winner) and flags each metric where Coney is outside the
+original's spread ([coney-tools](coney-tools.md#trace)). Give one `--original` and one `--coney` per orientation (which
+gang is side 1), as the gangs and the sides each change the numbers. Keep the recordings in the scratch folder, never
+in the repository. Match the original's set-up on Coney's side: where the recording hands player 1 to the AI after
+the countdown, run Coney with `--ai-player`, and give each Coney match its own `--ai-seed`
+([Running: tracing](running.md#tracing)).
 
 ### Differential playthroughs {#differential-playthroughs}
 

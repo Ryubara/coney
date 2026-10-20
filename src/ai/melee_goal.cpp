@@ -50,6 +50,7 @@ GoalStatus MeleeGoal::process(Brain& brain) {
     } else {
         target = brain.target();
         if (target == nullptr || !valid(*target) || !brain.hasAttackSlot()) {
+            const TargetCauseScope cause(brain, TargetCause::Pick); // Melee's own clear (ra 0x002aec88)
             brain.setTarget(nullptr);
             return GoalStatus::Done;
         }

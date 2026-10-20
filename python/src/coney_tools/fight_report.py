@@ -2,37 +2,73 @@
 """Behaviour statistics of a gang fight, from an all-humans trace of either game.
 
 The two games draw different random numbers, so a fight cannot be compared update by update. This module reads one
-row per human per update (Coney's `--trace-humans`, `coney-tools pcsx2 record` of the all-humans field set) and
-computes what a fight is judged by: the time each human spends on each goal, the attacks by kind and the blocks per
-minute, how many humans go for one target at once, the distance to the target, how often the target changes, how
-often a goal is interrupted, the time until the first engagement, the knock-out times, and the match's length and
-winner. Every metric is worked out per human, per gang and for the whole match. A compare mode puts the metrics of
+row per human per update (Coney's `--trace-humans`, `coney-tools pcsx2 record` of the all-humans field set, with
+coney_tools.fight_trace) and computes what a fight is judged by, by the rules of
+docs/research/rumble.md#gang-battle-metrics: the fight's window (the brains going on to `RumbleOver`), who is out of
+it, the winner, attacks, blocks, reactions, knock-downs and health losses per standing minute, the target changes by
+kind and cause, the goals' shares and the fight goals' lengths, how many fighters go for one enemy and how many active
+places are held, where the waiting ones stand, taunts, help calls and the idle share, and each side's tactic.
+Every metric is worked out per human, per side and for the whole match. coney_tools.fight_compare puts the metrics of
 several recordings of the original (min, median, max over the runs) beside Coney's and flags the ones outside the
 original's spread (docs/guides/research-workflow.md#comparing-with-coney, docs/guides/coney-tools.md#trace).
 
-The trace is CSV with the columns `step`, `human` (a number per human) and `gang`; the others are optional, and a
-metric whose columns are missing is left out:
-
-* `x`, `y` (metres): the distance to the target.
-* `health` (and `ko`): a human is knocked out when `ko` is 1 or `health` is 0 or less.
-* `command`: the command id of the update; an attack is a change to an attack command (ATTACK_COMMANDS).
-* `blocking` (or `block`): 1 while blocking (the block command, 4, counts too).
-* `goal` (the top goal's type id; -1 for none) and the goal stack, as `goal0`, `goal1`, ... (the original's and
-  Coney's columns: the type ids from the bottom, -1 above the top) or `stack` (the ids joined with `>`).
-* `target`: the number of the human it fights (-1 for none).
+The module is longer than the guides' rough 500 lines on purpose: reading (coney_tools.fight_trace) and comparing
+(coney_tools.fight_compare) are already their own modules, and what is left is one pipeline whose steps share the
+private per-human records (HumanMetrics, Analysis, the step view): the window and sides decide which rows the per-human
+pass reads, and the numbers read what that pass kept. Split along those steps, each part would import the others'
+private helpers, so they stay together.
 """
 
 from __future__ import annotations
 
-import csv
 import math
-import re
 import statistics
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
 
-import yaml
+from coney_tools.fight_compare import Comparison, compare_runs, report_compare
+from coney_tools.fight_trace import (
+    ATTACK_COMMANDS,
+    GOAL_NAMES,
+    TARGET_CAUSES,
+    FightTrace,
+    FightTraceError,
+    Metric,
+    Sample,
+    from_step,
+    goal_name,
+    load_fight_trace,
+    load_goal_names,
+    parse_fight_trace,
+    set_target_cause,
+    tactic_name,
+)
+
+__all__ = [
+    "ATTACK_COMMANDS",
+    "GOAL_NAMES",
+    "Analysis",
+    "Comparison",
+    "FightTrace",
+    "FightTraceError",
+    "HumanMetrics",
+    "Metric",
+    "Sample",
+    "Settings",
+    "analyse",
+    "compare_runs",
+    "fighting_gangs",
+    "gangs_of",
+    "goal_name",
+    "human_metrics",
+    "load_fight_trace",
+    "load_goal_names",
+    "parse_fight_trace",
+    "report_compare",
+    "report_run",
+    "scalars",
+    "set_target_cause",
+]
 
 #: Updates a second of a trace: the characters' step.
 DEFAULT_HZ = 30
@@ -40,216 +76,25 @@ DEFAULT_HZ = 30
 DEFAULT_ENGAGE_DISTANCE = 3.0
 #: The block command (combat::command::kR1Held).
 BLOCK_COMMAND = 4
-
-#: The attack commands (combat::command, docs/research/combat.md#commands) by the name a report shows.
-ATTACK_COMMANDS = {
-    0x0D: "grab",
-    0x0E: "tackle",
-    0x0F: "square",
-    0x10: "cross",
-    0x11: "square",
-    0x12: "cross",
-    0x19: "grab_spin",
-    0x1E: "throw",
-    0x20: "charge",
-    0x21: "dive",
-    0x22: "power",
-    0x23: "grapple",
-}
-
-#: The goal type ids (src/ai/goal.h, docs/research/ai.md#goals) by the name a report shows.
-GOAL_NAMES = {
-    0x00: "idle",
-    0x01: "move_to_flag",
-    0x06: "move_to_human",
-    0x08: "melee",
-    0x0B: "engage_enemy",
-    0x0F: "fight",
-    0x10: "spectate",
-    0x12: "react_grabbing",
-    0x13: "react_tackling",
-    0x14: "react_grabbed",
-    0x15: "react_tackled",
-    0x17: "react_knocked_down",
-    0x18: "react_stunned",
-    0x1B: "block",
-    0x1D: "help_respond",
-    0x1F: "grab_target",
-    0x32: "follow_player",
-    0x33: "follow_formation",
-    0x34: "follow_and_attack",
-    0x36: "hold_position",
-    0x41: "find_enemy",
-    0x54: "riot",
-    0x9B: "backoff",
-}
-
-#: Metric families where a run without the metric means zero (a goal never used, an attack never made).
-ZERO_FILLED = ("goal.", "attack.", "attackers.share")
+#: Goal type ids the rules name: Fight, Blocking and HelpRespond (docs/references/goal-types.md).
+FIGHT_GOAL, BLOCKING_GOAL, HELP_RESPOND_GOAL = 15, 27, 29
+#: The taunt's clip (`0x25b`, docs/research/gang-fights.md#waiting).
+TAUNT_CLIP = 0x25B
+#: The crowd's brain type, whose gangs are not fighters.
+CROWD_BRAIN = 4
+#: The attack phase's wind-up bit (record `+0x08`).
+WIND_UP = 0x1
+#: Updates in a row with every fighter's goal stack empty that end a fight traced without `brain_off`.
+QUIET_UPDATES = 30
+#: A fight goal that lasts this long, seconds, is counted in `fight_goal.share_4s` (its deadline, 4000 ms).
+LONG_FIGHT_GOAL_S = 4.0
+#: The band a waiting attacker is sent to round his target, metres (docs/research/gang-fights.md#waiting).
+WAIT_BAND = (4.0, 4.75)
 
 
-class FightTraceError(Exception):
-    """A trace that cannot be read; the message names the file and the problem."""
-
-
-def load_goal_names(path: Path) -> None:
-    """Name the goals by the reference list `path` (research/references/goal-types.yaml), a goal id to its class name
-    in snake case. Raises FightTraceError when the file cannot be read."""
-    try:
-        entries = yaml.safe_load(path.read_text(encoding="utf-8"))["entries"]
-    except (OSError, yaml.YAMLError, KeyError, TypeError) as error:
-        raise FightTraceError(f"{path}: {error}") from error
-    for entry in entries:
-        name = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", str(entry["name"])).lower()
-        GOAL_NAMES[int(entry["id"])] = name
-
-
-def goal_name(goal: int) -> str:
-    """A goal id as the report shows it."""
-    if goal < 0:
-        return "none"
-    return GOAL_NAMES.get(goal, f"goal_{goal:#04x}")
-
-
-@dataclass(frozen=True)
-class Sample:
-    """One human's row of one update; None where the trace has no such column."""
-
-    step: int
-    human: int
-    gang: int
-    x: float | None = None
-    y: float | None = None
-    ko: bool | None = None
-    command: int | None = None
-    block: bool | None = None
-    goal: int | None = None
-    stack: tuple[int, ...] | None = None
-    target: int | None = None
-
-
-@dataclass
-class FightTrace:
-    """A trace's rows by human (in step order) and by step."""
-
-    name: str
-    columns: frozenset[str]
-    by_human: dict[int, list[Sample]]
-    by_step: dict[int, list[Sample]]
-
-    @property
-    def last_step(self) -> int:
-        """The last step with a row."""
-        return max(self.by_step)
-
-
-def _number(cell: str | None) -> float | None:
-    """A cell as a number; None for an empty or non-numeric cell."""
-    if cell is None or cell.strip() == "":
-        return None
-    try:
-        value = float(cell)
-    except ValueError:
-        return None
-    return value if math.isfinite(value) else None
-
-
-def _whole(cell: str | None) -> int | None:
-    """A cell as a whole number (a hex id like `0x0f` too); None for an empty or non-numeric cell."""
-    if cell is None or cell.strip() == "":
-        return None
-    try:
-        return int(cell.strip(), 0)
-    except ValueError:
-        value = _number(cell)
-        return None if value is None else int(value)
-
-
-def _stack(cell: str | None) -> tuple[int, ...] | None:
-    """A `stack` cell (`8>65>15`; `-` or empty for none) as the goal ids."""
-    if cell is None:
-        return None
-    text = cell.strip()
-    if text in ("", "-"):
-        return ()
-    try:
-        return tuple(int(part, 0) for part in text.split(">"))
-    except ValueError:
-        return None
-
-
-def _stack_columns(row: dict[str, str], columns: frozenset[str]) -> tuple[int, ...] | None:
-    """The goal stack from the columns `goal0`, `goal1`, ... (type ids from the bottom, -1 above the top); None
-    when the trace has none."""
-    if "goal0" not in columns:
-        return None
-    stack = []
-    for index in range(len(columns)):
-        goal = _whole(row.get(f"goal{index}")) if f"goal{index}" in columns else None
-        if goal is None or goal < 0:
-            break
-        stack.append(goal)
-    return tuple(stack)
-
-
-def parse_fight_trace(text: str, name: str = "trace") -> FightTrace:
-    """Read an all-humans trace from CSV `text`. Raises FightTraceError when it lacks `step`, `human` or `gang`."""
-    reader = csv.DictReader(text.splitlines())
-    columns = frozenset(reader.fieldnames or [])
-    missing = [column for column in ("step", "human", "gang") if column not in columns]
-    if missing:
-        raise FightTraceError(f"{name}: no {', '.join(missing)} column: not an all-humans trace")
-    by_human: dict[int, list[Sample]] = defaultdict(list)
-    by_step: dict[int, list[Sample]] = defaultdict(list)
-    seen: set[tuple[int, int]] = set()
-    for line, row in enumerate(reader, start=2):
-        step, human, gang = _whole(row["step"]), _whole(row["human"]), _whole(row["gang"])
-        if step is None or human is None or gang is None:
-            raise FightTraceError(f"{name}: line {line}: step, human and gang must be whole numbers")
-        if (step, human) in seen:
-            raise FightTraceError(f"{name}: line {line}: human {human} twice at step {step}")
-        seen.add((step, human))
-        health = _number(row.get("health"))
-        ko = None
-        if "ko" in columns:
-            flag = _whole(row.get("ko"))
-            ko = None if flag is None else flag != 0
-        elif health is not None:
-            ko = health <= 0
-        block = None
-        block_column = "blocking" if "blocking" in columns else "block"
-        if block_column in columns:
-            flag = _whole(row.get(block_column))
-            block = None if flag is None else flag != 0
-        sample = Sample(
-            step=step,
-            human=human,
-            gang=gang,
-            x=_number(row.get("x")),
-            y=_number(row.get("y")),
-            ko=ko,
-            command=_whole(row.get("command")),
-            block=block,
-            goal=_whole(row.get("goal")),
-            stack=_stack(row.get("stack")) if "stack" in columns else _stack_columns(row, columns),
-            target=_whole(row.get("target")),
-        )
-        by_human[human].append(sample)
-        by_step[step].append(sample)
-    if not by_step:
-        raise FightTraceError(f"{name}: no rows")
-    for samples in by_human.values():
-        samples.sort(key=lambda sample: sample.step)
-    return FightTrace(name, columns, dict(by_human), dict(by_step))
-
-
-def load_fight_trace(path: Path) -> FightTrace:
-    """Read an all-humans trace file. Raises FightTraceError when it cannot be read."""
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as error:
-        raise FightTraceError(f"{path}: {error}") from error
-    return parse_fight_trace(text, str(path))
+def _is_ko(sample: Sample) -> bool:
+    """Whether a row's human is out of the fight."""
+    return bool(sample.ko)
 
 
 # --- one human ---------------------------------------------------------------------------------------------------
@@ -257,25 +102,43 @@ def load_fight_trace(path: Path) -> FightTrace:
 
 @dataclass
 class HumanMetrics:
-    """What one human did over the match."""
+    """What one human did over the fight. `alive_steps` counts its standing updates."""
 
     human: int
     gang: int
     alive_steps: int = 0
     goal_steps: Counter[str] = field(default_factory=Counter)
     attacks: Counter[str] = field(default_factory=Counter)
+    attack_distances: list[float] = field(default_factory=list)
     blocks: int = 0
+    held_blocks: int = 0
+    reactions: int = 0
+    knockdowns: int = 0
+    health_losses: int = 0
     target_switches: int = 0
+    target_sets: int = 0
+    target_clears: int = 0
     goal_changes: int = 0
     goal_interruptions: int = 0
     distances: list[float] = field(default_factory=list)
+    fight_goals: list[int] = field(default_factory=list)
+    active: Counter[int] = field(default_factory=Counter)
+    wait_mutual: list[float] = field(default_factory=list)
+    wait_other: list[float] = field(default_factory=list)
+    taunts: int = 0
+    help_responds: int = 0
+    idle_steps: int = 0
+    help_calls: int = 0
+    helpers_sent: int = 0
+    #: Its target changes by cause (rule 7), from the `set-target` hook log or Coney's `target_causes`.
+    target_causes: Counter[str] = field(default_factory=Counter)
     first_engage_step: int | None = None
     ko_step: int | None = None
 
 
 @dataclass
 class Analysis:
-    """The metrics of one trace: per human, the groups of attackers, and the match's end."""
+    """The metrics of one trace: per human, the groups of attackers, the sides and the fight's end."""
 
     trace: FightTrace
     hz: int
@@ -283,18 +146,18 @@ class Analysis:
     winner_gang: int | None
     winner_known: bool
     humans: dict[int, HumanMetrics]
-    #: Per (step, target), the gangs of the humans going for it.
+    #: Per (step, target), the gangs of the standing humans going for it.
     attacker_groups: list[tuple[int, ...]]
     first_step: int
-
-
-def _is_ko(sample: Sample) -> bool:
-    """Whether a row is a knocked-out human's."""
-    return bool(sample.ko)
+    #: Per side's gang, its fighters out of the fight at the end (when the end is RumbleOver or one side left).
+    out_at_end: dict[int, int] = field(default_factory=dict)
+    #: Per side's gang, its gang-wide columns at each step of the fight (one fighter's row a step).
+    gang_rows: dict[int, list[Sample]] = field(default_factory=dict)
 
 
 def match_end(trace: FightTrace, excluded: frozenset[int]) -> tuple[int, int | None, bool]:
-    """The match's last step, its winning gang and whether a winner is known.
+    """The match's last step, its winning gang and whether a winner is known, for a trace without the brains' or the
+    goals' columns that mark the end.
 
     The match ends at the first step where at most one gang has a human on its feet (more than one gang needs to
     have been in it). The winner is that gang; with every gang knocked out there is none (a draw). A match that is
@@ -304,7 +167,7 @@ def match_end(trace: FightTrace, excluded: frozenset[int]) -> tuple[int, int | N
     gangs = {sample.gang for sample in samples_all if sample.gang >= 0}
     if len(gangs) < 2 or not any(sample.ko is not None for sample in samples_all):
         return trace.last_step, None, False
-    for step in sorted(trace.by_step):
+    for step in trace.steps:
         standing = {s.gang for s in trace.by_step[step] if s.gang >= 0 and s.human not in excluded and not _is_ko(s)}
         if len(standing) <= 1:
             return step, (next(iter(standing)) if standing else None), True
@@ -326,106 +189,270 @@ def _stack_change(previous: tuple[int, ...], current: tuple[int, ...]) -> tuple[
     return True, True
 
 
-def _analyse_human(
-    trace: FightTrace,
-    samples: list[Sample],
-    positions: dict[int, dict[int, tuple[float, float]]],
-    end_step: int,
-    engage_distance: float,
-) -> HumanMetrics:
-    """The metrics of one human up to the match's end."""
+@dataclass
+class _StepView:
+    """What a human's metrics read of the others at each step: positions and targets."""
+
+    positions: dict[int, dict[int, tuple[float, float]]]
+    targets: dict[int, dict[int, int]]
+    #: How near a target counts as engaged, metres.
+    engage: float = DEFAULT_ENGAGE_DISTANCE
+
+    def distance(self, step: int, human: int, other: int) -> float | None:
+        """Metres from `human` to `other` at `step`; None when either has no position."""
+        here = self.positions.get(step, {})
+        if human in here and other in here:
+            return math.dist(here[human], here[other])
+        return None
+
+
+def _goal_change(metrics: HumanMetrics, previous: Sample, sample: Sample) -> None:
+    """Counts a goal change and interruption between two standing rows (from the stack, else the top goal)."""
+    if sample.stack is not None and previous.stack is not None:
+        changed, interrupted = _stack_change(previous.stack, sample.stack)
+    elif sample.goal is not None and previous.goal is not None:
+        changed = sample.goal != previous.goal
+        interrupted = changed and previous.goal >= 0
+    else:
+        changed = interrupted = False
+    metrics.goal_changes += changed
+    metrics.goal_interruptions += interrupted
+
+
+def _target_change(metrics: HumanMetrics, previous: Sample, sample: Sample) -> None:
+    """Counts a change of target between two standing rows by kind: A to B, set from none, cleared to none."""
+    if sample.target is None or previous.target is None or sample.target == previous.target:
+        return
+    if previous.target < 0:
+        metrics.target_sets += 1
+    elif sample.target < 0:
+        metrics.target_clears += 1
+    else:
+        metrics.target_switches += 1
+
+
+def _attack(metrics: HumanMetrics, previous: Sample | None, sample: Sample, view: _StepView, by_phase: bool) -> None:
+    """Counts an attack starting at a standing row: a wind-up starting (`phase`), else a change to an attack
+    command; with its distance to the target."""
+    if by_phase:
+        before = previous.phase if previous is not None and previous.phase is not None else 0
+        started = sample.phase is not None and sample.phase & WIND_UP != 0 and before & WIND_UP == 0
+        kind = None
+    else:
+        command = sample.command or 0
+        before = previous.command if previous is not None and previous.command is not None else 0
+        started = command != before and command in ATTACK_COMMANDS
+        kind = ATTACK_COMMANDS.get(command)
+    if not started:
+        return
+    metrics.attacks[kind or "windup"] += 1
+    if metrics.first_engage_step is None:
+        metrics.first_engage_step = sample.step
+    if by_phase and sample.target is not None and sample.target >= 0:
+        distance = view.distance(sample.step, sample.human, sample.target)
+        if distance is not None:
+            metrics.attack_distances.append(distance)
+
+
+def _standing_row(
+    metrics: HumanMetrics, previous: Sample | None, sample: Sample, view: _StepView, trace: FightTrace
+) -> None:
+    """Everything one standing row adds: its time, goal, attack, blocks, reactions, target and waiting."""
+    metrics.alive_steps += 1
+    top = sample.top
+    before_top = previous.top if previous is not None and previous.top is not None else -1
+    if top is not None:
+        metrics.goal_steps[goal_name(top)] += 1
+        metrics.idle_steps += top < 0
+        metrics.blocks += top == BLOCKING_GOAL and before_top != BLOCKING_GOAL
+        metrics.help_responds += top == HELP_RESPOND_GOAL and before_top != HELP_RESPOND_GOAL
+    if sample.active is not None:
+        metrics.active[sample.active] += 1
+    _attack(metrics, previous, sample, view, "phase" in trace.columns)
+    if sample.clip == TAUNT_CLIP and (previous is None or previous.clip != TAUNT_CLIP):
+        metrics.taunts += 1
+    if previous is not None:
+        metrics.reactions += sample.react is not None and sample.react >= 0 and previous.react == -1
+        metrics.knockdowns += sample.down == 1 and previous.down == 0
+        if sample.health is not None and previous.health is not None:
+            metrics.health_losses += sample.health < previous.health
+    # The target: its distance, and the waiting ones' distance split by whom their target fights.
+    if sample.target is not None and sample.target >= 0:
+        distance = view.distance(sample.step, sample.human, sample.target)
+        if distance is not None:
+            metrics.distances.append(distance)
+            if metrics.first_engage_step is None and distance <= view.engage:
+                metrics.first_engage_step = sample.step
+            if top == FIGHT_GOAL and sample.fight_active == 0:
+                mutual = view.targets.get(sample.step, {}).get(sample.target) == sample.human
+                (metrics.wait_mutual if mutual else metrics.wait_other).append(distance)
+
+
+@dataclass
+class _FightGoalRuns:
+    """The runs of Fight on top of one human: a new one when `fight_updates` starts again (or, without it, when Fight
+    comes back on top), each as its first and last step."""
+
+    counted: bool
+    runs: list[int] = field(default_factory=list)
+    start: int | None = None
+    last: int = 0
+    last_updates: int | None = None
+
+    def see(self, sample: Sample, standing: bool) -> None:
+        """Takes one row."""
+        on_top = standing and sample.top == FIGHT_GOAL
+        if not on_top:
+            if not self.counted or not standing:
+                self.close()
+            return
+        updates = sample.fight_updates
+        restarted = (
+            self.counted and updates is not None and self.last_updates is not None and updates < self.last_updates
+        )
+        if self.start is None or restarted:
+            self.close()
+            self.start = sample.step
+        self.last = sample.step
+        if updates is not None:
+            self.last_updates = updates
+
+    def close(self) -> None:
+        """Ends the run under way."""
+        if self.start is not None:
+            self.runs.append(self.last - self.start + 1)
+        self.start = None
+        self.last_updates = None
+
+
+def _analyse_human(trace: FightTrace, samples: list[Sample], view: _StepView, end_step: int) -> HumanMetrics:
+    """The metrics of one human from the fight's first step to its end."""
     first = samples[0]
     metrics = HumanMetrics(first.human, first.gang)
+    runs = _FightGoalRuns(counted="fight_updates" in trace.columns)
     previous: Sample | None = None
-    previous_blocking = False
-    previous_command = 0
     for sample in samples:
         if sample.step > end_step:
             break
         ko = _is_ko(sample)
         if ko and metrics.ko_step is None:
             metrics.ko_step = sample.step
+        runs.see(sample, not ko)
         if not ko:
-            metrics.alive_steps += 1
-            if sample.goal is not None:
-                metrics.goal_steps[goal_name(sample.goal)] += 1
-        # Attacks and blocks: the first update of a command (a held one is one attack).
-        command = sample.command if sample.command is not None else 0
-        if not ko and command != previous_command and command in ATTACK_COMMANDS:
-            metrics.attacks[ATTACK_COMMANDS[command]] += 1
-            if metrics.first_engage_step is None:
-                metrics.first_engage_step = sample.step
-        previous_command = command
-        blocking = (bool(sample.block) or command == BLOCK_COMMAND) and not ko
-        if blocking and not previous_blocking:
-            metrics.blocks += 1
-        previous_blocking = blocking
-        # The target: switches, and the distance to it.
-        if sample.target is not None and sample.target >= 0 and not ko:
-            if (
-                previous is not None
-                and previous.target is not None
-                and previous.target >= 0
-                and previous.target != sample.target
-            ):
-                metrics.target_switches += 1
-            here = positions.get(sample.step, {})
-            if sample.human in here and sample.target in here:
-                distance = math.dist(here[sample.human], here[sample.target])
-                metrics.distances.append(distance)
-                if metrics.first_engage_step is None and distance <= engage_distance:
-                    metrics.first_engage_step = sample.step
-        # The goals: changes and interruptions, not counting what a knock-out clears.
-        if previous is not None and not ko and not _is_ko(previous):
-            if sample.stack is not None and previous.stack is not None:
-                changed, interrupted = _stack_change(previous.stack, sample.stack)
-            elif sample.goal is not None and previous.goal is not None:
-                changed = sample.goal != previous.goal
-                interrupted = changed and previous.goal >= 0
-            else:
-                changed = interrupted = False
-            metrics.goal_changes += changed
-            metrics.goal_interruptions += interrupted
+            standing_before = previous if previous is not None and not _is_ko(previous) else None
+            _standing_row(metrics, standing_before, sample, view, trace)
+            # Held blocks: the blocking state or the block command starting.
+            blocking = bool(sample.block) or sample.command == BLOCK_COMMAND
+            was = standing_before is not None and (
+                bool(standing_before.block) or standing_before.command == BLOCK_COMMAND
+            )
+            metrics.held_blocks += blocking and not was
+            if standing_before is not None:
+                _target_change(metrics, standing_before, sample)
+                _goal_change(metrics, standing_before, sample)
         previous = sample
+    runs.close()
+    metrics.fight_goals = runs.runs
+    # Gone from the trace before the end: deleted after a knock-out.
+    last = samples[-1].step
+    if metrics.ko_step is None and last < end_step:
+        later = [step for step in trace.steps if last < step <= end_step]
+        metrics.ko_step = later[0] if later else None
+    window = range(trace.steps[0], end_step + 1)
+    metrics.help_calls = sum(1 for step, human in trace.help_calls or [] if human == first.human and step in window)
+    metrics.helpers_sent = sum(1 for step, human in trace.helpers_sent or [] if human == first.human and step in window)
+    metrics.target_causes.update(
+        cause for step, human, cause in trace.target_causes or [] if human == first.human and step in window
+    )
     return metrics
 
 
-def fighting_gangs(trace: FightTrace) -> frozenset[int]:
-    """The gangs that fight: the ones with a human that had a target, attacked or was knocked out.
+# --- the fight's window and sides ----------------------------------------------------------------------------------
 
-    A level has bystander gangs (an audience, passers-by) that never fight; they are left out of the report. A
-    human that blocked counts as fighting too. A trace
+
+def fighting_gangs(trace: FightTrace) -> frozenset[int]:
+    """The gangs that fight: the ones with a human that had a target, attacked, blocked or was knocked out, less the
+    crowd (gangs whose humans are mostly of brain type 4, rule 1 of docs/research/rumble.md#gang-battle-metrics).
+
+    A level has bystander gangs (an audience, passers-by) that never fight; they are left out of the report. A trace
     without a target, command or health column cannot tell, so every gang counts.
     """
     samples = [sample for rows in trace.by_step.values() for sample in rows]
     if not any(s.target is not None or s.command is not None or s.ko is not None for s in samples):
-        return frozenset(s.gang for s in samples if s.gang >= 0)
-    return frozenset(
-        s.gang
-        for s in samples
-        if s.gang >= 0
-        and (
-            (s.target is not None and s.target >= 0)
-            or s.command in ATTACK_COMMANDS
-            or s.command == BLOCK_COMMAND
-            or bool(s.block)
-            or _is_ko(s)
-        )
-    )
+        gangs = {s.gang for s in samples if s.gang >= 0}
+    else:
+        gangs = {
+            s.gang
+            for s in samples
+            if s.gang >= 0
+            and (
+                (s.target is not None and s.target >= 0)
+                or s.command in ATTACK_COMMANDS
+                or s.command == BLOCK_COMMAND
+                or bool(s.block)
+                or _is_ko(s)
+            )
+        }
+    if "btype" in trace.columns:
+        crowd: Counter[int] = Counter()
+        size: Counter[int] = Counter()
+        for rows in trace.by_human.values():
+            size[rows[0].gang] += 1
+            crowd[rows[0].gang] += rows[0].btype == CROWD_BRAIN
+        gangs = {gang for gang in gangs if crowd[gang] * 2 <= size[gang]}
+    return frozenset(gangs)
 
 
-def from_step(trace: FightTrace, start: int) -> FightTrace:
-    """`trace` without the steps before `start` (an intro, a countdown); times are then counted from `start`."""
-    if start <= min(trace.by_step):
-        return trace
-    by_step = {step: rows for step, rows in trace.by_step.items() if step >= start}
-    if not by_step:
-        raise FightTraceError(f"{trace.name}: no rows from step {start}")
-    by_human: dict[int, list[Sample]] = defaultdict(list)
-    for step in sorted(by_step):
-        for sample in by_step[step]:
-            by_human[sample.human].append(sample)
-    return FightTrace(trace.name, trace.columns, dict(by_human), by_step)
+def _fight_start(trace: FightTrace, fighters: set[int]) -> int:
+    """The first step of the fight: a fighter's brain on (`brain_off` 0), else the first goal pushed, else the
+    trace's first step (rule 2)."""
+    by_brain = "brain_off" in trace.columns
+    if not by_brain and not {"goal", "goal0", "stack"} & trace.columns:
+        return trace.steps[0]
+    for step in trace.steps:
+        for sample in trace.by_step[step]:
+            if sample.human not in fighters:
+                continue
+            top = sample.top if sample.top is not None else -1
+            if (sample.brain_off == 0) if by_brain else top >= 0:
+                return step
+    return trace.steps[0]
+
+
+def _rumble_over(trace: FightTrace, fighters: set[int]) -> int | None:
+    """The fight's last step, RumbleOver: the update before every fighter's brain is off, or before every fighter's
+    goal stack is empty for QUIET_UPDATES in a row (rule 2); None when the trace shows neither."""
+    rows = {step: [s for s in trace.by_step[step] if s.human in fighters] for step in trace.steps}
+    if "brain_off" in trace.columns:
+        for index, step in enumerate(trace.steps):
+            if index > 0 and rows[step] and all(s.brain_off == 1 for s in rows[step]):
+                return trace.steps[index - 1]
+        return None
+    if not {"goal", "goal0", "stack"} & trace.columns:
+        return None
+    quiet = 0
+    for index, step in enumerate(trace.steps):
+        empty = bool(rows[step]) and all((s.top if s.top is not None else 0) < 0 for s in rows[step])
+        quiet = quiet + 1 if empty else 0
+        if quiet == QUIET_UPDATES:
+            start = index - QUIET_UPDATES + 1
+            return trace.steps[start - 1] if start > 0 else None
+    return None
+
+
+def _sides_at(
+    trace: FightTrace, gangs: frozenset[int], fighters: set[int], end: int
+) -> tuple[dict[int, int], set[int]]:
+    """Per gang, its fighters out at step `end` (out, or gone from the trace), and the gangs with one standing."""
+    standing = {s.human for s in trace.by_step.get(end, []) if s.human in fighters and not _is_ko(s)}
+    out: dict[int, int] = {}
+    left: set[int] = set()
+    for gang in gangs:
+        members = {h for h, rows in trace.by_human.items() if h in fighters and rows[0].gang == gang}
+        out[gang] = len(members - standing)
+        if members & standing:
+            left.add(gang)
+    return out, left
 
 
 def analyse(
@@ -434,42 +461,62 @@ def analyse(
     exclude: frozenset[int] = frozenset(),
     engage_distance: float = DEFAULT_ENGAGE_DISTANCE,
     start: int = 1,
+    sides: list[int] | None = None,
 ) -> Analysis:
-    """Work out every metric of `trace` from step `start` on.
+    """Work out every metric of `trace` over its fight, from step `start` at the earliest.
 
-    The humans in `exclude` (a spectator, a pad-driven player) are left out, and so are the humans of gangs that
-    never fight (fighting_gangs()).
+    The fighters are the humans of `sides` (the sides' gang ids), or of the gangs that fight (fighting_gangs());
+    the humans in `exclude` (a spectator, a pad-driven player) are left out too. The fight runs from the first update
+    a fighter's brain is on to RumbleOver (rules 1, 2 and 4 of docs/research/rumble.md#gang-battle-metrics); a trace
+    without the columns that mark them runs from `start` to the first step where one gang or none stands.
     """
     trace = from_step(trace, start)
-    fighting = fighting_gangs(trace)
-    exclude = exclude | frozenset(
-        sample.human for samples in trace.by_human.values() for sample in samples if sample.gang not in fighting
+    gangs = frozenset(sides) if sides else fighting_gangs(trace)
+    fighters = {h for h, rows in trace.by_human.items() if rows[0].gang in gangs and h not in exclude}
+    trace = from_step(trace, _fight_start(trace, fighters))
+    excluded = frozenset(h for h in trace.by_human if h not in fighters)
+    over = _rumble_over(trace, fighters)
+    out_at_end: dict[int, int] = {}
+    if over is not None:
+        end_step = over
+        out_at_end, left = _sides_at(trace, gangs, fighters, end_step)
+        winner = next(iter(left)) if len(left) == 1 else None
+        known = len(left) <= 1
+    else:
+        end_step, winner, known = match_end(trace, excluded)
+        if known:
+            out_at_end, _ = _sides_at(trace, gangs, fighters, end_step)
+    view = _StepView(
+        positions={
+            step: {s.human: (s.x, s.y) for s in rows if s.x is not None and s.y is not None}
+            for step, rows in trace.by_step.items()
+        },
+        targets={
+            step: {s.human: s.target for s in rows if s.target is not None} for step, rows in trace.by_step.items()
+        },
+        engage=engage_distance,
     )
-    end_step, winner, known = match_end(trace, exclude)
-    positions: dict[int, dict[int, tuple[float, float]]] = {}
-    for step, samples in trace.by_step.items():
-        positions[step] = {s.human: (s.x, s.y) for s in samples if s.x is not None and s.y is not None}
-    humans = {
-        human: _analyse_human(trace, samples, positions, end_step, engage_distance)
-        for human, samples in trace.by_human.items()
-        if human not in exclude
-    }
+    humans = {human: _analyse_human(trace, trace.by_human[human], view, end_step) for human in sorted(fighters)}
     groups: list[tuple[int, ...]] = []
-    for step, samples in trace.by_step.items():
+    gang_rows: dict[int, list[Sample]] = defaultdict(list)
+    for step in trace.steps:
         if step > end_step:
-            continue
-        standing = {s.human: s for s in samples if not _is_ko(s) and s.human not in exclude}
+            break
+        rows = [s for s in trace.by_step[step] if s.human in fighters]
         attackers: dict[int, list[int]] = defaultdict(list)
-        for sample in standing.values():
-            if sample.target is not None and sample.target in standing:
+        for sample in rows:
+            if not _is_ko(sample) and sample.target is not None and sample.target >= 0:
                 attackers[sample.target].append(sample.gang)
-        groups.extend(tuple(gangs) for gangs in attackers.values())
-    return Analysis(trace, hz, end_step, winner, known, humans, groups, min(trace.by_step))
+        groups.extend(tuple(gangs_of_target) for gangs_of_target in attackers.values())
+        for gang in gangs:
+            first = next((s for s in rows if s.gang == gang), None)
+            if first is not None:
+                gang_rows[gang].append(first)
+    return Analysis(trace, hz, end_step, winner, known, humans, groups, trace.steps[0], out_at_end, dict(gang_rows))
 
 
 # --- the numbers -------------------------------------------------------------------------------------------------
 
-Metric = float | str
 #: analyse()'s settings after the trace: updates a second, humans left out, engage distance, first step.
 Settings = tuple[int, frozenset[int], float, int]
 
@@ -485,50 +532,121 @@ def _percentile(values: list[float], fraction: float) -> float:
     return ordered[low] + (ordered[high] - ordered[low]) * (position - low)
 
 
+def _rates(analysis: Analysis, members: list[HumanMetrics], minutes: float) -> dict[str, Metric]:
+    """The per-standing-minute rates of a set of humans, each when the trace has the columns it needs."""
+    columns = analysis.trace.columns
+    metrics: dict[str, Metric] = {}
+
+    # A rate: the members' counts of `count` per minute.
+    def rate(name: str, count: str) -> None:
+        metrics[name] = sum(getattr(member, count) for member in members) / minutes
+
+    if "phase" in columns or "command" in columns:
+        attacks: Counter[str] = Counter()
+        for member in members:
+            attacks.update(member.attacks)
+        if "phase" not in columns:
+            for kind, kinds in attacks.items():
+                metrics[f"attack.{kind}_per_min"] = kinds / minutes
+        metrics["attack.total_per_min"] = sum(attacks.values()) / minutes
+    if {"goal", "goal0", "stack"} & columns:
+        rate("block.per_min", "blocks")
+        rate("help.respond_per_min", "help_responds")
+        rate("goal.changes_per_min", "goal_changes")
+        rate("goal.interruptions_per_min", "goal_interruptions")
+    if {"command", "block", "blocking"} & columns:
+        rate("block.held_per_min", "held_blocks")
+    for column, name, count in (
+        ("react", "react.per_min", "reactions"),
+        ("down", "down.per_min", "knockdowns"),
+        ("health", "health.losses_per_min", "health_losses"),
+        ("clip", "taunt.per_min", "taunts"),
+    ):
+        if column in columns:
+            rate(name, count)
+    if "target" in columns:
+        rate("target.switch_per_min", "target_switches")
+        rate("target.set_per_min", "target_sets")
+        rate("target.clear_per_min", "target_clears")
+        changes = sum(m.target_switches + m.target_sets + m.target_clears for m in members)
+        metrics["target.changes_per_min"] = changes / minutes
+    if analysis.trace.target_causes is not None:
+        for cause in TARGET_CAUSES:
+            metrics[f"target.cause.{cause}_per_min"] = sum(m.target_causes[cause] for m in members) / minutes
+    if analysis.trace.help_calls is not None:
+        rate("help.calls_per_min", "help_calls")
+    if analysis.trace.helpers_sent is not None:
+        rate("help.helpers_per_min", "helpers_sent")
+    return metrics
+
+
+def _distribution(metrics: dict[str, Metric], name: str, values: list[float]) -> None:
+    """Adds the 10th, 50th and 90th percentiles of `values` as `<name>p10`, `<name>p50` and `<name>p90`, when there
+    are any."""
+    if values:
+        for label, fraction in (("p10", 0.1), ("p50", 0.5), ("p90", 0.9)):
+            metrics[f"{name}{label}"] = _percentile(values, fraction)
+
+
+def _active_shares(metrics: dict[str, Metric], counts: Counter[int]) -> None:
+    """Adds the shares of 0, 1 and 2 active places held (and of more, `active.share3plus`) of `counts`."""
+    total = sum(counts.values())
+    if total:
+        for value in range(3):
+            metrics[f"active.share{value}"] = counts.get(value, 0) / total
+        metrics["active.share3plus"] = sum(count for value, count in counts.items() if value > 2) / total
+
+
+def _wait_metrics(metrics: dict[str, Metric], members: list[HumanMetrics]) -> None:
+    """Adds where the waiting ones stand (rule 10): the median distance and the share in the 4-4.75 m band, for a
+    target who fights the waiter (`mutual`) and one who fights someone else (`other`)."""
+    for kind in ("mutual", "other"):
+        values = [d for m in members for d in getattr(m, f"wait_{kind}")]
+        if values:
+            metrics[f"wait.{kind}_p50"] = statistics.median(values)
+            metrics[f"wait.{kind}_band"] = sum(1 for d in values if WAIT_BAND[0] <= d <= WAIT_BAND[1]) / len(values)
+
+
 def _group_metrics(analysis: Analysis, members: list[HumanMetrics], gangs: set[int] | None) -> dict[str, Metric]:
-    """The metrics of a set of humans (a gang, or all); `gangs` limits the attackers counted per target."""
+    """The metrics of a set of humans (a side, or all); `gangs` limits the attackers counted per target."""
     hz = analysis.hz
     metrics: dict[str, Metric] = {}
-    alive = sum(member.alive_steps for member in members)
-    minutes = alive / hz / 60
+    minutes = sum(member.alive_steps for member in members) / hz / 60
     metrics["humans"] = float(len(members))
-    goal_total = sum(sum(member.goal_steps.values()) for member in members)
+    # The goals' shares of standing time and the idle share (rules 8 and 11).
+    goals: Counter[str] = Counter()
+    for member in members:
+        goals.update(member.goal_steps)
+    goal_total = sum(goals.values())
     if goal_total:
-        goals: Counter[str] = Counter()
-        for member in members:
-            goals.update(member.goal_steps)
         for name, steps in goals.items():
             metrics[f"goal.{name}"] = steps / goal_total
-    columns = analysis.trace.columns
+        metrics["idle.share"] = sum(member.idle_steps for member in members) / goal_total
     if minutes > 0:
-        if "command" in columns:
-            attacks: Counter[str] = Counter()
-            for member in members:
-                attacks.update(member.attacks)
-            for name, count in attacks.items():
-                metrics[f"attack.{name}_per_min"] = count / minutes
-            metrics["attack.total_per_min"] = sum(attacks.values()) / minutes
-        if "command" in columns or "block" in columns:
-            metrics["block.per_min"] = sum(member.blocks for member in members) / minutes
-        if "target" in columns:
-            metrics["target.switches_per_min"] = sum(member.target_switches for member in members) / minutes
-        if "goal" in columns or "stack" in columns:
-            metrics["goal.changes_per_min"] = sum(member.goal_changes for member in members) / minutes
-            metrics["goal.interruptions_per_min"] = sum(member.goal_interruptions for member in members) / minutes
+        metrics.update(_rates(analysis, members, minutes))
+    _distribution(metrics, "attack.distance_", [d for m in members for d in m.attack_distances])
+    # The fight goals' lengths (rule 8).
+    runs = [run / hz for member in members for run in member.fight_goals]
+    if runs:
+        metrics["fight_goal.count"] = float(len(runs))
+        metrics["fight_goal.median_s"] = statistics.median(runs)
+        metrics["fight_goal.p90_s"] = _percentile(runs, 0.9)
+        metrics["fight_goal.share_4s"] = sum(1 for run in runs if run >= LONG_FIGHT_GOAL_S - 1e-9) / len(runs)
+    # Fighters on one enemy and the active places (rule 9).
     sizes = [len(group if gangs is None else [g for g in group if g in gangs]) for group in analysis.attacker_groups]
     sizes = [size for size in sizes if size > 0]
     if sizes:
         metrics["attackers.mean"] = statistics.fmean(sizes)
         metrics["attackers.p90"] = _percentile([float(size) for size in sizes], 0.9)
         metrics["attackers.max"] = float(max(sizes))
-        metrics["attackers.share1"] = sizes.count(1) / len(sizes)
-        metrics["attackers.share2"] = sizes.count(2) / len(sizes)
-        metrics["attackers.share3plus"] = sum(1 for size in sizes if size >= 3) / len(sizes)
-    distances = [d for member in members for d in member.distances]
-    if distances:
-        metrics["distance.p10"] = _percentile(distances, 0.1)
-        metrics["distance.p50"] = _percentile(distances, 0.5)
-        metrics["distance.p90"] = _percentile(distances, 0.9)
+        for count in range(1, 5):
+            metrics[f"attackers.share{count}"] = sizes.count(count) / len(sizes)
+    active: Counter[int] = Counter()
+    for member in members:
+        active.update(member.active)
+    _active_shares(metrics, active)
+    _wait_metrics(metrics, members)
+    _distribution(metrics, "distance.", [d for member in members for d in member.distances])
     engaged = [(m.first_engage_step - analysis.first_step) / hz for m in members if m.first_engage_step is not None]
     if members:
         metrics["engage.share"] = len(engaged) / len(members)
@@ -544,13 +662,40 @@ def _group_metrics(analysis: Analysis, members: list[HumanMetrics], gangs: set[i
     return metrics
 
 
+def _side_metrics(analysis: Analysis, gang: int) -> dict[str, Metric]:
+    """A side's own metrics (rules 4 and 12): its fighters out at the end, its tactic and when it changes, the
+    team-ups allowed, the order running and the shared target."""
+    metrics: dict[str, Metric] = {}
+    if gang in analysis.out_at_end:
+        metrics["out.at_end"] = float(analysis.out_at_end[gang])
+    rows = analysis.gang_rows.get(gang, [])
+    tactics = [tactic_name(row.g_tactic) for row in rows if row.g_tactic is not None]
+    if tactics:
+        changes = [index for index in range(1, len(tactics)) if tactics[index] != tactics[index - 1]]
+        metrics["tactic.first"] = tactics[0]
+        metrics["tactic.last"] = tactics[-1]
+        metrics["tactic.changes"] = float(len(changes))
+        if changes:
+            metrics["tactic.first_updates"] = float(changes[0])
+    teamups = [row.g_teamups for row in rows if row.g_teamups is not None]
+    if teamups:
+        metrics["teamups.max"] = float(max(teamups))
+    orders = [row.g_order for row in rows if row.g_order is not None]
+    if orders:
+        metrics["order.share"] = sum(1 for order in orders if order >= 0) / len(orders)
+    chosen = [row.g_chosen for row in rows if row.g_chosen is not None]
+    if chosen:
+        metrics["chosen.share"] = sum(1 for human in chosen if human >= 0) / len(chosen)
+    return metrics
+
+
 def gangs_of(analysis: Analysis) -> list[int]:
-    """The gang ids in the trace, from the lowest (the humans in no gang, -1, are not a gang)."""
+    """The sides' gang ids, from the lowest (the humans in no gang, -1, are not a gang)."""
     return sorted({m.gang for m in analysis.humans.values() if m.gang >= 0})
 
 
 def scalars(analysis: Analysis, labels: dict[int, str] | None = None) -> dict[str, Metric]:
-    """Every metric of a run as one flat map: `all.*`, `match.*` and one prefix per gang (its label in `labels`).
+    """Every metric of a run as one flat map: `all.*`, `match.*` and one prefix per side (its label in `labels`).
 
     `labels` names the gangs (a gang's id to `g0`, `g1`, ...); a gang without a label is called `g<id>`.
     """
@@ -562,7 +707,7 @@ def scalars(analysis: Analysis, labels: dict[int, str] | None = None) -> dict[st
     for gang in gangs_of(analysis):
         label = labels.get(gang, f"g{gang}")
         gang_members = [m for m in members if m.gang == gang]
-        for key, value in _group_metrics(analysis, gang_members, {gang}).items():
+        for key, value in {**_group_metrics(analysis, gang_members, {gang}), **_side_metrics(analysis, gang)}.items():
             out[f"{label}.{key}"] = value
     out["match.length_s"] = (analysis.end_step - analysis.first_step + 1) / analysis.hz
     if analysis.winner_known:
@@ -599,7 +744,7 @@ def _table(rows: dict[str, Metric], indent: str = "  ") -> list[str]:
 
 
 def report_run(analysis: Analysis, per_human: bool = False, labels: dict[int, str] | None = None) -> str:
-    """The text report of one trace: the match, each gang, and with `per_human` each human."""
+    """The text report of one trace: the match, each side, and with `per_human` each human."""
     flat = scalars(analysis, labels)
     lines = [
         f"{analysis.trace.name}: {len(analysis.humans)} humans, {len(analysis.trace.by_step)} steps, "
@@ -616,95 +761,4 @@ def report_run(analysis: Analysis, per_human: bool = False, labels: dict[int, st
             member = analysis.humans[number]
             lines.append(f"human {number} (gang {member.gang}):")
             lines.extend(_table(human_metrics(analysis, member)))
-    return "\n".join(lines)
-
-
-# --- comparing runs ----------------------------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Comparison:
-    """One metric across the original's runs and Coney's."""
-
-    name: str
-    original: list[Metric]
-    coney: list[Metric]
-    flag: str  # "", "below", "above", "missing", "different"
-
-
-def _spread(values: list[float]) -> tuple[float, float, float]:
-    """The minimum, median and maximum of `values`."""
-    return min(values), statistics.median(values), max(values)
-
-
-def compare_runs(
-    original: list[dict[str, Metric]], coney: list[dict[str, Metric]], margin: float = 0.0
-) -> list[Comparison]:
-    """Each metric of the original's runs against Coney's, flagging Coney's outside the original's spread.
-
-    A metric is flagged when Coney's median is below the original's minimum or above its maximum, each widened by
-    `margin` times the spread's width; a metric Coney lacks that the original has is `missing`; a winner (a name)
-    Coney's runs have and the original's never did is `different`. A run without a goal or an attack metric counts as
-    zero for it (ZERO_FILLED).
-    """
-    names = sorted({name for run in [*original, *coney] for name in run})
-    results = []
-    for name in names:
-        fill = name.split(".", 1)[1] if "." in name else name
-        zero = any(fill.startswith(prefix) for prefix in ZERO_FILLED)
-        seen = [run[name] for run in [*original, *coney] if name in run]
-        sides = []
-        for runs in (original, coney):
-            values = [run.get(name, 0.0 if zero else None) for run in runs]
-            sides.append([value for value in values if value is not None])
-        theirs, ours = sides
-        if not theirs:
-            continue  # only Coney has it: nothing to compare against
-        if not ours:
-            results.append(Comparison(name, theirs, ours, "missing"))
-            continue
-        if any(isinstance(value, str) for value in seen):
-            outside = {str(v) for v in ours} - {str(v) for v in theirs}
-            results.append(Comparison(name, theirs, ours, "different" if outside else ""))
-            continue
-        low, _, high = _spread([float(v) for v in theirs])
-        slack = (high - low) * margin + 1e-9
-        median = statistics.median(float(v) for v in ours)
-        flag = "below" if median < low - slack else "above" if median > high + slack else ""
-        results.append(Comparison(name, theirs, ours, flag))
-    return results
-
-
-def _spread_text(values: list[Metric]) -> str:
-    """`min / median / max` of a metric's values, or the names of a categorical one."""
-    if not values:
-        return "-"
-    if isinstance(values[0], str):
-        counts = Counter(str(v) for v in values)
-        return ", ".join(f"{name} x{count}" for name, count in sorted(counts.items()))
-    low, middle, high = _spread([float(v) for v in values])
-    return f"{_format(low)} / {_format(middle)} / {_format(high)}"
-
-
-def report_compare(comparisons: list[Comparison], runs: tuple[int, int]) -> str:
-    """The comparison table: each metric's original spread against Coney's, the outliers marked."""
-    lines = [
-        f"original: {runs[0]} runs, Coney: {runs[1]} runs; each cell is min / median / max over the runs; "
-        "'<<' marks a Coney median outside the original's spread"
-    ]
-    width = max((len(c.name) for c in comparisons), default=6)
-    original_cells = [_spread_text(c.original) for c in comparisons]
-    original_width = max((len(cell) for cell in original_cells), default=8)
-    lines.append(f"{'metric'.ljust(width)}  {'original'.ljust(original_width)}  coney")
-    flagged = 0
-    for comparison, original_cell in zip(comparisons, original_cells, strict=True):
-        mark = ""
-        if comparison.flag:
-            flagged += 1
-            mark = f"  << {comparison.flag}"
-        lines.append(
-            f"{comparison.name.ljust(width)}  {original_cell.ljust(original_width)}  "
-            f"{_spread_text(comparison.coney)}{mark}"
-        )
-    lines.append(f"{flagged} of {len(comparisons)} metrics outside the original's spread")
     return "\n".join(lines)

@@ -251,7 +251,10 @@ void TacticAttack::onViolence(Gang& gang, const BrainEvent& event) {
         }
         pushMelee(*member);
         member->addEnemy(*picked);
-        member->setTarget(picked);
+        {
+            const TargetCauseScope cause(*member, TargetCause::Help); // sent to a fight in view: a help response
+            member->setTarget(picked);
+        }
         if (member->findGoalAboveBase(GoalType::HelpRespond) == nullptr) {
             sendHelper(*member, *picked);
         }

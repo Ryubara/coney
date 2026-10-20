@@ -609,13 +609,21 @@ the original's all-humans recorder under the same name and unit (`research/trace
 | `x`, `y`, `z`, `heading`, `speed`, `vz`, `gait` (O) | as in the player's trace |
 | `clip`, `clip_frame`, `command` (O) | the anim id playing, its frame (30 a second) and the command of the step (0 for none) |
 | `health`, `health_max`, `power`, `stamina` (O) | the meters |
-| `down`, `blocking`, `grabbed`, `grabbing` (O) | 1 on the ground, 1 blocking, 1 held or tackled, 1 holding someone |
+| `state` (O) | the record's state word as far as Coney keeps its states: grabbed `0x10` / `0x20` (front, rear), grabbing `0x40` / `0x80`, mounted `0x800`, blocking `0x8000`, wounded `0x10000`, arrested `0x20000`, knocked out `0x40000`, down `0x80000`, stunned `0x100000`; the stance, dying (`0x80000000`) and the other bits stay 0 ([Rumble: Coney](../research/rumble.md#coney)) |
+| `phase` (O) | the attack phase, the held flags (`0x1` wind-up, `0x2` chain window, `0x4` end) |
+| `down`, `blocking`, `stunned`, `grabbed`, `grabbing`, `attacking` (O) | 1 on the ground, 1 blocking, 1 stunned, 1 held or tackled, 1 holding someone, 1 in an attack phase |
 | `lock`, `target` (O) | the number of the human its fighter has locked on, and of its brain's target (-1 for none) |
 | `goals`, `goal`, `goal0` ... `goal5`, `react` (O) | the goal stack's depth, its top goal's type id, the stack from the bottom (-1 above the top) and the reaction goal's id ([goal types](../references/goal-types.md)) |
 | `actions`, `next_attack`, `attackable`, `warned` (O) | the actions queued, the ms until it may attack and may be attacked again, and the attacks announced on it this step |
-| `enemies`, `slots`, `slots_max`, `threat` (O) | the enemy list's length, the attackers holding a slot on it, the slots it allows and its threat response |
-| `g_tactic`, `g_leader`, `g_chosen` (O) | 1 when its gang has a tactic, and the numbers of the gang's leader and chosen target |
+| `enemies`, `slots`, `slots_max`, `active` (O) | the enemy list's length, the attackers holding a slot on it, the slots it allows and the active-attacker places held on it |
+| `space_up`, `space_down`, `threat` (O) | its spacing bytes (standing and down) and its threat response |
+| `fight_updates`, `fight_active` (O) | with the Fight goal on top, the updates it has run and 1 when it holds an active place on its target; -1 with another goal on top |
+| `g_alert` (O) | the gang's alert state: always -1, as Coney does not model it ([Gang fights: Coney](../research/gang-fights.md#coney)) |
+| `g_tactic` (O) | the gang's tactic as the original's vtable: `0x00543740` TacticConfront, `0x00543320` TacticAttack, `0x00544160` the attack command's; 1 for another tactic (Coney's stand-in), 0 for none |
+| `g_leader`, `g_chosen` (O) | the numbers of the gang's leader and chosen target (-1 for none) |
+| `g_teamups`, `g_order`, `brain_off` (O) | 1 when the gang's team-ups are allowed (`GangEnableAttackStrategies`), the team-up order running (always -1: Coney builds none) and 1 while the brain is off (`BrDead`) |
 | `target_dist`, `action_kind`, `attack_kind`, `slot_held` | Coney's own: metres to the target, the front action (`none`, `attack`, `move`, ...), the attack kind it presses (-1 when it is none) and 1 when it holds a slot on its target |
+| `help_calls`, `helpers_sent`, `target_causes` | Coney's own: the help calls the human has made, the HelpRespond goals it has been sent and its target changes by cause (`pick=3;front=1`; empty for none: `pick`, `front`, `hit_back`, `help`, `engage`, `displaced`, `reaction`, `order`, `other`, [Rumble: Coney](../research/rumble.md#coney)) so far, which stand for the original's `help-call`, `send-helper` and `set-target` hook logs |
 
 `--script-trace FILE` (with `--play-level` and a level) writes what the level's scripts do to `FILE`, one line per
 call: every script binding they call, with its arguments and what it returned (`HUDSetObjective(0, "...", 0, nil)`,

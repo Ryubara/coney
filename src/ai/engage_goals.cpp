@@ -178,6 +178,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
                 }
             }
             if (nearest != nullptr && nearest != target) {
+                const TargetCauseScope cause(brain, TargetCause::Engage);
                 brain.setTarget(nearest);
                 target = nearest;
             }

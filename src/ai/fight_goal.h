@@ -63,6 +63,8 @@ class FightGoal final : public Goal {
     [[nodiscard]] int kind() const { return m_kind; }
     /// Whether it holds an active-attacker place on its target (`+0x28`).
     [[nodiscard]] bool holdsPlace() const { return m_place; }
+    /// The updates it has processed (`+0x18`).
+    [[nodiscard]] std::uint32_t updates() const { return m_updates; }
 
   private:
     // The tackle try (`FightGoal_TryTackle`): when the tackle meter has passed the gang's threshold, a tackle (a cop's

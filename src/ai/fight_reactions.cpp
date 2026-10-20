@@ -210,6 +210,7 @@ GoalStatus GrabbingGoal::process(Brain& brain) {
     const human::Fighter& fighter = brain.human().fighter();
     Brain* held = brainOf(brain, fighter.held());
     if (held != nullptr && brain.target() != held) {
+        const TargetCauseScope cause(brain, TargetCause::Reaction);
         brain.setTarget(held);
     }
     if (held == nullptr || brain.actionCount() > 0) {
@@ -316,6 +317,7 @@ GoalStatus MountingGoal::process(Brain& brain) {
     }
     Brain* held = brainOf(brain, brain.human().fighter().held());
     if (held != nullptr && brain.target() != held) {
+        const TargetCauseScope cause(brain, TargetCause::Reaction);
         brain.setTarget(held);
     }
     if (held == nullptr || brain.actionCount() > 0) {
@@ -349,6 +351,7 @@ GoalStatus HeldGoal::process(Brain& brain) {
     }
     // 5. The holder is the target.
     if (brain.target() != holder) {
+        const TargetCauseScope cause(brain, TargetCause::Reaction);
         brain.setTarget(holder);
     }
     // 6. Once mugged, no more struggling.

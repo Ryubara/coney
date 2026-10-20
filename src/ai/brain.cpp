@@ -31,6 +31,30 @@ constexpr int kRandomDelayMaxMs = 500;
 
 } // namespace
 
+const char* targetCauseName(TargetCause cause) {
+    switch (cause) {
+    case TargetCause::Pick:
+        return "pick";
+    case TargetCause::Front:
+        return "front";
+    case TargetCause::HitBack:
+        return "hit_back";
+    case TargetCause::Help:
+        return "help";
+    case TargetCause::Engage:
+        return "engage";
+    case TargetCause::Displaced:
+        return "displaced";
+    case TargetCause::Reaction:
+        return "reaction";
+    case TargetCause::Order:
+        return "order";
+    case TargetCause::Other:
+        break;
+    }
+    return "other";
+}
+
 BrainType brainTypeOf(int behaviour) {
     if (behaviour < 0 || behaviour > static_cast<int>(BrainType::CivilianDi)) {
         return BrainType::Gang;
@@ -179,7 +203,11 @@ Brain* Brain::knockOut() {
     clearGoals();
     m_goalBase = -1;
     clearActions();
-    setTarget(nullptr);
+    {
+        // Human_DropTarget from Brain_OnKnockedOut (docs/research/gang-fights.md#set-target-causes).
+        const TargetCauseScope cause(*this, TargetCause::Reaction);
+        setTarget(nullptr);
+    }
     m_enemies.clear();
     m_knockedOut = true;
     return foe;
@@ -482,6 +510,9 @@ void Brain::addEnemy(Brain& enemy) {
     }
     // A tactic that runs its members hears of the new enemy.
     if (m_gang != nullptr && m_gang->tactic() != nullptr && !m_gang->tactic()->alertsGang()) {
+        // A target the tactic sets here is its own answer, not the caller's cause (a hit back or a help call that
+        // listed the enemy): docs/research/gang-fights.md#set-target-causes.
+        const TargetCauseScope cause(*this, TargetCause::Other);
         m_gang->tactic()->event(*m_gang, *this, BrainEvent{.id = kEventEnemyAdded, .other = &enemy});
     }
 }
@@ -496,6 +527,7 @@ void Brain::setTarget(Brain* target, bool force) {
     if (m_target != nullptr) {
         m_target->releaseSlot(*this);
     }
+    ++m_targetChanges.at(static_cast<std::size_t>(m_targetCause));
     m_target = target;
     if (m_target != nullptr) {
         m_target->claimSlot(*this, force);
@@ -541,6 +573,7 @@ bool Brain::claimSlot(Brain& attacker, bool force) {
     m_fight.places.release(*farthest);
     if ((*farthest)->m_target == this) {
         (*farthest)->m_target = nullptr;
+        ++(*farthest)->m_targetChanges.at(static_cast<std::size_t>(TargetCause::Displaced));
     }
     *farthest = &attacker;
     raiseSpacing(attacker);
@@ -684,6 +717,7 @@ bool deliverEvent(Brain& brain, const BrainEvent& event) {
 void Brain::forget(const Brain& other) {
     if (m_target == &other) {
         m_target = nullptr;
+        ++m_targetChanges.at(static_cast<std::size_t>(TargetCause::Other)); // the target left the scene
     }
     std::erase(m_enemies, &other);
     std::erase(m_slots, &other);

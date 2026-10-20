@@ -702,8 +702,24 @@ def _add_trace_commands(groups: Any) -> None:
         "fight-report", help="behaviour statistics of an all-humans trace; compare the original's runs with Coney's"
     )
     fight.add_argument("traces", nargs="*", type=Path, help="all-humans traces (coney --trace-humans) to report")
-    fight.add_argument("--original", nargs="+", type=Path, default=[], metavar="TRACE", help="the original's runs")
-    fight.add_argument("--coney", nargs="+", type=Path, default=[], metavar="TRACE", help="Coney's runs")
+    fight.add_argument(
+        "--original",
+        nargs="+",
+        type=Path,
+        action="append",
+        default=[],
+        metavar="TRACE",
+        help="the original's runs of one orientation (repeat for each orientation)",
+    )
+    fight.add_argument(
+        "--coney",
+        nargs="+",
+        type=Path,
+        action="append",
+        default=[],
+        metavar="TRACE",
+        help="Coney's runs of one orientation, in the order of --original",
+    )
     fight.add_argument("--hz", type=int, default=30, help="updates a second in the traces (default 30)")
     fight.add_argument("--exclude", nargs="+", type=int, default=[], metavar="HUMAN", help="leave these humans out")
     fight.add_argument("--engage-distance", type=float, default=3.0, help="metres to the target that count as engaged")
@@ -712,8 +728,10 @@ def _add_trace_commands(groups: Any) -> None:
     fight.add_argument(
         "--margin", type=float, default=0.0, help="widen the original's spread by this share of its width"
     )
-    fight.add_argument("--original-gangs", type=_gang_list, help="the original's gang ids in the order g0,g1,...")
-    fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's gang ids in the order g0,g1,...")
+    fight.add_argument(
+        "--original-gangs", type=_gang_list, help="the original's sides' gang ids in the order g0,g1,..."
+    )
+    fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's sides' gang ids in the order g0,g1,...")
     mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
     mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
     mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")

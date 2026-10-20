@@ -428,11 +428,9 @@ A recording of the biggest Rumble battle with every human traced on every update
 behaviour statistics (issue #273); the rules it checks, with code evidence, are on [Gang fights](gang-fights.md), and
 which column checks which rule is [What a trace records](gang-fights.md#trace). The columns are the
 `humans` field set of `repo:research/traces/fields.toml` (one row per human per update; [Every
-human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-humans` writes many of the same columns
-([Tracing](../guides/building.md#tracing)), and `coney-tools trace fight-report` compares the two by the rules of
-[What the comparison computes](#gang-battle-metrics). Coney does not write yet `phase`, `state`, `stunned`,
-`attacking`, `active`, `space_up`, `space_down`, `fight_updates`, `fight_active`, `g_alert`, `g_teamups`, `g_order`
-and `brain_off`, which those rules use, and writes `g_tactic` as a flag where the original has the tactic's vtable.
+human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-humans` writes the same columns
+([Tracing](../guides/running.md#tracing), [below](#coney)), and `coney-tools trace fight-report` compares the two by
+the rules of [What the comparison computes](#gang-battle-metrics).
 The scenarios are `repo:research/traces/scenarios/gang_battle.toml` and its mirror `gang_battle_swap.toml`
 ([The sides swapped](#gang-battle-swap)); the traces are measurements of the game and stay in the engineer's scratch
 folder.
@@ -621,6 +619,29 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   and the player's hit flags), as after `HuSwitchPlayer`; the scripts' player 1 handle still names him; the HUD panel
   stays. `--ai-seed` varies the AI's draws: the shared stream's index (`0x006eb880`, [Scripting](scripting.md)) starts
   that far in, and Coney's per-brain generators, which the original does not have, are seeded from it.
+- **The gang-battle trace** (`--trace-humans`, `repo:src/ai/fight_trace.h`): every column of the `humans` field set
+  the rules of [What the comparison computes](#gang-battle-metrics) read. **Coney's choices**: `state` composes the
+  bits from the states Coney keeps, a knock-out setting `0x40000` as `Human_KnockOut` does
+  ([Combat reactions: the knocked-out bit](combat-reactions.md#knocked-out-bit)); the stance, dying (`0x80000000`),
+  the dead high half and the other bits stay 0, so Coney's fighter is out from his knock-out or wound, not from the
+  lethal hit. `g_alert` is -1 (the alert state is not modelled, [Gang fights: Coney](gang-fights.md#coney) item 9),
+  `g_order` -1 (no team-up order is built) and `g_tactic` 1 for a tactic the research names no vtable for. Coney has
+  no hooks, so it counts per human, in its own columns, the help calls (`help_calls`, one per call at
+  `broadcastHelpCall`, however many hear it), the helpers sent (`helpers_sent`) and its target changes by cause
+  (`target_causes`, rule 7): each change is counted under the cause its caller names (`ai::TargetCause`), the causes
+  of [What each set-target caller means](gang-fights.md#set-target-causes): the AI pick (`pickBestEnemy`, which the
+  Melee goal picks through and which clears and then sets, counting both halves as the original's pick does; Melee's
+  own clear; Spectate's end; FollowAndAttack's clear of a pick beyond 60 m of the leader), the re-target to the man
+  in front, a hit back, a help response (a heard help call's side, and TacticAttack's members sent to violence in
+  view), the engage re-target, a slot lost to a closer attacker, a knock-out or a grab's or mount's partner
+  (reaction) and a tactic starting, the reset or going for an item (order); every other caller is `other`, among them
+  a tactic's own answer to a new enemy listed during a hit back or a help response. A helper sent counts as a help
+  response, as the hearer takes the man he sides against as his target before sending the helper. Three of the
+  original's callers have no matching call in Coney, so their causes read low in Coney's column for that reason
+  alone: `AttackAction_Start`'s switch to the victim of an attack queued at someone else (hit back; Coney's attack
+  action never sets the target), `GetItemGoal_Process`'s item sites (order; Coney's item goal sets the target only
+  at its start) and Melee's end drop (`MeleeGoal_End`, order; Coney's Melee keeps the target when it ends). Compare
+  those causes with that in mind.
 - **The cheer**: `HuUseAnim`'s idle replacement (slot 0) plays: its `.anm` resource is loaded from the disc when first
   named (`repo:src/characters/dynamic_clips.h`) and plays wherever the idle would.
 - **Win camera** (`repo:src/camera/win_camera.h`): `CameraCreateWin`, `CamDelete` and `CamSetFollowHeading`; it

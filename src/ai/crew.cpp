@@ -384,6 +384,9 @@ Brain* FollowAndAttackGoal::enemy(Brain& brain, Brain& leader) {
     }
     Brain* best = pickBestEnemy(brain, this, score_term::kMelee);
     if (best != nullptr && leader.distanceTo(*best) > kCrewAttackReach) {
+        // Counted with the pick, as the original's clear here (ra 0x002bc278) is
+        // (docs/research/gang-fights.md#set-target-causes).
+        const TargetCauseScope cause(brain, TargetCause::Pick);
         brain.setTarget(nullptr);
         return nullptr;
     }

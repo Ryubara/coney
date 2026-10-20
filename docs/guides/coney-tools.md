@@ -584,39 +584,71 @@ step (the first update of input) come from the scenario's `[diff]` table; flags 
 
 ```sh
 uv run --project python coney-tools trace fight-report TRACE... [--humans] [--hz N] [--exclude HUMAN ...]
-    [--engage-distance METRES]
-uv run --project python coney-tools trace fight-report --original TRACE... --coney TRACE... [--margin SHARE]
-    [--original-gangs ID,ID,...] [--coney-gangs ID,ID,...]
+    [--engage-distance METRES] [--from STEP] [--original-gangs ID,ID,...]
+uv run --project python coney-tools trace fight-report --original TRACE... [--original TRACE...]
+    --coney TRACE... [--coney TRACE...] [--margin SHARE] [--original-gangs ID,ID,...] [--coney-gangs ID,ID,...]
 ```
 
 Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)). The two games draw different
+original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)), by the rules of
+[Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics). The two games draw different
 random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
-columns `step`, `human` and `gang`; a metric whose columns are missing is left out. For the whole match (`all`) and
-each gang (and each human with `--humans`) it prints:
+columns `step`, `human` and `gang`; a metric whose columns are missing is left out.
 
-* the **time share of each goal** (`goal.NAME`), of the time the human is on its feet;
-* **attacks per minute** by kind (`attack.square_per_min`, ...: a change to an attack command in `command`) and
-  **blocks per minute** (`block.per_min`: `blocking`, or the block command), per human on its feet;
-* **attackers on one target** (`attackers.mean`, `p90`, `max` and the shares of 1, 2 and 3 or more humans going for
-  one target at the same step, from `target`);
-* the **distance to the target** (`distance.p10`, `p50`, `p90`, from `x` and `y`);
-* **target switches per minute** (`target.switches_per_min`) and **goal changes and interruptions per minute**
-  (`goal.changes_per_min`, `goal.interruptions_per_min`: a goal pushed over another, or a stack replaced instead of
-  popped; the stack is `goal0`...`goal5`, or `goal` alone);
-* the **time to the first engagement** (`engage.first_s`, `median_s`, `share`: the first attack, or a target within
-  `--engage-distance`, 3 m by default, in seconds from the first step);
-* the **knock-out times** (`ko.count`, `first_s`, `median_s`, `last_s`: `health` of 0 or less);
-* the **match's length and winner** (`match.length_s`, `match.winner`): it ends at the first step where one gang or
-  none has anyone on its feet, and the gang left wins; a match still going at the trace's end has no winner.
+* **The fighters** are the humans of the gangs in `--original-gangs` (`--coney-gangs` for Coney's runs), or else of
+  the gangs that fight (a target, an attack, a block or a knock-out), less a crowd of brain type 4 (`btype`).
+* **The fight** runs from the first step a fighter's brain is on (`brain_off` 0, or without that column the first
+  goal pushed) to `RumbleOver`, the step before every fighter's `brain_off` is 1 (or every goal stack has been empty
+  for 30 steps). A trace without those columns runs from `--from` to the first step where one gang or none stands.
+* **Out of the fight** is `Human_IsDownOrDead`'s mask, `state` `0x80050000` (dying, knocked out, wounded) or
+  `state_hi` `0x1` (dead), or clip 349, or gone from the trace; in a trace without `clip` and `state`, `ko` 1 or
+  `health` 0. Every rate is per minute a human stands, at `--hz` updates a second (30).
 
-Rates are per minute of `--hz` updates a second (30). `--exclude` leaves humans out (a spectator, the pad's player).
+For the whole match (`all`) and each side (and each human with `--humans`) it prints:
 
-With `--original` and `--coney` (several recordings of each) it prints, for every metric, the original's spread
-(min / median / max over its runs) beside Coney's and marks with `<<` each metric where Coney's median is outside the
-original's spread (`above`, `below`, `missing`, or `different` for a winner the original never had). `--margin`
-widens the spread by that share of its width. A goal or an attack one side never uses counts as zero. Gangs are paired
-by rank, the lowest id first, or in the order of `--original-gangs` and `--coney-gangs` when their ids differ. The
+* **attacks** (`attack.total_per_min`, the wind-ups: `phase` bit `0x1` turning on, with `attack.distance_p10`,
+  `p50`, `p90` to the target then; without `phase`, a change to an attack command in `command`, also by kind as
+  `attack.square_per_min`, ...);
+* **blocks** (`block.per_min`, the Blocking goal, 27, coming on top) and **held blocks** (`block.held_per_min`,
+  `blocking` or the block command); **reactions** (`react.per_min`), **knock-downs** (`down.per_min`), **health
+  losses** (`health.losses_per_min`) and **taunts** (`taunt.per_min`, clip 603 starting);
+* **target changes** (`target.changes_per_min`, split into `target.switch_per_min` A to B, `set_per_min` from none
+  and `clear_per_min` to none, and by cause as `target.cause.pick_per_min`, `front`, `hit_back`, `help`, `engage`,
+  `displaced`, `reaction`, `order`, `other` and `unknown`: from Coney's `target_causes` column, or the original's
+  `set-target` hook log beside the trace, `<stem>.set-target.csv`, counting only the calls that change the target,
+  each caller named by the table `SET_TARGET_CAUSES` in `repo:python/src/coney_tools/fight_trace.py`, which follows
+  [What each set-target caller means](../research/gang-fights.md#set-target-causes); a caller it does not name yet is
+  `unknown`. The causes are not a split of `target.changes_per_min` and need not add up to it: they count every
+  change in the window, also while the human is out (the knock-out's drop) and both halves of a pick's clear and set,
+  where `changes_per_min` counts the changes seen between two sampled rows while he stands; both are divided by the
+  minutes he stands) and goal changes and interruptions (`goal.changes_per_min`,
+  `goal.interruptions_per_min`: a goal pushed over another, or a stack replaced instead of popped);
+* the **time share of each goal** (`goal.NAME`) and the **idle share** (`idle.share`, an empty stack while standing);
+  the **fight goals**, runs of Fight on top, a new one when `fight_updates` starts again (`fight_goal.count`,
+  `median_s`, `p90_s`, `share_4s`);
+* **fighters on one enemy** (`attackers.mean`, `p90`, `max`, `share1` to `share4`) and the **active places** held on
+  a fighter (`active.share0`, `share1`, `share2`, `share3plus`);
+* **waiting**: the distance to the target with Fight on top and no active place (`fight_active` 0), split by whether
+  the target's own target is him (`wait.mutual_p50`, `wait.other_p50`, and the share in 4-4.75 m, `_band`);
+* **help** (`help.calls_per_min`, `help.helpers_per_min`, `help.respond_per_min`): Coney's `help_calls` and
+  `helpers_sent` columns, or for the original the `help-call` and `send-helper` hook logs beside the trace
+  (`<stem>.help-call.csv`, `<stem>.send-helper.csv`);
+* the **distance to the target** (`distance.p10`, `p50`, `p90`), the **time to the first engagement**
+  (`engage.first_s`, `median_s`, `share`: the first attack, or a target within `--engage-distance`, 3 m by default)
+  and the **knock-out times** (`ko.count`, `first_s`, `median_s`, `last_s`);
+* per side, its **fighters out at the end** (`out.at_end`), its **tactic** (`tactic.first`, `last`, `changes`,
+  `first_updates`, from `g_tactic`), `teamups.max`, `order.share` and `chosen.share`;
+* the **match's length and winner** (`match.length_s`, `match.winner`: the side with fighters standing at the end).
+
+`--exclude` leaves humans out (a spectator, the pad's player); `--from` skips the steps before one.
+
+With `--original` and `--coney` it prints, for every metric, the original's spread (min / median / max over its runs)
+beside Coney's and marks with `<<` each metric where Coney's median is outside the original's spread (`above`,
+`below`, `missing`, or `different` for a winner the original never had). `--margin` widens the spread by that share of
+its width. A goal or an attack one side never uses counts as zero. Each `--original` and `--coney` names the runs of
+one orientation (which gang is side 1), and the two are paired in order, so each orientation of Coney's is compared
+with the original's runs of the same orientation; give as many of one as of the other. Sides are labelled `g0`, `g1`,
+... by rank, the lowest id first, or in the order of `--original-gangs` and `--coney-gangs` when their ids differ. The
 exit code is 1 when a metric is outside the spread, 0 when none is, 2 when a trace cannot be read. With one run of the
 original the spread is a point, so record several ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
 

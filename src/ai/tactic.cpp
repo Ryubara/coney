@@ -23,6 +23,7 @@ int Tactic::process(Gang& gang) {
         for (Brain* member : gang.members()) {
             if (member->type() != BrainType::Player) {
                 member->markGoalBase();
+                const TargetCauseScope cause(*member, TargetCause::Order);
                 member->setTarget(nullptr);
             }
         }

@@ -213,7 +213,10 @@ void SpectateGoal::end(Brain& brain) {
     if (m_still) {
         return;
     }
-    brain.setTarget(nullptr);
+    {
+        const TargetCauseScope cause(brain, TargetCause::Pick); // the original buckets Spectate's clear as a pick
+        brain.setTarget(nullptr);
+    }
     brain.clearActions();
     brain.setMoveFailure(MoveFailure::None);
 }

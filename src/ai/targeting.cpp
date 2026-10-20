@@ -179,6 +179,7 @@ float Goal::adjustEnemyScore(const Brain& scorer, const Brain& candidate, const 
 
 Brain* pickBestEnemy(Brain& brain, const Goal* goal, std::uint32_t flags) {
     const Brain* previous = brain.target();
+    const TargetCauseScope cause(brain, TargetCause::Pick); // its clear and its set (gang-fights.md#set-target-causes)
     brain.setTarget(nullptr);
     Brain* best = nullptr;
     float bestScore = 0.0F;

@@ -111,7 +111,11 @@ std::optional<double> StealClusters::claim(const Brain& human, const ItemService
 void GetItemGoal::start(Brain& brain) {
     m_savedTurnBoost = brain.turnBoost();
     brain.setTurnBoost(m_savedTurnBoost + 1);
-    brain.setTarget(nullptr);
+    {
+        // Human_DropTarget from GetItemGoal_Start (docs/research/gang-fights.md#set-target-causes).
+        const TargetCauseScope cause(brain, TargetCause::Order);
+        brain.setTarget(nullptr);
+    }
     resume(brain);
 }
 
