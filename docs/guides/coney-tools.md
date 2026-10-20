@@ -1144,6 +1144,44 @@ agent, priority, minutes waiting) and the stale entries; `--json` prints the sam
 left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`, which frees
 the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and tests](agents.md#builds).
 
+## coord {#coord}
+
+`coord status` answers "what waits for the coordinator?" in one read, for the coordinator's mod
+([The coordinator's mod](coordinator-mod.md)), which runs it every 15 seconds, and for anyone at a prompt:
+
+```sh
+uv run --project python coney-tools coord status            # one line per section, then the ids
+uv run --project python coney-tools coord status --json --github
+```
+
+Without `--github` it reads only the machine, in a few seconds, and never the network: the PCSX2 copies (the rows of
+`pcsx2 status --json`), the build slots and queues (`build status --json`), each worktree's last detached build
+(`build result`), the release queue (each `PR.md` or `PR-<n>.md` in the scratch folder of a branch that has a
+worktree, with whether `origin` has the branch as the local clone knows it) and the tracks (each scratch folder's
+`STATUS.md`, kept while its worktree exists or for three days after its last change). `--github` adds, through `gh`:
+the open issues (number, status, priority and area labels, the other labels and age; no titles), the open pull
+requests (branch, draft, mergeability, auto-merge, the required checks in one word, and the causes the
+[`repo pr-health`](#repo-pr-health) judge finds, whose report is included whole), the CI queue's counts
+(`gh run list --status queued` and `--status in_progress`) and, for each unit file, the pull request that released it:
+an open one for its branch, or one merged or closed after the file last changed. A unit with neither is queued.
+
+`--json` prints one object: `time`, `checkout`, `github`, the sections `worktrees`, `pcsx2`, `builds`, `results`,
+`tracks`, `release`, `issues`, `prs` and `ci` (the last three `null` without `--github`), and `action`. Each section has
+`error`, `null` when it was read; a section that could not be read holds only `error`, and the others stand, so a
+failure is never taken for "nothing waits". The exit code is 0, and 2 when the command cannot run at all (outside a
+checkout). `action` lists the ids of what waits, sorted:
+
+| Id | When |
+| --- | --- |
+| `issue:<n>:S-needs-triage` | an open issue carries `S-needs-triage` |
+| `pr:<n>:<cause>` | `repo pr-health` calls the pull request stuck for that cause |
+| `unit:<branch>:<file>` | a unit file is queued |
+| `build:done:<worktree>` | the worktree's detached build ended within the last hour |
+
+An id stays the same while the thing waits, and leaves the list once it has been dealt with, so a reader can tell new
+work from old by comparing lists. The `issue`, `pr` and `unit` ids need GitHub and appear only in a `--github` read; a
+reader that mixes the two kinds of read (the mod does) keeps those from its last `--github` read.
+
 ## mcp {#mcp}
 
 ```sh

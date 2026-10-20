@@ -1,0 +1,10 @@
+{
+  "name": "coney",
+  "version": "0.1.0",
+  "description": "Coney's coordinator pane: what waits for the coordinator (issues, pull requests, the release queue), the machine (PCSX2 copies, build slots, tracks) and the checkout's files, live, with a band of counts; wakes the session when new work arrives",
+  "author": {
+    "name": "The Coney contributors"
+  },
+  "license": "GPL-3.0-or-later",
+  "types": "./types/index.d.ts"
+}

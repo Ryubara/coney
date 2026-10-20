@@ -62,27 +62,33 @@ def _state(row: claims.Row) -> str:
     return "stale" if row.stale else "held"
 
 
+def status_json(rows: list[claims.Row]) -> list[dict[str, object]]:
+    """The rows of `pcsx2 status --json` (also what `coord status` shows of the copies)."""
+    return [
+        {
+            "copy": r.copy.name,
+            "path": str(r.copy.path),
+            "port": r.copy.port,
+            "state": _state(r),
+            "claim": asdict(r.claim) if r.claim else None,
+            "running": r.running,
+            "sdl": r.copy.sdl,
+            "pids": list(r.pids),
+        }
+        for r in rows
+    ]
+
+
+def status_rows(max_age_hours: float | None = None) -> list[dict[str, object]]:
+    """This machine's copies as `pcsx2 status --json` lists them."""
+    return status_json(_registry(max_age_hours).status())
+
+
 def run_status(as_json: bool, max_age_hours: float | None) -> int:
     """`pcsx2 status`: every copy, who holds it, and whether its PCSX2 really runs."""
     rows = _registry(max_age_hours).status()
     if as_json:
-        print(
-            json.dumps(
-                [
-                    {
-                        "copy": r.copy.name,
-                        "path": str(r.copy.path),
-                        "port": r.copy.port,
-                        "state": _state(r),
-                        "claim": asdict(r.claim) if r.claim else None,
-                        "running": r.running,
-                        "sdl": r.copy.sdl,
-                        "pids": list(r.pids),
-                    }
-                    for r in rows
-                ]
-            )
-        )
+        print(json.dumps(status_json(rows)))
         return 0
     table = [("copy", "state", "agent", "since", "port", "running")]
     for r in rows:

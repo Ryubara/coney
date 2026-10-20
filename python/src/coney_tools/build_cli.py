@@ -147,12 +147,15 @@ def _numbers(root: Path) -> dict[str, int]:
     return load_config(root).numbers if local_config_file(root) else dict(INT_KEYS)
 
 
-def _log_folder(root: Path) -> Path:
-    """The worktree's folder in the scratch directory (`scratch_dir`, else the shared scratch beside the main checkout,
-    then the worktree's name)."""
+def scratch_root(root: Path) -> Path:
+    """The scratch directory: `scratch_dir`, else the shared scratch beside the main checkout."""
     configured = load_config(root).paths.get("scratch_dir") if local_config_file(root) else None
-    scratch = configured or (main_checkout(root) / ".." / ".." / "scratch").resolve()
-    return scratch / root.name
+    return configured or (main_checkout(root) / ".." / ".." / "scratch").resolve()
+
+
+def _log_folder(root: Path) -> Path:
+    """The worktree's folder in the scratch directory (`scratch_root`, then the worktree's name)."""
+    return scratch_root(root) / root.name
 
 
 def _new_log(root: Path, preset: str, folder: str | None, agent: str) -> Path:
@@ -496,6 +499,33 @@ def _minutes(since: float, now: float) -> str:
     return f"{max(0.0, now - since) / 60:.0f} min"
 
 
+def _status_json(snapshots: dict[str, Any]) -> dict[str, Any]:
+    """The JSON of `build status --json`: per lane, its slots with their claims and its queue in order."""
+    return {
+        lane: {
+            "slots": [
+                {"slot": r.number, "stale": r.stale, "claim": asdict(r.claim) if r.claim else None} for r in snap.slots
+            ],
+            "queue": [{"position": r.position, "stale": r.stale, **asdict(r.ticket)} for r in snap.queue],
+        }
+        for lane, snap in snapshots.items()
+    }
+
+
+def status_json(root: Path) -> dict[str, Any]:
+    """What `build status --json` prints for the checkout at `root` (also what `coord status` shows of the slots)."""
+    return _status_json({lane: build_claims.default_slots(lane, root).status() for lane in (MAIN_LANE, FAST_LANE)})
+
+
+def result_record(root: Path) -> dict[str, Any] | None:
+    """The worktree's last --detach run as `build result --json` gives it (state `running`, `done`, or `lost` for a
+    run whose process is gone without a result), or None when there is none."""
+    record = _read_record(_log_folder(root) / RESULT_FILE)
+    if record is not None and record.get("state") == "running" and not _alive(record.get("pid")):
+        record = {**record, "state": "lost"}
+    return record
+
+
 def run_status(directory: Path | None, as_json: bool) -> int:
     """`build status`: the slots of both lanes with their holders, the queues in order, and stale entries."""
     root = _root(directory)
@@ -503,20 +533,7 @@ def run_status(directory: Path | None, as_json: bool) -> int:
     snapshots = {lane: slots.status() for lane, slots in lanes.items()}
     now = lanes[MAIN_LANE].clock()
     if as_json:
-        print(
-            json.dumps(
-                {
-                    lane: {
-                        "slots": [
-                            {"slot": r.number, "stale": r.stale, "claim": asdict(r.claim) if r.claim else None}
-                            for r in snap.slots
-                        ],
-                        "queue": [{"position": r.position, "stale": r.stale, **asdict(r.ticket)} for r in snap.queue],
-                    }
-                    for lane, snap in snapshots.items()
-                }
-            )
-        )
+        print(json.dumps(_status_json(snapshots)))
         return 0
     for lane, snap in snapshots.items():
         print(f"{lane} lane ({lanes[lane].slots} slot{'s' if lanes[lane].slots != 1 else ''}):")
