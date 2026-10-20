@@ -456,7 +456,9 @@ TEST_CASE("GoalMoveToFlag walks to the flag, turns to its heading, arrives and t
     MoveScene scene;
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);
-    const double flag = flags.add(100.0, "Spot", {48.0F, 41.0F, 0.0F}, 90.0F).handle;
+    // The flag's 270 degrees turn clockwise seen from above (docs/research/flags.md#position): it faces -x, back the
+    // way he came, which is Coney's 90.
+    const double flag = flags.add(100.0, "Spot", {48.0F, 41.0F, 0.0F}, 270.0F).handle;
     coney::ai::ScriptedBrains scripted(scene.brains, flags);
     Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);
     scripted.bind(1.0, brain);
@@ -474,15 +476,16 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
           "[ai][flag]") {
     // worksetup.StartWorkout: DeactivateWarchief (BrDead(player, true): the pad given up, the goals run), then
     // GoalMoveToFlag(player, fWorkout[k], walk, 0, 0, 0.5, 0, faceFlag = true). The player already stands inside the
-    // radius, facing -90 degrees, and the flag faces 93 (the heavy bag's): only the turn is left. The bag, a human
-    // 0.7 m ahead of him, is his fight target, so he stands in the fight stance locked on it
+    // radius with his back to the bag (Coney's 90 degrees, facing -x), and the flag's 93 (clockwise seen from above,
+    // docs/research/flags.md#position) faces +x, at the heavy bag 0.7 m from him: only the turn is left, to Coney's
+    // -93. The bag, a human, is his fight target, so he stands in the fight stance locked on it
     // (docs/research/workouts.md#coney).
     MoveScene scene;
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);
     const double flag = flags.add(100.0, "fWorkout", {41.2F, 41.0F, 0.0F}, 93.0F).handle;
     coney::ai::ScriptedBrains scripted(scene.brains, flags);
-    Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, 90.0F);
     scene.add({41.7F, 41.0F, 0.0F}, 90.0F);
     scene.lockOn(player);
     REQUIRE(player.human().fighter().lockTarget() != nullptr);
@@ -496,7 +499,7 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
     const int steps = scene.runUntil(150, [&] { return scripted.arrivals() == 1; }, [] {});
     CHECK(scripted.arrivals() == 1);
     CHECK(steps < 30);
-    CHECK(std::fabs(coney::human::wrapAngle(player.human().heading() - radians(93.0F))) <= coney::ai::kFaceFlagAngle);
+    CHECK(std::fabs(coney::human::wrapAngle(player.human().heading() - radians(-93.0F))) <= coney::ai::kFaceFlagAngle);
 }
 
 TEST_CASE("locked on a foe, a pad's human faces it; a player under script control follows his brain", "[ai][turn]") {

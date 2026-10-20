@@ -67,8 +67,9 @@ std::array<float, 3> WorldFlags::position(const WorldFlag& flag, const ObjectLoc
 }
 
 float WorldFlags::headingDegrees(const WorldFlag& flag, const ObjectLocator& locate) {
+    // The parent's heading is its rotation's (Quat_Heading), the flags' clockwise sense; a Placement turns the other way.
     if (const std::optional<Placement> parent = parentOf(flag, locate)) {
-        return parent->headingDegrees;
+        return placementHeading(parent->headingDegrees);
     }
     return flag.headingDegrees;
 }

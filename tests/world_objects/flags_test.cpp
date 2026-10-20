@@ -77,7 +77,7 @@ TEST_CASE("a flag's position and heading follow a live parent, and are its own o
     if (flag == nullptr) {
         return;
     }
-    // Object 9 stands at (10, 20, 0) facing 90; any other handle is no live object.
+    // Object 9 stands at (10, 20, 0) facing 90 as a Placement turns (about +z); any other handle is no live object.
     const coney::world_objects::ObjectLocator locate = [](double handle) -> std::optional<Placement> {
         if (handle == 9.0) {
             return Placement{.position = {10.0F, 20.0F, 0.0F}, .headingDegrees = 90.0F};
@@ -88,7 +88,8 @@ TEST_CASE("a flag's position and heading follow a live parent, and are its own o
     CHECK(WorldFlags::headingDegrees(*flag, locate) == 45.0F);
     flag->parent = 9.0;
     CHECK(WorldFlags::position(*flag, locate) == std::array<float, 3>{10.0F, 20.0F, 0.0F});
-    CHECK(WorldFlags::headingDegrees(*flag, locate) == 90.0F);
+    // A flag's heading turns the other way (clockwise seen from above, as the parent's rotation reads).
+    CHECK(WorldFlags::headingDegrees(*flag, locate) == -90.0F);
     flag->parent = 8.0;
     CHECK(WorldFlags::position(*flag, locate) == std::array<float, 3>{1.0F, 1.0F, 1.0F});
     CHECK(WorldFlags::headingDegrees(*flag, {}) == 45.0F);

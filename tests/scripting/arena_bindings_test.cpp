@@ -208,7 +208,8 @@ TEST_CASE("Teleport moves a human the scripts made, keeping its facing for -1", 
     CHECK(thug.human().position().y == 12.0F);
     const coney::HumanCreation* made = level.humans.find(thug.handle());
     REQUIRE(made != nullptr);
-    CHECK(made->teleported.value_or(coney::world_objects::Placement{}).headingDegrees == 90.0F);
+    // The heading turns clockwise seen from above (about -z), so the placement's (about +z) is its negative.
+    CHECK(made->teleported.value_or(coney::world_objects::Placement{}).headingDegrees == -90.0F);
     CHECK(made->teleports == 1);
     // The default heading keeps the facing it has now.
     const std::optional<coney::world_objects::Placement> before = level.scripted->humanPlacement(thug.handle());
@@ -390,7 +391,9 @@ TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a te
     }
     level.call("ObjColor", {Value(300.0), Value(std::move(colour))});
     CHECK(records.find(300.0)->tint == 0xFF101001U);
-    level.call("Teleport", {Value(300.0), position(5.0, 6.0, 7.0), Value(180.0)});
+    level.call("Teleport", {Value(300.0), position(5.0, 6.0, 7.0), Value(90.0)});
     CHECK(records.find(300.0)->position == std::array<float, 3>{5.0F, 6.0F, 7.0F});
-    CHECK(std::abs(records.find(300.0)->rotation[2] - 1.0F) < 1e-5F);
+    // A quarter turn about -z (Quat_FromAxisAngle with the axis (0, 0, -1)).
+    CHECK(std::abs(records.find(300.0)->rotation[2] + std::sqrt(0.5F)) < 1e-5F);
+    CHECK(std::abs(records.find(300.0)->rotation[3] - std::sqrt(0.5F)) < 1e-5F);
 }

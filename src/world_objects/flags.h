@@ -12,11 +12,16 @@
 
 namespace coney::world_objects {
 
-/// Where a world object stands: its position (metres, game axes with z up) and its heading in degrees about z.
+/// Where a world object stands: its position (metres, game axes with z up) and its heading in degrees about +z
+/// (anticlockwise seen from above), the sense of `HuCreate`'s heading and of Coney's humans (human::facing()).
 struct Placement {
     std::array<float, 3> position{};
     float headingDegrees = 0.0F;
 };
+
+/// A heading in the sense of a flag, `Teleport` and `TeleportToFlag` (degrees clockwise seen from above: the original
+/// turns by it about -z, docs/research/flags.md#position) as a Placement's heading (about +z), and back: its negative.
+[[nodiscard]] constexpr float placementHeading(float clockwiseDegrees) { return -clockwiseDegrees; }
 
 /// Finds the live world object behind a handle and says where it is; nothing when the handle names no live object.
 /// The flags ask it for a flag's parent (docs/research/flags.md#position).
@@ -81,7 +86,8 @@ class WorldFlags {
     /// own. A null `locate` resolves nothing.
     /// @orig 0x004161e8 Flag_Position (flags.cpp)
     [[nodiscard]] static std::array<float, 3> position(const WorldFlag& flag, const ObjectLocator& locate);
-    /// Which way `flag` faces, in degrees: its parent's heading when the parent is live, else its own.
+    /// Which way `flag` faces, in the flags' degrees (clockwise seen from above; placementHeading() turns it into a
+    /// Placement's): its parent's heading when the parent is live, else its own.
     /// @orig 0x00416258 Flag_Heading (flags.cpp)
     [[nodiscard]] static float headingDegrees(const WorldFlag& flag, const ObjectLocator& locate);
 

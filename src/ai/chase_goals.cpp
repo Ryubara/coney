@@ -17,6 +17,7 @@
 #include "ai/story_goals.h"
 #include "ai/turn_action.h"
 #include "human/locomotion.h"
+#include "world_objects/flags.h"
 
 namespace coney::ai {
 
@@ -136,7 +137,8 @@ GoalStatus GuardFlagGoal::process(Brain& brain) {
     }
     // On station: the heading, now and then.
     if (m_heading >= 0 && brain.updates() % kGuardFaceUpdates == 0) {
-        const float heading = radians(static_cast<float>(m_heading));
+        // The script's degrees turn clockwise seen from above (TurnAction_Init's heading), the other way from Coney's.
+        const float heading = radians(world_objects::placementHeading(static_cast<float>(m_heading)));
         if (std::fabs(human::wrapAngle(heading - brain.human().heading())) > kFaceAngle) {
             brain.queueAction(TurnAction::toHeading(heading));
         }

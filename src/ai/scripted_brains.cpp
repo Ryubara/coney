@@ -180,7 +180,9 @@ void ScriptedBrains::actTurnToDir(double human, float headingDegrees, std::int16
         return;
     }
     if (Brain* found = named(human); found != nullptr) {
-        found->queueAction(TurnAction::toHeading(headingDegrees * std::numbers::pi_v<float> / 180.0F, delayMs));
+        // The script's degrees are the original's heading (TurnAction_Init's, clockwise seen from above).
+        const float heading = world_objects::placementHeading(headingDegrees);
+        found->queueAction(TurnAction::toHeading(heading * std::numbers::pi_v<float> / 180.0F, delayMs));
     }
 }
 
@@ -680,8 +682,9 @@ std::optional<world_objects::Placement> ScriptedBrains::flag(double handle) cons
     if (found == nullptr) {
         return std::nullopt;
     }
-    return world_objects::Placement{.position = world_objects::WorldFlags::position(*found, m_locate),
-                                    .headingDegrees = world_objects::WorldFlags::headingDegrees(*found, m_locate)};
+    return world_objects::Placement{
+        .position = world_objects::WorldFlags::position(*found, m_locate),
+        .headingDegrees = world_objects::placementHeading(world_objects::WorldFlags::headingDegrees(*found, m_locate))};
 }
 
 void ScriptedBrains::arrived(double handle, Brain& user) {

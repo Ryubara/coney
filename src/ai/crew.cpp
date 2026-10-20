@@ -552,16 +552,31 @@ bool WarriorHoldTactic::event(Gang& /*gang*/, Brain& member, const BrainEvent& e
 
 // ---- CrewOrders ----
 
+bool CrewOrders::chiefTargetInRange(const Brain& chief) {
+    const human::Combatant* target = chief.human().fighter().target();
+    if (target == nullptr) {
+        return false;
+    }
+    // A Warrior hitting back at a player who hit him does not count (his brain's +0x2e5).
+    if (const std::vector<std::unique_ptr<Brain>>* peers = chief.peers(); peers != nullptr) {
+        for (const std::unique_ptr<Brain>& peer : *peers) {
+            if (&peer->human() == target && peer->type() == BrainType::Warrior && peer->hittingBack()) {
+                return false;
+            }
+        }
+    }
+    const anim::Vec3 from = chief.human().position();
+    const anim::Vec3 to = target->position();
+    return std::hypot(to.x - from.x, to.y - from.y, to.z - from.z) < chief.meleeFar();
+}
+
 std::optional<int> CrewOrders::update(const Brain& chief, int last, std::uint64_t nowMs) {
     const Gang* gang = chief.gang();
     if (last == kCrewFollow) {
         m_calmSince.reset();
-        // His target (**stand-in**: his nearest attacker) within his far melee range while he has attackers.
-        bool near = false;
-        for (const Brain* attacker : chief.attackSlots()) {
-            near = near || (Brain::fightable(*attacker) && chief.distanceTo(*attacker) <= chief.meleeFar());
-        }
-        if (!near) {
+        // His target (human +0xc8, the one his fighter keeps) within his far melee range while he has attackers
+        // (`WarChief_IsTargetInRange` 0x00303db8, `Brain_HasAttackers` 0x00303e68).
+        if (!chiefTargetInRange(chief) || chief.attackSlots().empty()) {
             m_attackSince.reset();
             return std::nullopt;
         }

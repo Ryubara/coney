@@ -1289,6 +1289,10 @@ updates and then, by his last command (confirmed (code)):
 
 All of these are forced dispatches. So in the original a crew under follow stands round the chief, turns to face his
 enemies, and joins the fight with `FollowAndAttack` 1.5 s after the chief, within 5 m of his target, is attacked.
+Being attacked alone is not enough: the attackers count only while the chief has a target of his own in range. Coney
+reads the target his fighter keeps (human `+0xc8`, which `Human_SetTarget` `0x00226c70` also gives his brain's
+`+0x124`); until 2026-10-20 it stood in his nearest attacker for it, and so attacked for a chief who had none, as at
+level80 checkpoint 4, where the Destroyers come for Cleon before the script's attack order (`ai::CrewOrders`).
 Under attack, defend or follow, `Brain_PushFightGoal` pushes nothing ([Tactics](#tactics)): the tactic decides.
 
 ## Formations and follow slots {#formations}
