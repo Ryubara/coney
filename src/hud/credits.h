@@ -32,7 +32,7 @@ inline constexpr float kCreditGapBeforeHeading = 0.08F;
 inline constexpr float kCreditGapAfterSharedRole = 0.04F;
 
 /// A credit line's style (`CreditData +0x00`, `CfgCredits`' first argument).
-enum class CreditStyle : std::uint32_t {
+enum class CreditStyle : std::uint8_t {
     Heading = 0,  ///< A centred heading at kCreditHeadingScale.
     RoleName = 1, ///< A role (right of the gutter's left edge, shown only when it changes) and a name.
     Line = 2,     ///< A centred line at kCreditLineScale; `CfgCredits` style 4 becomes this.

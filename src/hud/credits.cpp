@@ -3,6 +3,7 @@
 
 #include <algorithm>
 
+#include "core/assert.h"
 #include "graphics/font.h"
 #include "gui/colour_table.h"
 
@@ -266,6 +267,7 @@ void Credits::update() {
             continue;
         }
         scrollLine(line);
+        CONEY_ASSERT(line.widget.has_value()); // a started line holds its widget until it finishes
         const float height = heightOf(line);
         // The first live line's centre is the pen's start: half its height takes the pen to its bottom.
         pen = first ? m_pool.at(*line.widget).style().y + (height / 2.0F) : pen + height;
