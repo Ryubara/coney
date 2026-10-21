@@ -1162,17 +1162,18 @@ Every program the command starts runs below normal priority, like a build's (Win
 elsewhere `nice -n 5`).
 
 **Tidy slots, the cache and waiting.** clang-tidy runs only on the files the shared result cache has not seen clean in
-the same state, and only while the command holds a slot of the machine's **tidy lane** ([building](building.md#clang-tidy-cache)):
-`tidy_slots` of `coney.local.toml` gates at once (default 1), each running `tidy_jobs` clang-tidy processes (default 0:
-a build slot's share, the cores divided by `build_slots`); `--jobs` overrides the second for one run. A gate whose
-files are all cached takes no slot. The summary line says how many files came from the cache (`254 files (clang-tidy
-19, 251 cached)`). The queue is the build slots' own: fair, with the same claim files; `build status` lists the
-lane, each holder with its file count and progress (`tidy 12/40`), and `build release --lane tidy` cleans up after a
-crash. The queue entry carries `--agent` (default: `CONEY_AGENT`, else the worktree's folder name). `--max-wait`
-minutes (default and most 40, inside an agent's prompt cache) bound the wait; a gate that gives up skips clang-tidy,
-runs the other steps and exits 75 unless one of them failed. `--detach` runs the whole gate in the background, apart
-from the shell (default wait 240 minutes), and returns at once; `check result` prints its output and exits with its
-code (75 while it runs, as `build result` does). `--no-cache` tidies every file again.
+the same state, and only while the command holds a slot of the machine's **tidy lane**
+([building](building.md#clang-tidy-cache)): `tidy_slots` of `coney.local.toml` gates at once (default 1), each running
+`tidy_jobs` clang-tidy processes (default 0: a build slot's share, the cores divided by `build_slots`); `--jobs`
+overrides the second for one run. A gate whose files are all cached takes no slot, and one of at most 6 files takes the
+fast lane's slot instead. The summary line says how many files came from the cache (`254 files (clang-tidy 19, 251
+cached)`). The queue is the build slots' own: fair, with the same claim files; `build status` lists the lane, each
+holder with its file count and progress (`tidy 12/40`), and `build release --lane tidy` cleans up after a crash. The
+queue entry carries `--agent` (default: `CONEY_AGENT`, else the worktree's folder name). `--max-wait` minutes (default
+and most 40, inside an agent's prompt cache) bound the wait; a gate that gives up skips clang-tidy, runs the other steps
+and exits 75 unless one of them failed. `--detach` runs the whole gate in the background, apart from the shell (default
+wait 240 minutes), and returns at once; `check result` prints its output and exits with its code (75 while it runs, as
+`build result` does). `--no-cache` tidies every file again.
 
 **Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
 default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The

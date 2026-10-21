@@ -5,14 +5,18 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
-from collections.abc import Callable
+import time
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from coney_tools import build_cli, check_cli, local_gate, pcsx2_proc
-from coney_tools.build_claims import TIDY_LANE, Slots, SlotTimeout
+from coney_tools.build_claims import FAST_LANE, TIDY_LANE, Slots, SlotTimeout
 from coney_tools.check_cli import TidyGate
 from coney_tools.cli import _build_parser, main
 from coney_tools.config import ConfigError
@@ -221,3 +225,92 @@ def test_check_result_reports_a_finished_run(
     )
     monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda _pid: True)
     assert main(["check", "result"]) == 75
+
+
+def test_a_file_edited_during_its_run_is_not_stored_as_clean(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """clang-tidy saw the old contents; storing "clean" under the old key would hand a later gate a stale pass."""
+    build = repo / "build" / "dev"
+    database(build, repo, ["src/other.cpp"])
+    tidy = FakeTidy(monkeypatch, {})
+    tidy.on_run = lambda _name: write(repo, "src/other.cpp", "int edited;\n")
+    assert check_cli._step_tidy(repo, ["src/other.cpp"], build, 1, None, gate(tmp_path)).ok
+    write(repo, "src/other.cpp", "int x;\n")  # back to the contents that were tidied
+    tidy.on_run = lambda _name: None
+    tidy.ran.clear()
+    assert check_cli._step_tidy(repo, ["src/other.cpp"], build, 1, None, gate(tmp_path)).ok
+    assert tidy.ran == ["src/other.cpp"]
+
+
+def test_an_interrupt_drops_the_files_not_started(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ctrl+C must let go of the slot now, not after every queued file has run."""
+    ran: list[str] = []
+
+    def slow(command: list[str], _root: Path, name: str) -> tuple[str, int, list[str], list[str]]:
+        ran.append(name)
+        time.sleep(0.2)
+        return name, 0, [], []
+
+    monkeypatch.setattr(check_cli, "_tidy_one", slow)
+
+    def interrupt(_done: int) -> None:
+        raise KeyboardInterrupt
+
+    commands = [(["tidy", f"f{index}.cpp"], f"f{index}.cpp") for index in range(8)]
+    started = time.monotonic()
+    with pytest.raises(KeyboardInterrupt):
+        check_cli._run_tidy(commands, tmp_path, 1, interrupt)
+    assert time.monotonic() - started < 1.0
+    assert len(ran) <= 2
+
+
+def test_a_small_run_takes_the_fast_lane_past_a_busy_tidy_lane(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build = repo / "build" / "dev"
+    database(build, repo, ["src/other.cpp"])
+    tidy_lane = Slots(tmp_path / "claims", 1, lane=TIDY_LANE, sleep=lambda _s: None)
+    other = tidy_lane.join("someone", "wt", "250 files", False, os.getpid())
+    assert tidy_lane.try_claim(other) is not None
+    tidy_lane.leave(other)
+    fast = Slots(tmp_path / "claims", 1, lane=FAST_LANE, sleep=lambda _s: None)
+    seen: list[str] = []
+    tidy = FakeTidy(monkeypatch, {})
+
+    def look(_name: str) -> None:
+        claim = fast.status().slots[0].claim
+        seen.append(claim.agent if claim else "free")
+
+    tidy.on_run = look
+    both = replace(gate(tmp_path, tidy_lane, max_wait=0.0), small_slots=fast)
+    assert check_cli._step_tidy(repo, ["src/other.cpp"], build, 1, None, both).ok
+    assert seen == ["me"]
+    # A run past SMALL_TIDY_FILES waits for the tidy lane as before.
+    monkeypatch.setattr(check_cli, "SMALL_TIDY_FILES", 0)
+    write(repo, "src/other.cpp", "int big;\n")
+    with pytest.raises(SlotTimeout):
+        check_cli._step_tidy(repo, ["src/other.cpp"], build, 1, None, both)
+
+
+def test_files_another_gate_tidied_during_the_wait_are_not_run_again(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build = repo / "build" / "dev"
+    database(build, repo, ["src/ai/brain.cpp", "src/ai/walk.cpp"])
+    tidy = FakeTidy(monkeypatch, {})
+    elsewhere = TidyGate("other", "wt2", TidyCache(tmp_path / "other-cache"), None, None, lambda _line: None)
+    assert check_cli._step_tidy(repo, ["src/ai/brain.h"], build, 1, None, elsewhere).ok
+    tidy.ran.clear()
+    real_slot = check_cli._tidy_slot
+
+    @contextmanager
+    def slot_after_the_other_gate(held: TidyGate | None, files: int) -> Iterator[Callable[[int], None]]:
+        # While this gate waited, the other one finished and its results reached the shared cache.
+        shutil.copytree(tmp_path / "other-cache", tmp_path / "tidy-cache", dirs_exist_ok=True)
+        with real_slot(held, files) as progress:
+            yield progress
+
+    monkeypatch.setattr(check_cli, "_tidy_slot", slot_after_the_other_gate)
+    result = check_cli._step_tidy(repo, ["src/ai/brain.h"], build, 1, None, gate(tmp_path))
+    assert result.ok and tidy.ran == [] and "2 cached" in result.detail

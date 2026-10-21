@@ -19,13 +19,15 @@ def write(root: Path, name: str, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def entry(root: Path, source: str, extra: str = "") -> dict[str, str]:
-    """A cl.exe-style compile database entry for `source` in the checkout at `root`, as CMake writes it."""
-    native = str(root / source).replace("/", "\\")
-    include = str(root / "src").replace("/", "\\")
+def entry(root: Path, source: str, extra: str = "", include: str | None = None) -> dict[str, str]:
+    """A cl.exe-style compile database entry for `source` in the checkout at `root`, as CMake writes it, with the
+    platform's own paths (a Windows path on Linux is one odd file name, not a folder); `include` replaces the
+    `-I<root>/src` that finds the checkout's headers."""
+    native = str(root / source)
+    flag = f"-I{root / 'src'}" if include is None else include
     return {
         "directory": (root / "build" / "dev").as_posix(),
-        "command": f"C:\\VS\\cl.exe /nologo /TP -I{include} {extra}/W4 @src\\{Path(source).name}.obj.modmap "
+        "command": f"C:\\VS\\cl.exe /nologo /TP {flag} {extra}/W4 @src\\{Path(source).name}.obj.modmap "
         f"/Fo{Path(source).name}.obj -c {native}",
         "file": native,
     }
@@ -146,3 +148,61 @@ def test_the_default_folder_is_in_the_workspace_cache_unless_configured(tmp_path
     assert tidy_cache.default_cache(main).directory == (tmp_path / "cache" / "clang-tidy").resolve()
     write(main, "coney.local.toml", 'tidy_cache_dir = "../../elsewhere"\n')
     assert tidy_cache.default_cache(main).directory == (tmp_path / "elsewhere").resolve()
+
+
+@pytest.mark.parametrize("flags", ["-isystem {src}", "-external:I{src}", "-I {src}"])
+def test_every_include_flag_form_finds_the_headers(tmp_path: Path, flags: str) -> None:
+    """A folder given in the same argument or the next one, under the GCC, Clang and MSVC spellings."""
+    root = checkout(tmp_path / "a")
+    flag = flags.format(src=root / "src")
+    before = KeyMaker(root, "setup").key("src/ai/brain.cpp", entry(root, "src/ai/brain.cpp", include=flag))
+    write(root, "src/ai/mind.h", "int changed();\n")
+    after = KeyMaker(root, "setup").key("src/ai/brain.cpp", entry(root, "src/ai/brain.cpp", include=flag))
+    assert after != before
+
+
+def test_an_update_of_the_compiler_in_place_changes_the_key(tmp_path: Path) -> None:
+    """The compiler's path can stay the same across an update (an 8.3 alias, a package upgrade); its file cannot."""
+    root = checkout(tmp_path / "a")
+    compiler = tmp_path / "bin" / "cl.exe"
+    write(tmp_path, "bin/cl.exe", "version 1\n")
+    made = entry(root, "src/ai/brain.cpp")
+    made["command"] = made["command"].replace("C:\\VS\\cl.exe", str(compiler))
+    before = KeyMaker(root, "setup").key("src/ai/brain.cpp", made)
+    write(tmp_path, "bin/cl.exe", "version 2, longer\n")
+    assert KeyMaker(root, "setup").key("src/ai/brain.cpp", made) != before
+
+
+def test_the_system_include_environment_is_in_the_setup(tmp_path: Path) -> None:
+    root = checkout(tmp_path / "a")
+    one = tidy_cache.setup_text(root, "v", "c", [], {"INCLUDE": "C:/SDK/10.0.22621"})
+    two = tidy_cache.setup_text(root, "v", "c", [], {"INCLUDE": "C:/SDK/10.0.26100"})
+    assert one != two
+    assert tidy_cache.setup_text(root, "v", "c", [], {"PATH": "x"}) == tidy_cache.setup_text(root, "v", "c", [], {})
+
+
+def test_an_unreadable_header_gives_a_key_instead_of_an_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = checkout(tmp_path / "a")
+    readable = key_of(root)
+    real = Path.read_bytes
+
+    def locked(path: Path) -> bytes:
+        if path.name == "mind.h":
+            raise PermissionError(13, "Permission denied")
+        return real(path)
+
+    monkeypatch.setattr(Path, "read_bytes", locked)
+    assert key_of(root) != readable
+
+
+def test_leftovers_of_a_killed_store_are_pruned(tmp_path: Path) -> None:
+    cache = TidyCache(tmp_path / "cache")
+    cache.store("ab" * 32, "src/a.cpp")
+    leftover = cache.path("ab" * 32).with_name(".leftover.123.tmp")
+    leftover.write_text("{}", encoding="utf-8")
+    fresh = cache.path("ab" * 32).with_name(".fresh.456.tmp")
+    fresh.write_text("{}", encoding="utf-8")
+    stamp = leftover.stat().st_mtime - tidy_cache.TEMPORARY_MAX_AGE_SECONDS - 60
+    os.utime(leftover, (stamp, stamp))
+    assert cache.prune() == 1
+    assert not leftover.exists() and fresh.exists() and cache.hit("ab" * 32)

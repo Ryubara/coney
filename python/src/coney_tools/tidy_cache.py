@@ -7,9 +7,11 @@ cache remembers each file clean clang-tidy run by a key of everything that decid
 the same state is checked once on the machine:
 
 - the setup (`setup_text`): clang-tidy's `--version`, the checks and extra arguments the gate passes, the repository's
-  `.clang-tidy` and `cmake/deps.cmake` (the pinned third-party versions, whose headers the key does not read);
+  `.clang-tidy` and `cmake/deps.cmake` (the pinned third-party versions, whose headers the key does not read), and the
+  environment variables that add system include folders (HEADER_ENV: MSVC's and the Windows SDK's through `INCLUDE`);
 - the file's compile command with the checkout's own path taken out (so worktrees share entries), without a compiler
-  launcher or an `@response` file (CMake's module maps exist only after a build);
+  launcher or an `@response` file (CMake's module maps exist only after a build), and the size and modification time
+  of the compiler it names (an update in place, or a short 8.3 path that hides the version folder, changes them);
 - the file's path in the checkout, and the contents of the file and of every header inside the checkout it reaches
   through `#include`, transitively. Every include line counts, whatever `#if` it sits in: that over-counts (an edit
   can miss a hit it did not need to), never under-counts. Headers outside the checkout (the standard library, the
@@ -17,7 +19,13 @@ the same state is checked once on the machine:
   names the compiler's folder, which changes with its version.
 
 Only a clean result is stored, as an empty-ish file named by the key; a failure is always rerun, as its findings are
-what the gate prints. An entry not used for MAX_AGE_SECONDS is pruned.
+what the gate prints. The gate works a file's key out again when its run ends and stores the result only if the key is
+the same, so a file edited while it waited or ran is never stored as clean under its old contents. An entry not used
+for MAX_AGE_SECONDS is pruned.
+
+Limits, none of which Coney's build uses today: the contents of `@response` files are not read (CMake writes them only
+for module maps); a forced include (`-include`, `/FI`), `-idirafter` and `#include MACRO` are not followed; and the
+headers in a system include folder count by the folder's name, not their contents.
 """
 
 from __future__ import annotations
@@ -28,7 +36,7 @@ import json
 import os
 import re
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -44,19 +52,28 @@ DEFAULT_DIR = Path("cache") / "clang-tidy"
 MAX_AGE_SECONDS = 30 * 24 * 3600.0
 #: Files of the repository that change what clang-tidy reports for any file (besides the file and its headers).
 SETUP_FILES: tuple[str, ...] = (".clang-tidy", "cmake/deps.cmake")
+#: Environment variables that add system include folders for the compiler driver clang-tidy imitates.
+HEADER_ENV: tuple[str, ...] = ("INCLUDE", "EXTERNAL_INCLUDE", "CPATH", "C_INCLUDE_PATH", "CPLUS_INCLUDE_PATH")
+#: A leftover `.tmp` of `store` (a run killed between write and rename) older than this is removed by `prune`.
+TEMPORARY_MAX_AGE_SECONDS = 3600.0
 #: An include directive, quoted or angled.
 _INCLUDE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*([<"])([^>"\n]+)[>"]', re.MULTILINE)
 #: Compiler options that add an include folder, with the folder in the same argument or (bare) in the next one.
 _INCLUDE_FLAGS: tuple[str, ...] = ("-I", "/I", "-external:I", "/external:I", "-isystem", "-iquote", "-imsvc")
 
 
-def setup_text(root: Path, version: str, checks: str, extra: Sequence[str]) -> str:
+def setup_text(
+    root: Path, version: str, checks: str, extra: Sequence[str], environment: Mapping[str, str] | None = None
+) -> str:
     """The part of every key that is the same for all files of one run: the format, clang-tidy's version text, the
-    checks and extra arguments, and the contents of SETUP_FILES (a missing one counts as missing)."""
+    checks and extra arguments, the contents of SETUP_FILES (a missing one counts as missing) and the HEADER_ENV
+    variables of `environment` (default: this process's)."""
+    environment = os.environ if environment is None else environment
     parts = [FORMAT, version.strip(), checks, *extra]
     for name in SETUP_FILES:
         path = root / name
         parts.append(f"{name}:{_digest(path.read_bytes()) if path.is_file() else 'missing'}")
+    parts.extend(f"{name}={environment.get(name, '')}" for name in HEADER_ENV)
     return "\n".join(parts)
 
 
@@ -85,6 +102,8 @@ class KeyMaker:
         self._found: dict[tuple[str, str, str, tuple[Path, ...]], Path | None] = {}
         #: Each path's checkout-relative name, or None outside it (`_inside`), worked out once.
         self._names: dict[Path, str | None] = {}
+        #: Each compiler's size and modification time (`_stamp`), looked up once.
+        self._stamps: dict[str, str] = {}
 
     def key(self, source: str, entry: dict[str, Any]) -> str:
         """The key of `source` (relative to the checkout) compiled by the compile database `entry`."""
@@ -92,9 +111,22 @@ class KeyMaker:
         base = Path(str(entry.get("directory", self.root)))
         folders = self._include_folders(arguments, base)
         command = self._portable(" ".join(arguments))
+        compiler = self._stamp(Path(arguments[0].strip('"'))) if arguments else "none"
         reached = self._closure(self.root / source, folders)
-        lines = [self.setup, source, command, *(f"{name} {digest}" for name, digest in sorted(reached.items()))]
+        lines = [self.setup, source, command, compiler]
+        lines.extend(f"{name} {digest}" for name, digest in sorted(reached.items()))
         return _digest("\n".join(lines).encode("utf-8"))
+
+    def _stamp(self, compiler: Path) -> str:
+        """The size and modification time of the compiler a command names ("missing" when it is not a file there)."""
+        text = str(compiler)
+        if text not in self._stamps:
+            try:
+                status = compiler.stat()
+                self._stamps[text] = f"{status.st_size}:{status.st_mtime_ns}"
+            except OSError:
+                self._stamps[text] = "missing"
+        return self._stamps[text]
 
     def _portable(self, text: str) -> str:
         """`text` with forward slashes and the checkout's own path replaced, so two worktrees write it the same."""
@@ -131,10 +163,16 @@ class KeyMaker:
         return self._names[path]
 
     def _read(self, path: Path) -> tuple[str, list[tuple[str, str]]]:
-        """A file's digest and its include directives (kind, name), read once per run."""
+        """A file's digest and its include directives (kind, name), read once per run. A file that cannot be read
+        (locked, or deleted mid-run) counts by its error and includes nothing: its key differs from any key made when
+        it was readable, and clang-tidy itself reports the problem."""
         name = self._inside(path) or str(path)
         if name not in self._files:
-            data = path.read_bytes()
+            try:
+                data = path.read_bytes()
+            except OSError as error:
+                self._files[name] = (f"unreadable: {error.strerror or error}", [])
+                return self._files[name]
             text = data.decode("utf-8", errors="replace")
             self._files[name] = (_digest(data), [(m.group(1), m.group(2).strip()) for m in _INCLUDE.finditer(text)])
         return self._files[name]
@@ -199,10 +237,13 @@ class TidyCache:
             pass  # a cache that cannot be written only costs the next run time
 
     def prune(self, now: float | None = None) -> int:
-        """Remove the entries not used for MAX_AGE_SECONDS; returns how many went."""
-        limit = (time.time() if now is None else now) - MAX_AGE_SECONDS
+        """Remove the entries not used for MAX_AGE_SECONDS, and the `.tmp` leftovers of killed runs older than
+        TEMPORARY_MAX_AGE_SECONDS; returns how many went."""
+        now = time.time() if now is None else now
+        found = [(path, now - MAX_AGE_SECONDS) for path in self._files("*/*.json")]
+        found += [(path, now - TEMPORARY_MAX_AGE_SECONDS) for path in self._files("*/.*.tmp")]
         removed = 0
-        for path in self.directory.glob("*/*.json") if self.directory.is_dir() else []:
+        for path, limit in found:
             try:
                 if path.stat().st_mtime < limit:
                     path.unlink()
@@ -210,6 +251,10 @@ class TidyCache:
             except OSError:
                 continue
         return removed
+
+    def _files(self, pattern: str) -> list[Path]:
+        """The cache's files matching a glob pattern (none while the folder does not exist)."""
+        return list(self.directory.glob(pattern)) if self.directory.is_dir() else []
 
 
 def default_cache(root: Path) -> TidyCache:

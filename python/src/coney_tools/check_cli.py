@@ -29,7 +29,7 @@ from pathlib import Path
 from coney_tools import build_claims, build_cli, docs_check, docs_cli, local_gate, process_lifetime, tidy_cache
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
-from coney_tools.build_claims import TIDY_LANE, Slots, SlotTimeout, Waiting
+from coney_tools.build_claims import FAST_LANE, TIDY_LANE, Slots, SlotTimeout, Waiting
 from coney_tools.build_run import EXIT_QUEUED, jobs_for
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.conventions import Paths, load_conventions
@@ -67,13 +67,16 @@ FALLBACK_TAIL_LINES = 30
 #: The files in the worktree's scratch folder that a --detach run records itself in, and its console output.
 RESULT_FILE = "check-result.json"
 DETACHED_OUTPUT = "check-detached.out"
+#: A clang-tidy run of at most this many files (a rerun after a fix, a change that reaches a few sources) takes the
+#: fast lane's slot instead of a tidy slot: a couple of minutes, which must not wait behind a 250-file gate.
+SMALL_TIDY_FILES = 6
 
 
 @dataclass(frozen=True)
 class TidyGate:
     """How the clang-tidy step shares the machine: who runs it (for the queue), the result cache (None: off), the
-    tidy slots (None: none taken, as in a test), the most seconds to wait for one (None: no limit) and where the
-    waiting lines go."""
+    tidy slots (None: none taken, as in a test), the most seconds to wait for one (None: no limit), where the
+    waiting lines go, and the fast lane a run of at most SMALL_TIDY_FILES files takes instead (None: the tidy slots)."""
 
     agent: str
     worktree: str
@@ -81,6 +84,7 @@ class TidyGate:
     slots: Slots | None
     max_wait: float | None
     say: Callable[[str], None] = print
+    small_slots: Slots | None = None
 
 
 def _timed(name: str, work: Callable[[], StepResult]) -> StepResult:
@@ -172,18 +176,20 @@ def _plural(count: int, word: str) -> str:
 
 @contextmanager
 def _tidy_slot(gate: TidyGate | None, files: int) -> Iterator[Callable[[int], None]]:
-    """Hold a tidy slot while `files` files are tidied (none when the gate has no slots); yields the function that
-    notes how many are done in the slot's owner file, which `build status` shows. Raises SlotTimeout after the gate's
-    wait."""
+    """Hold a tidy slot while `files` files are tidied (none when the gate has no slots), or the fast lane's slot
+    for at most SMALL_TIDY_FILES files; yields the function that notes how many are done in the slot's owner file,
+    which `build status` shows. Raises SlotTimeout after the gate's wait."""
     if gate is None or gate.slots is None:
         yield lambda _done: None
         return
-    slots = gate.slots
+    small = gate.small_slots is not None and files <= SMALL_TIDY_FILES
+    slots = gate.small_slots if small and gate.small_slots is not None else gate.slots
+    lane = "fast-lane" if small else "clang-tidy"
 
     def report(waiting: Waiting) -> None:
         held = ", ".join(f"{h.agent} ({h.step})" for h in waiting.holders) or "nobody"
         gate.say(
-            f"     waiting for a clang-tidy slot: {waiting.place} of {waiting.total} in the queue, held by {held}; "
+            f"     waiting for a {lane} slot: {waiting.place} of {waiting.total} in the queue, held by {held}; "
             f"about {waiting.minutes:.0f} min"
         )
 
@@ -199,14 +205,26 @@ def _tidy_slot(gate: TidyGate | None, files: int) -> Iterator[Callable[[int], No
 
 
 def _run_tidy(
-    commands: list[tuple[list[str], str]], root: Path, jobs: int, progress: Callable[[int], None]
+    commands: list[tuple[list[str], str]],
+    root: Path,
+    jobs: int,
+    progress: Callable[[int], None],
+    finished: Callable[[str, int], None] = lambda _name, _code: None,
 ) -> list[tuple[str, int, list[str], list[str]]]:
-    """Run the clang-tidy commands, `jobs` at a time, noting each finished file; results in the commands' order."""
-    with ThreadPoolExecutor(max_workers=max(1, min(jobs, len(commands)))) as pool:
+    """Run the clang-tidy commands, `jobs` at a time, handing each finished file and its exit code to `finished` and
+    the count so far to `progress`; results in the commands' order."""
+    pool = ThreadPoolExecutor(max_workers=max(1, min(jobs, len(commands))))
+    try:
         futures = [pool.submit(_tidy_one, command, root, name) for command, name in commands]
-        for done, _future in enumerate(as_completed(futures), start=1):
+        for done, future in enumerate(as_completed(futures), start=1):
+            name, code, _lines, _everything = future.result()
+            finished(name, code)
             progress(done)
         return [future.result() for future in futures]
+    finally:
+        # On Ctrl+C or a kill the files not started yet are dropped, so the slot is let go now rather than after
+        # every queued file has run (the `with` form waits for all of them); after a normal end nothing is left.
+        pool.shutdown(wait=False, cancel_futures=True)
 
 
 def _step_tidy(
@@ -239,24 +257,35 @@ def _step_tidy(
         )
     # The cache: a key per file from everything that decides its result; a file found clean before is not run again.
     cache = gate.cache if gate is not None else None
+    entries = {name: database[local_gate.comparable(root / name)] for name in sources}
     keys: dict[str, str] = {}
+    setup = ""
     if cache is not None:
         setup = tidy_cache.setup_text(root, local_gate.tidy_version(tool), checks, extra)
         maker = tidy_cache.KeyMaker(root, setup)
-        keys = {name: maker.key(name, database[local_gate.comparable(root / name)]) for name in sources}
-    todo = [name for name in sources if cache is None or not cache.hit(keys[name])]
-    cached = len(sources) - len(todo)
+        keys = {name: maker.key(name, entries[name]) for name in sources}
+
+    def uncached(names: list[str]) -> list[str]:
+        """The names the cache has not seen clean in their current state."""
+        return [name for name in names if cache is None or not cache.hit(keys[name])]
+
+    def finished(name: str, code: int) -> None:
+        """Store a clean file at once, if its key is still the one it was run under: a file edited while the gate
+        waited or ran was tidied in one state and would be stored under another."""
+        if cache is not None and code == 0 and tidy_cache.KeyMaker(root, setup).key(name, entries[name]) == keys[name]:
+            cache.store(keys[name], name)
+
+    todo = uncached(sources)
     results: list[tuple[str, int, list[str], list[str]]] = []
     if todo:
         with tempfile.TemporaryDirectory(prefix="coney-tidy-") as scratch:
             database_dir = local_gate.without_missing_response_files(database, Path(scratch))
-            commands = [(local_gate.clean_tidy_command(tool, database_dir, checks, extra, name), name) for name in todo]
             with _tidy_slot(gate, len(todo)) as progress:
-                results = _run_tidy(commands, root, jobs, progress)
-    if cache is not None:
-        for name, code, _lines, _everything in results:
-            if code == 0:
-                cache.store(keys[name], name)
+                # Another worktree's gate may have tidied some of these while this one waited for the slot.
+                todo = uncached(todo)
+                commands = [(local_gate.clean_tidy_command(tool, database_dir, checks, extra, n), n) for n in todo]
+                results = _run_tidy(commands, root, jobs, progress, finished)
+    cached = len(sources) - len(results)
     failed = [(name, lines, everything) for name, code, lines, everything in results if code != 0]
     version = f"clang-tidy {major}" if major is not None else "clang-tidy"
     if cached:
@@ -454,6 +483,7 @@ def run_changed(
         build_claims.default_slots(TIDY_LANE, root),
         max_wait_minutes(max_wait, detached) * 60,
         lambda line: print(line, flush=True),
+        build_claims.default_slots(FAST_LANE, root),
     )
     steps: dict[str, Callable[[], StepResult]] = {
         "repo": lambda: _step_repo(root),

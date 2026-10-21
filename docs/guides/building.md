@@ -386,19 +386,27 @@ clang-tidy costs about a minute and a gigabyte of memory per file, and a header 
   `coney.local.toml` sets how many gates tidy at once (default 1) and `tidy_jobs` how many clang-tidy processes each
   runs (default 0: a build slot's share of the cores, `-j` of a build); together they bound clang-tidy's share of the
   machine. Before the lane, every gate started its own processes: on 2026-10-21 eight gates ran 22 of them (about
-  20 GB) beside five full builds on 16 threads, and the builds queued for over an hour.
+  20 GB) beside five full builds on 16 threads, and the builds queued for over an hour. A run of at most 6 files (a
+  rerun after a fix, a change that reaches a few sources) takes the fast lane's slot instead, so it never waits behind a
+  gate of 250 files. Once a gate has its slot it asks the cache again, as another gate may have tidied the same files
+  while it waited. Ctrl+C or a kill lets the slot go at once: the files not started yet are dropped.
 - **Result cache.** A file clang-tidy found clean is remembered in a cache every worktree shares (`tidy_cache_dir`,
   default `cache/clang-tidy` in the workspace, beside the [compiler cache](#compiler-cache)), and the next gate that
   meets the same file in the same state skips it. The key is everything that decides the result: clang-tidy's version,
   the checks and warning flags, `.clang-tidy`, `cmake/deps.cmake` (the pinned third-party versions), the file's compile
-  command with the checkout's path taken out, and the contents of the file and of every Coney header it includes,
-  transitively (every `#include` line counts, whatever `#if` it sits under). So a rerun after a fix tidies only the
-  files the fix reaches, and a gate whose files are all cached takes no slot and finishes in seconds. A failing file is
-  never cached. Entries unused for 30 days are removed; `--no-cache` ignores the cache for one run.
+  command with the checkout's path taken out, the size and date of the compiler it names, the system include
+  variables (`INCLUDE`, `CPATH` and the like, which name the Windows SDK and MSVC versions), and the contents of the
+  file and of every Coney header it includes, transitively (every `#include` line counts, whatever `#if` it sits
+  under). So a rerun after a fix tidies only the files the fix reaches, and a gate whose files are all cached takes no
+  slot and finishes in seconds. Each clean file is stored as soon as it finishes, and only if its key is still the
+  same: a file edited while the gate waited or ran is tidied again next time. A failing file is never cached. Entries
+  unused for 30 days are removed; `--no-cache` ignores the cache for one run.
 
-What the key leaves out, by design: headers outside the checkout (the standard library, the compiler's own; the compile
-command names the compiler's folder, which changes with its version) and the fetched dependencies under `_deps`
-(pinned by `deps.cmake`). Delete the cache folder if a toolchain is ever updated in place.
+What the key leaves out, by design: the contents of headers outside the checkout (the standard library, the compiler's
+own, which the compiler and include variables stand for) and of the fetched dependencies under `_deps` (pinned by
+`deps.cmake`). It does not follow forced includes (`-include`, `/FI`), `-idirafter`, `#include MACRO` or the contents of
+`@response` files; Coney's build uses none of them. Delete the cache folder if a toolchain changes in a way none of
+these show.
 
 ## Python tools
 
