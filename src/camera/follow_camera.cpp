@@ -747,7 +747,8 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
     }
     // The overshoot test: × 2.5 when this update's aim point, moved by the lag built so far, would still end farther
     // from the goal than the look-at point is (squared 3D distances); only when it would not, a target the stick does
-    // not move. **Coney choice**: the slope latch that also passes the first test (`+0x460`) is not modelled.
+    // not move (`0x00133dcc`-`0x00133ec8`, docs/research/camera.md#aim-point). **Coney's choice** (a stand-in): the
+    // slope latch that also passes the first test (`+0x460`) is not modelled, as Coney has no slope latches yet.
     if (speed3d > target.walkSpeed + 0.18F * (target.runSpeed - target.walkSpeed)) {
         const anim::Vec3 next = anim::add(m_aim, anim::scale(anim::subtract(goal, m_aim), lag));
         const anim::Vec3 toLookAt3d = anim::subtract(goal, m_lookAt);

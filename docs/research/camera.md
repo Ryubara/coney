@@ -934,28 +934,58 @@ street; at frame 5 his feet are put 40 m up and he falls for 71 updates (2.4 s),
   its height, so the aim point's trail tilts the view up: +16° (step 30), +38° (42), +46° (54), +55° (72). The original
   looks up a good way too in a long fall with the stick held, but its view stays under about 55°.
 
+**Several heights** (confirmed (runtime), the maintainer's question on issue #111: does the original's camera fly up
+too?). PCSX2-MCP 2.9.129, 2026-10-20, scenario `repo:research/traces/scenarios/fall_heights.toml` recorded with
+`--let rise=20`, `40`, `70` and the default 120: the same spot, slot 1, the stick at rest, 300 updates sampled every
+update. While he falls (vertical speed under −0.5 m/s):
+
+| Rise | Updates falling | Top speed | Highest lag | Aim point above look-at | Camera pitch | View pitch | Look-at off the view's centre |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 20 m | 47 | 24.6 m/s | 0.153 | 4.2 m | 41.9° | 15.5° | 57.5° |
+| 40 m | 67 | 35.0 m/s | 0.189 | 4.8 m | 51.5° | 14.0° | 65.6° |
+| 70 m | 89 | 46.5 m/s | 0.193 | 6.2 m | 59.1° | 36.9° | 96.1° |
+| 120 m | 119 | 50.0 m/s | 0.193 | 7.6 m | 61.8° | 55.2° | 117.1° |
+
+The columns are each the largest value of the fall: the camera's pitch above the look-at point, the view's pitch
+(camera to aim point, positive up) and the angle between the view and the look-at point. The fall caps at 50 m/s.
+So **the original's camera rises too**: it stays 4.5-5.2 m from the look-at point and climbs above it to about 62°,
+and in a fall of 20 m or more the player leaves the frame below (the look-at point is more than 57° off the view's
+centre); from about 70 m the view also tilts up, to 55° at 120 m. What it never does is face straight up: at 40 m the
+view stays within 15° of level and shows the horizon and the buildings (a PCSX2 frame at 56 updates, 14 m above the
+street, checked by eye). After the landing the lag eases back to 0.061 by about 140 updates.
+
+How it was done (a recipe for `coney-tools pcsx2`): the scenario's `setup` adds `rise` to the player's transform
+height (`tf(player) + 0x8`, `f32`) at frame 5, once; for a single frame, launch the scenario's patched state copy
+with `pcsx2 launch`, pause through the debug server, write the scripted pad's rest bytes (`0x005de3aa`-`0x005de3af`:
+`ff ff 80 80 80 80`), find the player's transform as the entry of the table at `0x00714b00` (0x20 each) whose
+position is the trace's first row (entry 2 in slot 1), add the height at `+0x8`, and `pcsx2_frame_advance` two
+frames per update before `pcsx2_screenshot`.
+
 #### Coney's difference {#long-fall-coney}
 
 Fixed (issue #111); this paragraph is how Coney differed before. Inferred, from `repo:src/camera/follow_camera.cpp`
 (`stepAim()`) and `repo:src/human/player.cpp` (`followTargetOf()`): Coney built the lag from the **horizontal** speed
-only. `c` was 1 while the horizontal speed was under the walk speed, and the ×2.5 needed `!stickOwned` and a horizontal speed above walk + 18% of (run − walk), with no
-overshoot test. In a straight fall the horizontal speed is about 0, so the lag stays **0.06**, and at 35 m/s the aim
-point settles about 1.167 × 0.94 / 0.06 ≈ **18 m** above the look-at point (11 m at 20 m/s) instead of under 5 m. With
-the camera 3.5-5 m from the look-at point the view then faces nearly straight up: the user's "camera flies up".
-Coney's `longFall` (airborne while not counting or grounded) is not the cause: the original does not set it on a plain
-fall either. (Coney's headless `--trace` could not show this: with the release build of 2026-10-10 the trace's camera
-columns stayed constant even in the `walk60` scenario.)
+only. `c` was 1 while the horizontal speed was under the walk speed, and the ×2.5 needed `!stickOwned` and a
+horizontal speed above walk + 18% of (run − walk), with no overshoot test. In a straight fall the horizontal speed is
+about 0, so the lag stayed **0.06**, and at 35 m/s the aim point settled about 1.167 × 0.94 / 0.06 ≈ **18 m** above
+the look-at point (11 m at 20 m/s) instead of under 5 m. With the camera 3.5-5 m from the look-at point the view then
+faced nearly straight up: the user's "camera flies up". Coney's `longFall` (airborne while not counting or grounded)
+is not the cause: the original does not set it on a plain fall either. (Coney's headless `--trace` could not show
+this: with the release build of 2026-10-10 the trace's camera columns stayed constant even in the `walk60` scenario.)
 
-The fix, now in `stepAim()`: it takes `c` from the 3D velocity against the camera's 3D forward, with its
-gate on the 3D speed; keeps `s` on the horizontal speed; gates the ×2.5 on the 3D speed and applies it when |`P` −
-look-at|² > 10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the
-old aim point) × the lag being built, which the original keeps in `+0x418` while it builds it: written at
-`0x00133be8` and `0x00133d4c`, read for the test at `0x00133e20`), else when the stick is not the player's; the slope
-latch is not modelled. The test, in `repo:tests/camera/follow_camera_test.cpp`: a synthetic follow-camera test
-with the target falling straight down 1.167 m an update (35 m/s) for 70 updates from rest: the lag passes 0.18 and the
-aim point stays under 5 m above the look-at point (the trace: 0.188 and 4.7 m at step 72), and the view's pitch with
-the camera held 3.5 m away at the look-at height stays under 60°. The overshoot test also applies at a run, so rerun
-the `walk60` and `run_circle` diffs afterwards (the runtime lag there is 0.14-0.16).
+The fix, now in `stepAim()`: it takes `c` from the 3D velocity against the camera's 3D forward, with its gate on the
+3D speed; keeps `s` on the horizontal speed; gates the ×2.5 on the 3D speed and applies it when |`P` − look-at|² >
+10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the old aim point) × the lag being
+built, which the original keeps in `+0x418` while it builds it: written at `0x00133be8` and `0x00133d4c`, read for the
+test at `0x00133e20`; confirmed (code), re-read 2026-10-20), else when the stick is not the player's. **Open
+question**: the slope latch `+0x460`, which also passes the first test, is not modelled (Coney has no slope latches
+yet), a marked stand-in in the code. The test, in `repo:tests/camera/follow_camera_test.cpp`: a synthetic
+follow-camera test with the target falling straight down 1.167 m an update (35 m/s) for 70 updates from rest: the lag
+passes 0.18 and the aim point stays under 5 m above the look-at point (the trace: 0.188 and 4.7 m at step 72), and
+the view's pitch with the camera held 3.5 m away at the look-at height stays under 60°. A disc test,
+`repo:tests/platform/disc_fall_camera_test.cpp`, plays the same 40 m fall in `level99` checkpoint 3 through the game
+session. The overshoot test also applies at a run, so the `walk60` and `run_circle` diffs are worth rerunning (the
+runtime lag there is 0.14-0.16).
 
 ### Climbs {#climbs}
 
