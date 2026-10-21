@@ -382,6 +382,7 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
+    ai/fidget_action_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp

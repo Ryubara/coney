@@ -2861,6 +2861,12 @@ handler component, as for `TriggerSphereEnable`).
 
 ## Open questions
 
+- **[The rooftop chase](#level3) in Coney:** with the pad driven along the roofs (the playthrough test,
+  [Testing](../guides/testing.md#playthrough-tests)), Snow reaches the gallery only for some sequences of the AI's
+  draws: on main at 613998259, for `--ai-seed` 0 and 5 of 0-5. In the others the Hi-Hat pursuers beat him down
+  before the gallery. Open: whether the original's pursuers (a hostile devil run, gait 5, attacking at 1 m, up to
+  13 m/s) catch a player who sprints the route, so that the driver must play better, or whether Coney's pursuers or
+  its crew differ from the original's.
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
   reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
   (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and

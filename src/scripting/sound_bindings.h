@@ -109,6 +109,10 @@ class SoundHost {
 
     /// A human's animation sound or hit sound, played as the game chooses it. Ignored by default.
     virtual void humanSound(const HumanSoundCall& /*call*/) {}
+    /// `Ambient_MayGesture` for `who` (his handle, type and feet are read): whether he may make a gesture now, taking a
+    /// gesture slot when he may. True by default: a host without voices limits nothing.
+    /// @orig 0x00291ed0 Ambient_MayGesture (unknown)
+    [[nodiscard]] virtual bool mayGesture(const HumanSoundCall& /*who*/) { return true; }
     /// The human `human` (his script handle) is gone from the level: the sound he holds stops with him (the spray loop,
     /// docs/research/sound-events.md#spray-loop). Ignored by default.
     virtual void humanRemoved(double /*human*/) {}

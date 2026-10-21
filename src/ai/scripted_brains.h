@@ -317,6 +317,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void setSpeech(std::function<void(double handle, int command, bool interrupt, double target)> hook) {
         m_speech = std::move(hook);
     }
+    /// The gesture test the hook setGestureTest() gave (the game's sound), true without one.
+    [[nodiscard]] bool mayGesture(Brain& human) override { return !m_gestureTest || m_gestureTest(human); }
+    /// What mayGesture() asks: the game's sound, which holds the gesture slots; empty for none.
+    void setGestureTest(std::function<bool(const Brain& human)> test) { m_gestureTest = std::move(test); }
     /// ScriptSystem::schedule() when there is a script system.
     void schedule(std::string_view function, std::span<const double> args, std::uint32_t delayMs) override;
     /// ScriptSystem::call() when there is a script system. **Coney choice**: the result is whether the call ran, as
@@ -376,6 +380,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     world_objects::ObjectLocator m_locate;
     std::function<void(double, int, int, float)> m_radarIcon; // setRadarIcon()
     std::function<void(double, int, bool, double)> m_speech;  // setSpeech()
+    std::function<bool(const Brain&)> m_gestureTest;          // setGestureTest()
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
     const world_objects::FlagNet* m_flagNet = nullptr;

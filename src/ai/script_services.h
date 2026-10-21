@@ -75,6 +75,10 @@ class ScriptServices {
     /// none); with `interrupt` it cuts off a line he is saying, else nothing plays while one does. Nothing without a
     /// sound system.
     virtual void say(Brain& /*human*/, int /*command*/, bool /*interrupt*/, double /*target*/) {}
+    /// Whether `human` may make a gesture now (`Ambient_MayGesture`: the camera near him and a free gesture slot, which
+    /// this takes). True by default: with no sound system nothing limits the gestures.
+    /// @orig 0x00291ed0 Ambient_MayGesture (unknown)
+    [[nodiscard]] virtual bool mayGesture(Brain& /*human*/) { return true; }
     /// Starts anim `animId` on `human` (`0x0025a3e0`) and returns the record flags (`+0x08`) it holds while it plays;
     /// nothing when it cannot start. By default nothing starts: Coney's humans play no clip by id from outside their
     /// dispatcher yet.

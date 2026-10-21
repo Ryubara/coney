@@ -4844,6 +4844,12 @@ subsystem = "Human"
 size = 260
 
 [[function]]
+address = 0x00225f58
+name = "Human_IsFreeForFidget"
+subsystem = "Human"
+size = 108
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -5111,6 +5117,12 @@ address = 0x00231590
 name = "Attack_GetNextAttackDelay"
 subsystem = "Human"
 size = 1192
+
+[[function]]
+address = 0x00231b60
+name = "Human_StopFidget"
+subsystem = "Human"
+size = 120
 
 [[function]]
 address = 0x00232538
@@ -9179,6 +9191,30 @@ address = 0x002f9de0
 name = "Action_AbortAndDestroy"
 subsystem = "Human"
 size = 104
+
+[[function]]
+address = 0x002f9f48
+name = "FidgetAction_Init"
+subsystem = "Human"
+size = 48
+
+[[function]]
+address = 0x002f9f78
+name = "FidgetAction_Start"
+subsystem = "Human"
+size = 360
+
+[[function]]
+address = 0x002fa0e0
+name = "FidgetAction_Abort"
+subsystem = "Human"
+size = 256
+
+[[function]]
+address = 0x002fa1e0
+name = "FidgetAction_Update"
+subsystem = "Human"
+size = 64
 
 [[function]]
 address = 0x002fa5a0
