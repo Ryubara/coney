@@ -693,3 +693,21 @@ def test_the_cache_line_says_why_it_is_off_or_not_used(tmp_path: Path) -> None:
     assert line is not None and "not used" in line and "delete the folder" in line
     (folder / "CMakeCache.txt").write_text("CMAKE_CXX_COMPILER_LAUNCHER:STRING=ccache\n", encoding="utf-8")
     assert build_cli.cache_line(on, folder, tmp_path / "s", toolchain) is None  # nothing compiled
+
+
+def test_the_cache_line_says_when_ccache_cannot_give_the_hits(tmp_path: Path) -> None:
+    # An older ccache (before 4.10) has no --print-log-stats: the build still used the cache, so say so.
+    on = compiler_cache.CompilerCache(tmp_path / "ccache", tmp_path, 25)
+    stats_log = tmp_path / "run.ccache-stats"
+    stats_log.write_text("cache_miss\n", encoding="utf-8")
+    line = build_cli.cache_line(on, tmp_path, stats_log, FakeToolchain(tmp_path, {}))
+    assert line is not None and "hits unavailable" in line and compiler_cache.MIN_VERSION in line
+    assert not stats_log.exists()
+
+
+def test_the_stats_log_is_removed_however_the_run_ends(tmp_path: Path) -> None:
+    stats_log = tmp_path / "run.ccache-stats"
+    stats_log.write_text("x", encoding="utf-8")
+    with pytest.raises(RuntimeError), build_cli._removed_after(stats_log):
+        raise RuntimeError("configure failed")
+    assert not stats_log.exists()

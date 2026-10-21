@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/clip_recorder.h"
+#include "support/test_paths.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -55,9 +56,9 @@ TEST_CASE("a clip folder outside any checkout is accepted", "[clips]") {
 }
 
 TEST_CASE("the repository itself never takes a clip", "[clips]") {
-    // This file lives in the checkout; so would any clips/ folder beside it.
-    const std::filesystem::path here{__FILE__};
-    CHECK(gitCheckoutAround(here.parent_path() / "clips" / "a.mp4").has_value());
+    // tests/support lives in the checkout; so would any clips/ folder beside it. Not __FILE__: the shared compiler
+    // cache hands this object to every worktree with the path of the one that compiled it first.
+    CHECK(gitCheckoutAround(coney::test::testSupportDir() / "clips" / "a.mp4").has_value());
 }
 
 // With CONEY_FFMPEG naming an FFmpeg, three synthetic frames make a clip; without it the test skips (CI has none).

@@ -9,6 +9,7 @@ import pytest
 
 from coney_tools import compiler_cache, workspace_fetch
 from coney_tools.compiler_cache import CompilerCache, Stats, environment, find, parse_stats, write_config
+from coney_tools.config import ConfigError, load_config
 
 
 @pytest.fixture
@@ -130,3 +131,17 @@ def test_the_cap_is_written_into_the_cache_folder_for_a_ccache_started_by_hand(t
     (folder / "ccache.conf").write_text("compression_level = 3\nmax_size = 5.0G\n", encoding="utf-8")
     write_config(CompilerCache(tmp_path / "ccache", folder, 10))
     assert (folder / "ccache.conf").read_text(encoding="utf-8") == "compression_level = 3\nmax_size = 10G\n"
+
+
+def test_an_unwritable_cache_folder_is_left_alone(tmp_path: Path) -> None:
+    blocker = tmp_path / "cache"
+    blocker.write_text("a file where the folder would be", encoding="utf-8")
+    write_config(CompilerCache(tmp_path / "ccache", blocker, 25))  # no exception: the environment holds the cap
+    assert blocker.read_text(encoding="utf-8") == "a file where the folder would be"
+
+
+def test_a_negative_cap_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (tmp_path / "coney.local.toml").write_text("ccache_size_gb = -1\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="ccache_size_gb"):
+        load_config(tmp_path)

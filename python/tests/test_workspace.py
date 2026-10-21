@@ -205,3 +205,13 @@ def test_the_ccache_check_is_optional_and_names_the_program_or_why_not(tmp_path:
     program.write_text("", encoding="utf-8")
     found = workspace.ccache_check(checkout)
     assert found.ok and not found.required and found.detail == str(program.resolve())
+
+
+def test_a_packaged_tool_is_left_to_the_package_manager(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    checkout = make_upstream(tmp_path / "ws" / "repos" / "coney")
+    monkeypatch.chdir(checkout)
+    monkeypatch.setattr(workspace_fetch, "packaged", lambda _tool, _platform: True)  # ccache on Linux or macOS
+    assert main(["workspace", "init", "--fetch", "ccache", "--dry-run"]) == 0
+    assert "ccache: install it with your package manager" in capsys.readouterr().out

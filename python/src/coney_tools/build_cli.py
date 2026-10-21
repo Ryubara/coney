@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import _thread
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -13,7 +14,7 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -186,6 +187,10 @@ def _new_log(root: Path, preset: str, folder: str | None, agent: str) -> Path:
     logs = sorted(directory.glob("build-*.log"), key=lambda path: (path.stat().st_mtime, path.name))
     for old in logs[:-KEEP_LOGS]:
         old.unlink(missing_ok=True)  # one a running build still holds is refused on Windows: it is not the oldest
+    # A run's ccache stats log goes with it (cache_line removes it; one a killed run left behind goes with its log).
+    for stats in directory.glob("build-*.ccache-stats"):
+        if not stats.with_suffix(".log").exists():
+            stats.unlink(missing_ok=True)
     return directory / name
 
 
@@ -293,7 +298,7 @@ def _build(
     print(f"log: {log_path}", flush=True)
     toolchain = build_run.ProcessToolchain(root, env)
     lifetime(toolchain)
-    with log_path.open("a", encoding="utf-8", buffering=1) as log:
+    with log_path.open("a", encoding="utf-8", buffering=1) as log, _removed_after(stats_log):
         context = build_run.Context(
             slots=slots,
             fast=build_claims.default_slots(FAST_LANE, root),
@@ -317,6 +322,16 @@ def _build(
     return result
 
 
+@contextlib.contextmanager
+def _removed_after(path: Path) -> Iterator[None]:
+    """Remove `path` when the block ends, however it ends: a run that only configures, or whose configure fails, never
+    reads its ccache stats log, and it must not be left beside the logs."""
+    try:
+        yield
+    finally:
+        path.unlink(missing_ok=True)
+
+
 def cache_line(
     cache: compiler_cache.CompilerCache, folder: Path, stats_log: Path, toolchain: build_run.Toolchain
 ) -> str | None:
@@ -326,13 +341,14 @@ def cache_line(
     if not cache.on:
         reason = cache.missing or "ccache_size_gb is 0"
         return f"compiler cache: off ({reason})"
-    stats = None
     if stats_log.is_file() and cache.program is not None:
         code, output = toolchain.capture([str(cache.program), "--print-log-stats"], None)
         stats = compiler_cache.parse_stats(output) if code == 0 else None
         stats_log.unlink(missing_ok=True)
-    if stats is not None:
-        return stats.line()
+        if stats is not None:
+            return stats.line()
+        needs = compiler_cache.MIN_VERSION
+        return f"compiler cache: on, hits unavailable (`ccache --print-log-stats` failed; it needs ccache {needs}+)"
     try:
         configured = (folder / "CMakeCache.txt").read_text(encoding="utf-8", errors="replace")
     except OSError:

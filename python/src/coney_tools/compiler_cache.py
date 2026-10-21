@@ -36,6 +36,10 @@ DEFAULT_SIZE_GB = 25
 #: The cache's folder in the workspace (beside repos/, worktrees/ and scratch/), when `ccache_dir` is not set.
 DEFAULT_DIR = Path("cache") / "ccache"
 
+#: The oldest ccache whose `--print-log-stats` (added in 4.10) gives a run's own hits; an older one still caches, and
+#: the summary then says its hits are unavailable.
+MIN_VERSION = "4.10"
+
 #: ccache's counters (`--print-log-stats`) that count a call it could not cache: a link, a precompiled header, an
 #: option it does not support, and so on. Hits and misses are counted apart; the rest are not calls.
 UNCACHEABLE = frozenset(
