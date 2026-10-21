@@ -222,8 +222,9 @@ std::size_t countLines(const std::vector<std::string>& trace, std::string_view t
 }
 
 // Runs checkpoint 3 of level99 to the charge at fence `fence` begun `delay` frames after control returns, and on to the
-// dealer's cut; the timeline, with 0 for what never came.
-Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t delay) {
+// dealer's cut; the timeline, with 0 for what never came. With `walkUp` the player first walks to kStandShort short of
+// the fence and stands there kStandFrames before the charge.
+Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t delay, bool walkUp = false) {
     coney::platform::PlayLevelMode* playPtr = nullptr;
     ChargeDriver driver([&playPtr] { return playPtr; });
     coney::test::DiscSession run(wad, driver);
