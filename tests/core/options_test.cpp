@@ -960,6 +960,9 @@ TEST_CASE("installing refuses a missing install folder and anything that starts 
         parse(std::to_array<std::string_view>({"--install", "H:/", "--data", "D:/C", "--play-level", "level99"}));
     REQUIRE_FALSE(withPlay.has_value());
     CHECK(withPlay.error().message.find("runs on its own") != std::string::npos);
+    auto withHost = parse(std::to_array<std::string_view>({"--install", "H:/", "--data", "D:/C", "--host"}));
+    REQUIRE_FALSE(withHost.has_value());
+    CHECK(withHost.error().message.find("runs on its own") != std::string::npos);
     auto verifyAlone = parse(std::to_array<std::string_view>({"--verify"}));
     REQUIRE_FALSE(verifyAlone.has_value());
     auto dataAlone = parse(std::to_array<std::string_view>({"--data", "D:/C"}));

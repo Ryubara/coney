@@ -423,7 +423,7 @@ std::expected<void, Error> checkInstall(const Options& options) {
                        options.viewText || options.viewWorld || options.viewCharacter || options.playLevel ||
                        options.sandbox || options.renderReferences || options.rumble || options.frameLimit ||
                        options.inputScript || options.screenshotPath || options.recordPath || options.padPipe ||
-                       options.headless || options.audioTest;
+                       options.headless || options.audioTest || options.netHost || options.netJoin || options.netName;
     if (other) {
         return invalidArgument("--install runs on its own and exits: only --data and --verify go with it");
     }
