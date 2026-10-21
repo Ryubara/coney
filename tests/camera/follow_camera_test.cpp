@@ -584,8 +584,8 @@ TEST_CASE("in a long straight fall the aim point's lag climbs past 0.18 and keep
           "[camera]") {
     // The fall_high trace (docs/research/camera.md#long-fall): the player falls straight down at 35 m/s (1.167 m an
     // update) for 70 updates from rest, the stick his. The lag's across test and its 2.5 × read the 3D velocity, so the
-    // lag climbs toward about 0.21 (0.188 at step 72) and the aim point trails 4.7 m above the look-at point; built from
-    // the horizontal speed alone it stayed 0.06 and the aim point trailed about 18 m above.
+    // lag climbs toward about 0.21 (0.188 at step 72) and the aim point trails 4.7 m above the look-at point; built
+    // from the horizontal speed alone it stayed 0.06 and the aim point trailed about 18 m above.
     FollowCamera camera(Vec3{0.0F, 0.0F, 100.0F}, 0.0F);
     FollowTarget target = standing(Vec3{0.0F, 0.0F, 100.0F});
     target.walkSpeed = 1.6F;

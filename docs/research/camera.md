@@ -977,8 +977,8 @@ this: with the release build of 2026-10-10 the trace's camera columns stayed con
 
 The fix, now in `stepAim()`: it takes `c` from the 3D velocity against the view's 3D direction as the last update
 left it (from the camera's place before the update to the old aim point; **Coney's reading** of the orientation
-`+0x20`), with its gate on the 3D speed; keeps `s` on the horizontal speed; gates the ×2.5 on the 3D speed and applies it when |`P` − look-at|² >
-10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the old aim point) × the lag being
+`+0x20`), with its gate on the 3D speed; keeps `s` on the horizontal speed; gates the ×2.5 on the 3D speed and
+applies it when |`P` − look-at|² > 10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the old aim point) × the lag being
 built, which the original keeps in `+0x418` while it builds it: written at `0x00133be8` and `0x00133d4c`, read for the
 test at `0x00133e20`; confirmed (code), re-read 2026-10-20), else when the stick is not the player's. **Open
 question**: the slope latch `+0x460`, which also passes the first test, is not modelled (Coney has no slope latches

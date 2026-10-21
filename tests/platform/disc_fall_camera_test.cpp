@@ -61,12 +61,12 @@ TEST_CASE("the disc's level99: in a 40 m fall the follow camera's aim point stay
 
     // Put him on the ground at the trace's spot first, so the camera settles behind him, then 40 m above it.
     const float ground = play->playerFeet().z;
-    play->teleport(coney::debug::Place{.name = "street end", .feet = {kStartX, kStartY, ground}, .headingDegrees =
-                                                                                                  kStartHeading});
+    play->teleport(
+        coney::debug::Place{.name = "street end", .feet = {kStartX, kStartY, ground}, .headingDegrees = kStartHeading});
     run.run(60);
     const coney::anim::Vec3 feet = play->playerFeet();
-    play->teleport(coney::debug::Place{.name = "40 m up", .feet = {feet.x, feet.y, feet.z + kRise},
-                                       .headingDegrees = kStartHeading});
+    play->teleport(coney::debug::Place{
+        .name = "40 m up", .feet = {feet.x, feet.y, feet.z + kRise}, .headingDegrees = kStartHeading});
     REQUIRE(play->playerFeet().z > feet.z + kRise - 1.0F);
 
     // The fall: the lag and the aim point's height above the look-at point each update.
