@@ -34,6 +34,8 @@ from coney_tools.config import (
     workspace_folder,
 )
 from coney_tools.pcsx2_claims import AGENT_NAME
+from coney_tools.test_costs import FILE_NAME as TEST_COSTS_FILE
+from coney_tools.test_costs import TestCosts
 
 PRESETS = ("dev", "release", "ci", "asan")
 #: How many logs of one worktree are kept; older ones are removed when a run starts.
@@ -115,6 +117,14 @@ def add_parser(groups: Any) -> None:
         "first configure of a folder",
     )
     group.add_argument("--priority", action="store_true", help="go ahead of the normal queue (a build someone awaits)")
+    group.add_argument(
+        "--lane",
+        choices=("auto", MAIN_LANE),
+        default="auto",
+        dest="run_lane",
+        help="auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you "
+        "know is long",
+    )
     group.add_argument(
         "--max-wait",
         "--slots-wait-timeout",
@@ -375,6 +385,7 @@ def _build(
         jobs=args.jobs,
         targets=tuple(args.targets),
         disc=disc,
+        lane=MAIN_LANE if args.run_lane == MAIN_LANE else None,
     )
     print(f"log: {log_path}", flush=True)
     toolchain = build_run.ProcessToolchain(root, env)
@@ -394,6 +405,8 @@ def _build(
             checkout_lock=build_claims.folder_lock(folder, root),
             configured_now=lambda: (folder / "CMakeCache.txt").is_file(),
             history=History(slots.claims_dir / FILE_NAME),
+            test_costs=TestCosts(slots.claims_dir / TEST_COSTS_FILE),
+            fast_test_seconds=float(numbers["build_fast_lane_test_seconds"]),
             cached=cache.on,
             cache_report=lambda: cache_line(cache, folder, stats_log, toolchain),
         )
@@ -455,6 +468,8 @@ def _child_command(
         ("--test", args.test),
         ("--priority", args.priority),
     )
+    if args.run_lane != "auto":
+        command += ["--lane", args.run_lane]
     command += [flag for flag, on in switches if on]
     for flag, value in (("-R", args.regex), ("-L", args.label), ("--build-dir", args.build_dir), ("-j", args.jobs)):
         command += [flag, str(value)] if value is not None else []
