@@ -129,17 +129,27 @@ TEST_CASE("a follower who joins or leaves has the formation planned again before
     REQUIRE(formation.join(first));
     const std::optional<coney::ai::FollowPoint> joined = formation.followPoint(first, 0.75F);
     REQUIRE(joined.has_value());
+    if (!joined) {
+        return;
+    }
     CHECK(joined->slot);
     CHECK(near(joined->point, {42.0F, 40.0F, 0.0F}));
 
     // A second follower queues; once the first leaves, the second's next query plans and gives him the slot.
     Brain& second = scene.add({36.0F, 40.0F, 0.0F}, 0.0F);
     REQUIRE(formation.join(second));
-    REQUIRE(formation.followPoint(second, 0.75F).has_value());
-    CHECK_FALSE(formation.followPoint(second, 0.75F)->slot);
+    const std::optional<coney::ai::FollowPoint> queued = formation.followPoint(second, 0.75F);
+    REQUIRE(queued.has_value());
+    if (!queued) {
+        return;
+    }
+    CHECK_FALSE(queued->slot);
     formation.leave(first);
     const std::optional<coney::ai::FollowPoint> moved = formation.followPoint(second, 0.75F);
     REQUIRE(moved.has_value());
+    if (!moved) {
+        return;
+    }
     CHECK(moved->slot);
     CHECK(near(moved->point, {42.0F, 40.0F, 0.0F}));
 }

@@ -1021,8 +1021,8 @@ TEST_CASE(
             if (runIn) {
                 const coney::anim::Vec3 feet = warrior.human().position();
                 constexpr float kHalfLandingZ = 2.43F;
-                halfLanding[k] = halfLanding[k] ||
-                                 (feet.y > 114.8F && feet.y < 118.7F && std::abs(feet.z - kHalfLandingZ) < 0.1F);
+                halfLanding[k] =
+                    halfLanding[k] || (feet.y > 114.8F && feet.y < 118.7F && std::abs(feet.z - kHalfLandingZ) < 0.1F);
                 airborne = airborne || warrior.human().traversal() == coney::human::Traversal::Falling;
                 const auto* first = dynamic_cast<const coney::ai::MoveAction*>(warrior.frontAction());
                 if (following && first != nullptr && !firstMoveOff[k]) {
