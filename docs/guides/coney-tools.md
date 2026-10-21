@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers nineteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which checks
 pages against the documentation standards, [`build`](#build), which
 configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
@@ -12,10 +12,10 @@ of the README and the docs current, [`natives`](#natives), which renders the scr
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
 and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
 [`clips`](#clips), which checks, publishes and cleans up in-game video clips,
-[`mcp`](#mcp), which starts the debugging servers for agent tools, [`ghidra`](#ghidra), which sets up your own Ghidra
-project with our function names, and [`workspace`](#workspace), which sets up the local workspace. Everything is
-read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
-is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+[`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
+contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and
+[`workspace`](#workspace), which sets up the local workspace. Everything is read in place and streamed, so the 1.4 GB
+WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -1458,6 +1458,18 @@ as soon as your next turn starts. A wake that started no turn is sent again.
 `idleWakeMinutes` above 0 also wakes the session after that many idle minutes with nothing new, but never while a
 subagent is at work. A poller whose read fails shows as failing in the status line and in `/tether-watch`. Its ids
 are never taken for "nothing waits". `/tether-watch` reports each poller's last read.
+
+## doctor {#doctor}
+
+```sh
+uv run --project python coney-tools doctor [--disc DISC]
+```
+
+Checks this machine and the disc for building and contributing, section by section (build tools, configuration,
+disc, research tools, disk), and prints a fix for each problem. Exit code 1 when something the engine's build or the
+disc needs is missing, 0 otherwise (notes, such as another release of the game or a missing research tool, do not
+change it). Read only; no `--agent`, works without `coney.local.toml`. What it checks:
+[Check your setup](building.md#doctor).
 
 ## ghidra {#ghidra}
 

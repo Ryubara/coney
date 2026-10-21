@@ -1,0 +1,179 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Tests for coney_tools.doctor: `coney-tools doctor` on made-up machines, discs and folders."""
+
+import hashlib
+from collections.abc import Sequence
+from pathlib import Path
+
+import pytest
+
+from coney_tools import doctor
+from coney_tools.cli import main
+from coney_tools.disc import Disc
+from coney_tools.ghidra_headless import GhidraProject
+from coney_tools.workspace_checks import Check, Run
+
+SLUS = b"made-up executable"
+DIR = b"made-up directory"
+WAD = b"made-up archive!"
+REFERENCE = {
+    "SLUS_212.15": doctor.Reference(len(SLUS), hashlib.sha1(SLUS).hexdigest()),
+    "WARRIORS.DIR": doctor.Reference(len(DIR), hashlib.sha1(DIR).hexdigest()),
+    "WARRIORS.WAD": doctor.Reference(len(WAD), None),
+}
+
+
+def make_disc(tmp_path: Path, files: dict[str, bytes]) -> Disc:
+    """A made-up disc folder holding `files`."""
+    folder = tmp_path / "disc"
+    folder.mkdir()
+    for name, data in files.items():
+        (folder / name).write_bytes(data)
+    return Disc(folder)
+
+
+def by_name(checks: Sequence[Check]) -> dict[str, Check]:
+    """The checks by name."""
+    return {check.name: check for check in checks}
+
+
+def test_the_ntsc_u_disc_passes(tmp_path: Path) -> None:
+    disc = make_disc(tmp_path, {"SLUS_212.15": SLUS, "WARRIORS.DIR": DIR, "WARRIORS.WAD": WAD})
+    checks = doctor.disc_checks(disc, REFERENCE)
+    assert all(check.ok for check in checks), checks
+    assert hashlib.sha1(SLUS).hexdigest() in by_name(checks)["SLUS_212.15"].detail
+
+
+def test_another_release_is_a_note_not_a_problem(tmp_path: Path) -> None:
+    disc = make_disc(tmp_path, {"SLUS_212.15": b"other", "WARRIORS.DIR": DIR, "WARRIORS.WAD": WAD})
+    check = by_name(doctor.disc_checks(disc, REFERENCE))["SLUS_212.15"]
+    assert not check.ok and not check.required
+    assert "not the NTSC-U release" in check.detail
+
+
+def test_a_disc_missing_the_archive_is_a_problem(tmp_path: Path) -> None:
+    disc = make_disc(tmp_path, {"SLUS_212.15": SLUS})
+    checks = by_name(doctor.disc_checks(disc, REFERENCE))
+    assert not checks["WARRIORS.WAD"].ok and checks["WARRIORS.WAD"].required
+    assert "missing" in checks["WARRIORS.WAD"].detail
+
+
+def test_no_disc_is_a_note(tmp_path: Path) -> None:
+    (check,) = doctor.disc_checks(None, REFERENCE)
+    assert not check.ok and not check.required
+    assert "--disc" in check.hint
+
+
+def test_the_reference_matches_the_ghidra_setup_hash() -> None:
+    from coney_tools.disc import NTSC_U_SHA1
+
+    assert doctor.NTSC_U["SLUS_212.15"].sha1 == NTSC_U_SHA1
+
+
+def fake_run(outputs: dict[str, str]) -> Run:
+    """A stand-in for run_command answering by program name."""
+
+    def run(command: Sequence[str]) -> str | None:
+        return outputs.get(Path(command[0]).name)
+
+    return run
+
+
+def test_old_default_gcc_with_a_newer_one_installed_says_to_set_cc() -> None:
+    which = {"g++": "/usr/bin/g++", "g++-13": "/usr/bin/g++-13"}.get
+    run = fake_run({"g++": "g++ (Ubuntu 11.4.0) 11.4.0", "g++-13": "g++-13 (Ubuntu 13.1.0) 13.1.0"})
+    check = doctor.default_compiler_check("linux", which, run, {})
+    assert check is not None and not check.ok
+    assert "CC=gcc-13 CXX=g++-13" in check.hint
+
+
+def test_default_gcc_note_is_quiet_when_cxx_is_set_or_gcc_is_new() -> None:
+    which = {"g++": "/usr/bin/g++", "g++-13": "/usr/bin/g++-13"}.get
+    old = fake_run({"g++": "g++ 11.4.0", "g++-13": "g++-13 13.1.0"})
+    assert doctor.default_compiler_check("linux", which, old, {"CXX": "g++-13"}) is None
+    assert doctor.default_compiler_check("linux", which, fake_run({"g++": "g++ 13.2.0"}), {}) is None
+    assert doctor.default_compiler_check("windows", which, old, {}) is None
+
+
+def test_uv_is_required() -> None:
+    assert doctor.uv_check({"uv": "/bin/uv"}.get).ok
+    missing = doctor.uv_check(lambda name: None)
+    assert not missing.ok and missing.required
+
+
+def test_disk_space_check() -> None:
+    gib = 1 << 30
+    assert doctor.disk_check(40 * gib).ok
+    low = doctor.disk_check(3 * gib)
+    assert not low.ok and low.required
+    assert "6.5 GB" in low.hint
+
+
+def make_ghidra(tmp_path: Path, sla: bool) -> Path:
+    """A made-up Ghidra install with the extension; with `sla`, its language compiled."""
+    install = tmp_path / "ghidra"
+    (install / "support").mkdir(parents=True)
+    (install / "support" / "analyzeHeadless").write_text("", encoding="utf-8")
+    languages = install / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded" / "data" / "languages"
+    languages.mkdir(parents=True)
+    if sla:
+        (languages / "r5900.sla").write_text("", encoding="utf-8")
+    return install
+
+
+def test_ghidra_checks_point_at_ghidra_setup(tmp_path: Path) -> None:
+    project = GhidraProject(tmp_path / "projects", "warriors")
+    checks = by_name(doctor.ghidra_checks(tmp_path / "none", project))
+    assert not checks["Ghidra 12.1.4"].ok and not checks["Ghidra 12.1.4"].required
+    assert "ghidra setup" in checks["Ghidra 12.1.4"].hint
+    checks = by_name(doctor.ghidra_checks(make_ghidra(tmp_path, sla=False), project))
+    assert checks["Ghidra 12.1.4"].ok
+    assert not checks["EE language (r5900.sla)"].ok
+    assert not checks["Ghidra project"].ok
+
+
+def test_port_check_tells_ghidra_mcp_from_another_program() -> None:
+    assert doctor.port_check(8090, listening=lambda port: False, answers=lambda: False).ok
+    assert doctor.port_check(8090, listening=lambda port: True, answers=lambda: True).ok
+    taken = doctor.port_check(8090, listening=lambda port: True, answers=lambda: False)
+    assert not taken.ok and not taken.required
+    assert "-Port" in taken.hint
+
+
+def test_report_prints_each_section_and_counts_problems(capsys: pytest.CaptureFixture[str]) -> None:
+    sections = [
+        ("Build tools", [Check("Git", True, "/usr/bin/git", "install Git", True)]),
+        ("Disc", [Check("Disc", False, "none given", "pass --disc", False)]),
+        ("Disk", [Check("Free space", False, "2 GB", "free some space", True)]),
+    ]
+    assert doctor.report(sections) == 1
+    out = capsys.readouterr().out
+    assert "Build tools" in out and "  ok       Git: /usr/bin/git" in out
+    assert "  note     Disc: none given -> pass --disc" in out
+    assert "  problem  Free space: 2 GB -> free some space" in out
+    assert out.rstrip().endswith("1 problem, 1 note.")
+
+
+def test_report_is_zero_without_problems(capsys: pytest.CaptureFixture[str]) -> None:
+    assert doctor.report([("Build tools", [Check("Git", True, "git", "", True)])]) == 0
+    assert "No problems" in capsys.readouterr().out
+
+
+def test_doctor_runs_in_a_plain_clone_without_a_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    checkout = tmp_path / "coney"
+    checkout.mkdir()
+    (checkout / "coney.local.example.toml").write_text("", encoding="utf-8")
+    disc = make_disc(tmp_path, {"SLUS_212.15": b"other release"})
+    monkeypatch.chdir(checkout)
+    monkeypatch.setattr(doctor, "check_prerequisites", lambda *args: [Check("Git", True, "git", "", True)])
+    monkeypatch.setattr(doctor, "clang_tidy_check", lambda: Check("clang-tidy 19", True, "x", "", False))
+    monkeypatch.setattr(doctor, "is_listening", lambda port: False)
+    code = main(["doctor", "--disc", str(disc.path)])
+    out = capsys.readouterr().out
+    assert "coney.local.toml: none (defaults are used)" in out
+    assert "not the NTSC-U release" in out
+    # The archive is missing from the made-up disc: a problem, so the exit code is 1.
+    assert "problem  WARRIORS.WAD: missing" in out
+    assert code == 1
