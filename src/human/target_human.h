@@ -60,6 +60,14 @@ class TargetHuman final : public Holdable {
     void hit(const TargetHit& hit) override;
     /// A warning does nothing: the target never blocks.
     void warn(const AttackNotice& /*notice*/) override {}
+    /// Its flag word, character class and category 13 (Combatant): what its attacker's damage and rage read. None, -1
+    /// and false until set.
+    [[nodiscard]] std::uint64_t flags() const override { return m_flags; }
+    void setFlags(std::uint64_t flags) { m_flags = flags; }
+    [[nodiscard]] int characterClass() const override { return m_characterClass; }
+    void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
+    [[nodiscard]] bool bossClass() const override { return m_bossClass; }
+    void setBossClass(bool boss) { m_bossClass = boss; }
     /// The target itself: it can be grabbed and tackled.
     [[nodiscard]] Holdable* holdable() override { return this; }
     /// Plays the victim's `clips`, then `loop`, in `state` (AnimState::Attack returns to the idle afterwards,
@@ -136,6 +144,9 @@ class TargetHuman final : public Holdable {
     TurnAndSlide m_carry;    // a throw's turn and slide round the thrower (carryOver())
     std::uint64_t m_updates = 0;
     int m_hits = 0;
+    std::uint64_t m_flags = 0;
+    int m_characterClass = -1;
+    bool m_bossClass = false;
     TargetSnapshot m_previous;
     TargetSnapshot m_current;
 };

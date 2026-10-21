@@ -35,6 +35,7 @@ struct GrabberState {
     bool raging = false;     ///< Raging: no struggle, escape or reversal works.
     bool flag40 = false;     ///< Human flag `0x40`: it cannot be reversed.
     int struggleDivisor = 4; ///< Its power class byte `+0x36`.
+    bool scoresRage = true;  ///< A hit on it earns rage: not a class of category 13 with flag `0x10` (`Hit_Score`).
 };
 
 /// What the grabbed player did.

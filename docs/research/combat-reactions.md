@@ -63,9 +63,13 @@ and for a player applies upgrade percentages (categories `0x13` / `0x19` and `0x
 to be the upgrade levels). An attacker with flag `0x20` deals the victim's whole health. `0x0021d680` →
 `Human_AddPendingDamage` (`0x00264bd8`) stores it at record `+0x118` if larger than what is pending, with its weight at
 `+0x11a` ([Scripted knockdowns](#scripted-knockdowns)); the damage is **doubled** when the attacker has human flag
-`0x4000` and **quartered** for
-class `0x80` against brain type 3. Confirmed (code). Health (record `+0x144`) fell by exactly the table's value on
-every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their damage on the move's first update.
+`0x4000` and **quartered** for class `0x80` (`bopp_bo`, the Boppers' boss) against brain type 3, after the doubling,
+with an arithmetic shift right by 2. Confirmed (code), re-read 2026-10-21: every damage path reaches it
+(`Strike_Contact`, `Human_DealDamage` from the grab strikes, mounts and throws), so a grab strike is quartered too.
+Coney quarters a fighter's strikes and grab strikes on that class when its brain is a Warrior's
+(`human::Fighter::quarteredFor`); the grabbed side's strike-backs are only a player's (`Player_UpdateGrabbed`, brain
+type 0), so they are never quartered. Health (record `+0x144`) fell by exactly the table's value on every hit tested
+(confirmed (runtime)). Grab moves (`0x00262ac8`) apply their damage on the move's first update.
 
 **Applying it** (`Human_ApplyPendingDamage`, `0x00265f70`, each update), confirmed (code), in order:
 

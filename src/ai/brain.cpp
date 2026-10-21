@@ -17,6 +17,7 @@
 #include "ai/story_goals.h"
 #include "ai/swap_prompt.h"
 #include "ai/tactic.h"
+#include "human/human.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
 
@@ -97,7 +98,10 @@ std::uint64_t releasedFlags(std::uint64_t flags, BrainType leftAs) {
 }
 
 Brain::Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed)
-    : m_human(&human), m_settings(settings), m_random(seed), m_type(type) {}
+    : m_human(&human), m_settings(settings), m_random(seed), m_type(type) {
+    // The human's damage reads whether its brain is a Warrior's (`Human_AddPendingDamage` 0x00264bd8).
+    human.fighter().setWarriorBrain(type == BrainType::Warrior);
+}
 
 Brain::~Brain() = default;
 
@@ -218,10 +222,16 @@ void Brain::setType(BrainType type) {
         return;
     }
     m_type = type;
+    m_human->fighter().setWarriorBrain(type == BrainType::Warrior);
     // An AI brain has no pad to hand back while dead (the scripts flush the goals of a new player themselves).
     if (type != BrainType::Player) {
         m_padControl = {};
     }
+}
+
+void Brain::setCharacterClass(int characterClass) {
+    m_characterClass = characterClass;
+    m_human->setCharacterClass(characterClass);
 }
 
 bool Brain::onEvent(const BrainEvent& event) {

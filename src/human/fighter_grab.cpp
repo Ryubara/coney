@@ -312,7 +312,8 @@ void Fighter::landGrapple(const FighterInput& input) {
         return;
     }
     const auto strike = static_cast<int>(connectClip());
-    const int damage = m_ranges != nullptr ? combat::strikeDamage(*m_ranges, strike) : 0;
+    const int damage = quarteredFor(*m_held, m_ranges != nullptr ? combat::strikeDamage(*m_ranges, strike) : 0);
+    const bool scores = scoresRageOn(*m_held);
     const auto hold = static_cast<int>(m_rear ? clips::kGrabRearHold : clips::kGrabHold);
     m_held->hit(IncomingHit{.damage = damage,
                             .attackAnim = hold,
@@ -326,7 +327,9 @@ void Fighter::landGrapple(const FighterInput& input) {
     if (m_player) {
         m_strikes.push_back(hold);
     }
-    earnRage(strike, input.nowMs, false);
+    if (scores) {
+        earnRage(strike, input.nowMs, false);
+    }
     m_repeat.note(strike, input.nowMs);
 }
 
@@ -714,7 +717,8 @@ combat::GrabberState Fighter::grabberState() const {
                                 .hurt = hurt(),
                                 .raging = m_combat.rage().raging(),
                                 .flag40 = hasFlag(flag::kUngrabbable),
-                                .struggleDivisor = m_victim.powerClass().struggleDivisor};
+                                .struggleDivisor = m_victim.powerClass().struggleDivisor,
+                                .scoresRage = !(m_bossClass && hasFlag(flag::kGod))};
 }
 
 void Fighter::applyHeldReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator) {

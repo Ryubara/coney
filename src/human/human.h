@@ -508,6 +508,11 @@ class Human final : public Holdable {
 
     /// The flag word (human `+0xe0`, human/human_flags.h), kept by its fighter.
     [[nodiscard]] std::uint64_t flags() const override { return m_fighter.flags(); }
+    /// Its character class (human `+0xcc`); its brain gives it (ai::Brain::setCharacterClass()), -1 until then.
+    [[nodiscard]] int characterClass() const override { return m_characterClass; }
+    void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
+    /// Its class's category is 13 (FighterProfile::bossClass).
+    [[nodiscard]] bool bossClass() const override { return m_fighter.bossClass(); }
     [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
     /// Sets (`on`) or clears the bits of `bits`.
     void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }
@@ -901,6 +906,7 @@ class Human final : public Holdable {
     std::map<std::uint32_t, std::string> m_overrideNames; // setOverrideClip()
     std::unique_ptr<combat::AnimRangeList> m_ownRanges;   // the list with the class's damage, when it has one
     std::vector<std::int16_t> m_classDamage;              // the class's damage table, for HuApplyDamageModifier
+    int m_characterClass = -1;                            // human +0xcc, from its brain
     int m_damagePercent = 0;                              // a player's Warrior class percentage (0: not a player)
     const combat::AnimRangeList* m_ranges;
     FighterProfile m_profile;
