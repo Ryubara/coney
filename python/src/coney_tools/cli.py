@@ -336,8 +336,8 @@ def _add_check_commands(groups: Any) -> None:
     changed.add_argument(
         "--jobs",
         type=int,
-        default=max(1, (os.cpu_count() or 2) // 2),
-        help="clang-tidy processes at once (default: half the cores)",
+        default=None,
+        help="clang-tidy processes at once (default: a build's share, the cores divided by build_slots)",
     )
     changed.add_argument("--clang-tidy", help="the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH")
 

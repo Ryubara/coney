@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,11 +63,32 @@ class StepResult:
     output: tuple[str, ...] = ()
 
 
+def low_priority(command: Sequence[str]) -> tuple[list[str], dict[str, object]]:
+    """`command` and the `subprocess` arguments that run it below normal priority, as `coney-tools build` runs its own:
+    the gate's clang-tidy, pre-commit and pytest runs share the machine with other agents' builds and must not take
+    their cores (or the keyboard from the person at it). Windows: BELOW_NORMAL_PRIORITY_CLASS with no console window,
+    the flags BuildRun uses. Elsewhere `nice -n 5` in front of the command when `nice` exists: never a `preexec_fn`,
+    which is unsafe in the threads clang-tidy runs from."""
+    if sys.platform == "win32":
+        return list(command), {"creationflags": 0x00004000 | 0x08000000}  # BELOW_NORMAL_PRIORITY_CLASS | NO_WINDOW
+    nice = shutil.which("nice")
+    return ([nice, "-n", "5", *command] if nice else list(command)), {}
+
+
 def run_command(command: Sequence[str], cwd: Path) -> tuple[int, str]:
-    """Run a command, returning its exit code and its stdout and stderr together; a missing program is code 127."""
+    """Run a command below normal priority (`low_priority`), returning its exit code and its stdout and stderr
+    together; a missing program is code 127."""
+    lowered, options = low_priority(command)
     try:
-        done = subprocess.run(
-            list(command), cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
+        done = subprocess.run(  # type: ignore[call-overload]
+            lowered,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            **options,
         )
     except OSError as error:
         return 127, f"{command[0]}: {error.strerror or error}"
