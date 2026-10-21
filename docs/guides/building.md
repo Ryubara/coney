@@ -477,11 +477,15 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   which ccache refuses; every preset uses `/Z7` instead ([Debug information on MSVC](#debug-info)), so that is
   settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so the `ci` and
   `asan` presets also inherit the hidden `cacheable` preset, which turns `CMAKE_DISABLE_PRECOMPILE_HEADERS` on.
-- **Sizes.** Each job's cap is 700 MB (`max-size` of the `ccache` action). Six jobs save (four `build`, two
-  `sanitizers`): at most 6 × 0.7 = 4.2 GB, plus three dependency entries (one per OS, about 0.1 to 0.2 GB each) and
-  the `setup-uv` caches (about 50 MB per OS), about 5 GB in all, half of the 10 GB. While a `main` run is between its
-  saves and `cache-prune`, the old and new entries of a job both exist for a few minutes. A full build's objects must
-  fit under the cap, or the build evicts its own objects and the next run misses: when a job's summary shows the
-  cache size at 100 % and the hit rate of an unchanged rebuild stays low, raise that job's cap and redo this sum.
+- **Sizes.** Each job's cap while it runs is 1 GB (`max-size` of the `ccache` action): the restored entry plus what
+  the job compiles anew must fit, or ccache evicts restored objects before the build reaches them and those miss too.
+  At the earlier 700 MB, about one build's objects, the Windows, GCC, macOS and macOS sanitizer jobs of a pull
+  request's run on 2026-10-21 all ended at their cap, with 72.5, 79.8, 80.0 and 34.3 % hits, while the Clang jobs,
+  under it, had 93.1 %. The saved entry is trimmed to what the job used (below), so it stays about one build's size,
+  0.3 to 0.7 GB. Six jobs save (four `build`, two `sanitizers`): at most 6 × 1 GB = 6 GB even untrimmed, plus three
+  dependency entries (one per OS, about 0.1 to 0.2 GB each) and the `setup-uv` caches (about 50 MB per OS), under
+  7 GB of the 10 GB. While a `main` run is between its saves and `cache-prune`, the old and new entries of a job both
+  exist for a few minutes. When a job's summary shows the cache at its cap and a rebuild of an unchanged commit hits
+  little, raise that cap and redo this sum.
 - **Hit rates.** Each job's summary shows `ccache --show-stats` for that job alone (the counters are zeroed after the
   restore): cacheable calls, hits, misses, uncacheable calls and the cache size.

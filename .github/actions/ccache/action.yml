@@ -22,9 +22,11 @@ inputs:
     required: true
   max-size:
     description: >-
-      ccache's size cap. One full build's objects must fit, or the build evicts its own objects and the next run
-      misses; every saved job's cap together must fit the repository's 10 GB (docs/guides/building.md#ci-caches).
-    default: 700M
+      ccache's size cap while the job runs: the restored entry (about one build's objects) plus what the job compiles
+      anew must fit, or ccache evicts restored objects before the build reaches them and those miss too. The saved
+      entry is trimmed to what the job used (ccache-save), so it stays one build's size; even untrimmed, six saving
+      jobs at the cap are 6 GB of the repository's 10 GB (docs/guides/building.md#ci-caches).
+    default: 1000M
 
 runs:
   using: composite
