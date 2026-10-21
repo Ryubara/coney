@@ -92,6 +92,8 @@ class PlayerPanel {
     /// counter.
     /// @orig 0x00214138 PlayerHUD_Update (unknown)
     void update(const PanelValues& values, const Pad* pad, std::uint64_t nowMs, const HudSound& audio);
+    /// The money count's looping sound (cue 0x10) while it plays; 0 when none is kept.
+    [[nodiscard]] HudSoundHandle moneySound() const { return m_moneySound; }
 
     /// The panel's alpha at the last update: 1 for kPanelHoldMs after the last activity, then down to 0 over
     /// kPanelFadeMs.
@@ -145,6 +147,10 @@ class PlayerPanel {
     void renderMoney(const HudCanvas& canvas, float alpha) const;
     void renderCounters(const HudCanvas& canvas, float alpha) const;
     void renderTally(const HudCanvas& canvas, float alpha, bool swapped, int levelNumber) const;
+    // The money count's sound: kept while the count runs, stopped when it ends.
+    // @orig 0x001becb0 HudMoney_Update (unknown)
+    // Research: docs/research/sound-events.md#money-count-sound
+    void updateMoneySound(const HudSound& audio);
 
     std::size_t m_player;
     bool m_attached = false;
@@ -160,6 +166,7 @@ class PlayerPanel {
     PanelValues m_values;
     CountingNumber m_score;
     CountingNumber m_money;
+    HudSoundHandle m_moneySound = 0; // `+0x50`: the count's looping cue, 0 for none
     std::array<int, 4> m_items{};
     std::array<GuiPoint, 4> m_slots{};
     bool m_tallyOn = false;         // +0x4130

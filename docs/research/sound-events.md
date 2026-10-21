@@ -10,6 +10,12 @@ how loud: animation sounds, footsteps, hits and contacts, cars, objects, pickups
 says by itself, and the ambience and music of a level. The sound engine these calls go into (tasks, voices, 3D
 volume, the music player, the speech-line rules) is on [Sound](sound.md); the data on [Audio data](formats/audio.md).
 
+## Original structure
+
+The game starts its sounds from the subsystems that raise them (humans, combat, objects, cars, the HUD, the AI's
+speech), each through one of a few players over the sound matrix, below; each section of Behaviour names the
+function that plays its sound. The sound engine's own classes are on [Sound](sound.md).
+
 ## The players {#players}
 
 Gameplay sounds go through a few players over the [sound matrix](sound.md#sound-matrix), filled by the matrix
@@ -47,6 +53,16 @@ Combat framing: one player, and player 1 either locked on with a target or in th
 types, all of them women (`char_lcgf`, the Lizzies, `hook_01` ...): the code reads it only to pick the `_female`
 animation sound for a vocal id. Confirmed (code); "female" is inferred from the types and the ids' names.
 
+## Data
+
+The tables an event reads (the sound matrix's material pairs, the vocal and speech-command ids, the sound classes of
+the disc's sound list) are described where an event uses them, in Behaviour below; their formats are on
+[Audio data](formats/audio.md).
+
+## Behaviour
+
+What starts each sound, kind by kind.
+
 ## The ground under a human {#ground-material}
 
 Human `+0x1d8` is the material of the level triangle under him: `Human_SnapToGround` (`0x0023eab8`, each update's
@@ -62,6 +78,8 @@ A clip event of type 11 sends the human message `0x8b` with the event's value ([
 table (`0x00714b00 + index × 0x20`). Confirmed (code) for every row.
 
 ### Footsteps and body falls {#footsteps}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 `Human_PlayFootstep(vol, pitch, h, body)` plays `Sound_PlayMaterialPair` of `[body][ground]`, with `ground` the
 [ground material](#ground-material) remapped first (`Sound_RemapFootMaterial`, `0x00110aa8`: 18 `TRAINRAIL` → 106
@@ -162,6 +180,8 @@ during a cinematic. Where a female id is given, a human with `+0x3b8` = 1 uses i
 
 ### Speech-command ids {#command-ids}
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 These say a [speech command](sound.md#speech) through `Human_SayCommand(vol, h, command, callback, interrupt,
 uncut, target, duckable)` (`0x002205e0`; `uncut` 0 plays it as a cutting line; it returns the line's handle). The
 target for a look is the null handle (`0x006ebd30`) in every row. "Gesture" means only when `Ambient_MayGesture`
@@ -192,6 +212,8 @@ empty, or its human not speaking (`+0x178` dead). The human then takes that slot
 reaction kind make these gesture lines at a time. Confirmed (code).
 
 ### Crew lines while tagging {#tag-lines}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 Two tag lines come from a crew member, not the tagger, through `Tag_SayNearbyLine(tagger, command)` (`0x00273a68`).
 Confirmed (code):
@@ -224,6 +246,8 @@ stores at `0x0021810c`-`0x0021811c`), so both are on for every human until a scr
 ## Hits and contacts {#hits}
 
 ### A strike on a human {#strike-human}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 A landed strike (`Strike_Contact`, `0x0021b290`, [Combat](combat.md#moving-strikes)) on a human with health plays its hit
 sound in `Hit_ResolveBlock` (`0x00220df0`): `Human_PlayImpactSound(1, attacker, attacker, victim, strike, struck, 5)`,
@@ -303,6 +327,8 @@ Confirmed (code):
 
 ## Objects {#objects}
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 World objects play material pairs of their type's material (`CfgObj`, type record `+100`) through
 `Sound_PlayMaterialPair` or `Sound_PlayMaterialPairAt` (`0x00117280`: volume 1, default 5), and fixed sounds by
 hash through `Sound_PlayAtDefault` / `Sound_PlayAtDefault2` (`0x00117190`, `0x00117238`: positional, volume and
@@ -358,6 +384,8 @@ pitch 1, duckable). Glass panes, doors and barriers are on [World objects](objec
   that its trains squeak rather than pass fits level99 not being level `0x1f` or `0x57` (inferred).
 
 ## Speech the game says {#speech}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 Besides the [animation ids](#command-ids) and the scripts' `SoundPlayCommand`, the game's own code says speech
 commands through `Human_SayCommand` (`0x002205e0`, [Saying a speech command](sound.md#speech)) from 129 functions,
@@ -592,8 +620,9 @@ pause.
 
 **User item 22 (the pick-up sound looping until paused)**: nothing in the data or the original's code loops these
 sounds, so the loop is Coney's. Coney decodes the sample to its end flag and gives a bank sample loop points only
-for a looping class (`repo:src/audio/sound_bank.cpp`), so the data is not the cause either; what remains is the
-engine side. **Coney fixes**:
+for a looping class (`repo:src/audio/sound_bank.cpp`), so the data is not the cause either. The sound that loops
+is the one heard with every money pick-up after it: the HUD's money count ([below](#money-count-sound)). The list
+that follows was the plan before that was found; its step 1 is what found it. **Coney fixes**:
 
 1. Reproduce with `--event-log` and look at the `sound` events: many `0x7b3534e9` plays (one a step) mean the pick-up
    is re-triggered (a pick-up, purchase or mugging path firing every update, or a record not removed), not a loop;
@@ -605,6 +634,49 @@ engine side. **Coney fixes**:
 3. Test: play `0x7b3534e9` through `GameSound::play2D` on the offline device and step past 0.4 s: the voice has
    ended and the task is free; with every voice busy (a steal), the same holds; a looping class sound stopped by
    handle while a pick-up starts does not leave either playing.
+
+### The money count's sound {#money-count-sound}
+
+**The sound loops.** Interface cue 16 (`0x10`) is `vags/misc/count_money2` (hash `0x6c7f4d7d`; [Sound and
+music](../references/sound.md#sound-interface-16)), a bank sample of class 3 with class flags **`0x01`: looping**,
+2D, priority 12, volume 60 %, 22,050 Hz, 688 bytes (from the disc's sound list, `coney-tools audio list sounds`;
+counts and flags only). A voice playing it repeats until something stops it.
+
+**How the original keeps and stops it**, confirmed (code) in `HudMoney_Update` (`0x001becb0`), once a frame per
+player panel ([HUD: score and money](hud.md#score-and-money)):
+
+- The panel keeps the sound's handle at `+0x50`; the "no sound" value is the global at `0x00598690` (stored back
+  at `0x001beff8`).
+- **While the shown money counts** toward the inventory's (the shown value `+0x44` differs from the value read, and
+  no `±$N` change is being held, `+0x4c` = 0): the kept handle is resolved (`SoundHandle_Resolve`, `0x0010f578`,
+  called at `0x001bef6c`); only when it names no live sound is cue `0x10` played again (`Sound_PlayInterfaceCue`,
+  `0x0010fc30`, at `0x001bef84`) and the new handle kept. So one looping voice plays for the whole count, and it is
+  started again if it was lost (refused, stolen, or stopped) while the count goes on.
+- **Otherwise** (the count has reached the value, or a change is being held, below): when a handle is kept, the
+  sound is stopped at once (`Sound_Stop(mgr, handle, 0)`, `0x00110318`, at `0x001befec`) and the handle reset.
+- **The hold.** A new money value is first shown as the `±$N` line for 1,000 ms (`+0x4c` = the clock `+0x48` of
+  `0x0050b734` plus 1,000) while the shown count stays put; only when that time has passed is the new value taken
+  (`+0x48`) and the count, with its sound, starts (`0x001bed0c`-`0x001bed34`). The first change after the panel
+  starts (`+0xa20` still 0) is taken at once.
+- While it counts, the function also zeroes word `+0x411c` of the player's record (`0x00600848[player]`, at
+  `0x001bef70`); what that word is was not looked at.
+
+So the count's sound lasts exactly as long as the count (after the hold) and never outlives it.
+
+**Watched running**, confirmed (runtime) on 2026-10-21 in PCSX2 (`level99` checkpoint 1, player 0's panel at
+`0x00619d70`): with the shown money `+0x44` set to 200 over 0 in the inventory, the play at `0x001bef84` was hit once,
+on the count's first frame; the handle it returned stayed in `+0x50` through all 35 shown values from 200 to 0
+(about 1.2 s, many times the sample's length, so the voice was still live and looping); `Sound_Stop` at `0x001befec`
+was hit once, on the first frame after the count reached 0, and `+0x50` went back to `0xffffffff`.
+
+**In Coney** before the fix, the HUD played cue 16 once as a count started, as a fire-and-forget sound (`PlayerPanel`,
+`repo:src/hud/player_panel.cpp`, "Coney's choice"). Being a looping class, its voice never ended: each money
+pick-up, mugging or purchase left one more `count_money2` voice looping until a bank change (the main menu) stopped
+it. That is user item 22, reproduced in a disc test (`repo:tests/platform/disc_level99_money_sound_test.cpp`: a
+$50 pick-up walked into on `level99` left the sound live 5 s after the count). **Coney fix**, done: the panel keeps
+the handle, starts the cue on a counting frame when the kept sound is not playing, and stops it on the first frame
+without counting. The 1,000 ms hold before a count is a separate difference (Coney counts at once and shows the line
+meanwhile).
 
 ## World one-shots {#world}
 
@@ -658,6 +730,12 @@ From `level95.lua`, `level95_coney.lua` and `level95_clubhouse.lua`, read with `
 - **Outside**, the street humans' own speech: gang banter (above), the civilians' and cops' goal lines (the table
   above: `PedInteractGoal` 179 `question`, 180 `answer`, 181 `bye`, crime reports, cop shakedowns, bums) and the
   dealers.
+
+## Coney's implementation
+
+Coney plays these events in `repo:src/audio/` (the engine and its players) and in the subsystems that raise them;
+the sections above say where Coney differs, such as [the pick-up sound](#pickup-sound) and
+[the money count's sound](#money-count-sound).
 
 ## Open questions
 

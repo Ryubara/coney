@@ -162,7 +162,10 @@ TEST_CASE("the disc's STORY level99: hints bleep, the Rudy scene's humans shuffl
     flow->context().sound = &game;
     game.connect(&flow->scripts(), &flow->context());
     flow->services().attachAudio(&game);
-    flow->hud().setSoundOutput([&sounds](std::string_view name) { sounds.play(name); });
+    flow->hud().setSoundOutput(
+        [&sounds](std::string_view name) { return sounds.play(name).id; },
+        [&sounds](coney::hud::HudSoundHandle sound) { sounds.stop(coney::audio::VoiceHandle{sound}); },
+        [&sounds](coney::hud::HudSoundHandle sound) { return sounds.isPlaying(coney::audio::VoiceHandle{sound}); });
 
     // STORY with a new profile through the real screens, until gameplay starts.
     auto menus = coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt");

@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <string_view>
+#include <utility>
 
 #include "core/assert.h"
 
@@ -99,6 +100,18 @@ bool promptWakesPanel(std::string_view text) {
                                [text](std::string_view word) { return text.find(word) != std::string_view::npos; });
 }
 
+// The count's cue 0x10 loops, so its voice is kept by handle: started on a counting frame when the kept one no longer
+// plays (lost or never started), stopped on the first frame without counting.
+void PlayerPanel::updateMoneySound(const HudSound& audio) {
+    if (m_money.moved()) {
+        if (!audio.isPlaying(m_moneySound)) {
+            m_moneySound = audio.startCue(kCueMoneyCount);
+        }
+    } else if (m_moneySound != 0) {
+        audio.stopSound(std::exchange(m_moneySound, 0));
+    }
+}
+
 void PlayerPanel::setFlashFrames(std::uint32_t frames) {
     m_flashFrames = frames;
     m_flashCounter = 0;
@@ -112,12 +125,8 @@ void PlayerPanel::update(const PanelValues& values, const Pad* pad, std::uint64_
     // The score and the money count toward their values; a change is activity and makes a popup.
     activity = m_score.update(values.score, nowMs) || activity;
     const int money = std::clamp(values.money, kMoneyMin, kMoneyMax);
-    const bool wasCounting = m_money.counting();
     activity = m_money.update(money, nowMs) || activity;
-    // Coney's choice: the counting cue plays once as the count starts, not every frame it runs.
-    if (m_money.counting() && !wasCounting) {
-        audio.playCue(kCueMoneyCount);
-    }
+    updateMoneySound(audio);
     if (const std::optional<CountingNumber::Popup> popup = m_score.popup();
         popup && nowMs - popup->startMs >= kScorePopupMs) {
         m_score.clearPopup();

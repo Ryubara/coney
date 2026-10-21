@@ -3532,6 +3532,12 @@ subsystem = "GUI"
 size = 700
 
 [[function]]
+address = 0x001becb0
+name = "HudMoney_Update"
+subsystem = "GUI"
+size = 948
+
+[[function]]
 address = 0x001bf7e0
 name = "MugMeter_Setup"
 subsystem = "GUI"

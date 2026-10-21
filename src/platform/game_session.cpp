@@ -239,8 +239,12 @@ void GameSession::attachAudio(AudioOutput* audio) {
     };
     hold.release = [audio] { audio->sounds().resumeAll(); };
     m_movieMode->setSoundHold(std::move(hold));
-    // The HUD's sounds through the game-facing player (docs/research/hud.md#coneys-implementation).
-    m_flow->hud().setSoundOutput([audio](std::string_view name) { audio->sounds().play(name); });
+    // The HUD's sounds through the game-facing player (docs/research/hud.md#coneys-implementation), by handle so that a
+    // looping cue can be stopped (the money count's, docs/research/sound-events.md#money-count-sound).
+    m_flow->hud().setSoundOutput(
+        [audio](std::string_view name) { return audio->sounds().play(name).id; },
+        [audio](hud::HudSoundHandle sound) { audio->sounds().stop(audio::VoiceHandle{sound}); },
+        [audio](hud::HudSoundHandle sound) { return audio->sounds().isPlaying(audio::VoiceHandle{sound}); });
     // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
     audio::GameSound& game = audio->game();
     m_flow->context().sound = &game;

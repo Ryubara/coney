@@ -189,6 +189,49 @@ TEST_CASE("money is clamped, counts with its cue and a changed item count is act
     CHECK(panel.fade() == 1.0F);
 }
 
+// User item 22: the count's cue 0x10 is a looping sound, so a count that started it and never stopped it left it
+// looping for good (docs/research/sound-events.md#money-count-sound).
+TEST_CASE("the money count's looping sound plays while it counts, comes back if lost and stops when it ends",
+          "[hud][audio]") {
+    PlayerPanel panel(0);
+    panel.attach(32);
+    KeepingAudio audio;
+    PanelValues values;
+    panel.update(values, nullptr, 0, audio.sound);
+
+    // A pick-up of $50: one voice of the cue for the count, kept while it runs.
+    values.money = 50;
+    std::uint64_t now = run(panel, values, 0, 2, audio.sound);
+    REQUIRE(panel.money().counting());
+    CHECK(audio.cues == std::vector<int>{coney::hud::kCueMoneyCount});
+    const coney::hud::HudSoundHandle first = panel.moneySound();
+    CHECK(first != 0);
+    CHECK(audio.live == std::vector<coney::hud::HudSoundHandle>{first});
+
+    // Lost while the count goes on (stolen, say): started again on the next counting frame.
+    audio.end(first);
+    now = run(panel, values, now, 1, audio.sound);
+    REQUIRE(panel.money().counting());
+    CHECK(audio.cues.size() == 2);
+    const coney::hud::HudSoundHandle second = panel.moneySound();
+    CHECK(second != first);
+
+    // The count ends: the voice is stopped and nothing loops on.
+    now = run(panel, values, now, 60, audio.sound);
+    CHECK_FALSE(panel.money().counting());
+    CHECK(panel.money().shown() == 50);
+    CHECK(audio.stopped == std::vector<coney::hud::HudSoundHandle>{second});
+    CHECK(audio.live.empty());
+    CHECK(panel.moneySound() == 0);
+
+    // Another pick-up starts one new voice, which ends with its count too.
+    values.money = 75;
+    run(panel, values, now, 60, audio.sound);
+    CHECK(audio.cues.size() == 3);
+    CHECK(audio.stopped.size() == 2);
+    CHECK(audio.live.empty());
+}
+
 TEST_CASE("the rage meter shows rage over 150 and a full meter pulses gold and plays its sound once", "[hud]") {
     PlayerPanel panel(0);
     panel.attach(32);

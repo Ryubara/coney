@@ -904,16 +904,25 @@ int main(int argc, char** argv) {
         }
     }
     coney::platform::PadMenuOverlay padMenu(debugSession, std::move(debugFont));
-    // A sandbox's play mode plays the HUD's sounds through the game-facing player, when there is sound.
-    const auto sandboxHudSound = [&audio](std::string_view name) {
+    // A sandbox's play mode plays the HUD's sounds through the game-facing player, when there is sound, by handle (a
+    // looping cue is stopped by it).
+    const auto sandboxHudSound = [&audio](std::string_view name) -> coney::hud::HudSoundHandle {
+        return audio ? audio->sounds().play(name).id : 0;
+    };
+    // Stops a HUD sound the sandbox started.
+    const auto sandboxHudStop = [&audio](coney::hud::HudSoundHandle sound) {
         if (audio) {
-            audio->sounds().play(name);
+            audio->sounds().stop(coney::audio::VoiceHandle{sound});
         }
+    };
+    // Whether a HUD sound the sandbox started still plays.
+    const auto sandboxHudPlaying = [&audio](coney::hud::HudSoundHandle sound) {
+        return audio && audio->sounds().isPlaying(coney::audio::VoiceHandle{sound});
     };
     if (playLevel) {
         playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
-        playLevel->hud()->setSoundOutput(sandboxHudSound);
+        playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
     }
     if (session) {
         session->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
@@ -954,7 +963,7 @@ int main(int argc, char** argv) {
             playLevel = std::move(*mode);
             playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
-            playLevel->hud()->setSoundOutput(sandboxHudSound);
+            playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
             modes.push(*playLevel);
             return;
         }

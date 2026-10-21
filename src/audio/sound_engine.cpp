@@ -527,6 +527,11 @@ void SoundEngine::stopAll() {
 
 bool SoundEngine::isPlaying(SoundHandle sound) const { return find(sound) != nullptr; }
 
+std::size_t SoundEngine::liveCount(std::uint32_t hash) const {
+    return static_cast<std::size_t>(
+        std::ranges::count_if(m_tasks, [hash](const Task& t) { return t.live && t.record->hash == hash; }));
+}
+
 bool SoundEngine::isVirtual(SoundHandle sound) const {
     const Task* task = find(sound);
     return task != nullptr && task->virtualPlay;

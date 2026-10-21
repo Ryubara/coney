@@ -419,9 +419,11 @@ scripts order the crew with `WCIssueCommand`.
   `"+N"` (or `"-N"`) beside it that shrinks over the 400 ms before it is removed at 1,000 ms (`0x0050ea3c`,
   `0x0050ea40`). Drawn only in levels numbered below 100. Confirmed (code) at `0x001c7928`, `0x00213290`.
 - **Money** (`0x001bea00`, panel `+0x400`): inventory item 2 ([Inventory items](../references/inventory.md)), clamped to
-  -99..9999, counting toward a new value by (difference / 16) ± 1 per frame with a sound (cue `0x10`) while it counts,
-  and a floating `±$N` line (`<MONEYPLUS>` / `<MONEYMINUS>` markup) for 1 s after a change. Confirmed (code) at
-  `0x001becb0`. Hidden when 0 (inferred: the runtime panel with 0 dollars showed none).
+  -99..9999, counting toward a new value by (difference / 16) ± 1 per frame, and a floating `±$N` line
+  (`<MONEYPLUS>` / `<MONEYMINUS>` markup) for 1 s after a change, during which the count waits. While it counts, the
+  looping cue `0x10` plays, one voice kept by handle and stopped when the count ends ([Sound events: the money
+  count's sound](sound-events.md#money-count-sound)). Confirmed (code) at `0x001becb0`; the sound's keep and stop
+  confirmed (runtime). Hidden when 0 (inferred: the runtime panel with 0 dollars showed none).
 
 ### Item counters {#item-counters}
 
@@ -963,7 +965,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   step, not from inside the damage step.
 - **Sound**: the cues by the table `SoundCfgInterfaceSound` fills (the binding keeps each call for the HUD as well
   as filling the engine's table), and the named sounds, play through `audio::SoundPlayer`
-  ([Sound](sound.md#interface-sounds)); silent without sound.
+  ([Sound](sound.md#interface-sounds)); silent without sound. A play returns the player's handle (`HudSound`), so the
+  money count's looping cue `0x10` is kept while the count runs, started again if it was lost, and stopped when the
+  count ends (`PlayerPanel`, [Sound events: the money count's sound](sound-events.md#money-count-sound)).
 - **The action prompt** (`repo:src/gamemodes/gameplay_mode.cpp`, the level's part `PlayLevelMode::promptOffer()`):
   each frame of play player 0's text is chosen in `HUD_Update`'s order: nothing while he tags, plays a scene part,
   mugs, steals a stereo or picks a lock; a held human set up for interrogation gives `GSTRING.HUD` 0 (interrogate,
@@ -1176,7 +1180,6 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 - The money's icon (rectangle and sheet) and where the score's and the money's popups sit.
 - The size arguments of the HUD's texts: a glyph's height, or `(w, h)`, or a `Font_Size` scale.
 - Whether the built-in announcements (`0x00622e20`) are `GSTRING.ANNOUNCE`.
-- Whether the money's cue `0x10` plays once or every counting frame.
 - The counter panels' text layout and alignment, and a bar panel's look.
 - Player 1's score, money and counter offsets.
 - The scripted bars ([above](hud-messages.md#scripted-bars)): which sheet and rectangles kind 0's sprite word `0x020a0000`
