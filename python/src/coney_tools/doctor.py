@@ -103,7 +103,8 @@ def clang_tidy_check() -> Check:
     except ConfigError:
         return Check("clang-tidy 19", False, "not found (needed only to check C++ changes)", hint, False)
     ok = major == local_gate.TIDY_MAJOR
-    return Check("clang-tidy 19", ok, f"{path} (version {major})", hint, False)
+    version = f"version {major}" if major is not None else "version unknown"
+    return Check("clang-tidy 19", ok, f"{path} ({version})", hint, False)
 
 
 def default_compiler_check(platform: str, which: Which, run: Run, env: Mapping[str, str]) -> Check | None:
@@ -137,7 +138,15 @@ def ghidra_checks(install: Path, project: GhidraProject) -> list[Check]:
     """Ghidra, its compiled EE language and a project holding the executable: optional, all made by ghidra setup."""
     hint = "uv run --project python coney-tools ghidra setup (docs/guides/ghidra.md#own-project)"
     there = (install / "support").is_dir()
-    checks = [Check("Ghidra 12.1.4", there, str(install) if there else f"not in {install}", hint, False)]
+    checks = [
+        Check(
+            f"Ghidra {workspace_fetch.GHIDRA_VERSION}",
+            there,
+            str(install) if there else f"not in {install}",
+            hint,
+            False,
+        )
+    ]
     sla = install / LANGUAGES / "r5900.sla"
     checks.append(
         Check("EE language (r5900.sla)", sla.is_file(), "compiled" if sla.is_file() else "not compiled", hint, False)
@@ -237,7 +246,10 @@ def run(cwd: Path, disc_arg: str | None) -> int:
     discs = [problem] if problem is not None else disc_checks(disc)
 
     main = main_checkout(root)
-    install = paths.get("ghidra_install") or (main / ".." / ".." / "tools" / "ghidra_12.1.4_PUBLIC").resolve()
+    install = (
+        paths.get("ghidra_install")
+        or (main / ".." / ".." / "tools" / f"ghidra_{workspace_fetch.GHIDRA_VERSION}_PUBLIC").resolve()
+    )
     projects = paths.get("ghidra_projects") or (main / ".." / ".." / "ghidra").resolve()
     research = [check for check in found if not check.required]
     research += ghidra_checks(install, GhidraProject(projects, PROJECT_NAME))
