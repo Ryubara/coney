@@ -363,7 +363,8 @@ The whole gate:
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`; `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables are built into
   the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,
-  `refs render`, `missions render`, `pcsx2 recipe render`). Rerun a generator without `--check` when you change what it reads.
+  `refs render`, `missions render`, `pcsx2 recipe render`). Rerun a generator without `--check` when you change what it
+  reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
   `mkdocs build --strict` passes.
 

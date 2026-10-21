@@ -590,9 +590,9 @@ Steps:
 Make full-deflection stick input read as a chosen magnitude, by rewriting the stick table's ends.
 
 The game turns each raw stick byte into a float through a 256-entry `float` table at `0x0050b8d0` (entry 0 is -1.0,
-entry 255 is +1.0); it is data, so a write takes effect at once. Writing -m to entry 0 and +m to entry 255 (`0x0050b8d0
-+ 0x3fc`) makes a fully deflected stick (a keyboard key, a pad at its stop) read as magnitude m; the pad record
-(`0x005dd810`, `+0x08` / `+0x0c` the stick as floats) shows what the game uses. The camera's right-stick code
+entry 255 is +1.0); it is data, so a write takes effect at once. Writing -m to entry 0 and +m to entry 255 (the table's
+address plus `0x3fc`) makes a fully deflected stick (a keyboard key, a pad at its stop) read as magnitude m; the pad
+record (`0x005dd810`, the stick as floats at `0x08` and `0x0c`) shows what the game uses. The camera's right-stick code
 (`0x00129050`) reads the raw bytes, so the table does not change it. Run it again with `magnitude=1` to restore the
 table. With the `scripted-pad` patch, `pad` gives partial values directly and this is not needed. State the magnitude
 with every runtime claim that depends on input.
