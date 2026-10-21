@@ -41,6 +41,7 @@ std::optional<Category> parseCategory(std::string_view name) {
 std::expected<std::vector<Category>, Error> parseCategoryList(std::string_view list) {
     if (list == "all") {
         std::vector<Category> all;
+        all.reserve(kCategoryCount);
         for (std::size_t i = 0; i < kCategoryCount; ++i) {
             all.push_back(static_cast<Category>(i));
         }
