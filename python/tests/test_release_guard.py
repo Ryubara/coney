@@ -68,7 +68,7 @@ def test_a_refused_body_blocks_with_the_checks_reason(body: Path) -> None:
 
 
 def test_a_refused_title_blocks(body: Path) -> None:
-    reason = GUARD.check(f"gh pr create --title=bad \"--body-file={body}\"", "", runner=FakeRunner(title_code=1))
+    reason = GUARD.check(f'gh pr create --title=bad "--body-file={body}"', "", runner=FakeRunner(title_code=1))
     assert reason is not None and "check-title refused" in reason
 
 
@@ -101,7 +101,7 @@ def test_shapes_the_checks_cannot_see_are_refused(command: str, words: str) -> N
 
 def test_edit_checks_only_what_it_changes(body: Path) -> None:
     runner = FakeRunner()
-    assert GUARD.check(f"gh pr edit 12 --body-file \"{body}\"", "", runner=runner) is None
+    assert GUARD.check(f'gh pr edit 12 --body-file "{body}"', "", runner=runner) is None
     assert runner.calls == [(["repo", "check-body", "--body", str(body)], "")]
     runner = FakeRunner()
     assert GUARD.check("gh pr edit 12 --title 'tools: Fix y'", "", runner=runner) is None
@@ -128,15 +128,17 @@ def test_other_commands_pass_without_a_check(command: str) -> None:
 
 
 def test_a_command_after_a_separator_is_found(body: Path) -> None:
-    reason = GUARD.check(f"cd \"{body.parent}\" && gh pr create --fill", "", runner=FakeRunner())
+    reason = GUARD.check(f'cd "{body.parent}" && gh pr create --fill', "", runner=FakeRunner())
     assert reason is not None and "--fill" in reason
 
 
 def test_a_missing_file_or_a_check_that_cannot_run_fails_open(body: Path) -> None:
     runner = FakeRunner()
-    assert GUARD.check("gh pr create --title 'tools: Add x' --body-file gone.md", str(body.parent), runner=runner) is None
+    assert (
+        GUARD.check("gh pr create --title 'tools: Add x' --body-file gone.md", str(body.parent), runner=runner) is None
+    )
     assert [args[1] for args, _ in runner.calls] == ["check-title"]
-    assert GUARD.check(f"gh pr create -t x -F \"{body}\"", "", runner=FakeRunner(title_code=2, body_code=2)) is None
+    assert GUARD.check(f'gh pr create -t x -F "{body}"', "", runner=FakeRunner(title_code=2, body_code=2)) is None
 
 
 def test_an_unclosed_quote_fails_open() -> None:
@@ -149,7 +151,7 @@ def test_powershell_keeps_backslashes_in_paths(tmp_path: Path) -> None:
     (folder / "PR.md").write_text("x", encoding="utf-8")
     runner = FakeRunner()
     windows = str(folder / "PR.md").replace("/", "\\")
-    command = f"gh pr create --title \"tools: Add x\" --body-file \"{windows}\""
+    command = f'gh pr create --title "tools: Add x" --body-file "{windows}"'
     assert GUARD.check(command, "", powershell=True, runner=runner) is None
     assert runner.calls[1][0][3] == windows
 

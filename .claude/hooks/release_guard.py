@@ -5,8 +5,9 @@ The coordinator opens each pull request from an agent's description file with `g
 <file>` (docs/guides/how-we-work.md#release-queue). The rule is that the file passed `coney-tools repo check-review`
 first, which runs the same title and body checks as CI's required `title` and `body` jobs; but nothing ran it, and on
 2026-10-20 and 21 four pull requests were pushed whose descriptions CI's `body` job then refused (a missing
-`## Summary` or `## Screenshots`), each costing a CI round and an edit. This hook, registered in `.claude/settings.json` for the Bash and
-PowerShell tools, runs those two checks before the command does, from the main checkout's `coney-tools`:
+`## Summary` or `## Screenshots`), each costing a CI round and an edit. This hook, registered in
+`.claude/settings.json` for the Bash and PowerShell tools, runs those two checks before the command does, from the main
+checkout's `coney-tools`:
 
 * `gh pr create` must give `--title` and `--body-file <file>` (not `--body`, `--fill`, `--web` or a body on stdin,
   which the check cannot see), and both must pass `repo check-title` and `repo check-body --title`; a local image is
@@ -61,7 +62,7 @@ _UNCHECKED = ("-f", "--fill", "--fill-first", "--fill-verbose", "-w", "--web")
 #: How long one check may take (a first `uv run` may sync the environment).
 CHECK_TIMEOUT = 90
 HOW = (
-    "Open a pull request with `gh pr create --title \"<title>\" --body-file <file>` from a description that passes "
+    'Open a pull request with `gh pr create --title "<title>" --body-file <file>` from a description that passes '
     "`uv run --project python coney-tools repo check-title` and `repo check-body --title ... --body <file>` (or "
     "`repo check-review`), the checks CI's required `title` and `body` jobs run "
     "(docs/guides/how-we-work.md#release-queue)."
