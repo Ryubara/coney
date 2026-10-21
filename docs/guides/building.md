@@ -227,7 +227,7 @@ fresh build folder, its logs kept with the track's scratch files):
 The first build fills the cache at a small cost over none; every later fresh folder of nearly the same sources takes
 it back. One `dev` build's objects are 0.6 GB in the cache, so the 25 GB cap keeps many presets and branches. What
 was left of the cached build was mostly CMake's C++ module scanning (733 of its 935 step-seconds, summed from
-`.ninja_log`), which ccache does not cache.
+`.ninja_log`), which ccache does not cache; it is off now ([Module scanning](#module-scanning)).
 
 - **Install it.** Windows: `coney-tools workspace init --fetch ccache` puts ccache 4.14.1 (the release CI's Windows
   job uses, checked by SHA-256) in `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
@@ -268,6 +268,22 @@ was left of the cached build was mostly CMake's C++ module scanning (733 of its 
   the cache at the same time.
 - **By hand.** A person building without the tool gets the same with `cmake --preset dev
   -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache` on a new folder.
+
+### Module scanning {#module-scanning}
+
+The top `CMakeLists.txt` turns CMake's C++ module scanning off (`CMAKE_CXX_SCAN_FOR_MODULES OFF`), for Coney's
+targets and the dependencies alike. CMake 3.28 scans every C++20-and-later source for `import` before compiling it: a
+scan step per source and a collation step per target that every compile of the target waits for. Nothing here uses
+modules, and the compiler cache cannot cache the scans. Measured on 2026-10-20 (Windows, `dev` at `-j 3`, a fresh
+folder each, every compile from the cache, no other agent building):
+
+| Fresh `dev` folder | Steps | Step-seconds (summed `.ninja_log`) | Build step |
+| --- | --- | --- | --- |
+| Scanning on | 3,444 | 935, of which the scans 733 | 2.1 min |
+| Scanning off | 1,514 | 119 | 38 s |
+
+A source that ever `import`s a module turns it back on for its target (`CXX_SCAN_FOR_MODULES ON`); a Python test keeps
+the setting in place.
 
 ## Sanitizers
 
