@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eighteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers nineteen groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which checks
 pages against the documentation standards, [`build`](#build), which
 configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
@@ -8,7 +8,8 @@ the repository's own rules (titles, descriptions, labels), `wad`, which reads th
 archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
 the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies'
 headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables
-of the README and the docs current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
+of the README and the docs current, [`orig`](#orig), which indexes the `@orig` tags for the fidelity audit,
+[`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
 and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
 [`clips`](#clips), which checks, publishes and cleans up in-game video clips,
@@ -297,6 +298,61 @@ The span is an upper bound: a function that nothing calls directly and no pointe
 only by a tail jump) is not seen as a start, and the span of the function before it includes it, unless that function
 is itself listed in `functions.toml`: a listed function always ends the span of the one before it. When `--fill`
 gives a size that looks too large for what the research page describes, check the size Ghidra shows.
+
+## orig {#orig}
+
+The fidelity audit compares each function Coney reimplements with the original function at its `@orig` address in
+Ghidra ([The @orig tag](conventions.md#comments-and-orig)). The `orig` commands give it its index and its order of
+work. They only read: the source, the research pages, the shared Ghidra project through reading endpoints, and the
+open issues through `gh`.
+
+```sh
+uv run --project python coney-tools orig index --out <folder> [--ghidra auto|live|listing|off] [--url URL]
+uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [--label bug] [--show N] [--ghidra ...]
+```
+
+`orig index` reads every `@orig` tag in `src/` and writes to `<folder>` (use your scratch folder):
+
+* `index.tsv`: one line per tag: the original's address, name and source file, the Coney function the tag
+  documents, its file and line, where the tag sits (`comment` above a function, `body` inside one, `other` on a
+  class or file), and the research links that document it (the function's comment, else its declaration's, its
+  class's or its file's);
+* `untagged.tsv`: the functions defined in the gameplay directories (`orig_index.GAMEPLAY_DIRS`: every directory of
+  `src/` but `platform`, `core`, `fileio`, `debug`, `net` and `sandbox`) that have no tag, through their own comment or
+  their declaration's, and no Coney-only marker. Each is a `member`, a `free` function, a file's private `helper` (an
+  anonymous namespace or `static`) or an `inline` member defined in its class. A marker is `@coney-only <reason>` in
+  the function's comment or its file's header comment, or the older wording ("Coney's own", "(no @orig)");
+* `research-gaps.md`: the research sections tagged code links that cite no original address, links to a page or
+  section that does not exist, tags whose linked pages never cite their address, and tags with no research link;
+* `report.md`: the counts and the tags Ghidra does not bear out, and with a running server `callees.tsv` and its
+  table: the original functions the tagged ones call that no tag covers (game code only; the libraries the original
+  links in are left out, by `docs/progress/totals.toml`), most-called first.
+
+The Ghidra check (`--ghidra`, default `auto`) uses a running ghidra-mcp ([Ghidra + ghidra-mcp](ghidra.md)) when one
+answers on `--url`, else the committed listing `docs/progress/ghidra-functions.tsv`, which is as current as its last
+`progress ghidra` export and gives no callees. Each tag gets one of: `no-function` (Ghidra has no function there),
+`not-a-start` (the address is inside another function), `names-differ` (the names share fewer than half their words:
+the tag may name the wrong function), `renamed` (they share half or more, usually a rename in Ghidra since the tag was
+written) or `unnamed` (Ghidra still has its default `FUN_` name). Names agree when they are equal without case and
+punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's `lua_` wrapper prefix is ignored. A
+full live run reads about 2,400 functions and their callees and takes a few minutes.
+
+`orig queue` writes the same files and the audit's queue, `queue.md` (a table per `src/` directory, then the first
+`--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,
+or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
+
+* an open issue with `--label` (default `bug`) that names it (its address, its original or Coney name), its file or
+  a research section it links, weighted by the issue's priority label; the area labels of the issues add at most
+  4 points between them;
+* a tag Ghidra does not bear out, as above;
+* research that grades it only `inferred` or `speculative` anywhere, cites it with no level, or does not cite it;
+* a linked section that cites no address, or linked pages that lack its address;
+* for untagged code, its kind and length.
+
+`--issues FILE` reads a saved `gh issue list --json number,title,body,labels,comments` instead of asking GitHub. The
+order is a starting point for the audit team, which re-ranks as it learns. The files hold addresses, names, paths and
+issue numbers, never the original's code; they change with every pull request that touches `src/`, so they are
+regenerated when needed and never committed.
 
 ## natives {#natives}
 

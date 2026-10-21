@@ -257,7 +257,7 @@ def export_listing(fetch: Fetch, batch: int = 200) -> list[ListedFunction]:
 # --- the citations ----------------------------------------------------------------------------------------------------
 
 
-def _blocks(text: str) -> list[list[str]]:
+def claim_blocks(text: str) -> list[list[str]]:
     """A Markdown page cut into the units a claim lives in: each table row alone, else each paragraph."""
     blocks: list[list[str]] = []
     current: list[str] = []
@@ -291,7 +291,7 @@ def scan_citations(root: Path) -> dict[int, Citation]:
     pages = sorted(p for p in research.rglob("*.md") if p.name not in NOT_UNDERSTANDING) if research.is_dir() else []
     for path in pages:
         page = path.relative_to(root / "docs").as_posix()
-        for block in _blocks(path.read_text(encoding="utf-8", errors="replace")):
+        for block in claim_blocks(path.read_text(encoding="utf-8", errors="replace")):
             evidence = bool(_EVIDENCE.search("\n".join(block)))
             for line in block:
                 for match in _ADDRESS.finditer(line):
