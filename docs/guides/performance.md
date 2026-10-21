@@ -72,7 +72,7 @@ the clip recorder that the `no-real-clock` check allows to), and with measuring 
 | `play.ai_capture` | the AI fighters' pose snapshots for drawing |
 | `play.anim_overrides`, `play.scenes`, `play.world` | the scripts' clip overrides, the scenes, the scenery and world objects round the camera |
 | `render` | the frame's render, the present included |
-| `render.skin` | every human skinned on the CPU and written into its mesh |
+| `render.skin` | every human posed: its bone matrices (GPU skinning), or every vertex skinned and written (CPU) |
 | `render.scene` | the scenery's draw, with the humans, cars and objects among it |
 | `render.humans` | every human's atomics drawn (librw instancing and uploading the skinned vertices, then drawing) |
 | `render.shadows_rings` | the blob shadows and health rings |
@@ -95,3 +95,20 @@ A counter is a running total sampled at the end of each frame; the report gives 
 The OpenGL counters wrap the functions librw's loader fills in (`glad_glDrawElements` and the rest), so librw itself is
 unchanged. The allocation counter replaces the global `operator new` in the executable and the tests; librw's and SDL's
 own allocations use `malloc` and are not counted.
+
+## GPU skinning {#gpu-skinning}
+
+In play and in scenes every human is skinned in the vertex shader (`src/platform/character_skin.*`): a librw GL3
+object pipeline of Coney's own uploads a character's vertices once, with each vertex's four bone indices and weights,
+and per frame only its bone matrices change (at most 64, the placement in the world folded in). Its lighting, fog,
+texture levels and alpha test are those of Coney's default pipeline (`src/platform/texture_lod.*`), and the blended
+normal is normalised as the CPU skinning normalised it, so a human looks as it did. Before, every human's every vertex
+was blended on the CPU each frame, written into two librw geometries (the second for the blood layer) and uploaded
+again whole.
+
+The bounding sphere that chooses a human's lights and fades it out at a distance comes from the box round each skin
+node's vertices as the node's matrix moves it (`posedBox()`), which holds every vertex and is a little larger than the
+vertices' own box (**Coney's choice**: the original's choice of sphere is not traced). Where the pipeline cannot start
+(OpenGL 2.1 or ES 2, a model with more than 64 skin nodes), the mesh skins on the CPU as before, straight into librw's
+geometry with the placement folded into the bone matrices. The character viewer and the reference images skin on the
+CPU.

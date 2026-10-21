@@ -114,8 +114,7 @@ void SceneStage::skinPuppets(float alpha, const Skin& skin) {
             continue;
         }
         const scenes::RoleFrame frame = blend(frames->previous(), frames->current(), alpha);
-        skin(*puppet.loaded.character, frame.pose, frame.feet, frame.heading, puppet.positions, puppet.normals);
-        puppet.mesh->update(puppet.positions, puppet.normals);
+        skin(*puppet.loaded.character, frame.pose, frame.feet, frame.heading, *puppet.mesh);
     }
 }
 
@@ -192,9 +191,7 @@ bool SceneStage::humanReady(double human) {
     }
     Puppet puppet;
     const characters::CharacterModel& model = loaded->character->assets().model;
-    puppet.mesh = std::make_unique<CharacterMesh>(model, textureOf(loaded->dictionaries));
-    puppet.positions.resize(model.vertices.size());
-    puppet.normals.resize(model.vertices.size());
+    puppet.mesh = std::make_unique<CharacterMesh>(model, textureOf(loaded->dictionaries), Skinning::Gpu);
     puppet.loaded = std::move(*loaded);
     m_puppets.emplace(human, std::move(puppet));
     return true;

@@ -2888,7 +2888,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/characters/character_rig.*` builds the skeleton and the skinning matrices (pose bone `n + 2` · the pose turn
   · the inverse bind matrix) and skins on the CPU.
 - `src/platform/character_mesh.*` holds the skinned model as two librw atomics: the first texture-coordinate set
-  with the character's texture, and the second set for the material's dual layer. In play
+  with the character's texture, and the second set for the material's dual layer. In play and in scenes the humans
+  are skinned on the GPU (`src/platform/character_skin.*`: the vertices uploaded once, the bone matrices per frame;
+  [Performance](../guides/performance.md#gpu-skinning)); the viewers and reference images still skin on the CPU. In play
   (`src/platform/play_lighting.*`) every human is drawn in the two passes of
   [Drawing a human](graphics.md#human-draw): the second pass blends the blood texture
   (`src/graphics/human_blood.*`, the three `charblood` textures of `global.pak`) by its alpha below 90% health.

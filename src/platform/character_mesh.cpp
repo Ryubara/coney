@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/character_mesh.h"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 
 #include <rw.h>
@@ -89,13 +91,88 @@ void writePose(rw::Atomic* atomic, std::span<const anim::Vec3> positions, std::s
 
 } // namespace
 
-CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning /*skinning*/)
-    : m_texture(texture) {
+namespace {
+
+// `box` grown to hold `p`.
+void include(BoneBox& box, anim::Vec3 p) {
+    box.min = box.empty ? p : anim::Vec3{std::min(box.min.x, p.x), std::min(box.min.y, p.y), std::min(box.min.z, p.z)};
+    box.max = box.empty ? p : anim::Vec3{std::max(box.max.x, p.x), std::max(box.max.y, p.y), std::max(box.max.z, p.z)};
+    box.empty = false;
+}
+
+} // namespace
+
+std::vector<BoneBox> boneBoxes(const characters::CharacterModel& model) {
+    std::vector<BoneBox> boxes(model.clump.skin.inverseBind.size());
+    for (const characters::SkinVertex& vertex : model.vertices) {
+        for (std::size_t w = 0; w < characters::kVertexWeights; ++w) {
+            if (vertex.weights[w] != 0.0F && vertex.bones[w] < boxes.size()) {
+                include(boxes[vertex.bones[w]], vertex.position);
+            }
+        }
+    }
+    return boxes;
+}
+
+BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> placed) {
+    BoneBox posed;
+    for (std::size_t bone = 0; bone < boxes.size() && bone < placed.size(); ++bone) {
+        const BoneBox& box = boxes[bone];
+        if (box.empty) {
+            continue;
+        }
+        for (unsigned corner = 0; corner < 8; ++corner) {
+            const anim::Vec3 p{(corner & 1U) != 0 ? box.max.x : box.min.x, (corner & 2U) != 0 ? box.max.y : box.min.y,
+                               (corner & 4U) != 0 ? box.max.z : box.min.z};
+            include(posed, anim::transformPoint(placed[bone], p));
+        }
+    }
+    return posed;
+}
+
+anim::Mat34 characterPlacement(anim::Vec3 feet, float heading, float lean) {
+    // The lean's roll about the forward (y) axis, then the heading about z, as columns: where each axis goes.
+    const float lc = std::cos(-lean);
+    const float ls = std::sin(-lean);
+    const float c = std::cos(heading);
+    const float s = std::sin(heading);
+    const anim::Mat34 roll{{lc, 0.0F, -ls}, {0.0F, 1.0F, 0.0F}, {ls, 0.0F, lc}, {}};
+    const anim::Mat34 turn{{c, s, 0.0F}, {-s, c, 0.0F}, {0.0F, 0.0F, 1.0F}, feet};
+    // Game axes into RenderWare's: (x, y, z) to (x, z, -y).
+    const anim::Mat34 toRenderWare{{1.0F, 0.0F, 0.0F}, {0.0F, 0.0F, -1.0F}, {0.0F, 1.0F, 0.0F}, {}};
+    return anim::multiply(toRenderWare, anim::multiply(turn, roll));
+}
+
+CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning)
+    : m_texture(texture), m_vertices(model.vertices) {
     if (m_texture != nullptr) {
         m_texture->addRef();
     }
     m_atomic = makeAtomic(model, m_texture, &characters::SkinVertex::texCoords);
     m_blood = makeAtomic(model, nullptr, &characters::SkinVertex::secondTexCoords);
+    const std::size_t nodes = model.clump.skin.inverseBind.size();
+    m_gpu = skinning == Skinning::Gpu && characterSkinOn() && nodes <= kMaxSkinBones;
+    if (!m_gpu) {
+        return;
+    }
+    // The shader's weights and bones, and each bone's box of the vertices it moves.
+    m_skin.weights.reserve(m_vertices.size());
+    m_skin.indices.reserve(m_vertices.size());
+    for (const characters::SkinVertex& vertex : m_vertices) {
+        std::array<float, 4> weights{};
+        std::array<std::uint8_t, 4> indices{};
+        for (std::size_t w = 0; w < characters::kVertexWeights && w < weights.size(); ++w) {
+            weights[w] = vertex.weights[w];
+            indices[w] = vertex.bones[w];
+        }
+        m_skin.weights.push_back(weights);
+        m_skin.indices.push_back(indices);
+    }
+    m_boxes = boneBoxes(model);
+    m_palette = std::make_unique<BonePalette>();
+    m_palette->fill(0.0F);
+    useCharacterSkin(m_atomic, m_skin, *m_palette);
+    useCharacterSkin(m_blood, m_skin, *m_palette);
 }
 
 CharacterMesh::~CharacterMesh() {
@@ -107,17 +184,85 @@ CharacterMesh::~CharacterMesh() {
 }
 
 void CharacterMesh::update(std::span<const anim::Vec3> positions, std::span<const anim::Vec3> normals) {
+    CONEY_ASSERT(!m_gpu);
     writePose(m_atomic, positions, normals);
     writePose(m_blood, positions, normals);
 }
 
-void CharacterMesh::pose(std::span<const anim::Mat34> /*skinning*/, const anim::Mat34& /*placement*/) {}
+void CharacterMesh::pose(std::span<const anim::Mat34> skinning, const anim::Mat34& placement) {
+    m_placed.resize(skinning.size());
+    for (std::size_t i = 0; i < skinning.size(); ++i) {
+        m_placed[i] = anim::multiply(placement, skinning[i]);
+    }
+    if (m_gpu) {
+        poseOnGpu(m_placed);
+    } else {
+        poseOnCpu(m_placed);
+    }
+}
 
-anim::Mat34 characterPlacement(anim::Vec3 /*feet*/, float /*heading*/, float /*lean*/) { return anim::Mat34{}; }
+void CharacterMesh::poseOnCpu(std::span<const anim::Mat34> placed) {
+    rw::Geometry* geometry = m_atomic->geometry;
+    CONEY_ASSERT(m_vertices.size() == static_cast<std::size_t>(geometry->numVertices));
+    geometry->lock(rw::Geometry::LOCKVERTICES | rw::Geometry::LOCKNORMALS);
+    rw::MorphTarget& target = geometry->morphTargets[0];
+    // Each vertex by its bones' matrices, which already hold the placement; the normal blended, then normalised.
+    for (std::size_t i = 0; i < m_vertices.size(); ++i) {
+        const characters::SkinVertex& vertex = m_vertices[i];
+        anim::Vec3 position;
+        anim::Vec3 normal;
+        for (std::size_t w = 0; w < characters::kVertexWeights; ++w) {
+            if (vertex.weights[w] == 0.0F) {
+                continue;
+            }
+            const anim::Mat34& matrix = placed[vertex.bones[w]];
+            position =
+                anim::add(position, anim::scale(anim::transformPoint(matrix, vertex.position), vertex.weights[w]));
+            normal = anim::add(normal, anim::scale(anim::transformDirection(matrix, vertex.normal), vertex.weights[w]));
+        }
+        target.vertices[i] = toRw(position);
+        target.normals[i] = toRw(anim::normalise(normal));
+    }
+    geometry->calculateBoundingSphere();
+    geometry->unlock();
+    m_atomic->boundingSphere = target.boundingSphere;
+    m_atomic->object.object.privateFlags |= rw::Atomic::WORLDBOUNDDIRTY;
+    // The blood layer takes the same vertices.
+    rw::Geometry* layer = m_blood->geometry;
+    layer->lock(rw::Geometry::LOCKVERTICES | rw::Geometry::LOCKNORMALS);
+    rw::MorphTarget& layerTarget = layer->morphTargets[0];
+    std::copy_n(target.vertices, geometry->numVertices, layerTarget.vertices);
+    std::copy_n(target.normals, geometry->numVertices, layerTarget.normals);
+    layerTarget.boundingSphere = target.boundingSphere;
+    layer->unlock();
+    m_blood->boundingSphere = target.boundingSphere;
+    m_blood->object.object.privateFlags |= rw::Atomic::WORLDBOUNDDIRTY;
+}
 
-std::vector<BoneBox> boneBoxes(const characters::CharacterModel& /*model*/) { return {}; }
-
-BoneBox posedBox(std::span<const BoneBox> /*boxes*/, std::span<const anim::Mat34> /*placed*/) { return {}; }
+void CharacterMesh::poseOnGpu(std::span<const anim::Mat34> placed) {
+    // The palette: each matrix column-major, as OpenGL takes it.
+    BonePalette& palette = *m_palette;
+    for (std::size_t i = 0; i < placed.size() && i < kMaxSkinBones; ++i) {
+        const anim::Mat34& m = placed[i];
+        const std::array<float, kBoneFloats> column{m.x.x, m.x.y, m.x.z, 0.0F, m.y.x, m.y.y, m.y.z, 0.0F,
+                                                    m.z.x, m.z.y, m.z.z, 0.0F, m.t.x, m.t.y, m.t.z, 1.0F};
+        std::ranges::copy(column, palette.begin() + static_cast<std::ptrdiff_t>(i * kBoneFloats));
+    }
+    // The world box round every bone's box as its matrix moves it (posedBox()). The sphere is the box's, as librw makes
+    // a sphere from the vertices' box: **Coney's choice**, a box a little larger than the vertices' own.
+    const BoneBox box = posedBox(m_boxes, placed);
+    const anim::Vec3 low = box.min;
+    const anim::Vec3 high = box.max;
+    rw::Sphere sphere{};
+    sphere.center = rw::V3d{(low.x + high.x) * 0.5F, (low.y + high.y) * 0.5F, (low.z + high.z) * 0.5F};
+    const anim::Vec3 half{(high.x - low.x) * 0.5F, (high.y - low.y) * 0.5F, (high.z - low.z) * 0.5F};
+    sphere.radius = std::sqrt((half.x * half.x) + (half.y * half.y) + (half.z * half.z));
+    for (rw::Atomic* atomic : {m_atomic, m_blood}) {
+        atomic->geometry->morphTargets[0].boundingSphere = sphere;
+        atomic->boundingSphere = sphere;
+        atomic->object.object.privateFlags |= rw::Atomic::WORLDBOUNDDIRTY;
+    }
+}
 
 void CharacterMesh::setBloodTexture(rw::Texture* texture) {
     if (texture == m_bloodTexture) {
