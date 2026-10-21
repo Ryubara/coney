@@ -242,7 +242,10 @@ coordinator, who pushes them when CI has room.
 - **An agent never pushes and never opens a pull request.** It commits on its branch and runs every local check that
   applies before calling a unit finished: `coney-tools build --test` for code, `uvx pre-commit run --all-files`, pytest,
   `mkdocs build --strict` ([The local gate](testing.md#local-gate)). CI should only ever find what the local
-  platform cannot see.
+  platform cannot see. A hook (`.claude/hooks/push_guard.py`) refuses `git push` and every `gh` command that writes
+  (a pull request, a comment, a label, a review, a merge, a rerun, `gh api` with a method other than GET) when a
+  subagent runs it; Claude Code marks a subagent's calls with an `agent_id`, so the coordinator's own session is never
+  refused.
 - **The unit is one pull request's worth,** not a whole task: one fix or feature with its tests and docs. For each,
   the agent writes the pull request's title and description (from `.github/pull_request_template.md`) to a file in
   its scratch folder (`PR.md`, or `PR-<n>.md` for several), messages the coordinator the branch, the commit range and

@@ -283,7 +283,8 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   with `issue create`, `edit` or `link` ([Filing an issue](#filing)), and only when the brief says to: the
   coordinator does the rest, from the same release queue as pull requests ([How we work](how-we-work.md)). An agent
   reports what it would say (the finding, the question for the reporter, the status change) in its message to the
-  coordinator.
+  coordinator. `.claude/hooks/push_guard.py` refuses a subagent's `gh` command that writes; `coney-tools issue` runs
+  `gh` itself, so filing stays possible when the brief allows it.
 - **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
