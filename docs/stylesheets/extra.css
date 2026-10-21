@@ -6,3 +6,9 @@
 
   --md-typeset-a-color: var(--md-accent-fg-color);
 }
+
+/* A Mermaid diagram (docs/guides/writing-docs.md, "Diagrams") keeps a readable size on a narrow screen and scrolls
+   sideways instead of shrinking its text (docs/javascripts/mermaid-elk.js sets the picture's minimum width). */
+.md-typeset div.mermaid {
+  overflow-x: auto;
+}

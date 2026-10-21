@@ -18,9 +18,11 @@ not_in_nav: |
 extra_css:
   - stylesheets/extra.css
   - stylesheets/home.css
-# The home page's scroll effect: docs/guides/writing-docs.md, "The home page".
 extra_javascript:
+  # The home page's scroll effect: docs/guides/writing-docs.md, "The home page".
   - javascripts/home.js
+  # Mermaid diagrams drawn with the ELK layout: docs/guides/writing-docs.md, "Diagrams".
+  - javascripts/mermaid-elk.js
 
 theme:
   name: material

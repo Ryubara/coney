@@ -3,9 +3,40 @@
 This page is the map of Coney's reverse-engineering process: what happens between the original game and a line of
 Coney code, which tools sit at each step, and how many people (or agents) work at once without stepping on each
 other. It stays high level and links to the guide that holds the detail. Read it first; read the linked guide when
-you are about to do that step. [How the work is run](#how-it-runs) explains who does what, for a newcomer.
+you are about to do that step. [How the work is run](#how-it-runs) explains who does what, for a newcomer, and
+[How the rules are enforced](#enforcement) shows which check stops what, from the first line of code to `main`. The
+diagrams on this page illustrate; the text beside each is the rule.
 
 ## The pipeline
+
+A piece of work travels from an issue to `main` like this:
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+  issue(["Issue"]) --> study["Study the original<br/>Ghidra and PCSX2,<br/>write the page"]
+  study --> port["Tests first,<br/>then port to Coney"]
+  port --> compare["Compare with<br/>the original"]
+  compare --> local["Local checks"]
+  local --> code["reviewer or<br/>research-reviewer"]
+  code --> desc["pr-reviewer<br/>reads the PR<br/>description"]
+  desc --> queue["Release queue"]
+  queue --> push["Coordinator<br/>pushes and<br/>opens the PR"]
+  push --> ci["CI required<br/>checks"]
+  ci --> merge["Squash merge"]
+  merge --> main(["main"])
+  code -. "findings" .-> port
+  ci -. "red: fixed forward" .-> push
+```
+
+*Figure: the road from an issue to `main`. Solid arrows are the usual way; dotted arrows are where a failure sends the
+work back.*
+
+The numbered steps below are the engineer's part (from the issue to the local checks). Everything after it is the
+[release queue](#release-queue) and [merging](#merging).
 
 Every feature goes through the same steps:
 
@@ -49,6 +80,39 @@ the techniques underneath).
 ## How the work is run {#how-it-runs}
 
 Coney is written by agents (AI models) under a maintainer, and a person can take any of the same roles. The parts:
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+  maint["Maintainer<br/>decides, can merge"]
+  tether["Tether<br/>wakes the coordinator"]
+  coord["Coordinator<br/>briefs, pushes, merges"]
+  subgraph teams ["Five standing teams"]
+    reimpl["Reimplementation"]
+    missions["Missions"]
+    bugs["Bug fixing"]
+    audit["Fidelity audit"]
+    steward["Repo steward"]
+  end
+  subgraph rev ["Reviewers, who report and never edit"]
+    r1["reviewer<br/>code, tests, docs"]
+    r2["research-reviewer<br/>research pages"]
+    r3["pr-reviewer<br/>PR descriptions"]
+  end
+  gh["GitHub<br/>CI and main"]
+  maint --> coord
+  tether --> coord
+  coord -- "briefs engineers" --> teams
+  teams -- "finished units" --> coord
+  coord -- "asks for reviews" --> rev
+  coord -- "pushes, merges" --> gh
+```
+
+*Figure: who does what. The maintainer decides, the coordinator runs the work, engineers in five standing teams do it,
+and reviewers check it; only the coordinator writes to GitHub.*
 
 - **The maintainer decides.** What only a maintainer may decide is a short list in [AGENTS.md](repo:AGENTS.md);
   everything else is decided by the coordinator or the engineer on the spot.
@@ -378,6 +442,52 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
   written into the guide where it applies, generally (why and the method), alongside its fix; briefs only point to
   it.
+
+## How the rules are enforced {#enforcement}
+
+A rule that only people remember gets broken, so each rule is checked by a program, and each check sits at the first
+place the mistake can be caught. The same checks run again further along, so a mistake that slips past one stage meets
+the next. Most of the pull request rules are read from one file, [.github/conventions.yml](repo:.github/conventions.yml),
+so the local check and the CI check never disagree ([Repository conventions](repo-conventions.md)).
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+  hooks["Claude Code hooks<br/>refuse the wrong<br/>command"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
+  pre --> gate["check changed<br/>what CI would<br/>fail on"]
+  gate --> text["check-title,<br/>check-body,<br/>check-docs"]
+  text --> stamp["pr-reviewer stamp,<br/>check-review"]
+  stamp --> push["Only the coordinator<br/>pushes"]
+  push --> ci["CI required<br/>checks"]
+  ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
+  rules --> main(["main"])
+  tether["Tether pull request guard<br/>wakes for a stuck PR"] -.-> push
+  conv[".github/conventions.yml<br/>one source of the rules"] -.-> text
+  conv -.-> ci
+```
+
+*Figure: the guards between a line of code and `main`, in the order a change meets them. Dotted arrows show where the
+rules are read from and what wakes the coordinator.*
+
+The guards, with the rule each one holds (the diagram only orders them):
+
+| Guard | What it refuses | Where it is documented |
+| --- | --- | --- |
+| Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a wait loop with no bound; an agent started with `isolation: "worktree"`; a `Co-Authored-By` trailer that names the wrong model | [Setting up an agent tool](agents.md#setup) |
+| pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
+| `coney-tools check changed` | What CI would fail on, for the files the change touched: the repository audit, pre-commit, clang-tidy, `mkdocs build --strict`, ruff, mypy and pytest | [The local gate](testing.md#local-gate) |
+| `repo check-title`, `check-body`, `check-docs` | A title that is not `area: Verb the rest`; a description that breaks the template; a change under `src/` or `python/src/` with no docs change and no `Docs: none` line | [Repository conventions](repo-conventions.md#workflows) |
+| `pr-reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
+| Release queue | An agent pushing: only the coordinator pushes, when CI has room | [Local first](#release-queue) |
+| Tether pull request guard | A pull request left with a failed required check, a conflict, a stuck check or auto-merge off: the `prs` poller (`repo pr-health`) wakes the coordinator | [Waking the coordinator](coney-tools.md#coord-wakes) |
+| CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint` | [What CI runs](building.md#what-ci-runs) |
+| Branch protection (GitHub ruleset on `main`) | A direct push; a merge before every required check passes; a merge that is not a squash | [Merging safely](#merging) |
+
+Issues are guarded the same way: the `issue_guard` hook, `coney-tools issue check` and the `issue-check` workflow
+([Issues](#issues)).
 
 ## Merging safely {#merging}
 
