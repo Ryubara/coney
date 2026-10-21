@@ -67,7 +67,7 @@ sections, so the pairs are sound. **Evidence:** inferred.
   GCC 2.x on the EE passes `this` in `a0` like any argument.
 - **Library code is named.** 580 functions (C runtime, XAPI, D3D, DirectSound) are named by signatures, so calls
   like `sprintf` and `strncpy` read as such; on the PS2, RenderWare, the SCE libraries and libc are unnamed until
-  a contributor names them.
+  an engineer names them.
 - **Floats and vectors.** Float code decompiles as plain `float` arithmetic; 21 of the 341 PS2 functions use VU0
   macro instructions, which decompile as opaque `in_vf0` registers.
 - **More anchors.** MSVC keeps one copy of `__FILE__` per use, so 338 functions in 141 files load a path, against
@@ -111,12 +111,12 @@ what PCSX2's debugger and PINE give together. Coney has no tooling for it, and a
 
 ## Recommendation {#recommendation}
 
-**Adopt the Xbox executable as an optional, read-only cross-reference for contributors; do not make it a reference
+**Adopt the Xbox executable as an optional, read-only cross-reference for engineers; do not make it a reference
 and do not build xemu tooling.** It is not easier overall: game code is equally unnamed, MSVC's register
 artefacts and lower function coverage offset the cleaner x86 output, and its layouts differ from the PS2's. It does
 pay off for string-heavy and float-heavy code: front end, audio cues, scripting glue, camera and other vector maths.
 There, opening the Xbox twin of a PS2 function first (found through a shared string) shows its literals,
-`this` argument and float expressions quickly. Contributors who do so cite only PS2 addresses as evidence and keep the
+`this` argument and float expressions quickly. Engineers who do so cite only PS2 addresses as evidence and keep the
 XBE project outside the repository.
 
 ## Open questions

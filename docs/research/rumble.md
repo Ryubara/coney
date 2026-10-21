@@ -432,8 +432,8 @@ human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-huma
 ([Tracing](../guides/running.md#tracing), [below](#coney)), and `coney-tools trace fight-report` compares the two by
 the rules of [What the comparison computes](#gang-battle-metrics).
 The scenarios are `repo:research/traces/scenarios/gang_battle.toml` and its mirror `gang_battle_swap.toml`
-([The sides swapped](#gang-battle-swap)); the traces are measurements of the game and stay in the scratch
-folder of whoever ran them.
+([The sides swapped](#gang-battle-swap)); the traces are measurements of the game and stay in the engineer's scratch
+folder.
 
 ### The set-up {#gang-battle-setup}
 
