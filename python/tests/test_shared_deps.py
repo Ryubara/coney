@@ -3,7 +3,6 @@
 base folder, and cmake/deps.cmake picks the version's folder under it on every configure from the pins alone, and
 locks it before it fetches."""
 
-import glob
 import re
 import shutil
 import subprocess
@@ -60,8 +59,8 @@ def _cmake() -> str | None:
     found = shutil.which("cmake")
     if found:
         return found
-    studio = "C:/Program Files*/Microsoft Visual Studio/*/*"
-    copies = sorted(glob.glob(studio + "/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"))
+    inside = "Microsoft Visual Studio/*/*/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
+    copies = sorted(str(path) for folder in Path("C:/").glob("Program Files*") for path in folder.glob(inside))
     return copies[-1] if copies else None
 
 
