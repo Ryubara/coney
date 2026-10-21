@@ -397,7 +397,7 @@ void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSou
     }
     door.slideStep = info != nullptr ? info->property6 * 2.0F : 0.0F;
     // The leaves by type name: the first at the door's pose, a second 2w along its x axis, turned about.
-    const auto* row = std::ranges::find(kSlidingRows, door.type, &SlidingRow::name);
+    const auto row = std::ranges::find(kSlidingRows, door.type, &SlidingRow::name);
     if (row != kSlidingRows.end()) {
         if (row->axisOneMore) {
             ++door.slideAxis;
