@@ -339,30 +339,7 @@ def game_files_pattern() -> re.Pattern[str]:
     return re.compile(hook["files"])
 
 
-@pytest.mark.parametrize(
-    "path",
-    [
-        "scratch/state.p2s",
-        "research/traces/run.trace",
-        "tests/fixtures/ram.dump",
-        "tests/fixtures/ram.BIN",
-        "SLUS_212.15",
-        "game/SLUS_212.15",
-        "The Warriors.iso",
-        "assets/a.wad",
-        "input.p2m2",
-        "Mcd001.ps2",
-        "warriors.gpr",
-        "HANDOFF.md",
-        "STATUS.md",
-        "docs/PR.md",
-        "PR-2.md",
-        "REVIEW.json",
-        "REVIEW.md",
-        "coney.local.toml",
-        ".coney-busy",
-    ],
-)
+@pytest.mark.parametrize("path", af.GAME_FILE_SAMPLES)
 def test_the_game_files_hook_refuses_game_data_and_local_records(path: str) -> None:
     assert game_files_pattern().search(path), path
 
@@ -387,14 +364,20 @@ def test_a_config_without_the_game_files_hook_is_found(root: Path) -> None:
 
 def test_a_game_files_hook_that_misses_a_capture_suffix_is_found(root: Path) -> None:
     edit(root, ".pre-commit-config.yaml", "p2s|", "")
-    (problem,) = found(af.game_files_refused, context(root))
-    assert ".p2s" in problem.message and "workspace.game_capture_suffixes" in problem.message
+    messages = [problem.message for problem in found(af.game_files_refused, context(root))]
+    assert any(".p2s" in message and "workspace.game_capture_suffixes" in message for message in messages)
 
 
 def test_a_game_files_hook_that_misses_the_busy_marker_is_found(root: Path) -> None:
     edit(root, ".pre-commit-config.yaml", r"|\.coney-busy", "")
+    problems = found(af.game_files_refused, context(root))
+    assert problems and all(".coney-busy" in problem.message for problem in problems)
+
+
+def test_a_game_files_hook_that_misses_a_local_record_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", "HANDOFF|STATUS|", "HANDOFF|")
     (problem,) = found(af.game_files_refused, context(root))
-    assert ".coney-busy" in problem.message
+    assert "STATUS.md" in problem.message and "GAME_FILE_SAMPLES" in problem.message
 
 
 def test_a_game_files_hook_with_an_exclude_is_found(root: Path) -> None:
@@ -405,6 +388,52 @@ def test_a_game_files_hook_with_an_exclude_is_found(root: Path) -> None:
     edit_yaml(root, ".pre-commit-config.yaml", add_exclude)
     (problem,) = found(af.game_files_refused, context(root))
     assert "`exclude`" in problem.message
+
+
+def game_files_hook(data: dict[str, Any]) -> dict[str, Any]:
+    """The no-game-files entry of a loaded pre-commit config."""
+    return next(hook for repo in data["repos"] for hook in repo["hooks"] if hook["id"] == af.GAME_FILES_HOOK)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("types", ["binary"]),
+        ("types_or", ["text"]),
+        ("exclude_types", ["binary"]),
+        ("stages", ["manual"]),
+        ("pass_filenames", False),
+    ],
+)
+def test_a_guard_narrowed_by_a_hook_setting_is_found(root: Path, key: str, value: object) -> None:
+    edit_yaml(root, ".pre-commit-config.yaml", lambda data: game_files_hook(data).update({key: value}))
+    edit_yaml(root, ".pre-commit-config.yaml", lambda data: large_file_hook(data).update({key: value}))
+    for check in (af.game_files_refused, af.large_file_limit_matches):
+        (problem,) = found(check, context(root))
+        assert key in problem.message
+
+
+def test_a_game_files_hook_that_is_not_language_fail_is_found(root: Path) -> None:
+    edit_yaml(root, ".pre-commit-config.yaml", lambda data: game_files_hook(data).update({"language": "pygrep"}))
+    (problem,) = found(af.game_files_refused, context(root))
+    assert "language: fail" in problem.message
+
+
+@pytest.mark.parametrize(
+    ("key", "value", "words"),
+    [
+        ("exclude", "^(assets/|LICENSE)", "top-level `exclude`"),
+        ("files", "^src/", "top-level `files`"),
+        ("default_stages", ["manual"], "default_stages"),
+    ],
+)
+def test_a_top_level_setting_that_hides_files_from_the_guards_is_found(
+    root: Path, key: str, value: object, words: str
+) -> None:
+    edit_yaml(root, ".pre-commit-config.yaml", lambda data: data.update({key: value}))
+    for check in (af.game_files_refused, af.large_file_limit_matches):
+        (problem,) = found(check, context(root))
+        assert words in problem.message
 
 
 # --- files.markdown-hook ------------------------------------------------------------------------------------------

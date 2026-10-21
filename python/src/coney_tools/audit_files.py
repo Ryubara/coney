@@ -318,6 +318,35 @@ def ci_scope_reads_the_file(context: FilesContext) -> Iterator[Problem]:
 
 #: The pre-commit hook that refuses game data and local records by name (`.pre-commit-config.yaml`).
 GAME_FILES_HOOK = "no-game-files"
+#: One path per kind of game data or local record the no-game-files hook names; it must refuse each.
+GAME_FILE_SAMPLES = (
+    "scratch/state.p2s",
+    "research/traces/run.trace",
+    "tests/fixtures/ram.dump",
+    "tests/fixtures/ram.BIN",
+    "SLUS_212.15",
+    "game/SLUS_212.15",
+    "The Warriors.iso",
+    "game/SLUS.elf",
+    "assets/a.wad",
+    "input.p2m2",
+    "Mcd001.ps2",
+    "warriors.gpr",
+    "warriors.rep/project.prp",
+    "HANDOFF.md",
+    "STATUS.md",
+    "docs/PR.md",
+    "PR-2.md",
+    "REVIEW.json",
+    "REVIEW.md",
+    "coney.local.toml",
+    ".coney-busy",
+)
+#: The pre-commit config's top-level `exclude`: only the licence texts, which no hook may rewrite (LEGAL.md). Any
+#: wider one would hide files from both guards; a new licence file changes this and the config together.
+LICENCE_EXCLUDE = r"^(LICENSE|docs/LICENSE|assets/sandbox/License\.txt)$"
+#: Keys that narrow which files a hook sees or when it runs; a guard against game data takes none of them.
+_NARROWING_KEYS = ("exclude", "types", "types_or", "exclude_types", "stages")
 
 
 def _pre_commit_hook(root: Path, hook_id: str) -> dict[str, Any] | None:
@@ -332,11 +361,27 @@ def _pre_commit_hook(root: Path, hook_id: str) -> dict[str, Any] | None:
     return None
 
 
-def _skips_files(hook: dict[str, Any], name: str) -> Iterator[Problem]:
-    """A problem for each key of `hook` that narrows the files it sees: such a guard must see every file."""
-    for key in ("exclude", "files") if name == "check-added-large-files" else ("exclude",):
+def _skips_files(root: Path, hook: dict[str, Any], name: str) -> Iterator[Problem]:
+    """A problem for each setting that narrows the files a guard sees or when it runs: the hook's own `exclude`,
+    `types`, `stages` (and `files` for check-added-large-files), `pass_filenames: false`, and a top-level `exclude`,
+    `files` or `default_stages` of the config. Such a guard must see every file on every commit."""
+    for key in (*_NARROWING_KEYS, "files") if name == "check-added-large-files" else _NARROWING_KEYS:
         if key in hook:
             yield Problem(PRE_COMMIT_CONFIG, f"{name} has `{key}`: never exclude a file from a game-data guard")
+    if hook.get("pass_filenames", True) is not True:
+        yield Problem(PRE_COMMIT_CONFIG, f"{name} has `pass_filenames: false`, so it sees no file")
+    data = _yaml(root, PRE_COMMIT_CONFIG)
+    config = data if isinstance(data, dict) else {}
+    if config.get("exclude", LICENCE_EXCLUDE) != LICENCE_EXCLUDE:
+        yield Problem(
+            PRE_COMMIT_CONFIG,
+            f"the top-level `exclude` hides more than the licence texts from {name}: it must be {LICENCE_EXCLUDE}",
+        )
+    if "files" in config:
+        yield Problem(PRE_COMMIT_CONFIG, f"has a top-level `files`, which narrows what {name} sees")
+    stages = config.get("default_stages")
+    if stages is not None and "pre-commit" not in (stages if isinstance(stages, list) else [stages]):
+        yield Problem(PRE_COMMIT_CONFIG, f"its `default_stages` leave out pre-commit, so {name} does not run on commit")
 
 
 @check("files.large-file-limit")
@@ -356,19 +401,21 @@ def large_file_limit_matches(context: FilesContext) -> Iterator[Problem]:
         return
     if "--enforce-all" not in (hook.get("args") or []):
         yield Problem(PRE_COMMIT_CONFIG, "check-added-large-files lacks --enforce-all, so a committed file is not seen")
-    yield from _skips_files(hook, "check-added-large-files")
+    yield from _skips_files(context.root, hook, "check-added-large-files")
 
 
 @check("files.game-files")
 def game_files_refused(context: FilesContext) -> Iterator[Problem]:
-    """pre-commit's no-game-files hook refuses every file type of `workspace.game_capture_suffixes` and the busy
-    marker, and excludes nothing."""
+    """pre-commit's no-game-files hook fails (`language: fail`) on every path of `GAME_FILE_SAMPLES`, every file type
+    of `workspace.game_capture_suffixes` and the busy marker, and nothing narrows the files it sees."""
     hook = _pre_commit_hook(context.root, GAME_FILES_HOOK)
     if hook is None:
         yield Problem(
             PRE_COMMIT_CONFIG, f"has no {GAME_FILES_HOOK} hook, so a small file of game data can be committed"
         )
         return
+    if hook.get("language") != "fail":
+        yield Problem(PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK} must have `language: fail`, so every file it sees fails")
     try:
         pattern = re.compile(str(hook.get("files", "")))
     except re.error as error:
@@ -385,7 +432,10 @@ def game_files_refused(context: FilesContext) -> Iterator[Problem]:
         yield Problem(
             PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK} does not refuse {workspace.busy_marker} (workspace.busy_marker)"
         )
-    yield from _skips_files(hook, GAME_FILES_HOOK)
+    for sample in GAME_FILE_SAMPLES:
+        if not pattern.search(sample):
+            yield Problem(PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK} does not refuse {sample} (GAME_FILE_SAMPLES)")
+    yield from _skips_files(context.root, hook, GAME_FILES_HOOK)
 
 
 @check("files.markdown-hook")
