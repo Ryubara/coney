@@ -169,8 +169,11 @@ default mode.
 Every HUD count of a gang's members passes **1** as `Gang_CountLiving`'s second argument, so the marks show the
 members that are **standing**, not every member that still exists. **Evidence:** confirmed (code) at each call
 site below. Because both the indicator and the panel recount every update, a member who is knocked out or tackled
-loses his mark while he is down and gets it back when he is up again (inferred from the recount and the state test;
-not watched in PCSX2).
+loses his mark while he is down, health or not: confirmed (runtime) on 2026-10-20, a WAR PARTY (Furies against
+Orphans, five a side, every fighter on the AI) watched in PCSX2, the Orphans' indicator (`+0xc40`) dropped in the
+same update as each member went down by state (5 to 4 to 3 to 2 over 4,500 updates) and showed 3 while all 5 still
+had health, one of them tackled with 250 health left and one knocked out with 1. That he gets the mark back when he
+is up again is inferred from the recount (not seen in that run).
 
 | Call | Caller | Argument |
 | --- | --- | --- |
