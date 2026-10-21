@@ -426,7 +426,7 @@ Warned warnedAt(std::string_view button, float distance, float bystanderDistance
     const coney::test::FightCharacter character(movingClips());
     coney::test::Fight fight(character, 60.0F);
     coney::human::TargetHuman& bystander = fight.addTarget(character, 70.0F, 0.0F);
-    const int start = startOf(button);
+    const int start = kPress; // with L2 held, cross (the charge) starts on its press, as square does
     fight.run(script(0, 100, button, true), 90, [&](std::uint64_t frame) {
         if (static_cast<int>(frame) != start - 1) {
             return;
@@ -461,9 +461,14 @@ TEST_CASE("the dive warns the human its own search dives at, not the nearest one
 
 TEST_CASE("the charge of a player with no target warns the one his search finds, and no one else",
           "[human][combat][moving]") {
-    // docs/research/combat.md#charge-aim: the charge takes no target, but warns the human ahead its search picks; a
+    // docs/research/combat.md#charge-aim: the charge takes no target, but warns the nearest human its reach search
+    // finds (Player_StartCharge's Attack_FindNearestInReach, between the charge's reach and far range, 3.29-4.11 m); a
     // bystander 6 m off to the side is not warned.
-    const Warned charge = warnedAt("cross", 2.0F, 2.0F, 6.0F);
+    const Warned charge = warnedAt("cross", 3.7F, 2.0F, 6.0F);
     CHECK(charge.target == 1);
     CHECK(charge.bystander == 0);
+    // A human inside the reach is not in the band: no one is warned.
+    const Warned inside = warnedAt("cross", 2.0F, 2.0F, 6.0F);
+    CHECK(inside.target == 0);
+    CHECK(inside.bystander == 0);
 }
