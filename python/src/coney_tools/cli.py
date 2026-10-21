@@ -632,6 +632,12 @@ def _add_claim_commands(commands: Any) -> None:
     status = commands.add_parser("status", help="who holds each PCSX2 copy and whether its PCSX2 runs")
     status.add_argument("--json", action="store_true", help="print JSON instead of a table")
     status.add_argument("--max-age-hours", type=float, help="a claim with no process is stale after this (default 4)")
+    check = commands.add_parser(
+        "check-ports", help="exit 2 unless the ports are those of a copy you hold (the check the pcsx2 MCP guard makes)"
+    )
+    check.add_argument("--agent", required=True, help="your id (must hold the claim)")
+    check.add_argument("--debug-port", type=int, help="the debug server port you are about to connect to")
+    check.add_argument("--pine-port", type=int, help="the PINE port you are about to connect to")
     keys = commands.add_parser("keys", help="post keys to a claimed copy's window by handle (never takes focus)")
     keys.add_argument("--agent", required=True, help="your id (must hold the claim)")
     keys.add_argument("--copy", required=True, help="the copy")
@@ -929,6 +935,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         return pcsx2_claims_cli.run_release(args.agent, args.copy, args.force)
     if args.command == "status":
         return pcsx2_claims_cli.run_status(args.json, args.max_age_hours)
+    if args.command == "check-ports":
+        return pcsx2_claims_cli.run_check_ports(args.agent, args.debug_port, args.pine_port)
     if args.command == "keys":
         return pcsx2_claims_cli.run_keys(args.agent, args.copy, args.keys, args.hold_ms, args.gap_ms)
     if args.command == "screenshot":

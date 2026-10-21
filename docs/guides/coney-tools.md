@@ -527,6 +527,7 @@ command that starts PCSX2 needs one.
 uv run --project python coney-tools pcsx2 claim --agent ID [--copy NAME] [--json]
 uv run --project python coney-tools pcsx2 release --agent ID [--copy NAME] [--force]
 uv run --project python coney-tools pcsx2 status [--json]
+uv run --project python coney-tools pcsx2 check-ports --agent ID [--debug-port N] [--pine-port N]
 ```
 
 `claim` takes a free copy (or the named one) atomically and prints its folder, PINE port and debug server port (a line
@@ -543,6 +544,14 @@ ports, whether PCSX2 runs (by pid or by either port) and stale claims; it warns 
 `../../emulators`); two copies on one port (PINE or debug server) are refused, naming both. The claims are under
 `pcsx2_claims_dir` (default: `pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`,
 whatever a worktree's `scratch_dir` says, so every worktree sees the same claims).
+
+**A port is only a number, and every copy's ports are readable** (`status`, the ini), so nothing may act on ports it
+did not get from its own claim. `check-ports` succeeds (and prints `ok: ID holds NAME`) only when the ports given are
+the debug server and PINE ports of one copy whose live claim ID holds, and exits 2 naming the holder otherwise
+(`Registry.require_ports`, the check everything else below calls). From a script, `DebugClient.claimed("ID")`
+(`coney_tools.debug_server`) connects to the debug port of the claim ID holds and to no other. For the shared `pcsx2`
+MCP server, a hook makes the same check before `pcsx2_connect` and keeps one connection per session
+([The PCSX2 MCP guard](agents.md#pcsx2-guard)).
 
 ```sh
 uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]

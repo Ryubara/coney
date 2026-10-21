@@ -33,11 +33,43 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*coney-tools pcsx2*)",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "PowerShell(*coney-tools pcsx2*)",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "Agent",
         "hooks": [
           {
             "type": "command",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/agent_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__pcsx2__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
             "timeout": 10
           }
         ]

@@ -21,7 +21,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `engineer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/release_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/release_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call, and their `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
@@ -44,7 +44,7 @@ the debug server serves several clients, but PCSX2's PINE serves one, and an MCP
 own calls and nothing else uses the copy, and never leave the ports out: the defaults (21512, 28011) are copy
 `pcsx2`'s, someone else's game. An agent tool that starts one server per agent can run
 `coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's ports to the server as `pcsx2_connect`'s defaults
-([`mcp`](coney-tools.md#mcp)). What the tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
+([`mcp`](coney-tools.md#mcp)). **A hook enforces this** ([below](#pcsx2-guard)). What the tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
 guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which
@@ -300,6 +300,39 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
 - The local gate's clang-tidy waits in the same way, for a slot of the tidy lane: at most 40 minutes in a call you
   wait on, then exit 75. `coney-tools check changed --detach` runs the whole gate in the background; whoever continues
   runs `coney-tools check result` in the worktree ([`check`](coney-tools.md#check)).
+
+## The PCSX2 MCP guard {#pcsx2-guard}
+
+The `pcsx2` MCP server is one process for a whole agent session, so every agent in it (the coordinator and its
+subagents) shares **one connection**. On 2026-10-21 that cost two runs: one agent's connection moved from copy `pcsx2`
+to `pcsx2-b` in the middle of its work and a memory write landed in the other agent's game, and another agent's
+`pcsx2_pause` held a neighbour's emulator for 10 to 20 seconds. Prose does not stop that, so a hook does
+(`.claude/hooks/pcsx2_guard.py`, the rules in `repo:python/src/coney_tools/pcsx2_guard.py`):
+
+- **Connect only to your claim.** `pcsx2_connect` is refused unless the ports it needs for its `mode` are given
+  (`debug_port` and `pine_port` for `auto`, `debug_port` for `debug`, `pine_port` for `pine`), are the ports of one
+  copy, and that copy's live claim is held by an id you used in a `coney-tools pcsx2 ... --agent <id>` command. The
+  hook reads that id from your shell commands, so run `coney-tools pcsx2 claim --agent <your id>` in a shell first
+  (it hands your existing claim back); that is also how it knows who you are after a resume. The ports of a copy
+  nobody claimed, of a stale claim and of a copy another agent holds are refused, naming the holder.
+- **One connection per session, one user.** The last allowed `pcsx2_connect` makes its caller the holder of the
+  session's connection. While it holds it, every other `pcsx2_*` tool is refused to everyone else, and so is their
+  `pcsx2_connect`. The connection frees up when the holder releases its copy, loses its claim, or leaves it unused for
+  15 minutes; any use of the tools renews it. Calling a tool without a connection of your own on record is refused
+  with the instruction to connect first.
+- **Passing:** `pcsx2_status` and the `ps2recomp_*` tools always pass, and the guard does nothing on a machine with
+  no PCSX2 copies set up, in a payload without a session id or when it fails itself.
+
+So an agent that needs its emulator while another holds the shared connection does not wait for it or take it over: it
+uses the tools that are bound to its own claim and need no shared server, `coney-tools pcsx2 ...` (`record`, `recipe`,
+`clip`, `launch`, `keys`) and, from a script, `DebugClient.claimed("<your id>")` (`coney_tools.debug_server`), which
+connects to the debug server of the claim you hold and refuses any other. `coney-tools pcsx2 check-ports --agent <id>
+--debug-port N --pine-port M` makes the same check on a pair of ports before you point anything at them.
+
+Once connected, call `pcsx2_status` before the first write of a task and after a long pause: it shows the connection
+and the game it is connected to, and is the one thing the guard cannot check for you. Follow-up, in the PCSX2-MCP fork
+(the maintainer's, outside this repository): pin a connection per caller, or refuse `pcsx2_connect` while another
+caller's connection is in use, so the guard no longer has to stand in front of a server that cannot tell callers apart.
 
 ## Bounded waits {#bounded-waits}
 
