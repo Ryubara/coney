@@ -995,31 +995,37 @@ yet), a marked stand-in in the code. A first version took `c` against the direct
 a fall points down along the velocity (`c` near 1), and the synthetic test's lag only reached 0.141 with the aim point
 8.8 m above the look-at point; read against the view toward the aim point it passes.
 
-After the fix (Coney's `--trace`, 2026-10-21, the same four falls from `level99` checkpoint 1's yard with the noclip
-rise, the stick at rest; the original's from the table above):
+The camera's own height was a second difference: Coney's pitch step turned the wanted position toward its target at
+most 85°/s, so in a fall the leash dragged it up its line to the falling look-at point and the camera ended almost
+overhead (84-87° above the look-at point, against the original's 52-62°). The original's update step 11 turns the
+wanted position the whole way to the target pitch every update (`0x0012d4e8` called at `0x0012beac`, the pitch measured
+by `0x0012d908`; confirmed (code), [update](#update)); the 85°/s is only step 16's return without a stick. Coney now
+does the same (`FollowCamera::update()`).
+
+After both fixes (Coney's `--trace`, 2026-10-21, the same four falls from `level99` checkpoint 1's yard with the noclip
+rise, the stick at rest; the original's from the table above). The view pitch is the highest before the last three
+updates in the air, in both traces:
 
 | Rise | Highest lag (Coney / original) | Aim point above look-at | View pitch | Camera pitch |
 | --- | --- | --- | --- | --- |
-| 20 m | 0.162 / 0.153 | 4.0 / 4.2 m | at most level / 15.5° | 78.0° / 41.9° |
-| 40 m | 0.179 / 0.189 | 5.2 / 4.8 m | 16.3° / 14.0° | 84.4° / 51.5° |
-| 70 m | 0.182 / 0.193 | 6.9 / 6.2 m | 71.8° / 36.9° | 86.2° / 59.1° |
-| 120 m | 0.182 / 0.193 | 8.6 / 7.6 m | 81.3° / 55.2° | 86.7° / 61.8° |
+| 20 m | 0.172 / 0.153 | 3.6 / 4.2 m | 8.5° / 15.3° | 43.1° / 41.9° |
+| 40 m | 0.192 / 0.189 | 4.6 / 4.8 m | 10.5° / 11.4° | 52.1° / 51.5° |
+| 70 m | 0.196 / 0.193 | 6.0 / 6.2 m | 31.3° / 32.9° | 58.9° / 59.1° |
+| 120 m | 0.196 / 0.193 | 7.5 / 7.6 m | 53.9° / 54.8° | 61.3° / 61.8° |
 
-Before it, the 40 m fall gave a lag of 0.060, the aim point 14.4 m up and the view 84.8° up. The aim point now
-behaves as the original's; **the camera's own height does not** (an open question, inferred from the traces): the
-original's wanted position stays low while he falls (0.43 m above the look-at point and 3.5 m out in plan at 40 m, a
-pitch of about 7°), so its camera, lagging 22% an update behind it, climbs to about 52-62° above the look-at point.
-Coney's wanted position is dragged up by the leash along its line to the falling look-at point (3.4 m above it and
-0.7 m out in plan at the end of the 40 m fall), so the camera ends almost overhead (84-87°), and from about 70 m the
-view tilts up further than the original's. Which step keeps the original's wanted position at its pitch in a fall
-(the pitch toward its target at 85°/s cannot turn it 18° an update) is not yet read.
- The test, in `repo:tests/camera/follow_camera_test.cpp`: a synthetic
-follow-camera test with the target falling straight down 1.167 m an update (35 m/s) for 70 updates from rest: the lag
-passes 0.18 and the aim point stays under 5 m above the look-at point (the trace: 0.188 and 4.7 m at step 72), and
-the view's pitch with the camera held 3.5 m away at the look-at height stays under 60°. A disc test,
-`repo:tests/platform/disc_fall_camera_test.cpp`, plays the same 40 m fall in `level99` checkpoint 3 through the game
-session. The overshoot test also applies at a run, so the `walk60` and `run_circle` diffs are worth rerunning (the
-runtime lag there is 0.14-0.16).
+Before the fixes, the 40 m fall gave a lag of 0.060, the aim point 14.4 m up and the view 84.8° up. Over the 40 m
+fall the lag and the aim point's height stay within 0.01 and 0.15 m of the original's at every update. **Open
+question** (inferred from the traces): in the last one or two updates before he lands, Coney's view tips up to
+43-68° while the original's stays where it was (14° at 40 m); what the original does to the camera on the landing
+update is not yet read.
+
+The tests: in `repo:tests/camera/follow_camera_test.cpp`, a synthetic follow camera with the target falling straight
+down from rest, gaining 0.52 m/s an update up to 35 m/s, for 70 updates: the lag passes 0.18 and the aim point stays
+under 5 m above the look-at point, and the wanted position keeps the target pitch, so the camera stays under 65° above
+the look-at point. A disc test, `repo:tests/platform/disc_fall_camera_test.cpp`, plays the same 40 m fall in `level99`
+checkpoint 3 through the game session, once the follow camera has the view back from the checkpoint's opening scene
+and the street end's locked camera (0.192 and 4.70 m). The overshoot test also applies at a run, so the `walk60` and
+`run_circle` diffs are worth rerunning (the runtime lag there is 0.14-0.16).
 
 ### Climbs {#climbs}
 
@@ -3358,6 +3364,9 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
 
 ## Open questions
 
+- **The landing update after a long fall**: in the last one or two updates in the air Coney's view tips up to
+  43-68°, while the original's stays where it was ([Long falls](#long-fall-coney)). Inferred from the traces; what the
+  original's follow camera does on the landing update is not yet read.
 - **Look-behind in a fight** (answered, [Looking behind](#reverse)): R1 turns the view round only while the player
   runs or sprints (gait 4 or 5, record `+0x08` clear), so never while he blocks or walks locked on. Confirmed (code)
   at `0x0012b4a0`; a runtime check (R1 held at a standstill, at a walk and at a run) is still to be made.
