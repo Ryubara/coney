@@ -58,13 +58,11 @@ first hour; the rest of this file is for agents.
 
 ## Code
 
-- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides layout;
-  no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
-- Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
-  A gameplay function with no original counterpart says `@coney-only <reason>`; `orig check` refuses one that says
-  neither (`conventions.md#coney-only`).
-- A Coney-only capability a script could use joins the native-candidates registry:
-  `conventions.md#coney-only-capabilities`.
+- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides
+  layout; no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants
+  `CONEY_ASSERT`.
+- Reimplemented code cites the original (`@orig 0x<addr> <Name> (<File>.cpp)` and its research page); other gameplay
+  code says `@coney-only <reason>`, and a capability a script could use is registered: `conventions.md#coney-only`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,
   private members, long lambdas) and before each step of a long one; comments explain *why*, briefly.
 - Keep the test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
