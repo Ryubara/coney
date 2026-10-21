@@ -112,3 +112,34 @@ TEST_CASE("GoalTrackHuman walks to its slot, and without a slot only turns to th
     tracker.flush();
     CHECK(tracker.following() == nullptr);
 }
+
+TEST_CASE("a follower who joins or leaves has the formation planned again before its next slot is read",
+          "[ai][formations]") {
+    // docs/research/ai-gangs.md#formations: joining and leaving set the formation's replan byte (+0x274), and reading a
+    // follower's slot or the human it queues behind plans first while it is set (Formation_GetSlotPoint 0x00296358,
+    // Formation_GetAhead 0x002963b0), so a follower takes his slot on the update he joins, not at the next plan time.
+    AiScene scene;
+    Brain& leader = scene.player();
+    Formation& formation = *scene.brains.formations().of(leader, true);
+    formation.setSlotCount(1, -1, 0);
+    formation.setSlot(0, 2.0F, 0.0F, 0, 0); // planned now, with nobody to place: the next plan is 2 s away
+    REQUIRE(formation.nextPlanMs() == coney::ai::kPlanOtherMs);
+
+    Brain& first = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    REQUIRE(formation.join(first));
+    const std::optional<coney::ai::FollowPoint> joined = formation.followPoint(first, 0.75F);
+    REQUIRE(joined.has_value());
+    CHECK(joined->slot);
+    CHECK(near(joined->point, {42.0F, 40.0F, 0.0F}));
+
+    // A second follower queues; once the first leaves, the second's next query plans and gives him the slot.
+    Brain& second = scene.add({36.0F, 40.0F, 0.0F}, 0.0F);
+    REQUIRE(formation.join(second));
+    REQUIRE(formation.followPoint(second, 0.75F).has_value());
+    CHECK_FALSE(formation.followPoint(second, 0.75F)->slot);
+    formation.leave(first);
+    const std::optional<coney::ai::FollowPoint> moved = formation.followPoint(second, 0.75F);
+    REQUIRE(moved.has_value());
+    CHECK(moved->slot);
+    CHECK(near(moved->point, {42.0F, 40.0F, 0.0F}));
+}

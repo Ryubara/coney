@@ -241,9 +241,12 @@ the disc checks print counts only).
    behind it, so a move with no route now slows for the turn onto its point (`MoveAction::turnLimit`, the circle part
    of [the corner speed](ai-moving.md#corner-speed); the rest is item 7); and arrival is now in 3D (in plan within 1
    m), so a follower below the crate stack no longer counts as arrived on top of it. The `level80` disc test passes:
-   12.81 m/s asked, no follow within 9 m in line, both stand when the player stands, the crate stack climbed. One gap
-   stays: on the run-in Coney's walkable line runs from the landing to the street, so the crew runs off the landing
-   instead of taking the stairs (issue #315; the test prints whether a route was planned). A follower crossing a
+   12.81 m/s asked, no follow within 9 m in line, both stand when the player stands, the crate stack climbed. Issue #315
+   (the crew seemed to run off the landing because no route was planned) was a misreading: the stairs run straight in
+   plan, the original's straight line follows them too and only Vermin's move made a route, to a slot point in the
+   stairs' own area; both games' crews take both flights ([the stairs](ai-gangs.md#warrior-follow)). What did differ
+   was the first move's point: a follower who joins now takes his slot at once (the replan byte,
+   [Formations](ai-gangs.md#formations)), and the test checks both. A follower crossing a
    fence the player jumped ran into it before climbing (issue #236): the fast climber's early climb
    (`Route_TryClimbNear`, #269) fixes that, and a `level80` disc test puts the player 6 m past the kind-8 fence of
    nodes 396-403 and checks that both followers climb with fewer updates against it than a failed climb's 31 tries.

@@ -95,14 +95,15 @@ class Formation {
     /// for a slot or set out of range.
     void setDefaultSlot(int slot, float x, float y, int set);
 
-    /// `follower` joins (a free follower entry, its brain's formation set). Returns false when it is full.
+    /// `follower` joins (a free follower entry, its brain's formation set) and asks for a plan before the next slot is
+    /// read. Returns false when it is full.
     /// @orig 0x00295f28 Formation_Join (unknown)
     bool join(Brain& follower);
-    /// `follower` leaves.
+    /// `follower` leaves, which asks for a plan as joining does.
     /// @orig 0x00296028 Formation_Leave (unknown)
     void leave(Brain& follower);
 
-    /// One step at `nowMs`: plans when the leader has just stopped, at the plan time, or once he is kPlanMoveDistance
+    /// One step at `nowMs`: plans when a plan was asked for (a follower joined or left, or the leader has just stopped), at the plan time, or once he is kPlanMoveDistance
     /// from the planned spot; nothing without followers.
     /// @orig 0x002956d0 Formation_Plan (unknown)
     void update(std::uint64_t nowMs);
@@ -120,11 +121,15 @@ class Formation {
     /// otherwise the position of the human it queues behind (the follower ahead of it in the queue, or the leader)
     /// within kQueueFollowRadius, that human's speed then standing in for the leader's. Nothing when it does not follow
     /// this formation.
+    /// A follower joining or leaving asks for a plan, and this plans first when one is asked for (the replan byte
+    /// `+0x274`), so a newcomer takes his slot on the update he joins (docs/research/ai-gangs.md#formations).
     /// @orig 0x00295e38 Formation_GetFollowPoint (unknown)
     /// @orig 0x002963b0 Formation_GetAhead (unknown)
-    [[nodiscard]] std::optional<FollowPoint> followPoint(const Brain& follower, float arrival) const;
-    /// `follower`'s slot point in the world, m; nothing when it has no slot.
-    [[nodiscard]] std::optional<anim::Vec3> slotPoint(const Brain& follower) const;
+    [[nodiscard]] std::optional<FollowPoint> followPoint(const Brain& follower, float arrival);
+    /// `follower`'s slot point in the world, m; nothing when it has no slot. Plans first when a plan is asked for, as
+    /// followPoint() does.
+    /// @orig 0x00296358 Formation_GetSlotPoint (unknown)
+    [[nodiscard]] std::optional<anim::Vec3> slotPoint(const Brain& follower);
     /// `follower`'s entry; null when it does not follow.
     [[nodiscard]] const Follower* follower(const Brain& brain) const;
     /// The followers, the set in use, the slot count and the followers allowed in slots.
@@ -147,6 +152,9 @@ class Formation {
     // kRetargetQueueRadius (docs/research/ai-gangs.md#follow-retarget).
     // @orig 0x00295250 Formation_RetargetFollowerMoves (unknown)
     void retargetMoves();
+    // Plans at the leader's time when a follower's joining or leaving (or the leader stopping) asked for a plan and
+    // somebody follows: the replan byte's test at the top of Formation_GetSlotPoint and Formation_GetAhead.
+    void planIfAsked();
 
     Brain* m_leader;
     std::array<std::array<FollowSlot, kFormationSlots>, kFormationSets> m_sets{};
@@ -156,7 +164,7 @@ class Formation {
     float m_planHeading = 0.0F;            // +0x230
     float m_lastSpeed = 0.0F;              // +0x240
     std::uint64_t m_nextPlanMs = 0;        // +0x248
-    bool m_stopped = false;                // +0x274
+    bool m_replan = false;                 // +0x274: plan before the next slot is read
     int m_set = 0;                         // +0x270
     int m_slotCount = kDefaultFollowSlots; // +0x271
     int m_allowed = kDefaultFollowSlots;   // +0x272

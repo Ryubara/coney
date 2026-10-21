@@ -78,11 +78,16 @@ bool Formation::join(Brain& follower) {
     }
     m_followers.push_back(Follower{.brain = &follower});
     follower.setFollowing(this);
+    // The next read of a slot plans first, so the newcomer takes his slot at once.
+    m_replan = true;
     return true;
 }
 
 void Formation::leave(Brain& follower) {
-    std::erase_if(m_followers, [&follower](const Follower& f) { return f.brain == &follower; });
+    // Removing an entry asks for a plan, as joining does (Formation_RemoveFollowerAt 0x00294c98).
+    if (std::erase_if(m_followers, [&follower](const Follower& f) { return f.brain == &follower; }) > 0) {
+        m_replan = true;
+    }
     for (Follower& entry : m_followers) {
         if (entry.behind == &follower) {
             entry.behind = nullptr;
@@ -100,18 +105,18 @@ void Formation::update(std::uint64_t nowMs) {
     // The leader has just stopped.
     const float speed = std::hypot(m_leader->human().velocity().x, m_leader->human().velocity().y);
     if (speed <= kStoppedSpeed && m_lastSpeed >= kStoppedSpeed) {
-        m_stopped = true;
+        m_replan = true;
     }
     m_lastSpeed = speed;
     const bool moved =
         planDistanceSquared(m_leader->human().position(), m_planPoint) >= kPlanMoveDistance * kPlanMoveDistance;
-    if (m_stopped || m_nextPlanMs <= nowMs || moved) {
+    if (m_replan || m_nextPlanMs <= nowMs || moved) {
         plan(nowMs);
     }
 }
 
 void Formation::plan(std::uint64_t nowMs) {
-    m_stopped = false;
+    m_replan = false;
     const human::Human& leader = m_leader->human();
     // 1. When to plan next, and from where: 2 m ahead while the leader runs.
     m_nextPlanMs = nowMs + (leader.gait() == human::Gait::Walk ? kPlanWalkingMs : kPlanOtherMs);
@@ -245,7 +250,14 @@ void Formation::assign() {
     }
 }
 
-std::optional<anim::Vec3> Formation::slotPoint(const Brain& follower) const {
+void Formation::planIfAsked() {
+    if (m_replan && !m_followers.empty()) {
+        plan(m_leader->nowMs());
+    }
+}
+
+std::optional<anim::Vec3> Formation::slotPoint(const Brain& follower) {
+    planIfAsked();
     const Follower* entry = this->follower(follower);
     if (entry == nullptr || entry->slot < 0) {
         return std::nullopt;
@@ -254,7 +266,8 @@ std::optional<anim::Vec3> Formation::slotPoint(const Brain& follower) const {
     return anim::Vec3{toMetres(slot.point[0]), toMetres(slot.point[1]), toMetres(slot.point[2])};
 }
 
-std::optional<FollowPoint> Formation::followPoint(const Brain& follower, float arrival) const {
+std::optional<FollowPoint> Formation::followPoint(const Brain& follower, float arrival) {
+    planIfAsked();
     const Follower* entry = this->follower(follower);
     if (entry == nullptr) {
         return std::nullopt;

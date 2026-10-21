@@ -247,7 +247,7 @@ void FollowFormationGoal::start(Brain& brain) {
 GoalStatus FollowFormationGoal::process(Brain& brain) {
     // 1. Done when it no longer follows, the leader is gone, the last move failed (the follow goal waits it out) or
     // its time is up.
-    const Formation* formation = brain.following();
+    Formation* formation = brain.following();
     if (formation == nullptr || formation->leader().human().outOfWorld() || brain.moveFailure() != MoveFailure::None ||
         (m_limitMs != 0 && brain.nowMs() - m_startMs >= m_limitMs)) {
         return GoalStatus::Done;

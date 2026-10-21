@@ -1007,10 +1007,28 @@ TEST_CASE(
     int pushedNear = 0;
     int pushedFar = 0;
     std::vector<bool> wasFollowing(8, false);
+    // The run-in down the landing's stairs (docs/research/ai-gangs.md#warrior-follow, "The stairs"): how far each
+    // Warrior's first follow move's point lies from the chief, whether he was seen on the half landing (z 2.43,
+    // y 114.8-118.7), and whether any Warrior fell.
+    std::vector<std::optional<float>> firstMoveOff(8);
+    std::vector<bool> halfLanding(8, false);
+    bool airborne = false;
+    bool runIn = true;
     const auto watch = [&](const FollowingCrew& at) {
         for (std::size_t k = 0; k < at.crew.size() && k < wasFollowing.size(); ++k) {
             coney::ai::Brain& warrior = *at.crew[k];
             const bool following = followingFormation(warrior);
+            if (runIn) {
+                const coney::anim::Vec3 feet = warrior.human().position();
+                constexpr float kHalfLandingZ = 2.43F;
+                halfLanding[k] = halfLanding[k] ||
+                                 (feet.y > 114.8F && feet.y < 118.7F && std::abs(feet.z - kHalfLandingZ) < 0.1F);
+                airborne = airborne || warrior.human().traversal() == coney::human::Traversal::Falling;
+                const auto* first = dynamic_cast<const coney::ai::MoveAction*>(warrior.frontAction());
+                if (following && first != nullptr && !firstMoveOff[k]) {
+                    firstMoveOff[k] = coney::anim::distance(first->request().point, at.chief->human().position());
+                }
+            }
             if (following && !wasFollowing[k]) {
                 const coney::ai::RoutePlanner* planner = warrior.planner();
                 const bool inLine =
@@ -1037,12 +1055,22 @@ TEST_CASE(
     for (const coney::anim::Vec3 feet : run.atLetsGo) {
         startHeight = std::max(startHeight, feet.z - chief->human().position().z);
     }
-    // **Known difference** (not checked): the original's Warriors planned a route down the landing's stairs; Coney's
-    // walkable line passes from the landing to the street, so they run straight.
     std::printf("  level80 follow: run-in from %.1f m up asked up to %.2f m/s (1.25 x sprint %.2f), route %s\n",
                 static_cast<double>(startHeight), static_cast<double>(fastest), static_cast<double>(1.25F * sprint),
                 routed ? "planned" : "none");
     CHECK(fastest > 1.25F * sprint - 0.01F);
+    // Both took the stairs on their feet, by the half landing, as the original's crew does; and each ran to his slot
+    // from his first move (the original's lie 1.6 m from the chief), not to the chief himself (issue #315).
+    runIn = false;
+    CHECK_FALSE(airborne);
+    for (std::size_t k = 0; k < run.crew.size(); ++k) {
+        CHECK(halfLanding.at(k));
+        REQUIRE(firstMoveOff.at(k).has_value());
+        const float off = firstMoveOff.at(k).value_or(0.0F);
+        std::printf("  level80 follow: Warrior %zu's first move ran to a point %.2f m from the chief\n", k,
+                    static_cast<double>(off));
+        CHECK(off > 1.0F);
+    }
 
     // The player runs (stick 100 % ahead) for 4 s, then stops for 6 s.
     pushedNear = 0;

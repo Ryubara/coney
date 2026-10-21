@@ -41,7 +41,7 @@ GoalStatus TrackHumanGoal::process(Brain& brain) {
     // The point: its slot's, or where it stands.
     const anim::Vec3 position = brain.human().position();
     std::optional<anim::Vec3> point;
-    if (const Formation* formation = brain.following(); formation != nullptr) {
+    if (Formation* formation = brain.following(); formation != nullptr) {
         point = formation->slotPoint(brain);
     }
     const anim::Vec3 aim = point.value_or(position);
