@@ -14,9 +14,12 @@ goes by the ids of its own `coney-tools pcsx2 claim | launch | record ... --agen
 reads from the shell tools (`agents_in`, `Guard.bind`), so an agent that never claimed through a shell is told to.
 Nothing else is refused, and nothing is locked: no lease, no per-session state beyond those ids.
 
-**What it cannot do.** The server holds one connection per process, so another agent's `pcsx2_connect` to its *own*
-claim still moves this agent's connection, and `mode: debug` leaves the previous PINE half. Both are the server's to
-fix (a connection per caller, `pcsx2_connect` replacing both halves; the plan is in the track's STATUS.md).
+**The server's `agent` argument.** A PCSX2-MCP server that keeps a connection per caller takes an optional `agent` on
+every `pcsx2_*` call (docs/guides/agents.md#pcsx2-guard). The guard checks it where it is given: it must be an id the
+caller claimed with (and, on `pcsx2_connect`, the id the copy is claimed as), so a caller cannot act in another agent's
+name by mistake. Whether it is *present* is the server's to require (`PCSX2_REQUIRE_AGENT=1`). Against an older
+server, which has one connection per process, another agent's `pcsx2_connect` to its own claim still moves this
+agent's connection, and `mode: debug` leaves the previous PINE half.
 
 The guard fails open where it cannot work (no PCSX2 copies set up, no session id in the payload, anything unexpected),
 and writes one line to `guard.log` beside its state when it fails itself. State is a few small files below the claims
@@ -128,14 +131,32 @@ class Guard:
     # -- the decision
 
     def decide(self, session: str, agent_id: str, tool: str, arguments: dict[str, Any]) -> str | None:
-        """None when the call may go ahead, else why it is refused (shown to the agent). Only `pcsx2_connect` is
-        refused; fails open when no copies are set up."""
-        if tool != f"{SERVER_PREFIX}pcsx2_connect":
+        """None when the call may go ahead, else why it is refused (shown to the agent). A `pcsx2_*` call that names
+        an `agent` (the connection name of the server's per-caller connections) must name an id the caller goes by;
+        `pcsx2_connect` is refused unless its ports are those of a claim the caller holds. Fails open when no copies
+        are set up."""
+        name = tool.removeprefix(SERVER_PREFIX)
+        if name == tool or not name.startswith("pcsx2_"):
+            return None
+        is_connect = name == "pcsx2_connect"
+        agent = arguments.get("agent")
+        if not is_connect and agent is None:
             return None
         try:
             self.registry.copies()
         except (ClaimError, ConfigError):
             return None  # no managed copies on this machine: nothing to protect, and no claims to check against
+        names = self.bound(session, agent_id)
+        if agent is not None and agent not in names:
+            return (
+                f"Blocked: `agent` is {agent!r}, which is not an id you claimed with"
+                + (f" (you claimed {', '.join(sorted(names))})" if names else "")
+                + ". Pass your own id there (the one of `coney-tools pcsx2 claim --agent <your id>`, run in a shell "
+                "first so this guard learns it): it names your connection, and passing another agent's would act on "
+                "its PCSX2."
+            )
+        if not is_connect:
+            return None
         ports: dict[str, int] = {}
         for key in _PORTS:
             value = arguments.get(key)
@@ -149,7 +170,6 @@ class Guard:
                     "before the first write."
                 )
             ports[key] = int(value)
-        names = self.bound(session, agent_id)
         if not names:
             return (
                 "Blocked: this guard does not know your claim. Run `uv run --project python coney-tools pcsx2 claim "
@@ -157,9 +177,14 @@ class Guard:
                 "the id from that command, then lets you connect to the ports it prints."
             )
         try:
-            self.registry.require_ports(names, debug_port=ports["debug_port"], pine_port=ports["pine_port"])
+            claim = self.registry.require_ports(names, debug_port=ports["debug_port"], pine_port=ports["pine_port"])
         except ClaimError as error:
             return f"Blocked: {error}."
+        if agent is not None and agent != claim.agent:
+            return (
+                f"Blocked: name your connection after the claim you connect to: `agent` is {agent!r} but the copy "
+                f"{claim.copy} is claimed as {claim.agent!r}."
+            )
         return None
 
 

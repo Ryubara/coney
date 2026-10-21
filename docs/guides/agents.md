@@ -317,21 +317,27 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
   `coney-tools pcsx2 claim --agent <your id>` in a shell first (it hands your existing claim back); that is also how it
   knows who you are after a resume. The ports of a copy nobody claimed, of a stale claim and of a copy another agent
   holds are refused, naming the holder.
-- **Nothing else is locked.** Every other tool passes, and so do the other agents of the session. The guard keeps
-  no lease: a lock on the shared connection would let one engineer's task shut the others out of the emulator for
-  hours.
+- **Your own connection, by name.** The PCSX2-MCP build with per-caller connections gives every `pcsx2_*` tool an
+  optional `agent` argument and keeps one DebugServer and Pine connection per name, so your `pcsx2_connect` replaces
+  only yours (both halves, whatever the mode), a port another name is connected to is refused (`share: true` to use
+  one copy on purpose) and `pcsx2_status` shows your name, the ports you are connected to, the game and the other
+  names. `coney-tools mcp serve pcsx2` starts the server with `PCSX2_REQUIRE_AGENT=1`, so **pass `agent: "<your
+  id>"` on every `pcsx2_*` call**, the id you claimed with. The hook checks it wherever it is given: it must be an id
+  of your claiming commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's
+  name by mistake. Your tool list shows whether the installed server has it (`agent` among `pcsx2_connect`'s
+  arguments).
+- **Nothing is locked.** There is no lease: every other agent of the session keeps using its own connection, and a
+  lock on a shared one would let one engineer's task shut the others out of the emulator for hours.
 - It does nothing on a machine with no PCSX2 copies set up or in a payload without a session id, and when it fails
   itself it lets the call through and writes one line to `guard.log` in the `mcp/` folder beside the claims.
 
-**What it cannot stop yet.** The server holds one connection, so another agent's `pcsx2_connect` to its *own* claim
-still moves yours (your next write then lands in its game), and `mode: "debug"` leaves the PINE half of the previous
-connection. So **call `pcsx2_status` before the first write of a task and after any pause** to see which copy the
-connection is to, and prefer what needs no shared server: `coney-tools pcsx2 ...` (`record`, `recipe`, `clip`) and, from
-a script, `DebugClient.claimed("<your id>")` (`coney_tools.debug_server`), which connects to the debug server of the
-claim you hold and refuses any other; `coney-tools pcsx2 check-ports --agent <id> --debug-port N --pine-port M` makes
-the same check on a pair of ports. The root fix is in the PCSX2-MCP fork (a connection per `agent` name, both halves
-replaced by every connect, `pcsx2_status` showing the ports); the track's `STATUS.md` has the plan, and the hook will
-then also require your `agent` id on each call.
+**Against an older server** (one connection for the whole process, no `agent` argument) the hook still stops a connect
+to a copy you did not claim, but another agent's `pcsx2_connect` to its *own* claim moves yours (your next write then
+lands in its game), and `mode: "debug"` leaves the PINE half of the previous connection. There, **call `pcsx2_status`
+before the first write of a task and after any pause** to see which copy you are connected to, and prefer what needs no
+shared server: `coney-tools pcsx2 ...` (`record`, `recipe`, `clip`) and, from a script, `DebugClient.claimed("<your
+id>")` (`coney_tools.debug_server`), which connects to the debug server of the claim you hold and refuses any other.
+`coney-tools pcsx2 check-ports --agent <id> --debug-port N --pine-port M` makes the claim check on a pair of ports.
 
 ## Bounded waits {#bounded-waits}
 

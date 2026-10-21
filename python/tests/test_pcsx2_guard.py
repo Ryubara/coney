@@ -317,6 +317,34 @@ def test_nothing_is_locked_for_the_other_agents_of_a_session(guard: Guard, regis
         assert guard.decide("s1", "agent-recipes", f"mcp__pcsx2__{tool}", {}) is None
 
 
+def test_an_agent_argument_must_be_an_id_the_caller_claimed_with(guard: Guard, registry: Registry) -> None:
+    registry.claim("alice", "pcsx2-b")
+    guard.bind("s1", "agent-1", ["alice"])
+    for tool in ("pcsx2_connect", "pcsx2_status", "pcsx2_write_memory", "pcsx2_pause"):
+        ports = {"debug_port": 21513, "pine_port": 28012} if tool == "pcsx2_connect" else {}
+        assert guard.decide("s1", "agent-1", f"mcp__pcsx2__{tool}", {**ports, "agent": "alice"}) is None
+        reason = guard.decide("s1", "agent-1", f"mcp__pcsx2__{tool}", {**ports, "agent": "bob"})
+        assert reason is not None and "'bob'" in reason and "alice" in reason
+    # Another caller that never claimed has no id to name.
+    reason = guard.decide("s1", "agent-2", "mcp__pcsx2__pcsx2_write_memory", {"agent": "alice"})
+    assert reason is not None and "not an id you claimed" in reason
+
+
+def test_a_call_without_an_agent_argument_is_the_servers_business(guard: Guard) -> None:
+    # Whether `agent` is present is for the server to require; the guard only checks it where given.
+    assert guard.decide("s1", "agent-1", "mcp__pcsx2__pcsx2_write_memory", {"address": "0x100000"}) is None
+
+
+def test_a_connection_is_named_after_the_claim_it_connects_to(guard: Guard, registry: Registry) -> None:
+    registry.claim("alice", "pcsx2")
+    registry.claim("alice-2", "pcsx2-b")
+    guard.bind("s1", "agent-1", ["alice", "alice-2"])
+    wrong = {"debug_port": 21513, "pine_port": 28012, "agent": "alice"}
+    reason = guard.decide("s1", "agent-1", CONNECT, wrong)
+    assert reason is not None and "name your connection after the claim" in reason and "'alice-2'" in reason
+    assert guard.decide("s1", "agent-1", CONNECT, {**wrong, "agent": "alice-2"}) is None
+
+
 @pytest.mark.parametrize(
     "tool",
     ["mcp__pcsx2__pcsx2_status", "mcp__pcsx2__ps2recomp_lookup_function", "mcp__ghidra-mcp__list_functions", "Bash"],
@@ -454,5 +482,5 @@ def test_the_hook_is_registered_for_the_mcp_tools_and_the_shell() -> None:
         if "pcsx2_guard.py" in hook["command"]
     ]
     matchers = {matcher for matcher, _ in registered}
-    assert "mcp__pcsx2__pcsx2_connect" in matchers, "pcsx2_connect is not guarded"
+    assert "mcp__pcsx2__.*" in matchers, "the pcsx2 MCP tools are not guarded"
     assert {"Bash", "PowerShell"} <= matchers, "the shell commands that claim a copy are not read"

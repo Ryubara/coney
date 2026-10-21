@@ -65,7 +65,7 @@
         ]
       },
       {
-        "matcher": "mcp__pcsx2__pcsx2_connect",
+        "matcher": "mcp__pcsx2__.*",
         "hooks": [
           {
             "type": "command",

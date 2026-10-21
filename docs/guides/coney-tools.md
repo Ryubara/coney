@@ -1637,10 +1637,12 @@ headless server on port 8090 unless `GHIDRA_MCP_URL` says otherwise), `pcsx2` is
 from `pcsx2_mcp_dir` (its `pcsx2-mcp-server/`). The server connects to nothing until `pcsx2_connect`; with
 `--copy NAME` it starts with that copy's ports in `PCSX2_DEBUG_PORT` and `PCSX2_PINE_PORT`, which a fork server from
 the `env-default-ports` change on takes as `pcsx2_connect`'s defaults (an older build ignores them, so pass the ports
-to `pcsx2_connect` anyway). The checkout is `CLAUDE_PROJECT_DIR` when the agent tool sets it, else the current
-folder; a worktree reads the main checkout's `coney.local.toml`. A missing key, folder or program (`uv`, `node`)
-prints one line on stderr and exits with code 2, so a server that is not installed fails without affecting the
-others. Why and how it is set up: [Setting up an agent tool](agents.md#setup).
+to `pcsx2_connect` anyway). The pcsx2 server always starts with `PCSX2_REQUIRE_AGENT=1`, which a fork build with
+per-caller connections reads as "every `pcsx2_*` call must carry an `agent` argument" ([The PCSX2 MCP
+guard](agents.md#pcsx2-guard)); an older build ignores it. The checkout is `CLAUDE_PROJECT_DIR` when the agent tool
+sets it, else the current folder; a worktree reads the main checkout's `coney.local.toml`. A missing key, folder or
+program (`uv`, `node`) prints one line on stderr and exits with code 2, so a server that is not installed fails
+without affecting the others. Why and how it is set up: [Setting up an agent tool](agents.md#setup).
 
 ## workspace {#workspace}
 
