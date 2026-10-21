@@ -36,6 +36,21 @@ counts resolving handles; confirmed (code) at `0x00166158`). The HUD's gang coun
 tests knocked out, state `0x100000000` and wounded separately (confirmed (code) at `0x00166220`). Goal kinds
 are the type ids of [Goals](ai.md#goals).
 
+## Original structure
+
+The units cover the AI stretch of `Human/` (brains, goals, actions, tactics, formations), the gang record's functions
+in `GameModes/` and the Warriors' command dispatcher in `Warriors/`, as the scope above says. Their classes and how
+they call each other are on [AI humans](ai.md) and the [AI code index](ai-code.md).
+
+## Data
+
+The records the units read and write are the brain ([The brain](ai.md#brain)), the human and the gang record
+([The gang](ai-gangs.md#gang-record)), in the shared conventions above; each unit lists the offsets it uses.
+
+## Behaviour
+
+Units 1 to 7 below specify what each of their functions does in the original, one section per unit.
+
 ## Unit 1: threats and the gang's shared target {#unit-1}
 
 Gang-fight needs 1, 5 and 6 of the gang-fight research (issue #273). One small unit, because three other parts of
@@ -47,7 +62,7 @@ Coney use a stand-in threat test today (`repo:src/ai/brain_events.cpp`, `repo:sr
 `Gang_IsEnemyOf(a, b)`: whether gang *a* treats gang *b* as an enemy. Confirmed (code) at `0x00168fe0`.
 
 1. False when one gang's kind (*gang* `+0x2c`) is 1 (the police) and the other's is `0x17`, either way round.
-2. False during a **truce**: the global `0x0050cb7c` holds an end time; while it is not 0 and *now* is below it,
+2. False during a **truce**: the global `0x0050cb7c` holds an end time (confirmed (code): written by `Gangs_SetTruce`); while it is not 0 and *now* is below it,
    no gang is anyone's enemy.
 3. Otherwise bit (*b*'s id, *gang* `+0x30`, masked to 0-31) of *a*'s enemy mask (*gang* `+0x38`). The test reads
    *a*'s mask only, so it is not symmetric by itself; `GangMakeEnemies` sets both masks.
@@ -252,6 +267,8 @@ Details settled from the code (confirmed (code) at `0x00307d40`):
 condition Start used to install it (can flee and v9 ≠ 0, or kind 6 with `+0xd9`). Confirmed (code).
 
 ### The gang's alert state (`0x00164a28` and four clip helpers) {#alert-state}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 `Gang_SetAlertState(gang, state)` (`0x00164a28`, 316 bytes), confirmed (code). Nothing happens unless *state*
 differs from *gang* `+0x32`. It stores *state*, then:
@@ -479,6 +496,8 @@ Every Process: no order while the leader's line plays; exactly one order.
 
 ## Unit 5: the Guard orders and the FightBackOff goal {#unit-5}
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 Gang-fight needs 4 and 12. Confirmed (code) at each address. Depends on FollowAndDefend (`0x002bca20`, a crew unit
 in [the plan](#plan)); until that unit lands, Coney's FollowAndDefend stand-in is used.
 
@@ -648,6 +667,8 @@ object first); an object claimed 2 s ago by the same gang (skipped) and by anoth
 
 ## Unit 7 and later: what each needs first {#unit-7}
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 Unit 7 (the fight goal's Start, Resume, Suspend and End, the fidget and taunt actions, the pattern block, and the
 waiting ring of [The reposition](ai.md#fight-reposition), gang-fight need 7) is described by its sections and by
 the three below: the fidget and taunt actions and `Brain_TryPatternBlock`. Gang-fight needs 8 (event `0x15`'s
@@ -773,6 +794,12 @@ after *brain* `+0x200` was raised for this warning. It lets an AI in a fight blo
 current target, who is in a Fight goal with an empty queue (block goal pushed, command 4, a standing stun ended);
 the same with the pattern below `t`, with a non-Fight top goal, with an action that refuses to abort, and with the
 attacker not his target (the ordinary chance, seeded).
+
+## Coney's implementation
+
+Each built unit ends with its **Coney status**: Units 1 and 2 are implemented (`repo:src/ai/threats.h`,
+`repo:src/ai/tactic_attack.h`, `repo:src/ai/gangs.h`), with the stand-ins each still has. The plan below lists the
+units left.
 
 ## Reimplementation plan {#plan}
 

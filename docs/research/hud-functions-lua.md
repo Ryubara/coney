@@ -5,8 +5,16 @@ PCSX2 2.9.94 as on [The in-game HUD](hud.md), which this page was split from bec
 large. The overview, the data tables and the rest of the behaviour stay on [The in-game HUD](hud.md).
 Every claim keeps the evidence level it had there.
 
+## Purpose
+
 This page covers the function index for `GUI/HUDLua.cpp`, with the gang-count indicator, the panel tally and the
 lock-pick dial.
+
+## Original structure
+
+`GUI/HUDLua.cpp` holds the script bindings' HUD calls: one-line callees on the HUD object, the gang-count indicator,
+the panel tally's layout and the scripted bars, in the address order of the sections below. The HUD's classes are on
+[The in-game HUD](hud.md#original-structure).
 
 ## `GUI/HUDLua.cpp`: the bindings' HUD calls (first part) {#fn-hudlua-start}
 
@@ -125,8 +133,9 @@ default mode.
 - **Marks**: `part_page0` rectangle 366 (`0x16e`, a short upright stroke, 7 × 14 texels) for the strokes and 367
   (`0x16f`, a long flat bar, 37 × 6 texels) for every fifth, blue, all rotated **3.3 rad** (about 189°, so tilted
   about 9° off their art). Size (an overlay height; the width follows from the rectangle's aspect): 0.04 × 1.2 =
-  **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` × `0x0050d604`).
-- **Where mark *i* goes** (0-based, *i* < the standing count), in GUI units, `NumIndicator_Update` (`0x001b67b8`) with
+  **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` × `0x0050d604`; confirmed (code)).
+- **Where mark *i* goes** (0-based, *i* < the standing count; confirmed (code)), in GUI units, `NumIndicator_Update`
+  (`0x001b67b8`) with
   the default mode's layout (`NumIndicator_ApplyLayout`, `0x001b6168`: origin (0.09, 0.94) `0x0050d5f0`/`0x0050d5f8`,
   header shift 0.08 `0x0050d600`):
 
@@ -222,18 +231,19 @@ every mark        y = base.y + T+0x1f8 + shift
 ```
 
 Every mark is turned by `0x005100a8` = **3.3 rad**, as the [gang-count indicator](#gang-count-indicator)'s, and its
-size is the table's times `0x00510050` = 1.0. With the bases (0.10, 0.05) and (0.785, 0.05) the strokes of player 0
+size is the table's times `0x00510050` = 1.0 (confirmed (code)). With the bases (0.10, 0.05) and (0.785, 0.05) the strokes of player 0
 start at x 0.005 (bar at 0.025, the sixth stroke at 0.075) and player 1's at 0.779 (bar 0.799, sixth 0.85).
 
 **The shift** moves the tally below the money and the item counters:
 
 - `shifted` is 0 → no shift. `PlayerHUD_Update` (`0x00214138`, each update while the tally is on, `+0x4130`) passes
-  what `PlayerHUD_UpdateCounters` (`0x00213770`) returned: **1** when the money (`+0x444`) is 1-999 or any item
+  what `PlayerHUD_UpdateCounters` (`0x00213770`) returned (confirmed (code)): **1** when the money (`+0x444`) is 1-999 or any item
   counter is shown, else 0 (money 0 or less, or 1,000 or more, with no counter).
 - `shifted` is 1 → **0.09** (`0x005100a4`) when slot 2 or slot 3 of the [counter slots](hud.md#item-counters) sits on
   line 2
-  (its y equals 0.146) and holds an item (its `+0x20` is not 4); otherwise **0.045** (`0x005100a0`).
-- In a level numbered 100 or more (`0x0041d160`) a further **−0.03** (`0x005100c4`), whatever `shifted` is.
+  (its y equals 0.146) and holds an item (its `+0x20` is not 4); otherwise **0.045** (`0x005100a0`). Confirmed
+  (code).
+- In a level numbered 100 or more (`0x0041d160`) a further **−0.03** (`0x005100c4`), whatever `shifted` is. Confirmed (code).
 
 So player 0's marks sit at y 0.154 with nothing above them, 0.199 under one row of counters and 0.244 under two.
 
@@ -476,3 +486,23 @@ The bar functions of `HUDEnableBar`, `HUDSetBarPercentage` and `HUDSetBarPropert
 | `0x001b53b0` | `HUD_EnableBar` | `HUDEnableBar`: dispatch by kind | confirmed (code) |
 | `0x001b5450` | `HUD_SetBarPercentage` | `HUDSetBarPercentage`: dispatch by kind; kinds 1 and 2 also set the gauge | confirmed (code) |
 | `0x001b54f0` | `HUD_SetBarProperty` | `HUDSetBarProperty`: fill colour, gradient flag, width | confirmed (code) |
+
+## Data
+
+The tables these functions read (the indicator's fields, the panel layout table's tally entries, the dial's layout)
+are given in the sections above; the HUD's other data is on [The in-game HUD](hud.md#data).
+
+## Behaviour
+
+What each binding does is in its row and section above: [the gang-count indicator](#gang-count-indicator), [what the
+count counts](#gang-count-what), [the panel's tally](#panel-tally), [the lock-pick dial](#lock-pick-dial-layout) and
+[the scripted bars](#fn-hudlua-bars).
+
+## Coney's implementation
+
+The indicator, the panel tally and the bars are built in `repo:src/hud/` (`num_indicator.h`, `player_panel.h`,
+`hud.h`); what each does and its stand-ins are on [The in-game HUD](hud.md#coneys-implementation).
+
+## Open questions
+
+- Which of the Rumble scripts' two branches is the two-player one (inferred above, not traced).
