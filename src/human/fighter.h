@@ -290,7 +290,7 @@ class Fighter {
     void setWarriorBrain(bool warrior) { m_warriorBrain = warrior; }
     /// Whether a hit on `victim` earns rage at all: not on a man already out (health run out), nor on a class of
     /// category 13 with flag `0x10` (docs/research/combat-rage.md#hit-score-skips).
-    /// @orig 0x002653d8 Hit_Score (unknown)
+    /// @orig 0x002653d8 Stats_AttackRage (unknown)
     [[nodiscard]] static bool scoresRageOn(const Combatant& victim);
 
     // The human flag word (human `+0xe0`, human/human_flags.h): what the scripts switch on a human and combat reads.
