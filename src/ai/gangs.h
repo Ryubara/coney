@@ -142,7 +142,8 @@ class Gang {
     /// human leaves its gang, Gangs::removeMember()), so the first form is the member count. The one count behind the
     /// HUD's gang counter (hudGangCount(), which passes 1) and the scripts' `GangGetHeadCount`. It is **not**
     /// `Gang_CountStanding` (`0x00166220`, the scripts' `GangGetStandingCount`: standing()), a stricter count with
-    /// its own three state tests that the HUD does not use. Research: docs/research/hud-functions-lua.md#gang-count-what
+    /// its own three state tests that the HUD does not use. Research:
+    /// docs/research/hud-functions-lua.md#gang-count-what
     /// @orig 0x00166158 Gang_CountLiving (unknown)
     [[nodiscard]] int countLiving(bool standingOnly) const;
     /// The living members (`Gang_CountLiving(gang, 0)`, countLiving(false)): every member, the dead included.

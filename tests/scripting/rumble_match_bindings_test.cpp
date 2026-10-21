@@ -281,8 +281,8 @@ TEST_CASE("HuSwitchPlayer hands the pad to the player's first standing team-mate
 
 TEST_CASE("GangGetHeadCount is Gang_CountLiving: every member, or with living only those not knocked out or dead",
           "[scripting][rumble]") {
-    // Research: docs/research/hud-functions-lua.md#gang-count-what. A member out of health still has a handle that resolves, and
-    // `living` tests his state, not his health: the knocked-out one has health left and does not count.
+    // Research: docs/research/hud-functions-lua.md#gang-count-what. A member out of health still has a handle that
+    // resolves, and `living` tests his state, not his health: the knocked-out one has health left and does not count.
     Level level;
     Brain& standing = level.add({44.0F, 40.0F, 0.0F});
     Brain& dead = level.add({45.0F, 40.0F, 0.0F});
