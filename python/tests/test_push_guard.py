@@ -2,9 +2,9 @@
 """Tests for .claude/hooks/push_guard.py, the Claude Code hook that keeps a subagent from pushing or writing to GitHub.
 
 Agents work local-first: they commit and hand each unit to the coordinator, who pushes and opens the pull request
-(docs/guides/how-we-work.md#release-queue); they read GitHub and never write to it (docs/guides/issues.md#agents). Claude
-Code gives a hook an `agent_id` only inside a subagent, so the main session, the coordinator, is never refused. The hook
-is a standalone, standard-library-only file, loaded by path like the other guards.
+(docs/guides/how-we-work.md#release-queue); they read GitHub and never write to it (docs/guides/issues.md#agents).
+Claude Code gives a hook an `agent_id` only inside a subagent, so the main session, the coordinator, is never refused.
+The hook is a standalone, standard-library-only file, loaded by path like the other guards.
 """
 
 import importlib.util
