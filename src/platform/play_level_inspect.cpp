@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The play mode's side of the Entity inspector and of the Debug draw page's collision shapes
-// (docs/guides/debug-menu.md#entity-inspector): the humans and objects it lists, what it knows of each, and the lines
-// it adds to the scene. Coney's own debug tooling, read-only: nothing here changes how the game plays.
+// The Entity inspector over a play mode and the Debug draw page's collision shapes
+// (docs/guides/debug-menu.md#entity-inspector): the humans and objects it lists, what it knows of each, freezing one,
+// and the lines it adds to the scene. Coney's own debug tooling, in the debug tools' target
+// (docs/guides/building.md#debug-tools): read-only but for freezing, nothing here changes how the game plays.
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -12,7 +13,7 @@
 #include "debug/human_shapes.h"
 #include "debug/human_watch.h"
 #include "debug/object_watch.h"
-#include "platform/play_level_mode.h"
+#include "platform/play_level_controls.h"
 
 namespace coney::platform {
 
@@ -68,8 +69,15 @@ void addTriangle(debug::DebugLines& lines, const raycast::CollisionMesh& mesh, s
 
 } // namespace
 
-std::vector<debug::EntityRef> PlayLevelMode::Inspector::entities() const {
-    const PlayLevelMode& mode = m_mode;
+std::vector<debug::EntityRef> PlayLevelControls::Inspector::entities() const {
+    return m_controls.m_mode != nullptr ? entitiesOf(*m_controls.m_mode) : std::vector<debug::EntityRef>{};
+}
+
+std::vector<debug::WatchGroup> PlayLevelControls::Inspector::describe(debug::EntityId id) const {
+    return m_controls.m_mode != nullptr ? describeIn(*m_controls.m_mode, id) : std::vector<debug::WatchGroup>{};
+}
+
+std::vector<debug::EntityRef> PlayLevelControls::entitiesOf(const PlayLevelMode& mode) {
     std::vector<debug::EntityRef> list;
     // Player 1 first, then the targets, the AI humans and the objects, each in the mode's own order.
     list.push_back(debug::EntityRef{.id = kPlayerId,
@@ -129,8 +137,7 @@ std::vector<debug::EntityRef> PlayLevelMode::Inspector::entities() const {
     return list;
 }
 
-std::vector<debug::WatchGroup> PlayLevelMode::Inspector::describe(debug::EntityId id) const {
-    const PlayLevelMode& mode = m_mode;
+std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode& mode, debug::EntityId id) {
     if (id == kPlayerId) {
         const debug::HumanFacts facts{.id = id,
                                       .role = "player 1",
@@ -191,75 +198,78 @@ std::vector<debug::WatchGroup> PlayLevelMode::Inspector::describe(debug::EntityI
     return {};
 }
 
-bool PlayLevelMode::canFreezeEntity(debug::EntityId id) const {
+bool PlayLevelControls::canFreezeEntity(debug::EntityId id) const {
+    const PlayLevelMode& mode = *m_mode;
     if (id == kPlayerId) {
         return true;
     }
     if (const auto index = indexIn(id, kTargetBase)) {
-        return *index < m_targets.size();
+        return *index < mode.m_targets.size();
     }
     if (const auto index = indexIn(id, kAiBase)) {
-        return m_ai && *index < m_ai->humans().size() && !m_ai->humans()[*index].removed;
+        return mode.m_ai && *index < mode.m_ai->humans().size() && !mode.m_ai->humans()[*index].removed;
     }
     return false;
 }
 
-bool PlayLevelMode::entityFrozen(debug::EntityId id) const {
+bool PlayLevelControls::entityFrozen(debug::EntityId id) const {
+    const PlayLevelMode& mode = *m_mode;
     if (id == kPlayerId) {
-        return m_frozen;
+        return mode.m_frozen;
     }
-    if (const auto index = indexIn(id, kTargetBase); index && *index < m_targets.size()) {
-        return m_targets[*index].frozen;
+    if (const auto index = indexIn(id, kTargetBase); index && *index < mode.m_targets.size()) {
+        return mode.m_targets[*index].frozen;
     }
     if (const auto index = indexIn(id, kAiBase); index && canFreezeEntity(id)) {
-        return m_player->humans().held(*m_ai->humans()[*index].human);
+        return mode.m_player->humans().held(*mode.m_ai->humans()[*index].human);
     }
     return false;
 }
 
-void PlayLevelMode::setEntityFrozen(debug::EntityId id, bool frozen) {
+void PlayLevelControls::setEntityFrozen(debug::EntityId id, bool frozen) {
     if (!canFreezeEntity(id)) {
         return;
     }
+    PlayLevelMode& mode = *m_mode;
     if (id == kPlayerId) {
-        m_frozen = frozen;
+        mode.m_frozen = frozen;
     } else if (const auto targetIndex = indexIn(id, kTargetBase)) {
-        m_targets[*targetIndex].frozen = frozen;
+        mode.m_targets[*targetIndex].frozen = frozen;
     } else if (const auto aiIndex = indexIn(id, kAiBase)) {
-        m_player->humans().setHeld(*m_ai->humans()[*aiIndex].human, frozen);
+        mode.m_player->humans().setHeld(*mode.m_ai->humans()[*aiIndex].human, frozen);
     }
 }
 
-anim::Vec3 PlayLevelMode::drawnOffsetOf(debug::EntityId id, float alpha) const {
+anim::Vec3 PlayLevelControls::drawnOffsetOf(const PlayLevelMode& mode, debug::EntityId id, float alpha) {
     // The models are drawn `alpha` of the way from the step before the newest to the newest (render()); a human's
     // shapes are built at its newest feet, so the offset is the distance between the two.
     const auto offsetOf = [alpha](const human::Combatant& human, const human::TargetSnapshot& previous,
                                   const human::TargetSnapshot& current) {
         return anim::subtract(human::interpolate(previous, current, alpha).feet, human.position());
     };
-    if (const auto index = indexIn(id, kTargetBase); index && *index < m_targets.size()) {
-        const human::TargetHuman& target = *m_targets[*index].human;
+    if (const auto index = indexIn(id, kTargetBase); index && *index < mode.m_targets.size()) {
+        const human::TargetHuman& target = *mode.m_targets[*index].human;
         return offsetOf(target, target.previous(), target.current());
     }
-    if (const auto index = indexIn(id, kAiBase); index && m_ai && *index < m_ai->humans().size()) {
-        const ai::AiHuman& fighter = m_ai->humans()[*index];
+    if (const auto index = indexIn(id, kAiBase); index && mode.m_ai && *index < mode.m_ai->humans().size()) {
+        const ai::AiHuman& fighter = mode.m_ai->humans()[*index];
         return offsetOf(*fighter.human, fighter.previous, fighter.current);
     }
     if (id == kPlayerId) {
-        return anim::subtract(human::interpolate(m_player->previous(), m_player->current(), alpha).feet,
-                              m_player->human().position());
+        return anim::subtract(human::interpolate(mode.m_player->previous(), mode.m_player->current(), alpha).feet,
+                              mode.m_player->human().position());
     }
     return {};
 }
 
-void PlayLevelMode::addInspectorLines(debug::DebugLines& lines, const human::PlayerSnapshot& snapshot,
-                                      float alpha) const {
-    const debug::DebugDrawOptions& options = *m_debugDraw;
-    const raycast::CollisionMesh& mesh = m_scenery->collision();
+void PlayLevelControls::addInspectorLines(const PlayLevelMode& mode, const debug::DebugDrawOptions& options,
+                                          debug::DebugLines& lines, const human::PlayerSnapshot& snapshot,
+                                          float alpha) {
+    const raycast::CollisionMesh& mesh = mode.m_scenery->collision();
     const anim::Vec3 feet = snapshot.feet;
     // The player's shapes move to where his model is drawn (his snapshot, which a scene may pose); the others' by
     // drawnOffsetOf().
-    const anim::Vec3 playerOffset = anim::subtract(snapshot.feet, m_player->human().position());
+    const anim::Vec3 playerOffset = anim::subtract(snapshot.feet, mode.m_player->human().position());
     // The collision wireframe coloured by the walking sweep's own classing (human::wallClassOf()).
     if (options.wallClasses) {
         debug::addCollisionWireframe(lines, mesh, feet, options.collisionRadius, true, kMaxClassifiedTriangles);
@@ -267,34 +277,34 @@ void PlayLevelMode::addInspectorLines(debug::DebugLines& lines, const human::Pla
     // The humans' shapes: every human's, or the player's and the selection's alone.
     const debug::ShapeLayers layers{.bodies = options.shapes, .strikes = options.strikes, .contacts = options.contacts};
     if (layers.bodies || layers.strikes || layers.contacts) {
-        debug::addHumanShapes(lines, m_player->human(), layers, playerOffset);
-        if (m_ai) {
-            const auto& humans = m_ai->humans();
+        debug::addHumanShapes(lines, mode.m_player->human(), layers, playerOffset);
+        if (mode.m_ai) {
+            const auto& humans = mode.m_ai->humans();
             for (std::size_t i = 0; i < humans.size(); ++i) {
                 if (!humans[i].removed && (options.shapesAllHumans || options.inspected == kAiBase + i)) {
-                    debug::addHumanShapes(lines, *humans[i].human, layers, drawnOffsetOf(kAiBase + i, alpha));
+                    debug::addHumanShapes(lines, *humans[i].human, layers, drawnOffsetOf(mode, kAiBase + i, alpha));
                 }
             }
         }
     }
     // The selection: a marker over it, and an object's own collision triangles.
     if (options.highlight && options.inspected != debug::kNoEntity) {
-        const std::vector<debug::EntityRef> list = m_inspector.entities();
+        const std::vector<debug::EntityRef> list = entitiesOf(mode);
         if (const debug::EntityRef* entity = debug::findEntity(list, options.inspected); entity != nullptr) {
             // The marker follows the model, not the newest step.
             const anim::Vec3 offset =
-                options.inspected == kPlayerId ? playerOffset : drawnOffsetOf(options.inspected, alpha);
+                options.inspected == kPlayerId ? playerOffset : drawnOffsetOf(mode, options.inspected, alpha);
             const anim::Vec3 drawnAt = anim::add(entity->position, offset);
             debug::addHighlight(lines, drawnAt, kHighlightHeight);
         }
-        if (m_objects != nullptr) {
-            const auto doors = m_objects->doors.doors();
+        if (mode.m_objects != nullptr) {
+            const auto doors = mode.m_objects->doors.doors();
             if (const auto index = indexIn(options.inspected, kDoorBase); index && *index < doors.size()) {
                 for (const std::uint32_t triangle : doors[*index].triangles) {
                     addTriangle(lines, mesh, triangle, kSelectedTriangle);
                 }
             }
-            const auto panes = m_objects->glass.panes();
+            const auto panes = mode.m_objects->glass.panes();
             if (const auto index = indexIn(options.inspected, kPaneBase); index && *index < panes.size()) {
                 for (const std::uint32_t triangle : panes[*index].triangles) {
                     addTriangle(lines, mesh, triangle, kSelectedTriangle);

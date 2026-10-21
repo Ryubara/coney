@@ -82,8 +82,9 @@ class GameSession {
     /// loading screen's banks, the movies' mixer, the pause's sound, the HUD's sounds and the play modes' scene sounds.
     /// Call it before the first frame; null: the run stays silent.
     void attachAudio(AudioOutput* audio);
-    /// The debug lines every level's play mode draws (the debug session's); null: none.
-    void setDebugDraw(const debug::DebugDrawOptions* options) { m_debugDraw = options; }
+    /// The lines every level's play mode draws into its scene (PlayLevelMode::setSceneLines(): the debug tools' Debug
+    /// draw page); empty: none.
+    void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
 
     /// What the first level loaded does before its first frame (`--start`, `--camera`, `--trace`, `--scene`): called
     /// once, on that level's play mode; an error fails that level's load.
@@ -141,7 +142,7 @@ class GameSession {
     world::SectorBudget& m_budget;
     audio::ObjectSounds& m_objectSounds;
     std::function<void(std::string_view)> m_log;
-    const debug::DebugDrawOptions* m_debugDraw = nullptr;
+    SceneLines m_sceneLines; // setSceneLines()
     AudioOutput* m_audio = nullptr;
     LevelSetup m_firstLevelSetup;
     std::shared_ptr<HumansTrace> m_humansTrace;

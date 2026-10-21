@@ -81,6 +81,49 @@ def test_the_not_moved_yet_list_holds_only_what_is_still_there() -> None:
     assert stale == [], "drop the entry: the source has moved"
 
 
+#: Game sources that still include a debug tools' header, each until the unit that unties it (the game session, the
+#: sound output and network play implement the debug menus' services, Audio page and Network page). It never grows.
+_STILL_INCLUDES_DEBUG = {
+    "src/platform/audio_output.h",
+    "src/platform/game_session.h",
+    "src/platform/net_play.cpp",
+    "src/platform/net_play.h",
+}
+
+_DEBUG_INCLUDE = re.compile(r'^#include "debug/', re.MULTILINE)
+
+
+def _game_files() -> list[Path]:
+    """The game libraries' sources and the headers beside them."""
+    sources, _ = _targets()
+    files: list[Path] = []
+    for name in GAME_TARGETS:
+        folder = ROOT / "src" / ("platform" if name == "coney_platform" else "")
+        for source in sources.get(name, []):
+            path = folder / source
+            files += [p for p in (path, path.with_suffix(".h")) if p.exists()]
+    return sorted(set(files))
+
+
+def test_no_game_source_includes_a_debug_header() -> None:
+    offenders = [
+        path.relative_to(ROOT).as_posix()
+        for path in _game_files()
+        if _DEBUG_INCLUDE.search(path.read_text(encoding="utf-8"))
+        and path.relative_to(ROOT).as_posix() not in _STILL_INCLUDES_DEBUG
+    ]
+    assert offenders == [], "reach the game through its own API; debug code goes in coney_debug or coney_devtools"
+
+
+def test_the_still_includes_list_holds_only_files_that_do() -> None:
+    stale = [
+        name
+        for name in sorted(_STILL_INCLUDES_DEBUG)
+        if not _DEBUG_INCLUDE.search((ROOT / name).read_text(encoding="utf-8"))
+    ]
+    assert stale == [], "drop the entry: the file no longer includes a debug header"
+
+
 def test_only_the_devtools_link_dear_imgui() -> None:
     _, links = _targets()
     linking = sorted(name for name, libraries in links.items() if "imgui" in libraries)

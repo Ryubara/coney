@@ -12,8 +12,8 @@ render backend are on [Enhancements plan](enhancements.md#foundations) (F4, F5);
 
 ## Where Coney stands {#where-coney-stands}
 
-Counted on `main` at `7300c566` (2026-10-07). The `repo check` rule below ([N4](#now)) keeps the first four rows
-current once it exists.
+Counted on `main` at `7300c566` (2026-10-07). A planned `repo check` rule ([N4](#now)) is to keep the first four
+rows current.
 
 | What | Count | Where |
 | --- | --- | --- |
@@ -283,7 +283,7 @@ not in `research/bindings/`, not in [Script bindings](../references/bindings/ind
 the original (the wrapper's address, the functions it calls, an evidence level, usage counts in the shipped
 scripts), and `natives render`, `natives cpp` and the Natives page all read it as the original's table. A Coney file
 would need every one of those fields faked or made optional, and a second origin threaded through three generators,
-for natives that do not exist yet. A table here costs no machinery. When the first one is exposed, the move is the
+for natives of which Coney has none. A table here costs no machinery. When the first one is exposed, the move is the
 `Native` struct above (its `origin` field already says `Coney`), and the generated pages can then grow a "Coney"
 section from that data; this table is its seed.
 
@@ -295,22 +295,22 @@ caller, not new logic ([Debug menus: adding a feature](debug-menu.md#adding-a-fe
 | Proposed native | C++ entry point today | What it does | Status |
 | --- | --- | --- | --- |
 | `Coney.SetFlight(human, speed, climb)` | `human::Human::setFlight(std::optional<Flight>)`, `human::noclipFlight()` (the debug noclip change, not on main yet) | Flies a human by the stick, through walls and floors, with no gravity; `nil` ends it and drops him with the normal physics | engine-only, on its branch |
-| `Coney.SetNoclip(on)` | `debug::PlayControls::setNoclip()`, `human::Player::setNoclip()` (the debug noclip change, not on main yet) | The player's flight as the debug noclip drives it (pad 1 flies him) | engine-only, on its branch |
-| `Coney.TeleportPlayer(x, y, z, heading)` | `human::Player::teleport(mesh, PlayerStart)`, `debug::PlayControls::teleport()` | Puts the player on the ground below a spot, with the camera behind him and nothing to blend from | engine-only |
-| `Coney.SetPlayerFrozen(on)` | `debug::PlayControls::setPlayerFrozen()` | Makes the player ignore the pad, or listen again | engine-only |
-| `Coney.ChangeCharacter(type)` | `human::Player::changeCharacter()`, `debug::PlayControls::changeCharacter()` | Rebuilds the player in place as a `CfgChar` character type: model, moves, class damage, power class, full health | engine-only |
-| `Coney.SetFreeCamera(on)` | `debug::PlayControls::setFreeCamera()`, `world::DebugCamera` | A camera flown by pad 1 while the player stands still | engine-only |
+| `Coney.SetNoclip(on)` | `PlayLevelMode::setNoclip()`, `human::Player::setNoclip()` (the debug noclip change, not on main yet) | The player's flight as the debug noclip drives it (pad 1 flies him) | engine-only, on its branch |
+| `Coney.TeleportPlayer(x, y, z, heading)` | `human::Player::teleport(mesh, PlayerStart)`, `PlayLevelMode::teleport()` | Puts the player on the ground below a spot, with the camera behind him and nothing to blend from | engine-only |
+| `Coney.SetPlayerFrozen(on)` | `PlayLevelMode::setPlayerFrozen()` | Makes the player ignore the pad, or listen again | engine-only |
+| `Coney.ChangeCharacter(type)` | `human::Player::changeCharacter()`, `PlayLevelMode::changeCharacter()` | Rebuilds the player in place as a `CfgChar` character type: model, moves, class damage, power class, full health | engine-only |
+| `Coney.SetFreeCamera(on)` | `PlayLevelMode::setFreeCamera()`, `world::DebugCamera` | A camera flown by pad 1 while the player stands still | engine-only |
 | `Coney.ResetCamera()` | `human::Player::resetCamera()`, `camera::FollowCamera::place()` | Places the follow camera behind the player again, with nothing to blend from | engine-only |
-| `Coney.SpawnObject(kind, ...)`, `Coney.ClearSpawned()` | `debug::PlayControls::spawn()`, `clearSpawned()`, `debug::spawnables()` | Adds a solid sandbox primitive (crate, wall, ramp, stairs) ahead of the player, or removes them; sandbox only | engine-only |
-| `Coney.SpawnFighter(x, y, z, heading [, model])`, `Coney.ClearFighters()` | `debug::PlayControls::spawnFighter()`, `spawnFighterAs()`, `clearFighters()`; `ai::AiHumans` | Adds or removes AI fighters that fight the player, as the scene's character or any human model the configuration names | engine-only |
+| `Coney.SpawnObject(kind, ...)`, `Coney.ClearSpawned()` | `PlayLevelMode::spawn()`, `clearSpawned()`, `debug::spawnables()` | Adds a solid sandbox primitive (crate, wall, ramp, stairs) ahead of the player, or removes them; sandbox only | engine-only |
+| `Coney.SpawnFighter(x, y, z, heading [, model])`, `Coney.ClearFighters()` | `PlayLevelMode::spawnFighter()`, `spawnFighterAs()`, `clearFighters()`; `ai::AiHumans` | Adds or removes AI fighters that fight the player, as the scene's character or any human model the configuration names | engine-only |
 | `Coney.SetFightersEngage(on)` | `ai::AiHumans::setEngaging()` | Whether idle fighters take the player on | engine-only |
-| `Coney.PlayAnim(human, set, id, loop, speed, inPlace)`, `Coney.StopAnim(human)` | `human::Human::playDebugClip()`, `stopDebugClip()`; `debug::PlayControls::playAnim()`, `stopAnim()` | Plays any clip of an anim set (the human's own, the generic set or another character's) from its first frame, once or looping, at a speed, then gives the human its own animation back | engine-only |
+| `Coney.PlayAnim(human, set, id, loop, speed, inPlace)`, `Coney.StopAnim(human)` | `human::Human::playDebugClip()`, `stopDebugClip()`; `PlayLevelControls::playAnim()`, `stopAnim()` (debug tools) | Plays any clip of an anim set (the human's own, the generic set or another character's) from its first frame, once or looping, at a speed, then gives the human its own animation back | engine-only |
 | `Coney.SetHudOverride(player, field, value)` | `hud::Hud::overrides()` (`hud::PanelOverrides`) | Shows a chosen rage, score, money or item count on a player's panel instead of his own | engine-only |
 | `Coney.SetPaused(on)`, `Coney.StepOnce()`, `Coney.SetTimeScale(scale)` | `debug::TimeControl`, `FrameClock::setSpeed()` | Stops the game's steps, runs one, or runs more or fewer of them a second (0.05x to 4x); every step is still 1/30 s | engine-only |
 | `Coney.GetTunable(path)`, `Coney.SetTunable(path, value)`, `Coney.ListTunables()` | `debug::TunableRegistry::value()`, `set()` (applied between steps by `applyPending()`), `categories()` | Reads and writes any named, typed value a subsystem registered, by its `Category/Name` key | engine-only |
 | `Coney.GetOption(key)`, `Coney.SetOption(key, value)` | `debug::TunableRegistry` and the `Display/<name>` keys of [Enhancements](enhancements.md#where-the-settings-live) | The enhancement options (the cutscene letterbox now, more later) by their stable key | engine-only |
 | `Coney.StartLevel(name, checkpoint)` | `StartUpFlow::jumpToLevel()` | Jumps to a level at a checkpoint from the front end or from a level in play | engine-only |
-| `Coney.SetDebugDraw(option, on)` | `debug::DebugDrawOptions`, `PlayLevelMode::setDebugDraw()` | Draws collision, headings, camera and places as lines in the scene | engine-only |
+| `Coney.SetDebugDraw(option, on)` | `debug::DebugDrawOptions`, `PlayLevelMode::setSceneLines()`, `PlayLevelControls::sceneLines()` (debug tools) | Draws collision, headings, camera and places as lines in the scene | engine-only |
 | `Coney.SetVolume(bus, volume)`, `Coney.SetTestTone(on)` | `debug::AudioControls::setVolume()`, `setTestTone()` | Sets the master or a bus volume; plays Coney's synthesised test tone | engine-only |
 | `Coney.Notice(text)` | `debug::DebugSession::notice()` (the debug noclip change, not on main yet) | Prints a line and shows it as a short notice under the corner lines | engine-only, on its branch |
 | `Coney.TraceCalls(path)` | `script::ScriptSystem::traceCalls()` (`--script-trace`) | Writes every binding call the scripts make, and every call into them, to a log | engine-only |

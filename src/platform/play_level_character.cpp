@@ -55,12 +55,12 @@ rw::Texture* PlayLevelMode::textureOf(const std::vector<TextureDictionary>& dict
     return textures.empty() ? nullptr : textures.front();
 }
 
-std::vector<debug::CharacterChoice> PlayLevelMode::characterChoices() const {
+std::vector<characters::CharacterChoice> PlayLevelMode::characterChoices() const {
     // Every configured type a player can be drawn as: those whose record (or class record) names a model.
-    std::vector<debug::CharacterChoice> choices;
+    std::vector<characters::CharacterChoice> choices;
     for (const characters::CharacterType& type : m_types.all()) {
         if (std::optional<std::string> model = m_types.modelFor(type.type, 1, m_levelNumber); model) {
-            choices.push_back(debug::CharacterChoice{.type = type.type, .model = std::move(*model)});
+            choices.push_back(characters::CharacterChoice{.type = type.type, .model = std::move(*model)});
         }
     }
     return choices;

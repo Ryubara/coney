@@ -9,9 +9,11 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "characters/character_choice.h"
 #include "core/error.h"
 #include "debug/anim_catalog.h"
 #include "debug/entity_inspect.h"
+#include "human/place.h"
 #include "sandbox/sandbox_layout.h"
 
 namespace coney::hud {
@@ -20,13 +22,8 @@ class Hud;
 
 namespace coney::debug {
 
-/// A named place the player can be put: the feet, in the game's axes (z up, metres), and the heading in degrees (0
-/// faces +y), as a level's player start and a sandbox spawn point are given.
-struct Place {
-    std::string name;
-    anim::Vec3 feet;
-    float headingDegrees = 0.0F;
-};
+/// A named place the player can be put (human::Place, the play mode's own type).
+using Place = human::Place;
 
 /// What the Debug draw page switches: lines a play mode draws into the 3D scene, over the scenery.
 struct DebugDrawOptions {
@@ -57,12 +54,9 @@ struct Spawnable {
 /// (docs/guides/sandbox.md).
 [[nodiscard]] const std::vector<Spawnable>& spawnables();
 
-/// One character type the Player page can rebuild the player as: its `CfgChar` type and the model a player of it is
-/// drawn as (characters::CharacterTypes::modelFor()).
-struct CharacterChoice {
-    int type = 0;
-    std::string model;
-};
+/// One character type the Player page can rebuild the player as (characters::CharacterChoice, the play mode's own
+/// type).
+using CharacterChoice = characters::CharacterChoice;
 
 /// How the Animation player plays a clip on the player (docs/guides/debug-menu.md#animation-player).
 struct AnimPlayOptions {

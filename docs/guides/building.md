@@ -240,10 +240,14 @@ and `coney_platform`; the debug tools are two libraries of their own:
 | `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
 | `coney_devtools` | `src/platform/` | the menus' platform glue, the developer overlay (the only target that links Dear ImGui), the texture, character and sandbox viewers, the reference images |
 
-`coney` and `coney_tests` link both. Until the play mode, the game session and the sound output stop implementing
-the debug menus' interfaces, `coney_platform` still links `coney_debug`; the release preset follows once they do.
-`python/tests/test_debug_tools_split.py` reads the CMake files and fails when a game library lists a debug source or
-anything but `coney_devtools` links `imgui`.
+`coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other
+way round: the play mode has Coney's own capabilities as its own API (teleport, freeze, noclip, spawn, change
+character), and `PlayLevelControls` in `coney_devtools` turns them into the debug menus' `debug::PlayControls`, with
+the Entity inspector, the Animation player and the Debug draw lines, which it hands the mode as a hook
+(`PlayLevelMode::setSceneLines()`). Until the game session and the sound output are untied the same way,
+`coney_platform` still links `coney_debug`; the release preset follows once they are.
+`python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources and fails when a game library
+lists a debug source or includes a `debug/` header, or anything but `coney_devtools` links `imgui`.
 
 ### Debug information on MSVC {#debug-info}
 

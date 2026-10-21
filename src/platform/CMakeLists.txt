@@ -12,7 +12,7 @@ target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/running.md#playing-a-level), in a level's scenery or a sandbox's.
-target_sources(coney_platform PRIVATE play_level_anim.cpp play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_inspect.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
+target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
 target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
@@ -51,8 +51,9 @@ target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 
 # The debug tools' platform half (docs/guides/building.md#debug-tools), the only target that links Dear ImGui: the
 # debug menus' glue, the pad menu drawn over every frame (docs/guides/debug-menu.md); the developer overlay over the
-# same menus (docs/guides/debug-menu.md#the-developer-overlay); the texture, character and sandbox viewers; the
-# reference images of characters and objects (docs/guides/running.md#reference-images).
+# same menus (docs/guides/debug-menu.md#the-developer-overlay); the menus' controls of the play mode with its Entity
+# inspector, Animation player and Debug draw lines; the texture, character and sandbox viewers; the reference images of
+# characters and objects (docs/guides/running.md#reference-images).
 add_library(
     coney_devtools STATIC
     character_viewer_mode.cpp
@@ -60,6 +61,9 @@ add_library(
     imgui_model_view.cpp
     imgui_overlay.cpp
     imgui_ui_scale.cpp
+    play_level_anim.cpp
+    play_level_controls.cpp
+    play_level_inspect.cpp
     reference_renderer.cpp
     sandbox_viewer_mode.cpp
     texture_viewer_mode.cpp)
