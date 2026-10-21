@@ -347,6 +347,40 @@ folder each, every compile from the cache, no other agent building):
 A source that ever `import`s a module turns it back on for its target (`CXX_SCAN_FOR_MODULES ON`); a Python test keeps
 the setting in place.
 
+### Shared dependency sources {#shared-deps}
+
+`coney-tools build` fetches the pinned dependencies once per machine and version, not once per build folder: it sets
+`CONEY_DEPS_SOURCES` (the mechanism CI's dependency cache uses, [Caches](#ci-caches)) to `cache/deps` in the workspace
+(`deps_dir` of [coney.local.toml](workspace.md#local-config) moves it), and `cmake/deps.cmake` fetches into
+`<that folder>/<version>/<name>`, where the version is the first 16 hex digits of a SHA-256 of its pin lines
+(repositories, tags, URLs, patches; a comment or a build option changes nothing). The first configure of a version
+fetches and stamps each dependency; every later one, in any worktree, uses the stamped copies without a download.
+
+- **The version is worked out on every configure**, never kept in CMake's cache (only the base folder is): a folder
+  configured before a pin changed moves to the new version's folder at its next configure, and never fetches new pins
+  into a folder other worktrees compile from. A Python test runs `deps.cmake`'s own lines to check that a pin change
+  moves the folder and a comment does not.
+- **One fetch at a time.** While any dependency of the version lacks its stamp, `deps.cmake` holds a lock on the
+  version's folder (`file(LOCK ... DIRECTORY)`), so two first configures fetch once, the second waiting for the first.
+- **Only for new folders.** CMake keeps the base in a build folder's cache from its first configure, so folders
+  configured before keep their own copies. `--env CONEY_DEPS_SOURCES=` with no value turns the sharing off for a new
+  folder.
+- **Old versions stay.** Nothing removes the folder of a version no branch uses any more (about 500 MB each); delete
+  it by hand when no build runs.
+
+Measured on 2026-10-20 (Windows, `dev`, a fresh folder each, no other agent building; logs kept with the track's
+scratch files):
+
+| Configure only | Time | `_deps/` in the build folder |
+| --- | --- | --- |
+| Sharing off (`--env CONEY_DEPS_SOURCES=`) | 49 s | 528 MB |
+| Two worktrees at once, the version's folder empty: one fetched, the other waited | 60 s and 61 s | 25 MB and 13 MB |
+| Version folder filled | 10 s | |
+
+The compiler cache sees the version folder's absolute path in every command line that includes a dependency's
+headers, so the first build at a new version recompiles most of the engine once per machine (8.7 min, 477 hits and
+1,034 misses); the next worktree at that version built in 41 s with 99.9 % hits.
+
 ## Sanitizers
 
 The `asan` preset builds with AddressSanitizer and UndefinedBehaviorSanitizer and runs the tests under them. Any
@@ -640,8 +674,8 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   entries, one per job and commit. A pull request restores the newest entry of its job from `main`.
 - **The dependency sources** (`deps`, then `deps-save` after the configure step): SDL3, librw, Catch2, Dear ImGui, ENet
   and FFmpeg as fetched, one entry per OS and version of `cmake/deps.cmake`, shared by every job and preset on that OS.
-  `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<name>` and use a complete copy found
-  there without downloading. The build trees under `build/<preset>/_deps/` are not kept: they belonged to one
+  `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<version>/<name>` and use a complete
+  copy found there without downloading ([Shared dependency sources](#shared-deps)). The build trees under `build/<preset>/_deps/` are not kept: they belonged to one
   compiler and preset, a fresh job rebuilds them anyway (Ninja has no record of them), and they made eight entries of
   about 400 MB. The same rule applies: only runs outside pull requests save.
 - **Rolling entries.** Each saved compiler-cache entry is named after the run, and the `cache-prune` job, which runs

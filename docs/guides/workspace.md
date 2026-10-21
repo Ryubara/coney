@@ -13,6 +13,7 @@ Coney/                          the workspace (a plain folder, not a repository)
   worktrees/coney/<branch>/     every worktree, and nowhere else
   scratch/                      captures, dumps, tool output, leftovers; never committed
   cache/ccache/                 the compiler cache every checkout's builds share (building.md#compiler-cache)
+  cache/deps/<version>/         the fetched dependency sources they share (building.md#shared-deps)
   game/                         your disc image and files extracted from it
   emulators/pcsx2, pcsx2-b, ... portable PCSX2 copies of the PCSX2-MCP fork build (plus BIOS), one per agent
   tools/                        local installs: Ghidra (with the EE extension), RenderDoc, a JDK if needed
@@ -198,6 +199,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `build_fast_lane_test_seconds` | `300` | a number: such a run takes a main slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools.md#build)); `0` turns that off |
 | `ccache_dir` | `cache/ccache` in the main checkout's `../..` (`<clone>-workspace/cache/ccache` in a plain clone) | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
 | `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
+| `deps_dir` | `cache/deps` in the main checkout's `../..` | where `coney-tools build` keeps the [dependency sources](building.md#shared-deps), a folder per version of the pins |
 | `ccache_size_gb` | `25` | a number: the compiler cache's size cap in GB (ccache drops the least recently used objects beyond it); `0` turns the cache off |
 | `scratch_dir` | `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
