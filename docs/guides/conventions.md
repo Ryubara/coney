@@ -441,6 +441,10 @@ code keeps to these rules:
   ([Drawing between steps](../research/rendering.md#interpolation)). Discrete state (a menu's selection, text, the GUI's
   sprite list for the step) is drawn as the newest step has it. Every helper returns the newest value exactly at
   alpha 1, so lockstep draws exactly what the simulation holds.
+- **The simulation is the server's.** What `update()` changes is what a network server would own and replicate;
+  what `render()` and the platform layer keep is each machine's own. [Network
+  architecture](network-architecture.md#authority) says who owns what, and its
+  [checklist](network-architecture.md#checklist) what every subsystem keeps to.
 - **Pads are read once per step**, by the stack, before the update. The platform's input source keeps every press
   until the next step reads it, so a tap shorter than a step is seen, and seen once.
 - **Only the frame pacer reads the real clock** (`src/platform/frame_pacer.cpp`). It measures each frame and holds

@@ -67,6 +67,11 @@ first hour; the rest of this file is for agents.
   private members, long lambdas) and before each step of a long one; comments explain *why*, briefly. Keep the
   engine's test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
   or a human.
+- Write every subsystem for networked play: simulation state owned by the game mode (no mutable globals), never
+  one assumed player (take a player slot or pad record), ids rather than pointers for anything another machine
+  names, gameplay randomness only from `GameRandom` and presentation randomness from its own stream, and every
+  sound, effect or HUD change the simulation causes made through one call that can be sent as an event. The list:
+  `docs/guides/network-architecture.md#checklist`.
 - Tests for everything testable without the game, written first: `docs/guides/testing.md`. Style and the rest:
   `docs/guides/conventions.md`.
 

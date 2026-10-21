@@ -39,13 +39,13 @@ second player everywhere a network game needs them to.
 
 | What the original does with two players | Where | Evidence |
 | --- | --- | --- |
-| Player 2 joins when a second pad presses START and joining is allowed (`CfgMultiplayerJoin`): `GameState_SyncPlayers` takes the player gang's next human by hand-over priority, makes him a player and calls the level's multiplayer callback; a pad leaving releases him | `0x0041a460`, `0x0041b148` ([Scripting: player 2](../research/scripting.md#level99-p2-vermin-fence)) | confirmed (code) |
+| Player 2 joins when a second pad presses START and joining is allowed (`CfgMultiplayerJoin`): `GameState_SyncPlayers` takes the player gang's next human by hand-over priority, makes him a player and calls the level's multiplayer callback (`GameState_CallMultiplayerCallback`). He drops out only through the pause menu's Player 2 quit; a pulled pad raises the controller error instead (`Player_UnbindPad` `0x0022a980`) | `0x0041a460`, `0x0041b148`, `PauseMenu_QuitPlayerTwo` `0x001df3a8` ([Scripting: player 2](../research/scripting.md#level99-p2-vermin-fence)) | confirmed (code) |
 | Whether player 2 is in play is kept per mode (story, Rumble, Armies) | `GameState_IsTwoPlayerActive` `0x00419a80` ([Front end](../research/frontend.md#warriors-functions)) | confirmed (code) |
-| Every level script guards player 2's steps with `HuIsAPlayer(player2)`, and registers `SetPlayer2Callback` to resume, place or hide the second Warrior | `level99` scripts ([Scripting](../research/scripting.md#level99-p2-vermin-fence)) | inferred (script disassembly) |
+| The level scripts guard player 2's steps with `HuIsAPlayer(player2)` and register `SetPlayer2Callback` to resume, place or hide the second Warrior. Shown for `level99`'s three scripts, the ones disassembled; the other levels are expected to follow the same pattern (not checked) | `level99.lua`, `level99_lesson1.lua`, `level99_lesson2.lua` ([Scripting](../research/scripting.md#level99-p2-vermin-fence)) | inferred (script disassembly) |
 | The cameras split and merge the screen: merged when both players are in view within 11 m, else split, with 0.72 s timers and a flash | `Cam_Follow_DecideSplit` `0x00126c40`, `Cameras_LayoutViews` `0x00122ed0` ([Cameras](../research/camera.md)) | confirmed (code) |
 | The AI knows about two players: Warriors far from player 1 defend player 2, reactions and enemy counting change in co-op | `DefendTactic_GiveGoals` `0x00310288`, `WarriorFollowTactic_GiveGoals` `0x00310f38`, `HideTactic_RegiveMember` `0x00313028` ([AI code](../research/ai-code.md)) | confirmed (code) |
-| Spawners place new humans where no player's camera can see them | `Camera_AnyPlayerCanSeePoint` ([AI: spawners](../research/ai-gangs.md#spawner-unseen)) | confirmed (code) |
-| The pause menu offers a co-op quit (player 2 or all) | [Pause menu](../research/pause.md) | confirmed (code) |
+| Spawners place new humans where no player's camera can see them | `Camera_AnyPlayerCanSeePoint` `0x001202e8` ([AI: spawners](../research/ai-gangs.md#spawner-unseen)) | confirmed (code) |
+| The pause menu offers a co-op quit (player 2 or all) | `PauseMenu_QuitPlayerTwo` `0x001df3a8` ([Pause menu](../research/pause.md)) | confirmed (code) |
 
 So the first online game is **the original's two-player story with player 2's pad and screen on another machine**.
 The host simulates exactly what a PS2 with two pads would; nothing in the simulation changes, only where the second
@@ -134,10 +134,10 @@ flowchart TB
 
 Why server-authoritative and not peer-to-peer lockstep or rollback:
 
-- **The world is large and busy.** Up to about 40 AI humans, brains, gangs, scripts and streaming. Lockstep makes
-  every machine wait for the slowest and needs bit-exact floats across compilers and platforms; rollback must copy
-  and re-simulate all of that several times a frame. Both are right for a fighting game with two characters
-  ([GGPO](#sources)), not here.
+- **The world is large and busy.** Up to 60 humans (the original's human pool, [Characters](../research/characters.md)),
+  brains, gangs, scripts and streaming. Lockstep makes every machine wait for the slowest and needs bit-exact floats
+  across compilers and platforms; rollback must copy and re-simulate all of that several times a frame. Both are right
+  for a fighting game with two characters ([GGPO](#sources)), not here.
 - **Joining late.** Snapshots let a player drop in mid-level, as the original's player 2 does; lockstep needs the
   whole history.
 - **The trust model.** One authority decides every hit, item and mission step; a client that lies about its position
@@ -203,8 +203,8 @@ snapshot) when there is none. Loss costs nothing to repair: the next delta is ju
   quality ([Link quality](multiplayer.md#link-quality)).
 
 A rough budget, to show it fits: a moving human is about 15-25 bytes as a delta (position, heading, clip and
-playhead, a few flags), a still one 1-2 bytes. Forty humans of which twelve move near a player: about 300 bytes a
-snapshot, 9 KB/s at 30 Hz per client, 72 kbit/s. The host's upstream for three clients is about 220 kbit/s.
+playhead, a few flags), a still one 1-2 bytes. Sixty humans of which twelve move near a player: about 340 bytes a
+snapshot, about 10 KB/s at 30 Hz per client, 82 kbit/s. The host's upstream for three clients is about 250 kbit/s.
 
 ### Interest management {#interest}
 
@@ -328,9 +328,9 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   brains cause go through the HUD state. **Owner:** server only.
 - **Today:** `Brains` own brains, gangs and formations; thinking is staggered by index; randomness per brain and
   per gang, seeded by slot; spawner placement draws from `GameRandom` and reads the player's camera.
-- **In the way:** `m_playerBrain` in `AiHumans` and `ScriptedBrains::m_player` are single pointers, with about 116
-  references to the player brain in `ai/`. The original's two-player rules (a Warrior defends the other player) are
-  not built.
+- **In the way:** `m_playerBrain` in `AiHumans` and `ScriptedBrains::m_player` are single pointers, used across `ai/`
+  (21 lines name `playerBrain` or `player_brain`, counted with grep on `src/ai`). The original's two-player rules (a
+  Warrior defends the other player) are not built.
 
 ### Physics, collision and paths (`physics/`, `raycast/`, `world/`) {#sub-physics}
 
@@ -384,8 +384,9 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   into the game through `BindingContext`; callbacks by name (message handlers, pad handlers, anim callbacks,
   triggers, `ScheduleFunc`); handles from one counter per state.
 - **In the way:** the Lua state is game state no snapshot can copy, which is why scripts stay on the server. The
-  original's two-player natives (`CheckMultiplayer`, `SetMultiplayerCallback`, `CfgMultiplayerJoin`) are stubs
-  (`scripting/hub_world_bindings.cpp`). Natives that show something on screen or play a sound must go through the
+  original's two-player natives do nothing yet: `CheckMultiplayer` is a no-op (`scripting/hub_world_bindings.cpp`),
+  and `SetMultiplayerCallback` and `CfgMultiplayerJoin` only store their callback name and flag
+  (`scripting/player_bindings.cpp`). Natives that show something on screen or play a sound must go through the
   HUD state and sound events.
 
 ### Missions, story and saves (`warriors/`, `gamemodes/`) {#sub-missions}
@@ -444,7 +445,7 @@ pad now possibly remote.
 | Moment | What the original does with two pads | Online (P1, P2) |
 | --- | --- | --- |
 | Joining | player 2 presses START when joining is allowed; `GameState_SyncPlayers` makes the gang's next human a player and calls the level's callback | a client connecting **is** a second pad coming in: its first command with START is the same press, through the same `SyncPlayers` path. Until joining is allowed, the client waits in a lobby view |
-| Leaving | the pad leaving releases the human, the callback hides him again | a client leaving or timing out is the pad leaving, on that step |
+| Leaving | player 2 drops out only through the pause menu's Player 2 quit, which releases the human and calls the callback to hide him; a pulled pad puts up the controller error and waits ([Scripting: player 2](../research/scripting.md#level99-p2-vermin-fence)) | a client choosing to leave is the Player 2 quit, on that step. A client that drops or times out is **not** a pulled pad on the host (the controller error would stop the host's game): Coney's choice is to run the same Player 2 quit for it, so the host plays on alone |
 | Pause | either player's START pauses the whole game ([Pause](../research/pause.md#pausing)) | the same: a client's START pauses the host's game, both see the menu, the pauser's pad drives it. The co-op quit's Player 2 entry disconnects the guest |
 | Scenes (in-engine cutscenes) | the scene runs in the simulation; either player's cross or START skips a skippable scene after 2 s ([Scenes: skipping](../research/scenes.md#skipping)) | the scene runs on the host as any simulation; the client sees it through snapshots and its view's scene camera. Either player skips, as in the original |
 | Movies (Bink FMV) | the game stops while a movie plays; any button on any pad skips a skippable one ([Movies](../research/movies.md)) | a reliable `MovieStarted(name, skippable)` event; each machine plays its own copy from its own disc; any player's skip ends it for both; the host resumes when its movie has ended and every client has said it has, or after a time-out |
@@ -565,10 +566,9 @@ GTA Online's suffer ([sources](#sources)).
 ENet sends plain UDP and its connect handshake is not authenticated. Before a session is offered across the internet
 (P2), every packet after the handshake is encrypted and authenticated:
 
-- **Joining by address or invite (P2):** an ephemeral key exchange (X25519) in the handshake, then every payload
-  sealed with an AEAD (XChaCha20-Poly1305 or AES-GCM) with the packet sequence as nonce and a replay window. A
-  session password or invite code, if set, is checked inside the encrypted channel. This needs a cryptography
-  library (libsodium, ISC licence, is the candidate): a [maintainer decision](#decisions).
+- **Joining a host (P2):** the transport encrypts and authenticates every packet: GameNetworkingSockets does it
+  built in (Curve25519 key exchange, AES-GCM), [recommended below](#transport-recommendation). A session password or
+  room code, if set, is checked inside the encrypted channel. Issue #561.
 - **Dedicated servers with accounts (P3+):** the netcode.io connect-token pattern ([sources](#sources)): a web service
   the operator trusts issues short-lived tokens bound to the server's address; the server checks the token and sends
   a challenge before it keeps any state for the client. Whether Coney has any such service is a maintainer decision.
@@ -582,18 +582,65 @@ cannot ask for more.
 
 ## Transport {#transport}
 
-ENet over UDP, behind the `Transport` interface, with three deliveries
-([Transport and delivery](multiplayer.md#transport)). What changes later, each behind the same interface so nothing
-above it notices:
+Today: ENet over UDP, behind the `Transport` interface, with three deliveries
+([Transport and delivery](multiplayer.md#transport)). Nothing above `Transport` knows which library carries the
+packets, so the choice below changes one file in `src/platform/` and its tests.
+
+What a player needs from it: **the least delay** (UDP, no waiting behind lost packets for data that does not need
+it), and **joining a friend with nothing to set up**: no port forwarding, no IP address to read out, behind ordinary
+home routers. Today a guest needs the host's address and, across the internet, a forwarded port.
+
+### The options {#transport-options}
+
+| | ENet + libsodium + our own NAT code | GameNetworkingSockets (open source) | Steamworks networking | Epic Online Services P2P |
+| --- | --- | --- | --- | --- |
+| Delay | UDP, minimal | UDP, minimal; send with the no-delay flag so it does not batch (not re-checked) | UDP, minimal | UDP, minimal |
+| Encryption | none built in: we seal every packet with libsodium ourselves | built in: AES-GCM-256, Curve25519 key exchange | built in | built in |
+| Hole punching | none: we write the rendezvous protocol and the punching, or add libjuice (MPL-2.0) for ICE | built in: a native ICE client (out of beta in 1.6.0) | built in | built in |
+| Relay when punching fails | none: we run a TURN server (coturn, BSD-3) and write the client side | TURN through its ICE client (1.6.0); we run the TURN server | Valve's relay network (SDR), Steam only | Epic's relays |
+| IPv6 | not in ENet 1.3.18 (the enet6 fork adds it) | yes | yes | yes |
+| What we must run | a rendezvous service, STUN (public ones work), TURN | a **signaling service** (a few KB a connection), STUN (public ones work), TURN only for hard routers | nothing; needs the Steam client and an App ID | nothing; needs an Epic account and product |
+| Dependency | ENet (tiny, MIT) + libsodium (ISC) + libjuice | protobuf, and OpenSSL or libsodium for its crypto (BSD-3 itself) | proprietary SDK | proprietary SDK |
+| Licence with GPL-3.0 | compatible | compatible | Valve's own docs call GPL "generally problematic" with the SDK: a legal question | proprietary SDK; terms not checked |
+| Maintenance | ENet's last release April 2024; the rest is our code to keep secure | Valve, four releases in 2026 | Valve | Epic |
+
+Sources: [GameNetworkingSockets](https://github.com/ValveSoftware/GameNetworkingSockets) (README, README_P2P,
+BUILDING, releases), [ENet ChangeLog](https://github.com/lsalzman/enet/blob/master/ChangeLog),
+[enet6](https://github.com/SirLynix/enet6), [libjuice](https://github.com/paullouisageneau/libjuice),
+[coturn](https://github.com/coturn/coturn), [Steamworks: distributing open source](https://partner.steamgames.com/doc/sdk/uploading/distributing_opensource).
+
+**Is Steam needed for a relay?** No. Valve's relay network is Steam-only and is not in the open-source library; the
+open-source GameNetworkingSockets relays through a standard TURN server that whoever runs Coney's services hosts.
+
+### Recommendation {#transport-recommendation}
+
+**GameNetworkingSockets** (BSD-3) as the transport for internet play, replacing ENet behind the same interface, in
+P2 (issues #561 and #562). Delay is the same as ENet's; it brings, already written and maintained, the three things
+that make joining easy and safe and that we would otherwise write and secure ourselves: encryption, hole punching
+(ICE) and relay fallback, plus IPv6. ENet stays for P1 (LAN and direct addresses), where none of that is needed.
+
+What it costs: protobuf and a crypto library in the build (`cmake/deps.cmake`), and a few weeks of one engineer to
+port `EnetTransport` and its tests. Both a new dependency and replacing ENet are maintainer decisions.
+
+**Services Coney would run** (a maintainer decision; none is needed for LAN or direct-address play):
+
+| Service | Needed for | Cost |
+| --- | --- | --- |
+| **Signaling** (a room-code lookup: the host gets a short code, a guest types it, the service passes each side's connection candidates to the other) | joining by code across the internet | tiny: a few KB a connection; one small server |
+| STUN | each side learning its public address | none: public STUN servers work; or our own, cheap |
+| TURN relay | the few players behind routers that defeat hole punching | real bandwidth (every relayed packet); start without it, count how often punching fails, then decide |
+| Server list | P5 | later |
+
+Without any service, a host can still offer **LAN discovery** (a broadcast on the local network; GameNetworkingSockets
+has none, so Coney writes it) and **direct addresses**, with UPnP or NAT-PMP asking the host's router to open the port.
+
+### Other transport needs {#transport-needs}
 
 | Need | When | Plan |
 | --- | --- | --- |
-| Encryption and authentication | P2 | a sealing layer between the sessions and ENet ([above](#crypto)); or, if the maintainer prefers a library that has it, Valve's GameNetworkingSockets (BSD-3: encryption, reliability, ICE), a heavier dependency |
-| NAT traversal | P2 | in order: LAN discovery (a broadcast on the local network), UPnP or NAT-PMP port mapping on the host's router, UDP hole punching through a rendezvous service, and a **relay** when nothing else works (symmetric NATs). A relay is a service someone runs: a maintainer decision |
-| IPv6 | P2 | a dual-stack transport before P2 ships (check what ENet 1.3.18 offers, or replace it) |
 | MTU | P1 | payloads of at most 1,200 bytes, below every common path's MTU, VPNs and IPv6 included |
 | Bandwidth control | P1 | the snapshot budget and rate per client from link quality |
-| A server list | P5 | a master list service: a maintainer decision |
+| Authentication on dedicated servers | P3 | the connect-token pattern ([above](#crypto)) on top of the encrypted transport |
 
 ## Saves and persistence {#saves}
 
@@ -613,9 +660,10 @@ ends with the host, as the original's ends when the console is switched off.
 ## Tick rate: should the simulation run at 60 Hz? {#tick-rate}
 
 The question: should Coney move its simulation to a fixed 60 Hz everywhere, and would that help networking?
-**Recommendation: no.** Keep the original's rates, already built: a 30 Hz step with the original's two 60 Hz object
-ticks inside it, drawn at any frame rate. A 60 Hz simulation cannot be made identical to the original, and networking
-gains little from it. The decision is a maintainer's ([Maintainer decisions](#decisions)).
+**Decided: no, 30 Hz**, subject to [a measurement](#sixty-measure). Keep the original's rates, already built: a 30 Hz
+step with the original's two 60 Hz object ticks inside it, drawn at any frame rate. A 60 Hz simulation cannot be made
+identical to the original, and in networked play the step is a small share of the delay, which prediction removes for
+the player's own Warrior.
 
 ### The original's rates {#original-rates}
 
@@ -623,7 +671,7 @@ All on NTSC-U `SLUS_212.15`.
 
 | What | Rate | Evidence |
 | --- | --- | --- |
-| The play tick | `TaskManager_TickGame` (`0x003a2ea0`) once per frame; while the bus clock holds at least two 60 Hz ticks (`0x960000` COP0 counts), it runs **two** 60 Hz ticks, and the rest carries over | confirmed (code) and (runtime), [Tasks: the play tick](../research/tasks.md#tick) |
+| The play tick | `TaskManager_TickGame` (`0x003a2ea0`) once per frame; **while** the bus clock holds at least two 60 Hz ticks (`0x960000` COP0 counts) it runs a pair of 60 Hz ticks, so a long frame catches up with several pairs; the rest carries over. At 29.97 frames a second that is one pair a frame, and two in about one frame of 1,000 | confirmed (code) and (runtime), [Tasks: the play tick](../research/tasks.md#tick) |
 | Frames | 29.97 a second, two fields each | confirmed (runtime), same page |
 | Characters: movement, combat, animation, brains | `Humans_Update` (`0x00249108`) is called on both ticks, its body runs on every second: **30 Hz** | confirmed (code) and (runtime), same page |
 | AI thinking | inside the characters' step; some rules count steps (a think every fifth step) | confirmed (code), [AI](../research/ai.md) |
@@ -653,33 +701,117 @@ it, and the difference compounds. Every step-counted rule (the five updates afte
 A faithful game at 60 Hz is not a reachable target; a 60 Hz game is a different game that is close.
 
 What a player wants from "60 Hz" is smooth motion and quick response. Smooth motion is already built (interpolated
-drawing). Response gains at most half a step of input delay: about 17 ms on average at 30 Hz against 8 ms at 60 Hz,
-one displayed frame at 60 fps.
+drawing). Response gains 16.7 ms on average ([below](#sixty-latency)).
 
-### Networking at 30 or 60 Hz {#sixty-networking}
+### Where the tick shows in response time {#sixty-latency}
 
-| | 30 Hz step (keep) | 60 Hz step |
+A press waits for the next step that reads the pad, and what that step changes is drawn by blending the last two
+steps ([Update and render](conventions.md#update-and-render)), which shows the newest step up to one step late. Both
+waits scale with the step length *T*: on average *T*/2 each, at worst *T* each.
+
+| | 30 Hz (*T* = 33.3 ms) | 60 Hz (*T* = 16.7 ms) | Difference |
+| --- | --- | --- | --- |
+| Wait for the step that reads the press | 16.7 ms on average, 33.3 ms at worst | 8.3 ms, 16.7 ms | 8.3 ms, 16.7 ms |
+| Drawing between steps | 16.7 ms on average, 33.3 ms at worst | 8.3 ms, 16.7 ms | 8.3 ms, 16.7 ms |
+| **Together** | **33.3 ms on average, 66.7 ms at worst** | 16.7 ms, 33.3 ms | **16.7 ms on average, 33.3 ms at worst** |
+
+Arithmetic from the step lengths, not a measurement. These waits are the same offline and online, and the original on a
+PS2 has the same 30 Hz waits, so at 30 Hz Coney responds as the original did (inferred from [the play
+tick](../research/tasks.md#tick): the original reads the pads once a frame and draws the frame it has just stepped).
+
+**What the network adds** on top, for the guest's own Warrior:
+
+| Path | Round trip | Source |
 | --- | --- | --- |
-| Input delay from the tick | about 17 ms on average | about 8 ms |
-| Input commands | 30 a second, each repeating the last few | 60 a second: twice the packets, or bigger ones |
-| Snapshots | at most 30 a second (15 across the internet) | the snapshot rate is set apart from the tick; games at 60 Hz usually still send 20-30, so little changes |
-| Server work, prediction replays | one step per 33 ms; replaying 100 ms is 3 steps | twice the work for the same span |
-| Determinism and replays | the same | the same |
-| What hides latency | the interpolation delay and prediction, which depend on the round trip, not the tick | the same |
+| Same house (LAN) | under 1 ms to a few ms | general knowledge |
+| Same region (one country in Europe, one US region) | 10-45 ms | Verizon's backbone targets: 30 ms within Europe, 45 ms within North America ([Verizon latency](https://www.verizon.com/business/terms/latency/)) |
+| Across the US | 60-80 ms | general knowledge (not re-checked) |
+| Across the Atlantic | about 90 ms | Verizon: London to New York ([same page](https://www.verizon.com/business/terms/latency/)) |
 
-Source simulates at 66 Hz but sends 20-30 updates a second; Overwatch runs about 62.5 Hz. Those games were designed
-at those rates. *The Warriors'* rules were written at 30 Hz, and a brawler at 30 Hz with prediction feels as the
-original felt.
+- **Without prediction (P1):** the guest's Warrior answers after the round trip, plus the server's step wait, plus the
+  wait for the next snapshot, plus the interpolation delay (about 100 ms). Across a region that is about 150-200 ms
+  at 30 Hz. A 60 Hz step would take about 17-25 ms off it (the step wait and a snapshot sent every step), about a
+  tenth; the round trip and the interpolation delay, which the tick rate does not change, are the rest.
+- **With prediction (P2):** the guest's own Warrior runs on the guest's machine from the guest's pad, so its response
+  is the offline one above, whatever the round trip. The network then shows only in the others (drawn about 100 ms
+  in the past) and in hits, which the server decides with [lag compensation](#lag-compensation). The tick rate's
+  share is the same 16.7 ms average difference as offline.
+- **The host** plays with no network at all: his response is the offline one.
 
-### Recommendation and cost {#sixty-recommendation}
+**What players notice.** Studies of action games put noticeable delay at about 50-100 ms for precise, fast actions
+(Claypool and Claypool, *Latency and player actions in online games*, CACM 2006, not re-checked; a survey of the
+thresholds finds the most time-critical games degrade from about 50 ms, [Hagen et al.](https://ntnu.no/ojs/index.php/nikt/article/view/5252)).
+The 16.7 ms between 30 and 60 Hz is below those thresholds and is already part of the original's feel; the round
+trip across a region is not, and prediction is what removes it.
 
-1. **Keep the 30 Hz step with its 60 Hz object ticks**, the original's rates, everywhere: offline, host and server.
-2. **Keep high frame rates as drawing only**, as built; what is not yet blended is listed on
-   [Enhancements](enhancements.md#screen-and-timing).
-3. **For networking, recover response with prediction (P2)**, not with the tick rate.
-4. **Keep the door open at no cost:** every duration named as steps or as time
-   ([Update and render](conventions.md#update-and-render)), so a later Coney-only 60 Hz mode, if ever wanted, has its
-   list to rescale.
+### What shipped games use {#sixty-shipped}
+
+Tick (simulation) and update (snapshot) rates of online games, for scale. Marked *secondary* when the figure comes
+from a measurement or write-up rather than the developer, and *not re-checked* when it could not be fetched.
+
+| Game | Server tick | Updates to clients | Source |
+| --- | --- | --- | --- |
+| Apex Legends | 20 Hz | a snapshot each tick | Respawn, [Servers and netcode deep dive](https://www.ea.com/games/apex-legends/news/servers-netcode-developer-deep-dive) |
+| Call of Duty: Warzone | about 20-24 Hz | | secondary, [Sportskeeda on measurements](https://www.sportskeeda.com/esports/warzone-2-s-terrible-server-performance-explained-tacticalbrit) |
+| Fortnite | 30 Hz (8 Hz at launch) | 75 a second (2018) | secondary, [GamingBolt citing Battle(non)sense](https://gamingbolt.com/epics-stunning-improvements-to-fortnite-netcode-continue-to-impress) |
+| Battlefield 4 | 30 Hz after patches (10 Hz at launch); 60 and 120 Hz tested | | secondary, [GamePro](https://www.gamepro.de/artikel/battlefield-4-netcode-update-dice-testet-60-und-120-tickrate,3085776.html) |
+| Battlefield 1, Battlefield 6 | 60 Hz | | secondary, [MP1st](https://mp1st.com/news/battlefield-6-server-tick-rate-60hz-enemy-visibility-improved-per-map) |
+| Overwatch | about 62.5 Hz (16 ms command frames) | | secondary, [Edgegap on Tim Ford's GDC 2017 talk](https://edgegap.com/blog/game-backend-deep-dive-overwatch-2016-netcode-architecture-rollback) |
+| Counter-Strike 2 | 64 Hz with sub-tick timing of inputs | | Valve, [CS2](https://www.counter-strike.net/cs2); 64 Hz secondary |
+| Valorant | 128 Hz | | Riot, [Peeking into Valorant's netcode](https://www.riotgames.com/en/news/peeking-valorants-netcode) |
+| Rocket League | 120 Hz physics | | Jared Cone, GDC 2018 (secondary, not re-checked) |
+| GTA Online | peer-to-peer hybrid; no published rate | | none found |
+
+So 20-30 Hz servers are common in big third-person and battle-royale games, and 60-128 Hz in competitive shooters,
+where a few milliseconds decide who saw whom first. Apex's developers give the cost in their own terms: at 50 ms of
+ping, 20 Hz against 60 Hz is about two displayed frames of extra delay, for three times the bandwidth. A
+four-player co-op brawler against AI is far from the shooters' case.
+
+### Input sampled at the display rate {#sixty-input}
+
+Coney already keeps every press between steps, so a tap shorter than a step is never lost, and samples the pads just
+before each step ([Update and render](conventions.md#update-and-render)). Sampling faster than the step cannot make
+the step act sooner: the original's game reads the pad once per step and acts on what it reads. Two things do help,
+and both are in the plan:
+
+- **The guest's client sends each step's command as soon as it is sampled**, with no wait for its own frame, so the
+  command reaches the server as early as the link allows ([Input commands](#input)).
+- **Drawing at the display rate** (built) means the result appears on the first displayed frame after the step,
+  not at the next 30 Hz frame boundary.
+
+Counter-Strike 2's sub-tick idea (timestamping a press inside the step) changes what a step decides, so it is not
+faithful and is not planned.
+
+### How we would measure it {#sixty-measure}
+
+So the decision can be revisited with evidence (issue #568): a headless test, in CI once the client's world and
+prediction exist (issues #555 and #559), measures **press to screen**, the time from a pad press to the first drawn
+frame where the pressing player's Warrior has changed:
+
+1. A server and a client over the loopback, behind the link conditioner, at round trips of 0, 20, 50, 100 and 150 ms
+   with 5 ms of jitter and 1% loss.
+2. The client draws at 240 frames a second in test mode (simulated frame times, no clock); an input script presses a
+   button (a punch, a step of the stick) at random sub-step moments, 1,000 presses per run, seeded.
+3. Each press's time to screen is recorded on the client, for the host's player and for the guest's, with and without
+   prediction, and split into its parts: step wait, network, server buffer, snapshot wait, interpolation, drawing.
+4. The same network path is run at a 60 Hz step: the network layer counts in steps and is told the step rate in
+   Welcome ([Protocol](multiplayer.md#protocol)), so the sessions, commands and snapshots run at 60 Hz with a
+   stand-in simulation of the same size; the step-bound parts are then compared directly.
+5. The report gives the median and the 95th percentile for each case. **The rule:** 30 Hz stays while, with
+   prediction, the guest's median press to screen at 30 Hz is within 20 ms of the 60 Hz path and of the offline
+   figure, at every round trip. If not, the result goes back to the maintainer.
+
+### Decision {#sixty-decision}
+
+**30 Hz**, the original's rates, everywhere: offline, host and server, subject to the measurement above. It was
+decided on that condition; the measurement is issue #568.
+
+- Keep high frame rates as drawing only, as built; what is not yet blended is listed on
+  [Enhancements](enhancements.md#screen-and-timing).
+- Recover response online with prediction (P2), not with the tick rate.
+- Keep the door open at no cost: every duration named as steps or as time
+  ([Update and render](conventions.md#update-and-render)), so a later Coney-only 60 Hz mode, if ever wanted, has its
+  list to rescale.
 
 Moving to 60 Hz would cost a rescale and re-verification of every gameplay constant and rule in every subsystem
 (months of the whole team's work), the loss of the step-by-step comparison with the original, and a game that no
@@ -711,6 +843,8 @@ first entity and field that differ.
 ## The networking checklist {#checklist}
 
 For every engineer writing any subsystem, faithful work included. Each item is cheap now and expensive to retrofit.
+It is a rule, not a suggestion: [AGENTS.md](repo:AGENTS.md) cites it under Code, the [code
+review](review/code.md#correctness) checks it, and [Update and render](conventions.md#update-and-render) points here.
 
 1. **Say who owns each piece of state:** simulation (the server decides; it lives in the game's state and changes
    only in `update()`) or presentation (each machine's own; it may read the simulation, never write it). Write it in
@@ -741,49 +875,53 @@ For every engineer writing any subsystem, faithful work included. Each item is c
 
 ## Roadmap {#roadmap}
 
-The work in order; each row is about one pull request.
+The work in order; each row is about one pull request. Each is an issue, a sub-issue of #547.
 
-| # | Unit | Phase | Needs |
-| --- | --- | --- | --- |
-| 1 | The Network page, `--host` and `--join` (in progress) | P1 | the foundation |
-| 2 | The remote player's pad on pad port 2 (in progress) | P1 | 1 |
-| 3 | **The original's two-player game, offline:** `GameState_SyncPlayers`, player 2's human, `HuIsAPlayer`, the multiplayer callbacks, the co-op quit | P1 | faithful work with two local pads |
-| 4 | Two players' cameras: the split decision and the layout, offline | P1 | 3 |
-| 5 | The AI's two-player rules | P1 | 3 |
-| 6 | Players by slot everywhere: the single-player assumptions in gameplay, HUD and bindings | P1 | 3 |
-| 7 | Input commands: tagged, redundant, the server's buffer and timing feedback | P1 | 2 |
-| 8 | Network ids and the replicated-field tables | P1 | |
-| 9 | Snapshots: humans first, deltas against acknowledged baselines, the budget | P1 | 8 |
-| 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 |
-| 11 | Events: sounds, particles, HUD messages, scenes, movies | P1 | 9 |
-| 12 | Level loads, checkpoints and the loading barrier | P1 | 11 |
-| 13 | The state digest, two-process tests in CI, replays | P1 | 9 |
-| 14 | Prediction of the client's own Warrior | P2 | 10 |
-| 15 | Lag compensation for strikes | P2 | 14 |
-| 16 | Encryption and authentication | P2 | maintainer decision |
-| 17 | NAT traversal: LAN discovery, UPnP, hole punching, relay | P2 | maintainer decision |
-| 18 | The simulation out of `src/platform/`, so a server needs no renderer | P3 | |
-| 19 | `coney-server`, the headless dedicated server | P3 | 18 |
-| 20 | Coney's rule set: three and four players | P3 | maintainer decision |
-| 21 | Resources: manifest, Lua 5.4 sandbox, events, replicated state | P4 | the script split |
-| 22 | Server list, routing buckets, many players | P5 | maintainer decision |
+| # | Unit | Phase | Needs | Issue |
+| --- | --- | --- | --- | --- |
+| 1 | The Network page, `--host` and `--join` (in progress) | P1 | the foundation | in progress |
+| 2 | The remote player's pad on pad port 2 (in progress) | P1 | 1 | in progress |
+| 3 | **The original's two-player game, offline:** `GameState_SyncPlayers`, player 2's human, `HuIsAPlayer`, the multiplayer callbacks, the co-op quit | P1 | faithful work with two local pads | #548 |
+| 4 | Two players' cameras: the split decision and the layout, offline | P1 | 3 | #549 |
+| 5 | The AI's two-player rules | P1 | 3 | #550 |
+| 6 | Players by slot everywhere: the single-player assumptions in gameplay, HUD and bindings | P1 | 3 | #551 |
+| 7 | Input commands: tagged, redundant, the server's buffer and timing feedback | P1 | 2 | #552 |
+| 8 | Network ids and the replicated-field tables | P1 | | #553 |
+| 9 | Snapshots: humans first, deltas against acknowledged baselines, the budget | P1 | 8 | #554 |
+| 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 | #555 |
+| 11 | Events: sounds, particles, HUD messages, scenes, movies | P1 | 9 | #556 |
+| 12 | Level loads, checkpoints and the loading barrier | P1 | 11 | #557 |
+| 13 | The state digest, two-process tests in CI, replays | P1 | 9 | #558 |
+| 13a | Measure press to screen at 30 and 60 Hz ([Tick rate](#sixty-measure)) | P2 | 10, 14 | #568 |
+| 14 | Prediction of the client's own Warrior | P2 | 10 | #559 |
+| 15 | Lag compensation for strikes | P2 | 14 | #560 |
+| 16 | Encryption and authentication: GameNetworkingSockets in place of ENet | P2 | maintainer decision | #561 |
+| 17 | Joining across home routers: LAN discovery, UPnP, ICE hole punching, signaling, relay | P2 | 16, maintainer decision | #562 |
+| 18 | The simulation out of `src/platform/`, so a server needs no renderer | P3 | | #563 |
+| 19 | `coney-server`, the headless dedicated server | P3 | 18 | #564 |
+| 20 | Coney's rule set: three and four players | P3 | maintainer decision | #565 |
+| 21 | Resources: manifest, Lua 5.4 sandbox, events, replicated state | P4 | the script split | #566 |
+| 22 | Server list, routing buckets, many players | P5 | maintainer decision | #567 |
 
 ## Maintainer decisions {#decisions}
 
-1. **The tick rate:** keep the 30 Hz step (this page's recommendation) or move to 60 Hz ([Tick rate](#tick-rate)).
-2. **Order of work:** P1 needs the original's two-player game built offline first (roadmap 3-6). That is faithful
-   work the reimplementation team can take now.
-3. **A cryptography dependency** for P2 (libsodium), or GameNetworkingSockets in place of ENet.
-4. **Services Coney would run:** a relay for NAT traversal (P2), a token service (P3), a server list (P5). Each costs
-   money and operation, and raises legal questions.
-5. **Coney's rule set** (P3): more than two players, which humans they take, how the AI and cameras treat them.
-6. **A guest's co-op record** in Coney's own store ([Saves](#saves)).
-7. **A second Lua runtime** (5.4) for resources (P4).
+Decided: the networking checklist is adopted; the tick rate stays 30 Hz, subject to [the measurement](#sixty-measure);
+the original's two-player game is built offline first (roadmap 3-6). Open:
+
+1. **Moving the transport to GameNetworkingSockets** in P2 ([Transport](#transport-recommendation)): a new dependency
+   (with protobuf and a crypto library) and the end of ENet.
+2. **Services Coney would run:** a signaling service for joining by room code (P2), a TURN relay once its need is
+   measured (P2), a token service (P3), a server list (P5). Each costs money and operation, and raises legal
+   questions.
+3. **Coney's rule set** (P3): more than two players, which humans they take, how the AI and cameras treat them.
+4. **A guest's co-op record** in Coney's own store ([Saves](#saves)).
+5. **A second Lua runtime** (5.4) for resources (P4).
 
 ## Prior art and sources {#sources}
 
 Ideas only: no code is taken from any of these. FiveM's code is under the Rockstar Games Creator Platform License
-Agreement, not an open-source licence, so only its public documentation was read. Sources marked *(not re-checked)*
+Agreement, not an open-source licence, as its [repository's README](https://github.com/citizenfx/fivem) states, so only
+its public documentation was read. Sources marked *(not re-checked)*
 could not be fetched when this page was written.
 
 | Idea used here | Source |
