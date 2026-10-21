@@ -16,8 +16,10 @@ from are on [Combat: grabs](combat-grabs.md); damage and reactions on [Combat: r
 
 The throw is `Player_Throw` with the paired-move code it starts; a bat is the `melee_weapon` object's message
 handler, the human's pick-up clip and the dispatcher's armed branch; the mugging is `Player_UpdateMugging` with its
-parameter table and the tackle and cuffing holds. Each function, with its address and level, is in
-[Combat's code index](combat.md#code-index); the behaviour below names the one each step lives in.
+parameter table and the tackle and cuffing holds. `Player_Throw` and `Player_UpdateMugging` are in
+[Combat's Original structure](combat.md#original-structure), the helpers in [its code index](combat.md#code-index);
+the behaviour below names the function each step lives in, with its address and level, the weapon's handler and the
+pick-up clip among them.
 
 ## Data
 
@@ -663,8 +665,16 @@ fight plays differently is listed on [Combat: where Coney differs](combat-diffs.
   front victim lands 19.2° right of the stick against 2.1° ([Where a throw goes](#throw-direction);
   [Combat: open questions](combat.md#open-questions)).
 - **What sends a weapon message 1** (the break, `0x003fd600`): hits alone do not, at runtime ([A bat in hand](#bat)).
-- **The inventory check for a type 44 object** on pick-up (`0x0041e420`, `0x0041ded0`).
-- **The armed branch's object attack** on a breakable with no human target (`0x00263eb8`), and what plays the knife's
-  `KNIFE_ATTACK_FROM_RUN` (490) ([Moving attacks with something in hand](#armed-moves)).
-- **The mugging angle's frame**, world or camera ([Mugging](#mugging)).
-- **Why `Tackle_StartHold` deals a zero-damage hit** ([The cuffing hold](#cuffing-hold)).
+  Coney's weapons never break for want of it. Found from the callers that send message 1 to an object (the
+  object message dispatch's cross-references), or a PCSX2 breakpoint on `0x003fd600` while a weapon is used.
+- **The inventory check for a type 44 object** on pick-up (`0x0041e420`, `0x0041ded0`): which count it reads and
+  what refuses the pick-up. Pick-up of that type depends on it. Found by decompiling both functions.
+- **The armed branch's object attack** on a breakable with no human target (`0x00263eb8`, `Human_AttackObject` on
+  [Combat](combat.md#code-index)), and what plays the knife's `KNIFE_ATTACK_FROM_RUN` (490)
+  ([Moving attacks with something in hand](#armed-moves)). Found from the references to anim id 490 in the code and
+  the scripts.
+- **The mugging angle's frame**, world or camera ([Mugging](#mugging)): Coney's stick game depends on it. Found by
+  reading the angle `Player_UpdateMugging` compares against, or at runtime by turning the camera during a mugging.
+- **Why `Tackle_StartHold` deals a zero-damage hit** ([The cuffing hold](#cuffing-hold)): the hit's side effects
+  (events, statistics, the brain's reaction) may matter to the AI. Found by following `Human_DealDamage` with a
+  damage of 0.

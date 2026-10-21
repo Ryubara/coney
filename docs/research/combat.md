@@ -327,10 +327,10 @@ The grab strikes 51-57 have code 0 (the grab's own reactions play instead).
 3. **Side**: 0 when the attacker is within 45° of the victim's front, 3 on its left, 1 on its right, 2 behind
    (`Hit_GetSideFromPoint` `0x00267338` via `Human_GetSideOf` `0x002672d0`; confirmed (code), cos 45° = 0.7071). The
    reaction's direction = (code direction + side) & 3.
-4. The id is the s32 table at `0x00510798`, index strength × 16 + height × 4 + direction; a -1 entry (or an index
-   above 64) falls back to 272, the table's entry 10 (`Hit_PickReactionClip` `0x00266f38`; confirmed (code)). Dying
-   uses `Hit_PickDyingReaction` (`0x00266fd8`; confirmed (code)): strength 2, and for a strength-2 entry half the time
-   the `DIE` set 304-315 (id + 20), else the entry itself; a -1 entry gives 292, the table's entry 42.
+4. The id is the s32 table at `0x00510798`, index strength × 16 + height × 4 + direction; a -1 entry (or an index above
+   64) falls back to 272, the table's entry 10 (`Hit_PickReactionClip` `0x00266f38`; confirmed (code)). Dying uses
+   `Hit_PickDyingReaction` (`0x00266fd8`; confirmed (code)): strength 2, and for a strength-2 entry half the time the
+   `DIE` set 304-315 (id + 20), else the entry itself; a -1 entry or an index above 64 gives 292, the table's entry 42.
 
 | Strength | Height | Back (0) | Left (1) | Front (2) | Right (3) |
 | --- | --- | --- | --- | --- | --- |

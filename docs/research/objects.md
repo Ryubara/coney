@@ -524,7 +524,8 @@ a marker out.
 - `sub_objective_glow` (script type 223, init `0x003ea0b0`, update `0x003ea260`, message `0x003ea198`): a 120 × 120
   sprite of the `lighting` sheet, rectangle 3 (a corona), alpha 255, pulled 0.32 m towards the camera every 2 ticks;
   message `0x0a` shows or hides it. Confirmed (code) for the three functions (the table's record 223), the 2-tick
-  interval, rectangle 3 and the 0.32 m pull; the size and the sheet are inferred. Who spawns it is not traced.
+  interval, rectangle 3, alpha 255, the 0.32 m pull and message `0x0a`'s show and hide; the size and the sheet are
+  inferred. Who spawns it is not traced.
 - `dyn_throwtarget` (gold), `dyn_w_bonus` and `dyn_objective_green` (purple), `dyn_w_cinematics` (white): the same
   class; their uses are not traced.
 

@@ -15,8 +15,9 @@ Coney side is confirmed by reading the source.
 ## Original structure
 
 The original functions behind each entry are on the page it links, in that page's own Original structure and code
-index ([Combat](combat.md#original-structure), [Combat moves](combat-moves.md#original-structure)); this page adds
-none of its own.
+index ([Combat](combat.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
+here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
+they are cited.
 
 ## Data
 
