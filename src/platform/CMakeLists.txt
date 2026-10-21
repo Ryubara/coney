@@ -43,9 +43,12 @@ target_sources(coney_platform PRIVATE game_session.cpp)
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
 target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp imgui_ui_scale.cpp)
+# Network play over UDP with ENet; the sessions themselves are coney_net (docs/guides/multiplayer.md#enet).
+target_sources(coney_platform PRIVATE enet_transport.cpp)
 coney_target_defaults(coney_platform)
-target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies SDL3::SDL3-static librw::librw imgui)
-target_link_libraries(coney_platform PRIVATE ffmpeg_bink)
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net SDL3::SDL3-static librw::librw
+                                            imgui)
+target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 
 add_executable(coney main.cpp)
 coney_target_defaults(coney)
