@@ -209,7 +209,17 @@ and with a target he cannot see (`Human_HasLineOfSight` `0x00222288`), instead t
 **`Ambient_MayGesture`** (`0x00291ed0`): true when a camera is within 30 m of the human and one of the first
 *n* slots of his brain's reaction kind (two handles per kind at `0x006cddf8`; *n* is the brain's help level) is free:
 empty, or its human not speaking (`+0x178` dead). The human then takes that slot. So at most two humans of a
-reaction kind make these gesture lines at a time. Confirmed (code).
+reaction kind make these gesture lines at a time. Confirmed (code). The reaction kind (`Brain_GetReactionKind`
+`0x00291d48`) is the brain's type, but 0 for a gang brain of class role 13 and, for the player, 3 alone or 0 in co-op
+(game state `+0x158`); the help level (`Brain_GetHelpLevel` `0x00291db8`) is 1 for a cop or a Warrior, 1 for a gang
+brain or a civilian of class role 6 or whose gang's tactic is the confront (`0x23`), else 2. Confirmed (code), re-read
+2026-10-21 (`ai-code.md` had the help level as inferred). A human still speaking keeps his slot, so a second gesture
+while he talks takes the other one when his help level allows it.
+
+**Coney status (2026-10-21):** `GameSound::Voices::mayGesture` (`repo:src/audio/game_sound.h`) keeps the slots per
+kind, given `ai::reactionKind` and `ai::helpLevel` through the sound call. Stand-ins: the player is always taken as
+alone (the AI has no co-op word), and the class role is read through the gang's lookups, so a brain with no gang has
+help level 2.
 
 ### Crew lines while tagging {#tag-lines}
 

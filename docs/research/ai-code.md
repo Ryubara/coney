@@ -243,7 +243,7 @@ Small helpers that read or reset fields of the 0x2f0-byte brain record at `0x006
 | `0x0028d9e0` | `Brain_GetGangTactic` | helper | the gang's tactic (gang `+0x40`) | confirmed (code) |
 | `0x002911e8` | `Brain_StoreAttackWeight` | helper | `+0x298 + kind` | confirmed (code) |
 | `0x00291d48` | `Brain_GetReactionKind` | helper | 0 for the player in co-op, 3 alone; type 2 of class kind 13 → 0; else the type | confirmed (code) |
-| `0x00291db8` | `Brain_GetHelpLevel` | helper | 1 or 2 by type, class kind 6 and tactic `0x23` | inferred |
+| `0x00291db8` | `Brain_GetHelpLevel` | helper | 1 for a cop or a Warrior; for a gang brain or a civilian 1 with class kind 6 or tactic `0x23`, else 2; 2 for the rest ([Gestures](sound-events.md#command-ids)) | confirmed (code) |
 | `0x002920b8` | `Brain_SetTimerA` | helper | `+0x2cc` = now + ms (0 clears) | confirmed (code) |
 | `0x002920e0` | `Brain_ExpireTimerA` | helper | when `+0x2cc` passes: cleared, `+0x2d0` = 0 | confirmed (code) |
 | `0x00292130` | `Brain_SetTimerB` | helper | `+0x2c8` = now + ms (0 clears) | confirmed (code) |
