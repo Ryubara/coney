@@ -1222,7 +1222,8 @@ int main(int argc, char** argv) {
                                    {"headless", options->headless ? "yes" : "no"},
                                    {"vsync", options->vsync ? "on" : "off"},
                                    {"build", CONEY_BUILD_TYPE},
-                                   {"renderer", coney::platform::glRendererName()}});
+                                   {"renderer", coney::platform::glRendererName()},
+                                   {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"}});
         if (!line) {
             std::fprintf(stderr, "coney: %s\n", line.error().message.c_str());
             return 1;
