@@ -970,7 +970,7 @@ TEST_CASE("installing refuses a missing install folder and anything that starts 
     REQUIRE_FALSE(twice.has_value());
 }
 
-TEST_CASE("--data plays from an install folder's copy of the disc", "[options]") {
+TEST_CASE("an install folder's copy of the disc plays through --data", "[options]") {
     auto result = parse(std::to_array<std::string_view>({"--data", "D:/Coney", "--play-level", "level99"}));
     REQUIRE(result.has_value());
     CHECK(result->dataPath == "D:/Coney");
