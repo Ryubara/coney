@@ -147,8 +147,8 @@ TEST_CASE("a guest who leaves over a slow link is still seen to leave, not to lo
 TEST_CASE("a closing transport that never closes is dropped after its steps", "[net][net_play]") {
     TwoGames games;
     games.connect();
-    // Everything the guest sends is lost, so his Bye is never acknowledged and his connection never closes.
-    games.guest.setSimulation(NetSimulation{.lossPercent = 100});
+    // A second of latency holds the guest's Bye for 30 steps, longer than the close may take.
+    games.guest.setSimulation(NetSimulation{.latencyMs = 1000});
     games.guest.disconnect();
     games.run(static_cast<int>(NetPlay::kCloseSteps) - 1);
     CHECK(games.guest.closingTransports() == 1);
