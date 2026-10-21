@@ -156,8 +156,10 @@ uv run --project python coney-tools build --agent <your id> --preset dev --test
 ```
 
 A hook in `.claude/settings.json` refuses `cmake --build`, `cmake --preset`, `ctest` and `ninja` typed directly (it
-only applies inside Claude Code). A person may use either way: `--agent` takes any name (`me` will do), and on Windows
-the tool loads the Visual Studio environment itself, so no special prompt is needed. Underneath, and for a person
+only applies inside Claude Code). A person may use either way. Typed in a terminal, `--agent` may be left out: the build
+is then labelled with your user name. An agent always passes it (it is required when the output is not a terminal,
+and inside Claude Code). On Windows the
+tool loads the Visual Studio environment itself, so no special prompt is needed. Underneath, and for a person
 alone on a machine, the everyday loop is:
 
 ```sh
