@@ -635,10 +635,16 @@ player panel ([HUD: score and money](hud.md#score-and-money)):
 
 So the count's sound lasts exactly as long as the count (after the hold) and never outlives it.
 
+**Watched running**, confirmed (runtime) on 2026-10-21 in PCSX2 (`level99` checkpoint 1, player 0's panel at
+`0x00619d70`): with the shown money `+0x44` set to 200 over 0 in the inventory, the play at `0x001bef84` was hit once,
+on the count's first frame; the handle it returned stayed in `+0x50` through all 35 shown values from 200 to 0
+(about 1.2 s, many times the sample's length, so the voice was still live and looping); `Sound_Stop` at `0x001befec`
+was hit once, on the first frame after the count reached 0, and `+0x50` went back to `0xffffffff`.
+
 **In Coney** before the fix, the HUD played cue 16 once as a count started, as a fire-and-forget sound (`PlayerPanel`,
 `repo:src/hud/player_panel.cpp`, "Coney's choice"). Being a looping class, its voice never ended: each money
 pick-up, mugging or purchase left one more `count_money2` voice looping until a bank change (the main menu) stopped
-it. That is owner item 22, reproduced in a disc test (`repo:tests/platform/disc_level99_money_sound_test.cpp`: a
+it. That is user item 22, reproduced in a disc test (`repo:tests/platform/disc_level99_money_sound_test.cpp`: a
 $50 pick-up walked into on `level99` left the sound live 5 s after the count). **Coney fix**, done: the panel keeps
 the handle, starts the cue on a counting frame when the kept sound is not playing, and stops it on the first frame
 without counting. The 1,000 ms hold before a count is a separate difference (Coney counts at once and shows the line

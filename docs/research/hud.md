@@ -416,7 +416,8 @@ scripts order the crew with `WCIssueCommand`.
   -99..9999, counting toward a new value by (difference / 16) ± 1 per frame, and a floating `±$N` line
   (`<MONEYPLUS>` / `<MONEYMINUS>` markup) for 1 s after a change, during which the count waits. While it counts, the
   looping cue `0x10` plays, one voice kept by handle and stopped when the count ends ([Sound events: the money
-  count's sound](sound-events.md#money-count-sound)). Confirmed (code) at `0x001becb0`. Hidden when 0 (inferred: the runtime panel with 0 dollars showed none).
+  count's sound](sound-events.md#money-count-sound)). Confirmed (code) at `0x001becb0`; the sound's keep and stop
+  confirmed (runtime). Hidden when 0 (inferred: the runtime panel with 0 dollars showed none).
 
 ### Item counters {#item-counters}
 
