@@ -26,7 +26,7 @@ Linux install `clang-tidy-19`, on macOS `brew install llvm@19`. For step 4, your
 the North American (NTSC-U) game: the research is checked against its executable `SLUS_212.15`; other releases are
 untested.
 
-1. **Clone.** With write access, `git clone https://github.com/Ryubara/coney.git`; without it, fork first and follow
+1. **Clone.** The command is in the [README](README.md#clone); without write access, fork first and follow
    [Working from a fork](#working-from-a-fork). The tools keep their logs and scratch files in `../../scratch`
    beside the checkout, so the tidy layout is to clone into `<workspace>/repos/coney` and run `./bootstrap.sh` there
    (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1` on Windows). It makes the sibling folders, writes
@@ -64,8 +64,7 @@ untested.
     [Running Coney](docs/guides/running.md).
 5. **Pick a first change.** The safest first pull requests change no gameplay: a fix to a docs or research page
    (every page ends with what it was checked against; a wrong claim is worth fixing), a test, a tool or build
-   problem, or an issue labelled [`good first issue`](https://github.com/Ryubara/coney/labels/good%20first%20issue)
-   or [`help wanted`](https://github.com/Ryubara/coney/labels/help%20wanted). A change to what a player sees
+   problem, or an issue labelled `good first issue` or `help wanted` in the issue tracker. A change to what a player sees
    (`gameplay`, `graphics`, `audio`) must also be compared with the original running, which needs the research tools
    below; talk to a maintainer in the issue first. Write the test first ([Testing](docs/guides/testing.md)) and
    keep the code in the style of [Conventions](docs/guides/conventions.md).
