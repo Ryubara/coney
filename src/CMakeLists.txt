@@ -26,6 +26,7 @@ add_library(coney_core STATIC
     core/pad_handlers.cpp
     core/pads.cpp
     core/sha1.cpp
+    core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
     fileio/file_stream.cpp
