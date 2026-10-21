@@ -58,10 +58,24 @@ void MenuLayer::load(const PauseSheetLoader& loadSheet, const PauseRecordLoader&
     }
 }
 
+void MenuLayer::loadSecond(const PauseRecordLoader& loadRecord, std::uint32_t record, std::size_t capacity, float depth,
+                           const std::function<void(std::string_view)>& log, std::string_view who) {
+    m_second.reset();
+    if (!loadRecord) {
+        return;
+    }
+    if (auto sheet = loadRecord(record); sheet) {
+        m_second.emplace(std::move(*sheet), capacity, depth);
+    } else {
+        log(std::format("{}: sheet record {}: {}\n", who, record, sheet.error().message));
+    }
+}
+
 void MenuLayer::release() {
     // The queue points at the batches released below.
     m_pass.empty();
     m_sprites.reset();
+    m_second.reset();
     m_textBatch.reset();
     m_bigBatch.reset();
     m_textFont.reset();
@@ -69,7 +83,7 @@ void MenuLayer::release() {
 }
 
 void MenuLayer::queue() {
-    for (std::optional<graphics::SpriteBatch>* batch : {&m_sprites, &m_textBatch, &m_bigBatch}) {
+    for (std::optional<graphics::SpriteBatch>* batch : {&m_sprites, &m_second, &m_textBatch, &m_bigBatch}) {
         if (*batch) {
             m_pass.queue(**batch);
         }
@@ -167,6 +181,10 @@ void PauseMode::enter() {
     m_layer.load(m_loadSheet, m_loadRecord, kBackgroundRecord, kBackgroundCapacity, gui::PauseMenu::kBackgroundDepth,
                  m_log, "pause");
     m_menu.setBackgroundBatch(m_layer.sprites());
+    // The Controls screen's pad picture (`ControllerPage_Init`'s sprite word `0x18f0000`).
+    m_layer.loadSecond(m_loadRecord, gui::ControlMenu::kPictureRecord, 1, gui::ControlMenu::kPictureDepth, m_log,
+                       "pause");
+    m_menu.setControllerBatch(m_layer.second());
     if (m_hooks.radarsOff) {
         m_hooks.radarsOff();
     }
@@ -181,6 +199,7 @@ ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_openPending = false;
         m_frozen = RenderTime{.alpha = 1.0F, .gameTicks = frame.gameTicks - frame.stepTicks, .index = 0};
         gui::PauseMenuSetup setup;
+        setup.language = m_state.language;
         if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel)) {
             setup.level = static_cast<int>(record->number);
         }
@@ -231,6 +250,7 @@ void PauseMode::exit() {
         m_hooks.pauseSound(false);
     }
     m_menu.setBackgroundBatch(nullptr);
+    m_menu.setControllerBatch(nullptr);
     m_layer.release();
 }
 

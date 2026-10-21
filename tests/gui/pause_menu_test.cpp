@@ -224,7 +224,8 @@ TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up
     CHECK_FALSE(paused.menu.closing());
 }
 
-TEST_CASE("pause menu: Stats opens nothing without stats; Options and Controls open their lists", "[pause_menu]") {
+TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list, Controls its screen",
+          "[pause_menu]") {
     Paused paused(99);
     paused.selectItem(PauseItem::Stats);
     paused.driver.tap(coney::pad::kCross);
@@ -239,6 +240,29 @@ TEST_CASE("pause menu: Stats opens nothing without stats; Options and Controls o
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.screen() == PauseScreen::Controls);
     CHECK(paused.menu.headers()[0].text() == "#173");
+    // The Controls screen's entries; triangle leaves it for the grid.
+    CHECK(paused.menu.screenLines() == std::vector<std::string>{"#130", "#131"});
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.screen() == PauseScreen::Grid);
+}
+
+TEST_CASE("pause menu: Controls takes the d-pad and cross: down to Tutorial, cross opens it, triangle twice resumes "
+          "the grid",
+          "[pause_menu][controls]") {
+    Paused paused(99);
+    paused.selectItem(PauseItem::Controls);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Controls);
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.controls().selected() == 1);
+    paused.driver.tap(coney::pad::kCross);
+    CHECK(paused.menu.controls().page() == coney::gui::ControlPage::Tutorial);
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.controls().page() == coney::gui::ControlPage::None);
+    CHECK(paused.menu.screen() == PauseScreen::Controls);
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK_FALSE(paused.menu.closing());
 }
 
 TEST_CASE("pause menu: Restart Last Check Point is selected first and asks 0x103, No selected", "[pause_menu]") {
@@ -367,4 +391,17 @@ TEST_CASE("mission failed: Last checkpoint ends at once; Quit asks first", "[pau
     quitDriver.tap(coney::pad::kLeft);
     quitDriver.tap(coney::pad::kCross);
     CHECK(quit.outcome() == PauseOutcome::QuitToMainMenu);
+}
+
+TEST_CASE("pause menu: the Controls screen takes its layout from the language and video mode the menu opens with",
+          "[pause_menu][controls]") {
+    PauseMenuSetup setup;
+    setup.language = coney::Language::French;
+    setup.widescreen = true;
+    Paused paused(99, setup);
+    paused.selectItem(PauseItem::Controls);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Controls);
+    CHECK(paused.menu.controls().label(1).style().x == Catch::Approx(0.16F));
+    CHECK(paused.menu.controls().tips().visibleCount() == 10);
 }

@@ -72,6 +72,12 @@ class MenuLayer {
     void load(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
               std::optional<std::uint32_t> record, std::size_t capacity, float depth,
               const std::function<void(std::string_view)>& log, std::string_view who);
+    /// Loads a second sheet, of record `record`, into a batch of `capacity` at `depth` (the pause menu's pad picture);
+    /// `log` gets a line when it fails. Released with the rest.
+    void loadSecond(const PauseRecordLoader& loadRecord, std::uint32_t record, std::size_t capacity, float depth,
+                    const std::function<void(std::string_view)>& log, std::string_view who);
+    /// The second sheet's batch; null when it did not load.
+    [[nodiscard]] graphics::SpriteBatch* second() { return m_second ? &*m_second : nullptr; }
     /// Releases everything load() made.
     void release();
 
@@ -93,6 +99,7 @@ class MenuLayer {
     std::optional<graphics::SpriteBatch> m_textBatch;
     std::optional<graphics::SpriteBatch> m_bigBatch;
     std::optional<graphics::SpriteBatch> m_sprites;
+    std::optional<graphics::SpriteBatch> m_second;
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
     gui::GuiCanvas m_canvas{
@@ -192,6 +199,8 @@ class PauseMode final : public GameMode {
 
     /// The menu.
     [[nodiscard]] const gui::PauseMenu& menu() const { return m_menu; }
+    /// The canvas the menu renders into (its fonts, for tests that measure the menu's texts).
+    [[nodiscard]] const gui::GuiCanvas& canvas() const { return m_layer.canvas(); }
     /// The START cool-down (`+0x20ac`).
     [[nodiscard]] int cooldown() const { return m_cooldown; }
     /// The player who paused (`+0x1bc0`).
