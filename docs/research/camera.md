@@ -1017,7 +1017,7 @@ Before the fixes, the 40 m fall gave a lag of 0.060, the aim point 14.4 m up and
 fall the lag and the aim point's height stay within 0.01 and 0.15 m of the original's at every update. **Open
 question** (inferred from the traces): in the last one or two updates before he lands, Coney's view tips up to
 43-68° while the original's stays where it was (14° at 40 m); what the original does to the camera on the landing
-update is not yet read.
+update is unread.
 
 The tests: in `repo:tests/camera/follow_camera_test.cpp`, a synthetic follow camera with the target falling straight
 down from rest, gaining 0.52 m/s an update up to 35 m/s, for 70 updates: the lag passes 0.18 and the aim point stays
@@ -3366,7 +3366,7 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
 
 - **The landing update after a long fall**: in the last one or two updates in the air Coney's view tips up to
   43-68°, while the original's stays where it was ([Long falls](#long-fall-coney)). Inferred from the traces; what the
-  original's follow camera does on the landing update is not yet read.
+  original's follow camera does on the landing update is unread.
 - **Look-behind in a fight** (answered, [Looking behind](#reverse)): R1 turns the view round only while the player
   runs or sprints (gait 4 or 5, record `+0x08` clear), so never while he blocks or walks locked on. Confirmed (code)
   at `0x0012b4a0`; a runtime check (R1 held at a standstill, at a walk and at a run) is still to be made.
