@@ -632,6 +632,13 @@ not something `Brain_PickSideInFight` returns.
    gang clip table's names and the event sent as a man comes to lie on the ground
    (`repo:src/ai/brains.h`, `reportPutDowns`); the BigFighter branch and class `0x80`'s hat are not.
 
+   **At runtime** (confirmed (runtime), PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the
+   `taunt-init` hook on `TauntAction_Init` `0x002fb0f0`): in level99's sparring fight against a still player, one
+   gloat was queued in 1,198 updates: a cheer (kind 3, line `0x10`) by one Warrior at update 1507, as a mount let the
+   player go (the call at `0x00293428`). It never said its line,
+   so no gloat played. Nothing taunted at kind 4: the still player has no target of his own. Coney's sparring disc
+   test over the same span saw no gloat start in any of its eight AI sequences.
+
 Event `0x15` is sent to a man as he is put on the ground: by `HitReact_OnSpecialEnd` (`0x0026a1f8`, the end of a
 knock-down clip) and by `Throw_ClearVictimLink` (`0x0022bdc0`, a throw, grab or mount putting its victim down).
 Confirmed (code); the detail is in [Gang fights](gang-fights.md#waiting) rule 5.
