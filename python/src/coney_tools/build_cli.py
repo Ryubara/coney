@@ -21,7 +21,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime
+from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime, shared_deps
 from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import (
@@ -367,7 +367,7 @@ def _build(
     cache = compiler_cache.find(root)
     compiler_cache.write_config(cache)
     stats_log = log_path.with_suffix(".ccache-stats")
-    env = {**env, **compiler_cache.environment(cache, root, stats_log, env)}
+    env = {**env, **compiler_cache.environment(cache, root, stats_log, env), **shared_deps.environment(root, env)}
     env, disc = disc_environment(env, root)
     options = build_run.Options(
         agent=args.agent,
