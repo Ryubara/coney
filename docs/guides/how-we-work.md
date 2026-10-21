@@ -220,7 +220,7 @@ something:
   virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds and no
   clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is fixed forward on the branch
   ([CI](building.md#what-ci-runs)).
-- **Keep the drive from filling up.** A build is about 4 GB and every track has its own worktree, so forgotten
+- **Keep the drive from filling up.** A build is about 6 GB and every track has its own worktree, so forgotten
   worktrees fill a drive (once down to 3 GB free, which broke builds). An agent creates a `.coney-busy` file in its
   worktree when it starts and deletes it when it finishes, and deletes its own `build/` folder when it hands over a
   unit. The coordinator runs `coney-tools workspace clean --apply` after every merge round (it removes merged

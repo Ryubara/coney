@@ -37,6 +37,7 @@
 #include "human/player.h"
 #include "human/target_human.h"
 #include "sandbox/sandbox_world.h"
+#include "support/test_paths.h"
 
 namespace {
 
@@ -69,7 +70,7 @@ Yard loadYard(const char* discPath) {
     auto character = coney::human::PlayerCharacter::load(discWad, table, coney::human::kPlayerModel);
     REQUIRE(character.has_value());
     yard.character = std::move(*character);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", "combat");
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
     REQUIRE(world->collision() != nullptr);
     yard.world = std::make_unique<coney::sandbox::SandboxWorld>(std::move(*world));

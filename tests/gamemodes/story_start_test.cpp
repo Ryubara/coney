@@ -49,6 +49,7 @@
 #include "support/lua_fixtures.h"
 #include "support/optional_value.h"
 #include "support/recording_device.h"
+#include "support/test_paths.h"
 #include "warriors/disk_profile_store.h"
 
 using coney::GameModeStack;
@@ -201,7 +202,7 @@ struct StoryRun {
 // STORY with a new profile (tests/support/story_new_profile.txt, which `coney --input-script` plays too): the menus
 // are done on frame 419 and fade out for a second.
 std::vector<coney::InputEvent> storyScript() {
-    return coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value();
+    return coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt").value();
 }
 
 } // namespace

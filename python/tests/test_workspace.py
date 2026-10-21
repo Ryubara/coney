@@ -3,12 +3,13 @@
 
 import os
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
 import pytest
 
-from coney_tools import workspace
+from coney_tools import workspace, workspace_fetch
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.workspace import WORKSPACE_DIRS, fill_config, find_layout
@@ -186,3 +187,31 @@ def test_init_points_pcsx2_mcp_dir_at_the_newest_fork_build(tmp_path: Path, monk
     assert main(["workspace", "init"]) == 0
     config = tomllib.loads((checkout / "coney.local.toml").read_text(encoding="utf-8"))
     assert config["pcsx2_mcp_dir"] == "../../tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.12-win64"
+
+
+def test_the_ccache_check_is_optional_and_names_the_program_or_why_not(tmp_path: Path) -> None:
+    missing = workspace.ccache_check(tmp_path)
+    assert not missing.ok and not missing.required and missing.detail == "no checkout yet"
+    checkout = tmp_path / "repos" / "coney"
+    checkout.mkdir(parents=True)
+    (checkout / "coney.local.example.toml").write_text("", encoding="utf-8")
+    program = (
+        tmp_path
+        / "tools"
+        / f"ccache-{workspace_fetch.CCACHE_VERSION}"
+        / ("ccache.exe" if sys.platform == "win32" else "ccache")
+    )
+    program.parent.mkdir(parents=True)
+    program.write_text("", encoding="utf-8")
+    found = workspace.ccache_check(checkout)
+    assert found.ok and not found.required and found.detail == str(program.resolve())
+
+
+def test_a_packaged_tool_is_left_to_the_package_manager(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    checkout = make_upstream(tmp_path / "ws" / "repos" / "coney")
+    monkeypatch.chdir(checkout)
+    monkeypatch.setattr(workspace_fetch, "packaged", lambda _tool, _platform: True)  # ccache on Linux or macOS
+    assert main(["workspace", "init", "--fetch", "ccache", "--dry-run"]) == 0
+    assert "ccache: install it with your package manager" in capsys.readouterr().out

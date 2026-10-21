@@ -34,6 +34,7 @@
 #include "gamemodes/gameplay_mode.h"
 #include "human/human.h"
 #include "platform/play_level_mode.h"
+#include "support/test_paths.h"
 #include "world_objects/flags.h"
 
 #include "support/disc_play_fixtures.h"
@@ -72,7 +73,7 @@ TEST_CASE("the disc's level99: a bum walks over the gravel heap by its walk leg 
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    std::ifstream file(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt");
+    std::ifstream file(coney::test::testSupportDir().string() + "/story_new_profile.txt");
     REQUIRE(file.good());
     std::stringstream script;
     script << file.rdbuf();

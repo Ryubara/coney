@@ -163,7 +163,8 @@ instead of repeating it:
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - disk: it creates `.coney-busy` in its worktree as it starts and deletes it when it finishes, and before reporting a
-  unit finished it deletes its own `build/` folder; a build is about 4 GB per preset
+  unit finished it deletes its own `build/` folder; a build is about 6 GB per preset, and with the shared
+  [compiler cache](building.md#compiler-cache) a fresh one builds in about 2 minutes, not 11
   ([Cleanup](workspace.md#cleanup));
 - builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
   tests](#builds)); the brief does not paste the flags;
@@ -250,6 +251,10 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   whole suite; the first build in a fresh worktree and a full test run are the big jobs. `-L disc` runs only the tests
   that need the game's disc. `-R` is a CMake regular expression: escape `.` `+` `(` `)` with a backslash and quote it
   with single quotes ([Choosing tests](coney-tools.md#build)).
+- **A play build is `--target coney`.** It builds the executable and what it links, not the tests; it cannot be
+  combined with `--test`. Every build goes through the shared [compiler cache](building.md#compiler-cache), so the
+  first build of a fresh worktree takes most of its objects from builds other worktrees already ran, and its summary
+  prints the hits.
 - **One run per build folder.** A second `build` in the same checkout and preset waits for the first (it prints who
   holds the folder), so start a build and its tests as one `--test` run rather than two commands, and never run two at
   once in one worktree. Each run writes a log of its own, named for the preset, the agent and the time; read the path

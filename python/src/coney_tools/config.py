@@ -17,6 +17,8 @@ PATH_KEYS: tuple[str, ...] = (
     "pcsx2_root",
     "pcsx2_claims_dir",
     "build_claims_dir",
+    "ccache_dir",
+    "ccache_program",
     "scratch_dir",
     "jdk_home",
     "ghidra_mcp_repo",
@@ -27,11 +29,13 @@ PATH_KEYS: tuple[str, ...] = (
 #: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at
 #: once; `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
-#: PINE and debug server ports of the first copy, each next copy taking the next port).
+#: PINE and debug server ports of the first copy, each next copy taking the next port; `ccache_size_gb`: the cap of the
+#: shared compiler cache, 0 turning it off, compiler_cache.py).
 INT_KEYS: dict[str, int] = {
     "build_slots": 2,
     "build_fast_lane_steps": 50,
     "build_fast_lane_tests": 20,
+    "ccache_size_gb": 25,
     "pcsx2_copies": 5,
     "pcsx2_pine_base": 28011,
     "pcsx2_debug_base": 21512,

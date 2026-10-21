@@ -1051,8 +1051,8 @@ sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-g
 
 ```sh
 uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
-    [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority] [--max-wait MIN]
-    [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
+    [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
+    [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
@@ -1073,8 +1073,11 @@ commands, so the hook never sees them.
    no special shell is needed.
 2. *The build folder's lock*, held to the very end (see "One run per build folder" below).
 3. *Configure and build*, one claim: `cmake --preset P` when the build folder has no `CMakeCache.txt` or with
-   `--configure`, then `cmake --build --preset P -j N`. `--configure-only` stops after the configure (the compile
-   database `check changed` reads).
+   `--configure`, then `cmake --build --preset P -j N`, through the [compiler cache](building.md#compiler-cache).
+   `--configure-only` stops after the configure (the compile database `check changed` reads). `--target NAME`
+   (repeatable) builds only those targets and what they need: `--target coney` is a play build, the executable
+   without the roughly thousand test files of `coney_tests`. It is refused with `--test` (the tests would run an
+   old `coney_tests` or `coney`) and with `--configure-only`.
 4. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
    long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N`,
    with the filters `-R REGEX` and `-L LABEL` when given (see "Choosing tests" below).
@@ -1083,7 +1086,10 @@ commands, so the hook never sees them.
 worktree's folder of the scratch directory (`scratch/<worktree>/`; the process id is added if that name exists), and
 its path is the first line printed. No two runs share a log, so one never garbles another's; the newest 20 logs of a
 worktree are kept. What is printed after is short: a line per step (outcome, time, lane, how many steps were out of
-date, time spent waiting), the first compile, link and CMake errors (MSVC, GCC and Clang forms) and the failed steps,
+date, time spent waiting), a line on the compiler cache after the build (`compiler cache: 980 hits, 12 misses
+(98.8 %)`: this run's calls alone, from a stats log of its own, though other builds share the cache; or `off` and
+why, or `not used` for a folder configured before the cache was on), the first compile, link and CMake errors (MSVC,
+GCC and Clang forms) and the failed steps,
 the failed tests by name (the first eight, then a count; the counts and the names are ctest's own, read from its "The
 following tests FAILED:" list up to its blank line or "Errors while running CTest" line, labels after a state
 included, so a test's output that looks like a list entry is never taken for a failure; without that list, or when it
@@ -1142,7 +1148,10 @@ waits and steps together, so an agent's wait plus its build stays inside the hou
 `--max-wait` or `--budget`, or `--budget 0` (no budget), is refused with exit `2` unless the run is detached. Each
 finished step's duration is kept in `durations.json` in the claims directory, the last ten per preset, step and size
 (`ci/configure/main`, `ci/build/fast` or `ci/build/main` by lane, `ci/test/filtered` with `-R` or `-L`, `ci/test/full`
-without); a failed step is not recorded. While a run waits for a slot, it leaves the queue with exit `75` as soon as
+without); a build of some targets only has them in its key (`dev/build/main:coney`) and a build through the compiler
+cache `+ccache` (`dev/build/main+ccache`), because both take a fraction of a full build without the cache and would
+otherwise pull its median down or up; a failed step is not recorded. While a run waits for a slot, it leaves the
+queue with exit `75` as soon as
 the time the call has taken plus the median of what it waits for (a phase's steps added up; with no history, the
 typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
 the budget, and says so with the numbers: `time budget: 25 min of the call so far; the build would take about 30 min
@@ -1166,7 +1175,8 @@ while it runs, and `1` with `ended without a result` when its process is gone wi
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`
 globs, which is cheap, and re-runs CMake only when a CMake file or a glob changed, which the build would do first
-anyway; under the folder's lock, outside a slot), then `ninja -n -d explain` runs on a *copy* of `build.ninja`, and the
+anyway; under the folder's lock, outside a slot), then `ninja -n -d explain` (of the `--target` targets only, when
+given) runs on a *copy* of `build.ninja`, and the
 **causes** it names are counted: each "output x older than most recent input y", "output x doesn't exist" or "command
 line changed for x". A plain `ninja -n` is no use here: the globs make ninja want to re-run CMake first, and a dry run
 stops there having planned nothing; and a dry run on a copy plans too much, because it cannot ask a `restat` step
@@ -1377,8 +1387,10 @@ uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url
 
 Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
 (`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
-`--fetch ghidra|ghidra-mcp|pcsx2-mcp|all`, downloads the research tools at pinned versions, checked by SHA-256 (the
-two MCP projects are cloned at a pinned commit; PCSX2 comes from the fork's own build, `pcsx2 setup-copies`).
+`--fetch ghidra|ghidra-mcp|pcsx2-mcp|ccache|all`, downloads the research tools and, on Windows, the
+[compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (the two MCP projects are cloned
+at a pinned commit; PCSX2 comes from the fork's own build, `pcsx2 setup-copies`; on Linux and macOS ccache comes from
+the package manager).
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
 `bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each

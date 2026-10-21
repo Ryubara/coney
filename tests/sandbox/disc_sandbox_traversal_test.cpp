@@ -33,6 +33,7 @@
 #include "human/player.h"
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
+#include "support/test_paths.h"
 
 using Catch::Approx;
 using coney::human::Traversal;
@@ -78,7 +79,7 @@ Course loadCourse(const char* discPath, const char* layout = "parkour") {
     auto character = coney::human::PlayerCharacter::load(discWad, table, coney::human::kPlayerModel);
     REQUIRE(character.has_value());
     course.character = std::move(*character);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", layout);
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", layout);
     REQUIRE(world.has_value());
     REQUIRE(world->collision() != nullptr);
     course.world = std::make_unique<coney::sandbox::SandboxWorld>(std::move(*world));
@@ -98,7 +99,7 @@ std::uint64_t fnv1a(std::uint64_t hash, const void* bytes, std::size_t size) {
 // facing +y, and prints where he was every second (every frame with CONEY_TRACE set).
 Run runScript(const Course& course, const char* label, const std::string& name, coney::anim::Vec3 start,
               std::uint64_t frames) {
-    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / name;
+    const std::filesystem::path path = coney::test::testSupportDir() / name;
     auto events = coney::loadInputScript(path.string());
     REQUIRE(events.has_value());
     coney::ScriptedInput input(std::move(*events));

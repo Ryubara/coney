@@ -6,13 +6,13 @@ temporary directory."""
 import json
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import ClassVar
 
 import pytest
 
-from coney_tools import build_cli, build_run, pcsx2_proc
+from coney_tools import build_cli, build_run, compiler_cache, pcsx2_proc
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
 from coney_tools.process_lifetime import Process
@@ -56,7 +56,7 @@ class FakeToolchain:
         FakeToolchain.commands.append(command)
         return 0, "[1/2] a\n[2/2] b\n"
 
-    def dry_run(self, directory: Path) -> tuple[int, str]:
+    def dry_run(self, directory: Path, targets: Sequence[str] = ()) -> tuple[int, str]:
         return 0, "ninja explain: output a.obj.ddi older than most recent input a.cpp (1 vs 2)\n[1/2] a\n[2/2] b\n"
 
     def run(self, command: list[str], on_line: Callable[[str], None]) -> int:
@@ -76,10 +76,15 @@ def fake_toolchain(monkeypatch: pytest.MonkeyPatch) -> type[FakeToolchain]:
     monkeypatch.setattr(build_run, "ProcessToolchain", FakeToolchain)
     monkeypatch.setattr(build_run, "load_msvc_environment", lambda base, run: dict(base))
     monkeypatch.setattr(build_run, "find_programs", lambda env: None)
+    # No compiler cache unless a test gives one: the machine's own ccache must not change what a test sees.
+    monkeypatch.setattr(compiler_cache, "find", lambda root: NO_CACHE)
     TIED.clear()
     monkeypatch.setattr(build_cli, "_tie_to_caller", TIED.append)
     return FakeToolchain
 
+
+#: The compiler cache of a machine without ccache.
+NO_CACHE = compiler_cache.CompilerCache(None, Path("cache"), 25, "ccache not found")
 
 #: The toolchains a run tied to its caller (the real tie binds the test process itself, so the tests record it).
 TIED: list[object] = []
@@ -391,7 +396,7 @@ def test_an_env_setting_replaces_a_variable_whatever_its_case(
 ) -> None:
     monkeypatch.setattr(build_run, "load_msvc_environment", lambda base, run: {"PATH": "x", "Cc": "gcc"})
     assert main(["build", "--agent", "a", "--configure", "--env", "CC=clang"]) == 0
-    assert fake_toolchain.env == {"PATH": "x", "CC": "clang"}
+    assert fake_toolchain.env == {"PATH": "x", "CC": "clang", "CCACHE_DISABLE": "1"}
 
 
 @pytest.mark.parametrize("setting", ["CC", "=x", "1BAD=x", "A B=x", ""])
@@ -605,3 +610,104 @@ def test_result_as_json(checkout: Path, tmp_path: Path, capsys: pytest.CaptureFi
     write_record(checkout, tmp_path, state="done", pid=1, exit_code=0, summary=["result: ok"], ended=1_800_000_600.0)
     assert main(["build", "result", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["summary"] == ["result: ok"]
+
+
+# -- --target and the compiler cache ------------------------------------------------------------------------------
+
+
+def test_targets_reach_the_build_command_and_the_detached_child(
+    checkout: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    spawned: list[tuple[list[str], Path, Path]],
+) -> None:
+    assert main(["build", "--agent", "alice", "--configure", "--target", "coney", "--target", "coney_tests"]) == 0
+    build = next(c for c in fake_toolchain.commands if "--build" in c)
+    assert build[build.index("--target") :][:3] == ["--target", "coney", "coney_tests"]
+    assert "build coney coney_tests: ok" in capsys.readouterr().out
+    assert main(["build", "--agent", "alice", "--detach", "--target", "coney"]) == 0
+    command = spawned[0][0]
+    assert command[command.index("--target") + 1] == "coney"
+
+
+@pytest.mark.parametrize("flag", ["--test", "--configure-only"])
+def test_a_target_with_tests_or_a_configure_only_run_is_refused(
+    checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain], flag: str
+) -> None:
+    assert main(["build", "--agent", "alice", "--target", "coney", flag]) == 2
+    assert "--target with" in capsys.readouterr().err and fake_toolchain.commands == []
+
+
+def test_the_build_gets_the_cache_environment_and_reports_its_hits(
+    checkout: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    program = tmp_path / "ccache.exe"
+    program.write_text("", encoding="utf-8")
+    cache = compiler_cache.CompilerCache(program, tmp_path / "cache", 25)
+    monkeypatch.setattr(compiler_cache, "find", lambda root: cache)
+    captured: list[list[str]] = []
+
+    def capture(
+        self: FakeToolchain, command: list[str], cwd: Path | None, timeout: float | None = None
+    ) -> tuple[int, str]:
+        captured.append(command)
+        if command[0] == str(program):
+            return 0, "direct_cache_hit\t9\ncache_miss\t1\n"
+        return 0, "[1/2] a\n[2/2] b\n"
+
+    def run(self: FakeToolchain, command: list[str], on_line: Callable[[str], None]) -> int:
+        FakeToolchain.commands.append(command)
+        Path(FakeToolchain.env["CCACHE_STATSLOG"]).write_text("# ccache\n", encoding="utf-8")  # ccache writes it
+        return 0
+
+    monkeypatch.setattr(FakeToolchain, "capture", capture)
+    monkeypatch.setattr(FakeToolchain, "run", run)
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    env = FakeToolchain.env
+    assert env["CMAKE_CXX_COMPILER_LAUNCHER"] == program.as_posix() and env["CCACHE_BASEDIR"] == str(checkout)
+    stats_log = Path(env["CCACHE_STATSLOG"])
+    assert stats_log.suffix == ".ccache-stats" and stats_log.parent == tmp_path / "scratch" / "wt"
+    assert [str(program), "--print-log-stats"] in captured and not stats_log.exists()  # read, then removed
+    assert "compiler cache: 9 hits, 1 misses (90.0 %)" in capsys.readouterr().out
+
+
+def test_the_cache_line_says_why_it_is_off_or_not_used(tmp_path: Path) -> None:
+    toolchain = FakeToolchain(tmp_path, {})
+    off = compiler_cache.CompilerCache(None, tmp_path, 25, "ccache not found (x)")
+    assert (
+        build_cli.cache_line(off, tmp_path, tmp_path / "s", toolchain) == "compiler cache: off (ccache not found (x))"
+    )
+    zero = compiler_cache.CompilerCache(tmp_path / "ccache", tmp_path, 0)
+    assert (
+        build_cli.cache_line(zero, tmp_path, tmp_path / "s", toolchain) == "compiler cache: off (ccache_size_gb is 0)"
+    )
+    on = compiler_cache.CompilerCache(tmp_path / "ccache", tmp_path, 25)
+    folder = tmp_path / "dev"
+    folder.mkdir()
+    (folder / "CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Debug\n", encoding="utf-8")
+    line = build_cli.cache_line(on, folder, tmp_path / "s", toolchain)
+    assert line is not None and "not used" in line and "delete the folder" in line
+    (folder / "CMakeCache.txt").write_text("CMAKE_CXX_COMPILER_LAUNCHER:STRING=ccache\n", encoding="utf-8")
+    assert build_cli.cache_line(on, folder, tmp_path / "s", toolchain) is None  # nothing compiled
+
+
+def test_the_cache_line_says_when_ccache_cannot_give_the_hits(tmp_path: Path) -> None:
+    # An older ccache (before 4.10) has no --print-log-stats: the build still used the cache, so say so.
+    on = compiler_cache.CompilerCache(tmp_path / "ccache", tmp_path, 25)
+    stats_log = tmp_path / "run.ccache-stats"
+    stats_log.write_text("cache_miss\n", encoding="utf-8")
+    line = build_cli.cache_line(on, tmp_path, stats_log, FakeToolchain(tmp_path, {}))
+    assert line is not None and "hits unavailable" in line and compiler_cache.MIN_VERSION in line
+    assert not stats_log.exists()
+
+
+def test_the_stats_log_is_removed_however_the_run_ends(tmp_path: Path) -> None:
+    stats_log = tmp_path / "run.ccache-stats"
+    stats_log.write_text("x", encoding="utf-8")
+    with pytest.raises(RuntimeError), build_cli._removed_after(stats_log):
+        raise RuntimeError("configure failed")
+    assert not stats_log.exists()

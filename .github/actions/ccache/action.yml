@@ -1,8 +1,10 @@
 # Compile through ccache and restore its cache from main, so a job recompiles only what changed. A runner starts
 # empty, so without this every job recompiles everything, SDL3 and librw included. Windows (MSVC) works too: every
 # preset uses /Z7 (the "embedded-debug-info" preset in CMakePresets.json), which keeps the debug info in each object
-# where MSVC's default /Zi writes a shared PDB that ccache refuses, and the ci and asan presets also inherit
-# "cacheable", which turns off precompiled headers, which ccache cannot use.
+# where MSVC's default /Zi writes a shared PDB that ccache refuses, and every preset inherits "cacheable", which
+# turns off precompiled headers, which ccache cannot use. Local builds use the same ccache version
+# (coney-tools build, python/src/coney_tools/compiler_cache.py; a test keeps the Windows pin below equal to
+# workspace_fetch.py's).
 # Call it after the step that installs the packages (on Linux the package index is already updated by then), and
 # end the job with ./.github/actions/ccache-save, which reports the hit rate and saves the cache (main only).
 #
@@ -53,8 +55,8 @@ runs:
         if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $expected) { throw "ccache ${version}: wrong SHA-256" }
         Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
         Add-Content $env:GITHUB_PATH (Join-Path $env:RUNNER_TEMP $name)
-    # CMake reads the two launcher variables when it first configures; the presets stay untouched, so local builds do
-    # not use ccache unless the developer asks. COMPILERCHECK=content because the compilers are installed fresh on
+    # CMake reads the two launcher variables when it first configures; the presets stay untouched (coney-tools build
+    # sets the same variables for local builds). COMPILERCHECK=content because the compilers are installed fresh on
     # every run and their modification times mean nothing.
     - shell: bash
       env:

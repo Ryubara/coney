@@ -45,6 +45,7 @@
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
 #include "support/optional_value.h"
+#include "support/test_paths.h"
 
 namespace {
 
@@ -163,7 +164,7 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     coney::platform::PlayerSetup setup;
     setup.ai = coney::ai::aiConfigFrom(scripts.recorded);
     setup.types = coney::characters::CharacterTypes::fromRecorded(scripts.recorded);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", "combat");
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
     auto made = coney::platform::PlayLevelMode::createInSandbox(
         **engine, *wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);

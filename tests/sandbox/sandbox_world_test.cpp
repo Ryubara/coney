@@ -15,6 +15,7 @@
 
 #include "raycast/collision_mesh.h"
 #include "sandbox/sandbox_layout.h"
+#include "support/test_paths.h"
 
 using Catch::Approx;
 using coney::raycast::Ray;
@@ -151,7 +152,7 @@ TEST_CASE("a layout with nothing solid has no collision mesh", "[sandbox][world]
 }
 
 TEST_CASE("the shipped layouts parse and build", "[sandbox][world]") {
-    const std::filesystem::path folder = std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox";
+    const std::filesystem::path folder = coney::test::assetsDir() / "sandbox";
     const std::vector<std::string> names = coney::sandbox::listSandboxLayouts(folder);
     CHECK(std::ranges::find(names, "default") != names.end());
     CHECK(std::ranges::find(names, "parkour") != names.end());

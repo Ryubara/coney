@@ -32,6 +32,7 @@
 #include "human/player_trace.h"
 #include "platform/level_file.h"
 #include "platform/render_engine.h"
+#include "support/test_paths.h"
 
 using Catch::Approx;
 
@@ -103,7 +104,7 @@ std::vector<FrameRecord> runEvents(const Level99& loaded, std::vector<coney::Inp
 // Runs `frames` frames of the input script `name` (in tests/support) on a fresh player at `at`, or level99's start.
 std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& name, std::uint64_t frames,
                                    std::optional<coney::human::PlayerStart> at = std::nullopt) {
-    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / name;
+    const std::filesystem::path path = coney::test::testSupportDir() / name;
     auto events = coney::loadInputScript(path.string());
     REQUIRE(events.has_value());
     return runEvents(loaded, events ? std::move(*events) : std::vector<coney::InputEvent>{}, frames, at);

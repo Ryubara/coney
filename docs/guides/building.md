@@ -203,10 +203,71 @@ default `/Zi`, which has every compile write one shared PDB through `mspdbsrv`. 
 sharing a machine, or `-j` on a busy one) contend for that PDB and fail at random with `fatal error C1090: PDB API
 call failed, error code 23`; a rerun clears it, but costs a rebuild. With `/Z7` a compile never touches a shared
 file, so that contention cannot happen (the fix rests on this mechanism: how often the error came before was not
-measured), and a compiler cache can store the object ([Caches](#ci-caches)). Debugging works the same; the linker still
-writes the executable's PDB. The setting lives once, in the hidden `embedded-debug-info` preset of
-`CMakePresets.json`, which `dev`, `release` and the hidden `cacheable` preset inherit. `ci` and `asan` (through
-`cacheable`) also turn precompiled headers off, which a cache cannot use; `dev` and `release` keep them.
+measured), and a compiler cache can store the object ([Compiler cache](#compiler-cache), [Caches](#ci-caches)).
+Debugging works the same; the linker still writes the executable's PDB. The setting lives once, in the hidden
+`embedded-debug-info` preset of `CMakePresets.json`, which the hidden `cacheable` preset inherits, and every preset
+inherits `cacheable`, which also turns precompiled headers off, as a cache cannot use them.
+
+### Compiler cache {#compiler-cache}
+
+`coney-tools build` compiles through [ccache](https://ccache.dev), the cache CI uses, with one cache for the whole
+machine. Every agent's worktree is a fresh checkout of nearly the same sources, so without it each one compiled the
+whole engine, its thousand test files and the dependencies again; with it, the first build of a fresh worktree takes
+the objects another worktree already compiled. Measured on 2026-10-20 (Windows, MSVC 19.44, 16 cores, `dev` at
+`-j 3`, no other agent building; the first two rows ran at the same time, each the other's only load; each row a
+fresh build folder, its logs kept with the track's scratch files):
+
+| `dev` build of a fresh folder, same commit | Build step | Cache |
+| --- | --- | --- |
+| Cache disabled (`--env CCACHE_DISABLE=1`), worktree A | 10.9 min | none |
+| Empty cache, worktree B, at the same time | 12.8 min | 0 hits, 1,511 misses |
+| Worktree A again, after it | 2.1 min | 1,492 hits, 19 misses (98.7 %) |
+| Worktree B, `--target coney` in `build/play` | 47 s | 978 hits, 0 misses |
+
+The first build fills the cache at a small cost over none; every later fresh folder of nearly the same sources takes
+it back. One `dev` build's objects are 0.6 GB in the cache, so the 25 GB cap keeps many presets and branches. What
+was left of the cached build was mostly CMake's C++ module scanning (733 of its 935 step-seconds, summed from
+`.ninja_log`), which ccache does not cache.
+
+- **Install it.** Windows: `coney-tools workspace init --fetch ccache` puts ccache 4.14.1 (the release CI's Windows
+  job uses, checked by SHA-256) in `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
+  ccache`. `workspace init` lists it as an optional prerequisite. Without it builds work as before, and the summary
+  says `compiler cache: off (ccache not found ...)`.
+- **Settings** ([coney.local.toml](workspace.md#local-config)): `ccache_dir`, the cache folder (default
+  `cache/ccache` in the workspace, beside `scratch/`); `ccache_size_gb`, its cap (default 25: ccache drops the least
+  recently used objects beyond it, so the drive keeps its 30 GB floor; `0` turns the cache off); `ccache_program`,
+  the executable (default the fetched copy, else `ccache` on `PATH`). The cap is also written into the folder's
+  `ccache.conf`, so a `ccache -s` or a build started by hand does not trim the cache to ccache's default 5 GB.
+- **How it is switched on.** Only through the run's environment, never the presets: `CMAKE_C_COMPILER_LAUNCHER` and
+  `CMAKE_CXX_COMPILER_LAUNCHER` name ccache, and CMake reads them only when it first configures a folder. A folder
+  configured before keeps compiling without the cache (so a build running when the cache was turned on is never
+  changed under it), and its summary says `compiler cache: not used (... delete the folder to build with it)`. A
+  launcher you set yourself is kept.
+- **Sharing between worktrees.** `CCACHE_BASEDIR` is the checkout being built, so ccache rewrites the checkout's
+  absolute paths in a command line relative to the build folder, and the same source in two worktrees is one command
+  line and one cache entry; `CCACHE_NOHASHDIR` keeps the build folder's own path out of the hash. ccache does not
+  rewrite a path inside a compile definition, so **no target may get a definition holding a checkout path**: the
+  test target's `CONEY_ASSETS_DIR` and `CONEY_TEST_SUPPORT_DIR` made every test object miss in a second worktree.
+  They now reach the tests through one file, `tests/support/test_paths.cpp`
+  (`coney::test::assetsDir()`, `testSupportDir()`), and a Python test refuses such a definition on a target.
+- **Precompiled headers are off in every preset.** ccache cannot use them, so SDL3's made its sources uncacheable on
+  every build (ccache counts them as `could_not_use_precompiled_header`). So `dev` and `release` inherit the hidden
+  `cacheable` preset as `ci` and `asan` do.
+- **What a hit carries.** A hit is the object another worktree compiled, with that worktree's absolute paths in it:
+  in its debug information (a debugger may open the source file in the other worktree) and in what `__FILE__` expanded
+  to (`CONEY_ASSERT` messages may name the other worktree). ccache's manual names `__FILE__` among the things such
+  sharing gets wrong, so no code may use `__FILE__` to find files: the tests use `coney::test::testSupportDir()`.
+- **ccache's path in a folder.** CMake writes the launcher's absolute path into the folder's `CMakeCache.txt` at the
+  first configure. A ccache moved or replaced by another version in another folder breaks the folders configured
+  with the old one (the compile cannot start the launcher): keep the old `tools/ccache-<version>` until they are
+  deleted, or delete those folders.
+- **Version.** ccache 4.10 or newer gives a run its own hits (`--print-log-stats`); with an older one the build still
+  uses the cache and the summary says `hits unavailable`.
+- **The report.** Each run gives ccache a stats log of its own (`CCACHE_STATSLOG`, beside the run's log), so the
+  summary's `compiler cache: H hits, M misses (P %), U uncacheable` is that build's alone, although other builds use
+  the cache at the same time.
+- **By hand.** A person building without the tool gets the same with `cmake --preset dev
+  -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache` on a new folder.
 
 ## Sanitizers
 
@@ -477,8 +538,8 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
 - **What a cache can store.** MSVC's default `/Zi` writes every object's debug information into one shared PDB,
   which ccache refuses; every preset uses `/Z7` instead ([Debug information on MSVC](#debug-info)), so that is
-  settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so the `ci` and
-  `asan` presets also inherit the hidden `cacheable` preset, which turns `CMAKE_DISABLE_PRECOMPILE_HEADERS` on.
+  settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so every preset
+  inherits the hidden `cacheable` preset, which turns `CMAKE_DISABLE_PRECOMPILE_HEADERS` on.
 - **Sizes.** Each job's cap while it runs is 1 GB (`max-size` of the `ccache` action): the restored entry plus what
   the job compiles anew must fit, or ccache evicts restored objects before the build reaches them and those miss too.
   At the earlier 700 MB, about one build's objects, the Windows, GCC, macOS and macOS sanitizer jobs of a pull
