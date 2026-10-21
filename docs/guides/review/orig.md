@@ -75,8 +75,9 @@ or two concrete signs in the note whenever the class is `transcription`.
 
 ## Classes {#classes}
 
-Each function gets exactly one class: the first of these that applies, read from the bottom up. For example, a
-transcription that also has a bug is `diff-bug`.
+Each function gets exactly one class. Judge `wrong-address` first, because a function cannot be compared with the
+wrong original. Otherwise the class is the first in the table, read from the bottom up, that applies. For example,
+a transcription that also has a bug is `diff-bug`.
 
 | Class | Meaning | The note gives | A pull request |
 | --- | --- | --- | --- |
@@ -88,6 +89,22 @@ transcription that also has a bug is `diff-bug`.
 | `transcription` | The shape was copied rather than ported. | The signs (which statements, which artifacts). | fails |
 | `diff-bug` | The behaviour differs from the original with no reason. | The original's behaviour, in our own words. | fails |
 
+These cases come up often:
+
+- **An omitted step.** A step the original has and Coney leaves out is `diff-uncommented` when Coney cannot do it
+  yet (the system it needs is not ported) and nothing at the code says so. It is `diff-bug` when Coney has what it
+  needs.
+- **A note on the research page.** A difference described only on the research page (its "Coney choices") has no
+  comment at the difference. The comment belongs at the code, and it may link the page.
+- **A "Coney's reading" that the original contradicts.** A comment that guesses at the original's behaviour, where
+  the original turns out to do something else, is `diff-bug`. The note also asks for the comment to be fixed.
+- **A ported function that nothing calls.** A function that matches the original but has no caller, so the
+  behaviour never happens in play, is `diff-bug`, and the note names the original's caller.
+- **One original function split over several Coney functions, or the reverse.** The finding goes on the Coney
+  function that holds the code. A tag that cites only a small getter, while the logic sits on another Coney
+  function, gets a note.
+- **A tag name that differs from Ghidra's** at the right address is a note, not a class.
+
 A pull request passes the orig review only when every function it changes is `clean`, `diff-deliberate-ok` or
 `unclear`. An `unclear` function goes to the [runtime comparison](../testing.md#runtime-comparison) that the
 `Runtime:` line of the description already requires. In a sweep, every class except `clean` and
@@ -97,8 +114,19 @@ A pull request passes the orig review only when every function it changes is `cl
 Every finding names the Coney function, its `file:line` and the `@orig` address, and gives an evidence level as
 research claims do ([Evidence levels](../research-workflow.md)):
 
-- `confirmed (code)`: you read both sides;
-- `inferred`: part of it rests on a callee you did not open.
+- `confirmed (code)`: you read both sides of what the finding is about;
+- `inferred`: part of it rests on a callee you did not open, or on the research page.
+
+In a function of thousands of lines, read every path the finding is about on both sides, and say in the note which
+paths you did not read. A `clean` class there means clean on the paths read: write `inferred` unless you read all
+of them.
+
+A sweep may also give each finding a **severity**:
+
+- `high`: a player sees it in normal play;
+- `low`: an edge case, a one-update overshoot, or a capacity off by one.
+
+Severity is the optional eighth column of `FINDINGS.tsv`, and it orders the fix units.
 
 ## Limits {#limits}
 
@@ -157,9 +185,12 @@ addresses):
     4. `file:line`;
     5. `class`;
     6. `evidence`;
-    7. `note`: one line, in our own words.
-- `SUMMARY.md`: the counts per class, the ten worst findings, and anything systemic.
+    7. `note`: one line, in our own words;
+    8. `severity` (optional): `high` or `low`.
 - `PROGRESS.md`: the files done, so a successor continues without redoing work.
+- The summary: the counts per class, the ten worst findings and anything systemic. It is the agent's final
+  message, which the launcher saves as `SUMMARY.md` beside the findings. Claude Code refuses a subagent's own
+  writes of a summary file.
 
 `coney-tools orig record <FINDINGS.tsv>... --ref <commit>` records the rows in the ledger against the functions at
 the commit the sweep read, and prints what is still unreviewed.

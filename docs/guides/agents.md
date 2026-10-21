@@ -100,10 +100,10 @@ Run it in one of two modes:
   makes the verdict stale; a rebase that leaves the functions as they were does not.
 - **sweep mode, on existing code,** for the [fidelity audit](how-we-work.md#fidelity-audit). Give it a `src/` folder
   or a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what
-  `orig review-stamp --folder` lists as unreviewed or stale, writes `FINDINGS.tsv`, `SUMMARY.md` and `PROGRESS.md`,
-  and records the findings with `coney-tools orig record`. Run one agent per folder, and leave out the folders that
-  another audit or open branch owns. The coordinator turns each finding that is not `clean` or
-  `diff-deliberate-ok` into a fix unit.
+  `orig review-stamp --folder` lists as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the
+  findings with `coney-tools orig record`, and returns a summary that the launcher saves as `SUMMARY.md`. Run one
+  agent per folder, and leave out the folders that another audit or open branch owns. The coordinator turns each
+  finding that is not `clean` or `diff-deliberate-ok` into a fix unit.
 
 ## What a run costs {#cost}
 

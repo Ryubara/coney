@@ -33,9 +33,9 @@ The task names a branch (or worktree), its base and the folder of its descriptio
    open callees as far as the comparison needs. Judge both counts and give the function exactly one class.
 4. **Write the verdict**, `ORIG-REVIEW.json`, next to `PR.md`, in exactly the rubric's format. Copy `tip`, `base`,
    each `key` and `body_sha256` from the stamp, give each function the `addresses` you compared for it, and set
-   `rubric_version` to the rubric's version. List every compared address in `reviewed`. Make each function that fails its class a `blocker` finding at its `file:line`;
-   other remarks are `note`s. The `verdict` is `pass` only when no function's class fails and no finding is a
-   blocker.
+   `rubric_version` to the rubric's version. List every compared address in `reviewed`. Make each function whose
+   class fails a `blocker` finding at its `file:line`; other remarks are `note`s. The `verdict` is `pass` only when
+   no function's class fails and no finding is a blocker.
 5. **Write the report**, `ORIG-REVIEW.md`: the verdict on the first line, then one line per function (Coney name,
    `file:line`, address, class, note), then what was sampled and why.
 
@@ -52,10 +52,10 @@ addresses.
    from it.
 2. **Compare each function** as in pr mode, and append its row to `FINDINGS.tsv` at once, in the rubric's columns.
    After each file, update `PROGRESS.md` with the files done and the commit.
-3. **Summarise** in `SUMMARY.md`: the counts per class, the ten worst findings with their Coney function,
-   `file:line` and address, and anything systemic.
-4. **Record** with `uv run --project python coney-tools orig record <group>/FINDINGS.tsv --ref <commit>`, so the
-   ledger and `orig queue` know what is done. Report its unmatched rows.
+3. **Record** with `uv run --project python coney-tools orig record <group>/FINDINGS.tsv --ref <commit>`, so the
+   ledger and `orig queue` know what is done.
+4. **Summarise** in your final message, which the launcher saves as `SUMMARY.md` (you do not write it): the counts
+   per class, the ten worst findings with their Coney function, `file:line` and address, anything systemic, and
+   the unmatched rows `orig record` printed.
 
-Your final message gives the counts per class, the worst findings and anything systemic, in a few lines. At 500k
-context, write `PROGRESS.md` and a handover note in the group folder and stop.
+At 500k context, write `PROGRESS.md` and a handover note in the group folder and stop.
