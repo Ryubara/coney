@@ -21,6 +21,7 @@
 #include "ai/route_planner.h"
 #include "animation/anim_math.h"
 #include "camera/camera_lens.h"
+#include "characters/character_choice.h"
 #include "characters/character_types.h"
 #include "characters/dynamic_clips.h"
 #include "combat/stick.h"
@@ -28,9 +29,6 @@
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
-#include "debug/debug_lines.h"
-#include "debug/entity_inspect.h"
-#include "debug/play_controls.h"
 #include "effects/glints.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
@@ -38,6 +36,7 @@
 #include "graphics/render_device.h"
 #include "graphics/throw_arc.h"
 #include "hud/health_rings.h"
+#include "human/place.h"
 #include "human/player.h"
 #include "human/strike_shapes.h"
 #include "human/target_human.h"
@@ -96,7 +95,7 @@ struct PlayerSetup {
     int type = human::kPlayerType;
     /// The character types the scripts configured (`CfgChar`, with the power and Warrior classes): the player takes
     /// his class from them (human::playerClassOf()), and the debug menus can rebuild him as any of them
-    /// (debug::PlayControls::changeCharacter()); empty: none, and the player plays his files' own damage.
+    /// (changeCharacter()); empty: none, and the player plays his files' own damage.
     characters::CharacterTypes types;
     /// Whether the start is snapped to the ground as `HuCreate` does; false for a start a `TeleportToFlag` gave, which
     /// does not snap (docs/research/flags.md#position).
@@ -111,6 +110,21 @@ struct PlayStats {
     std::uint64_t frames = 0;
     float travelled = 0.0F; ///< Metres the player's feet moved across the ground.
 };
+
+class PlayLevelMode;
+
+/// A line PlayLevelMode draws into the scene (PlayLevelMode::setSceneLines()): its ends in the game's axes and its
+/// colour.
+struct SceneLine {
+    anim::Vec3 a;
+    anim::Vec3 b;
+    graphics::Rgba colour;
+};
+
+/// The lines to draw this frame, from the mode, player 1's snapshot as drawn and the frame's alpha: the debug tools'
+/// Debug draw page (PlayLevelControls::sceneLines()).
+using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mode,
+                                                        const human::PlayerSnapshot& snapshot, float alpha)>;
 
 /// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/running.md#playing-a-level): Rembrandt
 /// standing in a scenery (PlayScenery) at its start, driven by pad 1's left stick, and the follow camera behind him
@@ -137,9 +151,12 @@ struct PlayStats {
 /// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
 /// landed hits, and triangle at a pickable door starts a lock pick that takes the pad until it ends.
 ///
-/// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
-/// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
-class PlayLevelMode final : public GameMode, public debug::PlayControls, public ScriptedPlayer, public OverlaidLevel {
+/// It also has Coney's own capabilities, which the original has nothing like (docs/guides/conventions.md#coney-only):
+/// teleporting, freezing and flying the player, the free camera, spawning fighters and objects, changing his character.
+/// The debug menus reach them, and the parts that are debug tooling alone (the Entity inspector, the Animation player,
+/// the Debug draw page's lines), through PlayLevelControls in the debug tools (src/platform/play_level_controls.h,
+/// docs/guides/building.md#debug-tools); render() draws the lines a hook gives.
+class PlayLevelMode final : public GameMode, public ScriptedPlayer, public OverlaidLevel {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x106;
@@ -221,48 +238,79 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// Whether the world is frozen now (freezeWorld() and its first step done).
     [[nodiscard]] bool worldFrozen() const { return m_freezeWorld && m_frozenSince.has_value(); }
 
-    /// Sets the debug lines render() draws (the debug session's, which must outlive the mode); null draws none.
-    void setDebugDraw(const debug::DebugDrawOptions* options) { m_debugDraw = options; }
+    /// Sets the lines render() draws into the scene each frame, through the camera and tested against depth (the debug
+    /// tools' Debug draw page, PlayLevelControls::sceneLines()); empty draws none.
+    void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
 
-    // debug::PlayControls, for the debug menus.
-    [[nodiscard]] std::string sceneName() const override { return m_scenery->name(); }
-    [[nodiscard]] anim::Vec3 playerFeet() const override;
-    [[nodiscard]] float playerHeadingDegrees() const override;
+    // Coney's own capabilities and views of the play: the debug menus' Player, Camera, Spawner and AI fighters pages
+    // reach them through PlayLevelControls, and the disc tests call them.
+    /// The scenery's name: the level, or the sandbox layout's title.
+    [[nodiscard]] std::string sceneName() const { return m_scenery->name(); }
+    /// Player 1's feet, in the game's axes.
+    [[nodiscard]] anim::Vec3 playerFeet() const;
+    /// Player 1's heading in degrees (0 faces +y).
+    [[nodiscard]] float playerHeadingDegrees() const;
     /// The level's parked cars (their stereos), or null without any.
     [[nodiscard]] const world_objects::Cars* cars() const { return m_cars; }
-    [[nodiscard]] float playerSpeed() const override;
-    [[nodiscard]] std::string playerState() const override;
-    void teleport(const debug::Place& place) override;
-    [[nodiscard]] std::vector<debug::Place> places() const override { return m_scenery->places(); }
-    [[nodiscard]] bool playerFrozen() const override { return m_frozen; }
-    void setPlayerFrozen(bool frozen) override { m_frozen = frozen; }
-    [[nodiscard]] bool canNoclip() const override { return true; }
-    [[nodiscard]] bool noclip() const override { return m_player->noclip(); }
-    void setNoclip(bool on) override { m_player->setNoclip(on); }
-    [[nodiscard]] anim::Vec3 cameraEye() const override;
-    [[nodiscard]] anim::Vec3 cameraTarget() const override;
-    void resetCamera() override { m_player->resetCamera(); }
-    [[nodiscard]] bool freeCamera() const override { return m_freeCamera.has_value(); }
-    void setFreeCamera(bool on) override;
+    /// Player 1's speed, metres a second.
+    [[nodiscard]] float playerSpeed() const;
+    /// One line of how player 1 moves: gait, clip, ground or air, traversal, stamina.
+    [[nodiscard]] std::string playerState() const;
+    /// Puts player 1 at `place`, dropped onto the ground below it, with the camera behind him.
+    void teleport(const human::Place& place);
+    /// The scene's places: a level's player start, a sandbox's spawn points.
+    [[nodiscard]] std::vector<human::Place> places() const { return m_scenery->places(); }
+    /// Whether player 1 is frozen (he ignores the pad).
+    [[nodiscard]] bool playerFrozen() const { return m_frozen; }
+    /// Freezes or frees player 1.
+    void setPlayerFrozen(bool frozen) { m_frozen = frozen; }
+    /// Whether player 1 flies through everything (human::Human::setFlight(), the noclip).
+    [[nodiscard]] bool noclip() const { return m_player->noclip(); }
+    /// Switches the noclip.
+    void setNoclip(bool on) { m_player->setNoclip(on); }
+    /// The follow camera's eye, in the game's axes.
+    [[nodiscard]] anim::Vec3 cameraEye() const;
+    /// The point the follow camera looks at, in the game's axes.
+    [[nodiscard]] anim::Vec3 cameraTarget() const;
+    /// Places the follow camera behind player 1 again, with the current follow settings.
+    void resetCamera() { m_player->resetCamera(); }
+    /// Whether the free camera flies with pad 1 (the player stands still).
+    [[nodiscard]] bool freeCamera() const { return m_freeCamera.has_value(); }
+    /// Switches the free camera, starting where the follow camera is.
+    void setFreeCamera(bool on);
     /// The collision mesh the player and the AI stand on: the level's or the sandbox's, with any spawned objects in it.
     [[nodiscard]] const raycast::CollisionMesh& collision() const { return m_scenery->collision(); }
-    [[nodiscard]] bool canSpawn() const override { return m_scenery->canSpawn(); }
-    std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
-    [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }
-    std::expected<void, Error> clearSpawned() override;
-    [[nodiscard]] bool canSpawnFighter() const override { return true; }
-    std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees) override;
-    [[nodiscard]] std::vector<std::string> fighterModels() const override;
-    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model) override;
-    [[nodiscard]] std::size_t fighterCount() const override { return m_ai->count(); }
-    void clearFighters() override;
-    [[nodiscard]] bool fightersEngage() const override { return m_ai->engaging(); }
-    void setFightersEngage(bool on) override { m_ai->setEngaging(on); }
-    [[nodiscard]] std::string fightersState() const override;
-    [[nodiscard]] std::vector<debug::CharacterChoice> characterChoices() const override;
-    [[nodiscard]] int playerType() const override { return m_type; }
-    [[nodiscard]] std::string characterState() const override;
-    /// Rebuilds the player as `type` (debug::PlayControls::changeCharacter()): the model a player of the type is drawn
+    /// Whether objects can be spawned into the scenery (spawn()).
+    [[nodiscard]] bool canSpawn() const { return m_scenery->canSpawn(); }
+    /// Adds a sandbox primitive to the scenery and its collision (the Spawner page).
+    std::expected<void, Error> spawn(const sandbox::Primitive& primitive);
+    /// How many spawned objects there are.
+    [[nodiscard]] std::size_t spawnedCount() const { return m_spawned.size(); }
+    /// Removes every spawned object, the collision back as loaded.
+    std::expected<void, Error> clearSpawned();
+    /// Makes an AI fighter at `feet` facing `headingDegrees`, drawn as the scene's character.
+    std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees);
+    /// The models a fighter can be drawn as: the distinct models of characterChoices(), sorted.
+    [[nodiscard]] std::vector<std::string> fighterModels() const;
+    /// Makes an AI fighter drawn as `model`.
+    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model);
+    /// How many AI humans there are.
+    [[nodiscard]] std::size_t fighterCount() const { return m_ai->count(); }
+    /// Removes the AI fighters.
+    void clearFighters();
+    /// Whether idle fighters take the player on.
+    [[nodiscard]] bool fightersEngage() const { return m_ai->engaging(); }
+    /// Lets idle fighters take the player on, or keeps them from it.
+    void setFightersEngage(bool on) { m_ai->setEngaging(on); }
+    /// One line of the fighters' state.
+    [[nodiscard]] std::string fightersState() const;
+    /// The character types the player can be made as (changeCharacter()), each with its model.
+    [[nodiscard]] std::vector<characters::CharacterChoice> characterChoices() const;
+    /// The character type the player is.
+    [[nodiscard]] int playerType() const { return m_type; }
+    /// One line of the player's character and classes.
+    [[nodiscard]] std::string characterState() const;
+    /// Rebuilds the player as `type` (the debug menus' Change character): the model a player of the type is drawn
     /// as and its files (the anim set, the moves' Anim Range List, the speeds its clips give), loaded as the mode's
     /// start loads them, and his class as the start's player takes it (human::playerClassOf(): the class's damage
     /// scaled by his Warrior class, his power class), at full health where he stands. The AI
@@ -270,15 +318,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// level whose scripts drive the cast the brains and scripts hold the player, so he becomes the type in place
     /// (human::Player::changeCharacter(): the same files and class, at full health) and the scripts' record of him
     /// and his brain take the new type; the cast is left as it is.
-    std::expected<void, Error> changeCharacter(int type) override;
-    // The Animation player (src/platform/play_level_anim.cpp): the player's set, the generic set, then every model a
-    // player can be drawn as, each with its own clips (every character shares the player's skeleton).
-    [[nodiscard]] std::vector<std::string> animSets() const override;
-    std::expected<std::vector<debug::AnimClipChoice>, Error> animClips(std::size_t set) override;
-    std::expected<void, Error> playAnim(std::size_t set, std::uint32_t id,
-                                        const debug::AnimPlayOptions& options) override;
-    void stopAnim() override { m_player->human().stopDebugClip(); }
-    [[nodiscard]] debug::AnimPlayback animPlayback() const override;
+    std::expected<void, Error> changeCharacter(int type);
 
     /// Plays the game's scenes in this mode (src/platform/play_level_scene.cpp): `scenes` is stepped with every step
     /// and drawn through the mode's SceneStage (its camera, letterbox, fades and the bound humans), `playerHandle` is
@@ -329,7 +369,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::string& model() const { return m_model; }
 
     /// The HUD the mode steps and draws (its own until useHud()), for the HUD page and the scripts.
-    [[nodiscard]] hud::Hud* hud() override { return &m_hud->hud(); }
+    [[nodiscard]] hud::Hud* hud() { return &m_hud->hud(); }
     /// How many HUD sprites the newest step queued (HudLayer::spritesQueued()).
     [[nodiscard]] std::size_t hudSprites() const { return m_hud->spritesQueued(); }
     /// Steps and draws `shared` (the game's HUD, which the scripts' bindings act on; it must outlive the mode) instead
@@ -348,15 +388,6 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
-    /// The Entity inspector's view of the scene: its humans and objects (play_level_inspect.cpp).
-    [[nodiscard]] const debug::EntityInspect* inspect() const override { return &m_inspector; }
-    [[nodiscard]] bool canFreezeEntity(debug::EntityId id) const override;
-    [[nodiscard]] bool entityFrozen(debug::EntityId id) const override;
-    void setEntityFrozen(debug::EntityId id, bool frozen) override;
-    /// The distance from entity `id`'s newest-step feet (where the debug shapes are built) to where its model is drawn
-    /// `alpha` of the way from the step before to the newest one; zero for an object or an unknown id. The debug shapes
-    /// and the inspector's highlight move by it so they stay on the models at any frame rate.
-    [[nodiscard]] anim::Vec3 drawnOffsetOf(debug::EntityId id, float alpha) const;
     /// How many objects made as `typeName` the level's spawn records still hold (not removed): a disc test's way to ask
     /// whether the boards a broken fence threw are still standing, whatever the renderer.
     [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
@@ -389,9 +420,6 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void swapPlayerModel(LoadedCharacter loaded, const std::string& model);
     // The texture a character's dictionaries hold, which every material uses; null when none.
     [[nodiscard]] static rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries);
-    // The Animation player's anim set `set` (animSets()), a model's loaded on first use; fails for a set that does not
-    // exist and as loading the model does (src/platform/play_level_anim.cpp).
-    [[nodiscard]] std::expected<const characters::AnimSet*, Error> animSetAt(std::size_t set);
     // The character the player plays: his own after a change of character, else the scene's.
     [[nodiscard]] const human::PlayerCharacter& playerCharacter() const {
         return m_playerCharacter ? *m_playerCharacter : *m_character;
@@ -709,23 +737,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);
-    // Draws the Debug draw page's lines through the current camera, from `snapshot`, the models at `alpha` of a step.
-    void drawDebugLines(const human::PlayerSnapshot& snapshot, float alpha) const;
-    // The Entity inspector's view of the mode's humans and objects (play_level_inspect.cpp): read-only (freezing is
-    // PlayControls').
-    class Inspector final : public debug::EntityInspect {
-      public:
-        explicit Inspector(PlayLevelMode& mode) : m_mode(mode) {}
-        [[nodiscard]] std::vector<debug::EntityRef> entities() const override;
-        [[nodiscard]] std::vector<debug::WatchGroup> describe(debug::EntityId id) const override;
-
-      private:
-        PlayLevelMode& m_mode;
-    };
-    // Adds the Debug draw page's collision shapes, drawn where the models are `alpha` of the way between steps, the
-    // classified wireframe round the player's feet in `snapshot` and the Entity inspector's highlight to `lines`
-    // (play_level_inspect.cpp).
-    void addInspectorLines(debug::DebugLines& lines, const human::PlayerSnapshot& snapshot, float alpha) const;
+    // Draws the lines of the setSceneLines() hook through the current camera, from `snapshot`, the models at `alpha`
+    // of a step.
+    void drawSceneLines(const human::PlayerSnapshot& snapshot, float alpha) const;
+    // The debug tools' view of the mode (src/platform/play_level_controls.h): it reads the mode and sets the state
+    // below that only debug tooling uses (the Animation player's sets, the frozen humans).
+    friend class PlayLevelControls;
 
     RenderEngine& m_engine;
     const io::Wad& m_wad;
@@ -764,7 +781,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     Interpolated<float> m_drawDistance;     // at the last two steps
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
-    const debug::DebugDrawOptions* m_debugDraw = nullptr;
+    SceneLines m_sceneLines; // setSceneLines()
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`
@@ -875,7 +892,6 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<std::pair<double, world_objects::WorldPose>> m_attachedDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
-    Inspector m_inspector{*this};              // the Entity inspector's view of the mode
     std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;

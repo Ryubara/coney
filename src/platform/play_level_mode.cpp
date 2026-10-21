@@ -44,11 +44,6 @@ std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::k
 constexpr float kTeleportDrop = 2.0F;
 // How fast the free camera flies, in metres a second: the sandbox viewer's walking pace for a level's scale.
 constexpr float kFreeCameraSpeed = 8.0F;
-// The most collision triangles the Debug draw wireframe draws in one frame.
-constexpr std::size_t kMaxWireTriangles = 6000;
-// The size of a debug marker's cross and of a heading line, in metres.
-constexpr float kMarkerSize = 0.3F;
-constexpr float kHeadingLength = 1.0F;
 // How far debug lines are lifted off what they lie on, in metres.
 constexpr float kLineLift = 0.02F;
 
@@ -59,13 +54,6 @@ class LineList {
     void add(anim::Vec3 a, anim::Vec3 b, graphics::Rgba colour) {
         push(a, colour);
         push(b, colour);
-    }
-    // Adds a cross of three lines `size` long, centred on `p`.
-    void cross(anim::Vec3 p, float size, graphics::Rgba colour) {
-        const float h = size * 0.5F;
-        add({p.x - h, p.y, p.z}, {p.x + h, p.y, p.z}, colour);
-        add({p.x, p.y - h, p.z}, {p.x, p.y + h, p.z}, colour);
-        add({p.x, p.y, p.z - h}, {p.x, p.y, p.z + h}, colour);
     }
     // Draws the lines through the current camera: tested against depth, not writing it, untextured.
     void draw() {
@@ -366,7 +354,7 @@ std::expected<void, Error> PlayLevelMode::spawnFighter(anim::Vec3 feet, float he
 std::vector<std::string> PlayLevelMode::fighterModels() const {
     // The distinct models of the configured types a player can be drawn as, sorted.
     std::set<std::string> models;
-    for (const debug::CharacterChoice& choice : characterChoices()) {
+    for (const characters::CharacterChoice& choice : characterChoices()) {
         models.insert(choice.model);
     }
     return {models.begin(), models.end()};
@@ -855,7 +843,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
         m_lights->drawShadows();
         drawRings(ringFeet);
-        drawDebugLines(snapshot, alpha);
+        drawSceneLines(snapshot, alpha);
     };
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
 }
@@ -878,69 +866,12 @@ world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::De
     return between;
 }
 
-void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot, float alpha) const {
-    if (m_debugDraw == nullptr || !m_engine.drawsPixels()) {
+void PlayLevelMode::drawSceneLines(const human::PlayerSnapshot& snapshot, float alpha) const {
+    if (!m_sceneLines || !m_engine.drawsPixels()) {
         return;
     }
-    const debug::DebugDrawOptions& options = *m_debugDraw;
     LineList lines;
-    const anim::Vec3 feet = snapshot.feet;
-    // The collision triangles whose first corner is near the feet, as a wireframe, up to a budget.
-    if (options.collision && !options.wallClasses) {
-        const raycast::CollisionMesh& mesh = m_scenery->collision();
-        const auto vertices = mesh.vertices();
-        const float reach = options.collisionRadius * options.collisionRadius;
-        std::size_t drawn = 0;
-        for (const raycast::CollisionTriangle& triangle : mesh.triangles()) {
-            const raycast::Vec3 a = vertices[triangle.vertices[0]];
-            const float dx = a.x - feet.x;
-            const float dy = a.y - feet.y;
-            const float dz = a.z - feet.z;
-            if (dx * dx + dy * dy + dz * dz > reach) {
-                continue;
-            }
-            const raycast::Vec3 b = vertices[triangle.vertices[1]];
-            const raycast::Vec3 c = vertices[triangle.vertices[2]];
-            constexpr graphics::Rgba kWire{80, 220, 255, 255};
-            lines.add({a.x, a.y, a.z}, {b.x, b.y, b.z}, kWire);
-            lines.add({b.x, b.y, b.z}, {c.x, c.y, c.z}, kWire);
-            lines.add({c.x, c.y, c.z}, {a.x, a.y, a.z}, kWire);
-            if (++drawn == kMaxWireTriangles) {
-                break;
-            }
-        }
-    }
-    // The player: a cross at the feet, the heading, and the velocity (a second's travel).
-    if (options.player) {
-        constexpr graphics::Rgba kPlayer{255, 230, 60, 255};
-        lines.cross(feet, kMarkerSize, kPlayer);
-        const anim::Vec3 ahead = human::facing(snapshot.heading);
-        lines.add(feet, anim::add(feet, anim::scale(ahead, kHeadingLength)), kPlayer);
-        lines.add(feet, anim::add(feet, m_player->human().velocity()), graphics::Rgba{255, 120, 40, 255});
-    }
-    if (options.groundNormal) {
-        lines.add(feet, anim::add(feet, m_player->human().groundNormal()), graphics::Rgba{120, 255, 120, 255});
-    }
-    // The follow camera: where it wants to be and what it looks at.
-    if (options.camera) {
-        constexpr graphics::Rgba kCamera{255, 80, 220, 255};
-        lines.cross(m_player->camera().wanted(), kMarkerSize, kCamera);
-        lines.cross(snapshot.cameraTarget, kMarkerSize, kCamera);
-        lines.add(snapshot.cameraEye, snapshot.cameraTarget, kCamera);
-    }
-    // The scene's places, each a cross and its heading.
-    if (options.places) {
-        constexpr graphics::Rgba kPlace{255, 255, 255, 255};
-        for (const debug::Place& place : m_scenery->places()) {
-            lines.cross(place.feet, kMarkerSize * 2.0F, kPlace);
-            const anim::Vec3 ahead = human::facing(place.headingDegrees * std::numbers::pi_v<float> / 180.0F);
-            lines.add(place.feet, anim::add(place.feet, anim::scale(ahead, kHeadingLength)), kPlace);
-        }
-    }
-    // The collision shapes, the classified wireframe and the Entity inspector's highlight (play_level_inspect.cpp).
-    debug::DebugLines extra;
-    addInspectorLines(extra, snapshot, alpha);
-    for (const debug::DebugLine& line : extra.lines()) {
+    for (const SceneLine& line : m_sceneLines(*this, snapshot, alpha)) {
         lines.add(line.a, line.b, line.colour);
     }
     lines.draw();
@@ -964,7 +895,7 @@ std::string PlayLevelMode::playerState() const {
                        human.sprinting() ? ", sprint" : "");
 }
 
-void PlayLevelMode::teleport(const debug::Place& place) {
+void PlayLevelMode::teleport(const human::Place& place) {
     // Dropped onto the ground below the spot, as a start is; left where it is over nothing.
     const raycast::CollisionMesh& mesh = m_scenery->collision();
     raycast::Vec3 point{place.feet.x, place.feet.y, place.feet.z + kTeleportDrop};

@@ -38,6 +38,7 @@
 #include "human/human_animator.h"
 #include "human/player.h"
 #include "platform/game_session.h"
+#include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
@@ -102,38 +103,40 @@ TEST_CASE("the disc's level99: a clip chosen on the Animation player plays its f
     // The debug menus as `coney` wires them, with the play mode as `coney --play-level` gives it to them.
     coney::debug::DebugServices services;
     coney::platform::connectDebugServices(services, [&run] { return &run.session(); });
-    services.play = [&run]() -> coney::debug::PlayControls* { return run.session().play(); };
+    coney::platform::PlayLevelControls controls;
+    services.play = [&run, &controls] { return controls.controlsOf(run.session().play()); };
     coney::debug::TunableRegistry tunables;
     coney::debug::DebugSession debug(tunables, services, nullptr);
     REQUIRE(run.runToPlayFrame(kChooseAt));
     coney::platform::PlayLevelMode* play = run.session().play();
     REQUIRE(play != nullptr);
+    controls.setMode(play);
     const coney::human::Human& human = play->player().human();
 
     // The page: the player's set, the Attack category, and S1's item.
     const auto page = debug.model().openPage("Animation player");
     REQUIRE(page != nullptr);
-    const std::vector<std::string> sets = play->animSets();
+    const std::vector<std::string> sets = controls.animSets();
     REQUIRE(sets.size() > 2);
     const coney::debug::MenuItem& setItem = itemOn(*page, sets.front());
     const auto setPage = setItem.open();
     REQUIRE(setPage != nullptr);
     const auto attacks = itemOn(*setPage, "Attack").open();
     REQUIRE(attacks != nullptr);
-    auto clips = play->animClips(0);
+    auto clips = controls.animClips(0);
     REQUIRE(clips.has_value());
     const std::optional<AnimClipChoice> found = clipOf(*clips, kAttackS1);
     REQUIRE(found.has_value());
     const AnimClipChoice s1 = coney::test::got(found);
     const std::string label = std::format("{} {} {:.2f} s", s1.id, s1.clip, s1.seconds);
     itemOn(*attacks, label).run();
-    REQUIRE(play->animPlayback().playing);
-    CHECK(play->animPlayback().id == kAttackS1);
+    REQUIRE(controls.animPlayback().playing);
+    CHECK(controls.animPlayback().id == kAttackS1);
     CHECK(human.animator().state() == coney::human::AnimState::Debug);
 
     // It plays to its end, the pad doing nothing to him, then his own idle.
     int updates = 0;
-    while (play->animPlayback().playing && updates < 600) {
+    while (controls.animPlayback().playing && updates < 600) {
         run.run(1);
         ++updates;
     }
@@ -170,6 +173,7 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
         **engine, *wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);
     REQUIRE(made.has_value());
     coney::platform::PlayLevelMode& mode = **made;
+    coney::platform::PlayLevelControls controls(&mode);
     coney::GameModeStack modes;
     coney::GameTimer timer;
     timer.setFixedStep(true);
@@ -178,13 +182,13 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     const coney::human::Human& human = mode.player().human();
 
     // The player's set, the generic set and another character's own: each lists clips by anim id.
-    const std::vector<std::string> sets = mode.animSets();
+    const std::vector<std::string> sets = controls.animSets();
     REQUIRE(sets.size() > 2);
-    auto own = mode.animClips(0);
+    auto own = controls.animClips(0);
     REQUIRE(own.has_value());
-    auto generic = mode.animClips(1);
+    auto generic = controls.animClips(1);
     REQUIRE(generic.has_value());
-    auto other = mode.animClips(2);
+    auto other = controls.animClips(2);
     REQUIRE(other.has_value());
     std::printf("anim player: %zu sets; %zu clips in the player's, %zu generic, %zu in %s's own, %zu categories\n",
                 sets.size(), own->size(), generic->size(), other->size(), sets[2].c_str(),
@@ -192,21 +196,22 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     CHECK(own->size() > 500);
     CHECK(generic->size() > 500);
     CHECK_FALSE(other->empty());
-    CHECK_FALSE(mode.animClips(sets.size()).has_value());
+    CHECK_FALSE(controls.animClips(sets.size()).has_value());
 
     // S1 looping at twice the speed and in place: still playing after three times its length, then stopped.
     const std::optional<AnimClipChoice> found = clipOf(*own, kAttackS1);
     REQUIRE(found.has_value());
     const AnimClipChoice s1 = coney::test::got(found);
     const coney::anim::Vec3 feet = mode.playerFeet();
-    REQUIRE(mode.playAnim(0, kAttackS1, coney::debug::AnimPlayOptions{.loop = true, .speed = 2.0F, .inPlace = true}));
+    REQUIRE(
+        controls.playAnim(0, kAttackS1, coney::debug::AnimPlayOptions{.loop = true, .speed = 2.0F, .inPlace = true}));
     (void)modes.runUntilEmpty(timer, {}, static_cast<std::uint64_t>(3 * expectedUpdates(s1, 2.0F)));
-    CHECK(mode.animPlayback().playing);
-    CHECK(mode.animPlayback().loop);
+    CHECK(controls.animPlayback().playing);
+    CHECK(controls.animPlayback().loop);
     CHECK(std::abs(mode.playerFeet().x - feet.x) < 0.01F);
     CHECK(std::abs(mode.playerFeet().y - feet.y) < 0.01F);
-    mode.stopAnim();
-    CHECK_FALSE(mode.animPlayback().playing);
+    controls.stopAnim();
+    CHECK_FALSE(controls.animPlayback().playing);
     (void)modes.runUntilEmpty(timer, {}, 10);
     CHECK(ownAnimation(human));
 
@@ -214,9 +219,9 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     for (const auto& [set, clips] : {std::pair{std::size_t{1}, &*generic}, std::pair{std::size_t{2}, &*other}}) {
         REQUIRE_FALSE(clips->empty());
         const AnimClipChoice& clip = clips->front();
-        REQUIRE(mode.playAnim(set, clip.id, {}));
+        REQUIRE(controls.playAnim(set, clip.id, {}));
         int updates = 0;
-        while (mode.animPlayback().playing && updates < 3000) {
+        while (controls.animPlayback().playing && updates < 3000) {
             (void)modes.runUntilEmpty(timer, {}, 1);
             ++updates;
         }
@@ -226,5 +231,5 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
         CHECK(ownAnimation(human));
     }
     // An id a set has no clip for is refused.
-    CHECK_FALSE(mode.playAnim(0, 100000, {}));
+    CHECK_FALSE(controls.playAnim(0, 100000, {}));
 }

@@ -28,6 +28,7 @@
 #include "human/human.h"
 #include "human/player.h"
 #include "platform/game_session.h"
+#include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
@@ -69,7 +70,8 @@ TEST_CASE("the disc's level99: a wall from the Spawner stops player 1, clears, a
     // The debug menus as `coney` wires them, with the play mode as `coney --play-level` gives it to them.
     coney::debug::DebugServices services;
     coney::platform::connectDebugServices(services, [&run] { return &run.session(); });
-    services.play = [&run]() -> coney::debug::PlayControls* { return run.session().play(); };
+    coney::platform::PlayLevelControls controls;
+    services.play = [&run, &controls] { return controls.controlsOf(run.session().play()); };
     coney::debug::TunableRegistry tunables;
     coney::debug::DebugSession debug(tunables, services, nullptr);
 
@@ -180,7 +182,8 @@ TEST_CASE("the disc's level99: player 1 climbs a spawned fence and onto a spawne
     REQUIRE(run.runUntilPlay());
     coney::debug::DebugServices services;
     coney::platform::connectDebugServices(services, [&run] { return &run.session(); });
-    services.play = [&run]() -> coney::debug::PlayControls* { return run.session().play(); };
+    coney::platform::PlayLevelControls controls;
+    services.play = [&run, &controls] { return controls.controlsOf(run.session().play()); };
     coney::debug::TunableRegistry tunables;
     coney::debug::DebugSession debug(tunables, services, nullptr);
     coney::platform::PlayLevelMode* play = run.session().play();

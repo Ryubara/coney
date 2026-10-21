@@ -238,9 +238,10 @@ page through the pad in `level99`, plays `PLOGO` to its end and skips `L99_IN`, 
 player, the camera, the level, the checkpoint, the HUD and the sound engine's pause are the same before and after.
 
 **Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
-Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say
-there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him again.
-Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
+Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which `platform::PlayLevelControls`
+(`src/platform/play_level_controls.h`, in the debug tools) implements over the play mode's own capabilities; elsewhere
+they say there is no player. A teleport drops the player onto the ground below the spot and places the camera behind
+him again. Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
 ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;

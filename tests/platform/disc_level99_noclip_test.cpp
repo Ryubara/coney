@@ -21,6 +21,7 @@
 #include "human/human.h"
 #include "human/player.h"
 #include "platform/game_session.h"
+#include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
@@ -52,14 +53,15 @@ TEST_CASE("the disc's level99: the noclip flies player 1 up and across, hovers, 
     // The debug menus as `coney` wires them, with the play mode as `coney --play-level` gives it to them.
     coney::debug::DebugServices services;
     coney::platform::connectDebugServices(services, [&run] { return &run.session(); });
-    services.play = [&run]() -> coney::debug::PlayControls* { return run.session().play(); };
+    coney::platform::PlayLevelControls controls;
+    services.play = [&run, &controls] { return controls.controlsOf(run.session().play()); };
     coney::debug::TunableRegistry tunables;
     coney::debug::DebugSession debug(tunables, services, nullptr);
 
     REQUIRE(run.runToPlayFrame(kOnAt));
     coney::platform::PlayLevelMode* play = run.session().play();
     REQUIRE(play != nullptr);
-    REQUIRE(play->canNoclip());
+    REQUIRE(controls.controlsOf(play)->canNoclip());
     const coney::human::Human& human = play->player().human();
     REQUIRE_FALSE(human.airborne());
     const coney::anim::Vec3 ground = human.position();
@@ -117,7 +119,8 @@ TEST_CASE("the disc's level99: R3 + d-pad left on pad 1 switches the noclip on a
     // The debug menus' input gate between the pad and the game, as `coney` puts it: the hotkey is on by default.
     coney::debug::DebugServices services;
     coney::platform::connectDebugServices(services, [&run] { return &run.session(); });
-    services.play = [&run]() -> coney::debug::PlayControls* { return run.session().play(); };
+    coney::platform::PlayLevelControls controls;
+    services.play = [&run, &controls] { return controls.controlsOf(run.session().play()); };
     coney::debug::TunableRegistry tunables;
     coney::debug::DebugSession debug(tunables, services, &run.input());
     run.stack().setInput(&debug.gate());

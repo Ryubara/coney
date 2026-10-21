@@ -311,7 +311,7 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
     if (!mode) {
         return std::unexpected(std::move(mode.error()));
     }
-    (*mode)->setDebugDraw(m_debugDraw);
+    (*mode)->setSceneLines(m_sceneLines);
     (*mode)->setSounds(m_audio != nullptr ? &m_audio->sounds() : nullptr);
     // The game's HUD, which the scripts' bindings act on.
     (*mode)->useHud(m_flow->hud());
