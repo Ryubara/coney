@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools coord status`: what waits for the coordinator, in one read (docs/guides/coordinator-mod.md).
+"""`coney-tools coord status`: what waits for the coordinator, in one read (docs/guides/coney-tools.md#coord).
 
-The coordinator's Claude Code mod (`mods/coney/`) runs this every 15 seconds, and with `--github` every two minutes, to
-draw its panes and to decide when to wake the session. The local parts are fast and never touch the network: the PCSX2
+Anyone at a prompt reads the whole report; the coordinator's Tether watch runs `--ids --kind ...` as command pollers to
+wake the session when new ids appear (docs/guides/coney-tools.md#coord-wakes). The local parts are fast and never touch
+the network: the PCSX2
 copies (the rows of `pcsx2 status --json`), the build slots and queues (`build status --json`), each worktree's last
 detached build (`build result`), the release queue (the `PR*.md` files in the scratch folders) and the tracks (each
 scratch folder's `STATUS.md`). `--github` adds the open issues (ids and labels, no titles), the open pull requests with
@@ -20,6 +21,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -34,6 +36,8 @@ from coney_tools.workspace_clean import list_worktrees
 
 #: Action kinds that only a `--github` read can tell.
 GITHUB_KINDS = ("issue", "pr", "unit")
+#: Every action kind, and the report sections its ids come from: `--kind` reads only those (and the worktrees).
+KIND_SECTIONS = {"issue": ("issues",), "pr": ("prs",), "unit": ("release",), "build": ("results",)}
 #: The issue status label that waits for the coordinator (triage is its job).
 TRIAGE_LABEL = "S-needs-triage"
 #: A finished detached build is news for this long after it ended.
@@ -372,9 +376,15 @@ def actions(report: dict[str, Any]) -> list[str]:
     return sorted(out)
 
 
-def collect(src: Sources, github: bool) -> dict[str, Any]:
-    """The whole report; the GitHub sections are None without `github`."""
+def collect(src: Sources, github: bool, kinds: list[str] | None = None) -> dict[str, Any]:
+    """The whole report; the GitHub sections are None without `github`. With `kinds`, only the sections those action
+    kinds come from are read (the others are None), so a poller that asks for one kind pays for one read."""
     now = src.now()
+    wanted = {name for kind in kinds for name in KIND_SECTIONS[kind]} if kinds else None
+
+    def read(name: str) -> bool:
+        return wanted is None or name in wanted
+
     report: dict[str, Any] = {"time": _iso(now), "checkout": str(src.main), "github": github}
     listed: list[tuple[Path, str | None]] = []
     trees: dict[str, Path] = {}
@@ -384,10 +394,10 @@ def collect(src: Sources, github: bool) -> dict[str, Any]:
         report["worktrees"] = {"error": None, "count": len(listed)}
     except (ConfigError, OSError) as error:
         report["worktrees"] = {"error": str(error)}
-    report["pcsx2"] = _section(lambda: {"copies": src.pcsx2()})
-    report["builds"] = _section(lambda: {"lanes": src.builds()})
-    report["results"] = _section(lambda: _results(src, listed, now))
-    report["tracks"] = _section(lambda: _tracks(src, trees, now))
+    report["pcsx2"] = _section(lambda: {"copies": src.pcsx2()}) if read("pcsx2") else None
+    report["builds"] = _section(lambda: {"lanes": src.builds()}) if read("builds") else None
+    report["results"] = _section(lambda: _results(src, listed, now)) if read("results") else None
+    report["tracks"] = _section(lambda: _tracks(src, trees, now)) if read("tracks") else None
 
     def release() -> dict[str, Any]:
         try:
@@ -399,13 +409,10 @@ def collect(src: Sources, github: bool) -> dict[str, Any]:
             _released(src, units)
         return {"units": units}
 
-    report["release"] = _section(release)
-    if github:
-        report["issues"] = _section(lambda: _issues(src, now))
-        report["prs"] = _section(lambda: _prs(src, now))
-        report["ci"] = _section(lambda: _ci(src))
-    else:
-        report["issues"] = report["prs"] = report["ci"] = None
+    report["release"] = _section(release) if read("release") else None
+    report["issues"] = _section(lambda: _issues(src, now)) if github and read("issues") else None
+    report["prs"] = _section(lambda: _prs(src, now)) if github and read("prs") else None
+    report["ci"] = _section(lambda: _ci(src)) if github and read("ci") else None
     report["action"] = actions(report)
     return report
 
@@ -443,11 +450,61 @@ def add_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> N
     )
     status.add_argument("--json", action="store_true", help="print the report as JSON")
     status.add_argument("--github", action="store_true", help="also read GitHub through gh (slower)")
+    status.add_argument(
+        "--ids",
+        action="store_true",
+        help="print only the action ids, one per line; exit 1 when a section they come from could not be read",
+    )
+    status.add_argument(
+        "--kind",
+        action="append",
+        choices=sorted(KIND_SECTIONS),
+        help="read only what these action kinds need, and print only their ids (repeatable)",
+    )
 
 
-def run(args: argparse.Namespace, sources: Sources | None = None, out: Callable[[str], None] = print) -> int:
+def _stderr(line: str) -> None:
+    """Print one line to stderr."""
+    print(line, file=sys.stderr)
+
+
+def _ids(
+    report: dict[str, Any], kinds: list[str] | None, out: Callable[[str], None], err: Callable[[str], None]
+) -> int:
+    """`--ids`: the action ids of `kinds` (every kind read when None), one per line. A section they come from that
+    could not be read fails the run (exit 1, nothing printed), since a short list would read as "nothing waits"."""
+    asked = kinds or [kind for kind in KIND_SECTIONS if report["github"] or kind not in GITHUB_KINDS]
+    failed = [
+        f"{name} not read: {report[name]['error']}"
+        for kind in asked
+        for name in KIND_SECTIONS[kind]
+        if report.get(name) and report[name].get("error")
+    ]
+    if failed:
+        for reason in dict.fromkeys(failed):
+            err(f"coord status: {reason}")
+        return 1
+    for action in report["action"]:
+        if action.split(":", 1)[0] in asked:
+            out(action)
+    return 0
+
+
+def run(
+    args: argparse.Namespace,
+    sources: Sources | None = None,
+    out: Callable[[str], None] = print,
+    err: Callable[[str], None] = _stderr,
+) -> int:
     """Run `coord status`."""
-    report = collect(sources or default_sources(Path.cwd()), args.github)
+    kinds: list[str] | None = getattr(args, "kind", None)
+    for kind in kinds or []:
+        if kind in GITHUB_KINDS and not args.github:
+            err(f"coord status: --kind {kind} needs --github")
+            return 2
+    report = collect(sources or default_sources(Path.cwd()), args.github, kinds)
+    if getattr(args, "ids", False):
+        return _ids(report, kinds, out, err)
     if args.json:
         out(json.dumps(report, indent=1, ensure_ascii=False))
     else:

@@ -300,6 +300,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;
   the coordinator restarts each stopped track as a fresh agent from its `STATUS.md` and branch before taking new work.
+- **Let Tether wake it.** Between turns the session sees nothing. The [Tether](coney-tools.md#coord-wakes) plugin's
+  watch starts a turn for new work: issues to triage, units in the release queue, detached builds that ended and stuck
+  pull requests. The settings that do this are documented there, not kept only on one machine.
 - **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it saves the state,
   clears and continues from it at a natural boundary ([Running agents](agents.md#cache)).
 - **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
