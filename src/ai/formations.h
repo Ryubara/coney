@@ -103,8 +103,8 @@ class Formation {
     /// @orig 0x00296028 Formation_Leave (unknown)
     void leave(Brain& follower);
 
-    /// One step at `nowMs`: plans when a plan was asked for (a follower joined or left, or the leader has just stopped), at the plan time, or once he is kPlanMoveDistance
-    /// from the planned spot; nothing without followers.
+    /// One step at `nowMs`: plans when a plan was asked for (a follower joined or left, or the leader has just
+    /// stopped), at the plan time, or once he is kPlanMoveDistance from the planned spot; nothing without followers.
     /// @orig 0x002956d0 Formation_Plan (unknown)
     void update(std::uint64_t nowMs);
     /// Plans now: the next plan time (kPlanWalkingMs while the leader walks, else kPlanOtherMs), the plan point and

@@ -1229,17 +1229,17 @@ and the right stick up, then the player driven by the left stick; one sample per
 
 - **The run-in.** Vermin planned a route down the stairs (route state `+0x04` set) and asked for **12.81 m/s**, the
   clamp 1.25 × sprint; his speed climbed through gait 2, 3 and 5. Both stopped 1.8 to 2.4 m from the player.
-- **The stairs** (2026-10-20, PCSX2 2.9.129, the same moment from a state of no patches, the order given with R2 and
-  the right stick at 0 for 20 frames, one sample per update). The stairs run straight in plan from the landing
-  (−192.9, 108.3, 5.63) north to the street, with a half landing at z 2.43 for y 114.8 to 118.7; the landing, both
-  flights and a patch of pavement at their foot are one path area (polygon 283, 29 vertices, ground byte 8), the street
-  another (95, ground 2). Both Warriors ran straight down both flights on the ground (z 5.63 → 2.43 → 1.23 by y 121.7)
-  at 12.81 m/s. Each ran to his **slot** from his first move: Vermin's (−192.1, 128.4) lies in area 283, and the
-  straight line to it crosses one of 283's own edges, so his move made a one-node route (node 793, the stairs' foot,
-  its last node area 283); Rembrandt's (−194.6, 128.6) lies in the street, his line passes from 283 into 95 at the
-  stairs' foot and he made **no** route. So "a route down the stairs" is Vermin's slot, not the stairs: without a route
-  the straight line already follows them. Coney's crew takes the same flights (z 2.43 at y 115 to 118.7, 1.23 by
-  y 121); it differed in going first to the leader's position (the replan byte, [Formations](#formations)).
+- **The stairs** (2026-10-20, PCSX2 2.9.129, the same moment from a state of no patches, the order given with R2 and the
+  right stick at 0 for 20 frames, one sample per update). The stairs run straight in plan from the landing (−192.9,
+  108.3, 5.63) north to the street, with a half landing at z 2.43 for y 114.8 to 118.7; the landing, both flights and a
+  patch of pavement at their foot are one path area (polygon 283, 29 vertices, ground byte 8), the street another (95,
+  ground 2). Both Warriors ran straight down both flights on the ground (z 5.63 → 2.43 → 1.23 by y 121.7) at 12.81 m/s.
+  Each ran to his **slot** from his first move: Vermin's (−192.1, 128.4) lies in area 283, and the straight line to it
+  crosses one of 283's own edges, so his move made a one-node route (node 793, the stairs' foot, its last node area
+  283); Rembrandt's (−194.6, 128.6) lies in the street, his line passes from 283 into 95 at the stairs' foot and he made
+  **no** route. So "a route down the stairs" is Vermin's slot, not the stairs: without a route the straight line already
+  follows them. Coney's crew takes the same flights (z 2.43 at y 115 to 118.7, 1.23 by y 121); it differed in going
+  first to the leader's position (the replan byte, [Formations](#formations)).
 - **Walking** (stick 50 % straight down, the player at 1.63 m/s): both walked at **their own walk speed** (1.65 and
   1.63 m/s), 0.9 to 2.5 m from him: the formula's floor, since *f* is far below 1 so close.
 - **Running** (stick 100 %, 7.80 m/s): neither moved while within 9 m. Vermin passed 9 m at update 366; Rembrandt
@@ -1340,17 +1340,16 @@ attack-slot list. A pool of 42 formations of 0x280 at `0x006ceaf0`; `Formations_
   sent both to the leader's own position for the first 2 s and stopped them 3.4 m short of him.
 - **Planning** (`0x002956d0`; nothing while `+0x273` is 0), when `+0x274` is set, at the plan time, or once he is 1 m
   from the planned spot: next plan in 1000 ms at gait 2, else 2000; the plan point is the leader's position, 2 m ahead
-  while he runs (`0x00223c10`); the slots' world points are worked out (`0x00294f38`: the offset in 1/16 m, turned by the leader's
-  orientation (`0x004dacc0`, so x is to his right and y ahead), added to the plan point and dropped to the ground
-  with a ray (`WorldManager_RayCast` `0x0040db88`) that starts 1.9 m above it and runs 5.9 m straight down, so it
+  while he runs (`0x00223c10`); the slots' world points are worked out (`0x00294f38`: the offset in 1/16 m, turned by
+  the leader's orientation (`0x004dacc0`, so x is to his right and y ahead), added to the plan point and dropped to the
+  ground with a ray (`WorldManager_RayCast` `0x0040db88`) that starts 1.9 m above it and runs 5.9 m straight down, so it
   finds ground down to 4.0 m below; on a hit at distance *t* the point becomes the plan point + (*t* − 2.1) down, i.e.
-  **0.2 m above the hit**; with no hit it keeps the plan point's height; a slot is usable when the leader has a
-  walkable line to its point (`Human_CanWalkStraightTo` `0x002221e0` from the leader), up to `+0x272` of them;
-  **no slot is usable at all** while the leader is airborne (state `0x1c00000000`, jumping or falling,
-  `0x00227f90`) or at detail level `+0x333` 3 or more: every follower then queues behind the human ahead;
-  followers whose human is gone leave (`0x00294e98`); each usable slot takes its nearest unassigned
-  follower; followers left over queue nearest-first behind the slotted ones (or the leader); up to 3 passes swap
-  pairs whose paths cross.
+  **0.2 m above the hit**; with no hit it keeps the plan point's height; a slot is usable when the leader has a walkable
+  line to its point (`Human_CanWalkStraightTo` `0x002221e0` from the leader), up to `+0x272` of them; **no slot is
+  usable at all** while the leader is airborne (state `0x1c00000000`, jumping or falling, `0x00227f90`) or at detail
+  level `+0x333` 3 or more: every follower then queues behind the human ahead; followers whose human is gone leave
+  (`0x00294e98`); each usable slot takes its nearest unassigned follower; followers left over queue nearest-first behind
+  the slotted ones (or the leader); up to 3 passes swap pairs whose paths cross.
 
 **GoalTrackHuman** (vtable `0x00541d10`, constructor `0x002df250`: `+0x10` target, `+0x14` distance, `+0x18` a retry
 counter): Start (`0x002df288`) joins the target's formation (`0x0021d428`, `0x00295f28`) and turns the fight stance
