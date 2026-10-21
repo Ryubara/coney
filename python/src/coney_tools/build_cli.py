@@ -7,6 +7,7 @@ from __future__ import annotations
 import _thread
 import argparse
 import contextlib
+import getpass
 import json
 import os
 import re
@@ -67,7 +68,10 @@ def add_parser(groups: Any) -> None:
         "build",
         help="configure, build and test under the build slots (at most two at once); status, release",
     )
-    group.add_argument("--agent", help="your id: letters, digits, '.', '_' and '-'")
+    group.add_argument(
+        "--agent",
+        help="your id: letters, digits, '.', '_' and '-' (default for a person: your user name; agents must pass it)",
+    )
     group.add_argument("--preset", choices=PRESETS, default="dev", help="the CMake preset (default dev)")
     group.add_argument("--dir", type=Path, help="the checkout to build (default: the current one)")
     group.add_argument("--configure", action="store_true", help="configure even when the build folder has a cache")
@@ -267,11 +271,37 @@ def run_build(args: argparse.Namespace) -> int:
     return _build(args, root, env, log_path, (max_wait, budget), _tie_to_caller).exit_code
 
 
+def _typed_in_a_terminal() -> bool:
+    """Whether a person runs the command in a terminal: both stdin and stdout are one. Agent tools (Claude Code,
+    Gemini CLI, Codex) capture the output of what they run, so their stdout is never a terminal."""
+    try:
+        return sys.stdin.isatty() and sys.stdout.isatty()
+    except (AttributeError, ValueError):
+        return False
+
+
+def default_agent_id(interactive: Callable[[], bool] = _typed_in_a_terminal) -> str | None:
+    """The id of a person's build when they pass no --agent: their user name in the characters an id allows, else
+    `me`. None for an agent, where every run names itself so that a slot, a queue place and a log say whose they are
+    (docs/guides/agents.md): inside Claude Code (CLAUDECODE set) and whenever the command is not typed in a terminal,
+    which covers every agent tool whatever it sets."""
+    if os.environ.get("CLAUDECODE") or not interactive():
+        return None
+    try:
+        user = getpass.getuser()
+    except (OSError, KeyError, ImportError):
+        user = ""
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", user).strip("-.")[:64]
+    return cleaned if cleaned else "me"
+
+
 def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     """Refuse a run that cannot work before anything waits: the agent id, the preset, the settings and the tools.
     Returns the checkout and the environment of the run."""
     if not args.agent:
-        raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
+        args.agent = default_agent_id()
+        if args.agent is None:
+            raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
     if args.targets and args.test:
         raise ConfigError(
             "--target with --test: the tests need coney_tests and coney rebuilt, which --target would leave stale; "

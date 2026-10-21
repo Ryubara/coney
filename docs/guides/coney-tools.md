@@ -1215,7 +1215,7 @@ the checkout or not a page the check covers (`README.md`, a generated page).
 ## build {#build}
 
 ```sh
-uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
+uv run --project python coney-tools build [--agent ID] [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
     [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
@@ -1232,7 +1232,10 @@ every core, so a build takes a **slot** like a PCSX2 copy takes a claim, and at 
 once. The command replaces `cmake --preset`, `cmake --build --preset` and `ctest --preset`; a hook in
 `.claude/settings.json` refuses those, `ctest` and `ninja` typed directly in a shell
 ([`.claude/hooks/build_guard.py`](repo:.claude/hooks/build_guard.py)). The tool's own subprocesses are not shell
-commands, so the hook never sees them.
+commands, so the hook never sees them. `--agent` names whose run a slot, a queue place and a log are; a person typing
+the command in a terminal may leave it out and gets their user name (`me` when it has no usable characters). It
+stays required whenever the output is not a terminal, as under every agent tool, and inside Claude Code
+(`CLAUDECODE` set), so every agent's build says whose it is.
 
 **What a run does.** From the checkout (the current one, or `--dir`):
 

@@ -185,9 +185,36 @@ def test_result_dir_reads_another_worktrees_record(
     assert "bob" in capsys.readouterr().out
 
 
-def test_a_build_needs_an_agent(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_an_agent_must_name_itself(
+    checkout: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Inside an agent tool the id names whose build a slot or log is, so it stays required there. Under pytest the
+    # output is captured, as any agent tool captures it, so no terminal is seen either.
+    monkeypatch.setenv("CLAUDECODE", "1")
     assert main(["build"]) == 2
     assert "--agent" in capsys.readouterr().err
+    monkeypatch.delenv("CLAUDECODE")
+    assert main(["build"]) == 2
+    assert "--agent" in capsys.readouterr().err
+
+
+def test_a_person_in_a_terminal_gets_a_default_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CLAUDECODE", raising=False)
+    terminal = lambda: True  # noqa: E731 -- a one-line stand-in for a terminal
+    monkeypatch.setattr(build_cli.getpass, "getuser", lambda: "Jane Doe")
+    assert build_cli.default_agent_id(terminal) == "Jane-Doe"
+    monkeypatch.setattr(build_cli.getpass, "getuser", lambda: "???")
+    assert build_cli.default_agent_id(terminal) == "me"
+
+    def no_user() -> str:
+        raise OSError("no user name")
+
+    monkeypatch.setattr(build_cli.getpass, "getuser", no_user)
+    assert build_cli.default_agent_id(terminal) == "me"
+    # An agent: Claude Code's variable, or any tool that captures the output (not a terminal).
+    assert build_cli.default_agent_id(lambda: False) is None
+    monkeypatch.setenv("CLAUDECODE", "1")
+    assert build_cli.default_agent_id(terminal) is None
 
 
 def test_an_unknown_preset_is_refused_before_any_slot_is_taken(

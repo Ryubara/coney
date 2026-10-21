@@ -35,14 +35,15 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
    on Windows): it makes the sibling folders (`scratch/`, `tools/`, ...) the tools then use, writes
    `coney.local.toml`, installs uv when it is missing and prints what else you lack
    ([Bootstrap](docs/guides/workspace.md#bootstrap)).
-2. **Build and run the tests.** No game files are needed. `--agent` is only a name for your build log and slot, so use
-   any name, such as your handle:
+2. **Build and run the tests.** No game files are needed:
 
     ```sh
-    uv run --project python coney-tools build --agent me --preset dev --test
+    uv run --project python coney-tools build --preset dev --test
     ```
 
-    It downloads and builds the dependencies, then Coney, then runs the tests (2,688 of them, none needing the game).
+    Your user name labels the build's log and slot (`--agent NAME` picks another; the project's agents must pass
+    it). It downloads and builds the dependencies, then Coney, then runs the tests (2,688 of them, none needing the
+    game).
     On Windows it loads the Visual Studio environment itself, so any shell works. The first time is long: about 11
     minutes to build on an idle 16-core machine, 57 on a busy one without a compiler cache, then up to half an hour of
     tests. To get going sooner, build only the program with `--target coney` (no tests), and later run only the tests
