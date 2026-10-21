@@ -284,6 +284,7 @@ nav:
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md
       - Network multiplayer: guides/multiplayer.md
+      - Network architecture design: guides/network-architecture.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Research workflow: guides/research-workflow.md

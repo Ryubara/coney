@@ -6,6 +6,10 @@ has no network play, so nothing here reimplements the original: none of this cod
 game offline runs exactly as before. This page is kept current: a change to the protocol, a layer or a plan updates
 it in the same commit.
 
+The architecture this builds toward (the original's own two-player co-op online, then dedicated and scripted
+servers), what every subsystem must sync and the checklist every engineer follows are on [Network
+architecture](network-architecture.md).
+
 **Built:** the platform-neutral library `coney_net` (bit stream, transport interface, loopback and link conditioner,
 protocol, the server and client sessions with their handshake, keep-alive and timeouts) and the ENet transport.
 **Next:** the Network page of the debug menus and the `--host` and `--join` flags, then the layers under
