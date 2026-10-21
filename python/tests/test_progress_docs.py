@@ -127,21 +127,10 @@ def test_a_published_history_is_the_cache_of_the_next_build(tmp_path: Path, monk
     hooks = load_hooks()
     root = make_grid_checkout(tmp_path / "repo")
     state = hooks.load_progress(root)
+    from coney_tools import progress_history
+
     cache = tmp_path / "history.json"
-    old = {
-        "schema": 1,
-        "points": [
-            dict(
-                date="2020-01-01",
-                commit="abc",
-                game_bytes=10,
-                reimplemented_bytes=1,
-                reimplemented_functions=1,
-                researched_bytes=5,
-            )
-        ],
-        "skipped": [],
-    }
+    old = progress_history.to_json([progress_history.Point("2020-01-01", "abc", 10, 1, 1, 5)], [])
     cache.write_text(json.dumps(old), encoding="utf-8")
     monkeypatch.delenv("CONEY_PROGRESS_HISTORY", raising=False)
     monkeypatch.setenv("CONEY_PROGRESS_HISTORY_CACHE", str(cache))
