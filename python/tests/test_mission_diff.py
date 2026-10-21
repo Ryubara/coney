@@ -14,8 +14,10 @@ import pytest
 
 from coney_tools.course import (
     CROSS,
+    L2,
     SQUARE,
     TRIANGLE,
+    Level3Chase,
     Level99Street,
     Level99Tutorial,
     Observation,
@@ -47,7 +49,16 @@ from coney_tools.events import (
 )
 from coney_tools.hooks import RING_BASE, HookError, RingReader, decode_text, entry_row, parse_hook
 from coney_tools.input_script import PadState
-from coney_tools.mission import load_mission, pad_line, parse_event_line, parse_observation, play, route_csv
+from coney_tools.mission import (
+    MissionError,
+    load_mission,
+    pad_line,
+    parse_event_line,
+    parse_observation,
+    play,
+    route_csv,
+    view_of,
+)
 from coney_tools.pine import Read, Write
 
 REPO = Path(__file__).resolve().parents[2]
@@ -499,3 +510,93 @@ def test_the_repository_mission_scenarios_load() -> None:
     street = load_mission(REPO / "research/traces/missions/level99_cp2.toml")
     assert street.course == "level99-street"
     assert street.until == ("callback", "P2.CarRadioStolen")
+
+
+def _chase_at(x: float, y: float, z: float = 20.0) -> Observation:
+    """The chase's player at (x, y, z) with the rail camera south of him, looking north."""
+    return _seen(player=(x, y, z, 270.0), camera=(x, y - 8.0, x, y))
+
+
+def test_the_chase_course_sprints_a_run_leg_with_l2_toward_its_point() -> None:
+    course = Level3Chase()
+    course.see(_chase_at(-230.0, 363.7), [])
+    pad = course.pad()
+    assert pad.buttons & L2
+    assert pad.sticks[2] > 0xC0  # east is the rail camera's right
+
+
+def test_the_chase_course_moves_on_once_a_run_leg_is_reached() -> None:
+    course = Level3Chase()
+    first = Level3Chase.ROUTE[0]
+    course.see(_chase_at(first.x + 0.5, first.y), [])
+    course.pad()
+    assert course.leg == 1
+
+
+def test_the_chase_course_sprints_into_a_climb_tapping_triangle() -> None:
+    course = Level3Chase()
+    course.leg = 1  # the first climb, its point at x -205.5
+    climb = Level3Chase.ROUTE[1]
+    buttons = []
+    for _ in range(4):
+        course.see(_chase_at(climb.x - 3.0, climb.y), [])
+        buttons.append(course.pad().buttons)
+    assert all(b & L2 for b in buttons)
+    assert [bool(b & TRIANGLE) for b in buttons] == [False, True, False, True]
+
+
+def test_the_chase_course_backs_off_and_charges_again_when_it_stalls_at_the_fence() -> None:
+    course = Level3Chase()
+    course.leg = next(i for i, leg in enumerate(Level3Chase.ROUTE) if leg.move == "charge")
+    charge = Level3Chase.ROUTE[course.leg]
+    stuck = charge.x + 3.0  # short of the fence row
+    for _ in range(Level3Chase.STALL_UPDATES + 2):
+        course.see(_chase_at(stuck, charge.y), [])
+        pad = course.pad()
+    assert course.backing_off and pad.buttons & L2 and not pad.buttons & CROSS
+    course.see(_chase_at(charge.x - Level3Chase.CHARGE_BACK_OFF, charge.y), [])
+    course.pad()
+    assert not course.backing_off
+    assert Level3Chase.ROUTE[course.leg].move == "charge"
+
+
+def test_the_chase_course_charges_with_cross_past_the_take_off() -> None:
+    course = Level3Chase()
+    course.leg = next(i for i, leg in enumerate(Level3Chase.ROUTE) if leg.move == "charge")
+    charge = Level3Chase.ROUTE[course.leg]
+    buttons = []
+    for _ in range(Level3Chase.TAP_EVERY * 2):
+        course.see(_chase_at(charge.x + 0.2, charge.y), [])
+        buttons.append(course.pad().buttons)
+    assert all(b & L2 for b in buttons) and any(b & CROSS for b in buttons)
+    course.see(_chase_at(Level3Chase.FENCE_X + 1.0, charge.y), [])
+    course.pad()
+    assert Level3Chase.ROUTE[course.leg].move != "charge"
+
+
+def test_the_original_cameras_view_runs_along_its_local_y_axis() -> None:
+    assert view_of((1.0, 2.0), (0.0, 0.0, 0.0, 1.0)) == pytest.approx((1.0, 2.0, 1.0, 3.0))
+    # Turned a quarter anticlockwise about z: +y goes to -x.
+    half = math.sqrt(0.5)
+    assert view_of((0.0, 0.0), (0.0, 0.0, half, half)) == pytest.approx((0.0, 0.0, -1.0, 0.0))
+
+
+class StallingGame(FakeGame):
+    """A game whose clock stops at update `stall` (a game-over screen)."""
+
+    def __init__(self, stall: int) -> None:
+        """Stop answering at update `stall`."""
+        super().__init__(done=10**6)
+        self.stall = stall
+
+    def step(self, pad: PadState) -> tuple[Observation, list[Event]] | None:
+        """One update, until the stall."""
+        if self.update + 1 >= self.stall:
+            raise MissionError(f"the game stood still for 10 s at step {self.update}")
+        return super().step(pad)
+
+
+def test_a_playthrough_whose_game_stalls_keeps_its_events_and_says_why() -> None:
+    result = play(StallingGame(stall=30), Level99Tutorial(), _rules(), 1000, ("checkpoint", "SetCheckPoint:2"))
+    assert not result.finished and result.updates == 29
+    assert result.events and "stood still" in result.stopped

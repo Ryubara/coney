@@ -149,13 +149,15 @@ class Game(Protocol):
 
 @dataclass
 class Playthrough:
-    """What play() gives: every event, the updates played, and whether the scenario's end was reached."""
+    """What play() gives: every event, the updates played, whether the scenario's end was reached, and why the game
+    stopped before it, if it did (a stall: a game-over screen stops the clock)."""
 
     events: list[Event] = field(default_factory=list)
     updates: int = 0
     finished: bool = False
     #: The route: one RouteRow per update in play, so two runs' paths can be laid side by side (route_csv()).
     route: list[RouteRow] = field(default_factory=list)
+    stopped: str = ""
 
 
 @dataclass(frozen=True)
@@ -192,7 +194,8 @@ def play(
     progress: Callable[[int, Course], None] | None = None,
 ) -> Playthrough:
     """Play `course` on `game` for at most `updates`, or until the event `until` (normalized kind and name) and
-    `after` more updates. `progress` is told every 1000 updates."""
+    `after` more updates. `progress` is told every 1000 updates. A game that stops answering ends the run with the
+    events so far and the reason in `stopped`, so a failed run still leaves its log."""
     result = Playthrough()
     observation, events = game.start(course.objects)
     result.events += events
@@ -211,7 +214,11 @@ def play(
         pad = course.pad()
         if observation.play:
             result.route.append(RouteRow(observation.frame, observation.player, pad))
-        stepped = game.step(pad)
+        try:
+            stepped = game.step(pad)
+        except MissionError as error:
+            result.stopped = str(error)
+            break
         if stepped is None:
             break
         observation, events = stepped
@@ -331,6 +338,20 @@ class ConeyGame:
 def _f32(word: int) -> float:
     """A word as a float."""
     return float(struct.unpack("<f", struct.pack("<I", word & 0xFFFFFFFF))[0])
+
+
+#: Player 1's current camera, the one shown (`Camera_GetPlayerCamera`, `0x0011f9b0`: `0x005d9150`[player]); a rail,
+#: locked or scene camera as well as the follow camera (docs/research/camera.md).
+CURRENT_CAMERA_POINTER = 0x005D9150
+
+
+def view_of(eye: tuple[float, float], rotation: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    """A camera's (eye x, y, a point ahead x, y) from its position and its orientation quaternion (x, y, z, w), whose
+    local +y is the view direction (docs/research/camera.md#the-base-camera-object): the point is 1 m along the view's
+    direction across the ground."""
+    x, y, z, w = rotation
+    ahead_x, ahead_y = 2.0 * (x * y - w * z), 1.0 - 2.0 * (x * x + z * z)
+    return eye[0], eye[1], eye[0] + ahead_x, eye[1] + ahead_y
 
 
 def _s16(word: int) -> int:
@@ -499,9 +520,13 @@ class OriginalGame:
             tf = TRANSFORM_TABLE + index * TRANSFORM_SIZE
             reads += [Read(tf, 4), Read(tf + 4, 4), Read(tf + 8, 4), Read(tf + 0x18, 4), Read(tf + 0x1C, 4)]
             reads += [Read(record + 0x144, 2), Read(record, 8)]
-        camera = self.memory.batch([Read(CAMERA_POINTER, 4)])[0]
+        # The camera shown, whose view the stick moves the player by: the current one, else the follow camera.
+        current, follow = self.memory.batch([Read(CURRENT_CAMERA_POINTER, 4), Read(CAMERA_POINTER, 4)])
+        camera = current or follow
         if camera:
-            reads += [Read(camera + 0x10, 4), Read(camera + 0x14, 4), Read(camera + 0x180, 4), Read(camera + 0x184, 4)]
+            reads += [Read(camera + 0x10 + 4 * i, 4) for i in range(2)] + [
+                Read(camera + 0x20 + 4 * i, 4) for i in range(4)
+            ]
         values = self.memory.batch(reads)
         seen_now: set[int] = set()
         for n, (address, _, _, number, brain, name) in enumerate(humans):
@@ -526,8 +551,8 @@ class OriginalGame:
             events.append(Event(self.step_number, "human_gone", ""))
             del self.humans_out[address]
         if camera:
-            eye_x, eye_y, look_x, look_y = (_f32(v) for v in values[7 * len(humans) :])
-            observation.camera = (eye_x, eye_y, look_x, look_y)
+            view = [_f32(word) for word in values[7 * len(humans) :]]
+            observation.camera = view_of((view[0], view[1]), (view[2], view[3], view[4], view[5]))
         observation.objects = self._objects()
         return observation, events
 
