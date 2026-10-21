@@ -28,9 +28,10 @@ Triangle climbs a fence or wall in front of the player or, at a run, jumps.
 
 ## Original structure
 
-`Human/` (`0x002176b8`-`0x00323298`, [Source map](source-map.md)) holds the human; the model side
-is in `Graphics/Character.cpp`, `CharacterModel.cpp` and `Animations.cpp`. Names are ours unless a path or class
-string gives them.
+`Human/` (`0x00217a70`-`0x00323298`, inferred from the path strings and calls on [Source map](source-map.md), which
+starts it at `0x002176b8`; the four functions from there to `Human_GetClump` at `0x00217a70` belong to
+`GameStatsSubItem.cpp`, confirmed (code)) holds the human; the model side is in `Graphics/Character.cpp`,
+`CharacterModel.cpp` and `Animations.cpp`. Names are ours unless a path or class string gives them.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -159,7 +160,8 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x20` | this update's command id ([Buttons](#buttons)), read by `0x00147ef8`; cleared each update for a human without a pad (`0x00146000`) |
 | `+0x24` | a pending command (from table entries whose mask is `0xfe`) |
 
-A second per-human record of 0x2f0 bytes at `0x006d53f0 + i × 0x2f0` is the human's **brain** ([AI](ai.md#brain)).
+A second per-human record of 0x2f0 bytes at `0x006d53f0 + i × 0x2f0` is the human's **brain** ([AI](ai.md#brain));
+confirmed (code) at `Human_GetBrain` (`0x0021d408`).
 
 ### The 0x180 record {#the-record}
 
@@ -283,10 +285,10 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
   (`Anim_LevelVariant`) or the voice. So the binding page's "Warrior index" was a misreading: Rembrandt's 7 is his
   voice folder.
 - **The weapon** (string `+0x18c`): when it is not `none`, `Human_Init` puts that object type in the new human's hand
-  (`Human_PlaceItemInHand(h, name, 1, 1)` `0x0024c280`: made by name, recorded as a pinned object, refused when the
-  hand is already busy with held flag `0x4000`). The police types carry `dyn_baton`. A cop who later has nothing in
-  hand draws it again, and an AI of a power class with byte `+0x41` draws it, or a switchblade when it is `none`
-  ([Power class fields](#power-class-bytes)).
+  (`Human_PlaceItemInHand(h, name, 1, 1)` `0x0024c280`, confirmed (code): made by name, recorded as a pinned object,
+  refused when the hand is already busy with held flag `0x4000`). The police types carry `dyn_baton`. A cop who later
+  has nothing in hand draws it again, and an AI of a power class with byte `+0x41` draws it, or a switchblade when it is
+  `none` ([Power class fields](#power-class-bytes)).
 
 #### Body scale {#body-scale}
 
@@ -301,12 +303,12 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
    - anyone else: `r` 0-30 → 1.0; 31-54 without a hat → 1.02 for a cop (brain type 1) or a gang member (brain type
      2) whose brain `+0x20c` record's `+0x2c` is below 23, else 0.98; otherwise (31-54 with a hat, or 55-89) → 1.01
      when `r` < 90, else 1.0.
-2. **The type's fixed size** (`Human_ApplyTypeScale`, `0x00219638`, also run by `Human_AttachInstance`) replaces it
-   for these types (`+0xcc`): 5 → 1.02; 18, 30 → 0.97 (so Rembrandt's 0.97, as seen at runtime); 21, 23, 24 → 0.98;
-   33 → 1.03; 89 → 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set (co-op), 89,
-   119, 120, 128 and 161 take 1.1 and 135 takes 1.03.
+2. **The type's fixed size** (`Human_ApplyTypeScale`, `0x00219638`, also run by `Human_AttachInstance`; confirmed
+   (code)) replaces it for these types (`+0xcc`): 5 → 1.02; 18, 30 → 0.97 (so Rembrandt's 0.97, as seen at runtime); 21,
+   23, 24 → 0.98; 33 → 1.03; 89 → 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set
+   (co-op), 89, 119, 120, 128 and 161 take 1.1 and 135 takes 1.03.
 
-`Human_GetScale` (`0x0021d020`) returns it, except 1.0 in a scene for a scale under 1.1.
+`Human_GetScale` (`0x0021d020`) returns it, except 1.0 in a scene for a scale under 1.1. Confirmed (code).
 
 ### Stats {#stats}
 
@@ -316,9 +318,9 @@ and the pages they link hold the detail; this is the one list. "Human" is the fi
 is made or becomes a player; the evidence is as the cited page gives it. Every type's values on normal:
 [Characters](../references/characters.md) (its *Stats (normal)* column joins the four tables).
 
-**1. The character type** (`CfgChar`, record `0x00684620 + type × 0x1ac`, [Character classes](#classes)); `Human_Init`
-(`0x00218008`) reads it at creation, `+0x11b` and `+0x11d` from the type's own record and the rest after the
-[remap](#type-to-model) from the class's:
+**1. The character type** (`CfgChar`, record `0x00684620 + type × 0x1ac`, [Character classes](#classes); confirmed
+(code) at `CharClass_Get`, `0x00228800`); `Human_Init` (`0x00218008`) reads it at creation, `+0x11b` and `+0x11d` from
+the type's own record and the rest after the [remap](#type-to-model) from the class's:
 
 | Stat | Field | Human | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -506,9 +508,10 @@ How `HuCreate`'s type picks what is drawn and animated, confirmed (code) at `0x0
    later systems (combat, health) read the class or the type is not traced here.
 5. **The files**: the Character List record at the model index names the three resources (character data with the
    animations, model, texture dictionary, [Files](#files)); `Human_Init` makes the instance at once when they are
-   resident (`0x001774d0`, `0x00177b80`, then `Human_AttachInstance` `0x00217a98`), else the resource manager loads
-   them later ([Creation](#creation)). The anim set is that character data over the generic defaults (its 722 slots,
-   [Files](#files)) and the [anim slots](#anim-slots), the same for every type until a movement style changes them.
+   resident (`0x001774d0`, `0x00177b80`, then `Human_AttachInstance` `0x00217a98`; confirmed (code)), else the resource
+   manager loads them later ([Creation](#creation)). The anim set is that character data over the generic defaults (its
+   722 slots, [Files](#files)) and the [anim slots](#anim-slots), the same for every type until a movement style changes
+   them.
 
 For an implementer with Coney's recorded `CfgChar` calls and its `CharacterList`: find the type's call, apply the
 alias rule for a player, take the model-name argument (or `<name>_a` in levels 60-64) and look it up by name. The
@@ -604,15 +607,16 @@ begin, cycle and land.
 
 ### Files of a character {#files}
 
-A character is three resources, each a file named by the decimal CRC of a hash (`"%u"`, `0x00551ed8`) and loaded by
-the resource manager ([Chunk system](chunk-system.md)):
+A character is three resources, each a file named by the decimal CRC of a hash (`"%u"`, `0x00551ed8`) and loaded by the
+resource manager ([Chunk system](chunk-system.md)). The resource types and their loaders are confirmed (code); the
+chunks each file holds are inferred from the chunk handlers on that page:
 
-- the **model** (resource type 3, loader `0x001783d0`): chunk `0x47` with the RenderWare clump, then chunk `0x28`
-  with the bones' bind offsets (34 × float4, 544 bytes);
-- the **texture dictionary** (type 4, `0x0018e9e0`): one chunk `0x2a`;
-- the **character data** (type 5, `0x0016e8f0`): the animations (a `0x00` keyframe chunk and a `0x02` descriptor
-  for each, [Animation](formats/animation.md)), one **Anim Range List** (`0x45`) and one **Character Data** chunk
-  (`0x08`).
+- the **model** (resource type 3, loader `0x001783d0`, confirmed (code)): chunk `0x47` with the RenderWare clump, then
+  chunk `0x28` with the bones' bind offsets (34 × float4, 544 bytes);
+- the **texture dictionary** (type 4, `0x0018e9e0`, confirmed (code)): one chunk `0x2a`;
+- the **character data** (type 5, `0x0016e8f0`, confirmed (code)): the animations (a `0x00` keyframe chunk and a `0x02`
+  descriptor for each, [Animation](formats/animation.md)), one **Anim Range List** (`0x45`) and one **Character Data**
+  chunk (`0x08`).
 
 The **Character List** (chunk `0x44` in `warriors.glr`, 543 records of 32 bytes) finds them by model name:
 
@@ -707,13 +711,14 @@ confirmed (code):
 1. Build the rotation about `z` from the heading (degrees × 0.0174533, half-angle quaternion with the axis at
    `0x00511740`).
 2. Take a free slot (`0x00217f08`); on failure free it again (`0x00217ec8`) and return `NilHandle` (`0x006ebd30`).
-3. `Human_Init` (`0x00218008`): remap the type to the behaviour class; take the model index from the class
-   record (`+0x112`, or `+0x114` in levels 60-64); load or find the character; **snap to the ground**: cast a ray from
-   the position plus (0, 0, 1) straight down for 2.5 m through `WorldManager_RayCast`
-   ([Collision](collision.md)) and, on a hit, put the human on it 0.01 above (skipped in game modes `0xb` and `0x11`).
+   Confirmed (code).
+3. `Human_Init` (`0x00218008`, confirmed (code)): remap the type to the behaviour class; take the model index from the
+   class record (`+0x112`, or `+0x114` in levels 60-64); load or find the character; **snap to the ground**: cast a ray
+   from the position plus (0, 0, 1) straight down for 2.5 m through `WorldManager_RayCast` ([Collision](collision.md))
+   and, on a hit, put the human on it 0.01 above (skipped in game modes `0xb` and `0x11`).
 4. Name (`+0x80`); the player argument goes to the hand-over priority `+0x1b1` as given; **only the value 1** calls
-   `Human_MakePlayer` (`0x00229c40`, [Players](#players)), whose result is ignored. `Human_Init` has already set the
-   player slot `+0x1b0` to -1 and added the human to its gang (`Gang_AddMember`).
+   `Human_MakePlayer` (`0x00229c40`, [Players](#players)), whose result is ignored (confirmed (code)). `Human_Init` has
+   already set the player slot `+0x1b0` to -1 and added the human to its gang (`Gang_AddMember`).
 5. Return the handle (`+0x2c` of the slot) and write the snapped position back into the Lua table.
 
 The fifth argument (`"warr_sw"` in `level99.lua`) is not read by `0x00233d60`. **At runtime** Rembrandt was created at
@@ -752,11 +757,11 @@ becomes player 1 when player 1 goes. What the engine calls "the player" (the rin
 7. **War chief**: `+0x3ac` = 1 unless another listed player is already chief (with `W_GameState + 0x158` set, only
    one of the same gang kind counts); a chief becomes its gang's leader (gang `+0x44`).
 8. **Difficulty scaling**: health (record `+0x144`, `+0x146`) times a percentage, power maxima reloaded, attack damage
-   times another percentage (bytes `+5` and `+6` of the record `0x00222b58` returns; `Human_ReleasePlayer` divides
-   back).
-9. The war chief's default Warrior command 0 to its gang (`0x0041c4e0`, [AI](ai-gangs.md#warrior-commands)), the gang's
-   cached player data (`0x00166708`), physics body flag `0x400` and a wider body, the human flags of the table above.
-   Returns 1.
+   times another percentage (bytes `+5` and `+6` of the record `0x00222b58` returns, confirmed (code);
+   `Human_ReleasePlayer` divides back).
+9. The war chief's default Warrior command 0 to its gang (`WarriorCommand_Dispatch`, `0x0041c4e0`, confirmed (code),
+   [AI](ai-gangs.md#warrior-commands)), the gang's cached player data (`0x00166708`), physics body flag `0x400` and a
+   wider body, the human flags of the table above. Returns 1.
 
 `Human_MakePlayer` does **not** touch the camera: the follow camera keeps the human it was made with, and the hand-over
 below puts the new player on the camera target list.
@@ -777,9 +782,9 @@ the AI flags back. The human stays in the world as an AI member of its gang.
    least 1).
 3. A listed player already in `gang` is released and made a player again with a remembered pad, and put on the
    camera target list.
-4. For each player still owed: `Gang_PickNextPlayer(gang)` (`0x0022a770`) takes the gang's member that is not a
-   player with the **lowest non-zero `+0x1b1`**, else the first such member (with no member at all, outside level 99
-   and with `+0x158` clear, a non-player human of a kind-0 gang); `Human_MakePlayer(h, -1, -1, -1)` on it; on
+4. For each player still owed: `Gang_PickNextPlayer(gang)` (`0x0022a770`, confirmed (code)) takes the gang's member that
+   is not a player with the **lowest non-zero `+0x1b1`**, else the first such member (with no member at all, outside
+   level 99 and with `+0x158` clear, a non-player human of a kind-0 gang); `Human_MakePlayer(h, -1, -1, -1)` on it; on
    success it joins the camera target list.
 
 `Gang_PickNextPlayer` is what makes `+0x1b1` matter: in the Warriors' gang Rembrandt (1) is chosen before Ash (2), and
@@ -822,14 +827,14 @@ deferred to a later update. Confirmed (code); in order:
    objects its per-panel record holds are destroyed; the object at `+0x358` is let go with a 120 s lifetime.
 5. A human that still has its instance is knocked out first (`Human_KnockOut`) and marked.
 6. The [spinning icon](#spinning-icon) (`+0x360`) is sent message `0x15` and the handle cleared
-   (`Human_RemoveOverheadIcon`, `0x00227388`).
-7. **Radar**: a blip of the human is removed from both radars (HUD `+0x15d0` and `+0x3f10`, `0x001b2b58`,
-   [HUD](hud.md)).
-8. A spawner that made it is told (`GangSpawner_OnHumanGone`); the instance is released (`0x00217dd8`); its script
-   handlers and its brain are cleared.
-9. **A player**: the per-panel record is reset, the **HUD panel detached** (`0x001b22f0`) and `+0x380` = -1;
-   `+0x1b1` = 0; its **pad freed** (`+0x42` = -1) and it is **removed from the player list** (`0x00419c68`, the
-   others shift down).
+   (`Human_RemoveOverheadIcon`, `0x00227388`, confirmed (code)).
+7. **Radar**: a blip of the human is removed from both radars (HUD `+0x15d0` and `+0x3f10`, `HUD_RadarRemoveHandle`,
+   `0x001b2b58`, confirmed (code), [HUD](hud.md)).
+8. A spawner that made it is told (`GangSpawner_OnHumanGone`); the instance is released (`Human_ReleaseInstance`,
+   `0x00217dd8`, confirmed (code)); its script handlers and its brain are cleared.
+9. **A player**: the per-panel record is reset, the **HUD panel detached** (`HUD_DetachPlayer`, `0x001b22f0`, confirmed
+   (code)) and `+0x380` = -1; `+0x1b1` = 0; its **pad freed** (`+0x42` = -1) and it is **removed from the player list**
+   (`0x00419c68`, the others shift down).
 10. The 0x180 record's attachment freed, `+0xd4` = 0, the **handle freed** (the slot can be reused), the physics body
     released.
 
@@ -918,18 +923,18 @@ debug switch that is on in play (`0x005e5350`-`0x005e5368`); the full list is on
 1. The litter, ground fog and rain splashes (`0x00170c88`, `0x00171d38`, `0x00184568`,
    [Graphics](graphics.md#code-camera-effects)); `Pads_Update`; the formations; the 60 player records (`0x00146078`,
    below).
-2. The gangs, then the **brains** (`0x00293b28`, [AI](ai.md#update)), which write an AI human's command into its
-   player record as a pad would.
+2. The gangs, then the **brains** (`Brains_Update`, `0x00293b28`, confirmed (code), [AI](ai.md#update)), which write an
+   AI human's command into its player record as a pad would.
 3. For every human with an instance, `0x0023bd78` (the instance's animation step, `0x00175610`), then
    `0x00105570`.
 4. Per human: a position 1.3 above the human handed to `0x0019c3f0` for humans with flag `0x4000` (an effect or
    sound, inferred), and checks against the player's gang.
 5. Per human: vtable slot `+0x13c` (its state update: the locomotion) or a flag when it is idle.
-6. The actions, alternating the order (0 → 59, then 59 → 0) on each update: `Human_UpdateActions` (`0x00254e78`),
-   which runs the command dispatcher (`0x0027c120`) for player and AI humans alike; a dead or knocked-out human runs
-   `0x00221108`, `0x00256f28` and `0x00265f70` instead. An earlier reading of this page called this step the
-   brains.
-7. The cameras' update (`0x0011e878`) with dt, at least 1/30.
+6. The actions, alternating the order (0 → 59, then 59 → 0) on each update: `Human_UpdateActions` (`0x00254e78`,
+   confirmed (code)), which runs the command dispatcher (`Player_UpdateActions`, `0x0027c120`) for player and AI humans
+   alike; a dead or knocked-out human runs `0x00221108`, `0x00256f28` and `0x00265f70` instead. An earlier reading of
+   this page called this step the brains.
+7. The cameras' update (`0x0011e878`) with dt, at least 1/30 (confirmed (code)).
 
 ### From pad to intent {#input}
 
@@ -1072,14 +1077,15 @@ keeps sprinting at 0 (inferred: no reader found).
 
 **The speed this update.** Start from the brain's speed, then, in order:
 
-1. **Stopped** (zero velocity, the rotation kept, the lean cleared) while the human is busy (`0x00223cb0`), its
-   `+0x280` is not −1, or it is blocking or ducking (`0x00223ad0`).
-2. **Caps by state**: hurt (state `0x10000`, `0x00227d98`) → the record's walk speed `+0x170` when asked for more
-   than 0.1; in a fight stance (state `0x3`) → the base speed (`+0x164` × `+0x3a4`, the combat walk) when asked for
-   more than 0.1, else 0; carrying an object of kind 4 or 6 and asked for more than the run speed → it **drops** the
-   object (`0x00257f38`) unless its type's `+0x87` is 6 and `+0x5a` is 0; otherwise at most 25 m/s. With brain
-   `+0x0b` (the turn boost, [AI](ai-gangs.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a fight stance gets
-   anim slot 14 = 380 (the player's combat walk) and its speeds recomputed; at 0 or below, slot 14 goes back to 372.
+1. **Stopped** (zero velocity, the rotation kept, the lean cleared) while the human is busy (`Human_IsBusy`,
+   `0x00223cb0`, confirmed (code)), its `+0x280` is not −1, or it is blocking or ducking (`0x00223ad0`).
+2. **Caps by state**: hurt (state `0x10000`, `Human_IsWounded`, `0x00227d98`, confirmed (code)) → the record's walk
+   speed `+0x170` when asked for more than 0.1; in a fight stance (state `0x3`) → the base speed (`+0x164` × `+0x3a4`,
+   the combat walk) when asked for more than 0.1, else 0; carrying an object of kind 4 or 6 and asked for more than the
+   run speed → it **drops** the object (`0x00257f38`) unless its type's `+0x87` is 6 and `+0x5a` is 0; otherwise at most
+   25 m/s. With brain `+0x0b` (the turn boost, [AI](ai-gangs.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a
+   fight stance gets anim slot 14 = 380 (the player's combat walk) and its speeds recomputed; at 0 or below, slot 14
+   goes back to 372.
 3. **Speeding up from rest** (current speed exactly 0): unless the state code is 3 or 7 or the anim state is 4, the
    state code becomes **6** (run start) when asked for at least the run speed (**8** instead when brain `+0x0c` is
    above 0), or **5** when asked for exactly the walk speed; the [clip selection](#clip-selection) plays the run or
@@ -1172,9 +1178,10 @@ So an AI running at its point stops with the run stop once the point is closer t
 1.6 m for Rembrandt), and one starting near its point takes a step or dash. Whether a given goal's move reaches
 this test is the move action's business ([AI, The move action](ai-moving.md#move-action)).
 
-**Other effects**: when the brain asks for any gait above 0 (`Brain_UpdateGait`, `0x0028ab08`), the human lets go of
-carried props (`0x0024ce40`) and, after a state 18 or with held flag `0x20000`, its animation is rebuilt
-(`0x0025f450`); a human in a scene state also lets go of its props.
+**Other effects**: when the brain asks for any gait above 0 (`Brain_UpdateGait`, `0x0028ab08`, tested in
+`Human_UpdateControl`; confirmed (code)), the human lets go of carried props (`Human_ReleaseCarriedProps`, `0x0024ce40`)
+and, after a state 18 or with held flag `0x20000`, its animation is rebuilt (`0x0025f450`); a human in a scene state
+also lets go of its props.
 
 ### Step control {#step-control}
 
@@ -1191,8 +1198,9 @@ argument: the clip decides how far the body goes. `Human_EnterStepControl` does 
   `0x10000`-`0x80000` (`0x10000` is hurt) and `0x8000000` and `0x10000000`, whose meanings are not traced;
 - the step control is already installed.
 
-Otherwise it saves the current control (`Human_SaveControl`: `+0x1bc` copied to `+0x1c4`) and installs the step
-control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = −1).
+Otherwise it saves the current control (`Human_SaveControl`: `+0x1bc` copied to `+0x1c4`) and installs the step control
+(the 8-byte member-function pointer at `+0x1bc` = `0x00243420ffff0000`: `+0x1be` = −1 and the function `0x00243420` at
+`+0x1c0`), confirmed (code).
 
 **One update of the step control, for an AI.** The per-player record's `+0x1b` is 0 for an AI.
 
@@ -1240,30 +1248,30 @@ control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = �
    - after the clip, the idle loops (slot 0, or slot 11 in a fight stance);
    - while the clip plays it holds held flag **`0x80000`**, with state code 0 and the push sphere off.
 
-   The clip-end callback (`0x0025c5b0`) is an empty function.
-5. **Turn during the clip.** The human is not turned first. `Human_TurnToOver` (`0x0023cf88`) turns it to the end
-   facing at a constant rate over **half the clip's play time** (`Anim_GetPlayTime` × 0.5), while the clip plays.
-   The angle is negated before the call, the same convention as [turning on the spot](#ai-locomotion):
-   `Human_TurnToOver` takes the turn θ about `+z` (anticlockwise seen from above), which is minus the heading. A turn
-   under 0.01 rad is skipped.
-6. **Leave.** `Human_LeaveStepControl` (`0x00243360`) runs in the same update. It restores the saved control
-   (`Human_RestoreControl`), then sets `+0x1bc` to `Human_UpdateControl` (`0x00243848`), or to `Human_MoveAttached`
-   (`0x00244e78`) while grabbed or being mugged. So the step control is installed for a single update, unless step 2
-   held it.
+   The clip-end callback (`0x0025c5b0`) is an empty function (`jr ra`, confirmed (code)).
+5. **Turn during the clip.** The human is not turned first. `Human_TurnToOver` (`0x0023cf88`, called from
+   `Human_StepControl`; confirmed (code)) turns it to the end facing at a constant rate over **half the clip's play
+   time** (`Anim_GetPlayTime` × 0.5), while the clip plays. The angle is negated before the call, the same convention as
+   [turning on the spot](#ai-locomotion): `Human_TurnToOver` takes the turn θ about `+z` (anticlockwise seen from
+   above), which is minus the heading. A turn under 0.01 rad is skipped.
+6. **Leave.** `Human_LeaveStepControl` (`0x00243360`, confirmed (code)) runs in the same update. It restores the saved
+   control (`Human_RestoreControl`), then sets `+0x1bc` to `Human_UpdateControl` (`0x00243848`), or to
+   `Human_MoveAttached` (`0x00244e78`) while grabbed or being mugged. So the step control is installed for a single
+   update, unless step 2 held it.
 
 For a pad player (`+0x1b` set) the step control restores the saved control. It then picks the player's control and
 runs it in the same update: air when turn-limited (state `0x400000000`), the fight stance with a target, button tap,
-the wheelchair, or else `PlayerLocomotion` (`0x00240e38`).
+the wheelchair, or else `PlayerLocomotion` (`0x00240e38`). Confirmed (code).
 
 **How the action ends.**
 
-- **Update** (`TakeStepAction_Update`, `0x002fe428`) returns running (0) while held flags **`0x20080000`**
-  (`Human_HasHeld20080000`, `0x00228448`: `0x80000` the step clip, `0x20000000` a turn clip) are set, or while the
-  step control is still installed. Otherwise it returns done (2). The step lasts as long as its clip.
-- **Abort** (`0x002fe3d8`) always calls `Human_LeaveStepControl`. With argument 0 it agrees; with a non-zero
-  argument it refuses while `0x20080000` is held.
+- **Update** (`TakeStepAction_Update`, `0x002fe428`, confirmed (code)) returns running (0) while held flags
+  **`0x20080000`** (`Human_HasHeld20080000`, `0x00228448`: `0x80000` the step clip, `0x20000000` a turn clip) are set,
+  or while the step control is still installed. Otherwise it returns done (2). The step lasts as long as its clip.
+- **Abort** (`TakeStepAction_Abort`, `0x002fe3d8`, confirmed (code)) always calls `Human_LeaveStepControl`. With
+  argument 0 it agrees; with a non-zero argument it refuses while `0x20080000` is held.
 
-**GiveWay.** `GiveWayAction_Start` (`0x002fe5d8`) runs these steps in order:
+**GiveWay.** `GiveWayAction_Start` (`0x002fe5d8`) runs these steps in order (confirmed (code)):
 
 1. The AI looks at the other human for 2000 ms (`Brain_LookAtTarget`, weight 0.5).
 2. With the action's boost flag (`+0x14`), it saves the turn boost `+0x0b` and raises it by 1. A boost of 0
@@ -1282,10 +1290,10 @@ steps out of a walker's.
 [AI: Giving way](ai-moving.md#giving-way)). All of these must hold:
 
 - the stander's brain has a task (`+0x04` ≠ 0) or its `+0x09` is set;
-- **neither human is a threat to the other**: `Human_IsThreatTo` (`0x00222a48`) is false both ways. It is
-  `Brain_IsThreat` on the two brains: the gangs are enemies (`Gang_IsEnemyOf` on brain `+0x20c`), or both are pad
+- **neither human is a threat to the other**: `Human_IsThreatTo` (`0x00222a48`, confirmed (code)) is false both ways. It
+  is `Brain_IsThreat` on the two brains: the gangs are enemies (`Gang_IsEnemyOf` on brain `+0x20c`), or both are pad
   players, with a Warrior's (type 3) `+0x2e5` mode able to force it either way. It tests only; nothing is changed;
-- **the stander is idle under its control**: `Human_IsIdleUnderControl` (`0x00225390`). Its control is
+- **the stander is idle under its control**: `Human_IsIdleUnderControl` (`0x00225390`, confirmed (code)). Its control is
   `Human_UpdateControl` or the step control, it has no state bit of **`0x7bf9e1f3ff0`**, and it has **no held flag
   at all**.
 
@@ -1318,13 +1326,14 @@ the pad; the sticks are not read.
   turns raise the heading (counter-clockwise from above), so L1 (the right wheel) turns left and R1 right.
 - **Neither**: `speed` − 0.04 (not below 0). **Cross** (the brake) then takes 0.5 more off, not below 0, whatever
   the shoulders do; with neither shoulder held it replaces the 0.04 decay.
-- The new heading is the old one plus the turn (written as a rotation about z); the velocity is `speed` along it,
-  zero while any of state flags `0x110c0880` is set or the state code is 5 or 6. Above 4.5 the human's animation
-  layer gets flag 2 and event groups 3, 6, 18, 19, 24, 25, 29, 30, 32 and 33 (`0x00248170`); at or below 4.5 they
-  are cleared (`0x00248270`). The pending turn fields `+0x298` / `+0x29c` are zeroed.
+- The new heading is the old one plus the turn (written as a rotation about z); the velocity is `speed` along it, zero
+  while any of state flags `0x110c0880` is set or the state code is 5 or 6. Above 4.5 the human's animation layer gets
+  flag 2 and event groups 3, 6, 18, 19, 24, 25, 29, 30, 32 and 33 (`Human_StrikeAllOn`, `0x00248170`, confirmed (code));
+  at or below 4.5 they are cleared (`0x00248270`). The pending turn fields `+0x298` / `+0x29c` are zeroed.
 
-The constants are at `0x005104d4` (0.5 push), `0x005104d8` (0.04 decay), `0x005104dc` (0.5 brake), `0x005104e0`
-(0.03) and `0x005104e4` (0.08). Changes are per update; whether the update is 1/30 s or 1/60 s here is not traced.
+The constants, confirmed (code) in `Human_MoveWheelchair`, are at `0x005104d4` (0.5 push), `0x005104d8` (0.04 decay),
+`0x005104dc` (0.5 brake), `0x005104e0` (0.03) and `0x005104e4` (0.08). Changes are per update; whether the update is
+1/30 s or 1/60 s here is not traced.
 
 ### Buttons {#buttons}
 
@@ -1374,12 +1383,13 @@ Rembrandt (confirmed (runtime)). Confirmed (code) unless marked:
   rate 5; 0 when `0x005102a8` is set, which it is not in play), with the fraction carried at `+0x158` and the time at
   `+0x154`. When it reaches 0 or below it is set to 0 and the sprint flag is cleared. Gait 5 is the speed nearest the
   sprint speed, above 9.02 m/s for Rembrandt, so the drain starts on the third update of the speed-up.
-- **Refill** (`0x00256a60`, every update): stamina gains the power class's `+0x2e`, **40 per second** for Rembrandt,
-  up to the maximum. It gains nothing (and the time is not carried over) while any of these holds: gait 5
-  (`0x00223a98`); state flags `0x1c18003ff0` (the airborne bits among them); a jump or fall (`0x00227f90`, flags
-  `0x1c00000000`); **gait 4 (run) with L2 held** (`0x00223a60` and the button); record `+0x08` flags `0x41a420`. Human
-  flag `0x4000000` fills stamina and the second meter every update. In three states (`0x00223b98`, `0x00223bc0`,
-  `0x00223b70`) the function returns before taking the time, so the time spent in them is refilled at once afterwards.
+- **Refill** (`0x00256a60`, every update, from `Human_UpdateActions`; confirmed (code)): stamina gains the power class's
+  `+0x2e`, **40 per second** for Rembrandt, up to the maximum. It gains nothing (and the time is not carried over) while
+  any of these holds: gait 5 (`0x00223a98`); state flags `0x1c18003ff0` (the airborne bits among them); a jump or fall
+  (`0x00227f90`, flags `0x1c00000000`); **gait 4 (run) with L2 held** (`0x00223a60` and the button); record `+0x08`
+  flags `0x41a420`. Human flag `0x4000000` fills stamina and the second meter every update. In three states
+  (`0x00223b98`, `0x00223bc0`, `0x00223b70`) the function returns before taking the time, so the time spent in them is
+  refilled at once afterwards.
 - **No delay and no threshold**: the refill starts on the first update the blocks are gone, and the sprint test is
   only "not 0", so one point of stamina sprints again.
 
@@ -1426,7 +1436,7 @@ and change animation by "fade over *d*, new task at the bottom" ([Task stack](fo
 Confirmed (code) at the cited addresses unless marked.
 
 **Choosing the state** (the plain locomotion case; grabs, combat, carried objects and scripted moves test their own
-flags first and are not described here):
+flags first and are not described here), confirmed (code) with the builders read from the table at `0x005106e0`:
 
 | State | When | Builder |
 | --- | --- | --- |
@@ -1444,19 +1454,23 @@ record `+0x14` is 18 or human flag `0x40000000` is set), which builds one of:
   (type 3) that plays **slot 10, the walk start** (413), with a blend time of 0, and hands over to the gait blend.
   The fade before it has a duration of **0**: the start clip replaces the idle at once. Human flag `0x10000000` is set
   while the start clip plays (it is what stops the locomotion setting a velocity, [Root motion](formats/animation.md#root-motion)).
-- **Run start** (`0x0025b9f8`, when the stick asks for a run and record `+0x14` is 6, 7 or 8, or a carried object of
-  class 4 or 6 and state flag `0x1000000`): the same, but the gait blend starts at 2 (run) and the start clip is
-  **slot 10's id + 1** (414, run start).
+- **Run start** (`0x0025b9f8`, confirmed (code) in `Human_BuildMoveTasks`: outside a shadow, when the stick asks for a
+  run and record `+0x14` is 6, 7 or 8, or for a jog with state flag `0x1000000`, `Human_WantsJog` being what tests a
+  carried object of class 4 or 6): the same, but the gait blend starts at 2 (run) and the start clip is **slot 10's id +
+  1** (414, run start).
 - **Already moving** (the top task is a gait blend): a fade of 0.1333 s and a new gait blend that starts at the old
-  one's value (`0x0025ff50` rounds it down to 0, 1, 2 or 3) and the old one's normalised time, so the cycle carries on.
-- Other cases: a looping single clip of slot 14 (combat walk) when the global `0x0051031c` is set; a four-clip task of
-  slot 0 and slot 4 under `0x00227d98`; a two-clip mix of 633 `STEALTH_WALK` and 636 `STEALTH_READY_WALK` while stalking
-  a target (`Human_IsStalkingTarget`, `0x00228188`, [Combat moves](combat-moves.md#stealth)).
+  one's value (`0x0025ff50` rounds it down to 0, 1, 2 or 3; confirmed (code)) and the old one's normalised time, so the
+  cycle carries on.
+- Other cases: a looping single clip of slot 14 (combat walk) when the global `0x0051031c` is set (for a player, in
+  `0x0025f4d0`; confirmed (code)); a four-clip task of slot 0 and slot 4 under `0x00227d98`; a two-clip mix of 633
+  `STEALTH_WALK` and 636 `STEALTH_READY_WALK` while stalking a target (`Human_IsStalkingTarget`, `0x00228188`, [Combat
+  moves](combat-moves.md#stealth)).
 
 **Walk start to run start.** While the walk start plays (flag `0x10000000`), if the stick asks for a run or sprint
-(`0x00225c10`, `0x00225dc0`) above the magnitude at `0x005102e8`, and less than half of the clip has played, the
-controller swaps it for the run start: a fade of min(0.1333 s, the clip's duration), a gait blend at 2, and the run
-start begun at the walk start's normalised time (`0x00259578`).
+(`Human_WantsRun`, `0x00225c10`; `Human_WantsSprint`, `0x00225dc0`) above the magnitude at `0x005102e8` (0.95), and less
+than half of the clip has played, the controller swaps it for the run start: a fade of min(0.1333 s, the clip's
+duration), a gait blend at 2, and the run start begun at the walk start's normalised time (`0x00259578`, confirmed
+(code)).
 
 **Gait value from the speed.** In states 4 and 14, every update, `0x0025eee0` sets the top gait blend's target to
 `Gait_BlendForSpeed` (`0x0025ec28`), a piecewise-linear map through the [speed getters](#speed-classes):
@@ -1567,14 +1581,14 @@ flag `0x600` is set in `+0x54`); writing it (vtable `+0x74`, `0x0023cf00`) also 
 gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) is the current speed.
 
 **Airborne flag.** Bit `0x4000000` of the object flags at `+0x54` means "in the air". `0x003a2158` sets it (and clears
-`0x2000000`, "on the ground"); `0x003a21c0` does the reverse.
+`0x2000000`, "on the ground"); `0x003a21c0` does the reverse. Confirmed (code).
 
 **One update, in order** (the parts that move the body; the human's other duties are left out):
 
 1. Copy the transform from the table; run the current state's function (for the player, the locomotion,
    [above](#locomotion)), which sets the velocity.
-2. **Speed sanity check:** a velocity longer than 50 × the human's scale (`+0x65c`, 1.0 normally; `0x0021d020`) is
-   zeroed.
+2. **Speed sanity check:** a velocity longer than 50 × the human's scale (`+0x65c`, 1.0 normally; `Human_GetScale`,
+   `0x0021d020`; confirmed (code)) is zeroed.
 3. **Gravity**, only while airborne: from the second airborne update on (the counter `+0x384` counts airborne
    updates), `vz -= 15.68 × dt` (0.5227 m/s per 1/30 s update; 15.68 m/s² is 1.6 g), clamped at **−50 m/s**. The
    result is written back with the velocity. On the ground `+0x384` is reset to 0.
@@ -1583,25 +1597,25 @@ gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) i
    and for a player in a mission whose game-state flags `+0x150` have bit 1, `W_GameState + 0x14c` is set to 1 and
    `+0x152` to 2 (a mission failure, [Level loading](level-loading.md#a-frame-of-play)).
 5. **Stuck in the air:** after 60 airborne updates, if the physics body's "could not move" counter (body `+0x70`) is
-   also above 59, the human is put back at its last ground position (`+0x390`) and landed (`0x0023e090`).
-6. **Move** (`0x0023d8c8`, below).
+   also above 59, the human is put back at its last ground position (`+0x390`) and landed (`Human_Land`, `0x0023e090`).
+   Confirmed (code).
+6. **Move** (`Human_Move`, `0x0023d8c8`, below; confirmed (code)).
 
 **The move.** With velocity `v` (and an external push `+0x2f0` added, which knock-backs use):
 
 - A human without a physics body (`+0x1a0` = 0), riding something (`+0x280` ≠ −1) or in state `0x40` simply moves:
   `position += (v + push) × dt`.
 - Otherwise, on the ground, **`v.z` is set to 0** first: walking never climbs by velocity, only by the ground snap
-  below. On a slope (ground normal `z`, `+0x238`, below 0.95) and outside some states (`0x00227f68`), the velocity
-  is scaled by `clamp(0.6 + 0.3 × (n.z − 0.5), 0.5, 1.0)`: 0.735 just below the threshold, 0.71 on a 30° slope
-  (`n.z` = 0.87), 0.5 from `n.z` ≤ 0.17. (The code also computes the facing just before, but the scale
-  does not depend on it, so it slows uphill and downhill alike; and there is a step from 1.0 to 0.735 at
-  `n.z` = 0.95.)
-- The physics world then **sweeps the body** (`0x0033e278(dt, world, body, &v, &out)`): the body's pending push-out
-  (body `+0x50`, divided by dt) is added to the displacement `v × dt`, which is swept up to three times, sliding
-  along what it hits. If it is still blocked after three passes, the body stays where it is, its horizontal velocity is
-  zeroed and its "could not move" counter (`+0x70`) goes up; otherwise the counter is reset. Walls come from the
-  level's [collision mesh](collision.md) through the body's shape: a **sphere swept along the move**, below
-  ([Walls and steps](#walls)).
+  below. On a slope (ground normal `z`, `+0x238`, below 0.95) and outside some states (`0x00227f68`; confirmed (code)),
+  the velocity is scaled by `clamp(0.6 + 0.3 × (n.z − 0.5), 0.5, 1.0)`: 0.735 just below the threshold, 0.71 on a 30°
+  slope (`n.z` = 0.87), 0.5 from `n.z` ≤ 0.17. (The code also computes the facing just before, but the scale does not
+  depend on it, so it slows uphill and downhill alike; and there is a step from 1.0 to 0.735 at `n.z` = 0.95.)
+- The physics world then **sweeps the body** (`PhysicsBody_Sweep`, `0x0033e278(dt, world, body, &v, &out)`, confirmed
+  (code)): the body's pending push-out (body `+0x50`, divided by dt) is added to the displacement `v × dt`, which is
+  swept up to three times, sliding along what it hits. If it is still blocked after three passes, the body stays where
+  it is, its horizontal velocity is zeroed and its "could not move" counter (`+0x70`) goes up; otherwise the counter is
+  reset. Walls come from the level's [collision mesh](collision.md) through the body's shape: a **sphere swept along the
+  move**, below ([Walls and steps](#walls)).
 - **Ground snap**, on the ground only (and not in game modes 8, `0xb` or `0x11`, `0x00221950`), `0x0023eab8`: cast
   a ray **straight down from 1.0 m above the feet, 1.5 m long** (the 1.0 is vtable `+0x5c`, `0x004ed818`, a constant).
     - **Hit:** put the feet **exactly on the hit point** (no gap), whatever the hit triangle's normal: the snap has
@@ -1646,12 +1660,12 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
    less than **0.25 m**, skip the triangle. Then take the longest edge; unless it is nearly vertical (`|unit z|` ≥
    0.8), skip the triangle when the third corner lies less than 0.25 m from that edge's line within the triangle's
    plane.
-4. Sweep the sphere along the move against the triangle (`0x0034ee60`); a hit at a fraction from 0 to 1 is a
-   contact. The contacts go to the body's contact handler (`Human_OnContact`, `0x00219d50`), which for the level's
-   triangles slides (code `0x20001`), lands on a floor contact (flag `0x80`), and during a climb (record `+0x08`
-   `0x40`) **ignores** triangles of materials 30 (`LOW_FENCE`), 31 (`OPAQUE_FENCE`) and 122 (`RAILING`), so the body
-   passes through the fence it climbs. No other material has a rule here: a glass pane's `GLASS` triangles are a
-   wall like any other until the pane breaks ([Moving into a pane](objects.md#pane-break)).
+4. Sweep the sphere along the move against the triangle (`Sweep_SphereTriangle`, `0x0034ee60`; confirmed (code)); a hit
+   at a fraction from 0 to 1 is a contact. The contacts go to the body's contact handler (`Human_OnContact`,
+   `0x00219d50`), which for the level's triangles slides (code `0x20001`), lands on a floor contact (flag `0x80`), and
+   during a climb (record `+0x08` `0x40`) **ignores** triangles of materials 30 (`LOW_FENCE`), 31 (`OPAQUE_FENCE`) and
+   122 (`RAILING`), so the body passes through the fence it climbs. No other material has a rule here: a glass pane's
+   `GLASS` triangles are a wall like any other until the pane breaks ([Moving into a pane](objects.md#pane-break)).
 
 So on the ground the original has **no step height of its own**: a wall face shorter than 0.25 m is not a wall, and
 the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m or taller that reaches into the sphere
@@ -1833,10 +1847,10 @@ feet are about 0.17 m under is not traced. What the code shows (confirmed (code)
 
 - the segment's upper point is `0x00226a20`: the feet + `+0x4e8` − 0.16 × the scale;
 - only a hit with a normal `z` above 0.65 records a landing contact;
-- `0x0033d340` marks the contact (`+0xb0` = `0x80`) and its handler `0x00219d50` calls `Land(1, 1)`;
+- `0x0033d340` marks the contact (`+0xb0` = `0x80`) and its handler `0x00219d50` calls `Land(1, 1)` (confirmed (code));
 - contacts are kept sorted by fraction (`0x0033d718`), and the resolution `0x0033d9d8` acts on the first contact
-  whose handler returns a code that is not 0, then returns;
-- the body's move loop `0x0033e278` runs the sweep up to 3 times.
+  whose handler returns a code that is not 0, then returns (confirmed (code));
+- the body's move loop `0x0033e278` runs the sweep up to 3 times (confirmed (code)).
 
 Read alone, this lands on the update the moved feet pass the ground, which the runtime contradicts; the 0.17 m does
 not follow from the 0.88 / 1.0 m geometry either. A log of the contacts (a code patch that copies each contact's
@@ -1856,7 +1870,7 @@ anim state **27** (landing), `0x800000000` or `0x1000000000` → **26** (falling
 Confirmed (code). The builders, confirmed (code):
 
 - 25 (`0x0025fba0` → `0x0025cf30`): the **jump loop** (434) after a 0.1 s fade, then the launch ([Jumping](#jump)).
-- 26 (`0x0025d020`): the **drop cycle** (428), or the long-fall cycles 422 / 425 in a long fall
+- 26 (`0x0025d020`, confirmed (code)): the **drop cycle** (428), or the long-fall cycles 422 / 425 in a long fall
   (`0x400000`, `0x00223b48`, `0x00227e60`). After a jump the jump loop keeps playing (runtime).
 - 27 (`0x0025d390`): after a jump, **436** (jump end running) handing over to a gait blend when the stick is above
   0.12, else **435** (jump end) and then the idle; after a drop, **429** (drop land); after a long fall
@@ -1872,8 +1886,9 @@ and record `+0x08` `0x400000` for the first two updates, gravity as above, then 
 the first that succeeds. Confirmed (code):
 
 1. a **climb** (`Climb_TryStart`, [below](#climb)), if human flag `0x20000000` is clear and the stick is above 0.12;
-2. a **context action** (`0x002811f0`), if L2 is not held;
-3. a **jump** (`Player_TryJump`, `0x002829e8`), if human flag `0x10000000` is clear and the stick is above **0.95**;
+2. a **context action** (`Player_TriangleAction`, `0x002811f0`, confirmed (code)), if L2 is not held;
+3. a **jump** (`Player_TryJump`, `0x002829e8`, confirmed (code)), if human flag `0x10000000` is clear and the stick is
+   above **0.95**;
 4. the **drop** of what is in hand (`Human_DropHeld`, `0x00257f38`), if L2 is not held
    ([Triangle with something in hand](#triangle-held)).
 
@@ -1898,7 +1913,7 @@ more and `|v|` at least 3.3; it keeps the gait at `+0x3c0` and the height at `+0
 
 - horizontal velocity: the current direction times the **run speed** for a take-off gait of 3 or 4, the **sprint
   speed** for gait 5 (the jog speed below 3);
-- vertical velocity **5.5 m/s** (`0x00510188`);
+- vertical velocity **5.5 m/s** (`0x00510188`, read by `Human_LaunchJump`; confirmed (code));
 - `Human_StartFall` (vtable `+0x154`), then the state function `Human_AirControl` (`0x00240898`, set through
   `0x00227c28`) and anim state 26.
 
@@ -1941,10 +1956,11 @@ again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120
 1. **There is no buffer.** Command 10 is one sample ([Commands](combat.md#commands)) and each try runs once, on that
    update. An "early" climb is only the long ray: 4.5 m ahead for a player (human flag `0x2`) at gait 4 or 5, else
    1.5 m.
-2. **The climb comes first and ignores what is in hand.** `Climb_TryStart` refuses only on record `+0x08`
-   `0x84240`; nothing about a held object. When the climb starts, `Climb_Start` **drops** an object of held set 4
-   (overhead: barrels, crates) always, and one of set 6 (the ghetto blaster) unless `CfgClimbWithGhetto`
-   (`0x00510250`) is set; a weapon (sets 1-3) or a one-handed throwable (5) stays in hand through the climb.
+2. **The climb comes first and ignores what is in hand.** `Climb_TryStart` refuses only on record `+0x08` `0x84240`;
+   nothing about a held object. When the climb starts, `Climb_Start` **drops** an object of held set 4 (overhead:
+   barrels, crates) always, and one of set 6 (the ghetto blaster) unless `CfgClimbWithGhetto` (`0x00510250`) is set
+   (confirmed (code) in `Climb_Start`); a weapon (sets 1-3) or a one-handed throwable (5) stays in hand through the
+   climb.
 3. **A press slightly out of reach is swallowed.** `Climb_Start` returns "done" for a player (per-player `+0x1b` not
    0), without climbing, when the face is beyond the clip's maximum distance but closer than twice a clip's reach
    (which clip's reach the decompiler hides; [open question](#open-questions)), and when the space at the top is not
@@ -1957,7 +1973,8 @@ again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120
    drop); only an AI (`+0x1b` = 0) drops here.
 5. **The jump**: refused while carrying held set 4 or 6 (`Human_HoldsKind4Or6`), in a fight stance, at 3.3 m/s or
    less, or with a climbable face within 5.5 m ([above](#jump)). A weapon does not refuse it.
-6. **Only then the drop**: with L2 not held and an object in hand, `Human_DropHeld` (`0x00257f38`) and `+0x5b8` = 1.
+6. **Only then the drop**: with L2 not held and an object in hand, `Human_DropHeld` (`0x00257f38`) and `+0x5b8` = 1
+   (confirmed (code)).
 
 So with a bat at a run toward a climbable wall: within 4.5 m (and inside the clips' distances) he climbs with the bat;
 just beyond the clips' distance the press may be swallowed; farther but within 5.5 m nothing climbs or jumps and the
@@ -1985,7 +2002,8 @@ jump, `src/platform/play_level_objects.cpp`):
 `Climb_TryStart` (`0x002826f0`) runs on triangle with the stick above 0.12 ([Jumping](#jump)). Confirmed (code):
 
 1. Refused while record `+0x08` has any of `0x84240`.
-2. Direction `d`: the stick's direction when its magnitude is above 0.01, else the facing (`0x0021d228`).
+2. Direction `d`: the stick's direction when its magnitude is above 0.01, else the facing (`Player_GetStickDirection`,
+   `0x0021d228`; confirmed (code)).
 3. Two horizontal rays along `d` from **1.7 m** and **0.69 m** above the feet, **1.5 m** long, or **4.5 m** when human
    flag `0x2` is set (players) and the gait (`+0x1a8`) is 4 or 5.
 4. If both hit and their distances differ by less than 0.1, the obstacle is **tall** (the high hit is used);
@@ -2020,11 +2038,11 @@ jump, `src/platform/play_level_objects.cpp`):
   read here.
 - The start point is the hit at the feet' height plus `n × 0.9 × reach`, kept at `+0x2c0`; the human is turned to
   face the wall and moved there over 1/60 s or 1/15 s.
-- The three clips play in turn (P1, P2 = id + 1, P3 = id + 2). At P1's end (`0x00281450` running, `0x00281838`
-  standing) the forward probe is made again from 0.69 m (2.5 m long running, 1.5 m standing). On success the body
-  is **moved at once** by P2's root displacement turned to the facing, body `+0x40` gets `0x80000000 | 0x4000`,
-  and record `+0x08` gets `0x40` (the fences stop blocking, [Walls and steps](#walls)); on failure the climb ends
-  in the idle or the combat idle. A running climb ends in a gait blend, a standing one in the idle.
+- The three clips play in turn (P1, P2 = id + 1, P3 = id + 2). At P1's end (`0x00281450` running, `0x00281838` standing;
+  confirmed (code)) the forward probe is made again from 0.69 m (2.5 m long running, 1.5 m standing). On success the
+  body is **moved at once** by P2's root displacement turned to the facing, body `+0x40` gets `0x80000000 | 0x4000`, and
+  record `+0x08` gets `0x40` (the fences stop blocking, [Walls and steps](#walls)); on failure the climb ends in the
+  idle or the combat idle. A running climb ends in a gait blend, a standing one in the idle.
 - While clips 437-460 play, `+0x5b9` is 1 (`Human_StateUpdate`).
 - **From P2 on nothing collides.** While record `+0x08` has `0x40`, `Human_Move` (`0x0023d8c8`) skips the wall
   sweep (`PhysicsBody_Sweep`) and the ground snap and adds the velocity and the clip's root motion (`+0x2f0`), height
@@ -2202,18 +2220,19 @@ updates (`+0xc8` and `+0xcc` set to `0xFFFFFF00` | alpha first). [HUD](hud.md) h
 
 ## Code index {#code-index}
 
-Every function of the human code in `0x002176b8`-`0x00288000` that the sections above do not walk through, in address
-order, with what it does. Names are ours, as in the local Ghidra project, where each function also carries a plate
-comment. Combat functions are indexed on [Combat](combat.md#code-index) and the crimes' on
-[Crimes](crimes.md#code-index).
+Every function of the human code in `0x00217a70`-`0x00288000` (inferred: the range is our grouping, and each row is
+graded) that the sections above do not walk through, in address order, with what it does. Names are ours, as in the
+local Ghidra project, where each function also carries a plate comment. Combat functions are indexed on
+[Combat](combat.md#code-index) and the crimes' on [Crimes](crimes.md#code-index).
 
 ### The human core {#code-core}
 
-`0x002176b8`-`0x00233ef0`, around `Human.cpp`'s path string (`0x0021c7c8`): pose writes, fire and hit effects, the grab
-sound, voice lines and anim sounds, the record's accessors and state-flag tests, the class tables, targets, getting up
-and the overlay clips. Field offsets are on the human object ([above](#the-human-object)) and the record
-([above](#the-record)); the pose slot is the human's entry (`+0x92`) in the task pose table at `0x00714b00`, `0x20`
-bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`, a held flag one of record `+0x08`.
+`0x00217a70`-`0x00233ef0`, around `Human.cpp`'s path string (`0x0021c7c8`; the range inferred, each row graded): pose
+writes, fire and hit effects, the grab sound, voice lines and anim sounds, the record's accessors and state-flag tests,
+the class tables, targets, getting up and the overlay clips. Field offsets are on the human object
+([above](#the-human-object)) and the record ([above](#the-record)); the pose slot is the human's entry (`+0x92`) in the
+task pose table at `0x00714b00`, `0x20` bytes each. A human flag is a bit of `+0xe0`, a state flag one of record
+`+0x00`, a held flag one of record `+0x08`.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2462,9 +2481,9 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 
 ### Script functions {#code-script}
 
-The engine side of the `Hu*` and `Cfg*` script functions (`0x00233ef0`-`0x00238b18`); each row names its script
-function. A setter with a flag turns that bit of the human flags `+0xe0` on or off; a `Cfg*` setter writes one global
-the human code reads.
+The engine side of the `Hu*` and `Cfg*` script functions (`0x00233ef0`-`0x0023b838`, inferred from where the rows lie;
+each row is graded); each row names its script function. A setter with a flag turns that bit of the human flags `+0xe0`
+on or off; a `Cfg*` setter writes one global the human code reads.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2674,8 +2693,9 @@ the human code reads.
 
 ### The update, controls and carried props {#code-update}
 
-`0x0023b838`-`0x0024e1f8`: anim handles, the state update and its control functions (the member-function pointer at
-`+0x1bc`, [An AI's locomotion](#ai-locomotion)), falling and landing, the look-at, the reticules and carried props.
+`0x0023b838`-`0x0024e1f8` (inferred from where the rows lie; each row is graded): anim handles, the state update and its
+control functions (the member-function pointer at `+0x1bc`, [An AI's locomotion](#ai-locomotion)), falling and landing,
+the look-at, the reticules and carried props.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2732,8 +2752,8 @@ the human code reads.
 
 ### Navigation {#code-nav}
 
-`0x0024e1f8`-`0x00250e00`: the human's side of the navigation mesh (on-mesh tests, path polygons, links); the planner is
-on [AI](ai-moving.md#path-planning).
+`0x0024e1f8`-`0x00250e00` (inferred from where the rows lie; each row is graded): the human's side of the navigation
+mesh (on-mesh tests, path polygons, links); the planner is on [AI](ai-moving.md#path-planning).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2747,8 +2767,8 @@ on [AI](ai-moving.md#path-planning).
 
 ### Movement styles, clips and actions {#code-movement}
 
-From `0x00250e00`: movement styles and anim slots, the clip builders ([Clip selection](#clip-selection)), the turn and
-arrival clips of an AI, and the per-human actions.
+From `0x00250e00` (inferred from where the rows lie; each row is graded): movement styles and anim slots, the clip
+builders ([Clip selection](#clip-selection)), the turn and arrival clips of an AI, and the per-human actions.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2838,8 +2858,8 @@ arrival clips of an AI, and the per-human actions.
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, a range inferred from where its functions lie: inventory,
+statistics, flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
