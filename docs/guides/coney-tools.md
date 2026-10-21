@@ -1190,8 +1190,8 @@ handling of paths, programs and long command lines is tested on all three.
 
 `--only` and `--skip` take step names, for a rerun of the one that failed. Exit codes: 0 all passed, 1 a step failed, 2
 a setup problem (no compile database, no clang-tidy), 75 clang-tidy gave up waiting for a slot. The command prints at
-most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
-sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
+most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits,
+macOS, the sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
 
 ## docs {#docs}
 
@@ -1395,11 +1395,12 @@ instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FO
 run, such as `CC=clang-19`; CMake reads `CC` and `CXX` at a folder's first configure and keeps them in the cache.
 
 `build status` prints every lane (main, fast, and the [clang-tidy lane](#check) of `check changed`, whose "preset" is
-the gate's file count): each slot's holder, worktree, preset, step and minutes, the queue in order (place,
-agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release
---agent ID [--lane main|fast|tidy]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left,
-stops what a crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`, which frees
-the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and tests](agents.md#builds).
+the gate's file count): each slot's holder, worktree, preset, step and minutes, the queue in order (place, agent,
+priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release --agent ID
+[--lane main|fast|tidy]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left, stops what a
+crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`,
+which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and
+tests](agents.md#builds).
 
 ## coord {#coord}
 
