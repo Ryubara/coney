@@ -58,8 +58,12 @@ def checkout(root: Path) -> Path:
     for folder in (*CONVENTIONS.paths.code, *CONVENTIONS.paths.docs):
         (root / folder).mkdir(parents=True, exist_ok=True)
     for generated in CONVENTIONS.paths.generated:
-        if generated.by.startswith("coney-tools "):
+        if generated.by.startswith("coney-tools ") and generated.path.endswith("/"):
             (root / generated.path).mkdir(parents=True, exist_ok=True)
+        elif generated.by.startswith("coney-tools "):
+            # A generated page (docs/guides/pcsx2-recipes.md) rather than a folder of them.
+            (root / generated.path).parent.mkdir(parents=True, exist_ok=True)
+            (root / generated.path).touch()
         for excluded in generated.excluding:
             (root / excluded).parent.mkdir(parents=True, exist_ok=True)
             (root / excluded).write_text("", encoding="utf-8")
