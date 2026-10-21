@@ -1025,7 +1025,9 @@ build makes clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC 
 initializer that leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra
 -Wpedantic` (the flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's
 diagnostics through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`.
-`--jobs` runs that many files at once (default: half the cores).
+`--jobs` runs that many files at once (default: a build's share, the cores divided by `build_slots`, as `coney-tools
+build -j` defaults: the gate runs outside the build slots, beside the builds that hold them). Every program the command
+starts runs below normal priority, like a build's (Windows: below-normal priority class; elsewhere `nice -n 5`).
 
 **Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
 default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The

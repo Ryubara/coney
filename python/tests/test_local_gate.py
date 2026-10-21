@@ -755,3 +755,35 @@ def test_the_python_workflow_runs_the_local_gate_on_every_os_it_tests() -> None:
     gate = [step["run"] for step in steps if "coney-tools check changed" in step.get("run", "")]
     assert len(gate) == 1 and "--base HEAD^1" in gate[0]
     assert "--only pre-commit" in gate[0] and "--only repo" in gate[0]
+
+
+# -- sharing the machine with the builds ---------------------------------------------------------------------------
+
+
+def test_clang_tidy_defaults_to_a_builds_share_of_the_cores(tmp_path: Path) -> None:
+    checkout = tmp_path / "wt"
+    checkout.mkdir()
+    (checkout / "coney.local.example.toml").write_text("", encoding="utf-8")
+    assert check_cli.tidy_jobs(checkout, 16) == 8  # no coney.local.toml: the default two slots
+    (checkout / "coney.local.toml").write_text("build_slots = 5\n", encoding="utf-8")
+    assert check_cli.tidy_jobs(checkout, 16) == 3
+    assert check_cli.tidy_jobs(checkout, 2) == 1
+    (checkout / "coney.local.toml").write_text("no_such_key = 1\n", encoding="utf-8")
+    assert check_cli.tidy_jobs(checkout, 16) == 8  # a broken file is the build's own precheck's to report
+
+
+def test_the_gates_commands_run_below_normal_priority(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
+        seen.append((command, options))
+        return subprocess.CompletedProcess(command, 0, "out", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert local_gate.run_command(["clang-tidy", "a.cpp"], tmp_path) == (0, "out")
+    command, options = seen[0]
+    assert "preexec_fn" not in options  # unsafe in the threads clang-tidy runs from
+    if os.name == "nt":
+        assert command == ["clang-tidy", "a.cpp"] and options["creationflags"] == 0x00004000 | 0x08000000
+    else:
+        assert command[-2:] == ["clang-tidy", "a.cpp"] and (len(command) == 2 or command[1:3] == ["-n", "5"])
