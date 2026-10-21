@@ -64,6 +64,8 @@ BINDING_KEEP_SECONDS = 3 * 86400.0
 LOG_FILE = "guard.log"
 #: The log is cut to its newest half once it is larger than this.
 LOG_MAX_BYTES = 64 * 1024
+#: A logged message is cut to this many characters.
+LOG_LINE_CHARS = 1000
 #: A half-written binding file nobody finished (a crash between writing and renaming) is removed after this long.
 TEMPORARY_KEEP_SECONDS = 3600.0
 #: How often a rename that Windows refuses (the destination is open in another hook process) is tried.
@@ -97,6 +99,14 @@ def agents_in(command: str) -> list[str]:
 def _key(text: str) -> str:
     """A name safe to use in a file name (the session and agent ids come from the agent tool, not from us)."""
     return re.sub(r"[^A-Za-z0-9_-]", "_", text)[:80] or "main"
+
+
+#: What a refusal about `agent` tells the agent to do.
+_PASS_YOUR_ID = (
+    'Pass `agent: "<your id>"` on every pcsx2_* call, the id of `uv run --project python coney-tools pcsx2 claim '
+    "--agent <your id>`, run in a shell first so this guard learns it (it returns your claim again if you hold one): "
+    "it names your connection."
+)
 
 
 class Guard:
@@ -243,14 +253,6 @@ class Guard:
         return None
 
 
-#: What a refusal about `agent` tells the agent to do.
-_PASS_YOUR_ID = (
-    'Pass `agent: "<your id>"` on every pcsx2_* call, the id of `uv run --project python coney-tools pcsx2 claim '
-    "--agent <your id>`, run in a shell first so this guard learns it (it returns your claim again if you hold one): "
-    "it names your connection."
-)
-
-
 def _port(value: object) -> int | None:
     """A TCP port from what a tool call carries (an integer, a whole float or a string of ASCII digits), else None.
     Strings like "\u00b2" pass `str.isdigit()` and then break `int()`, so the digits are checked as ASCII."""
@@ -289,7 +291,8 @@ def log_failure(start: Path, error: BaseException) -> bool:
 
 def append_log(path: Path, error: BaseException) -> None:
     """Append `<time> <ErrorType>: <message>` to the log at `path`; past LOG_MAX_BYTES keep only its newest half."""
-    line = f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(error).__name__}: {error}".replace("\n", " ") + "\n"
+    message = f"{error}".replace("\n", " ")[:LOG_LINE_CHARS]  # one absurd message must not swallow the log
+    line = f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(error).__name__}: {message}\n"
     with path.open("a", encoding="utf-8") as log:
         log.write(line)
     if path.stat().st_size > LOG_MAX_BYTES:
@@ -297,7 +300,7 @@ def append_log(path: Path, error: BaseException) -> None:
         size = 0
         for old in reversed(path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)):
             size += len(old.encode("utf-8"))
-            if size > LOG_MAX_BYTES // 2:
+            if kept and size > LOG_MAX_BYTES // 2:  # the newest line always stays
                 break
             kept.append(old)
         path.write_text("".join(reversed(kept)), encoding="utf-8")

@@ -330,10 +330,10 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
   share the server's `default` connection), and checks it wherever it is given: it must be an id of your claiming
   commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's name by mistake.
   It does not check on a later call that the claim is still live (after a `release` or a takeover the old id still
-  passes; the server frees an idle name within 30 minutes). Your tool list shows whether the installed server has it (`agent` among `pcsx2_connect`'s
-  arguments). A command that gets no reply in time closes its connection (a late reply could answer your next
-  command), and closing one fails the command waiting on it at once with `Connection closed`: reconnect with
-  `pcsx2_connect`.
+  passes; the server frees an idle name within 30 minutes). Your tool list shows whether the installed server has
+  the `agent` argument (it is among `pcsx2_connect`'s arguments). A command that gets no reply in time closes its
+  connection (a late reply could answer your next command), and closing one fails the command waiting on it at once
+  with `Connection closed`: reconnect with `pcsx2_connect`.
 - **Release it when you finish.** `pcsx2_disconnect` (with your `agent`) closes your connection and frees your name
   and ports for the next agent on the copy; one idle for 30 minutes (`PCSX2_IDLE_MINUTES` in the server's
   environment) is released by a connect that wants its port, and the answer says so. Without that, the next agent to

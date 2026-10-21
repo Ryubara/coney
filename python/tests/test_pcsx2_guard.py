@@ -17,6 +17,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
@@ -483,7 +484,7 @@ def test_a_replace_that_fails_while_a_reader_has_the_file_open_is_retried(
         return real(self, target)
 
     monkeypatch.setattr(Path, "replace", replace)
-    monkeypatch.setattr(pcsx2_guard.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(time, "sleep", lambda seconds: None)
     guard.bind("s1", "agent-1", ["alice"])
     assert guard.bound("s1", "agent-1") == {"alice"} and not failures
     assert not [path for path in guard.folder.iterdir() if ".json." in path.name]  # no temporary file left
@@ -497,7 +498,7 @@ def test_two_processes_binding_different_ids_at_once_lose_neither(
     rivalled: list[bool] = []
 
     def replace(self: Path, target: Any) -> Path:
-        if not rivalled:  # the other hook process binds its id between this one's read and its replace
+        if not rivalled:  # the other hook process binds its id while this one is writing its own
             rivalled.append(True)
             rival.bind("s1", "agent-1", ["bob"])
         return real(self, target)
@@ -505,6 +506,14 @@ def test_two_processes_binding_different_ids_at_once_lose_neither(
     monkeypatch.setattr(Path, "replace", replace)
     guard.bind("s1", "agent-1", ["alice"])
     assert guard.bound("s1", "agent-1") == {"alice", "bob"}
+
+
+def test_a_single_huge_log_line_is_kept(registry: Registry, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda start=None: registry)
+    monkeypatch.setattr(pcsx2_guard, "LOG_MAX_BYTES", 400)
+    pcsx2_guard.log_failure(tmp_path, RuntimeError("x" * 5000))
+    text = (registry.claims_dir / "mcp" / pcsx2_guard.LOG_FILE).read_text(encoding="utf-8")
+    assert "RuntimeError: xxx" in text and len(text) < 1200
 
 
 def test_the_failure_log_does_not_grow_without_bound(
@@ -697,7 +706,9 @@ def test_the_guard_needs_nothing_but_the_standard_library() -> None:
 
 
 def filter_pattern(settings: dict[str, Any], matcher: str) -> re.Pattern[str]:
-    """The `if` filter of the guard's registration for `matcher`, as a regular expression (`*` is any text)."""
+    """The `if` filter of the guard's registration for `matcher`, as a regular expression (`*` is any text, newlines
+    included). This models Claude Code's rule matching, which the test cannot run; if the real matcher stops at a
+    newline, the continued-line spellings are skipped and the caller is told to claim again (it fails closed)."""
     (condition,) = {
         hook["if"]
         for group in settings["hooks"]["PreToolUse"]

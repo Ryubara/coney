@@ -51,7 +51,7 @@ def record(start: Path, error: BaseException) -> None:
     except Exception:
         pass
     try:
-        line = f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(error).__name__}: {error}".replace("\n", " ")
+        line = f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(error).__name__}: {str(error)[:1000]}".replace("\n", " ")
         with (Path(tempfile.gettempdir()) / FALLBACK_LOG_FILE).open("a", encoding="utf-8") as log:
             log.write(line + "\n")
     except Exception:
