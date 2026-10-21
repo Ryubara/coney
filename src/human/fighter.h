@@ -460,10 +460,10 @@ class Fighter {
     [[nodiscard]] float reachOf(int animId) const;
     // The attack warning of attack `animId`'s start (event 0x10): to its one target only, never to the other humans
     // around. A player's pad path warns the target it picked at any distance, an AI's start only one within the clip's
-    // far range; the charge warns the target it has (a player with none, its search's). Each warned brain then makes
+    // far range; the charge warns the target it has (a player with none, the nearest in its reach band). Each warned brain then makes
     // its own sight test (ai::Brain::update()). **Coney choices**: a player's standing square warns once, where the
     // original's pad path and Attack_Start each warn (the brain counts 2); the dive warns the one its own search
-    // (diveTargetOf()) dives at, as the research does not list it; a block try only asks for a warning.
+    // (nearestInReach()) dives at, as the research does not list it; a block try only asks for a warning.
     // Research: docs/research/combat.md#attack-warnings
     // @orig 0x0021d5c0 Human_WarnOfAttack (unknown)
     void warnTarget(int animId, const FighterInput& input, bool chainStep) const;
@@ -490,10 +490,11 @@ class Fighter {
     // takes it there over 0.1 s (docs/research/combat.md#charge-aim).
     // @orig 0x00264878 Player_StartDive (unknown)
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
-    // The dive's search: the nearest standing human between its reach and far range within 54° of the stick or the
-    // facing, or null. Both the dive's warning (warnTarget()) and its steer (steerDive()) use it.
+    // The reach search of attack `animId` (the dive's, the charge's): the nearest standing human between its reach and
+    // far range within 54° of the stick or the facing, or null. The dive's warning and steer (warnTarget(),
+    // steerDive()) and a player's charge warning (warnTarget(), as Player_StartCharge `0x00264a80` searches) use it.
     // @orig 0x0027b058 Attack_FindNearestInReach (unknown)
-    [[nodiscard]] Combatant* diveTargetOf(const FighterInput& input) const;
+    [[nodiscard]] Combatant* nearestInReach(int animId, const FighterInput& input) const;
     // The turn and the slide onto the reach of attack `animId` from `target`, at a constant rate from the next state
     // update (m_steer), the target led by its velocity x (`toEvent` + 0.1 s). The attack's flag 0x8 (ledSteer())
     // picks the steer: the led one takes `toEvent` + 0.1 s, the other `seconds`, cut to `toEvent` + 0.1 s. The led

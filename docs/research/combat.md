@@ -893,7 +893,7 @@ humans to warn them: every one of its 23 call sites passes a single human, the m
   and the throw's release.
 
 **Coney choice, not a finding:** the running dive is not among the call sites above, so whether the original's dive
-warns anyone is not known; Coney's dive warns the one human its own search dives at (`Fighter::diveTargetOf`,
+warns anyone is not known; Coney's dive warns the one human its own search dives at (`Fighter::nearestInReach`,
 `repo:src/human/fighter.h`), and no one when it finds none.
 
 **What others hear.** Only indirectly: the warned human's shared handler (`0x00292d80`) makes the gangs enemies and

@@ -755,22 +755,21 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
 }
 
 void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) const {
-    // The charge warns the target it already has or, for a player with none, the one its search finds; it takes none
+    // The charge warns the target it already has or, for a player with none, the nearest human its reach search
+    // finds (Player_StartCharge's Attack_FindNearestInReach with the charge's reach and far range); it takes none
     // (docs/research/combat.md#charge-aim).
     if (animId == id::kRunningAttackCharge) {
-        Combatant* target = m_target != nullptr ? m_target
-                            : m_player          ? attackTargetOf(animId, input, chainStep)
-                                                : nullptr;
+        Combatant* target = m_target != nullptr ? m_target : m_player ? nearestInReach(animId, input) : nullptr;
         if (target != nullptr) {
             target->announceAttack(input.position);
         }
         return;
     }
-    // **Coney choice**: the dive warns the human its own search dives at (diveTargetOf(), the same search steerDive()
+    // **Coney choice**: the dive warns the human its own search dives at (nearestInReach(), the same search steerDive()
     // makes next), none when it finds none; the research does not list the dive's warning
     // (docs/research/combat.md#attack-warnings).
     if (animId == id::kRunningAttackDive) {
-        if (Combatant* target = diveTargetOf(input); target != nullptr) {
+        if (Combatant* target = nearestInReach(id::kRunningAttackDive, input); target != nullptr) {
             target->announceAttack(input.position);
         }
         return;
@@ -876,15 +875,14 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     steerOnto(animId, *target, input, toEvent, toEvent, heading);
 }
 
-Combatant* Fighter::diveTargetOf(const FighterInput& input) const {
-    // Attack_FindNearestInReach: the standing humans between the dive's reach and its far range, within 54° of the
+Combatant* Fighter::nearestInReach(int animId, const FighterInput& input) const {
+    // Attack_FindNearestInReach: the standing humans between the attack's reach and its far range, within 54° of the
     // stick (or the facing), nearest first; no any-angle or wide pass.
-    const int dive = id::kRunningAttackDive;
-    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(dive)) : nullptr;
+    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(animId)) : nullptr;
     const float nearest = range != nullptr ? range->reach : 0.0F;
     const float along = aimHeading(input, 0.0F);
     Combatant* found = nullptr;
-    float bestDistance = reachOf(dive);
+    float bestDistance = reachOf(animId);
     for (Combatant* target : input.targets) {
         if (!fightable(*target, input.position)) {
             continue;
@@ -902,7 +900,7 @@ Combatant* Fighter::diveTargetOf(const FighterInput& input) const {
 
 void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator, float heading) {
     const int dive = id::kRunningAttackDive;
-    Combatant* found = diveTargetOf(input);
+    Combatant* found = nearestInReach(dive, input);
     // The result is the target; none found clears it, unless the player is locked on.
     if (found != nullptr || lockTarget() == nullptr) {
         m_target = found;
