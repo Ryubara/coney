@@ -941,4 +941,29 @@ TEST_CASE("the run log options refuse an unknown category, a missing value and a
     CHECK_FALSE(parse(std::array<std::string_view, 1>{"--log-file"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--log-file", "a", "--log-file", "b"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--log-verbose", "ai", "--log-verbose", "combat"}).has_value());
+
+TEST_CASE("installing takes the disc, the install folder and --verify", "[options]") {
+    auto result = parse(std::to_array<std::string_view>({"--install", "H:/", "--data", "D:/Coney", "--verify"}));
+    REQUIRE(result.has_value());
+    CHECK(result->installFrom == "H:/");
+    CHECK(result->dataPath == "D:/Coney");
+    CHECK(result->verifyInstall);
+    CHECK(coney::usageText().find("--install DISC") != std::string_view::npos);
+}
+
+TEST_CASE("installing refuses a missing install folder and anything that starts the game", "[options]") {
+    auto noData = parse(std::to_array<std::string_view>({"--install", "H:/"}));
+    REQUIRE_FALSE(noData.has_value());
+    CHECK(noData.error().code == ErrorCode::InvalidArgument);
+    CHECK(noData.error().message.find("--data") != std::string::npos);
+    auto withPlay =
+        parse(std::to_array<std::string_view>({"--install", "H:/", "--data", "D:/C", "--play-level", "level99"}));
+    REQUIRE_FALSE(withPlay.has_value());
+    CHECK(withPlay.error().message.find("runs on its own") != std::string::npos);
+    auto verifyAlone = parse(std::to_array<std::string_view>({"--verify"}));
+    REQUIRE_FALSE(verifyAlone.has_value());
+    auto dataAlone = parse(std::to_array<std::string_view>({"--data", "D:/C"}));
+    REQUIRE_FALSE(dataAlone.has_value());
+    auto twice = parse(std::to_array<std::string_view>({"--install", "H:/", "--install", "I:/", "--data", "D:/C"}));
+    REQUIRE_FALSE(twice.has_value());
 }

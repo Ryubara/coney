@@ -38,7 +38,8 @@ constexpr std::string_view kPlayerSynopsis =
 
 // The text usageText() returns (see its doc comment in options.h).
 constexpr std::string_view kUsage =
-    "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
+    "Usage: coney --install DISC --data DIR [--verify]\n"
+    "       coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
     "             [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--profiles DIR]\n"
@@ -59,6 +60,11 @@ constexpr std::string_view kUsage =
     "             [--record FILE [--record-seconds N]]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "\n"
+    "  --install DISC     install the PS2 disc (a mounted disc, a folder of its files or an ISO image)\n"
+    "                     into the folder --data names: its files copied as they are and checked,\n"
+    "                     then exit; run it again to finish an install that was stopped\n"
+    "  --data DIR         the install folder\n"
+    "  --verify           with --install: read every installed file again and copy any that changed\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
     "                     through the chunk system and print a summary; repeatable; needs --disc;\n"
@@ -398,8 +404,37 @@ std::expected<void, Error> checkRecord(const Options& options) {
     return clips::checkClipPath(*options.recordPath);
 }
 
+// Refuses the install's options in combinations that cannot work: part of checkCombinations(). An install runs on its
+// own and exits, so nothing that starts the game goes with it.
+std::expected<void, Error> checkInstall(const Options& options) {
+    if (options.verifyInstall && !options.installFrom.has_value()) {
+        return invalidArgument("--verify needs --install: it checks the files an install copied");
+    }
+    if (options.dataPath.has_value() && !options.installFrom.has_value()) {
+        return invalidArgument("--data needs --install: it names the folder to install into");
+    }
+    if (!options.installFrom.has_value()) {
+        return {};
+    }
+    if (!options.dataPath.has_value()) {
+        return invalidArgument("--install needs --data DIR: the folder to install into");
+    }
+    const bool other = options.discPath || !options.loads.empty() || options.viewTxd || options.viewSheet ||
+                       options.viewText || options.viewWorld || options.viewCharacter || options.playLevel ||
+                       options.sandbox || options.renderReferences || options.rumble || options.frameLimit ||
+                       options.inputScript || options.screenshotPath || options.recordPath || options.padPipe ||
+                       options.headless || options.audioTest;
+    if (other) {
+        return invalidArgument("--install runs on its own and exits: only --data and --verify go with it");
+    }
+    return {};
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
+    if (auto installing = checkInstall(options); !installing) {
+        return installing;
+    }
     if (auto record = checkRecord(options); !record) {
         return record;
     }
@@ -755,6 +790,18 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--disc needs the path of a disc folder or an ISO image");
             }
             options.discPath = std::string(args[++i]);
+        } else if (arg == "--install") {
+            if (auto value = takeValue(args, i, options.installFrom, "--install",
+                                       "the path of the PS2 disc: a mounted disc, a folder or an ISO image");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--data") {
+            if (auto value = takeValue(args, i, options.dataPath, "--data", "the install folder's path"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--verify") {
+            options.verifyInstall = true;
         } else if (arg == "--load") {
             if (i + 1 == args.size() || args[i + 1].empty()) {
                 return invalidArgument("--load needs an entry name or a 0x hash");

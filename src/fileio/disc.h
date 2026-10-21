@@ -64,6 +64,10 @@ class Disc {
     /// openFile() and Stream::read() do.
     [[nodiscard]] std::expected<std::vector<std::byte>, Error> readFile(std::string_view name) const;
 
+    /// Every file of the disc, the root's and those of the folders directly below it (`IOP/BFW.SND`), as
+    /// cleanDiscName() keys them, sorted. The installer copies exactly these (docs/guides/running.md#install).
+    [[nodiscard]] std::vector<std::string> names() const;
+
     /// The names of the files in the folder `folder` directly below the root (`PSS` gives `LOGO.BIK`, ...), cleaned
     /// as cleanDiscName() cleans them and sorted; empty when there is no such folder. The root itself is not a folder
     /// below it, so `""` lists nothing.

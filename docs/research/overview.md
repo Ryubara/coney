@@ -14,6 +14,8 @@ Date: 2026-10-04. Disc: `Warriors, The (USA) (En,Fr,De,Es,It).iso` (4,295,917,56
 | `PSS/*.BIK` | 16 files | Bink videos (intro/outro per level, logos, trailer) |
 | `MODULES/*.IRX`, `IOPRP300.IMG` | | Standard SCE IOP modules + one custom `IOP.IRX` (audio driver, probably) |
 
+Every file's size and SHA-1, as the installer checks them: [The discs Coney installs from](discs.md).
+
 ## Main ELF (`SLUS_212.15`)
 
 * Entry `0x100008`; one PT_LOAD at `0x100000` (filesz `0x496f6c`, memsz `0x615b5c`).

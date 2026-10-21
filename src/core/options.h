@@ -123,6 +123,12 @@ struct Options {
     std::optional<int> frameLimit;
     /// `--disc`: the player's disc, a folder (a mounted disc) or an ISO 9660 image, exactly as typed.
     std::optional<std::string> discPath;
+    /// `--install DISC`: install the PS2 disc (a mounted disc, a folder of its files or an ISO image) into the folder
+    /// dataPath names, then exit (docs/guides/running.md#install). Only dataPath and verifyInstall go with it.
+    std::optional<std::string> installFrom;
+    /// `--data DIR`: the install folder (docs/guides/asset-and-script-architecture.md#install-folder). Requires
+    /// installFrom.
+    std::optional<std::string> dataPath;
     /// `--load`, in the order given: WAD entries to load through the chunk system, each a name or a `0x` hash.
     /// Requires discPath.
     std::vector<std::string> loads;
@@ -252,6 +258,8 @@ struct Options {
     // The flags and the one-byte settings last, so the fields above pack without padding.
     /// `--help` was given: print usageText() and exit 0.
     bool showHelp = false;
+    /// `--verify`: with installFrom, re-read every file already installed and copy again any that changed.
+    bool verifyInstall = false;
     /// `--headless`: no window and librw's NULL renderer, so nothing needs a display or a GPU. CI runs this way.
     bool headless = false;
     /// `--freeze-world`: after the first step of play nothing in the world advances (pedestrians, cars, particles,

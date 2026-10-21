@@ -220,6 +220,15 @@ const Disc::Location* Disc::find(std::string_view name) const {
 
 bool Disc::has(std::string_view name) const { return find(name) != nullptr; }
 
+std::vector<std::string> Disc::names() const {
+    std::vector<std::string> names;
+    names.reserve(m_files.size());
+    for (const auto& [name, location] : m_files) {
+        names.push_back(name);
+    }
+    return names;
+}
+
 std::vector<std::string> Disc::filesIn(std::string_view folder) const {
     std::vector<std::string> names;
     if (folder.empty()) {
