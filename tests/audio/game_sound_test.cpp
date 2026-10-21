@@ -847,3 +847,45 @@ TEST_CASE("gameplay's load screen loads load_NN, defers SndLoadBank, then loads 
     rig.sound.playCue(9);
     CHECK(rig.engine().stats().started >= 1);
 }
+
+// docs/research/ai.md#fight-reposition (`Ambient_MayGesture` 0x00291ed0): two gesture slots per reaction kind, of
+// which a brain may take as many as its help level; a slot frees when its holder stops speaking.
+TEST_CASE("a gesture takes a free slot of the speaker's reaction kind, up to his help level", "[audio][speech]") {
+    Rig rig;
+    coney::camera::FollowCamera follow{coney::anim::Vec3{2.0F, 0.0F, 0.0F}, 0.0F};
+    coney::camera::Cameras cameras;
+    cameras.attachFollow(&follow);
+    rig.context.cameras = &cameras;
+    rig.frames(1);
+    coney::script::HumanSoundCall ash;
+    ash.human = 20.0;
+    ash.characterType = 40;
+    ash.position = {5.0F, 0.0F, 0.0F};
+    ash.gestureKind = 3;
+    ash.gestureSlots = 1;
+    coney::script::HumanSoundCall cleon = ash;
+    cleon.human = 10.0;
+    cleon.position = {0.0F, 0.0F, 0.0F};
+    // Ash takes kind 3's one usable slot and speaks: Cleon, of the same kind and help level 1, may not.
+    CHECK(rig.sound.mayGesture(ash));
+    rig.call("HuSpeak", {Value(20.0), str(kLine), str("OnLine"), Value(1.0)});
+    CHECK_FALSE(rig.sound.mayGesture(cleon));
+    // Another kind has slots of its own; with help level 2 Ash himself takes his kind's second slot.
+    coney::script::HumanSoundCall cleonKind2 = cleon;
+    cleonKind2.gestureKind = 2;
+    cleonKind2.gestureSlots = 2;
+    CHECK(rig.sound.mayGesture(cleonKind2));
+    coney::script::HumanSoundCall ashTwo = ash;
+    ashTwo.gestureSlots = 2;
+    CHECK(rig.sound.mayGesture(ashTwo));
+    // Once his line has ended (3 s) the first slot is free again.
+    rig.frames(92);
+    CHECK(rig.sound.mayGesture(cleon));
+    // No gesture with every camera beyond 30 m, nor for a kind outside the table.
+    coney::script::HumanSoundCall far = cleonKind2;
+    far.position = {40.0F, 0.0F, 0.0F};
+    CHECK_FALSE(rig.sound.mayGesture(far));
+    coney::script::HumanSoundCall unknown = cleonKind2;
+    unknown.gestureKind = 9;
+    CHECK_FALSE(rig.sound.mayGesture(unknown));
+}
