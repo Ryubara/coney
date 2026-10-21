@@ -24,8 +24,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "debug/play_controls.h"
 #include "fileio/wad.h"
+#include "human/place.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
 #include "scripting/script_system.h"
@@ -83,7 +83,7 @@ struct Riot {
         coney::platform::PlayLevelMode* mode = run.session().play();
         REQUIRE(mode != nullptr);
         mode->teleport(
-            coney::debug::Place{.name = "objective", .feet = {x, y, mode->playerFeet().z}, .headingDegrees = heading});
+            coney::human::Place{.name = "objective", .feet = {x, y, mode->playerFeet().z}, .headingDegrees = heading});
     }
     // Puts player 1 `distance` metres from (x, y) in the direction `degrees` (from +x), facing the point.
     void faceFrom(float x, float y, float degrees, float distance) {
