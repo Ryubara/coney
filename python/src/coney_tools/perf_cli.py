@@ -166,9 +166,7 @@ def run_bench(args: argparse.Namespace) -> int:
     for fighters in args.fighters:
         stem = f"bench-{args.level}-{fighters}{'-headless' if args.headless else ''}"
         report_path = (out / f"{stem}.json").resolve()
-        command = bench_command(
-            coney, disc, args.level, fighters, args.frames, args.warmup, args.headless, report_path
-        )
+        command = bench_command(coney, disc, args.level, fighters, args.frames, args.warmup, args.headless, report_path)
         print(f"perf: {fighters} fighters ...", flush=True)
         with (out / f"{stem}.log").open("w", encoding="utf-8") as log:
             done = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=False)
