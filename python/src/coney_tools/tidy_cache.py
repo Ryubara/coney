@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import local_gate
-from coney_tools.config import ConfigError, load_config, local_config_file, main_checkout
+from coney_tools.config import ConfigError, load_config, local_config_file, workspace_root
 
 #: Bumped when what goes into a key changes, so entries made by an older rule are never read.
 FORMAT = "coney-tidy-cache 1"
@@ -260,7 +260,7 @@ class TidyCache:
 def default_cache(root: Path) -> TidyCache:
     """The cache of the checkout at `root`: `tidy_cache_dir` of coney.local.toml (this checkout's, else the main
     checkout's), else `cache/clang-tidy` in the workspace, beside the compiler cache."""
-    workspace = (main_checkout(root) / ".." / "..").resolve()
+    workspace = workspace_root(root)
     try:
         config = load_config(root) if local_config_file(root) else None
     except ConfigError:

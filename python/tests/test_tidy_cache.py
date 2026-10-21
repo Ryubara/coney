@@ -150,6 +150,13 @@ def test_the_default_folder_is_in_the_workspace_cache_unless_configured(tmp_path
     assert tidy_cache.default_cache(main).directory == (tmp_path / "elsewhere").resolve()
 
 
+def test_a_plain_clone_keeps_the_default_folder_beside_itself(tmp_path: Path) -> None:
+    clone = tmp_path / "code" / "coney"
+    write(clone, "coney.local.example.toml", "")
+    expected = (tmp_path / "code" / "coney-workspace" / "cache" / "clang-tidy").resolve()
+    assert tidy_cache.default_cache(clone).directory == expected
+
+
 @pytest.mark.parametrize("flags", ["-isystem {src}", "-external:I{src}", "-I {src}"])
 def test_every_include_flag_form_finds_the_headers(tmp_path: Path, flags: str) -> None:
     """A folder given in the same argument or the next one, under the GCC, Clang and MSVC spellings."""
