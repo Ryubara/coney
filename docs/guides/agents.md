@@ -173,6 +173,10 @@ instead of repeating it:
   that is not told runs only the checks it knows of, and CI finds the rest;
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
+Engineers who drive the original use the [PCSX2 recipes](pcsx2-recipes.md) for the basic things (finding a human,
+teleporting, spawning, calling the game, loading a checkpoint) instead of working the addresses out again, and add a
+recipe, confirmed in PCSX2, when they find a new technique; a brief need not repeat them.
+
 A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
 reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
 issue stays the one place to read it.

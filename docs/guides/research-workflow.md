@@ -285,6 +285,13 @@ How the runtime passes are done. The first ones (from 2026-10-04) ran the offici
 alone; since 2026-10-20 every copy runs the maintainer's PCSX2-MCP fork, a build of PCSX2 2.9.129 with a debug
 server built in, beside PINE. Both are reached through `coney-tools pcsx2` and the `pcsx2` MCP server.
 
+**Recipes first.** The basic things (find the player or a human, teleport, change health or rage, spawn a human, give
+money, send an event, run a Lua chunk or call one of the game's functions, load a checkpoint, pause and step) are
+[PCSX2 recipes](pcsx2-recipes.md), each confirmed in PCSX2 and run with `coney-tools pcsx2 recipe run`. Use them
+rather than working an address out again, and add a recipe when you find a new technique: an entry in
+`research/pcsx2-recipes.toml`, run in PCSX2 and its `confirmed_runtime` filled in, then `coney-tools pcsx2 recipe
+render`.
+
 - **Set-up.** `coney-tools pcsx2 setup-copies` puts the fork's build (`pcsx2_mcp_dir`) into every copy and sets its
   ini: `[EmuCore]` `EnablePINE = true` with `PINESlot` 28011 + *i*, `EnableDebugServer = true` with
   `DebugServerPort` 21512 + *i* for copy *i* (`pcsx2` is 0, `pcsx2-b` 1, ...), and `[InputSources]` `SDL = false`
@@ -346,8 +353,8 @@ server built in, beside PINE. Both are reached through `coney-tools pcsx2` and t
   `pcsx2_input_recording` (below). The MCP server connects to nothing at start: `pcsx2_connect` with your claim's
   `debug_port` and `pine_port` picks the copy ([Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
   speaks the same protocol itself (`repo:python/src/coney_tools/debug_server.py`).
-- **Input recordings.**{#input-recordings} PCSX2's own `.p2m2` files hold every frame's pad state from a start
-  savestate (`<file>.p2m2_SaveState.p2s` beside it) or from power-on, so a run's input repeats exactly.
+- <span id="input-recordings"></span>**Input recordings.** PCSX2's own `.p2m2` files hold every frame's pad state from
+  a start savestate (`<file>.p2m2_SaveState.p2s` beside it) or from power-on, so a run's input repeats exactly.
   `pcsx2_input_recording` drives them as PCSX2's "Input Recording" menu does: `new` (with `author`, `from`
   `savestate` or `power_on`, `path`) records from now on, `play` loads the start and replays, `stop` closes the file,
   `status` reports the mode and frames. At a replay's last frame PCSX2 pauses and the fork stops the replay there, so
@@ -369,14 +376,10 @@ server built in, beside PINE. Both are reached through `coney-tools pcsx2` and t
   keys). The hotkeys: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
   game's 640 × 448), F4 toggles the frame limiter. Hold a pad key for about 300 ms so that a 30 Hz game sees it.
   Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
-- **A chosen analog stick value.** Keyboard keys bound to a stick only give full deflection (raw byte 0
-  or 255), but the gait thresholds need partial values. The game turns each raw stick byte into a float through a
-  256-entry `float` table at `0x0050b8d0` (entry 0 is −1.0, entry 255 is +1.0); it is data, so a PINE write takes
-  effect at once. To give the left stick a magnitude *m* straight up: write −*m* to entry 0 (`0x0050b8d0`) and +*m*
-  to entry 255 (`0x0050b8d0 + 0x3fc`), then hold W; the pad record (`0x005dd810`; `+0x08` / `+0x0c` the stick as
-  floats, `+0x00` / `+0x04` the same turned by the camera) shows the value the game uses. Write −1.0 / +1.0 back
-  afterwards. The camera's right-stick code (`0x00129050`) reads the raw bytes, so the table does not change it.
-  State the magnitude used with every runtime claim that depends on input ("stick magnitude 0.5, straight up").
+- **A chosen analog stick value.** Keyboard keys bound to a stick only give full deflection, but the gait thresholds
+  need partial values: the stick table at `0x0050b8d0` sets what full deflection reads as. How, with its addresses:
+  the [`stick-magnitude`](pcsx2-recipes.md#stick-magnitude) recipe. State the magnitude used with every runtime claim
+  that depends on input ("stick magnitude 0.5, straight up").
 - **Catching a moment.** Load a state, press Space to pause, make the memory writes, then send Space followed by a
   run of F8 presses (one a second, or faster) and look at the screenshots afterwards. Data drawn in one frame
   usually survives in memory until reused: a sprite batch's arrays keep the last frame's sprites after its count is
@@ -390,37 +393,24 @@ server built in, beside PINE. Both are reached through `coney-tools pcsx2` and t
   halving its size factors, and the start-up movies were skipped by making their skip check (`0x0042a820`) return 1.
   Say on the page which patch a claim depends on. A write to code that has already been compiled is not picked up
   (PCSX2 logs "Impossible block clearing failure", and writing during a state load crashed it).
-- **Scripted pad input** (2026-10-05, the traversal pass). When the keyboard does not reach the window, or for exact
-  timing, make the pad code read buttons and the left stick from spare bytes after the `scePadRead` buffer: in the
-  DualShock 2 path the `lbu` loads at `0x00149dd4`, `0x00149dd8`, `0x00149de8` and `0x00149df0` (and at `0x00149e8c`,
-  `0x00149e90`, `0x00149ea8`, `0x00149eb0` in the digital path) take offsets `0x22`, `0x23`, `0x26` and `0x27`
-  instead of 2, 3, 6 and 7, so `0x005de3aa` / `0x005de3ab` are the active-low button bytes and `0x005de3ae` /
-  `0x005de3af` the stick's x and y. The patch must be in RAM before the block is compiled: **copy** the save state
-  file (a zip of `eeMemory.bin` and the rest; Python 3.14's `zipfile` reads its zstd entries), patch `eeMemory.bin` at
-  those addresses, and start it with `coney-tools pcsx2 launch --agent <id> <copy>`; restart PCSX2 the same way
-  for every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
-  whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`. The
-  patch is `scripted-pad` in `research/traces/patches/state-patches.toml`, with each instruction word it expects and the
-  one that replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.
-- **The right stick, too** (2026-10-05, the feel pass). The right stick's loads are at `0x00149df8` / `0x00149e00`
-  (DualShock 2 path) and `0x00149eb8` / `0x00149ec0` (digital path), offsets 4 and 5; making them 0x24 and 0x25
-  puts the right stick's x and y at `0x005de3ac` / `0x005de3ad` (the `right-stick` patch). The stick table at
-  `0x0050b8d0` is the same map as
+- **Scripted pad input** (2026-10-05, the traversal pass). For a **closed-loop driver**, one that decides each input
+  from what the game shows, the `scripted-pad` patch (`research/traces/patches/state-patches.toml`) makes the pad code
+  read player 1's buttons and left stick from spare bytes that a PINE write sets; the patch must be in the state copy
+  before the code is compiled (`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`). The addresses, the byte order
+  and how to hold a pad state: the [`pad`](pcsx2-recipes.md#pad) recipe. `coney-tools pcsx2 prepare-state` and
+  `pcsx2 record` make the copy and restart PCSX2 for you. For input that does not depend on the game's state, use an
+  [input recording](#input-recordings) instead: it is the default for runtime evidence (a maintainer decision,
+  2026-10-21), because PCSX2 replays it frame by frame, the same every time.
+- **The right stick, too** (2026-10-05, the feel pass). The `right-stick` patch puts the right stick's x and y in the
+  same spare bytes (the [`pad`](pcsx2-recipes.md#pad) recipe). The stick table at `0x0050b8d0` is the same map as
   Coney's `pad::stickValue` (dead band 95-160, `(raw − 160) / 95`), so writing the raw bytes Coney makes from an input
   script's percentages (`160 + round(0.95 × v)`, `95 − round(0.95 × |v|)`, 128 at rest) gives both games the same
   stick, diagonals included, without touching the table.
 - **A puppet human** (2026-10-05, the combat runtime pass). To make an AI human attack, grab or block the player,
-  write command ids ([Combat](../research/combat.md#commands)) into its per-player record (`0x00660f50` + index ×
-  `0x2c`, `+0x20`): `Player_UpdateActions` runs for every human whose per-player `+0x1e` is 0, AI humans included,
-  and acts on that command. For a human with no pad, `0x00146000` clears `+0x20` every update, so put a `nop` over its
-  `sw zero,0x20(a0)` at `0x00146030` in the state copy (with the pad patch above; the `puppet` patch), then write the
-  command for one
-  update and 0 the next (a cross tap is `0x12`, then `0x10`, then 0). A grab needs a target: write the player's handle
-  (human `+0x90`) to the puppet's human `+0xc8` and its brain's `+0x124` (`0x006d53f0` + index × `0x2f0`), or 70 misses.
-  A held button (R1 to block) is read from a pad record, so give the puppet pad index 4 (per-player `+0x19`) and write
-  the button into all eight entries of pad record 4's button history (`0x005dd950 + 0x1c`, eight `u16`) every update.
-  Set `CfgAutoLockAndCombat` (`0x005104b8`) to 0 when the player must not turn to face the attacker. Pick the puppet
-  by name: the nearest human changes as pedestrians walk, and an ally's hits play reactions without damage.
+  write command ids ([Combat](../research/combat.md#commands)) into its per-player record with the `puppet` patch,
+  which stops the game clearing them: the [`puppet-command`](pcsx2-recipes.md#puppet-command) recipe, with what a grab
+  and a held button need. Pick the puppet by name: the nearest human changes as pedestrians walk, and an ally's hits
+  play reactions without damage.
 - **Following a script at runtime** (2026-10-07, the level99 hints pass). To log which Lua functions run and which
   bindings a script calls, with their arguments, hook the Lua 4 VM. Its interpreter entry is `0x00334478`
   (`luaV_execute`, called by `luaD_call` `0x00328b40`); its `a1` is the closure, whose prototype (`+0x00`) holds

@@ -285,6 +285,7 @@ nav:
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Research workflow: guides/research-workflow.md
+      - PCSX2 recipes: guides/pcsx2-recipes.md
       - Ghidra + ghidra-mcp: guides/ghidra.md
       - Writing these docs: guides/writing-docs.md
       - Reviews:
