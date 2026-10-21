@@ -1200,17 +1200,19 @@ SetCopSpawnMax(count)
 
 **Returns** nothing.
 
-Sets the cap on spawned police (`W_GameState + 0x326`). A responder spawner only makes a new police responder while the
-game's police count (`+0x324`) is under this cap ([AI: spawners](../../research/ai-gangs.md#spawners)).
+Sets the cap on spawned police (`W_GameState + 0x326`). A police gang (kind 1) runs its spawners only while the game's
+police count (`+0x324`) is under this cap, and a police dispatch spawner makes a responder gang only then ([AI:
+spawners](../../research/ai-gangs.md#spawners)).
 
-**Notes.** Reset to 16 on every level load (0x00418c68). Also read by Gang_CachePlayerInfo (0x00166954), not traced. 0
-stops police responders entirely (inferred).
+**Notes.** Reset to 16 on every level load (0x00418c68). The police count goes up by one per spawn in state 6
+(0x001681a0) and down when a police gang's spawner in state 4 or 6 loses a human (0x001672a8). 0 stops police responders
+entirely (inferred).
 
 - **Evidence:** confirmed (code) at `0x00299520`; detail: traced
 - **Wrapper** `0x0035b0d8` (registered by `RegisterBindings`); **calls** `0x00299520` `GameState_SetCopSpawnMax`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetCopStation {#setcopstation}
 
@@ -1426,8 +1428,10 @@ Sets the level's cap on spawned characters (`W_GameState + 0x434`). Each update 
 spawners (0x00166960) only while the count of spawned humans (`+0x432`) is below this cap; police spawners use their own
 pair (`+0x324` against `+0x326`).
 
-**Notes.** Level scripts call it once while setting up. Humans placed with HuCreate are not limited by it (inferred:
-only the spawner path reads it). What counts `+0x432` up and down is not traced.
+**Notes.** Level scripts call it once while setting up; the level reset (0x00418c68) sets it to 16. Humans placed with
+HuCreate are not limited by it (inferred: only the spawner path reads it). Each spawn adds 1 to `+0x432` and
+GangSpawner_OnHumanGone (0x001672a8) takes it off; the cap is asked once per gang update (0x00166708), so one gang's
+spawners may pass it by one update's spawns ([AI: spawners](../../research/ai-gangs.md#spawners)).
 
 - **Evidence:** confirmed (code) at `0x00299510`; detail: traced
 - **Wrapper** `0x0035b0a0` (registered by `RegisterBindings`); **calls** `0x00299510` `GameState_SetSpawnMax`

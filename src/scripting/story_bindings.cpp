@@ -1093,6 +1093,10 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     vm.registerFunction("SetSpawnMax", stateCall(context, [](StoryState& s, A a) {
                             s.spawnMax = static_cast<std::int16_t>(intArg(a, 0));
                         }));
+    // @orig 0x00299520 GameState_SetCopSpawnMax (unknown)
+    vm.registerFunction("SetCopSpawnMax", stateCall(context, [](StoryState& s, A a) {
+                            s.copSpawnMax = static_cast<std::int16_t>(intArg(a, 0));
+                        }));
     // @orig 0x0041da60 Cfg_SetGrappleCounters (unknown)
     vm.registerFunction("CfgEnableGrappleCounters",
                         stateCall(context, [](StoryState& s, A a) { s.grappleCounters = boolArgOr(a, 0, true); }));

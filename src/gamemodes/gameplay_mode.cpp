@@ -152,6 +152,11 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return found != m_scripted->bound().end() && found->second->human().alive();
     }
 
+    [[nodiscard]] bool policeGang(int gang) const override {
+        const ai::Gang* found = m_scripted->owner().gangs().find(gang);
+        return found != nullptr && found->kind() == ai::kPoliceKind;
+    }
+
     double spawn(const ai::SpawnRequest& request) override {
         auto position = std::make_shared<script::Table>();
         for (std::size_t i = 0; i < request.position.size(); ++i) {
@@ -803,7 +808,9 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         stepCrew(nowMs);
         ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_cameras.get(), m_context.boxes,
                                         m_objects.world.collision, m_state.random);
-        m_scripted->humanHost().spawners().update(nowMs, spawnerWorld);
+        m_scripted->humanHost().spawners().update(
+            nowMs, spawnerWorld,
+            ai::SpawnCaps{.spawnMax = m_state.story.spawnMax, .copSpawnMax = m_state.story.copSpawnMax});
         m_scripted->hubHost().update(nowMs);
         stepSystemMusic(m_state.story, m_context.sound, m_state.random, m_scripted->storyHost().musicMood());
     }

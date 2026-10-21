@@ -1906,10 +1906,22 @@ subsystem = "GameModes"
 size = 464
 
 [[function]]
+address = 0x00166708
+name = "Gang_CachePlayerInfo"
+subsystem = "GameModes"
+size = 1108
+
+[[function]]
 address = 0x00166ff8
 name = "Gang_AddSpawner"
 subsystem = "GameModes"
 size = 688
+
+[[function]]
+address = 0x001672a8
+name = "GangSpawner_OnHumanGone"
+subsystem = "GameModes"
+size = 200
 
 [[function]]
 address = 0x001673b8
@@ -7536,6 +7548,12 @@ size = 88
 [[function]]
 address = 0x00299510
 name = "GameState_SetSpawnMax"
+subsystem = "Human"
+size = 16
+
+[[function]]
+address = 0x00299520
+name = "GameState_SetCopSpawnMax"
 subsystem = "Human"
 size = 16
 

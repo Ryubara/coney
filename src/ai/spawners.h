@@ -15,11 +15,13 @@
 #include "ai/route_planner.h"
 #include "animation/anim_math.h"
 #include "scripting/human_bindings.h"
+#include "warriors/story_state.h"
 
 // The gangs' spawners: points that make gang members over time (`GangAddSpawner`, switched by `GangStartSpawner`).
 // Each update runs every spawner in use against its state: when the state says it is ready, the delay since its last
 // spawn has passed, fewer of its humans are alive than it allows and it has not made its total, it makes one human
-// and calls its callback with it. The play mode makes the human as `HuCreate` does.
+// and calls its callback with it. A gang's spawners run only while the level's spawned humans are under its cap
+// (`SetSpawnMax`, or `SetCopSpawnMax` for the police). The play mode makes the human as `HuCreate` does.
 // Research: docs/research/ai-gangs.md#spawners, docs/references/spawner-states.md
 
 namespace coney::ai {
@@ -69,6 +71,8 @@ class SpawnerWorld {
     [[nodiscard]] virtual std::optional<anim::Vec3> outOfSight(float value, int gang) = 0;
     /// Whether the human with `handle` is alive (made, not deleted and not down).
     [[nodiscard]] virtual bool alive(double handle) const = 0;
+    /// Whether gang `gang` is of the police kind (gang `+0x2c` = 1), whose spawners read the police cap.
+    [[nodiscard]] virtual bool policeGang(int gang) const = 0;
     /// Whether a camera sees the sphere of `radius` metres about `centre`.
     [[nodiscard]] virtual bool seen(anim::Vec3 centre, float radius) const = 0;
     /// Makes the human and returns its handle; 0 (NilHandle) when none was made.
@@ -129,6 +133,13 @@ using PlacementRandom = std::function<float()>;
                                                          anim::Vec3 origin, anim::Vec3 goal, anim::Vec3 coneAxis,
                                                          float halfAngle, float value);
 
+/// The level's caps on spawned humans alive at once, all gangs together: `SetSpawnMax` (game state `+0x434`) for every
+/// gang but the police, `SetCopSpawnMax` (`+0x326`) for the police; the level reset's 16 until a script sets them.
+struct SpawnCaps {
+    int spawnMax = kResetSpawnMax;
+    int copSpawnMax = kResetSpawnMax;
+};
+
 /// One spawner: what `GangAddSpawner` gave it and what it has done since.
 struct Spawner {
     script::SpawnerCall call;      ///< The fields `GangAddSpawner` set (the position, the types, the limits).
@@ -157,9 +168,19 @@ class Spawners {
     /// @orig 0x0016afc8 Gang_StartSpawner (unknown)
     /// @orig 0x00168cd0 Gang_SetSpawnerState (unknown)
     void start(int gang, std::string_view name, int mode, int value);
-    /// One update at game time `nowMs`: each spawner in use that is ready and may spawn makes one human.
+    /// One update at game time `nowMs`: the humans gone since the last free their places, then, gang by gang, a gang
+    /// whose count is under its cap in `caps` (the police count for a police gang, the spawned count for any other)
+    /// runs its spawners, and each in use that is ready and may spawn makes one human. The cap is asked once per gang,
+    /// so a gang's four spawners may together pass it by the spawns of one update, as the original's do.
+    /// @orig 0x00166708 Gang_CachePlayerInfo (unknown)
     /// @orig 0x001681a0 Gang_UpdateSpawners (unknown)
-    void update(std::uint64_t nowMs, SpawnerWorld& world);
+    void update(std::uint64_t nowMs, SpawnerWorld& world, SpawnCaps caps = {});
+
+    /// The spawned humans alive, every gang's together (game state `+0x432`): +1 per spawn, -1 per human gone.
+    [[nodiscard]] int spawnedCount() const { return m_spawned; }
+    /// The police count (game state `+0x324`): +1 per spawn in state 6, -1 per human gone from a police gang's spawner
+    /// in state 4 or 6.
+    [[nodiscard]] int copSpawnedCount() const { return m_copSpawned; }
 
     /// The spawners of gang `gang`, in the order they were added.
     [[nodiscard]] const std::vector<Spawner>& of(int gang) const;
@@ -190,9 +211,14 @@ class Spawners {
     [[nodiscard]] static bool roomFor(const Spawner& spawner);
     // Makes one human from `spawner`, counts it and calls its callback.
     void spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& world);
+    // Drops the humans of every spawner, in use or not, that went down or were deleted, and takes them off the counts.
+    // @orig 0x001672a8 GangSpawner_OnHumanGone (unknown)
+    void forgetGone(const SpawnerWorld& world);
 
     std::map<int, std::vector<Spawner>> m_spawners;
     std::uint64_t m_nowMs = 0; // the last update's time, which a state set between updates counts from
+    int m_spawned = 0;         // game state +0x432 (spawnedCount())
+    int m_copSpawned = 0;      // game state +0x324 (copSpawnedCount())
 };
 
 } // namespace coney::ai

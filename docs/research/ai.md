@@ -2449,7 +2449,7 @@ human whose last move failed runs straight at
   old). **Coney choices**: the detail level is 0, so a decision is made every update; a speed tie goes to the lower
   brain slot, and the brain's slot stands for the human's index; the mover's line for giving way is unbounded.
   **Stand-in**: with no waypoint claims (`Nav_ClaimWaypoint`), "held at the node" (route state `+0x16`) is read as
-  "he is nearer the shared node than I am", the human the claim would keep. **Not yet**: the waypoint claims and
+  "he is nearer the shared node than I am", the human the claim would keep. **Left out**: the waypoint claims and
   queues.
 - **Giving way** (`repo:src/ai/give_way.h`, [Giving way](ai-moving.md#giving-way); the step in `repo:src/human/step_control.h`,
   [Characters: Step control](characters.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside another
@@ -2466,7 +2466,7 @@ human whose last move failed runs straight at
   finished action is aborted before it is freed (`Action_AbortAndDestroy`), so the boost goes back in Abort alone.
   **Stand-ins**: the 2 s look at the mover (no head look-ats); the push sphere stays on during the step; a Warrior's
   `+0x2e5` mode in the threat test; brain flag
-  `+0xcc` bit 2. **Not yet**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
+  `+0xcc` bit 2. **Left out**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
   `WarriorBrain_Think`, `SaveHumanGoal_Process`).
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
@@ -2648,21 +2648,25 @@ built; the spray starts at once.
 
 **The spawners** (`src/ai/spawners.*`, [Spawners](ai-gangs.md#spawners)): after each characters' step every spawner in
 use whose state is ready (1, 6, 7, 8 and 10 always; 2 past its deadline; 3 and 5 by player 1's distance, taken in 3D)
-makes a human once its delay has passed, while fewer of its humans are alive than its limit and it has not made its total
-(-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model string
-as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does), then
-the callback, when it names a function, is called with its handle, the gang's id and the spawner's name.
-6, 8 and 10 place the human out of sight as [above](ai-gangs.md#spawner-placement) and
-[the search](ai-gangs.md#spawner-search) say: from player 1's camera (Coney has one player, so no second camera refuses
-a node), the start node the planner's route ends use, 17 outward searches, the node then checked against the gang's turf
-boxes; no node, no spawn this update. **Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as
-[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the
-dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax`
-is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as
-[above](ai-gangs.md#spawners) says, from `GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`,
-or added in state 11) skips an update while player 1's camera sees the 0.3 m sphere 1.6 m above it
-([Off screen](ai-gangs.md#spawner-unseen)): within the far clip, in view and with no wall of the collision mesh on the
-ray to its centre; **stand-in**: the six-plane frustum is taken as a cone of half the field of view widened by the sphere.
+makes a human once its delay has passed, while fewer of its humans are alive than its limit and it has not made its
+total (-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model
+string as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does),
+then the callback, when it names a function, is called with its handle, the gang's id and the spawner's name. 6, 8 and
+10 place the human out of sight as [above](ai-gangs.md#spawner-placement) and [the search](ai-gangs.md#spawner-search)
+say: from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
+route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this update.
+**Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as [its placement](ai-world.md#spawner-reinforcements)
+says; the others stand at the spawner; no door opens; the dispatch states 4 and 9 (no crimes are routed) and the top-up
+11 (no gang limits kept) never spawn. A gang runs its spawners only while the level's count is under its cap ([The
+level's cap](ai-gangs.md#spawners)): the police count under `SetCopSpawnMax` for a police gang, the spawned count under
+`SetSpawnMax` for any other, 16 each after the level reset, asked once per gang. A human counts off when he is down or
+deleted (the original: when his brain is torn down), and the counts start at 0 with each level's spawners; humans
+leaving their gang and a dispatch's completed squad are not taken off (neither is built). `GangSetMaxConcurrent` changes
+the limit (16 bits; a negative -n spawns waves of n as [above](ai-gangs.md#spawners) says, from `GangAddSpawner`'s limit
+too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an update while player 1's
+camera sees the 0.3 m sphere 1.6 m above it ([Off screen](ai-gangs.md#spawner-unseen)): within the far clip, in view and
+with no wall of the collision mesh on the ray to its centre; **stand-in**: the six-plane frustum is taken as a cone of
+half the field of view widened by the sphere.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
@@ -2930,6 +2934,6 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
 - What stopped Vermin's route jump at the `level99` window (x 47.76, by the panes at x 47.40) in the window-jump
-  state, and whether a normal play-through clears it first; a jump that lands on its point is not yet seen at runtime.
+  state, and whether a normal play-through clears it first; no run has seen a jump land on its point.
 - What reads `RunCarrotGoal`'s hostile flag (goal `+0x25`, set by `RunCarrotGoal_Init` `0x002e1230`,
   [AI goals](ai-goals.md#by-address)); Coney does not model it.
