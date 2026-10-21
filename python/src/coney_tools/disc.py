@@ -19,6 +19,10 @@ from typing import BinaryIO, cast
 from coney_tools.config import ConfigError
 
 SECTOR = 2048
+#: The executable of the NTSC-U release and its SHA-1: every address in the research refers to this one file
+#: (docs/guides/research-workflow.md, "Cite addresses").
+NTSC_U_EXECUTABLE = "SLUS_212.15"
+NTSC_U_SHA1 = "e9cb2cc49aa046b9e494313dce2f5038ed17b2f4"
 _PVD_SECTOR = 16
 
 

@@ -95,9 +95,10 @@ PCSX2 itself is not downloaded: every copy runs the fork's own build ([PCSX2 cop
 
 What is left to do by hand, which the command reminds you of:
 
-* **Ghidra:** compile the extension's `r5900.sla` once, as [Ghidra + ghidra-mcp](ghidra.md) shows.
-* **ghidra-mcp:** build its headless server (`target/GhidraMCPHeadless.jar`) as its README says; the agent bridge
-  runs from the source as it is.
+* **Ghidra:** compile the extension's `r5900.sla` once and import `SLUS_212.15`: `coney-tools ghidra setup` does both
+  and applies our function names ([Starting your own project](ghidra.md#own-project)).
+* **ghidra-mcp:** build its headless server (`target/GhidraMCPHeadless.jar`) with Maven 3.9+
+  ([ghidra-mcp on your machine](ghidra.md#own-ghidra-mcp)); the agent bridge runs from the source as it is.
 * **PCSX2-MCP:** build the fork as its README says (`pcsx2-plugin\prepare.ps1`, then CMake, then `npm ci` and
   `npm run build` in `pcsx2-mcp-server/`), into a release folder `release/PCSX2-MCP-coney-v2.9.129.N-win64` that
   holds PCSX2's program with `pcsx2-mcp-server/` beside it; point `pcsx2_mcp_dir` at it and run

@@ -219,9 +219,15 @@ def _print_next(layout: Layout, fetch: Sequence[str]) -> None:
             "and Coney never downloads one (docs/guides/workspace.md#pcsx2-copies)."
         )
     if "ghidra" in fetch:
-        print("  - Compile the Emotion Engine language once (the release has no r5900.sla): docs/guides/ghidra.md.")
+        print(
+            "  - Compile the Emotion Engine language and import SLUS_212.15 with our function names: "
+            "uv run --project python coney-tools ghidra setup (docs/guides/ghidra.md#own-project)."
+        )
     if "ghidra-mcp" in fetch:
-        print("  - Build ghidra-mcp's headless server (target/GhidraMCPHeadless.jar) as its README says.")
+        print(
+            "  - Build ghidra-mcp's headless server (target/GhidraMCPHeadless.jar) with Maven 3.9+: "
+            "docs/guides/ghidra.md#own-ghidra-mcp."
+        )
 
 
 def run_init(cwd: Path, workspace: Path | None, repo_url: str | None, fetch: Sequence[str], dry_run: bool) -> int:

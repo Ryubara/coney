@@ -3,7 +3,8 @@
 How to install, start and use the shared Ghidra project that engineers read the PS2 executable in. Paths below are
 `coney.local.toml` keys or workspace-relative; see [Local workspace](workspace.md). `coney-tools workspace init
 --fetch ghidra` downloads Ghidra and the Emotion Engine extension ([Bootstrap](workspace.md#bootstrap)); the steps
-below are what is left to do by hand.
+below are what is left to do by hand. On a machine of your own, `coney-tools ghidra setup` does all of it up to a
+project of `SLUS_212.15` with our function names ([Starting your own project](#own-project)).
 
 ## Pieces
 
@@ -12,7 +13,7 @@ below are what is left to do by hand.
 | Ghidra 12.1.4 | `ghidra_install` (default `../../tools/ghidra_12.1.4_PUBLIC`) |
 | EE extension | `<ghidra_install>\Ghidra\Extensions\ghidra-emotionengine-reloaded` |
 | JDK 21 | `jdk_home` (no default; a system `java` may be older, so always set `JAVA_HOME` to this JDK) |
-| ghidra-mcp v7.0.0 | `ghidra_mcp_repo` (no default; jar `target\GhidraMCPHeadless.jar` and the Python bridge). Use it as it is: do not rebuild, pull or edit it |
+| ghidra-mcp v7.0.0 | `ghidra_mcp_repo` (no default; jar `target\GhidraMCPHeadless.jar` and the Python bridge). Use it as it is: do not rebuild, pull or edit it. Building it on a machine of your own needs Maven 3.9+ ([ghidra-mcp on your machine](#own-ghidra-mcp)) |
 | Server start script | `tools\start-ghidra-mcp.ps1` |
 | The Ghidra project the server keeps open | project name `warriors`: the files `warriors.gpr` and `warriors.rep` inside the folder `ghidra_projects` (default `../../ghidra`, that is `<workspace>\ghidra`) |
 
@@ -103,24 +104,81 @@ copy the program into a copy of the project folder, then `load_program_from_proj
 
 ## Starting your own project {#own-project}
 
-The pieces above are the maintainers' set-up. On a machine of your own, three things are not there yet:
+The pieces above are the maintainers' set-up. On a machine of your own, one command builds the project the server
+opens, from your own disc, with our function names in it:
 
-* **A JDK 21** (for example Eclipse Temurin 21). Ghidra 12.1.4 and `sleigh` need it, and `workspace init` only
-  reports it as missing; put its home in `jdk_home` and `JAVA_HOME`.
-* **Apache Maven 3.9+**, which ghidra-mcp's own README lists for building the headless server. Its README names Ghidra
-  12.1.3; use the 12.1.4 that Coney pins and follow the README's build steps otherwise.
-* **The program itself.** The project the server keeps open starts empty. Import `SLUS_212.15` from your disc with
-  `analyzeHeadless` as shown under [Loading a program](#loading-a-program). Measured on 2026-10-21 on a fresh
-  workspace (Windows, a busy 16-core machine): `workspace init --fetch ghidra` 29 s, compiling `r5900.sla` 9 s, the
-  headless import and analysis 143 s, which finds 13,789 functions, all with Ghidra's default names.
+```sh
+uv run --project python coney-tools ghidra setup [--disc DISC] [--dry-run]
+```
 
-**The function names are not in your project.** The maintainers' project holds the names they gave 11,530 of its
-13,971 functions, and the plate comments and types that go with them. Only the names, with each function's address and
-size, are published, in `docs/progress/ghidra-functions.tsv` ([The Understood measure](research-workflow.md#understood)),
-and the research pages cite the same addresses. A fresh analysis finds 13,789 of the listed functions and 11,348 of the
-11,530 named ones at the same addresses, so the names can be applied by address; no command does that yet, so for now
-look a function up by address in the file or on its research page. Plate comments, structures and signatures are not
-shared at all until the research database exists ([The research database](research-workflow.md#the-research-database)).
+It needs a **JDK 21** (for example Eclipse Temurin 21; `jdk_home` in `coney.local.toml`, else `JAVA_HOME`, else the
+`java` on your `PATH`), and it does, skipping each step that is already done:
+
+1. **Fetch Ghidra 12.1.4** with the Emotion Engine extension into `ghidra_install`, as `workspace init --fetch ghidra`
+   does ([Fetching the research tools](workspace.md#fetch)), when it is not there yet.
+2. **Compile `r5900.sla`** with Ghidra's `sleigh`, when the extension has none (as under
+   [Install the extension](#install-the-extension)).
+3. **Import and analyse `SLUS_212.15`** from the disc (`--disc`, else `game_dir`: a mounted disc, a folder or an
+   `.iso`) into the project `warriors` in `ghidra_projects`, with `analyzeHeadless`, the ELF loader and the language
+   `r5900:LE:32:default`. The executable is copied into a temporary folder in the scratch folder for the import and
+   deleted after it. Its SHA-1 is checked first: a disc whose `SLUS_212.15` is not the NTSC-U release
+   (`e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) is refused, because every address in the research and in the names
+   refers to that one file; `--any-release` imports it anyway.
+4. **Apply the names** with [`ghidra import-names`](#import-names) (`--no-names` stops before it).
+
+It prints counts, the executable's size and SHA-1, and each step; the logs (`ghidra-import.log`,
+`ghidra-sleigh.log`, `ghidra-import-names.log`) go to `ghidra/` in the scratch folder. Measured on 2026-10-21 on
+a fresh workspace (Windows, a busy 16-core machine): fetching Ghidra 35 s, compiling `r5900.sla` 11 s, the headless
+import and analysis 152 s, which finds 13,789 functions. `--project-dir` and `--project-name` set up another project
+than `<ghidra_projects>/warriors`. A project that a running ghidra-mcp server holds open is refused: stop the server
+first ([Gotchas](#gotchas)).
+
+### Our function names {#import-names}
+
+```sh
+uv run --project python coney-tools ghidra import-names [--program SLUS_212.15] [--overwrite] [--dry-run]
+```
+
+The maintainers' project holds the names they gave 11,530 of its 13,971 functions, and the plate comments and types
+that go with them. Only the names, with each function's address and size, are published, in
+`docs/progress/ghidra-functions.tsv` ([The Understood measure](research-workflow.md#understood)), and the research
+pages cite the same addresses. `import-names` applies them to your project by address: it runs Coney's Ghidra script
+`ImportNames.java` ([`python/src/coney_tools/ghidra_scripts/`](repo:python/src/coney_tools/ghidra_scripts/ImportNames.java))
+through `analyzeHeadless` on the program, without analysing it again, and prints how many names were:
+
+* **matched**: Ghidra has a function at the address. It is *renamed*, is already the *same*, or is *kept* because you
+  named it yourself (a `USER_DEFINED` name; `--overwrite` replaces those too). A matched function whose size differs
+  from the listing is renamed anyway and counted on a line of its own.
+* **created**: analysis found no function there, so one is created, and kept with the name only when its size is the
+  listed size.
+* **skipped**: Ghidra's function there is a *thunk* (renaming it would rename the function it jumps to), the address
+  lies *inside* another function, holds *data*, cannot be disassembled (*nocode*), the function could not be created
+  (*failed*) or came out another *size* (the function is removed again, though the instructions disassembled for it
+  stay), or Ghidra refused the name (*error*).
+
+Names it applies get the source `IMPORTED`, so running it again after the listing changes replaces them, while your
+own names stay. `--dry-run` opens the program read-only: the script does everything, Ghidra saves none of it, and
+the counts are the ones a real run would give. Measured on 2026-10-21 on a project `ghidra setup` had just made
+(Windows, a busy 16-core machine; import, analysis and names 2 min 42 s in all): of the 11,527 names (the listing's
+11,530 less three that are Ghidra-style `FUN_` names), 11,345 were matched (11,290 renamed, 55 already the same) and
+182 created, none skipped; a second run found all 11,527 the same, in 15 s. Plate comments, structures and signatures
+are not shared at all until the
+research database exists ([The research database](research-workflow.md#the-research-database)).
+
+### ghidra-mcp on your machine {#own-ghidra-mcp}
+
+The project works in Ghidra's own window as it is. For the agent tools you also need ghidra-mcp's headless server,
+`target/GhidraMCPHeadless.jar` in the clone `workspace init --fetch ghidra-mcp` makes, which
+`tools/start-ghidra-mcp.ps1` runs by its main class with Ghidra's jars beside it. Building it needs **Apache Maven
+3.9+**, which neither `workspace init` nor `ghidra setup` installs. ghidra-mcp's README and `pom.xml` name Ghidra
+12.1.3 while Coney pins 12.1.4; leave the pom as it is. The steps the maintainers' jar was built with, in the clone,
+with `JAVA_HOME` set to the JDK 21:
+
+1. `python -m tools.setup ensure-prereqs --ghidra-path <ghidra_install>` (from its README) copies the jars of your
+   Ghidra 12.1.4 into the local Maven repository under the pom's version; its setup treats 12.1.4 as compatible
+   (same minor series).
+2. `mvn clean package -Pheadless -DskipTests`, then copy `target/GhidraMCP-7.0.0.jar` to
+   `target/GhidraMCPHeadless.jar`.
 
 ## Gotchas
 
