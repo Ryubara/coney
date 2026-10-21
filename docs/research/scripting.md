@@ -2467,9 +2467,9 @@ on [Story coverage](../references/bindings/story.md#level2). Inferred unless mar
   tag spots (`TagInfo.SetupTags`, a `global.lua` helper over the tagging bindings).
 - **`SetupFlagNet2`** is a **Lua function of `level2.lua` itself** (function 96 of the main chunk), not a binding: it
   links the 13 flags `PedNet_01`-`13` (made by `AddFlagsBoxesPaths`) into a pedestrian network with 13
-  [`FlagNetAddLink`](../references/bindings/ai.md#flagnetaddlink) calls (two or three neighbours each), calls
+  [`FlagNetAddLink`](../references/bindings/world.md#flagnetaddlink) calls (two or three neighbours each), calls
   `AddCivilians` (gang 23 "Civilians" with one spawner whose per-spawn callback, `global.lua`'s `CivFlagNet`, sets
-  each civilian walking the net with [`FlagNetTraverse`](../references/bindings/ai.md#flagnettraverse)) and then
+  each civilian walking the net with [`FlagNetTraverse`](../references/bindings/world.md#flagnettraverse)) and then
   sets itself and its twin `SetupFlagNet52` (a 28-node net for `level52`, never called here) to nil, so it runs once.
   Its other caller is `P2.SetupTenement`, when `peds` is still 0 (the player came from checkpoint 1 in the same
   level). Nothing for the engine to register.
