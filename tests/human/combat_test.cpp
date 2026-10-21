@@ -225,8 +225,8 @@ TEST_CASE("an attack a human no player controls starts warns its target only wit
     for (const float ahead : {3.0F, 1.0F}) {
         INFO("target " << ahead << " m ahead");
         Fight fight(character, ahead);
-        fight.human().setFighterProfile(
-            coney::human::FighterProfile{.player = false, .powerClass = coney::combat::kCivilianPowerClass, .health = 600});
+        fight.human().setFighterProfile(coney::human::FighterProfile{
+            .player = false, .powerClass = coney::combat::kCivilianPowerClass, .health = 600});
         const coney::human::TargetHuman& bystander = fight.addTarget(character, -2.0F, 2.0F);
         fight.run("5 tap square\n", 20);
         // Within the far range the attack takes the target (beyond it the search may leave it without one).

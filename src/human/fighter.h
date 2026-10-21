@@ -460,10 +460,10 @@ class Fighter {
     [[nodiscard]] float reachOf(int animId) const;
     // The attack warning of attack `animId`'s start (event 0x10): to its one target only, never to the other humans
     // around. A player's pad path warns the target it picked at any distance, an AI's start only one within the clip's
-    // far range; the charge warns the target it has (a player with none, the nearest in its reach band). Each warned brain then makes
-    // its own sight test (ai::Brain::update()). **Coney choices**: a player's standing square warns once, where the
-    // original's pad path and Attack_Start each warn (the brain counts 2); the dive warns the one its own search
-    // (nearestInReach()) dives at, as the research does not list it; a block try only asks for a warning.
+    // far range; the charge warns the target it has (a player with none, the nearest in its reach band). Each warned
+    // brain then makes its own sight test (ai::Brain::update()). **Coney choices**: a player's standing square warns
+    // once, where the original's pad path and Attack_Start each warn (the brain counts 2); the dive warns the one its
+    // own search (nearestInReach()) dives at, as the research does not list it; a block try only asks for a warning.
     // Research: docs/research/combat.md#attack-warnings
     // @orig 0x0021d5c0 Human_WarnOfAttack (unknown)
     void warnTarget(int animId, const FighterInput& input, bool chainStep) const;
