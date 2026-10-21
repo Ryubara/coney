@@ -34,6 +34,8 @@ the pause menu ([Pause menu](pause.md)).
 
 ## Original structure
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 `GUI/HUDInterface.cpp` (`0x001ad588` to its stub `0x001b3ea8`), `GUI/HUDLua.cpp` after it (the bindings'
 callees, to `0x001b8f78`), `GUI/TutorialHUD.cpp` (the hint box), `GUI/ScrollInHUD.cpp` (queued messages),
 `GUI/RadarHUD.cpp`, `GUI/ChecklistMessageHUD.cpp`; the player panel class lives at `0x00211ca0`-`0x00214c28`, after
@@ -189,6 +191,8 @@ fade never touches its alpha, so it is invisible in the default mode. Confirmed 
 
 ### The name banner
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 `PlayerHUD_SetBanner` (`0x0020dc98`) gives three sprite widgets the whole first rectangle of one sprite sheet, chosen
 by a kind that `0x00229570` derives from the character id (human `+0xcc`):
 
@@ -284,6 +288,8 @@ and skipped for `n` frames, repeating; `n` = 0 draws it every frame. Confirmed (
 passes 5: on and off every 5 frames (1/6 s at 30 frames a second).
 
 ### The Warrior command menu {#warrior-command-menu}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 A war chief (human `+0x3ac` = 1) orders his crew from a six-slot menu held open with **R2** and steered with the
 **right stick**; releasing R2 gives the highlighted order. Each player panel owns one (`WarCommandDisplay`, panel
@@ -467,6 +473,8 @@ The box is the text's rectangle grown by those amounts and drawn first; the text
 
 ### The HUD's frame
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 `HUD_Update` (`0x001af010`) runs once per mode-1 frame with both players' pads; `HUD_Render` (`0x001b1688`) in the
 overlay pass ([Boot](boot.md)). Mode 0xb (mission complete) runs the overlay pass but not `HUD_Update`, so the HUD is
 drawn as it was left. Confirmed (code) at `0x0015d160`.
@@ -500,6 +508,8 @@ Hidden parts are not paused: a hidden hint keeps its place and its timer runs on
 Armies of the Night level (`0x0041d110`).
 
 ### The player panel
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 **Attach.** `Human_MakePlayer` (`0x00229c40`) calls `HUD_AttachPlayer` for the human: if panel `slot` (0 or 1) is not
 attached yet, it runs its `Init` once (`0x00212840`), attaches it, sets the banner (`0x0020dc98`), and hides it again
@@ -676,6 +686,8 @@ sprites form the line between the two views is inferred.
 
 ### The fixed-camera icon {#hud-fixed-cam-icon}
 
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
+
 A **"this camera can't be turned" hint**: a crossed-out film camera (`part_page0` rectangle 87, sprite word `0x57`,
 batch 3) that appears while the player pushes the **right stick** on a camera that ignores it, and fades out over a
 second after he lets go. Confirmed (code) at `0x001af010` unless marked.
@@ -712,6 +724,8 @@ second after he lets go. Confirmed (code) at `0x001af010` unless marked.
   shows on a fixed, locked, transition or rail camera, or while a script has switch 0 off.
 
 ### The spinner {#hud-spinner}
+
+Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
 A sprite at HUD `+0xe050` (`0x001ae378`: size 0.09, depth 11,000, `part_page0` rectangle **92** (sprite word `0x5c`,
 batch 3), colour (191, 191, 191, 255), **not visible** and active from the set-up, at (0.95, 0.83) in the default
@@ -998,8 +1012,8 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   the last direction the stick picked while it is on target, and `GSTRING.HUD` `0x180` (`0x181` for modes 1 and 3)
   above; while it shows, the scroll-in message, the hint box and the action prompt are hidden. **Coney's stand-ins**:
   bar 1 is the off-target time against the allowance (record `+0x0c`, what fails a player's mugging in Coney) instead of
-  the time since the start against `+0x134`. Not yet: modes 1-3 (a player victim and the hold), which need two players
-  and the hold's states.
+  the time since the start against `+0x134`. Coney has no modes 1-3 (a player victim and the hold), which need two
+  players and the hold's states.
 - **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelMode::stepLockPickDial()`) as
   [the dial's layout](hud-functions-lua.md#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins at
   the player's centre point at distance 1, turned by their angles (gone once every pin is done), then over every sprite
@@ -1101,8 +1115,8 @@ upright, at (0.95, 0.83), drawn after the arrow while shown in the colour the la
 grey before any); `Spinner::drawPulse` is the pulse, (221, 56, 56) fading out over 1.1 s and back over the next.
 **Coney's stand-in**: the pulse runs on its caller's clock. The memory-card screen at start-up turns it on and pulses
 it ([Level loading](level-loading.md#memory-card-screen)); a level's set-up (`Hud::levelSetUp`) turns it off again,
-**Coney's stand-in** for the fade branch on the level's first fully faded frame. Not yet: the preload indicator, and
-the HUD's fade branch itself.
+**Coney's stand-in** for the fade branch on the level's first fully faded frame. Coney has neither the preload indicator
+nor the HUD's fade branch itself.
 
 **Coney's stand-ins for the rings** (marked in the code): the blend state the world pass leaves is taken as alpha
 blending with Z test and no Z write; flat shading gives a triangle its last vertex's colour; the blink runs on the game
