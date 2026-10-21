@@ -7511,6 +7511,12 @@ subsystem = "Human"
 size = 160
 
 [[function]]
+address = 0x00296358
+name = "Formation_GetSlotPoint"
+subsystem = "Human"
+size = 88
+
+[[function]]
 address = 0x002963b0
 name = "Formation_GetAhead"
 subsystem = "Human"
