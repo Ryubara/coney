@@ -91,6 +91,12 @@ std::expected<std::optional<Sha1Digest>, Error> stream(io::Stream& source, Track
     return std::optional<Sha1Digest>{sha.finish()};
 }
 
+// Removes a part file after a failed copy. A failed removal is left alone on purpose: the part file keeps a name no
+// reader takes, and the next run overwrites it.
+void dropPart(InstallFolder& folder, const std::string& part) {
+    [[maybe_unused]] const auto removed = folder.remove(part);
+}
+
 // Copies `source` to `dest` through `dest.part`, renamed once `expected` (when given) matches. Returns the digest,
 // nullopt when cancelled (the part file is removed), or the failure.
 std::expected<std::optional<Sha1Digest>, Error> copyFile(InstallFolder& folder, io::Stream& source,
@@ -104,8 +110,8 @@ std::expected<std::optional<Sha1Digest>, Error> copyFile(InstallFolder& folder, 
     auto digest = stream(source, tracker, [&](std::span<const std::byte> piece) { return (*out)->write(piece); });
     auto closed = (*out)->close();
     if (!digest || !*digest || !closed) {
-        // Nothing half-copied keeps a name; a failed removal only leaves a part file the next run overwrites.
-        (void)folder.remove(part);
+        // Nothing half-copied keeps a name.
+        dropPart(folder, part);
         if (!digest) {
             return std::unexpected(std::move(digest.error()));
         }
@@ -115,7 +121,7 @@ std::expected<std::optional<Sha1Digest>, Error> copyFile(InstallFolder& folder, 
         return std::unexpected(std::move(closed.error()));
     }
     if (expected && **digest != *expected) {
-        (void)folder.remove(part);
+        dropPart(folder, part);
         return fail(ErrorCode::Invalid,
                     std::format("{}: SHA-1 {} is not the known disc's {}: a read error or a modified disc; the file "
                                 "was not kept. Run the install again to retry",
@@ -137,7 +143,7 @@ std::expected<void, Error> writeText(InstallFolder& folder, std::string_view pat
     auto written = (*out)->write(std::as_bytes(std::span(text.data(), text.size())));
     auto closed = (*out)->close();
     if (!written || !closed) {
-        (void)folder.remove(part);
+        dropPart(folder, part);
         return std::unexpected(std::move(!written ? written.error() : closed.error()));
     }
     return folder.rename(part, path);

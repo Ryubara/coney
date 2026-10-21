@@ -87,7 +87,7 @@ system (no mounting); `DIR` is the folder you pick, made if needed. The layout i
 
 ```sh
 build/dev/src/platform/coney --install /path/to/warriors.iso --data ../../Coney
-build/dev/src/platform/coney --install H:/ --data D:/Games/Coney --verify
+build/dev/src/platform/coney --install H:/ --data ../../Coney --verify
 ```
 
 ```text

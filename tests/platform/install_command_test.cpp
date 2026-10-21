@@ -34,7 +34,7 @@ std::pair<int, std::string> run(const coney::Options& options, const FixtureRele
     std::FILE* out = scratchFile();
     REQUIRE(out != nullptr);
     const int code = coney::platform::runInstallCommand(options, release.known(), program, out);
-    std::rewind(out);
+    REQUIRE(std::fseek(out, 0, SEEK_SET) == 0);
     std::string text;
     for (int c = std::fgetc(out); c != EOF; c = std::fgetc(out)) {
         text.push_back(static_cast<char>(c));

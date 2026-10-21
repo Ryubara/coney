@@ -40,7 +40,8 @@ class HostOutputFile final : public install::OutputFile {
 
 } // namespace
 
-std::expected<std::unique_ptr<HostInstallFolder>, Error> HostInstallFolder::openRoot(const std::filesystem::path& root) {
+std::expected<std::unique_ptr<HostInstallFolder>, Error>
+HostInstallFolder::openRoot(const std::filesystem::path& root) {
     std::error_code ec;
     if (std::filesystem::exists(root, ec) && !std::filesystem::is_directory(root, ec)) {
         return fail(ErrorCode::InvalidArgument, std::format("{}: a file, not a folder", root.string()));
