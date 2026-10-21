@@ -440,7 +440,7 @@ target_sources(coney_tests PRIVATE support/test_paths.cpp)
 set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
     "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\"")
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU).
-target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
+target_link_libraries(coney_tests PRIVATE coney_platform coney_devtools Catch2::Catch2WithMain)
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
 # A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)

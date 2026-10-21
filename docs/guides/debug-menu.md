@@ -28,6 +28,9 @@ The item kinds are: **action** (run a callback), **toggle**, **number** (a slide
 real), **choice** (one of a list), **text** (typed text or a number, with an optional history), **submenu**,
 **watch** (a live read-only value, optionally with a plotted channel) and **log** (read-only lines).
 
+All of it is built apart from the game, in the `coney_debug` and `coney_devtools` libraries, so the release build a
+player gets can leave it out ([The debug tools and the game](building.md#debug-tools)).
+
 There are two front ends. The **pad menu** is a trainer-style list drawn in the game's own font, driven by the pad
 alone, in every run including headless ones; it is the one to use with a gamepad in hand, on a television, and in
 scripted tests. The **developer overlay** shows the same pages as Dear ImGui windows for the mouse and keyboard, in a

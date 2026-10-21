@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Everything that talks to SDL3 or librw, as a library so the tests can use it too (with the headless renderer).
-add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp texture_viewer_mode.cpp
+add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp
                                   window.cpp world_atomic.cpp)
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
 target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp front_end_scene.cpp)
 # Dynamic objects' models, drawn where the scripts and scenes put them (docs/research/objects.md#coneys-implementation).
 target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
-target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
+target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/running.md#playing-a-level), in a level's scenery or a sandbox's.
 target_sources(coney_platform PRIVATE play_level_anim.cpp play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_inspect.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
@@ -15,9 +15,7 @@ target_sources(coney_platform PRIVATE play_level_anim.cpp play_level_cast.cpp pl
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
 target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
 # The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
-target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.cpp)
-# The reference images of characters and objects (docs/guides/running.md#reference-images).
-target_sources(coney_platform PRIVATE reference_renderer.cpp)
+target_sources(coney_platform PRIVATE sandbox_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # A driver program's pad and the frame's observation (`--pad-pipe`), and the humans for the event log (docs/guides/running.md#pad-pipe).
@@ -35,25 +33,40 @@ target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp movie_screen.cpp)
 # Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
-# The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
-target_sources(coney_platform PRIVATE debug_menus.cpp)
 # The one game set-up over a disc that every way into a level shares (docs/guides/testing.md#test-through-the-players-path).
 target_sources(coney_platform PRIVATE game_session.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
-# The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
-target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp imgui_ui_scale.cpp)
 # Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
 # themselves are coney_net (docs/guides/multiplayer.md).
 target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
 coney_target_defaults(coney_platform)
-target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net SDL3::SDL3-static librw::librw
-                                            imgui)
+# coney_debug only until the play mode, the game session and the sound output are untied from the debug menus'
+# interfaces (docs/guides/building.md#debug-tools); the release build will not link it.
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net coney_debug SDL3::SDL3-static
+                                            librw::librw)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
+
+# The debug tools' platform half (docs/guides/building.md#debug-tools), the only target that links Dear ImGui: the
+# debug menus' glue, the pad menu drawn over every frame (docs/guides/debug-menu.md); the developer overlay over the
+# same menus (docs/guides/debug-menu.md#the-developer-overlay); the texture, character and sandbox viewers; the
+# reference images of characters and objects (docs/guides/running.md#reference-images).
+add_library(
+    coney_devtools STATIC
+    character_viewer_mode.cpp
+    debug_menus.cpp
+    imgui_model_view.cpp
+    imgui_overlay.cpp
+    imgui_ui_scale.cpp
+    reference_renderer.cpp
+    sandbox_viewer_mode.cpp
+    texture_viewer_mode.cpp)
+coney_target_defaults(coney_devtools)
+target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)
 
 add_executable(coney main.cpp)
 coney_target_defaults(coney)
-target_link_libraries(coney PRIVATE coney_platform)
+target_link_libraries(coney PRIVATE coney_platform coney_devtools)
 
 # Headless smoke tests: the NULL renderer needs no display or GPU, so these run on CI and in a future test harness.
 add_test(NAME coney.runs_headless COMMAND coney --headless --frames 3)

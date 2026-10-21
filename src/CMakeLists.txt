@@ -54,9 +54,7 @@ add_library(coney_core STATIC
     gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
     gamemodes/rumble_result_mode.cpp
-    gamemodes/sheet_viewer_mode.cpp
     gamemodes/start_up_flow.cpp
-    gamemodes/text_viewer_mode.cpp
     graphics/font.cpp
     graphics/frame_stats.cpp
     graphics/car_draw.cpp
@@ -372,8 +370,7 @@ target_sources(coney_core PRIVATE
     combat/stick_games.cpp
     combat/tandem.cpp
     combat/throw_aim.cpp
-    combat/throw_velocity.cpp
-    debug/combat_tunables.cpp)
+    combat/throw_velocity.cpp)
 # Scenes: the in-engine cutscenes' records, slots and player (docs/research/scenes.md).
 target_sources(coney_core PRIVATE
     scenes/letterbox.cpp
@@ -382,46 +379,8 @@ target_sources(coney_core PRIVATE
     scenes/scene_list.cpp
     scenes/scene_player.cpp
     scenes/scene_record.cpp)
-# The sandbox: Coney's own test worlds of primitives (docs/guides/sandbox.md), and the collision writer they use.
-target_sources(coney_core PRIVATE
-    raycast/collision_builder.cpp
-    sandbox/sandbox_layout.cpp
-    sandbox/sandbox_lighting.cpp
-    sandbox/sandbox_mesh.cpp
-    sandbox/sandbox_world.cpp)
-# The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
-target_sources(coney_core PRIVATE
-    debug/debug_lines.cpp
-    debug/anim_catalog.cpp
-    debug/anim_id_names.cpp
-    debug/debug_session.cpp
-    debug/fighter_spawn.cpp
-    debug/entity_inspect.cpp
-    debug/game_tunables.cpp
-    debug/human_shapes.cpp
-    debug/human_watch.cpp
-    debug/input_gate.cpp
-    debug/lua_console.cpp
-    debug/menu_model.cpp
-    debug/menu_navigator.cpp
-    debug/native_caller.cpp
-    debug/native_signatures.cpp
-    debug/object_watch.cpp
-    debug/pad_menu_input.cpp
-    debug/pages_anim.cpp
-    debug/pages_engine.cpp
-    debug/pages_net.cpp
-    debug/pages_entity.cpp
-    debug/pages_hud.cpp
-    debug/pages_movies.cpp
-    debug/pages_play.cpp
-    debug/pages_scripts.cpp
-    debug/pages_time.cpp
-    debug/story_missions.cpp
-    debug/time_control.cpp
-    debug/time_series.cpp
-    debug/ui_scale.cpp
-    debug/tunables.cpp)
+# The collision writer: the sandbox's meshes and the debug menus' spawned objects in a level (docs/guides/sandbox.md).
+target_sources(coney_core PRIVATE raycast/collision_builder.cpp)
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE
     hud/counter_panels.cpp
@@ -446,8 +405,6 @@ target_sources(coney_core PRIVATE
     hud/num_indicator.cpp
     hud/scripted_bars.cpp
     hud/spinner.cpp)
-# The pad debug menu's renderer: the in-game list in the game's font or Coney's bitmap font.
-target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 # Audio: the game's sound engine and data, Coney's mixer, the game-facing sound calls and the offline device; no OS or
@@ -488,4 +445,52 @@ add_library(coney_net STATIC net/bit_stream.cpp net/link_conditioner.cpp net/lin
                              net/net_client.cpp net/net_server.cpp net/protocol.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)
+# The debug tools' platform-neutral half, apart from the game's libraries so the release build can leave them out
+# (docs/guides/building.md#debug-tools): the debug menus' model and pages (docs/guides/debug-menu.md), the pad menu's
+# renderer and its bitmap font, the sandbox's test worlds (docs/guides/sandbox.md) and the sheet and text viewers.
+add_library(
+    coney_debug STATIC
+    debug/anim_catalog.cpp
+    debug/anim_id_names.cpp
+    debug/combat_tunables.cpp
+    debug/debug_lines.cpp
+    debug/debug_session.cpp
+    debug/entity_inspect.cpp
+    debug/fighter_spawn.cpp
+    debug/game_tunables.cpp
+    debug/human_shapes.cpp
+    debug/human_watch.cpp
+    debug/input_gate.cpp
+    debug/lua_console.cpp
+    debug/menu_model.cpp
+    debug/menu_navigator.cpp
+    debug/native_caller.cpp
+    debug/native_signatures.cpp
+    debug/object_watch.cpp
+    debug/pad_menu_input.cpp
+    debug/pages_anim.cpp
+    debug/pages_engine.cpp
+    debug/pages_entity.cpp
+    debug/pages_hud.cpp
+    debug/pages_movies.cpp
+    debug/pages_net.cpp
+    debug/pages_play.cpp
+    debug/pages_scripts.cpp
+    debug/pages_time.cpp
+    debug/story_missions.cpp
+    debug/time_control.cpp
+    debug/time_series.cpp
+    debug/tunables.cpp
+    debug/ui_scale.cpp
+    gamemodes/sheet_viewer_mode.cpp
+    gamemodes/text_viewer_mode.cpp
+    graphics/bitmap_font.cpp
+    gui/debug_menu_view.cpp
+    gui/debug_text_painter.cpp
+    sandbox/sandbox_layout.cpp
+    sandbox/sandbox_lighting.cpp
+    sandbox/sandbox_mesh.cpp
+    sandbox/sandbox_world.cpp)
+coney_target_defaults(coney_debug)
+target_link_libraries(coney_debug PUBLIC coney_core)
 add_subdirectory(platform)
