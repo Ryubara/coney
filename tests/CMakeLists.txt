@@ -430,8 +430,9 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
                                    audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp)
 # Network play: the bit stream, the transports, the protocol and the sessions over the loopback, and ENet on 127.0.0.1
 # (docs/guides/multiplayer.md).
-target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/link_conditioner_test.cpp net/link_quality_test.cpp
-                                   net/loopback_transport_test.cpp net/protocol_test.cpp net/sessions_test.cpp
+target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
+                                   net/link_quality_test.cpp net/loopback_transport_test.cpp net/protocol_test.cpp
+                                   net/sessions_test.cpp
                                    platform/enet_transport_test.cpp platform/net_play_test.cpp debug/net_page_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)

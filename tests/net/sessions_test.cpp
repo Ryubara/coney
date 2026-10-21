@@ -324,9 +324,12 @@ TEST_CASE("a joined client's pad reaches the server every step, in the slot it h
     match.run(3);
     REQUIRE(client.state() == ClientState::Connected);
 
-    // A step's pad leaves at the end of that step and is taken at the start of the server's next.
+    // A step's pad leaves at the end of that step, arrives at the start of the server's next and plays one step
+    // after that (InputBufferConfig::delaySteps).
     client.setPad(padWith(coney::pad::kStart, 200));
     match.run(2);
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == 0);
+    match.run(1);
     const auto pad = match.server.remotePad(1);
     REQUIRE(pad.has_value());
     CHECK(pad.value_or(coney::PadSample{}).connected);
@@ -336,7 +339,7 @@ TEST_CASE("a joined client's pad reaches the server every step, in the slot it h
 
     // The next step's pad replaces it.
     client.setPad(padWith(coney::pad::kCross));
-    match.run(2);
+    match.run(3);
     CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kCross);
 
     // Gone with the player.
@@ -354,24 +357,98 @@ TEST_CASE("a joined player's pad reads unplugged until their first pad input arr
     CHECK_FALSE(pad.value_or(coney::PadSample{}).connected);
 }
 
-TEST_CASE("an older or repeated pad input never replaces a newer one", "[net][sessions][pad]") {
+TEST_CASE("input commands that come late, out of order or twice each play once on their own step",
+          "[net][sessions][pad]") {
     Match match;
     LoopbackTransport raw(match.network, "raw");
     const PeerId peer = rawJoin(match, raw);
-    const auto sendPad = [&](std::uint32_t step, std::uint16_t buttons) {
-        REQUIRE(
-            raw.send(peer, Delivery::Unreliable, encode(PadInput{.step = step, .pad = padWith(buttons)})).has_value());
+    const auto sendCommands = [&](std::uint32_t newest, std::vector<coney::PadSample> pads) {
+        REQUIRE(raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = newest, .pads = std::move(pads)}))
+                    .has_value());
     };
-    sendPad(10, coney::pad::kCircle);
-    sendPad(9, coney::pad::kSquare); // arrives after step 10's: late, dropped
+    const auto played = [&] { return match.server.remotePad(1).value_or(coney::PadSample{}).buttons; };
+    sendCommands(0, {padWith(coney::pad::kSquare)});
     match.run(1);
-    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kCircle);
-    sendPad(10, coney::pad::kTriangle); // the same step again
+    CHECK_FALSE(match.server.remotePad(1).value_or(coney::PadSample{}).connected); // the delay filling
+    sendCommands(2, {padWith(coney::pad::kTriangle)}); // step 2 overtakes step 1
+    sendCommands(1, {padWith(coney::pad::kCircle)});
     match.run(1);
-    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kCircle);
-    sendPad(11, coney::pad::kTriangle);
+    CHECK(played() == coney::pad::kSquare);
+    sendCommands(2, {padWith(coney::pad::kCross)}); // step 2 again: the first copy stands
+    sendCommands(3, {padWith(coney::pad::kR1)});
     match.run(1);
-    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kTriangle);
+    CHECK(played() == coney::pad::kCircle);
+    match.run(1);
+    CHECK(played() == coney::pad::kTriangle);
+    match.run(1);
+    CHECK(played() == coney::pad::kR1);
+    const InputBufferStats& stats = match.server.clients().at(0).input.stats();
+    CHECK(stats.applied == 4);
+    CHECK(stats.missed == 0);
+}
+
+TEST_CASE("a lost packet's steps come in the next one and play late, none missed", "[net][sessions][pad]") {
+    Match match;
+    NetClient& client = match.join("Rembrandt");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+    client.setPad(padWith(coney::pad::kL1));
+    match.run(3);
+    // Two steps of the client's packets lost; the next repeats their steps (ClientConfig::inputSteps is 4).
+    match.guests[0]->link.setConditions(LinkConditions{.lossFraction = 1.0F});
+    client.setPad(padWith(coney::pad::kR2));
+    match.run(2);
+    match.guests[0]->link.setConditions(LinkConditions{});
+    match.run(6);
+    const InputBufferStats& stats = match.server.clients().at(0).input.stats();
+    CHECK(stats.missed == 0);
+    CHECK(stats.skipped == 0);
+    // The one step of delay covered the first lost step; the buffer waited one step for the second, and plays a step
+    // later than before from then on.
+    CHECK(stats.stalled == 1);
+    CHECK(match.server.clients().at(0).input.lead() == 2);
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kR2);
+}
+
+TEST_CASE("the server tells a client how early its input comes, and the client's clock follows",
+          "[net][sessions][pad]") {
+    ServerConfig config = Match::serverConfig();
+    config.input.slackSteps = 10; // keep a long stall's delay rather than skipping it
+    Match match(config);
+    NetClient& client = match.join("Vermin");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+    CHECK(client.clockSpeedPercent() == 100);
+
+    // All well: the lead is the delay the server wants, and the clock runs at its own speed.
+    match.run(12);
+    REQUIRE(client.inputTiming().has_value());
+    CHECK(client.inputTiming().value_or(InputTiming{}).lead == 1);
+    CHECK(client.inputTiming().value_or(InputTiming{}).target == 1);
+    CHECK(client.clockSpeedPercent() == 100);
+
+    // The client's packets stop coming: its commands are late, so it should step faster.
+    match.guests[0]->link.setConditions(LinkConditions{.lossFraction = 1.0F});
+    match.run(8);
+    CHECK(client.inputTiming().value_or(InputTiming{}).lead <= 0);
+    CHECK(client.clockSpeedPercent() == 102);
+
+    // They come again, with the stall's delay kept: they now wait longer than needed, so it should step slower.
+    match.guests[0]->link.setConditions(LinkConditions{});
+    match.run(12);
+    CHECK(client.inputTiming().value_or(InputTiming{}).lead > 2);
+    CHECK(client.clockSpeedPercent() == 98);
+}
+
+TEST_CASE("a client sends 1 to 8 steps of input commands", "[net][sessions][pad]") {
+    Match match;
+    for (const std::uint32_t steps : {0U, 9U}) {
+        LoopbackTransport wire(match.network, "bad" + std::to_string(steps));
+        NetClient client(wire, ClientConfig{.inputSteps = steps});
+        const auto connected = client.connect("host", match.server.port());
+        REQUIRE_FALSE(connected.has_value());
+        CHECK(connected.error().code == coney::ErrorCode::InvalidArgument);
+    }
 }
 
 TEST_CASE("a pad input before the handshake is a protocol error", "[net][sessions][pad]") {
@@ -379,7 +456,8 @@ TEST_CASE("a pad input before the handshake is a protocol error", "[net][session
     LoopbackTransport raw(match.network, "eager");
     const PeerId peer = raw.connect("host", match.server.port()).value();
     (void)drain(raw);
-    REQUIRE(raw.send(peer, Delivery::Unreliable, encode(PadInput{.step = 0, .pad = padWith(0)})).has_value());
+    REQUIRE(raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = 0, .pads = {padWith(0)}}))
+                .has_value());
     match.run(1);
     const auto events = drain(raw);
     REQUIRE(events.size() == 2);
@@ -389,12 +467,12 @@ TEST_CASE("a pad input before the handshake is a protocol error", "[net][session
 
 TEST_CASE("a pad that goes quiet is let go: held buttons released, sticks centred", "[net][sessions][pad]") {
     ServerConfig config = Match::serverConfig();
-    config.padHoldSteps = 5;
+    config.input.holdSteps = 5;
     Match match(config);
     NetClient& client = match.join("Fox");
     match.run(3);
     client.setPad(padWith(coney::pad::kR1, 255));
-    match.run(2);
+    match.run(3);
     REQUIRE(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kR1);
 
     // Nothing the client sends from now on arrives (the link has not timed out yet); the pad already on its way

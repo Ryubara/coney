@@ -2,6 +2,7 @@
 // The Network page driven through the menu model over a fake NetControls: no socket, no session.
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -36,8 +37,16 @@ class FakeNet final : public NetControls {
         status.packetsSent = 7;
         if (hosting) {
             status.players.push_back(
-                NetPlayerStatus{.slot = 1, .name = "Swan", .roundTripNs = 42'000'000, .lossFraction = 0.0F});
+                NetPlayerStatus{.slot = 1,
+                                .name = "Swan",
+                                .roundTripNs = 42'000'000,
+                                .lossFraction = 0.0F,
+                                .inputLead = 1,
+                                .inputLost = 3});
         }
+        status.inputLead = lead;
+        status.inputTarget = 1;
+        status.clockSpeedPercent = lead.value_or(1) < 1 ? 102 : 100;
         return status;
     }
     [[nodiscard]] std::string playerName() const override { return name; }
@@ -64,6 +73,7 @@ class FakeNet final : public NetControls {
 
     bool hosting = false;
     int joins = 0;
+    std::optional<std::int64_t> lead; // a client's input lead, once the host has said it
     std::string name = "Player";
     std::uint16_t portValue = 27615;
     std::string addressValue = "127.0.0.1";
@@ -99,7 +109,10 @@ TEST_CASE("the Network page hosts, joins and sets its fields through NetControls
     CHECK(page->find("Ping")->watch() == "42 ms");
     CHECK(page->find("Loss")->watch() == "25 %");
     CHECK(page->find("Sent")->watch() == "12.3 KB in 7 packets");
-    CHECK(page->find("Players")->lines() == std::vector<std::string>{"2: Swan (42 ms, 0 % loss)"});
+    CHECK(page->find("Players")->lines() == std::vector<std::string>{"2: Swan (42 ms, 0 % loss, input 1 ahead, 3 lost)"});
+    CHECK(page->find("Input timing")->watch() == "-"); // a host has no host to send its input to
+    net.lead = 0;
+    CHECK(page->find("Input timing")->watch() == "0 ahead (wants 1), clock 102 %");
     CHECK(page->find("Log")->lines().size() == 1);
     page->find("Join")->run();
     CHECK(net.joins == 1);

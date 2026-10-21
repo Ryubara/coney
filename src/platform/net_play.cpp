@@ -17,6 +17,7 @@
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "net/input_buffer.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
 #include "net/net_server.h"
@@ -266,6 +267,8 @@ PortSamples NetPlay::pads(const PortSamples& local) {
     return samples;
 }
 
+std::uint32_t NetPlay::clockSpeedPercent() const { return m_client ? m_client->clockSpeedPercent() : 100; }
+
 net::NetStatus NetPlay::status() const {
     net::NetStatus status;
     if (m_wire) {
@@ -285,10 +288,13 @@ net::NetStatus NetPlay::status() const {
             if (!client.joined) {
                 continue;
             }
+            const net::InputBufferStats& input = client.input.stats();
             status.players.push_back(net::NetPlayerStatus{.slot = client.slot,
                                                           .name = client.name,
                                                           .roundTripNs = client.quality.roundTripNs(),
-                                                          .lossFraction = client.quality.lossFraction()});
+                                                          .lossFraction = client.quality.lossFraction(),
+                                                          .inputLead = client.input.lead(),
+                                                          .inputLost = input.missed + input.skipped});
             // The host's figures are its slowest player's: the one a problem shows on first.
             status.roundTripNs = std::max(status.roundTripNs, client.quality.roundTripNs());
             status.lossFraction = std::max(status.lossFraction, client.quality.lossFraction());
@@ -299,6 +305,11 @@ net::NetStatus NetPlay::status() const {
         status.state = m_client->describe();
         status.roundTripNs = m_client->quality().roundTripNs();
         status.lossFraction = m_client->quality().lossFraction();
+        if (const auto& timing = m_client->inputTiming(); timing) {
+            status.inputLead = timing->lead;
+            status.inputTarget = timing->target;
+        }
+        status.clockSpeedPercent = m_client->clockSpeedPercent();
     }
     return status;
 }

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <limits>
 #include <span>
 #include <string>
 #include <string_view>
@@ -12,6 +13,7 @@
 #include <variant>
 #include <vector>
 
+#include "core/assert.h"
 #include "core/error.h"
 #include "core/pad.h"
 #include "net/bit_stream.h"
@@ -21,7 +23,7 @@ namespace coney::net {
 
 namespace {
 
-// Writes a pad as PadInput's comment lays it out: a disconnected pad is one bit.
+// Writes a pad in full as InputCommands' comment lays it out: a disconnected pad is one bit.
 void writePad(BitWriter& out, const PadSample& pad) {
     out.writeBool(pad.connected);
     if (!pad.connected) {
@@ -111,11 +113,26 @@ void writeMessage(BitWriter& out, const Message& message) {
             } else if constexpr (std::is_same_v<T, Pong>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::Pong));
                 out.writeVarUint(m.sequence);
+            } else if constexpr (std::is_same_v<T, InputTiming>) {
+                out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
+                out.writeVarInt(m.lead);
+                out.writeU8(m.target);
             } else {
-                static_assert(std::is_same_v<T, PadInput>);
-                out.writeU8(static_cast<std::uint8_t>(MessageId::PadInput));
-                out.writeVarUint(m.step);
-                writePad(out, m.pad);
+                static_assert(std::is_same_v<T, InputCommands>);
+                CONEY_ASSERT(!m.pads.empty() && m.pads.size() <= kMaxInputCommands);
+                CONEY_ASSERT(m.pads.size() - 1 <= m.newestStep);
+                out.writeU8(static_cast<std::uint8_t>(MessageId::InputCommands));
+                out.writeVarUint(m.newestStep);
+                out.writeBits(static_cast<std::uint32_t>(m.pads.size() - 1), 3);
+                writePad(out, m.pads.front());
+                // A held button or stick is usually held for several steps, so an older pad is often one bit.
+                for (std::size_t i = 1; i < m.pads.size(); ++i) {
+                    const bool same = samePadOnTheWire(m.pads[i], m.pads[i - 1]);
+                    out.writeBool(same);
+                    if (!same) {
+                        writePad(out, m.pads[i]);
+                    }
+                }
             }
         },
         message);
@@ -216,17 +233,58 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return Pong{.sequence = *sequence};
     }
-    case MessageId::PadInput: {
-        auto step = readSequence(in);
-        if (!step) {
-            return std::unexpected(step.error());
+    case MessageId::InputCommands: {
+        auto newest = readSequence(in);
+        if (!newest) {
+            return std::unexpected(newest.error());
         }
-        auto pad = readPad(in);
-        if (!pad) {
-            return std::unexpected(pad.error());
+        auto countLess1 = in.readBits(3);
+        if (!countLess1) {
+            return std::unexpected(countLess1.error());
         }
-        return PadInput{.step = *step, .pad = *pad};
+        if (*countLess1 > *newest) {
+            return fail(ErrorCode::Invalid, "network input commands reach below step 0");
+        }
+        InputCommands commands{.newestStep = *newest, .pads = {}};
+        auto first = readPad(in);
+        if (!first) {
+            return std::unexpected(first.error());
+        }
+        commands.pads.push_back(*first);
+        for (std::uint32_t i = 0; i < *countLess1; ++i) {
+            auto same = in.readBool();
+            if (!same) {
+                return std::unexpected(same.error());
+            }
+            if (*same) {
+                commands.pads.push_back(commands.pads.back());
+                continue;
+            }
+            auto pad = readPad(in);
+            if (!pad) {
+                return std::unexpected(pad.error());
+            }
+            // One encoding per message: a pad the same as the step after it must be the one bit.
+            if (samePadOnTheWire(*pad, commands.pads.back())) {
+                return fail(ErrorCode::Invalid, "network input command repeats a pad in full");
+            }
+            commands.pads.push_back(*pad);
+        }
+        return commands;
     }
+    case MessageId::InputTiming: {
+        auto lead = in.readVarInt();
+        if (!lead) {
+            return std::unexpected(lead.error());
+        }
+        if (*lead < std::numeric_limits<std::int32_t>::min() || *lead > std::numeric_limits<std::int32_t>::max()) {
+            return fail(ErrorCode::Invalid, "network input lead is over 32 bits");
+        }
+        auto target = in.readU8();
+        if (!target) {
+            return std::unexpected(target.error());
+        }
+        return InputTiming{.lead = static_cast<std::int32_t>(*lead), .target = *target};
     }
     return fail(ErrorCode::Invalid, "network message has an unknown id " + std::to_string(id));
 }
@@ -260,12 +318,20 @@ std::expected<Message, Error> decode(std::span<const std::byte> packet) {
 }
 
 Delivery deliveryOf(const Message& message) {
-    // A pad input is sent again every step, so a lost one is replaced at once; a resend would only arrive stale.
+    // Input commands repeat the steps before them in every packet, and timing goes with every Ping, so a lost one is
+    // replaced at once; a resend would only arrive stale.
     if (std::holds_alternative<Ping>(message) || std::holds_alternative<Pong>(message) ||
-        std::holds_alternative<PadInput>(message)) {
+        std::holds_alternative<InputCommands>(message) || std::holds_alternative<InputTiming>(message)) {
         return Delivery::Unreliable;
     }
     return Delivery::ReliableOrdered;
+}
+
+bool samePadOnTheWire(const PadSample& a, const PadSample& b) {
+    if (!a.connected || !b.connected) {
+        return a.connected == b.connected; // a disconnected pad's other fields never travel
+    }
+    return a.buttons == b.buttons && a.sticks == b.sticks && a.pressure == b.pressure;
 }
 
 bool validPlayerName(std::string_view name) {

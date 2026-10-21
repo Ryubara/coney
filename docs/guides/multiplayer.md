@@ -84,7 +84,7 @@ Received.
 | --- | --- | --- | --- |
 | ReliableOrdered | exactly once, in order among reliable packets | handshake, Bye; later game events, mission state | `ENET_PACKET_FLAG_RELIABLE`, channel 0 |
 | UnreliableSequenced | at most once; one older than a packet already delivered is dropped | later: snapshots | no flag, channel 1 |
-| Unreliable | at most once, any order | Ping, Pong, PadInput (sent again every step anyway) | `ENET_PACKET_FLAG_UNSEQUENCED`, channel 1 |
+| Unreliable | at most once, any order | Ping, Pong, InputCommands (each repeats the steps before it), InputTiming | `ENET_PACKET_FLAG_UNSEQUENCED`, channel 1 |
 
 An unreliable packet too big for one datagram also gets `ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT`: without it ENet
 resends a big unreliable packet's fragments reliably, so a lost snapshot fragment would stall the channel instead of
@@ -110,7 +110,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 2)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 3)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -122,13 +122,17 @@ unnoticed.
 | 4 | Bye | either | reason (8): quit, timed out, protocol error | reliable |
 | 5 | Ping | either | sequence (varint, 32 bits at most) | unreliable |
 | 6 | Pong | either | the Ping's sequence | unreliable |
-| 7 | PadInput | client to server | the client's step (varint, 32 bits at most), its pad (below); since version 2 | unreliable |
+| 7 | PadInput | retired: one step's pad (version 2 only); the id is never reused | | |
+| 8 | InputCommands | client to server | the newest step (varint, 32 bits at most), the number of pads less one (3 bits), the newest step's pad, then each older step's "same pad" bit or pad (below); since version 3 | unreliable |
+| 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
 
-**PadInput's pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of
-`core/pad.h`), the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a
-bit saying whether it is above 0 followed by the byte when it is. A pad with nothing held costs 61 bits; a
-disconnected one, 1 bit, and decodes as a pad at rest. A pressure flagged as above 0 but written as 0 is refused, so
-each pad has one encoding.
+**A pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of `core/pad.h`),
+the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a bit saying
+whether it is above 0 followed by the byte when it is. A pad with nothing held costs 61 bits; a disconnected one, 1
+bit, and decodes as a pad at rest. In InputCommands each older step's pad is one bit when it is the same as the step
+after it, which it mostly is, so four steps of a held pad cost hardly more than one. A pressure flagged as above 0 but
+written as 0, an older pad written in full that is the same as the step after it, and pads for steps below 0 are
+refused, so each message has one encoding.
 
 **Decoding is strict.** An unknown id or enumerator, the wrong magic, a short packet, a name over its limit or
 trailing bytes is an error, and the receiving session closes the connection with Bye (protocol error). The one
@@ -237,17 +241,18 @@ original's.
   `NetPlay`); a second is told the server is full. The guest holds slot 1, which is port 2. Port 1 is always the host's.
 - **The path of a pad.** On the guest, `NetInput` (`src/platform/net_play.h`) sits between the debug menus' input gate
   and the mode stack: port 1 as the guest's game reads it (never their debug menu's input, which the gate keeps) goes to
-  the session, which sends it as PadInput at the end of the step, numbered by the guest's step. On the host the server
-  keeps each player's newest pad by that number (a late or repeated packet never replaces a newer one), and the host's
-  `NetInput` puts it on port 2. On a link with no delay a press reaches the host's game in the host's step after the
-  one in which the guest's game saw it; over a network, add the one-way delay.
+  the session, which sends it in its [input commands](#input-commands) at the end of the step, numbered by the guest's
+  step. On the host the server's input buffer plays each of the guest's steps on a step of its own, and the host's
+  `NetInput` puts that pad on port 2. On a link with no delay a press reaches the host's game two of the host's steps
+  after the one in which the guest's game saw it (one to arrive, one of buffer delay); over a network, add the one-way
+  delay.
 - **The host's own port 2** plays while nobody has joined, and again once the guest leaves; while they are joined it is
   set aside (Coney's choice: one pad per port).
-- **Until the first PadInput** arrives, port 2 reads unplugged; a guest with no pad plugged in sends an unplugged
+- **Until the guest's first step plays**, port 2 reads unplugged; a guest with no pad plugged in sends an unplugged
   pad, and port 2 stays unplugged.
-- **A stalled link lets go.** When no new PadInput has come for more than 15 steps (half a second;
-  `ServerConfig::padHoldSteps`), port 2 reads plugged in with nothing held and the sticks centred, rather than holding
-  the last buttons until the 10 s timeout drops the player (Coney's choice). The next PadInput takes over again.
+- **A stalled link lets go.** When no new step has come for more than 15 steps (half a second;
+  `InputBufferConfig::holdSteps`), port 2 reads plugged in with nothing held and the sticks centred, rather than
+  holding the last buttons until the 10 s timeout drops the player (Coney's choice). The next step takes over again.
 - **What a second pad does in Coney today.** The front end's two-player screens read port 2: the Story's number of
   players (`PM_NumPlayers` and its "player 2 press START"; the main menu first counts the connected pads,
   [Profile manager](../research/frontend.md#profile-manager)) and the Rumble mode's (`RM_NumPlayers`, No 2nd
@@ -266,8 +271,41 @@ pressed START: the host went `PM_Mode`, `PM_NumPlayers`, then `PM_Profile` after
 three screens; the host alone went from `PM_Mode` straight to `PM_Profile`. The network carrying the pad has no
 counterpart in the original.
 
-This is the plain form of the next layer: [The plan](#plan)'s input commands replace the one pad per packet with the
-last few steps' pads, and a buffer on the host that applies each on its own step.
+## Input commands {#input-commands}
+
+A guest's pad travels as **input commands**: every step, its client sends that step's pad and the pads of the steps
+before it (`ClientConfig::inputSteps`, 4), tagged with the newest step's number, unreliably. A lost packet costs
+nothing as long as one of the next three arrives, since each carries its steps again; a repeated step is played
+once, and one that comes after its turn is dropped.
+
+The server keeps a **buffer** per player (`net::InputBuffer`, `src/net/input_buffer.h`) and each step, after
+receiving, plays the next of the player's steps from it, so each of the guest's steps is played on exactly one of the
+host's, in order, whatever order the packets came in. Its rules (`InputBufferConfig`, Coney's choices):
+
+- **A delay.** It plays one step (`delaySteps`) behind the newest step that has arrived: a packet up to one step late
+  still comes in time. The first step to arrive sets it; until a step plays, port 2 reads unplugged.
+- **A missing step** (lost from every packet that carried it) plays the step before's pad again: a held button stays
+  held.
+- **A stall.** When nothing new has come, the last pad holds and the buffer waits rather than skipping the step, so
+  the delay grows by one; the steps still on their way play late, but they play.
+- **Too far behind.** When more than `delaySteps` + `slackSteps` (3) steps wait, it skips the oldest and plays
+  `delaySteps` behind the newest again, so a long stall does not leave the guest's input late for good.
+- **Letting go.** No new step for more than `holdSteps` (15) lets the pad go ([Player two](#player-two)).
+
+The Network page's Players line shows each player's lead (steps waiting: the delay when all is well) and the steps
+lost (missing or skipped) since they joined.
+
+### Input timing {#input-timing}
+
+With each Ping (5 a second) the server sends the player an **InputTiming**: their lead and the lead it wants (the
+delay). The guest's game then runs its clock a little fast or slow (`NetClient::clockSpeedPercent()`): at 102 % while
+the lead is below the target, so its steps, and their commands, come a little sooner; at 98 % while it is over the
+target by more than one, so they stop waiting longer than they need to; at its own speed in between
+(`ClientConfig::clockNudgePercent`, 2). Two percent is a step gained or lost in 50, too little to see. The guest's
+FrameClock takes it as a speed, as it takes the Time page's (`FrameClock::setSpeed()`), and test mode never applies
+it. This is Overwatch's way of keeping commands arriving just in time ([Network
+architecture](network-architecture.md#input)), with the clock's speed nudged. The Network page's Input timing line
+shows it on the guest.
 
 ## Testing {#testing}
 
@@ -281,8 +319,11 @@ and runs the sessions' handshake over real UDP. `tests/platform/net_play_test.cp
 and joins between two `NetPlay`s on the loopback (by address, the figures, the simulated latency in the ping,
 leaving and stopping, a leave over a slow link, a close that never completes, hosting again on a closing host's
 port, shutting down, refusals, the guest's pad on the host's port 2 and the host's own port 2 around it, one remote
-player at most); `tests/net/sessions_test.cpp` also covers the server's side of the pad (by slot, newest step wins, a
-pad before the handshake, letting go of a quiet pad); `tests/net/protocol_test.cpp` pins PadInput's bytes;
+player at most); `tests/net/sessions_test.cpp` also covers the server's side of the pad (by slot, late, out of order
+and repeated commands each played once on their own step, a lost packet's steps arriving in the next, a pad before
+the handshake, letting go of a quiet pad, InputTiming and the client's clock following it);
+`tests/net/input_buffer_test.cpp` covers the buffer's rules one by one; `tests/net/protocol_test.cpp` pins
+InputCommands' and InputTiming's bytes;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
@@ -294,8 +335,9 @@ Each step is a pull request that builds and is tested on its own.
 1. **Foundation** (built): this page, ENet, `coney_net` and its tests.
 2. **The Network page and flags** (built): [In the game](#in-the-game).
 3. **A second player** (built): the guest's pad on pad port 2 of the host's game ([Player two](#player-two)).
-4. **Input commands:** the client's pad samples, tagged with the step, with the last few steps repeated in every
-   packet; the server's buffer that applies each on its step.
+4. **Input commands** (built): the client's pads tagged with the step, the last few repeated in every packet, the
+   server's buffer that plays each on its step, and the timing that keeps them coming in time
+   ([Input commands](#input-commands)).
 5. **Replicated players:** network ids, snapshots (quantized, delta-compressed against acknowledged baselines),
    the client's jitter buffer and interpolation, and its own follow camera.
 6. **AI humans, events, mission state:** the rest of what a client must see and hear, events reliable.

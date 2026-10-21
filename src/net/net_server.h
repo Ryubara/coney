@@ -10,6 +10,7 @@
 
 #include "core/error.h"
 #include "core/pad.h"
+#include "net/input_buffer.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
 #include "net/transport.h"
@@ -26,10 +27,9 @@ struct ServerConfig {
     std::uint32_t pingIntervalSteps = 6;       ///< a Ping to each player this often (5 a second at 30 Hz)
     std::uint32_t timeoutSteps = 300;          ///< a player heard from for this long is dropped (10 s at 30 Hz)
     std::uint32_t handshakeTimeoutSteps = 150; ///< a connection that sends no valid Hello for this long is closed
-    /// A player's pad is held as last heard for this many steps with no new PadInput, then let go (remotePad()); 15
-    /// is half a second at 30 Hz. Coney's choice, so a link that stalls does not leave a stick held until it times
-    /// out.
-    std::uint32_t padHoldSteps = 15;
+    /// How each player's input commands are played on the server's steps: the delay, its slack and when a quiet pad
+    /// is let go.
+    InputBufferConfig input;
 };
 
 /// One remote player as the server sees it.
@@ -41,10 +41,7 @@ struct ServerClient {
     std::uint32_t stepsSinceHeard = 0;
     std::uint32_t stepsConnected = 0;
     LinkQuality quality;
-    PadSample pad;              ///< the newest PadInput's pad; unplugged until one arrives
-    bool padHeard = false;      ///< a PadInput has arrived
-    std::uint32_t padStep = 0;  ///< its step, when padHeard
-    std::uint32_t padQuiet = 0; ///< steps begun since it arrived
+    InputBuffer input; ///< their input commands; current() is this step's pad
 };
 
 /// Something the game should know happened, from takeEvents().
@@ -87,9 +84,10 @@ class NetServer {
 
     /// Passes the frame's elapsed time to the transport and to the round-trip clock.
     void advance(std::uint64_t elapsedNs);
-    /// One step's receiving: every waiting transport event and message, then the step's timeouts.
+    /// One step's receiving: every waiting transport event and message, the step's timeouts, then each joined
+    /// player's pad for the step (InputBuffer::take()).
     void receive();
-    /// One step's sending: the Pings that are due, then a flush.
+    /// One step's sending: the Pings that are due, each joined player's InputTiming with theirs, then a flush.
     void send();
 
     /// Every connection, joined or not, in the order they connected.
@@ -97,8 +95,7 @@ class NetServer {
     /// Joined players.
     [[nodiscard]] std::size_t joinedCount() const;
     /// The pad of the player in `slot`, as the host's game should read it this step: nothing when no player has joined
-    /// in it; else their newest PadInput's pad, unplugged until the first arrives, and plugged in with nothing held and
-    /// the sticks centred once no new one has come for more than ServerConfig::padHoldSteps steps.
+    /// in it; else the pad their input buffer played on this step (InputBuffer::take()).
     [[nodiscard]] std::optional<PadSample> remotePad(std::uint8_t slot) const;
     /// The events since the last call, oldest first.
     [[nodiscard]] std::vector<ServerEvent> takeEvents();

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -21,6 +22,13 @@ struct ClientConfig {
     std::uint32_t pingIntervalSteps = 6;     ///< a Ping to the server this often (5 a second at 30 Hz)
     std::uint32_t timeoutSteps = 300;        ///< the server heard from for this long is taken for gone (10 s at 30 Hz)
     std::uint32_t connectTimeoutSteps = 150; ///< giving up on a connection or handshake after this long (5 s at 30 Hz)
+    /// The steps each InputCommands carries, the newest and those before it: 1 to kMaxInputCommands. 4 rides out
+    /// three lost packets in a row for 3 extra bytes or so while the pad is unchanged (Coney's choice).
+    std::uint32_t inputSteps = 4;
+    /// How much faster or slower than its own speed the client's game runs while the server says its commands come
+    /// late or wait too long (clockSpeedPercent()). 2 gains or loses a step in 50, slowly enough not to be seen.
+    /// Coney's choice.
+    std::uint32_t clockNudgePercent = 2;
 };
 
 /// Where a client's session is.
@@ -60,7 +68,8 @@ class NetClient {
     ~NetClient();
 
     /// Starts connecting to the server at `address`:`port`. Fails as Transport::connect() does, or with
-    /// InvalidArgument when a session is under way (Connecting, Handshaking or Connected).
+    /// InvalidArgument when a session is under way (Connecting, Handshaking or Connected) or ClientConfig::inputSteps
+    /// is out of range.
     [[nodiscard]] std::expected<void, Error> connect(std::string_view address, std::uint16_t port);
     /// Says Bye and closes the connection; the session ends as Left. Nothing happens when no session is under way.
     void disconnect();
@@ -69,7 +78,8 @@ class NetClient {
     void advance(std::uint64_t elapsedNs);
     /// One step's receiving: every waiting transport event and message, then the step's timeouts.
     void receive();
-    /// One step's sending: once joined, this step's pad (PadInput) and a Ping when due; then a flush.
+    /// One step's sending: once joined, the input commands of this step and the few before it (InputCommands) and a
+    /// Ping when due; then a flush.
     void send();
     /// The pad the next send() sends: this game's player 1 pad, which plays the host's pad port 2.
     void setPad(const PadSample& pad) { m_pad = pad; }
@@ -84,6 +94,14 @@ class NetClient {
     [[nodiscard]] std::uint8_t playerSlot() const { return m_welcome.playerSlot; }
     [[nodiscard]] std::uint16_t stepRateHz() const { return m_welcome.stepRateHz; }
     [[nodiscard]] const std::string& serverName() const { return m_welcome.serverName; }
+    /// What the server last said of this client's input commands (InputTiming), once Connected; nothing before the
+    /// first.
+    [[nodiscard]] const std::optional<InputTiming>& inputTiming() const { return m_timing; }
+    /// The speed the client's game clock should run at, percent: 100, or 100 plus ClientConfig::clockNudgePercent
+    /// while the server's last InputTiming has its lead below the target (the commands come late: step faster, so
+    /// they are sent sooner), or minus it while the lead is over the target by more than one (they wait longer than
+    /// they need to). Always 100 when not Connected.
+    [[nodiscard]] std::uint32_t clockSpeedPercent() const;
     /// The round trip and loss to the server.
     [[nodiscard]] const LinkQuality& quality() const { return m_quality; }
     /// One line for the Network page and the log: the state, and for an ended session why.
@@ -112,6 +130,9 @@ class NetClient {
     std::uint32_t m_stepsSinceHeard = 0;
     std::uint64_t m_steps = 0; // steps since joining, for the ping schedule and the pad's step
     PadSample m_pad;           // sent by send(); unplugged until setPad()
+    std::optional<InputTiming> m_timing; // the server's latest, while Connected
+    // The pads of the latest steps sent, by step % kMaxInputCommands, for the next InputCommands to repeat.
+    std::array<PadSample, kMaxInputCommands> m_sent{};
 };
 
 } // namespace coney::net

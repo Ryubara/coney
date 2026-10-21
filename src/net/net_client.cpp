@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "net/net_client.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -10,6 +11,7 @@
 #include <variant>
 
 #include "core/error.h"
+#include "core/pad.h"
 #include "net/protocol.h"
 #include "net/transport.h"
 
@@ -24,6 +26,9 @@ std::expected<void, Error> NetClient::connect(std::string_view address, std::uin
     if (m_state == ClientState::Connecting || m_state == ClientState::Handshaking ||
         m_state == ClientState::Connected) {
         return fail(ErrorCode::InvalidArgument, "the client is already connecting or connected");
+    }
+    if (m_config.inputSteps == 0 || m_config.inputSteps > kMaxInputCommands) {
+        return fail(ErrorCode::InvalidArgument, "a client sends 1 to 8 steps of input commands");
     }
     auto peer = m_transport.connect(address, port);
     if (!peer) {
@@ -101,9 +106,15 @@ void NetClient::receive() {
 
 void NetClient::send() {
     if (m_state == ClientState::Connected) {
-        // Every step's pad, numbered by the step so the server can tell a late one from a newer one. 32 bits of steps
-        // is four and a half years at 30 Hz.
-        sendToServer(PadInput{.step = static_cast<std::uint32_t>(m_steps), .pad = m_pad});
+        // This step's pad and the latest before it, numbered by the step so the server plays each on a step of its
+        // own and a lost packet's steps come in the next. 32 bits of steps is four and a half years at 30 Hz.
+        m_sent.at(m_steps % kMaxInputCommands) = m_pad;
+        const std::uint64_t count = std::min<std::uint64_t>(m_config.inputSteps, m_steps + 1);
+        InputCommands commands{.newestStep = static_cast<std::uint32_t>(m_steps), .pads = {}};
+        for (std::uint64_t i = 0; i < count; ++i) {
+            commands.pads.push_back(m_sent.at((m_steps - i) % kMaxInputCommands));
+        }
+        sendToServer(commands);
         if (m_config.pingIntervalSteps > 0 && m_steps % m_config.pingIntervalSteps == 0) {
             sendToServer(Ping{.sequence = m_quality.pingSent(m_nowNs)});
         }
@@ -119,6 +130,7 @@ void NetClient::handle(const Message& message) {
             return;
         }
         m_welcome = *welcome;
+        m_timing.reset();
         m_state = ClientState::Connected;
         m_stepsInState = 0;
         m_steps = 0;
@@ -132,10 +144,30 @@ void NetClient::handle(const Message& message) {
         sendToServer(Pong{.sequence = ping->sequence});
     } else if (const auto* pong = std::get_if<Pong>(&message); pong != nullptr) {
         m_quality.pongReceived(pong->sequence, m_nowNs);
+    } else if (const auto* timing = std::get_if<InputTiming>(&message); timing != nullptr) {
+        // Unreliable and on another channel than Welcome, so it may overtake it: kept only once joined.
+        if (m_state == ClientState::Connected) {
+            m_timing = *timing;
+        }
     } else {
-        // A Hello or a PadInput only ever goes from a client to a server.
+        // A Hello or an InputCommands only ever goes from a client to a server.
         finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
     }
+}
+
+std::uint32_t NetClient::clockSpeedPercent() const {
+    if (m_state != ClientState::Connected || !m_timing) {
+        return 100;
+    }
+    const std::uint32_t nudge = std::min<std::uint32_t>(m_config.clockNudgePercent, 50);
+    // A band of two steps (the target and one over) where nothing changes, so the speed does not flip every Ping.
+    if (m_timing->lead < m_timing->target) {
+        return 100 + nudge;
+    }
+    if (m_timing->lead > m_timing->target + 1) {
+        return 100 - nudge;
+    }
+    return 100;
 }
 
 void NetClient::finish(ClientEnd end, bool bye, ByeReason reason) {
