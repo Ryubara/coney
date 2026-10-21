@@ -21,7 +21,10 @@ import socket
 import struct
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from coney_tools.pcsx2_claims import Registry
 
 #: Seconds for a command to answer; `play` and `new` load or save a state first (the fork allows them 30 s).
 DEFAULT_TIMEOUT = 10.0
@@ -102,6 +105,30 @@ class DebugClient:
         except OSError as error:
             raise DebugServerError(f"no debug server on port {port} ({error}); is PCSX2 running a game?") from error
         self.buffer = b""
+
+    @classmethod
+    def claimed(cls, agent: str, copy: str | None = None, registry: Registry | None = None) -> DebugClient:
+        """A client bound to the copy `agent` has claimed (`copy` names it when the agent holds several), the way to
+        reach a debug server from your own script: it connects to the debug port of your claim only, and refuses a
+        copy another agent holds with a ClaimError before it opens any connection. Raises DebugServerError when the
+        copy's debug server is off or not answering."""
+        from coney_tools import pcsx2_claims  # not at import: the claim layer is only needed here
+
+        registry = registry or pcsx2_claims.default_registry()
+        if copy is None:
+            held = [claim.copy for claim in registry.held_by(agent)]
+            if not held:
+                raise pcsx2_claims.ClaimError(
+                    f"{agent} holds no PCSX2 copy: run `coney-tools pcsx2 claim --agent {agent}` first"
+                )
+            if len(held) > 1:
+                raise pcsx2_claims.ClaimError(f"{agent} holds {', '.join(held)}: name one (copy=...)")
+            copy = held[0]
+        port = registry.copy(copy).debug
+        if port is None:
+            raise DebugServerError(f"{copy}: the debug server is off in its PCSX2.ini (`pcsx2 setup-copies` sets it)")
+        registry.require_ports([agent], debug_port=port)
+        return cls(port)
 
     def close(self) -> None:
         """Close the connection."""

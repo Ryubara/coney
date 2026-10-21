@@ -125,11 +125,19 @@ def make_pcsx2_server(folder: Path) -> Path:
     return script
 
 
+def test_pcsx2_server_requires_the_agent_argument_so_each_agent_has_its_own_connection(tmp_path: Path) -> None:
+    make_pcsx2_server(tmp_path)
+    _, extra = server_command("pcsx2", paths(pcsx2_mcp_dir=tmp_path), which_all, {})
+    assert extra == {"PCSX2_REQUIRE_AGENT": "1"}
+    _, ghidra = server_command("ghidra-mcp", paths(ghidra_mcp_repo=tmp_path), which_all, {"UV": "/bin/uv"})
+    assert "PCSX2_REQUIRE_AGENT" not in ghidra
+
+
 def test_pcsx2_with_a_copy_passes_its_ports(tmp_path: Path) -> None:
     make_pcsx2_server(tmp_path)
     copy = pcsx2_claims.Copy("pcsx2-c", tmp_path / "pcsx2-c", 28013, debug=21514)
     _, extra = server_command("pcsx2", paths(pcsx2_mcp_dir=tmp_path), which_all, {}, copy)
-    assert extra == {"PCSX2_DEBUG_PORT": "21514", "PCSX2_PINE_PORT": "28013"}
+    assert extra == {"PCSX2_REQUIRE_AGENT": "1", "PCSX2_DEBUG_PORT": "21514", "PCSX2_PINE_PORT": "28013"}
 
 
 def test_pcsx2_with_a_copy_without_a_debug_server_says_so(tmp_path: Path) -> None:

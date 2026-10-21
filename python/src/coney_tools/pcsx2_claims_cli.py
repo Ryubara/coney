@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools pcsx2 claim | release | status | keys | screenshot` commands (the claims are in pcsx2_claims.py,
-the Win32 calls in pcsx2_proc.py). Nothing here focuses a window: keys are posted to a window's handle and screenshots
-read it by handle, so the user keeps the keyboard."""
+"""The `coney-tools pcsx2 claim | release | status | check-ports | keys | screenshot` commands (the claims are in
+pcsx2_claims.py, the Win32 calls in pcsx2_proc.py). Nothing here focuses a window: keys are posted to a window's
+handle and screenshots read it by handle, so the user keeps the keyboard."""
 
 from __future__ import annotations
 
@@ -116,6 +116,15 @@ def run_status(as_json: bool, max_age_hours: float | None) -> int:
     unclaimed = [r.copy.name for r in rows if r.claim is None and r.running]
     if unclaimed:
         print(f"note: {', '.join(unclaimed)} run PCSX2 without a claim; whoever started it should claim it")
+    return 0
+
+
+def run_check_ports(agent: str, debug_port: int | None, pine_port: int | None) -> int:
+    """`pcsx2 check-ports`: succeed only when the ports are those of one copy that `agent` holds. Run it before pointing
+    a client (the pcsx2 MCP server's `pcsx2_connect`, a script) at ports you were given or read: a copy another agent
+    holds is refused with a ClaimError (exit 2) naming its holder."""
+    claim = claims.default_registry().require_ports([agent], debug_port=debug_port, pine_port=pine_port)
+    print(f"ok: {agent} holds {claim.copy}")
     return 0
 
 

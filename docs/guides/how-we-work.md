@@ -196,7 +196,8 @@ to the merged result, is in [From research to code](research-to-code.md).
   debug server port, so several engineers can run the game at once. A copy is used only inside a claim:
   `coney-tools pcsx2 claim --agent <id>` hands out a free copy and its two ports, `pcsx2 release` frees it, `pcsx2
   status` shows who holds what, and a claim whose process died is taken over; an agent connects the `pcsx2` MCP server
-  to its own copy's ports only ([Driving PCSX2](research-workflow.md#driving-pcsx2), [Agents](agents.md#setup)).
+  to its own copy's ports only, which a hook checks at the connect ([Driving PCSX2](research-workflow.md#driving-pcsx2),
+  [Agents](agents.md#setup), [the PCSX2 MCP guard](agents.md#pcsx2-guard)).
 - **Input without the keyboard.** The game is driven by writing pad state into its memory over PINE (the
   `scripted-pad`, `right-stick` and `puppet` patches), with analog sticks at realistic partial deflections, or by the
   debug server's pad and PCSX2's own input recordings, which replay a run exactly. No tool brings PCSX2 to

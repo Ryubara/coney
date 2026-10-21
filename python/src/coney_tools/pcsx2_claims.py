@@ -23,7 +23,7 @@ import re
 import socket
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -432,3 +432,52 @@ class Registry:
             holder = "nobody" if claim is None else claim.agent
             raise ClaimError(f"{name} is held by {holder}, not {agent}; claim it first")
         return claim
+
+    def require_ports(
+        self,
+        agents: Collection[str],
+        debug_port: int | None = None,
+        pine_port: int | None = None,
+    ) -> Claim:
+        """The live claim that one of `agents` (the ids a caller goes by) holds on the copy the given ports belong to,
+        or ClaimError. This is what keeps an agent off a copy it has not claimed: a port is only a number, and every
+        copy's ports are readable by anyone (`pcsx2 status`, the ini), so whoever connects a debug client or the
+        `pcsx2` MCP server to ports checks them here first. Each given port must be its copy's debug server or PINE
+        port, both must belong to the same copy, and that copy's claim must be held (not stale) by one of `agents`."""
+        if debug_port is None and pine_port is None:
+            raise ClaimError(
+                "the call names no port: give the debug server port and the PINE port of your claimed copy"
+            )
+        rows = self.status()
+        found: dict[str, Row] = {}
+        for kind, port in (("debug server", debug_port), ("PINE", pine_port)):
+            if port is None:
+                continue
+            row = next((r for r in rows if (r.copy.debug if kind == "debug server" else r.copy.port) == port), None)
+            if row is None:
+                known = ", ".join(f"{r.copy.name} {r.copy.debug}/{r.copy.port}" for r in rows)
+                raise ClaimError(f"port {port} is the {kind} port of no PCSX2 copy (copies, debug/PINE: {known})")
+            found[row.copy.name] = row
+        if len(found) > 1:
+            raise ClaimError(
+                f"the debug server port {debug_port} and the PINE port {pine_port} belong to two different copies "
+                f"({', '.join(found)}); use the two ports `coney-tools pcsx2 claim --agent <your id>` prints"
+            )
+        (row,) = found.values()
+        who = ", ".join(sorted(agents)) or "nobody"
+        if row.claim is None:
+            raise ClaimError(
+                f"{row.copy.name} is not claimed: run `coney-tools pcsx2 claim --agent <your id>` and use the ports "
+                "it prints"
+            )
+        if row.stale:
+            raise ClaimError(
+                f"the claim of {row.claim.agent} on {row.copy.name} is stale (no process of it lives); claim the copy "
+                "again with `coney-tools pcsx2 claim --agent <your id>`"
+            )
+        if row.claim.agent not in agents:
+            raise ClaimError(
+                f"{row.copy.name} is held by {row.claim.agent}, not {who}: another agent is using that PCSX2; "
+                "claim a copy of your own with `coney-tools pcsx2 claim --agent <your id>`"
+            )
+        return row.claim

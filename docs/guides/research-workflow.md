@@ -338,7 +338,9 @@ render`.
   false` so the user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim`
   and `status` warn when it is on. Claims live in `pcsx2-claims/` of the main checkout's shared scratch folder
   (`../../scratch`), never a worktree's own `scratch_dir`, so every worktree sees them (`pcsx2_root` and
-  `pcsx2_claims_dir` in `coney.local.toml` move the copies and the claims).
+  `pcsx2_claims_dir` in `coney.local.toml` move the copies and the claims). **Act only on your own copy:** the ports
+  of every copy are readable, but a client may use only the ports of the claim it holds ([The PCSX2 MCP
+  guard](agents.md#pcsx2-guard) says what is enforced and what to check yourself).
 - **What PINE gives.** Memory reads and writes, game info, the emulator's status and save/load state slots; no
   breakpoints, registers, pause or frame capture. PCSX2 serves **one PINE client at a time**: a second client (`pcsx2
   record`, a script of your own) blocks while another is connected, so the MCP server connects in `mode: "debug"`,
@@ -351,7 +353,8 @@ render`.
   whole state, held until the next call), `pcsx2_screenshot` (a PNG at internal resolution in the copy's `snaps/`),
   `pcsx2_capture` (PCSX2's video capture), `pcsx2_gs_dump` (a GS dump of N frames), save and load state, and
   `pcsx2_input_recording` (below). The MCP server connects to nothing at start: `pcsx2_connect` with your claim's
-  `debug_port` and `pine_port` picks the copy ([Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
+  `debug_port` and `pine_port` picks the copy, and **every `pcsx2_*` call carries `agent: "<your id>"`** (the id you
+  claimed with; it names your connection, [Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
   speaks the same protocol itself (`repo:python/src/coney_tools/debug_server.py`).
 - <span id="input-recordings"></span>**Input recordings.** PCSX2's own `.p2m2` files hold every frame's pad state from
   a start savestate (`<file>.p2m2_SaveState.p2s` beside it) or from power-on, so a run's input repeats exactly.
