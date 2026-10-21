@@ -1,5 +1,5 @@
 # Missions: the status list. The pages docs/missions/ are generated from this file by
-# `coney-tools missions render`; everything here is hand-kept. An engineer updates it in the same commit as
+# `coney-tools missions render`; everything here is hand-kept. A contributor updates it in the same commit as
 # mission work (docs/guides/research-workflow.md#missions). Our own words only: no game text or dialogue. A mission's
 # title is not kept here: it is the level's `title` in research/references/levels.yaml (read from the disc). `label`
 # is the slot's name ("Mission 2"). `summary_source` is research (our findings), disc, web or mixed; a web summary
