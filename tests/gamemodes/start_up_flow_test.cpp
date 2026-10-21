@@ -42,6 +42,7 @@
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
 #include "support/scene_fixtures.h"
+#include "support/test_paths.h"
 #include "warriors/disk_profile_store.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_record.h"
@@ -359,7 +360,7 @@ TEST_CASE("start-up with scripts: the debug menus' jump starts a level at its ch
 TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level request, and back to the menus",
           "[start_up]") {
     // STORY with a new profile (tests/support/story_new_profile.txt): the menus are done on frame 419, then fade out.
-    ScriptedRun run(coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value());
+    ScriptedRun run(coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt").value());
     run.frames(420);
     CHECK(run.flow->profileManager().session().done);
     CHECK(run.flow->levelFlow().levelRequests().empty());
@@ -379,7 +380,7 @@ TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level reques
 TEST_CASE("start-up with scripts: a new story profile is saved to the profile folder and read back", "[start_up]") {
     const coney::test::TempDir folder;
     {
-        ScriptedRun run(coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value(),
+        ScriptedRun run(coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt").value(),
                         folder.path());
         CHECK(run.flow->profiles().count() == 0);
         run.frames(446);

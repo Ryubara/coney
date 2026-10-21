@@ -24,6 +24,7 @@
 #include "debug/play_controls.h"
 #include "hud/hud.h"
 #include "human/climb.h"
+#include "support/test_paths.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -336,7 +337,7 @@ TEST_CASE("the Debug draw page switches the session's debug lines", "[debug]") {
 TEST_CASE("the Levels page lists the sandbox layouts and asks for the one chosen", "[debug][sandbox]") {
     TunableRegistry tunables;
     DebugServices services;
-    services.sandboxFolder = std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox";
+    services.sandboxFolder = coney::test::assetsDir() / "sandbox";
     std::vector<std::string> asked;
     services.loadSandbox = [&asked](std::string_view name) {
         asked.emplace_back(name);

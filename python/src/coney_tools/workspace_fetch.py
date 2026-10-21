@@ -29,7 +29,7 @@ from coney_tools.config import ConfigError
 PLATFORMS: tuple[str, ...] = ("windows", "linux", "macos")
 
 #: The tools `--fetch` accepts, in the order they are fetched.
-TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp")
+TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "ccache")
 
 #: The tools installed as a git clone at a pinned commit rather than from a release archive.
 CLONED: frozenset[str] = frozenset({"ghidra-mcp", "pcsx2-mcp"})
@@ -94,11 +94,23 @@ PCSX2_MCP = Pin(
     "PCSX2-MCP (fork, source)", "2.9.129", f"{_GH}/Ryubara/PCSX2-MCP", "974cf222e0104a93facf8f70d4e5f4f64a7a23e5"
 )
 
-#: The pins of each tool for a platform.
+#: The compiler cache `coney-tools build` puts in front of the compiler (compiler_cache.py). Only Windows has no
+#: package of it, so only Windows fetches it: the official release, the same version and digest as CI's
+#: (.github/actions/ccache/action.yml; a test keeps the two equal). Linux and macOS install it with apt or Homebrew.
+CCACHE_VERSION = "4.14.1"
+CCACHE_WINDOWS = Pin(
+    "ccache",
+    CCACHE_VERSION,
+    f"{_GH}/ccache/ccache/releases/download/v{CCACHE_VERSION}/ccache-{CCACHE_VERSION}-windows-x86_64.zip",
+    "6219f3865ca59aec41ee4b678df171d5d35855ecb2b6dbbbd20690b3a68af7b4",
+)
+
+#: The pins of each tool for a platform (none: the platform's package manager installs it).
 PINS: dict[str, Callable[[str], list[Pin]]] = {
     "ghidra": lambda platform: [GHIDRA, GHIDRA_EE],
     "ghidra-mcp": lambda platform: [GHIDRA_MCP],
     "pcsx2-mcp": lambda platform: [PCSX2_MCP],
+    "ccache": lambda platform: [CCACHE_WINDOWS] if platform == "windows" else [],
 }
 
 #: Where each tool goes, relative to the workspace (docs/guides/workspace.md#the-layout), and so what
@@ -107,6 +119,7 @@ _DESTINATIONS = {
     "ghidra": f"tools/ghidra_{GHIDRA_VERSION}_PUBLIC",
     "ghidra-mcp": "tools/ghidra-mcp",
     "pcsx2-mcp": "tools/pcsx2-mcp",
+    "ccache": f"tools/ccache-{CCACHE_VERSION}",
 }
 
 
@@ -243,12 +256,20 @@ def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, 
         unpack(files[0], dest)
         unpack(files[1], dest / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded")
         return
+    if tool == "ccache" and files:
+        unpack(files[0], dest)  # the release's one folder is stripped: dest/ccache.exe
+        return
     raise ConfigError(f"unknown tool {tool!r} on {platform}")
 
 
 def describe(tool: str, platform: str) -> str:
     """One line naming what `tool` fetches on `platform`."""
     return ", ".join(f"{pin.name} {pin.version}" for pin in PINS[tool](platform))
+
+
+def packaged(tool: str, platform: str) -> bool:
+    """Whether `tool` comes from the platform's package manager there, so `--fetch` has nothing to download."""
+    return tool not in CLONED and not PINS[tool](platform)
 
 
 def platform_name() -> str:

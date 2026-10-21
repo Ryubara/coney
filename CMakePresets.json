@@ -28,7 +28,7 @@
       "name": "cacheable",
       "hidden": true,
       "inherits": "embedded-debug-info",
-      "description": "Compiles a compiler cache can store (docs/guides/building.md#ci-caches): embedded debug info, and no precompiled headers (SDL3's made its 265 sources uncacheable).",
+      "description": "Compiles a compiler cache can store (docs/guides/building.md#compiler-cache): embedded debug info, and no precompiled headers (SDL3's made its 265 sources uncacheable). Every preset inherits it: local builds share one ccache too.",
       "cacheVariables": {
         "CMAKE_DISABLE_PRECOMPILE_HEADERS": "ON"
       }
@@ -36,7 +36,7 @@
     {
       "name": "dev",
       "displayName": "Development (Debug)",
-      "inherits": ["base", "embedded-debug-info"],
+      "inherits": ["base", "cacheable"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -44,7 +44,7 @@
     {
       "name": "release",
       "displayName": "Release with debug info",
-      "inherits": ["base", "embedded-debug-info"],
+      "inherits": ["base", "cacheable"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }

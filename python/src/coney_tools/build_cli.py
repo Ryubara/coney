@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_claims, build_run, pcsx2_proc, process_lifetime
+from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
@@ -61,6 +61,15 @@ def add_parser(groups: Any) -> None:
         "--configure-only", action="store_true", help="configure and stop (no build): the compile database for check"
     )
     group.add_argument("--test", action="store_true", help="run ctest after a successful build")
+    group.add_argument(
+        "--target",
+        action="append",
+        default=[],
+        metavar="NAME",
+        dest="targets",
+        help="build only this target and what it needs (repeatable), e.g. `coney` for a play build without the "
+        "tests; not with --test",
+    )
     group.add_argument(
         "-R",
         "--regex",
@@ -229,6 +238,13 @@ def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     Returns the checkout and the environment of the run."""
     if not args.agent:
         raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
+    if args.targets and args.test:
+        raise ConfigError(
+            "--target with --test: the tests need coney_tests and coney rebuilt, which --target would leave stale; "
+            "drop --target to build everything, or --test to build only the targets"
+        )
+    if args.targets and args.configure_only:
+        raise ConfigError("--target with --configure-only: a configure builds no target")
     if not AGENT_NAME.match(args.agent):
         raise ConfigError(f"agent id {args.agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
     root = _root(args.dir)
@@ -254,6 +270,10 @@ def _build(
     numbers = _numbers(root)
     folder = build_dir if build_dir is not None else root / "build" / args.preset
     slots = build_claims.default_slots(MAIN_LANE, root)
+    cache = compiler_cache.find(root)
+    compiler_cache.write_config(cache)
+    stats_log = log_path.with_suffix(".ccache-stats")
+    env = {**env, **compiler_cache.environment(cache, root, stats_log, env)}
     options = build_run.Options(
         agent=args.agent,
         preset=args.preset,
@@ -268,6 +288,7 @@ def _build(
         max_wait=limits_minutes[0],
         budget=limits_minutes[1],
         jobs=args.jobs,
+        targets=tuple(args.targets),
     )
     print(f"log: {log_path}", flush=True)
     toolchain = build_run.ProcessToolchain(root, env)
@@ -287,11 +308,41 @@ def _build(
             checkout_lock=build_claims.folder_lock(folder, root),
             configured_now=lambda: (folder / "CMakeCache.txt").is_file(),
             history=History(slots.claims_dir / FILE_NAME),
+            cached=cache.on,
+            cache_report=lambda: cache_line(cache, folder, stats_log, toolchain),
         )
         result = build_run.execute(options, context)
     for line in result.summary:
         print(line)
     return result
+
+
+def cache_line(
+    cache: compiler_cache.CompilerCache, folder: Path, stats_log: Path, toolchain: build_run.Toolchain
+) -> str | None:
+    """The summary's line on the compiler cache after a build: this run's hits and misses (read from its own stats log,
+    which is then removed), why the cache is off, or that the folder was configured without it (CMake takes the
+    launcher only when it first configures a folder). None when the build compiled nothing."""
+    if not cache.on:
+        reason = cache.missing or "ccache_size_gb is 0"
+        return f"compiler cache: off ({reason})"
+    stats = None
+    if stats_log.is_file() and cache.program is not None:
+        code, output = toolchain.capture([str(cache.program), "--print-log-stats"], None)
+        stats = compiler_cache.parse_stats(output) if code == 0 else None
+        stats_log.unlink(missing_ok=True)
+    if stats is not None:
+        return stats.line()
+    try:
+        configured = (folder / "CMakeCache.txt").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    if "CMAKE_CXX_COMPILER_LAUNCHER" not in configured:
+        return (
+            f"compiler cache: not used ({folder.name} was configured before the cache was on; delete the folder to "
+            "build with it)"
+        )
+    return None
 
 
 def _child_command(
@@ -310,6 +361,8 @@ def _child_command(
     command += [flag for flag, on in switches if on]
     for flag, value in (("-R", args.regex), ("-L", args.label), ("--build-dir", args.build_dir), ("-j", args.jobs)):
         command += [flag, str(value)] if value is not None else []
+    for target in args.targets:
+        command += ["--target", target]
     for setting in args.env:
         command += ["--env", setting]
     return [*command, "--log-file", str(log), "--result-file", str(result)]

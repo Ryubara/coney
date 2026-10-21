@@ -53,6 +53,7 @@
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "support/test_paths.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world/sector_budget.h"
@@ -156,7 +157,7 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
     // STORY with a new profile through the real screens (tests/support/story_new_profile.txt, as `coney --input-script`
     // plays it); then, in level99, the left stick at 35 % forward for two seconds and at a 30/65 diagonal for two more,
     // then let go.
-    auto script = coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt");
+    auto script = coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt");
     auto walk = coney::parseInputScript("490 stick left 0 35\n"
                                         "550 stick left 30 65\n"
                                         "610 stick left 0 0\n");

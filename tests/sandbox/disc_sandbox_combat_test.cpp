@@ -37,6 +37,7 @@
 #include "human/player.h"
 #include "human/target_human.h"
 #include "sandbox/sandbox_world.h"
+#include "support/test_paths.h"
 
 using coney::human::TargetState;
 
@@ -63,7 +64,7 @@ Yard loadYard(const char* discPath) {
     auto character = coney::human::PlayerCharacter::load(discWad, table, coney::human::kPlayerModel);
     REQUIRE(character.has_value());
     yard.character = std::move(*character);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", "combat");
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
     REQUIRE(world->collision() != nullptr);
     yard.world = std::make_unique<coney::sandbox::SandboxWorld>(std::move(*world));
@@ -115,7 +116,7 @@ bool inOrder(const std::vector<std::uint32_t>& clips, const std::vector<std::uin
 // Runs `frames` frames of the input script `name` (in tests/support): a fresh player at the yard's first spawn and the
 // front target, stepped after him; prints the clips, counts and a hash.
 Fight runFight(const Yard& yard, const char* label, const std::string& name, std::uint64_t frames) {
-    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / name;
+    const std::filesystem::path path = coney::test::testSupportDir() / name;
     auto events = coney::loadInputScript(path.string());
     REQUIRE(events.has_value());
     coney::ScriptedInput input(std::move(*events));

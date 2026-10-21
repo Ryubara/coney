@@ -53,6 +53,7 @@
 #include "scripting/config_strings.h"
 #include "support/disc_play_fixtures.h"
 #include "support/level99_lessons.h"
+#include "support/test_paths.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -164,7 +165,7 @@ TEST_CASE("the disc's STORY level99: hints bleep, the Rudy scene's humans shuffl
     flow->hud().setSoundOutput([&sounds](std::string_view name) { sounds.play(name); });
 
     // STORY with a new profile through the real screens, until gameplay starts.
-    auto menus = coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt");
+    auto menus = coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt");
     REQUIRE(menus.has_value());
     coney::ScriptedInput menuPad(std::move(menus).value_or(std::vector<coney::InputEvent>{}));
     stack.setInput(&menuPad);

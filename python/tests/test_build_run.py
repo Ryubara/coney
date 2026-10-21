@@ -7,7 +7,7 @@ returns canned output."""
 
 import io
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pytest
@@ -435,8 +435,8 @@ class FakeToolchain:
         self.commands.append(command)
         return self.output[self.kind(command)]
 
-    def dry_run(self, directory: Path) -> tuple[int, str]:
-        command = ["ninja", "-n", "-d", "explain"]
+    def dry_run(self, directory: Path, targets: Sequence[str] = ()) -> tuple[int, str]:
+        command = ["ninja", "-n", "-d", "explain", *targets]
         self.commands.append(command)
         return self.output["ninja"]
 
@@ -1318,3 +1318,48 @@ def test_a_short_queue_estimate_waits_as_before(tmp_path: Path) -> None:
 
     run.on_sleep.append(free_a_slot)
     assert run.go().ok
+
+
+# -- --target and the compiler cache ------------------------------------------------------------------------------
+
+
+def test_targets_are_built_and_measured_alone_and_kept_apart_in_the_history(tmp_path: Path) -> None:
+    run = Run(tmp_path, targets=("coney",))
+    run.history = History(tmp_path / "claims" / "durations.json")
+    result = run.go()
+    assert result.ok and result.summary[0].startswith("build coney: ok")
+    assert ["ninja", "-n", "-d", "explain", "coney"] in run.toolchain.commands  # the fast lane's measure
+    build = next(c for c in run.toolchain.commands if "--build" in c)
+    assert build[build.index("--target") :][:2] == ["--target", "coney"]
+    assert run.history.expected(step_key("dev", "build", "fast:coney")) is not None
+    assert run.history.expected(step_key("dev", "build", "fast")) is None
+
+
+def test_a_cached_build_has_its_own_history_and_reports_the_cache(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    run.history = History(tmp_path / "claims" / "durations.json")
+
+    def go() -> build_run.Result:
+        context = Context(
+            slots=run.main,
+            fast=run.fast,
+            toolchain=run.toolchain,
+            emit=run.lines.append,
+            log=run.log,
+            pid=1,
+            cpus=16,
+            fast_steps=50,
+            fast_tests=20,
+            configured=True,
+            history=run.history,
+            cached=True,
+            cache_report=lambda: "compiler cache: 2 hits, 0 misses (100.0 %)",
+        )
+        return execute(run.options, context)
+
+    result = go()
+    assert result.ok and result.summary[1] == "compiler cache: 2 hits, 0 misses (100.0 %)"
+    assert run.history.expected(step_key("dev", "build", "fast+ccache")) is not None
+    run.toolchain.output["build"] = (1, "FAILED: a.obj\n/w/a.cpp:1:1: error: boom\n")
+    failed = go()
+    assert not failed.ok and failed.summary[1] == "compiler cache: 2 hits, 0 misses (100.0 %)"

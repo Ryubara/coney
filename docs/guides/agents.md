@@ -243,6 +243,10 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   whole suite; the first build in a fresh worktree and a full test run are the big jobs. `-L disc` runs only the tests
   that need the game's disc. `-R` is a CMake regular expression: escape `.` `+` `(` `)` with a backslash and quote it
   with single quotes ([Choosing tests](coney-tools.md#build)).
+- **A play build is `--target coney`.** It builds the executable and what it links, not the tests; it cannot be
+  combined with `--test`. Every build goes through the shared [compiler cache](building.md#compiler-cache), so the
+  first build of a fresh worktree takes most of its objects from builds other worktrees already ran, and its summary
+  prints the hits.
 - **One run per build folder.** A second `build` in the same checkout and preset waits for the first (it prints who
   holds the folder), so start a build and its tests as one `--test` run rather than two commands, and never run two at
   once in one worktree. Each run writes a log of its own, named for the preset, the agent and the time; read the path

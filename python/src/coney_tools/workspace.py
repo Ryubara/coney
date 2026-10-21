@@ -14,17 +14,18 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 
-from coney_tools import workspace_fetch
+from coney_tools import compiler_cache, workspace_fetch
 from coney_tools.config import EXAMPLE_FILE, LOCAL_FILE, ConfigError, find_repo_root, load_config, main_checkout
 from coney_tools.workspace_checks import Check, check_prerequisites, run_command
 
 #: The folders of the workspace, relative to its root (docs/guides/workspace.md#the-layout).
-WORKSPACE_DIRS: tuple[str, ...] = ("repos", "worktrees", "scratch", "game", "emulators", "tools", "ghidra")
+WORKSPACE_DIRS: tuple[str, ...] = ("repos", "worktrees", "scratch", "cache", "game", "emulators", "tools", "ghidra")
 
 #: Where the checkout sits in the workspace; coney.local.toml's `../../` defaults rely on this depth.
 CHECKOUT = Path("repos") / "coney"
@@ -103,6 +104,17 @@ def gather_checks(jdk_home: Path | None) -> list[Check]:
     return check_prerequisites(workspace_fetch.platform_name(), shutil.which, run_command, os.environ, jdk_home)
 
 
+def ccache_check(checkout: Path) -> Check:
+    """The optional check of the compiler cache `coney-tools build` uses (compiler_cache.py): the engine builds
+    without it, only slower."""
+    hint = "coney-tools workspace init --fetch ccache" if sys.platform == "win32" else "apt or brew install ccache"
+    if not (checkout / EXAMPLE_FILE).is_file():
+        return Check("ccache (compiler cache)", False, "no checkout yet", hint, False)
+    cache = compiler_cache.find(checkout)
+    detail = str(cache.program) if cache.program is not None else cache.missing
+    return Check("ccache (compiler cache)", cache.program is not None, detail, hint, False)
+
+
 def _relative(layout: Layout, path: Path) -> str:
     """`path` as shown to the user: relative to the workspace when inside it."""
     return path.relative_to(layout.workspace).as_posix() if path.is_relative_to(layout.workspace) else str(path)
@@ -146,6 +158,9 @@ def plan(layout: Layout, repo_url: str | None, fetch: Sequence[str], platform: s
     cache = layout.workspace / "scratch" / "downloads"
     for tool in fetch:
         dest = workspace_fetch.tool_destination(tool, layout.workspace)
+        if workspace_fetch.packaged(tool, platform):
+            steps.append(Step("skip", f"{tool}: install it with your package manager (docs/guides/building.md)", None))
+            continue
         if dest.exists():
             steps.append(Step("exists", _relative(layout, dest), None))
             continue
@@ -227,6 +242,7 @@ def run_init(cwd: Path, workspace: Path | None, repo_url: str | None, fetch: Seq
         else:
             print(f"  {step.verb:<8}{step.target}", flush=True)
             step.action()
+    checks = [*checks, ccache_check(layout.checkout)]  # after the steps, so a ccache this run fetched counts
     _print_checks(checks)
     _print_next(layout, tools)
     return 1 if any(check.required and not check.ok for check in checks) else 0

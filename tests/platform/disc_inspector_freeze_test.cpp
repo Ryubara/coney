@@ -33,6 +33,7 @@
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
 #include "scripting/config_strings.h"
+#include "support/test_paths.h"
 
 namespace {
 
@@ -88,7 +89,7 @@ bool openYard(Yard& yard) {
     coney::platform::PlayerSetup setup;
     setup.ai = coney::ai::aiConfigFrom(run.recorded);
     setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", "combat");
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
     auto made = coney::platform::PlayLevelMode::createInSandbox(
         *yard.engine, *yard.wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);

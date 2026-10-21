@@ -29,7 +29,7 @@ import shutil
 import subprocess
 import sys
 from collections import deque
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, TextIO
@@ -372,8 +372,9 @@ class Toolchain(Protocol):
         """Run a short command (in `cwd`, else the checkout) and return its exit code and output."""
         ...
 
-    def dry_run(self, directory: Path) -> tuple[int, str]:
-        """`ninja -n -d explain` of the build folder, on a copy of its manifest (see ProcessToolchain.dry_run)."""
+    def dry_run(self, directory: Path, targets: Sequence[str] = ()) -> tuple[int, str]:
+        """`ninja -n -d explain` of the build folder (of `targets` only, when given), on a copy of its manifest (see
+        ProcessToolchain.dry_run)."""
         ...
 
 
@@ -486,18 +487,19 @@ class ProcessToolchain:
             return 127, str(error)
         return done.returncode, done.stdout + done.stderr
 
-    def dry_run(self, directory: Path) -> tuple[int, str]:
-        """`ninja -n -d explain` of the build folder, run on a copy of `build.ninja`. The project's globs are
-        CONFIGURE_DEPENDS, so ninja always wants to re-run CMake first, and a dry run stops there having planned
-        nothing; the copy is not an output of any step, so ninja has no manifest to rebuild and goes on. The copy sits
-        in the build folder (the manifest's paths are relative to it) and is removed again."""
+    def dry_run(self, directory: Path, targets: Sequence[str] = ()) -> tuple[int, str]:
+        """`ninja -n -d explain` of the build folder, run on a copy of `build.ninja`, for `targets` only when given
+        (`--target`). The project's globs are CONFIGURE_DEPENDS, so ninja always wants to re-run CMake first, and a dry
+        run stops there having planned nothing; the copy is not an output of any step, so ninja has no manifest to
+        rebuild and goes on. The copy sits in the build folder (the manifest's paths are relative to it) and is removed
+        again."""
         probe = directory / f".coney-probe-{os.getpid()}.ninja"
         try:
             shutil.copyfile(directory / "build.ninja", probe)
         except OSError as error:
             return 127, str(error)
         try:
-            return self.capture(["ninja", "-n", "-d", "explain", "-f", probe.name], directory)
+            return self.capture(["ninja", "-n", "-d", "explain", "-f", probe.name, *targets], directory)
         finally:
             probe.unlink(missing_ok=True)
 
@@ -529,6 +531,8 @@ class Options:
     budget: float = 0.0
     #: Parallel jobs; None shares the cores between the slots.
     jobs: int | None = None
+    #: The targets to build (`--target`, such as `coney` for a play build); empty: everything.
+    targets: tuple[str, ...] = ()
 
     @property
     def folder(self) -> Path:
@@ -574,6 +578,11 @@ class Context:
     history: History | None = None
     #: When the call started (the clock of `slots`), the start of the budget; set by `execute` when None.
     call_started: float | None = None
+    #: Whether the compiler cache is on for this run (compiler_cache.py): a build's history is kept apart then, as a
+    #: build that takes its objects from the cache is several times faster than one that compiles them.
+    cached: bool = False
+    #: The summary line on the compiler cache after the build step (its hits and misses), or None for none.
+    cache_report: Callable[[], str | None] | None = None
 
 
 @dataclass
@@ -677,10 +686,14 @@ class _Phase:
 
     def size_of(self, step: str) -> str:
         """The size part of a step's history key: a configure is always "main" (it does the same work in either lane),
-        a build its lane, a test run "full" or "filtered"."""
+        a build its lane, then `:` and its targets when it builds only some (`main:coney`), then `+ccache` when the
+        compiler cache is on; a test run "full" or "filtered"."""
         if self.size is not None:
             return self.size
-        return MAIN_LANE if step == "configure" else self.lane_name
+        if step == "configure":
+            return MAIN_LANE
+        targets = ":" + "+".join(sorted(self.options.targets)) if self.options.targets else ""
+        return self.lane_name + targets + ("+ccache" if self.context.cached else "")
 
     def run(self, steps: list[tuple[str, list[str], Callable[[str], None]]]) -> list[tuple[str, int, float]]:
         """Hold a slot and run each (step, command, line handler); returns (step, exit code, seconds) for each step
@@ -788,7 +801,7 @@ def _choose_build_lane(options: Options, context: Context) -> tuple[str, int | N
     code, _ = context.toolchain.capture(["ninja", "build.ninja"], options.folder, REFRESH_SECONDS)
     if code != 0:
         return MAIN_LANE, None
-    code, output = context.toolchain.dry_run(options.folder)
+    code, output = context.toolchain.dry_run(options.folder, options.targets)
     steps = count_dirty_steps(output) if code == 0 else None
     return (FAST_LANE if steps is not None and steps < context.fast_steps else MAIN_LANE), steps
 
@@ -878,8 +891,9 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         configure = ["cmake", "--preset", options.preset, *(["-B", str(options.build_dir)] if custom else [])]
         build_steps.append(("configure", configure, build_line))
     if not options.configure_only:
-        target = [str(options.build_dir)] if custom else ["--preset", options.preset]
-        build_steps.append(("build", ["cmake", "--build", *target, "-j", jobs], build_line))
+        folder = [str(options.build_dir)] if custom else ["--preset", options.preset]
+        targets = ["--target", *options.targets] if options.targets else []
+        build_steps.append(("build", ["cmake", "--build", *folder, *targets, "-j", jobs], build_line))
     note("measuring")
     lane, measured = _choose_build_lane(options, context)
     if measured is not None:
@@ -888,12 +902,16 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     ran = phase.run(build_steps)
     if phase.queued is not None:
         return _gave_up(result, "build", phase.queued)
+    built = " " + " ".join(options.targets) if options.targets else ""
     for step, code, seconds in ran:
+        name = step + (built if step == "build" else "")
         if code == 0:
             where = f" ({phase.lane_text(measured)})" if step == "build" or len(ran) == 1 else ""
-            result.summary.append(f"{step}: ok in {_duration(seconds)}{where}")
+            result.summary.append(f"{name}: ok in {_duration(seconds)}{where}")
+            _report_cache(result, context, step)
         else:
-            result.summary.append(f"{step}: FAILED (exit {code}) in {_duration(seconds)} ({phase.lane_text(measured)})")
+            result.summary.append(f"{name}: FAILED (exit {code}) in {_duration(seconds)} ({phase.lane_text(measured)})")
+            _report_cache(result, context, step)
             result.summary += _failure_lines(scan)
             if step == "configure":
                 result.summary.append("build: not run")
@@ -940,6 +958,13 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     if outside:
         result.summary.append("  " + OUTSIDE.format(what="test"))
     return _failed(result, "test", False, "test" if outside else "", names[:3])
+
+
+def _report_cache(result: Result, context: Context, step: str) -> None:
+    """Add the compiler cache's line (this build's hits and misses) once the build step has run."""
+    line = context.cache_report() if context.cache_report is not None and step == "build" else None
+    if line:
+        result.summary.append(line)
 
 
 def _failed(

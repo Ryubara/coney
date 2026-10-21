@@ -12,6 +12,7 @@ Coney/                          the workspace (a plain folder, not a repository)
   repos/coney/                  the main checkout; agent sessions start here
   worktrees/coney/<branch>/     every worktree, and nowhere else
   scratch/                      captures, dumps, tool output, leftovers; never committed
+  cache/ccache/                 the compiler cache every checkout's builds share (building.md#compiler-cache)
   game/                         your disc image and files extracted from it
   emulators/pcsx2, pcsx2-b, ... portable PCSX2 copies of the PCSX2-MCP fork build (plus BIOS), one per agent
   tools/                        local installs: Ghidra (with the EE extension), RenderDoc, a JDK if needed
@@ -60,8 +61,9 @@ the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Insi
    JDK 21, and `ghidra_mcp_repo` and `pcsx2_mcp_dir` when those tools are in `tools/` (`pcsx2_mcp_dir` names the
    newest fork build, `tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.N-win64`, when one is there);
 5. checks the prerequisites ([Building and testing](building.md#what-you-need)): Git, the C++ compiler, CMake 3.28+
-   and Ninja, which the engine needs, and a JDK 21 and Node.js 18+, which only the research tools need. It prints what
-   is missing and what to install; it installs none of it.
+   and Ninja, which the engine needs, and a JDK 21 and Node.js 18+, which only the research tools need, and ccache,
+   which makes builds faster but is not needed. It prints what is missing and what to install; it installs none of it
+   (ccache on Windows comes with `--fetch ccache`).
 
 Every step that is already done is skipped, so running it again is safe; an existing `coney.local.toml` is never
 changed. `--dry-run` prints the steps without doing any. `--workspace DIR` names the workspace instead of finding it
@@ -86,6 +88,7 @@ that would land outside the tool's folder is refused.
 | --- | --- | --- | --- |
 | `ghidra` | Ghidra 12.1.4, with the Emotion Engine extension v2.1.38 (built for 12.1.4) in its `Ghidra/Extensions/` | `tools/ghidra_12.1.4_PUBLIC` | Apache-2.0 both |
 | `ghidra-mcp` | ghidra-mcp's repository at the commit Coney was set up with (7.0.0 pre-release) | `tools/ghidra-mcp` | Apache-2.0 |
+| `ccache` | ccache 4.14.1, the [compiler cache](building.md#compiler-cache) `coney-tools build` uses; Windows only (the release CI's Windows job installs), on Linux and macOS install the `ccache` package with apt or Homebrew | `tools/ccache-4.14.1` | GPL-3.0 |
 | `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source | `tools/pcsx2-mcp` | GPL-3.0 |
 
 PCSX2 itself is not downloaded: every copy runs the fork's own build ([PCSX2 copies](#pcsx2-copies)).
@@ -173,6 +176,9 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
+| `ccache_dir` | `cache/ccache` in the main checkout's `../..` | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
+| `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
+| `ccache_size_gb` | `25` | a number: the compiler cache's size cap in GB (ccache drops the least recently used objects beyond it); `0` turns the cache off |
 | `scratch_dir` | `../../scratch` | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |

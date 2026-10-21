@@ -34,6 +34,7 @@
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
 #include "scripting/config_strings.h"
+#include "support/test_paths.h"
 
 namespace {
 
@@ -72,7 +73,7 @@ TEST_CASE("Change character rebuilds the player as another type where he stands"
     coney::platform::PlayerSetup setup;
     setup.ai = coney::ai::aiConfigFrom(run.recorded);
     setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", "combat");
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
     auto made = coney::platform::PlayLevelMode::createInSandbox(
         **engine, *wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);

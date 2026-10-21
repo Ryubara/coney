@@ -16,6 +16,7 @@ import pytest
 
 from coney_tools.config import ConfigError
 from coney_tools.workspace_fetch import (
+    CCACHE_VERSION,
     CLONED,
     PINS,
     PLATFORMS,
@@ -24,6 +25,7 @@ from coney_tools.workspace_fetch import (
     fetch_file,
     fetch_tool,
     newest_release,
+    packaged,
     tool_destination,
     unpack,
 )
@@ -245,3 +247,21 @@ def test_destinations_match_the_workspace_layout(tmp_path: Path) -> None:
     assert tool_destination("ghidra", tmp_path) == tmp_path / "tools" / "ghidra_12.1.4_PUBLIC"
     assert tool_destination("ghidra-mcp", tmp_path) == tmp_path / "tools" / "ghidra-mcp"
     assert tool_destination("pcsx2-mcp", tmp_path) == tmp_path / "tools" / "pcsx2-mcp"
+
+
+def test_ccache_is_fetched_on_windows_only_and_pinned_like_ci() -> None:
+    # One version for local builds and CI: the ccache action pins the same release and digest.
+    action = (Path(__file__).parents[2] / ".github" / "actions" / "ccache" / "action.yml").read_text(encoding="utf-8")
+    (pin,) = PINS["ccache"]("windows")
+    assert f"$version = '{CCACHE_VERSION}'" in action and f"$expected = '{pin.digest}'" in action
+    assert pin.version == CCACHE_VERSION and CCACHE_VERSION in pin.url
+    assert PINS["ccache"]("linux") == [] and packaged("ccache", "linux") and not packaged("ccache", "windows")
+
+
+def test_ccache_unpacks_to_a_folder_holding_the_program(tmp_path: Path) -> None:
+    archive = make_zip({"ccache-9-windows-x86_64/ccache.exe": b"x", "ccache-9-windows-x86_64/NEWS.md": b"n"})
+    pin = pin_for("ccache.zip", archive)
+    dest = tmp_path / "tools" / "ccache-9"
+    fetch_tool("ccache", dest, "windows", tmp_path / "cache", FakeWeb({pin.url: archive}), [pin])
+    assert (dest / "ccache.exe").is_file()
+    assert tool_destination("ccache", tmp_path) == tmp_path / "tools" / f"ccache-{CCACHE_VERSION}"

@@ -33,6 +33,7 @@
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
+#include "support/test_paths.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -94,7 +95,7 @@ struct PlayRun {
 /// otherwise interpolated, one frame per entry of `times` after the first at time 0.
 PlayRun play(coney::platform::RenderEngine& engine, const coney::io::Wad& wad, const std::string& script,
              const std::vector<std::uint64_t>& times, std::optional<std::uint64_t> stepLimit) {
-    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / script;
+    const std::filesystem::path path = coney::test::testSupportDir() / script;
     auto events = coney::loadInputScript(path.string());
     REQUIRE(events.has_value());
     coney::ScriptedInput input(std::move(*events));

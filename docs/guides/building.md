@@ -194,10 +194,10 @@ default `/Zi`, which has every compile write one shared PDB through `mspdbsrv`. 
 sharing a machine, or `-j` on a busy one) contend for that PDB and fail at random with `fatal error C1090: PDB API
 call failed, error code 23`; a rerun clears it, but costs a rebuild. With `/Z7` a compile never touches a shared
 file, so that contention cannot happen (the fix rests on this mechanism: how often the error came before was not
-measured), and a compiler cache can store the object ([Caches](#ci-caches)). Debugging works the same; the linker still
-writes the executable's PDB. The setting lives once, in the hidden `embedded-debug-info` preset of
-`CMakePresets.json`, which `dev`, `release` and the hidden `cacheable` preset inherit. `ci` and `asan` (through
-`cacheable`) also turn precompiled headers off, which a cache cannot use; `dev` and `release` keep them.
+measured), and a compiler cache can store the object ([Compiler cache](#compiler-cache), [Caches](#ci-caches)).
+Debugging works the same; the linker still writes the executable's PDB. The setting lives once, in the hidden
+`embedded-debug-info` preset of `CMakePresets.json`, which the hidden `cacheable` preset inherits, and every preset
+inherits `cacheable`, which also turns precompiled headers off, as a cache cannot use them.
 
 ## Sanitizers
 
@@ -466,8 +466,8 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
 - **What a cache can store.** MSVC's default `/Zi` writes every object's debug information into one shared PDB,
   which ccache refuses; every preset uses `/Z7` instead ([Debug information on MSVC](#debug-info)), so that is
-  settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so the `ci` and
-  `asan` presets also inherit the hidden `cacheable` preset, which turns `CMAKE_DISABLE_PRECOMPILE_HEADERS` on.
+  settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so every preset
+  inherits the hidden `cacheable` preset, which turns `CMAKE_DISABLE_PRECOMPILE_HEADERS` on.
 - **Sizes.** Each job's cap is 700 MB (`max-size` of the `ccache` action). Six jobs save (four `build`, two
   `sanitizers`): at most 6 × 0.7 = 4.2 GB, plus three dependency entries (one per OS, about 0.1 to 0.2 GB each) and
   the `setup-uv` caches (about 50 MB per OS), about 5 GB in all, half of the 10 GB. While a `main` run is between its

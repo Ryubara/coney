@@ -355,8 +355,6 @@ target_sources(coney_tests PRIVATE
     sandbox/sandbox_layout_test.cpp
     sandbox/sandbox_mesh_test.cpp
     sandbox/sandbox_world_test.cpp)
-# The shipped sandbox layouts are Coney's own (assets/sandbox), so the tests may read them.
-target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets")
 # The debug menus (docs/guides/debug-menu.md).
 target_sources(coney_tests PRIVATE
     debug/anim_catalog_test.cpp
@@ -426,8 +424,14 @@ target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-# Where the input scripts the disc tests play live.
-target_compile_definitions(coney_tests PRIVATE CONEY_TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/support")
+# The checkout's folders the tests read: the shipped sandbox layouts (Coney's own, assets/sandbox) and the input
+# scripts the disc tests play. Only support/test_paths.cpp gets them, never the whole target: they are absolute paths
+# of this checkout, and on every test file they made the command lines differ between worktrees, so the shared
+# compiler cache missed every test object (docs/guides/building.md#compiler-cache). A Python test refuses such a
+# definition on a target.
+target_sources(coney_tests PRIVATE support/test_paths.cpp)
+set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
+    "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\"")
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU).
 target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
 include(Catch)
