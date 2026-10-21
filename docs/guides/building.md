@@ -214,8 +214,8 @@ inherits `cacheable`, which also turns precompiled headers off, as a cache canno
 machine. Every agent's worktree is a fresh checkout of nearly the same sources, so without it each one compiled the
 whole engine, its thousand test files and the dependencies again; with it, the first build of a fresh worktree takes
 the objects another worktree already compiled. Measured on 2026-10-20 (Windows, MSVC 19.44, 16 cores, `dev` at
-`-j 3`, other agents' builds in the remaining slots; each row a fresh build folder, its logs kept with the track's
-scratch files):
+`-j 3`, no other agent building; the first two rows ran at the same time, each the other's only load; each row a
+fresh build folder, its logs kept with the track's scratch files):
 
 | `dev` build of a fresh folder, same commit | Build step | Cache |
 | --- | --- | --- |
