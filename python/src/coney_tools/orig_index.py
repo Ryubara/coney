@@ -28,31 +28,11 @@ from coney_tools.progress_research import claim_blocks
 SOURCE_DIR = Path("src")
 RESEARCH_DIR = Path("docs/research")
 SOURCE_SUFFIXES = frozenset({".h", ".hpp", ".cpp", ".cc", ".inl"})
-#: The directories of `src/` that hold the game's behaviour, where every function either reimplements one of the
-#: original's (an `@orig` tag) or says it is Coney's own. The others are Coney's by nature: `platform` (the operating
-#: system, SDL3 and librw), `core` and `fileio` (the engine's plumbing), `debug`, `net` and `sandbox`.
-GAMEPLAY_DIRS = (
-    "ai",
-    "animation",
-    "audio",
-    "camera",
-    "characters",
-    "combat",
-    "effects",
-    "gamemodes",
-    "graphics",
-    "gui",
-    "hud",
-    "human",
-    "movies",
-    "physics",
-    "raycast",
-    "scenes",
-    "scripting",
-    "warriors",
-    "world",
-    "world_objects",
-)
+#: The directories of `src/` that are Coney's own by nature: the operating system, SDL3 and librw (`platform`), the
+#: engine's plumbing (`core`, `fileio`), the debug tools, network play and the sandbox. Every other directory holds the
+#: game's behaviour, where each function either reimplements one of the original's (an `@orig` tag) or says it is
+#: Coney's own, so a new directory is in scope until it is listed here.
+CONEY_ONLY_DIRS = ("platform", "core", "fileio", "debug", "net", "sandbox")
 _ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
 _EVIDENCE_WORDS = re.compile(r"\b(confirmed|inferred|speculative)\b", re.IGNORECASE)
 _HEADING = re.compile(r"^(?P<hashes>#{1,6})\s+(?P<name>.*?)\s*$")
@@ -95,6 +75,14 @@ class Untagged:
     lines: int
 
 
+@dataclass(frozen=True)
+class Malformed:
+    """A comment line that starts an `@orig` tag without its whole form `@orig 0x<address> <Name> (<File>.cpp)`."""
+
+    where: str
+    text: str
+
+
 @dataclass
 class Index:
     """What `orig index` finds in the source."""
@@ -106,6 +94,7 @@ class Index:
     marked: int  # ... marked Coney-only with `@coney-only`
     marked_legacy: int  # ... marked only by the older wording ("Coney's own", "(no @orig)")
     files: int = 0
+    malformed: list[Malformed] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -233,12 +222,20 @@ def _marker(text: str) -> str:
 
 
 class _Coverage:
-    """Which functions are tagged or marked, through their own comment or a declaration's elsewhere."""
+    """Which functions are tagged or marked, through their own comment or their declaration's.
+
+    A declaration covers a definition with the same scope, name and parameter types, looked up in the same file
+    pair (`brain.h`, `brain.cpp`), then the same folder, then (for a member) anywhere. When the parameter types differ
+    (a declaration and its definition spelt differently) a declaration still covers it if its name is not
+    overloaded. A file's private helper is covered only by a declaration in its own file.
+    """
 
     def __init__(self, sources: list[SourceFile]) -> None:
-        self.by_stem: dict[tuple[str, str], dict[tuple[str, str], str]] = defaultdict(dict)
-        self.by_dir: dict[str, dict[tuple[str, str], str]] = defaultdict(dict)
-        self.scoped: dict[tuple[str, str], str] = {}
+        # (table, key) -> every declaration and definition with that scope and name: (params, state, where).
+        self.by_file: dict[str, dict[tuple[str, str], list[tuple[str, str, str]]]] = defaultdict(dict)
+        self.by_stem: dict[tuple[str, str], dict[tuple[str, str], list[tuple[str, str, str]]]] = defaultdict(dict)
+        self.by_dir: dict[str, dict[tuple[str, str], list[tuple[str, str, str]]]] = defaultdict(dict)
+        self.scoped: dict[tuple[str, str], list[tuple[str, str, str]]] = {}
         self.file_marks: dict[tuple[str, str], str] = {}
         for source in sources:
             stem = _stem(source.path)
@@ -246,9 +243,12 @@ class _Coverage:
             if mark:
                 self.file_marks[stem] = self.file_marks.get(stem) or mark
             for function in source.functions:
-                state = self.state(function)
-                if state:
-                    self._note(stem, function, state)
+                entry = (function.params, self.state(function), f"{function.path}:{function.line}")
+                tables = [self.by_file[source.path], self.by_stem[stem], self.by_dir[stem[0]]]
+                if function.scope:
+                    tables.append(self.scoped)
+                for table in tables:
+                    table.setdefault(function.key, []).append(entry)
 
     @staticmethod
     def state(function: Function) -> str:
@@ -257,11 +257,21 @@ class _Coverage:
             return "tagged"
         return _marker(function.comment)
 
-    def _note(self, stem: tuple[str, str], function: Function, state: str) -> None:
-        """Remember a tagged or marked declaration under its key; a tag wins over a marker."""
-        for table in (self.by_stem[stem], self.by_dir[stem[0]], self.scoped if function.scope else None):
-            if table is not None and table.get(function.key) != "tagged":
-                table[function.key] = state
+    @staticmethod
+    def _decide(function: Function, entries: list[tuple[str, str, str]]) -> str | None:
+        """The state the declarations in `entries` give `function`; None when none of them is its declaration."""
+        where = f"{function.path}:{function.line}"
+        others = [e for e in entries if e[2] != where]
+        exact = [state for params, state, _ in others if params == function.params]
+        if exact:
+            return max(exact, key=_STATE_ORDER.index)
+        # Spelt differently, but the name is not overloaded (no file has two of it): still its declaration.
+        per_file: dict[str, set[str]] = defaultdict(set)
+        for params, _, place in entries:
+            per_file[place.rsplit(":", 1)[0]].add(params)
+        if others and all(len(kinds) == 1 for kinds in per_file.values()):
+            return max((state for _, state, _ in others), key=_STATE_ORDER.index)
+        return None
 
     def lookup(self, function: Function) -> str:
         """The function's state, from its own comments, then its declaration's, then its file's header."""
@@ -269,10 +279,20 @@ class _Coverage:
         if own:
             return own
         stem = _stem(function.path)
-        found = self.by_stem[stem].get(function.key) or self.by_dir[stem[0]].get(function.key)
-        if not found and function.scope:
-            found = self.scoped.get(function.key)
-        return found or self.file_marks.get(stem, "")
+        tables = [self.by_file[function.path]]
+        if not function.helper:
+            tables += [self.by_stem[stem], self.by_dir[stem[0]]]
+            if function.scope:
+                tables.append(self.scoped)
+        for table in tables:
+            decided = self._decide(function, table.get(function.key, []))
+            if decided is not None:
+                return decided or self.file_marks.get(stem, "")
+        return self.file_marks.get(stem, "")
+
+
+#: The states from weakest to strongest: a tag wins over a marker, a marker over the older wording.
+_STATE_ORDER = ("", "legacy", "marker", "tagged")
 
 
 def _kind(function: Function) -> str:
@@ -284,7 +304,7 @@ def _kind(function: Function) -> str:
     return "member" if function.scope else "free"
 
 
-def build_index(root: Path, gameplay_dirs: tuple[str, ...] = GAMEPLAY_DIRS) -> Index:
+def build_index(root: Path, coney_only: tuple[str, ...] = CONEY_ONLY_DIRS) -> Index:
     """The index of `root`'s source: the tag rows and the gameplay functions that are neither tagged nor marked."""
     sources = read_sources(root)
     coverage = _Coverage(sources)
@@ -292,7 +312,7 @@ def build_index(root: Path, gameplay_dirs: tuple[str, ...] = GAMEPLAY_DIRS) -> I
     counts = {"tagged": 0, "marker": 0, "legacy": 0}
     in_scope = 0
     for source in sources:
-        if _directory(source.path) not in gameplay_dirs:
+        if _directory(source.path) in coney_only or not _directory(source.path):
             continue
         for function in source.functions:
             if not function.body:
@@ -312,6 +332,7 @@ def build_index(root: Path, gameplay_dirs: tuple[str, ...] = GAMEPLAY_DIRS) -> I
         counts["marker"],
         counts["legacy"],
         len(sources),
+        [Malformed(f"{s.path}:{line}", text) for s in sources for line, text in s.malformed],
     )
 
 
@@ -377,12 +398,10 @@ def check_research(root: Path, rows: list[IndexRow]) -> ResearchReport:
         heading, body = sections[anchor]
         if not _ADDRESS.search(body):
             report.gaps.append(SectionGap(link, heading, tuple(tagged)))
+    # Each page's addresses are read once, not once per tag that links it.
+    page_addresses = {page: {int(m.group(1), 16) for m in _ADDRESS.finditer(text)} for page, text in page_text.items()}
     for row in rows:
-        cited = {
-            int(m.group(1), 16)
-            for link in row.research
-            for m in _ADDRESS.finditer(page_text.get(link.split("#")[0], ""))
-        }
+        cited = set().union(*(page_addresses.get(link.split("#")[0], set()) for link in row.research))
         if row.research and row.address not in cited:
             report.uncited.append(row)
     return report

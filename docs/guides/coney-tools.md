@@ -317,25 +317,30 @@ uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [-
   documents, its file and line, where the tag sits (`comment` above a function, `body` inside one, `other` on a
   class or file), and the research links that document it (the function's comment, else its declaration's, its
   class's or its file's);
-* `untagged.tsv`: the functions defined in the gameplay directories (`orig_index.GAMEPLAY_DIRS`: every directory of
-  `src/` but `platform`, `core`, `fileio`, `debug`, `net` and `sandbox`) that have no tag, through their own comment or
-  their declaration's, and no Coney-only marker. Each is a `member`, a `free` function, a file's private `helper` (an
-  anonymous namespace or `static`) or an `inline` member defined in its class. A marker is `@coney-only <reason>` in
-  the function's comment or its file's header comment, or the older wording ("Coney's own", "(no @orig)");
+* `untagged.tsv`: the functions defined in the gameplay directories (every directory of `src/` but those of
+  `orig_index.CONEY_ONLY_DIRS`: `platform`, `core`, `fileio`, `debug`, `net` and `sandbox`, so a new directory is in
+  scope) that have no tag and no Coney-only marker. A tag covers a function through its own comment, or through its
+  declaration's: the declaration with the same scope, name and parameter types (any one, when the name is not
+  overloaded), in the same file pair, folder or, for a member, anywhere; a file's private helper only through a
+  declaration in its own file. Each is a `member`, a `free` function, a file's private `helper` (an anonymous
+  namespace or `static`) or an `inline` member defined in its class. A marker is the proposed `@coney-only <reason>`
+  in the function's comment or its file's header comment, or the older wording ("Coney's own", "(no @orig)");
 * `research-gaps.md`: the research sections tagged code links that cite no original address, links to a page or
   section that does not exist, tags whose linked pages never cite their address, and tags with no research link;
-* `report.md`: the counts and the tags Ghidra does not bear out, and with a running server `callees.tsv` and its
+* `report.md`: the counts, the malformed tags (a line with `@orig 0x` that is not the whole form `@orig 0x<address>
+  <Name> (<File>.cpp)`), the tags Ghidra does not bear out, and with a running server `callees.tsv` and its
   table: the original functions the tagged ones call that no tag covers (game code only; the libraries the original
   links in are left out, by `docs/progress/totals.toml`), most-called first.
 
 The Ghidra check (`--ghidra`, default `auto`) uses a running ghidra-mcp ([Ghidra + ghidra-mcp](ghidra.md)) when one
 answers on `--url`, else the committed listing `docs/progress/ghidra-functions.tsv`, which is as current as its last
 `progress ghidra` export and gives no callees. Each tag gets one of: `no-function` (Ghidra has no function there),
-`not-a-start` (the address is inside another function), `names-differ` (the names share fewer than half their words:
-the tag may name the wrong function), `renamed` (they share half or more, usually a rename in Ghidra since the tag was
+`not-a-start` (the address is inside another function), `names-differ` (they share fewer than half the shorter
+name's words: the tag may name the wrong function), `renamed` (half or more, usually a rename in Ghidra since the tag was
 written) or `unnamed` (Ghidra still has its default `FUN_` name). Names agree when they are equal without case and
 punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's `lua_` wrapper prefix is ignored. A
-full live run reads about 2,400 functions and their callees and takes a few minutes.
+full live run asks the server about each of the 2,400 tagged functions twice (the function, its callees), one request
+at a time, and takes several minutes.
 
 `orig queue` writes the same files and the audit's queue, `queue.md` (a table per `src/` directory, then the first
 `--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,

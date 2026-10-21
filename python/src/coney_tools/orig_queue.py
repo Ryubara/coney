@@ -78,6 +78,14 @@ class Issue:
     title: str
     text: str  # title, body and comments
     labels: tuple[str, ...]
+    #: The names, file names and addresses the text holds (`Brain::think`, `brain.cpp`, `0x00100010`), read once so
+    #: that matching thousands of entries is a set lookup, not a regular expression over every issue.
+    tokens: frozenset[str] = frozenset()
+    folded: str = ""  # the text in lower case, for research links
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "tokens", frozenset(_TOKEN.findall(self.text)))
+        object.__setattr__(self, "folded", self.text.casefold())
 
     @property
     def weight(self) -> int:
@@ -130,9 +138,8 @@ def fetch_issues(label: str = "bug") -> list[Issue]:
     return issues_from_json(json.loads(done.stdout))
 
 
-def _word(term: str) -> re.Pattern[str]:
-    """A whole-word pattern for a name (letters, digits, `_` and `::` count as part of the word)."""
-    return re.compile(rf"(?<![\w:]){re.escape(term)}(?![\w])")
+#: A name (`Brain::think`, `~Brain`, `FightGoal_TryTackle`), a file name (`brain.cpp`) or an address.
+_TOKEN = re.compile(r"0x[0-9a-fA-F]{8}\b|~?[A-Za-z_]\w*(?:::~?[A-Za-z_]\w*)*(?:\.(?:cpp|hpp|h)\b)?")
 
 
 def _names_of_row(row: IndexRow) -> list[str]:
@@ -156,14 +163,12 @@ def _file_terms(path: str) -> list[str]:
     return terms
 
 
-def _mentions(issues: list[Issue], patterns: list[re.Pattern[str]], plain: Iterable[str] = ()) -> list[Issue]:
-    """The issues whose text matches any pattern or holds any plain substring (case-insensitive)."""
-    found = []
-    for issue in issues:
-        lowered = issue.text.casefold()
-        if any(p.search(issue.text) for p in patterns) or any(s.casefold() in lowered for s in plain):
-            found.append(issue)
-    return found
+def _mentions(issues: list[Issue], names: Iterable[str], links: Iterable[str] = ()) -> list[Issue]:
+    """The issues that hold any of `names` as a whole token, or any research link of `links` (`ai.md#brain`, not
+    followed by more of an anchor)."""
+    wanted = set(names)
+    patterns = [re.compile(re.escape(link.casefold()) + r"(?![\w-])") for link in links]
+    return [i for i in issues if wanted & i.tokens or any(p.search(i.folded) for p in patterns)]
 
 
 def _directory(path: str) -> str:
@@ -174,22 +179,25 @@ def _directory(path: str) -> str:
 
 def _issue_reasons(entry: Entry, issues: list[Issue], names: list[str], files: list[str], sections: list[str]) -> None:
     """Score what the open bug issues say about an entry."""
-    named = _mentions(issues, [_word(n) for n in names], [entry.key] if entry.key.startswith("0x") else [])
+    keys = [entry.key.casefold(), entry.key] if entry.key.startswith("0x") else []
+    named = _mentions(issues, [*names, *keys])
     for issue in named:
         entry.add(f"#{issue.number} names it", WEIGHTS["issue-names-it"] * issue.weight)
         entry.issues.add(issue.number)
-    rest = [i for i in issues if i not in named]
-    by_file = _mentions(rest, [_word(f) for f in files])
+    seen = {i.number for i in named}
+    by_file = _mentions([i for i in issues if i.number not in seen], files)
     for issue in by_file:
         entry.add(f"#{issue.number} names its file", WEIGHTS["issue-names-file"] * issue.weight)
         entry.issues.add(issue.number)
-    rest = [i for i in rest if i not in by_file]
-    by_section = _mentions(rest, [], [s.removeprefix("docs/research/") for s in sections if "#" in s])
+    seen |= {i.number for i in by_file}
+    links = [s.removeprefix("docs/research/") for s in sections if "#" in s]
+    by_section = _mentions([i for i in issues if i.number not in seen], [], links) if links else []
     for issue in by_section:
         entry.add(f"#{issue.number} cites its research", WEIGHTS["issue-names-section"] * issue.weight)
         entry.issues.add(issue.number)
+    seen |= {i.number for i in by_section}
     # An area label only says "somewhere in this directory": all of them together count at most AREA_CAP.
-    by_area = [i for i in rest if i not in by_section and entry.directory in i.dirs()]
+    by_area = [i for i in issues if i.number not in seen and entry.directory in i.dirs()]
     if by_area:
         points = min(sum(WEIGHTS["issue-area"] * i.weight for i in by_area), AREA_CAP)
         entry.add("area of " + " ".join(f"#{i.number}" for i in by_area), points)

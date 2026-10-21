@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for `coney-tools orig index` and `orig queue`, on a made-up checkout with invented addresses and names."""
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from coney_tools import orig_cli, orig_ghidra, orig_index, orig_queue
+from coney_tools import orig_cli, orig_ghidra, orig_index, orig_queue, orig_report
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.progress_research import ListedFunction
@@ -254,3 +255,91 @@ def test_the_commands_write_their_files(checkout: Path, monkeypatch: pytest.Monk
     assert "0x00100010\tBrain_Think\tBrain.cpp\tBrain::think" in (out / "index.tsv").read_text(encoding="utf-8")
     assert "docs/research/made-up.md#thinking" in (out / "research-gaps.md").read_text(encoding="utf-8")
     assert "| renamed | 0x00100020 |" in (out / "report.md").read_text(encoding="utf-8")
+
+
+def write(root: Path, files: dict[str, str]) -> None:
+    """Write made-up source files under `root`."""
+    for name, text in files.items():
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text(text, encoding="utf-8")
+
+
+def test_a_private_helper_is_not_covered_by_a_tag_in_another_file(checkout: Path) -> None:
+    write(
+        checkout,
+        {
+            "src/ai/a.cpp": "namespace {\n/// @orig 0x00100100 Scan (unknown)\nvoid scan() {}\n}\n",
+            "src/ai/b.cpp": "namespace {\nvoid scan() {}\n}\n",
+        },
+    )
+    untagged = [u.where for u in orig_index.build_index(checkout).untagged if u.coney == "scan"]
+    assert untagged == ["src/ai/b.cpp:2"]
+
+
+def test_a_tagged_overload_does_not_cover_its_untagged_sibling(checkout: Path) -> None:
+    write(
+        checkout,
+        {
+            "src/audio/player.h": (
+                "class Player {\n  public:\n    /// @orig 0x00100200 Player_Play (unknown)\n    void play(int id);\n"
+                "    void play(const Clip& clip);\n};\n"
+            ),
+            "src/audio/player.cpp": "void Player::play(int id) {}\nvoid Player::play(const Clip& clip) {}\n",
+        },
+    )
+    untagged = [u.where for u in orig_index.build_index(checkout).untagged if u.coney == "Player::play"]
+    assert untagged == ["src/audio/player.cpp:2"]
+
+
+def test_a_new_folder_of_src_is_in_scope_unless_it_is_coney_only(checkout: Path) -> None:
+    write(checkout, {"src/newthing/a.cpp": "void a() {}\n", "src/debug/b.cpp": "void b() {}\n"})
+    coneys = {u.coney for u in orig_index.build_index(checkout).untagged}
+    assert "a" in coneys and "b" not in coneys
+
+
+def test_a_malformed_tag_is_counted_in_the_report(checkout: Path) -> None:
+    write(checkout, {"src/ai/bad.h": "/// @orig 0x00100300 NoFile\nvoid bad();\n"})
+    result = orig_cli.collect(checkout, "off", "")
+    assert [(m.where, m.text) for m in result.index.malformed] == [("src/ai/bad.h:1", "/// @orig 0x00100300 NoFile")]
+    assert "1 malformed" in orig_report.summary_lines(result)[0]
+
+
+def test_issue_matching_is_by_whole_names_and_bounded_links() -> None:
+    issue = orig_queue.issues_from_json(
+        [{"number": 1, "title": "t", "body": "Brain_Waits and ai.md#brain-x, see brain.cpp.", "labels": []}]
+    )
+    assert orig_queue._mentions(issue, ["Brain_Wait"]) == []
+    assert orig_queue._mentions(issue, [], ["made-up.md#brain"]) == []
+    assert orig_queue._mentions(issue, [], ["ai.md#brain"]) == []
+    assert [i.number for i in orig_queue._mentions(issue, ["brain.cpp"])] == [1]
+
+
+def test_ranking_many_entries_against_many_issues_is_quick(checkout: Path) -> None:
+    import time
+
+    result = orig_cli.collect(checkout, "off", "")
+    rows = [dataclasses.replace(result.index.rows[0], address=0x00200000 + n, name=f"Made_Up{n}") for n in range(2000)]
+    issues = orig_queue.issues_from_json(
+        [{"number": n, "title": "x", "body": "word " * 2000, "labels": [{"name": "A-ai"}]} for n in range(100)]
+    )
+    started = time.monotonic()
+    orig_queue.rank(orig_queue.QueueInputs(rows, [], issues))
+    assert time.monotonic() - started < 10
+
+
+def test_each_research_page_is_scanned_once(checkout: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = orig_index.build_index(checkout).rows * 50
+    calls = []
+    real = orig_index._ADDRESS
+
+    class Counting:
+        def finditer(self, text: str) -> Any:
+            calls.append(len(text))
+            return real.finditer(text)
+
+        def search(self, text: str) -> Any:
+            return real.search(text)
+
+    monkeypatch.setattr(orig_index, "_ADDRESS", Counting())
+    orig_index.check_research(checkout, rows)
+    assert len(calls) == 1

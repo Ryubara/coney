@@ -15,10 +15,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-#: `@orig 0x<address> <OriginalName> (<File>.cpp)`; the file part may be missing on a malformed tag.
-ORIG_TAG = re.compile(
-    r"@orig\s+0x(?P<address>[0-9a-fA-F]{8})\b[ \t]*(?P<name>[^\n(]*?)[ \t]*(?:\((?P<file>[^()\n]*)\))?[ \t]*$"
-)
+#: `@orig 0x<address> <OriginalName> (<File>.cpp)`, anywhere on a line (a `/** ... */` comment, text after it); the
+#: file part may be missing on a malformed tag.
+ORIG_TAG = re.compile(r"@orig\s+0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s()*]+)(?:\s*\((?P<file>[^()\n]*)\))?")
+#: The whole form, which every tag must have; `@orig 0x` without it is reported as malformed.
+_ORIG_FORM = re.compile(r"@orig 0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
+_ORIG_MENTION = re.compile(r"@orig\s+0x")
 #: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
 #: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)".
@@ -26,8 +28,12 @@ LEGACY_CONEY_ONLY = re.compile(r"Coney's own|Coney-only|\(no @orig\)|no @orig\b|
 RESEARCH_LINK = re.compile(r"docs/research/[A-Za-z0-9_./-]+?\.md(?:#[A-Za-z0-9_-]+)?")
 
 _NAME_BEFORE_PAREN = re.compile(
-    r"((?:[A-Za-z_]\w*\s*(?:<[^<>;{}()]*>)?\s*::\s*)*(?:operator\s*(?:\(\)|\[\]|[^\s\w(]+|\w+)|~?[A-Za-z_]\w*))\s*\("
+    r"((?:[A-Za-z_]\w*\s*::\s*)*(?:operator\s*(?:\(\)|\[\]|[^\s\w(]+|\w+)|~?[A-Za-z_]\w*))\s*\("
 )
+#: A template argument list with no other inside it (`<void(int)>`, `<const int>`); removed until none is left.
+_TEMPLATE_ARGS = re.compile(r"<[^<>;{}=]*>")
+#: Operators whose spelling holds `<` or `>`, kept from the template removal.
+_ANGLE_OPERATOR = re.compile(r"operator\s*(<=>|<<=|>>=|<<|>>|<=|>=|->\*?|<|>)")
 _NAMESPACE = re.compile(r"^(?:inline\s+)?namespace\b\s*([\w:]*)")
 _EXTERN_BLOCK = re.compile(r'^extern\s*""$')
 _CLASS = re.compile(
@@ -67,6 +73,12 @@ class Function:
     comment: str = ""  # the comment block above it
     tags: list[Tag] = field(default_factory=list)  # tags in that comment block
     body_tags: list[Tag] = field(default_factory=list)  # tags in comments inside its body
+    params: str = ""  # the parameter types, `int,float`: what tells overloads apart
+
+    @property
+    def signature(self) -> tuple[str, str, str]:
+        """(scope, name, parameter types): what a declaration and its definition share, overloads apart."""
+        return (self.scope, self.name, self.params)
 
     @property
     def qualified(self) -> str:
@@ -89,17 +101,26 @@ class SourceFile:
     loose_tags: list[Tag]  # tags in no function's comment or body: a file's or a class's header comment
     tag_owner: dict[int, str]  # tag line -> the qualified name of what it documents, for loose tags too
     class_comments: dict[str, str] = field(default_factory=dict)  # "Outer::Inner" -> the comment above the class
+    malformed: list[tuple[int, str]] = field(default_factory=list)  # (line, text) of `@orig 0x` lines not in the form
 
 
 def parse_tags(comment: str, first_line: int) -> list[Tag]:
     """Every `@orig` tag in a comment that starts on `first_line`."""
     tags = []
     for offset, text in enumerate(comment.splitlines()):
-        match = ORIG_TAG.search(text)
-        if match:
+        for match in ORIG_TAG.finditer(text):
             name = match["name"].strip()
             tags.append(Tag(int(match["address"], 16), name, (match["file"] or "").strip(), first_line + offset))
     return tags
+
+
+def malformed_tags(comment: str, first_line: int) -> list[tuple[int, str]]:
+    """The lines of a comment that start an `@orig` tag but do not have its whole form."""
+    found = []
+    for offset, text in enumerate(comment.splitlines()):
+        if len(_ORIG_MENTION.findall(text)) != len(_ORIG_FORM.findall(text)):
+            found.append((first_line + offset, text.strip()))
+    return found
 
 
 def _clean_statement(text: str) -> str:
@@ -109,19 +130,72 @@ def _clean_statement(text: str) -> str:
     return " ".join(text.split())
 
 
-def _function_name(statement: str) -> tuple[str, str] | None:
-    """The (qualifier, name) of the function a statement declares or defines, or None when it is not one."""
+def _without_templates(statement: str) -> str:
+    """The statement with its template argument lists removed, so `std::function<void(int)> make()` reads as
+    `std::function make()`; operators spelt with `<` or `>` are kept."""
+    text = _ANGLE_OPERATOR.sub(lambda m: "operator" + "_" * len(m.group(1)), statement)
+    while True:
+        shorter = _TEMPLATE_ARGS.sub("", text)
+        if shorter == text:
+            return text
+        text = shorter
+
+
+def _split_params(text: str) -> list[str]:
+    """A parameter list's inside cut at its top-level commas."""
+    params: list[str] = []
+    depth = 0
+    current: list[str] = []
+    for char in text:
+        depth += char in "(<[{"
+        depth -= char in ")>]}"
+        if char == "," and depth == 0:
+            params.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+    params.append("".join(current))
+    return params
+
+
+def _param_types(text: str) -> str:
+    """The parameter types of a parameter list's inside (`int id, float v = 1.0f` -> `int,float`)."""
+    types = []
+    for param in _split_params(text):
+        param = param.split("=", 1)[0].strip()
+        if not param or param == "void":
+            continue
+        # Drop the parameter's name: the last word after a type (`const Clip& clip` -> `const Clip&`).
+        named = re.match(r"^(.*?[\w>&*\]])\s*\b[A-Za-z_]\w*(?:\[[^\]]*\])?$", param)
+        if named and named.group(1).strip() not in ("const", "unsigned", "signed", "struct", "class"):
+            param = named.group(1)
+        types.append(re.sub(r"\s*([&*])", r"\1", " ".join(param.split())))
+    return ",".join(types)
+
+
+def _function_name(statement: str) -> tuple[str, str, str] | None:
+    """The (qualifier, name, parameter types) of the function a statement declares or defines, or None when it is
+    not one."""
+    statement = _without_templates(statement)
     match = _NAME_BEFORE_PAREN.search(statement)
     if not match:
         return None
     before = statement[: match.start()]
     if "=" in before or "(" in before or before.rstrip().endswith((".", "->", "return")):
         return None  # an initializer, a lambda, a call, or a macro's argument list
-    parts = [re.sub(r"<[^<>]*>", "", p).strip() for p in re.split(r"\s*::\s*", match.group(1))]
+    if statement[match.end() :].lstrip().startswith(("*", "&")):
+        return None  # a pointer to a function, `void (*callback)(int)`
+    parts = [p.strip() for p in re.split(r"\s*::\s*", match.group(1))]
     name = parts[-1]
     if name in _NOT_FUNCTIONS or not name:
         return None
-    return "::".join(parts[:-1]), name
+    # The parameter list runs from the `(` after the name to its matching `)`.
+    end, depth = match.end(), 1
+    while end < len(statement) and depth:
+        depth += statement[end] == "("
+        depth -= statement[end] == ")"
+        end += 1
+    return "::".join(parts[:-1]), name, _param_types(statement[match.end() : end - 1])
 
 
 @dataclass
@@ -144,6 +218,8 @@ class _Reader:
         self.loose: list[Tag] = []
         self.owner: dict[int, str] = {}
         self.class_comments: dict[str, str] = {}
+        self.malformed: list[tuple[int, str]] = []
+        self.paren = 0  # open parentheses: a brace or `;` inside them is code, not structure
         self.statement: list[str] = []
         self.statement_line = 0
         self.lead: list[tuple[int, str]] = []  # comments before the statement: (first line, text)
@@ -169,8 +245,16 @@ class _Reader:
 
     # --- comments -------------------------------------------------------------------------------------------------
 
-    def _comment(self, first_line: int, text: str) -> None:
-        """Route a comment: into the statement's lead block, a function's body, or the file's header."""
+    def _comment(self, first_line: int, text: str, trailing: bool = False) -> None:
+        """Route a comment: into the statement's lead block, a function's body, or the file's header. A `trailing`
+        comment (after code on its line) documents that code, never what follows: its tags are kept as loose."""
+        self.malformed.extend(malformed_tags(text, first_line))
+        if trailing and (self._in_function() is None or self._at_declaration_level()):
+            tags = parse_tags(text, first_line)
+            self.loose.extend(tags)
+            for tag in tags:
+                self.owner[tag.line] = "(trailing)"
+            return
         if self.header_comment is None and not self.functions and not self.statement and not self.stack:
             self.lead.append((first_line, text))
             return
@@ -207,7 +291,7 @@ class _Reader:
         named = _function_name(statement)
         if named is None:
             return None
-        qualifier, name = named
+        qualifier, name, params = named
         scope = "::".join([*self._class_scope(), qualifier] if qualifier else self._class_scope())
         helper = any(f.kind == "anon" for f in self.stack) or (
             not self._class_scope()
@@ -217,6 +301,7 @@ class _Reader:
         function = Function(
             self.path, self.statement_line, scope, name, body, helper, bool(self._class_scope()), 1, comment, tags
         )
+        function.params = params
         for tag in tags:
             self.owner[tag.line] = function.qualified
         self.functions.append(function)
@@ -293,21 +378,47 @@ class _Reader:
     # --- the pass -------------------------------------------------------------------------------------------------
 
     def _code(self, char: str) -> None:
-        """One character of code."""
+        """One character of code. Inside a brace initializer (`Foo m_f{bar(1)}`) the characters are left out of the
+        statement, so a call in it never reads as the statement's name."""
+        if self.stack and self.stack[-1].kind == "init":
+            return
         if not self.statement and not char.isspace():
             self.statement_line = self.line
         if self.statement or not char.isspace():
             self.statement.append(char)
 
+    def _digit_separator(self, i: int) -> bool:
+        """Whether the `'` at `i` separates digits (`48'000`, `0x1'0`) rather than starting a character literal."""
+        text = self.text
+        start = i
+        while start > 0 and (text[start - 1].isalnum() or text[start - 1] in "'."):
+            start -= 1
+        following = text[i + 1] if i + 1 < len(text) else ""
+        return start < i and text[start].isdigit() and following.isalnum()
+
+    def _structure(self, c: str) -> None:
+        """A `{`, `}` or `;`: structure at parenthesis depth 0, plain code inside parentheses (a default argument
+        `= {}`, a lambda passed to a call, a `for` header)."""
+        if self.paren > 0:
+            self._code(c)
+        elif c == "{":
+            self._open()
+        elif c == "}":
+            self._close()
+        else:
+            self._end()
+
     def run(self) -> SourceFile:
         """Read the whole file."""
         text, i, n = self.text, 0, len(self.text)
         at_line_start = True
+        line_start = 0
         while i < n:
             c = text[i]
             if c == "\n":
                 self.line += 1
                 at_line_start = True
+                line_start = i + 1
                 self._code(" ")
                 i += 1
                 continue
@@ -321,39 +432,41 @@ class _Reader:
                 continue
             if not c.isspace():
                 at_line_start = False
-            if text.startswith("//", i):
-                end = text.find("\n", i)
-                end = n if end == -1 else end
-                # Consecutive `//` lines are one comment block.
-                self._comment(self.line, text[i:end])
-                i = end
-                continue
-            if text.startswith("/*", i):
-                end = text.find("*/", i + 2)
-                end = n if end == -1 else end + 2
+            if text.startswith(("//", "/*"), i):
+                # A comment after code on its line documents that code (trailing); consecutive `//` lines are one
+                # comment block.
+                trailing = bool(text[line_start:i].strip())
+                if text.startswith("//", i):
+                    end = text.find("\n", i)
+                    end = n if end == -1 else end
+                else:
+                    end = text.find("*/", i + 2)
+                    end = n if end == -1 else end + 2
                 block = text[i:end]
-                self._comment(self.line, block)
+                self._comment(self.line, block, trailing)
                 self.line += block.count("\n")
                 i = end
                 continue
             if c == '"' or (c == "R" and text.startswith('R"', i)):
                 i = self._skip_string(i)
                 continue
-            if c == "'" and not (i > 0 and text[i - 1].isalnum() and text[i - 1] not in "uUL8"):
+            if c == "'" and not self._digit_separator(i):
                 i = self._skip_char(i)
                 continue
-            if c == "{":
-                self._open()
-            elif c == "}":
-                self._close()
-            elif c == ";":
-                self._end()
+            if c in "{};":
+                self._structure(c)
             else:
+                if c == "(":
+                    self.paren += 1
+                elif c == ")":
+                    self.paren = max(0, self.paren - 1)
                 self._code(c)
             i += 1
         if self.header_comment is None:
             self.header_comment = "\n".join(t for _, t in self.lead)
-        return SourceFile(self.path, self.header_comment, self.functions, self.loose, self.owner, self.class_comments)
+        return SourceFile(
+            self.path, self.header_comment, self.functions, self.loose, self.owner, self.class_comments, self.malformed
+        )
 
     def _skip_string(self, i: int) -> int:
         """Skip a string literal starting at `i` (raw strings too); it stands in the statement as `""`."""
@@ -373,12 +486,13 @@ class _Reader:
         return j + 1
 
     def _skip_char(self, i: int) -> int:
-        """Skip a character literal starting at `i`."""
+        """Skip a character literal starting at `i`; an unclosed one stops before the end of its line, which the
+        main loop then counts."""
         j = i + 1
         while j < len(self.text) and self.text[j] != "'" and self.text[j] != "\n":
             j += 2 if self.text[j] == "\\" else 1
         self._code("0")
-        return j + 1
+        return j + 1 if j < len(self.text) and self.text[j] == "'" else j
 
 
 def read_source(path: str, text: str) -> SourceFile:

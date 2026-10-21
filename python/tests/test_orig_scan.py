@@ -131,3 +131,77 @@ def test_a_tag_on_a_class_comment_is_loose_and_names_the_class() -> None:
     source = read_source("src/ai/thing.h", text)
     assert [t.address for t in source.loose_tags] == [0x00100050]
     assert source.tag_owner[2] == "Thing"
+
+
+def test_braces_inside_a_parameter_or_initializer_list_open_no_function() -> None:
+    text = (
+        "namespace x {\n"
+        "Tactic::Tactic() : Base(kType, {}), m_list{} {\n"
+        "    run([](int v) { return v; });\n"
+        "}\n"
+        "void Other::go(Options options = {}) {}\n"
+        "}\n"
+    )
+    found = [(f.qualified, f.line) for f in read_source("src/ai/t.cpp", text).functions]
+    assert found == [("Tactic::Tactic", 2), ("Other::go", 5)]
+
+
+def test_template_arguments_and_brace_members_do_not_make_names() -> None:
+    text = (
+        "namespace x {\n"
+        "class C {\n"
+        "    std::function<void(int)> make();\n"
+        "    Foo m_f{bar(1)};\n"
+        "    std::span<const int> view() const { return m_v; }\n"
+        "};\n"
+        "}\n"
+    )
+    assert [f.name for f in read_source("src/ai/c.h", text).functions] == ["make", "view"]
+
+
+def test_digit_separators_are_not_character_literals() -> None:
+    text = (
+        "namespace x {\nconstexpr int kRate = 48'000;\nint rate() {\n    return 'a' + 0x1'0;\n}\n"
+        "int next() { return 1; }\n}\n"
+    )
+    found = [(f.name, f.line) for f in read_source("src/audio/r.cpp", text).functions]
+    assert found == [("rate", 3), ("next", 6)]
+
+
+def test_a_character_literal_that_ends_a_line_keeps_the_line_count() -> None:
+    text = "namespace x {\nint a() {\n    return '\n}\nint b() { return 1; }\n}\n"
+    assert [(f.name, f.line) for f in read_source("src/audio/r.cpp", text).functions][-1] == ("b", 5)
+
+
+def test_a_comment_after_code_on_its_line_documents_nothing_below() -> None:
+    text = "namespace x {\nint a = 1; // @orig 0x00100010 Wrong_Owner (unknown)\nvoid next();\n}\n"
+    source = read_source("src/ai/t.h", text)
+    assert source.functions[0].tags == []
+    assert [t.address for t in source.loose_tags] == [0x00100010]
+
+
+def test_a_tag_in_a_block_comment_or_with_trailing_text_is_read() -> None:
+    text = (
+        "/** @orig 0x00100010 Brain_Think (Brain.cpp) */\nvoid think();\n"
+        "/// @orig 0x00100020 Brain_Wait (unknown) and more\nvoid wait();\n"
+    )
+    found = [[(t.address, t.name, t.file) for t in f.tags] for f in read_source("src/ai/t.h", text).functions]
+    assert found == [[(0x00100010, "Brain_Think", "Brain.cpp")], [(0x00100020, "Brain_Wait", "unknown")]]
+
+
+def test_a_malformed_tag_is_reported() -> None:
+    text = "/// @orig 0x0010001 Short_Address (unknown)\n/// @orig 0x00100020 NoFile\nvoid f();\n"
+    assert [line for line, _ in read_source("src/ai/t.h", text).malformed] == [1, 2]
+
+
+def test_a_function_knows_its_parameter_types() -> None:
+    text = (
+        "namespace x {\nclass P {\n    void play(int id, float volume = 1.0f);\n"
+        "    void play(const Clip& clip);\n};\n}\n"
+    )
+    assert [f.params for f in read_source("src/audio/p.h", text).functions] == ["int,float", "const Clip&"]
+
+
+def test_a_pointer_to_a_function_is_not_a_function() -> None:
+    text = "void (*callback)(int, float) = nullptr;\nvoid real(int);\n"
+    assert [f.name for f in read_source("src/ai/p.cpp", text).functions] == ["real"]
