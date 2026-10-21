@@ -19,6 +19,9 @@ How far Coney has come, measured three ways:
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the user's play-test, with its checkpoints and the script bindings it needs.
+- **The picture:** every function of the game's own code as one small square, grouped by source
+  directory and coloured by the furthest state it has reached ([How the picture is drawn](#the-picture)), and the
+  missions' checkpoints the same way. The [history](history.md) shows how the shares moved day by day.
 
 The tables below are not in the repository: they are generated each time the documentation is built, so this page
 always shows the numbers of `main`, and the badges at the top of the repository's `README.md` read the same figures
@@ -57,6 +60,58 @@ checks a size given by hand against that bound. It is an upper bound: a function
 a tail jump reaches it) is folded into the one before it. An engineer who has the function in Ghidra can give the
 exact size instead. How to use the commands: [The coney-tools command line](../guides/coney-tools.md#progress).
 
+## How the picture is drawn {#the-picture}
+
+The picture of every function (under *Every function* above) draws one square for each function of the game's own code in
+`docs/progress/ghidra-functions.tsv` (the middleware ranges of `totals.toml` left out, as for the bars). It does not
+define anything new: each colour is a measure this page already has.
+
+| State | What puts a function in it | Measure it comes from |
+| --- | --- | --- |
+| Audited | The fidelity audit found Coney's version equal to the original | Not drawn yet: no audit result is stored on `main` in a machine-readable place |
+| Reimplemented | Listed in `functions.toml`, so Coney has code for it with an `@orig` tag | The Reimplemented bar |
+| Understood | Named in Ghidra and cited on a research page with an evidence level | The Understood bar |
+| Researched | Inside a source directory or file range of the source map, but not understood | The Researched bar |
+| Untouched | None of the above | |
+
+A function shows the furthest state it has reached, top to bottom. The headline above the picture counts squares by
+measure, each measure as the table defines it, so a square counts under every measure it meets: a reimplemented function
+that is also understood counts in both, while the legend counts squares by the colour they show. Researched is the
+source map's measure, not "researched or further": a function can be understood without the map placing it, so the
+Researched share can be below the Understood share. Blocks are the subsystems of `totals.toml`, the original's top-level
+source directories, in address order, so the picture follows the executable; code in no subsystem range comes last as
+*Unattributed*, and the game's link-once template code is the `link-once` block. A block's label is its share of
+reimplemented functions, and its tooltip (the browser's own) gives `reimplemented/total (share)` and the squares of each
+state. A reimplemented function whose address is not the start of a function in the Ghidra listing (an entry inside
+another function, or a listing that split a function differently) is counted in the bars but has no square and is not in
+the headline's Reimplemented count, which is therefore a few below the bar's; `progress.json` gives the number
+(`unlisted_reimplemented`).
+
+The picture has two views, switched above it. **One square per function** is the one that reads at a glance. Most
+functions are tiny (half are under 125 bytes, the largest is 30 KB), so it gives a four-byte accessor the area of a
+physics solver; the bars are in bytes. **One square per 512 bytes** gives a function one square per started 512
+bytes (at least one), so the area is the code and a large reimplemented function shows as the bar it is. Both are
+drawn the same way and carry the same tooltips.
+
+Hovering a square shows the function's name, address, size and state, the original source file the source map places
+it in, and, for a reimplemented function, the line of Coney's source that carries its `@orig` tag as a link; a click
+or a tap keeps the tooltip so the link can be followed. The tooltip needs the script and the per-function table
+(`progress/functions.json`, fetched on the first hover); without them the picture, the legend and every table still
+show the same numbers. The mission picture below the milestones draws one square per checkpoint, a block per mission,
+with the checklist's colours; a mission's label links to its page.
+
+The same pictures and numbers are published as files beside the page, for other places to embed or read; the list
+is in [the coney-tools guide](../guides/coney-tools.md#progress).
+
+### The history {#history}
+
+[The history page](history.md) has one point per day of `main`: the Reimplemented, Understood and Researched shares
+as the bars measure them. Git has the days, so nothing is appended or committed: for each day's last commit the docs
+build extracts the tracker's inputs (`docs/progress/`, the research pages, the roadmap, the bindings and the `@orig`
+tags) into a temporary folder and measures them with the current code, so every day is on today's definition. A day
+before the tracker existed, or in a format it can no longer read, is left out. How a deploy reuses the published days
+and what a pull request's build shows: [the coney-tools guide](../guides/coney-tools.md#progress).
+
 ## Keeping it current
 
 - An engineer adds a `[[function]]` block to `functions.toml` in the same commit as the code carrying its `@orig`
@@ -67,5 +122,5 @@ exact size instead. How to use the commands: [The coney-tools command line](../g
 Nothing generated is committed, so these changes never conflict with another pull request's. The tables and the
 badge data are produced from the inputs by the documentation build (`mkdocs build --strict` shows them locally too),
 and `uv run --project python coney-tools progress check`, which CI runs, fails when `functions.toml` and the `@orig`
-tags in `src/` disagree or an input is malformed. `coney-tools progress render <folder>` writes the filled page and
-the badge files to a folder, to look at them without a docs build.
+tags in `src/` disagree or an input is malformed. `coney-tools progress render <folder>` writes the filled pages,
+the badge files, the pictures and the numbers to a folder, to look at them without a docs build.

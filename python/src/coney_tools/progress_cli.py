@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from coney_tools import elf, progress, progress_render, progress_research, wad
+from coney_tools import elf, progress, progress_render, progress_research, progress_site, wad
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.wad_cli import open_disc
 
@@ -63,7 +63,12 @@ def _load_checked(root: Path) -> progress.Progress | None:
 
 def _page_template(root: Path) -> str:
     """The committed docs/progress/index.md, which holds the marker the build fills in."""
-    path = root / progress.PAGE_FILE
+    return _template(root, progress.PAGE_FILE)
+
+
+def _template(root: Path, page: Path) -> str:
+    """The committed page `page` (relative to `root`), with LF line endings."""
+    path = root / page
     try:
         return _normalise(path.read_bytes().decode("utf-8"))
     except (OSError, UnicodeDecodeError) as error:
@@ -82,34 +87,56 @@ def run_check() -> int:
     if state is None:
         print("progress: fix the problems above")
         return 1
-    progress_render.fill_page(_page_template(root), progress_render.render_page(state), progress.PAGE_FILE.as_posix())
+    site = progress_site.build_site(root, state, reconstruct_history=False)
+    progress_render.fill_page(
+        _page_template(root),
+        progress_render.render_page(state, site.grid_html, site.missions_html),
+        progress.PAGE_FILE.as_posix(),
+    )
+    progress_render.fill_history_page(
+        _template(root, progress.HISTORY_PAGE_FILE), site.history_html, progress.HISTORY_PAGE_FILE.as_posix()
+    )
     progress_render.badge_files(state)
     print(f"progress: inputs are consistent ({len(state.functions)} functions, {len(state.milestones)} milestones)")
     return 0
 
 
-def run_render(out_dir: Path) -> int:
-    """Write what the docs build publishes to `out_dir`: the filled page and the badge JSON files.
+def run_render(out_dir: Path, history: bool = True) -> int:
+    """Write what the docs build publishes to `out_dir`: the filled pages, the badge JSON, the pictures and numbers.
 
-    For looking at the numbers without a docs build; nothing under the checkout changes.
+    For looking at the numbers without a docs build; nothing under the checkout changes. `history` False skips the
+    git walk that rebuilds the daily history (the chart then holds only today's point).
     """
     root = find_repo_root(Path.cwd())
     state = _load_checked(root)
     if state is None:
         print("progress: fix the problems above first")
         return 1
+    site = progress_site.build_site(root, state, reconstruct_history=history)
     page = progress_render.fill_page(
-        _page_template(root), progress_render.render_page(state), progress.PAGE_FILE.as_posix()
+        _page_template(root),
+        progress_render.render_page(state, site.grid_html, site.missions_html),
+        progress.PAGE_FILE.as_posix(),
+    )
+    history_page = progress_render.fill_history_page(
+        _template(root, progress.HISTORY_PAGE_FILE), site.history_html, progress.HISTORY_PAGE_FILE.as_posix()
     )
     badges = progress_render.badge_files(state)
     try:
         (out_dir / progress_render.BADGES_DIR).mkdir(parents=True, exist_ok=True)
         (out_dir / "progress" / "index.md").write_text(page, encoding="utf-8")
+        (out_dir / "progress" / "history.md").write_text(history_page, encoding="utf-8")
         for name, text in badges.items():
             (out_dir / progress_render.BADGES_DIR / name).write_text(text, encoding="utf-8")
+        for name, text in site.files.items():
+            target = out_dir / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
     except OSError as error:
         raise ConfigError(f"{out_dir}: cannot be written ({error})") from error
-    print(f"progress: wrote progress/index.md and {len(badges)} badge files to {out_dir}")
+    print(
+        f"progress: wrote 2 pages, {len(badges)} badge files and {len(site.files)} picture and data files to {out_dir}"
+    )
     return 0
 
 

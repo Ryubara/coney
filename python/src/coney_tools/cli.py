@@ -495,8 +495,13 @@ def _add_progress_commands(groups: Any) -> None:
     show = commands.add_parser("show", help="print how much is reimplemented and researched")
     show.add_argument("--json", action="store_true", help="print everything as JSON")
     commands.add_parser("check", help="check the tracker's inputs (functions.toml, @orig tags, ranges, roadmap)")
-    render = commands.add_parser("render", help="write the page and badge JSON the docs build publishes, to a folder")
-    render.add_argument("out_dir", type=Path, help="a folder to write progress/index.md and progress/badges/ to")
+    render = commands.add_parser(
+        "render", help="write the pages, pictures, badge JSON and numbers the docs build publishes, to a folder"
+    )
+    render.add_argument("out_dir", type=Path, help="a folder to write progress/ (the pages, badges and pictures) to")
+    render.add_argument(
+        "--no-history", action="store_true", help="skip rebuilding the daily history from git (only today's point)"
+    )
     sizes = commands.add_parser("sizes", help="check the listed functions' sizes against your own disc")
     sizes.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
@@ -799,7 +804,7 @@ def _run_progress(args: argparse.Namespace) -> int:
     if args.command == "check":
         return progress_cli.run_check()
     if args.command == "render":
-        return progress_cli.run_render(args.out_dir)
+        return progress_cli.run_render(args.out_dir, history=not args.no_history)
     if args.command == "ghidra":
         return progress_cli.run_ghidra(args.url, args.check)
     if args.command == "backlog":

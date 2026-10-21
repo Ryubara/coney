@@ -18,11 +18,15 @@ not_in_nav: |
 extra_css:
   - stylesheets/extra.css
   - stylesheets/home.css
+  # The progress pictures: docs/guides/coney-tools.md, "progress".
+  - stylesheets/progress-grid.css
 extra_javascript:
   # The home page's scroll effect: docs/guides/writing-docs.md, "The home page".
   - javascripts/home.js
   # Mermaid diagrams drawn with the ELK layout: docs/guides/writing-docs.md, "Diagrams".
   - javascripts/mermaid-elk.js
+  # The progress picture's tooltips: docs/guides/coney-tools.md, "progress".
+  - javascripts/progress-grid.js
 
 theme:
   name: material
@@ -79,7 +83,9 @@ nav:
   - Home: index.md
   - Roadmap: roadmap.md
   - Changelog: changelog.md
-  - Progress: progress/index.md
+  - Progress:
+      - Overview: progress/index.md
+      - History: progress/history.md
   - Missions:
       - Overview: missions/index.md
       - Story missions:

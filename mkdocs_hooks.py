@@ -3,7 +3,8 @@
 No file names the repository's or the site's address: they come from the build. Pages link files outside `docs/` as
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
 built from. It also adds the Changelog page, written from the git history at build time, fills the progress page's
-tables and writes the README's badge data (shields.io endpoint JSON) into the site, so none of those is committed.
+tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress numbers into the
+site, so none of those is committed.
 """
 
 import os
@@ -47,11 +48,14 @@ def on_config(config):
     return config
 
 
-# The progress tracker's state for this build, read in on_files and used by on_page_markdown.
+# The progress tracker's state for this build, read in on_files and used by on_page_markdown, and the pictures and
+# numbers made from it (coney_tools.progress_site).
 _progress_state = None
+_progress_site = None
 
-# The committed progress page, whose marker the build fills.
+# The committed progress pages, whose markers the build fills.
 _PROGRESS_PAGE = "progress/index.md"
+_HISTORY_PAGE = "progress/history.md"
 
 
 def load_progress(root):
@@ -75,11 +79,58 @@ def load_progress(root):
     return state
 
 
-def fill_progress_page(markdown, state):
-    """The progress page's Markdown with its marker replaced by the generated tables of `state`."""
+def fill_progress_page(markdown, state, site=None):
+    """The progress page's Markdown with its marker replaced by the generated tables of `state` (and `site`'s pictures)."""
     from coney_tools import progress_render
 
-    return progress_render.fill_page(markdown, progress_render.render_page(state), _PROGRESS_PAGE)
+    grid_html = site.grid_html if site else ""
+    missions_html = site.missions_html if site else ""
+    return progress_render.fill_page(
+        markdown, progress_render.render_page(state, grid_html, missions_html), _PROGRESS_PAGE
+    )
+
+
+def fill_history_page(markdown, site):
+    """The history page's Markdown with its marker replaced by the chart and the table of days."""
+    from coney_tools import progress_render
+
+    return progress_render.fill_history_page(markdown, site.history_html, _HISTORY_PAGE)
+
+
+def build_progress_site(root, state, repo_url=None):
+    """The progress pictures and numbers for this build (coney_tools.progress_site.build_site).
+
+    The history is rebuilt from git only when `CONEY_PROGRESS_HISTORY=full` (the deploy sets it; each missing day costs
+    one extraction of the tracker's inputs, a few seconds); otherwise it is the cache plus today, which keeps pull
+    request and local builds quick. `CONEY_PROGRESS_HISTORY_CACHE` names a copy of the previously published
+    history.json, whose days a deploy reuses, so it extracts one commit rather than all of them.
+    """
+    from coney_tools import progress_history, progress_site
+
+    cache = None
+    cache_path = os.environ.get("CONEY_PROGRESS_HISTORY_CACHE")
+    if cache_path:
+        try:
+            cache = Path(cache_path).read_text(encoding="utf-8")
+        except OSError:
+            cache = None  # nothing published yet: the history is rebuilt in full
+    head = None
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "log", "-1", "--format=%h%x09%ct"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+        short, stamp = out.split("\t")
+        head = (progress_history.utc_day(int(stamp)), short)
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        head = None
+    return progress_site.build_site(
+        Path(root),
+        state,
+        repo_url=repo_url,
+        head=head,
+        history_cache=cache,
+        reconstruct_history=os.environ.get("CONEY_PROGRESS_HISTORY") == "full",
+    )
 
 
 def progress_badge_files(state):
@@ -92,10 +143,13 @@ def progress_badge_files(state):
 def on_page_markdown(markdown, config, page=None, **_):
     """Rewrites `repo:<path>` links to the file on the default branch, before MkDocs validates links.
 
-    On the progress page it first replaces the marker with the generated tables.
+    On the progress page it first replaces the marker with the generated tables and pictures, on the history page with
+    the chart and the table of days.
     """
     if page is not None and page.file.src_uri == _PROGRESS_PAGE and _progress_state is not None:
-        markdown = fill_progress_page(markdown, _progress_state)
+        markdown = fill_progress_page(markdown, _progress_state, _progress_site)
+    if page is not None and page.file.src_uri == _HISTORY_PAGE and _progress_site is not None:
+        markdown = fill_history_page(markdown, _progress_site)
     base = config.get("repo_url")
     if not base:
         # No repository to point at (a copy without git): an empty anchor keeps the strict build passing.
@@ -188,13 +242,16 @@ def on_files(files, config):
     from mkdocs.exceptions import PluginError
     from mkdocs.structure.files import File
 
-    global _progress_state
+    global _progress_state, _progress_site
     root = Path(config.config_file_path).parent
     try:
         _progress_state = load_progress(root)
+        _progress_site = build_progress_site(root, _progress_state, config.get("repo_url"))
     except (RuntimeError, ImportError, OSError) as error:
         raise PluginError(f"progress: {error}") from error
     for uri, text in progress_badge_files(_progress_state).items():
+        files.append(File.generated(config, uri, content=text))
+    for uri, text in _progress_site.files.items():
         files.append(File.generated(config, uri, content=text))
     for uri in _SERVED_ASSETS:
         if not (root / uri).is_file():
