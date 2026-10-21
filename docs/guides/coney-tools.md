@@ -426,16 +426,18 @@ uv run --project python coney-tools pcsx2 status [--json]
 
 `claim` takes a free copy (or the named one) atomically and prints its folder, PINE port and debug server port (a line
 `pcsx2-dir=... port=... debug-port=...`; `--json` has `port` and `debug_port`, which is `null` for a copy without the
-debug server); it hands back your own
-claim when you hold one, and takes over a stale one (its processes gone, or older than `--max-age-hours`, default 4,
-with no process) saying so. A copy running PCSX2 without a claim is never handed out. `release` closes the PCSX2 it
-recorded (only while that process is still a PCSX2) and drops the claim; another agent's claim needs `--force`.
-`status` lists every copy with its holder, the time, the PINE and debug ports, whether PCSX2 runs (by pid or by either
-port) and stale claims; it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*`
-folders with an `inis/PCSX2.ini` under `pcsx2_root` (default: `../../emulators`); two copies on one port (PINE or
-debug server) are refused, naming both. The claims are under `pcsx2_claims_dir` (default:
-`pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`, whatever a worktree's
-`scratch_dir` says, so every worktree sees the same claims).
+debug server); it hands back your own claim when you hold one, and takes over a stale one (its processes gone, or
+older than `--max-age-hours`, default 4, with no process) saying so. A claim whose copy has a live process is never
+stale, whatever its age or owner: a PCSX2 running from the copy's folder, a live recorded PCSX2 or holder pid, or a
+listening PINE or debug server port; that includes a claim whose owner file is unreadable (shown as holder `?`), which
+is stale only after a few seconds and only with nothing running in the copy. A copy running PCSX2 without a claim is
+never handed out. `release` closes the PCSX2 it recorded (only while that process is still a PCSX2) and drops the
+claim; another agent's claim needs `--force`. `status` lists every copy with its holder, the time, the PINE and debug
+ports, whether PCSX2 runs (by pid or by either port) and stale claims; it warns about copies whose ini has
+`[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an `inis/PCSX2.ini` under `pcsx2_root` (default:
+`../../emulators`); two copies on one port (PINE or debug server) are refused, naming both. The claims are under
+`pcsx2_claims_dir` (default: `pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`,
+whatever a worktree's `scratch_dir` says, so every worktree sees the same claims).
 
 ```sh
 uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]
