@@ -108,6 +108,7 @@ def table(reports: list[Report]) -> str:
         {
             f"{r.meta.get('build', '?')} build, {r.meta.get('level', '?')}, {r.frames} frames measured"
             f"{' headless' if r.meta.get('headless') == 'yes' else ''}, renderer {r.meta.get('renderer', '?')}"
+            f"{', skinning ' + r.meta['skinning'] if 'skinning' in r.meta else ''}"
             for r in reports
         }
     )
