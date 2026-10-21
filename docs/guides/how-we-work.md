@@ -38,8 +38,10 @@ Every feature goes through the same steps:
 
 Recipes are the shared ways of making things happen in the running original: finding, moving and spawning humans,
 editing their attributes and the player's stats, giving the crew orders, raising events, going to a level, mission or
-checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipe` (being added,
-issue #533). Until it lands, the techniques are in [Driving PCSX2](research-workflow.md#driving-pcsx2).
+checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipe` on a PCSX2 copy
+you hold a claim on; the list, with the address and evidence behind each recipe, is [PCSX2 recipes](pcsx2-recipes.md).
+A new way of triggering something becomes a recipe there ([Driving PCSX2](research-workflow.md#driving-pcsx2) explains
+the techniques underneath).
 
 ## One role: the engineer {#engineer}
 
