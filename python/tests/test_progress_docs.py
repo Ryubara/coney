@@ -95,3 +95,58 @@ def test_the_repository_is_ready_for_the_build() -> None:
     assert named and named <= written
     # No generated number is committed to the README.
     assert "progress:start" not in readme and "img.shields.io/badge/" not in readme
+
+
+def test_the_hook_builds_the_pictures_for_the_progress_and_history_pages(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The pictures are inline on the progress page, the chart on the history page, and the data files are listed."""
+    from test_progress import HISTORY_BLOCK
+    from test_progress_grid import make_grid_checkout
+
+    hooks = load_hooks()
+    root = make_grid_checkout(tmp_path)
+    monkeypatch.delenv("CONEY_PROGRESS_HISTORY", raising=False)
+    monkeypatch.delenv("CONEY_PROGRESS_HISTORY_CACHE", raising=False)
+    state = hooks.load_progress(root)
+    site = hooks.build_progress_site(root, state, "https://example.invalid/r")
+    assert "progress/functions.json" in site.files and "progress/progress.json" in site.files
+    monkeypatch.setattr(hooks, "_progress_state", state, raising=True)
+    monkeypatch.setattr(hooks, "_progress_site", site, raising=True)
+    config = {"repo_url": None}
+    progress_page = hooks.on_page_markdown(BLOCK, config, page=page_of("progress/index.md"))
+    assert "<svg" in progress_page and "cg-s-reimplemented" in progress_page and "## Every function" in progress_page
+    history_page = hooks.on_page_markdown(HISTORY_BLOCK, config, page=page_of("progress/history.md"))
+    assert "cg-chart" in history_page and progress_render.HISTORY_MARKER not in history_page
+
+
+def test_a_published_history_is_the_cache_of_the_next_build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`CONEY_PROGRESS_HISTORY_CACHE` names the previous history.json: its earlier days stay in the new history."""
+    from test_progress_grid import make_grid_checkout
+
+    hooks = load_hooks()
+    root = make_grid_checkout(tmp_path / "repo")
+    state = hooks.load_progress(root)
+    cache = tmp_path / "history.json"
+    old = {
+        "schema": 1,
+        "points": [
+            dict(
+                date="2020-01-01",
+                commit="abc",
+                game_bytes=10,
+                reimplemented_bytes=1,
+                reimplemented_functions=1,
+                researched_bytes=5,
+            )
+        ],
+        "skipped": [],
+    }
+    cache.write_text(json.dumps(old), encoding="utf-8")
+    monkeypatch.delenv("CONEY_PROGRESS_HISTORY", raising=False)
+    monkeypatch.setenv("CONEY_PROGRESS_HISTORY_CACHE", str(cache))
+    site = hooks.build_progress_site(root, state)
+    dates = [p["date"] for p in json.loads(site.files["progress/history.json"])["points"]]
+    assert dates[0] == "2020-01-01" and len(dates) == 2
+    monkeypatch.setenv("CONEY_PROGRESS_HISTORY_CACHE", str(tmp_path / "missing.json"))
+    assert len(json.loads(hooks.build_progress_site(root, state).files["progress/history.json"])["points"]) == 1

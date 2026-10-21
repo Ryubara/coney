@@ -242,17 +242,36 @@ publishes them from `main`, so pull requests never conflict on them. `check` fai
 * a `subsystem` that is not the one whose range in `totals.toml` holds the address (the message names the right
   one; outside every range it is `unattributed`);
 * an address inside middleware or outside `.text`, an address listed twice, or sizes that overlap;
-* a progress page without its single `<!-- progress:generated -->` marker, where the build puts the tables.
+* a progress page without its single `<!-- progress:generated -->` marker, where the build puts the tables and
+  pictures, or a history page without its `<!-- progress:history -->` marker.
 
 `mkdocs build --strict` shows the tables on the page locally too, and fails on the same problems.
 
+The pictures come from `progress_grid.py` (one square per function, from the Ghidra listing, the tracker's measures
+and the source map's file tables), `progress_picture.py` (layout and SVG), `progress_history.py` (one point per day
+from git) and `progress_site.py` (the page's HTML and the files of the site); `mkdocs_hooks.py` calls them. The
+page's tooltips are `docs/javascripts/progress-grid.js`, the colours `docs/stylesheets/progress-grid.css`, and what
+they mean is on [the page](../progress/index.md#the-picture). Where the fidelity audit's results will be read is
+`progress_grid.load_audited`: it returns no addresses until the audit stores a machine-readable result on `main`, and
+the picture then draws the Audited state.
+
 ```sh
-uv run --project python coney-tools progress render <folder>
+uv run --project python coney-tools progress render <folder> [--no-history]
 ```
 
-Writes the progress page as the build fills it (`progress/index.md`) and the badge files (`progress/badges/*.json`,
-shields.io endpoint JSON that the README's badges read) to `<folder>`, to look at them without a docs build. It
-refuses to write while the inputs disagree, as `check` finds.
+Writes what the build publishes to `<folder>`, to look at it without a docs build: the progress and history pages as
+the build fills them (`progress/index.md`, `progress/history.md`), the badge files (`progress/badges/*.json`,
+shields.io endpoint JSON that the README's badges read), the pictures (`progress/progress.svg`,
+`progress-size.svg`, `missions.svg`, `history.svg`), the raw numbers (`progress/progress.json`), the per-function
+table the tooltips read (`progress/functions.json`) and the history (`progress/history.json`). It rebuilds the daily
+history from git, a few seconds a day; `--no-history` keeps it to today's point. It refuses to write while the inputs
+disagree, as `check` finds.
+
+The docs build does the same, with the history limited so a pull request's build stays quick: it keeps the days of the
+file named by `CONEY_PROGRESS_HISTORY_CACHE` (the previously published `progress/history.json`) and today, and measures
+the missing days only when `CONEY_PROGRESS_HISTORY=full`. The `docs` workflow sets both on a push to `main`: it
+downloads the published file (a missing one just means every day is measured), builds with `full` and deploys the
+result, so each deploy extracts one commit.
 
 ```sh
 uv run --project python coney-tools progress sizes [DISC] [--fill]

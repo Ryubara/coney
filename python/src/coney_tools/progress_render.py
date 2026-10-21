@@ -16,6 +16,8 @@ from coney_tools.progress import UNATTRIBUTED, Progress, ProgressError
 
 #: Where docs/progress/index.md says "the generated tables go here".
 PAGE_MARKER = "<!-- progress:generated -->"
+#: Where docs/progress/history.md says "the chart and the table of days go here".
+HISTORY_MARKER = "<!-- progress:history -->"
 GENERATED_NOTE = (
     "<!-- Generated when the docs are built, from docs/progress/*.toml, the @orig tags in src/\n"
     "     and the roadmap's status table. Edit those, not this. -->"
@@ -185,14 +187,22 @@ def _function_table(progress: Progress) -> list[str]:
     return lines
 
 
-def render_page(progress: Progress) -> str:
-    """The docs page's generated block (without the markers)."""
+def render_page(progress: Progress, grid_html: str = "", missions_html: str = "") -> str:
+    """The docs page's generated block (without the markers).
+
+    `grid_html` and `missions_html` are the pictures (progress_site.py), put after the summary and the milestones;
+    the page has neither before the checkout has a Ghidra listing or a missions list.
+    """
     lines = ["## Overall", "", _badges(progress), "", *_summary_rows(progress, "../roadmap.md"), ""]
     missing = sum(1 for f in progress.functions if f.size is None)
     if missing:
         lines += [f"{missing} reimplemented function(s) have no size yet and add no bytes.", ""]
+    if grid_html:
+        lines += ["## Every function", "", grid_html, ""]
     lines += ["## Milestones", "", "| Milestone | Status |", "| --- | --- |"]
     lines += [f"| [{m.name}](../roadmap.md#{m.anchor}) | {m.status} |" for m in progress.milestones]
+    if missions_html:
+        lines += ["", "## Missions", "", missions_html]
     lines += ["", "## By subsystem", "", *_subsystem_table(progress), ""]
     lines += ["## Understood by subsystem", "", *_understood_table(progress), ""]
     lines += ["## Research coverage", "", *_coverage_table(progress), ""]
@@ -209,6 +219,13 @@ def fill_page(text: str, block: str, path: str) -> str:
     if text.count(PAGE_MARKER) != 1:
         raise ProgressError(f"{path}: needs exactly one {PAGE_MARKER} line, where the generated tables go")
     return text.replace(PAGE_MARKER, f"{GENERATED_NOTE}\n{block}")
+
+
+def fill_history_page(text: str, block: str, path: str) -> str:
+    """`text` (the committed docs/progress/history.md) with HISTORY_MARKER replaced by the generated `block`."""
+    if text.count(HISTORY_MARKER) != 1:
+        raise ProgressError(f"{path}: needs exactly one {HISTORY_MARKER} line, where the chart and table go")
+    return text.replace(HISTORY_MARKER, f"{GENERATED_NOTE}\n{block}")
 
 
 def _endpoint(label: str, message: str, color: str) -> str:

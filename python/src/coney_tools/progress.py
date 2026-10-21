@@ -34,6 +34,8 @@ TOTALS_FILE = DATA_DIR / "totals.toml"
 FUNCTIONS_FILE = DATA_DIR / "functions.toml"
 #: The committed page; the docs build fills its marker with the generated tables (progress_render.PAGE_MARKER).
 PAGE_FILE = DATA_DIR / "index.md"
+#: The committed history page, whose marker the build fills with the chart and the table of days.
+HISTORY_PAGE_FILE = DATA_DIR / "history.md"
 ROADMAP_FILE = Path("docs/roadmap.md")
 SOURCE_DIR = Path("src")
 

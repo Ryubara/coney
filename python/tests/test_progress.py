@@ -67,6 +67,8 @@ ROADMAP = """# Roadmap
 
 # The committed progress page: hand-written text around the marker the docs build fills.
 BLOCK = f"before\n\n{progress_render.PAGE_MARKER}\n\nafter\n"
+# The committed history page, with its own marker.
+HISTORY_BLOCK = f"history\n\n{progress_render.HISTORY_MARKER}\n"
 
 
 def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
@@ -77,6 +79,7 @@ def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
     (root / "docs" / "progress" / "totals.toml").write_text(TOTALS, encoding="utf-8")
     (root / "docs" / "progress" / "functions.toml").write_text(functions, encoding="utf-8")
     (root / "docs" / "progress" / "index.md").write_text(BLOCK, encoding="utf-8")
+    (root / "docs" / "progress" / "history.md").write_text(HISTORY_BLOCK, encoding="utf-8")
     (root / "docs" / "roadmap.md").write_text(ROADMAP, encoding="utf-8")
     (root / "src" / "core").mkdir(parents=True)
     (root / "src" / "core" / "thing.h").write_text(tags, encoding="utf-8")
@@ -227,6 +230,12 @@ def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pyte
     }
     assert json.loads((badges / "milestones.json").read_text(encoding="utf-8"))["message"] == "1 of 3 done"
     assert (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8") == BLOCK
+    # The history page and the numbers: no Ghidra listing here, so no function picture, but today's history point.
+    history = (out / "progress" / "history.md").read_text(encoding="utf-8")
+    assert history.startswith("history") and progress_render.HISTORY_MARKER not in history and "<svg" in history
+    assert json.loads((out / "progress" / "progress.json").read_text(encoding="utf-8"))["functions"] == 0
+    assert (out / "progress" / "history.svg").is_file() and not (out / "progress" / "progress.svg").exists()
+    assert (root / "docs" / "progress" / "history.md").read_text(encoding="utf-8") == HISTORY_BLOCK
 
 
 def test_render_follows_the_inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -257,6 +266,24 @@ def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pyte
     assert data["researched"]["bytes"] == 1024
     assert [m["status"] for m in data["milestones"]] == ["done", "in progress", "not started"]
     assert data["subsystems"][-1]["name"] == "unattributed"
+
+
+def test_render_can_skip_the_history_walk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`--no-history` leaves the history at today's point without reading git."""
+    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG)
+    monkeypatch.chdir(root)
+    assert main(["progress", "render", str(tmp_path / "out"), "--no-history"]) == 0
+    history = json.loads((tmp_path / "out" / "progress" / "history.json").read_text(encoding="utf-8"))
+    assert len(history["points"]) == 1 and history["skipped"] == []
+
+
+def test_missing_history_marker_is_exit_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(make_checkout(tmp_path))
+    (tmp_path / "docs" / "progress" / "history.md").write_text("no marker\n", encoding="utf-8")
+    assert main(["progress", "check"]) == 2
+    assert "history.md: needs exactly one <!-- progress:history -->" in capsys.readouterr().err
 
 
 def test_missing_marker_is_exit_2(
