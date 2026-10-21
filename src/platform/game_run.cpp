@@ -2,17 +2,21 @@
 // What both of Coney's entry points do the same way (docs/guides/building.md#debug-tools).
 #include "platform/game_run.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 
+#include "core/frame_clock.h"
 #include "core/log.h"
 #include "core/log_filter.h"
 #include "fileio/disc.h"
 #include "gamemodes/memory_card_mode.h"
 #include "movies/movie_mode.h"
+#include "platform/frame_pacer.h"
 #include "platform/profile_folder.h"
 
 namespace coney::platform {
@@ -135,6 +139,54 @@ void printGameSummary(GameSession& session, AudioOutput* audio, const audio::Obj
         logText(std::format("object sounds: {} played, {} material pairs, {} unplayed\n", objectSounds.played(),
                               objectSounds.materialPairs(), objectSounds.unplayed()));
     }
+}
+
+bool startNetPlay(NetPlay& net, const Options& options) {
+    if (const std::optional<std::string> name = options.netName; name && !net.setPlayerName(*name)) {
+        return false;
+    }
+    if (const std::optional<NetEndpoint> host = options.netHost; host) {
+        net.setPort(host->port);
+        if (!net.hostOn(host->address)) {
+            return false;
+        }
+    }
+    if (const std::optional<NetEndpoint> join = options.netJoin; join) {
+        net.setAddress(join->address);
+        net.setPort(join->port);
+        if (!net.join()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, bool realTime) {
+    // The game's fixed step: 30 a second (docs/guides/conventions.md#update-and-render).
+    constexpr std::uint64_t kStepNs = FrameClock::kNanosecondsPerSecond / 30;
+    hooks.beforeStep = [&net, realTime] {
+        if (!realTime) {
+            net.advance(kStepNs);
+        }
+        net.beforeStep();
+    };
+    hooks.afterStep = [&net] { net.afterStep(); };
+}
+
+void finishNetPlay(NetPlay& net, const Options& options) {
+    if (options.netHost || options.netJoin) {
+        logText(net.summary());
+    }
+    // This is after the last frame, so a short real wait does no harm, even in test mode; a pacer at 100 frames a
+    // second times it, the one real clock Coney reads, and is made only when a transport is still closing.
+    std::optional<FramePacer> closePacer;
+    net.shutdown([&closePacer] {
+        if (!closePacer) {
+            closePacer.emplace(100);
+            (void)closePacer->waitForFrame(); // the first call only starts the count
+        }
+        return closePacer->waitForFrame();
+    });
 }
 
 } // namespace coney::platform

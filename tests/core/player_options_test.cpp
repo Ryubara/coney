@@ -99,6 +99,9 @@ TEST_CASE("the release build's usage text lists only a player's options", "[opti
     CHECK(usage.find("--disc") != std::string::npos);
     CHECK(usage.find("--skip-movies") != std::string::npos);
     CHECK(usage.find("--frames") != std::string::npos);
+    CHECK(usage.find("--host") != std::string::npos);
+    CHECK(usage.find("--join") != std::string::npos);
+    CHECK(usage.find("--net-name") != std::string::npos);
     CHECK(usage.find("--play-level") == std::string::npos);
     CHECK(usage.find("--sandbox") == std::string::npos);
     CHECK(usage.find("--tunables") == std::string::npos);
@@ -106,4 +109,20 @@ TEST_CASE("the release build's usage text lists only a player's options", "[opti
     CHECK(usage.ends_with('\n'));
     // A continuation line stays with its option: --input-script's description follows it.
     CHECK(usage.find("--input-script") < usage.find("--headless"));
+}
+
+TEST_CASE("the release build takes network play's options", "[options][net]") {
+    // Network play ships to players (docs/guides/multiplayer.md), so a player's build hosts and joins from the
+    // command line as the debug tools' build does.
+    const std::array<std::string_view, 4> host{"--host", "127.0.0.1:27615", "--net-name", "Tester"};
+    auto hosting = parsePlayer(host);
+    REQUIRE(hosting.has_value());
+    REQUIRE(hosting->netHost.has_value());
+    CHECK(hosting->netHost->port == 27615);
+    CHECK(hosting->netName == "Tester");
+    const std::array<std::string_view, 2> join{"--join", "127.0.0.1"};
+    auto joining = parsePlayer(join);
+    REQUIRE(joining.has_value());
+    REQUIRE(joining->netJoin.has_value());
+    CHECK(joining->netJoin->address == "127.0.0.1");
 }

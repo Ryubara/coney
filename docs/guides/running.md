@@ -43,10 +43,12 @@ refuses any other with a message that names the debug tools; `coney --help` list
 coney [--disc PATH] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
       [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
+      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
       [--headless] [--frames N] [--input-script FILE] [--help]
 ```
 
-It plays the story from boot (or shows the idle screen without a disc). `--headless`, `--frames` and
+It plays the story from boot (or shows the idle screen without a disc), and hosts or joins network play
+([Network play](#network-play)) as any build does. `--headless`, `--frames` and
 `--input-script` are there for its own smoke tests; everything else on this page (the viewers, `--play-level`, the
 sandbox, the traces, the event log, the pad pipe, screenshots, clips, the debug menus) needs the debug tools.
 

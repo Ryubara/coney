@@ -116,6 +116,15 @@ add_test(NAME coney.release.plays_input_script
          COMMAND ${_coney_release_exe} --headless --frames 10 --input-script
                  "${PROJECT_SOURCE_DIR}/tests/support/menu_input.txt")
 set_tests_properties(coney.release.plays_input_script PROPERTIES TIMEOUT 30)
+add_test(NAME coney.release.hosts_headless COMMAND ${_coney_release_exe} --headless --frames 3 --host 127.0.0.1:0
+                                                     --net-name Tester)
+set_tests_properties(coney.release.hosts_headless PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION
+                                                             "net: hosting on port [1-9][0-9]* as Tester")
+add_test(NAME coney.release.joins_headless COMMAND ${_coney_release_exe} --headless --frames 3 --join 127.0.0.1:1)
+set_tests_properties(coney.release.joins_headless PROPERTIES TIMEOUT 30)
+add_test(NAME coney.release.host_and_join_refused COMMAND ${_coney_release_exe} --headless --frames 3 --host 0 --join
+                                                            127.0.0.1)
+set_tests_properties(coney.release.host_and_join_refused PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.release.has_no_debug_tools
          COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -DEXPECT=absent -P
                  "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")

@@ -694,21 +694,8 @@ int main(int argc, char** argv) {
     coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
     coney::platform::NetPlayControls netControls(netPlay); // the Network page's view of network play
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
-    if (const std::optional<std::string> name = options->netName; name && !netPlay.setPlayerName(*name)) {
+    if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
-    }
-    if (const std::optional<coney::NetEndpoint> host = options->netHost; host) {
-        netPlay.setPort(host->port);
-        if (!netPlay.hostOn(host->address)) {
-            return 1;
-        }
-    }
-    if (const std::optional<coney::NetEndpoint> join = options->netJoin; join) {
-        netPlay.setAddress(join->address);
-        netPlay.setPort(join->port);
-        if (!netPlay.join()) {
-            return 1;
-        }
     }
     // The Time page's bug report: the run log's ring into the log file.
     if (runLog) {
@@ -1119,16 +1106,8 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
-    // Network play receives before each step and sends after it. Test mode has no real clock, so there each step
-    // passes the network a fixed step's time, keeping a run the same every time.
-    const bool netRealTime = pacer.has_value();
-    hooks.beforeStep = [&netPlay, netRealTime] {
-        if (!netRealTime) {
-            netPlay.advance(coney::FrameClock::kNanosecondsPerSecond / kStepsPerSecond);
-        }
-        netPlay.beforeStep();
-    };
-    hooks.afterStep = [&netPlay] { netPlay.afterStep(); };
+    // Network play receives before each step and sends after it.
+    coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
     // `--record`: a clip of the frames as the game draws them (read back before the menus above are drawn) and of
     // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
     // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.
@@ -1242,22 +1221,8 @@ int main(int argc, char** argv) {
     if (audio && options->audioTest) {
         logText(audio->summary());
     }
-    if (options->netHost || options->netJoin) {
-        logText(netPlay.summary());
-    }
-    // Leaving network play: the other games get this one's Bye before its connections close. This is after the last
-    // frame, so a short real wait does no harm, even in test mode; a pacer at 100 frames a second times it, the one
-    // real clock Coney reads, and is made only when a transport is still closing.
-    {
-        std::optional<coney::platform::FramePacer> closePacer;
-        netPlay.shutdown([&closePacer] {
-            if (!closePacer) {
-                closePacer.emplace(100);
-                (void)closePacer->waitForFrame(); // the first call only starts the count
-            }
-            return closePacer->waitForFrame();
-        });
-    }
+    // Leaving network play: the other games get this one's Bye before its connections close.
+    coney::platform::finishNetPlay(netPlay, *options);
     if (session) {
         coney::platform::printGameSummary(*session, audio.get(), objectSounds, testMode);
     }

@@ -10,9 +10,11 @@
 #include "core/error.h"
 #include "core/options.h"
 #include "fileio/wad.h"
+#include "gamemodes/game_mode_stack.h"
 #include "platform/audio_output.h"
 #include "platform/game_session.h"
 #include "platform/log_output.h"
+#include "platform/net_play.h"
 #include "platform/window.h"
 
 namespace coney::platform {
@@ -62,5 +64,18 @@ void logWarning(std::string_view text);
 /// The end of a run that played the game: the movies played (when any), then in test mode what its humans asked to
 /// be heard and what the glass and doors played. Counts only.
 void printGameSummary(GameSession& session, AudioOutput* audio, const audio::ObjectSounds& objectSounds, bool testMode);
+
+/// Network play from the command line (docs/guides/multiplayer.md): `--net-name`, then hosting (`--host`) or joining
+/// (`--join`) from the start. False when one fails (the log says why), which ends the run as a bad argument does.
+[[nodiscard]] bool startNetPlay(NetPlay& net, const Options& options);
+
+/// Network play's part of the main loop: each step receives before it and sends after it (FrameHooks::beforeStep and
+/// afterStep), and `realTime` says whether the frame pacer passes it the real time (NetPlay::advance() from
+/// waitForFrame); without one (test mode) each step passes a fixed step's time, so a run is the same every time.
+void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, bool realTime);
+
+/// The end of network play: the summary line when the run hosted or joined, then the leave, waiting a little real time
+/// for the other games to get this one's Bye (NetPlay::shutdown()).
+void finishNetPlay(NetPlay& net, const Options& options);
 
 } // namespace coney::platform

@@ -31,10 +31,12 @@
 #include "gamemodes/idle_mode.h"
 #include "gui/global_strings.h"
 #include "platform/audio_output.h"
+#include "platform/enet_transport.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
+#include "platform/net_play.h"
 #include "platform/render_engine.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
@@ -134,6 +136,13 @@ int main(int argc, char** argv) {
     }
     modes.setInput(input.get());
 
+    // Network play (docs/guides/multiplayer.md), hosted or joined from the start with `--host` or `--join`; a port that
+    // cannot be opened ends the run, as any bad argument does.
+    coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
+    if (!coney::platform::startNetPlay(netPlay, *options)) {
+        return 1;
+    }
+
     // The pacing (docs/guides/conventions.md#update-and-render): test mode runs in lockstep with no clock; otherwise
     // the frame pacer measures real time and the frame clock turns it into fixed steps, a cap of 30 being the
     // original's rhythm of one step a frame.
@@ -167,7 +176,11 @@ int main(int argc, char** argv) {
     };
     if (pacer) {
         coney::platform::FramePacer& paced = *pacer;
-        hooks.waitForFrame = [&paced] { return paced.waitForFrame(); };
+        hooks.waitForFrame = [&paced, &netPlay] {
+            const std::uint64_t nanoseconds = paced.waitForFrame();
+            netPlay.advance(nanoseconds);
+            return nanoseconds;
+        };
         hooks.endFrame = [&paced, &audio](std::uint32_t steps) {
             paced.endFrame(steps);
             if (audio) {
@@ -177,10 +190,12 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
+    coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {
         printText(pacer->summary());
     }
+    coney::platform::finishNetPlay(netPlay, *options);
     if (session) {
         coney::platform::printGameSummary(*session, audio.get(), objectSounds, testMode);
     }

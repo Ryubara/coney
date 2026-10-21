@@ -259,24 +259,24 @@ extras (`PlayScenery::setExtras()`), both made in `coney_devtools`. So no game l
 
 **The two entry points.** `main.cpp` is the debug tools' `coney`: every option, the viewers, the sandbox, the menus.
 `main_release.cpp` is the release build's: a player's options alone (`OptionSet::Player`: the disc, the language, the
-profiles, the frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window) and test
-mode's `--headless`, `--frames` and `--input-script` for its smoke tests; any other option is refused with a message
-that names the debug tools. It plays the story from boot, or the idle screen without a disc. Network play (`--host`,
-`--join`, the Network page) is not set up there yet: only the debug tools' `coney` has it. What both set up the same way
-(the disc, the window, the session's settings, the sound, the end-of-run counts) is `platform/game_run.h`, so a player's
-game is set up as the tested one. A build with the tools also builds `main_release.cpp` as `coney_release`, so every
-build checks that the game links without them; without the tools it is `coney` itself.
+profiles, the frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window, network play)
+and test mode's `--headless`, `--frames` and `--input-script` for its smoke tests; any other option is refused with a
+message that names the debug tools. It plays the story from boot, or the idle screen without a disc. Network play is
+there too, from the command line (`--host`, `--join`, `--net-name`, set up by `platform/game_run.h` as in the debug
+tools' `coney`); the Network page is a debug page. What both set up the same way (the disc, the window, the session's
+settings, the sound, the end-of-run counts) is `platform/game_run.h`, so a player's game is set up as the tested one. A
+build with the tools also builds `main_release.cpp` as `coney_release`, so every build checks that the game links
+without them; without the tools it is `coney` itself.
 
-**What proves it.** Besides the Python test below, ctest runs the release entry point's smoke tests
-(`coney.release.*`: it starts headless, prints a player's options, refuses `--play-level`, plays an input script) in
-every build, and `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the
-debug pages' titles, the developer overlay's settings file, Dear ImGui's default one; `cmake/debug_tools_markers.cmake`)
-and fails when it finds one. On the debug tools' `coney` the same script must find them
-(`coney.debug_tools_markers_found`), so the check cannot pass by finding nothing. The release build does not build
-the unit tests yet; CI builds it on Windows and Linux ([What CI runs](#what-ci-runs)).
-`python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources and fails when a game library
-lists a debug source, includes a `debug/` or `sandbox/` header or links a debug library, or anything but
-`coney_devtools` links `imgui`.
+**What proves it.** Besides the Python test below, ctest runs the release entry point's smoke tests (`coney.release.*`:
+it starts headless, prints a player's options, refuses `--play-level`, plays an input script, hosts and joins) in every
+build, and `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug
+pages' titles, the developer overlay's settings file, Dear ImGui's default one; `cmake/debug_tools_markers.cmake`) and
+fails when it finds one. On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`),
+so the check cannot pass by finding nothing. The release build does not build the unit tests yet; CI builds it on
+Windows and Linux ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and
+the game's sources and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links
+a debug library, or anything but `coney_devtools` links `imgui`.
 
 ### Debug information on MSVC {#debug-info}
 
