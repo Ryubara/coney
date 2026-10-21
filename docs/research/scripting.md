@@ -2567,6 +2567,12 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    takes it ([Characters: climbing](characters.md#climb)). The way on is the steel stairs beside it (material 3,
    y 367-369.5): two 33° flights with a landing from x 167 to 177.5, a platform at z 16.46 to x 193, then the jump in
    `vbJumpWarn_09` over the gap (x 193.5-200.5) to the gallery's roof (z 14.4) and `vbEnterGallery` (x 200.8-208.8).
+   **Outrunning the pursuers**, confirmed (runtime) in PCSX2 (`coney-tools trace mission` from a level3
+   checkpoint 4 state, 2026-10-21): a player who walks up to each climb is caught (Snow knocked down near x -97
+   and knocked out at x -74.5 by about update 2,000), while one who sprints into the climbs reaches
+   `vbEnterGallery` (`SetCheckPoint(5)` at update 3,038). Coney's playthrough test drives the second way and
+   reaches the gallery for every `--ai-seed` from 0 to 7
+   ([Testing](../guides/testing.md#playthrough-tests)).
 7. **`ch4.EnterGallery`** (`vbEnterGallery`, kind 2): objective done, handlers off, the chase gangs removed,
    tireless and fast-climber cleared, the jump scene, then the Warriors warped to the gallery and `NextMission`.
 
@@ -2862,12 +2868,6 @@ handler component, as for `TriggerSphereEnable`).
 
 ## Open questions
 
-- **[The rooftop chase](#level3) in Coney:** with the pad driven along the roofs (the playthrough test,
-  [Testing](../guides/testing.md#playthrough-tests)), Snow reaches the gallery only for some sequences of the AI's
-  draws: on main at 613998259, for `--ai-seed` 0 and 5 of 0-5. In the others the Hi-Hat pursuers beat him down
-  before the gallery. Open: whether the original's pursuers (a hostile devil run, gait 5, attacking at 1 m, up to
-  13 m/s) catch a player who sprints the route, so that the driver must play better, or whether Coney's pursuers or
-  its crew differ from the original's.
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
   reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
   (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and

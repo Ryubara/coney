@@ -28,6 +28,7 @@
 #include "fileio/wad.h"
 #include "human/human.h"
 #include "human/player.h"
+#include "platform/game_session.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
@@ -39,10 +40,11 @@ using coney::human::Traversal;
 // What a leg of a route asks of the driver.
 enum class Move : std::uint8_t {
     Run,   // sprint (L2 held) at full deflection to the point; done within kArrived of it
-    Climb, // sprint to within kClimbSlowWithin of the point beyond a face, then walk at kClimbStick, tapping triangle
-           // near it; done once a climb has ended
+    Climb, // sprint (L2 held) at the point beyond a face, tapping triangle from kClimbTapWithin of it; done once a
+           // climb has ended
     Jump, // sprint (L2 held) along the leg's line and tap triangle from the point's x on; done once the jump has landed
-    Charge, // sprint (L2 held) along the leg's line and tap cross from the point's x on; done once the charge has ended
+    Charge, // sprint (L2 held) along the leg's line and tap cross from the point's x on; done once a charge has ended
+            // kChargeThrough past the point, else he backs off kChargeBackOff and charges again
 };
 
 // One leg of a route: what to do and its point on the roofs (x, y; game axes, metres).
@@ -54,22 +56,25 @@ struct Leg {
 
 // How close to a Run leg's point counts as there, m.
 constexpr float kArrived = 1.0F;
-// The stick's deflection on the way to a climb: below the jump's 0.95 (docs/research/characters.md#jump), so a tap
-// that finds no climbable face never jumps, and above the climb's 0.12.
-constexpr float kClimbStick = 0.9F;
-// How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, and a
-// standing climb takes a face within about 1.2 m (docs/research/characters.md#climb).
+// How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, so the
+// face is then about 2-2.5 m ahead. A player at the run or sprint gait probes 4.5 m for a face and takes it with the
+// running climb, which keeps his speed (docs/research/characters.md#climb), so he climbs without slowing down.
 constexpr float kClimbTapWithin = 4.0F;
-// How far from a Climb leg's point the driver stops sprinting and goes on at kClimbStick, m: beyond the tap distance,
-// so the walk has slowed him before triangle is tapped.
-constexpr float kClimbSlowWithin = 6.0F;
-// Frames between button taps while a climb, a jump or a charge is wanted.
+// Frames between triangle taps on the way to a climb: every other frame (pressed, then released), so a sprint of about
+// 0.25 m a frame meets the face with a tap.
+constexpr int kClimbTapEvery = 2;
+// Frames between button taps while a charge is wanted.
 constexpr int kTapEvery = 6;
 // How far past a Jump or Charge leg's take-off x the driver aims along the leg's line, m.
 constexpr float kJumpLead = 20.0F;
 // The attack record's bit a run attack or a charge holds (`+0x08` & 0x1000000, docs/research/combat.md#run-attacks):
 // with L2 held it is the charge, so a Charge leg's charge has ended once it clears.
 constexpr std::uint32_t kChargeRecordBit = 0x1000000;
+// How far past a Charge leg's point he must be when the charge ends for the leg to be done, m: the barrier row it
+// breaks stands 3.7 m past the point (kChaseRoute).
+constexpr float kChargeThrough = 4.0F;
+// How far back from a Charge leg's point he runs to charge again when a charge ended short of the row, m: a run-up.
+constexpr float kChargeBackOff = 3.0F;
 
 // A pad driven by what player 1 is doing: it follows `route` leg by leg, turning each wanted direction into the left
 // stick by the shown camera's heading (the stick moves the player relative to the camera,
@@ -96,8 +101,11 @@ class RouteDriver final : public coney::InputSource {
         }
         const Leg& leg = m_route[m_leg];
         const coney::anim::Vec3 feet = human.position();
-        // Where to steer: the leg's point, or for a jump or a charge a point well past the take-off on the leg's line.
-        const float aimX = leg.move == Move::Jump || leg.move == Move::Charge ? leg.x + kJumpLead : leg.x;
+        // Where to steer: the leg's point, for a jump or a charge a point well past the take-off on the leg's line, or
+        // back from a charge that did not get through, for another run-up.
+        const float aimX = m_backingOff                                         ? leg.x - kChargeBackOff
+                           : leg.move == Move::Jump || leg.move == Move::Charge ? leg.x + kJumpLead
+                                                                                : leg.x;
         const float dx = aimX - feet.x;
         const float dy = leg.y - feet.y;
         const float reach = std::hypot(leg.x - feet.x, leg.y - feet.y);
@@ -106,13 +114,14 @@ class RouteDriver final : public coney::InputSource {
         // (docs/research/ai-gangs.md#warrior-auto-commands); that the chapter's Setup turns the commands off, and the
         // pursuers' speed, are inferred (docs/research/scripting.md#level3, docs/research/ai-scripting.md#devil-run).
         // So he sprints wherever he is not about to climb; Snow is tireless in the chase, so the sprint never runs
-        // out (docs/research/characters.md#sprint).
-        const bool slowing = leg.move == Move::Climb && reach < kClimbSlowWithin;
-        steer(pad, *player, dx, dy, slowing ? kClimbStick : 1.0F);
+        // out (docs/research/characters.md#sprint). The original's pursuers catch a driver that slows down for each
+        // climb too (issue #531: the same route driven in PCSX2 lost Snow at the climbs near x -97 and -74.5), so he
+        // runs into the climbs as a player who wants to win does.
+        steer(pad, *player, dx, dy, 1.0F);
 
-        // Buttons: L2 held while he sprints and for a jump's or a charge's run-up; triangle tapped near a climb's face
-        // or past a jump's take-off; cross tapped past a charge's (L2 held, then cross pressed: the charge,
-        // combat.md#run-attacks).
+        // Buttons: L2 held throughout (the sprint, and a jump's or a charge's run-up); triangle tapped near a climb's
+        // face or past a jump's take-off; cross tapped past a charge's (L2 held, then cross pressed: the charge,
+        // combat.md#run-attacks), not while backing off for another.
         const bool tapFrame = m_frame % kTapEvery == 0;
         const bool onGround = human.traversal() == Traversal::None && !human.airborne();
         switch (leg.move) {
@@ -120,10 +129,8 @@ class RouteDriver final : public coney::InputSource {
             pad.buttons |= coney::pad::kL2;
             break;
         case Move::Climb:
-            if (!slowing) {
-                pad.buttons |= coney::pad::kL2;
-            }
-            if (tapFrame && onGround && reach < kClimbTapWithin) {
+            pad.buttons |= coney::pad::kL2;
+            if (m_frame % kClimbTapEvery == 0 && onGround && reach < kClimbTapWithin) {
                 pad.buttons |= coney::pad::kTriangle;
             }
             break;
@@ -136,7 +143,7 @@ class RouteDriver final : public coney::InputSource {
             break;
         case Move::Charge:
             pad.buttons |= coney::pad::kL2;
-            if (tapFrame && onGround && feet.x >= leg.x && !m_sawMove) {
+            if (tapFrame && onGround && feet.x >= leg.x && !m_sawMove && !m_backingOff) {
                 pad.buttons |= coney::pad::kCross;
             }
             break;
@@ -148,14 +155,16 @@ class RouteDriver final : public coney::InputSource {
     [[nodiscard]] bool done() const { return m_leg >= m_route.size(); }
     // The legs done.
     [[nodiscard]] std::size_t legsDone() const { return m_leg; }
-    // Climbs, jumps and charges made.
+    // Climbs, jumps and charges made (a charge that ended short of the row and was made again counts each time).
     [[nodiscard]] int climbs() const { return m_climbs; }
     [[nodiscard]] int jumps() const { return m_jumps; }
     [[nodiscard]] int charges() const { return m_charges; }
 
   private:
     // Moves on past the legs `human` has finished: a run once he is at its point, a climb or a jump once one began
-    // and he is back on his feet, a charge once one began and ended.
+    // and he is back on his feet, a charge once one began and ended past the barrier row. A charge that ended short
+    // of it (it stops where it meets a barrier, and does not always break it) sends him back for another run-up
+    // through the gap or at the barrier again.
     void advance(const coney::human::Human& human) {
         while (!done()) {
             const Leg& leg = m_route[m_leg];
@@ -176,10 +185,20 @@ class RouteDriver final : public coney::InputSource {
                 m_jumps += finished ? 1 : 0;
                 break;
             case Move::Charge: {
+                const coney::anim::Vec3 feet = human.position();
+                if (m_backingOff) {
+                    m_backingOff = std::hypot(leg.x - kChargeBackOff - feet.x, leg.y - feet.y) >= kArrived;
+                    break;
+                }
                 const bool charging = (human.gateInput().flags & kChargeRecordBit) != 0;
                 m_sawMove = m_sawMove || charging;
-                finished = m_sawMove && !charging;
-                m_charges += finished ? 1 : 0;
+                const bool ended = m_sawMove && !charging;
+                m_charges += ended ? 1 : 0;
+                finished = ended && feet.x >= leg.x + kChargeThrough;
+                if (ended && !finished) {
+                    m_sawMove = false;
+                    m_backingOff = true;
+                }
                 break;
             }
             }
@@ -220,6 +239,7 @@ class RouteDriver final : public coney::InputSource {
     std::function<const coney::human::Player*()> m_player;
     std::size_t m_leg = 0;
     bool m_sawMove = false;
+    bool m_backingOff = false; // a charge ended short of the barrier row: back to the run-up point
     int m_climbs = 0;
     int m_jumps = 0;
     int m_charges = 0;
@@ -256,63 +276,63 @@ constexpr std::uint64_t kChaseLimit = 5400;
 
 } // namespace
 
-TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the gallery",
-          "[disc][story][playthrough][!mayfail]") {
-    // **Open question** (docs/research/scripting.md#open-questions, the rooftop chase in Coney): the driver reaches
-    // the gallery only for some sequences of the AI's draws (on main, `--ai-seed` 0 and 5 of 0-5); in the others the
-    // pursuers beat Snow down. Until it is known whether the pursuers or the driver are at fault, a failure here is
-    // reported, not fatal.
+TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the gallery for every AI seed",
+          "[disc][story][playthrough]") {
     // docs/research/scripting.md#level3: the AI walks Snow to vbStartRail, the stick then runs him east along the
-    // roofs, and vbEnterGallery hands over to the gallery chapter (SetCheckPoint(5)). A fall fails the mission.
+    // roofs, and vbEnterGallery hands over to the gallery chapter (SetCheckPoint(5)). A fall fails the mission. The
+    // chase is run for each of the AI's seeds 0-7 (`--ai-seed`): the pursuers' draws differ, and a driver that wins
+    // for one sequence only passes by luck (issue #531).
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    coney::test::DiscSession* session = nullptr;
-    RouteDriver driver(kChaseRoute, [&session]() -> const coney::human::Player* {
-        coney::platform::PlayLevelMode* play = session != nullptr ? session->session().play() : nullptr;
-        return play != nullptr ? &play->player() : nullptr;
-    });
-    coney::test::DiscSession run(*wad, driver);
-    session = &run;
-    run.session().startAtLevel("level3", 4);
-    REQUIRE(run.runUntilPlay());
+    constexpr std::uint32_t kSeeds = 8;
+    for (std::uint32_t seed = 0; seed < kSeeds; ++seed) {
+        INFO("--ai-seed " << seed);
+        coney::test::DiscSession* session = nullptr;
+        RouteDriver driver(kChaseRoute, [&session]() -> const coney::human::Player* {
+            coney::platform::PlayLevelMode* play = session != nullptr ? session->session().play() : nullptr;
+            return play != nullptr ? &play->player() : nullptr;
+        });
+        const coney::platform::GameSessionSettings settings{
+            .skipMovies = true, .rumble = std::nullopt, .aiSeed = seed, .profiles = std::nullopt};
+        coney::test::DiscSession run(*wad, driver, settings);
+        session = &run;
+        run.session().startAtLevel("level3", 4);
+        REQUIRE(run.runUntilPlay());
 
-    const auto failed = [&run] {
-        return std::ranges::any_of(run.log(),
-                                   [](const std::string& line) { return line.starts_with("mission failed"); });
-    };
-    const auto& state = run.session().flow().state();
-    // The chapter's Setup turns player 1's Warrior commands 0-5 off (docs/research/scripting.md#level3), so through
-    // the chase the chief's automatic attack is refused and the crew keeps running ahead
-    // (docs/research/ai-gangs.md#warrior-auto-commands): the race the driver has to win.
-    bool commandsOn = false;
-    run.runUntil(
-        [&] {
-            const auto& commands = state.characters.warriorCommands.at(0);
-            // Until the gallery's chapter (checkpoint 5), which sets its own.
-            commandsOn = commandsOn || (state.checkPoint < 5 &&
-                                        std::ranges::any_of(commands.begin(), commands.begin() + 6, std::identity{}));
-            return state.checkPoint >= 5 || failed();
-        },
-        kChaseLimit);
+        const auto failed = [&run] {
+            return std::ranges::any_of(run.log(),
+                                       [](const std::string& line) { return line.starts_with("mission failed"); });
+        };
+        const auto& state = run.session().flow().state();
+        // The chapter's Setup turns player 1's Warrior commands 0-5 off (docs/research/scripting.md#level3), so
+        // through the chase the chief's automatic attack is refused and the crew keeps running ahead
+        // (docs/research/ai-gangs.md#warrior-auto-commands): the race the driver has to win.
+        bool commandsOn = false;
+        run.runUntil(
+            [&] {
+                const auto& commands = state.characters.warriorCommands.at(0);
+                // Until the gallery's chapter (checkpoint 5), which sets its own.
+                commandsOn =
+                    commandsOn || (state.checkPoint < 5 &&
+                                   std::ranges::any_of(commands.begin(), commands.begin() + 6, std::identity{}));
+                return state.checkPoint >= 5 || failed();
+            },
+            kChaseLimit);
 
-    const coney::platform::PlayLevelMode* play = run.session().play();
-    const std::uint64_t errors = run.session().flow().scripts().errors();
-    std::printf("  level3 checkpoint 4 chase: checkpoint %.0f after %llu frames of play, legs %zu of %zu, climbs %d, "
-                "jumps %d, charges %d, %llu script errors, %s\n",
-                state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
-                kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.charges(),
-                static_cast<unsigned long long>(errors), failed() ? "failed" : "not failed");
-    if (play != nullptr) {
-        const coney::anim::Vec3 feet = play->player().human().position();
-        std::printf("  player 1 at (%.1f, %.1f, %.1f), health %d\n", static_cast<double>(feet.x),
-                    static_cast<double>(feet.y), static_cast<double>(feet.z), play->player().human().health().value());
+        const coney::platform::PlayLevelMode* play = run.session().play();
+        const std::uint64_t errors = run.session().flow().scripts().errors();
+        const int health = play != nullptr ? play->player().human().health().value() : 0;
+        std::printf("  level3 checkpoint 4 chase, ai seed %u: checkpoint %.0f after %llu frames of play, legs %zu of "
+                    "%zu, climbs %d, jumps %d, charges %d, health %d, %llu script errors, %s\n",
+                    seed, state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
+                    kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.charges(), health,
+                    static_cast<unsigned long long>(errors), failed() ? "failed" : "not failed");
+        CHECK(errors == 0);
+        CHECK_FALSE(commandsOn);
+        CHECK_FALSE(failed());
+        CHECK(state.checkPoint == 5);
+        CHECK(health > 0);
     }
-    CHECK(errors == 0);
-    CHECK_FALSE(commandsOn);
-    CHECK_FALSE(failed());
-    CHECK(state.checkPoint == 5);
-    REQUIRE(play != nullptr);
-    CHECK(play->player().human().health().value() > 0);
 }
