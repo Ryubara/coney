@@ -248,6 +248,17 @@ def test_check_body_refuses_an_unchecked_checklist_item(
     assert "finish it or take it out" in out and "Later" in out
 
 
+def test_check_body_accepts_local_images_only_when_asked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    local = GOOD_BODY.replace("Screenshots: none (no change)", "![after](./shots/after.png)")
+    (tmp_path / "body.md").write_text(local, encoding="utf-8")
+    assert main(["repo", "check-body", "--body", "body.md"]) == 1
+    assert "is a local file" in capsys.readouterr().out
+    assert main(["repo", "check-body", "--body", "body.md", "--local-images"]) == 0
+
+
 def test_check_body_with_an_unreadable_file_exits_2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

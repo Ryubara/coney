@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import sys
 from collections.abc import Sequence
@@ -148,16 +149,24 @@ def _repo_check_docs(body_file: str | None) -> int:
 
 
 def _repo_check_body(
-    body_file: str | None, worktree: Path | None = None, base: str = DEFAULT_BASE, title: str | None = None
+    body_file: str | None,
+    worktree: Path | None = None,
+    base: str = DEFAULT_BASE,
+    title: str | None = None,
+    local_images: bool = False,
 ) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused.
 
     With a `worktree`, the Model line must also name the models its commits after `base` credit in trailers; CI has
     only the description and gives none. With the pull request's `title` (CI gives it), a title area a player sees must
-    have the Testing section's `Runtime:` line; without one that rule is skipped, and the output says so.
+    have the Testing section's `Runtime:` line; without one that rule is skipped, and the output says so. With
+    `local_images` an image may point at a local file, as in a description `gh pr create --attach` is about to upload
+    (the release guard hook passes it when the command attaches files).
     """
     conventions = _conventions()
     rules = conventions.pull_requests
+    if local_images:
+        rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
     if body_file is None or body_file == "-":
         body = sys.stdin.read()
     else:
@@ -291,6 +300,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_body_parser.add_argument(
         "--base", default=DEFAULT_BASE, help="what the branch is compared with, with --worktree (default: %(default)s)"
+    )
+    check_body_parser.add_argument(
+        "--local-images",
+        action="store_true",
+        help="accept an image that points at a local file, which `gh pr create --attach` uploads",
     )
     render_parser = repo_commands.add_parser(
         "render",
@@ -1065,7 +1079,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
-        return _repo_check_body(args.body, args.worktree, args.base, args.title)
+        return _repo_check_body(args.body, args.worktree, args.base, args.title, args.local_images)
     return _repo_check()
 
 
