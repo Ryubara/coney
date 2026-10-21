@@ -1,6 +1,7 @@
-# Build and test the engine on every supported OS and compiler, under the sanitizers and clang-tidy, and check the
-# formatting. A draft pull request, or one that changes no engine file (only documentation or the tools), skips all but
-# the formatting (see the changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# Build and test the engine on every supported OS and compiler and under the sanitizers, and check the formatting;
+# clang-tidy runs nightly and by hand only (see the clang-tidy job). A draft pull request, or one that changes no
+# engine file (only documentation or the tools), skips all but the formatting (see the changes job). Actions are
+# pinned to a full commit SHA; the tag is in the comment beside it.
 name: build
 
 on:
@@ -12,7 +13,7 @@ on:
   # Run it by hand on a branch that is already on GitHub, without opening a pull request: the Actions tab, this
   # workflow, "Run workflow", or `gh workflow run build.yml --ref <branch>`. clang-tidy then checks every file.
   workflow_dispatch:
-  # Every night on main, so what the pull requests' clang-tidy skips (see the clang-tidy job) is still checked.
+  # Every night on main: the one run besides a manual one where clang-tidy checks (see the clang-tidy job).
   schedule:
     - cron: "23 7 * * *"
 
@@ -159,12 +160,15 @@ jobs:
       - if: ${{ !cancelled() }}
         uses: ./.github/actions/ccache-save
 
-  # A full pass takes over an hour, so a pull request checks only what it changes (see .github/scripts/tidy-files.sh);
-  # pushes to main, the nightly run, a manual run and a change to the build setup check every file. A pull request
-  # with no source file to check (a test or data change, say) skips the steps below but the job still passes.
+  # A full pass takes an hour or more, so it runs only nightly and by hand, and nothing waits on it: build-ok does not
+  # need it. Pull requests are tidied before they are pushed, by `coney-tools check changed` on the files they change
+  # (maintainer decision, 2026-10-21; docs/guides/building.md#clang-tidy). The pull-request branch below picks those
+  # files by .github/scripts/tidy-files.sh, ready if pull requests run it again.
   clang-tidy:
     needs: changes
-    if: needs.changes.outputs.build == 'true'
+    if: >-
+      needs.changes.outputs.build == 'true' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     env:
       CC: clang-19
@@ -274,13 +278,13 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uvx pre-commit run --all-files --show-diff-on-failure
 
-  # The one required check for the jobs above. A skipped matrix job reports its name unexpanded ("build
-  # (${{ matrix.name }})"), so "build (windows-msvc)" could never be a required check that a docs-only pull request
-  # satisfies; this job always runs, passes when every needed job passed or was skipped on purpose, and fails when one
-  # failed or was cancelled (including the changes job, which would skip the rest).
+  # The one required check for build and sanitizers (clang-tidy runs nightly, outside it). A skipped matrix job reports
+  # its name unexpanded ("build (${{ matrix.name }})"), so "build (windows-msvc)" could never be a required check that
+  # a docs-only pull request satisfies; this job always runs, passes when every needed job passed or was skipped on
+  # purpose, and fails when one failed or was cancelled (including the changes job, which would skip the rest).
   build-ok:
     if: always()
-    needs: [changes, build, sanitizers, clang-tidy]
+    needs: [changes, build, sanitizers]
     runs-on: ubuntu-24.04
     steps:
       - name: Check the results of the needed jobs
