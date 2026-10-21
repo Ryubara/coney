@@ -1007,6 +1007,12 @@ and the re-target is made due (`+0x14` = now; step 6 runs when `+0x14` < now, so
 both are left (`+0x14` starts at 0, also due). So every fight goal re-targets on its second update, and again one
 second apart, and a resumed one (after a block or a reaction) picks its kind afresh.
 
+At runtime (confirmed (runtime), PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the
+`fight-retarget-due` hook at `0x002b3c18`): in level99's sparring fight the three Warriors' fight goals started or
+resumed 28 times in 1,198 updates. Each time the first re-target test read `+0x14` equal to now (no re-target), and
+the test on the next update read now 33-34 ms past it and re-targeted: the update after that, `+0x14` was 966-967 ms
+ahead. Four times a goal started or resumed twice in one update, and the second test also read `+0x14` equal to now.
+
 #### The fight goal in order {#fight-order}
 
 `FightGoal_Process` (`0x002b3ab0`), every update. Confirmed (code); this corrects an earlier reading that put the
