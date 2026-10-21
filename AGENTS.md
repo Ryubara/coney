@@ -58,9 +58,8 @@ first hour; the rest of this file is for agents.
 
 ## Code
 
-- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides
-  layout; no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants
-  `CONEY_ASSERT`.
+- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides layout;
+  no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
 - Reimplemented code cites the original (`@orig 0x<addr> <Name> (<File>.cpp)` and its research page); other gameplay
   code says `@coney-only <reason>` (`conventions.md#coney-only`); script-usable ones: `#coney-only-capabilities`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,
