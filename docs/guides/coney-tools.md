@@ -1328,7 +1328,7 @@ command in it parses.
 ```
 
 Replace `<workspace>` in the `prs` poller with the folder that holds `repos/` and `worktrees/` on your machine, for
-example `C:/Repositories/Coney`. What each poller wakes for:
+example `D:/work/coney`. What each poller wakes for:
 
 * **`triage`** wakes for each issue waiting for [triage](issues.md#triage): an open issue carrying `S-needs-triage`,
   read every two minutes. It wakes once per issue, keyed by its number, so the coordinator's own comment does not wake
