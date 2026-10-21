@@ -261,14 +261,14 @@ coordinator, who pushes them when CI has room.
 - **Every description is reviewed before it is pushed** ([below](#pr-review)). The coordinator runs
   `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
   the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.
-- **The release guard holds the push to CI's checks.** A Claude Code hook (`.claude/hooks/release_guard.py`) runs
-  before `gh pr create` and `gh pr edit`. `create` needs `--title` and `--body-file` (never `--body`, `--fill`, `--web`
-  or a body on stdin), and the title and the file must pass `repo check-title` and `repo check-body --title` (with
-  `--local-images` when the command has `--attach`), the checks CI's required `title` and `body` jobs run; `edit`
-  checks the title or file it changes. On 2026-10-20 and 21 CI's `body` job refused four pull requests for a missing
-  section, a mistake this finds before the push. A relative `--body-file` is found from the folder a leading `cd`
-  moved to. A command that names only another repository passes, a title or file the shell fills in (`"$TITLE"`) is
-  not checked, and the hook lets a command through when it cannot run the checks.
+- **The release guard holds the push to CI's checks.** A Claude Code hook (`.claude/hooks/release_guard.py`) runs before
+  `gh pr create` and `gh pr edit`. `create` needs `--title` and `--body-file` (never `--body`, `--fill`, `--web` or a
+  body on stdin), and the title and the file must pass `repo check-title` and `repo check-body --title` (with
+  `--local-images` when the command has `--attach`), the checks CI's required `title` and `body` jobs run; `edit` checks
+  the title or file it changes. On 2026-10-20 and 21 CI's `body` job refused six pull requests for a missing section or
+  a local image not attached, mistakes this finds before the push. A relative `--body-file` is found from the folder a
+  leading `cd` moved to. A command that names only another repository passes, a title or file the shell fills in
+  (`"$TITLE"`) is not checked, and the hook lets a command through when it cannot run the checks.
 - **Stale failures restart themselves.** `coney-tools repo pr-health --rerun --apply` (run from the coordinator's
   watch loop) reruns a required check that failed because the runner or GitHub did (cancelled, never started, timed
   out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or
