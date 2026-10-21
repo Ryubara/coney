@@ -18,7 +18,19 @@ from coney_tools import hooks as hook_tools
 from coney_tools import pcsx2_claims as claims
 from coney_tools import recipes, recipes_cli, recipes_render, recipes_run
 from coney_tools.config import find_repo_root
-from coney_tools.game_memory import HUMAN_TABLE, PER_PLAYER_TABLE, TRANSFORM_TABLE, ExpressionError, to_raw
+from coney_tools.game_memory import (
+    BRAIN_TABLE,
+    GAME_STATE_POINTER,
+    HANDLE_TABLE,
+    HUMAN_TABLE,
+    PER_PLAYER_TABLE,
+    TRANSFORM_TABLE,
+    WARRIOR_TACTICS,
+    ExpressionError,
+    GameMemory,
+    to_raw,
+)
+from coney_tools.input_script import stick_byte
 from coney_tools.pcsx2_state import Edit, Patch
 from coney_tools.pine import PineClient, Read
 
@@ -270,6 +282,15 @@ def test_buttons_and_sticks_as_coney_makes_them() -> None:
         recipes_run.button_mask("jump")
 
 
+def test_a_stick_percentage_is_rounded_to_a_whole_percent() -> None:
+    # A direction worked out with sin/cos (87 % across, 50 % up for 60 degrees) gives Coney's bytes for 87 and 50.
+    assert recipes_run.stick_percent(100 * math.sin(math.radians(60))) == stick_byte(87)
+    assert recipes_run.stick_percent(100 * math.cos(math.radians(60))) == stick_byte(50)
+    assert recipes_run.stick_percent(1e-14) == stick_byte(0)
+    with pytest.raises(ValueError, match="-100 to 100"):
+        recipes_run.stick_percent(101)
+
+
 # --- running over PINE ------------------------------------------------------------------------------------------------
 
 
@@ -371,6 +392,55 @@ def test_the_humans_table(fake_pine: tuple[FakeGame, int]) -> None:
     _, lines = _run(port, _recipe([{"humans": True}]))
     assert len(lines) == 3
     assert "Hero" in lines[2] and "  0  " in lines[2]
+
+
+def _make_crew(game: FakeGame) -> None:
+    """Give the fake game's two humans a brain each (handles `0x00050003` for Ped, `0x00050004`..), Ped on the player's
+    gang with two goals and the player as target, and a gang record with a tactic."""
+    ped, hero = HUMAN_TABLE, HUMAN_TABLE + 0x6D0
+    game.write(ped + 0x90, 4, 0x00040003)
+    game.write(hero + 0x90, 4, 0x00050004)
+    for human, serial in ((ped, 3), (hero, 4)):
+        index = game.read(human + 0x92, 2)
+        game.write(HANDLE_TABLE + index * 8, 4, human)
+        game.write(HANDLE_TABLE + index * 8 + 4, 2, serial)
+    brain = BRAIN_TABLE + 4 * 0x2F0
+    game.write(brain + 0x2C, 1, 1)
+    for slot, vtable in enumerate((0x00543000, 0x00543100)):
+        goal = 0x00700000 + slot * 0x40
+        game.write(brain + 0x40 + 4 * slot, 4, goal)
+        game.write(goal + 0xC, 4, vtable)
+    game.write(brain + 0x124, 4, 0x00050004)
+
+
+def test_members_prints_a_handle_list_with_goals_and_target(fake_pine: tuple[FakeGame, int]) -> None:
+    game, port = fake_pine
+    _make_crew(game)
+    list_at = 0x00710000
+    game.write(list_at, 4, 0x00040003)  # Ped
+    game.write(list_at + 4, 4, 0xFFFFFFFF)  # a free entry
+    game.write(list_at + 8, 4, 0x00040009)  # a stale handle (wrong serial)
+    steps: list[dict[str, Any]] = [{"let": {"gang": str(list_at)}}, {"members": "gang", "count": 4}]
+    with PineClient(port) as pine:
+        lines: list[str] = []
+        runner = recipes_run.Runner(pine, goal_types={0x00543000: 0x34, 0x00543100: 8}, out=lines.append)
+        runner.run(_recipe(steps), {})
+    assert len(lines) == 2  # the header and Ped only
+    assert lines[1].split() == ["4", "Ped", "-1", "52", "8", "5"]
+
+
+def test_warrior_command_names_a_tactic_by_its_vtable(fake_pine: tuple[FakeGame, int]) -> None:
+    game, port = fake_pine
+    gang_tactic = 0x006EA1B0
+    game.write(gang_tactic + 0x1C, 4, 0x00544160)
+    with PineClient(port) as pine:
+        names = GameMemory(pine).names()
+        assert names["warrior_command"](gang_tactic) == 1  # attack
+        assert names["warrior_command"](0) == -1  # no tactic
+        game.write(gang_tactic + 0x1C, 4, 0x00500000)
+        assert names["warrior_command"](gang_tactic) == -2  # a tactic the chief did not give
+        assert names["game_state"] == game.read(GAME_STATE_POINTER, 4)
+    assert sorted(set(WARRIOR_TACTICS.values())) == [0, 1, 2, 3, 4, 5]
 
 
 def test_lua_globals_walk_the_globals_table(fake_pine: tuple[FakeGame, int]) -> None:

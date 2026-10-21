@@ -34,6 +34,8 @@ every name bound before):
 - `text = "expr"`: print the C string at that address (`size`, default 32).
 - `write = "address expr"`, `type`, `value = "expr"`: write once, or again at each of the next `updates` updates.
 - `humans = true`: print every human in use: index, name, player number, position and heading.
+- `members = "address expr"`: print the humans of a handle list there (`count` words, default 16; a gang's members at
+  gang `+0x48`): index, name, player number, the brain's goal stack (type ids, bottom first) and target.
 - `globals = "expr"`: print the script's global variables whose names hold that text (`"''"` for all).
 - `call = "function expr"`, `args = [...]`: make the game call its function through the call hook (a hook with
   `call = true` among `patches`), wait for it, and bind the result to `result` (default `result`).
@@ -77,6 +79,7 @@ STEP_KINDS: dict[str, set[str]] = {
     "text": {"label", "size"},
     "write": {"type", "value", "updates"},
     "humans": set(),
+    "members": {"count"},
     "globals": {"limit"},
     "call": {"args", "result", "timeout"},
     "lua": {"result", "timeout"},
@@ -190,7 +193,7 @@ def _step(raw: object, where: str) -> dict[str, Any]:
     elif kind == "lua":
         if not isinstance(value, str) or not value.strip():
             raise RecipeError(f"{where}: lua takes the code as a string")
-    elif kind in ("require", "show", "text", "write", "call"):
+    elif kind in ("require", "show", "text", "write", "call", "members"):
         _check_expression(value, f"{where}: {kind}")
     elif kind in ("wait", "advance"):
         if isinstance(value, str):
