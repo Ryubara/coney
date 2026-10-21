@@ -306,8 +306,9 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
     case CameraKind::Rail:
         if (m_rail && m_place) {
             const auto placed = m_place(m_railTarget);
+            const std::optional<anim::Vec3> velocity = m_velocity ? m_velocity(m_railTarget) : std::nullopt;
             m_rail->update(placed ? std::optional<anim::Vec3>(placed->first) : std::nullopt, enabled(kSwitchRailLead),
-                           seconds);
+                           seconds, velocity.value_or(anim::Vec3{}));
         }
         break;
     case CameraKind::Fixed:
@@ -455,6 +456,10 @@ void Cameras::makeActive(double handle, float seconds) {
     }
     if (ref->kind == CameraKind::Path && m_path) {
         m_path->activate();
+    }
+    // The rail's mode 3 starts over on the update after an activation (CamRail_Activate).
+    if (ref->kind == CameraKind::Rail && m_rail) {
+        m_rail->activate();
     }
     // A tracking camera is placed on its target before it is first shown.
     stepTracking(*ref, 0.0F);

@@ -393,6 +393,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE raycast/collision_builder.cpp)
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE
+    hud/armies_hud.cpp
     hud/counter_panels.cpp
     hud/credits.cpp
     hud/crime_panel.cpp

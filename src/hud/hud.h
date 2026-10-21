@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "core/pad.h"
+#include "hud/armies_hud.h"
 #include "hud/counter_panels.h"
 #include "hud/credits.h"
 #include "hud/crime_panel.h"
@@ -306,6 +307,9 @@ class Hud {
     /// docs/research/hud-functions-lua.md#lock-pick-dial-layout).
     [[nodiscard]] LockPickHud& lockPick(std::size_t player) { return m_lockPick.at(player); }
     [[nodiscard]] const LockPickHud& lockPick(std::size_t player) const { return m_lockPick.at(player); }
+    /// The Armies of the Night parts: the credits line, the GO sign (HUD `+0xe650`) and the join messages.
+    [[nodiscard]] ArmiesHud& armies() { return m_armies; }
+    [[nodiscard]] const ArmiesHud& armies() const { return m_armies; }
     /// Player `player`'s fixed-camera icon (HUD `+0x135e0` + player × `0x100`).
     [[nodiscard]] FixedCamIcon& fixedCamIcon(std::size_t player) { return m_fixedCam.at(player); }
     [[nodiscard]] const FixedCamIcon& fixedCamIcon(std::size_t player) const { return m_fixedCam.at(player); }
@@ -489,6 +493,7 @@ class Hud {
     std::array<MugMeter, kPlayers> m_mug{};
     std::array<LockPickHud, kPlayers> m_lockPick{};
     std::array<FixedCamIcon, kPlayers> m_fixedCam{};
+    ArmiesHud m_armies;
     std::array<TagHud, kPlayers> m_tagPanels{};
     CounterPanels m_counters;
     ScriptedBars m_bars;

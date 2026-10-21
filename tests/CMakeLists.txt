@@ -90,6 +90,7 @@ add_executable(coney_tests
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    hud/armies_hud_test.cpp
     hud/credits_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp

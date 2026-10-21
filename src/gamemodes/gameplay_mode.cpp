@@ -489,6 +489,13 @@ void GameplayMode::enter() {
             const std::array<float, 3>& p = placement->position;
             return std::pair{anim::Vec3{p[0], p[1], p[2]}, placement->headingDegrees};
         });
+    // The rail's mode 3 reads its target's locomotion velocity.
+    m_cameras->setVelocityLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
+        if (const ai::Brain* brain = scripted->brain(handle); brain != nullptr) {
+            return brain->human().velocity();
+        }
+        return std::nullopt;
+    });
     // A locked camera's kept-in-view push moves a human the scripts made, keeping his heading.
     m_cameras->setMover([scripted = m_scripted.get()](double handle, anim::Vec3 feet) {
         if (ai::Brain* brain = scripted->brain(handle); brain != nullptr) {

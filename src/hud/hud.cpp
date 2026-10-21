@@ -21,9 +21,8 @@ constexpr int kObjectiveMark = 2;
 constexpr int kObjectiveSetMarked = 3;
 // The announcement kind that shows the script's own text.
 constexpr int kAnnounceCustom = 5;
-// The Armies of the Night levels, where the first-objective hint is not given.
-constexpr int kArmiesFirstLevel = 60;
-constexpr int kArmiesLastLevel = 64;
+// The stopwatch's seconds form, in the Armies of the Night levels (`0x0050eb34`, `0x0050eb38`).
+constexpr GuiPoint kArmiesStopWatchPlace{0.49F, 0.10F};
 // The player's arrow: the widget colour (`0x005fd310`, (178, 178, 178, 255) at run time), 0.03 overlay units wide
 // (`0x001c5210`).
 constexpr graphics::Rgba kPlayerBlipColour{178, 178, 178, 255};
@@ -68,6 +67,8 @@ int Hud::attachPlayer(int slot, int type) {
 
 void Hud::levelSetUp() {
     m_radar.scriptOn = true;
+    // The Armies of the Night parts: the GO sign off, no join message (docs/research/armies.md).
+    m_armies.levelSetUp();
     // **Coney's stand-in** for HUD_Render's fade branch, which hides the spinner the memory-card screen left on at
     // the level's first fully faded frame (docs/research/hud.md#hud-spinner): a level's set-up hides it.
     m_spinner.set(false);
@@ -87,6 +88,8 @@ void Hud::levelShutDown() {
     // W_GameState's switches, which Coney keeps here: the game state outlives the level.
     fresh.m_gameTutorialText = m_gameTutorialText;
     fresh.m_firstObjectiveHintGiven = m_firstObjectiveHintGiven;
+    // The Armies of the Night credits are a global (`0x00619910`), which global.lua sets again at each load.
+    fresh.m_armies.setCredits(m_armies.credits());
     // Shown or hidden and the spinner are the screen's, not the level's: the next set-up hides both.
     fresh.m_visible = m_visible;
     fresh.m_spinner = m_spinner;
@@ -153,7 +156,7 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
         }
         // The first slot-1 objective with the game's hints on queues one hint, once.
         if (slot == 1 && m_gameTutorialText && !m_firstObjectiveHintGiven &&
-            (m_levelNumber < kArmiesFirstLevel || m_levelNumber > kArmiesLastLevel)) {
+            !isArmiesLevel(m_levelNumber)) {
             m_firstObjectiveHintGiven = true;
             m_hints.queue(read(m_services.tutorialString, kFirstObjectiveHint), kGameHintPriority);
         }
@@ -373,6 +376,8 @@ void Hud::update(const HudFrame& frame) {
         return;
     }
     updateRadar(frame);
+    // The Armies of the Night parts (GoSign_Update, the ANHud join messages), in those levels only; player 1 is in.
+    m_armies.update(frame.nowMs, frame.levelNumber, {m_panels.at(0).attached(), m_panels.at(1).attached()});
     // 1. The player panels, with their values and pads.
     for (std::size_t i = 0; i < kPlayers; ++i) {
         PanelValues values = frame.players.at(i);
@@ -562,7 +567,14 @@ void Hud::renderScores(const HudCanvas& canvas) const {
         drawPlainText(canvas, gui::kTextFontSlot, std::to_string(row.score), kScoreRowsPlace.x + kScoreValueOffset, y,
                       metrics, row.colour);
     }
-    if (m_stopWatch.shown) {
+    if (m_stopWatch.shown && m_armies.active()) {
+        // An Armies of the Night level: the label (markup) and the whole seconds in two digits, centred at
+        // (0.49, 0.10) (StopWatchHud_UpdateSeconds, HUD +0x225d5).
+        const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
+        gui::TextStyle style = messageStyle(kArmiesStopWatchPlace.x);
+        style.alignment = gui::TextAlignment::Centre;
+        drawMessage(canvas, std::format("{}{:02}", m_stopWatch.label, ms / 1000), style, kArmiesStopWatchPlace.y);
+    } else if (m_stopWatch.shown) {
         // Minutes:seconds, the seconds truncated.
         const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
         const std::int32_t seconds = ms / 1000;
@@ -596,6 +608,7 @@ void Hud::render(const HudCanvas& canvas) const {
     renderArrow(canvas);
     m_spinner.render(canvas);
     renderScores(canvas);
+    m_armies.render(canvas, m_services.hudString);
     m_counters.render(canvas);
     // The bars go below the visible counter panels, and lower again while the stopwatch shows.
     const auto panels = static_cast<float>(std::ranges::count_if(

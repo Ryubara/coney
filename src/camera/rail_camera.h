@@ -31,7 +31,8 @@ struct RailSetup {
 enum class RailMode : std::uint8_t {
     Level,  ///< Mode 0, after `CamSetupRail`: at the target point's foot on the rail.
     Ahead,  ///< Mode 1: `lead` metres ahead of the target along the rail.
-    Behind, ///< Mode 2: `lead` metres behind it.
+    Behind,   ///< Mode 2: `lead` metres behind it.
+    Trailing, ///< Mode 3 (`CamModifyRail(5, pitch)`, the Armies levels): trails the target forward only, at a pitch.
 };
 
 /// One of the rail camera's settings, eased linearly to its target over the time left.
@@ -61,6 +62,11 @@ class RailCamera {
     static constexpr std::uint32_t kFieldOfView = 2; ///< Degrees; negative ignored.
     static constexpr std::uint32_t kShift = 3;       ///< The target point's shift along the rail, metres.
     static constexpr std::uint32_t kLookShift = 4;   ///< The look-at point's further shift along the rail, metres.
+    /// Degrees; at or above -360 switches the rail to mode 3 (RailMode::Trailing) and is its view pitch, below it
+    /// goes back to mode 0.
+    static constexpr std::uint32_t kMode3Pitch = 5;
+    /// Metres: mode 3's margin inside the view's sides for the targets (eased, kept for the keep-in-frame step).
+    static constexpr std::uint32_t kMode3Margin = 7;
     static constexpr std::uint32_t kPitch = 8;       ///< A fixed look-at pitch, degrees; below -360 off.
     static constexpr std::uint32_t kLookHeight = 9;  ///< The look-at offset's height, metres.
     /// An angle below this is off.
@@ -86,16 +92,22 @@ class RailCamera {
     void setLead(float lead, float seconds, bool ahead);
     /// `CamModifyRail(param, value, seconds)`: one setting eased to `value`. The distance and the height switched on
     /// from off start from the camera's present ones, and a height set negative eases back to the present height
-    /// before it switches off; the pitch switched on starts from the present one. **Coney stand-in**: settings 5, 6
-    /// and 7 (mode 3) are not traced and do nothing.
+    /// before it switches off; the pitch switched on starts from the present one. Setting 5 switches mode 3 on or off
+    /// (docs/research/camera.md#rail-mode3). Setting 6 is eased by the original and never read, so it is not kept.
     /// @orig 0x0011d228 Camera_ModifyRail (unknown)
+    /// @orig 0x0013fac8 CamRail_SetMode3Angle (unknown)
     void modify(std::uint32_t param, float value, float seconds);
 
+    /// `CameraMakeActive` on the rail: mode 3 starts over on its next update (`+0x3e7`).
+    /// @orig 0x0013b508 CamRail_Activate (unknown)
+    void activate() { m_starting = true; }
+
     /// One update of `seconds` with the target's feet at `feet` (nothing: no target, the update stops after the
-    /// easing): the settings eased, the target and look-at points made and damped, then the camera placed by its
-    /// mode; with `leadLook` (switch 7) a leading mode moves the look-at point along the rail by the lead.
+    /// easing) and his locomotion's velocity `velocity` (mode 3 reads it): the settings eased, the target and look-at
+    /// points made and damped, then the camera placed by its mode; with `leadLook` (switch 7) a leading mode moves the
+    /// look-at point along the rail by the lead.
     /// @orig 0x0013d010 CamRail_Update (unknown)
-    void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds);
+    void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity = {});
 
     /// What it shows.
     [[nodiscard]] CameraView view() const;
@@ -125,8 +137,16 @@ class RailCamera {
     void placeLevel(anim::Vec3 feet);
     // Modes 1 and 2: the lead ahead of or behind the target's place on the rail (CamRail_PlaceLeading).
     void placeLeading(anim::Vec3 feet, bool leadLook);
+    // Mode 3's placement (CamRail_PlaceMode3): the start after an activation, else the trailing move.
+    void placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 velocity, float seconds);
+    // Mode 3's look-at point: 2 m from `from` toward `toward` in plan, at the mode's pitch.
+    [[nodiscard]] anim::Vec3 pitchedLook(anim::Vec3 from, anim::Vec3 toward) const;
+    // Mode 3's projection of `p` on the current segment, in plan, clamped only at the rail's two ends.
+    [[nodiscard]] anim::Vec3 projectTrailing(anim::Vec3 p) const;
     // Picks the segment the target point is on (CamRail_ChooseSegment).
-    void chooseSegment();
+    void chooseSegment() { chooseSegmentFor(m_target); }
+    // Picks the segment point `p` is on; a change sets the hand-over blend.
+    void chooseSegmentFor(anim::Vec3 p);
     // The current segment's direction flattened to the ground plane and normalised; +y with no segment.
     [[nodiscard]] anim::Vec3 flatDirection() const;
     // Where `p` projects on segment `i` (0 at its first point, its length at the second) and the segment's length.
@@ -149,6 +169,13 @@ class RailCamera {
                        .target = -std::numeric_limits<float>::max(),
                        .secondsLeft = 0.0F};
     EasedValue m_lookHeight;
+    // Setting 5, radians; off (lowest float) outside mode 3.
+    EasedValue m_mode3Pitch{.current = -std::numeric_limits<float>::max(),
+                            .target = -std::numeric_limits<float>::max(),
+                            .secondsLeft = 0.0F};
+    EasedValue m_mode3Margin; // setting 7
+    bool m_starting = false;  // +0x3e7: mode 3 starts over on the next update
+    anim::Vec3 m_goal;        // +0x310: mode 3's goal for the look-at point
     bool m_heightOffPending = false; // a negative height eases back to the present height, then switches off
     float m_blend = 0.0F;            // +0x3cc: the soft hand-over between segments, 0 when none
     bool m_held = false;

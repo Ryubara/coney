@@ -94,6 +94,9 @@ class Cameras {
     void setPlacer(Placer placer) { m_place = std::move(placer); }
     /// Sets how the manager finds an object (not a human) by handle, for CamCanSee.
     void setObjectLocator(Locator locator) { m_locateObject = std::move(locator); }
+    /// Sets how the manager finds a human's locomotion velocity (m/s) by handle, which the rail's mode 3 reads
+    /// (`Task_GetVelocity`, docs/research/camera.md#rail-mode3).
+    void setVelocityLocator(Locator locator) { m_velocity = std::move(locator); }
 
     /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
     /// (0.3 m up) `handle` names: within `range` of the camera (at most its far clip; 0 or less: the far clip), inside
@@ -365,6 +368,7 @@ class Cameras {
     std::uint32_t m_reverseButton = 0;
     Locator m_locate;
     Locator m_locateObject;
+    Locator m_velocity;
     Mover m_move;
     std::map<double, anim::Vec3> m_keptBefore; // each kept-in-view human's feet at the last update
     CameraShake m_shake;

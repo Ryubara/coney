@@ -25,6 +25,16 @@ constexpr float kZeroPitch = -0.05F;
 constexpr float kBlendStart = 0.1F;
 constexpr float kBlendStep = 0.05F;
 constexpr float kBlendDone = 0.01F;
+// Mode 3 (docs/research/camera.md#rail-mode3): the look-at point stands this far from the camera in plan; it moves at
+// most this share of the gap to its goal in one update, at the target's forward speed plus the base speed (`+0x1a4`);
+// the segment hand-over grows by kTrailBlendGrowth an update and ends at 1 or once the step is under kTrailBlendDone in
+// plan; a camera this near (squared) to the rail's first or last point holds there.
+constexpr float kTrailReach = 2.0F;
+constexpr float kTrailGapShare = 0.4F;
+constexpr float kTrailBaseSpeed = 1.0F;
+constexpr float kTrailBlendGrowth = 1.15F;
+constexpr float kTrailBlendDone = 0.3F;
+constexpr float kTrailEndSquared = 1e-10F;
 
 // The length of a vector across the ground.
 float flatLength(anim::Vec3 v) { return std::hypot(v.x, v.y); }
@@ -126,6 +136,26 @@ void RailCamera::modify(std::uint32_t param, float value, float seconds) {
     case kLookHeight:
         m_lookHeight.set(value, seconds);
         break;
+    case kMode3Pitch:
+        // At or above -360 degrees mode 3 with that pitch, in radians; below it off, and mode 0 again.
+        if (value < kAngleOff) {
+            m_mode3Pitch.set(-std::numeric_limits<float>::max(), 0.0F);
+            if (m_mode == RailMode::Trailing) {
+                m_mode = RailMode::Level;
+            }
+            break;
+        }
+        m_mode = RailMode::Trailing;
+        // **Coney choice**: switched on from off with a time it starts at its target, where the original would ease
+        // from the lowest float (the levels give 0 s).
+        if (m_mode3Pitch.current < kAngleOff * kRadians) {
+            m_mode3Pitch.set(value * kRadians, 0.0F);
+        }
+        m_mode3Pitch.set(value * kRadians, seconds);
+        break;
+    case kMode3Margin:
+        m_mode3Margin.set(value, seconds);
+        break;
     default:
         break;
     }
@@ -204,7 +234,7 @@ void RailCamera::damp(anim::Vec3 oldTarget, anim::Vec3 oldLook) {
     m_lookAt = dampOne(oldLook, m_lookAt);
 }
 
-void RailCamera::chooseSegment() {
+void RailCamera::chooseSegmentFor(anim::Vec3 p) {
     if (m_count < 2) {
         return;
     }
@@ -212,15 +242,15 @@ void RailCamera::chooseSegment() {
     std::size_t nearest = 0;
     float best = std::numeric_limits<float>::max();
     for (std::size_t i = 0; i < m_count; ++i) {
-        if (const float away = anim::distance(m_points.at(i), m_target); away < best) {
+        if (const float away = anim::distance(m_points.at(i), p); away < best) {
             best = away;
             nearest = i;
         }
     }
     std::size_t chosen = std::min(nearest, m_count - 2);
     // Outside it, the previous or the next segment the target point projects inside.
-    const auto inside = [this](std::size_t i) {
-        const auto [t, length] = project(i, m_target);
+    const auto inside = [this, p](std::size_t i) {
+        const auto [t, length] = project(i, p);
         return t >= 0.0F && t <= length;
     };
     if (!inside(chosen)) {
@@ -343,18 +373,22 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool leadLook) {
     }
 }
 
-void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float seconds) {
+void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity) {
     if (seconds <= 0.0F && m_placed) {
         return;
     }
     // The settings eased toward their targets; a height on its way off switches off once there.
-    for (EasedValue* value :
-         {&m_lead, &m_distance, &m_height, &m_fieldOfView, &m_shift, &m_lookShift, &m_pitch, &m_lookHeight}) {
+    for (EasedValue* value : {&m_lead, &m_distance, &m_height, &m_fieldOfView, &m_shift, &m_lookShift, &m_pitch,
+                              &m_lookHeight, &m_mode3Pitch, &m_mode3Margin}) {
         value->step(seconds);
     }
     if (m_heightOffPending && m_height.secondsLeft <= 0.0F) {
         m_height.set(-1.0F, 0.0F);
         m_heightOffPending = false;
+    }
+    if (m_mode == RailMode::Trailing && m_count >= 2) {
+        placeTrailing(feet, velocity, seconds);
+        return;
     }
     if (!feet) {
         return;
@@ -379,6 +413,129 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float sec
         placeLeading(*feet, leadLook);
     }
     m_placed = true;
+}
+
+anim::Vec3 RailCamera::pitchedLook(anim::Vec3 from, anim::Vec3 toward) const {
+    anim::Vec3 out = from;
+    const anim::Vec3 flat{toward.x - from.x, toward.y - from.y, 0.0F};
+    if (const float plan = flatLength(flat); plan > 0.0F) {
+        out.x += flat.x / plan * kTrailReach;
+        out.y += flat.y / plan * kTrailReach;
+    }
+    out.z += kTrailReach * std::tan(m_mode3Pitch.current);
+    return out;
+}
+
+anim::Vec3 RailCamera::projectTrailing(anim::Vec3 p) const {
+    // Along the segment's unit vector by the plan distance over its plan length, so the height follows the rail.
+    const anim::Vec3 a = m_points.at(m_segment);
+    const anim::Vec3 b = m_points.at(m_segment + 1);
+    const anim::Vec3 ab = anim::subtract(b, a);
+    const float length = anim::length(ab);
+    if (length <= 0.0F) {
+        return a;
+    }
+    const anim::Vec3 u = anim::scale(ab, 1.0F / length);
+    const float flatSquared = (u.x * u.x) + (u.y * u.y);
+    if (flatSquared <= 0.0F) {
+        return a;
+    }
+    const float s = (((p.x - a.x) * u.x) + ((p.y - a.y) * u.y)) / flatSquared;
+    // Clamped only before the rail's first point and past its last.
+    if (m_segment == 0 && s < 0.0F) {
+        return a;
+    }
+    if (m_segment + 2 == m_count && s > length) {
+        return b;
+    }
+    return anim::add(a, anim::scale(u, s));
+}
+
+void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 velocity, float seconds) {
+    const anim::Vec3 offset{m_setup.offset.x, m_setup.offset.y, m_lookHeight.current};
+    // 1. The start, on the first update after an activation (or the first ever): level with the target point.
+    if (m_starting || !m_placed) {
+        if (!feet) {
+            return;
+        }
+        m_feet = *feet;
+        m_target = anim::add(*feet, offset);
+        chooseSegmentFor(m_target);
+        m_position = projectTrailing(m_target);
+        m_lookAt = pitchedLook(m_position, m_target);
+        m_goal = m_lookAt;
+        m_placed = true;
+        // The start flag goes with the first update that has time (the original skips updates without).
+        if (seconds > 0.0F) {
+            m_starting = false;
+        }
+        return;
+    }
+    // No target: the camera keeps its place.
+    if (!feet) {
+        return;
+    }
+    m_feet = *feet;
+    // 2. **Coney stand-in**: the keep-in-frame step (0x00140d68), which pushes the targets back inside the view's
+    // sides by the margin (setting 7) and out of walls, is not built; Coney's rail has one target, so the hindmost is
+    // he.
+    // 3. The target point: his feet raised by the offset's height only.
+    m_target = anim::Vec3{feet->x, feet->y, feet->z + offset.z};
+    // 4. The goal: the target point's foot on the rail and 2 m toward him at the pitch, taken only when ahead of the
+    // look-at point along the segment: the camera never goes back.
+    const bool heldBefore = m_held;
+    const anim::Vec3 start = m_position;
+    chooseSegmentFor(m_target);
+    const anim::Vec3 goal = pitchedLook(projectTrailing(m_target), m_target);
+    const anim::Vec3 d = flatDirection();
+    const bool ahead = ((goal.x - m_lookAt.x) * d.x) + ((goal.y - m_lookAt.y) * d.y) > 0.0F;
+    bool move = false;
+    if (ahead) {
+        m_goal = goal;
+        move = !heldBefore;
+    }
+    // 5. The ends: a camera at the rail's first point (on segment 0) or its last (on the last segment) holds there,
+    // until CamLockRail(false).
+    const anim::Vec3 fromFirst = anim::subtract(start, m_points.at(0));
+    const anim::Vec3 fromLast = anim::subtract(start, m_points.at(m_count - 1));
+    if ((m_segment == 0 && anim::dot(fromFirst, fromFirst) < kTrailEndSquared) ||
+        (m_segment + 2 >= m_count && anim::dot(fromLast, fromLast) < kTrailEndSquared)) {
+        m_held = true;
+    }
+    if (!move || m_held) {
+        m_goal = m_lookAt;
+        return;
+    }
+    // 6. The move: toward the goal by the target's forward speed plus 1 m/s, at most 40% of the gap; the segment
+    // chosen again for the moved point (so it crosses joints) and the camera its foot on the rail.
+    const float forward = (velocity.x * d.x) + (velocity.y * d.y);
+    const float speed = (forward > 0.0F ? forward + kTrailBaseSpeed : kTrailBaseSpeed) * seconds;
+    const anim::Vec3 gap = anim::subtract(m_goal, m_lookAt);
+    const float gapLength = anim::length(gap);
+    const float step = std::min(gapLength * kTrailGapShare, speed);
+    if (gapLength > 0.0F) {
+        m_lookAt = anim::add(m_lookAt, anim::scale(gap, step / gapLength));
+    }
+    chooseSegmentFor(m_lookAt);
+    anim::Vec3 placed = projectTrailing(m_lookAt);
+    // 7. The hand-over between segments: a share of the step that grows by 15% an update.
+    if (m_blend > 0.0F) {
+        const anim::Vec3 change = anim::subtract(placed, start);
+        const float grown = m_blend * kTrailBlendGrowth;
+        if (((change.x * change.x) + (change.y * change.y)) < kTrailBlendDone * kTrailBlendDone || grown >= 1.0F) {
+            m_blend = 0.0F;
+        } else {
+            placed = anim::add(start, anim::scale(change, m_blend));
+            m_blend = grown;
+        }
+    }
+    m_position = placed;
+    // 8. The look-at point again 2 m from the camera toward where it was, at the pitch.
+    m_lookAt = pitchedLook(m_position, m_lookAt);
+    // The finish: with the height setting above 0 the camera is no higher than that over the target's feet.
+    if (m_height.current > 0.0F) {
+        m_position.z = std::min(m_position.z, feet->z + m_height.current);
+    }
 }
 
 CameraView RailCamera::view() const {
