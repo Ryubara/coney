@@ -378,6 +378,65 @@ The older wording ("Coney's own", "(no @orig)") marks only functions that had it
 `untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
 `check changed` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 
+```sh
+uv run --project python coney-tools orig copy-check [--base origin/main] [--all]
+```
+
+This check refuses decompiler fingerprints in the C++ lines a change adds under `src/`, since HEAD left `--base`,
+committed or not, with untracked files counted whole ([Porting, not transcribing](conventions.md#porting)). With
+`--all` it checks every line of `src/`. It reads only the code part of each line: comments, string and character
+literals and raw strings are blanked first, so a shader's `in_pos0` or a comment that cites `FUN_00123456` passes.
+It finds these fingerprints:
+
+* Ghidra's automatic names: `iVar1`, `puVar3`, `param_1`, `local_1c`, `auStack_20`, `DAT_`, `FUN_`, `LAB_`,
+  `unaff_`, `extraout_`, and `in_` followed by a MIPS register;
+* `undefined` and `undefined1` to `undefined8`;
+* a raw read at a byte offset, `*(T *)(x + 0x40)` or `*reinterpret_cast<T*>(x + 0x40)`;
+* `goto`.
+
+A line with `// copy-check: allow <reason>` passes. Each finding names the file, the line, the text and what to do,
+and the exit code is 1 when there is one. `check changed` runs it in its `orig` step, and CI's `python` job runs it
+with `--base HEAD^1`. On 2026-10-21 `--all` found none in `src/`. The check cannot see a transcription's shape; the
+orig-reviewer agent judges that.
+
+```sh
+uv run --project python coney-tools orig review-stamp (--branch B | --worktree WT) [--base origin/main] [--ledger F]
+uv run --project python coney-tools orig review-stamp (--folder src/x/ | --address 0x...)... [--ref HEAD] [--every]
+uv run --project python coney-tools orig check-review --body PR.md [--head B] [--base B] [--cwd DIR] [--ledger F]
+uv run --project python coney-tools orig record [FINDINGS.tsv ...] [--ref COMMIT] [--ledger F]
+```
+
+These commands feed the orig review, which compares `@orig` functions with the original
+([Orig review](review/orig.md), the [orig-reviewer agent](agents.md#orig-reviewer)). Each one works on **units**. A
+unit is a function definition with a body that a tag covers: its own tag, one in its body, or its declaration's.
+A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a hash of its body
+lines. The source is read from commits, not from the working tree.
+
+* `review-stamp` prints JSON.
+    * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, and the units that
+      are new at the tip or whose body or addresses changed.
+    * With `--folder` or `--address` (sweep mode) it gives the units at `--ref` in scope that the ledger has not
+      seen at their current body; `--every` lists all of them.
+* `check-review` is the release gate. A branch that changes no unit passes. Otherwise the passing verdict
+  (`pull_requests.orig_review.verdict_file`, `ORIG-REVIEW.json`) next to the description must cover every changed
+  unit at its current body, as [the verdict](review/orig.md#verdict) says. A rebase that leaves those bodies as
+  they were keeps the verdict.
+    * The branch is found in this order: `--head`, then the branch checked out in `--cwd`, then the description's
+      folder under the workspace's scratch.
+    * The exit code is 0 for a pass (which is recorded in the ledger), 1 for a refusal with the reasons, and 2 when
+      the branch cannot be found.
+    * The release step calls `orig_review.gate` (or `check_verdict_file`, which writes nothing).
+* `record` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the ledger.
+  Each row is matched by address and Coney name to the units at `--ref`, the commit the sweep read; rows that match
+  nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
+
+The ledger is `pull_requests.orig_review.ledger` under the workspace's scratch folder (`orig-review/ledger.jsonl`).
+It is one JSON object per review and is never committed. `orig queue` reads it:
+
+* an address whose units were all reviewed `clean` or `diff-deliberate-ok` at their current bodies leaves the queue;
+* an unreviewed one gains 3 points, and a stale one 5;
+* a review finding adds its class's weight, from `unclear` (6) to `diff-bug` (40).
+
 ## natives {#natives}
 
 The script-binding reference (`docs/references/bindings/`, under Game references) is generated from

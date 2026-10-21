@@ -255,6 +255,74 @@ private:
 } // namespace coney::io
 ```
 
+## Porting, not transcribing {#porting}
+
+A reimplementation keeps the original's **behaviour and logic** and is written in Coney's **own expression**.
+This is a source-level rule: the compiled code can never match, because the original is MIPS code for the EE built
+by an old GCC, and Coney is x86-64 or ARM code built by MSVC, GCC or Clang.
+
+What must match the original:
+
+- what the function does: the same inputs give the same effects, in the same order;
+- the math and constants, branch conditions, loop bounds, timings, random draws, state writes and the calls made.
+
+A difference is allowed only on purpose, with a comment at the difference that says why (a platform substitution, an
+id in place of a pointer, network play).
+
+What must be ours:
+
+- Coney's types, names, ids and APIs, never offsets into a raw block of memory;
+- a structure that Coney's design decides (its classes, events and tables), not the listing's statement order;
+- names that say what a value means, and comments that give the reason.
+
+A function written from the decompiler's output is a transcription, even after its variables are renamed. Its signs
+are:
+
+- the listing's statement-by-statement shape;
+- Ghidra's temporaries (`iVar1`, `param_1`, `local_10`), its `undefined4` types and its casts;
+- raw `*(T *)(x + 0x..)` reads;
+- `goto`;
+- dead code and compiler artifacts carried over.
+
+Here is an invented example, not game code. Bad: the listing's shape, Ghidra's names and offsets.
+
+```cpp
+// @orig 0x00123450 Lantern_Tick (Lantern.cpp)
+void Lantern::tick(int param_1) {
+    int iVar1 = *(int *)(param_1 + 0x40);
+    if (iVar1 < 1) goto LAB_done;
+    *(int *)(param_1 + 0x40) = iVar1 - 1;
+    if (iVar1 - 1 == 0) {
+        *(float *)(param_1 + 0x44) = 0.0f;
+    }
+LAB_done:
+    return;
+}
+```
+
+Good: the same logic in Coney's own types, with the reason in a comment.
+
+```cpp
+/// Burns one tick of oil; the light goes out on the tick the oil runs dry, not the one after.
+/// @orig 0x00123450 Lantern_Tick (Lantern.cpp)
+void Lantern::tick() {
+    if (m_oilTicks <= 0) {
+        return;
+    }
+    --m_oilTicks;
+    if (m_oilTicks == 0) {
+        m_brightness = 0.0f;
+    }
+}
+```
+
+Two checks hold the rule:
+
+- `coney-tools orig copy-check` refuses the mechanical signs in changed lines (`check changed` and CI run it,
+  [orig](coney-tools.md#orig)). A deliberate case carries `// copy-check: allow <reason>`.
+- The orig-reviewer agent compares each changed `@orig` function with the original on both counts, fidelity and own
+  expression, before release ([Orig review](review/orig.md)).
+
 ## Coney-only code {#coney-only}
 
 Every function in a gameplay folder (`paths.gameplay` in [.github/conventions.yml](repo:.github/conventions.yml):

@@ -63,6 +63,17 @@ def test_the_real_review_gate() -> None:
     assert (REPO / ".claude" / "agents" / f"{review.agent}.md").is_file()
 
 
+def test_the_real_orig_review_gate() -> None:
+    orig = load_conventions(REPO).pull_requests.orig_review
+    assert (orig.agent, orig.verdict_file, orig.report_file) == ("orig-reviewer", "ORIG-REVIEW.json", "ORIG-REVIEW.md")
+    assert orig.ledger == "orig-review/ledger.jsonl" and orig.rubric_version >= 1
+    assert (REPO / ".claude" / "agents" / f"{orig.agent}.md").is_file()
+    # The rubric page states the same version.
+    assert f"Rubric version: {orig.rubric_version}." in (REPO / "docs/guides/review/orig.md").read_text(
+        encoding="utf-8"
+    )
+
+
 def test_the_real_merge_settings_follow_the_owners_decisions() -> None:
     merge = load_conventions(REPO).merge
     assert merge.methods == ("squash",) and merge.squash_message == "PR_BODY" and merge.auto_merge
@@ -201,6 +212,13 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         (("pull_requests.review.report_file", "REVIEW.json"),),
         r"review\.report_file",
     ),
+    (
+        "an orig verdict named like review's",
+        (("pull_requests.orig_review.verdict_file", "REVIEW.json"),),
+        r"orig_review",
+    ),
+    ("an orig ledger outside the scratch folder", (("pull_requests.orig_review.ledger", "../x.jsonl"),), r"ledger"),
+    ("an orig rubric version of zero", (("pull_requests.orig_review.rubric_version", 0),), r"rubric_version"),
     (
         "a squash message GitHub does not have",
         (("merge.squash_message", "BODY"),),

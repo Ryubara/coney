@@ -1,12 +1,13 @@
 # Reviews
 
 Every change gets a review, and a review is a list of findings written by someone who did not do the work.
-This page says how a review runs; the four checklists say what to look at:
+This page says how a review runs; the checklists say what to look at:
 
 | Reviewing | Checklist |
 | --- | --- |
 | Code: C++, Python, CMake, scripts, tests | [Code](code.md) |
 | Research pages and the research database | [Research](research.md) |
+| A function carrying `@orig`, against the original in Ghidra | [Orig review](orig.md) |
 | A branch's commits or a pull request | [Commits](commits.md) |
 | Guides, designs and other pages outside `docs/research/` | [Docs](docs.md) |
 

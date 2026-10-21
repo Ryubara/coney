@@ -22,13 +22,15 @@ flowchart LR
   port --> compare["Compare with<br/>the original"]
   compare --> local["Local checks"]
   local --> code["reviewer or<br/>research-reviewer"]
-  code --> desc["pr-reviewer<br/>reads the PR<br/>description"]
+  code --> orig["orig-reviewer<br/>checks changed<br/>@orig functions"]
+  orig --> desc["pr-reviewer<br/>reads the PR<br/>description"]
   desc --> queue["Release queue"]
   queue --> push["Coordinator<br/>pushes and<br/>opens the PR"]
   push --> ci["CI required<br/>checks"]
   ci --> merge["Squash merge"]
   merge --> main(["main"])
   code -. "findings" .-> port
+  orig -. "findings" .-> port
   ci -. "red: fixed forward" .-> push
 ```
 
@@ -166,9 +168,15 @@ subsystem at a time, in the order of the `@orig` index, and avoids files that ot
   ([Evidence levels](research-workflow.md#evidence-levels)).
 - **Coney-only code is out of scope:** networking, the launcher, debug tooling and enhancements have no original
   function to compare with.
-- **The `@orig` index** is a tool that lists every tagged function with the research page that covers it and what has
-  been compared, so the audit can be ordered and its progress seen. It is being written; this page names its commands
-  once it has landed.
+- **Check the expression too.** Each function is judged on two counts: fidelity, and own expression (ported, not
+  transcribed: [Porting, not transcribing](conventions.md#porting)). The classes, the snippet limit and the file
+  formats are in one rubric, [Orig review](review/orig.md). A sweep over existing code runs the `orig-reviewer`
+  agent in sweep mode, one folder or address list at a time ([Running agents](agents.md#orig-reviewer)). Every
+  class but `clean` and `diff-deliberate-ok` becomes a fix unit.
+- **Progress is kept by the tool.** `coney-tools orig index` lists every tagged function with its research page. The
+  review ledger records each function reviewed, at which body and with what class, and `orig queue` orders what is
+  unreviewed or changed since its review ([orig](coney-tools.md#orig)). So every `@orig` function is reviewed once,
+  and again after each change to it.
 
 The audit's output is ordinary units: a branch of fixes, tests and page references per pull request, handed to the
 [release queue](#release-queue).
@@ -263,6 +271,14 @@ coordinator, who pushes them when CI has room.
   [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
+- **Every `@orig` function a branch adds or changes is checked against the original before release.** The
+  `orig-reviewer` agent runs in pr mode on the branch ([Running agents](agents.md#orig-reviewer)). It decompiles
+  each address and compares on fidelity and own expression ([Orig review](review/orig.md)), and writes
+  `ORIG-REVIEW.json` and `ORIG-REVIEW.md` next to the description. The release step runs
+  `coney-tools orig check-review`. That check passes a branch with no changed `@orig` function, and otherwise needs
+  a passing verdict that covers each changed function at its current body. A transcription, a behaviour difference
+  with no reason, a deliberate difference with no comment, or a wrong address fails. Run it before pr-reviewer, so a
+  fix to the code does not make the description's review stale.
 - **Every description is reviewed before it is pushed** ([below](#pr-review)). The coordinator runs
   `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
   the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.

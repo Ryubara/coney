@@ -9,7 +9,10 @@ costly:
   weighs more), and those whose area label covers its directory;
 * a tag Ghidra does not bear out (no function there, inside another function, another function's name);
 * research that grades the function only inferred or speculative, or does not cite it;
-* code with no tag at all, which nobody has compared with anything.
+* code with no tag at all, which nobody has compared with anything;
+* the orig review's ledger (orig_review.py): a function not yet reviewed, changed since its review, or reviewed
+  with a finding (a bug, a transcription, a wrong address, a missing comment, a question for a runtime run) moves
+  up; one reviewed clean, or different on purpose with the comment that says so, leaves the queue until it changes.
 
 The weights are a starting order, not a measure; the audit team re-ranks as it learns. The queue holds addresses,
 names and issue numbers only and is written to the scratch folder, never committed.
@@ -65,7 +68,16 @@ WEIGHTS = {
     "untagged": 6,
     "untagged-helper": 2,
     "untagged-inline": 0,
+    "unreviewed": 3,
+    "stale": 5,
+    "diff-bug": 40,
+    "wrong-address": 30,
+    "transcription": 25,
+    "diff-uncommented": 10,
+    "unclear": 6,
 }
+#: What the queue says for each review status (orig_review.status_of) that keeps a function in it.
+REVIEW_REASONS = {"unreviewed": "not reviewed", "stale": "changed since its review"}
 #: The most the area labels of all open issues add to one entry.
 AREA_CAP = 4
 
@@ -215,6 +227,20 @@ class QueueInputs:
     evidence: dict[int, set[str]] = field(default_factory=dict)
     empty_sections: set[str] = field(default_factory=set)  # research links whose section cites no address
     uncited: set[str] = field(default_factory=set)  # IndexRow.where of tags whose linked pages lack the address
+    #: Each tagged address -> its review status (orig_review.address_status); an address not in it is unreviewed.
+    reviews: dict[int, str] = field(default_factory=dict)
+
+
+def review_done(status: str) -> bool:
+    """Whether a review status takes a function off the queue: reviewed clean or deliberately different (with
+    its comment) at its current body."""
+    return status in ("clean", "diff-deliberate-ok")
+
+
+def add_review(entry: Entry, status: str) -> None:
+    """Count an address's review status in its entry."""
+    if not review_done(status) and status in WEIGHTS:
+        entry.add(REVIEW_REASONS.get(status, f"review: {status}"), WEIGHTS[status])
 
 
 def rank(inputs: QueueInputs) -> list[Entry]:
@@ -227,6 +253,9 @@ def rank(inputs: QueueInputs) -> list[Entry]:
         findings[finding.row.address].append(finding)
     entries = []
     for address, rows in by_address.items():
+        review = inputs.reviews.get(address, "unreviewed")
+        if review_done(review):
+            continue
         name = rows[0].name.split()[0] if rows[0].name.split() else f"0x{address:08x}"
         entry = Entry(f"0x{address:08x}", name, rows[0].directory, [r.where for r in rows])
         names = sorted({n for r in rows for n in _names_of_row(r)})
@@ -243,6 +272,7 @@ def rank(inputs: QueueInputs) -> list[Entry]:
             entry.add("linked section cites no address", WEIGHTS["section-cites-nothing"])
         if any(r.where in inputs.uncited for r in rows):
             entry.add("linked page lacks this address", WEIGHTS["page-lacks-address"])
+        add_review(entry, review)
         entries.append(entry)
     for function in inputs.untagged:
         if function.exempt:

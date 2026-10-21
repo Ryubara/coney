@@ -218,6 +218,17 @@ pull_requests:
     report_file: REVIEW.md
     body_hash: sha256-lf
     identical_images: refused
+  # The release gate on the orig-reviewer agent's verdict (`coney-tools orig check-review`, which the release step
+  # runs): a branch that adds or changes a function carrying `@orig` needs a passing verdict that covers those
+  # functions' bodies, next to the description file. The rubric is docs/guides/review/orig.md. The
+  # ledger records every review (pull request and sweep) under the workspace's scratch folder, never committed;
+  # `orig queue` orders the functions it has not seen at their current body.
+  orig_review:
+    agent: orig-reviewer
+    verdict_file: ORIG-REVIEW.json
+    report_file: ORIG-REVIEW.md
+    ledger: orig-review/ledger.jsonl
+    rubric_version: 1                            # docs/guides/review/orig.md; raise it when the rubric changes
   stacked:
     depends_line: "Depends on #N"                # required when the base is not the default branch
     merge_into_base: false                       # never merged into a non-default base: retarget to main first
@@ -706,7 +717,7 @@ workspace:
   scratch_skip_folders: [CMakeFiles, _deps, .gradle, build, venv, .venv, site-packages, .git, node_modules]
   # Scratch folders that are the workspace's own, not a branch's (the emulator's files, the saved states, the PCSX2
   # claims, the downloads, the preview builds): the scratch check never reports them.
-  shared_scratch: [pcsx2, pcsx2-states, pcsx2-claims, downloads, preview, public-preview, presentation]
+  shared_scratch: [pcsx2, pcsx2-states, pcsx2-claims, downloads, preview, public-preview, presentation, orig-review, orig-sweep]
   # In-game video clips for issues and pull requests (`coney-tools clips`; docs/guides/testing.md#clips): they live
   # only in scratch/<task>/<folder>/, are at most max_seconds long, warn past warn_mb and are deleted once uploaded
   # or after keep_hours. Coney's own cap, kMaxClipSeconds in src/core/clip_recording.h, must equal max_seconds (a

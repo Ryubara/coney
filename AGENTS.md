@@ -62,6 +62,8 @@ first hour; the rest of this file is for agents.
   no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
 - Reimplemented code cites the original (`@orig 0x<addr> <Name> (<File>.cpp)` and its research page); other gameplay
   code says `@coney-only <reason>` (`conventions.md#coney-only`); script-usable ones: `#coney-only-capabilities`.
+- Port, never transcribe: keep the original's logic, write it as Coney's own code (no decompiler shape, names, offsets
+  or `goto`): `docs/guides/conventions.md#porting`; `orig copy-check` and the orig-reviewer agent check it.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,
   private members, long lambdas) and before each step of a long one; comments explain *why*, briefly.
 - Keep the test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display

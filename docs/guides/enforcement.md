@@ -25,7 +25,7 @@ where?" When you write a rule into a guide, add its row here in the same commit;
 | Release gate (`repo check-review`) | The description file, its pictures and the branch tip | Before the coordinator pushes ([The description review](how-we-work.md#pr-review)) | Model line against the trailers |
 | CI required check | The pushed branch and the pull request's text | After the push; a failure costs a CI round | `title`, `body`, `docs`, `build-ok` |
 | Audit and hygiene (`repo audit`, `hygiene.yml`, Tether) | GitHub and the workspace as they are | After the fact, as findings | `issue.labels`, `ws.scratch` |
-| Review (`reviewer`, `research-reviewer`, `pr-reviewer`) | Meaning: whether a test proves the fix, a claim is backed | Per change, by an agent | [Reviewing](review/index.md) |
+| Review (`reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer`) | Meaning: whether a test proves the fix, a claim is backed | Per change, by an agent | [Reviewing](review/index.md) |
 
 A check that refuses at an earlier point is worth more than the same check later: a hook costs nothing, a CI failure
 costs a CI round and a fresh agent ([When a pull request fails checks](agents.md#ci-failures)).
@@ -74,6 +74,8 @@ costs a CI round and a fresh agent ([When a pull request fails checks](agents.md
 | Gameplay, graphics and audio titles carry a `Runtime:` line with numbers, and it is true | [Testing](testing.md#runtime-line) | `repo check-body --title` (shape); `pr-reviewer` (truth) | enforced (shape), judgement (truth) |
 | A change to `src/` or `python/src/` changes `docs/` or `research/`, or says `Docs: none` | [AGENTS.md](repo:AGENTS.md) | CI `docs` (required, `repo check-docs`) | enforced at CI |
 | Every description is reviewed by `pr-reviewer` and passes `repo check-review` before it is pushed | [How we work](how-we-work.md#release-queue) | `.claude/hooks/release_guard.py` runs CI's title and body checks before `gh pr create` and `gh pr edit`; the verdict itself is `repo check-review`, run by hand | partly: the hook does not require a fresh verdict |
+| Reimplemented code is ported, not transcribed: no decompiler names, `undefined` types, raw offset reads or `goto` | [Conventions](conventions.md#porting) | `orig copy-check` in `check changed` and CI's `python` job | enforced (the mechanical signs) |
+| Every `@orig` function a branch adds or changes matches the original and is our own expression | [Orig review](review/orig.md) | `orig-reviewer` (judgement); `orig check-review` before release (a passing verdict covering each changed function's body) | judgement, gated at release |
 | Only `Co-Authored-By` trailers; no other email address in a message | [AGENTS.md](repo:AGENTS.md) (`commits.trailers`) | None (the squash message is the description) | written; best point `repo check-body` |
 | No "Generated with" line in a pull request or issue | [AGENTS.md](repo:AGENTS.md) | None in the repository | written; best point `repo check-body` and `issue check` |
 | One feature per pull request; a diff holds only that change | [How we work](how-we-work.md#working-in-parallel) | `pr-reviewer`, the coordinator | judgement |
