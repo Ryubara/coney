@@ -36,11 +36,11 @@ void loadSample(Credits& credits) {
     });
 }
 
-// The y of a line's main widget.
+// The y of a line's main widget. value_or after the REQUIRE: clang-tidy cannot see through Catch2's check.
 float lineY(const Credits& credits, std::size_t line) {
     const CreditLine& data = credits.lines().at(line);
     REQUIRE(data.widget.has_value());
-    return credits.widget(*data.widget).style().y;
+    return credits.widget(data.widget.value_or(0)).style().y;
 }
 
 // The synthetic font in every slot, drawing into one batch.
@@ -123,15 +123,15 @@ TEST_CASE("a role line shows its role only when it changes, right-aligned left o
     REQUIRE(lines[3].roleWidget.has_value());
     // Heading 1 + (role, name) + name + (role, name) + section 1 = 7 widgets.
     CHECK(credits.freeWidgets() == coney::hud::kCreditWidgets - 7);
-    const auto& role = credits.widget(*lines[1].roleWidget);
+    const auto& role = credits.widget(lines[1].roleWidget.value_or(0));
     CHECK(role.text() == "Role A");
     CHECK(role.style().alignment == coney::gui::TextAlignment::Right);
     CHECK(role.style().x == Approx(0.49F));
-    const auto& name = credits.widget(*lines[1].widget);
+    const auto& name = credits.widget(lines[1].widget.value_or(0));
     CHECK(name.text() == "Name 1");
     CHECK(name.style().alignment == coney::gui::TextAlignment::Left);
     CHECK(name.style().x == Approx(0.51F));
-    const auto& heading = credits.widget(*lines[0].widget);
+    const auto& heading = credits.widget(lines[0].widget.value_or(0));
     CHECK(heading.style().alignment == coney::gui::TextAlignment::Centre);
     CHECK(heading.style().scale == Approx(1.8F));
     CHECK(name.style().scale == Approx(0.9F));
