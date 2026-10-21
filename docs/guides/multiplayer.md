@@ -223,7 +223,7 @@ what this game sends, live); and a log of what happened, also printed as `net:` 
 
 ## Player two {#player-two}
 
-A guest plays the host's game as **player 2 on pad port 2**: his own player 1 pad, sampled by his game each step, is
+A guest plays the host's game as **player 2 on pad port 2**: their own player 1 pad, sampled by their game each step, is
 what the host's game reads on port 2, exactly as a second pad plugged into the host's machine would be. Nothing in
 the game knows the pad is remote, so whatever a second local pad does, a remote one does too, and gameplay stays the
 original's.
@@ -231,14 +231,14 @@ original's.
 - **Two ports, one remote player.** The PS2 has two pad ports, and the original reads only pad records 0 (port 1) and
   4 (port 2, first multitap slot) (confirmed (code) at `0x001454a8`, [Pad record](../research/frontend.md#pad-record)),
   so its games have two players at most. A host therefore takes one remote player (`ServerConfig::maxClients` 1 in
-  `NetPlay`); a second is told the server is full. He holds slot 1, and slot 1 is port 2. Port 1 is always the host's.
+  `NetPlay`); a second is told the server is full. The guest holds slot 1, which is port 2. Port 1 is always the host's.
 - **The path of a pad.** On the guest, `NetInput` (`src/platform/net_play.h`) sits between the debug menus' input gate
-  and the mode stack: port 1 as the guest's game reads it (never his debug menu's input, which the gate keeps) goes to
+  and the mode stack: port 1 as the guest's game reads it (never their debug menu's input, which the gate keeps) goes to
   the session, which sends it as PadInput at the end of the step, numbered by the guest's step. On the host the server
   keeps each player's newest pad by that number (a late or repeated packet never replaces a newer one), and the host's
   `NetInput` puts it on port 2. On a link with no delay a press reaches the host's game in the host's step after the
   one in which the guest's game saw it; over a network, add the one-way delay.
-- **The host's own port 2** plays while nobody has joined, and again once the guest leaves; while he is joined it is
+- **The host's own port 2** plays while nobody has joined, and again once the guest leaves; while they are joined it is
   set aside (Coney's choice: one pad per port).
 - **Until the first PadInput** arrives, port 2 reads unplugged; a guest with no pad plugged in sends an unplugged
   pad, and port 2 stays unplugged.

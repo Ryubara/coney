@@ -100,7 +100,7 @@ bool NetPlay::hostOn(const std::string& bindAddress) {
     config.port = m_port;
     config.bindAddress = bindAddress;
     config.serverName = m_playerName;
-    // One remote player: he is the host's pad port 2, and the game has two players at most, as the original's two
+    // One remote player: they are the host's pad port 2, and the game has two players at most, as the original's two
     // ports give (only pad records 0 and 4 are read, 0x001454a8).
     config.maxClients = kPadPorts - 1;
     m_server = std::make_unique<net::NetServer>(*m_link, config);

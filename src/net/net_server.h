@@ -97,7 +97,7 @@ class NetServer {
     /// Joined players.
     [[nodiscard]] std::size_t joinedCount() const;
     /// The pad of the player in `slot`, as the host's game should read it this step: nothing when no player has joined
-    /// in it; else his newest PadInput's pad, unplugged until the first arrives, and plugged in with nothing held and
+    /// in it; else their newest PadInput's pad, unplugged until the first arrives, and plugged in with nothing held and
     /// the sticks centred once no new one has come for more than ServerConfig::padHoldSteps steps.
     [[nodiscard]] std::optional<PadSample> remotePad(std::uint8_t slot) const;
     /// The events since the last call, oldest first.

@@ -176,7 +176,7 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
     }
     if (const auto* input = std::get_if<PadInput>(&message)) {
         if (!client.joined) {
-            close(index, ByeReason::ProtocolError, true); // a pad belongs to a player, and he has not joined
+            close(index, ByeReason::ProtocolError, true); // a pad belongs to a player, and they have not joined
             return false;
         }
         // Unreliable delivery may reorder and repeat: only a newer step replaces the pad.
