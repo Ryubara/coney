@@ -10,6 +10,9 @@ whole page up to it, and untouched pages wait until someone does.
 Everything here is a function of the page text, so the tests use made-up pages. The heuristics are deliberately
 forgiving (they flag what is surely a gap, not what might be one); each is described where it is implemented and in
 docs/guides/coney-tools.md#docs.
+
+The module is longer than most because it keeps every rule in one place, in sections that follow a page: reading it,
+the skeleton, evidence levels, the Style rules, and driving the check over files.
 """
 
 from __future__ import annotations
@@ -47,14 +50,15 @@ SKELETON: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: The sections that state no behaviour of the original, so an address in them needs no evidence level: what the page
 #: is for, where Coney's code lives (an `@orig` tag cites an address without claiming anything) and the questions.
 UNGRADED_SECTIONS = frozenset({"purpose", "coney's implementation", "open questions"})
-#: An address in the executable, written as the conventions say: `0x` and eight hex digits (`0x00149160`). A field
-#: offset, a mask or a flag value is written shorter.
-ADDRESS = re.compile(r"(?<![\w])0x[0-9a-fA-F]{8}\b")
+#: An address in the executable, written as the conventions say: `0x` and eight hex digits (`0x00149160`), within the
+#: EE's 32 MB of main memory where the executable and its data live (`0x00100000`-`0x01ffffff`). A field offset, a mask
+#: or a flag value is written shorter; a name hash, a disc offset or a full-width mask (`0x80000000`) falls outside.
+ADDRESS = re.compile(r"(?<![\w])0x0(?:0[1-9a-fA-F]|1[0-9a-fA-F])[0-9a-fA-F]{5}\b")
 #: A sentence in the opening of a page that grades every claim at once ("every claim is confirmed (code) at the cited
 #: address unless it says otherwise"); the page then needs no level beside each address.
 PAGE_LEVEL = re.compile(
-    r"\b(?:every|all|each)\b[^.]{0,120}\b(?:confirmed|inferred|speculative)\b"
-    r"|\b(?:confirmed|inferred|speculative)\b[^.]{0,120}\bunless\b",
+    r"(?<!not )\b(?:every|all|each)\b(?:[^.]|\.(?=\w)){0,120}\b(?:confirmed|inferred|speculative)\b"
+    r"|\b(?:confirmed|inferred|speculative)\b(?:[^.]|\.(?=\w)){0,120}\bunless\b",
     re.IGNORECASE,
 )
 #: A word that grades a claim (research-workflow.md#evidence-levels), or the label `Evidence:`.
@@ -65,6 +69,14 @@ LEVEL_COLUMN = re.compile(r"(?:evidence(?: level)?|confidence)", re.IGNORECASE)
 STALE = re.compile(
     r"\bstill small\b|\bnot yet\b|\bonce (?:it|this|that|they) (?:exists?|is built|are built)\b"
     r"|\b(?:does|do)(?:n't| not) exist yet\b|\byet to be (?:written|built|done|implemented)\b",
+    re.IGNORECASE,
+)
+#: On a guide or another page, "not yet" dates a claim when it says what the project has not done ("not yet
+#: implemented"); "not yet looked at" (an issue's state) or "scenery not yet loaded" (the game) describe something else.
+#: A research page tells them apart by section and by naming Coney instead (`_is_status`).
+NOT_YET_WORK = re.compile(
+    r"\bnot yet (?:been )?(?:implemented|written|built|done|ported|supported|listed|documented|wired|available|merged"
+    r"|exposed|added|covered|tested|checked|known|understood|decided|in place)\b",
     re.IGNORECASE,
 )
 #: A path on somebody's machine: a user folder, or a drive-letter path that goes two folders deep. `H:\`, a file at a
@@ -82,7 +94,8 @@ _MENTION = re.compile(r"`[^`\n]*`|\"[^\"\n]{1,60}\"|\u201c[^\u201d\n]{1,60}\u201
 _CODE = re.compile(r"`[^`\n]*`")
 _LINK = re.compile(r"!?\[[^\]\n]*\]\(<?(?P<target>[^)\s>]+)")
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-_FENCE = re.compile(r"^[ \t]*(```|~~~)")
+_FENCE = re.compile(r"^[ \t]*(?P<marker>`{3,}|~{3,})")
+_REF_DEF = re.compile(r"^[ \t]{0,3}\[[^\]\n]+\]:[ \t]*<?(?P<target>[^\s>]+)")
 _HEADING = re.compile(r"^(?P<hashes>#{1,6})[ \t]+(?P<text>\S.*?)[ \t]*#*[ \t]*$")
 _ANCHOR = re.compile(r"[ \t]*\{#[^}]*\}[ \t]*$")
 _ITEM = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]+")
@@ -223,16 +236,23 @@ def _read(text: str) -> _Page:
                 front = index + 1
                 break
     lines: list[_Line] = []
-    fenced = False
+    opener = ""  # the fence that opened the code block we are in ("" outside one)
     for number, content in enumerate(raw, start=1):
         if number <= front:
             lines.append(_Line(number, "", False))
             continue
-        if _FENCE.match(content):
+        fence = _FENCE.match(content)
+        if fence:
+            marker = fence.group("marker")
+            # A block closes only on a fence of the same character, at least as long, with nothing after it, so a
+            # four-backtick block can show a three-backtick one.
+            if not opener:
+                opener = marker
+            elif marker[0] == opener[0] and len(marker) >= len(opener) and not content.strip()[len(marker) :].strip():
+                opener = ""
             lines.append(_Line(number, content, True))
-            fenced = not fenced
             continue
-        lines.append(_Line(number, content, fenced))
+        lines.append(_Line(number, content, bool(opener)))
     page = _Page(lines, [], [], [], front)
     _split_blocks(page)
     return page
@@ -309,14 +329,25 @@ def _name(heading: str) -> str:
     return heading.replace(chr(0x2019), "'").casefold().strip("`*_ ")
 
 
+def _is_named(text: str, names: tuple[str, ...]) -> bool:
+    """Whether heading text `text` (as `_name` gives it) is one of `names`, or starts with one, then a space, colon or
+    dash ("Data layout" is the Data section)."""
+    return any(text == name or re.match(rf"{re.escape(name)}[\s:\u2013\u2014-]", text) for name in names)
+
+
+def _skeleton_key(text: str) -> str:
+    """The skeleton section a level-2 heading's text (as `_name` gives it) counts as, lower case; '' for none."""
+    for title, names in SKELETON:
+        if _is_named(text, names):
+            return title.casefold()
+    return ""
+
+
 def _skeleton_index(headings: list[_Heading], names: tuple[str, ...]) -> int | None:
-    """The index in `headings` of the first level-2 heading that is one of `names` (or starts with one, then a space,
-    colon or dash); None when there is none."""
+    """The index in `headings` of the first level-2 heading that is one of `names` (`_is_named`); None when there is
+    none."""
     for index, heading in enumerate(headings):
-        if heading.level != 2:
-            continue
-        text = _name(heading.text)
-        if any(text == name or re.match(rf"{re.escape(name)}[\s:\u2013\u2014-]", text) for name in names):
+        if heading.level == 2 and _is_named(_name(heading.text), names):
             return index
     return None
 
@@ -455,7 +486,7 @@ def _check_evidence(page: _Page) -> Iterable[Finding]:
             continue
         address = ADDRESS.search(block.text)
         name = _section_name(page, block.section)
-        if not address or not name or name in UNGRADED_SECTIONS or LEVEL.search(block.text):
+        if not address or not name or _skeleton_key(name) in UNGRADED_SECTIONS or LEVEL.search(block.text):
             continue
         line = _address_line(block, address) if block.kind == "text" else block.line
         if block.kind == "row" and block.table is not None and page.tables[block.table].graded:
@@ -526,14 +557,16 @@ def _line_sections(page: _Page) -> list[str]:
 def _is_status(section: str, text: str) -> bool:
     """Whether a line of a research page says what Coney has (so "not yet" dates it) and not what the original does
     ("a store that is not yet broken"): it sits in Coney's implementation or the open questions, or names Coney."""
-    return section in ("coney's implementation", "open questions") or "coney" in text.casefold()
+    return _skeleton_key(section) in ("coney's implementation", "open questions") or "coney" in text.casefold()
 
 
 def _person_words(words: tuple[str, ...]) -> re.Pattern[str]:
     """The pattern for the avoided words in their person sense: "the owner", "the project owner", "repository owner".
     "An object's owner" and `owner/repo` are not people and stay."""
     alternatives = "|".join(re.escape(word) for word in words)
-    return re.compile(rf"\b(?:the|project|repository|repo)\s+(?:{alternatives})(?:'s|s)?\b(?![/_])", re.IGNORECASE)
+    return re.compile(
+        rf"\b(?:the|project|repository|repo)\s+(?:{alternatives})(?:'s|s)?\b(?![/_])(?!\s+of\b)", re.IGNORECASE
+    )
 
 
 def _check_style(path: str, page: _Page, kind: str, context: Context) -> Iterable[Finding]:
@@ -560,8 +593,11 @@ def _check_style(path: str, page: _Page, kind: str, context: Context) -> Iterabl
             continue
         mentioned = _without_mentions(text)
         for stale in STALE.finditer(mentioned):
-            if kind == "research" and stale.group(0).casefold() == "not yet" and not _is_status(sections[index], text):
-                continue
+            if stale.group(0).casefold() == "not yet":
+                if kind == "research" and not _is_status(sections[index], text):
+                    continue
+                if kind != "research" and not NOT_YET_WORK.match(mentioned, stale.start()):
+                    continue
             yield Finding(
                 "stale-wording",
                 line.number,
@@ -574,12 +610,12 @@ def _check_style(path: str, page: _Page, kind: str, context: Context) -> Iterabl
                     line.number,
                     f"'{person.group(0)}' names a person: say 'the user' or 'a maintainer'",
                 )
-        for target in _LINK.finditer(_CODE.sub(" ", text)):
+        for target in [*_LINK.finditer(_CODE.sub(" ", text)), *_REF_DEF.finditer(text)]:
             link = target.group("target")
             if _SCHEME.match(link) or link.startswith(("#", "/")):
                 continue
             resolved = posixpath.normpath(posixpath.join(folder, link.split("#", 1)[0].split("?", 1)[0]))
-            if link.split("#", 1)[0] and not resolved.startswith("docs/"):
+            if link.split("#", 1)[0] and resolved != "docs" and not resolved.startswith("docs/"):
                 yield Finding("repo-link", line.number, f"'{link}' leaves docs/: write repo:<path>")
 
 
@@ -651,6 +687,10 @@ def check_paths(root: Path, paths: Iterable[str], context: Context) -> Result:
             raise ConfigError(f"{path} is outside the checkout")
         if target.is_dir():
             names.extend(sorted(item.relative_to(top).as_posix() for item in target.rglob("*.md")))
+        elif not target.is_file():
+            raise ConfigError(f"{path}: no such file or folder")
+        elif kind_of(name := target.relative_to(top).as_posix()) not in CHECKED_KINDS:
+            raise ConfigError(f"{path}: not a page the check covers (a hand-written page under docs/)")
         else:
-            names.append(target.relative_to(top).as_posix())
+            names.append(name)
     return check_files(root, names, context)

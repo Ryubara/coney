@@ -26,7 +26,7 @@ first hour; the rest of this file is for agents.
 - Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` (presets `dev`, `release`,
   `ci`, `asan`); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
-- Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
+- Docs: `.venv/Scripts/python -m mkdocs build --strict`; `coney-tools docs check`. Details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate; fix failures forward.
 
 ## Rules (never broken)
@@ -73,13 +73,11 @@ first hour; the rest of this file is for agents.
 ## Documentation
 
 Document as you work: a change that alters behaviour, a command or what we know updates its living doc in the same
-commit. One document per subject, updated in place: findings in `docs/research/`, how-tos in `docs/guides/`, the
-why in code comments. Mission work updates `research/missions.yaml` (status, checkpoints) in the same commit and
-reruns `coney-tools missions render`. CI refuses a pull request that changes `src/` or `python/src/` without
-changing `docs/` or `research/`, unless its description has a line `Docs: none`. `HANDOFF.md` holds only the current
-state of the work (local, never committed). Whoever changes a page brings the whole page up to
-`docs/guides/writing-docs.md`; `coney-tools docs check` (also in `check changed` and the docs workflow) fails on any
-touched page that breaks a rule.
+commit, and a page you touch meets [the docs standard](docs/guides/writing-docs.md#touch-it) as a whole. One document
+per subject, updated in place: findings in `docs/research/`, how-tos in `docs/guides/`, the why in code comments.
+Mission work updates `research/missions.yaml` (status, checkpoints) in the same commit and reruns `coney-tools missions
+render`. CI refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`, unless
+its description has a line `Docs: none`. `HANDOFF.md` holds only the current state of the work (local, never committed).
 
 ## Commits and GitHub
 

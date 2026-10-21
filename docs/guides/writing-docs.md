@@ -232,16 +232,17 @@ checked; their source is. What each rule looks at, by the kind of page ([Page ki
 | `skeleton` | research | A missing `# Title`; a missing, empty or out-of-order section of the [Subsystem page](#subsystem-page) skeleton. A level-2 heading counts when it is the section's name or starts with it and a space, colon or dash ("Data layout"); other sections may sit between the six |
 | `verified` | research | No `Verified against: ...` line (with something after it) above the first section: the executable and, for runtime claims, the PCSX2 version |
 | `evidence` | research | An address cited with no evidence level nearby, see below |
-| `machine-path` | all | A user folder (under `Users` or `/home`, with a real name) or a drive-letter path two folders deep. Not refused: a placeholder (`<name>`), a bare drive (`H:\`), `C:\Program Files`, and the original's own build paths (`c:/Warriors/...`, `/home/ack/...`) |
-| `stale-wording` | all | "still small", "not yet", "once it exists", "does not exist yet", "yet to be written": wording that says when something is true instead of what is true. On a research page "not yet" is refused only where it speaks of Coney (the implementation and open-question sections, or a line that names Coney), since "a store that is not yet broken" describes the original. A phrase in code spans or in double quotes is mentioned, not used |
-| `repo-link` | all | A relative link (or image) that leaves `docs/`: write `repo:<path>` |
-| `person-wording` | guides and other pages | "the owner", "the project owner", "repo owner" and the other words of `repo.wording.avoid` in `.github/conventions.yml`: write "the user" or "a maintainer". "An object's owner" is not refused |
+| `machine-path` | all | A user folder (under `Users` or `/home`, with a real name) or a drive-letter path two folders deep. Not refused: a placeholder (`<name>`), a bare drive (`H:\`), `C:\Program Files`, `C:\Windows`, and the original's own build paths (`c:/Warriors/...`, `/home/ack/...`) |
+| `stale-wording` | all | "still small", "not yet", "once it exists", "does not exist yet", "yet to be written": wording that says when something is true instead of what is true. "Not yet" is refused only where it dates the project: on a research page where it speaks of Coney (the implementation and open-question sections, or a line that names Coney), since "a store that is not yet broken" describes the original; on any other page where a word of work follows it ("not yet implemented", "written", "listed", "supported", ...), since "not yet looked at" is an issue's state. A phrase in code spans or in double quotes is mentioned, not used |
+| `repo-link` | all | A relative link, image or link reference definition that leaves `docs/`: write `repo:<path>` |
+| `person-wording` | guides and other pages | "the owner", "the project owner", "repo owner" and the other words of `repo.wording.avoid` in `.github/conventions.yml`: write "the user" or "a maintainer". "An object's owner" and "the owner of the task" are not refused |
 | `address` | all | The repository's or the docs site's address (only the README may carry it) |
 | `length` | research, guides | A **warning** above 1,500 lines (research) or 800 lines (guides). A page is read whole before it is changed, and the reader's window is 2,000 lines; a research page past 1,500 lines (the longest sixth of today's pages; the median is about 530) leaves no room for the code beside it, and a guide past 800 (the longest tenth; the median is about 260) is several guides. A warning, because where to cut is the author's call |
 
 **The evidence rule.** It looks at every paragraph, list item and table row that cites an address (`0x` and eight hex
-digits, the form of [Writing up a finding](research-workflow.md#writing-up-a-finding)) in a research page's sections
-other than Purpose, Coney's implementation and Open questions, and passes it when a level word (`confirmed`,
+digits, the form of [Writing up a finding](research-workflow.md#writing-up-a-finding), in main memory: `0x00100000` to
+`0x01ffffff`) in a research page's sections other than Purpose, Coney's implementation and Open questions (or a heading
+that starts with one of them, as the skeleton counts it), and passes it when a level word (`confirmed`,
 `inferred`, `speculative` or `Evidence:`) appears in:
 
 - the item itself, the item before it or the item after it (for a table row: the paragraph before or after the table);

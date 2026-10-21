@@ -340,7 +340,7 @@ uv run --project python coney-tools check changed
 
 It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files a pull request changes
 (a changed header through the `.cpp` files that include it; the only clang-tidy a pull request gets, as CI's runs
-nightly), `mkdocs build --strict` when docs changed, ruff, pytest and mypy when `python/` or `.claude/` changed, and
+nightly), the page standards on the changed pages and `mkdocs build --strict` when docs changed, ruff, pytest and mypy when `python/` or `.claude/` changed, and
 `repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only --agent <id>`:
 configure, no build). It catches what MSVC lets
 through: a designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked
@@ -365,8 +365,8 @@ The whole gate:
   the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,
   `refs render`, `missions render`, `pcsx2 recipe render`). Rerun a generator without `--check` when you change what it
   reads.
-- **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
-  `mkdocs build --strict` passes.
+- **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
+  `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.
 
 Commands and presets: [Building and testing](building.md).
 

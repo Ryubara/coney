@@ -8,11 +8,14 @@ change to a heuristic shows up as a change here. The fixtures hold no game data:
 from pathlib import Path
 
 import pytest
+import yaml
 from conventions_support import REPO
 from git_support import git
 
 from coney_tools import check_cli, docs_check, docs_cli
+from coney_tools.config import ConfigError
 from coney_tools.docs_check import Context, Finding, check_page
+from coney_tools.local_gate import StepResult
 
 RESEARCH = "docs/research/widget.md"
 GUIDE = "docs/guides/widget.md"
@@ -323,6 +326,8 @@ def test_not_yet_on_a_research_page_is_status_only_where_it_speaks_of_coney() ->
 def test_a_relative_link_that_leaves_docs_is_reported() -> None:
     assert errors(GUIDE, "# G\n\nSee [the licence](../../LEGAL.md#x).\n") == ["repo-link"]
     assert errors("docs/references/entities.md", "# A\n\n[x](../../src/a.cpp)\n") == ["repo-link"]
+    assert errors(GUIDE, "# G\n\n![a picture](../../a.png)\n") == ["repo-link"]
+    assert errors(GUIDE, "# G\n\nSee [the licence][l].\n\n[l]: ../../LEGAL.md\n") == ["repo-link"]
 
 
 @pytest.mark.parametrize(
@@ -334,12 +339,13 @@ def test_a_relative_link_that_leaves_docs_is_reported() -> None:
         "[x](#here)",
         "[x](https://example.org/a)",
         "[x](mailto:a@example.org)",
+        "[x](../)",
+        "![a picture](../images/a.png)",
+        "[l]: ../research/camera.md",
     ],
 )
 def test_other_links_are_fine(link: str) -> None:
-    text = f"# G\n\n{link}\n"
-    # An image reference is the one link that may leave docs/? No: it is also checked, so it is the exception below.
-    assert errors(GUIDE, text) == (["repo-link"] if link.startswith("![") else [])
+    assert errors(GUIDE, f"# G\n\n{link}\n") == []
 
 
 def test_the_decider_wording_is_reported_in_guides_only() -> None:
@@ -520,8 +526,39 @@ def test_a_long_page_that_otherwise_passes_is_only_a_note_in_the_gate(tmp_path: 
 
 
 def test_the_ci_docs_job_runs_the_check_on_the_pages_a_pull_request_changes() -> None:
-    workflow = (REPO / ".github/workflows/docs.yml").read_text(encoding="utf-8")
-    assert "coney-tools docs check --base HEAD^1" in workflow
+    workflow = yaml.safe_load((REPO / ".github/workflows/docs.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["mkdocs"]["steps"]
+    check = next(step for step in steps if "coney-tools docs check --base HEAD^1" in step.get("run", ""))
+    build = next(step for step in steps if step.get("run", "").startswith("mkdocs build --strict"))
+    # Pull requests only (on a push HEAD^1 is the previous commit of main), and it does not stop the build ...
+    assert check["if"] == "github.event_name == 'pull_request'" and check["continue-on-error"] is True
+    assert steps.index(check) < steps.index(build)
+    # ... and the job still fails when it did, after the build ran.
+    last = steps[-1]
+    assert last["if"] == f"steps.{check['id']}.outcome == 'failure'" and "exit 1" in last["run"]
+
+
+def test_the_docs_step_runs_the_standards_and_the_build_and_fails_on_either(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = checkout_with_conventions(tmp_path)
+    write(root, "docs/research/old.md", "# Old\n\nSome line.\n")
+    built = StepResult("docs", True, "mkdocs build --strict")
+    monkeypatch.setattr(check_cli, "_mkdocs_build", lambda root: built)
+    failed = check_cli._step_docs(root, ["docs/research/old.md"])
+    assert not failed.ok and "page standards failed" in failed.detail and "mkdocs build --strict" in failed.detail
+    assert check_cli._step_docs(root, ["docs/research/good.md"]).ok
+    built = StepResult("docs", False, "mkdocs build --strict failed", output=("ERROR x",))
+    broken = check_cli._step_docs(root, ["docs/research/good.md"])
+    assert not broken.ok and "ERROR x" in broken.output
+
+
+def test_a_named_path_that_is_missing_or_not_a_page_is_an_error(tmp_path: Path) -> None:
+    root = checkout(tmp_path)
+    (root / "README.md").write_text("# R\n", encoding="utf-8")
+    for path, message in [("docs/guides/typo.md", "no such file"), ("README.md", "not a page the check covers")]:
+        with pytest.raises(ConfigError, match=message):
+            docs_check.check_paths(root, [path], Context())
 
 
 def test_the_real_page_standards_page_passes_its_own_check() -> None:
@@ -541,3 +578,47 @@ def test_a_person_is_not_an_objects_owner() -> None:
     context = Context(avoid=("owner",))
     assert errors(GUIDE, "# G\n\nThe object's owner pointer, and its owner.\n", context) == []
     assert errors(GUIDE, "# G\n\nThe project owner decides.\n", context) == ["person-wording"]
+
+
+def test_a_heading_that_starts_with_an_ungraded_section_name_is_ungraded() -> None:
+    page = (
+        research_page()
+        .replace("## Purpose", "## Purpose and scope")
+        .replace("What the widget does.", "What the widget does, from 0x00123456.")
+    )
+    assert errors(RESEARCH, page) == []
+    coney = research_page().replace("## Coney's implementation", "## Coney's implementation (so far)")
+    coney = coney.replace("`src/widget/`.", "`@orig 0x00123456 Spin` in `src/widget/`. Not yet complete.")
+    # The @orig tag needs no level, and "not yet" in this section still dates the project.
+    assert errors(RESEARCH, coney) == ["stale-wording"]
+
+
+def test_not_yet_on_a_guide_counts_only_when_it_says_what_the_project_has_not_done() -> None:
+    assert errors(GUIDE, "# G\n\nStatus: not yet looked at.\n") == []
+    assert errors(GUIDE, "# G\n\nThe game draws scenery not yet loaded as boxes.\n") == []
+    assert errors(GUIDE, "# G\n\nThe 16:9 overwrites are not yet listed.\n") == ["stale-wording"]
+    assert errors(GUIDE, "# G\n\nThis has not yet been implemented.\n") == ["stale-wording"]
+
+
+def test_only_addresses_in_main_memory_are_claims() -> None:
+    for number in ("0x7e23a6f2", "0x18300000", "0x80000000", "0x00001000"):
+        assert errors(RESEARCH, research_page(f"The value {number}.\n")) == [], number
+    assert errors(RESEARCH, research_page("The function at 0x01f00000.\n")) == ["evidence"]
+
+
+def test_a_page_level_sentence_may_name_the_executable_but_not_deny_the_grade() -> None:
+    graded = "Every address in SLUS_212.15 is confirmed (code) unless a line says otherwise.\n"
+    assert errors(RESEARCH, research_page("The widget at 0x00123456.\n", extra=graded + "\n")) == []
+    denied = "Not all of this is confirmed.\n"
+    assert errors(RESEARCH, research_page("The widget at 0x00123456.\n", extra=denied + "\n")) == ["evidence"]
+
+
+def test_a_longer_fence_can_show_a_shorter_one() -> None:
+    page = "# G\n\n````markdown\n```text\nnot yet written\n```\nnot yet written\n````\n\nAll done.\n"
+    assert errors(GUIDE, page) == []
+    assert errors(GUIDE, page + "\nIt is not yet written.\n") == ["stale-wording"]
+
+
+def test_the_owner_of_a_thing_is_not_a_person() -> None:
+    context = Context(avoid=("owner",))
+    assert errors(GUIDE, "# G\n\nThe owner of the task runs it.\n", context) == []

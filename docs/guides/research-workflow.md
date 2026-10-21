@@ -775,8 +775,9 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
   but do not revert another engineer's names; a disagreement goes on the page as an open question.
 - **Do not guess in code.** A gap in a page becomes an open question on the page and a marked stand-in in code, never
   a silent guess ([When a research page isn't enough](#when-a-research-page-isnt-enough)).
-- **Research is done when a reader can implement from it:** a name and plate comment in Ghidra, and a page that cites
-  the address with an evidence level and says what the function does ([The Understood measure](#understood)).
+- **Research is done when the page maps the behaviour to the code:** a name and plate comment in Ghidra, and a page
+  that names the function, cites its address with an evidence level and says what the code alone does not show
+  ([The Understood measure](#understood)). The engineer who ports it reads the function itself.
 - **Weak evidence stays labelled.** A screenshot is a source of measurements, not a claim; a claim quotes numbers, the
   scenario that produced them and the build or state they came from.
 
@@ -799,8 +800,9 @@ A finding is done when someone else can use it without asking you. For each one:
    [LEGAL.md](repo:LEGAL.md#research-limits).
 6. **No game data.** Tables of offsets, constants and counts are facts and belong on the page; the bytes of a game
    file, a dump or an extracted asset never do.
-7. **Build the docs** with `mkdocs build --strict` (see [Writing these docs](writing-docs.md)), which catches broken
-   links and pages missing from the navigation.
+7. **Check and build the docs:** `coney-tools docs check` holds every page you touched to the standard
+   ([Checking a page](writing-docs.md#checking)), and `mkdocs build --strict` catches broken links and pages missing
+   from the navigation.
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with

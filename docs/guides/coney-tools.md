@@ -1080,7 +1080,8 @@ workflow does on a pull request. With `PATHS` it checks those files, or every pa
 changed. It prints `path:line: rule: message` for each finding (`--quiet` prints only the counts), a warning (a long
 page) never fails, and `--summary` adds how many pages of each kind pass and how many pages break each rule: run it
 on `docs` for the standing of the whole tree. Exit 0 when no page has an error, 1 when one has, 2 when the command is
-not run inside a checkout or the conventions cannot be read.
+not run inside a checkout, the conventions cannot be read, `--base` is unknown, or a named path is missing, outside
+the checkout or not a page the check covers (`README.md`, a generated page).
 
 ## build {#build}
 
