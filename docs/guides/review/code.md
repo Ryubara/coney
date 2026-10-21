@@ -31,6 +31,9 @@ the [format on the index page](index.md#finding-format).
 - [ ] **Fixtures are synthetic.** Tests that need the disc skip when it is not configured and print aggregates
   only.
 - [ ] **The build is clean.** Warning-free on every supported compiler, and the tests pass. Run them.
+- [ ] **Networking.** The change keeps [the networking checklist](../network-architecture.md#checklist): no new
+  mutable global in simulation code, no new "the player" or pad 0 assumption, no new pointer kept across steps where
+  an id would do, no `GameRandom` draw from presentation code.
 
 ## Readability for a hand-writer
 

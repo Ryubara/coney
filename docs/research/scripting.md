@@ -1189,7 +1189,13 @@ out of sight; he never joins unless a second pad does.
 - **Joining.** Only `GameState_SyncPlayers` (`0x0041a460`) makes player 2: when joining is allowed (`+0x56e8`,
   `CfgMultiplayerJoin`) and a second pad comes in, it takes the player gang's next human by hand-over priority
   (`Gang_PickNextPlayer`; Ash's 2), calls `Human_MakePlayer` and then the multiplayer callback with (Ash, true)
-  (`0x0041b148`); a pad leaving releases him (`Human_ReleasePlayer`) and calls it with (Ash, false). Confirmed (code).
+  (`GameState_CallMultiplayerCallback`, `0x0041b148`). Confirmed (code). A second pad joins on START: the level
+  mode's update (`0x00158728`) calls `GameState_SyncPlayers(pad)` for a pad with START held.
+- **Leaving.** A pulled pad does **not** release player 2: the pad callback `Pads_Init` installs (`Player_UnbindPad`,
+  `0x0022a980`, passed at `0x00149630`) only unbinds that pad from the HUD and raises the controller error message
+  (`Gm_Error_SetPadMessage`). Player 2 drops out through the pause menu's Player 2 quit (`PauseMenu_QuitPlayerTwo`,
+  `0x001df3a8`): it clears the two-player flag and calls `GameState_SyncPlayers(-1)`, whose release branch runs only
+  with that flag clear and calls `Human_ReleasePlayer` and the callback with (Ash, false). Confirmed (code).
   `F.Player2Join(h, true)` resumes his brain, adds his blip and puts him beside Rembrandt (`HuTeleportNearHuman`);
   with false it suspends him again and sends him back to `fAshTeleport2` (z −8.5).
 
@@ -2461,9 +2467,9 @@ on [Story coverage](../references/bindings/story.md#level2). Inferred unless mar
   tag spots (`TagInfo.SetupTags`, a `global.lua` helper over the tagging bindings).
 - **`SetupFlagNet2`** is a **Lua function of `level2.lua` itself** (function 96 of the main chunk), not a binding: it
   links the 13 flags `PedNet_01`-`13` (made by `AddFlagsBoxesPaths`) into a pedestrian network with 13
-  [`FlagNetAddLink`](../references/bindings/ai.md#flagnetaddlink) calls (two or three neighbours each), calls
+  [`FlagNetAddLink`](../references/bindings/world.md#flagnetaddlink) calls (two or three neighbours each), calls
   `AddCivilians` (gang 23 "Civilians" with one spawner whose per-spawn callback, `global.lua`'s `CivFlagNet`, sets
-  each civilian walking the net with [`FlagNetTraverse`](../references/bindings/ai.md#flagnettraverse)) and then
+  each civilian walking the net with [`FlagNetTraverse`](../references/bindings/world.md#flagnettraverse)) and then
   sets itself and its twin `SetupFlagNet52` (a 28-node net for `level52`, never called here) to nil, so it runs once.
   Its other caller is `P2.SetupTenement`, when `peds` is still 0 (the player came from checkpoint 1 in the same
   level). Nothing for the engine to register.

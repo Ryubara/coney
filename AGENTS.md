@@ -27,8 +27,7 @@ first hour; the rest of this file is for agents.
   `ci`, `asan`); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
-- On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is
-  fixed forward on the branch.
+- On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate; fix failures forward.
 
 ## Rules (never broken)
 
@@ -64,11 +63,12 @@ first hour; the rest of this file is for agents.
 - Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
 - A Coney-only capability a script could use joins the native-candidates registry: `conventions.md#coney-only`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,
-  private members, long lambdas) and before each step of a long one; comments explain *why*, briefly. Keep the
-  engine's test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
-  or a human.
-- Tests for everything testable without the game, written first: `docs/guides/testing.md`. Style and the rest:
-  `docs/guides/conventions.md`.
+  private members, long lambdas) and before each step of a long one; comments explain *why*, briefly.
+- Keep the test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
+  or a human. Tests for everything testable without the game, written first: `docs/guides/testing.md`.
+- Write for networked play: state owned by the game mode, player slots not one player, ids not pointers, gameplay
+  randomness only from `GameRandom`, simulated effects as events: `docs/guides/network-architecture.md#checklist`.
+- Style and the rest: `docs/guides/conventions.md`.
 
 ## Documentation
 

@@ -251,7 +251,9 @@ Online play, from a few friends to large brawls with dozens of players on one se
 changes for it. Planned for after the whole game, it was started early by a maintainer decision on 2026-10-20, with
 ENet as its UDP transport (approved the same day; [Licences](repo:LEGAL.md#licences)). The design and its steps are
 [Network multiplayer](guides/multiplayer.md): a listen server in the host's game, server-authoritative, input
-commands up and snapshots down, clients interpolating. The thinking below set that direction.
+commands up and snapshots down, clients interpolating. The phases beyond it, from the original's own two-player
+co-op over a network to scripted dedicated servers, are designed on [Network
+architecture](guides/network-architecture.md). The thinking below set that direction.
 
 - Done: the network library `coney_net` (bit stream, transports, link conditioner, protocol, the server and client
   sessions with their handshake and timeouts) and the ENet transport, tested over an in-memory loopback and over UDP
