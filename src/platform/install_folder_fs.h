@@ -20,9 +20,10 @@ namespace coney::platform {
 class HostInstallFolder final : public install::InstallFolder {
   public:
     /// Opens (making it when needed) the folder `root`. Fails with ErrorCode::Io when it cannot be made, and
-    /// ErrorCode::InvalidArgument when `root` is a file.
+    /// ErrorCode::InvalidArgument when `root` is a file. Named apart from open() so that a string literal passed to
+    /// open() is never ambiguous between a path and a relative name.
     [[nodiscard]] static std::expected<std::unique_ptr<HostInstallFolder>, Error>
-    open(const std::filesystem::path& root);
+    openRoot(const std::filesystem::path& root);
 
     // The InstallFolder interface; its doc comments give the contracts.
     [[nodiscard]] std::expected<void, Error> makeFolders(std::string_view relative) override;

@@ -36,7 +36,7 @@ int runInstallCommand(const Options& options, std::span<const install::KnownDisc
         say(out, disc.error().message);
         return 1;
     }
-    auto folder = HostInstallFolder::open(dataPath);
+    auto folder = HostInstallFolder::openRoot(dataPath);
     if (!folder) {
         say(out, folder.error().message);
         return 1;

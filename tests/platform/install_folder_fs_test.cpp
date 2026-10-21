@@ -28,7 +28,7 @@ void writeFile(HostInstallFolder& folder, std::string_view relative, std::string
 
 TEST_CASE("the host install folder writes, renames over and removes files", "[install]") {
     TempDir dir;
-    auto folder = HostInstallFolder::open(dir.path() / "Coney");
+    auto folder = HostInstallFolder::openRoot(dir.path() / "Coney");
     REQUIRE(folder.has_value());
     auto& f = **folder;
     REQUIRE(f.makeFolders("game/ps2/IOP").has_value());
@@ -53,7 +53,7 @@ TEST_CASE("the host install folder writes, renames over and removes files", "[in
 
 TEST_CASE("the host install folder refuses paths that leave it", "[install]") {
     TempDir dir;
-    auto folder = HostInstallFolder::open(dir.path());
+    auto folder = HostInstallFolder::openRoot(dir.path());
     REQUIRE(folder.has_value());
     const auto climbing = (*folder)->create("../outside.txt");
     REQUIRE_FALSE(climbing.has_value());
@@ -65,7 +65,7 @@ TEST_CASE("the host install folder refuses paths that leave it", "[install]") {
 TEST_CASE("a file cannot be an install folder", "[install]") {
     TempDir dir;
     const auto file = dir.write("taken", std::vector<std::byte>(3));
-    const auto folder = HostInstallFolder::open(file);
+    const auto folder = HostInstallFolder::openRoot(file);
     REQUIRE_FALSE(folder.has_value());
     CHECK(folder.error().code == ErrorCode::InvalidArgument);
 }
