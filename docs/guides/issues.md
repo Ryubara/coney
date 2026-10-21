@@ -237,7 +237,7 @@ Every open issue has exactly one status label, and the coordinator moves it:
 | `S-needs-triage` | The form sets it. |
 | `S-ready-to-start` | Triage accepted the issue: type, area and priority are set and nothing blocks it. |
 | `S-needs-info` | Triage found the report incomplete and asked the reporter. Back to triage when they answer. |
-| `S-needs-research` | The behaviour of the original is not yet written on a research page. |
+| `S-needs-research` | No research page describes the behaviour of the original. |
 | `S-in-progress` | An agent or person picks up an `S-ready-to-start` issue and starts work. |
 | `S-pending-review` | The coordinator opens the pull request, with `Fixes #N` in its body. |
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
