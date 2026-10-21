@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(*coney-tools pcsx2*)",
+            "if": "Bash(*coney-tools*pcsx2*)",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
             "timeout": 10
           }
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "if": "PowerShell(*coney-tools pcsx2*)",
+            "if": "PowerShell(*coney-tools*pcsx2*)",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
             "timeout": 10
           }

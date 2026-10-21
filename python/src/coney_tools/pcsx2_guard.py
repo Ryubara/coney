@@ -17,17 +17,30 @@ Nothing else is refused, and nothing is locked: no lease, no per-session state b
 **The server's `agent` argument.** A PCSX2-MCP server that keeps a connection per caller takes an optional `agent` on
 every `pcsx2_*` call (docs/guides/agents.md#pcsx2-guard). The guard checks it where it is given: it must be an id the
 caller claimed with (and, on `pcsx2_connect`, the id the copy is claimed as), so a caller cannot act in another agent's
-name by mistake. Whether it is *present* is the server's to require (`PCSX2_REQUIRE_AGENT=1`). Against an older
-server, which has one connection per process, another agent's `pcsx2_connect` to its own claim still moves this
-agent's connection, and `mode: debug` leaves the previous PINE half.
+name by mistake. `pcsx2_connect` **must** carry it: whatever server runs (a local-scope `pcsx2` entry, an older
+checkout, the old fork), two agents that left it out would share the server's `default` connection and one's connect
+would move the other's, so the hook refuses a connect without it (an older server ignores the extra key). Other calls
+may leave it out: that is the server's to require (`PCSX2_REQUIRE_AGENT=1`). Against an older server, which has one
+connection per process, another agent's `pcsx2_connect` to its own claim still moves this agent's connection, and
+`mode: debug` leaves the previous PINE half.
 
-The guard fails open where it cannot work (no PCSX2 copies set up, no session id in the payload, anything unexpected),
-and writes one line to `guard.log` beside its state when it fails itself. State is a few small files below the claims
-folder (`<claims dir>/mcp/`), one per caller, replaced whole and pruned after `BINDING_KEEP_SECONDS`.
+**What it is not.** The ids come from the text of shell commands, so the guard stops mistakes, not impersonation: a
+caller that runs `claim --agent <another agent's id>` (or only mentions it in a command) goes by that id, exactly as
+`claim` itself hands that agent's claim back to anyone who asks.
+
+The guard fails open where it cannot work (no PCSX2 copies set up, no session id in the payload, anything
+unexpected), and writes one line to `guard.log` beside its state whenever it does so for a failure of its own (also an
+unreadable payload; when the package cannot even load, the line goes to `coney-pcsx2-guard.log` in the system temp
+folder). Not logged: a hook that the 10 second timeout kills (Claude Code shows that itself). State is a few small
+files below the claims folder (`<claims dir>/mcp/`), one per caller and claim id, written whole by a rename, renewed
+whenever the caller uses its binding and pruned after `BINDING_KEEP_SECONDS`; the log is cut to its newest half past
+`LOG_MAX_BYTES`.
 """
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import json
 import os
 import re
@@ -49,6 +62,12 @@ _PORTS = ("debug_port", "pine_port")
 BINDING_KEEP_SECONDS = 3 * 86400.0
 #: Where the hook notes its own failures, below the guard's folder.
 LOG_FILE = "guard.log"
+#: The log is cut to its newest half once it is larger than this.
+LOG_MAX_BYTES = 64 * 1024
+#: A half-written binding file nobody finished (a crash between writing and renaming) is removed after this long.
+TEMPORARY_KEEP_SECONDS = 3600.0
+#: How often a rename that Windows refuses (the destination is open in another hook process) is tried.
+REPLACE_ATTEMPTS = 6
 
 _AGENT_ID = r"[A-Za-z0-9._-]{1,64}"
 #: The `coney-tools pcsx2` commands that run under the caller's own claim (making one when it holds none), so their
@@ -90,43 +109,79 @@ class Guard:
 
     # -- who is calling
 
-    def _binding(self, session: str, agent_id: str) -> Path:
-        """The file that holds the claim ids one caller of a session goes by."""
-        return self.folder / f"{_key(session)}.bind.{_key(agent_id)}.json"
+    def _binding(self, session: str, agent_id: str, name: str | None = None) -> Path:
+        """The file that holds one claim id one caller of a session goes by (`name`), or, without it, the prefix
+        shared by all the caller's files. One file per id means a bind never reads and rewrites another's, so two
+        hook processes binding at once lose nothing."""
+        prefix = f"{_key(session)}.bind.{_key(agent_id)}."
+        if name is None:
+            return self.folder / prefix
+        return self.folder / f"{prefix}{_key(name)}-{hashlib.sha1(name.encode('utf-8')).hexdigest()[:8]}.json"
 
     def bind(self, session: str, agent_id: str, names: Collection[str]) -> None:
         """Note that this caller goes by `names` (the ids of its claiming `pcsx2 ... --agent` commands) from now on,
-        and drop the bindings nobody has renewed for BINDING_KEEP_SECONDS."""
-        known = self.bound(session, agent_id)
-        path = self._binding(session, agent_id)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if set(names) <= known and path.exists():
-            path.touch()  # renewed: a caller that keeps claiming keeps its binding
-        else:
+        and drop the files nobody has renewed for BINDING_KEEP_SECONDS."""
+        self.folder.mkdir(parents=True, exist_ok=True)
+        for name in sorted(set(names)):
+            path = self._binding(session, agent_id, name)
+            if path.exists():
+                self._renew(path)  # a caller that keeps claiming keeps its binding
+                continue
             temporary = path.with_name(f"{path.name}.{os.getpid()}.{uuid.uuid4().hex[:6]}")
-            temporary.write_text(json.dumps({"names": sorted(known | set(names))}), encoding="utf-8")
-            temporary.replace(path)
+            temporary.write_text(json.dumps({"name": name}), encoding="utf-8")
+            self._replace(temporary, path)
         self._prune()
+
+    @staticmethod
+    def _replace(temporary: Path, path: Path) -> None:
+        """Rename `temporary` to `path`, trying again when Windows refuses because another hook process has `path`
+        open (the `bound` of a parallel tool call). The content is the same whoever wins, so a `path` that appears
+        meanwhile settles it. The temporary file never stays behind."""
+        for attempt in range(REPLACE_ATTEMPTS):
+            try:
+                temporary.replace(path)
+                return
+            except PermissionError:
+                if path.exists() or attempt == REPLACE_ATTEMPTS - 1:
+                    break
+                time.sleep(0.05 * (attempt + 1))
+        with contextlib.suppress(OSError):
+            temporary.unlink()
+        if not path.exists():
+            raise PermissionError(f"could not write {path.name}")
+
+    @staticmethod
+    def _renew(path: Path) -> None:
+        """Mark a binding file as used now (best effort: it may be pruned or replaced at this very moment)."""
+        try:
+            os.utime(path, None)
+        except OSError:
+            return
 
     def _prune(self) -> None:
         """Remove binding files not renewed for BINDING_KEEP_SECONDS (a session's file is never read again once it
-        ends)."""
+        ends) and half-written temporary ones left by a crash, which no glob of `bound` would ever match."""
         now = time.time()
-        for path in self.folder.glob("*.bind.*.json"):
+        for path in self.folder.glob("*.bind.*"):
+            keep = BINDING_KEEP_SECONDS if path.suffix == ".json" else TEMPORARY_KEEP_SECONDS
             try:
-                if now - path.stat().st_mtime > BINDING_KEEP_SECONDS:
+                if now - path.stat().st_mtime > keep:
                     path.unlink()
             except OSError:
                 continue
 
     def bound(self, session: str, agent_id: str) -> set[str]:
         """The claim ids this caller goes by."""
-        try:
-            data = json.loads(self._binding(session, agent_id).read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return set()
-        names = data.get("names") if isinstance(data, dict) else None
-        return {name for name in names if isinstance(name, str)} if isinstance(names, list) else set()
+        names: set[str] = set()
+        for path in self.folder.glob(f"{self._binding(session, agent_id).name}*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            name = data.get("name") if isinstance(data, dict) else None
+            if isinstance(name, str):
+                names.add(name)
+        return names
 
     # -- the decision
 
@@ -147,45 +202,70 @@ class Guard:
         except (ClaimError, ConfigError):
             return None  # no managed copies on this machine: nothing to protect, and no claims to check against
         names = self.bound(session, agent_id)
+        if agent is not None and not isinstance(agent, str):
+            return f"Blocked: `agent` must be a string, your claim id; it is {agent!r}. {_PASS_YOUR_ID}"
+        if is_connect and not agent:
+            # Whatever server runs: without a name two agents share its `default` connection and one moves the other's.
+            return f"Blocked: pcsx2_connect needs `agent` (it names your connection). {_PASS_YOUR_ID}"
         if agent is not None and agent not in names:
             return (
                 f"Blocked: `agent` is {agent!r}, which is not an id you claimed with"
                 + (f" (you claimed {', '.join(sorted(names))})" if names else "")
-                + ". Pass your own id there (the one of `coney-tools pcsx2 claim --agent <your id>`, run in a shell "
-                "first so this guard learns it): it names your connection, and passing another agent's would act on "
-                "its PCSX2."
+                + f". {_PASS_YOUR_ID} Passing another agent's would act on its PCSX2."
             )
+        if agent is not None:
+            self._renew(self._binding(session, agent_id, agent))  # the binding is in use: it must not expire
         if not is_connect:
             return None
         ports: dict[str, int] = {}
         for key in _PORTS:
-            value = arguments.get(key)
-            if isinstance(value, bool) or not isinstance(value, int | float | str) or not str(value).isdigit():
+            number = _port(arguments.get(key))
+            if number is None:
+                what = "is missing" if arguments.get(key) is None else "is not a port number"
                 return (
-                    f"Blocked: pcsx2_connect needs both `debug_port` and `pine_port` (`{key}` is missing), of your "
+                    f"Blocked: pcsx2_connect needs both `debug_port` and `pine_port` (`{key}` {what}), of your "
                     "claimed copy, in every mode. The server's defaults belong to whichever copy it was started for, "
                     "and a connect moves the connection of every agent of this session. Run `uv run --project python "
                     "coney-tools pcsx2 claim --agent <your id>` (it returns your claim again if you hold one), connect "
                     'with the `debug-port` and `port` (PINE) it prints and `mode: "debug"`, and check `pcsx2_status` '
                     "before the first write."
                 )
-            ports[key] = int(value)
-        if not names:
-            return (
-                "Blocked: this guard does not know your claim. Run `uv run --project python coney-tools pcsx2 claim "
-                "--agent <your id>` in a shell first (it returns your claim again if you hold one); the guard reads "
-                "the id from that command, then lets you connect to the ports it prints."
-            )
+            ports[key] = number
         try:
             claim = self.registry.require_ports(names, debug_port=ports["debug_port"], pine_port=ports["pine_port"])
         except ClaimError as error:
             return f"Blocked: {error}."
-        if agent is not None and agent != claim.agent:
+        if agent != claim.agent:
             return (
                 f"Blocked: name your connection after the claim you connect to: `agent` is {agent!r} but the copy "
                 f"{claim.copy} is claimed as {claim.agent!r}."
             )
         return None
+
+
+#: What a refusal about `agent` tells the agent to do.
+_PASS_YOUR_ID = (
+    'Pass `agent: "<your id>"` on every pcsx2_* call, the id of `uv run --project python coney-tools pcsx2 claim '
+    "--agent <your id>`, run in a shell first so this guard learns it (it returns your claim again if you hold one): "
+    "it names your connection."
+)
+
+
+def _port(value: object) -> int | None:
+    """A TCP port from what a tool call carries (an integer, a whole float or a string of ASCII digits), else None.
+    Strings like "\u00b2" pass `str.isdigit()` and then break `int()`, so the digits are checked as ASCII."""
+    if isinstance(value, bool):
+        return None
+    number: int | None
+    if isinstance(value, float):
+        number = int(value) if value.is_integer() else None
+    elif isinstance(value, int):
+        number = value
+    elif isinstance(value, str) and value.isascii() and value.isdigit() and len(value) <= 5:
+        number = int(value)
+    else:
+        number = None
+    return number if number is not None and 0 < number < 65536 else None
 
 
 def default_guard(start: Path) -> Guard:
@@ -195,17 +275,32 @@ def default_guard(start: Path) -> Guard:
     return Guard(registry, registry.claims_dir / "mcp")
 
 
-def log_failure(start: Path, error: BaseException) -> None:
+def log_failure(start: Path, error: BaseException) -> bool:
     """Note one line about a failure of the hook itself in `guard.log` (the hook lets the call through, so without
-    this a broken guard would be invisible). Best effort: a failure here is dropped."""
+    this a broken guard would be invisible). Best effort: returns whether the line was written."""
     try:
         folder = pcsx2_claims.default_registry(start).claims_dir / "mcp"
         folder.mkdir(parents=True, exist_ok=True)
-        stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
-        with (folder / LOG_FILE).open("a", encoding="utf-8") as log:
-            log.write(f"{stamp} {type(error).__name__}: {error}\n")
+        append_log(folder / LOG_FILE, error)
     except Exception:
-        return
+        return False
+    return True
+
+
+def append_log(path: Path, error: BaseException) -> None:
+    """Append `<time> <ErrorType>: <message>` to the log at `path`; past LOG_MAX_BYTES keep only its newest half."""
+    line = f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(error).__name__}: {error}".replace("\n", " ") + "\n"
+    with path.open("a", encoding="utf-8") as log:
+        log.write(line)
+    if path.stat().st_size > LOG_MAX_BYTES:
+        kept: list[str] = []
+        size = 0
+        for old in reversed(path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)):
+            size += len(old.encode("utf-8"))
+            if size > LOG_MAX_BYTES // 2:
+                break
+            kept.append(old)
+        path.write_text("".join(reversed(kept)), encoding="utf-8")
 
 
 def handle(payload: dict[str, Any], guard: Guard) -> str | None:

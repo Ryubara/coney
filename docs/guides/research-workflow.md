@@ -353,7 +353,8 @@ render`.
   whole state, held until the next call), `pcsx2_screenshot` (a PNG at internal resolution in the copy's `snaps/`),
   `pcsx2_capture` (PCSX2's video capture), `pcsx2_gs_dump` (a GS dump of N frames), save and load state, and
   `pcsx2_input_recording` (below). The MCP server connects to nothing at start: `pcsx2_connect` with your claim's
-  `debug_port` and `pine_port` picks the copy ([Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
+  `debug_port` and `pine_port` picks the copy, and **every `pcsx2_*` call carries `agent: "<your id>"`** (the id you
+  claimed with; it names your connection, [Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
   speaks the same protocol itself (`repo:python/src/coney_tools/debug_server.py`).
 - <span id="input-recordings"></span>**Input recordings.** PCSX2's own `.p2m2` files hold every frame's pad state from
   a start savestate (`<file>.p2m2_SaveState.p2s` beside it) or from power-on, so a run's input repeats exactly.

@@ -38,13 +38,16 @@ Code asks once whether to use the project's servers. A server of the same name r
 **The PCSX2 server and your copy.** The `pcsx2` server connects to no PCSX2 when it starts, and several agents run
 their own copies at once, so connect it to the copy you claimed and to no other. `coney-tools pcsx2 claim --agent
 <id>` prints the copy's `port` (PINE) and `debug-port`; start PCSX2 with `pcsx2 launch --agent <id>`, then call
-`pcsx2_connect` with `debug_port` and `pine_port` set to those and `mode: "debug"`. Debug mode is the default to use:
+`pcsx2_connect` with `debug_port` and `pine_port` set to those, `mode: "debug"` and `agent: "<your id>"` (the id you
+claimed with). **Pass `agent: "<your id>"` on every `pcsx2_*` call**, not only the connect: it names your connection
+in the server, and the hook refuses a connect without it. Debug mode is the default to use:
 the debug server serves several clients, but PCSX2's PINE serves one, and an MCP server holding it blocks
 `pcsx2 record` and every other PINE client of that copy. Use `mode: "auto"` or `"pine"` only when you need PINE's
 own calls and nothing else uses the copy, and never leave the ports out: the defaults (21512, 28011) are copy
 `pcsx2`'s, someone else's game. An agent tool that starts one server per agent can run
 `coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's ports to the server as `pcsx2_connect`'s defaults
-([`mcp`](coney-tools.md#mcp)). **A hook enforces this** ([below](#pcsx2-guard)). What the tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
+([`mcp`](coney-tools.md#mcp)); the hook still wants both ports in the call, so those defaults serve a server run
+outside it. **A hook enforces this** ([below](#pcsx2-guard)). What the tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
 guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which
@@ -322,9 +325,12 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
   only yours (both halves, whatever the mode), a port another name is connected to is refused (`share: true` to use
   one copy on purpose) and `pcsx2_status` shows your name, the ports you are connected to, the game and the other
   names. `coney-tools mcp serve pcsx2` starts the server with `PCSX2_REQUIRE_AGENT=1`, so **pass `agent: "<your
-  id>"` on every `pcsx2_*` call**, the id you claimed with. The hook checks it wherever it is given: it must be an id
-  of your claiming commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's
-  name by mistake. Your tool list shows whether the installed server has it (`agent` among `pcsx2_connect`'s
+  id>"` on every `pcsx2_*` call**, the id you claimed with. The hook **requires it on `pcsx2_connect`, whatever server
+  runs** (a local-scope `pcsx2` entry or an older checkout may not require it itself, and two agents that leave it out
+  share the server's `default` connection), and checks it wherever it is given: it must be an id of your claiming
+  commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's name by mistake.
+  It does not check on a later call that the claim is still live (after a `release` or a takeover the old id still
+  passes; the server frees an idle name within 30 minutes). Your tool list shows whether the installed server has it (`agent` among `pcsx2_connect`'s
   arguments). A command that gets no reply in time closes its connection (a late reply could answer your next
   command), and closing one fails the command waiting on it at once with `Connection closed`: reconnect with
   `pcsx2_connect`.
@@ -335,7 +341,12 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
 - **Nothing is locked.** There is no lease: every other agent of the session keeps using its own connection, and a
   lock on a shared one would let one engineer's task shut the others out of the emulator for hours.
 - It does nothing on a machine with no PCSX2 copies set up or in a payload without a session id, and when it fails
-  itself it lets the call through and writes one line to `guard.log` in the `mcp/` folder beside the claims.
+  itself (an unreadable payload, an error inside it) it lets the call through and writes one line to `guard.log` in
+  the `mcp/` folder beside the claims; when the package cannot even load, to `coney-pcsx2-guard.log` in the system
+  temp folder. A hook killed by its 10 second timeout writes nothing. A binding (which ids a caller claimed with)
+  expires 3 days after the caller last used it or claimed.
+- **It stops mistakes, not impersonation.** The ids come from the text of your shell commands, so a caller that runs
+  `claim --agent <another agent's id>` goes by that id (`claim` hands that agent's claim back to anyone who asks).
 
 **Against an older server** (one connection for the whole process, no `agent` argument) the hook still stops a connect
 to a copy you did not claim, but another agent's `pcsx2_connect` to its *own* claim moves yours (your next write then
