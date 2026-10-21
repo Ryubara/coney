@@ -5,6 +5,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "support/optional_value.h"
+
 using coney::launcher::parseRelease;
 using coney::launcher::parseVersion;
 using coney::launcher::Version;
@@ -22,11 +24,10 @@ std::string manifest(std::string_view path = "coney.exe", std::string_view extra
 } // namespace
 
 TEST_CASE("versions parse and sort as Semantic Versioning orders them", "[launcher]") {
-    const auto v = parseVersion("0.3.0-rc.1");
-    REQUIRE(v.has_value());
-    CHECK(v->minor == 3);
-    CHECK(v->prerelease == "rc.1");
-    CHECK(v->text() == "0.3.0-rc.1");
+    const Version v = coney::test::got(parseVersion("0.3.0-rc.1"));
+    CHECK(v.minor == 3);
+    CHECK(v.prerelease == "rc.1");
+    CHECK(v.text() == "0.3.0-rc.1");
     for (const char* bad : {"v0.1.0", "0.1", "0.01.0", "1.2.3-", "1.2.3-r c", "1.2.x", ""}) {
         INFO(bad);
         CHECK_FALSE(parseVersion(bad).has_value());

@@ -21,6 +21,7 @@ class Reader {
 
     // The whole document: one value, then nothing but whitespace.
     std::expected<Value, Error> document() {
+        // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks): the shared_ptr in a nested array or object owns it
         auto value = parseValue(0);
         if (!value) {
             return value;
