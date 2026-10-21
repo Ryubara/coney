@@ -19,8 +19,10 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "core/perf.h"
 #include "core/window_display.h"
 #include "platform/movie_screen.h"
+#include "platform/perf_probes.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
 #include "platform/world_atomic.h"
@@ -402,6 +404,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     engine->createCamera();
     // Mip levels by distance, as the GS picks them; without it OpenGL picks them by screen size.
     engine->m_textureLod = startTextureLod();
+    // The profiler's counts of draws, uploads and state changes (docs/guides/performance.md).
+    installGlCounters();
     return engine;
 }
 
@@ -699,6 +703,7 @@ void RenderEngine::drawWindowRects(std::span<const graphics::LogicalQuad> quads)
 
 void RenderEngine::present() {
     CONEY_ASSERT(m_inFrame);
+    CONEY_PERF_ZONE("present");
     // The modes' 2D layers for this frame first, taken out first so that a layer may add the next frame's; then the
     // debug menus over them.
     for (const std::function<void(RenderEngine&)>& overlay : std::exchange(m_frameOverlays, {})) {
@@ -713,6 +718,7 @@ void RenderEngine::present() {
         tapFrame();
     }
     if (m_presentOverlay) {
+        CONEY_PERF_ZONE("present.debug_overlays");
         m_presentOverlay(*this);
     }
     m_inFrame = false;
@@ -724,6 +730,7 @@ void RenderEngine::present() {
             m_capture = captureBackBuffer(m_capturePath);
         }
         // librw's GL3 device sets the swap interval from the flag on every show: 1 with it, 0 without.
+        CONEY_PERF_ZONE("present.swap");
         m_camera->showRaster(m_vsync ? rw::Raster::FLIPWAITVSYNCH : 0);
 
     } else if (captureThisFrame) {
@@ -914,6 +921,7 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
 }
 
 void RenderEngine::shutDown() noexcept {
+    removeGlCounters(); // a later start loads OpenGL's functions afresh
     destroyCamera();
     if (m_textureLod) {
         m_textureLod = false;

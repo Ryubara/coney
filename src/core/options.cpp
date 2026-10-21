@@ -33,6 +33,7 @@ constexpr std::string_view kUsage =
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
     "             [--ai-player] [--ai-seed N]\n"
+    "             [--bench FILE [--bench-fighters N] [--bench-warmup N]]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
@@ -76,6 +77,11 @@ constexpr std::string_view kUsage =
     "                     fighter is AI-driven (a test aid for comparing gang fights)\n"
     "  --ai-seed N        with --play-level or --rumble: vary the AI's random draws (0 to\n"
     "                     2147483647, default 0); the same N plays the same run\n"
+    "  --bench FILE       with --play-level and --frames: measure the run with the profiler and\n"
+    "                     write its summary (frame times, zones, counters) to FILE as JSON\n"
+    "  --bench-fighters N with --bench: spawn N AI fighters (0 to 1000) in front of the player on\n"
+    "                     the first frame of play\n"
+    "  --bench-warmup N   with --bench: frames of play left unmeasured first (default 60)\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
@@ -248,6 +254,23 @@ std::expected<void, Error> checkRumble(const Options& options) {
     return {};
 }
 
+// Refuses `--bench` and its options where they cannot work: part of checkSandbox(), with the other play options.
+std::expected<void, Error> checkBench(const Options& options) {
+    if (!options.benchFile.has_value()) {
+        if (options.benchFighters.has_value() || options.benchWarmup.has_value()) {
+            return invalidArgument("--bench-fighters and --bench-warmup need --bench: they set up the measured run");
+        }
+        return {};
+    }
+    if (!options.playLevel.has_value() || !options.frameLimit.has_value()) {
+        return invalidArgument("--bench needs --play-level and --frames: it measures a level played for N frames");
+    }
+    if (options.benchWarmup.value_or(kDefaultBenchWarmup) >= *options.frameLimit) {
+        return invalidArgument("--bench needs more --frames than its warm-up (--bench-warmup, default 60)");
+    }
+    return {};
+}
+
 // Refuses the sandbox's options in combinations that cannot work: part of checkCombinations().
 std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.spawn.has_value() && !(options.playLevel && sandboxOfPlayLevel(*options.playLevel))) {
@@ -261,6 +284,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.traceFile.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--trace needs --play-level: it traces the player");
+    }
+    if (auto bench = checkBench(options); !bench) {
+        return bench;
     }
     if (options.aiSeed.has_value() && !options.playLevel.has_value() && !options.rumble.has_value()) {
         return invalidArgument("--ai-seed needs --play-level or --rumble: it varies the AI of a played level");
@@ -657,6 +683,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> arenaArg;         // as typed, likewise
     std::optional<std::string> gangSizeArg;      // as typed, likewise
     std::optional<std::string> aiSeedArg;        // as typed, likewise
+    std::optional<std::string> benchFightersArg; // as typed, likewise
+    std::optional<std::string> benchWarmupArg;   // as typed, likewise
     bool aiPlayer = false;                       // `--ai-player`, which goes into the Rumble launch
     std::optional<std::string> cameraArg;        // as typed, likewise
     std::optional<std::string> renderSizeArg;    // as typed, likewise
@@ -958,6 +986,28 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(seed.error()));
             }
             options.aiSeed = static_cast<std::uint32_t>(*seed);
+        } else if (arg == "--bench") {
+            if (auto value = takeValue(args, i, options.benchFile, "--bench", "the path of a JSON file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--bench-fighters") {
+            if (auto value = takeValue(args, i, benchFightersArg, "--bench-fighters", "a number of fighters"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto fighters = parseRange("--bench-fighters", benchFightersArg.value_or(std::string{}), 0, kMaxBenchFighters);
+            if (!fighters) {
+                return std::unexpected(std::move(fighters.error()));
+            }
+            options.benchFighters = *fighters;
+        } else if (arg == "--bench-warmup") {
+            if (auto value = takeValue(args, i, benchWarmupArg, "--bench-warmup", "a number of frames"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto warmup = parseRange("--bench-warmup", benchWarmupArg.value_or(std::string{}), 0, kMaxFrameLimit);
+            if (!warmup) {
+                return std::unexpected(std::move(warmup.error()));
+            }
+            options.benchWarmup = *warmup;
         } else if (arg == "--gang-size") {
             if (auto value = takeValue(args, i, gangSizeArg, "--gang-size", "the fighters a side"); !value) {
                 return std::unexpected(std::move(value.error()));

@@ -79,6 +79,9 @@ void addAudioPage(DebugSession& session);
 void addNetworkPage(DebugSession& session);
 /// The Input page: port 1's buttons, sticks and pressures live, with channels to plot the sticks.
 void addInputPage(DebugSession& session);
+/// The Performance page: the profiler (core/perf.h) on and off, the frame time plotted, and every zone's and
+/// counter's mean over the last frames (docs/guides/performance.md).
+void addPerformancePage(DebugSession& session);
 
 /// The 27 retail cheat codes in our words: what each does, by index (docs/research/debug.md#cheat-table).
 inline constexpr std::array<std::string_view, 27> kCheatEffects{

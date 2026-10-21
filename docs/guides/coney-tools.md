@@ -768,6 +768,23 @@ FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside 
 `--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a
 capture device or any input that is not a file.
 
+## perf {#perf}
+
+```sh
+uv run --project python coney-tools perf bench --out FOLDER [--fighters 0,10,25,50,100] [--level level99]
+    [--frames 600] [--warmup 60] [--headless] [--preset release] [--coney EXE] [--disc DISC]
+uv run --project python coney-tools perf table REPORT.json ...
+```
+
+`perf bench` plays the level once per fighter count with `coney --bench` ([Performance](performance.md#bench)): each
+run spawns that many AI fighters on the first frame of play, leaves `--warmup` frames unmeasured and measures
+`--frames` more, windowed with `--vsync off` (or `--headless`: the simulation alone). Each report and its log go to
+`--out` (a scratch folder), named for the level, the count and headless; the command prints one Markdown table of
+the frame times (mean, 95th and 99th percentile, frames a second), the main zones and the counters, and a line per
+build and renderer the rows came from. Coney is `build/PRESET/src/platform/coney` (`release` by default: measure an
+optimised build), the disc `game_dir`. Exit 1 when a run fails. `perf table` prints the same table from reports
+already written.
+
 ## trace {#trace}
 
 ```sh

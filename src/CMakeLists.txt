@@ -17,6 +17,7 @@ add_library(coney_core STATIC
     core/clip_recording.cpp
     core/window_display.cpp
     core/options.cpp
+    core/perf.cpp
     core/pad.cpp
     core/pad_handlers.cpp
     core/pads.cpp

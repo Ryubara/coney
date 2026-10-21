@@ -22,6 +22,7 @@
 #include "characters/character_rig.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
+#include "core/perf.h"
 #include "fileio/executable.h"
 #include "gamemodes/game_mode_stack.h"
 #include "graphics/human_blood.h"
@@ -512,6 +513,7 @@ void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Po
 }
 
 void PlayLevelMode::drawCharacter() const {
+    CONEY_PERF_ZONE("render.humans");
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
@@ -565,17 +567,27 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     const Pad& actionPad = noclip ? kStill : playerPad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).
-    applyAnimOverrides();
+    CONEY_PERF_ZONE("play.update");
+    {
+        CONEY_PERF_ZONE("play.anim_overrides");
+        applyAnimOverrides();
+    }
     const anim::Vec3 before = m_player->human().position();
     giveObjectTargets();
     stepObjectBodies();
-    m_player->update(playerPad, &m_scenery->collision(), m_combatants);
-    for (Target& target : m_targets) {
-        if (!target.frozen) {
-            target.human->step();
+    {
+        CONEY_PERF_ZONE("play.humans");
+        m_player->update(playerPad, &m_scenery->collision(), m_combatants);
+        for (Target& target : m_targets) {
+            if (!target.frozen) {
+                target.human->step();
+            }
         }
     }
-    m_ai->capture();
+    {
+        CONEY_PERF_ZONE("play.ai_capture");
+        m_ai->capture();
+    }
     stepPickups();
     stepThrowAim(actionPad);
     stepMugMeter(m_player->human(), actionPad);
@@ -601,12 +613,16 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_lastAnimId = id;
     }
     // The scenes, with any player's skip buttons.
-    stepScenes(millisecondsOf(frame.gameTicks),
-               static_cast<std::uint16_t>(pad.buttons() | stack.pads().port(1).buttons()));
+    {
+        CONEY_PERF_ZONE("play.scenes");
+        stepScenes(millisecondsOf(frame.gameTicks),
+                   static_cast<std::uint16_t>(pad.buttons() | stack.pads().port(1).buttons()));
+    }
 
     // The scenery's step around the camera, then its visibility pass from the newest step's camera. The pinned
     // camera, a scene camera while one is current, or the free camera while it is on, takes the follow camera's
     // place.
+    CONEY_PERF_ZONE("play.world");
     const WorldView stepView = stepSceneryView(frame);
     const world::Vec3 eye = stepView.pose.position;
     // The lights' flicker and the player's shadow dimming, stepped with the simulation.
@@ -733,6 +749,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(human));
     };
     if (m_engine.drawsPixels()) {
+        CONEY_PERF_ZONE("render.skin");
         m_stage->skinPuppets(alpha,
                              [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                                 float heading, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals) {
@@ -834,10 +851,14 @@ void PlayLevelMode::render(const RenderTime& time) {
             m_levelEffects->drawInScene(blended.pose);
             m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
         }
-        m_lights->drawShadows();
-        drawRings(ringFeet);
+        {
+            CONEY_PERF_ZONE("render.shadows_rings");
+            m_lights->drawShadows();
+            drawRings(ringFeet);
+        }
         drawSceneLines(snapshot, alpha);
     };
+    CONEY_PERF_ZONE("render.scene");
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
 }
 

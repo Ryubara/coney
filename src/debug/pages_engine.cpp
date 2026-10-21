@@ -11,8 +11,10 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "core/pad.h"
+#include "core/perf.h"
 #include "debug/audio_controls.h"
 #include "debug/debug_session.h"
 #include "debug/ui_scale.h"
@@ -169,6 +171,48 @@ void addDisplayPage(DebugSession& session) {
                 .withHelp("The scale the overlay is drawn at now.");
         },
         "Overlays over the game's screen.");
+}
+
+void addPerformancePage(DebugSession& session) {
+    // The frame time, plotted, while measuring is on (the recent means are empty otherwise).
+    session.model().addChannel("Performance/Frame ms",
+                               [] { return static_cast<float>(perf::recentMeans().frameMilliseconds); });
+    session.model().addPage(
+        "Performance",
+        [](MenuPage& page) {
+            page.add(toggleItem("Measure", [] { return perf::enabled(); }, [](bool on) { perf::setEnabled(on); }))
+                .withHelp("Times the engine's zones and samples its counters every frame (docs/guides/"
+                          "performance.md). Costs a little while on; nothing is measured while it is off.");
+            page.add(watchItem(
+                         "Frame",
+                         [] {
+                             const perf::RecentMeans means = perf::recentMeans();
+                             return means.frames == 0 ? std::string("off")
+                                                      : std::format("{:.2f} ms over {} frames",
+                                                                    means.frameMilliseconds, means.frames);
+                         },
+                         "Performance/Frame ms"))
+                .withHelp("The mean real time a frame took over the last 60 frames: steps, render and present.");
+            // The zones and counters known when the page is made (a zone appears once its code first ran: Refresh
+            // shows the new ones).
+            const std::vector<std::string> zones = perf::zoneNames();
+            for (std::size_t i = 0; i < zones.size(); ++i) {
+                page.add(watchItem(zones[i], [i] {
+                    const perf::RecentMeans means = perf::recentMeans();
+                    return i < means.zoneMilliseconds.size() ? std::format("{:.3f} ms", means.zoneMilliseconds[i])
+                                                             : std::string("-");
+                }));
+            }
+            const std::vector<std::string> counters = perf::counterNames();
+            for (std::size_t i = 0; i < counters.size(); ++i) {
+                page.add(watchItem(counters[i], [i] {
+                    const perf::RecentMeans means = perf::recentMeans();
+                    return i < means.counters.size() ? std::format("{:.0f} a frame", means.counters[i])
+                                                     : std::string("-");
+                }));
+            }
+        },
+        "Where each frame's time goes: the profiler's zones and counters, averaged over the last 60 frames.");
 }
 
 void addAudioPage(DebugSession& session) {

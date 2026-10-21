@@ -27,6 +27,8 @@ target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp parti
                                       room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# The profiler's clock, OpenGL counters and allocation counter, and `--bench` (docs/guides/performance.md).
+target_sources(coney_platform PRIVATE perf_bench.cpp perf_probes.cpp)
 # In-game clips for issues and pull requests (`--record`, docs/guides/testing.md#clips): FFmpeg run as a program.
 target_sources(coney_platform PRIVATE clip_recorder.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
@@ -74,6 +76,8 @@ target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)
 add_executable(coney main.cpp)
 coney_target_defaults(coney)
 target_link_libraries(coney PRIVATE coney_platform coney_devtools)
+# The build type a `--bench` report names (docs/guides/performance.md): Debug, RelWithDebInfo, Release.
+target_compile_definitions(coney PRIVATE CONEY_BUILD_TYPE="$<CONFIG>")
 
 # Headless smoke tests: the NULL renderer needs no display or GPU, so these run on CI and in a future test harness.
 add_test(NAME coney.runs_headless COMMAND coney --headless --frames 3)
@@ -183,10 +187,17 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.freezes_level PROPERTIES TIMEOUT 120 PASS_REGULAR_EXPRESSION
                          "camera: pinned at \\(75.200, 41.100, 1.800\\).*fov 65.0.*world: frozen after frame")
+    # A bench (docs/guides/performance.md): level99 headless with 10 AI fighters spawned on its first frame of play,
+    # 30 frames of warm-up, then 60 measured; the report is written to the build folder. Counts and times only.
+    add_test(NAME coney.bench_level
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 90 --play-level level99
+                     --bench "${CMAKE_CURRENT_BINARY_DIR}/bench_level.json" --bench-fighters 10 --bench-warmup 30)
+    set_tests_properties(coney.bench_level PROPERTIES TIMEOUT 120 PASS_REGULAR_EXPRESSION
+                         "bench: 10 fighters, 60 frames: frame [0-9.]+ ms mean")
     # Every check above needs the disc: label them like the disc tests of coney_tests, so `ctest -L disc` runs (or
     # lists) them all, and `-LE disc` leaves them out.
     set_tests_properties(coney.reaches_main_menu coney.story_reaches_level99 coney.plays_movies coney.views_character
-                         coney.plays_level coney.exits_cleanly_level95 coney.exits_cleanly_level99 coney.plays_sandbox
+                         coney.bench_level coney.plays_level coney.exits_cleanly_level95 coney.exits_cleanly_level99 coney.plays_sandbox
                          coney.freezes_level PROPERTIES LABELS disc)
 endif()
 

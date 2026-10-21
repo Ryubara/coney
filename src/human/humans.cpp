@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <iterator>
 
+#include "core/perf.h"
+
 namespace coney::human {
 
 void Humans::add(Human& human, bool padControlled) {
@@ -89,12 +91,16 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     }
     // 2. The brains write their humans' records.
     if (m_brains) {
+        CONEY_PERF_ZONE("humans.brains");
         m_brains(m_humans);
     }
     // 3. Every human's animation, then 4. every human's state update; a held human (setHeld()) takes no part in 3-5.
-    for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
-        if (!m_held[slot]) {
-            m_humans[slot]->animate(mesh);
+    {
+        CONEY_PERF_ZONE("humans.animate");
+        for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
+            if (!m_held[slot]) {
+                m_humans[slot]->animate(mesh);
+            }
         }
     }
     // Every walking body meets the others' capsules (docs/research/physics.md#human-contacts), from a list of its own
@@ -105,23 +111,27 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     }
     // Each human's strike test runs in its state update, after its move (the humans it fights, and the level's
     // objects).
-    for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
-        if (m_held[slot]) {
-            continue;
-        }
-        m_humans[slot]->updateState(mesh);
-        if (m_humans[slot]->strikeShapes().anyOn()) {
-            m_victims.clear();
-            for (std::size_t other = 0; other < m_humans.size(); ++other) {
-                if (other != slot && opposed(slot, other)) {
-                    m_victims.push_back(m_humans[other]);
-                }
+    {
+        CONEY_PERF_ZONE("humans.state");
+        for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
+            if (m_held[slot]) {
+                continue;
             }
-            m_humans[slot]->testStrikes(m_victims, m_strikeContact ? &m_strikeContact : nullptr);
+            m_humans[slot]->updateState(mesh);
+            if (m_humans[slot]->strikeShapes().anyOn()) {
+                m_victims.clear();
+                for (std::size_t other = 0; other < m_humans.size(); ++other) {
+                    if (other != slot && opposed(slot, other)) {
+                        m_victims.push_back(m_humans[other]);
+                    }
+                }
+                m_humans[slot]->testStrikes(m_victims, m_strikeContact ? &m_strikeContact : nullptr);
+            }
         }
     }
     // 5. Every human's actions, first to last on one step and last to first on the next.
     const bool forward = m_steps % 2 == 0;
+    CONEY_PERF_ZONE("humans.actions");
     for (std::size_t n = 0; n < m_humans.size(); ++n) {
         const std::size_t slot = forward ? n : m_humans.size() - 1 - n;
         if (m_held[slot]) {

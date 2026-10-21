@@ -32,6 +32,7 @@ from coney_tools import (
     pcsx2_cli,
     pcsx2_clip,
     pcsx2_copies,
+    perf_cli,
     progress_cli,
     recipes_cli,
     recordings_make,
@@ -345,6 +346,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     doctor_parser.add_argument("--disc", help="a mounted disc, folder or .iso to check (default: game_dir)")
     coord_cli.add_parser(groups)
+    perf_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
 
@@ -1022,6 +1024,8 @@ def _run(args: argparse.Namespace) -> int:
         return ghidra_cli.run(args)
     if args.group == "coord":
         return coord_cli.run(args)
+    if args.group == "perf":
+        return perf_cli.run(args)
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)

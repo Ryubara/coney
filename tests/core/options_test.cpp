@@ -878,3 +878,38 @@ TEST_CASE("bad network flags are refused", "[options]") {
     refused(std::array<std::string_view, 3>{"--host", "--join", "server"});
     refused(std::array<std::string_view, 1>{"--net-name"});
 }
+
+TEST_CASE("the bench options measure a played level with fighters spawned", "[options]") {
+    auto bench = parse(std::array<std::string_view, 12>{"--disc", "x", "--play-level", "level99", "--frames", "300",
+                                                        "--bench", "out.json", "--bench-fighters", "100",
+                                                        "--bench-warmup", "30"});
+    REQUIRE(bench.has_value());
+    CHECK(bench->benchFile == std::optional<std::string>("out.json"));
+    CHECK(bench->benchFighters == std::optional<int>(100));
+    CHECK(bench->benchWarmup == std::optional<int>(30));
+    // The fighters and the warm-up default to none and 60 frames.
+    auto plain = parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--frames", "300",
+                                                       "--bench", "out.json"});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->benchFighters.has_value());
+    CHECK_FALSE(plain->benchWarmup.has_value());
+    // A played level for a number of frames, more than the warm-up.
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--frames", "300", "--bench", "out.json"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--bench", "out.json"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--frames", "60",
+                                                      "--bench", "out.json"})
+                    .has_value());
+    // The fighters from 0 to 1000, and only with --bench.
+    CHECK_FALSE(parse(std::array<std::string_view, 10>{"--disc", "x", "--play-level", "level99", "--frames", "300",
+                                                       "--bench", "out.json", "--bench-fighters", "1001"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--frames", "300",
+                                                      "--bench-fighters", "10"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--frames", "300",
+                                                      "--bench-warmup", "10"})
+                    .has_value());
+    CHECK(coney::usageText().find("--bench-fighters") != std::string_view::npos);
+}

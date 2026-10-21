@@ -3,13 +3,17 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "core/error.h"
 
 namespace coney::debug {
+
+class PlayControls;
 
 /// The most fighters one click of the AI fighters page spawns.
 inline constexpr int kMaxFighterAmount = 50;
@@ -43,5 +47,18 @@ class SpawnRandom {
 /// across, the row centred on the player's line. The first is exactly `distance` ahead when it stands alone.
 [[nodiscard]] std::vector<anim::Vec3> fighterSpots(anim::Vec3 playerFeet, float playerHeadingDegrees, float distance,
                                                    int amount);
+
+/// What spawnFighters() did.
+struct SpawnedFighters {
+    std::size_t made = 0;        ///< Fighters spawned.
+    std::size_t asked = 0;       ///< Fighters asked for.
+    std::optional<Error> error;  ///< Why the rest were not, when one failed (the spawning stops there).
+};
+
+/// Spawns `amount` AI fighters facing the player, as the AI fighters page's Spawn does: models picked by `choice`
+/// (pickFighterModels()) in rows of five from `distance` metres ahead (fighterSpots()). An amount over
+/// kMaxFighterAmount is spawned as several clicks' worth, each placed beyond the rows before it, so no two fighters
+/// stand on one spot. Used by the page and by `--bench-fighters` (docs/guides/performance.md).
+SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random);
 
 } // namespace coney::debug

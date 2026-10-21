@@ -147,6 +147,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Network | [network play](multiplayer.md): status, player name, port, address, Host, Join, Disconnect, the ping (plotted), loss, bytes and packets, the players, a Simulate network submenu (latency, jitter, loss, duplicates, reordering), the log |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
+| Performance | the profiler on and off, the frame time (plotted) and every zone's and counter's mean over the last 60 frames ([Performance](performance.md#overlay)) |
 
 **Time.** The game always advances by whole fixed 1/30 s steps, never a variable step. Paused, no step runs; *Step
 one* runs exactly one. *Time scale* (0.05x to 4x, in steps of 0.05, L2 for hundredths) speeds the game up or slows it
