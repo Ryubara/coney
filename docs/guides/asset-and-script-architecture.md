@@ -179,7 +179,8 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
 | Scripts, levels, object lists, worlds, collision, animations, scenes, characters, executable tables, game text | PS2 (overrides only in a modded session) | simulation kinds |
 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
-  neither, Coney looks for `game/ps2/` next to its executable. All three build the same store.
+  neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
+  the store exists, `--data` and the lookup point `--disc` at `<install>/game/ps2/` ([Running Coney](running.md#install)).
 
 ### The legacy loaders, one by one {#legacy-loaders}
 
@@ -399,7 +400,7 @@ engineers are working in `src/platform/` now.
 | N4 | `coney-tools repo check` rule: outside `src/fileio/`, `src/assets/` and a shrinking allowlist, no `#include` of `fileio/disc.h`, `wad.h`, `wad_index.h` or `executable.h` (`reader.h` and `stream.h` stay free). The allowlist starts with today's files and only ever shrinks, so the 1:1 work adds no new direct use | `python/src/coney_tools/repo_checks.py`, its test | S |
 | N5 | One function for every texture load (Enhancements choice 5), called by `texture_dictionary`, `sprite_sheets` and `object_models`; F4 attaches there later | `src/platform/` texture files | S |
 | N6 | Platform loaders and modes to the store, after N3 and when the platform's maintainers agree: 17 headers, about 30 signatures (`world_set`, `level_file`, `play_level_*`, viewers, `hud_layer`, `particle_renderer`, ...) | `src/platform/` | 2 x M |
-| N7 | `--data <install>` opening `<install>/game/ps2/` through the same `Disc` + `Wad` (a folder copy already works), and the default lookup next to the executable; `docs/guides/building.md` updated | `core/options`, `platform/main.cpp` | S |
+| N7 | Done: `--data <install>` opening `<install>/game/ps2/` through the same `Disc` + `Wad` (a folder copy already works), and the default lookup next to the executable; `docs/guides/building.md` updated | `core/options`, `platform/main.cpp` | S |
 
 Not now, but **rules for all work from today on**: no new `const io::Wad&` parameter (N4 enforces this once it
 lands); a new loader takes a stream or bytes; new script entry points go through `ScriptSystem`, not `LuaVm`; new

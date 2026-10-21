@@ -126,8 +126,10 @@ struct Options {
     /// `--install DISC`: install the PS2 disc (a mounted disc, a folder of its files or an ISO image) into the folder
     /// dataPath names, then exit (docs/guides/running.md#install). Only dataPath and verifyInstall go with it.
     std::optional<std::string> installFrom;
-    /// `--data DIR`: the install folder (docs/guides/asset-and-script-architecture.md#install-folder). Requires
-    /// installFrom.
+    /// `--data DIR`: the install folder (docs/guides/asset-and-script-architecture.md#install-folder): where
+    /// installFrom goes, or, without it, the install to play from: discPath is then its `game/ps2/`. Set to the install
+    /// beside the executable when neither `--disc` nor `--data` is given and there is one. Cannot be combined with
+    /// discPath on the command line.
     std::optional<std::string> dataPath;
     /// `--load`, in the order given: WAD entries to load through the chunk system, each a name or a `0x` hash.
     /// Requires discPath.
@@ -364,11 +366,16 @@ enum class OptionSet : std::uint8_t {
 /// Whether `option` (as typed, `--disc`) is one of playerOptions().
 [[nodiscard]] bool isPlayerOption(std::string_view option);
 
-/// Parses the arguments after the program name, taking the options of `set`. Never throws; a bad argument gives
-/// ErrorCode::InvalidArgument with a one-line message naming the argument, and an option outside `set` says it needs
-/// a build with the debug tools.
+/// Parses the arguments after the program name, taking the options of `set`. `installBesideExecutable` is the install
+/// folder the executable sits in, when it sits in one (platform::installBesideExecutable()): with neither `--disc` nor
+/// `--data`, the game is played from it. Never throws; a bad argument gives ErrorCode::InvalidArgument with a one-line
+/// message naming the argument, and an option outside `set` says it needs a build with the debug tools.
 [[nodiscard]] std::expected<Options, Error> parseOptions(std::span<const std::string_view> args,
-                                                         OptionSet set = OptionSet::All);
+                                                         OptionSet set = OptionSet::All,
+                                                         std::optional<std::string_view> installBesideExecutable = {});
+
+/// The folder of an install that holds the PS2 disc's files: `<install>/game/ps2`.
+[[nodiscard]] std::string installGameFolder(std::string_view install);
 
 /// The usage text printed for `--help` and after an argument error. It ends with a newline. Print it by its size
 /// (`%.*s` or fwrite), as with any string_view: callers must not rely on data() being null-terminated.

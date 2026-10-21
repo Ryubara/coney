@@ -65,6 +65,15 @@ TEST_CASE("the release build takes the install's options", "[options]") {
     CHECK(options->installFrom == std::optional<std::string>("game.iso"));
     CHECK(options->dataPath == std::optional<std::string>("Coney"));
     CHECK(options->verifyInstall);
+    // `--data` alone plays the install, and so does the install beside the executable.
+    const std::array<std::string_view, 2> play{"--data", "Coney"};
+    auto data = parsePlayer(play);
+    REQUIRE(data.has_value());
+    CHECK(data->discPath == coney::installGameFolder("Coney"));
+    const std::array<std::string_view, 0> none{};
+    auto beside = parseOptions(std::span<const std::string_view>(none), OptionSet::Player, std::string_view("Coney"));
+    REQUIRE(beside.has_value());
+    CHECK(beside->discPath == coney::installGameFolder("Coney"));
 }
 
 TEST_CASE("the release build keeps test mode for its smoke tests", "[options]") {
