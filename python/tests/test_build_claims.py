@@ -575,3 +575,28 @@ def test_releasing_a_dead_claim_by_hand_stops_its_leftovers_and_a_forced_live_on
     slots.release("alice")
     slots.release("bob", force=True)
     assert reaped == ["alice"]
+
+
+def test_the_tidy_lane_has_tidy_slots_and_its_own_queue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """clang-tidy runs of `check changed` take their own lane, sized by `tidy_slots`, beside the build slots."""
+    from coney_tools import build_claims
+
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (tmp_path / "coney.local.toml").write_text(
+        f"build_slots = 5\ntidy_slots = 2\nbuild_claims_dir = '{tmp_path / 'claims'}'\n", encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+    tidy = build_claims.default_slots(build_claims.TIDY_LANE)
+    assert tidy.slots == 2 and tidy.lane == build_claims.TIDY_LANE
+    ticket = tidy.join("gate", "wt", "clang-tidy", False, os.getpid())
+    claim = tidy.try_claim(ticket)
+    assert claim is not None and (tmp_path / "claims" / "tidy-1.claim" / "owner.json").is_file()
+    assert build_claims.default_slots().status().slots[0].claim is None  # the main slots are untouched
+    assert build_claims.TIDY_LANE in build_claims.LANES
+
+
+def test_a_tidy_slot_is_estimated_by_the_tidy_typical_length() -> None:
+    from coney_tools import build_claims
+
+    assert build_claims.estimate_wait(1, [], 1, 0.0, build_claims.TIDY_LANE) == 0.0
+    assert build_claims.estimate_wait(2, [], 1, 0.0, build_claims.TIDY_LANE) == build_claims.TIDY_MINUTES

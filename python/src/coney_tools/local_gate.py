@@ -183,6 +183,12 @@ def tidy_sources(root: Path, changed: Iterable[str]) -> list[str]:
 # --- clang-tidy ----------------------------------------------------------------------------------------------------
 
 
+def tidy_version(tool: Path) -> str:
+    """Everything a clang-tidy binary says about its version (empty when it will not say): part of the cache key."""
+    code, output = run_command([str(tool), "--version"], tool.parent)
+    return output.strip() if code == 0 else ""
+
+
 def _tidy_major(tool: Path) -> int | None:
     """The major version a clang-tidy binary reports, or None when it will not say."""
     code, output = run_command([str(tool), "--version"], tool.parent)
@@ -312,7 +318,7 @@ def _is_launcher(token: str) -> bool:
     return _program_name(token) in COMPILER_LAUNCHERS
 
 
-def _entry_command(entry: dict[str, Any]) -> list[str]:
+def entry_command(entry: dict[str, Any]) -> list[str]:
     """The compiler command line of a compile database entry, split into arguments, a launcher dropped."""
     if isinstance(entry.get("arguments"), list):
         command = [str(part) for part in entry["arguments"]]
@@ -325,7 +331,7 @@ def _entry_command(entry: dict[str, Any]) -> list[str]:
 
 def uses_clang_cl_driver(entry: dict[str, Any]) -> bool:
     """True when the entry compiles with cl.exe or clang-cl, so clang-tidy reads its flags in clang-cl's syntax."""
-    command = _entry_command(entry)
+    command = entry_command(entry)
     return bool(command) and _program_name(command[0]) in ("cl", "clang-cl")
 
 
@@ -335,7 +341,7 @@ def uses_gcc_driver(entry: dict[str, Any]) -> bool:
     CI's clang-tidy reads a Clang compile database; some of GCC's flags (module and dependency-format options) make
     clang-tidy fail before it checks anything.
     """
-    command = _entry_command(entry)
+    command = entry_command(entry)
     return bool(command) and re.fullmatch(r"(?:[\w.]+-)*(?:gcc|g\+\+)(?:-\d+)?", _program_name(command[0])) is not None
 
 

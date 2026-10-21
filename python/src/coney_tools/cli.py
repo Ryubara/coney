@@ -365,9 +365,31 @@ def _add_check_commands(groups: Any) -> None:
         "--jobs",
         type=int,
         default=None,
-        help="clang-tidy processes at once (default: a build's share, the cores divided by build_slots)",
+        help="clang-tidy processes at once in the tidy slot (default: tidy_jobs of coney.local.toml, else a build's "
+        "share, the cores divided by build_slots)",
     )
     changed.add_argument("--clang-tidy", help="the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH")
+    changed.add_argument(
+        "--agent", help="your id, for your place in the clang-tidy queue (default: CONEY_AGENT, else the worktree)"
+    )
+    changed.add_argument(
+        "--max-wait",
+        type=float,
+        metavar="MIN",
+        help="minutes to wait for a clang-tidy slot before giving up with exit 75 (default and most 40; with --detach "
+        "default 240)",
+    )
+    changed.add_argument(
+        "--no-cache", action="store_true", help="tidy every file, ignoring the shared clang-tidy result cache"
+    )
+    changed.add_argument(
+        "--detach",
+        action="store_true",
+        help="run in the background, apart from this shell, and return at once; `check result` shows the outcome",
+    )
+    # Internal: where a --detach run's child records its outcome.
+    changed.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
+    commands.add_parser("result", help="the output and outcome of the worktree's last `check changed --detach`")
 
 
 def _add_wad_commands(groups: Any) -> None:
@@ -926,7 +948,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "docs":
         return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet)
     if args.group == "check":
-        return check_cli.run_changed(args.base, args.build_dir, args.only, args.skip, args.jobs, args.clang_tidy)
+        return check_cli.run_check(args)
     if args.group == "issue":
         return issue_cli.run_issue(args)
     if args.group == "wad":

@@ -297,6 +297,9 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools.md#build)).
+- The local gate's clang-tidy waits in the same way, for a slot of the tidy lane: at most 40 minutes in a call you
+  wait on, then exit 75. `coney-tools check changed --detach` runs the whole gate in the background; whoever continues
+  runs `coney-tools check result` in the worktree ([`check`](coney-tools.md#check)).
 
 ## Bounded waits {#bounded-waits}
 

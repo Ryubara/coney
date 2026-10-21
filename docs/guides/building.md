@@ -376,6 +376,30 @@ On Linux, where `dev` builds with GCC, configure a Clang database for it once, w
 raw `cmake`): `coney-tools build --agent <id> --configure-only --preset dev --build-dir build/tidy --env CC=clang-19
 --env CXX=clang++-19`, then pass `--build-dir build/tidy` to `check changed`.
 
+### The tidy slots and the result cache {#clang-tidy-cache}
+
+clang-tidy costs about a minute and a gigabyte of memory per file, and a header change reaches 100 to 280 of the 948
+`.cpp` files, so on a machine shared by many agents the gate is held to the same rules as a build:
+
+- **Tidy slots.** `check changed` runs its clang-tidy processes only while it holds a slot of the machine's tidy lane,
+  a lane of the [build slots](coney-tools.md#build) with its own queue (`build status` lists it). `tidy_slots` of
+  `coney.local.toml` sets how many gates tidy at once (default 1) and `tidy_jobs` how many clang-tidy processes each
+  runs (default 0: a build slot's share of the cores, `-j` of a build); together they bound clang-tidy's share of the
+  machine. Before the lane, every gate started its own processes: on 2026-10-21 eight gates ran 22 of them (about
+  20 GB) beside five full builds on 16 threads, and the builds queued for over an hour.
+- **Result cache.** A file clang-tidy found clean is remembered in a cache every worktree shares (`tidy_cache_dir`,
+  default `cache/clang-tidy` in the workspace, beside the [compiler cache](#compiler-cache)), and the next gate that
+  meets the same file in the same state skips it. The key is everything that decides the result: clang-tidy's version,
+  the checks and warning flags, `.clang-tidy`, `cmake/deps.cmake` (the pinned third-party versions), the file's compile
+  command with the checkout's path taken out, and the contents of the file and of every Coney header it includes,
+  transitively (every `#include` line counts, whatever `#if` it sits under). So a rerun after a fix tidies only the
+  files the fix reaches, and a gate whose files are all cached takes no slot and finishes in seconds. A failing file is
+  never cached. Entries unused for 30 days are removed; `--no-cache` ignores the cache for one run.
+
+What the key leaves out, by design: headers outside the checkout (the standard library, the compiler's own; the compile
+command names the compiler's folder, which changes with its version) and the fetched dependencies under `_deps`
+(pinned by `deps.cmake`). Delete the cache folder if a toolchain is ever updated in place.
+
 ## Python tools
 
 `python/` is the `coney-tools` package (see [Conventions](conventions.md#python)). [uv](https://docs.astral.sh/uv/)
