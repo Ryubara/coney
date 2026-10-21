@@ -1,0 +1,18 @@
+description = "level3 checkpoint 4: the rooftop chase, sprinted along the roofs to the gallery (issue #531)"
+research = "docs/research/scripting.md#level3"
+course = "level3-chase"
+updates = 6000
+until = "checkpoint SetCheckPoint:5"
+after = 60
+
+[original]
+# A state of the original at checkpoint 4's loading screen: level3 entered through mode 8 from a copy of slot 7 with
+# the scripted-pad patch (level index 6 to 0x005e5db0, checkpoint 4 to W_GameState + 0x33a, 3 to + 0x14c), made by
+# hand; it already holds scripted-pad. Never committed.
+state = "states/l3cp4_load.p2s"
+patches = ["event-call", "event-callback"]
+friends = ["Snow", "Cowboy", "Ajax", "Cochise", "Rembrandt", "Vermin", "Cleon", "Fox", "Swan", "Ash"]
+
+[coney]
+level = "level3"
+args = ["--checkpoint", "4"]

@@ -670,5 +670,116 @@ class RouteFollower(Course):
         return self.playing.pop(0)
 
 
+@dataclass(frozen=True)
+class Leg:
+    """One leg of the rooftop chase's route: `run` (sprint to the point), `climb` (sprint at it, tapping triangle
+    near the face, which a running player takes from 4.5 m; the point lies 1.5-2 m beyond it), `jump` (sprint along
+    the leg's line and press triangle from the point's x on) or `charge` (the same with cross, again after a run-up
+    when he stalls short of the fence row), and its point on the roofs (game axes, m)."""
+
+    move: str
+    x: float
+    y: float
+
+
+class Level3Chase(Course):
+    """level3 checkpoint 4, the rooftop chase (docs/research/scripting.md#level3): from vbStartRail east along the
+    roofs to vbEnterGallery, sprinting wherever it is not about to climb, as the disc test's RouteDriver plays it
+    (tests/platform/disc_story_playthrough_test.cpp, the same route). A leg is done by where the player stands, all
+    a player sees: a run or a climb within ARRIVED of its point, a jump once he is JUMP_PAST beyond its take-off, the
+    charge once he is past the fence row at FENCE_X."""
+
+    name = "level3-chase"
+    ROUTE = (
+        Leg("run", -212.0, 363.7), Leg("climb", -205.5, 363.5), Leg("climb", -200.5, 363.3),
+        Leg("run", -163.0, 363.4), Leg("climb", -157.5, 362.8), Leg("run", -136.0, 361.8),
+        Leg("jump", -131.0, 361.7), Leg("run", -112.0, 363.8), Leg("climb", -106.5, 364.1),
+        Leg("run", -100.0, 364.5), Leg("climb", -94.5, 364.7), Leg("run", -88.5, 364.8),
+        Leg("climb", -83.0, 364.9), Leg("run", -79.5, 364.9), Leg("climb", -74.5, 364.9),
+        Leg("jump", -64.5, 364.9), Leg("run", 15.0, 364.8), Leg("jump", 18.5, 364.8),
+        Leg("run", 50.0, 365.1), Leg("run", 66.0, 367.4), Leg("climb", 74.5, 367.5),
+        Leg("run", 79.0, 365.0), Leg("charge", 81.5, 365.0), Leg("run", 92.0, 365.0),
+        Leg("climb", 96.0, 365.0), Leg("jump", 100.5, 365.0), Leg("run", 134.0, 364.7),
+        Leg("climb", 139.5, 364.8), Leg("jump", 149.5, 364.8), Leg("run", 164.5, 368.2),
+        Leg("run", 178.0, 368.2), Leg("jump", 191.5, 368.2), Leg("run", 206.0, 368.2),
+    )  # fmt: skip
+    #: Metres: a run's arrival, a climb's (its point is on top, beyond the face), where triangle starts being tapped
+    #: how far past a jump's take-off it counts as made, how far ahead on
+    #: the leg's line a jump or a charge steers, and the fence row the charge breaks.
+    ARRIVED, CLIMBED, CLIMB_TAP, JUMP_PAST, LEAD, FENCE_X = 1.0, 1.2, 4.0, 3.0, 20.0, 85.5
+    #: Updates between taps (a climb's: every other update), how far back a stalled charge runs for its run-up (m),
+    #: and the updates without 0.3 m of progress east that count as stalled at the fence.
+    TAP_EVERY, CLIMB_TAP_EVERY, CHARGE_BACK_OFF, STALL_UPDATES = 6, 2, 3.0, 30
+
+    def __init__(self) -> None:
+        """A course at its first leg."""
+        self.observation = Observation(0)
+        self.frame = 0
+        self.leg = 0
+        self.backing_off = False
+        self.progress_x = -1e9
+        self.progress_frame = 0
+
+    def see(self, observation: Observation, events: Sequence[Event]) -> None:
+        """Take in the update, and move on past the legs the player has finished."""
+        self.observation = observation
+        self.frame += 1
+        x, y = observation.player[0], observation.player[1]
+        while self.leg < len(self.ROUTE):
+            leg = self.ROUTE[self.leg]
+            reach = math.hypot(leg.x - x, leg.y - y)
+            if leg.move == "run":
+                done = reach < self.ARRIVED
+            elif leg.move == "climb":
+                done = reach < self.CLIMBED
+            elif leg.move == "jump":
+                done = x >= leg.x + self.JUMP_PAST
+            else:
+                done = x >= self.FENCE_X
+            if not done:
+                return
+            self.leg += 1
+
+    def status(self) -> str:
+        """The leg and the player's feet."""
+        x, y = self.observation.player[0], self.observation.player[1]
+        return f"leg {self.leg} of {len(self.ROUTE)}; feet {x:.1f},{y:.1f}"
+
+    def pad(self) -> PadState:
+        """The next update's pad: the stick toward the leg, L2 while sprinting, the leg's button near its point."""
+        if not self.observation.play or self.leg >= len(self.ROUTE):
+            return pad_of()
+        leg = self.ROUTE[self.leg]
+        x, y = self.observation.player[0], self.observation.player[1]
+        reach = math.hypot(leg.x - x, leg.y - y)
+        tap = self.frame % self.TAP_EVERY == 0
+        if leg.move == "climb":
+            climb_tap = self.frame % self.CLIMB_TAP_EVERY == 0 and reach < self.CLIMB_TAP
+            return pad_of(L2 | (TRIANGLE if climb_tap else 0), *stick_towards(self.observation, (leg.x, leg.y), 100))
+        if leg.move == "charge":
+            # Progress east; a charge that stalls short of the row (the barrier stands) backs off for a run-up.
+            if x > self.progress_x + 0.3:
+                self.progress_x, self.progress_frame = x, self.frame
+            back = (leg.x - self.CHARGE_BACK_OFF, leg.y)
+            if self.backing_off and math.hypot(back[0] - x, back[1] - y) < self.ARRIVED:
+                self.backing_off, self.progress_x, self.progress_frame = False, x, self.frame
+            elif not self.backing_off and x >= leg.x and self.frame - self.progress_frame > self.STALL_UPDATES:
+                self.backing_off = True
+            if self.backing_off:
+                return pad_of(L2, *stick_towards(self.observation, back, 100))
+        if leg.move in ("jump", "charge"):
+            stick = stick_towards(self.observation, (leg.x + self.LEAD, leg.y), 100)
+            # A jump holds triangle from the take-off on, as the disc test's driver does, so it leaves at the edge; a
+            # charge taps cross.
+            jump = leg.move == "jump" and x >= leg.x
+            charge = leg.move == "charge" and tap and x >= leg.x
+            return pad_of(L2 | (TRIANGLE if jump else 0) | (CROSS if charge else 0), *stick)
+        return pad_of(L2, *stick_towards(self.observation, (leg.x, leg.y), 100))
+
+
 #: The courses by name.
-COURSES: dict[str, Callable[[], Course]] = {Level99Tutorial.name: Level99Tutorial, Level99Street.name: Level99Street}
+COURSES: dict[str, Callable[[], Course]] = {
+    Level99Tutorial.name: Level99Tutorial,
+    Level99Street.name: Level99Street,
+    Level3Chase.name: Level3Chase,
+}

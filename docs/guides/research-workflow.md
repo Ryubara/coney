@@ -725,6 +725,14 @@ Write a course from the player's view only: what a policy cannot see on screen i
 state, a handle number), or it will pass on one game for a reason the other does not share. When the course itself
 fails on the original, fix the course before reading anything into Coney's run.
 
+The `level3-chase` course (`research/traces/missions/level3_cp4.toml`, the rooftop chase from checkpoint 4) is the
+disc test's route driver in Python, leg for leg, so the two can be checked against each other. It taught two things.
+The course steers by the camera that is shown (`Camera_GetPlayerCamera`'s `0x005d9150`), not the follow camera
+alone: the chase runs on rail and fixed cameras. And a course must play as fast as a player who wants to win: one that
+walked up to each climb lost Snow to the pursuers on the original as on Coney, and passed on Coney only for some AI
+seeds; sprinting into the climbs, holding triangle from a jump's take-off and charging again when a charge leaves the
+barrier standing, it reached checkpoint 5 on the original in 3,099 updates (issue #531).
+
 ## Lessons learned {#lessons-learned}
 
 What past sessions taught, written so that it holds for any game. Multi-agent coordination, the shared machine and

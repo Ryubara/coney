@@ -81,7 +81,8 @@ def _finish(result: Playthrough, scenario: MissionScenario, out: Path, side: str
     out.with_suffix(".route.csv").write_text(route_csv(result.route), encoding="utf-8")
     end = f"{scenario.until[0]} {scenario.until[1]}" if scenario.until else "the update limit"
     state = "reached" if result.finished else "NOT reached"
-    print(f"{out}: {len(result.events)} events in {result.updates} updates on {side}; {end} {state}")
+    stopped = f" (stopped: {result.stopped})" if result.stopped else ""
+    print(f"{out}: {len(result.events)} events in {result.updates} updates on {side}; {end} {state}{stopped}")
     return 0 if result.finished or scenario.until is None else 1
 
 
