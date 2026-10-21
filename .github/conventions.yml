@@ -156,7 +156,7 @@ pull_requests:
   checklist: {section: Checklist, unchecked: refused, since: "2026-10-12T10:39:13Z", legacy_label: "Remaining:"}
   screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
   # Gameplay work is checked against the original running, not only against our reading of its code (maintainer
-  # decision, 2026-10-21). A pull request whose title area is one of `areas` (the areas a player sees; each must be a
+  # decision, 2026-10-20). A pull request whose title area is one of `areas` (the areas a player sees; each must be a
   # key of commits.title.areas) holds, inside `section`, a line starting `line` that gives the evidence (a trace diff,
   # an event diff, or named PCSX2 captures or reads compared with Coney's, with numbers) or the `none` line with a
   # reason in parentheses. The check is `coney-tools repo check-body --title ...`, the same locally and in CI.

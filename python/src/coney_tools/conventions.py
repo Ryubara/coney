@@ -238,7 +238,7 @@ class ScreenshotsRule:
 @dataclass(frozen=True)
 class RuntimeEvidence:
     """The runtime-evidence line: a pull request whose title area a player sees says how it was checked against the
-    original running (maintainer decision 2026-10-21)."""
+    original running (maintainer decision 2026-10-20)."""
 
     #: The title areas (keys of `commits.title.areas`) whose pull request needs the line.
     areas: tuple[str, ...]

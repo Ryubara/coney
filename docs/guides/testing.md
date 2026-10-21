@@ -12,7 +12,7 @@ A piece of work is done when the evidence in this table exists and passes. Repor
 request's Testing and Screenshots sections ([What a pull request shows](#pr-evidence)).
 
 Gameplay work is checked against **the original running**, not only against our reading of its code (maintainer
-decision, 2026-10-21): code read in Ghidra can be misread, and a test written from that reading passes on the
+decision, 2026-10-20): code read in Ghidra can be misread, and a test written from that reading passes on the
 misreading. So the rows for work a player sees ask for a [runtime comparison](#runtime-comparison), and the pull
 request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 
