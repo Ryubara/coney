@@ -373,7 +373,41 @@ void addScoreBindings(LuaVm& vm, const BindingContext& context) {
     });
 }
 
-void addHudBindings(LuaVm& vm, const BindingContext& context) {
+namespace {
+
+// The end credits' bindings (docs/research/frontend.md#fn-credits).
+void addCreditBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
+    // `PreloadCredits()`: a fresh list filled by `credits.lua`'s CfgCredits calls, and the widget pool.
+    // @orig 0x001b5fb0 HUD_PreloadCredits (unknown)
+    vm.registerFunction("PreloadCredits", [scripts = &scripts, hud = context.hud](std::span<const Value> /*args*/) {
+        if (hud != nullptr) {
+            hud->credits().load([scripts] { scripts->runFile("credits.lua"); });
+        }
+        return binding::none();
+    });
+    // `ShowCredits()`: starts the scroll when loaded.
+    // @orig 0x001b5fd0 HUD_ShowCredits (unknown)
+    vm.registerFunction("ShowCredits", [hud = context.hud](std::span<const Value> /*args*/) {
+        if (hud != nullptr) {
+            hud->credits().start(hud->nowMs());
+        }
+        return binding::none();
+    });
+    // `CfgCredits(style, role, name)`: the style as an unsigned integer, a nil name as none.
+    // @orig 0x0036ee48 lua_CfgCredits (unknown)
+    vm.registerFunction("CfgCredits", [hud = context.hud](std::span<const Value> args) {
+        if (hud != nullptr) {
+            hud->credits().addLine(unsignedArg(args, 0), absent(args, 1) ? std::string{} : binding::string(args, 1),
+                                   absent(args, 2) ? std::string{} : binding::string(args, 2));
+        }
+        return binding::none();
+    });
+}
+
+} // namespace
+
+void addHudBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
+    addCreditBindings(scripts, vm, context);
     addScoreBindings(vm, context);
     addPanelBindings(vm, context);
     addMessageBindings(vm, context);

@@ -1099,6 +1099,10 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("RestoreHud"),
     real("ShowHud"),
     real("ShowPlayerHud"),
+    // The end credits (hud_bindings.h).
+    real("PreloadCredits"),
+    real("ShowCredits"),
+    real("CfgCredits"),
     // The Rumble menu's lists, which its chunks build (rumble_bindings.h).
     real("CfgRumbleGame"),
     real("CfgRumbleGang"),
@@ -1439,7 +1443,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addLightingBindings(vm, context);
     addPlayerBindings(scripts, vm, context);
     addSoundBindings(scripts, vm, context);
-    addHudBindings(vm, context);
+    addHudBindings(scripts, vm, context);
     addCharacterBindings(vm, context);
     // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
     // scripts' scene flow moving.

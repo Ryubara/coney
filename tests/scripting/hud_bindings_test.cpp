@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <expected>
+#include <functional>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,6 +22,7 @@
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "support/lua_fixtures.h"
 #include "support/optional_value.h"
 #include "warriors/game_state.h"
 
@@ -52,10 +55,15 @@ struct Harness {
     coney::script::BindingContext context;
     ScriptSystem scripts;
 
+    std::map<std::string, std::vector<std::byte>, std::less<>> files; ///< The scripts runFile() finds, by name.
+
     explicit Harness(coney::hud::Hud* hud)
         : scripts(
-              [](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {
-                  return coney::fail(coney::ErrorCode::NotFound, "no scripts in this test");
+              [this](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+                  if (const auto found = files.find(name); found != files.end()) {
+                      return found->second;
+                  }
+                  return coney::fail(coney::ErrorCode::NotFound, "no such script in this test");
               },
               [this](ScriptSystem& system, LuaVm& vm) { coney::script::installBindings(system, vm, context); }, {}) {
         context.state = &state;
@@ -221,4 +229,37 @@ TEST_CASE("the counter-panel, arrow, announcement and radar bindings", "[scripti
     harness.call("HUDDeleteRadarMissionObjective", {Value(12.0)});
     harness.call("HUDDeleteRadarObject", {Value(14.0)});
     CHECK(hud.radar().blips.size() == 1);
+}
+
+TEST_CASE("PreloadCredits runs credits.lua into a fresh list; ShowCredits starts the scroll",
+          "[script][hud][credits]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    // credits.lua's stand-in: a heading, then a role line with a name.
+    coney::test::LuaAsm script;
+    script.getGlobal("CfgCredits").pushInt(0).pushString("Heading").call(2);
+    script.getGlobal("CfgCredits").pushInt(1).pushString("Role").pushString("Name").call(3);
+    harness.files.emplace("credits.lua", coney::test::luaChunk(script.end()));
+    // A line configured before the load is dropped by it.
+    harness.call("CfgCredits", {Value(4.0), Value(std::string("Early")), Value()});
+    REQUIRE(hud.credits().lines().size() == 1);
+    CHECK(hud.credits().lines()[0].style == 2);
+    CHECK(hud.credits().lines()[0].name.empty());
+    harness.call("ShowCredits", {});
+    CHECK_FALSE(hud.credits().running());
+    harness.call("PreloadCredits", {});
+    CHECK(hud.credits().loaded());
+    REQUIRE(hud.credits().lines().size() == 2);
+    CHECK(hud.credits().lines()[0].role == "Heading");
+    CHECK(hud.credits().lines()[1].role == "Role");
+    CHECK(hud.credits().lines()[1].name == "Name");
+    harness.call("ShowCredits", {});
+    CHECK(hud.credits().running());
+}
+
+TEST_CASE("the credit bindings do nothing without a HUD", "[script][hud][credits]") {
+    Harness harness(nullptr);
+    harness.call("PreloadCredits", {});
+    harness.call("CfgCredits", {Value(1.0), Value(std::string("Role")), Value(std::string("Name"))});
+    harness.call("ShowCredits", {});
 }

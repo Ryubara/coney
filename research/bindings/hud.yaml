@@ -305,6 +305,7 @@
     Sets the element's loaded flag (`+0x44`) and a duration-like field `+0x16c` to 8000 (ms, inferred); scroll
     fields `+0x170`-`+0x18c` are set here but their use is not traced. Calling it twice allocates again.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [84]}
+  coney: implemented
 
 - name: ShowCredits
   wrapper: 0x0036ee28
@@ -321,6 +322,7 @@
   notes: >-
     Does nothing without PreloadCredits first. The update and drawing of the scroll (speed, end) are not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [84]}
+  coney: implemented
 
 - name: HUDEnableGameTutorialText
   wrapper: 0x0036eec8

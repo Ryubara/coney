@@ -1971,6 +1971,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 578, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CfgSteam
   wrapper: 0x003792c0

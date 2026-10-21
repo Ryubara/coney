@@ -81,6 +81,7 @@ add_executable(coney_tests
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    hud/credits_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp
     hud/mash_meter_test.cpp
@@ -135,6 +136,7 @@ add_executable(coney_tests
     platform/disc_spawner_money_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
+    platform/disc_credits_test.cpp
     platform/disc_game_session_test.cpp
     platform/disc_level99_handover_test.cpp
     platform/disc_level99_player2_test.cpp

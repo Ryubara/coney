@@ -1752,7 +1752,7 @@ fields `+0x170`-`+0x18c` are set here but their use is not traced. Calling it tw
   `Credits_Load`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## RestoreHud {#restorehud}
 
@@ -1798,7 +1798,7 @@ start.
   `Credits_Start`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ShowGameStatsInterface {#showgamestatsinterface}
 
