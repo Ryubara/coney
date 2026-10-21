@@ -201,7 +201,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `scratch_dir` | `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
-| `pcsx2_mcp_dir` | none | a PCSX2-MCP fork build (`release/PCSX2-MCP-coney-v2.9.129.N-win64`): the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
+| `pcsx2_mcp_dir` | none (`init` sets it to the clone's newest build under `tools/pcsx2-mcp/release/`, else to the fetched release `tools/PCSX2-MCP-v1.1.0-win64`) | a PCSX2-MCP fork build, the release or one made from the clone: the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
 | `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
