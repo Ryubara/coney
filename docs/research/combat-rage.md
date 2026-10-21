@@ -137,6 +137,25 @@ circle):
 each (`trunc(5.76 × 0.5)`); with 5.17 s between hits the count stayed at 1 and every hit gave 5. The earlier reading
 that the game rewrote a written flag "on the next update" is the clear at the next noted hit.
 
+**Who scores** {#hit-score-skips} (`Hit_Score` `0x002653d8`, called by `Human_ApplyPendingDamage` `0x00265f70` after
+the hit's damage is taken from health and before its reaction plays; confirmed (code), read 2026-10-21). Nothing is
+scored when any of these holds:
+
+- there is no attacker, or the attacker's brain is not a player's (type 0); the caller already requires a pad
+  (per-player `+0x1b`);
+- the two are friends (`Brain_IsFriendly`);
+- the victim's class is of category 13 (`+0x11b`) and he has human flag `0x10` (the god flag, which the demi-god
+  health floor also sets);
+- the victim is in state `0x180040000`: knocked out `0x40000`, the dying mark `0x80000000` or dead `0x100000000`.
+  These are set by the reaction of the hit that put him out, which plays after the score, so the blow that puts a man
+  out scores and every blow after it does not.
+
+**Coney status (2026-10-21):** `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose
+health ran out before the hit (**Coney's reading**, inferred: Coney has no state word, and all three states follow a
+man's health running out) and a category-13 victim with flag `0x10`; a hit only reaches an opponent, so the friends
+test holds; the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed player's
+counters and strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
+
 **The points** come from the stats system, which also adds them to the per-player score at `0x006fe490 + player ×
 0xc0`: `0x002653d8` maps the attack to an event (`X1` event 1, `S1` event 2, ...; a blocked hit is halved through
 `0x004ed9c8`), grab moves and throws map through `0x00264fa0`, and the event's value is count × a table entry

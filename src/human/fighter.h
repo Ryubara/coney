@@ -284,6 +284,14 @@ class Fighter {
     [[nodiscard]] bool player() const { return m_player; }
     /// Its class's `+0x11b` is kBossCategory (FighterProfile::bossClass).
     [[nodiscard]] bool bossClass() const { return m_bossClass; }
+    /// Whether its brain is a Warrior's (brain type 3): its hits on class `0x80` are quartered (applyHit()). Its brain
+    /// keeps it (ai::Brain's constructor and Brain::setType()); false by default.
+    [[nodiscard]] bool warriorBrain() const { return m_warriorBrain; }
+    void setWarriorBrain(bool warrior) { m_warriorBrain = warrior; }
+    /// Whether a hit on `victim` earns rage at all: not on a man already out (health run out), nor on a class of
+    /// category 13 with flag `0x10` (docs/research/combat-rage.md#hit-score-skips).
+    /// @orig 0x002653d8 Hit_Score (unknown)
+    [[nodiscard]] static bool scoresRageOn(const Combatant& victim);
 
     // The human flag word (human `+0xe0`, human/human_flags.h): what the scripts switch on a human and combat reads.
 
@@ -512,6 +520,10 @@ class Fighter {
     // Gives the rage hit `animId` earns (`isThrow`: the throw bonus), only to a human that may rage (flag 0x2000000,
     // `Human_AddRage`).
     void earnRage(int animId, std::uint64_t nowMs, bool isThrow = false);
+    // `damage` as `victim` takes it from this fighter: quartered for class 0x80 from a Warrior's brain.
+    // @orig 0x00264bd8 Human_AddPendingDamage (unknown)
+    [[nodiscard]] int quarteredFor(const Combatant& victim, int damage) const;
+
     // Remembers the clip playing at the end of the update and its time (the pair's moments, the duck's window).
     void noteClip(const HumanAnimator& animator);
     // Keeps the target or drops it (gone, out of health, down, or too far without L1 or a hold), lets L1 pick one, and
@@ -789,6 +801,7 @@ class Fighter {
     // The flags, together so the class packs.
     bool m_player = true;         // FighterProfile::player
     bool m_bossClass = false;     // FighterProfile::bossClass
+    bool m_warriorBrain = false;  // setWarriorBrain(): brain type 3
     bool m_l1Held = false;        // L1 held this update (record +0x00 0x8)
     bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
     bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts

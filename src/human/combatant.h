@@ -72,6 +72,12 @@ class Combatant {
     /// Its flag word (human `+0xe0`, human/human_flags.h), which a grab reads of its victim (the grab blocks, the
     /// power-out escape). None by default.
     [[nodiscard]] virtual std::uint64_t flags() const { return 0; }
+    /// Its character class (human `+0xcc`, `HuCreate`'s type), which an attacker's damage reads (class `0x80` takes a
+    /// quarter from a Warrior, Fighter::applyHit()). -1 (not known) by default.
+    [[nodiscard]] virtual int characterClass() const { return -1; }
+    /// Whether its class's category (`+0x11b`) is 13, the bosses and big fighters (`Human_IsClass13` `0x00223e20`),
+    /// which a hit's rage award reads (Fighter::earnRage()). False by default.
+    [[nodiscard]] virtual bool bossClass() const { return false; }
     /// Whether an attacker's strike shapes can meet it (a body with its own spine and head shapes, posed each update,
     /// human/strike_shapes.h): its hits then land only where a shape touches it. False by default: a target without
     /// shapes takes an attack's hit at its hit update (combat::attackHitUpdate(), a **Coney stand-in**).

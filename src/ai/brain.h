@@ -221,9 +221,10 @@ class Brain {
     /// 0 (Coney's `NilHandle`) until the scripts name it.
     [[nodiscard]] double handle() const { return m_handle; }
     void setHandle(double handle) { m_handle = handle; }
-    /// Its human's character class (`HuCreate`'s type, which `GoalDealer` reads); -1 when not known.
+    /// Its human's character class (`HuCreate`'s type, which `GoalDealer` reads); -1 when not known. Setting it gives
+    /// it to the human too (human `+0xcc`, which a Warrior's damage reads).
     [[nodiscard]] int characterClass() const { return m_characterClass; }
-    void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
+    void setCharacterClass(int characterClass);
     /// "Dead" to the AI (`+0x09`, `BrDead`): the actions are cleared (the goals stay) and the handlers installed
     /// again. A dead brain runs only the goals and actions it is given: its think and its event handler do nothing,
     /// so it counts no attack warnings, and a dead player's brain runs them too. A player's brain set dead gives up the

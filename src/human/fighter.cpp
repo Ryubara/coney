@@ -56,6 +56,12 @@ bool switchesStrikeShapes(const anim::AnimClip& clip) {
 // The horizontal distance between two points.
 float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot(b.x - a.x, b.y - a.y); }
 
+// The character class whose damage from a Warrior is quartered: `bopp_bo`, the Boppers' boss.
+constexpr int kQuarteredClass = 0x80;
+
+// A quarter of `damage` as the original takes it, an arithmetic shift right by 2 (`sra`), which rounds down.
+int quarterOf(int damage) { return damage >= 0 ? damage / 4 : -((-damage + 3) / 4); }
+
 } // namespace
 
 Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const FighterProfile& profile)
@@ -1022,6 +1028,9 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
     if (doubled) {
         damage *= 2;
     }
+    damage = quarteredFor(victim, damage);
+    // The rage award reads the victim as it was before this hit (Hit_Score runs before the hit's reaction).
+    const bool scores = scoresRageOn(victim);
     // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
     // hit armour, as do double damage's.
     victim.hit(IncomingHit{.damage = damage,
@@ -1042,8 +1051,29 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
     }
     // The hit earns its rage (**Coney choice**: never the blocked award, as a blocked hit is not reported back to the
     // attacker), then goes into the repeat tracker; a throw takes the bonus its grab strikes built.
-    earnRage(animId, nowMs, clips::isThrow(animId));
+    if (scores) {
+        earnRage(animId, nowMs, clips::isThrow(animId));
+    }
     m_repeat.note(animId, nowMs);
+}
+
+int Fighter::quarteredFor(const Combatant& victim, int damage) const {
+    // `Human_AddPendingDamage` (`0x00264bd8`) quarters the stored damage, after the doubling, when the victim is of
+    // class 0x80 and the attacker's brain is a Warrior's (type 3), whatever the path that dealt it.
+    if (m_warriorBrain && victim.characterClass() == kQuarteredClass) {
+        return quarterOf(damage);
+    }
+    return damage;
+}
+
+bool Fighter::scoresRageOn(const Combatant& victim) {
+    // `Hit_Score` (`0x002653d8`) gives nothing for a hit on a man in state 0x180040000 (knocked out, dying or dead) or
+    // on a class of category 13 with flag 0x10. **Coney's reading** (inferred): those states are a man whose health
+    // ran out before this hit, as Coney has no state word.
+    if (victim.health().depleted()) {
+        return false;
+    }
+    return !(victim.bossClass() && (victim.flags() & flag::kGod) != 0);
 }
 
 std::uint32_t Fighter::strikeMaterialOf(int animId, const combat::AnimRange* range,
@@ -1060,7 +1090,9 @@ std::uint32_t Fighter::strikeMaterialOf(int animId, const combat::AnimRange* ran
 }
 
 void Fighter::earnRage(int animId, std::uint64_t nowMs, bool isThrow) {
-    if (hasFlag(flag::kRageAllowed)) {
+    // `Hit_Score` scores only a pad-driven attacker whose brain is a player's (type 0; Coney: a player,
+    // FighterProfile), and `Human_AddRage` only one that may rage.
+    if (m_player && hasFlag(flag::kRageAllowed)) {
         combat::awardHitRage(m_combat.rage(), animId, false, combat::combatTuning(), nowMs, m_repeat, isThrow);
     }
 }

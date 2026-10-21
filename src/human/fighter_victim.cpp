@@ -286,7 +286,9 @@ void Fighter::startGrabbed(const FighterInput& input, HumanAnimator& animator) {
         m_report.grabberDamage =
             m_ranges != nullptr ? m_ranges->damage(static_cast<std::size_t>(combat::kGrabFrontCounter)) : 0;
         m_report.grabberStunned = true;
-        earnRage(combat::kGrabFrontCounter, input.nowMs);
+        if (grab.grabber.scoresRage) {
+            earnRage(combat::kGrabFrontCounter, input.nowMs);
+        }
         m_repeat.note(combat::kGrabFrontCounter, input.nowMs);
         m_reacting = true;
         return;
@@ -352,7 +354,7 @@ void Fighter::updateGrabbed(const FighterInput& input, HumanAnimator& animator) 
         animator.playCombat(clips::one(clip), grab.fromRear ? clips::kGrabRearHeld : clips::kGrabHeld, AnimState::Hold,
                             clips::kPairFade);
         m_report.grabberDamage = damage;
-        if (outcome.action == combat::GrabbedAction::StrikeBack) {
+        if (outcome.action == combat::GrabbedAction::StrikeBack && grab.grabber.scoresRage) {
             earnRage(outcome.animId, input.nowMs);
             m_repeat.note(outcome.animId, input.nowMs);
         }
@@ -405,7 +407,7 @@ void Fighter::struggleInHold(const FighterInput& input, const HumanAnimator& ani
         m_heldReport.grabberDamage =
             m_ranges != nullptr ? m_ranges->damage(static_cast<std::size_t>(outcome.animId)) : 0;
     }
-    if (outcome.action == combat::GrabbedAction::StrikeBack) {
+    if (outcome.action == combat::GrabbedAction::StrikeBack && held->grabber.scoresRage) {
         earnRage(outcome.animId, input.nowMs);
         m_repeat.note(outcome.animId, input.nowMs);
     }
