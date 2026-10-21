@@ -141,6 +141,13 @@ def test_the_real_process_list_holds_this_process_and_its_parent() -> None:
     assert process_lifetime.same_process(me)
 
 
+def test_a_process_start_time_is_read_for_a_live_pid_and_not_for_a_dead_one() -> None:
+    started = process_lifetime.process_started(os.getpid())
+    assert started is not None and 0 < time.time() - started < 7 * 24 * 3600
+    # A pid far above any the system hands out.
+    assert process_lifetime.process_started(0x7FFFFFF0) is None
+
+
 # -- a real tool, killed -------------------------------------------------------------------------------------------
 
 #: A stand-in for `coney-tools build`: ties its children to itself, then runs (through the real toolchain) a child

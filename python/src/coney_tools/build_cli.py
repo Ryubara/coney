@@ -43,6 +43,8 @@ BUDGET_CAP = 45.0
 DETACHED_MAX_WAIT = 240.0
 #: The file in the worktree's scratch folder that a --detach run records itself in, and its console output.
 RESULT_FILE = "build-result.json"
+#: Seconds a build process may have started before its record says (a record without `process_started`).
+LEGACY_START_SLACK = 120.0
 DETACHED_OUTPUT = "build-detached.out"
 #: Windows process creation flags of the detached child (beside process_lifetime.CREATE_NO_WINDOW), spelt out so they
 #: exist on every platform.
@@ -130,14 +132,28 @@ def add_parser(groups: Any) -> None:
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
     status = commands.add_parser("status", help="who holds the slots, who waits, and stale entries")
+    _add_dir(status)
     status.add_argument("--json", action="store_true", help="print JSON instead of text")
     result = commands.add_parser("result", help="the outcome of the worktree's last --detach run")
     result.add_argument("--json", action="store_true", help="print the record as JSON")
+    _add_dir(result)
     release = commands.add_parser("release", help="manual cleanup: free an agent's slots and drop its queue places")
     release.add_argument("--agent", dest="release_agent", required=True, help="the agent whose entries to remove")
     release.add_argument("--force", action="store_true", help="also another agent's, or a build that still runs")
     release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast lane)")
     release.add_argument("--lane", choices=(MAIN_LANE, FAST_LANE), help="one lane only (default: both)")
+    _add_dir(release)
+
+
+def _add_dir(parser: argparse.ArgumentParser) -> None:
+    """Accept `--dir` after a subcommand too (`build result --dir <worktree>`, as the guides write it). SUPPRESS keeps
+    a `--dir` given before the subcommand: a default here would overwrite it."""
+    parser.add_argument(
+        "--dir",
+        type=Path,
+        default=argparse.SUPPRESS,
+        help="the checkout the command is about (default: the current one)",
+    )
 
 
 def run(args: argparse.Namespace) -> int:
@@ -409,7 +425,7 @@ def _start_detached(args: argparse.Namespace, root: Path, max_wait: float, budge
     second detached run in a worktree whose last one still runs (they would share one result file)."""
     result = _log_folder(root) / RESULT_FILE
     previous = _read_record(result)
-    if previous is not None and previous.get("state") == "running" and _alive(previous.get("pid")):
+    if previous is not None and previous.get("state") == "running" and _alive(previous):
         raise ConfigError(
             f"a detached build of {previous.get('agent')} is still running (pid {previous.get('pid')}): "
             "`coney-tools build result` shows how it ends"
@@ -462,12 +478,14 @@ def _detached_lifetime() -> None:
 
 
 def _record(args: argparse.Namespace, pid: int | None, log: Path) -> dict[str, Any]:
-    """A running run's record: who runs what, its process (None until the child starts), its log, since when."""
+    """A running run's record: who runs what, its process (None until the child starts) and when that process
+    started (`_alive` tells it from a stranger that was given its pid later), its log, since when."""
     return {
         "state": "running",
         "agent": args.agent,
         "preset": args.preset,
         "pid": pid,
+        "process_started": None if pid is None else process_lifetime.process_started(pid),
         "log": str(log),
         "started": time.time(),
     }
@@ -498,9 +516,24 @@ def _read_record(path: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
-def _alive(pid: object) -> bool:
-    """Whether a recorded pid still runs (None: the child has not started yet, which counts as running)."""
-    return pid is None or (isinstance(pid, int) and pcsx2_proc.pid_alive(pid))
+def _alive(record: dict[str, Any]) -> bool:
+    """Whether the process a record names still runs (None as pid: the child has not started yet, which counts as
+    running). A live pid is not enough: the system hands a dead process's pid to a later one, and a stale record then
+    looked like a running build for ever. So the process must have started when the record says (`process_started`);
+    a record from before that was kept counts the process as a stranger when it began long after the record was made
+    (the build began just before its child wrote the record). A start time that cannot be read counts as running."""
+    pid = record.get("pid")
+    if pid is None:
+        return True
+    if not isinstance(pid, int) or not pcsx2_proc.pid_alive(pid):
+        return False
+    actual = process_lifetime.process_started(pid)
+    if actual is None:
+        return True
+    recorded = record.get("process_started")
+    if isinstance(recorded, int | float):
+        return abs(actual - recorded) <= process_lifetime.START_SLACK
+    return actual <= float(record.get("started", 0)) + LEGACY_START_SLACK
 
 
 def run_result(directory: Path | None, as_json: bool) -> int:
@@ -511,7 +544,7 @@ def run_result(directory: Path | None, as_json: bool) -> int:
         print("no detached build recorded for this worktree")
         return 1
     if record.get("state") == "running":
-        if _alive(record.get("pid")):
+        if _alive(record):
             code = build_run.EXIT_QUEUED
         else:
             code, record = 1, {**record, "state": "lost"}
@@ -596,7 +629,7 @@ def result_record(root: Path) -> dict[str, Any] | None:
     """The worktree's last --detach run as `build result --json` gives it (state `running`, `done`, or `lost` for a
     run whose process is gone without a result), or None when there is none."""
     record = _read_record(_log_folder(root) / RESULT_FILE)
-    if record is not None and record.get("state") == "running" and not _alive(record.get("pid")):
+    if record is not None and record.get("state") == "running" and not _alive(record):
         record = {**record, "state": "lost"}
     return record
 

@@ -1140,10 +1140,13 @@ the checkout or not a page the check covers (`README.md`, a generated page).
 uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
     [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
-uv run --project python coney-tools build status [--json]
+uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
-uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
+uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast] [--dir CHECKOUT]
 ```
+
+`--dir` names the checkout the command is about and works before or after the subcommand (`build --dir X result` and
+`build result --dir X`).
 
 The one way an agent configures, builds and tests the engine. Several agents share one machine and a full build uses
 every core, so a build takes a **slot** like a PCSX2 copy takes a claim, and at most `build_slots` (default 2) run at
@@ -1253,11 +1256,16 @@ makes Windows Terminal show an empty window for the venv launcher's child; out o
 it; elsewhere a session of its own), and returns at once printing the log path and the child's pid. A detached run may
 wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and neither is capped. Its
 children still end with it, but nothing watches the shell that started it. It records itself in `build-result.json` in
-the worktree's scratch folder (state, agent, preset, pid, log, start time; at the end the exit code, the printed summary
-and the end time; its console output goes to `build-detached.out` beside it), however it ends, a refused precheck
-included. A second `--detach` in a worktree whose detached run still runs is refused. `build result` prints that record:
-the run's own exit code and summary once it has ended, `75` and `still running` while it runs, and `1` with
-`ended without a result` when its process is gone without writing one (killed); `--json` prints the record itself.
+the worktree's scratch folder (state, agent, preset, pid, when that process started, log, start time; at the end the exit
+code, the printed summary and the end time; its console output goes to `build-detached.out` beside it), however it ends,
+a refused precheck included. A second `--detach` in a worktree whose detached run still runs is refused. `build result`
+prints that record: the run's own exit code and summary once it has ended, `75` and `still running` while it runs, and
+`1` with `ended without a result` when its process is gone without writing one (killed); `--json` prints the record
+itself. "Still running" means the recorded pid lives **and** that process started when the record says: the system
+hands a dead process's pid to a later one, and a stale record once kept a worktree "busy" for good because another
+program had been given the pid. A pid whose process began at another time is gone (an older record without the start
+time is judged by the record's own time: a process that began long after it is a stranger), and a start time that
+cannot be read counts as running.
 
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`
