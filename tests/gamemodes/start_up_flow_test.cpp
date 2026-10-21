@@ -380,8 +380,9 @@ TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level reques
 TEST_CASE("start-up with scripts: a new story profile is saved to the profile folder and read back", "[start_up]") {
     const coney::test::TempDir folder;
     {
-        ScriptedRun run(coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt").value(),
-                        folder.path());
+        ScriptedRun run(
+            coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt").value(),
+            folder.path());
         CHECK(run.flow->profiles().count() == 0);
         run.frames(446);
         CHECK(run.logged("profile manager: profile \"A\" created in slot 0"));

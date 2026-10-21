@@ -72,8 +72,8 @@ Course loadCourse(const char* discPath) {
     auto character = coney::human::PlayerCharacter::load(discWad, table, coney::human::kPlayerModel);
     REQUIRE(character.has_value());
     course.character = std::move(*character);
-    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox",
-                                                    coney::sandbox::kDefaultLayout);
+    auto world =
+        coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", coney::sandbox::kDefaultLayout);
     REQUIRE(world.has_value());
     REQUIRE(world->collision() != nullptr);
     course.world = std::make_unique<coney::sandbox::SandboxWorld>(std::move(*world));

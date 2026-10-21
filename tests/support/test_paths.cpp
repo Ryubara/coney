@@ -8,12 +8,8 @@
 
 namespace coney::test {
 
-std::filesystem::path assetsDir() {
-    return CONEY_ASSETS_DIR;
-}
+std::filesystem::path assetsDir() { return CONEY_ASSETS_DIR; }
 
-std::filesystem::path testSupportDir() {
-    return CONEY_TEST_SUPPORT_DIR;
-}
+std::filesystem::path testSupportDir() { return CONEY_TEST_SUPPORT_DIR; }
 
 } // namespace coney::test

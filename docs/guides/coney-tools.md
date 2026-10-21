@@ -1142,9 +1142,9 @@ finished step's duration is kept in `durations.json` in the claims directory, th
 (`ci/configure/main`, `ci/build/fast` or `ci/build/main` by lane, `ci/test/filtered` with `-R` or `-L`, `ci/test/full`
 without); a build of some targets only has them in its key (`dev/build/main:coney`) and a build through the
 compiler cache `+ccache` (`dev/build/main+ccache`), because both take a fraction of a full build without the cache
-and would otherwise pull its median down or up; a failed step is not recorded. While a run waits for a slot, it leaves the queue with exit `75` as soon as
-the time the call has taken plus the median of what it waits for (a phase's steps added up; with no history, the
-typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
+and would otherwise pull its median down or up; a failed step is not recorded. While a run waits for a slot, it
+leaves the queue with exit `75` as soon as the time the call has taken plus the median of what it waits for (a
+phase's steps added up; with no history, the typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
 the budget, and says so with the numbers: `time budget: 25 min of the call so far; the build would take about 30 min
 (median of 4 runs) and the budget is 45 min`. It also leaves at its first look when the queue's own estimate of the
 wait still ahead (from the holders' steps), added to those, would pass the budget: `the queue ahead is about 50 min`.
