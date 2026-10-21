@@ -723,15 +723,17 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
     }
 
     // 4. The lag, from 0.06: longer the more the target moves across the view and the faster he goes, its speed share
-    // coming back after a blocked view clears; 2.5 × when a script walks him fast; eased 3% an update.
+    // coming back after a blocked view clears; 2.5 × when he is fast and the aim point trails, or a script walks him
+    // fast; eased 3% an update. The across test and the 2.5 × gate read the 3D velocity (a fall counts), the speed
+    // share the horizontal speed (docs/research/camera.md#aim-point, #long-fall-coney).
     if (wasBlocked && !m_viewBlocked) {
         m_unblockTimer = kUnblockSeconds;
     }
     const float speed = std::hypot(target.velocity.x, target.velocity.y);
+    const float speed3d = anim::length(target.velocity);
     float across = 1.0F;
-    if (speed > target.walkSpeed && speed > 1e-4F) {
-        const anim::Vec3 ahead = forward();
-        across = std::abs((target.velocity.x * ahead.x + target.velocity.y * ahead.y) / speed);
+    if (speed3d > target.walkSpeed && speed3d > 1e-4F) {
+        across = std::abs(anim::dot(target.velocity, forward()) / speed3d);
     }
     float lag = kAimLag * (1.0F + (1.0F - across) * 0.5F);
     if (target.sprintSpeed > 0.0F) {
@@ -743,8 +745,18 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
         }
         lag += share * lag * ((1.0F - across) * 0.5625F + 0.1875F);
     }
-    if (!target.stickOwned && speed > target.walkSpeed + 0.18F * (target.runSpeed - target.walkSpeed)) {
-        lag *= 2.5F;
+    // The overshoot test: × 2.5 when this update's aim point, moved by the lag built so far, would still end farther
+    // from the goal than the look-at point is (squared 3D distances); only when it would not, a target the stick does
+    // not move. **Coney choice**: the slope latch that also passes the first test (`+0x460`) is not modelled.
+    if (speed3d > target.walkSpeed + 0.18F * (target.runSpeed - target.walkSpeed)) {
+        const anim::Vec3 next = anim::add(m_aim, anim::scale(anim::subtract(goal, m_aim), lag));
+        const anim::Vec3 toLookAt3d = anim::subtract(goal, m_lookAt);
+        const anim::Vec3 toNext = anim::subtract(goal, next);
+        const float leadSquared = anim::dot(toLookAt3d, toLookAt3d);
+        const bool trails = leadSquared > 1e-5F && leadSquared < anim::dot(toNext, toNext);
+        if (trails || !target.stickOwned) {
+            lag *= 2.5F;
+        }
     }
     m_aimLag += (lag - m_aimLag) * kAimLagEase;
     // **Coney's reading**: the long fall's 0.6 and the halving for a target that does not count apply to this

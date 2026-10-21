@@ -936,9 +936,9 @@ street; at frame 5 his feet are put 40 m up and he falls for 71 updates (2.4 s),
 
 #### Coney's difference {#long-fall-coney}
 
-Inferred, from `repo:src/camera/follow_camera.cpp` (`stepAim()`) and `repo:src/human/player.cpp`
-(`followTargetOf()`): Coney builds the lag from the **horizontal** speed only. `c` is 1 while the horizontal speed is
-under the walk speed, and the ×2.5 needs `!stickOwned` and a horizontal speed above walk + 18% of (run − walk), with no
+Fixed (issue #111); this paragraph is how Coney differed before. Inferred, from `repo:src/camera/follow_camera.cpp`
+(`stepAim()`) and `repo:src/human/player.cpp` (`followTargetOf()`): Coney built the lag from the **horizontal** speed
+only. `c` was 1 while the horizontal speed was under the walk speed, and the ×2.5 needed `!stickOwned` and a horizontal speed above walk + 18% of (run − walk), with no
 overshoot test. In a straight fall the horizontal speed is about 0, so the lag stays **0.06**, and at 35 m/s the aim
 point settles about 1.167 × 0.94 / 0.06 ≈ **18 m** above the look-at point (11 m at 20 m/s) instead of under 5 m. With
 the camera 3.5-5 m from the look-at point the view then faces nearly straight up: the user's "camera flies up".
@@ -946,10 +946,12 @@ Coney's `longFall` (airborne while not counting or grounded) is not the cause: t
 fall either. (Coney's headless `--trace` could not show this: with the release build of 2026-10-10 the trace's camera
 columns stayed constant even in the `walk60` scenario.)
 
-The fix for the implementer: in `stepAim()`, take `c` from the 3D velocity against the camera's 3D forward, with its
-gate on the 3D speed; keep `s` on the horizontal speed; gate the ×2.5 on the 3D speed and apply it when |`P` −
-look-at|² > 10⁻⁵ (or the slope latch) and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the
-old aim point) × the lag being built), else when the stick is not the player's. Test: a synthetic follow-camera test
+The fix, now in `stepAim()`: it takes `c` from the 3D velocity against the camera's 3D forward, with its
+gate on the 3D speed; keeps `s` on the horizontal speed; gates the ×2.5 on the 3D speed and applies it when |`P` −
+look-at|² > 10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the
+old aim point) × the lag being built, which the original keeps in `+0x418` while it builds it: written at
+`0x00133be8` and `0x00133d4c`, read for the test at `0x00133e20`), else when the stick is not the player's; the slope
+latch is not modelled. The test, in `repo:tests/camera/follow_camera_test.cpp`: a synthetic follow-camera test
 with the target falling straight down 1.167 m an update (35 m/s) for 70 updates from rest: the lag passes 0.18 and the
 aim point stays under 5 m above the look-at point (the trace: 0.188 and 4.7 m at step 72), and the view's pitch with
 the camera held 3.5 m away at the look-at height stays under 60°. The overshoot test also applies at a run, so rerun
@@ -3077,7 +3079,8 @@ by `src/human/player.*` and drawn by `--play-level` ([Running Coney](../guides/r
   after the world collision: the lead along the target's facing eased 35% an update (0.365 m ahead standing or walking
   away, as at runtime), the height from the body point (`Human::bodyPoint()`, the hips' bone 2 times the scale) with
   its dead band, the running bob and the sprint sway (Coney's own seeded random numbers), the 1.0 m sphere push, the
-  lag from 0.06 (from the horizontal speed only, unlike the original: [Long falls](#long-fall-coney)) and
+  lag from 0.06 (its across test and its 2.5 × overshoot test on the 3D velocity, the speed share on the horizontal
+  speed, as in the original: [Long falls](#long-fall-coney)) and
   the pull back in plan. **Coney's reading** of the state flags: grabbing (`0xc0`) is holding a
   victim in a grab's pair; down (`0xe2c00`) is holding one with no pair (a tackle), mounted, grounded, arrested or
   knocked out; the target counts for the cameras unless dying, dead, knocked out, mounted or arrested (the upgrade

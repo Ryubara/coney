@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "camera/follow_camera.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -577,4 +578,33 @@ TEST_CASE("the follow camera's aim point leads less in a grab and lags more for 
     CHECK(scripted.aimLag() ==
           Approx(0.06F * (1.0F + across * 0.5F) * (1.0F + 4.4F / 10.2F * (across * 0.5625F + 0.1875F)) * 2.5F)
               .margin(0.001F));
+}
+
+TEST_CASE("in a long straight fall the aim point's lag climbs past 0.18 and keeps it under 5 m above the look-at point",
+          "[camera]") {
+    // The fall_high trace (docs/research/camera.md#long-fall): the player falls straight down at 35 m/s (1.167 m an
+    // update) for 70 updates from rest, the stick his. The lag's across test and its 2.5 × read the 3D velocity, so the
+    // lag climbs toward about 0.21 (0.188 at step 72) and the aim point trails 4.7 m above the look-at point; built from
+    // the horizontal speed alone it stayed 0.06 and the aim point trailed about 18 m above.
+    FollowCamera camera(Vec3{0.0F, 0.0F, 100.0F}, 0.0F);
+    FollowTarget target = standing(Vec3{0.0F, 0.0F, 100.0F});
+    target.walkSpeed = 1.6F;
+    target.runSpeed = 7.8F;
+    target.sprintSpeed = 10.2F;
+    for (int i = 0; i < 300; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    REQUIRE(camera.aimLag() == Approx(FollowCamera::kAimLag));
+    constexpr float kFall = 35.0F;
+    target.velocity = Vec3{0.0F, 0.0F, -kFall};
+    float highest = 0.0F;
+    for (int i = 0; i < 70; ++i) {
+        target.feet.z -= kFall * kStep;
+        camera.update(target, kRest, kRest, nullptr, kStep);
+        highest = std::max(highest, camera.aimPoint().z - camera.lookAt().z);
+    }
+    CHECK(camera.aimLag() > 0.18F);
+    CHECK(highest < 5.0F);
+    // A camera held 3.5 m from the look-at point at its height would face the aim point under 60° up.
+    CHECK(std::atan2(highest, 3.5F) < 60.0F * kDegree);
 }
