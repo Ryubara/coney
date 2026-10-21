@@ -1,6 +1,7 @@
 # Build and test the engine on every supported OS and compiler and under the sanitizers, and check the formatting;
 # clang-tidy runs nightly and by hand only (see the clang-tidy job). A draft pull request, or one that changes no
-# engine file (only documentation or the tools), skips all but the formatting (see the changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# engine file (only documentation or the tools), skips all but the formatting (see the changes job). Actions are
+# pinned to a full commit SHA; the tag is in the comment beside it.
 name: build
 
 on:
@@ -279,8 +280,8 @@ jobs:
 
   # The one required check for build and sanitizers (clang-tidy runs nightly, outside it). A skipped matrix job reports
   # its name unexpanded ("build (${{ matrix.name }})"), so "build (windows-msvc)" could never be a required check that
-  # a docs-only pull request satisfies; this job always runs, passes when every needed job passed or was skipped on purpose, and fails when one
-  # failed or was cancelled (including the changes job, which would skip the rest).
+  # a docs-only pull request satisfies; this job always runs, passes when every needed job passed or was skipped on
+  # purpose, and fails when one failed or was cancelled (including the changes job, which would skip the rest).
   build-ok:
     if: always()
     needs: [changes, build, sanitizers]
