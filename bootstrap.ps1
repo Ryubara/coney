@@ -24,11 +24,16 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     $env:PATH = "$env:USERPROFILE\.local\bin;$env:PATH"
 }
 
+# ccache makes every build after the first one fast (docs/guides/building.md#compiler-cache): it is fetched (4 MB,
+# checked by SHA-256) unless the command line says what to fetch.
+$Forward = @($args)
+if (-not ($Forward | Where-Object { $_ -eq "--fetch" -or $_ -like "--fetch=*" })) { $Forward += @("--fetch", "ccache") }
+
 $Here = $PSScriptRoot
 if (Test-Path (Join-Path $Here "python\pyproject.toml")) {
     # Inside a checkout: run its own coney-tools from the checkout, so init finds the workspace around it.
     Push-Location $Here
-    try { & uv run --isolated --frozen --project (Join-Path $Here "python") coney-tools workspace init @args }
+    try { & uv run --isolated --frozen --project (Join-Path $Here "python") coney-tools workspace init @Forward }
     finally { Pop-Location }
     exit $LASTEXITCODE
 }
@@ -44,5 +49,5 @@ if (-not $Url) {
     [Console]::Error.WriteLine("bootstrap: not inside a Coney checkout; pass --repo-url URL (the address in the README)")
     exit 2
 }
-& uvx --from "git+$Url#subdirectory=python" coney-tools workspace init @args
+& uvx --from "git+$Url#subdirectory=python" coney-tools workspace init @Forward
 exit $LASTEXITCODE

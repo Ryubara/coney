@@ -193,10 +193,26 @@ def test_a_failed_unpack_leaves_nothing_in_the_destination(tmp_path: Path) -> No
     assert list((tmp_path / "tools").iterdir()) == []
 
 
-def test_pcsx2_is_not_fetched_but_built_from_the_fork() -> None:
-    # The copies run the PCSX2-MCP fork's own build (pcsx2 setup-copies), not a stock release.
+def test_pcsx2_comes_from_the_forks_release_never_a_stock_one() -> None:
+    # The copies run the PCSX2-MCP fork's build (pcsx2 setup-copies), never a stock PCSX2: a newcomer downloads the
+    # fork's release, and the clone stays for changing the fork.
     assert "pcsx2" not in TOOLS
     assert [pin.url for pin in PINS["pcsx2-mcp"]("windows")] == ["https://github.com/Ryubara/PCSX2-MCP"]
+    (release,) = PINS["pcsx2-mcp-release"]("windows")
+    assert release.url.startswith("https://github.com/Ryubara/PCSX2-MCP/releases/download/")
+    assert release.url.endswith("-win64.zip")
+    # Windows only: there is no Linux or macOS build of the fork.
+    assert PINS["pcsx2-mcp-release"]("linux") == []
+    assert tool_destination("pcsx2-mcp-release", Path("ws")).parent == Path("ws") / "tools"
+
+
+def test_the_fork_release_unpacks_flat_with_its_server(tmp_path: Path) -> None:
+    data = make_zip({"pcsx2-qt.exe": b"exe", "pcsx2-mcp-server/dist/index.js": b"js"})
+    pin = pin_for("PCSX2-MCP-v9-win64.zip", data)
+    dest = tmp_path / "tools" / "PCSX2-MCP-v9-win64"
+    fetch_tool("pcsx2-mcp-release", dest, "windows", tmp_path / "cache", FakeWeb({pin.url: data}), [pin])
+    assert (dest / "pcsx2-qt.exe").is_file()
+    assert (dest / "pcsx2-mcp-server" / "dist" / "index.js").is_file()
 
 
 def test_the_newest_fork_build_is_found_by_version_then_build(tmp_path: Path) -> None:

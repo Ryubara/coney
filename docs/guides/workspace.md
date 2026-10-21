@@ -56,10 +56,13 @@ the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Insi
 
 1. creates the folders of [the layout](#the-layout) that are missing;
 2. clones the repository into `repos/coney` when run outside a checkout (`--repo-url`);
-3. downloads the research tools you ask for with `--fetch` (below);
+3. downloads the research tools you ask for with `--fetch` (below). The launchers add `--fetch ccache` when you name
+   nothing to fetch, so a new machine gets the compiler cache (Windows; on Linux and macOS init says to install the
+   package);
 4. writes `repos/coney/coney.local.toml` from the example when there is none, filling in `jdk_home` when it finds a
    JDK 21, and `ghidra_mcp_repo` and `pcsx2_mcp_dir` when those tools are in `tools/` (`pcsx2_mcp_dir` names the
-   newest fork build, `tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.N-win64`, when one is there);
+   fork's downloaded release, `tools/PCSX2-MCP-v1.1.0-win64`, or, when there is one, the newest build made from the
+   clone, `tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.N-win64`);
 5. checks the prerequisites ([Building and testing](building.md#what-you-need)): Git, the C++ compiler, CMake 3.28+
    and Ninja, which the engine needs, and a JDK 21 and Node.js 18+, which only the research tools need, and ccache,
    which makes builds faster but is not needed. It prints what is missing and what to install; it installs none of it
@@ -94,9 +97,11 @@ that would land outside the tool's folder is refused.
 | `ghidra` | Ghidra 12.1.4, with the Emotion Engine extension v2.1.38 (built for 12.1.4) in its `Ghidra/Extensions/` | `tools/ghidra_12.1.4_PUBLIC` | Apache-2.0 both |
 | `ghidra-mcp` | ghidra-mcp's repository at the commit Coney was set up with (7.0.0 pre-release) | `tools/ghidra-mcp` | Apache-2.0 |
 | `ccache` | ccache 4.14.1, the [compiler cache](building.md#compiler-cache) `coney-tools build` uses; Windows only (the release CI's Windows job installs), on Linux and macOS install the `ccache` package with apt or Homebrew | `tools/ccache-4.14.1` | GPL-3.0 |
-| `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source | `tools/pcsx2-mcp` | GPL-3.0 |
+| `pcsx2-mcp-release` | the PCSX2-MCP fork's release v1.1.0 (Windows only): PCSX2 2.9.129 built with the debug server, the MCP server with its dependencies in `pcsx2-mcp-server/`, and the patch's source | `tools/PCSX2-MCP-v1.1.0-win64` | GPL-3.0 |
+| `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source, to change the fork | `tools/pcsx2-mcp` | GPL-3.0 |
 
-PCSX2 itself is not downloaded: every copy runs the fork's own build ([PCSX2 copies](#pcsx2-copies)).
+A stock PCSX2 is never downloaded: every copy runs the fork's build, the release or one made from the clone
+([PCSX2 copies](#pcsx2-copies)).
 
 What is left to do by hand, which the command reminds you of:
 
@@ -104,7 +109,9 @@ What is left to do by hand, which the command reminds you of:
   and applies our function names ([Starting your own project](ghidra.md#own-project)).
 * **ghidra-mcp:** build its headless server (`target/GhidraMCPHeadless.jar`) with Maven 3.9+
   ([ghidra-mcp on your machine](ghidra.md#own-ghidra-mcp)); the agent bridge runs from the source as it is.
-* **PCSX2-MCP:** build the fork as its README says (`pcsx2-plugin\prepare.ps1`, then CMake, then `npm ci` and
+* **PCSX2-MCP:** with the release (`--fetch pcsx2-mcp-release`), run `coney-tools pcsx2 setup-copies`
+  ([PCSX2 copies](#pcsx2-copies)) and put your BIOS in each copy. Only to change the fork, build the clone as its
+  README says (`pcsx2-plugin\prepare.ps1`, then CMake, then `npm ci` and
   `npm run build` in `pcsx2-mcp-server/`), into a release folder `release/PCSX2-MCP-coney-v2.9.129.N-win64` that
   holds PCSX2's program with `pcsx2-mcp-server/` beside it; point `pcsx2_mcp_dir` at it and run
   `coney-tools pcsx2 setup-copies` ([PCSX2 copies](#pcsx2-copies)). Each copy needs your BIOS.

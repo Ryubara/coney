@@ -29,7 +29,7 @@ from coney_tools.config import ConfigError
 PLATFORMS: tuple[str, ...] = ("windows", "linux", "macos")
 
 #: The tools `--fetch` accepts, in the order they are fetched.
-TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "ccache")
+TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "pcsx2-mcp-release", "ccache")
 
 #: The tools installed as a git clone at a pinned commit rather than from a release archive.
 CLONED: frozenset[str] = frozenset({"ghidra-mcp", "pcsx2-mcp"})
@@ -105,11 +105,25 @@ CCACHE_WINDOWS = Pin(
     "6219f3865ca59aec41ee4b678df171d5d35855ecb2b6dbbbd20690b3a68af7b4",
 )
 
+#: The fork's public release (Windows only): its PCSX2 2.9.129 build with the debug server, and the MCP server with
+#: its dependencies beside it, the same shape as a build of the clone's `release/` folder, so `pcsx2_mcp_dir` can
+#: name it and `pcsx2 setup-copies` spreads it over the copies. This is the newcomer's way; building from the clone
+#: is for changing the fork (docs/guides/workspace.md#pcsx2-copies).
+PCSX2_MCP_RELEASE_VERSION = "1.1.0"
+PCSX2_MCP_RELEASE = Pin(
+    "PCSX2-MCP (fork, release)",
+    PCSX2_MCP_RELEASE_VERSION,
+    f"{_GH}/Ryubara/PCSX2-MCP/releases/download/v{PCSX2_MCP_RELEASE_VERSION}/"
+    f"PCSX2-MCP-v{PCSX2_MCP_RELEASE_VERSION}-win64.zip",
+    "98cee4215f928d4e6148ad955a78454ef70b9a6850ab64cee657f5e2edc69a11",
+)
+
 #: The pins of each tool for a platform (none: the platform's package manager installs it).
 PINS: dict[str, Callable[[str], list[Pin]]] = {
     "ghidra": lambda platform: [GHIDRA, GHIDRA_EE],
     "ghidra-mcp": lambda platform: [GHIDRA_MCP],
     "pcsx2-mcp": lambda platform: [PCSX2_MCP],
+    "pcsx2-mcp-release": lambda platform: [PCSX2_MCP_RELEASE] if platform == "windows" else [],
     "ccache": lambda platform: [CCACHE_WINDOWS] if platform == "windows" else [],
 }
 
@@ -119,6 +133,7 @@ _DESTINATIONS = {
     "ghidra": f"tools/ghidra_{GHIDRA_VERSION}_PUBLIC",
     "ghidra-mcp": "tools/ghidra-mcp",
     "pcsx2-mcp": "tools/pcsx2-mcp",
+    "pcsx2-mcp-release": f"tools/PCSX2-MCP-v{PCSX2_MCP_RELEASE_VERSION}-win64",
     "ccache": f"tools/ccache-{CCACHE_VERSION}",
 }
 
@@ -256,6 +271,9 @@ def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, 
         unpack(files[0], dest)
         unpack(files[1], dest / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded")
         return
+    if tool == "pcsx2-mcp-release" and files:
+        unpack(files[0], dest)  # flat: pcsx2-qt.exe and pcsx2-mcp-server/ at the top
+        return
     if tool == "ccache" and files:
         unpack(files[0], dest)  # the release's one folder is stripped: dest/ccache.exe
         return
@@ -265,6 +283,10 @@ def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, 
 def describe(tool: str, platform: str) -> str:
     """One line naming what `tool` fetches on `platform`."""
     return ", ".join(f"{pin.name} {pin.version}" for pin in PINS[tool](platform))
+
+
+#: Tools built for Windows only: elsewhere `--fetch` says so instead of pointing at a package manager.
+WINDOWS_ONLY: tuple[str, ...] = ("pcsx2-mcp-release",)
 
 
 def packaged(tool: str, platform: str) -> bool:

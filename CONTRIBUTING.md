@@ -33,8 +33,8 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
    never inside the repository. The tidy layout for more than a first change is to clone into
    `<workspace>/repos/coney` and run `./bootstrap.sh` there (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1`
    on Windows): it makes the sibling folders (`scratch/`, `tools/`, ...) the tools then use, writes
-   `coney.local.toml`, installs uv when it is missing and prints what else you lack
-   ([Bootstrap](docs/guides/workspace.md#bootstrap)).
+   `coney.local.toml`, installs uv when it is missing, fetches the compiler cache on Windows and prints what else you
+   lack ([Bootstrap](docs/guides/workspace.md#bootstrap)).
 2. **Build and run the tests.** No game files are needed:
 
     ```sh
@@ -88,11 +88,13 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
 **Beyond the first hour: studying the original.** Reading the game's code and watching it run is optional and
 heavier. It needs a JDK 21, Ghidra 12.1.4 with the Emotion Engine extension and Maven to build ghidra-mcp
 ([Ghidra + ghidra-mcp](docs/guides/ghidra.md)), and a PCSX2 build with the debug server patch plus a BIOS dumped from
-your own console ([PCSX2 copies](docs/guides/workspace.md#pcsx2-copies)). The fork has no release to download: you
-build PCSX2 from source with its `prepare.ps1`, and only the Windows build is described, so on Linux and macOS
-only the Ghidra half is available today. With a JDK 21 installed, `coney-tools ghidra setup` downloads Ghidra and the
-extension, imports `SLUS_212.15` from your disc into your own project and gives its functions the names the
-maintainers published ([Starting your own project](docs/guides/ghidra.md#own-project)); the rest you set up by hand.
+your own console ([PCSX2 copies](docs/guides/workspace.md#pcsx2-copies)). On Windows, `coney-tools workspace init
+--fetch pcsx2-mcp-release` downloads the fork's release (PCSX2 with the debug server and the MCP server, checked by
+SHA-256) and `coney-tools pcsx2 setup-copies` makes the copies from it; building the fork from source is only for
+changing it. The fork is built for Windows only, so on Linux and macOS only the Ghidra half is available today.
+With a JDK 21 installed, `coney-tools ghidra setup` downloads Ghidra and the extension, imports `SLUS_212.15` from
+your disc into your own project and gives its functions the names the maintainers published
+([Starting your own project](docs/guides/ghidra.md#own-project)); the rest you set up by hand.
 Two things are not shared yet, so expect them to be missing on your machine: the plate comments, types and structures
 of the maintainers' Ghidra project (only the function names are published, in `docs/progress/ghidra-functions.tsv`,
 and the research pages), and the PCSX2 save states and traces. Start from the research page for the subsystem you
