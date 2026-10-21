@@ -1219,7 +1219,8 @@ uv run --project python coney-tools build --agent ID [--preset dev|release|ci|as
     [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
-uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast] [--dir CHECKOUT]
+uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast|tidy]
+    [--dir CHECKOUT]
 ```
 
 `--dir` names the checkout the command is about and works before or after the subcommand (`build --dir X result` and
