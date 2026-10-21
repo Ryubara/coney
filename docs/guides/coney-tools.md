@@ -836,6 +836,7 @@ uv run --project python coney-tools repo check
 uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools repo check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
+    [--local-images]
 uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
     [--claude EXE] [--timeout-minutes N]
 uv run --project python coney-tools repo check-review PR.md --worktree WT [--base REF]
@@ -867,6 +868,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
   none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
   output says so; `repo check-review` always has the title (line 1 of `PR.md`).
+  `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
+  is about to upload; the release guard hook passes it ([The release queue](how-we-work.md#release-queue)).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
   [review](#repo-review). All three refuse a description whose title or body fails the checks above.
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).

@@ -285,7 +285,7 @@ other title area leaves the line out.
 
   ```sh
   cd scratch/<branch>
-  gh pr create --body-file PR.md --attach ./shots/before.png --attach ./shots/after.png
+  gh pr create --title "<title>" --body-file PR.md --attach ./shots/before.png --attach ./shots/after.png
   ```
 
   `gh` replaces each reference whose path matches an `--attach` with the uploaded
