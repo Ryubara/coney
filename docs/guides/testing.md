@@ -154,7 +154,11 @@ Once the chapter's own lock on the Warrior commands took effect, the crew ran on
 down. The dispatcher's refusal of a disabled command is confirmed (code); that the chapter's Setup turns the commands
 off, and the pursuers' speed, are inferred from the research ([level3](../research/scripting.md#level3),
 [Automatic commands](../research/ai-gangs.md#warrior-auto-commands),
-[the devil run](../research/ai-scripting.md#devil-run)). The driver now sprints wherever it is not about to climb.
+[the devil run](../research/ai-scripting.md#devil-run)). It still passed for only half of the AI's seeds: it slowed to a
+walk before each climb, and the pursuers, who speed up as they fall behind, caught it there; the same route driven
+in the original lost Snow the same way. Now it sprints into the climbs (a running player takes a face 4.5 m off,
+[Climbing](../research/characters.md#climb)), charges again when a charge leaves the barrier standing, and the test
+runs every `--ai-seed` from 0 to 7, so a pass is no longer one lucky sequence.
 
 A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
 player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
