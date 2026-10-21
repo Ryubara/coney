@@ -2300,12 +2300,13 @@ spawners and link to their subject pages; the rest are this mission's.
 **Checkpoint 3** (the three objectives, then `P1.HeadToGate`).
 
 9. This checkpoint depends on item 1: while the pool is full, nothing else can spawn.
-10. **The three objectives have no disc test that plays them together.** Disc tests exist for the radios and the
-    muggings, but not for the loot ($350 from store items; [Taking owned items](crimes.md#owned-items)) or for the
-    riot meter (200 points: a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). In
-    the driver runs the meter counted (1 % on the first point, then 2 %), so it is wired, but neither total was
-    played to the end. Done: a disc test from checkpoint 3 that takes store items to $350, breaks props and cars to
-    100 % and steals three stereos, then sees `P1.HeadToGate` and `SetCheckPoint(4)`.
+10. **The three objectives play together** (settled). `repo:tests/platform/disc_level34_objectives_test.cpp` starts
+    at checkpoint 3 and plays them with the pad: it steals the three stereos, takes store items until $350 is
+    picked up ([Taking owned items](crimes.md#owned-items)), and hits cars and street props until the riot meter
+    reaches 200 points (a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). Each
+    objective saves its target in its Lua float, and `F.CheckObjectives` then runs `P1.HeadToGate`, which calls
+    `SetCheckPoint(4)`. Confirmed (runtime, Coney). `P1.HeadToGate` is a Lua-to-Lua call, so a script trace shows
+    it only through the `SetCheckPoint(4)` it makes.
 
 **Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
 
