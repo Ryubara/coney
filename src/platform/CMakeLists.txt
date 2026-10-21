@@ -27,8 +27,9 @@ target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp parti
                                       room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
-# The profiler's clock, OpenGL counters and allocation counter, and `--bench` (docs/guides/performance.md).
-target_sources(coney_platform PRIVATE perf_bench.cpp perf_probes.cpp)
+# The profiler's clock, OpenGL counters and allocation counter (docs/guides/performance.md); `--bench` drives the debug
+# tools' fighter spawner, so it is coney_devtools' below.
+target_sources(coney_platform PRIVATE perf_probes.cpp)
 # In-game clips for issues and pull requests (`--record`, docs/guides/testing.md#clips): FFmpeg run as a program.
 target_sources(coney_platform PRIVATE clip_recorder.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
@@ -55,7 +56,8 @@ target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 # debug menus' glue, the pad menu drawn over every frame (docs/guides/debug-menu.md); the developer overlay over the
 # same menus (docs/guides/debug-menu.md#the-developer-overlay); the menus' controls of the play mode with its Entity
 # inspector, Animation player and Debug draw lines; the texture, character and sandbox viewers; the reference images of
-# characters and objects (docs/guides/running.md#reference-images).
+# characters and objects (docs/guides/running.md#reference-images); and `--bench`, the scripted benchmark run that
+# spawns fighters through the debug menus' controls (docs/guides/performance.md).
 add_library(
     coney_devtools STATIC
     character_viewer_mode.cpp
@@ -64,6 +66,7 @@ add_library(
     imgui_model_view.cpp
     imgui_overlay.cpp
     imgui_ui_scale.cpp
+    perf_bench.cpp
     play_level_anim.cpp
     play_level_controls.cpp
     play_level_inspect.cpp
