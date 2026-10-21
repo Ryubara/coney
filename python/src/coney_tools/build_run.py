@@ -149,13 +149,16 @@ class BuildScan:
 
 
 class TestScan:
-    """Reads ctest output: how many tests there were, how many passed and which failed."""
+    """Reads ctest output: how many tests there were, how many passed, which failed and how many skipped (ctest counts
+    a skipped test as passed, and the disc tests skip without the disc)."""
 
     __test__ = False  # not a pytest class, despite the name
 
     def __init__(self) -> None:
         self._lines_passed = 0
         self._lines_failed: list[str] = []
+        #: The tests whose line says they were skipped.
+        self.skipped = 0
         self._summary: tuple[int, int] | None = None
         self._listed_failures: list[str] = []
         # True while the lines are the entries under ctest's "The following tests FAILED:" heading.
@@ -226,6 +229,7 @@ class TestScan:
                 self._lines_failed.append(test.group("name"))
             elif state == "Passed" or "Skipped" in state:
                 self._lines_passed += 1
+                self.skipped += "Skipped" in state
 
 
 def count_dirty_steps(output: str) -> int | None:
@@ -509,6 +513,25 @@ class ProcessToolchain:
 
 
 @dataclass(frozen=True)
+class DiscTests:
+    """Whether the run's tests have the player's disc: `source` says where `CONEY_DISC` comes from, or is None with
+    `why_not` the reason there is no disc (the disc tests then skip)."""
+
+    source: str | None
+    why_not: str = ""
+
+    def line(self, skipped: int) -> str:
+        """The summary line about the disc tests, given how many tests ctest reported as skipped."""
+        if self.source is not None:
+            extra = f"; {skipped} tests still skipped (see the log)" if skipped else ""
+            return f"disc tests: ran with the disc (CONEY_DISC from {self.source}){extra}"
+        return (
+            f"disc tests: SKIPPED ({self.why_not}); set game_dir in coney.local.toml or pass --env CONEY_DISC=<disc> "
+            "(docs/guides/testing.md#kinds-of-tests)"
+        )
+
+
+@dataclass(frozen=True)
 class Options:
     """What the caller asked for."""
 
@@ -534,6 +557,9 @@ class Options:
     jobs: int | None = None
     #: The targets to build (`--target`, such as `coney` for a play build); empty: everything.
     targets: tuple[str, ...] = ()
+    #: Whether the disc tests have the disc (set by the caller, who passes it to the run's environment); None: the
+    #: summary says nothing of it.
+    disc: DiscTests | None = None
 
     @property
     def folder(self) -> Path:
@@ -944,6 +970,11 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         return _gave_up(result, "test", phase.queued)
     _, code, seconds = ran[0]
     counts = f"{tests.passed} passed, {tests.failed_count} failed of {tests.total}"
+    # ctest counts a skipped test as passed, so the skips are named: a run in which every disc test skipped must not
+    # read as a whole one.
+    counts += f", {tests.skipped} skipped" if tests.skipped else ""
+    if options.disc is not None:
+        result.summary.append(options.disc.line(tests.skipped))
     if code == 0 and not tests.none_found:
         result.summary.append(f"test: ok in {_duration(seconds)} ({phase.lane_text(selected)}): {counts}")
         result.summary.append("result: ok")

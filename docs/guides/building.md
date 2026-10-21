@@ -206,8 +206,10 @@ streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the 
 librw on its NULL device).
 
 Tests that check your own disc run only when the environment variable `CONEY_DISC` names the disc, are reported as
-skipped otherwise, and print counts only. They carry the Catch2 tag `[disc]` and a tag for their subject (`[world]`,
-`[story]`, `[rumble]`, ...; `coney_tests --list-tags` lists them), so you can run the ones for the area you changed.
+skipped otherwise, and print counts only. `coney-tools build --test` sets it from `game_dir` in `coney.local.toml`
+when it is not already set ([`build`](coney-tools.md#build)); a raw `coney_tests` run needs it set by hand. They
+carry the Catch2 tag `[disc]` and a tag for their subject (`[world]`, `[story]`, `[rumble]`, ...; `coney_tests
+--list-tags` lists them), so you can run the ones for the area you changed.
 With `CONEY_DISC` set when CMake configures, more smoke tests run `coney --disc` as well (the start-up movies, the main
 menu, the character viewer, a level played under a scripted pad):
 

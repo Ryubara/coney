@@ -62,9 +62,11 @@ either ([Studying the original](research-workflow.md#studying-the-original)).
 - **Unit tests** (Catch2 under `tests/`, mirroring `src/`) cover everything that can be tested without the game.
   They are written first.
 - **Smoke tests** run the `coney` executable itself under `ctest`: start-up, argument errors, scripted input.
-- **Disc tests** need the player's own disc, found through `coney.local.toml` or `CONEY_DISC`. They skip without it.
-  Every one carries the ctest label `disc` (the Catch2 tag `[disc]`), so `coney-tools build --test -L disc` runs them
-  and nothing else ([`build`](coney-tools.md#build)).
+- **Disc tests** need the player's own disc, which they read from `CONEY_DISC`. `coney-tools build --test` sets it from
+  `game_dir` in `coney.local.toml` when the environment does not, and its summary says whether the disc tests ran or
+  were skipped ([the disc for the tests](coney-tools.md#build)); without a disc they skip, and ctest counts a skip as
+  a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2
+  tag `[disc]`), so `coney-tools build --test -L disc` runs them and nothing else ([`build`](coney-tools.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
@@ -374,8 +376,9 @@ The whole gate:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
   `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
-  [build slot](coney-tools.md#build) and loads the MSVC environment itself; agents never run `cmake --build` or `ctest`
-  directly).
+  [build slot](coney-tools.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
+  agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
+  ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`; `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables are built into
   the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,

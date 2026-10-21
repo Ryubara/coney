@@ -1276,6 +1276,18 @@ stays required whenever the output is not a terminal, as under every agent tool,
    long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N`,
    with the filters `-R REGEX` and `-L LABEL` when given (see "Choosing tests" below).
 
+**The disc for the tests.** The disc tests read only the environment variable `CONEY_DISC`
+(`repo:tests/support/disc_play_fixtures.h`) and skip without it, and ctest counts a skipped test as passed. So the
+command sets `CONEY_DISC` for the whole run (CMake reads it too when it configures, to register the `coney --disc`
+smoke tests): a value already in the environment, or given with `--env CONEY_DISC=...`, is kept (an empty one counts
+as not set); otherwise it is the `game_dir` of `coney.local.toml` (the one `.iso` in that folder, else the folder
+itself, as `trace` hands it to Coney), when that exists. A folder configured before the variable was set keeps the
+smoke tests it registered then; `--configure` registers them. With `--test` the summary gets a line before the test
+line: `disc tests: ran with the disc (CONEY_DISC from the environment | game_dir in coney.local.toml)`, or
+`disc tests: SKIPPED (<why>)` with the two ways to run them, and `N skipped` joins the test counts when ctest
+reported skips (a disc configured and tests still skipping is named, and the log says which). A suite that passes
+with `disc tests: SKIPPED` ran no disc test.
+
 **The log.** The full output goes to a file of its own per run, `build-<preset>-<agent>-<date>-<time>.log` in the
 worktree's folder of the scratch directory (`scratch/<worktree>/`; the process id is added if that name exists), and
 its path is the first line printed. No two runs share a log, so one never garbles another's; the newest 20 logs of a

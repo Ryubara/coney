@@ -105,6 +105,15 @@ def main_checkout(root: Path) -> Path:
     return common.parent if common is not None and common.name == ".git" else root
 
 
+def disc_for_coney(game: Path) -> Path:
+    """The disc to hand to Coney for `game`, a `game_dir`: the one `.iso` in the folder, else the folder itself
+    (extracted files, a mounted disc, or several images, which are not guessed between); an image given itself stays."""
+    if not game.is_dir():
+        return game
+    images = sorted(game.glob("*.iso"))
+    return images[0] if len(images) == 1 else game
+
+
 def local_config_file(root: Path) -> Path | None:
     """The `coney.local.toml` that applies to the checkout at `root`, or None when there is none.
 

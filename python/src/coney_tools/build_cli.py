@@ -27,6 +27,7 @@ from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import (
     INT_KEYS,
     ConfigError,
+    disc_for_coney,
     find_repo_root,
     load_config,
     local_config_file,
@@ -241,6 +242,25 @@ def _environment(base: dict[str, str], settings: list[str]) -> dict[str, str]:
     return env
 
 
+def disc_environment(env: dict[str, str], root: Path) -> tuple[dict[str, str], build_run.DiscTests]:
+    """`env` with `CONEY_DISC` set for the tests, and what the summary says about it. The disc tests read only that
+    variable (tests/support/disc_play_fixtures.h) and skip without it, so a disc named by the environment or `--env`
+    (an empty value counts as not set, as the tests read it) is kept, else the `game_dir` of coney.local.toml is passed
+    on as the disc Coney would be given (`disc_for_coney`); with neither, the variable stays unset and the summary says
+    the disc tests skip. CMake reads the variable too when it configures, to register the `coney --disc` smoke tests."""
+    given = build_run.env_get(env, "CONEY_DISC")
+    if given:
+        return env, build_run.DiscTests("the environment")
+    game = load_config(root).paths.get("game_dir") if local_config_file(root) else None
+    if game is None:
+        return env, build_run.DiscTests(None, "CONEY_DISC is not set and coney.local.toml has no game_dir")
+    if not game.exists():
+        return env, build_run.DiscTests(None, "CONEY_DISC is not set and game_dir does not exist")
+    disc = {key: value for key, value in env.items() if key.upper() != "CONEY_DISC"}
+    disc["CONEY_DISC"] = str(disc_for_coney(game))
+    return disc, build_run.DiscTests("game_dir in coney.local.toml")
+
+
 def limits(args: argparse.Namespace) -> tuple[float, float]:
     """The run's (max wait, budget) in minutes: the flags, else the caps, or for a --detach run DETACHED_MAX_WAIT and
     no budget. Raises ConfigError for a run its caller waits on that asks for more than the caps."""
@@ -338,6 +358,7 @@ def _build(
     compiler_cache.write_config(cache)
     stats_log = log_path.with_suffix(".ccache-stats")
     env = {**env, **compiler_cache.environment(cache, root, stats_log, env)}
+    env, disc = disc_environment(env, root)
     options = build_run.Options(
         agent=args.agent,
         preset=args.preset,
@@ -353,6 +374,7 @@ def _build(
         budget=limits_minutes[1],
         jobs=args.jobs,
         targets=tuple(args.targets),
+        disc=disc,
     )
     print(f"log: {log_path}", flush=True)
     toolchain = build_run.ProcessToolchain(root, env)
