@@ -134,14 +134,16 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "coney: %s; running without pads\n", started.error().message.c_str());
         }
     }
-    modes.setInput(input.get());
-
     // Network play (docs/guides/multiplayer.md), hosted or joined from the start with `--host` or `--join`; a port that
     // cannot be opened ends the run, as any bad argument does.
     coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
     }
+    // The game reads its pads through network play: a guest sends what their game reads, and a host's pad port 2 is
+    // the guest's pad (docs/guides/multiplayer.md#player-two).
+    coney::platform::NetInput netInput(input.get(), netPlay);
+    modes.setInput(&netInput);
 
     // The pacing (docs/guides/conventions.md#update-and-render): test mode runs in lockstep with no clock; otherwise
     // the frame pacer measures real time and the frame clock turns it into fixed steps, a cap of 30 being the
