@@ -677,7 +677,8 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<version>/<name>` and use a complete
   copy found there without downloading ([Shared dependency sources](#shared-deps)). The build trees under
   `build/<preset>/_deps/` are not kept: they belonged to one compiler and preset, a fresh job rebuilds them anyway
-  (Ninja has no record of them), and they made eight entries of about 400 MB. The same rule applies: only runs outside pull requests save.
+  (Ninja has no record of them), and they made eight entries of about 400 MB. The same rule applies: only runs
+  outside pull requests save.
 - **Rolling entries.** Each saved compiler-cache entry is named after the run, and the `cache-prune` job, which runs
   after the build jobs outside pull requests, deletes every older entry of the same job (and older dependency entries
   of the same OS) on that branch, so `main` keeps one per job. Before saving, a job drops what it did not use
