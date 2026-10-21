@@ -120,6 +120,18 @@ def changed_files(root: Path, base: str) -> list[str]:
     return sorted(names)
 
 
+def renamed_files(root: Path, base: str) -> dict[str, str]:
+    """Each file renamed since HEAD left `base` (staged or committed, as git detects renames) -> its old path."""
+    since = merge_base(root, base)
+    fields = _git(root, "diff", "-z", "--name-status", "-M", "--diff-filter=R", since).split("\0")
+    renamed: dict[str, str] = {}
+    # -z gives `R<score>`, the old path and the new path as three fields.
+    for i in range(0, len(fields) - 2, 3):
+        if fields[i].startswith("R"):
+            renamed[fields[i + 2]] = fields[i + 1]
+    return renamed
+
+
 def needs_full_tidy_pass(changed: Iterable[str]) -> bool:
     """True when CI's clang-tidy would check every file for this change (build setup or tidy setup changed)."""
     pattern = re.compile(TIDY_ALL_PATTERN)

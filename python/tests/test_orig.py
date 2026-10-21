@@ -7,11 +7,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from conventions_support import write_checkout
 
-from coney_tools import orig_cli, orig_ghidra, orig_index, orig_queue, orig_report
+from coney_tools import orig_check, orig_cli, orig_ghidra, orig_index, orig_queue, orig_report
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
+from coney_tools.conventions import load_conventions
 from coney_tools.progress_research import ListedFunction
+
+GAMEPLAY = ("src/ai/", "src/audio/")
 
 BRAIN_H = """// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
@@ -78,7 +82,7 @@ LISTING = """# header
 @pytest.fixture
 def checkout(tmp_path: Path) -> Path:
     """A made-up checkout: a gameplay directory with a brain, a debug directory, a research page and a listing."""
-    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    write_checkout(tmp_path)
     files = {
         "src/ai/brain.h": BRAIN_H,
         "src/ai/brain.cpp": BRAIN_CPP,
@@ -93,7 +97,7 @@ def checkout(tmp_path: Path) -> Path:
 
 
 def test_every_tag_is_indexed_with_its_coney_function_and_research(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     rows = [(f"0x{r.address:08x}", r.name, r.file, r.coney, r.where, r.research) for r in index.rows]
     assert rows == [
         (
@@ -116,16 +120,20 @@ def test_every_tag_is_indexed_with_its_coney_function_and_research(checkout: Pat
 
 
 def test_untagged_gameplay_functions_are_listed_and_marked_ones_are_not(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
-    untagged = {u.coney: u.kind for u in index.untagged}
+    index = orig_index.build_index(checkout, GAMEPLAY)
+    untagged = {u.coney: (u.kind, u.exempt) for u in index.untagged}
     # think/wait take their declaration's tags; count has the older wording; debugDump the marker; the debug
     # directory is out of scope.
-    assert untagged == {"Brain::size": "inline", "helper": "helper", "Brain::forget": "member"}
+    assert untagged == {
+        "Brain::size": ("inline", True),
+        "helper": ("helper", False),
+        "Brain::forget": ("member", False),
+    }
     assert (index.in_scope, index.tagged, index.marked, index.marked_legacy) == (7, 2, 1, 1)
 
 
 def test_research_sections_without_an_address_are_reported(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     report = orig_index.check_research(checkout, index.rows)
     assert [(g.link, g.heading) for g in report.gaps] == [("docs/research/made-up.md#thinking", "Thinking")]
     assert report.missing == [] and report.unlinked == []
@@ -135,7 +143,7 @@ def test_research_sections_without_an_address_are_reported(checkout: Path) -> No
 
 def test_a_link_to_a_missing_section_is_reported(checkout: Path) -> None:
     (checkout / "src/ai/brain.h").write_text(BRAIN_H.replace("#thinking", "#gone"), encoding="utf-8")
-    report = orig_index.check_research(checkout, orig_index.build_index(checkout).rows)
+    report = orig_index.check_research(checkout, orig_index.build_index(checkout, GAMEPLAY).rows)
     assert [g.link for g in report.missing] == ["docs/research/made-up.md#gone"]
 
 
@@ -163,7 +171,7 @@ def test_names_are_compared_without_case_punctuation_or_a_wrapper_prefix(
 
 
 def test_the_listing_check_finds_starts_and_names(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     listing = [ListedFunction(0x00100010, 0x40, "Brain_Think", True), ListedFunction(0x00100100, 16, "X_Y", False)]
     findings = orig_ghidra.check_listing(index.rows, listing)
     assert [(f.row.address, f.problem, f.start) for f in findings] == [(0x00100020, "not-a-start", 0x00100010)]
@@ -272,7 +280,7 @@ def test_a_private_helper_is_not_covered_by_a_tag_in_another_file(checkout: Path
             "src/ai/b.cpp": "namespace {\nvoid scan() {}\n}\n",
         },
     )
-    untagged = [u.where for u in orig_index.build_index(checkout).untagged if u.coney == "scan"]
+    untagged = [u.where for u in orig_index.build_index(checkout, GAMEPLAY).untagged if u.coney == "scan"]
     assert untagged == ["src/ai/b.cpp:2"]
 
 
@@ -287,14 +295,15 @@ def test_a_tagged_overload_does_not_cover_its_untagged_sibling(checkout: Path) -
             "src/audio/player.cpp": "void Player::play(int id) {}\nvoid Player::play(const Clip& clip) {}\n",
         },
     )
-    untagged = [u.where for u in orig_index.build_index(checkout).untagged if u.coney == "Player::play"]
+    untagged = [u.where for u in orig_index.build_index(checkout, GAMEPLAY).untagged if u.coney == "Player::play"]
     assert untagged == ["src/audio/player.cpp:2"]
 
 
-def test_a_new_folder_of_src_is_in_scope_unless_it_is_coney_only(checkout: Path) -> None:
+def test_a_new_folder_of_src_is_reported_until_it_is_listed(checkout: Path) -> None:
     write(checkout, {"src/newthing/a.cpp": "void a() {}\n", "src/debug/b.cpp": "void b() {}\n"})
-    coneys = {u.coney for u in orig_index.build_index(checkout).untagged}
-    assert "a" in coneys and "b" not in coneys
+    paths = load_conventions(checkout).paths
+    assert orig_check.unlisted_folders(checkout, paths.gameplay, paths.coney_only) == ["src/newthing/"]
+    assert not {"a", "b"} & {u.coney for u in orig_index.build_index(checkout, paths.gameplay).untagged}
 
 
 def test_a_malformed_tag_is_counted_in_the_report(checkout: Path) -> None:
@@ -328,7 +337,7 @@ def test_ranking_many_entries_against_many_issues_is_quick(checkout: Path) -> No
 
 
 def test_each_research_page_is_scanned_once(checkout: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    rows = orig_index.build_index(checkout).rows * 50
+    rows = orig_index.build_index(checkout, GAMEPLAY).rows * 50
     calls = []
     real = orig_index._ADDRESS
 
@@ -359,7 +368,7 @@ def test_a_declaration_spelt_differently_covers_its_definition_when_not_overload
             "src/ai/go.cpp": "void Go::run(Thing const& thing) {}\n",
         },
     )
-    assert not [u for u in orig_index.build_index(checkout).untagged if u.coney == "Go::run"]
+    assert not [u for u in orig_index.build_index(checkout, GAMEPLAY).untagged if u.coney == "Go::run"]
 
 
 def test_a_member_defined_in_another_folder_takes_its_declaration_tag(checkout: Path) -> None:
@@ -370,7 +379,7 @@ def test_a_member_defined_in_another_folder_takes_its_declaration_tag(checkout: 
             "src/human/far_go.cpp": "void Far::go() {}\nvoid near() {}\n",
         },
     )
-    untagged = {u.coney for u in orig_index.build_index(checkout).untagged}
+    untagged = {u.coney for u in orig_index.build_index(checkout, ("src/ai/", "src/human/")).untagged}
     assert "Far::go" not in untagged and "near" in untagged
 
 
@@ -391,7 +400,7 @@ def test_a_tag_takes_its_research_link_from_the_declaration_the_class_or_the_hea
             ),
         },
     )
-    research = {r.name: r.research for r in orig_index.build_index(checkout).rows if r.path == "src/ai/r.cpp"}
+    research = {r.name: r.research for r in orig_index.build_index(checkout, GAMEPLAY).rows if r.path == "src/ai/r.cpp"}
     assert research == {
         "R_A": ("docs/research/made-up.md#thinking",),
         "S_C": ("docs/research/made-up.md#waiting",),
@@ -422,7 +431,7 @@ def test_a_coney_only_file_header_covers_its_untagged_functions_and_a_tag_wins(c
             )
         },
     )
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     assert not [u for u in index.untagged if u.where.startswith("src/ai/views.cpp")]
     assert (index.tagged, index.marked) == (3, 2)
 

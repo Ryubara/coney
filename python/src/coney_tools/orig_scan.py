@@ -21,9 +21,10 @@ ORIG_TAG = re.compile(r"@orig\s+0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s(
 #: The whole form, which every tag must have; `@orig 0x` without it is reported as malformed.
 _ORIG_FORM = re.compile(r"@orig 0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
 _ORIG_MENTION = re.compile(r"@orig\s+0x")
-#: The proposed marker a Coney-only function or file carries, `@coney-only <reason>` (docs/guides/coney-tools.md#orig).
+#: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
-#: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)".
+#: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)". It marks only
+#: functions written before `orig check` existed; a new function needs the marker.
 LEGACY_CONEY_ONLY = re.compile(r"Coney's own|Coney-only|\(no @orig\)|no @orig\b|the original has (?:nothing|no such)")
 RESEARCH_LINK = re.compile(r"docs/research/[A-Za-z0-9_./-]+?\.md(?:#[A-Za-z0-9_-]+)?")
 
@@ -44,6 +45,8 @@ _ACCESS = re.compile(r"\b(?:public|private|protected)\s*:(?!:)")
 #: A statement that is only an access label so far: the member below it is a new statement.
 _ACCESS_ONLY = re.compile(r"(?:public|private|protected)\s*:")
 _INIT_LIST = re.compile(r"\)\s*(?:noexcept\s*)?:(?!:)")
+#: The statements that branch or loop: a body holding one is not a one-statement accessor even without braces.
+_CONTROL = re.compile(r"^(?:if|for|while|switch|do)\b|\belse\b")
 _TRAILING_WORDS = frozenset({"const", "override", "final", "noexcept", "mutable", "volatile"})
 _NOT_FUNCTIONS = frozenset(
     {"if", "for", "while", "switch", "catch", "return", "sizeof", "decltype", "alignof", "static_assert", "alignas"}
@@ -81,6 +84,9 @@ class Function:
     def signature(self) -> tuple[str, str, str]:
         """(scope, name, parameter types): what a declaration and its definition share, overloads apart."""
         return (self.scope, self.name, self.params)
+
+    statements: int = 0  # `;` in its body, nested ones included: an accessor's `return m_x;` is 1
+    blocks: int = 0  # braces opened inside its body (an `if`, a loop, a lambda, a brace initializer)
 
     @property
     def qualified(self) -> str:
@@ -319,6 +325,9 @@ class _Reader:
         raw = "".join(self.statement)
         statement = _clean_statement(raw)
         if not self._at_declaration_level():
+            inside = self._in_function()
+            if inside is not None:
+                inside.blocks += 1
             self.stack.append(_Frame("block"))
             self._reset_statement()
             return
@@ -377,6 +386,13 @@ class _Reader:
                 self._drop_lead(statement[:40])
             elif not statement:
                 self._drop_lead("(empty)")
+        else:
+            inside = self._in_function()
+            if inside is not None:
+                inside.statements += 1
+                # An unbraced `if (v > 3) m_a = v;` branches as much as a braced one.
+                if _CONTROL.search(_clean_statement("".join(self.statement))):
+                    inside.blocks += 1
         self._reset_statement()
 
     # --- the pass -------------------------------------------------------------------------------------------------
@@ -407,6 +423,9 @@ class _Reader:
         """A `{`, `}` or `;`: structure at parenthesis depth 0, plain code inside parentheses (a default argument
         `= {}`, a lambda passed to a call, a `for` header)."""
         if self.paren > 0:
+            inside = self._in_function()
+            if c == "{" and inside is not None and not self._at_declaration_level():
+                inside.blocks += 1  # a lambda passed to a call is a block of the body too
             self._code(c)
         elif self.stack and self.stack[-1].kind == "init":
             # Inside a brace initializer (`m_v{Vec{1, 2}}`, `m_f{[this] { go(); }}`) braces nest and `;` ends nothing.

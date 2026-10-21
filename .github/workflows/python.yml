@@ -82,6 +82,11 @@ jobs:
       # data are not committed: the docs build writes them (mkdocs_hooks.py).
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools progress check
+      # A function a pull request adds to a gameplay folder carries @orig or @coney-only, and every folder of src/ is
+      # listed as gameplay or Coney-only (docs/guides/conventions.md#coney-only). HEAD^1 is the branch the pull
+      # request's merge commit joins, so only what the pull request adds is checked.
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools orig check --base HEAD^1
       # The script-binding pages (docs/references/bindings/) must match research/bindings/, which must be valid.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools natives render --check

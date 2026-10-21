@@ -318,14 +318,14 @@ uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [-
   documents, its file and line, where the tag sits (`comment` above a function, `body` inside one, `other` on a
   class or file), and the research links that document it (the function's comment, else its declaration's, its
   class's or its file's);
-* `untagged.tsv`: the functions defined in the gameplay directories (every directory of `src/` but those of
-  `orig_index.CONEY_ONLY_DIRS`: `platform`, `core`, `fileio`, `debug`, `net` and `sandbox`, so a new directory is in
-  scope) that have no tag and no Coney-only marker. A tag covers a function through its own comment, or through its
-  declaration's: the declaration with the same scope, name and parameter types (any one, when the name is not
-  overloaded), in the same file pair, folder or, for a member, anywhere; a file's private helper only through a
-  declaration in its own file. Each is a `member`, a `free` function, a file's private `helper` (an anonymous
-  namespace or `static`) or an `inline` member defined in its class. A marker is the proposed `@coney-only <reason>`
-  in the function's comment or its file's header comment, or the older wording ("Coney's own", "(no @orig)");
+* `untagged.tsv`: the functions defined in the gameplay folders (`paths.gameplay` of `.github/conventions.yml`) that
+  have no tag and no Coney-only marker. A tag covers a function through its own comment, or through its declaration's:
+  the declaration with the same scope, name and parameter types (any one, when the name is not overloaded), in the
+  same file pair, folder or, for a member, anywhere; a file's private helper only through a declaration in its own
+  file. Each is a `member`, a `free` function, a file's private `helper` (an anonymous namespace or `static`) or an
+  `inline` member defined in its class, and its `exempt` column is 1 when it needs neither ([Coney-only
+  code](conventions.md#coney-only)). A marker is `@coney-only <reason>` in the function's comment or its file's
+  header comment, or the older wording ("Coney's own", "(no @orig)");
 * `research-gaps.md`: the research sections tagged code links that cite no original address, links to a page or
   section that does not exist, tags whose linked pages never cite their address, and tags with no research link;
 * `report.md`: the counts, the malformed tags (a line with `@orig 0x` that is not the whole form `@orig 0x<address>
@@ -359,6 +359,24 @@ or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 order is a starting point for the audit team, which re-ranks as it learns. The files hold addresses, names, paths and
 issue numbers, never the original's code; they change with every pull request that touches `src/`, so they are
 regenerated when needed and never committed.
+
+```sh
+uv run --project python coney-tools orig check [--base origin/main]
+```
+
+Refuses a function that a change adds to a gameplay folder with neither `@orig` nor `@coney-only <reason>`, and a
+folder of `src/` that is in neither `paths.gameplay` nor `paths.coney_only` ([Coney-only code](conventions.md#coney-only)).
+The exempt functions pass: a member defined in its class whose body is one statement (an accessor, a setter, a
+forwarder) and a constructor or destructor with an empty body. A file's private helpers are not exempt. Only what
+the change adds counts: a function untagged now that was not untagged, under the same scope, name and parameter types
+in the same folder (a file's private helper: in the same file), where the branch left `--base`. So editing an old
+untagged function, moving it to another file of its folder, or renaming its file with `git mv` (to any folder)
+passes; removing a tag, adding an untagged overload, changing an untagged function's parameter types, or growing an
+exempt accessor into more than one statement fails.
+The older wording ("Coney's own", "(no @orig)") marks only functions that had it at `--base`; a new function needs
+`@coney-only <reason>`. The functions that said neither before the check existed are the audit's backlog in
+`untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
+`check changed` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 
 ## natives {#natives}
 
@@ -1137,6 +1155,7 @@ line, and any failure makes the command exit 1:
 | Step | Runs when | What it does |
 | --- | --- | --- |
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
+| `orig` | a file under `src/` changed | [`orig check`](#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
 | `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |

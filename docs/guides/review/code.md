@@ -47,8 +47,9 @@ The test: could someone write their own version of this subsystem from the code 
 - [ ] **Why comments.** Every non-obvious line says why, not what. Look at magic numbers, offsets, padding and
   ordering; each has a reason written next to it.
 - [ ] **`@orig` tags.** Each function that reimplements an original one carries
-  `@orig 0x<8 hex digits> <Name> (<File>.cpp)`, one per original function; a function with no counterpart carries
-  none. A reimplemented function without a tag is Important.
+  `@orig 0x<8 hex digits> <Name> (<File>.cpp)`, one per original function; a function in a gameplay folder with no
+  counterpart carries `@coney-only <reason>` ([Coney-only code](../conventions.md#coney-only)). A reimplemented
+  function without a tag is Important.
 - [ ] **Research link.** The doc comment names the research page it was written from (`docs/research/...`), and
   the path exists. Missing is Important.
 - [ ] **No commented-out code.**

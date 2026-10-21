@@ -26,7 +26,16 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import build_claims, build_cli, docs_check, docs_cli, local_gate, process_lifetime, tidy_cache
+from coney_tools import (
+    build_claims,
+    build_cli,
+    docs_check,
+    docs_cli,
+    local_gate,
+    orig_check,
+    process_lifetime,
+    tidy_cache,
+)
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
 from coney_tools.build_claims import FAST_LANE, TIDY_LANE, Slots, SlotTimeout, Waiting
@@ -38,7 +47,7 @@ from coney_tools.pcsx2_claims import AGENT_NAME
 from coney_tools.tidy_cache import TidyCache
 
 #: The steps, in the order they run and print; `--only` and `--skip` take these names.
-STEPS: tuple[str, ...] = ("repo", "pre-commit", "clang-tidy", "docs", "python")
+STEPS: tuple[str, ...] = ("repo", "orig", "pre-commit", "clang-tidy", "docs", "python")
 #: Characters of file names handed to one `pre-commit run --files`; Windows refuses a command line over ~32,000.
 COMMAND_LINE_BUDGET = 20000
 #: The mypy run, the same words as CI's python job. It runs from the repository root, where mypy finds no config, so
@@ -121,6 +130,19 @@ def _step_repo(root: Path) -> StepResult:
         f"{len(report.ran)} audit checks" if not problems else f"{len(problems)} problems",
         output=tuple(problems),
     )
+
+
+def _step_orig(root: Path, base: str, changed: list[str]) -> StepResult:
+    """`coney-tools orig check`, which CI runs: a new function in a gameplay folder carries `@orig` or `@coney-only`,
+    and every folder of `src/` is listed as gameplay or Coney-only."""
+    if not any(name.startswith("src/") for name in changed):
+        return _skipped("orig", "src/ unchanged")
+    problems = orig_check.check(root, base)
+    if problems:
+        return StepResult(
+            "orig", False, f"{len(problems)} new functions or folders say neither", output=_tail(problems)
+        )
+    return StepResult("orig", True, "every new gameplay function carries @orig or @coney-only")
 
 
 def _chunks(names: list[str], budget: int = COMMAND_LINE_BUDGET) -> list[list[str]]:
@@ -487,6 +509,7 @@ def run_changed(
     )
     steps: dict[str, Callable[[], StepResult]] = {
         "repo": lambda: _step_repo(root),
+        "orig": lambda: _step_orig(root, base, changed),
         "pre-commit": lambda: _step_pre_commit(root, changed),
         "clang-tidy": lambda: _step_tidy(root, changed, build_path, jobs, clang_tidy, gate),
         "docs": lambda: _step_docs(root, changed),
