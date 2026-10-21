@@ -1,8 +1,8 @@
 # AGENTS.md -- Coney
 
 Coney is an open-source, functional reimplementation of *The Warriors* (Rockstar Toronto, PS2, 2005) in C++23,
-running natively on Windows, Linux and macOS from a disc the player owns. Anyone should be able to hand-write a
-subsystem from our docs and comments alone. Legal rules in full: `LEGAL.md`.
+running natively on Windows, Linux and macOS from a disc the player owns. Anyone should be able to find, from our
+docs and code comments, where each behaviour lives in the original and port it. Legal rules in full: `LEGAL.md`.
 
 ## Layout
 
