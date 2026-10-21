@@ -258,6 +258,8 @@ architecture](guides/network-architecture.md). The thinking below set that direc
 - Done: the network library `coney_net` (bit stream, transports, link conditioner, protocol, the server and client
   sessions with their handshake and timeouts) and the ENet transport, tested over an in-memory loopback and over UDP
   on 127.0.0.1.
+- Done: hosting and joining from the debug menus' Network page (ping, loss, bytes, players, a simulated bad network)
+  and from the command line (`--host`, `--join`, `--net-name`).
 
 - **Client and server.** The server runs the one true simulation at a fixed tick and never waits for a slow or
   lagging client. Clients send inputs, which are exactly what a pad or a brain writes to a human's per-player record

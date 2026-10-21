@@ -25,6 +25,12 @@ struct FrameHooks {
     std::function<bool()> beginFrame;
     /// Called at the end of each frame with the number of steps it ran, for frame-rate statistics.
     std::function<void(std::uint32_t steps)> endFrame;
+    /// Called for every due step, after its pads are sampled and before the mode on top updates; a step the step gate
+    /// holds is due too, so a paused game still calls it. Network play receives here (docs/guides/multiplayer.md).
+    std::function<void()> beforeStep;
+    /// Called for every due step after the mode on top updated (or the gate held it). Network play sends here, so a
+    /// step's result leaves in the same frame.
+    std::function<void()> afterStep;
 };
 
 /// What a run of the main loop did.

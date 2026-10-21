@@ -102,6 +102,18 @@ enum class ReferenceKind : std::uint8_t {
     Particles,  ///< Only the particle effects whose sprite is traced.
 };
 
+/// The UDP port network play uses unless told otherwise (net::kDefaultPort; options are below the network library).
+inline constexpr std::uint16_t kDefaultNetPort = 27615;
+
+/// Where `--host` listens or `--join` connects (docs/guides/multiplayer.md).
+struct NetEndpoint {
+    /// `--host`: the local address to listen on, empty for every interface. `--join`: the server's host name or
+    /// numeric IPv4 address, never empty.
+    std::string address;
+    /// The UDP port. `--host` may give 0: any free port, which the run prints.
+    std::uint16_t port = kDefaultNetPort;
+};
+
 /// Settings taken from the command line.
 struct Options {
     /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
@@ -264,6 +276,14 @@ struct Options {
     /// `--skip-movies`: every movie is skipped at once, as if it had ended
     /// (docs/research/movies.md#coneys-implementation).
     bool skipMovies = false;
+    /// `--host [[ADDR:]PORT]`: host a network game from the start, listening on PORT (default kDefaultNetPort) of
+    /// ADDR (default every interface). Cannot be combined with `--join`.
+    std::optional<NetEndpoint> netHost;
+    /// `--join ADDR[:PORT]`: join the network game at ADDR from the start. Cannot be combined with `--host`.
+    std::optional<NetEndpoint> netJoin;
+    /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
+    /// it is a valid one (1 to 32 printable ASCII characters).
+    std::optional<std::string> netName;
 };
 
 /// The largest `--fps-cap`.

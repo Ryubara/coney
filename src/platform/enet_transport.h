@@ -46,6 +46,9 @@ class EnetTransport final : public net::Transport {
     [[nodiscard]] std::optional<net::TransportEvent> poll() override;
     void flush() override;
     void disconnect(net::PeerId peer) override;
+    /// True once ENet has reported every connection gone: a closing one goes after the far end acknowledges the
+    /// packets queued before the close (or times out).
+    [[nodiscard]] bool closed() const override { return m_peers.empty(); }
     [[nodiscard]] std::uint16_t boundPort() const override { return m_port; }
     [[nodiscard]] net::TransportStats stats() const override { return m_stats; }
 

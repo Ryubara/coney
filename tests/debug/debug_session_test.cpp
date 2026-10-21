@@ -70,10 +70,26 @@ TEST_CASE("every page of a session opens and every item on it is well formed", "
     tunables.add("Movement", "Run speed", &speed).range(0, 10, 0.5);
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto root = session.model().root();
-    CHECK(session.model().pageTitles() ==
-          std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels", "Missions",
-                                   "Movies", "Player", "Camera", "Spawner", "AI fighters", "Animation player", "HUD",
-                                   "Debug draw", "Entity inspector", "Display", "Audio", "Input"});
+    CHECK(session.model().pageTitles() == std::vector<std::string>{"Time",
+                                                                   "Tunables",
+                                                                   "Natives",
+                                                                   "Lua console",
+                                                                   "Cheats",
+                                                                   "Levels",
+                                                                   "Missions",
+                                                                   "Movies",
+                                                                   "Player",
+                                                                   "Camera",
+                                                                   "Spawner",
+                                                                   "AI fighters",
+                                                                   "Animation player",
+                                                                   "HUD",
+                                                                   "Debug draw",
+                                                                   "Entity inspector",
+                                                                   "Display",
+                                                                   "Audio",
+                                                                   "Network",
+                                                                   "Input"});
     for (const MenuItem& top : root->items()) {
         checkWellFormed(top);
         const auto page = top.open();

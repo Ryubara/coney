@@ -99,6 +99,45 @@ TEST_CASE("ENet connects on 127.0.0.1, carries every delivery kind and closes", 
     CHECK_FALSE(client.send(*peer, Delivery::ReliableOrdered, packet("late")).has_value());
 }
 
+TEST_CASE("ENet's Bye of a closing transport arrives before the close once it reports closed", "[net][enet]") {
+    // ENet throws away a peer's undelivered packets when that peer's close arrives: a transport destroyed right behind
+    // its last reliable packet can lose it. One kept going until closed() delivers it first.
+    EnetTransport server;
+    REQUIRE(server.listen(ListenConfig{.port = 0, .maxPeers = 2, .bindAddress = "127.0.0.1"}).has_value());
+    std::optional<EnetTransport> client(std::in_place);
+    const auto peer = client->connect("127.0.0.1", server.boundPort());
+    REQUIRE(peer.has_value());
+    REQUIRE(next(*client, server).kind == TransportEventKind::Connected);
+    REQUIRE(next(server, *client).kind == TransportEventKind::Connected);
+    CHECK_FALSE(client->closed());
+
+    REQUIRE(client->send(*peer, Delivery::ReliableOrdered, packet("bye")).has_value());
+    client->disconnect(*peer);
+    client->flush();
+    std::vector<TransportEvent> events;
+    for (int i = 0; i < 400 && !client->closed(); ++i) {
+        (void)client->waitForEvent(5);
+        while (client->poll()) {
+        }
+        (void)server.waitForEvent(5);
+        while (auto event = server.poll()) {
+            events.push_back(std::move(*event));
+        }
+    }
+    REQUIRE(client->closed());
+    client.reset();
+    for (int i = 0; i < 400 && (events.empty() || events.back().kind != TransportEventKind::Disconnected); ++i) {
+        (void)server.waitForEvent(10);
+        while (auto event = server.poll()) {
+            events.push_back(std::move(*event));
+        }
+    }
+    REQUIRE(events.size() == 2);
+    CHECK(events[0].kind == TransportEventKind::Received);
+    CHECK(text(events[0].data) == "bye");
+    CHECK(events[1].kind == TransportEventKind::Disconnected);
+}
+
 TEST_CASE("ENet refuses an address that does not resolve and a second listen", "[net][enet]") {
     EnetTransport transport;
     CHECK_FALSE(transport.connect("", 1).has_value());

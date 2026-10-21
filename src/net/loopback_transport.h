@@ -58,6 +58,8 @@ class LoopbackTransport final : public Transport {
     /// Nothing to do: send() delivers at once.
     void flush() override {}
     void disconnect(PeerId peer) override;
+    /// True with no connection: the loopback closes one at once.
+    [[nodiscard]] bool closed() const override { return m_peers.empty(); }
     [[nodiscard]] std::uint16_t boundPort() const override { return m_port; }
     [[nodiscard]] TransportStats stats() const override { return m_stats; }
 
