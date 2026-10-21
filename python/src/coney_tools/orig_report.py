@@ -38,9 +38,10 @@ def render_index_tsv(rows: list[IndexRow]) -> str:
 
 
 def render_untagged_tsv(result: IndexResult) -> str:
-    """One line per untagged gameplay function: where, the function, its kind and its length in lines."""
-    lines = ["where\tconey_function\tkind\tlines"]
-    lines += [f"{u.where}\t{u.coney}\t{u.kind}\t{u.lines}" for u in result.index.untagged]
+    """One line per untagged gameplay function: where, the function, its kind, its length in lines and 1 when it
+    needs no tag or marker (orig_index.is_exempt)."""
+    lines = ["where\tconey_function\tkind\tlines\texempt"]
+    lines += [f"{u.where}\t{u.coney}\t{u.kind}\t{u.lines}\t{int(u.exempt)}" for u in result.index.untagged]
     return "\n".join(lines) + "\n"
 
 
@@ -57,14 +58,15 @@ def summary_lines(result: IndexResult) -> list[str]:
     """The counts `orig index` prints and puts at the top of its report."""
     index, research = result.index, result.research
     unique = len({r.address for r in index.rows})
-    kinds = Counter(u.kind for u in index.untagged)
+    kinds = Counter(u.kind for u in index.untagged if not u.exempt)
+    exempt = sum(u.exempt for u in index.untagged)
     problems = Counter(f.problem for f in result.findings)
     lines = [
         f"tags: {len(index.rows):,} in {len({r.path for r in index.rows}):,} files ({index.files:,} read), "
         f"{unique:,} original functions, {len(index.malformed):,} malformed",
         f"gameplay functions: {index.in_scope:,} defined; {index.tagged:,} tagged, {index.marked:,} marked "
-        f"@coney-only, {index.marked_legacy:,} marked by the older wording, {len(index.untagged):,} neither "
-        f"({', '.join(f'{n:,} {k}' for k, n in sorted(kinds.items()))})",
+        f"@coney-only, {index.marked_legacy:,} marked by the older wording, {exempt:,} exempt, "
+        f"{len(index.untagged) - exempt:,} neither ({', '.join(f'{n:,} {k}' for k, n in sorted(kinds.items()))})",
         f"ghidra ({result.ghidra_source}): "
         + (", ".join(f"{problems[p]:,} {p}" for p in PROBLEMS) if result.ghidra_source != "none" else "not checked"),
     ]

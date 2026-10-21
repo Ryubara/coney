@@ -245,6 +245,8 @@ def rank(inputs: QueueInputs) -> list[Entry]:
             entry.add("linked page lacks this address", WEIGHTS["page-lacks-address"])
         entries.append(entry)
     for function in inputs.untagged:
+        if function.exempt:
+            continue  # needs neither a tag nor a marker (orig_index.is_exempt)
         path = function.where.rsplit(":", 1)[0]
         entry = Entry(
             function.where, f"{function.coney} (untagged {function.kind})", _directory(path), [function.where]

@@ -28,11 +28,6 @@ from coney_tools.progress_research import claim_blocks
 SOURCE_DIR = Path("src")
 RESEARCH_DIR = Path("docs/research")
 SOURCE_SUFFIXES = frozenset({".h", ".hpp", ".cpp", ".cc", ".inl"})
-#: The directories of `src/` that are Coney's own by nature: the operating system, SDL3 and librw (`platform`), the
-#: engine's plumbing (`core`, `fileio`), the debug tools, network play and the sandbox. Every other directory holds the
-#: game's behaviour, where each function either reimplements one of the original's (an `@orig` tag) or says it is
-#: Coney's own, so a new directory is in scope until it is listed here.
-CONEY_ONLY_DIRS = ("platform", "core", "fileio", "debug", "net", "sandbox")
 _ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
 #: A research link cut after a hyphen of its anchor at a line's end, and the next line's comment opener.
 _WRAPPED_LINK = re.compile(r"(docs/research/[A-Za-z0-9_./-]+?\.md#[A-Za-z0-9_-]*-)[ \t]*\r?\n[ \t]*(?://+!?|\*)?[ \t]*")
@@ -75,6 +70,14 @@ class Untagged:
     coney: str
     kind: str  # "member", "free", "helper" (a file's private function) or "inline" (a member defined in its class)
     lines: int
+    exempt: bool = False  # needs no tag or marker: a one-statement inline member, an empty constructor or destructor
+
+    @property
+    def key(self) -> tuple[str, str, str]:
+        """(file, scope, name): what the function is recognised by at another commit."""
+        path = self.where.rsplit(":", 1)[0]
+        scope, _, name = self.coney.rpartition("::")
+        return (path, scope, name)
 
 
 @dataclass(frozen=True)
@@ -204,12 +207,6 @@ def build_rows(sources: list[SourceFile]) -> list[IndexRow]:
     return rows
 
 
-def _directory(path: str) -> str:
-    """The `src/` directory a repository path is in."""
-    parts = PurePosixPath(path).parts
-    return parts[1] if len(parts) > 2 else ""
-
-
 def _stem(path: str) -> tuple[str, str]:
     """(directory path, file stem): what a header and its source file share."""
     pure = PurePosixPath(path)
@@ -308,30 +305,54 @@ def _kind(function: Function) -> str:
     return "member" if function.scope else "free"
 
 
-def build_index(root: Path, coney_only: tuple[str, ...] = CONEY_ONLY_DIRS) -> Index:
-    """The index of `root`'s source: the tag rows and the gameplay functions that are neither tagged nor marked."""
-    sources = read_sources(root)
+def is_exempt(function: Function) -> bool:
+    """Whether a function needs neither `@orig` nor `@coney-only` (docs/guides/conventions.md#coney-only): a member
+    defined in its class whose body is at most one statement (an accessor, a setter, a forwarder), or a
+    constructor or destructor with an empty body. A file's private helpers are not exempt."""
+    if function.blocks:
+        return False
+    if function.in_class and function.statements <= 1:
+        return True
+    last = function.scope.rsplit("::", 1)[-1]
+    special = function.name.startswith("~") or (bool(last) and function.name == last)
+    return special and function.statements == 0
+
+
+def find_untagged(
+    sources: list[SourceFile], gameplay: tuple[str, ...], paths: set[str] | None = None
+) -> tuple[list[Untagged], dict[str, int]]:
+    """The functions defined in the `gameplay` folders (or only in `paths` among them) with no tag and no marker, and
+    the counts of what was looked at: `in_scope`, `tagged`, `marker` and `legacy` (the older wording)."""
     coverage = _Coverage(sources)
     untagged: list[Untagged] = []
-    counts = {"tagged": 0, "marker": 0, "legacy": 0}
-    in_scope = 0
+    counts = {"in_scope": 0, "tagged": 0, "marker": 0, "legacy": 0}
     for source in sources:
-        if _directory(source.path) in coney_only or not _directory(source.path):
+        if not source.path.startswith(gameplay) or (paths is not None and source.path not in paths):
             continue
         for function in source.functions:
             if not function.body:
                 continue
-            in_scope += 1
+            counts["in_scope"] += 1
             state = coverage.lookup(function)
             if state:
                 counts[state] += 1
                 continue
             where = f"{function.path}:{function.line}"
-            untagged.append(Untagged(where, function.qualified, _kind(function), function.lines))
+            untagged.append(Untagged(where, function.qualified, _kind(function), function.lines, is_exempt(function)))
+    return untagged, counts
+
+
+def build_index(root: Path, gameplay: tuple[str, ...]) -> Index:
+    """The index of `root`'s source: the tag rows and the gameplay functions that are neither tagged nor marked.
+
+    `gameplay` is `paths.gameplay` of .github/conventions.yml (`src/ai/`, ...).
+    """
+    sources = read_sources(root)
+    untagged, counts = find_untagged(sources, gameplay)
     return Index(
         build_rows(sources),
         untagged,
-        in_scope,
+        counts["in_scope"],
         counts["tagged"],
         counts["marker"],
         counts["legacy"],

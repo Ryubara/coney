@@ -192,7 +192,8 @@ Everything that reimplements a function of the original game carries an `@orig` 
   the tag when research finds it.
 
 One tag per original function. A Coney function that does the work of two original functions carries two tags; a
-function with no original counterpart (our own glue, a helper the original inlined) carries none.
+helper that does part of an original function's work (a step the original inlined) carries that function's tag. A
+function with no original counterpart carries `@coney-only <reason>` instead ([Coney-only code](#coney-only)).
 
 **Every tag is counted.** In the same commit as the code, add a `[[function]]` block for each newly tagged original
 function to `docs/progress/functions.toml` (address, original name, subsystem and, when known, size), then run
@@ -254,7 +255,32 @@ private:
 } // namespace coney::io
 ```
 
-## Coney-only capabilities {#coney-only}
+## Coney-only code {#coney-only}
+
+Every function in a gameplay folder (`paths.gameplay` in [.github/conventions.yml](repo:.github/conventions.yml):
+`src/ai/`, `src/human/`, ...) says where it comes from: `@orig` for a reimplementation of the original function at
+that address in Ghidra, or `@coney-only <reason>` for code with no counterpart in the original (a test aid, a debug
+tool, platform glue, an enhancement), in its doc comment:
+
+```cpp
+/// Counts how often the target changed, for the all-humans trace (ai::FightTracer).
+/// @coney-only trace bookkeeping; the original keeps no such count
+std::uint32_t targetChanges() const;
+```
+
+The reason is a few words. A declaration's tag or marker covers its out-of-class definition, and a file that is wholly
+Coney's own says so once, in its header comment (`// @coney-only the debug menus' Time page; the original has
+none`). A file's private helpers (an anonymous namespace, `static`) are not exempt: one that does part of an original
+function's work carries that function's `@orig`, any other `@coney-only`. Exempt are only a member defined in its
+class whose body is one statement (an accessor, a setter, a forwarder) and a constructor or destructor with an empty
+body. The folders of `paths.coney_only` (`src/platform/`, `src/core/`, `src/fileio/`, `src/debug/`, `src/net/`,
+`src/sandbox/`) are Coney's own by nature and need no marker; every folder of `src/` is in one of the two lists.
+`coney-tools orig check` ([orig](coney-tools.md#orig)), run by `check changed` and CI, refuses a new function that
+says neither, and a new folder in neither list. The functions written before the rule are the fidelity audit's
+backlog (`orig index`); the older wording ("Coney's own", "(no @orig)") is still read as a marker until they are
+converted.
+
+### Coney-only capabilities {#coney-only-capabilities}
 
 Some code has no counterpart in the original: a debug tool, a test aid, an enhancement. When such a capability is
 something a script could plausibly want (flying a human, teleporting, spawning, pausing, reading or writing a
@@ -266,7 +292,7 @@ tunable), it is a future native of Coney's own ([Script mods](../roadmap.md#scri
   the status in the same commit as the registration. A capability that no script could use (a front end, a test aid
   such as `--frames`) is not listed.
 - **Keep its C++ API apart from reimplemented code.** The entry point is its own function, with no `@orig` tag and a
-  doc comment that says it is Coney's own and the original has nothing like it (`Human::setFlight()` is the model).
+  `@coney-only` marker that says the original has nothing like it (`Human::setFlight()` is the model).
   Never hang it on an `@orig` function, add a flag to one, or let one call it: the original's behaviour must read the
   same with every Coney capability off. Its natives live in the `Coney` table and never appear in
   `research/bindings/`, which describes only the original's 956.

@@ -227,3 +227,23 @@ def test_nested_braces_in_a_brace_initializer_keep_the_constructor() -> None:
     )
     found = [(f.qualified, f.line) for f in read_source("src/ai/a.cpp", text).functions]
     assert found == [("A::A", 2), ("B::B", 3), ("C::C", 4), ("after", 5)]
+
+
+def test_a_body_counts_its_statements_and_inner_blocks() -> None:
+    text = (
+        "namespace x {\n"
+        "struct S {\n"
+        "    int get() const { return m_v; }\n"
+        "    S() {}\n"
+        "    void work() {\n"
+        "        if (m_v) {\n"
+        "            m_v = 0;\n"
+        "        }\n"
+        "        m_v = 2;\n"
+        "    }\n"
+        "    int m_v = 0;\n"
+        "};\n"
+        "}\n"
+    )
+    found = {f.name: (f.statements, f.blocks) for f in read_source("src/ai/s.h", text).functions}
+    assert found == {"get": (1, 0), "S": (0, 0), "work": (2, 1)}

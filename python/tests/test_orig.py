@@ -7,11 +7,14 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from conventions_support import write_checkout
 
 from coney_tools import orig_cli, orig_ghidra, orig_index, orig_queue, orig_report
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.progress_research import ListedFunction
+
+GAMEPLAY = ("src/ai/",)
 
 BRAIN_H = """// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
@@ -78,7 +81,7 @@ LISTING = """# header
 @pytest.fixture
 def checkout(tmp_path: Path) -> Path:
     """A made-up checkout: a gameplay directory with a brain, a debug directory, a research page and a listing."""
-    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    write_checkout(tmp_path)
     files = {
         "src/ai/brain.h": BRAIN_H,
         "src/ai/brain.cpp": BRAIN_CPP,
@@ -93,7 +96,7 @@ def checkout(tmp_path: Path) -> Path:
 
 
 def test_every_tag_is_indexed_with_its_coney_function_and_research(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     rows = [(f"0x{r.address:08x}", r.name, r.file, r.coney, r.where, r.research) for r in index.rows]
     assert rows == [
         (
@@ -116,16 +119,20 @@ def test_every_tag_is_indexed_with_its_coney_function_and_research(checkout: Pat
 
 
 def test_untagged_gameplay_functions_are_listed_and_marked_ones_are_not(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
-    untagged = {u.coney: u.kind for u in index.untagged}
+    index = orig_index.build_index(checkout, GAMEPLAY)
+    untagged = {u.coney: (u.kind, u.exempt) for u in index.untagged}
     # think/wait take their declaration's tags; count has the older wording; debugDump the marker; the debug
     # directory is out of scope.
-    assert untagged == {"Brain::size": "inline", "helper": "helper", "Brain::forget": "member"}
+    assert untagged == {
+        "Brain::size": ("inline", True),
+        "helper": ("helper", False),
+        "Brain::forget": ("member", False),
+    }
     assert (index.in_scope, index.tagged, index.marked, index.marked_legacy) == (7, 2, 1, 1)
 
 
 def test_research_sections_without_an_address_are_reported(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     report = orig_index.check_research(checkout, index.rows)
     assert [(g.link, g.heading) for g in report.gaps] == [("docs/research/made-up.md#thinking", "Thinking")]
     assert report.missing == [] and report.unlinked == []
@@ -135,7 +142,7 @@ def test_research_sections_without_an_address_are_reported(checkout: Path) -> No
 
 def test_a_link_to_a_missing_section_is_reported(checkout: Path) -> None:
     (checkout / "src/ai/brain.h").write_text(BRAIN_H.replace("#thinking", "#gone"), encoding="utf-8")
-    report = orig_index.check_research(checkout, orig_index.build_index(checkout).rows)
+    report = orig_index.check_research(checkout, orig_index.build_index(checkout, GAMEPLAY).rows)
     assert [g.link for g in report.missing] == ["docs/research/made-up.md#gone"]
 
 
@@ -163,7 +170,7 @@ def test_names_are_compared_without_case_punctuation_or_a_wrapper_prefix(
 
 
 def test_the_listing_check_finds_starts_and_names(checkout: Path) -> None:
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     listing = [ListedFunction(0x00100010, 0x40, "Brain_Think", True), ListedFunction(0x00100100, 16, "X_Y", False)]
     findings = orig_ghidra.check_listing(index.rows, listing)
     assert [(f.row.address, f.problem, f.start) for f in findings] == [(0x00100020, "not-a-start", 0x00100010)]

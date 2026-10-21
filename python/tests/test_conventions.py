@@ -260,6 +260,12 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         r"a heading is used twice",
     ),
     ("a form without sections", (("issues.forms.bug.sections", {}),), r"forms\.bug\.sections: expected a non-empty"),
+    ("a gameplay entry that is not a src/ folder", (("paths.gameplay", ["ai/"]),), r"paths\.gameplay: 'ai/'"),
+    (
+        "a folder both gameplay and Coney-only",
+        (("paths.coney_only", ["src/ai/", "src/debug/"]),),
+        r"paths\.coney_only: 'src/ai/' is also in paths\.gameplay",
+    ),
 ]
 
 
@@ -405,3 +411,9 @@ def test_the_runtime_section_must_be_one_of_the_sections() -> None:
 def test_a_misspelled_runtime_key_is_refused() -> None:
     with pytest.raises(ConventionsError, match=r"pull_requests\.runtime"):
         conventions_with(("pull_requests.runtime.area", ["gameplay"]))
+
+
+def test_the_gameplay_and_coney_only_folders_are_read() -> None:
+    paths = conventions_with().paths
+    assert "src/ai/" in paths.gameplay and "src/debug/" in paths.coney_only
+    assert paths.gameplay_dir("src/ai/brain.cpp") and not paths.gameplay_dir("src/debug/menu.cpp")

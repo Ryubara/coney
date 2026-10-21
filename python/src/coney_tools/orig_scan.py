@@ -81,6 +81,8 @@ class Function:
     def signature(self) -> tuple[str, str, str]:
         """(scope, name, parameter types): what a declaration and its definition share, overloads apart."""
         return (self.scope, self.name, self.params)
+    statements: int = 0  # `;` in its body, nested ones included: an accessor's `return m_x;` is 1
+    blocks: int = 0  # braces opened inside its body (an `if`, a loop, a lambda, a brace initializer)
 
     @property
     def qualified(self) -> str:
@@ -319,6 +321,9 @@ class _Reader:
         raw = "".join(self.statement)
         statement = _clean_statement(raw)
         if not self._at_declaration_level():
+            inside = self._in_function()
+            if inside is not None:
+                inside.blocks += 1
             self.stack.append(_Frame("block"))
             self._reset_statement()
             return
@@ -377,6 +382,10 @@ class _Reader:
                 self._drop_lead(statement[:40])
             elif not statement:
                 self._drop_lead("(empty)")
+        else:
+            inside = self._in_function()
+            if inside is not None:
+                inside.statements += 1
         self._reset_statement()
 
     # --- the pass -------------------------------------------------------------------------------------------------

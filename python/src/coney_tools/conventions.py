@@ -112,6 +112,14 @@ class Paths:
     #: The only files that may hold the repository's or the docs site's address.
     address_allowed_in: tuple[str, ...]
     large_file_kb: int
+    #: The folders of `src/` (`src/ai/`) whose functions carry `@orig` or `@coney-only` (`coney-tools orig check`).
+    gameplay: tuple[str, ...]
+    #: The folders of `src/` that are Coney's own by nature, whose functions need neither.
+    coney_only: tuple[str, ...]
+
+    def gameplay_dir(self, path: str) -> bool:
+        """Whether the repository-relative `path` is in one of the `gameplay` folders."""
+        return path.startswith(self.gameplay)
 
     def is_code(self, path: str) -> bool:
         """Whether the repository-relative `path` (forward slashes) is under one of the `code` prefixes."""
@@ -835,8 +843,15 @@ def _read_paths(data: object, where: str) -> Paths:
         "pointer_files",
         "address_allowed_in",
         "large_file_kb",
+        "gameplay",
+        "coney_only",
     )
     table = _table(data, where, keys)
+    gameplay = _source_folders(table["gameplay"], _at(where, "gameplay"))
+    coney_only = _source_folders(table["coney_only"], _at(where, "coney_only"))
+    for folder in coney_only:
+        if folder in gameplay:
+            raise _fail(_at(where, "coney_only"), f"'{folder}' is also in {_at(where, 'gameplay')}")
     pointer = _table(table["pointer_files"], _at(where, "pointer_files"), ("files", "line", "max_bytes"))
     pointer_where = _at(where, "pointer_files")
     return Paths(
@@ -853,7 +868,18 @@ def _read_paths(data: object, where: str) -> Paths:
         ),
         address_allowed_in=_texts(table["address_allowed_in"], _at(where, "address_allowed_in")),
         large_file_kb=_count(table["large_file_kb"], _at(where, "large_file_kb")),
+        gameplay=gameplay,
+        coney_only=coney_only,
     )
+
+
+def _source_folders(value: object, where: str) -> tuple[str, ...]:
+    """A list of top-level folders of `src/`, each written `src/<name>/`."""
+    folders = _texts(value, where)
+    for folder in folders:
+        if not re.fullmatch(r"src/[A-Za-z0-9_]+/", folder):
+            raise _fail(where, f"'{folder}' is not a folder of src/ written src/<name>/")
+    return folders
 
 
 def _read_title(data: object, where: str) -> TitleRules:
