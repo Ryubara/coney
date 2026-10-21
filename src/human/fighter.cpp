@@ -60,6 +60,7 @@ float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot
 constexpr int kQuarteredClass = 0x80;
 
 // A quarter of `damage` as the original takes it, an arithmetic shift right by 2 (`sra`), which rounds down.
+// @orig 0x00264bd8 Human_AddPendingDamage (unknown)
 int quarterOf(int damage) { return damage >= 0 ? damage / 4 : -((-damage + 3) / 4); }
 
 } // namespace

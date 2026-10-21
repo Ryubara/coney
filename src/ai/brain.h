@@ -190,6 +190,7 @@ class Brain {
   public:
     /// The brain of `human` (not owned; it must outlive the brain) of `type`, fighting by `settings`, its rolls drawn
     /// from a generator seeded with `seed`. Enabled, with no goals, no actions and no target.
+    /// @coney-only object set-up; it hands the human its brain's type, which the original reads in place
     Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed);
     Brain(const Brain&) = delete;
     Brain& operator=(const Brain&) = delete;
@@ -224,6 +225,7 @@ class Brain {
     /// Its human's character class (`HuCreate`'s type, which `GoalDealer` reads); -1 when not known. Setting it gives
     /// it to the human too (human `+0xcc`, which a Warrior's damage reads).
     [[nodiscard]] int characterClass() const { return m_characterClass; }
+    /// @coney-only setter that gives the class to the human too
     void setCharacterClass(int characterClass);
     /// "Dead" to the AI (`+0x09`, `BrDead`): the actions are cleared (the goals stay) and the handlers installed
     /// again. A dead brain runs only the goals and actions it is given: its think and its event handler do nothing,
