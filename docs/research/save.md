@@ -199,7 +199,7 @@ and the defaults above, slots 1-5 were empty records. A string `BASLUS-21215/bug
 **Integrity**: no checksum or CRC. Loading checks the three files' sizes (`0x0041fcc8`: `WARR.ICO` 79,128,
 `icon.sys` 964, the data file the image length; any other size is "corrupt") and each header's version (`0x11`; another
 sets `ss + 0x11c`). **Space**: a new save needs `round_up_5(ceil(7,704 / 1024) + 83)` = **95 KB** free (`0x0041fb78`);
-the check is made only when the directory does not exist yet. Confirmed (code).
+the check is made only when the directory is absent. Confirmed (code).
 
 **The card state machine** (`ss + 0x184`, one step per frame from `PS2Save_Service`): 1 idle; 2 detect (after slot
 `+0xf4`); 3 format (slot `+0x11c`); 4 **create**: make the directory, write a zeroed data file, read `WARR.ICO` from the
@@ -310,7 +310,8 @@ hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from 
 ### Game-state functions {#warriors-functions}
 
 Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+workers) that belong to this page, by address; each is confirmed (code) at its address unless its row says
+otherwise.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -344,7 +345,7 @@ workers) that belong to this page, by address.
 | `0x00423200` / `0x00423280` / `0x00423300` | `Stats_WriteBests` / `Stats_ReadBests` / `Stats_BestsSize` | write / read the 0x168-byte best records (`0x006fe790`) to or from the profile file (from `Profile_Write` / `Profile_Read`); the size is 0x168 | confirmed (code) |
 | `0x00424a20` / `0x00424b90` | `Unlockables_Write` / `Unlockables_Read` | write / read the locked set then the new set, twenty 32-bit words each, to or from the profile file | confirmed (code) |
 
-## What Coney stores instead of a memory card {#coney}
+## Coney's implementation: what Coney stores instead of a memory card {#coney}
 
 Coney keeps each profile as one file holding the 1,284-byte record above (same fields and order, little-endian) in the
 platform's per-user data folder, writes it whenever the original would autosave, and has no format, space or icon
@@ -373,7 +374,7 @@ dialogs.
   for the run only (the original's fields past the saved words are not named).
 - The pause menu's Options screen ([Pause menu](pause.md#coneys-implementation)) writes its values into the game
   state as the setters above do (`storeOptionValues` in `repo:src/gamemodes/pause_mode.h`), so the autosave keeps them.
-- Not yet: the money bank's adds (Coney has no inventories).
+- Not implemented: the money bank's adds (Coney has no inventories).
 - **Coney's choices**: bit *i* of the unlockable and script-flag sets is byte *i* / 8, bit *i* % 8 (the little-endian
   layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero; the date and time a
   slot keeps (`+0x16`) are not stored; the fourth-difficulty unlock (slot `+0xb4`) leaves the "every story level
