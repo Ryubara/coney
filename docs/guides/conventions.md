@@ -153,8 +153,8 @@ nothing in Coney reads from a DVD drive directly.
 
 ## Comments and @orig {#comments-and-orig}
 
-Coney's comments are written for someone who will hand-write their own version of the subsystem from our code and
-docs alone, and for a reviewer reading a diff without the docs open. That sets these rules.
+Coney's comments are written for someone who needs to find where a behaviour lives in the original and port it, and
+for a reviewer reading a diff without the docs open. That sets these rules.
 
 1. **Every public type and function has a doc comment** (`///`), saying what it is for, what it returns and how it
    fails. A reader should be able to use it without opening the `.cpp`.

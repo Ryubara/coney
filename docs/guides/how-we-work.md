@@ -3,7 +3,7 @@
 This page is the map of Coney's reverse-engineering process: what happens between the original game and a line of
 Coney code, which tools sit at each step, and how many people (or agents) work at once without stepping on each
 other. It stays high level and links to the guide that holds the detail. Read it first; read the linked guide when
-you are about to do that step.
+you are about to do that step. [How the work is run](#how-it-runs) explains who does what, for a newcomer.
 
 ## The pipeline
 
@@ -22,11 +22,14 @@ Every feature goes through the same steps:
    memory reads fill in what neither shows alone.
 3. **Write it down.** The finding goes on a research page in `docs/research/`, in prose, with the address it comes
    from and an [evidence level](research-workflow.md#evidence-levels) on every claim.
-4. **Implement it.** The engineer first re-reads the addresses the page cites in Ghidra and records any disagreement on
-   the page ([the runtime comparison](testing.md#runtime-comparison)). Then the same behaviour is run in Coney: where
-   Coney already has it, the engineer adjusts it until it matches the recording; where it does not, adds it. Coney's
-   version is in Coney's own code and cites the original with `@orig` plus the page link
-   ([Conventions](conventions.md)).
+4. **Implement it.** The engineer ports the behaviour from the original function at its address in Ghidra. The
+   research page is the map to that function (which one, where, what it touches), not the source of its logic: the
+   logic is read from the function itself, and any disagreement with the page's cited addresses is recorded on the
+   page ([the runtime comparison](testing.md#runtime-comparison)). The engineer then writes Coney's own code for it,
+   tests first, and tags it with `@orig` and the page link ([Conventions](conventions.md#comments-and-orig)). Where
+   Coney already has the behaviour, the engineer adjusts it until it matches the original and the recording; where it
+   does not, adds it. Code with no original counterpart (networking, the launcher, debug tooling, enhancements) is
+   the exception: it carries no `@orig` tag and is checked by its own tests.
 5. **Compare.** Work a player sees is checked against the original running, not only against our reading of its code:
    the same scenario runs on both games, or the same moment is taken from a PCSX2 save state and from Coney, and
    traces, values or frames are compared ([Comparing with Coney](research-workflow.md#comparing-with-coney),
@@ -41,14 +44,78 @@ editing their attributes and the player's stats, giving the crew orders, raising
 checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipe` (being added,
 issue #533). Until it lands, the techniques are in [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
+## How the work is run {#how-it-runs}
+
+Coney is written by agents (AI models) under a maintainer, and a person can take any of the same roles. The parts:
+
+- **The maintainer decides.** What only a maintainer may decide is a short list in [AGENTS.md](repo:AGENTS.md);
+  everything else is decided by the coordinator or the engineer on the spot.
+- **The coordinator runs the work** day to day: it starts and briefs engineers, keeps the state, pushes finished
+  units and merges ([The coordinator](#coordinator)).
+- **Engineers each own one issue or unit.** An engineer works in its own worktree and branch, briefed as
+  [Briefing](agents.md#briefs) describes (a brief may be just "issue #N"), follows the [pipeline](#the-pipeline)
+  above, commits locally and hands the finished unit over. The model is chosen per task
+  ([Which model](agents.md#models)).
+- **Reviewers read what someone else wrote** and report; they never edit. `reviewer` takes code, tests, tools, docs and
+  commits, `research-reviewer` takes research pages and the research database, and `pr-reviewer` takes every pull
+  request description before it is pushed ([The description review](#pr-review); the roles are in
+  [Setting up an agent tool](agents.md#setup)).
+- **The release queue** is how work reaches GitHub: engineers never push; the coordinator does, when CI has room
+  ([below](#release-queue)).
+- **Tether wakes the coordinator.** Between turns the coordinator sees nothing, so the Tether plugin starts a turn
+  when there is new work ([Let Tether wake it](#coordinator)).
+
+### Standing teams {#teams}
+
+Five teams are kept staffed at all times. When an engineer finishes or stops, the coordinator starts the next one
+from that team's list at once instead of waiting; many issues are in work together, one engineer each, and two
+engineers never work in the same functions.
+
+1. **Reimplementation:** functions of the original that Coney has not ported yet, and the open feature issues.
+2. **Missions:** building the missions and fixing their checkpoints (`research/missions.yaml`).
+3. **Bug fixing:** the open bug issues, highest priority first.
+4. **Repo steward:** reads GitHub (issues, pull requests, CI, labels) and the workspace and proposes: triage, red or
+   stuck pull requests, audit findings. It writes nothing to GitHub; the coordinator applies what it proposes
+   ([Issues](#issues)).
+5. **Fidelity audit:** compares existing code with the original ([below](#fidelity-audit)).
+
+## The fidelity audit {#fidelity-audit}
+
+Code that predates porting from the original function, or was ported from a quick reading, can differ from the
+original in ways nobody has noticed. The audit is the standing team that looks for exactly that, since gameplay
+matches the original exactly until the game is complete ([AGENTS.md](repo:AGENTS.md)). It works through the code one
+subsystem at a time, in the order of the `@orig` index, and avoids files that other open branches change.
+
+- **Compare function by function.** For each function that carries an `@orig` tag, the engineer opens the original
+  function at that address in Ghidra and reads it next to Coney's. Where the code leaves a point unclear, the engineer
+  runs the original in PCSX2, inside a claim, and reads the values
+  ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
+- **Fix what differs, with a test.** Each fix comes with a test that fails before it and passes after
+  ([Testing](testing.md)). A difference that is deliberate (a PC platform call in place of a PS2 one) stays, and its
+  comment says why. A fix a player sees is a gameplay pull request like any other and carries a `Runtime:` line
+  ([the Runtime line](testing.md#runtime-line)).
+- **Research pages keep their structure and gain references.** Next to each behaviour a page describes, the audit adds
+  the address and name of the original function where its logic lives, so the next engineer is sent to the function.
+  A claim is rewritten only when the original contradicts it, with the address and evidence level
+  ([Evidence levels](research-workflow.md#evidence-levels)).
+- **Coney-only code is out of scope:** networking, the launcher, debug tooling and enhancements have no original
+  function to compare with.
+- **The `@orig` index** is a tool that lists every tagged function with the research page that covers it and what has
+  been compared, so the audit can be ordered and its progress seen. It is being written; this page names its commands
+  once it has landed.
+
+The audit's output is ordinary units: a branch of fixes, tests and page references per pull request, handed to the
+[release queue](#release-queue).
+
 ## One role: the engineer {#engineer}
 
 An engineer studies the original (Ghidra through ghidra-mcp, the running game through the pcsx2 MCP server), writes
 research pages where they help and implements the result in engine code and tests
 ([Studying the original](research-workflow.md#studying-the-original)). An answer worth keeping lands on the page, not
 in a private message, and no game data ever goes in the repository ([LEGAL.md](repo:LEGAL.md#no-game-data)).
-What a page must hold to be coded from, with three real features traced to the merged result, is in
-[From research to code](research-to-code.md).
+The page points the next engineer at the original function and records what was learned from it; the logic itself is
+ported from the function at its address. How a page and the function work together, with three real features traced
+to the merged result, is in [From research to code](research-to-code.md).
 
 ## The tools
 
@@ -138,7 +205,7 @@ coordinator, who pushes them when CI has room.
   trivial, otherwise to a small fresh agent ([When a pull request fails checks](agents.md#ci-failures)); never back
   to the agent that wrote the unit.
 - **A description is public:** the rules of a research page apply (addresses and short findings, no game data and
-  no decompiler output).
+  no pasted function listings).
 
 ### The description review {#pr-review}
 
@@ -290,9 +357,10 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
 - **Tidy after every merge round and once a week.** Run the `/repo-hygiene` skill: it audits the issues, pull requests,
   labels and workspace and fixes each finding by its class ([Merging safely](#merging)).
-- **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
-  subsystems that differ from the original, missions still to build (several at a time, one per track). The
-  priorities are on the [roadmap](../roadmap.md#priorities).
+- **Keep every team staffed.** The [standing teams](#teams) are never left empty: when an engineer finishes, the
+  next open item of that team's list gets an engineer at once (unfinished fixes, subsystems that differ from the
+  original, missions still to build, the audit's next subsystem), one issue per engineer. The priorities are on the
+  [roadmap](../roadmap.md#priorities).
 - **Merge on the automated gate, not on play-tests.** Pull requests merge once the
   [checks](testing.md#local-gate) pass; the coordinator fixes small gate failures (lint, formatting, generated
   pages) itself instead of sending the work back.
