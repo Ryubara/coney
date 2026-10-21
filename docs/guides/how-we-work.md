@@ -17,11 +17,14 @@ Every feature goes through the same steps:
    memory reads and writes, scripted input, per-update traces and reference frames.
 3. **Write it down.** The finding goes on a research page in `docs/research/`, in prose, with the address it comes
    from and an [evidence level](research-workflow.md#evidence-levels) on every claim.
-4. **Implement it.** The engineer writes Coney's version in Coney's own code and cites the original with `@orig`
-   plus the page link ([Conventions](conventions.md)).
-5. **Compare.** The same scenario runs on both games, and traces or frames are compared
-   ([Comparing with Coney](research-workflow.md#comparing-with-coney)). A difference goes back to step 1 or 4 as a
-   question or a fix.
+4. **Implement it.** The engineer first re-reads the addresses the page cites in Ghidra and records any disagreement on
+   the page ([the runtime comparison](testing.md#runtime-comparison)); then writes Coney's version in Coney's own code
+   and cites the original with `@orig` plus the page link ([Conventions](conventions.md)).
+5. **Compare.** Work a player sees is checked against the original running, not only against our reading of its code:
+   the same scenario runs on both games, or the same moment is taken from a PCSX2 save state and from Coney, and
+   traces, values or frames are compared ([Comparing with Coney](research-workflow.md#comparing-with-coney),
+   [the runtime comparison](testing.md#runtime-comparison)). A difference goes back to step 1 or 4 as a question or a
+   fix. The pull request states the result in its `Runtime:` line.
 6. **Merge.** Finished work goes to `main` after the full set of checks.
 
 ## One role: the engineer {#engineer}
@@ -134,6 +137,12 @@ opens every picture, and writes a verdict: whether each picture shows what the t
 loading screen or menu; the right level; before and after that differ), whether each claim in Summary and Testing is
 backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later, that `Docs: none` is allowed and
 that AI use is filled.
+For a title in an area a player sees (`gameplay`, `graphics`, `audio`), `check-body` already requires the Testing
+section's `Runtime:` line ([What a pull request shows](testing.md#runtime-line)); the reviewer checks that it is
+**true**. It refuses a `Runtime:` line with no log, trace or capture behind it in the scratch folder (a trace diff's
+output, the PCSX2 reads or the two pictures, with the numbers the line quotes), and a `Runtime: none (<reason>)` whose
+reason is only convenience ("not checked", "no time", "the copy was busy") when a PCSX2 copy and the save states were
+available: the original could have been run, so the comparison is made or the pull request waits.
 The gate also holds the `Model:` line to the branch's commits: `repo check-review` (or `repo check-body --worktree`)
 refuses a line that does not name every model a `Co-Authored-By` trailer on them credits; CI cannot, having no commits
 ([the Model line](coney-tools.md#repo-model-line)).

@@ -170,6 +170,13 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         + f" or a line `{shots.none} (<reason>)`"
         + (" that gives a reason." if shots.reason == "required" else ".")
     )
+    runtime = rules.runtime
+    lines += _bullet(
+        f"{runtime.section}: when the title's area is one a player sees ({_codes(runtime.areas)}), a line starting "
+        f"`{runtime.line}` with the evidence from the original running (a trace diff, an event diff, or named PCSX2 "
+        f"captures or reads compared with Coney's, with numbers) or `{runtime.none} (<reason>)`. It is checked given "
+        "the title (CI's `body` job and `repo check-review` give it)."
+    )
     ai = rules.ai_use
     lines += _bullet(
         f"{ai.section}: after `{ai.written_by.label}` one of {_codes(ai.written_by.choices)}; unless it is "

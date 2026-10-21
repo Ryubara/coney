@@ -41,7 +41,19 @@ and the report, next to `PR.md`. The task names the description file, the worktr
    scratch folder or the worktree; read only their ends or grep them): test names exist in the diff or the tree, counts
    ("412 passed") appear in a log, a stated behaviour is in the code, a command named would run. A claim with nothing
    behind it is a blocker.
-5. **Check the rules a program cannot:**
+5. **Check the `Runtime:` line** when the title's area is one a player sees (`gameplay`, `graphics`, `audio`; the
+   `pull_requests.runtime` key of `.github/conventions.yml`): `check-body` has only checked that the line exists, has
+   numbers or a reason. You check that it is **true**
+   ([the runtime comparison](../../docs/guides/testing.md#runtime-comparison)):
+   - with evidence: open the log, trace diff output or captures it names in the scratch folder (beside `PR.md` or the
+     paths it gives) and check that the numbers it quotes are in them, that they compare the **original** with Coney
+     (a PCSX2 trace or read next to Coney's, not Coney against itself or against the research page), and that they
+     cover the behaviour the change is about. A `Runtime:` line with no log, trace or capture behind it is a blocker;
+   - with `none (<reason>)`: a reason that is only convenience ("not checked", "no time", "the copy was busy",
+     "hard to capture") when PCSX2 copies and the save states were available is a blocker; a reason that says why the
+     original cannot show it (a refactor whose trace diff is unchanged, a Coney-only debug feature) is fine;
+   - the before and after pictures have a view of the original from the same spot, or a stated reason why not.
+6. **Check the rules a program cannot:**
    - `Fixes #N` / `Refs #N` fit the change (`gh issue view N` is allowed, read only); a `Fixes` line for work the
      change does not finish is a blocker;
    - nothing is left for later: no "Left for later", "Remaining", "TODO", "follow-up" or "next step" in the body

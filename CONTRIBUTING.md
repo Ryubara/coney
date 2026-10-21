@@ -45,6 +45,10 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
   finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
+- Testing: when the title's area is one a player sees (`gameplay`, `graphics`, `audio`), a line starting `Runtime:` with
+  the evidence from the original running (a trace diff, an event diff, or named PCSX2 captures or reads compared with
+  Coney's, with numbers) or `Runtime: none (<reason>)`. It is checked given the title (CI's `body` job and
+  `repo check-review` give it).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
@@ -57,7 +61,7 @@ A pull request lists only the work it finishes; file an issue for anything else 
 ([Issues](docs/guides/issues.md#follow-up-work)). To check a description yourself:
 
 ```sh
-uv run --project python coney-tools repo check-body --body description.md
+uv run --project python coney-tools repo check-body --body description.md --title "gameplay: Fix the thing"
 ```
 
 The documentation must build with `.venv/Scripts/python -m mkdocs build --strict`, which rejects broken links and

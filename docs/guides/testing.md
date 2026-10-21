@@ -11,15 +11,51 @@ of work, the rules every test follows, and where the checks run. How to build an
 A piece of work is done when the evidence in this table exists and passes. Report it with the work: in the pull
 request's Testing and Screenshots sections ([What a pull request shows](#pr-evidence)).
 
+Gameplay work is checked against **the original running**, not only against our reading of its code (maintainer
+decision, 2026-10-21): code read in Ghidra can be misread, and a test written from that reading passes on the
+misreading. So the rows for work a player sees ask for a [runtime comparison](#runtime-comparison), and the pull
+request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
+
 | Work | Evidence |
 | --- | --- |
 | A format, parser or other pure code | Unit tests on synthetic fixtures; a disc test that prints aggregates when the disc is involved |
-| Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path) |
-| A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists |
-| A bug fix | A test that fails before the fix and passes after it |
+| Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path); a [runtime comparison](#runtime-comparison) with the original; before and after captures of Coney and the original from the same spot for anything visible ([What a pull request shows](#pr-evidence)) |
+| A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists; a [runtime comparison](#runtime-comparison) of the checkpoint's moments with the original; before and after captures of Coney and the original from the same spot for anything visible |
+| A bug fix | A test that fails before the fix and passes after it; in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
 | A research finding | An address and an [evidence level](research-workflow.md#evidence-levels) on every claim; runtime claims checked in the emulator; a [trace diff](research-workflow.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
 | Docs | `mkdocs build --strict` and markdownlint |
+
+### The runtime comparison {#runtime-comparison}
+
+Before work that a player sees is done, its behaviour is compared with the original **running**, in one of two ways:
+
+- **A trace diff** ([Comparing with Coney](research-workflow.md#comparing-with-coney)): the same scripted scenario
+  recorded on the original and on Coney, compared per update with `coney-tools trace diff`. Use it for numbers that
+  change every update: positions, headings, health, timers, the camera. The result is the columns checked, the
+  updates compared and the first step outside tolerance (or none).
+- **The same moment from a PCSX2 save state and from Coney**, captured and compared: load the saved slot in a PCSX2
+  copy you hold a claim on, read the values or take the picture
+  ([Driving PCSX2](research-workflow.md#driving-pcsx2); the ready-made recipes for it are `coney-tools pcsx2 recipe`,
+  which is being added and gets its own guide page), put Coney in the same place, and compare the named values or the
+  two pictures. Use it for one-off facts: a constant, a flag, a state after an event, how a scene looks.
+
+An [event diff](#diff-against-the-original) counts for what it covers (hints, objectives, spawns, scenes, sounds). The
+evidence names what was compared and gives numbers: "trace diff walk60, 600 updates, columns x y heading, 0 outside
+tolerance", "PCSX2 slot 3 reads 0x00271f40 = 4, Coney's field = 4". A disagreement is not hidden: it becomes a fix
+in the same pull request, or an open question on the research page and a marked [stand-in](#stand-ins) in the code.
+The captures and logs stay in the scratch folder while the pull request is open, because the reviewer opens them
+([The description review](how-we-work.md#pr-review)).
+
+A change the original cannot say anything about has no comparison, and says so with a reason that is not
+convenience: "refactor with no change to behaviour (the existing trace diff still shows 0 differences)", "the
+original has no such case (Coney's debug menu)". "Not checked" or "no time" is not a reason, and neither is "the copy
+was busy" when a PCSX2 copy could have been claimed.
+
+Before implementing from a research page, the engineer **re-reads the page's cited addresses in Ghidra** and compares
+them with what the page says. Where they disagree, the engineer records the disagreement on the page (the address, what
+the page said, what the code does, the evidence level) before writing the code, so the next reader is not misled
+either ([Studying the original](research-workflow.md#studying-the-original)).
 
 ## Kinds of tests
 
@@ -164,6 +200,10 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
   finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
+- Testing: when the title's area is one a player sees (`gameplay`, `graphics`, `audio`), a line starting `Runtime:` with
+  the evidence from the original running (a trace diff, an event diff, or named PCSX2 captures or reads compared with
+  Coney's, with numbers) or `Runtime: none (<reason>)`. It is checked given the title (CI's `body` job and
+  `repo check-review` give it).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
@@ -181,10 +221,32 @@ What the two sections hold:
   ([above](#no-game-data)). For a docs-only or research change, list the checks that ran (pre-commit, the docs build)
   and the runtime evidence behind the claims (the PCSX2 trace or memory read, with its address and evidence level).
   What could not be tested yet is listed as such, with the reason and the exact steps for whoever can.
-- **Screenshots** shows anything a player can see, before and after: Coney before the change, Coney after it and,
-  where the original has the same view, the original in PCSX2 from the same place, so a reader can compare them. When
+- **Runtime:** for a title in an area a player sees, one line in Testing that reports the
+  [runtime comparison](#runtime-comparison) ([The Runtime line](#runtime-line)).
+- **Screenshots** shows anything a player can see, before and after: Coney before the change, Coney after it and
+  the original in PCSX2 from the same place, so a reader can compare them (a view the original cannot show is
+  said so, with the reason, in the caption). When
   nothing visible changes, the section is one line, `Screenshots: none (<reason>)`, for example `Screenshots: none
   (no visible change)` or `Screenshots: none (research page only)`.
+
+### The Runtime line {#runtime-line}
+
+For a title in an area a player sees (`gameplay`, `graphics`, `audio`; the key `pull_requests.runtime` of
+[.github/conventions.yml](repo:.github/conventions.yml)), the Testing section holds one line starting `Runtime:`. It
+gives the evidence of the [runtime comparison](#runtime-comparison) with numbers (a trace diff, an event diff, or named
+PCSX2 captures or reads compared with Coney's), or `Runtime: none (<reason>)`:
+
+```text
+- Runtime: trace diff walk60, 600 updates, columns x y heading: 0 outside tolerance
+- Runtime: PCSX2 slot 3 reads 0x00271f40 = 4 after the hit; Coney's field = 4 (same scenario, 12 updates later)
+- Runtime: none (refactor with no change in behaviour; the existing trace diff still shows 0 differences)
+```
+
+`coney-tools repo check-body --title "<title>"` refuses the description without it. CI's `body` job runs that command
+with the pull request's title, and `repo check-review` runs it with line 1 of `PR.md`, so the message is the same
+locally and in CI. The check refuses a missing, empty or numberless line (and `none` without a reason); the reviewer
+refuses one with nothing behind it in the scratch folder ([The description review](how-we-work.md#pr-review)). Any
+other title area leaves the line out.
 
 ### Capturing and attaching {#pr-media}
 

@@ -83,7 +83,11 @@ def test_repo_check_with_a_mistake_in_the_conventions_names_the_key(
 
 def title_checkout(tmp_path: Path) -> Path:
     """A made-up checkout whose title rules allow only the area `docs` and the verb `Add`."""
-    data = changed(("commits.title.areas", {"docs": "documentation"}), ("commits.title.verbs", ["Add"]))
+    data = changed(
+        ("commits.title.areas", {"docs": "documentation"}),
+        ("commits.title.verbs", ["Add"]),
+        ("pull_requests.runtime.areas", ["docs"]),
+    )
     return write_checkout(tmp_path, data)
 
 
@@ -188,6 +192,7 @@ def body_checkout(tmp_path: Path) -> Path:
     data = changed(
         ("pull_requests.sections", ["Summary", "Checklist", "Screenshots", "AI use"]),
         ("pull_requests.filled", ["Summary"]),
+        ("pull_requests.runtime.section", "Summary"),
         ("pull_requests.ai_use.written_by.label", "By:"),
         ("pull_requests.ai_use.written_by.choices", ["a person", "an AI"]),
     )
@@ -206,7 +211,7 @@ def test_check_body_passes_with_exit_0(
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     (tmp_path / "body.md").write_text(GOOD_BODY, encoding="utf-8")
-    assert main(["repo", "check-body", "--body", "body.md"]) == 0
+    assert main(["repo", "check-body", "--body", "body.md", "--title", "tools: Add a check"]) == 0
     assert capsys.readouterr().out.strip() == "body: ok"
 
 
@@ -329,3 +334,62 @@ def test_a_command_run_with_a_cp1252_pipe_prints_unicode(tmp_path: Path) -> None
     env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
     done = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, check=False)
     assert done.returncode == 0 and done.stdout.strip() == "→".encode()
+
+
+# --- check-body --title: the runtime-evidence line ---------------------------------------------------------------
+
+RUNTIME_BODY = GOOD_BODY.replace("## Checklist", "## Testing\n\n- `pytest`: 3 passed\n\n## Checklist")
+
+
+def runtime_checkout(tmp_path: Path) -> Path:
+    """A made-up checkout whose rules are the real ones for the Runtime line (the Testing section is needed)."""
+    data = changed(
+        ("pull_requests.sections", ["Summary", "Checklist", "Testing", "Screenshots", "AI use"]),
+        ("pull_requests.filled", ["Summary", "Testing"]),
+        ("pull_requests.ai_use.written_by.label", "By:"),
+        ("pull_requests.ai_use.written_by.choices", ["a person", "an AI"]),
+    )
+    return write_checkout(tmp_path, data)
+
+
+def test_check_body_with_a_player_facing_title_refuses_a_missing_runtime_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY))
+    assert main(["repo", "check-body", "--title", "gameplay: Fix the heading"]) == 1
+    out = capsys.readouterr().out
+    assert out.startswith("body refused: ") and "Runtime: <evidence>" in out and "'gameplay'" in out
+
+
+def test_check_body_with_a_player_facing_title_accepts_evidence_or_a_reasoned_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    for line in ("Runtime: trace diff of 600 updates, 0 differences", "Runtime: none (a rename)"):
+        monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY.replace("3 passed", f"3 passed\n- {line}")))
+        assert main(["repo", "check-body", "--title", "audio: Fix the cue"]) == 0
+
+
+def test_check_body_with_another_area_does_not_need_the_runtime_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY))
+    assert main(["repo", "check-body", "--title", "tools: Add a check"]) == 0
+    assert capsys.readouterr().out.strip() == "body: ok"
+
+
+def test_check_body_without_a_title_says_the_runtime_line_was_not_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY))
+    assert main(["repo", "check-body"]) == 0
+    assert "Runtime:" in capsys.readouterr().out
+
+
+def test_the_ci_body_job_passes_the_title(tmp_path: Path) -> None:
+    workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "pr.yml").read_text(encoding="utf-8")
+    assert 'check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE"' in workflow
+    assert "PR_TITLE: ${{ github.event.pull_request.title }}" in workflow

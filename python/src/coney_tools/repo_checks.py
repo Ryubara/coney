@@ -160,9 +160,15 @@ def _split_sections(text: str) -> dict[str, str]:
 
 
 def _is_blank(text: str, rules: PullRequests) -> bool:
-    """Whether `text` holds nothing but empty lines and the template's placeholders (`- [ ] ...`)."""
+    """Whether `text` holds nothing but empty lines and the template's placeholders (`- [ ] ...`).
+
+    The template's own `Runtime: ...` line is a placeholder too, so the untouched template still counts as empty.
+    """
+    runtime = rules.runtime.line
     for line in text.splitlines():
         content = LIST_MARKER.sub("", line.strip()).strip()
+        if content.startswith(runtime) and content[len(runtime) :].strip() in rules.placeholders:
+            continue
         if content and content not in rules.placeholders:
             return False
     return True
@@ -417,7 +423,73 @@ def _check_screenshots(section: str, rules: PullRequests) -> list[str]:
     return screenshots_problems(section, shots.section, shots.none, shots.uploaded_only, rules.placeholders)
 
 
-def check_body(body: str, rules: PullRequests, branch_models: Sequence[str] = ()) -> list[str]:
+def _runtime_line(section: str, rules: PullRequests) -> str | None:
+    """The text of the first `Runtime:` line of `section` (a bold label or a list marker is fine), with the lines
+    that continue it (indented deeper, or wrapped) joined on; None when the section has no such line."""
+    line_start = re.compile(rf"^{re.escape(rules.runtime.line)}\s*(?P<rest>.*)$", re.IGNORECASE)
+    lines = section.splitlines()
+    for number, line in enumerate(lines):
+        content = LIST_MARKER.sub("", line.replace("**", "").strip())
+        found = line_start.match(content.strip())
+        if not found:
+            continue
+        indent = len(line) - len(line.lstrip())
+        parts = [found.group("rest").strip()]
+        blank_seen = False
+        for follow in lines[number + 1 :]:
+            if not follow.strip():
+                blank_seen = True
+            elif len(follow) - len(follow.lstrip()) > indent:
+                parts.append(LIST_MARKER.sub("", follow.strip()).strip())
+            elif not blank_seen and not LIST_MARKER.match(follow.strip()) and not follow.lstrip().startswith("#"):
+                parts.append(follow.strip())  # a lazy continuation of the wrapped line
+            else:
+                break
+        return " ".join(part for part in parts if part)
+    return None
+
+
+def runtime_problems(section: str, title: str, rules: PullRequests) -> list[str]:
+    """Check the runtime-evidence line of the Testing section against `pull_requests.runtime`.
+
+    A pull request whose title area is one a player sees (`runtime.areas`: gameplay, graphics, audio) must have a line
+    `Runtime: <evidence>` or `Runtime: none (<reason>)` in the section: gameplay is checked against the original
+    running, not only against our reading of its code. Evidence names what was compared (a trace diff, an event diff,
+    or PCSX2 captures or reads against Coney's) and must hold numbers; `none` must give a reason. Whether the evidence
+    is real is the reviewer's job (docs/guides/how-we-work.md#pr-review); this check only refuses a missing, empty or
+    numberless line. A title that is not in the form, or an area that is not listed, has nothing to check here.
+    """
+    runtime = rules.runtime
+    form = _TITLE_FORM.match(title)
+    if not form or form.group("area") not in runtime.areas:
+        return []
+    area = form.group("area")
+    shape = (
+        f"'## {runtime.section}' needs a line '{runtime.line} <evidence>' (a trace diff, an event diff, or named PCSX2 "
+        f"captures or reads compared with Coney's, with numbers) or '{runtime.none} (<reason>)', because the title "
+        f"area '{area}' is one a player sees (docs/guides/testing.md#done)"
+    )
+    evidence = _runtime_line(section, rules)
+    if evidence is None:
+        return [shape]
+    none_word = runtime.none[len(runtime.line) :].strip()
+    none = re.match(rf"^{re.escape(none_word)}\b\s*(?:\((?P<reason>.*)\))?[\s.]*$", evidence, re.IGNORECASE)
+    if none:
+        reason = (none.group("reason") or "").strip()
+        if not reason or reason in rules.placeholders:
+            return [f"'{runtime.none}' needs its reason in parentheses: '{runtime.none} (<reason>)'; {shape}"]
+        return []
+    bare = evidence.strip("*_` 	")
+    if not bare or bare in rules.placeholders:
+        return [f"'{runtime.line}' is empty; {shape}"]
+    if not re.search(r"\d", bare):
+        return [f"'{runtime.line}' holds no numbers (frames, counts, addresses, differences); {shape}"]
+    return []
+
+
+def check_body(
+    body: str, rules: PullRequests, branch_models: Sequence[str] = (), title: str | None = None
+) -> list[str]:
     """Check a pull request description against the template's form.
 
     Every section must be present as a `##` heading, the `filled` ones (Summary, Testing) must hold text of their
@@ -426,7 +498,9 @@ def check_body(body: str, rules: PullRequests, branch_models: Sequence[str] = ()
     section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and no
     Checklist item may be left unticked (`- [ ]`). With `branch_models` (the models the branch's commits credit in
     `Co-Authored-By` trailers, see `branch_trailer_models`) the Model line must also name each of them, whoever wrote
-    the commits; a description alone has no branch, so CI passes none.
+    the commits; a description alone has no branch, so CI passes none. With the pull request's `title`, a title area a
+    player sees (`pull_requests.runtime`) also needs the Testing section's `Runtime:` line (`runtime_problems`);
+    without a title that rule cannot be applied and is skipped, so every caller that has the title passes it.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -439,6 +513,9 @@ def check_body(body: str, rules: PullRequests, branch_models: Sequence[str] = ()
             problems.append(f"missing the section '## {name}'")
         elif name in rules.filled and _is_blank(text, rules):
             problems.append(f"'## {name}' is empty (a comment or the template's placeholder does not count)")
+    testing = sections.get(rules.runtime.section.casefold())
+    if title is not None and testing is not None:
+        problems.extend(runtime_problems(testing, title, rules))
     screenshots = sections.get(rules.screenshots.section.casefold())
     if screenshots is not None:
         problems.extend(_check_screenshots(screenshots, rules))

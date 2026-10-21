@@ -25,12 +25,17 @@ The engineer writes a research page in `docs/research/`. Every claim on it carri
 
 ## What the implementation does with it
 
-The engineer writes Coney's code and tags each function `@orig 0x<addr>` with a link to the page
+Before writing anything, the engineer re-reads the addresses the page cites in Ghidra and checks them against the
+page; a disagreement goes on the page first, with the address and evidence level
+([the runtime comparison](testing.md#runtime-comparison)). The engineer then writes Coney's code and tags each function
+`@orig 0x<addr>` with a link to the page
 ([Conventions](conventions.md#comments-and-orig)). Tests are written first, from the page's numbers; that is how
 "correctly" gets checked ([Testing](testing.md#done)). For whole behaviours we also run both games through the same
 scenario and diff their traces ([Comparing with Coney](research-workflow.md#comparing-with-coney), and
 [Diff against the original](testing.md#diff-against-the-original)); the trace tooling records the same columns from
-each game and `coney-tools trace diff` reports the first update where they part.
+each game and `coney-tools trace diff` reports the first update where they part. For work a player sees this
+comparison with the original running is part of "done" ([Testing](testing.md#runtime-comparison)), and the pull request
+reports it in its `Runtime:` line.
 
 If a page doesn't say enough, the engineer goes back to the original and puts the answer on the page, or writes the
 question down when it can't be answered yet

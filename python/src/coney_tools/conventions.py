@@ -236,6 +236,23 @@ class ScreenshotsRule:
 
 
 @dataclass(frozen=True)
+class RuntimeEvidence:
+    """The runtime-evidence line: a pull request whose title area a player sees says how it was checked against the
+    original running (maintainer decision 2026-10-21)."""
+
+    #: The title areas (keys of `commits.title.areas`) whose pull request needs the line.
+    areas: tuple[str, ...]
+    #: The description section that holds the line (`Testing`).
+    section: str
+    #: The start of the line: the evidence follows it (`Runtime:`).
+    line: str
+    #: The start of the line that says the original was not run, followed by the reason in parentheses.
+    none: str
+    #: `required`: the `none` line must give a reason.
+    reason: str
+
+
+@dataclass(frozen=True)
 class WrittenBy:
     """Who wrote the commits: one of the choices."""
 
@@ -308,6 +325,7 @@ class PullRequests:
     closing: Closing
     checklist: Checklist
     screenshots: ScreenshotsRule
+    runtime: RuntimeEvidence
     ai_use: AiUse
     review: Review
     stacked: Stacked
@@ -904,6 +922,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "closing",
         "checklist",
         "screenshots",
+        "runtime",
         "ai_use",
         "review",
         "stacked",
@@ -920,6 +939,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
+    runtime, runtime_where = sub("runtime", "areas", "section", "line", "none", "reason")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
     review, review_where = sub("review", "agent", "verdict_file", "report_file", "body_hash", "identical_images")
     agent = _text(review["agent"], _at(review_where, "agent"))
@@ -944,6 +964,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         (_at(closing_where, "section"), closing["section"]),
         (_at(checklist_where, "section"), checklist["section"]),
         (_at(screenshots_where, "section"), screenshots["section"]),
+        (_at(runtime_where, "section"), runtime["section"]),
         (_at(ai_where, "section"), ai_use["section"]),
     )
     for field_where, section in section_fields:
@@ -976,6 +997,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             none=_text(screenshots["none"], _at(screenshots_where, "none")),
             reason=_choice(screenshots["reason"], _at(screenshots_where, "reason"), ("required",)),
             uploaded_only=_flag(screenshots["uploaded_only"], _at(screenshots_where, "uploaded_only")),
+        ),
+        runtime=RuntimeEvidence(
+            areas=_texts(runtime["areas"], _at(runtime_where, "areas")),
+            section=runtime["section"],
+            line=_text(runtime["line"], _at(runtime_where, "line")),
+            none=_text(runtime["none"], _at(runtime_where, "none")),
+            reason=_choice(runtime["reason"], _at(runtime_where, "reason"), ("required",)),
         ),
         ai_use=AiUse(
             section=ai_use["section"],
@@ -1408,6 +1436,14 @@ def parse_conventions(data: object) -> Conventions:
         for key in spec.keys:
             if not _has_key(data, key):
                 raise _fail(f"hygiene.checks.{spec.id}.keys", f"'{key}' is not a key of this file")
+    commits = _read_commits(table["commits"], "commits")
+    pull_requests = _read_pull_requests(table["pull_requests"], "pull_requests")
+    _names_in(
+        pull_requests.runtime.areas, commits.title.areas, "pull_requests.runtime.areas", "a key of commits.title.areas"
+    )
+    runtime_line = pull_requests.runtime.line
+    if not pull_requests.runtime.none.startswith(runtime_line):
+        raise _fail("pull_requests.runtime.none", f"must start with the line '{runtime_line}'")
     names = labels.names()
     for form in issues.forms.values():
         _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")
@@ -1417,8 +1453,8 @@ def parse_conventions(data: object) -> Conventions:
         version=SUPPORTED_VERSION,
         repo=_read_repo(table["repo"], "repo"),
         paths=_read_paths(table["paths"], "paths"),
-        commits=_read_commits(table["commits"], "commits"),
-        pull_requests=_read_pull_requests(table["pull_requests"], "pull_requests"),
+        commits=commits,
+        pull_requests=pull_requests,
         merge=_read_merge(table["merge"], "merge"),
         issues=issues,
         labels=labels,
