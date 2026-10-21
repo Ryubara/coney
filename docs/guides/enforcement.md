@@ -69,7 +69,7 @@ costs a CI round and a fresh agent ([When a pull request fails checks](agents.md
 
 | Rule | Written in | Enforced by | Status |
 | --- | --- | --- | --- |
-| Title `area: Verb the rest`, at most 72 characters | [AGENTS.md](repo:AGENTS.md) (`commits.title`) | `repo check-title`; CI `title` (required); `repo check-review` | enforced (branch commit titles are not checked: squash merge keeps only the pull request's) |
+| Title `area: Verb the rest`, within the length limit | [AGENTS.md](repo:AGENTS.md) (`commits.title`) | `repo check-title`; CI `title` (required); `repo check-review` | enforced (branch commit titles are not checked: squash merge keeps only the pull request's) |
 | The description has the template's sections, filled; Checklist all ticked; Screenshots or a reason; AI use; no local paths | [Testing](testing.md#pr-evidence) (`pull_requests`) | `repo check-body`; CI `body` (required); `repo check-review` | enforced at CI; the release gate checks it only when it is run |
 | Gameplay, graphics and audio titles carry a `Runtime:` line with numbers, and it is true | [Testing](testing.md#runtime-line) | `repo check-body --title` (shape); `pr-reviewer` (truth) | enforced (shape), judgement (truth) |
 | A change to `src/` or `python/src/` changes `docs/` or `research/`, or says `Docs: none` | [AGENTS.md](repo:AGENTS.md) | CI `docs` (required, `repo check-docs`) | enforced at CI |
