@@ -41,6 +41,8 @@ add_executable(coney_tests
     fileio/wad_test.cpp
     install/install_manifest_test.cpp
     install/installer_test.cpp
+    launcher/release_manifest_test.cpp
+    launcher/update_plan_test.cpp
     gamemodes/disc_front_end_test.cpp
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
@@ -413,8 +415,9 @@ target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_sources(coney_tests PRIVATE support/test_paths.cpp)
 set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
     "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\"")
-# coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU).
-target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
+# coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_launcher for the
+# launcher's library (docs/guides/launcher.md).
+target_link_libraries(coney_tests PRIVATE coney_platform coney_launcher Catch2::Catch2WithMain)
 # The tests of the debug tools (the menus, the overlay, the sandbox, the viewers, the play mode's debug controls and the
 # disc tests that drive them through those), only in a build with them (docs/guides/building.md#debug-tools); the
 # release build runs every other test, so the game is tested without them.

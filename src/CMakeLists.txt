@@ -513,4 +513,9 @@ add_library(coney_install STATIC install/install_manifest.cpp install/installer.
 coney_target_defaults(coney_install)
 target_link_libraries(coney_install PUBLIC coney_core)
 target_compile_definitions(coney_install PRIVATE CONEY_VERSION="${PROJECT_VERSION}")
+# The launcher's platform-neutral half: release manifests, versions and update plans; no window, network or file
+# code here (docs/guides/launcher.md).
+add_library(coney_launcher STATIC launcher/release_manifest.cpp launcher/update_plan.cpp)
+coney_target_defaults(coney_launcher)
+target_link_libraries(coney_launcher PUBLIC coney_core)
 add_subdirectory(platform)
