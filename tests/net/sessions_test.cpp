@@ -411,6 +411,45 @@ TEST_CASE("a lost packet's steps come in the next one and play late, none missed
     CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kR2);
 }
 
+TEST_CASE("at 5% loss with jitter every input command plays, in order, none lost", "[net][sessions][pad]") {
+    Match match;
+    NetClient& client = match.join("Cochise");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+    match.guests[0]->link.setConditions(LinkConditions{.latencyMs = 20, .jitterMs = 20, .lossFraction = 0.05F});
+
+    // A different pad each step (buttons 1, 2, 3, ...), so each step's command is told apart from its neighbours.
+    constexpr std::uint16_t kSteps = 300;
+    std::vector<std::uint16_t> played;
+    for (std::uint16_t i = 1; i <= kSteps; ++i) {
+        client.setPad(padWith(i));
+        match.run(1);
+        played.push_back(match.server.remotePad(1).value_or(coney::PadSample{}).buttons);
+    }
+    // The server plays a few steps behind the client: run on until the last steps have played too.
+    match.guests[0]->link.setConditions(LinkConditions{});
+    for (int i = 0; i < 8; ++i) {
+        match.run(1);
+        played.push_back(match.server.remotePad(1).value_or(coney::PadSample{}).buttons);
+    }
+
+    // A stall holds the step before, so the server plays a step twice in a row; apart from that, every step the
+    // client sent plays once, in order, with none skipped.
+    std::vector<std::uint16_t> distinct;
+    for (const std::uint16_t buttons : played) {
+        if (buttons != 0 && (distinct.empty() || distinct.back() != buttons)) {
+            distinct.push_back(buttons);
+        }
+    }
+    REQUIRE(distinct.size() == kSteps);
+    for (std::uint16_t i = 0; i < kSteps; ++i) {
+        CHECK(distinct.at(i) == i + 1);
+    }
+    const InputBufferStats& stats = match.server.clients().at(0).input.stats();
+    CHECK(stats.missed == 0);
+    CHECK(stats.skipped == 0);
+}
+
 TEST_CASE("the server tells a client how early its input comes, and the client's clock follows",
           "[net][sessions][pad]") {
     ServerConfig config = Match::serverConfig();
