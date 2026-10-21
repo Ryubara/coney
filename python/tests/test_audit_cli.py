@@ -55,7 +55,7 @@ def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]
     assert (
         code == 0 and data["findings"] == [] and data["errors"] == 0 and next(iter(data["checks"])) == "files.pointer"
     )
-    assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 9
+    assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 10
 
 
 def test_a_finding_in_the_checkout_fails_the_run(
@@ -85,7 +85,7 @@ def test_list_prints_the_registry(capsys: pytest.CaptureFixture[str]) -> None:
     lines = out.splitlines()
     assert (
         code == 0
-        and len(lines) == len(CONVENTIONS.hygiene.checks) == 41
+        and len(lines) == len(CONVENTIONS.hygiene.checks) == 42
         and lines[0].startswith("files.pointer")
         and "fix: maintainer" in out
     )
