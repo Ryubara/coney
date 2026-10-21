@@ -401,6 +401,7 @@ class Gangs {
 /// every HUD count of a gang passes 1 to `Gang_CountLiving`, so a member who is knocked out, wounded or dead loses
 /// his mark even with health left, and one who is only knocked down keeps it (Gangs::countLiving(id, true)). The
 /// returned function reads `gangs`, which must outlive it.
+/// @coney-only glue between the AI and the HUD; the original's HUD calls `Gang_CountLiving(gang, 1)` itself
 /// Research: docs/research/hud-functions-lua.md#gang-count-what
 [[nodiscard]] std::function<int(int gang)> hudGangCount(const Gangs& gangs);
 
