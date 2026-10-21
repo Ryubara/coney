@@ -363,14 +363,15 @@ TEST_CASE("input commands that come late, out of order or twice each play once o
     LoopbackTransport raw(match.network, "raw");
     const PeerId peer = rawJoin(match, raw);
     const auto sendCommands = [&](std::uint32_t newest, std::vector<coney::PadSample> pads) {
-        REQUIRE(raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = newest, .pads = std::move(pads)}))
-                    .has_value());
+        REQUIRE(
+            raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = newest, .pads = std::move(pads)}))
+                .has_value());
     };
     const auto played = [&] { return match.server.remotePad(1).value_or(coney::PadSample{}).buttons; };
     sendCommands(0, {padWith(coney::pad::kSquare)});
     match.run(1);
     CHECK_FALSE(match.server.remotePad(1).value_or(coney::PadSample{}).connected); // the delay filling
-    sendCommands(2, {padWith(coney::pad::kTriangle)}); // step 2 overtakes step 1
+    sendCommands(2, {padWith(coney::pad::kTriangle)});                             // step 2 overtakes step 1
     sendCommands(1, {padWith(coney::pad::kCircle)});
     match.run(1);
     CHECK(played() == coney::pad::kSquare);
@@ -456,8 +457,8 @@ TEST_CASE("a pad input before the handshake is a protocol error", "[net][session
     LoopbackTransport raw(match.network, "eager");
     const PeerId peer = raw.connect("host", match.server.port()).value();
     (void)drain(raw);
-    REQUIRE(raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = 0, .pads = {padWith(0)}}))
-                .has_value());
+    REQUIRE(
+        raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = 0, .pads = {padWith(0)}})).has_value());
     match.run(1);
     const auto events = drain(raw);
     REQUIRE(events.size() == 2);

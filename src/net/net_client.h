@@ -128,8 +128,8 @@ class NetClient {
     std::uint64_t m_nowNs = 0;
     std::uint32_t m_stepsInState = 0; // steps since the state last changed, for the connect timeout
     std::uint32_t m_stepsSinceHeard = 0;
-    std::uint64_t m_steps = 0; // steps since joining, for the ping schedule and the pad's step
-    PadSample m_pad;           // sent by send(); unplugged until setPad()
+    std::uint64_t m_steps = 0;           // steps since joining, for the ping schedule and the pad's step
+    PadSample m_pad;                     // sent by send(); unplugged until setPad()
     std::optional<InputTiming> m_timing; // the server's latest, while Connected
     // The pads of the latest steps sent, by step % kMaxInputCommands, for the next InputCommands to repeat.
     std::array<PadSample, kMaxInputCommands> m_sent{};

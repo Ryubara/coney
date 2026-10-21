@@ -136,14 +136,15 @@ void addNetworkPage(DebugSession& session) {
                 .withHelp("The round trip, smoothed: to the server, or to the slowest player when hosting.");
             page.add(watchItem("Loss", [net] { return std::format("{:.0f} %", net->status().lossFraction * 100.0F); }))
                 .withHelp("Pings unanswered among the last 32 (the newest 8 not yet judged).");
-            page.add(watchItem("Input timing", [net] {
-                         const NetStatus status = net->status();
-                         if (!status.inputLead) {
-                             return std::string("-");
-                         }
-                         return std::format("{} ahead (wants {}), clock {} %", *status.inputLead, status.inputTarget,
-                                            status.clockSpeedPercent);
-                     }))
+            page.add(watchItem("Input timing",
+                               [net] {
+                                   const NetStatus status = net->status();
+                                   if (!status.inputLead) {
+                                       return std::string("-");
+                                   }
+                                   return std::format("{} ahead (wants {}), clock {} %", *status.inputLead,
+                                                      status.inputTarget, status.clockSpeedPercent);
+                               }))
                 .withHelp("Joined to a host: how many of this game's steps of input wait on the host, how many it "
                           "wants, and this game's clock, a little fast or slow to bring the one to the other.");
             page.add(watchItem("Sent", [net] {
@@ -158,8 +159,8 @@ void addNetworkPage(DebugSession& session) {
                 std::vector<std::string> lines;
                 for (const NetPlayerStatus& player : net->status().players) {
                     lines.push_back(std::format("{}: {} ({}, {:.0f} % loss, input {} ahead, {} lost)", player.slot + 1,
-                                                player.name, pingText(player.roundTripNs),
-                                                player.lossFraction * 100.0F, player.inputLead, player.inputLost));
+                                                player.name, pingText(player.roundTripNs), player.lossFraction * 100.0F,
+                                                player.inputLead, player.inputLost));
                 }
                 return lines;
             }));

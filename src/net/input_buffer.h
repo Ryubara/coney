@@ -75,8 +75,8 @@ class InputBuffer {
 
     InputBufferConfig m_config;
     std::array<Slot, kCapacity> m_slots{};
-    bool m_started = false;   // a step has arrived
-    std::int64_t m_next = 0;  // the client's step the next take() plays; below 0 at first, while the delay fills
+    bool m_started = false;     // a step has arrived
+    std::int64_t m_next = 0;    // the client's step the next take() plays; below 0 at first, while the delay fills
     std::int64_t m_newest = -1; // the newest step that has arrived
     std::uint32_t m_quiet = 0;  // server steps since a new step last arrived
     bool m_played = false;      // a pad the client sent has been played

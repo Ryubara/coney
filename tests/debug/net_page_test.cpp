@@ -36,13 +36,12 @@ class FakeNet final : public NetControls {
         status.bytesSent = 12'345;
         status.packetsSent = 7;
         if (hosting) {
-            status.players.push_back(
-                NetPlayerStatus{.slot = 1,
-                                .name = "Swan",
-                                .roundTripNs = 42'000'000,
-                                .lossFraction = 0.0F,
-                                .inputLead = 1,
-                                .inputLost = 3});
+            status.players.push_back(NetPlayerStatus{.slot = 1,
+                                                     .name = "Swan",
+                                                     .roundTripNs = 42'000'000,
+                                                     .lossFraction = 0.0F,
+                                                     .inputLead = 1,
+                                                     .inputLost = 3});
         }
         status.inputLead = lead;
         status.inputTarget = 1;
@@ -109,7 +108,8 @@ TEST_CASE("the Network page hosts, joins and sets its fields through NetControls
     CHECK(page->find("Ping")->watch() == "42 ms");
     CHECK(page->find("Loss")->watch() == "25 %");
     CHECK(page->find("Sent")->watch() == "12.3 KB in 7 packets");
-    CHECK(page->find("Players")->lines() == std::vector<std::string>{"2: Swan (42 ms, 0 % loss, input 1 ahead, 3 lost)"});
+    CHECK(page->find("Players")->lines() ==
+          std::vector<std::string>{"2: Swan (42 ms, 0 % loss, input 1 ahead, 3 lost)"});
     CHECK(page->find("Input timing")->watch() == "-"); // a host has no host to send its input to
     net.lead = 0;
     CHECK(page->find("Input timing")->watch() == "0 ahead (wants 1), clock 102 %");

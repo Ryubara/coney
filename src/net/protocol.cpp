@@ -286,6 +286,7 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return InputTiming{.lead = static_cast<std::int32_t>(*lead), .target = *target};
     }
+    }
     return fail(ErrorCode::Invalid, "network message has an unknown id " + std::to_string(id));
 }
 

@@ -67,8 +67,7 @@ TEST_CASE("input commands round-trip every field of a connected pad", "[net][pro
     pad.sticks = {0, 255, 31, 200};
     pad.pressure.at(static_cast<std::size_t>(coney::pad::Pressure::Cross)) = 255;
     pad.pressure.at(static_cast<std::size_t>(coney::pad::Pressure::L2)) = 17;
-    const auto commands =
-        std::get<InputCommands>(roundTrip(InputCommands{.newestStep = 123456, .pads = {pad}}));
+    const auto commands = std::get<InputCommands>(roundTrip(InputCommands{.newestStep = 123456, .pads = {pad}}));
     CHECK(commands.newestStep == 123456);
     REQUIRE(commands.pads.size() == 1);
     CHECK(commands.pads[0].connected);
