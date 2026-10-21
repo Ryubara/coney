@@ -309,9 +309,7 @@ def test_a_limit_that_pre_commit_does_not_pass_is_found(root: Path) -> None:
 
 def large_file_hook(data: dict[str, Any]) -> dict[str, Any]:
     """The check-added-large-files entry of a loaded pre-commit config."""
-    return next(
-        hook for repo in data["repos"] for hook in repo["hooks"] if hook["id"] == "check-added-large-files"
-    )
+    return next(hook for repo in data["repos"] for hook in repo["hooks"] if hook["id"] == "check-added-large-files")
 
 
 def test_the_clean_large_file_hook_passes(root: Path) -> None:

@@ -365,7 +365,9 @@ def game_files_refused(context: FilesContext) -> Iterator[Problem]:
     marker, and excludes nothing."""
     hook = _pre_commit_hook(context.root, GAME_FILES_HOOK)
     if hook is None:
-        yield Problem(PRE_COMMIT_CONFIG, f"has no {GAME_FILES_HOOK} hook, so a small file of game data can be committed")
+        yield Problem(
+            PRE_COMMIT_CONFIG, f"has no {GAME_FILES_HOOK} hook, so a small file of game data can be committed"
+        )
         return
     try:
         pattern = re.compile(str(hook.get("files", "")))
@@ -380,7 +382,9 @@ def game_files_refused(context: FilesContext) -> Iterator[Problem]:
                 f"{GAME_FILES_HOOK} does not refuse {suffix} files (workspace.game_capture_suffixes)",
             )
     if not pattern.search(workspace.busy_marker):
-        yield Problem(PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK} does not refuse {workspace.busy_marker} (workspace.busy_marker)")
+        yield Problem(
+            PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK} does not refuse {workspace.busy_marker} (workspace.busy_marker)"
+        )
     yield from _skips_files(hook, GAME_FILES_HOOK)
 
 

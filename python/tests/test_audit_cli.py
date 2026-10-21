@@ -46,7 +46,7 @@ def no_tree(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_files_is_the_default_scope_and_this_checkout_is_clean(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(capsys)
-    assert code == 0 and out.strip() == "audit files: 9 checks, 0 errors, 0 warnings"
+    assert code == 0 and out.strip() == "audit files: 10 checks, 0 errors, 0 warnings"
 
 
 def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]) -> None:
