@@ -479,7 +479,13 @@ hygiene:
       severity: error
       fix: skill
       keys: [paths.large_file_kb]
-      summary: "pre-commit's check-added-large-files limit differs from the conventions"
+      summary: "pre-commit's check-added-large-files limit differs from the conventions, or the hook skips a file (no --enforce-all, an exclude)"
+    files.game-files:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [workspace.game_capture_suffixes, workspace.busy_marker]
+      summary: "pre-commit's no-game-files hook is missing, excludes a file or lets through a game capture type or the busy marker"
     files.markdown-hook:
       scope: files
       severity: error

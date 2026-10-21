@@ -316,9 +316,34 @@ def ci_scope_reads_the_file(context: FilesContext) -> Iterator[Problem]:
             )
 
 
+#: The pre-commit hook that refuses game data and local records by name (`.pre-commit-config.yaml`).
+GAME_FILES_HOOK = "no-game-files"
+
+
+def _pre_commit_hook(root: Path, hook_id: str) -> dict[str, Any] | None:
+    """The entry of the hook `hook_id` in the pre-commit config, or None when the config or the hook is not there."""
+    data = _yaml(root, PRE_COMMIT_CONFIG)
+    repos = data.get("repos") if isinstance(data, dict) else None
+    for repo in repos if isinstance(repos, list) else []:
+        hooks = repo.get("hooks") if isinstance(repo, dict) else None
+        for hook in hooks if isinstance(hooks, list) else []:
+            if isinstance(hook, dict) and hook.get("id") == hook_id:
+                return hook
+    return None
+
+
+def _skips_files(hook: dict[str, Any], name: str) -> Iterator[Problem]:
+    """A problem for each key of `hook` that narrows the files it sees: such a guard must see every file."""
+    for key in ("exclude", "files") if name == "check-added-large-files" else ("exclude",):
+        if key in hook:
+            yield Problem(PRE_COMMIT_CONFIG, f"{name} has `{key}`: never exclude a file from a game-data guard")
+
+
 @check("files.large-file-limit")
 def large_file_limit_matches(context: FilesContext) -> Iterator[Problem]:
-    """pre-commit's check-added-large-files uses the limit of `paths.large_file_kb`."""
+    """pre-commit's check-added-large-files uses the limit of `paths.large_file_kb`, checks every file
+    (`--enforce-all`, so CI's run over all files sees committed ones) and excludes none (AGENTS.md: never exclude a
+    file from it)."""
     text = _read(context.root, PRE_COMMIT_CONFIG)
     if text is None:
         yield Problem(PRE_COMMIT_CONFIG, "is missing or unreadable")
@@ -326,6 +351,37 @@ def large_file_limit_matches(context: FilesContext) -> Iterator[Problem]:
     wanted = f"--maxkb={context.conventions.paths.large_file_kb}"
     if wanted not in text:
         yield Problem(PRE_COMMIT_CONFIG, f"does not pass {wanted} to check-added-large-files (paths.large_file_kb)")
+    hook = _pre_commit_hook(context.root, "check-added-large-files")
+    if hook is None:
+        return
+    if "--enforce-all" not in (hook.get("args") or []):
+        yield Problem(PRE_COMMIT_CONFIG, "check-added-large-files lacks --enforce-all, so a committed file is not seen")
+    yield from _skips_files(hook, "check-added-large-files")
+
+
+@check("files.game-files")
+def game_files_refused(context: FilesContext) -> Iterator[Problem]:
+    """pre-commit's no-game-files hook refuses every file type of `workspace.game_capture_suffixes` and the busy
+    marker, and excludes nothing."""
+    hook = _pre_commit_hook(context.root, GAME_FILES_HOOK)
+    if hook is None:
+        yield Problem(PRE_COMMIT_CONFIG, f"has no {GAME_FILES_HOOK} hook, so a small file of game data can be committed")
+        return
+    try:
+        pattern = re.compile(str(hook.get("files", "")))
+    except re.error as error:
+        yield Problem(PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK}'s `files` is not a regular expression ({error})")
+        return
+    workspace = context.conventions.workspace
+    for suffix in workspace.game_capture_suffixes:
+        if not pattern.search(f"scratch/capture{suffix}"):
+            yield Problem(
+                PRE_COMMIT_CONFIG,
+                f"{GAME_FILES_HOOK} does not refuse {suffix} files (workspace.game_capture_suffixes)",
+            )
+    if not pattern.search(workspace.busy_marker):
+        yield Problem(PRE_COMMIT_CONFIG, f"{GAME_FILES_HOOK} does not refuse {workspace.busy_marker} (workspace.busy_marker)")
+    yield from _skips_files(hook, GAME_FILES_HOOK)
 
 
 @check("files.markdown-hook")

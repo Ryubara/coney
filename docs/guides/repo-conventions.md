@@ -104,7 +104,8 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.template` | files | error | skill | the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines |
 | `files.generated-blocks` | files | error | auto | a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render) |
 | `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file |
-| `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions |
+| `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions, or the hook skips a file (no --enforce-all, an exclude) |
+| `files.game-files` | files | error | skill | pre-commit's no-game-files hook is missing, excludes a file or lets through a game capture type or the busy marker |
 | `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI |
 | `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
 | `issue.form` | github | warn | skill | an open issue is not in its form's exact shape: ### headings, names, order, no extra sections, dropdown values (coney-tools issue check) |

@@ -50,6 +50,17 @@ repos:
   # recorder also sleeps, only while FFmpeg's input pipe is full: an I/O wait that no game time depends on.
   - repo: local
     hooks:
+      # Game data and local records never enter the repository, whatever their size (LEGAL.md#no-game-data): disc
+      # images and executables, console data, PCSX2 save states, input recordings and memory cards, recorded traces and
+      # memory dumps, Ghidra projects, and the records a track keeps beside the repository (HANDOFF.md, STATUS.md,
+      # PR.md, REVIEW.*, coney.local.toml, .coney-busy: docs/guides/how-we-work.md#shared-machine). `language: fail`
+      # refuses every file the pattern matches; `repo audit` (files.game-files) holds the pattern to
+      # workspace.game_capture_suffixes and the busy marker in .github/conventions.yml. Never give it an exclude.
+      - id: no-game-files
+        name: no game data or local records
+        language: fail
+        entry: "game data or a local record: keep it outside the repository (LEGAL.md#no-game-data)"
+        files: '(?i)(\.(iso|elf|irx|bin|xbe|xiso|wad|dir|qcow2|p2s|p2m2|ps2|mcd|mc2|trace|dump|raw|gpr)$|\.rep/|(^|/)SLUS_[^/]*$)|(?-i:(^|/)((HANDOFF|STATUS|PR(-\d+)?|REVIEW)\.md|REVIEW\.json|coney\.local\.toml|\.coney-busy)$)'
       - id: no-real-clock
         name: only the frame pacer reads the real clock
         language: pygrep

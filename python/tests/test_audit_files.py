@@ -7,6 +7,7 @@ differ once.
 """
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -304,6 +305,108 @@ def test_a_limit_that_pre_commit_does_not_pass_is_found(root: Path) -> None:
     edit(root, ".pre-commit-config.yaml", "--maxkb=512", "--maxkb=1024")
     (problem,) = found(af.large_file_limit_matches, context(root))
     assert "--maxkb=512" in problem.message
+
+
+def large_file_hook(data: dict[str, Any]) -> dict[str, Any]:
+    """The check-added-large-files entry of a loaded pre-commit config."""
+    return next(
+        hook for repo in data["repos"] for hook in repo["hooks"] if hook["id"] == "check-added-large-files"
+    )
+
+
+def test_the_clean_large_file_hook_passes(root: Path) -> None:
+    assert found(af.large_file_limit_matches, context(root)) == []
+
+
+@pytest.mark.parametrize("key", ["exclude", "files"])
+def test_a_large_file_hook_that_skips_files_is_found(root: Path, key: str) -> None:
+    edit_yaml(root, ".pre-commit-config.yaml", lambda data: large_file_hook(data).update({key: "^assets/"}))
+    (problem,) = found(af.large_file_limit_matches, context(root))
+    assert f"`{key}`" in problem.message and "never exclude" in problem.message
+
+
+def test_a_large_file_hook_without_enforce_all_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", ', "--enforce-all"]', "]")
+    (problem,) = found(af.large_file_limit_matches, context(root))
+    assert "--enforce-all" in problem.message
+
+
+# --- files.game-files ---------------------------------------------------------------------------------------------
+
+
+def game_files_pattern() -> re.Pattern[str]:
+    """The `files` pattern of the repository's own no-game-files hook."""
+    data = yaml.safe_load((REPO / ".pre-commit-config.yaml").read_text(encoding="utf-8"))
+    hook = next(hook for repo in data["repos"] for hook in repo["hooks"] if hook["id"] == af.GAME_FILES_HOOK)
+    return re.compile(hook["files"])
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "scratch/state.p2s",
+        "research/traces/run.trace",
+        "tests/fixtures/ram.dump",
+        "tests/fixtures/ram.BIN",
+        "SLUS_212.15",
+        "game/SLUS_212.15",
+        "The Warriors.iso",
+        "assets/a.wad",
+        "input.p2m2",
+        "Mcd001.ps2",
+        "warriors.gpr",
+        "HANDOFF.md",
+        "STATUS.md",
+        "docs/PR.md",
+        "PR-2.md",
+        "REVIEW.json",
+        "REVIEW.md",
+        "coney.local.toml",
+        ".coney-busy",
+    ],
+)
+def test_the_game_files_hook_refuses_game_data_and_local_records(path: str) -> None:
+    assert game_files_pattern().search(path), path
+
+
+def test_the_game_files_hook_matches_no_tracked_file() -> None:
+    tracked = subprocess.run(
+        ["git", "-C", str(REPO), "ls-files"], capture_output=True, text=True, check=True
+    ).stdout.splitlines()
+    pattern = game_files_pattern()
+    assert [path for path in tracked if pattern.search(path)] == []
+
+
+def test_the_clean_game_files_hook_passes(root: Path) -> None:
+    assert found(af.game_files_refused, context(root)) == []
+
+
+def test_a_config_without_the_game_files_hook_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", f"id: {af.GAME_FILES_HOOK}", "id: something-else")
+    (problem,) = found(af.game_files_refused, context(root))
+    assert af.GAME_FILES_HOOK in problem.message
+
+
+def test_a_game_files_hook_that_misses_a_capture_suffix_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", "p2s|", "")
+    (problem,) = found(af.game_files_refused, context(root))
+    assert ".p2s" in problem.message and "workspace.game_capture_suffixes" in problem.message
+
+
+def test_a_game_files_hook_that_misses_the_busy_marker_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", r"|\.coney-busy", "")
+    (problem,) = found(af.game_files_refused, context(root))
+    assert ".coney-busy" in problem.message
+
+
+def test_a_game_files_hook_with_an_exclude_is_found(root: Path) -> None:
+    def add_exclude(data: dict[str, Any]) -> None:
+        hook = next(hook for repo in data["repos"] for hook in repo["hooks"] if hook["id"] == af.GAME_FILES_HOOK)
+        hook["exclude"] = "^tests/"
+
+    edit_yaml(root, ".pre-commit-config.yaml", add_exclude)
+    (problem,) = found(af.game_files_refused, context(root))
+    assert "`exclude`" in problem.message
 
 
 # --- files.markdown-hook ------------------------------------------------------------------------------------------
