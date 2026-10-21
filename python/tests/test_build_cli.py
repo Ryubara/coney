@@ -3,6 +3,7 @@
 and exit codes, `build status` and `build release`. The toolchain is a fake; the claims are real folders in a
 temporary directory."""
 
+import getpass
 import json
 import os
 import re
@@ -201,15 +202,15 @@ def test_an_agent_must_name_itself(
 def test_a_person_in_a_terminal_gets_a_default_id(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CLAUDECODE", raising=False)
     terminal = lambda: True  # noqa: E731 -- a one-line stand-in for a terminal
-    monkeypatch.setattr(build_cli.getpass, "getuser", lambda: "Jane Doe")
+    monkeypatch.setattr(getpass, "getuser", lambda: "Jane Doe")
     assert build_cli.default_agent_id(terminal) == "Jane-Doe"
-    monkeypatch.setattr(build_cli.getpass, "getuser", lambda: "???")
+    monkeypatch.setattr(getpass, "getuser", lambda: "???")
     assert build_cli.default_agent_id(terminal) == "me"
 
     def no_user() -> str:
         raise OSError("no user name")
 
-    monkeypatch.setattr(build_cli.getpass, "getuser", no_user)
+    monkeypatch.setattr(getpass, "getuser", no_user)
     assert build_cli.default_agent_id(terminal) == "me"
     # An agent: Claude Code's variable, or any tool that captures the output (not a terminal).
     assert build_cli.default_agent_id(lambda: False) is None
