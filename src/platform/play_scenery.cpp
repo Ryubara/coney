@@ -192,6 +192,8 @@ std::vector<human::Place> PlayScenery::places() const {
     return {human::Place{startSource(), s.position, s.headingDegrees}};
 }
 
+// By value, as the overrides take the extras over; this one, for a scenery that has no room for them, drops them.
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
 std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/, SceneExtras /*extras*/) {
     return fail(ErrorCode::InvalidArgument, "objects cannot be spawned here");
 }
