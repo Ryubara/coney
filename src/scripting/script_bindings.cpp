@@ -1020,6 +1020,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("setDetailFlag"),
     real("SetFlagPos"),
     real("SetSpawnMax"),
+    real("SetCopSpawnMax"),
     real("TestDistance"),
     real("WalkingDistance"),
     real("WCEnableCommand"),

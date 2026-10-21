@@ -293,6 +293,7 @@ nav:
       - Network architecture design: guides/network-architecture.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
+      - Enforcement map: guides/enforcement.md
       - Research workflow: guides/research-workflow.md
       - PCSX2 recipes: guides/pcsx2-recipes.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

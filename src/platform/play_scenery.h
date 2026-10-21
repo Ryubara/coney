@@ -14,10 +14,10 @@
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
 #include "core/error.h"
-#include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
+#include "human/place.h"
 #include "human/player.h"
 #include "platform/render_engine.h"
 #include "platform/sandbox_renderer.h"
@@ -81,7 +81,7 @@ class PlayScenery {
     /// What is played, for the debug menus: the level's name, or "sandbox " and the layout's title.
     [[nodiscard]] virtual std::string name() const = 0;
     /// The named places the debug menus' teleport offers: the start (a level), or the spawn points (a sandbox).
-    [[nodiscard]] virtual std::vector<debug::Place> places() const;
+    [[nodiscard]] virtual std::vector<human::Place> places() const;
     /// The passive humans to fight (Coney's own sandbox targets): a sandbox layout's `target` lines; none in a level.
     [[nodiscard]] virtual std::vector<sandbox::TargetPoint> targets() const { return {}; }
     /// The AI humans that fight the player: a sandbox layout's `fighter` lines; none in a level.
@@ -191,7 +191,7 @@ class SandboxPlayScenery final : public PlayScenery {
     [[nodiscard]] const sandbox::SandboxWorld& world() const { return m_world; }
 
     [[nodiscard]] std::string name() const override { return "sandbox " + m_world.layout().title; }
-    [[nodiscard]] std::vector<debug::Place> places() const override;
+    [[nodiscard]] std::vector<human::Place> places() const override;
     [[nodiscard]] bool canSpawn() const override { return true; }
     [[nodiscard]] std::vector<sandbox::TargetPoint> targets() const override { return m_world.layout().targets; }
     [[nodiscard]] std::vector<sandbox::FighterPoint> fighters() const override { return m_world.layout().fighters; }

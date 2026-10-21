@@ -14,6 +14,10 @@ one shared place every worktree sees:
 A third kind of claim, the **folder lock** (`folder_lock`), is the same machinery with one slot and a folder of its own
 per build folder: a run holds it from configure to its last test, so two runs never share one build folder.
 
+A third lane, the **tidy lane** (`tidy-N.claim/`, queue `queue-tidy/`, `tidy_slots` slots), holds the clang-tidy runs of
+`coney-tools check changed` (check_cli.py), so the gates of every agent share a bounded number of cores instead of
+each starting its own clang-tidy processes beside the builds.
+
 A second, separate **fast lane** (`fast-1.claim/`, queue `queue-fast/`, one slot) is for small jobs: an incremental
 rebuild of a few steps, a test run that selects a few tests. It has its own claim and its own short queue, so these
 never wait behind a full build (the caller decides which lane a job belongs to; build_run.py).
@@ -43,7 +47,15 @@ from pathlib import Path
 
 from coney_tools import claim_files, pcsx2_proc, process_lifetime
 from coney_tools.claim_files import OWNER_FILE, TAKEOVER_ATTEMPTS
-from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    INT_KEYS,
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    main_checkout,
+    workspace_folder,
+)
 from coney_tools.pcsx2_claims import AGENT_NAME, INCOMPLETE_SECONDS
 
 #: How many builds may run at once when `build_slots` is not set.
@@ -59,13 +71,19 @@ REPORT_SECONDS = 60.0
 #: The lanes: the main slots (full builds, full test runs) and the single fast-lane slot (small jobs).
 MAIN_LANE = "main"
 FAST_LANE = "fast"
+#: The lane of `check changed`'s clang-tidy runs.
+TIDY_LANE = "tidy"
+#: Every lane, in the order `build status` lists them.
+LANES: tuple[str, ...] = (MAIN_LANE, FAST_LANE, TIDY_LANE)
 #: What each lane calls its claim folders and its queue folder.
-_PREFIX = {MAIN_LANE: "slot", FAST_LANE: "fast"}
-_QUEUE_DIR = {MAIN_LANE: "queue", FAST_LANE: "queue-fast"}
+_PREFIX = {MAIN_LANE: "slot", FAST_LANE: "fast", TIDY_LANE: "tidy"}
+_QUEUE_DIR = {MAIN_LANE: "queue", FAST_LANE: "queue-fast", TIDY_LANE: "queue-tidy"}
 #: Typical minutes of each step on a main slot, for the wait estimate (a rough guide, not a promise).
 TYPICAL_MINUTES = {"starting": 5.0, "configure": 5.0, "build": 15.0, "test": 10.0}
 #: A fast-lane job is short by definition.
 FAST_MINUTES = 3.0
+#: Typical minutes a gate holds a tidy slot (the files its change reaches that the cache has not seen clean).
+TIDY_MINUTES = 15.0
 
 
 class BuildClaimError(ConfigError):
@@ -158,10 +176,10 @@ def _iso(epoch: float) -> str:
 
 
 def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
-    """The slots (or, with `lane="fast"`, the single fast-lane slot) of this machine:
-    `build_slots` and `build_claims_dir` from coney.local.toml (this checkout's, else the main checkout's), else two
-    slots in `build-claims` in the shared scratch (`../../scratch` beside the main checkout, like `pcsx2-claims`).
-    The default ignores `scratch_dir`: a worktree may point that at its own folder,
+    """The slots (or, with `lane="fast"`, the single fast-lane slot; with `lane="tidy"`, the `tidy_slots` clang-tidy
+    slots) of this machine: `build_slots` and `build_claims_dir` from coney.local.toml (this checkout's, else the
+    main checkout's), else two slots in `build-claims` in the shared scratch (`../../scratch` beside the main
+    checkout, like `pcsx2-claims`). The default ignores `scratch_dir`: a worktree may point that at its own folder,
     and its claims would then be invisible to every other agent. `root` is the checkout to start from (default: the
     current folder)."""
     root = find_repo_root(root or Path.cwd())
@@ -169,8 +187,13 @@ def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
     config = load_config(root) if local_config_file(root) else None
     claims = config.paths.get("build_claims_dir") if config else None
     count = config.numbers["build_slots"] if config else DEFAULT_SLOTS
-    directory = claims or (main / ".." / ".." / "scratch" / "build-claims").resolve()
-    return Slots(directory, 1 if lane == FAST_LANE else count, lane=lane, reap=reap_claim)
+    if lane == FAST_LANE:
+        count = 1
+    elif lane == TIDY_LANE:
+        count = config.numbers["tidy_slots"] if config else INT_KEYS["tidy_slots"]
+    directory = claims or workspace_folder(main, "scratch") / "build-claims"
+    what = "clang-tidy slot" if lane == TIDY_LANE else "build slot"
+    return Slots(directory, count, lane=lane, what=what, reap=reap_claim)
 
 
 def reap_claim(claim: BuildClaim) -> list[object]:
@@ -180,6 +203,8 @@ def reap_claim(claim: BuildClaim) -> list[object]:
 
 def _typical(step: str, lane: str) -> float:
     """Typical minutes of a step in a lane."""
+    if lane == TIDY_LANE:
+        return TIDY_MINUTES
     return FAST_MINUTES if lane == FAST_LANE else TYPICAL_MINUTES.get(step, TYPICAL_MINUTES["build"])
 
 

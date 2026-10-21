@@ -140,3 +140,37 @@ def test_main_checkout_is_the_resolver_for_a_faked_worktree(tmp_path: Path, monk
 
 def test_main_checkout_of_a_plain_folder_is_itself(tmp_path: Path) -> None:
     assert main_checkout(tmp_path) == tmp_path
+
+
+def test_workspace_root_is_two_levels_up_in_the_workspace_layout(tmp_path: Path) -> None:
+    checkout = make_repo(tmp_path / "ws" / "repos" / "coney", None)
+    assert config.workspace_root(checkout) == (tmp_path / "ws").resolve()
+    assert config.workspace_folder(checkout, "scratch") == (tmp_path / "ws" / "scratch").resolve()
+
+
+def test_a_plain_clone_keeps_its_workspace_folders_beside_itself(tmp_path: Path) -> None:
+    # A clone anywhere else (~/code/coney) must not write two levels above itself, nor inside itself: the Ghidra
+    # projects, the emulators and the BIOS never go in the repository.
+    checkout = make_repo(tmp_path / "code" / "coney", None)
+    workspace = (tmp_path / "code" / "coney-workspace").resolve()
+    assert config.workspace_root(checkout) == workspace
+    assert config.workspace_folder(checkout, "ghidra") == workspace / "ghidra"
+    assert not config.workspace_folder(checkout, "emulators").is_relative_to(checkout.resolve())
+
+
+def test_a_worktree_uses_its_main_checkouts_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    main = make_repo(tmp_path / "ws" / "repos" / "coney", None)
+    worktree = make_repo(tmp_path / "ws" / "worktrees" / "coney" / "branch", None)
+    monkeypatch.setattr(config, "main_checkout", lambda root: main)
+    assert config.workspace_root(worktree) == (tmp_path / "ws").resolve()
+
+
+def test_the_disc_for_coney_is_the_one_iso_in_the_folder_else_the_folder(tmp_path: Path) -> None:
+    folder = tmp_path / "game"
+    folder.mkdir()
+    assert config.disc_for_coney(folder) == folder  # extracted files, or no image yet
+    (folder / "warriors.iso").write_bytes(b"")
+    assert config.disc_for_coney(folder) == folder / "warriors.iso"
+    (folder / "other.iso").write_bytes(b"")
+    assert config.disc_for_coney(folder) == folder  # two images: not guessed
+    assert config.disc_for_coney(folder / "warriors.iso") == folder / "warriors.iso"  # an image named itself

@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "core/error.h"
+#include "core/pad.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
 #include "net/transport.h"
@@ -68,8 +69,10 @@ class NetClient {
     void advance(std::uint64_t elapsedNs);
     /// One step's receiving: every waiting transport event and message, then the step's timeouts.
     void receive();
-    /// One step's sending: a Ping when due, then a flush.
+    /// One step's sending: once joined, this step's pad (PadInput) and a Ping when due; then a flush.
     void send();
+    /// The pad the next send() sends: this game's player 1 pad, which plays the host's pad port 2.
+    void setPad(const PadSample& pad) { m_pad = pad; }
 
     [[nodiscard]] ClientState state() const { return m_state; }
     [[nodiscard]] ClientEnd end() const { return m_end; }
@@ -107,7 +110,8 @@ class NetClient {
     std::uint64_t m_nowNs = 0;
     std::uint32_t m_stepsInState = 0; // steps since the state last changed, for the connect timeout
     std::uint32_t m_stepsSinceHeard = 0;
-    std::uint64_t m_steps = 0; // steps since joining, for the ping schedule
+    std::uint64_t m_steps = 0; // steps since joining, for the ping schedule and the pad's step
+    PadSample m_pad;           // sent by send(); unplugged until setPad()
 };
 
 } // namespace coney::net

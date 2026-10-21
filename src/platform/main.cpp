@@ -77,6 +77,7 @@
 #include "platform/imgui_overlay.h"
 #include "platform/net_play.h"
 #include "platform/pad_pipe.h"
+#include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
@@ -862,11 +863,10 @@ int main(int argc, char** argv) {
     }
     // The play mode, for the Player, Camera and Spawner pages; and the sandbox layouts the Levels page plays, switched
     // to at the start of the next frame (playSandbox below), outside any step.
-    debugServices.play = [&playLevel, &sessionPlayMode]() -> coney::debug::PlayControls* {
-        if (playLevel) {
-            return playLevel.get();
-        }
-        return sessionPlayMode();
+    // One set of controls, pointed at whichever play mode runs when a page asks.
+    coney::platform::PlayLevelControls playControls;
+    debugServices.play = [&playLevel, &sessionPlayMode, &playControls]() -> coney::debug::PlayControls* {
+        return playControls.controlsOf(playLevel ? playLevel.get() : sessionPlayMode());
     };
     debugServices.sandboxFolder = sandboxFolder(*options);
     std::optional<std::string> pendingSandbox;
@@ -891,7 +891,10 @@ int main(int argc, char** argv) {
         }
     }
     coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), printText);
-    modes.setInput(&debugSession.gate());
+    // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
+    // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
+    coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
+    modes.setInput(&netInput);
     std::optional<coney::graphics::Font> debugFont;
     if (wad) {
         if (auto sheet = loadSheet(coney::gui::kTextFontSheet); sheet) {
@@ -908,12 +911,12 @@ int main(int argc, char** argv) {
         }
     };
     if (playLevel) {
-        playLevel->setDebugDraw(&debugSession.debugDraw());
+        playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
         playLevel->hud()->setSoundOutput(sandboxHudSound);
     }
     if (session) {
-        session->setDebugDraw(&debugSession.debugDraw());
+        session->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
     }
     // The mode a sandbox or a new game session replaces: the sandbox's play mode or the sandbox viewer; null when
     // neither runs.
@@ -949,7 +952,7 @@ int main(int argc, char** argv) {
             }
             sandboxViewer.reset();
             playLevel = std::move(*mode);
-            playLevel->setDebugDraw(&debugSession.debugDraw());
+            playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
             playLevel->hud()->setSoundOutput(sandboxHudSound);
             modes.push(*playLevel);
@@ -983,7 +986,7 @@ int main(int argc, char** argv) {
         sandboxViewer.reset();
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
-        started.setDebugDraw(&debugSession.debugDraw());
+        started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         started.startAtLevel(name, checkpoint);
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };

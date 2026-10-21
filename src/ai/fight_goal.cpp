@@ -13,9 +13,12 @@
 #include "ai/attack_views.h"
 #include "ai/block_goal.h"
 #include "ai/brain.h"
+#include "ai/fidget_action.h"
 #include "ai/fight_checks.h"
+#include "ai/gangs.h"
 #include "ai/move_to_human_action.h"
 #include "ai/route_planner.h"
+#include "ai/script_services.h"
 #include "ai/sectors.h"
 #include "ai/targeting.h"
 #include "ai/threats.h"
@@ -31,6 +34,16 @@ namespace {
 
 // The re-target's period, ms.
 constexpr std::uint64_t kRetargetMs = 1000;
+// The taunt timer (`+0x20`): first due 750-1000 ms after the goal is made, then every 1000-2000 ms.
+constexpr int kFirstTauntLowMs = 750;
+constexpr int kFirstTauntHighMs = 1000;
+constexpr int kTauntLowMs = 1000;
+constexpr int kTauntHighMs = 2000;
+// The taunt's line: `cheer2`.
+constexpr int kTauntLine = 0x11;
+// The tactic types whose members wait close to the man (Defend, and `0xd`).
+constexpr int kDefendTactic = 2;
+constexpr int kCloseRingTactic = 0xd;
 // The walkable-line check's period, in updates.
 constexpr std::uint32_t kLineCheckUpdates = 30;
 // The walk into reach holds A at least this beyond twice T's radius, m.
@@ -154,11 +167,36 @@ void retargetFromSectors(Brain& brain) {
     brain.setTarget(ahead, true);
 }
 
+// Whether `brain`'s gang runs a tactic that keeps its waiting members close (type 2 or `0xd`).
+// @orig 0x002b3ab0 FightGoal_Process (unknown)
+bool ringTactic(const Brain& brain) {
+    const Gang* gang = brain.gang();
+    const Tactic* tactic = gang != nullptr ? gang->tactic() : nullptr;
+    return tactic != nullptr && (tactic->type() == kDefendTactic || tactic->type() == kCloseRingTactic);
+}
+
+// The reposition's taunt, its timer having run: a fight fidget saying `cheer2` when ai::repositionTaunts() allows
+// (T `distance` off, the humans holding slots on A, the gesture test). **Coney stand-in**: a Warrior's `turf_defend`
+// (`0xc3`, 31 % of the time while `CfgEnableTurfInvasion` is on) is not said, as the flag does not reach the brains.
+// @orig 0x002b3ab0 FightGoal_Process (unknown)
+void maybeTaunt(Brain& brain, const RepositionInput& ring, float distance) {
+    ScriptServices* services = brain.services();
+    const int slotsOnMe = static_cast<int>(brain.attackSlots().size());
+    const bool taunts = repositionTaunts(
+        ring, distance, slotsOnMe, [&] { return services != nullptr && services->mayGesture(brain); },
+        [&] { return brain.rand100(); });
+    if (taunts) {
+        brain.queueAction(std::make_unique<FidgetAction>(kFightFidgetAnim, false, kTauntLine));
+    }
+}
+
 } // namespace
 
 void FightGoal::start(Brain& brain) {
     m_deadlineMs = m_durationMs < 0 ? brain.nowMs() : brain.nowMs() + static_cast<std::uint64_t>(m_durationMs);
     m_retargetAtMs = brain.nowMs() + kRetargetMs;
+    m_tauntAtMs =
+        brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kFirstTauntLowMs, kFirstTauntHighMs));
     m_kind = kNoAttackKind;
     m_angle.reset();
 }
@@ -246,6 +284,8 @@ GoalStatus FightGoal::process(Brain& brain) {
         // The reposition: hold a ring round him.
         RepositionInput ring;
         ring.reason = answer;
+        ring.targetEmptyHanded = target->human().fighter().animSet() == 0;
+        ring.bothArmed = !ring.targetEmptyHanded && brain.human().fighter().animSet() != 0;
         ring.fewSlotHolders = target->attackSlots().size() < 2;
         ring.targetFacesMe = targetsBack(*target, brain);
         ring.firstOnFreeTarget =
@@ -254,7 +294,14 @@ GoalStatus FightGoal::process(Brain& brain) {
         ring.targetRadius = capsuleRadius(*target);
         ring.nearRange = brain.meleeNear();
         ring.farRange = brain.meleeFar();
+        ring.tacticRing = ringTactic(brain);
         const RepositionRing band = repositionRing(ring);
+        // The taunt, once each 1-2 s, queued before the move.
+        if (brain.nowMs() > m_tauntAtMs) {
+            m_tauntAtMs =
+                brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kTauntLowMs, kTauntHighMs));
+            maybeTaunt(brain, ring, distance);
+        }
         if (distance > band.outer) {
             brain.queueAction(std::make_unique<MoveToHumanAction>(band.limitMs, band.outer));
         } else {

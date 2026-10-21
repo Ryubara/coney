@@ -74,6 +74,7 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/control_menu_test.cpp
     gui/pause_menu_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
@@ -138,6 +139,7 @@ add_executable(coney_tests
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_credits_test.cpp
+    platform/disc_pause_controls_test.cpp
     platform/disc_game_session_test.cpp
     platform/disc_level99_handover_test.cpp
     platform/disc_level99_player2_test.cpp
@@ -381,6 +383,7 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
+    ai/fidget_action_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp
@@ -440,8 +443,9 @@ target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_sources(coney_tests PRIVATE support/test_paths.cpp)
 set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
     "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\"")
-# coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU).
-target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
+# coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_devtools
+# for the debug tools' own tests (the menus' glue, the overlay, the viewers), which test what developers use.
+target_link_libraries(coney_tests PRIVATE coney_platform coney_devtools Catch2::Catch2WithMain)
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
 # A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)

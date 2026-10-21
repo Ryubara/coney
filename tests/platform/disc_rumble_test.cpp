@@ -146,8 +146,17 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     const std::array<coney::script::Value, 2> args{coney::script::Value(p11->handle), coney::script::Value(*top)};
     REQUIRE(game.flow().scripts().call("TeleportToFlag", args));
 
-    // X.Update every 1,850 ms: the Furies score while their player stands in vTopTier, and lead the scoreboard.
-    game.run(900);
+    // X.Update every 1,850 ms: the Furies score while their player stands in vTopTier, and lead the scoreboard. The
+    // player holds the top as a player would: put back on it each second the brawl knocks him off (a single teleport
+    // left the lead to whichever way the AI's fight went).
+    constexpr std::uint64_t kHoldStep = 30;
+    constexpr std::uint64_t kLeadFrames = 900;
+    for (std::uint64_t held = 0; held < kLeadFrames; held += kHoldStep) {
+        if (held > 0) {
+            REQUIRE(game.flow().scripts().call("TeleportToFlag", args));
+        }
+        game.run(kHoldStep);
+    }
     const auto& rows = game.flow().hud().textProgress();
     REQUIRE(rows[0].active);
     CHECK(rows[0].label.find("FURIES") != std::string::npos);
@@ -160,7 +169,6 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     // Held to 100: the movement lock, X.GameOver 4 s later and the result screen naming the Furies. The player
     // holds the top as a player would: put back on it each second the brawl knocks him off, until the Furies have 100
     // (his crew follows him from the start, so where the fight goes is not fixed).
-    constexpr std::uint64_t kHoldStep = 30;
     constexpr std::uint64_t kHoldLimit = 9000;
     constexpr unsigned kWinScore = 100;
     for (std::uint64_t held = 0; held < kHoldLimit && rows[0].score < kWinScore; held += kHoldStep) {

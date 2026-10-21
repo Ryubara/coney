@@ -51,6 +51,9 @@ more (`0x0041d160`), where the same menu offers other items.
 
 ## Data
 
+Every value in this section is confirmed (code) at the address it cites unless its line says it is inferred or
+confirmed (runtime).
+
 ### The menu's fields
 
 The story menu (at least `0x4354` bytes: the Stats screen at `+0x3bb0` reaches `+0x4350`); confirmed (code) at the
@@ -128,6 +131,9 @@ The grid items (`0x001dbee0`), each with the code `PauseMenu_SelectItem` acts on
 The first item is selected when the menu opens. Confirmed (code); the story order and look confirmed (runtime).
 
 ## Behaviour
+
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred or
+confirmed (runtime).
 
 ### Pausing
 
@@ -364,8 +370,11 @@ cue `0xe`; back plays `0xf` and returns to the entries (`0x001e4618`).
 
 **Tutorial page** (`TutorialPage_Init` `0x001e3828`). A `ScrollingMenu` ([GUI](gui.md#fn-scrollingmenu)) at
 **(0.41, 0.35)** (`0x0050eef0`, `0x0050eef4`) of the **23 tips**, in order: tip *i* has the title string `0x145` +
-*i* and, as its description, the text `0x15c` + *i*. Each title and text is a `ScrollingTextWidget` 0.3 wide, font
-slot 3, size 1.0, wrapping at **0.53** (`0x0050eef8`; the first argument of `ScrollingTextWidget_SetText` is the wrap
+*i* and, as its description, the text `0x15c` + *i*. Each title and text is a `ScrollingTextWidget` 0.3 wide **centred**
+on that x (`ScrollingTextWidget_Update` `0x001e32a0` places the text at x − width / 2 + offset, the offset 0), so the
+text starts at 0.26 (confirmed (runtime): in PCSX2 at `level99` checkpoint 1 the first tip starts where the "Tutorial"
+title does, at 0.286 of the frame with the font's own left margin; the memory at `0x0050eef0` reads 0.41, 0.35, 0.53),
+font slot 3, size 1.0, wrapping at **0.53** (`0x0050eef8`; the first argument of `ScrollingTextWidget_SetText` is the wrap
 width that `MessageHUD_ReadAutoIndent` stores). A title is drawn in `0x005fd320`, and in **(134, 26, 26)** while
 selected; the selected tip's text unfolds under it (the menu's description reveal: 550 ms delay, step 0.25 per
 update, offset 0.01 below, `0x0050eefc`). The menu shows **8** tips at once (`0x0050ef00` and `0x0050ef10`, both 8
@@ -493,8 +502,8 @@ the items' actions are in `MissionFailedMenu_OnCommand` (`0x001d2a10`) and the Y
 ## Function index {#function-index}
 
 Every function of the pause, options and controls menus, by source file in address order, with the name it has in Ghidra
-(ours). Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
-[Source map](source-map.md#gui).
+(ours); each is confirmed (code) at its address unless its row says otherwise. Rows link to the section that
+describes the behaviour where there is one. The files and ranges are from the [Source map](source-map.md#gui).
 
 ### The Armies of the Night game-over screen {#an-game-over}
 
@@ -768,7 +777,18 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 Coney stand-ins, each an open question below:
 
 - The headers (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's
-  positions and colours; the Options and Controls screens are lists of their entries' names that do nothing on accept.
+  positions and colours; the Options screen is a list of its entries' names that does nothing on accept.
+- The Controls screen (`repo:src/gui/pause_menu/control_menu.h`, `ControlMenu`, written from
+  [`GUI/ControlMenuHUD.cpp`](#fn-controlmenuhud) and [The Controls screen](#controls-layout)) follows this page: the
+  entries, the cues, the pages' title, the pad picture (sheet-table record `0x18f`, loaded by the pause mode), the 14
+  labels on the table's rows (label 1 moved by the game state's language), the tips' list centred on (0.41, 0.35) with 8
+  visible, the 0.5 clip, the 0.53 wrap, the 0.01 spacing and the text unfolding 0.01 under the focused tip 550 ms after
+  the focus, a quarter a frame. `ControlLayout::forMode` holds the 16:9 and flag-`0x02` values, but Coney's pause
+  mode always opens the default 4:3 layout (no video-mode setting yet). Coney's choices: the list's window jumps
+  rather than scrolls, and the text is drawn once it has fully unfolded. Tests: `repo:tests/gui/control_menu_test.cpp`,
+  `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_controls_test.cpp` (START, the left stick
+  at 70 % and cross in `level99` started as `--play-level` starts it; with the disc's strings and fonts no Controller
+  label runs into the one under it).
 - The Stats screen is never available (Coney has no character stats), so Stats opens nothing.
 - The menu does not wait for its last cue to end before it pops.
 - The tint is a black quad rising to opaque over 1.4 s, under the menu; the mission-failed fade is the mode's own.

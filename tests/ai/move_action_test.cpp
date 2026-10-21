@@ -81,7 +81,7 @@ struct MoveScene {
     // A human with its feet at `feet` facing `headingDegrees` (0 faces +y, 90 faces -x), with a brain of `type` (a
     // gang brain unless given), driven by a pad when `padControlled`.
     Brain& add(Vec3 feet, float headingDegrees, coney::ai::BrainType type = coney::ai::BrainType::Gang,
-               bool padControlled = false) {
+               bool padControlled = false, const coney::ai::FightSettings& settings = {}) {
         humans.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
                                                  coney::test::identityBind(), 1.0F, &character.ranges));
         Human& made = *humans.back();
@@ -89,7 +89,7 @@ struct MoveScene {
             coney::human::FighterProfile{.player = false, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
         step.add(made, padControlled);
-        return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
+        return brains.add(made, type, settings, static_cast<std::uint32_t>(humans.size()));
     }
 
     // A player (fighter profile `player`) with the player's brain, his pad driving him, at `feet` facing
@@ -509,10 +509,27 @@ TEST_CASE("locked on a foe, a pad's human faces it; a player under script contro
     // more than 15 degrees off, nothing within 15 degrees or with no move asked.
     MoveScene scene;
     Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, -90.0F);
-    Brain& foe = scene.add({42.0F, 41.0F, 0.0F}, 90.0F);
+    // The foe only punches (a grab or a tackle would hold the player and turn him), so a punch locks him on.
+    coney::ai::FightSettings punches;
+    punches.attackWeights = coney::ai::AttackWeights{};
+    punches.attackWeights[1] = 10;
+    Brain& foe = scene.add({42.0F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Gang, false, punches);
     scene.lockOn(player);
     scene.lockOn(foe);
     REQUIRE(player.human().fighter().lockTarget() != nullptr);
+    REQUIRE(foe.human().fighter().lockTarget() != nullptr);
+    // The foe is only a lock target from here: his fight stops, and whatever it started in the player (a hit's
+    // reaction, which would turn him) plays out first.
+    foe.setThreatResponse(0);
+    foe.flush();
+    scene.runUntil(
+        120,
+        [&] {
+            const Human& body = player.human();
+            return !coney::human::stickBusy(body.gateInput()) && body.animator().flags() == 0 &&
+                   !body.fighter().holdsMovement(body.animator());
+        },
+        [] {});
     REQUIRE(foe.human().fighter().lockTarget() != nullptr);
     const float toFoe = radians(-90.0F); // +x
     const auto off = [](const Brain& brain, float heading) {

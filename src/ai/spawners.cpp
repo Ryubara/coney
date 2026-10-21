@@ -164,15 +164,37 @@ void Spawners::start(int gang, std::string_view name, int mode, int value) {
     }
 }
 
-void Spawners::update(std::uint64_t nowMs, SpawnerWorld& world) {
+void Spawners::forgetGone(const SpawnerWorld& world) {
+    // The original counts a human off when his brain is torn down; Coney when he is down or deleted, as its spawners'
+    // own limits do. The police count drops only for a police gang's spawner dispatching (4) or with a dispatch (6).
+    for (auto& [gang, spawners] : m_spawners) {
+        const bool police = world.policeGang(gang);
+        for (Spawner& spawner : spawners) {
+            const auto gone = static_cast<int>(
+                std::erase_if(spawner.humans, [&world](double handle) { return !world.alive(handle); }));
+            m_spawned -= gone;
+            if (police && (spawner.state == static_cast<int>(SpawnerState::PoliceDispatch) ||
+                           spawner.state == static_cast<int>(SpawnerState::DispatchingPolice))) {
+                m_copSpawned -= gone;
+            }
+        }
+    }
+}
+
+void Spawners::update(std::uint64_t nowMs, SpawnerWorld& world, SpawnCaps caps) {
     m_nowMs = nowMs;
-    for (auto& spawners : m_spawners | std::views::values) {
+    forgetGone(world);
+    for (auto& [gang, spawners] : m_spawners) {
+        // The gang's cap, asked once before its spawners run: the police count under SetCopSpawnMax for a police
+        // gang, the spawned count under SetSpawnMax for any other.
+        const bool police = world.policeGang(gang);
+        if ((police ? m_copSpawned : m_spawned) >= (police ? caps.copSpawnMax : caps.spawnMax)) {
+            continue;
+        }
         for (Spawner& spawner : spawners) {
             if (!spawner.inUse) {
                 continue;
             }
-            // Its humans that went down or were deleted no longer count against its limit.
-            std::erase_if(spawner.humans, [&world](double handle) { return !world.alive(handle); });
             // Ready by its state, or (in any state) while a wave runs.
             if (!spawner.waveRunning && !ready(spawner, nowMs, world)) {
                 continue;
@@ -325,6 +347,11 @@ void Spawners::spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& wor
     }
     spawner.humans.push_back(handle);
     ++spawner.made;
+    // The level's counts: every spawn, and a dispatching police spawn (state 6) on the police count too.
+    ++m_spawned;
+    if (state == SpawnerState::DispatchingPolice) {
+        ++m_copSpawned;
+    }
     // A total of -1 makes no limit (inferred from the scripts' values).
     if (spawner.call.total >= 0 && spawner.made >= spawner.call.total) {
         spawner.inUse = false;

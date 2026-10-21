@@ -1,8 +1,8 @@
 # AI reimplementation plan: units and specifications
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on
-2026-10-12 (the ObjectPile goal, the fidget and taunt actions and the pattern block on 2026-10-13). No runtime check
-yet; each claim states its evidence level.
+2026-10-12 (the ObjectPile goal, the fidget and taunt actions and the pattern block on 2026-10-13). Every claim is
+confirmed (code) at the cited address unless it says otherwise; nothing on this page was checked at runtime.
 
 ## Purpose
 
@@ -38,18 +38,17 @@ are the type ids of [Goals](ai.md#goals).
 
 ## Original structure
 
-The units cover the AI stretch of `Human/` (brains, goals, actions, tactics, formations), the gang record's functions
-in `GameModes/` and the Warriors' command dispatcher in `Warriors/`, as the scope above says. Their classes and how
-they call each other are on [AI humans](ai.md) and the [AI code index](ai-code.md).
+The AI code's layout (the `Human/` stretch, its classes and their vtables) is on the [AI code index](ai-code.md); each
+unit below names its own functions.
 
 ## Data
 
-The records the units read and write are the brain ([The brain](ai.md#brain)), the human and the gang record
-([The gang](ai-gangs.md#gang-record)), in the shared conventions above; each unit lists the offsets it uses.
+The records the units read are described on [The brain](ai.md#brain) and [The gang](ai-gangs.md#gang-record); each
+unit gives the offsets it uses.
 
 ## Behaviour
 
-Units 1 to 7 below specify what each of their functions does in the original, one section per unit.
+The units below, one section each, specify the behaviour to reimplement, function by function.
 
 ## Unit 1: threats and the gang's shared target {#unit-1}
 
@@ -62,8 +61,8 @@ Coney use a stand-in threat test today (`repo:src/ai/brain_events.cpp`, `repo:sr
 `Gang_IsEnemyOf(a, b)`: whether gang *a* treats gang *b* as an enemy. Confirmed (code) at `0x00168fe0`.
 
 1. False when one gang's kind (*gang* `+0x2c`) is 1 (the police) and the other's is `0x17`, either way round.
-2. False during a **truce**: the global `0x0050cb7c` holds an end time (confirmed (code): written by
-   `Gangs_SetTruce`); while it is not 0 and *now* is below it, no gang is anyone's enemy.
+2. False during a **truce**: the global `0x0050cb7c` holds an end time; while it is not 0 and *now* is below it,
+   no gang is anyone's enemy.
 3. Otherwise bit (*b*'s id, *gang* `+0x30`, masked to 0-31) of *a*'s enemy mask (*gang* `+0x38`). The test reads
    *a*'s mask only, so it is not symmetric by itself; `GangMakeEnemies` sets both masks.
 
@@ -268,8 +267,6 @@ condition Start used to install it (can flee and v9 ≠ 0, or kind 6 with `+0xd9
 
 ### The gang's alert state (`0x00164a28` and four clip helpers) {#alert-state}
 
-Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
-
 `Gang_SetAlertState(gang, state)` (`0x00164a28`, 316 bytes), confirmed (code). Nothing happens unless *state*
 differs from *gang* `+0x32`. It stores *state*, then:
 
@@ -319,12 +316,9 @@ clip groups, `canFlee` and flee count (`repo:src/ai/gangs.h`). `Tactic_Start` pu
 fighting state and calms the gang of a tactic of type `0x12` or above. The flight moved from the hub's per-update
 check (`ScriptedHub`) into the attack tactic's event 18; the hub hands the gangs its categories and flee shares
 (tested in `repo:tests/ai/scripted_hub_test.cpp`). The living count of Start and the spacing is `Gang::living()`:
-every member, the dead included, since a Coney member's handle resolves until the human is deleted. The script
-binding's head count (`ScriptedBrains::gangHeadCount`, its `living` the second argument of `Gang_CountLiving`) reads
-`Gangs::countLiving()`; its `living` true form and every HUD gang count (`hudGangCount()`, passing 1) count the
-members for whom `humanIsDownOrDead()` is false: not dead, dying, knocked out or wounded (the last two with health
-left too), while a member only knocked down stays ([HUD](hud-functions-lua.md#gang-count-what)). Tests:
-`repo:tests/ai/tactic_attack_test.cpp`, `repo:tests/ai/gangs_test.cpp`. Stand-ins left:
+every member, the dead included, since a Coney member's handle resolves until the human is deleted. That is not the
+script binding's living head count (`ScriptedBrains::gangHeadCount`, members with health left, Coney's reading) nor
+the HUD's gang counter, which also counts health. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins left:
 
 - "Cuffed" in the flight is the human's scripted arrested state.
 - The clip groups keep only their clip counts, and nothing plays the groups yet; the random three of five taunts is
@@ -496,8 +490,6 @@ Every Process: no order while the leader's line plays; exactly one order.
 
 ## Unit 5: the Guard orders and the FightBackOff goal {#unit-5}
 
-Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
-
 Gang-fight needs 4 and 12. Confirmed (code) at each address. Depends on FollowAndDefend (`0x002bca20`, a crew unit
 in [the plan](#plan)); until that unit lands, Coney's FollowAndDefend stand-in is used.
 
@@ -667,8 +659,6 @@ object first); an object claimed 2 s ago by the same gang (skipped) and by anoth
 
 ## Unit 7 and later: what each needs first {#unit-7}
 
-Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
-
 Unit 7 (the fight goal's Start, Resume, Suspend and End, the fidget and taunt actions, the pattern block, and the
 waiting ring of [The reposition](ai.md#fight-reposition), gang-fight need 7) is described by its sections and by
 the three below: the fidget and taunt actions and `Brain_TryPatternBlock`. Gang-fight needs 8 (event `0x15`'s
@@ -722,6 +712,12 @@ fidget passes anim 0 with idle 1 (`0x002b32d4`, `0x002bd574`).
 one holding a knife with idle 0 (plays `0x25a`); a line said at 1.0 and at 1.5 (target a pad human); a dealer with
 idle 0 (line, then done); an AI Warrior's idle fidget cleared while the chief stands with command 1 (refused) and
 with command 4 (stopped); a normal end (stopped).
+
+**Coney status (implemented, 2026-10-20).** `repo:src/ai/fidget_action.h` (`FidgetAction`), queued by the fight
+goal's reposition taunt (`repo:src/ai/fight_goal.cpp`) with the gang's combat fidgets (`combatFidgetClip`). Stand-ins:
+"free to fidget" is no held record flag, alive, up, not held and empty-handed (the state-flag word is not built), the
+line is said at one volume, the clip is a scripted clip rather than an overlay, and Abort's refusal for an idle
+Warrior is not built (no caller queues an idle fidget yet).
 
 ### The taunt action (`Taunt`, type 29) {#taunt-action}
 
@@ -795,13 +791,7 @@ current target, who is in a Fight goal with an empty queue (block goal pushed, c
 the same with the pattern below `t`, with a non-Fight top goal, with an action that refuses to abort, and with the
 attacker not his target (the ordinary chance, seeded).
 
-## Coney's implementation
-
-Each built unit ends with its **Coney status**: Units 1 and 2 are implemented (`repo:src/ai/threats.h`,
-`repo:src/ai/tactic_attack.h`, `repo:src/ai/gangs.h`), with the stand-ins each still has. The plan below lists the
-units left.
-
-## Reimplementation plan {#plan}
+## Coney's implementation: the reimplementation plan {#plan}
 
 Units in order. 1-7 come first (gang combat is the project's top priority) and need little else. Then the brain
 core and the actions, which the rest call; then the fight goals and the tactics; then the **crew** units, which wait

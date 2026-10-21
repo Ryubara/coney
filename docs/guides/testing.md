@@ -62,9 +62,11 @@ either ([Studying the original](research-workflow.md#studying-the-original)).
 - **Unit tests** (Catch2 under `tests/`, mirroring `src/`) cover everything that can be tested without the game.
   They are written first.
 - **Smoke tests** run the `coney` executable itself under `ctest`: start-up, argument errors, scripted input.
-- **Disc tests** need the player's own disc, found through `coney.local.toml` or `CONEY_DISC`. They skip without it.
-  Every one carries the ctest label `disc` (the Catch2 tag `[disc]`), so `coney-tools build --test -L disc` runs them
-  and nothing else ([`build`](coney-tools.md#build)).
+- **Disc tests** need the player's own disc, which they read from `CONEY_DISC`. `coney-tools build --test` sets it from
+  `game_dir` in `coney.local.toml` when the environment does not, and its summary says whether the disc tests ran or
+  were skipped ([the disc for the tests](coney-tools.md#build)); without a disc they skip, and ctest counts a skip as
+  a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2
+  tag `[disc]`), so `coney-tools build --test -L disc` runs them and nothing else ([`build`](coney-tools.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
@@ -253,6 +255,11 @@ other title area leaves the line out.
 
 ### Capturing and attaching {#pr-media}
 
+!!! note "For the project's agents"
+
+    The parts about `scratch/<branch>/shots/`, the coordinator attaching pictures and PCSX2 claims are for the project's
+    agents. A person opening their own pull request drags the PNG into its description box.
+
 - **Attach, never commit.** Gameplay screenshots and short videos of Coney or of the original are uploaded to the
   pull request or issue as GitHub attachments, with `gh --attach` (below) or, for a person, by dragging the file into
   the description box. They are never committed:
@@ -280,7 +287,7 @@ other title area leaves the line out.
 
   ```sh
   cd scratch/<branch>
-  gh pr create --body-file PR.md --attach ./shots/before.png --attach ./shots/after.png
+  gh pr create --title "<title>" --body-file PR.md --attach ./shots/before.png --attach ./shots/after.png
   ```
 
   `gh` replaces each reference whose path matches an `--attach` with the uploaded
@@ -297,6 +304,11 @@ other title area leaves the line out.
   merged ([Sharing one machine](how-we-work.md#shared-machine)).
 
 ### Clips {#clips}
+
+!!! note "For the project's agents"
+
+    `coney-tools clips publish` and the rules below are how the project's agents publish clips. A person drags a short
+    clip into the pull request or issue on GitHub; the no-game-data rule still applies.
 
 A short video shows a bug or a fix better than screenshots: a before and after of Coney, and the original from the
 same place. Agents record and publish them themselves (the user's request, 2026-10-12), under five rules. Each is
@@ -341,12 +353,19 @@ uv run --project python coney-tools check changed
 It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files a pull request changes
 (a changed header through the `.cpp` files that include it; the only clang-tidy a pull request gets, as CI's runs
 nightly), the page standards on the changed pages and `mkdocs build --strict` when docs changed, ruff, pytest and mypy
-when `python/` or `.claude/` changed, and `repo check`; it needs a `build/dev` that was configured once (`coney-tools
-build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets through: a designated initializer
-that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
-(`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not replace
-the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the sanitizers and the
-nightly full clang-tidy pass; a change to the build setup is checked on its changed files only.
+when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new gameplay function carries `@orig` or
+`@coney-only`), and `repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only
+--agent <id>`: configure, no build). It catches what MSVC lets through: a designated initializer that skips a field
+(`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access (`bugprone-unchecked-optional-access`).
+[The command's page](coney-tools.md#check) has the options. It does not replace the list below, which is the whole
+gate, and it leaves to CI the warnings only GCC emits, macOS, the sanitizers and the nightly full clang-tidy pass; a
+change to the build setup is checked on its changed files only.
+
+clang-tidy waits for a slot of the machine's tidy lane, like a build, and skips every file the shared cache has seen
+clean in the same state, so a rerun after a fix tidies only what the fix reaches ([building](building.md#clang-tidy-cache)).
+A first run on a header change can reach hundreds of files: when the queue or the run would outlast your prompt cache,
+start it with `--detach`, write STATUS.md and stop; `coney-tools check result` shows the outcome. Exit 75 means it gave
+up waiting, not that anything failed.
 
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
@@ -357,8 +376,9 @@ The whole gate:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
   `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
-  [build slot](coney-tools.md#build) and loads the MSVC environment itself; agents never run `cmake --build` or `ctest`
-  directly).
+  [build slot](coney-tools.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
+  agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
+  ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`; `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables are built into
   the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,

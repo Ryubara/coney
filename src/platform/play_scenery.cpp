@@ -209,9 +209,9 @@ std::string LevelPlayScenery::summary() const {
                                  : std::format(", spawned collision triangles {}", m_extraSolid.size()));
 }
 
-std::vector<debug::Place> PlayScenery::places() const {
+std::vector<human::Place> PlayScenery::places() const {
     const human::PlayerStart s = start();
-    return {debug::Place{startSource(), s.position, s.headingDegrees}};
+    return {human::Place{startSource(), s.position, s.headingDegrees}};
 }
 
 std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/,
@@ -257,10 +257,10 @@ SandboxPlayScenery::SandboxPlayScenery(sandbox::SandboxWorld world, std::unique_
     : m_world(std::move(world)), m_made(m_world.layout()), m_renderer(std::move(renderer)), m_start(start),
       m_spawn(std::move(spawn)) {}
 
-std::vector<debug::Place> SandboxPlayScenery::places() const {
-    std::vector<debug::Place> places;
+std::vector<human::Place> SandboxPlayScenery::places() const {
+    std::vector<human::Place> places;
     for (const sandbox::SpawnPoint& spawn : m_world.layout().spawns) {
-        places.push_back(debug::Place{spawn.name, spawn.position, spawn.headingDegrees});
+        places.push_back(human::Place{spawn.name, spawn.position, spawn.headingDegrees});
     }
     return places;
 }

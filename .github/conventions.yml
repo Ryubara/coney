@@ -109,6 +109,34 @@ paths:
   address_allowed_in: ["README.md"]
   # Mirrors pre-commit's check-added-large-files (a large file is usually game data); never exclude a file from it.
   large_file_kb: 512
+  # The folders of src/ whose every function says where it comes from: `@orig` for a reimplementation of the
+  # original function at that address, or `@coney-only <reason>` (docs/guides/conventions.md#coney-only). Every folder
+  # of src/ is in exactly one of the two lists; `coney-tools orig check` refuses a new folder in neither and a new
+  # gameplay function that says neither.
+  gameplay:
+    - "src/ai/"
+    - "src/animation/"
+    - "src/audio/"
+    - "src/camera/"
+    - "src/characters/"
+    - "src/combat/"
+    - "src/effects/"
+    - "src/gamemodes/"
+    - "src/graphics/"
+    - "src/gui/"
+    - "src/hud/"
+    - "src/human/"
+    - "src/movies/"
+    - "src/physics/"
+    - "src/raycast/"
+    - "src/scenes/"
+    - "src/scripting/"
+    - "src/warriors/"
+    - "src/world/"
+    - "src/world_objects/"
+  # Coney's own by nature: the operating system, SDL3 and librw (platform), the engine's plumbing (core, fileio),
+  # the debug tools, network play and the sandbox. Their functions need no marker.
+  coney_only: ["src/platform/", "src/core/", "src/fileio/", "src/debug/", "src/net/", "src/sandbox/"]
 
 commits:
   title:
@@ -451,7 +479,13 @@ hygiene:
       severity: error
       fix: skill
       keys: [paths.large_file_kb]
-      summary: "pre-commit's check-added-large-files limit differs from the conventions"
+      summary: "pre-commit's check-added-large-files limit differs from the conventions, or the hook or the config skips a file (no --enforce-all, an exclude, types, stages, a wider top-level exclude)"
+    files.game-files:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [workspace.game_capture_suffixes, workspace.busy_marker]
+      summary: "pre-commit's no-game-files hook is missing, not language fail, narrowed (an exclude, types, stages, a wider top-level exclude) or lets through a game capture type, the busy marker or a local record"
     files.markdown-hook:
       scope: files
       severity: error

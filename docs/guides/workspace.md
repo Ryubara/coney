@@ -56,10 +56,13 @@ the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Insi
 
 1. creates the folders of [the layout](#the-layout) that are missing;
 2. clones the repository into `repos/coney` when run outside a checkout (`--repo-url`);
-3. downloads the research tools you ask for with `--fetch` (below);
+3. downloads the research tools you ask for with `--fetch` (below). The launchers add `--fetch ccache` when you name
+   nothing to fetch, so a new machine gets the compiler cache (Windows; on Linux and macOS init says to install the
+   package);
 4. writes `repos/coney/coney.local.toml` from the example when there is none, filling in `jdk_home` when it finds a
    JDK 21, and `ghidra_mcp_repo` and `pcsx2_mcp_dir` when those tools are in `tools/` (`pcsx2_mcp_dir` names the
-   newest fork build, `tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.N-win64`, when one is there);
+   fork's downloaded release, `tools/PCSX2-MCP-v1.1.0-win64`, or, when there is one, the newest build made from the
+   clone, `tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.N-win64`);
 5. checks the prerequisites ([Building and testing](building.md#what-you-need)): Git, the C++ compiler, CMake 3.28+
    and Ninja, which the engine needs, and a JDK 21 and Node.js 18+, which only the research tools need, and ccache,
    which makes builds faster but is not needed. It prints what is missing and what to install; it installs none of it
@@ -67,7 +70,12 @@ the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Insi
 
 Every step that is already done is skipped, so running it again is safe; an existing `coney.local.toml` is never
 changed. `--dry-run` prints the steps without doing any. `--workspace DIR` names the workspace instead of finding it
-around the checkout (a checkout must sit in a workspace's `repos/` folder). The exit code is 1 when the engine's
+around the checkout (a checkout must sit in a workspace's `repos/` folder). A plain clone elsewhere needs no
+workspace: the tools then keep the folders the layout puts beside the checkout (`scratch/`, `cache/ccache`,
+`tools/`, `ghidra/`, `emulators/`) in a folder beside the clone named after it, `<clone>-workspace`
+(`~/code/coney` uses `~/code/coney-workspace`; `config.workspace_root`). Never inside the clone: Ghidra projects,
+emulators and a BIOS stay out of the repository ([Why siblings](#why-siblings)). A path set in `coney.local.toml`
+always wins. The exit code is 1 when the engine's
 prerequisites are missing, 2 for a usage error, 0 otherwise.
 
 **Never your game or firmware.** The bootstrapper never downloads or asks for game files or a BIOS
@@ -89,9 +97,11 @@ that would land outside the tool's folder is refused.
 | `ghidra` | Ghidra 12.1.4, with the Emotion Engine extension v2.1.38 (built for 12.1.4) in its `Ghidra/Extensions/` | `tools/ghidra_12.1.4_PUBLIC` | Apache-2.0 both |
 | `ghidra-mcp` | ghidra-mcp's repository at the commit Coney was set up with (7.0.0 pre-release) | `tools/ghidra-mcp` | Apache-2.0 |
 | `ccache` | ccache 4.14.1, the [compiler cache](building.md#compiler-cache) `coney-tools build` uses; Windows only (the release CI's Windows job installs), on Linux and macOS install the `ccache` package with apt or Homebrew | `tools/ccache-4.14.1` | GPL-3.0 |
-| `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source | `tools/pcsx2-mcp` | GPL-3.0 |
+| `pcsx2-mcp-release` | the PCSX2-MCP fork's release v1.1.0 (Windows only): PCSX2 2.9.129 built with the debug server, the MCP server with its dependencies in `pcsx2-mcp-server/`, and the patch's source | `tools/PCSX2-MCP-v1.1.0-win64` | GPL-3.0 |
+| `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source, to change the fork | `tools/pcsx2-mcp` | GPL-3.0 |
 
-PCSX2 itself is not downloaded: every copy runs the fork's own build ([PCSX2 copies](#pcsx2-copies)).
+A stock PCSX2 is never downloaded: every copy runs the fork's build, the release or one made from the clone
+([PCSX2 copies](#pcsx2-copies)).
 
 What is left to do by hand, which the command reminds you of:
 
@@ -99,7 +109,9 @@ What is left to do by hand, which the command reminds you of:
   and applies our function names ([Starting your own project](ghidra.md#own-project)).
 * **ghidra-mcp:** build its headless server (`target/GhidraMCPHeadless.jar`) with Maven 3.9+
   ([ghidra-mcp on your machine](ghidra.md#own-ghidra-mcp)); the agent bridge runs from the source as it is.
-* **PCSX2-MCP:** build the fork as its README says (`pcsx2-plugin\prepare.ps1`, then CMake, then `npm ci` and
+* **PCSX2-MCP:** with the release (`--fetch pcsx2-mcp-release`), run `coney-tools pcsx2 setup-copies`
+  ([PCSX2 copies](#pcsx2-copies)) and put your BIOS in each copy. Only to change the fork, build the clone as its
+  README says (`pcsx2-plugin\prepare.ps1`, then CMake, then `npm ci` and
   `npm run build` in `pcsx2-mcp-server/`), into a release folder `release/PCSX2-MCP-coney-v2.9.129.N-win64` that
   holds PCSX2's program with `pcsx2-mcp-server/` beside it; point `pcsx2_mcp_dir` at it and run
   `coney-tools pcsx2 setup-copies` ([PCSX2 copies](#pcsx2-copies)). Each copy needs your BIOS.
@@ -108,6 +120,12 @@ To move to newer versions, change the pins (URL and SHA-256, or the commit) in `
 each release asset's SHA-256.
 
 ### PCSX2 copies {#pcsx2-copies}
+
+!!! note "For the project's agents"
+
+    Several copies, their ports and the claims (`coney-tools pcsx2 claim`) let several agents run the original at once.
+    A person alone needs one copy: set `pcsx2_copies = 1` in `coney.local.toml`, run `coney-tools pcsx2 setup-copies`
+    once and start that PCSX2 yourself.
 
 Several agents run the original at once, each in its own portable PCSX2 copy under `pcsx2_root`
 (`../../emulators`): `pcsx2`, `pcsx2-b`, `pcsx2-c`, ... (`pcsx2_copies`, 5 by default). Every copy runs the
@@ -172,18 +190,18 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_copies` | `5` | a number: how many copies `pcsx2 setup-copies` makes |
 | `pcsx2_pine_base` | `28011` | a number: the PINE port of copy `pcsx2`; copy *i* uses this + *i* |
 | `pcsx2_debug_base` | `21512` | a number: the debug server port of copy `pcsx2`; copy *i* uses this + *i* |
-| `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
-| `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
+| `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
+| `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
-| `ccache_dir` | `cache/ccache` in the main checkout's `../..` | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
+| `ccache_dir` | `cache/ccache` in the main checkout's `../..` (`<clone>-workspace/cache/ccache` in a plain clone) | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
 | `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
 | `ccache_size_gb` | `25` | a number: the compiler cache's size cap in GB (ccache drops the least recently used objects beyond it); `0` turns the cache off |
-| `scratch_dir` | `../../scratch` | captures and tool output |
+| `scratch_dir` | `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
-| `pcsx2_mcp_dir` | none | a PCSX2-MCP fork build (`release/PCSX2-MCP-coney-v2.9.129.N-win64`): the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
+| `pcsx2_mcp_dir` | none (`init` sets it to the clone's newest build under `tools/pcsx2-mcp/release/`, else to the fetched release `tools/PCSX2-MCP-v1.1.0-win64`) | a PCSX2-MCP fork build, the release or one made from the clone: the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
 | `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
@@ -206,6 +224,11 @@ A worktree that does hold its own copy uses that one instead, with paths relativ
 worktree when its branch is merged: `coney-tools workspace clean` does it for you ([Cleanup](#cleanup)).
 
 ## Cleanup and free space {#cleanup}
+
+!!! note "For the project's agents"
+
+    This section is about a machine holding many agents' worktrees and builds. A person with one checkout keeps space
+    free by deleting old `build/` folders; `coney-tools workspace disk` shows the free space.
 
 A build of the engine is about 6 GB per preset (`build/dev` measured 6.4 GB on 2026-10-20, with `/Z7` objects) and each
 track has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke

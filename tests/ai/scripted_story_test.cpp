@@ -306,11 +306,19 @@ TEST_CASE("GangIsWanted asks the wanted timer by default and the second timer fo
 TEST_CASE("The story's configuration reaches the game state", "[ai][story]") {
     Level level;
     level.call("CfgVerticalSightModifier", {Value(2.5)});
+    CHECK(level.state.story.spawnMax == 16);
+    CHECK(level.state.story.copSpawnMax == 16);
     level.call("SetSpawnMax", {Value(6.0)});
+    level.call("SetCopSpawnMax", {Value(4.0)});
     level.call("CfgSetOutdoorMode", {Value(1.0)});
     level.call("CfgCivilianAggression", {Value(30.0), Value(40.0)});
     CHECK(level.state.story.verticalSight == 2.5F);
     CHECK(level.state.story.spawnMax == 6);
+    CHECK(level.state.story.copSpawnMax == 4);
+    // The level reset puts both caps back to 16.
+    level.state.story.resetForLevel();
+    CHECK(level.state.story.spawnMax == 16);
+    CHECK(level.state.story.copSpawnMax == 16);
     CHECK(level.state.story.outdoor);
     CHECK(level.state.story.civilianAggression[0] == 30);
     CHECK(level.state.story.civilianAggression[1] == 40);

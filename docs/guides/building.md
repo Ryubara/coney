@@ -22,6 +22,25 @@ and prints what is missing ([Bootstrap](workspace.md#bootstrap)). When uv itself
 pinned version of it with Astral's installer, which adds uv to your `PATH` (shell profiles on Linux and macOS, user
 `PATH` on Windows).
 
+### Check your setup {#doctor}
+
+```sh
+uv run --project python coney-tools doctor [--disc DISC]
+```
+
+One command checks everything above and the rest a contributor needs, and prints `ok`, `problem` or `note` per line,
+with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, clang-tidy 19, and on Linux
+an old default `g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
+folder, your disc (`--disc`, else `game_dir`: `SLUS_212.15` and `WARRIORS.DIR` by size and SHA-1, `WARRIORS.WAD` by
+size, against the NTSC-U release the research refers to), the research tools (JDK 21, Node.js, Ghidra, the compiled
+EE language, a project holding `SLUS_212.15`, whether port 8090 is free or held by ghidra-mcp, the PCSX2-MCP build
+`pcsx2_mcp_dir` names, with the command that downloads the fork's release when there is none, and a BIOS in the first
+copy) and the free disk
+space (a `dev` build with its tests takes about 6.5 GB; under 10 GB free is a problem). It works in a plain clone,
+needs no `--agent` and no configuration, changes nothing and prints sizes and hashes only. A problem is something the
+engine's build or the disc needs, and makes the exit code 1; a note is optional (another release of the game, a
+missing research tool). On an idle machine it takes a few seconds; hashing the disc's two small files is most of it.
+
 The C++ dependencies (SDL3, librw, Dear ImGui, ENet, Catch2, FFmpeg) are not installed by hand: CMake downloads them
 on the first configure, at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access
 and takes a few minutes; later builds reuse the copies under `build/<preset>/_deps/`.
@@ -139,8 +158,10 @@ uv run --project python coney-tools build --agent <your id> --preset dev --test
 ```
 
 A hook in `.claude/settings.json` refuses `cmake --build`, `cmake --preset`, `ctest` and `ninja` typed directly (it
-only applies inside Claude Code). A person may use either way: `--agent` takes any name (`me` will do), and on Windows
-the tool loads the Visual Studio environment itself, so no special prompt is needed. Underneath, and for a person
+only applies inside Claude Code). A person may use either way. Typed in a terminal, `--agent` may be left out: the build
+is then labelled with your user name. An agent always passes it (it is required when the output is not a terminal,
+and inside Claude Code). On Windows the
+tool loads the Visual Studio environment itself, so no special prompt is needed. Underneath, and for a person
 alone on a machine, the everyday loop is:
 
 ```sh
@@ -153,15 +174,20 @@ The first line only needs running again when a `CMakeLists.txt` or `cmake/deps.c
 does not pick up by itself (`coney-tools build --configure` forces it). Each preset builds into its own
 `build/<preset>/` folder, so presets never disturb each other.
 
-A build or a test run that takes minutes runs in the background with its output in a log. Waiting for it is bounded:
-never `until grep -q ... log; do sleep ...; done`, which waits for ever when the build dies first (a hook refuses it;
-[Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests; `coney-tools workspace
-clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
+!!! note "For the project's agents"
 
-No agent waits on a build past its prompt cache (about an hour): a call waits at most 40 minutes for a slot and takes
-at most 45 in all, and leaves at once with exit 75 when the queue says it cannot fit. A longer wait runs detached
-(`--detach`), the agent writes `STATUS.md` and stops, and whoever continues reads `coney-tools build result`
-([Build waits](agents.md#build-waits)).
+    The next two paragraphs are about several AI agents sharing one machine; a person building alone can skip them.
+    Alone on a machine, a build never waits for a slot.
+
+    A build or a test run that takes minutes runs in the background with its output in a log. Waiting for it is
+    bounded: never `until grep -q ... log; do sleep ...; done`, which waits for ever when the build dies first (a hook
+    refuses it; [Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests;
+    `coney-tools workspace clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
+
+    No agent waits on a build past its prompt cache (about an hour): a call waits at most 40 minutes for a slot and
+    takes at most 45 in all, and leaves at once with exit 75 when the queue says it cannot fit. A longer wait runs
+    detached (`--detach`), the agent writes `STATUS.md` and stops, and whoever continues reads `coney-tools build
+    result` ([Build waits](agents.md#build-waits)).
 
 | Preset | Build type | What it is for |
 | --- | --- | --- |
@@ -180,8 +206,10 @@ streamed worlds, PS2 geometry and collision meshes byte by byte; none needs the 
 librw on its NULL device).
 
 Tests that check your own disc run only when the environment variable `CONEY_DISC` names the disc, are reported as
-skipped otherwise, and print counts only. They carry the Catch2 tag `[disc]` and a tag for their subject (`[world]`,
-`[story]`, `[rumble]`, ...; `coney_tests --list-tags` lists them), so you can run the ones for the area you changed.
+skipped otherwise, and print counts only. `coney-tools build --test` sets it from `game_dir` in `coney.local.toml`
+when it is not already set ([`build`](coney-tools.md#build)); a raw `coney_tests` run needs it set by hand. They
+carry the Catch2 tag `[disc]` and a tag for their subject (`[world]`, `[story]`, `[rumble]`, ...; `coney_tests
+--list-tags` lists them), so you can run the ones for the area you changed.
 With `CONEY_DISC` set when CMake configures, more smoke tests run `coney --disc` as well (the start-up movies, the main
 menu, the character viewer, a level played under a scripted pad):
 
@@ -196,6 +224,32 @@ test case that skips without the disc but lacks the tag fails a Python test.
 
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
+
+### The debug tools and the game {#debug-tools}
+
+Coney is getting two kinds of build (a maintainer decision, 2026-10-21): builds with the **debug tools**, which
+developers and agents use, and a **release** build a player will get, the game alone with none of the tools compiled
+in (the launcher will install it). The split lands in steps: today the tools have targets of their own, and every
+build still carries them. The debug tools are the [debug menus](debug-menu.md) and their pages, the developer
+overlay and Dear ImGui, the debug lines, the viewers, the cheats and tunables, the [sandbox](sandbox.md) and the
+developer command-line flags.
+
+The split is made by target, not by `#ifdef`. The game is `coney_core`, `coney_audio`, `coney_movies`, `coney_net`
+and `coney_platform`; the debug tools are two libraries of their own:
+
+| Target | Folder | Holds |
+| --- | --- | --- |
+| `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
+| `coney_devtools` | `src/platform/` | the menus' platform glue, the developer overlay (the only target that links Dear ImGui), the texture, character and sandbox viewers, the reference images |
+
+`coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other
+way round: the play mode has Coney's own capabilities as its own API (teleport, freeze, noclip, spawn, change
+character), and `PlayLevelControls` in `coney_devtools` turns them into the debug menus' `debug::PlayControls`, with
+the Entity inspector, the Animation player and the Debug draw lines, which it hands the mode as a hook
+(`PlayLevelMode::setSceneLines()`). Until the game session and the sound output are untied the same way,
+`coney_platform` still links `coney_debug`; the release preset follows once they are.
+`python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources and fails when a game library
+lists a debug source or includes a `debug/` header, or anything but `coney_devtools` links `imgui`.
 
 ### Debug information on MSVC {#debug-info}
 
@@ -231,8 +285,9 @@ it back. One `dev` build's objects are 0.6 GB in the cache, so the 25 GB cap kee
 was left of the cached build was mostly CMake's C++ module scanning (733 of its 935 step-seconds, summed from
 `.ninja_log`), which ccache does not cache; it is off now ([Module scanning](#module-scanning)).
 
-- **Install it.** Windows: `coney-tools workspace init --fetch ccache` puts ccache 4.14.1 (the release CI's Windows
-  job uses, checked by SHA-256) in `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
+- **Install it.** Windows: the bootstrap launchers fetch it by default, and `coney-tools workspace init --fetch
+  ccache` does the same: ccache 4.14.1 (the release CI's Windows job uses, checked by SHA-256) in
+  `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
   ccache`. `workspace init` lists it as an optional prerequisite. Without it builds work as before, and the summary
   says `compiler cache: off (ccache not found ...)`.
 - **Settings** ([coney.local.toml](workspace.md#local-config)): `ccache_dir`, the cache folder (default
@@ -337,6 +392,38 @@ On Linux, where `dev` builds with GCC, configure a Clang database for it once, w
 raw `cmake`): `coney-tools build --agent <id> --configure-only --preset dev --build-dir build/tidy --env CC=clang-19
 --env CXX=clang++-19`, then pass `--build-dir build/tidy` to `check changed`.
 
+### The tidy slots and the result cache {#clang-tidy-cache}
+
+clang-tidy costs about a minute and a gigabyte of memory per file, and a header change reaches 100 to 280 of the 948
+`.cpp` files, so on a machine shared by many agents the gate is held to the same rules as a build:
+
+- **Tidy slots.** `check changed` runs its clang-tidy processes only while it holds a slot of the machine's tidy lane,
+  a lane of the [build slots](coney-tools.md#build) with its own queue (`build status` lists it). `tidy_slots` of
+  `coney.local.toml` sets how many gates tidy at once (default 1) and `tidy_jobs` how many clang-tidy processes each
+  runs (default 0: a build slot's share of the cores, `-j` of a build); together they bound clang-tidy's share of the
+  machine. Before the lane, every gate started its own processes: on 2026-10-21 eight gates ran 22 of them (about
+  20 GB) beside five full builds on 16 threads, and the builds queued for over an hour. A run of at most 6 files (a
+  rerun after a fix, a change that reaches a few sources) takes the fast lane's slot instead, so it never waits behind a
+  gate of 250 files. Once a gate has its slot it asks the cache again, as another gate may have tidied the same files
+  while it waited. Ctrl+C or a kill lets the slot go at once: the files not started yet are dropped.
+- **Result cache.** A file clang-tidy found clean is remembered in a cache every worktree shares (`tidy_cache_dir`,
+  default `cache/clang-tidy` in the workspace, beside the [compiler cache](#compiler-cache)), and the next gate that
+  meets the same file in the same state skips it. The key is everything that decides the result: clang-tidy's version,
+  the checks and warning flags, `.clang-tidy`, `cmake/deps.cmake` (the pinned third-party versions), the file's compile
+  command with the checkout's path taken out, the size and date of the compiler it names, the system include
+  variables (`INCLUDE`, `CPATH` and the like, which name the Windows SDK and MSVC versions), and the contents of the
+  file and of every Coney header it includes, transitively (every `#include` line counts, whatever `#if` it sits
+  under). So a rerun after a fix tidies only the files the fix reaches, and a gate whose files are all cached takes no
+  slot and finishes in seconds. Each clean file is stored as soon as it finishes, and only if its key is still the
+  same: a file edited while the gate waited or ran is tidied again next time. A failing file is never cached. Entries
+  unused for 30 days are removed; `--no-cache` ignores the cache for one run.
+
+What the key leaves out, by design: the contents of headers outside the checkout (the standard library, the compiler's
+own, which the compiler and include variables stand for) and of the fetched dependencies under `_deps` (pinned by
+`deps.cmake`). It does not follow forced includes (`-include`, `/FI`), `-idirafter`, `#include MACRO` or the contents of
+`@response` files; Coney's build uses none of them. Delete the cache folder if a toolchain changes in a way none of
+these show.
+
 ## Python tools
 
 `python/` is the `coney-tools` package (see [Conventions](conventions.md#python)). [uv](https://docs.astral.sh/uv/)
@@ -406,7 +493,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 | Workflow | Jobs |
 | --- | --- |
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (nightly and manual runs only); pre-commit over every file; the `build-ok` gate |
-| `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, the generators' `--check`) on Linux; the `python-ok` gate |
+| `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, `orig check --base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, the page standards on a pull request's changed pages ([`docs check`](writing-docs.md#checking)), markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 

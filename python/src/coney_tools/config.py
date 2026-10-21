@@ -19,6 +19,7 @@ PATH_KEYS: tuple[str, ...] = (
     "build_claims_dir",
     "ccache_dir",
     "ccache_program",
+    "tidy_cache_dir",
     "scratch_dir",
     "jdk_home",
     "ghidra_mcp_repo",
@@ -30,22 +31,35 @@ PATH_KEYS: tuple[str, ...] = (
 #: once; `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
 #: PINE and debug server ports of the first copy, each next copy taking the next port; `ccache_size_gb`: the cap of the
-#: shared compiler cache, 0 turning it off, compiler_cache.py).
+#: shared compiler cache, 0 turning it off, compiler_cache.py; `tidy_slots`: how many `check changed` clang-tidy runs
+#: go at once, machine-wide; `tidy_jobs`: the clang-tidy processes of each, 0 meaning a build slot's share of the
+#: cores, check_cli.py).
 INT_KEYS: dict[str, int] = {
     "build_slots": 2,
     "build_fast_lane_steps": 50,
     "build_fast_lane_tests": 20,
     "ccache_size_gb": 25,
+    "tidy_slots": 1,
+    "tidy_jobs": 0,
     "pcsx2_copies": 5,
     "pcsx2_pine_base": 28011,
     "pcsx2_debug_base": 21512,
 }
 
-#: The smallest value a number key accepts (default 0): `build_slots` needs a slot, 0 turns a fast lane off, and a
-#: port is above the privileged range.
-INT_MINIMUM: dict[str, int] = {"build_slots": 1, "pcsx2_copies": 1, "pcsx2_pine_base": 1024, "pcsx2_debug_base": 1024}
+#: The smallest value a number key accepts (default 0): `build_slots` and `tidy_slots` need a slot, 0 turns a fast
+#: lane off, and a port is above the privileged range.
+INT_MINIMUM: dict[str, int] = {
+    "build_slots": 1,
+    "tidy_slots": 1,
+    "pcsx2_copies": 1,
+    "pcsx2_pine_base": 1024,
+    "pcsx2_debug_base": 1024,
+}
 
 LOCAL_FILE = "coney.local.toml"
+#: In a plain clone (one not in a workspace's `repos/` folder), what the workspace folder beside it is named after:
+#: `~/code/coney` keeps its scratch, cache, tools, Ghidra projects and emulators in `~/code/coney-workspace/`.
+PLAIN_CLONE_SUFFIX = "-workspace"
 EXAMPLE_FILE = "coney.local.example.toml"
 
 
@@ -89,6 +103,15 @@ def main_checkout(root: Path) -> Path:
         return root
     common = Path(result.stdout.strip()) if result.returncode == 0 and result.stdout.strip() else None
     return common.parent if common is not None and common.name == ".git" else root
+
+
+def disc_for_coney(game: Path) -> Path:
+    """The disc to hand to Coney for `game`, a `game_dir`: the one `.iso` in the folder, else the folder itself
+    (extracted files, a mounted disc, or several images, which are not guessed between); an image given itself stays."""
+    if not game.is_dir():
+        return game
+    images = sorted(game.glob("*.iso"))
+    return images[0] if len(images) == 1 else game
 
 
 def local_config_file(root: Path) -> Path | None:
@@ -143,3 +166,22 @@ def load_config(root: Path) -> Config:
             raise ConfigError(f"{path}: {key} must be a whole number of at least {least}, got {value!r}")
         numbers[key] = value
     return Config(paths=paths, numbers=numbers)
+
+
+def workspace_root(root: Path) -> Path:
+    """The folder that holds the workspace's sibling folders (`scratch/`, `cache/`, `tools/`, `ghidra/`) for the
+    checkout at `root`.
+
+    In the workspace layout (docs/guides/workspace.md) the main checkout is `<workspace>/repos/coney`, so it is the
+    workspace, two levels up; worktrees share their main checkout's. A plain clone anywhere else would otherwise
+    write two levels above itself (`~/code/coney` writing `~/scratch`), so there it is a folder beside the clone,
+    `<clone>-workspace`. It is never inside the clone: the Ghidra projects, the copied executable, the emulators and
+    the BIOS stay out of the repository (LEGAL.md). A path set in coney.local.toml always wins over this default.
+    """
+    main = main_checkout(root).resolve()
+    return main.parent.parent if main.parent.name == "repos" else main.parent / (main.name + PLAIN_CLONE_SUFFIX)
+
+
+def workspace_folder(root: Path, name: str) -> Path:
+    """`name` (such as `scratch` or `cache/ccache`) in the workspace of the checkout at `root` (`workspace_root`)."""
+    return workspace_root(root) / name

@@ -84,12 +84,13 @@ RepositionRing repositionRing(const RepositionInput& input) {
     return ring;
 }
 
-bool repositionTaunts(const RepositionInput& input, float distance, int slotsOnMe, bool gesturesAllowed, int roll100) {
+bool repositionTaunts(const RepositionInput& input, float distance, int slotsOnMe,
+                      const std::function<bool()>& mayGesture, const std::function<int()>& roll100) {
     const float fightRange = kFightRangeShare * input.farRange;
     const bool farEnough = distance * distance >= fightRange * fightRange / 4.0F;
-    const bool allowed = farEnough && slotsOnMe < 2 && !closeIn(input) && !input.tacticRing &&
-                         input.targetEmptyHanded && gesturesAllowed;
-    return allowed && (input.reason != check::kBossHeld || roll100 < kBossHeldTauntPercent);
+    const bool allowed =
+        farEnough && slotsOnMe < 2 && !closeIn(input) && !input.tacticRing && input.targetEmptyHanded && mayGesture();
+    return allowed && (input.reason != check::kBossHeld || roll100() < kBossHeldTauntPercent);
 }
 
 void TackleMeter::think(bool pressing, int targetGait) {

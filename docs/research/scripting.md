@@ -2241,12 +2241,14 @@ spawners and link to their subject pages; the rest are this mission's.
    spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
    `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
    sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
-   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Coney does not read `SetSpawnMax`
-   ([Coney's implementation](ai.md#coney)), so at checkpoint 3 the riot, wanted-gang and police spawners fill the
-   human pool. In 1,500 updates of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of
-   each cop gang. Once the pool was full, most of these calls failed (handle 0) on every update. Done: a test with
-   `SetSpawnMax(n)` and two spawners never has more than *n* spawned humans alive, and a removed human frees its
-   place.
+   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Before issue #325 Coney did not read
+   `SetSpawnMax`, so at checkpoint 3 the riot, wanted-gang and police spawners filled the human pool: in 1,500 updates
+   of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of each cop gang, and once the pool
+   was full most of these calls failed (handle 0) on every update. **Done**: Coney keeps both caps and counts
+   ([Coney's implementation](ai.md#coney)); with `SetSpawnMax(n)` two gangs' spawners never have more than *n*
+   spawned humans alive, a removed human frees its place, and the police gangs keep to `SetCopSpawnMax` the same way
+   (`tests/ai/spawners_test.cpp`). One gang's own spawners may pass the cap by the spawns of one update, as the
+   original's do.
 2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
    [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
    one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the
@@ -2716,8 +2718,8 @@ confirmed):
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, its range confirmed (code): inventory, statistics,
+flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2778,7 +2780,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
   message 8 ([AI](ai.md#coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
-  stands in. Not yet: props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
+  stands in. Coney leaves out props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
   them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
   [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
@@ -2859,6 +2861,12 @@ handler component, as for `TriggerSphereEnable`).
 
 ## Open questions
 
+- **[The rooftop chase](#level3) in Coney:** with the pad driven along the roofs (the playthrough test,
+  [Testing](../guides/testing.md#playthrough-tests)), Snow reaches the gallery only for some sequences of the AI's
+  draws: on main at 613998259, for `--ai-seed` 0 and 5 of 0-5. In the others the Hi-Hat pursuers beat him down
+  before the gallery. Open: whether the original's pursuers (a hostile devil run, gait 5, attacking at 1 m, up to
+  13 m/s) catch a player who sprints the route, so that the driver must play better, or whether Coney's pursuers or
+  its crew differ from the original's.
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
   reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
   (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and

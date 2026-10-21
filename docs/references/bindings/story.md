@@ -37,7 +37,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level92`](#level92) | flashback 2 | 237 | 8 | 8 | 5 |
 | [`level83`](#level83) | flashback 3 | 250 | 1 | 1 | 1 |
 | [`level20`](#level20) | flashback 4 | 258 | 11 | 11 | 5 |
-| [`level11`](#level11) | flashback 5 | 260 | 7 | 7 | 1 |
+| [`level11`](#level11) | flashback 5 | 260 | 7 | 7 | 2 |
 | [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 15 | 4 |
 | [`level61`](#level61) | Armies of the Night 2 | 168 | 0 | 0 | 0 |
 | [`level62`](#level62) | Armies of the Night 3 | 127 | 1 | 1 | 0 |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 7 traced, 1 implemented in Coney (252 of all 260).
+260 bindings, 7 new: 7 traced, 2 implemented in Coney (253 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -650,7 +650,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`TacticStandGround`](ai.md#tacticstandground) | AI | traced | confirmed (code) | not implemented |
 | [`GangSetEnemy`](gang.md#gangsetenemy) | Gangs | traced | confirmed (code) | not implemented |
 | [`InvPlayerHasItem`](level.md#invplayerhasitem) | Levels and game state | traced | confirmed (code) | implemented |
-| [`SetCopSpawnMax`](level.md#setcopspawnmax) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`SetCopSpawnMax`](level.md#setcopspawnmax) | Levels and game state | traced | confirmed (code) | implemented |
 | [`SetHatCallBack`](script.md#sethatcallback) | Script flow | traced | confirmed (code) | not implemented |
 
 ## level60: Armies of the Night 1 {#level60}

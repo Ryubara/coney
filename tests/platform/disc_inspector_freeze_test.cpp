@@ -29,6 +29,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/level_start.h"
 #include "human/victim.h"
+#include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
 #include "sandbox/sandbox_world.h"
@@ -38,10 +39,11 @@
 namespace {
 
 // The ids of the inspector's humans other than the player, in the list's order.
-std::vector<coney::debug::EntityId> otherHumans(const coney::platform::PlayLevelMode& mode) {
+std::vector<coney::debug::EntityId> otherHumans(coney::platform::PlayLevelMode& mode) {
+    const coney::platform::PlayLevelControls controls(&mode);
     std::vector<coney::debug::EntityId> ids;
-    REQUIRE(mode.inspect() != nullptr);
-    for (const coney::debug::EntityRef& entity : mode.inspect()->entities()) {
+    REQUIRE(controls.inspect() != nullptr);
+    for (const coney::debug::EntityRef& entity : controls.inspect()->entities()) {
         if (entity.kind == coney::debug::EntityKind::Human) {
             ids.push_back(entity.id);
         }
@@ -50,8 +52,9 @@ std::vector<coney::debug::EntityId> otherHumans(const coney::platform::PlayLevel
 }
 
 // Where entity `id` stands now; the origin when it is not listed.
-coney::anim::Vec3 positionOf(const coney::platform::PlayLevelMode& mode, coney::debug::EntityId id) {
-    const std::vector<coney::debug::EntityRef> entities = mode.inspect()->entities();
+coney::anim::Vec3 positionOf(coney::platform::PlayLevelMode& mode, coney::debug::EntityId id) {
+    const coney::platform::PlayLevelControls controls(&mode);
+    const std::vector<coney::debug::EntityRef> entities = controls.inspect()->entities();
     const coney::debug::EntityRef* entity = coney::debug::findEntity(entities, id);
     return entity != nullptr ? entity->position : coney::anim::Vec3{};
 }
@@ -109,6 +112,7 @@ TEST_CASE("a frozen AI human stays where it is while the rest of the world runs"
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     coney::platform::PlayLevelMode& mode = *yard.mode;
+    coney::platform::PlayLevelControls controls(&mode);
 
     // Two fighters, to the player's left and right ahead of him, both facing him.
     const std::vector<coney::debug::EntityId> before = otherHumans(mode);
@@ -123,17 +127,17 @@ TEST_CASE("a frozen AI human stays where it is while the rest of the world runs"
     const coney::debug::EntityId loose = after.back();
 
     // Only humans can be frozen, and nothing is frozen at first.
-    CHECK(mode.canFreezeEntity(frozen));
-    CHECK_FALSE(mode.entityFrozen(frozen));
-    CHECK_FALSE(mode.canFreezeEntity(coney::debug::kNoEntity));
-    for (const coney::debug::EntityRef& entity : mode.inspect()->entities()) {
+    CHECK(controls.canFreezeEntity(frozen));
+    CHECK_FALSE(controls.entityFrozen(frozen));
+    CHECK_FALSE(controls.canFreezeEntity(coney::debug::kNoEntity));
+    for (const coney::debug::EntityRef& entity : controls.inspect()->entities()) {
         if (entity.kind == coney::debug::EntityKind::Object) {
-            CHECK_FALSE(mode.canFreezeEntity(entity.id));
+            CHECK_FALSE(controls.canFreezeEntity(entity.id));
         }
     }
-    mode.setEntityFrozen(frozen, true);
-    CHECK(mode.entityFrozen(frozen));
-    CHECK_FALSE(mode.entityFrozen(loose));
+    controls.setEntityFrozen(frozen, true);
+    CHECK(controls.entityFrozen(frozen));
+    CHECK_FALSE(controls.entityFrozen(loose));
 
     // The world runs: the loose fighter, which fights the player, moves; the frozen one does not move at all.
     const coney::anim::Vec3 frozenAt = positionOf(mode, frozen);
@@ -150,8 +154,8 @@ TEST_CASE("a frozen AI human stays where it is while the rest of the world runs"
     CHECK(freeMoved > 0.1F);
 
     // Let go, and it moves again.
-    mode.setEntityFrozen(frozen, false);
-    CHECK_FALSE(mode.entityFrozen(frozen));
+    controls.setEntityFrozen(frozen, false);
+    CHECK_FALSE(controls.entityFrozen(frozen));
     yard.run(90);
     CHECK(coney::anim::distance(frozenAt, positionOf(mode, frozen)) > 0.1F);
 }
@@ -162,10 +166,11 @@ TEST_CASE("a frozen sandbox target takes no step, and the player's freeze reads 
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     coney::platform::PlayLevelMode& mode = *yard.mode;
+    coney::platform::PlayLevelControls controls(&mode);
     REQUIRE(!mode.targets().empty());
     // The first sandbox target's entity.
     coney::debug::EntityId targetId = coney::debug::kNoEntity;
-    for (const coney::debug::EntityRef& entity : mode.inspect()->entities()) {
+    for (const coney::debug::EntityRef& entity : controls.inspect()->entities()) {
         if (entity.kind == coney::debug::EntityKind::Human && entity.label.starts_with("target")) {
             targetId = entity.id;
             break;
@@ -178,26 +183,26 @@ TEST_CASE("a frozen sandbox target takes no step, and the player's freeze reads 
     coney::human::IncomingHit hit;
     hit.damage = 5;
     hit.attacker = mode.playerFeet();
-    CHECK(mode.canFreezeEntity(targetId));
-    mode.setEntityFrozen(targetId, true);
-    CHECK(mode.entityFrozen(targetId));
+    CHECK(controls.canFreezeEntity(targetId));
+    controls.setEntityFrozen(targetId, true);
+    CHECK(controls.entityFrozen(targetId));
     target.hit(hit);
     yard.run(30);
     CHECK(target.hitsTaken() == 0);
-    mode.setEntityFrozen(targetId, false);
-    CHECK_FALSE(mode.entityFrozen(targetId));
+    controls.setEntityFrozen(targetId, false);
+    CHECK_FALSE(controls.entityFrozen(targetId));
     yard.run(2);
     std::printf("inspector freeze: a target hit while frozen took %d hit(s) after being let go\n", target.hitsTaken());
     CHECK(target.hitsTaken() == 1);
 
     // The player's freeze is the Player page's: one flag, read through the entity.
     constexpr coney::debug::EntityId kPlayer = 1;
-    CHECK(mode.canFreezeEntity(kPlayer));
-    CHECK_FALSE(mode.entityFrozen(kPlayer));
-    mode.setEntityFrozen(kPlayer, true);
+    CHECK(controls.canFreezeEntity(kPlayer));
+    CHECK_FALSE(controls.entityFrozen(kPlayer));
+    controls.setEntityFrozen(kPlayer, true);
     CHECK(mode.playerFrozen());
     mode.setPlayerFrozen(false);
-    CHECK_FALSE(mode.entityFrozen(kPlayer));
+    CHECK_FALSE(controls.entityFrozen(kPlayer));
 }
 
 TEST_CASE("the debug shapes' offset puts them on the drawn model between two steps", "[disc][debug]") {
@@ -206,6 +211,7 @@ TEST_CASE("the debug shapes' offset puts them on the drawn model between two ste
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     coney::platform::PlayLevelMode& mode = *yard.mode;
+    coney::platform::PlayLevelControls controls(&mode);
     const coney::anim::Vec3 ahead = coney::debug::spotAhead(mode.playerFeet(), mode.playerHeadingDegrees(), 4.0F);
     REQUIRE(mode.spawnFighter(ahead, mode.playerHeadingDegrees() + 180.0F));
     const std::vector<coney::debug::EntityId> humans = otherHumans(mode);
@@ -213,9 +219,9 @@ TEST_CASE("the debug shapes' offset puts them on the drawn model between two ste
     const coney::debug::EntityId fighter = humans.back();
     yard.run(60);
     // Drawn at the end of the last step: no offset. At its start: back to the step before. Between: in proportion.
-    const coney::anim::Vec3 atStart = mode.drawnOffsetOf(fighter, 0.0F);
-    const coney::anim::Vec3 atHalf = mode.drawnOffsetOf(fighter, 0.5F);
-    const coney::anim::Vec3 atEnd = mode.drawnOffsetOf(fighter, 1.0F);
+    const coney::anim::Vec3 atStart = coney::platform::PlayLevelControls::drawnOffsetOf(mode, fighter, 0.0F);
+    const coney::anim::Vec3 atHalf = coney::platform::PlayLevelControls::drawnOffsetOf(mode, fighter, 0.5F);
+    const coney::anim::Vec3 atEnd = coney::platform::PlayLevelControls::drawnOffsetOf(mode, fighter, 1.0F);
     std::printf("shape offset: %.4f m back at alpha 0 (the step before)\n", coney::anim::length(atStart));
     CHECK(atEnd.x == Catch::Approx(0.0F).margin(1e-5F));
     CHECK(atEnd.y == Catch::Approx(0.0F).margin(1e-5F));
@@ -223,5 +229,6 @@ TEST_CASE("the debug shapes' offset puts them on the drawn model between two ste
     CHECK(atHalf.y == Catch::Approx(atStart.y * 0.5F).margin(1e-5F));
     CHECK(coney::anim::length(atStart) > 0.0F);
     // No entity has no model to follow.
-    CHECK(coney::anim::length(mode.drawnOffsetOf(coney::debug::kNoEntity, 0.5F)) == 0.0F);
+    CHECK(coney::anim::length(coney::platform::PlayLevelControls::drawnOffsetOf(mode, coney::debug::kNoEntity, 0.5F)) ==
+          0.0F);
 }

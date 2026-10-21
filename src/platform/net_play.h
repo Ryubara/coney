@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include "core/pads.h"
 #include "debug/net_controls.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
@@ -62,6 +63,11 @@ class NetPlay final : public debug::NetControls {
     /// The longest shutdown() waits for the closes (Coney's choice).
     static constexpr std::uint64_t kQuitWaitNs = 500'000'000;
 
+    /// This step's pads through network play, given the game's own (`local`). Hosting with a guest joined, their pad is
+    /// port 2, as a second pad plugged into the host's console would be, and the host's own port 2 is set aside until
+    /// they leave; port 1 is always the host's. Joined to a host, port 1 is what the session sends them, and the pads
+    /// come back unchanged. Offline, they pass through. NetInput calls it.
+    [[nodiscard]] PortSamples pads(const PortSamples& local);
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
 
@@ -119,6 +125,21 @@ class NetPlay final : public debug::NetControls {
     std::unique_ptr<net::NetServer> m_server;
     std::unique_ptr<net::NetClient> m_client;
     std::string m_lastClientState; // the client's describe() last logged
+};
+
+/// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().
+/// The main loop puts it between the debug menus' input gate and the mode stack, so a guest sends what their own game
+/// reads (never their debug menu's input) and a host's port 2 is the guest's pad.
+class NetInput final : public InputSource {
+  public:
+    /// Network play's input over `inner`; both must outlive it.
+    NetInput(InputSource* inner, NetPlay& net) : m_inner(inner), m_net(net) {}
+    /// The inner source's sample for `frame`, through NetPlay::pads().
+    [[nodiscard]] PortSamples sample(std::uint64_t frame) override;
+
+  private:
+    InputSource* m_inner;
+    NetPlay& m_net;
 };
 
 /// A transport over UDP (EnetTransport), for NetPlay in the game.

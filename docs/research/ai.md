@@ -1263,8 +1263,34 @@ queues a fidget now and then, and always a move-to-human action that **holds A i
     - A is not close-in, not in a tactic ring, and T is empty-handed;
     - gestures are allowed.
 
-   For reason 7 it happens only 11 % of the time. It is a fidget action on anim `0x25b` with speech line `0x11`. A
-   Warrior uses line `0xc3` instead 31 % of the time, when the game flag `0x56e1` is set.
+   For reason 7 it happens only 11 % of the time. It is a fidget action on anim `0x25b` with speech line `0x11`
+   (`cheer2`). A Warrior uses line `0xc3` (`turf_defend`) instead 31 % of the time, when the game flag `0x56e1` is
+   set (`CfgEnableTurfInvasion`, [Game-state functions](#warriors-functions)).
+
+   **The timer and the order** (confirmed (code), `0x002b2fc8` and `FightGoal_Init` `0x002b2c20`, read 2026-10-20):
+   the fight goal's Init sets `+0x20` to now + a random 750-1000 ms. Each reposition call with now past `+0x20`
+   first re-arms it (now + 1000-2000 ms, `Random_IntRange` on stream `0x006eb880`), whether or not the taunt then
+   happens; the tests run in the order above, `Ambient_MayGesture` (`0x00291ed0`, which takes a gesture slot) after
+   the others and the 11 % roll after it. The fidget action is queued **before** the move-to-human action, so the
+   waiter plays it standing and moves on once it ends.
+
+   **Which clip** (confirmed (code)): the fidget plays anim `0x25b` (`Human_PlayHeldIdle` `0x00231ac8`), whose clip
+   the lookup (`Human_GetDynamicAnim` `0x00221a00`) takes, with no override, from the gang's group `0x25b` at a
+   random variant: `GangClips_Get` (`0x00163fc0`) draws `Random_Int(8)`, 0 to 8 inclusive, and returns nothing for
+   8 or for an empty slot. The fighting gang fills slots 0-3 with the four `combat_fidget_*` clips
+   ([alert state](ai-reimpl.md#alert-state)), so each of them plays 1 time in 9 and the character's own clip for the
+   id 5 times in 9; a calm gang's group is empty and the character's own clip always plays.
+
+   **At runtime** (confirmed (runtime), PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the
+   `say-command` hook on `Human_SayCommand` `0x002205e0`): in level99's sparring fight against a still player, the
+   three Warriors said `cheer2` from `FidgetAction_Start` (return address `0x002fa090`) 11 times in the 1,198 updates
+   from their run-in (updates 502-1700): one Warrior once, the other two five times each, each one's taunts 37 to
+   582 updates apart (the 1000-2000 ms timer allows one every 30-60 updates at most). Two earlier recordings of the
+   same state end 12 updates sooner, before the eleventh taunt, and hold 10 each: the first ten, at the same game
+   ticks, so the fight is deterministic from that state. Coney's count
+   over the same span, printed by the level99 sparring disc test for its eight AI sequences (2026-10-21, two runs), is
+   0-2: 2 or 1, 0, 0, 0, 1, 0, 1, 0. Coney's waiters taunt far less often than the original's; why is an
+   [open question](#open-questions).
 5. **The move-to-human action** (inner, outer, the limit above).
 
 So waiting attackers circle in a band of 4-4.75 m (5 m far range), and the one T is fighting stays close. The
@@ -2449,7 +2475,7 @@ human whose last move failed runs straight at
   old). **Coney choices**: the detail level is 0, so a decision is made every update; a speed tie goes to the lower
   brain slot, and the brain's slot stands for the human's index; the mover's line for giving way is unbounded.
   **Stand-in**: with no waypoint claims (`Nav_ClaimWaypoint`), "held at the node" (route state `+0x16`) is read as
-  "he is nearer the shared node than I am", the human the claim would keep. **Not yet**: the waypoint claims and
+  "he is nearer the shared node than I am", the human the claim would keep. **Left out**: the waypoint claims and
   queues.
 - **Giving way** (`repo:src/ai/give_way.h`, [Giving way](ai-moving.md#giving-way); the step in `repo:src/human/step_control.h`,
   [Characters: Step control](characters.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside another
@@ -2466,7 +2492,7 @@ human whose last move failed runs straight at
   finished action is aborted before it is freed (`Action_AbortAndDestroy`), so the boost goes back in Abort alone.
   **Stand-ins**: the 2 s look at the mover (no head look-ats); the push sphere stays on during the step; a Warrior's
   `+0x2e5` mode in the threat test; brain flag
-  `+0xcc` bit 2. **Not yet**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
+  `+0xcc` bit 2. **Left out**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
   `WarriorBrain_Think`, `SaveHumanGoal_Process`).
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
@@ -2648,21 +2674,25 @@ built; the spray starts at once.
 
 **The spawners** (`src/ai/spawners.*`, [Spawners](ai-gangs.md#spawners)): after each characters' step every spawner in
 use whose state is ready (1, 6, 7, 8 and 10 always; 2 past its deadline; 3 and 5 by player 1's distance, taken in 3D)
-makes a human once its delay has passed, while fewer of its humans are alive than its limit and it has not made its total
-(-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model string
-as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does), then
-the callback, when it names a function, is called with its handle, the gang's id and the spawner's name.
-6, 8 and 10 place the human out of sight as [above](ai-gangs.md#spawner-placement) and
-[the search](ai-gangs.md#spawner-search) say: from player 1's camera (Coney has one player, so no second camera refuses
-a node), the start node the planner's route ends use, 17 outward searches, the node then checked against the gang's turf
-boxes; no node, no spawn this update. **Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as
-[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the
-dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax`
-is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as
-[above](ai-gangs.md#spawners) says, from `GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`,
-or added in state 11) skips an update while player 1's camera sees the 0.3 m sphere 1.6 m above it
-([Off screen](ai-gangs.md#spawner-unseen)): within the far clip, in view and with no wall of the collision mesh on the
-ray to its centre; **stand-in**: the six-plane frustum is taken as a cone of half the field of view widened by the sphere.
+makes a human once its delay has passed, while fewer of its humans are alive than its limit and it has not made its
+total (-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model
+string as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does),
+then the callback, when it names a function, is called with its handle, the gang's id and the spawner's name. 6, 8 and
+10 place the human out of sight as [above](ai-gangs.md#spawner-placement) and [the search](ai-gangs.md#spawner-search)
+say: from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
+route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this update.
+**Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as [its placement](ai-world.md#spawner-reinforcements)
+says; the others stand at the spawner; no door opens; the dispatch states 4 and 9 (no crimes are routed) and the top-up
+11 (no gang limits kept) never spawn. A gang runs its spawners only while the level's count is under its cap ([The
+level's cap](ai-gangs.md#spawners)): the police count under `SetCopSpawnMax` for a police gang, the spawned count under
+`SetSpawnMax` for any other, 16 each after the level reset, asked once per gang. A human counts off when he is down or
+deleted (the original: when his brain is torn down), and the counts start at 0 with each level's spawners; humans
+leaving their gang and a dispatch's completed squad are not taken off (neither is built). `GangSetMaxConcurrent` changes
+the limit (16 bits; a negative -n spawns waves of n as [above](ai-gangs.md#spawners) says, from `GangAddSpawner`'s limit
+too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an update while player 1's
+camera sees the 0.3 m sphere 1.6 m above it ([Off screen](ai-gangs.md#spawner-unseen)): within the far clip, in view and
+with no wall of the collision mesh on the ray to its centre; **stand-in**: the six-plane frustum is taken as a cone of
+half the field of view widened by the sphere.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
@@ -2889,6 +2919,12 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 
 ## Open questions {#open-questions}
 
+- Why Coney's waiting attackers taunt about a tenth as often as the original's (the level99 sparring fight: 11
+  `cheer2` taunts in 1,198 updates in the original, 0-2 in Coney; [The reposition](#fight-reposition)). To check, in
+  this order: how long each Warrior waits in the reposition (Coney may let more of them attack at once); the gesture
+  slots, which the original keeps per reaction kind (`Brain_GetReactionKind`) with as many as the brain's help level
+  (`Brain_GetHelpLevel`, 1 or 2) in `Ambient_MayGesture` (`0x00291ed0`), where Coney keeps two for everyone; and the
+  close-in test, which reads the player's own target.
 - Movement and world use: MoveToUseFlag's clip states once he is on the flag; the pedestrian's flag re-use timer
   (goal `+0x6c`, 65 s inferred); the gait AvoidEnemies keeps in its `+0x3c`; why ChaseSupport jogs within 3 m;
   ManWeaponPile's Process (`0x002a3498`, not read).
@@ -2930,6 +2966,6 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
 - What stopped Vermin's route jump at the `level99` window (x 47.76, by the panes at x 47.40) in the window-jump
-  state, and whether a normal play-through clears it first; a jump that lands on its point is not yet seen at runtime.
+  state, and whether a normal play-through clears it first; no run has seen a jump land on its point.
 - What reads `RunCarrotGoal`'s hostile flag (goal `+0x25`, set by `RunCarrotGoal_Init` `0x002e1230`,
   [AI goals](ai-goals.md#by-address)); Coney does not model it.

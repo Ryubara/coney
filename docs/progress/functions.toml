@@ -1906,10 +1906,22 @@ subsystem = "GameModes"
 size = 464
 
 [[function]]
+address = 0x00166708
+name = "Gang_CachePlayerInfo"
+subsystem = "GameModes"
+size = 1108
+
+[[function]]
 address = 0x00166ff8
 name = "Gang_AddSpawner"
 subsystem = "GameModes"
 size = 688
+
+[[function]]
+address = 0x001672a8
+name = "GangSpawner_OnHumanGone"
+subsystem = "GameModes"
+size = 200
 
 [[function]]
 address = 0x001673b8
@@ -3994,6 +4006,84 @@ subsystem = "GUI"
 size = 224
 
 [[function]]
+address = 0x001e3520
+name = "ControlPage_Init"
+subsystem = "GUI"
+size = 180
+
+[[function]]
+address = 0x001e3828
+name = "TutorialPage_Init"
+subsystem = "GUI"
+size = 1388
+
+[[function]]
+address = 0x001e3e60
+name = "TutorialPage_OnCommand"
+subsystem = "GUI"
+size = 112
+
+[[function]]
+address = 0x001e3f38
+name = "TutorialPage_Render"
+subsystem = "GUI"
+size = 96
+
+[[function]]
+address = 0x001e4130
+name = "ControllerPage_Init"
+subsystem = "GUI"
+size = 1040
+
+[[function]]
+address = 0x001e4618
+name = "ControllerPage_OnCommand"
+subsystem = "GUI"
+size = 164
+
+[[function]]
+address = 0x001e4820
+name = "ControllerPage_Render"
+subsystem = "GUI"
+size = 232
+
+[[function]]
+address = 0x001e4908
+name = "ControlMenuHUD_Construct"
+subsystem = "GUI"
+size = 128
+
+[[function]]
+address = 0x001e4a30
+name = "ControlMenuHUD_Open"
+subsystem = "GUI"
+size = 1016
+
+[[function]]
+address = 0x001e4f18
+name = "ControlMenuHUD_OnCommand"
+subsystem = "GUI"
+size = 532
+
+[[function]]
+address = 0x001e5130
+name = "ControlMenuHUD_Update"
+subsystem = "GUI"
+size = 452
+
+[[function]]
+address = 0x001e52f8
+name = "ControlMenuHUD_SetAlpha"
+subsystem = "GUI"
+size = 8
+
+[[function]]
+address = 0x001e5300
+name = "ControlMenuHUD_Render"
+subsystem = "GUI"
+size = 312
+
+[[function]]
 address = 0x001e95c0
 name = "MenuInput_Dispatch"
 subsystem = "GUI"
@@ -4760,6 +4850,12 @@ subsystem = "Human"
 size = 260
 
 [[function]]
+address = 0x00225f58
+name = "Human_IsFreeForFidget"
+subsystem = "Human"
+size = 108
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -5033,6 +5129,12 @@ address = 0x00231590
 name = "Attack_GetNextAttackDelay"
 subsystem = "Human"
 size = 1192
+
+[[function]]
+address = 0x00231b60
+name = "Human_StopFidget"
+subsystem = "Human"
+size = 120
 
 [[function]]
 address = 0x00232538
@@ -7552,6 +7654,12 @@ subsystem = "Human"
 size = 16
 
 [[function]]
+address = 0x00299520
+name = "GameState_SetCopSpawnMax"
+subsystem = "Human"
+size = 16
+
+[[function]]
 address = 0x0029a8c0
 name = "Route_Request"
 subsystem = "Human"
@@ -9095,6 +9203,30 @@ address = 0x002f9de0
 name = "Action_AbortAndDestroy"
 subsystem = "Human"
 size = 104
+
+[[function]]
+address = 0x002f9f48
+name = "FidgetAction_Init"
+subsystem = "Human"
+size = 48
+
+[[function]]
+address = 0x002f9f78
+name = "FidgetAction_Start"
+subsystem = "Human"
+size = 360
+
+[[function]]
+address = 0x002fa0e0
+name = "FidgetAction_Abort"
+subsystem = "Human"
+size = 256
+
+[[function]]
+address = 0x002fa1e0
+name = "FidgetAction_Update"
+subsystem = "Human"
+size = 64
 
 [[function]]
 address = 0x002fa5a0

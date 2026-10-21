@@ -23,7 +23,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools import pcsx2_claims, pcsx2_proc
-from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    INT_KEYS,
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    main_checkout,
+    workspace_folder,
+)
 from coney_tools.debug_server import savestate_of
 from coney_tools.pcsx2_cli import set_ini_value
 
@@ -340,7 +348,7 @@ def scratch_recordings() -> Path:
     """The shared recordings folder: `recordings/` in the scratch folder (`scratch_dir`, else the main checkout's
     `../../scratch`)."""
     paths, _, main = _config()
-    scratch = paths.get("scratch_dir") or (main / ".." / ".." / "scratch").resolve()
+    scratch = paths.get("scratch_dir") or workspace_folder(main, "scratch")
     return scratch / "recordings"
 
 

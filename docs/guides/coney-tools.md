@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers nineteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which checks
 pages against the documentation standards, [`build`](#build), which
 configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
@@ -13,10 +13,10 @@ of the README and the docs current, [`orig`](#orig), which indexes the `@orig` t
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
 and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
 [`clips`](#clips), which checks, publishes and cleans up in-game video clips,
-[`mcp`](#mcp), which starts the debugging servers for agent tools, [`ghidra`](#ghidra), which sets up your own Ghidra
-project with our function names, and [`workspace`](#workspace), which sets up the local workspace. Everything is
-read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
-is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+[`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
+contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and
+[`workspace`](#workspace), which sets up the local workspace. Everything is read in place and streamed, so the 1.4 GB
+WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -318,14 +318,14 @@ uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [-
   documents, its file and line, where the tag sits (`comment` above a function, `body` inside one, `other` on a
   class or file), and the research links that document it (the function's comment, else its declaration's, its
   class's or its file's);
-* `untagged.tsv`: the functions defined in the gameplay directories (every directory of `src/` but those of
-  `orig_index.CONEY_ONLY_DIRS`: `platform`, `core`, `fileio`, `debug`, `net` and `sandbox`, so a new directory is in
-  scope) that have no tag and no Coney-only marker. A tag covers a function through its own comment, or through its
-  declaration's: the declaration with the same scope, name and parameter types (any one, when the name is not
-  overloaded), in the same file pair, folder or, for a member, anywhere; a file's private helper only through a
-  declaration in its own file. Each is a `member`, a `free` function, a file's private `helper` (an anonymous
-  namespace or `static`) or an `inline` member defined in its class. A marker is the proposed `@coney-only <reason>`
-  in the function's comment or its file's header comment, or the older wording ("Coney's own", "(no @orig)");
+* `untagged.tsv`: the functions defined in the gameplay folders (`paths.gameplay` of `.github/conventions.yml`) that
+  have no tag and no Coney-only marker. A tag covers a function through its own comment, or through its declaration's:
+  the declaration with the same scope, name and parameter types (any one, when the name is not overloaded), in the
+  same file pair, folder or, for a member, anywhere; a file's private helper only through a declaration in its own
+  file. Each is a `member`, a `free` function, a file's private `helper` (an anonymous namespace or `static`) or an
+  `inline` member defined in its class, and its `exempt` column is 1 when it needs neither ([Coney-only
+  code](conventions.md#coney-only)). A marker is `@coney-only <reason>` in the function's comment or its file's
+  header comment, or the older wording ("Coney's own", "(no @orig)");
 * `research-gaps.md`: the research sections tagged code links that cite no original address, links to a page or
   section that does not exist, tags whose linked pages never cite their address, and tags with no research link;
 * `report.md`: the counts, the malformed tags (a line with `@orig 0x` that is not the whole form `@orig 0x<address>
@@ -359,6 +359,24 @@ or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 order is a starting point for the audit team, which re-ranks as it learns. The files hold addresses, names, paths and
 issue numbers, never the original's code; they change with every pull request that touches `src/`, so they are
 regenerated when needed and never committed.
+
+```sh
+uv run --project python coney-tools orig check [--base origin/main]
+```
+
+Refuses a function that a change adds to a gameplay folder with neither `@orig` nor `@coney-only <reason>`, and a
+folder of `src/` that is in neither `paths.gameplay` nor `paths.coney_only` ([Coney-only code](conventions.md#coney-only)).
+The exempt functions pass: a member defined in its class whose body is one statement (an accessor, a setter, a
+forwarder) and a constructor or destructor with an empty body. A file's private helpers are not exempt. Only what
+the change adds counts: a function untagged now that was not untagged, under the same scope, name and parameter types
+in the same folder (a file's private helper: in the same file), where the branch left `--base`. So editing an old
+untagged function, moving it to another file of its folder, or renaming its file with `git mv` (to any folder)
+passes; removing a tag, adding an untagged overload, changing an untagged function's parameter types, or growing an
+exempt accessor into more than one statement fails.
+The older wording ("Coney's own", "(no @orig)") marks only functions that had it at `--base`; a new function needs
+`@coney-only <reason>`. The functions that said neither before the check existed are the audit's backlog in
+`untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
+`check changed` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 
 ## natives {#natives}
 
@@ -818,6 +836,7 @@ uv run --project python coney-tools repo check
 uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools repo check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
+    [--local-images]
 uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
     [--claude EXE] [--timeout-minutes N]
 uv run --project python coney-tools repo check-review PR.md --worktree WT [--base REF]
@@ -849,6 +868,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
   none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
   output says so; `repo check-review` always has the title (line 1 of `PR.md`).
+  `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
+  is about to upload; the release guard hook passes it ([The release queue](how-we-work.md#release-queue)).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
   [review](#repo-review). All three refuse a description whose title or body fails the checks above.
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
@@ -1125,7 +1146,8 @@ read.
 
 ```sh
 uv run --project python coney-tools check changed [--base origin/main] [--build-dir build/dev] [--only STEP ...]
-    [--skip STEP ...] [--jobs N] [--clang-tidy PATH]
+    [--skip STEP ...] [--jobs N] [--clang-tidy PATH] [--agent ID] [--max-wait MIN] [--no-cache] [--detach]
+uv run --project python coney-tools check result
 ```
 
 The local gate for the files a change touched ([Testing](testing.md#local-gate)): run it in your worktree before you
@@ -1136,6 +1158,7 @@ line, and any failure makes the command exit 1:
 | Step | Runs when | What it does |
 | --- | --- | --- |
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
+| `orig` | a file under `src/` changed | [`orig check`](#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
 | `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
@@ -1157,9 +1180,23 @@ build makes clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC 
 initializer that leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra
 -Wpedantic` (the flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's
 diagnostics through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`.
-`--jobs` runs that many files at once (default: a build's share, the cores divided by `build_slots`, as `coney-tools
-build -j` defaults: the gate runs outside the build slots, beside the builds that hold them). Every program the command
-starts runs below normal priority, like a build's (Windows: below-normal priority class; elsewhere `nice -n 5`).
+Every program the command starts runs below normal priority, like a build's (Windows: below-normal priority class;
+elsewhere `nice -n 5`).
+
+**Tidy slots, the cache and waiting.** clang-tidy runs only on the files the shared result cache has not seen clean in
+the same state, and only while the command holds a slot of the machine's **tidy lane**
+([building](building.md#clang-tidy-cache)): `tidy_slots` of `coney.local.toml` gates at once (default 1), each running
+`tidy_jobs` clang-tidy processes (default 0: a build slot's share, the cores divided by `build_slots`); `--jobs`
+overrides the second for one run. A gate whose files are all cached takes no slot, and one of at most 6 files takes the
+fast lane's slot instead. The summary line says how many files came from the cache (`254 files (clang-tidy 19, 251
+cached)`). The queue is the build slots' own: fair, with the same claim files; `build status` lists the lane, each
+holder with its file count and progress (`tidy 12/40`), and `build release --lane tidy` cleans up after a crash. The
+queue entry carries `--agent` (default: `CONEY_AGENT`, else the worktree's folder name). `--max-wait` minutes (default
+and most 40, inside an agent's prompt cache) bound the wait; a gate that gives up skips clang-tidy, runs the other steps
+and exits 75 unless one of them failed. `--detach` runs the whole gate in the background, apart from the shell (default
+wait 240 minutes), and returns at once; `check result` prints its output and exits with its code (75 while it runs, as
+`build result` does, and 1 when its process is gone; "still running" is judged as for `build result`, by the pid and
+when that process started). `--no-cache` tidies every file again.
 
 **Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
 default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The
@@ -1175,9 +1212,10 @@ uv run --project python coney-tools check changed --build-dir build/tidy
 CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
 handling of paths, programs and long command lines is tested on all three.
 
-`--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
-failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
-sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
+`--only` and `--skip` take step names, for a rerun of the one that failed. Exit codes: 0 all passed, 1 a step failed, 2
+a setup problem (no compile database, no clang-tidy), 75 clang-tidy gave up waiting for a slot. The command prints at
+most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits,
+macOS, the sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
 
 ## docs {#docs}
 
@@ -1199,12 +1237,13 @@ the checkout or not a page the check covers (`README.md`, a generated page).
 ## build {#build}
 
 ```sh
-uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
+uv run --project python coney-tools build [--agent ID] [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
     [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
-uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast] [--dir CHECKOUT]
+uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast|tidy]
+    [--dir CHECKOUT]
 ```
 
 `--dir` names the checkout the command is about and works before or after the subcommand (`build --dir X result` and
@@ -1215,7 +1254,10 @@ every core, so a build takes a **slot** like a PCSX2 copy takes a claim, and at 
 once. The command replaces `cmake --preset`, `cmake --build --preset` and `ctest --preset`; a hook in
 `.claude/settings.json` refuses those, `ctest` and `ninja` typed directly in a shell
 ([`.claude/hooks/build_guard.py`](repo:.claude/hooks/build_guard.py)). The tool's own subprocesses are not shell
-commands, so the hook never sees them.
+commands, so the hook never sees them. `--agent` names whose run a slot, a queue place and a log are; a person typing
+the command in a terminal may leave it out and gets their user name (`me` when it has no usable characters). It
+stays required whenever the output is not a terminal, as under every agent tool, and inside Claude Code
+(`CLAUDECODE` set), so every agent's build says whose it is.
 
 **What a run does.** From the checkout (the current one, or `--dir`):
 
@@ -1233,6 +1275,18 @@ commands, so the hook never sees them.
 4. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
    long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N`,
    with the filters `-R REGEX` and `-L LABEL` when given (see "Choosing tests" below).
+
+**The disc for the tests.** The disc tests read only the environment variable `CONEY_DISC`
+(`repo:tests/support/disc_play_fixtures.h`) and skip without it, and ctest counts a skipped test as passed. So the
+command sets `CONEY_DISC` for the whole run (CMake reads it too when it configures, to register the `coney --disc`
+smoke tests): a value already in the environment, or given with `--env CONEY_DISC=...`, is kept (an empty one counts
+as not set); otherwise it is the `game_dir` of `coney.local.toml` (the one `.iso` in that folder, else the folder
+itself, as `trace` hands it to Coney), when that exists. A folder configured before the variable was set keeps the
+smoke tests it registered then; `--configure` registers them. With `--test` the summary gets a line before the test
+line: `disc tests: ran with the disc (CONEY_DISC from the environment | game_dir in coney.local.toml)`, or
+`disc tests: SKIPPED (<why>)` with the two ways to run them, and `N skipped` joins the test counts when ctest
+reported skips (a disc configured and tests still skipping is named, and the log says which). A suite that passes
+with `disc tests: SKIPPED` ran no disc test.
 
 **The log.** The full output goes to a file of its own per run, `build-<preset>-<agent>-<date>-<time>.log` in the
 worktree's folder of the scratch directory (`scratch/<worktree>/`; the process id is added if that name exists), and
@@ -1380,11 +1434,13 @@ instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FO
 [`check changed`](#check) reads for clang-tidy. `--env NAME=VALUE` (repeatable) sets an environment variable for the
 run, such as `CC=clang-19`; CMake reads `CC` and `CXX` at a folder's first configure and keeps them in the cache.
 
-`build status` prints both lanes: each slot's holder, worktree, preset, step and minutes, the queue in order (place,
-agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release
---agent ID` is manual cleanup: it frees the slots a crashed or stuck run of that agent left, stops what a crashed run
-left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`, which frees
-the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and tests](agents.md#builds).
+`build status` prints every lane (main, fast, and the [clang-tidy lane](#check) of `check changed`, whose "preset" is
+the gate's file count): each slot's holder, worktree, preset, step and minutes, the queue in order (place, agent,
+priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release --agent ID
+[--lane main|fast|tidy]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left, stops what a
+crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`,
+which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and
+tests](agents.md#builds).
 
 ## coord {#coord}
 
@@ -1520,6 +1576,18 @@ as soon as your next turn starts. A wake that started no turn is sent again.
 subagent is at work. A poller whose read fails shows as failing in the status line and in `/tether-watch`. Its ids
 are never taken for "nothing waits". `/tether-watch` reports each poller's last read.
 
+## doctor {#doctor}
+
+```sh
+uv run --project python coney-tools doctor [--disc DISC]
+```
+
+Checks this machine and the disc for building and contributing, section by section (build tools, configuration,
+disc, research tools, disk), and prints a fix for each problem. Exit code 1 when something the engine's build or the
+disc needs is missing, 0 otherwise (notes, such as another release of the game or a missing research tool, do not
+change it). Read only; no `--agent`, works without `coney.local.toml`. What it checks:
+[Check your setup](building.md#doctor).
+
 ## ghidra {#ghidra}
 
 ```sh
@@ -1564,13 +1632,14 @@ uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url
 
 Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
 (`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
-`--fetch ghidra|ghidra-mcp|pcsx2-mcp|ccache|all`, downloads the research tools and, on Windows, the
-[compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (the two MCP projects are cloned
-at a pinned commit; PCSX2 comes from the fork's own build, `pcsx2 setup-copies`; on Linux and macOS ccache comes from
-the package manager).
+`--fetch ghidra|ghidra-mcp|pcsx2-mcp-release|pcsx2-mcp|ccache|all`, downloads the research tools and, on Windows,
+the [compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (`pcsx2-mcp-release` is the
+PCSX2-MCP fork's Windows release, the PCSX2 the copies run, `pcsx2 setup-copies`; the two MCP projects are cloned at
+a pinned commit; on Linux and macOS ccache comes from the package manager).
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
-`bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each
+`bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it, adding
+`--fetch ccache` when no `--fetch` is given. What each
 step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
 
 ```sh

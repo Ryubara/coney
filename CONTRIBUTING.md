@@ -24,23 +24,26 @@ Node.js 18+ makes the formatting hooks faster (otherwise pre-commit downloads it
 checked with clang-tidy 19 in step 6: on Windows add the Visual Studio component *C++ Clang tools for Windows*, on
 Linux install `clang-tidy-19`, on macOS `brew install llvm@19`. For step 4, your own copy of
 the North American (NTSC-U) game: the research is checked against its executable `SLUS_212.15`; other releases are
-untested.
+untested. Once uv is there, `uv run --project python coney-tools doctor` in the clone checks all of this, your disc
+included, and prints how to fix each problem ([Check your setup](docs/guides/building.md#doctor)).
 
 1. **Clone.** The command is in the [README](README.md#clone); without write access, fork first and follow
-   [Working from a fork](#working-from-a-fork). The tools keep their logs and scratch files in `../../scratch`
-   beside the checkout, so the tidy layout is to clone into `<workspace>/repos/coney` and run `./bootstrap.sh` there
-   (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1` on Windows). It makes the sibling folders, writes
-   `coney.local.toml`, installs uv when it is missing and prints what else you lack
-   ([Bootstrap](docs/guides/workspace.md#bootstrap)). A clone anywhere else builds too, and its logs land in a
-   `scratch` folder two levels above it.
-2. **Build and run the tests.** No game files are needed. `--agent` is only a name for your build log and slot, so use
-   any name, such as your handle:
+   [Working from a fork](#working-from-a-fork). A clone anywhere works: the tools then keep their logs, scratch
+   files and compiler cache in a folder beside it, `<clone>-workspace` (`~/code/coney` uses `~/code/coney-workspace`),
+   never inside the repository. The tidy layout for more than a first change is to clone into
+   `<workspace>/repos/coney` and run `./bootstrap.sh` there (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1`
+   on Windows): it makes the sibling folders (`scratch/`, `tools/`, ...) the tools then use, writes
+   `coney.local.toml`, installs uv when it is missing, fetches the compiler cache on Windows and prints what else you
+   lack ([Bootstrap](docs/guides/workspace.md#bootstrap)).
+2. **Build and run the tests.** No game files are needed:
 
     ```sh
-    uv run --project python coney-tools build --agent me --preset dev --test
+    uv run --project python coney-tools build --preset dev --test
     ```
 
-    It downloads and builds the dependencies, then Coney, then runs the tests (2,688 of them, none needing the game).
+    Your user name labels the build's log and slot (`--agent NAME` picks another; the project's agents must pass
+    it). It downloads and builds the dependencies, then Coney, then runs the tests (2,688 of them, none needing the
+    game).
     On Windows it loads the Visual Studio environment itself, so any shell works. The first time is long: about 11
     minutes to build on an idle 16-core machine, 57 on a busy one without a compiler cache, then up to half an hour of
     tests. To get going sooner, build only the program with `--target coney` (no tests), and later run only the tests
@@ -55,7 +58,7 @@ untested.
 
     ```sh
     build/dev/src/platform/coney --disc /path/to/warriors.iso
-    uv run --project python coney-tools wad info /path/to/warriors.iso   # reads the archive: a quick check the disc is readable
+    uv run --project python coney-tools doctor --disc /path/to/warriors.iso   # checks it is the NTSC-U release
     ```
 
     The tests that need the disc skip without it. To run them, set `CONEY_DISC` to the same path and run the build
@@ -85,11 +88,13 @@ untested.
 **Beyond the first hour: studying the original.** Reading the game's code and watching it run is optional and
 heavier. It needs a JDK 21, Ghidra 12.1.4 with the Emotion Engine extension and Maven to build ghidra-mcp
 ([Ghidra + ghidra-mcp](docs/guides/ghidra.md)), and a PCSX2 build with the debug server patch plus a BIOS dumped from
-your own console ([PCSX2 copies](docs/guides/workspace.md#pcsx2-copies)). The fork has no release to download: you
-build PCSX2 from source with its `prepare.ps1`, and only the Windows build is described, so on Linux and macOS
-only the Ghidra half is available today. With a JDK 21 installed, `coney-tools ghidra setup` downloads Ghidra and the
-extension, imports `SLUS_212.15` from your disc into your own project and gives its functions the names the
-maintainers published ([Starting your own project](docs/guides/ghidra.md#own-project)); the rest you set up by hand.
+your own console ([PCSX2 copies](docs/guides/workspace.md#pcsx2-copies)). On Windows, `coney-tools workspace init
+--fetch pcsx2-mcp-release` downloads the fork's release (PCSX2 with the debug server and the MCP server, checked by
+SHA-256) and `coney-tools pcsx2 setup-copies` makes the copies from it; building the fork from source is only for
+changing it. The fork is built for Windows only, so on Linux and macOS only the Ghidra half is available today.
+With a JDK 21 installed, `coney-tools ghidra setup` downloads Ghidra and the extension, imports `SLUS_212.15` from
+your disc into your own project and gives its functions the names the maintainers published
+([Starting your own project](docs/guides/ghidra.md#own-project)); the rest you set up by hand.
 Two things are not shared yet, so expect them to be missing on your machine: the plate comments, types and structures
 of the maintainers' Ghidra project (only the function names are published, in `docs/progress/ghidra-functions.tsv`,
 and the research pages), and the PCSX2 save states and traces. Start from the research page for the subsystem you

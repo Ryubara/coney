@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import sys
 from collections.abc import Sequence
@@ -18,6 +19,7 @@ from coney_tools import (
     clips,
     coord_cli,
     docs_cli,
+    doctor,
     ghidra_cli,
     issue_cli,
     mcp_serve,
@@ -147,16 +149,24 @@ def _repo_check_docs(body_file: str | None) -> int:
 
 
 def _repo_check_body(
-    body_file: str | None, worktree: Path | None = None, base: str = DEFAULT_BASE, title: str | None = None
+    body_file: str | None,
+    worktree: Path | None = None,
+    base: str = DEFAULT_BASE,
+    title: str | None = None,
+    local_images: bool = False,
 ) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused.
 
     With a `worktree`, the Model line must also name the models its commits after `base` credit in trailers; CI has
     only the description and gives none. With the pull request's `title` (CI gives it), a title area a player sees must
-    have the Testing section's `Runtime:` line; without one that rule is skipped, and the output says so.
+    have the Testing section's `Runtime:` line; without one that rule is skipped, and the output says so. With
+    `local_images` an image may point at a local file, as in a description `gh pr create --attach` is about to upload
+    (the release guard hook passes it when the command attaches files).
     """
     conventions = _conventions()
     rules = conventions.pull_requests
+    if local_images:
+        rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
     if body_file is None or body_file == "-":
         body = sys.stdin.read()
     else:
@@ -291,6 +301,11 @@ def _build_parser() -> argparse.ArgumentParser:
     check_body_parser.add_argument(
         "--base", default=DEFAULT_BASE, help="what the branch is compared with, with --worktree (default: %(default)s)"
     )
+    check_body_parser.add_argument(
+        "--local-images",
+        action="store_true",
+        help="accept an image that points at a local file, which `gh pr create --attach` uploads",
+    )
     render_parser = repo_commands.add_parser(
         "render",
         help="rewrite the generated blocks of AGENTS.md, CONTRIBUTING.md and the guides from .github/conventions.yml",
@@ -325,6 +340,10 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_clips_commands(groups)
     build_cli.add_parser(groups)
     ghidra_cli.add_parser(groups)
+    doctor_parser = groups.add_parser(
+        "doctor", help="check this machine and your disc for building and contributing, with a fix for each problem"
+    )
+    doctor_parser.add_argument("--disc", help="a mounted disc, folder or .iso to check (default: game_dir)")
     coord_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
@@ -360,9 +379,31 @@ def _add_check_commands(groups: Any) -> None:
         "--jobs",
         type=int,
         default=None,
-        help="clang-tidy processes at once (default: a build's share, the cores divided by build_slots)",
+        help="clang-tidy processes at once in the tidy slot (default: tidy_jobs of coney.local.toml, else a build's "
+        "share, the cores divided by build_slots)",
     )
     changed.add_argument("--clang-tidy", help="the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH")
+    changed.add_argument(
+        "--agent", help="your id, for your place in the clang-tidy queue (default: CONEY_AGENT, else the worktree)"
+    )
+    changed.add_argument(
+        "--max-wait",
+        type=float,
+        metavar="MIN",
+        help="minutes to wait for a clang-tidy slot before giving up with exit 75 (default and most 40; with --detach "
+        "default 240)",
+    )
+    changed.add_argument(
+        "--no-cache", action="store_true", help="tidy every file, ignoring the shared clang-tidy result cache"
+    )
+    changed.add_argument(
+        "--detach",
+        action="store_true",
+        help="run in the background, apart from this shell, and return at once; `check result` shows the outcome",
+    )
+    # Internal: where a --detach run's child records its outcome.
+    changed.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
+    commands.add_parser("result", help="the output and outcome of the worktree's last `check changed --detach`")
 
 
 def _add_wad_commands(groups: Any) -> None:
@@ -921,7 +962,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "docs":
         return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet)
     if args.group == "check":
-        return check_cli.run_changed(args.base, args.build_dir, args.only, args.skip, args.jobs, args.clang_tidy)
+        return check_cli.run_check(args)
     if args.group == "issue":
         return issue_cli.run_issue(args)
     if args.group == "wad":
@@ -967,6 +1008,8 @@ def _run(args: argparse.Namespace) -> int:
         return _run_clips(args)
     if args.group == "build":
         return build_cli.run(args)
+    if args.group == "doctor":
+        return doctor.run(Path.cwd(), args.disc)
     if args.group == "ghidra":
         return ghidra_cli.run(args)
     if args.group == "coord":
@@ -1036,7 +1079,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
-        return _repo_check_body(args.body, args.worktree, args.base, args.title)
+        return _repo_check_body(args.body, args.worktree, args.base, args.title, args.local_images)
     return _repo_check()
 
 

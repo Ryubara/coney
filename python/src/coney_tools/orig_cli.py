@@ -7,15 +7,16 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from coney_tools import orig_ghidra, orig_index, orig_queue, orig_report, progress, progress_research
+from coney_tools import orig_check, orig_ghidra, orig_index, orig_queue, orig_report, progress, progress_research
 from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.conventions import load_conventions
 from coney_tools.orig_report import IndexResult
 
 INDEX_FILES = ("index.tsv", "untagged.tsv", "report.md", "research-gaps.md")
 
 
 def add_parser(groups: Any) -> None:
-    """Register `coney-tools orig index` and `orig queue`."""
+    """Register `coney-tools orig index`, `orig queue` and `orig check`."""
     group = groups.add_parser("orig", help="the @orig index of src/ and the fidelity audit's queue")
     commands = group.add_subparsers(dest="command", required=True)
     index = commands.add_parser(
@@ -30,6 +31,17 @@ def add_parser(groups: Any) -> None:
         ),
     )
     _common(index)
+    check = commands.add_parser(
+        "check",
+        help="refuse a new gameplay function with neither @orig nor @coney-only (check changed and CI run it)",
+        description=(
+            "Fails when a function defined in a paths.gameplay folder of .github/conventions.yml since HEAD left "
+            "BASE has no @orig tag and no @coney-only marker and is not exempt (a one-statement member defined in "
+            "its class, an empty constructor or destructor), or when a folder of src/ is in neither paths.gameplay "
+            "nor paths.coney_only. Functions that were already untagged at BASE are the audit's backlog and pass."
+        ),
+    )
+    check.add_argument("--base", default="origin/main", help="what the change is measured from (default: %(default)s)")
     queue = commands.add_parser(
         "queue",
         help="rank the functions to audit first: open bug issues, Ghidra problems, weak research, untagged code",
@@ -62,7 +74,7 @@ def _common(parser: argparse.ArgumentParser) -> None:
 
 def collect(root: Path, ghidra: str, url: str, fetch: orig_ghidra.Fetch | None = None) -> IndexResult:
     """Build the index, check the research links and, as `ghidra` says, check the tags against Ghidra."""
-    index = orig_index.build_index(root)
+    index = orig_index.build_index(root, load_conventions(root).paths.gameplay)
     result = IndexResult(index, orig_index.check_research(root, index.rows))
     if ghidra == "off":
         return result
@@ -120,7 +132,9 @@ def queue_inputs(root: Path, result: IndexResult, issues: list[orig_queue.Issue]
 
 
 def run(args: argparse.Namespace, fetch: orig_ghidra.Fetch | None = None) -> int:
-    """Run `orig index` or `orig queue`."""
+    """Run `orig index`, `orig queue` or `orig check`."""
+    if args.command == "check":
+        return orig_check.run(args.base)
     root = find_repo_root(Path.cwd())
     result = collect(root, args.ghidra, args.url, fetch)
     write_index(args.out, result)

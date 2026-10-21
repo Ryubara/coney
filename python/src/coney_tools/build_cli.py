@@ -7,6 +7,7 @@ from __future__ import annotations
 import _thread
 import argparse
 import contextlib
+import getpass
 import json
 import os
 import re
@@ -21,9 +22,17 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime
-from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaimError, Slots
+from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
-from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    INT_KEYS,
+    ConfigError,
+    disc_for_coney,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    workspace_folder,
+)
 from coney_tools.pcsx2_claims import AGENT_NAME
 
 PRESETS = ("dev", "release", "ci", "asan")
@@ -60,7 +69,10 @@ def add_parser(groups: Any) -> None:
         "build",
         help="configure, build and test under the build slots (at most two at once); status, release",
     )
-    group.add_argument("--agent", help="your id: letters, digits, '.', '_' and '-'")
+    group.add_argument(
+        "--agent",
+        help="your id: letters, digits, '.', '_' and '-' (default for a person: your user name; agents must pass it)",
+    )
     group.add_argument("--preset", choices=PRESETS, default="dev", help="the CMake preset (default dev)")
     group.add_argument("--dir", type=Path, help="the checkout to build (default: the current one)")
     group.add_argument("--configure", action="store_true", help="configure even when the build folder has a cache")
@@ -131,7 +143,9 @@ def add_parser(groups: Any) -> None:
     group.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
-    status = commands.add_parser("status", help="who holds the slots, who waits, and stale entries")
+    status = commands.add_parser(
+        "status", help="who holds the slots (build lanes and the clang-tidy lane), who waits, and stale entries"
+    )
     _add_dir(status)
     status.add_argument("--json", action="store_true", help="print JSON instead of text")
     result = commands.add_parser("result", help="the outcome of the worktree's last --detach run")
@@ -140,8 +154,8 @@ def add_parser(groups: Any) -> None:
     release = commands.add_parser("release", help="manual cleanup: free an agent's slots and drop its queue places")
     release.add_argument("--agent", dest="release_agent", required=True, help="the agent whose entries to remove")
     release.add_argument("--force", action="store_true", help="also another agent's, or a build that still runs")
-    release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast lane)")
-    release.add_argument("--lane", choices=(MAIN_LANE, FAST_LANE), help="one lane only (default: both)")
+    release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast or tidy lane)")
+    release.add_argument("--lane", choices=LANES, help="one lane only (default: all)")
     _add_dir(release)
 
 
@@ -178,9 +192,9 @@ def _numbers(root: Path) -> dict[str, int]:
 
 
 def scratch_root(root: Path) -> Path:
-    """The scratch directory: `scratch_dir`, else the shared scratch beside the main checkout."""
+    """The scratch directory: `scratch_dir`, else the workspace's shared scratch (`config.workspace_root`)."""
     configured = load_config(root).paths.get("scratch_dir") if local_config_file(root) else None
-    return configured or (main_checkout(root) / ".." / ".." / "scratch").resolve()
+    return configured or workspace_folder(root, "scratch")
 
 
 def _log_folder(root: Path) -> Path:
@@ -228,6 +242,25 @@ def _environment(base: dict[str, str], settings: list[str]) -> dict[str, str]:
     return env
 
 
+def disc_environment(env: dict[str, str], root: Path) -> tuple[dict[str, str], build_run.DiscTests]:
+    """`env` with `CONEY_DISC` set for the tests, and what the summary says about it. The disc tests read only that
+    variable (tests/support/disc_play_fixtures.h) and skip without it, so a disc named by the environment or `--env`
+    (an empty value counts as not set, as the tests read it) is kept, else the `game_dir` of coney.local.toml is passed
+    on as the disc Coney would be given (`disc_for_coney`); with neither, the variable stays unset and the summary says
+    the disc tests skip. CMake reads the variable too when it configures, to register the `coney --disc` smoke tests."""
+    given = build_run.env_get(env, "CONEY_DISC")
+    if given:
+        return env, build_run.DiscTests("the environment")
+    game = load_config(root).paths.get("game_dir") if local_config_file(root) else None
+    if game is None:
+        return env, build_run.DiscTests(None, "CONEY_DISC is not set and coney.local.toml has no game_dir")
+    if not game.exists():
+        return env, build_run.DiscTests(None, "CONEY_DISC is not set and game_dir does not exist")
+    disc = {key: value for key, value in env.items() if key.upper() != "CONEY_DISC"}
+    disc["CONEY_DISC"] = str(disc_for_coney(game))
+    return disc, build_run.DiscTests("game_dir in coney.local.toml")
+
+
 def limits(args: argparse.Namespace) -> tuple[float, float]:
     """The run's (max wait, budget) in minutes: the flags, else the caps, or for a --detach run DETACHED_MAX_WAIT and
     no budget. Raises ConfigError for a run its caller waits on that asks for more than the caps."""
@@ -258,11 +291,37 @@ def run_build(args: argparse.Namespace) -> int:
     return _build(args, root, env, log_path, (max_wait, budget), _tie_to_caller).exit_code
 
 
+def _typed_in_a_terminal() -> bool:
+    """Whether a person runs the command in a terminal: both stdin and stdout are one. Agent tools (Claude Code,
+    Gemini CLI, Codex) capture the output of what they run, so their stdout is never a terminal."""
+    try:
+        return sys.stdin.isatty() and sys.stdout.isatty()
+    except (AttributeError, ValueError):
+        return False
+
+
+def default_agent_id(interactive: Callable[[], bool] = _typed_in_a_terminal) -> str | None:
+    """The id of a person's build when they pass no --agent: their user name in the characters an id allows, else
+    `me`. None for an agent, where every run names itself so that a slot, a queue place and a log say whose they are
+    (docs/guides/agents.md): inside Claude Code (CLAUDECODE set) and whenever the command is not typed in a terminal,
+    which covers every agent tool whatever it sets."""
+    if os.environ.get("CLAUDECODE") or not interactive():
+        return None
+    try:
+        user = getpass.getuser()
+    except (OSError, KeyError, ImportError):
+        user = ""
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", user).strip("-.")[:64]
+    return cleaned if cleaned else "me"
+
+
 def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     """Refuse a run that cannot work before anything waits: the agent id, the preset, the settings and the tools.
     Returns the checkout and the environment of the run."""
     if not args.agent:
-        raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
+        args.agent = default_agent_id()
+        if args.agent is None:
+            raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
     if args.targets and args.test:
         raise ConfigError(
             "--target with --test: the tests need coney_tests and coney rebuilt, which --target would leave stale; "
@@ -299,6 +358,7 @@ def _build(
     compiler_cache.write_config(cache)
     stats_log = log_path.with_suffix(".ccache-stats")
     env = {**env, **compiler_cache.environment(cache, root, stats_log, env)}
+    env, disc = disc_environment(env, root)
     options = build_run.Options(
         agent=args.agent,
         preset=args.preset,
@@ -314,6 +374,7 @@ def _build(
         budget=limits_minutes[1],
         jobs=args.jobs,
         targets=tuple(args.targets),
+        disc=disc,
     )
     print(f"log: {log_path}", flush=True)
     toolchain = build_run.ProcessToolchain(root, env)
@@ -622,7 +683,7 @@ def _status_json(snapshots: dict[str, Any]) -> dict[str, Any]:
 
 def status_json(root: Path) -> dict[str, Any]:
     """What `build status --json` prints for the checkout at `root` (also what `coord status` shows of the slots)."""
-    return _status_json({lane: build_claims.default_slots(lane, root).status() for lane in (MAIN_LANE, FAST_LANE)})
+    return _status_json({lane: build_claims.default_slots(lane, root).status() for lane in LANES})
 
 
 def result_record(root: Path) -> dict[str, Any] | None:
@@ -635,9 +696,10 @@ def result_record(root: Path) -> dict[str, Any] | None:
 
 
 def run_status(directory: Path | None, as_json: bool) -> int:
-    """`build status`: the slots of both lanes with their holders, the queues in order, and stale entries."""
+    """`build status`: the slots of every lane (main, fast, and the clang-tidy lane of `check changed`) with their
+    holders, the queues in order, and stale entries."""
     root = _root(directory)
-    lanes = {lane: build_claims.default_slots(lane, root) for lane in (MAIN_LANE, FAST_LANE)}
+    lanes = {lane: build_claims.default_slots(lane, root) for lane in LANES}
     snapshots = {lane: slots.status() for lane, slots in lanes.items()}
     now = lanes[MAIN_LANE].clock()
     if as_json:
@@ -679,9 +741,7 @@ def _epoch(iso: str) -> float:
 def run_release(directory: Path | None, agent: str, force: bool, slot: int | None, lane: str | None) -> int:
     """`build release`: free an agent's slots and drop its queue places (manual cleanup after a crash)."""
     root = _root(directory)
-    chosen: list[Slots] = [
-        build_claims.default_slots(name, root) for name in ([lane] if lane else [MAIN_LANE, FAST_LANE])
-    ]
+    chosen: list[Slots] = [build_claims.default_slots(name, root) for name in ([lane] if lane else LANES)]
     if slot is not None:
         chosen = chosen[:1]  # a slot number belongs to one lane: --lane, else the main slots
     released = 0
