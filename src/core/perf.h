@@ -153,4 +153,6 @@ void resetForTests();
 /// Times the rest of the enclosing scope as the zone `name` (a string literal).
 #define CONEY_PERF_ZONE(name)                                                                                          \
     static const ::coney::perf::ZoneSite CONEY_PERF_CONCAT(coneyPerfSite, __LINE__){name};                             \
-    const ::coney::perf::ScopedZone CONEY_PERF_CONCAT(coneyPerfZone, __LINE__) { CONEY_PERF_CONCAT(coneyPerfSite, __LINE__) }
+    const ::coney::perf::ScopedZone CONEY_PERF_CONCAT(coneyPerfZone, __LINE__) {                                       \
+        CONEY_PERF_CONCAT(coneyPerfSite, __LINE__)                                                                     \
+    }

@@ -880,9 +880,9 @@ TEST_CASE("bad network flags are refused", "[options]") {
 }
 
 TEST_CASE("the bench options measure a played level with fighters spawned", "[options]") {
-    auto bench = parse(std::array<std::string_view, 12>{"--disc", "x", "--play-level", "level99", "--frames", "300",
-                                                        "--bench", "out.json", "--bench-fighters", "100",
-                                                        "--bench-warmup", "30"});
+    auto bench =
+        parse(std::array<std::string_view, 12>{"--disc", "x", "--play-level", "level99", "--frames", "300", "--bench",
+                                               "out.json", "--bench-fighters", "100", "--bench-warmup", "30"});
     REQUIRE(bench.has_value());
     CHECK(bench->benchFile == std::optional<std::string>("out.json"));
     CHECK(bench->benchFighters == std::optional<int>(100));
@@ -894,8 +894,8 @@ TEST_CASE("the bench options measure a played level with fighters spawned", "[op
     CHECK_FALSE(plain->benchFighters.has_value());
     CHECK_FALSE(plain->benchWarmup.has_value());
     // A played level for a number of frames, more than the warm-up.
-    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--frames", "300", "--bench", "out.json"})
-                    .has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--frames", "300", "--bench", "out.json"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--bench", "out.json"})
                     .has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--frames", "60",

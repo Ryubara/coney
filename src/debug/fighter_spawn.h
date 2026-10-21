@@ -50,9 +50,9 @@ class SpawnRandom {
 
 /// What spawnFighters() did.
 struct SpawnedFighters {
-    std::size_t made = 0;        ///< Fighters spawned.
-    std::size_t asked = 0;       ///< Fighters asked for.
-    std::optional<Error> error;  ///< Why the rest were not, when one failed (the spawning stops there).
+    std::size_t made = 0;       ///< Fighters spawned.
+    std::size_t asked = 0;      ///< Fighters asked for.
+    std::optional<Error> error; ///< Why the rest were not, when one failed (the spawning stops there).
 };
 
 /// Spawns `amount` AI fighters facing the player, as the AI fighters page's Spawn does: models picked by `choice`

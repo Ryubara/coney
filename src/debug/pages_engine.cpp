@@ -180,7 +180,8 @@ void addPerformancePage(DebugSession& session) {
     session.model().addPage(
         "Performance",
         [](MenuPage& page) {
-            page.add(toggleItem("Measure", [] { return perf::enabled(); }, [](bool on) { perf::setEnabled(on); }))
+            page.add(toggleItem(
+                         "Measure", [] { return perf::enabled(); }, [](bool on) { perf::setEnabled(on); }))
                 .withHelp("Times the engine's zones and samples its counters every frame (docs/guides/"
                           "performance.md). Costs a little while on; nothing is measured while it is off.");
             page.add(watchItem(
@@ -188,8 +189,8 @@ void addPerformancePage(DebugSession& session) {
                          [] {
                              const perf::RecentMeans means = perf::recentMeans();
                              return means.frames == 0 ? std::string("off")
-                                                      : std::format("{:.2f} ms over {} frames",
-                                                                    means.frameMilliseconds, means.frames);
+                                                      : std::format("{:.2f} ms over {} frames", means.frameMilliseconds,
+                                                                    means.frames);
                          },
                          "Performance/Frame ms"))
                 .withHelp("The mean real time a frame took over the last 60 frames: steps, render and present.");

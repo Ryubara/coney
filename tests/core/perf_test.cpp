@@ -140,8 +140,8 @@ TEST_CASE("The summary leaves the untimed first frame out of the frame time", "[
     CHECK(summary.frames == 3);
     CHECK(summary.frameMilliseconds.mean == Catch::Approx(8.0));
     CHECK(summary.frameMilliseconds.max == Catch::Approx(10.0));
-    const auto outer = std::ranges::find_if(summary.zoneMilliseconds,
-                                            [](const auto& entry) { return entry.first == "test.outer"; });
+    const auto outer =
+        std::ranges::find_if(summary.zoneMilliseconds, [](const auto& entry) { return entry.first == "test.outer"; });
     REQUIRE(outer != summary.zoneMilliseconds.end());
     CHECK(outer->second.mean == Catch::Approx(20.0 / 3.0));
 }
@@ -173,7 +173,8 @@ TEST_CASE("The JSON report holds the metadata, the frame time, zones and counter
     // The expected pieces outside the checks: MSVC's preprocessor mishandles a raw string in a macro's arguments.
     const std::string meta = R"("meta": {"fighters": "100", "level": "level\"99"})";
     const std::string frames = R"("frames": 2)";
-    const std::string frameMs = R"("frame_ms": {"mean": 1.500, "p50": 1.000, "p95": 2.000, "p99": 2.000, "max": 2.000})";
+    const std::string frameMs =
+        R"("frame_ms": {"mean": 1.500, "p50": 1.000, "p95": 2.000, "p99": 2.000, "max": 2.000})";
     const std::string render = R"("render": {"mean": 0.250)";
     const std::string draws = R"("gl.draws": {"mean": 12.000)";
     CHECK(json.find(meta) != std::string::npos);

@@ -2,8 +2,8 @@
 #include "core/perf.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <utility>
 
@@ -170,8 +170,8 @@ void endFrame() {
         counter.last = total;
     }
     if (s.recording) {
-        s.kept.push_back(State::Kept{record->frameNanoseconds, s.values.size(), record->zones.size(),
-                                     record->counters.size()});
+        s.kept.push_back(
+            State::Kept{record->frameNanoseconds, s.values.size(), record->zones.size(), record->counters.size()});
         s.values.insert(s.values.end(), record->zones.begin(), record->zones.end());
         s.values.insert(s.values.end(), record->counters.begin(), record->counters.end());
     }
@@ -198,8 +198,9 @@ std::vector<FrameRecord> recorded() {
     for (const State::Kept& kept : s.kept) {
         const auto first = s.values.begin() + static_cast<std::ptrdiff_t>(kept.first);
         const auto middle = first + static_cast<std::ptrdiff_t>(kept.zones);
-        records.push_back(FrameRecord{kept.frameNanoseconds, std::vector<std::uint64_t>(first, middle),
-                                      std::vector<std::uint64_t>(middle, middle + static_cast<std::ptrdiff_t>(kept.counters))});
+        records.push_back(
+            FrameRecord{kept.frameNanoseconds, std::vector<std::uint64_t>(first, middle),
+                        std::vector<std::uint64_t>(middle, middle + static_cast<std::ptrdiff_t>(kept.counters))});
     }
     return records;
 }

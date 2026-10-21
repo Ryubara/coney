@@ -994,7 +994,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (auto value = takeValue(args, i, benchFightersArg, "--bench-fighters", "a number of fighters"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
-            auto fighters = parseRange("--bench-fighters", benchFightersArg.value_or(std::string{}), 0, kMaxBenchFighters);
+            auto fighters =
+                parseRange("--bench-fighters", benchFightersArg.value_or(std::string{}), 0, kMaxBenchFighters);
             if (!fighters) {
                 return std::unexpected(std::move(fighters.error()));
             }

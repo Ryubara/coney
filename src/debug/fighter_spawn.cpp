@@ -87,7 +87,9 @@ SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount
             ++result.made;
         }
         left -= batch;
-        ahead += static_cast<float>((batch + kPerRow - 1) / kPerRow) * kSpacing;
+        // The next batch stands behind this one's rows (whole rows: a part row counts as one).
+        const int rows = (batch + kPerRow - 1) / kPerRow;
+        ahead += static_cast<float>(rows) * kSpacing;
     }
     return result;
 }
