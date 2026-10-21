@@ -170,10 +170,15 @@ TEST_CASE("The JSON report holds the metadata, the frame time, zones and counter
     summary.zoneMilliseconds.emplace_back("render", coney::perf::Spread{.mean = 0.25});
     summary.counters.emplace_back("gl.draws", coney::perf::Spread{.mean = 12.0});
     const std::string json = coney::perf::toJson(summary, {{"fighters", "100"}, {"level", "level\"99"}});
-    CHECK(json.find(R"("meta": {"fighters": "100", "level": "level\"99"})") != std::string::npos);
-    CHECK(json.find(R"("frames": 2)") != std::string::npos);
-    CHECK(json.find(R"("frame_ms": {"mean": 1.500, "p50": 1.000, "p95": 2.000, "p99": 2.000, "max": 2.000})") !=
-          std::string::npos);
-    CHECK(json.find(R"("render": {"mean": 0.250)") != std::string::npos);
-    CHECK(json.find(R"("gl.draws": {"mean": 12.000)") != std::string::npos);
+    // The expected pieces outside the checks: MSVC's preprocessor mishandles a raw string in a macro's arguments.
+    const std::string meta = R"("meta": {"fighters": "100", "level": "level\"99"})";
+    const std::string frames = R"("frames": 2)";
+    const std::string frameMs = R"("frame_ms": {"mean": 1.500, "p50": 1.000, "p95": 2.000, "p99": 2.000, "max": 2.000})";
+    const std::string render = R"("render": {"mean": 0.250)";
+    const std::string draws = R"("gl.draws": {"mean": 12.000)";
+    CHECK(json.find(meta) != std::string::npos);
+    CHECK(json.find(frames) != std::string::npos);
+    CHECK(json.find(frameMs) != std::string::npos);
+    CHECK(json.find(render) != std::string::npos);
+    CHECK(json.find(draws) != std::string::npos);
 }
