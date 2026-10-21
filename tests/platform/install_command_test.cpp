@@ -17,10 +17,21 @@ using coney::test::TempDir;
 
 namespace {
 
+// A temporary file for the command's output. MSVC deprecates std::tmpfile (C4996, an error in the ci preset), so it
+// gets tmpfile_s, which opens the same kind of file.
+std::FILE* scratchFile() {
+#ifdef _MSC_VER
+    std::FILE* file = nullptr;
+    return tmpfile_s(&file) == 0 ? file : nullptr;
+#else
+    return std::tmpfile();
+#endif
+}
+
 // Runs the command with `options` against the fixture release; returns its exit code and what it printed.
 std::pair<int, std::string> run(const coney::Options& options, const FixtureRelease& release,
                                 const std::vector<std::filesystem::path>& program = {}) {
-    std::FILE* out = std::tmpfile();
+    std::FILE* out = scratchFile();
     REQUIRE(out != nullptr);
     const int code = coney::platform::runInstallCommand(options, release.known(), program, out);
     std::rewind(out);
