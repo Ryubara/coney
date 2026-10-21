@@ -12,7 +12,24 @@ original does (with a link to the research) and where Coney's side lives. Coney'
 Remove an entry when it is fixed, in the same commit. The original's evidence levels are on the linked pages; the
 Coney side is confirmed by reading the source.
 
-## Commands and input
+## Original structure
+
+The original functions behind each entry are on the page it links, in that page's own Original structure and code
+index ([Combat](combat.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
+here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
+they are cited.
+
+## Data
+
+This page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat.md#data) and
+[Combat moves](combat-moves.md#data).
+
+## Behaviour
+
+The differences, by subject. Each entry says what the original does, linking the page that grades it, and what
+Coney does instead; an address cited here carries its level beside it.
+
+### Commands and input
 
 - **Commands the dispatcher ignores**: 3 (the AI's counter, `Player_TryCounterGrab`), `0x36` (push 21), `0x37` /
   `0x38` (ground strikes 193 / 194), `0x39` (throw the melee weapon), `0x32`, `0x33` and `0x27` reach no handler
@@ -21,7 +38,7 @@ Coney side is confirmed by reading the source.
 - **The chain commands** `0x11` / `0x12` of the AI are read as square's by Coney's choice; the original writes them
   for the AI's chains only ([Attack kinds](../references/attacks.md#attack-kind)).
 
-## Timing and targets
+### Timing and targets
 
 The original's rules are in one place: [Timing](combat-moves.md#timing), [Input](combat-moves.md#input) and
 [Targets](combat-moves.md#targeting). Coney (main at `f4562750`): `repo:src/combat/attacks.cpp`,
@@ -44,7 +61,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Blend into an attack.** The original enters each new attack over 0.2 s and swaps a chain step's clip in place;
   Coney fades every attack in over 0.1 s (`kCombatFade`).
 
-## Square and cross
+### Square and cross
 
 - **Order of tests**: the original tests the moving attacks first (with only a low-target check inside them), then,
   in the stance, strafes, snaps, the target re-pick, the low, mid and front-grab strikes, the tandem, the counters
@@ -52,7 +69,10 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   run at a mounted or grabbed human plays 212 or 120 instead of 24. Coney: `repo:src/combat/attacks.cpp`.
 - **Cross at a low or held target**: the original plays 194 at a low target, 661 at a mid one and 120 at a front
   grab ([Cross](combat-moves.md#cross)); Coney's cross has no target branch (always `X1` standing).
-- **Mid target**: the original's 212 is chosen by a height and state test (`0x002250a0`), not "mounted";
+- **Mid target**: the original's 212 is chosen by a height and state test (`Human_IsMidOrBusy`, `0x002250a0`,
+  confirmed (code): the attacker 0.7-1.3 m above the target, or, unless he is more than 0.7 m below it, the
+  target in a state or attack phase its flags name), not
+  "mounted";
   [Grounded and mid strikes](combat-moves.md#ground).
 - **Strafe attacks 31-33** are not built ([Strafe attacks](combat-moves.md#strafe)).
 - **Counters from square and cross** (76 / 9 against a grab or tackle intro) are not built; only R1 at the catch is
@@ -64,21 +84,24 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
   ([How a moving attack strikes](combat.md#moving-strikes)). Coney fires the clips' events by the clip time from 0 on
   the clip's first update ([Animation](formats/animation.md#animation-tasks)); why the original's open about two
-  updates earlier is not yet traced.
+  updates earlier is open ([below](#open-questions)).
 - **The armed run attack 501** does not test the fight stance in Coney; the original's armed branch does
   ([Square](combat-moves.md#square)).
-- **The snap's target**: Coney does not test the clear line (`0x00222a90`) and does not keep the snap's target as
-  the current target ([Combat](combat.md#attacks)).
+- **The snap's target**: the original's snap search has no line test: what an earlier reading here called the clear
+  line (`0x00222a90`) is `Human_IsFriendly`, which the snap's filter `TargetFilter_Enemy` (`0x00279410`) calls
+  (confirmed (code) in `Player_FindSnapTarget`, `0x0027aa38`), so a snap takes no human friendly to the player.
+  Coney's search (`Fighter::snapTarget`) leaves friendliness to the targets it is given, and does not keep the
+  snap's target as the current target ([Combat](combat.md#attacks)).
 - **Object targets**: only glass panes; doors and loose objects are not targets, and the approach from far × 1.5 is
   missing ([Breakables](combat-targets.md#breakables)).
 
-## Stance
+### Stance
 
 - **The fight stance** is a stand-in (locked onto a target), not the original's enter and leave rules
   ([The fight stance](combat-targets.md#fight-stance)). Every gate that tests the stance (moving attacks, strafes, the
   snaps' path) inherits it.
 
-## Grabs, tackles and the mount
+### Grabs, tackles and the mount
 
 - **The tackle** always connects with 5 / 6 (the front hit), without the original's connect gates; 7, the hit from
   the rear, never plays ([Grab and tackle](combat-grabs.md#grab)).
@@ -103,7 +126,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   ([Grabbed](combat-grabs.md#grabbed)).
 - **Mugging**: the victim's qualification (class, money, brain state) is not tested ([Mugging](combat-throws.md#mugging)).
 
-## Being hit
+### Being hit
 
 - **Damage modifiers**: the held weapon's bonus (`CfgObj` `+0x58` × the power class factor), the ×2 flag and the
   ×3 against a cuffed human are missing ([Damage](combat-reactions.md#damage)).
@@ -114,7 +137,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **The power meter** is fixed at 400 with a refill of 60 per second; the original takes both from the human's power
   class and the Warrior upgrades ([Power meter](combat-rage.md#power-meter)).
 
-## Specials, rage and stealth
+### Specials, rage and stealth
 
 - **Rage** starts only through the block branch (L1 + R1 while blocking), not by the original's other routes
   ([Rage](combat-rage.md#rage)).
@@ -123,17 +146,17 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   ([Combat: revive](combat-rage.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op
   partner's flash and a knocked-out human waking on his own are not.
 
-## Weapons
+### Weapons
 
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
   (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-moves.md#weapons)).
 - **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502, next entry) are not built.
 - **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
-  a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for
-  a player holding any object, as `Player_Special` (`0x00287730`) does, and never throws: with nobody near the cross's
-  release swings where the original throws. The special 653 and circle + cross's strong grapple no longer start with an
-  object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)). Coney:
-  `repo:src/combat/player_combat.cpp`.
+  a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for a
+  player holding any object, as `Player_Special` (`0x00287730`, confirmed (code)) does, and never throws: with nobody
+  near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple no
+  longer start with an object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)).
+  Coney: `repo:src/combat/player_combat.cpp`.
 - **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
   it on the update its frame would reach F, one update sooner on 50 of the 174 clips in the move tables (19, 20, 34
   and the dive among them) and on 389, which they do not list ([When a clip ends](formats/animation.md#clip-end)).
@@ -148,10 +171,26 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   block clips 621-624) are missing ([Weapons](combat-moves.md#weapons)).
 - **Armed AI**: no AI human holds or uses a weapon.
 
-## The AI in a fight
+### The AI in a fight
 
 - **Attack kinds**: the AI plays its strikes and chains; its grabs, tackles, throws, specials and the kinds that need
   commands Coney ignores do nothing ([Attack kinds](../references/attacks.md#attack-kind)).
 - **A human held in another human's grab** (the player in an AI's, or an AI in the player's) struggles, strikes back
   and escapes by its command as `Player_UpdateGrabbed` decides, the grabber playing its side an update later; the
   **reversal** (R1) is not offered this way ([Grabbed](combat-grabs.md#grabbed)).
+
+## Coney's implementation
+
+The Coney side of each entry is named in it. The files the entries cite: `repo:src/combat/player_combat.cpp` (the
+dispatcher and the commands it takes), `repo:src/combat/attacks.cpp` (which attack a press starts),
+`repo:src/human/fighter.cpp` (targets and the steer), `repo:src/platform/play_level_objects.cpp` (moving attacks on
+objects), `repo:src/animation/anim_task.cpp` and `repo:src/human/human_animator.cpp` (clip timing). Coney's choices
+and stand-ins as a whole are listed on [Combat](combat.md#coneys-implementation).
+
+## Open questions
+
+- **The moving attacks' windows**: why the original's run and walk attacks switch their shapes on about two updates
+  before Coney's clip events do ([How a moving attack strikes](combat.md#moving-strikes)). Found by tracing the clip's
+  first update in the original's animation task against Coney's.
+- **A throw's root turn**: why the throw clips' root turn is about a third larger in Coney than at runtime, and
+  where the task's rate differs ([Where a throw goes](combat-throws.md#throw-direction)).

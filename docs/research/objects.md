@@ -22,7 +22,8 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 (the table at `0x00512f28`, [Particles](particles.md#type-record)) involved: `glass_script` (61), `sub_glass` (210),
 `sub_stained_glass` (247), `glasstest` (62, the shards), `dyn_door_swinging` (32), `sub_swinging_door` (249, a leaf),
 `dyn_door_sliding` (30), `sub_triglint` (254), and the barriers `dyn_door_fence` (27), `dyn_door_bar_bani` (23),
-`dyn_door_bnstr` (25), `dyn_door_chain_s` (26), `dyn_door_fence_o` (28), `dyn_door_parapet` (29).
+`dyn_door_bnstr` (25), `dyn_door_chain_s` (26), `dyn_door_fence_o` (28), `dyn_door_parapet` (29). Confirmed (code):
+each index read from the table's name pointer.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -116,7 +117,7 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `+0x8c` | **CRC-32 of the name** (the standard table at `0x005d91e0`, as typed: the names are lower case): the Object List key of its model |
 
 The other fields (`+0x58`-`+0x88`) are the binding's arguments. A name is found by `ObjectDb_FindByName`
-(`0x003913d8`): a hash table at `+0x34dfc` keyed by `h = 5h + c` over the characters.
+(`0x003913d8`): a hash table at `+0x34dfc` keyed by `h = 5h + c` over the characters. Confirmed (code).
 
 ### Spawn records {#spawn-records}
 
@@ -270,12 +271,13 @@ number and whose top bit is the word's bit 31, the "avoid" bit: route planning a
 the second argument 1, `0x003a4b00`) change the avoid bit of every link with the number, walking the D records from
 the last, and the path flags of one polygon, found from the first link they meet (the highest index):
 
-1. `0x002508b8`: the link's node (D `+0x00`), then that node's last link of kind `0x10` or `0x40` (searching its D
-   records from the end), and the middle of those two nodes, so the middle of the doorway;
-2. `PathPolygon_FindAtPoint` (`0x00250100`) at that point: of all polygons, only those with path flag 4 and at least
-   one vertex whose box holds the point; one such polygon is the answer, several are narrowed by the inside test
-   (`0x0024eef0`) to the one whose vertex average is nearest, none gives 0 (the original then writes through a null
-   pointer: do nothing);
+1. `0x002508b8` (confirmed (code); the kind mask is `0x50`): the link's node (D `+0x00`), then that node's last link of
+   kind `0x10` or `0x40` (searching its D records from the end), and the middle of those two nodes, so the middle of the
+   doorway;
+2. `PathPolygon_FindAtPoint` (`0x00250100`, confirmed (code)) at that point: of all polygons, only those with path flag
+   4 and at least one vertex whose box holds the point; one such polygon is the answer, several are narrowed by the
+   inside test (`0x0024eef0`) to the one whose vertex average is nearest, none gives 0 (the original then writes through
+   a null pointer: do nothing);
 3. opening sets bit 3 (8) of that polygon's `u16` flags at `+0x48`, closing clears it.
 
 The polygon is a **hole** of an area ([Path data](level-loading.md#path-data)), never the area's outline, which
@@ -521,7 +523,9 @@ a marker out.
   ([Scripting](scripting.md#level99-checkpoints)).
 - `sub_objective_glow` (script type 223, init `0x003ea0b0`, update `0x003ea260`, message `0x003ea198`): a 120 × 120
   sprite of the `lighting` sheet, rectangle 3 (a corona), alpha 255, pulled 0.32 m towards the camera every 2 ticks;
-  message `0x0a` shows or hides it. Who spawns it is not traced.
+  message `0x0a` shows or hides it. Confirmed (code) for the three functions (the table's record 223), the 2-tick
+  interval, rectangle 3, alpha 255, the 0.32 m pull and message `0x0a`'s show and hide; the size and the sheet are
+  inferred. Who spawns it is not traced.
 - `dyn_throwtarget` (gold), `dyn_w_bonus` and `dyn_objective_green` (purple), `dyn_w_cinematics` (white): the same
   class; their uses are not traced.
 
@@ -665,12 +669,12 @@ bat is the worked case ([Combat: a bat in hand](combat-throws.md#bat)); what the
 | `+0x10` / `+0x20` | while attached: the **local** position (vec4) and rotation (quaternion `x, y, z, w`) in the bone's frame |
 
 `Obj_Attach` (`0x003a1810`) sets the bit, the parent and the bone. `Obj_Detach` (`0x003a1858`) first writes the
-object's current world pose into `+0x10` / `+0x20`, then clears the bit and the parent, so a detached object starts
-exactly where it was drawn.
+object's pose "now" (vtable `+0xa4`, `Obj_GetPoseNow`) into `+0x10` / `+0x20`, then clears the bit and the parent, so
+a detached object starts exactly where it was drawn. Confirmed (code).
 
-**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, function word `+0x9c` of the world object's vtable
-`0x005453a0` and the car's `0x00544c08`): unattached, `+0x10` / `+0x20`; attached, three transforms composed with
-`0x003359b0` (rotation `qa · qb`, position `pa + qa · pb`, no scale):
+**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, function word `+0x9c` of the world object's vtable `0x005453a0`
+and the car's `0x00544c08`; confirmed (code), both slots read): unattached, `+0x10` / `+0x20`; attached, three
+transforms composed with `0x003359b0` (rotation `qa · qb`, position `pa + qa · pb`, no scale):
 
 ```text
 world = parent's world transform (its vtable +0x9c: for a human, its position and rotation)
@@ -872,8 +876,8 @@ held object's type `+0x87` and, when it differs from the human's current style (
 
 - style 0 (`NONE_SET`): nothing;
 - the human in the hidden style `0x14` ([Stealth](stealth.md#sneaking)) and the object's style 4 or 6: the top style is
-  **replaced** (`0x00253e68`);
-- no style yet: the object's style is **pushed** (`0x00253ed0`);
+  **replaced** (`0x00253e68`, a pop then a push; confirmed (code));
+- no style yet: the object's style is **pushed** (`0x00253ed0`; confirmed (code));
 - another style on top: that one is popped, the object's pushed, and the old one pushed back on top.
 
 A push applies the style with `Human_ApplyMoveStyle` (`0x00253688`): the [anim slots](characters.md#anim-slots) are
@@ -1262,33 +1266,33 @@ triangle (`0x0033d9d8` checks the triangle's enabled bit), so a pane broken duri
 **The body.** `GlassPane_CreateBody` makes a box of **half-extents** width / 2, **0.25** and height / 2
 (`0x00342dc0` halves `width, 0.5, height`), posed by the pane's matrix, so it stands 0.25 m proud of the glass on
 each side and covers the whole pane. Its body flags (`0x0033d070`) are `0x8000007a`: bits `0x2`, `0x8`, `0x10`,
-`0x20` and `0x40`. Two paths reach it.
+`0x20` and `0x40`. Confirmed (code) at `0x0038ed68`, `0x0033d070` and `0x00342dc0`. Two paths reach it.
 
-1. **A strike shape** (the jump, a punch or kick). A shape of the human's body is a strike shape while its flag
-   `0x2` is set. The human's strike-on and strike-off messages (`0x00247fc0` / `0x00248110`, from
-   `Human_HandleMessage`) go through `0x003428d0`, which keeps a bit mask in body `+0xc0` (a bit per bone byte
-   `+0x31`, from bone 2) and sets or clears flag `0x2` on the shape of that bone (shape vtable `+0x1c`). In the jump
-   it is the body's own capsule: its flags read `0x11` on the ground and `0x13` from the launch to the landing
-   (runtime, below). `Human_TestStrikes` (`0x0033f110`) runs once per update, after the move (`0x0023fea8` calls
-   the move `0x0023d8c8`, then it), while body `+0xc0` (or `+0xd0`) is non-zero. It gathers bodies near the human
-   whose flags hold `0x18`; for each, a ray from 1 m above the feet to the body's centre must hit nothing in the
-   level mesh, the ray excluding material 2 (its exclusion list is `{2, 1}`) and triangles with flag `0x8` (and
-   `0x40`, unless the target is a human's body, body `+0x44` bit `0x40`), so glass never hides a pane from a strike.
-   A body gathered with flag `0x8` or `0x10` (mask `0x18`, so `0x20` alone is never gathered) that the human may
-   strike (human vtable `+0x10c`, not traced) is then swept against each strike shape (shape flags `0x1` and `0x2`,
-   [Physics Unit 10](physics-bodies.md#u10-strikes)), and the first that hits calls `Strike_Contact`
-   (`0x0021b290`). For a pane that is: the noise event (`0x002936a8`, 30 m), `Glass_Break` (`0x0038f378`), a
-   player's crime-10 statistic and then message 1 ([A pane's life](#pane), steps 5-7).
-2. **The airborne body**. The move's sweep asks the physics world for bodies whose flags meet a mask the human
-   builds (`0x0033d498`, for a body with `+0x44` bit `0x40`, a human's): `0x4` on the ground; `0x44` while airborne
-   (object flag `0x4000000`) or while record `+0x08` holds `0x800`; plus `0x20` while the sweeping shape is a strike
-   shape and `0x40000` above gait 3. A pane's body has `0x20` and `0x40` but not `0x4` or `0x40000`, so **only an
-   airborne or striking human's sweep meets it**: walking and running on the ground (capsule flags `0x11`) never
-   touch the body, only the triangles. On the contact, `Human_OnContact` (object branch) goes on when the body has
-   `0x40` and the human is airborne (or record `+0x08` `0x800`, or the landing state flag `0x2000000000`), or the
-   body has `0x20` and the touching shape is a strike shape; it calls `Strike_Contact` (vtable `+0x104`) once per
-   body (the body's contact list, vtable `+0x34` / `+0x44`) and, because the pane's type flags hold `0x400`
-   (`0x0038f588`), returns 0: the contact is ignored and the sweep goes on as if the box were not there.
+1. **A strike shape** (the jump, a punch or kick). A shape of the human's body is a strike shape while its flag `0x2` is
+   set. The human's strike-on and strike-off messages (`0x00247fc0` / `0x00248110`, from `Human_HandleMessage`) go
+   through `Human_SetStrikeShape` (`0x0021c030`) to `0x003428d0` (confirmed (code)), which keeps a bit mask in body
+   `+0xc0` (a bit per bone byte `+0x31`, from bone 2) and sets or clears flag `0x2` on the shape of that bone (shape
+   vtable `+0x1c`). In the jump it is the body's own capsule: its flags read `0x11` on the ground and `0x13` from the
+   launch to the landing (runtime, below). `Human_TestStrikes` (`0x0033f110`) runs once per update, after the move
+   (`0x0023fea8` calls the move `0x0023d8c8`, then it), while body `+0xc0` (or `+0xd0`) is non-zero. It gathers bodies
+   near the human whose flags hold `0x18`; for each, a ray from 1 m above the feet to the body's centre must hit nothing
+   in the level mesh, the ray excluding material 2 (its exclusion list is `{2, 1}`) and triangles with flag `0x8` (and
+   `0x40`, unless the target is a human's body, body `+0x44` bit `0x40`), so glass never hides a pane from a strike. A
+   body gathered with flag `0x8` or `0x10` (mask `0x18`, so `0x20` alone is never gathered) that the human may strike
+   (human vtable `+0x10c`, not traced) is then swept against each strike shape (shape flags `0x1` and `0x2`, [Physics
+   Unit 10](physics-bodies.md#u10-strikes)), and the first that hits calls `Strike_Contact` (`0x0021b290`). For a pane
+   that is: the noise event (`0x002936a8`, 30 m), `Glass_Break` (`0x0038f378`), a player's crime-10 statistic and then
+   message 1 ([A pane's life](#pane), steps 5-7).
+2. **The airborne body**. The move's sweep asks the physics world for bodies whose flags meet a mask the human builds
+   (`0x0033d498`, confirmed (code), for a body with `+0x44` bit `0x40`, a human's): `0x4` on the ground; `0x44` while
+   airborne (object flag `0x4000000`) or while record `+0x08` holds `0x800`; plus `0x20` while the sweeping shape is a
+   strike shape and `0x40000` above gait 3. A pane's body has `0x20` and `0x40` but not `0x4` or `0x40000`, so **only an
+   airborne or striking human's sweep meets it**: walking and running on the ground (capsule flags `0x11`) never touch
+   the body, only the triangles. On the contact, `Human_OnContact` (object branch) goes on when the body has `0x40` and
+   the human is airborne (or record `+0x08` `0x800`, or the landing state flag `0x2000000000`), or the body has `0x20`
+   and the touching shape is a strike shape; it calls `Strike_Contact` (vtable `+0x104`) once per body (the body's
+   contact list, vtable `+0x34` / `+0x44`) and, because the pane's type flags hold `0x400` (`0x0038f588`), returns 0:
+   the contact is ignored and the sweep goes on as if the box were not there.
 
 So a pane breaks for a human who is in the air, or whose strike shapes are on, as soon as his body or a strike shape
 reaches the box 0.25 m in front of the glass; there is no minimum speed and nothing slows him. On the ground with no
@@ -1471,7 +1475,7 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
 
 **Swinging**: `DoorSwing_SwingTo` (`0x003f8fd0`) sends each leaf message `0x35` with its target rotation: the door's
 rotation turned by the angle about the vertical axis (half-angle quaternion), the right leaf by the negated angle
-from its turned base. How a leaf turns there is under [Leaves](#leaves).
+from its turned base. Confirmed (code). How a leaf turns there is under [Leaves](#leaves).
 
 ### Leaves: model, hinge and swing {#leaves}
 
@@ -1511,12 +1515,12 @@ leaf, hinged at the door's position.
 1. Message `0x35` (`0x003fb430`) stores the target in data `+0x00`-`+0x0c`, sets data `+0x14` = 1 and reschedules the
    leaf for the next tick.
 2. On that update the integrate step runs first (`Task_Integrate`, `0x003a2310`): with flag `0x1000` it copies the
-   **previous target** `+0x40` into the rotation `+0x20` and stamps the update time `+0x50`. Then the leaf's update
-   (`0x003fb5a0`) copies the new target into `+0x40` and clears data `+0x14`.
-3. Between updates the object's pose "now" (`Obj_GetPoseNow`, `0x003a1ad8`, flag `0x1000`) is
-   `Quat_Slerp(t, +0x20, +0x40)` with t = (time since `+0x50`) / the update interval in seconds (`+0x64`, 28/60),
-   clamped to 0-1. `Quat_Slerp` (`0x00336a00`) takes the shorter arc (it negates the second quaternion's weight when
-   their dot product is negative) and falls back to a plain lerp when they are within 1e-6.
+   **previous target** `+0x40` into the rotation `+0x20` and stamps the update time `+0x50` (confirmed (code)). Then the
+   leaf's update (`0x003fb5a0`) copies the new target into `+0x40` and clears data `+0x14`.
+3. Between updates the object's pose "now" (`Obj_GetPoseNow`, `0x003a1ad8`, flag `0x1000`) is `Quat_Slerp(t, +0x20,
+   +0x40)` with t = (time since `+0x50`) / the update interval in seconds (`+0x64`, 28/60), clamped to 0-1 (confirmed
+   (code)). `Quat_Slerp` (`0x00336a00`) takes the shorter arc (it negates the second quaternion's weight when their dot
+   product is negative) and falls back to a plain lerp when they are within 1e-6.
 4. The next update, 28 ticks later, makes the target the rotation, and the leaf rests.
 
 So a leaf turns at a **constant angular rate** from where it was to the target in 0.467 s: 170° at about 364° per
@@ -1564,12 +1568,12 @@ or 22. Confirmed (code) at `0x003f9ad0`, `0x003fa438`, `0x003b2180`; the kinds o
 
 `dyn_door_fence` and the classes beside it are single objects, not leaves: `SpawnDoor` with the same arguments; the
 triangles get two-sided, `0x40` and `0x400`, the number's links are retagged `0x40` at spawn, and the update interval is
-60 ticks. Hitpoints from the type, written to data `+0x04` and object `+0x128`. A hit (`0x003b2180`) takes 4 + 6 ×
-kind and makes dust and 20 splinters; one that leaves hitpoints does nothing more. At 0 or below: both triangle sets
-off, the number's links opened (`0x00250c50`), then by class name:
+60 ticks. Hitpoints from the type, written to data `+0x04` and object `+0x128`. A hit (`0x003b2180`) takes 4 + 6 × kind
+and makes dust and 20 splinters (confirmed (code)); one that leaves hitpoints does nothing more. At 0 or below: both
+triangle sets off, the number's links opened (`0x00250c50`), then by class name:
 
 - `dyn_door_wall_a`: a sound, flag `0x800000`, the damaged model `0x7f97c350` and its collision body removed
-  (`0x003a5340`);
+  (`Obj_RemoveBody`, `0x003a5340`; confirmed (code));
 - `dyn_door_wall_b`: sounds only;
 - the others (`dyn_door_fence`, `dyn_door_vargas`): more dust (unless bit 2 of game state word 0, `0x0041cf30`), a
   sound, and three `dyn_wooddmg_a`/`_b` boards (unless bit 2 of word 3), each sent messages `0x19` and `0x30`.
@@ -1611,8 +1615,8 @@ The door side, confirmed (code) at `0x003f9588`, `0x00397078`:
   glint at door position + door rotation × (−w, 0, 0) + 1.3 m up ([Leaves](#leaves)), drawn while within 30 m
   (`0x003eb0d0`); door object `+0x124` = 10; its collision body removed (`0x003a5340`).
 - **Pickable off** (commands 0, 11; `SetDoorPickable(door, false)`): the glint destroyed (message `0x15`), `+0x124` = 0,
-  the collision body back (`0x003a52c8`). `SetDoorPickable(false)` first stops every human whose object target is
-  the door (`0x0022e400`, state flag `0x20000000`).
+  the collision body back (`Obj_AddBody`, `0x003a52c8`; confirmed (code)). `SetDoorPickable(false)` first stops every
+  human whose object target is the door (`0x0022e400`, state flag `0x20000000`).
 - While pickable the door refuses `OpenDoor`, `DoorOpen` and `DoorOpenDegree` (which keeps its angle for later).
 
 The minigame (`CfgSetLockPickHandler`'s callbacks, `pick_lock.anm`) is not traced here.
@@ -1622,9 +1626,11 @@ The minigame (`CfgSetLockPickHandler`'s callbacks, `pick_lock.anm`) is not trace
 `SpawnDoor`'s last value is the door's number in its level (1-27; 484 doors in 45 levels, unique per level). It ties
 the door to the navigation links carrying it ([Navigation links](#nav-links)):
 
-- the breakable doors retag them kind `0x40` at spawn (`0x00250c00`): the classes `dyn_door_fence`,
-  `dyn_door_bar_bani`, `dyn_door_bnstr`, `dyn_door_fence_o` and `dyn_door_parapet` (initialisers `0x003b2f40`,
-  `0x003b3250`, `0x003b4128`, `0x003b57d0`, `0x003b6220`), and the swinging types `dyn_door_dclub` and `dyn_door_liz`;
+- the breakable doors retag them kind `0x40` at spawn (`0x00250c00`, through `0x003a4b30`; confirmed (code) at the five
+  initialisers below, which call it, and from `DoorSwing_SetUpType` `0x003f88c0`; which swinging types reach that call
+  is inferred): the classes `dyn_door_fence`, `dyn_door_bar_bani`, `dyn_door_bnstr`, `dyn_door_fence_o` and
+  `dyn_door_parapet` (initialisers `0x003b2f40`, `0x003b3250`, `0x003b4128`, `0x003b57d0`, `0x003b6220`), and the
+  swinging types `dyn_door_dclub` and `dyn_door_liz`;
 - opening (state command 5) or breaking clears their avoid bit and sets path flag 8 on the door's hole; closing sets
   it and clears the flag ([A door's hole](#nav-links)).
 
@@ -1939,8 +1945,8 @@ another passes within its radius of a segment; [AI](ai.md) movement checks it. T
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, a range inferred from where its functions lie: inventory,
+statistics, flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |

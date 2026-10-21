@@ -325,9 +325,12 @@ The grab strikes 51-57 have code 0 (the grab's own reactions play instead).
 2. **Height** = the code's, +1 when the attacker stands 0.3-0.9 m higher, +2 when 0.9-1.5 m; -1 / -2 when lower; at
    most 2. A low hit (height 0) is always strength 2.
 3. **Side**: 0 when the attacker is within 45° of the victim's front, 3 on its left, 1 on its right, 2 behind
-   (`0x00267338` via `0x002672d0`). The reaction's direction = (code direction + side) & 3.
-4. The id is the s32 table at `0x00510798`, index strength × 16 + height × 4 + direction; a -1 entry falls back to
-   272. Dying uses `0x00266fd8`: strength 2, and half the time the `DIE` set 304-315 (id + 20), else 292.
+   (`Hit_GetSideFromPoint` `0x00267338` via `Human_GetSideOf` `0x002672d0`; confirmed (code), cos 45° = 0.7071). The
+   reaction's direction = (code direction + side) & 3.
+4. The id is the s32 table at `0x00510798`, index strength × 16 + height × 4 + direction; a -1 entry (or an index above
+   64) falls back to 272, the table's entry 10 (`Hit_PickReactionClip` `0x00266f38`; confirmed (code)). Dying uses
+   `Hit_PickDyingReaction` (`0x00266fd8`; confirmed (code)): strength 2, and for a strength-2 entry half the time the
+   `DIE` set 304-315 (id + 20), else the entry itself; a -1 entry or an index above 64 gives 292, the table's entry 42.
 
 | Strength | Height | Back (0) | Left (1) | Front (2) | Right (3) |
 | --- | --- | --- | --- | --- | --- |
@@ -435,15 +438,16 @@ it keeps the current target within 2.5 m, `0x005104c0`, and searches only withou
   stance skips the walk attack) or from one standing (or sprinting) outside it: the stick pushed from rest and square
   pressed while he has not yet started to walk;
 - the stick above 0.95 (the per-player record's buffered magnitude) and more than 45° from the facing → a **snap**
-  attack, 25 right, 27 left, 29 back (`0x00264460`), but only **with a target there**: `0x0027aa38(h, 0x80)` takes
-  the nearest human within **2.0 m** (`0x00227598`) and within **45° of the stick's direction** (π/4 written to
-  `0x0051096c`), height difference at most 2.0 (`0x00510970`), the line to it clear (`0x00222a90`), of another gang,
-  not down, not grabbed or tackled, targetable (filter `0x00279410`). With `CfgSnap` on (`0x005102b4` = 1, the
-  default), none found, or the one found being the current target (`0x00226e60`), means no snap: square goes on
-  down this list (usually `S1` at the current target). With one, `0x00264460` turns the player onto it over 0.1 s
-  (`Attack_SteerToTarget`) when it is within the snap's far range. Confirmed (code); confirmed (runtime) in
-  `level99`'s lesson 7 with the stick at full deflection one update before square: 27, 29 and 25 started and hit bums
-  0.8-1.4 m away, and a square with the stick at the bum in front (the current target) gave 12;
+  attack, 25 right, 27 left, 29 back (`0x00264460`), but only **with a target there**: `0x0027aa38(h, 0x80)` takes the
+  nearest human within **2.0 m** (`0x00227598`) and within **45° of the stick's direction** (π/4 written to
+  `0x0051096c`), height difference at most 2.0 (`0x00510970`), not friendly (`Human_IsFriendly`, `0x00222a90`; there is
+  no line-of-sight test), of another gang, not down, not grabbed or tackled, targetable (filter `TargetFilter_Enemy`
+  `0x00279410`, in `Player_FindSnapTarget` `0x0027aa38`). With `CfgSnap` on (`0x005102b4` = 1, the default), none found,
+  or the one found being the current target (`0x00226e60`), means no snap: square goes on down this list (usually `S1`
+  at the current target). With one, `0x00264460` turns the player onto it over 0.1 s (`Attack_SteerToTarget`) when it is
+  within the snap's far range. Confirmed (code); confirmed (runtime) in `level99`'s lesson 7 with the stick at full
+  deflection one update before square: 27, 29 and 25 started and hit bums 0.8-1.4 m away, and a square with the stick at
+  the bum in front (the current target) gave 12;
 - otherwise 12, `S1`. Strafe ids 31-33 come from the combat-walk path (not tested).
 
 **Cross** (`0x00287a18`) starts 11, `X1`, on command `0x10`; at a run (gait 4, or 5, with record `+0x08` clear) it
@@ -876,13 +880,15 @@ humans to warn them: every one of its 23 call sites passes a single human, the m
 - **`Attack_Start`** (`0x002625a8`, the call at `0x00262674`) warns its current target (`Human_GetTarget`), and only
   when that target is within the clip's far range; out of range it turns to the target and warns no one; with no
   target, no one.
-- **The square path** (`Player_Square`, `0x00286cc8`): each branch warns the human it is about to attack. The call at
+- **The square path** (`Player_Square`, `0x00286cc8`; every call address below is a `jal` to `0x0021d5c0`,
+  confirmed (code)): each branch warns the human it is about to attack. The call at
   `0x0028758c` (the standing square in a fight stance, before the `S1` start at `0x002876f0`) warns the target it has
   just kept or re-picked (`Player_PickTarget`) before testing for a grounded, busy or grabbed target; the snap attacks
   warn their snap target (`0x00287454`, `0x002874c4`, `0x002874fc`); the run and walk charges and the
   run-up attacks warn the picked target (`0x00286e3c`, `0x00286fe0`, `0x002870d0`, `0x00287174`). The standing square
   then reaches `Attack_Start`, so its one target is warned twice in the same update (brain `+0x200` counts 2).
-- The rest pass the move's target too: `Player_Cross` (`0x00287b74`, `0x00287cc8`), the charge (`0x00264b30`), grabs
+- The rest pass the move's target too (confirmed (code): the 23 call sites are in these functions):
+  `Player_Cross` (`0x00287b74`, `0x00287cc8`), the charge (`0x00264b30`), grabs
   and tackles (`Player_GrabOrTackle`, `Player_UpdateGrabbing`), the mug, the tandem and mount starts, the melee throw
   and the throw's release.
 
@@ -1223,9 +1229,10 @@ the stick at 100 % stepped anticlockwise every update, under 90° a step (for ex
 
 ## Code index {#code-index}
 
-Every combat function of the human code (`0x002176b8`-`0x00288000`) that the sections above do not walk through, in
-address order, with what it does. Names are ours, as in the local Ghidra project, where each function also carries a
-plate comment. The rest of the human code is indexed on [Characters](characters.md#code-index).
+Every combat function of the human code (`0x00217a70`-`0x00288000`, a range inferred from where its functions lie; each
+row graded; [Characters](characters.md#code-index) has why it starts at `0x00217a70`) that the sections above do not
+walk through, in address order, with what it does. Names are ours, as in the local Ghidra project, where each function
+also carries a plate comment. The rest of the human code is indexed on [Characters](characters.md#code-index).
 
 ### Attack checks, grabs, tackles and three-person moves {#code-grabs}
 
@@ -1272,9 +1279,10 @@ back to 1.0.
 
 ### Hit reactions, paired moves and the mount {#code-reactions}
 
-`0x00265c28`-`0x00279050`: the handlers that turn pending damage into a reaction by the victim's state
-([Damage](combat-reactions.md#damage), [Hit codes](#hit-codes)), the pair-break clips, grab strikes, cuffing, the
-mount's end hooks, the alignment helpers and revives.
+`0x00265c28`-`0x00279050` (the first and last rows, a range inferred as our grouping; each row graded): the handlers
+that turn pending damage into a reaction by the victim's state ([Damage](combat-reactions.md#damage), [Hit
+codes](#hit-codes)), the pair-break clips, grab strikes, cuffing, the mount's end hooks, the alignment helpers and
+revives.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -1352,8 +1360,8 @@ mount's end hooks, the alignment helpers and revives.
 
 ### Targets and commands {#code-targets}
 
-`0x002790a8`-`0x0027c0f8`: the target searches and their filters ([Target selection](combat-targets.md#targets)) and one
-small test per [command](#commands).
+`0x002790a8`-`0x0027c0f8` (the first and last rows, a range inferred as our grouping; each row graded): the target
+searches and their filters ([Target selection](combat-targets.md#targets)) and one small test per [command](#commands).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -1423,8 +1431,9 @@ small test per [command](#commands).
 
 ### Grab ends, holds and the stick games {#code-holds}
 
-From `0x00280548`: ending a grab, the per-player action delay, and the stick games of the cuffing hold and of a mugged
-player ([Mugging](combat-throws.md#mugging)).
+From `0x00280548` (the first row; the range is our grouping, inferred, and each row graded): ending a grab, the
+per-player action delay, and the stick games of the cuffing hold and of a mugged player
+([Mugging](combat-throws.md#mugging)).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -1446,8 +1455,8 @@ player ([Mugging](combat-throws.md#mugging)).
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, a range inferred from where its functions lie: inventory,
+statistics, flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -1635,10 +1644,10 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   hand](combat-throws.md#armed-moves)): the fighter's anim set stands for the held object's set. With set 1-3 square and
   cross take the armed branch (501, the grounded strike, the slot's swing; no walk attack, snaps or strike on a grabbed
   target), and the charge and dive are unchanged; the rage is the [Rage](combat-rage.md#rage) table's (not its gates on
-  the attacker's brain and the victim's class, nor ids `0x269`-`0x26c`'s table-2 award). **Not yet**: the armed branch's
-  mugging, the blocks' clips of an anim set, the weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a
-  breakable's hit kind 2 for the moving attacks, and the throws of sets 4-6 (square, cross, the charge and the dive play
-  the unarmed moves); a bat never breaks.
+  the attacker's brain and the victim's class, nor ids `0x269`-`0x26c`'s table-2 award). **Not built**: the armed
+  branch's mugging, the blocks' clips of an anim set, the weapon's damage bonus (`CfgObj` `+0x58` × the power class's
+  factor), a breakable's hit kind 2 for the moving attacks, and the throws of sets 4-6 (square, cross, the charge and
+  the dive play the unarmed moves); a bat never breaks.
 - **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
   attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
   strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run attack's
@@ -1687,8 +1696,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   neither the unarmed run nor the walk attack plays, so a square there goes on to the snap or `S1` and a cross to `X1`;
   the armed 501 does not test the stance. **Stand-in**: the stance is the player locked onto a target
   (`Fighter::lockTarget()`), not the original's own rules for entering and leaving it.
-  **Stand-in**:
-  the clear line to the target (`0x00222a90`) is not tested. With the disc, `level99`'s lesson 7 passes:
+  The original's snap filter takes no human friendly to the player (`Human_IsFriendly`, `0x00222a90`); Coney's
+  search leaves that to the targets it is given. With the disc, `level99`'s lesson 7 passes:
   `repo:tests/platform/disc_level99_snaps_test.cpp`.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
   1.5 m.
@@ -1813,13 +1822,10 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   purchase to the use in the stance: 665 from the press, the spend, cue 23 and animation sound 70 on update 19 of
   it, and no play left silent by the engine).
 
-**Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests; the
-AI that would is on [AI](ai.md)); the
-warnings of the player's own clips to the targets (they never block); the rage of the attacks beyond the chain, the
-moving attacks and the throws (their events are not mapped); the hurt
-multipliers `+0x10` / `+0x14`; weapons, breakables and the theft's car windows (no objects yet); the class damage
-table read from the disc (`CfgChar` waits for the script runner's tables; the values `level99` needs are on
-[AI](ai.md#damage-tables)); and the allies and class 13 rules a fight between humans needs.
+**Not built**: the rage of the attacks beyond the chain, the moving attacks and the throws (their events are not
+mapped), and the hurt multipliers `+0x10` / `+0x14`. The AI's attacks on the player, its attack warnings, the
+class damage tables and a boss's class 13 are on [AI](ai.md); weapons on [A bat in hand](combat-throws.md#bat);
+breakables and car windows on [Breakables](combat-targets.md#breakables).
 
 ## Open questions
 

@@ -171,8 +171,8 @@ offset, `+0x80` near, `+0x84` far, `+0x88` fog plane: the RenderWare 3.7 layout)
 
 ### Video mode {#video-mode}
 
-`Init` (`0x00194558`) walks RenderWare's video-mode list (90 modes, a table of 24-byte records `{width, height,
-depth, flags, refresh, raster format}` at `0x0052ec38` in the PS2 driver) and picks the first with:
+`Init` (`0x00194558`, confirmed (code)) walks RenderWare's video-mode list (90 modes, a table of 24-byte records
+`{width, height, depth, flags, refresh, raster format}` at `0x0052ec38` in the PS2 driver) and picks the first with:
 
 | | Interlaced (the default) | Progressive |
 | --- | --- | --- |
@@ -311,15 +311,16 @@ confirmed (code):
 
 - **Start**: target = colour, from = current. With seconds > 0, start = now, end = now + seconds. With 0 or less
   the blend is **instant**: from = target and start = end = 0.
-- **Each frame** (`ScreenFx_DrawTint`, `0x0018ca50`): when end > start, *r* = (end − now) / (end − start), the
-  fraction left; while *r* > 0 the colour is `lerp(from, target, 1 − r)`, otherwise (blend over, or instant) the
-  colour is the target and from is set to it. The colour is stored in `+0x1c0` and filled over the viewport when its
+- **Each frame** (`ScreenFx_DrawTint`, `0x0018ca50`, confirmed (code)): when end > start, *r* = (end − now) / (end −
+  start), the fraction left; while *r* > 0 the colour is `lerp(from, target, 1 − r)`, otherwise (blend over, or instant)
+  the colour is the target and from is set to it. The colour is stored in `+0x1c0` and filled over the viewport when its
   alpha byte is not 0. Nothing is drawn while the current look is 2 and `+0x1b8` is 0 (the current colour is still
   set to the target).
-- **Lerp** (`0x0017a258`): **linear per byte**, each of the four bytes as a float, `from × (1 − t) + to × t`,
-  converted back with the EE's float-to-int, which **truncates** (rounds toward zero). The four bytes blend
-  together, alpha included.
-- `ScreenFx_FinishTintBlend` (`0x0018cb78`): once now is past the end, start = end and from = target.
+- **Lerp** (`0x0017a258`, confirmed (code)): **linear per byte**, each of the four bytes as a float,
+  `from × (1 − t) + to × t`, converted back with the EE's float-to-int, which **truncates** (rounds toward zero). The
+  four bytes blend together, alpha included.
+- `ScreenFx_FinishTintBlend` (`0x0018cb78`, confirmed (code)): once now is past the end, end = start and from =
+  target, so the next frame sees no blend running.
 
 The death camera's blend (`0xd0000014`: red 20, alpha 208) is on [Camera](camera.md#death-camera).
 
@@ -364,8 +365,8 @@ A full-view blur that rises, holds and falls, drawn through the device's [blur p
 | `+0x20c` | when the level reached 1, real-time ms (0 after the auto-end) |
 | `+0x210` | 16 bits: 1 = end by itself after the hold (set by queue type 4 only) |
 
-**Start**, `ScreenFx_StartBlurPulse(seconds, manager, reverse, delay)` (`0x0018d058`): the state becomes 1, the delay
-and the start (now) are stored, then:
+**Start**, `ScreenFx_StartBlurPulse(seconds, manager, reverse, delay)` (`0x0018d058`, confirmed (code)): the state
+becomes 1, the delay and the start (now) are stored, then:
 
 - **Forward** (reverse 0), seconds > 0: from level 0 the rate is 1 / seconds. From a level part-way the level is
   kept, the rate is 1 / (seconds × (1 − level)) (1.0 if that time is 0), and the state goes back to what it was,
@@ -375,7 +376,7 @@ and the start (now) are stored, then:
   rate −1 / seconds. **0 s or less: level 0, rate −1 and state 0**: the pulse is off at once and nothing more is
   drawn.
 
-**Each frame**, `ScreenFx_DrawBlurPulse(dt, manager)` (`0x0018d1d0`), from `ScreenFx_Render`:
+**Each frame**, `ScreenFx_DrawBlurPulse(dt, manager)` (`0x0018d1d0`, confirmed (code)), from `ScreenFx_Render`:
 
 1. Nothing when `+0x214` is set, or while the level is 0 and now < start + delay (unsigned ms), so the delay only
    holds back a pulse that starts from nothing.
@@ -450,16 +451,16 @@ follows [Level tint](rendering.md#tint): `SetLevelColour` stores look 9's colour
 switches to it, `EnterStore` look 10's with a 0.25 s blend, `ExitStore` back to look 9 over 0.25 s; each frame,
 after the HUD and before the scene's captions, a full-screen quad of the colour is blended over the screen at the
 alpha byte × 128 / 255 (truncated) out of 128; an alpha of 0 is not drawn. The blend is linear, each byte
-truncated (`0x0017a258`). `ScreenTint::blendTintTo` is `ScreenFx_BlendTintTo` (`0x0018c988`) for the cameras (the
-game-over shot and `CamUseDeathCamera` blend to `ScreenTint::kGameOver`, `0xd0000014`) and `finishBlend` its finish
-(`0x0018cb78`). **Coney's readings**: `SetLevelColour` switches at once (look 9's in time is 0); the blend is timed
-by the fixed steps, not the original's real-time clock (they differ only while paused or slowed); the other looks'
+truncated (`0x0017a258`, confirmed (code)). `ScreenTint::blendTintTo` is `ScreenFx_BlendTintTo` (`0x0018c988`) for the
+cameras (the game-over shot and `CamUseDeathCamera` blend to `ScreenTint::kGameOver`, `0xd0000014`) and `finishBlend`
+its finish (`0x0018cb78`). **Coney's readings**: `SetLevelColour` switches at once (look 9's in time is 0); the blend is
+timed by the fixed steps, not the original's real-time clock (they differ only while paused or slowed); the other looks'
 tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's
 ([The rage look](#rage-look) lists what rage needs).
 
 **The blur pulse** (`effects::BlurPulse`, `repo:src/effects/blur_pulse.h`, drawn by `RenderEngine::blurScreen`):
-`start(seconds, delayMs)` and `end(seconds)` are `ScreenFx_StartBlurPulse` (`0x0018d058`) forward and reversed,
-`ScreenQueueEffect` 4 and 5 queue look 5's (in 1.25 s, out 4 s, a 360 ms hold, 28 passes, offsets 0.002 and
+`start(seconds, delayMs)` and `end(seconds)` are `ScreenFx_StartBlurPulse` (`0x0018d058`, confirmed (code)) forward and
+reversed, `ScreenQueueEffect` 4 and 5 queue look 5's (in 1.25 s, out 4 s, a 360 ms hold, 28 passes, offsets 0.002 and
 0.003). Each step runs the original's draw-time update (`0x0018d1d0`): the delay, the rise or fall, the hold and the
 auto-end; the level × 28 (truncated) is the pass count. While it runs past its delay the view is replaced, before the
 tint, by the [blur pass](#motion-blur): half size, the passes, stretched back, opaque; the screen effects then go
@@ -506,29 +507,31 @@ in time, **1.0 s**:
 
 - the **tint** (`ScreenFx_BlendTintTo`, [Tint blend](#tint-blend)) from the level's colour to `0x50001933`, that is
   (51, 25, 0) at alpha 80, drawn as As = 80 × 128 / 255 = **40** of 128: about 31 % of the way to a dark brown;
-- the **motion blur** (`ScreenFx_BlendBlurTo` `0x0018c8c8`) from its colour to `0x96ffffff`, white at alpha 150.
+- the **motion blur** (`ScreenFx_BlendBlurTo` `0x0018c8c8`, confirmed (code)) from its colour to `0x96ffffff`, white at
+  alpha 150.
 
 Runtime: the tint went `0x34161512`, `0x38131517`, ... `0x4e011831` at 100 ms steps and was `0x50001933` 0.8 s after
 the first sample; the blur target was `0x96ffffff` from the first.
 
 **Each frame while raging** (`ScreenFx_Render` `0x0018dac0`: blur pulse, tint, fade, letterbox, motion blur; the
-screen effects go before the HUD):
+screen effects go before the HUD; confirmed (code)):
 
 1. The **tint**: one full-view quad of the current colour, `SRCALPHA` / `INVSRCALPHA` ([Level
    tint](rendering.md#tint)). `ScreenFx_DrawTint` (`0x0018ca50`) skips it while the look is 2 and `+0x1b8` is 0, but
-   only `ScreenFx_Construct` and `ScreenFx_ResetAll` (`0x0018c260`) write `+0x1b8`, both with 1, so the rage tint is
-   always drawn (runtime: `+0x1b8` was 1 throughout).
+   only `ScreenFx_Construct` (`0x0018b1e0`) and `ScreenFx_ResetAll` (`0x0018c058`, the store at `0x0018c260`) write
+   `+0x1b8`, both with 1 (confirmed (code) for those two stores; that no other code writes it is inferred), so the rage
+   tint is always drawn (runtime: `+0x1b8` was 1 throughout).
 2. The **ghost grid** ([Motion blur](#motion-blur), step 4): look 2 is one of the grid looks, so the last frame is
    laid over the new one as the 9 × 9 grid, its texture coordinates wobbling by sin and cos of a phase growing 0.5 a
-   frame × 0.001 × ±0.9 × 3 (`0x0050cdfc`, `0x0050cdf8`, `0x0050ce1c`), its vertices white with alpha 0 in the centre
-   rising to 224 at the corners, nearest filtering, `SRCALPHA` / `INVSRCALPHA`. The blur alpha of 150 only turns the
-   grid on and hides the rain layer (111 or more). So the middle of the screen is sharp and the edges smear and
-   swim, as in a tunnel.
+   frame × 0.001 × ±0.9 × 3 (`0x0050cdfc`, `0x0050cdf8`, `0x0050ce1c`, read by the grid `0x00193298`; confirmed (code)),
+   its vertices white with alpha 0 in the centre rising to 224 at the corners, nearest filtering, `SRCALPHA` /
+   `INVSRCALPHA`. The blur alpha of 150 only turns the grid on and hides the rain layer (111 or more). So the middle of
+   the screen is sharp and the edges smear and swim, as in a tunnel.
 
-**End, gradual** (`ScreenFx_EndLook(manager, 2)` `0x0018b950`, the meter running out): the current look becomes **3**;
-the tint blends back to the base look's tint and the blur to the base look's alpha, both over look 2's **out time,
-5.0 s**. Look 3 is still a grid look, and the grid (`0x00193298`) fades its wobble and alpha by `1 − elapsed / 2500
-ms` (`0x0050ce0c` = 2,500, the start kept at `0x0050ce20`); past 2,500 ms the look becomes 8, which
+**End, gradual** (`ScreenFx_EndLook(manager, 2)` `0x0018b950`, the meter running out; confirmed (code)): the current
+look becomes **3**; the tint blends back to the base look's tint and the blur to the base look's alpha, both over look
+2's **out time, 5.0 s**. Look 3 is still a grid look, and the grid (`0x00193298`) fades its wobble and alpha by
+`1 − elapsed / 2500 ms` (`0x0050ce0c` = 2,500, the start kept at `0x0050ce20`); past 2,500 ms the look becomes 8, which
 `ScreenFx_DrawMotionBlur` turns back into the base look. From then on the base look (9) draws the blur as the single
 full-view quad at the still-falling blur alpha, so a faint even ghost (alpha about 73 falling to 0) lingers for the
 remaining 2.5 s; the tint keeps blending for the full 5 s. Runtime: from the end (game time 589.41 s) the grid fade
@@ -541,7 +544,7 @@ at 593.58 s, 4.2 s in.
 use look 8's out time, 0, so the tint and blur snap back on the next frame with no grid fade.
 
 So look 3 is rage's fading grid and look 8 the hand-back to the base look; look 4 does the same for look 0 (the
-flash's look, `Flash_Use`) over 1,500 ms (`0x0050ce10`).
+flash's look, `Flash_Use`) over 1,500 ms (`0x0050ce10`; confirmed (code) in `0x00193298`).
 
 #### Motion blur {#motion-blur}
 
@@ -596,18 +599,18 @@ Confirmed (code) at the functions cited unless a line says otherwise.
   10 by 0.62) to **0 in every texel from row 191 (`v` 0.746) to the bottom**. Across, it tiles: its left and right
   columns differ by under 1 on average, and no column fades towards the sides (column means 54-73). Down, it does
   not: the top row averages 159, the bottom row 0.
-- **Start** (`OE_RoomSmoke_Construct`, `0x0019add0`): the overlay-effect base (`0x0019ba70`); the script's record
-  (`0x0019aff8`: tint RGB `+0x9c`, alpha 0 at `+0x9f`, lowest and highest alpha `+0xa0`/`+0xa1`, amount `+0xa4`); a
-  random U offset 0-1 (`+0xd8`); one `OE_Particle` sprite widget ([`BaseWidget`](gui.md#widget-classes)) set up with
-  size 1.0, depth 10,000, GUI position (0.5, 0, 0.2, 1) (centred across, `y` 0.2), the tint, visible, sprite word
-  `0x130000`, an instance of its own, anchored at its centre. Then two drifts are picked: the first is both the
+- **Start** (`OE_RoomSmoke_Construct`, `0x0019add0`, confirmed (code)): the overlay-effect base (`0x0019ba70`); the
+  script's record (`0x0019aff8`: tint RGB `+0x9c`, alpha 0 at `+0x9f`, lowest and highest alpha `+0xa0`/`+0xa1`, amount
+  `+0xa4`); a random U offset 0-1 (`+0xd8`); one `OE_Particle` sprite widget ([`BaseWidget`](gui.md#widget-classes)) set
+  up with size 1.0, depth 10,000, GUI position (0.5, 0, 0.2, 1) (centred across, `y` 0.2), the tint, visible, sprite
+  word `0x130000`, an instance of its own, anchored at its centre. Then two drifts are picked: the first is both the
   "from" (`+0xa8`) and the current drift (`+0xb8`), the second the "to" (`+0xc8`); the blend clock (`+0xe0`) starts
   at the real-time clock's now (`0x0050b8b8` slot `+0x30`, milliseconds).
-- **A drift** (`OE_RoomSmoke_PickDrift`, `0x0019b198`), each value uniform random: a U scroll per update of
-  0.0005-0.0015 × amount with a random sign, a width scale of 1.63-1.93, a height scale of 1.0-1.2, and an alpha (an
-  integer from the lowest to the highest alpha); picking one also sets the **blend time** `+0xe4`: 4,000-20,000 ms
-  (an integer).
-- **One drift into the next** (`OE_RoomSmoke_BlendDrift`, `0x0019b2a8`, first thing each update):
+- **A drift** (`OE_RoomSmoke_PickDrift`, `0x0019b198`, confirmed (code)), each value uniform random: a U scroll per
+  update of 0.0005-0.0015 × amount with a random sign, a width scale of 1.63-1.93, a height scale of 1.0-1.2, and an
+  alpha (an integer from the lowest to the highest alpha); picking one also sets the **blend time** `+0xe4`:
+  4,000-20,000 ms (an integer).
+- **One drift into the next** (`OE_RoomSmoke_BlendDrift`, `0x0019b2a8`, confirmed (code), first thing each update):
   `t = min((now - start) / blendTime, 1)` on the real-time clock, and the current scroll, width scale, height scale
   and alpha are `from × (1 - t) + to × t` (straight lines, no easing; the alpha rounded to a byte and written into
   the sprite's colour). When `t` reaches 1: from = to, start = now, and a new "to" is picked with its own blend time.
@@ -793,7 +796,7 @@ step ([Coney's implementation](#coneys-implementation)). The engine's test mode 
 ### Loading textures {#loading-textures}
 
 Texture dictionaries reach the game four ways, all through RenderWare's stream reader over the game's own stream (a
-custom stream, `0x00197df0`: close, read, write and skip functions over a game stream object):
+custom stream, `0x00197df0`: close, read, write and skip functions over a game stream object; confirmed (code)):
 
 | Source | Code | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -940,13 +943,15 @@ matrix palette the skin is drawn with; `HumanRender_Draw` passes `full` = 1.
 2. For each pose bone `b` from 2 to 33 (with `full` = 0, bone 2 only): `L_b` = the rotation as a matrix
    (`Quat_ToMatrix`) with the position × the human's scale (`Human_GetScale`) as its translation.
 3. `R` = the human's world transform: the rotation and position of the object transform table `0x00714b00` at the
-   human's index (`+0x92`), 32 bytes each ([Characters](characters.md#ground)).
+   human's index (`+0x92`), 32 bytes each, the rotation a quaternion at `+0x10` (confirmed (code))
+   ([Characters](characters.md#ground)).
 4. Each skin matrix `i = b − 2` (the matrix array of the first atomic's hierarchy, 64 bytes each, flags word `+0x0c` =
-   3) = `Mat_MulSwapYZ(R, L_b)` (`0x00336940`): the row-vector product `L_b × R` (bone first, then the human's
-   placement), re-expressed in RenderWare's y-up axes: a game vector `(x, y, z)` becomes `(x, z, −y)`, so the
+   3) = `Mat_MulSwapYZ(R, L_b)` (`0x00336940`, confirmed (code)): the row-vector product `L_b × R` (bone first, then the
+   human's placement), re-expressed in RenderWare's y-up axes: a game vector `(x, y, z)` becomes `(x, z, −y)`, so the
    product's rows become `(r0)`, `(r2)`, `(−r1)` with each row's components reordered the same way.
-5. When the human's scale is not 1, each matrix is also scaled by `(s, s, s)` before it (`0x0047ce40`, pre-concat),
-   so with the scaled translations the whole skinned body is scaled by `s` about the human's origin.
+5. When the human's scale is not 1, each matrix is also scaled by `(s, s, s)` before it (`RwMatrixScale`, `0x0047ce40`,
+   pre-concat; confirmed (code)), so with the scaled translations the whole skinned body is scaled by `s` about the
+   human's origin.
 6. Then the hierarchy's frame is marked dirty for RenderWare (`0x00483bf8`).
 
 So skin matrix `i` belongs to HAnim node `i` (pose bone `i + 2`, [Characters](characters.md#character-geometry)), and
@@ -1170,10 +1175,11 @@ This naming scheme names the whole first block of the WAD: see [WAD contents](fo
 
 ## Code index {#code-index}
 
-Every function of the game's own `Graphics/` code (`0x0016e388`-`0x0019dfb0`, [Source map](source-map.md#graphics))
-that the sections above do not already walk through, file by file in address order, with what it does. Lighting has
-its own index ([Lighting](lighting.md#code-index)). Names are ours, as in the local Ghidra project, where each
-function also carries a plate comment pointing here. A row that only links is described on the linked page.
+Every function of the game's own `Graphics/` code (`0x0016e388`-`0x0019dfb0`, a range inferred from where its functions
+lie, [Source map](source-map.md#graphics)) that the sections above do not already walk through, file by file in address
+order, with what it does. Lighting has its own index ([Lighting](lighting.md#code-index)). Names are ours, as in the
+local Ghidra project, where each function also carries a plate comment pointing here. A row that only links is described
+on the linked page.
 
 ### Resource manager: animations and cars {#code-resources}
 
@@ -1675,12 +1681,12 @@ Water fields, confirmed (code) at `0x00191230` and `0x00190810`:
 step 9) and draws with culling off; Z test, Z write and fog stay as the world pass left them (on).
 
 1. Nothing while the water is not loaded or not in view (`0x00191908`).
-2. When the phase has moved more than **0.3** (`0x0050cd84`) since the last update (`+0x60`), so every second frame,
-   with `t = phase × speed` (`+0x6c`):
-    - the texture scroll `u0 = fmod(t × 0.3, repeatsAcross)` (`0x0050cd90` = 0.3);
+2. When the phase has moved more than **0.3** (`0x0050cd84`, confirmed (code), as are the constants below) since the
+   last update (`+0x60`), so every second frame, with `t = phase × speed` (`+0x6c`):
+    - the texture scroll `u0 = fmod(t × 0.3, repeatsAcross)` (`0x0050cd90` = 0.3, confirmed (code));
     - for each column `i` but the last: `s = sin(i + t)`; every vertex of the column gets height `s × waveHeight`
       (`+0x68`, the vertex's z) and the water's colour (`+0x64`) with alpha **`225 + 5 s`** (`0x0050cd8c` = 225,
-      `0x0050cd88` = 5; RenderWare's 0-255 scale, so about 88 % opaque);
+      `0x0050cd88` = 5, confirmed (code); RenderWare's 0-255 scale, so about 88 % opaque);
     - texture coordinates `u = u0 + repeatsAcross × i / (columns − 1)` and `v = repeatsAlong × j / (rows − 1)`;
     - the last row and the last column copy the first one's heights and colours, so the surface tiles.
     - with `Water_Set`'s grid that leaves two distinct columns: the two edges at `sin t`, the middle at `sin(1 + t)`;
@@ -1812,8 +1818,8 @@ address.
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, a range inferred from where its functions lie: inventory,
+statistics, flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
