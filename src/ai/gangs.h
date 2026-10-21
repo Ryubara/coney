@@ -196,6 +196,7 @@ class Gang {
     /// How many clips group `group` of the gang's clip table (`+0x1b0`) holds; 0 when it is not installed.
     [[nodiscard]] int clipGroup(int group) const;
     /// The clip name in slot `slot` of group `group`; empty for a free slot or a group not installed.
+    /// @orig 0x00163fc0 GangClips_Get (unknown)
     [[nodiscard]] std::string_view clip(int group, int slot) const;
     /// Fills group `group` from `names` (`GangClips_Set`): in order when they fit its slots (clipGroupSlots()), else a
     /// random subset in order, each name taken on a 1-in-2 draw while more names are left than free slots.

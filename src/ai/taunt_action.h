@@ -24,6 +24,7 @@ inline constexpr int kAlwaysTauntRole = 13;
 inline constexpr float kTauntFade = 0.05F;
 
 /// The anim of taunt kind `kind` (kTauntFirstAnim + kind).
+/// @orig 0x002fb0f0 TauntAction_Init (unknown)
 [[nodiscard]] constexpr int tauntAnim(int kind) { return kTauntFirstAnim + kind; }
 
 /// The taunt action (vtable `0x00542e60`).

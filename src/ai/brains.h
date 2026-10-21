@@ -89,6 +89,7 @@ class Brains {
     // reaction over (`HitReact_OnSpecialEnd`) or a throw, grab or mount letting go of him (`Throw_ClearVictimLink`),
     // not knocked out. **Coney stand-in**: both read as "grounded, not held, his health not out and no reaction clip
     // driving him", once per time down; the original sends from the two places themselves.
+    // @coney-only stand-in poll for the event HitReact_OnSpecialEnd and Throw_ClearVictimLink send
     void reportPutDowns();
     // The health each human lost since the last step, kept before the gangs' tactics run: a tactic that holds a boss
     // above his cap gives the health back at once, and the hit must still reach reportDamage().
