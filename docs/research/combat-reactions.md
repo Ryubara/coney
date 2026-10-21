@@ -3,18 +3,67 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
 PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim keeps the evidence level it had there.
+Every claim carries the level written beside it.
+
+## Purpose
 
 This page covers how a hit lands on a busy target, the reactions (stun, knockdown, getting up and countering), being
-knocked out and the mission failing, being hit at runtime, a bat's hit (the level34 Furies) and hit blood.
+knocked out and the mission failing, being hit at runtime, a bat's hit (the level34 Furies) and hit blood. A player
+sees it as what a punch does to whoever takes it: a flinch, a stagger, a fall and the climb back up, a man left on
+the ground, and the "mission failed" screen when the crew can no longer help. The AI's fight goals, the grab and the
+mount ([Grabs](combat-grabs.md)) and the HUD's health meter all read the states set here.
+
+## Original structure
+
+No source file names this code: it lies in `Human/`, in the human's set-up and contacts and in the player's combat
+code after `cns/cnsplayertag.cpp` ([Source map](source-map.md#position), inferred). The names are ours. Every
+reaction function is in the [code index](combat.md#code-reactions); these are the entry points, each read in Ghidra
+at its address.
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x0021b290` | `Strike_Contact` | a strike's damage, from the damage table, a weapon and upgrades | confirmed (code) |
+| `0x00264bd8` | `Human_AddPendingDamage` | keeps the update's largest hit and its weight | confirmed (code) |
+| `0x00265f70` | `Human_ApplyPendingDamage` | applies the hit each update and picks the reaction by state ([Damage](#damage)) | confirmed (code) |
+| `0x0026b0a0` / `0x0026a6d0` | `Hit_PlayReaction` / `Human_PlayReaction` | a normal hit's reaction, by hit code; plays it | confirmed (code) |
+| `0x002688d0` / `0x00268ea8` / `0x00268c50` | `HitReact_WhileGrabbed` / `HitReact_WhileGrabbing` / `HitReact_InMiniGame` | a hit on a busy human ([Attacking a busy target](#busy-target)) | confirmed (code) |
+| `0x0022f658` / `0x0022f100` | `Human_Stun` / `Human_KnockDown` | the stun and the knockdown and their timers ([Reactions](#reactions)) | confirmed (code) |
+| `0x00256a60` / `0x0025e2d8` | `Human_UpdateDown` / `Human_PlayRise` | the get-up time and the rise 199 | confirmed (code) |
+| `0x002674c0` / `0x00230328` / `0x00230598` | `Human_OnHealthOut` / `Human_KnockOut` / `Human_WakeUp` | health out, knocked out, woken ([Defeat](#defeat)) | confirmed (code) |
+| `0x004197a8` / `0x00158728` | `GameState_CheckGameOver` / `Gm_Level_Update` | the mission failing and the hand-off to its screen | confirmed (code) |
+
+## Data
+
+The reactions use the record and state fields that [Combat](combat.md#data) owns ([State
+flags](combat.md#state-flags), [Other record fields](combat.md#record-fields)), the reaction table at `0x00510798`
+(read by `HitReact_WhileGrabbed`, confirmed (code)), the damage table ([Hit codes](combat.md#hit-codes)) and the
+[constants](combat.md#constants). The fields this page reads most are below, each read in the function named.
+
+| Field | Meaning | Evidence |
+| --- | --- | --- |
+| record `+0x118` | the pending damage, the update's largest (`Human_AddPendingDamage`) | confirmed (code) |
+| record `+0x11a` | the pending hit's weight, read only by the paired reactions ([Scripted knockdowns](#scripted-knockdowns)) | confirmed (code) |
+| record `+0x144` / `+0x146` | health and its maximum (`Human_ApplyPendingDamage`) | confirmed (code) |
+| record `+0x100` / `+0x104` | the times the stun and the knockdown end (`Human_Stun`, `Human_KnockDown`, `Human_UpdateDown`) | confirmed (code) |
+| record `+0xf0` | the knocked-out human's time (`Human_OnHealthOut`, `Human_KnockOut`) | confirmed (code) |
+| state `0x100000`, `0x80000`, `0x40000`, `0x10000` | stunned, knocked down, knocked out, wounded | confirmed (code) |
+| state `0x80000000`, `0x100000000` | dying, dead | confirmed (code) |
+| `0x00510790` / `0x00510794` | 500 and 14,000 ms, the knocked-out times (s32) | confirmed (code) |
+
+## Behaviour
+
+The sections below follow a hit from the contact to its reaction, then a human down, out and the mission's end. Each
+claim carries its level; the code claims were read at the addresses they cite, the runtime ones measured in PCSX2
+2.9.94 as each one says.
 
 ## Damage, health and reactions {#damage}
 
 `Strike_Contact` (`0x0021b290`) takes the [damage table](combat.md#damage-table)'s value, adds a held weapon's bonus,
 and for a player applies upgrade percentages (categories `0x13` / `0x19` and `0x1e` / `0x21` / `0x1d` / `0x20`, inferred
 to be the upgrade levels). An attacker with flag `0x20` deals the victim's whole health. `0x0021d680` →
-`Human_AddPendingDamage` (`0x00264bd8`) stores it at record `+0x118` if larger than what is pending, with the
-may-react flag at `+0x11a`; the damage is **doubled** when the attacker has human flag `0x4000` and **quartered** for
+`Human_AddPendingDamage` (`0x00264bd8`) stores it at record `+0x118` if larger than what is pending, with its weight at
+`+0x11a` ([Scripted knockdowns](#scripted-knockdowns)); the damage is **doubled** when the attacker has human flag
+`0x4000` and **quartered** for
 class `0x80` against brain type 3. Confirmed (code). Health (record `+0x144`) fell by exactly the table's value on
 every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their damage on the move's first update.
 
@@ -24,14 +73,22 @@ every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their da
 2. A victim with flag `0x20000000000` (demi-god,
    [`HuSetDemiGodMode`](../references/bindings/character.md#husetdemigodmode)) cannot drop below a fraction of its
    maximum in one hit: health is set to that fraction, flag `0x10` is set, and the rest is lost. The fraction is one
-   global for every human (`0x0051024c`, the last `HuSetDemiGodMode` call's; the scripts pass 0.25).
-3. Record `+0x00` `0x20000` triples the damage (`0x00223b70`); allies hurt each other only when both are players.
-4. Health drops; the flash clip 665 prevents death. A grabber hit by a third human loses 0.6 of its power.
+   global for every human (`0x0051024c`, the last `HuSetDemiGodMode` call's; the scripts pass 0.25, the executable's
+   own value is 0.3). Confirmed (code).
+3. A cuffed victim (state `0x20000`, `Human_IsCuffed`, `0x00223b70`) takes triple damage; allies hurt each other only
+   when both are players. Confirmed (code).
+4. Health drops; the flash clip 665 prevents death. Any human in a pair or a block (state `0x18003ff0`,
+   `Human_IsInPairOrBlock`, `0x00227fd8`) hit by someone other than his partner (`+0xc4`) spends 0.6 of his power (the
+   constant at `0x00510274`). Confirmed (code).
 5. **Hit armour**: no reaction plays (the damage still lands) while the victim is a player in an attack's wind-up or
    chain window (`+0x08` & 3), or a class 13 human with `+0x08` & `0x13`, unless the attacker is a player, class 13,
    raging, has flag `0x200000` or `0x4000`, or plays 617-620.
-6. Otherwise the reaction by state: grabbed `0x002688d0`, grabbing `0x00268ea8`, and others; a normal hit
-   `0x0026b0a0` ([Hit codes](combat.md#hit-codes)).
+6. Otherwise the reaction by state, each a function of its own, among them: in a jump, falling, on fire, cuffing or
+   being cuffed, in a mini-game, mugging or mugged, grabbed (`HitReact_WhileGrabbed`, `0x002688d0`), tackled,
+   grabbing (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, in a special, knocked out
+   (`HitReact_WhileOut`), wounded (`Hit_PlayBegReaction`) and hit by an object (`HitReact_FromObject`); a normal hit
+   `Hit_PlayReaction` (`0x0026b0a0`, [Hit codes](combat.md#hit-codes)). Confirmed (code); the list is not every
+   branch.
 
 ## Attacking a busy target {#busy-target}
 
@@ -45,11 +102,12 @@ checked. All confirmed (code) at the cited addresses.
 
 **The checks on an AI's way in**, in the order a fight meets them ([AI](ai.md#check-attack)):
 
-1. **EngageEnemy's run-in** (`0x002afa48`, [AI](ai.md#engage-enemy)): within 0.75 × far (3.75 m) of a target whose
+1. **EngageEnemy's run-in** (`EngageEnemyGoal_Process`, `0x002afa48`, [AI](ai.md#engage-enemy); confirmed (code)):
+   within 0.75 × far (3.75 m) of a target whose
    state has any of the busy mask `0x7bf9e9f7ff0` (`HumanRecord_AreActionsBlocked`, `0x00228228`), the runner stops
    and turns to him instead of charging. All three activities are in the mask. The fight goal then attacks from
    there.
-2. **`Brain_CheckAttack`** (`0x002906b8`) uses the same busy mask only to *relax* two of its waits:
+2. **`Brain_CheckAttack`** (`0x002906b8`, confirmed (code)) uses the same busy mask only to *relax* two of its waits:
    - result 4, hold back from an armed man, applies only when neither T nor T's target is busy;
    - result 8, let a heavy-armed mate go first, counts only a mate who is not busy.
    The busy target itself is not refused. Result 3 (`Brain_IsAttackableBy`, brain `+0x11f`) does not read the state:
@@ -57,7 +115,7 @@ checked. All confirmed (code) at the cited addresses.
    limits, but a human held in an ordinary fight grab is not.
 3. **The pick** (`Human_CanUseAttackKind`, `0x002240e8`) and **the start** (`Human_CanStartAttack`, `0x00224778`; the
    kind table at [An AI's attacks](combat-targets.md#ai-attacks)). The start first refuses a target holding any of the
-   held flags `0xc08200` (unless T has state `0x2000` and A `0x1000`). By kind:
+   held flags `0xc08200` (unless T has state `0x2000` and A `0x1000`). Confirmed (code). By kind:
 
 | Kinds | Grabbed by another (`0x10` / `0x20`) | Stereo (`0x4000000`) | Tagging (`0x2000000`) |
 | --- | --- | --- | --- |
@@ -71,33 +129,41 @@ checked. All confirmed (code) at the cited addresses.
 The pick also weighs a rear-grabbed target held by a gang mate +200 toward the grab ([AI](ai.md#pick-attack)).
 
 **A player's moves.** Square and cross strike whatever their shapes meet. The player's grab and tackle search uses
-`Human_CanBeGrabbed` (`0x002256a0`). It refuses the state bits `0x7bfdc8f7ff0` (grabbed, mini-game, but not tagging),
-the held flags `0x8fc57a60`, a human down, in a scene, more than 0.25 m above or below, or with human flag `0x40`. So
-a tagger can be grabbed or tackled; a stereo thief or a held human cannot.
+`Human_CanBeGrabbed` (`0x002256a0`, confirmed (code)). It refuses the state bits `0x7bfdc8f7ff0` (grabbed, mini-game,
+but not tagging), the held flags `0x8fc57a60`, a human knocked out, wounded, dying or dead (`Human_IsDownOrDead`,
+`0x00227e60`, state `0x180050000`), in a scene, more than
+0.25 m above or below, or with human flag `0x40`. A knocked-down human is tested without the knock-down bit
+(`0x7bfdc877ff0`), so he may be grabbed (the grounded mount), unless he holds `0x48000` with his clip half played. So a
+tagger can be grabbed or tackled; a stereo thief or a held human cannot.
 
 **The strike itself** never asks about these states. `Human_TestStrikes` skips only a target in state `0x100000000`
-(`Human_MayStrikeBody`, `0x00227180`), and `Strike_Contact` deals the damage. What the hit then does is
+(`Human_MayStrikeBody`, `0x00227180`, confirmed (code)), and `Strike_Contact` deals the damage. What the hit then does is
 `Human_ApplyPendingDamage`'s (`0x00265f70`, [Damage](#damage)). The health always drops first. Then, unless hit
 armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
 
 - **Tagging: the tag ends.** `Tag_End` (`0x0022e848`) runs for a tagger (or a human whose `+0x36c` still holds the
   tag's particle system), scoring an unfinished tag ([Crimes](crimes.md#tagging)). The ordinary reaction by hit code
-  follows.
-- **The stereo: the theft fails.** A human in a mini-game goes to `HitReact_InMiniGame` (`0x00268c50`):
+  follows. Confirmed (code) in `Human_ApplyPendingDamage`.
+- **The stereo: the theft fails.** A human in a mini-game goes to `HitReact_InMiniGame` (`0x00268c50`, confirmed
+  (code)):
   `MiniGame_Abort` (`0x0022d628`) → `StereoTheft_End(h, 0)` (`0x0022e020`) with no reward. It clears the mode, the
   meter, the stage and angle, and the context record's occupant (so the stereo can be tried again), closes the HUD and
   restores the camera. Then, whatever the hit's strength, the thief plays **331** `ARREST_RELEASE_HIT_REACT` and his
   stance loop, holding `0x2000`, with the push sphere off. Only lock picking (mode 2) gets the ordinary reaction
   instead.
 - **Held by another: the hold breaks** (`HitReact_WhileGrabbed`, `0x002688d0`, for an attacker other than the
-  grabber; the grabber's own hits are the grab's). The pending damage is cleared after the health drop.
+  grabber; the grabber's own hits are the grab's; confirmed (code)). The pending damage is cleared after the health
+  drop.
     - Rear-held (`0x20`) and not holding `0x2000`: the grab ends and the victim plays 133, the grabber 107
       `GRAB_REAR_BREAK_REACT`.
     - Front-held (`0x10`), not holding `0x2000`, without human flag `0x200`: the grab ends and the victim plays 137
       `GRAB_FRONT_HIT_VICTIM_KNOCKDOWN`, the grabber 138.
-    - Otherwise the pair stays and plays a paired hit reaction (front 133, rear 123), except that a heavy or crushing
-      hit (hit-code strength ≥ 2) without held `0x2000` ends the grab and stuns the victim first.
-    - The grabber hit by a third human is `HitReact_WhileGrabbing` (`0x00268ea8`) and loses 0.6 of his power.
+    - Otherwise the pair stays and plays a paired hit reaction (front 133, rear 123; 135 and 125 when record `+0x11a`
+      is 2 or more), except that a heavy or crushing hit (hit-code strength ≥ 2) without held `0x2000` ends the grab
+      and stuns the victim first.
+    - The grabber hit by a third human goes to `HitReact_WhileGrabbing` (`0x00268ea8`), which ends or keeps the grab
+      by the same tests from his side (a front grab ends with 144 on him and 145 on the victim). The 0.6 of his power
+      he loses is spent before it, in `Human_ApplyPendingDamage` ([Damage](#damage), step 4). Confirmed (code).
 
 ### Moves a hit cannot stop: the dive, the charge and the paired moves {#protected-moves}
 
@@ -522,8 +588,9 @@ addresses:
    record `+0xf0` = now + 500 ms.
 2. What happens next depends on human flag `0x4` (the player in the street had it,
    [Human flags](combat.md#human-flags)):
-   - **Without `0x4`**, a human that is not cuffed, has flag `0x8` and passes `0x00227d98` is **wounded**
-     (`Human_StartWounded`). It drops what it carries, leaves the radar and loses its icon.
+   - **Without `0x4`**, a human that is not cuffed, has flag `0x8` and is not wounded already (`Human_IsWounded`,
+     `0x00227d98`, state `0x10000`) is **wounded** (`Human_StartWounded`, `0x0022fa78`, which sets `0x10000`;
+     confirmed (code)). It drops what it carries, leaves the radar and loses its icon.
    - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries
      ([Dropped when down](crimes.md#down-drop)).
      It is **dead** instead (state `0x100000000`, record `+0xf0` = 0) when the source of the last hit (record `+0xd0`)
@@ -535,7 +602,7 @@ addresses:
 
 **`Human_KnockOut`**:
 
-- sets record `+0xf0` = now + 14,000 ms (`0x00510794`; its reader is not traced here);
+- sets record `+0xf0` = now + 14,000 ms (`0x00510794`, an s32 14000 in the executable; confirmed (code));
 - gives the push weight 1e9;
 - turns a player's slow motion off;
 - unless the human is dead or wounded (`0x100050000`), sets state **`0x40000`** (knocked out;
@@ -561,10 +628,10 @@ the scan matched `ld`/`sd` pairs, not every store).
 
 | Caller | When |
 | --- | --- |
-| `Human_OnHealthOut` (`0x002674c0`) | health out, a human without flag `0x8` or already wounded ([above](#defeat)) |
-| `Human_SetConscious` (`0x00237778`) | `HuSetConscious(h, false)` |
-| `Human_Destroy` (`0x0021c7c8`) | a human deleted while not dead: knocked out (his brain drops its goals and target), then made dead (`0x100000000`) and the bit cleared, in the same call |
-| `Human_ReleaseInstance` (`0x00217dd8`) | from `Human_Destroy` only, with argument 1; the state word is zeroed a few instructions later |
+| `Human_OnHealthOut` (`0x002674c0`, confirmed (code)) | health out, a human without flag `0x8` or already wounded ([above](#defeat)) |
+| `Human_SetConscious` (`0x00237778`, confirmed (code)) | `HuSetConscious(h, false)` |
+| `Human_Destroy` (`0x0021c7c8`, confirmed (code)) | a human deleted while not dead: knocked out (his brain drops its goals and target), then made dead (`0x100000000`) and the bit cleared, in the same call |
+| `Human_ReleaseInstance` (`0x00217dd8`, confirmed (code)) | from `Human_Destroy` only, with argument 1; the state word is zeroed a few instructions later |
 
 **Cleared** by:
 
@@ -618,14 +685,14 @@ It works through these cases, confirmed (code):
 1. **A dead player** (state `0x100000000`) fails at once.
 2. Nothing more happens while any player is neither knocked out nor cuffed.
 3. A cuffed player 1 who can free himself (upgrade (6, 15) and a key) is spared.
-4. When no one else in player 1's gang is free to help (`Gang_NoneAbleToHelp`, `0x00169dd8`: not cuffed, out or
-   busy), the mission fails at once.
+4. When no one else in player 1's gang is free to help (`Gang_NoneAbleToHelp`, `0x00169dd8`: not cuffed, knocked out
+   or wounded), the mission fails at once. Confirmed (code).
 5. When others are free, and player 1 is cuffed (not out) or holds a flash (item 1), and game state
    `+0x414 + player` is 0 (the crew was within 50 m at the last range check,
    [out-of-range flag](ai-gangs.md#warrior-range-flag)), it **waits**; with the byte set it fails at
    once. Every 37 updates it asks whether a free member has a route to him
    (`Gang_CanReachToHelp`, `0x00169ea0`; [who can help](#defeat-helpers)). A yes resets the count at `+0x56e6`; the
-   4th no in a row fails the mission.
+   4th no in a row fails the mission. Confirmed (code) at `0x004197a8`.
    A knocked-out player without a flash fails at once.
 
 A failure sets `+0x14c` = 1 and the menu's title (`MissionFailed_SetReason`, `0x001d1fb8`): `GSTRING.HUD` 21 with game
@@ -635,16 +702,19 @@ labels](../references/text-labels.md#text-gstring-hud)).
 **The hand-off** (`Gm_Level_Update`, `0x00158728`), confirmed (code):
 
 1. While `+0x14c` is 1 or 2, a countdown at level mode `+0x28` runs down by one per update. `Gm_Level_Enter` and
-`Gm_Level_Resume` set it to **180**; for anything but a story failure it is first capped at 90. 2. On a story failure
-(not an Armies level) the first update does the following, unless game state `+0x152` bit `0x2` is set: - makes the
-**failed camera** (`Cam_GetFailed(1)`) active for player 1; - blends the screen tint to `0xd0000014` over 6.5 s and
-starts a 1.5 s blur pulse; - hides the HUD and removes the players' overhead icons; - keeps the music volume, then fades
-it toward 0.7 while the failed camera runs.
+   `Gm_Level_Resume` set it to **180**; for anything but a story failure it is first capped at 90.
+2. On a story failure (not an Armies level) the first update does the following, unless game state `+0x152` bit
+   `0x2` is set:
+   - makes the **failed camera** (`Cam_GetFailed(1)`) active for player 1;
+   - blends the screen tint to `0xd0000014` over 6.5 s and starts a 1.5 s blur pulse;
+   - hides the HUD and removes the players' overhead icons;
+   - keeps the music volume, then fades it toward 0.7 while the failed camera runs.
 
-At 180 the system music stops. 3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3
-s. Game state `+0x152` bit `0x2` cuts it to 0. 4. At 0, `MissionFailed_Toggle` pushes mode `0xc`, the [mission-failed
-screen](pause.md#the-mission-failed-screen) (`ANGameOver_Toggle` on an Armies level). A level end of 2 launches the
-mission-complete screen instead.
+   At 180 the system music stops.
+3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3 s. Game state `+0x152`
+   bit `0x2` cuts it to 0.
+4. At 0, `MissionFailed_Toggle` pushes mode `0xc`, the [mission-failed screen](pause.md#the-mission-failed-screen)
+   (`ANGameOver_Toggle` on an Armies level). A level end of 2 launches the mission-complete screen instead.
 
 So the screen comes 180 updates (6 s at 30 updates a second, inferred) after the failure, with the reason set by the
 engine. `HUDLaunchMissionFailed` is only the scripts' own route.
@@ -655,11 +725,11 @@ Both tests walk the 16 member slots (gang `+0x48`) of the gang passed in (player
 downed player himself. Players count as members like anyone else. Confirmed (code):
 
 - **`Gang_NoneAbleToHelp(gang, player)`** (`0x00169dd8`) returns 1 when no other member is free. A member is free when
-  he is not cuffed (state `0x20000`), not knocked out (`Human_IsKnockedOut` `0x00227dd8`: state `0x40000`) and not held
-  (`0x00227d98`: state `0x10000`, the flag a tackled or grabbed victim carries, [above](combat.md#state-flags)). Both
-  state tests also count a human with no record (`+0xd4` = 0) as not free. The "busy" of case 4 is only that `0x10000`
-  test. **An empty gang (no live handle) returns 0**, so it does not fail at once and goes on to the route test, which
-  then says no.
+  he is not cuffed (state `0x20000`), not knocked out (`Human_IsKnockedOut` `0x00227dd8`: state `0x40000`) and not
+  wounded (`Human_IsWounded`, `0x00227d98`: state `0x10000`, which `Human_StartWounded` sets;
+  [Combat](combat.md#state-flags) also names it on a tackled victim). Both state tests also count a human with no record
+  (`+0xd4` = 0) as not free. The "wounded" of case 4 is that `0x10000` test. **An empty gang (no live handle) returns
+  0**, so it does not fail at once and goes on to the route test, which then says no.
 - **`Gang_CanReachToHelp(gang, player)`** (`0x00169ea0`) returns 1 when some member has a route to him; 0 when the
   player is null or the gang has no live handle. The goal is the player's position (`+0x2b0`) put on the navigation
   mesh: `Nav_FindPolygonUnder` (`0x00252410`, height 0) drops it to marked ground within 10 m, else to the nearest
@@ -836,9 +906,9 @@ named), with A the attacker it is given, O the object and V the victim:
   `Human_StickThrownKnife`): when the human at O `+0x11c` is set and V is that human's target or not his friend, the
   damage is replaced by the type's `+0x58` (no class float), or by V's whole health when V's character type `+0xcc` is
   `0x4f`; a hit with O `+0x11c` empty skips every case below.
-- The human at O `+0x11c` (empty: no case below applies): when his brain's type (brain `+0x4`) is 3 and V is of class
-  13 (`Human_IsClass13` `0x00223e20`), × 0.5; then, when his signed byte `+0x1b0` is not −1, × 3 against V of
-  character type `0x77` or `0x78` and × 1.25 against `0x87`.
+- The human at O `+0x11c` (empty: no case below applies): when his brain's type (brain `+0x4`) is 3 and V is of class 13
+  (`Human_IsClass13` `0x00223e20`), × 0.5 (confirmed (code)); then, when his signed byte `+0x1b0` is not −1, × 3 against
+  V of character type `0x77` or `0x78` and × 1.25 against `0x87`.
 
 None changed the damage in this fight (all 23 calls returning at `0x00393158` in the recorded run dealt 90, −90 or
 −72, `+0x58` × the class float or its negation, and the polled run's bat hits took 90 or 72), so for a Fury's bat on the
@@ -998,3 +1068,25 @@ killer's bone 25, his knife hand), each made one `sub_blood_effect` and, one upd
 every blob landed exactly once, 25 to 38 ticks after it was made, on the floor (contact normal z 1.0), and none
 landed again in the rest of the run. No `Human_SpawnHitEffect` call: the paired kill strikes nothing. Confirmed
 (runtime).
+
+## Coney's implementation
+
+The damage and the reactions live in `repo:src/combat/reactions.h` (the hit code, the side, the reaction table, the
+block reactions), `repo:src/combat/meters.h` (health and the pending damage), `repo:src/human/victim.h` (the stun,
+the knockdown, the ground time, the rise and the mash) and `repo:src/human/fighter_victim.cpp` (the player hit, the
+lethal hit held back, the rise's counter); the mission failing is `repo:src/warriors/game_over.h`. [Combat: Coney's
+implementation](combat.md#coneys-implementation) says what each file does. What differs from the original is written
+beside each subject above: the held flags that stop an attack or a reaction ([Moves a hit cannot
+stop](#protected-moves), items 25 and 29), the ground escapes ([Down and under attack](#ground-escape)), the
+game-over check's stand-ins ([Who can help](#defeat-helpers)) and the Furies' bats ([A bat's hit](#bat-knockdown)).
+
+## Open questions
+
+- Which code sets state `0x800000` on a lethal hit, and what plays the death once a paired clip ends ([Moves a hit
+  cannot stop](#protected-moves)).
+- Whether a tackled victim carries state `0x10000`, which the original's "free to help" test reads as wounded
+  (`Human_IsWounded`); Coney's game-over stand-in counts a held member instead ([Who can help](#defeat-helpers)).
+- The rise 199's exact play rate (about 0.75-0.78 from the measured edges, [Down and under attack](#ground-escape)).
+- What makes an armed AI pick 34 or 36, and 37 or 193 / 194 at a man down ([A bat's hit](#bat-knockdown)).
+- Whether a tackled victim is ever knocked out when `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the
+  knocked-out bit](#knocked-out-bit)).

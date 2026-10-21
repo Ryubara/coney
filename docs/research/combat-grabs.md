@@ -3,10 +3,61 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
 PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim keeps the evidence level it had there.
+Every claim carries the level written beside it.
+
+## Purpose
 
 This page covers the grab and the tackle, what the grabber and the grabbed can do in the hold, the strong grapple, how a
-grab is posed and moved, the mount and breaking a pair.
+grab is posed and moved, the mount and breaking a pair. A player sees it as circle: a tap catches the man in front, a
+hold runs him down, and from the hold come the strikes, the throws, the slam to the ground and the struggle to get
+free. [Throws](combat-throws.md) and [mugging](combat-throws.md#mugging) start from the hold, the
+[tutorial](scripting.md#level99-lessons) waits for its anim ids, and the AI grabs the player through the same code.
+
+## Original structure
+
+No source file names this code: it lies in the player's combat code in `Human/`, after `cns/cnsplayertag.cpp`
+([Source map](source-map.md#position), inferred), and the names are ours. Every grab function is in the [code
+index](combat.md#code-grabs) and its [grab ends and holds](combat.md#code-holds) part; these are the entry points, each
+read in Ghidra at its address.
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x00284920` | `Player_GrabOrTackle` | circle: search, then grab, tackle, tandem or grounded mount ([Grab and tackle](#grab)) | confirmed (code) |
+| `0x0026c548` / `0x0026c1d8` | `Grab_Start` / `Grab_IntroEnd` | the intro 71 and its end: miss, counter, front or rear grab | confirmed (code) |
+| `0x0026be68` / `0x0026bad8` | `Grab_Connect` / `Grab_ConnectEnd` | aligns the pair and plays 72 / 73; snaps and attaches at its end | confirmed (code) |
+| `0x0027f3b0` | `Player_UpdateGrabbing` | the grabber's moves in the hold ([In the grab](#grabbing)) | confirmed (code) |
+| `0x0027df38` | `Player_UpdatePowerMove` | the extension of a power strike | confirmed (code) |
+| `0x00287730` / `0x00263c90` | `Player_Special` / `Player_SpecialAttack` | the strong grapple ([Strong grapple](#strong-grapple)) | confirmed (code) |
+| `0x00262ac8` / `0x00263380` | `Attack_StartPaired` / `Grab_StartPairedMove` | a paired move from the hold or the mount | confirmed (code) |
+| `0x00245310` / `0x00244e78` | `Human_MoveGrabbing` / `Human_MoveAttached` | the grabber's walk and turn; the held body's place | confirmed (code) |
+| `0x0026f008` / `0x0022bfd0` | `Grab_StartMountFromFront` / `Pair_LinkMount` | the slam to the mount and the mount's link ([The mount](#mount)) | confirmed (code) |
+| `0x0027ec20` | `Player_UpdateMounting` | the mounter's moves | confirmed (code) |
+| `0x0027fd68` | `Player_UpdateGrabbed` | the held player's struggle, strike back, escape and reversal ([Grabbed](#grabbed)) | confirmed (code) |
+| `0x0026cc18` / `0x0026d150` / `0x00225830` | `Grab_Escape` / `Grab_Reverse` / `Grab_CanEscape` | the escape, the reversal and their shared roll | confirmed (code) |
+| `0x0026c7e0` / `0x00258a88` | `Grab_Release` / `Human_BreakPair` | the two ways a pair ends ([Breaking a pair](#pair-break)) | confirmed (code) |
+
+## Data
+
+The grab keeps its state in fields that [Combat](combat.md#data) owns: the state bits `0x10`-`0x2000` of a grab, a
+mount and a paired move ([State flags](combat.md#state-flags)), the partner's handle at human `+0xc4` and the other
+fields of [Other record fields](combat.md#record-fields), the reach and offset of each id in the [Anim Range
+List](combat.md#damage-table), and the costs and drains in [Constants](combat.md#constants). The fields this page adds
+are below; each was read in the function named.
+
+| Field | Meaning | Evidence |
+| --- | --- | --- |
+| record `+0xb4` | the grab's base id (`0x48`, or 657 for the strong grapple), set by `Grab_Start` | confirmed (code) |
+| record `+0xbc` | the count of power-strike extensions, below 2 (`Player_UpdatePowerMove`) | confirmed (code) |
+| human `+0xa0`, `+0xb0` | the held body's offset and relative rotation in the grabber's frame (`Pair_Attach`, `0x002802a0`) | confirmed (code) |
+| human `+0x348`, `+0x34c` | the carried prop's handles, such as the spray can ([Rembrandt's power move](#power-move-props)) | confirmed (code) |
+| human `+0x5e0` | the grab turn's previous rate, smoothed by `k` (`Human_MoveGrabbing`) | confirmed (code) |
+| `0x005102e8` | the stick magnitude a grab walk needs (0.95), written by `Cfg_SetStickDeflection` | confirmed (code) |
+| `0x00510304`-`0x00510318` | the grab turn's smoothing constants, written by `CfgTurnRate` (`Cfg_SetTurnRate`; [Moving a grab](#grab-turn)) | confirmed (code) |
+
+## Behaviour
+
+The sections below follow a grab from the catch to the break. Each claim carries its level; the code claims were read
+at the addresses they cite, the runtime ones measured in PCSX2 2.9.94 as each one says.
 
 ## Grab and tackle {#grab}
 
@@ -15,11 +66,16 @@ grab is posed and moved, the mount and breaking a pair.
 
 1. Refused while record `+0x08` has any of `0xfc7eaf7`, or while human `+0x1be` is -1 with `+0x1c0` pointing at
    `Human_MoveThrowAim` (`0x00244770`, aiming a throw).
-2. Without a target, it searches with `0x0027ac30(far × 1.25)`: for a tackle the far range of id 3 (2.999 m, so
-   3.75 m), for a grab that of id 70 `GRAB_INTRO` (2.499 m, so 3.12 m).
-3. It clears the buffered chain, enters a fight stance if not in one (`0x00280068`), then: a grounded target is mounted
-   (`0x00271b30`); a target already grabbable from behind (`0x00258e10`) starts a [tandem](combat-moves.md#tandem)
-   (`Tandem_Start`, `0x0026f860`); a tackle starts `0x002707a8(h, 3, 5)`; a grab starts `0x0026c548(h, 0, 0x48)`.
+2. When its brain's `+0x04` is 0, it searches afresh with `Player_FindCounterTarget(far × 1.25)` (`0x0027ac30`) and
+   makes the result its target: for a tackle the far range of id 3 (2.999 m, so 3.75 m), for a grab that of id 70
+   `GRAB_INTRO` (2.499 m, so 3.12 m). Confirmed (code); the ranges are Rembrandt's, read from the disc.
+3. It clears the buffered chain, enters a fight stance if not in one (`0x00280068`), then, in this order: a grounded
+   target is mounted (`Mount_StartOnGrounded`, `0x00271b30`). For a tackle, a target already grabbable from behind
+   (`Tandem_CanStart`, `0x00258e10`) starts a [tandem](combat-moves.md#tandem) (`Tandem_Start`, `0x0026f860`), else
+   `Tackle_Start(h, 3, 5)` (`0x002707a8`). For a grab, a target that is itself tackling and holds no held flag is
+   pulled off (`Grab_PullOffTackler`); one that is not tackling may start a tandem as above; with no target, the
+   global `0x005109a4` lets `Player_OnCommand33` act first; otherwise `Grab_Start(h, 0, 0x48)` (`0x0026c548`).
+   Confirmed (code).
 
 At runtime (confirmed (runtime)):
 
@@ -65,7 +121,8 @@ square 2 updates later, both released 4 updates after; then cross taps every 8 u
   389; a third press did nothing. Without the extension, 57 ends the grab: the victim falls (196) and gets up.
 - From the **rear hold**: the spin 80 / 81 plays first and the damage lands on the spin's first update, so the hit is
   scored with id **80**; 57 follows without a hit of its own; the extension 59 is scored as 59. The rear path spends
-  power twice (389 → 188; `0x00263380` spends 0.25, then again for the move's damage).
+  power twice (389 → 188; `Grab_StartPairedMove`, `0x00263380`, spends the power endurance fraction, 0.25 in play, on
+  entry, then again when the move deals damage: confirmed (code)).
 - The tutorial callback got 57 and 59 from the front, 80 and 59 from the rear.
 
 ### Rembrandt's power move and its spray can {#power-move-props}
@@ -319,15 +376,18 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
   (`0x005102e8`). At runtime the stick held 60 % and 80 % right did nothing; full right turned the pair.
 - The wanted heading is the stick's angle (pad `+0x08` / `+0x0c`) **+ 180°**: the grabber turns its back to the
   stick and walks backward along it, pulling the victim.
-- The turn per update, for an angle `d` still to turn: `r = min(max, max × (1 − cos(|d| × π / 4)) / 2 + prev × k)`,
-  `k` 0.8 (`0x00510314`), or −0.5 when the direction reverses within 45°; the smoothing branch is taken because
-  `0x00510308` is 1, with 4.0 at `0x00510318`. `max` comes from `0x002213d8`, which for a grab reads the table at
-  `0x005101b0`: 0.192 rad (11° per update) for a player, 0.0262 for the AI. Runtime table: 0.192, 0.0262, 0.2793,
-  0.0436, 0.3142, 0.0698, 0.3142, 0.1047, 0.3491, 0.2094, 0.4189, 0.4189; constants from `0x005102e0`: 0.05, 0,
+- The turn per update, for an angle `d` still to turn: `r = min(max, max × (1 − cos(|d| × π / 4)) / 2 + prev × k)`, `k`
+  0.8 (`0x00510314`), or −0.5 when the direction reverses within 45°; the smoothing branch is taken because `0x00510308`
+  is 1, with 4.0 at `0x00510318`. The formula is confirmed (code); the values are those in play, written by
+  `CfgTurnRate` (`Cfg_SetTurnRate`, `0x0023a5f8`, [Movement constants](characters.md#movement-constants)); the
+  executable's own defaults differ (0.5 at `0x00510314`). `max` comes from `0x002213d8`, which for a grab reads the
+  table at `0x005101b0`: 0.192 rad (11° per update) for a player, 0.0262 for the AI. Runtime table: 0.192, 0.0262,
+  0.2793, 0.0436, 0.3142, 0.0698, 0.3142, 0.1047, 0.3491, 0.2094, 0.4189, 0.4189; constants from `0x005102e0`: 0.05, 0,
   0.95, 0, 0, 30, 60, 100, 115, 0, 1, 0.8, 2.0, 0.8, 4.0.
 - Runtime: full stick turned the player's front hold by 118° in about 18 updates, 11° per update at first and
   slowing near the heading; the pair then walked backward at **1.125 m/s** in the front hold (record `+0x170` to
-  `+0x17c` became 1.125, the grab movement style's walk speed, `0x00254078`) and about 1.22 m/s in the rear hold.
+  `+0x17c` became 1.125, the grab movement style's walk speed, which `Human_ComputeGaitSpeeds` (`0x00254078`) writes
+  from the slot clips: confirmed (code)) and about 1.22 m/s in the rear hold.
   The victim kept the hold's offsets (front 1.012 ahead, 0.379 right; rear 0.222, −0.097).
 
 ### The hold walk: clips, speed and turning {#hold-walk}
@@ -410,9 +470,10 @@ puppet civilian 1 m ahead, stick centred):
   and no cost**; the grab's drain of 15 per second goes on (386 → 354 over 118).
 - The **press** (`0x1e`) starts it on the same update. The tap's `0xd` and a hold's `0xe` arrive while 118 holds
   `+0x08` `0x2000` and are dropped, so a tap and a hold of any length both mount once.
-- `Pair_LinkMount` (`0x0022bfd0`): states grabber `0x45` → `0x405`, victim `0x10` → `0x801` (`0xc0` / `0x30` cleared,
-  `0x400` / `0x800` set), movement styles `0xc` / `0xb`, the victim's brain targets the grabber. The tackle's connect
-  (`0x00270270`) and the grounded mount (`0x00271b30`) call it too.
+- `Pair_LinkMount` (`0x0022bfd0`, confirmed (code)): states grabber `0x45` → `0x405`, victim `0x10` → `0x801` (the
+  grab's `0xc0` / `0x30` were cleared by the two `Grab_End` calls before it; it sets `0x400` / `0x800` and clears
+  `0x8000`), movement styles `0xc` / `0xb`, one body group for both, and a victim whose brain's `+0x04` is 0 targets
+  the grabber. The tackle's connect (`0x00270270`) and the grounded mount (`0x00271b30`) call it too.
 - Grabber 118 `GRAB_MOUNT`, victim 119 from the grabber's set (a paired type 6 task), both holding `+0x08` `0x2000`,
   0.1 s blends. **118 lasts 65 updates (2.17 s)**; at its end `Grab_MountClipEnd` (`0x0026ef68`) moves the **mounter**
   to the victim over 0.1 s (`Human_AlignToVictimFacing`, `0x00277248`, below), and the idles become 210 / 207. A
@@ -566,24 +627,28 @@ not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 1
 (code); confirmed (runtime) where marked, from a puppet civilian's grab ([Being hit](combat-reactions.md#being-hit-runtime)):
 
 - **Square** (`0xf` / `0x11`): a struggle strike, 96 or 108 (front or rear), when the player may struggle
-  (`0x002258f0`: not hurt, the grabber not raging, own power above a sixth of the maximum) and the grabber's power
-  fraction is above 1 / its power class byte `+0x36`. It takes 1 / (own byte `+0x36`) of the **grabber's** maximum
+  (`Grab_CanStruggle`, `0x002258f0`: not hurt, the grabber not raging, own power above a sixth of the maximum) and the
+  player's own power fraction is above 1 / the grabber's class byte `+0x36` (`Human_GetClassChainDelay`, `0x002233a8`;
+  confirmed (code) at `0x0027fddc`-`0x0027fe00`). It takes 1 / (own byte `+0x36`) of the **grabber's** maximum
   power, spent even when the strike then cannot start (another move playing), and the strike damages the grabber by
   its clip's damage; a strike that would kill the grabber breaks the grab. Runtime: 96 (grabber 97); each press took
   the 200-power civilian down by about 75 (66.7 for 1 / 3, and the rest is the grab's own drain of 15 per second,
 which keeps running through the struggle clip: 198 → 123 over 19 updates = 66.7 + 9.5, then 4 more over the next 7
 updates of 96), 68 when 104 was still playing; the
   third press emptied the meter and the grab broke with the player on 94 and the grabber on 95. 96 does 0 damage.
-- **Cross** (`0x12` / `0x10`): 104 / 116, a strike back. Runtime: 104 (grabber 105) for 33 updates, 20 damage to the
+- **Cross** (`0x12` / `0x10`): 104 / 116, a strike back, under the same `Grab_CanStruggle` test and with no power
+  check (confirmed (code)). Runtime: 104 (grabber 105) for 33 updates, 20 damage to the
   grabber, no power spent, then back to the holds 83 / 82.
-- **Circle** (`0x1e`, `0xd`, `0xe`): an **escape** (`0x0026cc18`) when `0x00225830` lets it: with `t` a quarter of
+- **Circle** (`0x1e`, `0xd`, `0xe`): an **escape** (`Grab_Escape`, `0x0026cc18`; confirmed (code)) when the player
+  lacks human flag `0x2000000000` and `Grab_CanEscape` (`0x00225830`) lets it: with `t` a quarter of
   the grabber's maximum power (half if the grabber is hurt) and `p` its power, the escape always works when `p` ≤ `t`,
   and otherwise with chance 1 / `floor(p / t)` (a random number below `floor(p / t)` must be 0); never against a
   raging grabber. The escape plays 100 / 112 (102 / 114) and knocks down and stuns the grabber. Runtime: at 189 of
   200 (chance 1 / 2) the player played 100 and took the clip's 20; the grabber played 101, lay down (`0x180001`), rose
   with 199 2.2 s later and then stood stunned (356).
-- **R1 pressed** or `0x19`: a reversal (`0x0026d150`), 90 / 91 or 92 / 93, when the escape did not run, the grabber
-  lacks human flag `0x40`, the player lacks `0x80000000`, and the same chance as the escape allows it. Runtime: 90
+- **R1 pressed** or `0x19`: a reversal (`Grab_Reverse`, `0x0026d150`; confirmed (code)), 90 / 91 or 92 / 93, when the
+  escape did not run, the grabber lacks human flag `0x40`, the player lacks `0x80000000`, and the same chance as the
+  escape allows it. Runtime: 90
   (grabber 91) for 44 updates, after which **the player holds the grabber from the rear** (84 / 85, states `0x85` /
   `0x21`) and drains its own power at 15 per second. A press that lost the roll did nothing.
 - **A counter at the catch** (`Grab_IntroEnd`, `0x0026c1d8`): when `0x00510254` is set (1 in the street) and a
@@ -646,3 +711,28 @@ set its flags or handlers (`0x00292330`, `0x002923a0`); none touches the human's
 Inferred: its power keeps draining (15 per second in a grab or a mount, [constants](combat.md#constants)) until `Grab_Release`
 ends it with 95 / 94, as for any grab whose power runs out ([Grabbed](#grabbed)). There is no `HuStop` binding in the
 game.
+
+## Coney's implementation
+
+The grab lives in `repo:src/combat/grab.h` (when a grab starts, the search ranges, one update of a grab and of a mount),
+`repo:src/combat/grabbed.h` (held in a grab), `repo:src/combat/player_combat.cpp` (the dispatcher's grab, tackle and
+mount routes), `repo:src/human/fighter_grab.cpp` (the clips, the pose and the walk), `repo:src/human/pair_placement.h`
+(the offsets and the alignment) and `repo:src/human/carried_prop.h` (the spray can). [Combat: Coney's
+implementation](combat.md#coneys-implementation) says what each file does. Two differences from the original are
+listed above as fixes to make: the hold's movement styles and walk clips ([The hold walk](#hold-walk), user item 21)
+and the mount's power strike, which Coney plays like a mount strike and returns to 210 / 207 ([The mount's power
+strike](#mount-power), user item 32).
+
+## Open questions
+
+- Why 226's knockdown word reads non-zero at runtime, so that 198 never plays after the mount's power strike, when the
+  disc's clip holds 0 ([The mount's power strike](#mount-power)). A breakpoint on `Anim_GetKnockdownValue` during the
+  strike would show the word it reads.
+- How the tackle places the pair before the mount (`0x00270270` and the type 4 tasks), and so the mount's offset after a
+  tackle, which is inferred from the range record only ([Posing a grab](#grab-posing)).
+- How the stick drives the grabbing player's movement state while the pair turns, and the other callers of
+  `Pair_SnapAttach` (`0x0026d078`, `0x0026d8c8`, `0x0026eba0`, `0x00272918`).
+- The six callers of `Human_BreakPair` not traced, and what 244's and 199's end callback (`0x00267870`) does
+  ([Breaking a pair](#pair-break)).
+- What human flag `0x100000000` stands for (it blocks the mount from the front hold, the tackle and the strong
+  grapple's grab).
