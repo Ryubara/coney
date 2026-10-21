@@ -11,6 +11,8 @@
 
 #include "ai/brain.h"
 #include "ai/idle_goals.h"
+#include "hud/hud.h"
+#include "human/human.h"
 #include "support/ai_fixtures.h"
 
 using coney::ai::Brain;
@@ -249,4 +251,113 @@ TEST_CASE("GangMakeNeutralOfType ends the enmity with every unfriendly gang of a
     CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(others)));
     gangs.makeNeutralOfType(-1, 21); // no such gang: ignored
     CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(others)));
+}
+
+namespace {
+
+// A gang of five in `scene` and its id, the brains in `members` in this order: standing; knocked down alive (on the
+// ground, health left); dead (no health); knocked out with health left; wounded with health left.
+int makeCountedGang(AiScene& scene, std::vector<Brain*>& members) {
+    Gangs& gangs = scene.brains.gangs();
+    const int gang = gangs.create(19, "Punks");
+    for (int k = 0; k < 5; ++k) {
+        Brain& brain = scene.add({44.0F + static_cast<float>(k), 40.0F, 0.0F}, 0.0F);
+        gangs.addMember(gang, brain);
+        members.push_back(&brain);
+    }
+    scene.run(2);
+    // The second is hurt (below 35 % of 1400), then a heavy reaction (code 0x26) from the player in front knocks him
+    // down with health left.
+    members[1]->human().fighter().health().apply(1000);
+    coney::human::IncomingHit hit;
+    hit.damage = 46;
+    hit.attackAnim = 13;
+    hit.code = 0x26;
+    hit.attacker = coney::anim::Vec3{40.0F, 40.0F, 0.0F};
+    members[1]->human().hit(hit);
+    for (int k = 0; k < 60 && !members[1]->human().fighter().victim().grounded(); ++k) {
+        scene.run(1);
+    }
+    members[2]->human().fighter().health().set(0);
+    members[3]->human().script().knockedOut = true;
+    members[4]->human().script().wounded = true;
+    return gang;
+}
+
+} // namespace
+
+TEST_CASE("the living count takes every member whose handle resolves; standing leaves out the knocked out, wounded "
+          "and dead, whatever their health",
+          "[ai][gangs]") {
+    // Research: docs/research/hud-functions-lua.md#gang-count-what (Gang_CountLiving(g, 0) against (g, 1))
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int id = makeCountedGang(scene, members);
+    REQUIRE(members[1]->human().fighter().victim().grounded());
+    REQUIRE_FALSE(members[1]->human().fighter().health().depleted());
+    REQUIRE(members[2]->human().fighter().health().depleted());
+    REQUIRE_FALSE(members[3]->human().fighter().health().depleted());
+    REQUIRE_FALSE(members[4]->human().fighter().health().depleted());
+
+    const coney::ai::Gang& gang = *scene.brains.gangs().find(id);
+    CHECK(gang.countLiving(false) == 5);
+    CHECK(gang.living() == 5);
+    // Standing by state: the first, and the one knocked down alive (the mask has no knocked-down bit).
+    CHECK(gang.countLiving(true) == 2);
+    CHECK_FALSE(coney::ai::humanIsDownOrDead(*members[0]));
+    CHECK_FALSE(coney::ai::humanIsDownOrDead(*members[1]));
+    CHECK(coney::ai::humanIsDownOrDead(*members[2]));
+    CHECK(coney::ai::humanIsDownOrDead(*members[3]));
+    CHECK(coney::ai::humanIsDownOrDead(*members[4]));
+    // The scripts' head count reads the same function.
+    CHECK(scene.brains.gangs().countLiving(id, false) == 5);
+    CHECK(scene.brains.gangs().countLiving(id, true) == 2);
+    CHECK(scene.brains.gangs().countLiving(-1, false) == 0);
+    CHECK(scene.brains.gangs().countLiving(31, true) == 0);
+}
+
+TEST_CASE("the HUD's gang counters show the standing members: a member knocked out with health left, or dead, loses "
+          "his mark",
+          "[ai][gangs][hud]") {
+    // Research: docs/research/hud-functions-lua.md#gang-count-what (every HUD count passes 1)
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int id = makeCountedGang(scene, members);
+    const coney::ai::Gangs& gangs = scene.brains.gangs();
+
+    coney::hud::Hud hud;
+    hud.setNumIndicator(2, true, id);
+    hud.setNumIndicator(0, true, id); // slot 0 is fed by the same count
+    coney::hud::HudFrame frame;
+    frame.levelNumber = 101;
+    frame.gangLiving = coney::ai::hudGangCount(gangs);
+    hud.update(frame);
+    CHECK(hud.numIndicator(2).count == 2);
+    CHECK(hud.numIndicator(0).count == 2);
+
+    // The knocked-out member wakes: his mark returns (he is not counted by health).
+    members[3]->human().script().knockedOut = false;
+    hud.update(frame);
+    CHECK(hud.numIndicator(2).count == 3);
+    // A member out of health is dead and never counts, whatever else his state is.
+    members[1]->human().fighter().health().set(0);
+    hud.update(frame);
+    CHECK(hud.numIndicator(2).count == 2);
+    // Gang -1 shows nothing.
+    hud.setNumIndicator(1, true, -1);
+    hud.update(frame);
+    CHECK(hud.numIndicator(1).count == 0);
+}
+
+TEST_CASE("a member whose human is deleted leaves the gang and drops the living count", "[ai][gangs]") {
+    // The original's handle stops resolving at the delete; Coney's member leaves its gang (removeMember()).
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int id = makeCountedGang(scene, members);
+    scene.brains.gangs().removeMember(*members[2]);
+    CHECK(scene.brains.gangs().countLiving(id, false) == 4);
+    CHECK(scene.brains.gangs().countLiving(id, true) == 2);
+    scene.brains.gangs().removeMember(*members[1]);
+    CHECK(scene.brains.gangs().countLiving(id, false) == 3);
+    CHECK(scene.brains.gangs().countLiving(id, true) == 1);
 }

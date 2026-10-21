@@ -278,3 +278,23 @@ TEST_CASE("HuSwitchPlayer hands the pad to the player's first standing team-mate
     level.call("SetGameMode", {Value(0.0), Value(0.0), Value(0.0), Value(0.0)});
     CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == stranger.handle());
 }
+
+TEST_CASE("GangGetHeadCount is Gang_CountLiving: every member, or with living only those not knocked out or dead",
+          "[scripting][rumble]") {
+    // Research: docs/research/hud-functions-lua.md#gang-count-what. A member out of health still has a handle that
+    // resolves, and `living` tests his state, not his health: the knocked-out one has health left and does not count.
+    Level level;
+    Brain& standing = level.add({44.0F, 40.0F, 0.0F});
+    Brain& dead = level.add({45.0F, 40.0F, 0.0F});
+    Brain& knockedOut = level.add({46.0F, 40.0F, 0.0F});
+    const int gang = level.scene.brains.gangs().create(3, "Gang1");
+    level.scene.brains.gangs().addMember(gang, standing);
+    level.scene.brains.gangs().addMember(gang, dead);
+    level.scene.brains.gangs().addMember(gang, knockedOut);
+    dead.human().fighter().health().set(0);
+    knockedOut.human().script().knockedOut = true;
+    REQUIRE_FALSE(knockedOut.human().fighter().health().depleted());
+    const Value gangId(static_cast<double>(gang));
+    CHECK(level.call("GangGetHeadCount", {gangId}).number() == 3.0);
+    CHECK(level.call("GangGetHeadCount", {gangId, Value(1.0)}).number() == 1.0);
+}

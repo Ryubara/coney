@@ -255,8 +255,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Pushes the pedestrian goal on a human that is not a player's.
     /// @orig 0x002a78c8 FlagNet_StartTraverse (unknown)
     void flagNetTraverse(const script::FlagNetTraverseCall& call) override;
-    /// The gang's members (only the living with `living`: health left); 0 for no gang. While holding, the humans
-    /// created for it count too: **Coney choice**, as Coney runs the start callback before the humans exist.
+    /// `Gang_CountLiving(gang, living)` (Gangs::countLiving()): every member whose handle resolves, or with `living`
+    /// only the standing ones (`Gang_GetHeadCountById`, `0x0016a458`); 0 for no gang. While holding, the humans created
+    /// for it count too: **Coney choice**, as Coney runs the start callback before the humans exist. Research:
+    /// docs/research/hud-functions-lua.md#gang-count-what
     [[nodiscard]] int gangHeadCount(int gang, bool living) override;
     /// Gang::standing(), with the humans created for it while holding; 0 for no gang.
     [[nodiscard]] int gangStandingCount(int gang) override;

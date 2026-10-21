@@ -76,9 +76,19 @@ struct GangLookups {
     std::function<int(int kind)> fleeShare;
 };
 
-/// Whether `brain`'s human is down or dead (`Human_IsDownOrDead`). **Coney's reading**: out of health, or on the
-/// ground (the down and dead state flags are not traced).
+/// Whether `brain`'s human is down or dead in Coney's attack tactic's and standing count's reading: out of health, or
+/// on the ground. **Coney's reading**, wider than the original's `Human_IsDownOrDead` (humanIsDownOrDead()), which a
+/// member knocked down alive does not meet; kept for those callers until their call sites are checked against the
+/// research.
 [[nodiscard]] bool downOrDead(const Brain& brain);
+
+/// Whether `brain`'s human meets `Human_IsDownOrDead` (`0x00227e60`): no state record (never, a Coney human has one),
+/// or in one of the states `0x180050000`: dead, dying, knocked out or wounded (`0x10000`; the research pages call it
+/// tackled). Health is never read, but dead and dying are Coney's "no health left"; a member knocked down alive or
+/// arrested is not in the mask, so he is not down. What Gang::countLiving(true) tests. Research:
+/// docs/research/hud-functions-lua.md#gang-count-what
+/// @orig 0x00227e60 Human_IsDownOrDead (unknown)
+[[nodiscard]] bool humanIsDownOrDead(const Brain& brain);
 
 /// A gang's turf holds at most this many volume boxes (`+0x15c`, count `+0x17c`).
 inline constexpr std::size_t kTurfBoxes = 8;
@@ -126,14 +136,21 @@ class Gang {
     [[nodiscard]] std::uint32_t tacticsSet() const { return m_tacticsSet; }
     /// The Lua handler of message `message` (`+0xe4 + message × 4`); empty for none.
     [[nodiscard]] std::string_view handler(int message) const;
-    /// The living members (`Gang_CountLiving(gang, 0)`): the member slots whose handle still resolves, the dead
-    /// included until they are deleted. Every Coney member resolves (a deleted human leaves its gang), so it is the
-    /// member count. **Not** ScriptedBrains::gangHeadCount()'s "living" (health left), which is Coney's reading of the
-    /// script binding. Research: docs/research/ai-reimpl.md#purpose (its shared conventions)
+    /// `Gang_CountLiving(gang, standingOnly)`: the member slots whose handle still resolves, the downed and the dead
+    /// included until they are deleted; with `standingOnly` (the original's second argument 1, the only value that
+    /// selects it) only the members for whom humanIsDownOrDead() is false. Every Coney member resolves (a deleted
+    /// human leaves its gang, Gangs::removeMember()), so the first form is the member count. The one count behind the
+    /// HUD's gang counter (hudGangCount(), which passes 1) and the scripts' `GangGetHeadCount`. It is **not**
+    /// `Gang_CountStanding` (`0x00166220`, the scripts' `GangGetStandingCount`: standing()), a stricter count with
+    /// its own three state tests that the HUD does not use. Research:
+    /// docs/research/hud-functions-lua.md#gang-count-what
     /// @orig 0x00166158 Gang_CountLiving (unknown)
-    [[nodiscard]] int living() const { return static_cast<int>(m_members.size()); }
-    /// The members still on their feet (`0x00166220`): health left and not on the ground. **Coney choice** for the
-    /// three state tests (`0x00227dd8`, `0x00227eb0`, `0x00227d98`: down, dead and a third state, not traced).
+    [[nodiscard]] int countLiving(bool standingOnly) const;
+    /// The living members (`Gang_CountLiving(gang, 0)`, countLiving(false)): every member, the dead included.
+    [[nodiscard]] int living() const { return countLiving(false); }
+    /// The members still on their feet (`Gang_CountStanding`, the scripts' `GangGetStandingCount`): health left and
+    /// not on the ground. **Coney choice** for the original's three state tests (`0x00227dd8`, `0x00227eb0`,
+    /// `0x00227d98`: knocked out, a dead state and wounded), which are not mapped yet; downOrDead() stands in.
     /// @orig 0x00166220 Gang_StandingCount (unknown)
     [[nodiscard]] int standing() const;
     /// The gangs it belongs to.
@@ -263,6 +280,11 @@ class Gangs {
     /// The gang with `id`, when it is in use; null otherwise (and for -1).
     [[nodiscard]] Gang* find(int id);
     [[nodiscard]] const Gang* find(int id) const;
+    /// Gang `id`'s Gang::countLiving(`standingOnly`); 0 for a gang not in use (and for -1). What the HUD's gang
+    /// counter and the scripts' head count read (`Gang_GetHeadCountById`, `0x0016a458`, which passes `standingOnly`
+    /// on).
+    /// @orig 0x0016a458 Gang_GetHeadCountById (unknown)
+    [[nodiscard]] int countLiving(int id, bool standingOnly) const;
 
     /// `GangAddMember`: `brain` leaves its gang, even when it is gang `id` (its actions and target cleared, under a
     /// tactic popped to its goal base, no longer the leader, event kGangMessageMembers with 0), then joins gang `id`
@@ -373,5 +395,14 @@ class Gangs {
     ScanSchedule m_scans;
     std::uint64_t m_truceEndMs = 0; // 0x0050cb7c
 };
+
+/// The source of the HUD's gang counts (hud::HudFrame::gangLiving), for the shared indicator and the players 0 and 1
+/// panel tally (`NumIndicator_Set` `0x001b6798`, `NumIndicator_Update` `0x001b68a4`, `PlayerHUD_Update` `0x00214310`):
+/// every HUD count of a gang passes 1 to `Gang_CountLiving`, so a member who is knocked out, wounded or dead loses
+/// his mark even with health left, and one who is only knocked down keeps it (Gangs::countLiving(id, true)). The
+/// returned function reads `gangs`, which must outlive it.
+/// @coney-only glue between the AI and the HUD; the original's HUD calls `Gang_CountLiving(gang, 1)` itself
+/// Research: docs/research/hud-functions-lua.md#gang-count-what
+[[nodiscard]] std::function<int(int gang)> hudGangCount(const Gangs& gangs);
 
 } // namespace coney::ai

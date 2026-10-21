@@ -32,6 +32,7 @@
 #include "gamemodes/level_start.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
+#include "hud/hud.h"
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
@@ -63,8 +64,9 @@ inline std::optional<io::Wad> openDisc() {
 /// configured; the play mode's lines go to `print` (none when empty).
 inline GameplayMode::LevelLoader playLoader(platform::RenderEngine& renderer, const io::Wad& wad,
                                             world::SectorBudget& budget,
-                                            std::function<void(std::string_view)> print = {}) {
-    return [&renderer, &wad, &budget, print = std::move(print)](
+                                            std::function<void(std::string_view)> print = {},
+                                            std::function<hud::Hud*()> sharedHud = {}) {
+    return [&renderer, &wad, &budget, print = std::move(print), sharedHud = std::move(sharedHud)](
                const LevelStart& start, const ScriptedCast& cast) -> std::expected<std::unique_ptr<GameMode>, Error> {
         std::optional<human::PlayerStart> playerStart;
         platform::PlayerSetup setup;
@@ -92,6 +94,10 @@ inline GameplayMode::LevelLoader playLoader(platform::RenderEngine& renderer, co
             playerStart, setup, &cast);
         if (!mode) {
             return std::unexpected(std::move(mode.error()));
+        }
+        // The HUD the scripts' bindings act on, as GameSession::loadLevel() hands it to the play mode.
+        if (hud::Hud* hud = sharedHud ? sharedHud() : nullptr; hud != nullptr) {
+            (*mode)->useHud(*hud);
         }
         return std::unique_ptr<GameMode>(std::move(*mode));
     };
@@ -140,7 +146,9 @@ class DiscGame {
             },
             m_strings, LegalScreenSettings{}, [this](std::string_view line) { m_log.emplace_back(line); },
             script::wadScriptSource(m_wad),
-            playLoader(*m_engine, m_wad, m_budget, [this](std::string_view line) { m_log.emplace_back(line); }));
+            playLoader(
+                *m_engine, m_wad, m_budget, [this](std::string_view line) { m_log.emplace_back(line); },
+                [this] { return &m_flow->hud(); }));
         m_flow->rumbleMenu().setLaunchOverride(launch);
         m_flow->start();
         m_timer.setFixedStep(true);
