@@ -2,9 +2,6 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). No runtime claims.
 
-Every range and file attribution on this page is inferred unless it says otherwise; an anchor (a function that
-loads a file's path string, [step 2](#method)) is confirmed (code).
-
 ## Purpose
 
 `SLUS_212.15` has no symbols, but its `.rodata` holds 153 source paths of the form
@@ -73,7 +70,7 @@ named and the chunk type table is labelled `ChunkTypeNameTable`.
 
 ## Original structure: the layout of `.text` {#layout-of-text}
 
-`.text` runs from `0x00100000` to `0x004f6578` (4,154,744 bytes).
+`.text` runs from `0x00100000` to `0x004f6578` (4,154,744 bytes; the ELF's section header, confirmed (code)).
 
 | Range | Contents | Evidence |
 | --- | --- | --- |
@@ -132,8 +129,6 @@ pages. Names are ours.
 | `0x00162598`-`0x0016e388` | 49 KB | `GameModes/` | loading-screen texture names (`%s_ls_%d` with language suffixes, `0x00163270`, to the stub `0x00163c48`); the cheat codes (`Cheat_CheckSequence`, `0x00163c68`, [Debug](debug.md)); the gangs (`Gangs_Update`, `0x0016d170`, to the stub `0x0016d630`) and the responders (`0x0016df68`), [AI](ai-gangs.md#gangs) | rodata between `Initialize.cpp` and `Graphics/Animations.cpp`. The gangs are called from the AI 443 times; a directory of their own that sorts between `GameModes/` and `Graphics/` (say `Gang/`) would fit as well (speculative) |
 | `0x0019c5e8`-`0x0019dfb0` | 6 KB | `Graphics/` | the heat-distortion effects' methods | called only from `DistortionEffectManager.cpp` (`0x0019c070`-`0x0019c438`) |
 | `0x0019dfb0`-`0x001a1f10` | 16 KB | `GUI/` | `GlobalString_Get`/`_Set` (`0x0019ee70`, `0x0019eea0`), `Bar` (`0x001a0fd0`), the HUD meter (`0x001a1008`), soldier messages, [GUI](gui.md), [HUD](hud.md) | before `BaseWidget.cpp`'s path string; called from `GUI/` 232 times |
-| `0x002176b8`-`0x00217a70` | 1 KB | `GUI/` (`GameStatsSubItem.cpp`) | the rest of the stats screen's sub item: whether it is ready, its scaled rectangle, its layout and its drawing (`GameStatsSubItem_IsReady`, `0x002176b8`, to `GameStatsSubItem_Draw`, `0x002179e8`), [GUI](gui.md) | after the file's attributed `Shutdown`; each reads the sub item's own fields and child widgets (`+0x68`, `+0x6c`), confirmed (code) |
-| `0x00217a70`-`0x0021c7c8` | 20 KB | `Human/` | the human's set-up and contacts (`Human_Init`, `0x00218008`; `Human_OnContact`, `0x00219d50`; `Strike_Contact`, `0x0021b290`), [Characters](characters.md) | before `Human.cpp`'s path string; calls `Human/` 115 times and is called from it 123 |
 | `0x00273fa0`-`0x00323298` | 718 KB | `Human/` | the player's moves and combat (to `0x00287a18`, [Combat](combat.md)), then the AI: brains, goals, actions, tactics, formations ([AI](ai.md)); 8 static-init stubs | rodata between `cns/cnsplayertag.cpp` and Lua's; calls `Human/` 3,580 times. More `Human/` subdirectories like `cns/` would fit; a directory of its own between `Human/` and `lua-4.0.1/` cannot be ruled out |
 | `0x00335320`-`0x00338420` | 13 KB | (unnamed directory) | [maths](maths.md): random numbers (a table of 1,024, `Random_Int` `0x003353b8`), quaternions (`Quat_Slerp`, `0x00336a00`, [Physics](physics.md)), ray-triangle tests (`0x00337920`) | between Lua and `Memory/` (stubs `0x00335670`, `0x003383e0`); called from every directory, calls neither; a `Math/` directory would sort there (speculative) |
 | `0x0033b1a0`-`0x0033c288` | 4 KB | `Memory/` | the heaps' block allocator, [Memory](memory.md) | called only from `Memory/` |
@@ -164,6 +159,8 @@ ends its TU (blank when none qualifies) and up to three anchors. The names in br
 other strings each anchor passes, mostly class names: they say what the function creates, which is usually enough to
 name it. A file listed as "none" has a path string that no code loads (the assertion or allocation that used it was
 compiled out, or reaches the string some other way); its code lies somewhere between its neighbours in the table.
+Evidence: each anchor is confirmed (code) at its address; the ranges, the counts and the stubs read as a TU's end are
+inferred ([Evidence levels used here](#evidence-levels-used-here)).
 
 ### Animation
 
@@ -302,16 +299,22 @@ The function-by-function pass over `GUI/` ([GUI](gui.md), [HUD](hud.md), [Front 
 boundaries (inferred from the stubs and what the code does; the [coverage](#coverage) counts predate them):
 
 - **`HUDInterface.cpp`** runs to its stub `0x001b3ea8`: everything from `0x001ad588` to there is the HUD object's
-  methods ([HUD](hud-functions-parts.md#fn-hudinterface)), and `HUDLua.cpp`'s code starts after it.
+  methods ([HUD](hud-functions-parts.md#fn-hudinterface)), and `HUDLua.cpp`'s code starts after it (inferred).
 - **After `MissionSelectHUD.cpp`** (which ends at its stub `0x001c1688`) comes a unit with no path string,
   `0x001c16a8` to its stub `0x001c3dc0`: `MultiLineTextWidget`, the HUD's generic bars and the counter panels
-  ([GUI](gui.md#fn-multilinetext)). `RadarHUD.cpp` starts right after that stub, at `Radar_Setup` (`0x001c3de0`).
+  ([GUI](gui.md#fn-multilinetext)). `RadarHUD.cpp` starts right after that stub, at `Radar_Setup` (`0x001c3de0`)
+  (inferred).
 - **After `PM_TooManyProfiles.cpp`** comes another unit with no path string, `0x0020db98` to its stub `0x00211c80`:
   the player panel base, the target panel and the Armies of the Night panel (`ANHud`), whose colours that stub's
   initialiser sets ([HUD](hud-functions-panels.md#fn-player-panel-base)). So `0x00211c80` is not
-  `PM_TooManyProfiles.cpp`'s stub.
+  `PM_TooManyProfiles.cpp`'s stub (inferred).
 - **`GameStats.cpp`** starts at `0x00214d08`: the five sprite-batch makers before its first anchor come after the
-  player panel's static initialiser and serve only the statistics screen ([Front end](frontend.md#fn-gamestats)).
+  player panel's static initialiser and serve only the statistics screen ([Front end](frontend.md#fn-gamestats))
+  (inferred).
+- **`GameStatsSubItem.cpp`** runs to `0x00217a70`, past its last attributed function: the four functions from
+  `GameStatsSubItem_IsReady` (`0x002176b8`) to `GameStatsSubItem_Draw` (`0x002179e8`) are slots of the sub item's
+  vtable `0x0053ef48`, as is the file's anchor `GameStatsSubItem_Shutdown` (`0x002175f8`) (inferred: the vtable is
+  confirmed (code), the file follows from it). `Human/` starts after them, at `Human_GetClump` (`0x00217a70`).
 
 ### GUI/RumbleModeGUI
 
@@ -526,8 +529,10 @@ The full anchor list and every attributed function are reproducible with the [me
 
 ## Data
 
-The map covers `.text` only. The data sections follow the same file order ([step 3](#method)) but are not mapped
-here; they are used only as the anchors' neighbourhoods ([step 4](#method)).
+The map is of `.text`. It cites data only where that places code: the path strings in `.rodata` that the anchors
+load, the neighbourhoods of step 4, the middleware's read-only blocks and a few tables under
+[For the next steps](#for-the-next-steps). The data sections follow the same file order ([step 3](#method)) but are
+not mapped file by file.
 
 ## Behaviour
 
@@ -540,7 +545,8 @@ names the original file where this map gives one ([Conventions](../guides/conven
 
 ## For the next steps
 
-What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it lives:
+What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it lives. Each address below is an
+anchor (confirmed (code)) or is described, with its evidence, on the page its line links:
 
 - **Boot path and main loop:** [Boot and the main loop](boot.md). `main` (`0x001446d0`) calls
   `GameModes/Initialize.cpp` (`0x00160df8`), plays the start-up movies, pushes game modes and runs the game-mode
