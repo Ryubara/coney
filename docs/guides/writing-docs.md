@@ -37,6 +37,36 @@ reaches `main`. Pull requests and other branches build the site as a check but n
 The site opens in the dark palette (`slate`) whatever the reader's system setting; the toggle in the header switches
 to light, and Material keeps that choice for the next visit. The order of `theme.palette` in `mkdocs.yml` decides it.
 
+## Diagrams {#diagrams}
+
+A diagram is a Mermaid fence, drawn in the reader's browser with the ELK layout engine. Start it with the front matter
+below, so that ELK lays it out, and give it a one-sentence caption under the fence. A diagram illustrates a rule that
+the text states; it never replaces the text. Keep one to about fifteen nodes, with short labels (`<br/>` breaks a
+line), and put a long label in the text instead.
+
+````markdown
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+  a["First"] --> b["Second"]
+```
+````
+
+- **Why a script.** Material for MkDocs draws a diagram with its own copy of Mermaid, which has no ELK.
+  `docs/javascripts/mermaid-elk.js` (listed under `extra_javascript` in `mkdocs.yml`) puts a small stand-in where
+  Material looks for Mermaid. The stand-in loads a pinned Mermaid and `@mermaid-js/layout-elk` from jsDelivr when
+  the first diagram of a page is drawn, so a page without a diagram loads nothing extra. To upgrade, change the two
+  pinned versions in that file to releases at least two weeks old and look at every diagram again.
+- **Light and dark.** Material colours the diagram from the palette (its `--md-mermaid-*` variables), so the palette
+  toggle changes it at once. Do not set colours in the diagram (`classDef`, `style`): they would stay the same in both.
+- **Layout.** Nodes in one chain with `flowchart LR` wrap into rows by themselves. Avoid a `subgraph` that arrows enter
+  and leave from several sides, and long arrows back to an early node: ELK then reverses the flow or draws long
+  detours. Preview with `mkdocs serve` in both palettes before committing.
+- **Needs a network.** The diagrams are drawn from the CDN, so a reader who is offline sees the fence's text instead.
+
 ## The home page {#home-page}
 
 `docs/index.md` is the site's landing page: a full-height hero over a painting, then the page's own content. The hero's
