@@ -7,12 +7,15 @@
 #include "hud/hud.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
+#include "scripting/script_system.h"
 
 namespace coney::script {
 
-/// The HUD bindings Coney implements: every HUD binding the first mission calls, and the few beside them that share
-/// their state. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 38> kHudBindings{"FlashRageBar",
+/// The HUD bindings Coney implements: every HUD binding the first mission calls, the few beside them that share their
+/// state, and the end credits' (`PreloadCredits`, `ShowCredits`, `CfgCredits`). All real; installBindings() registers
+/// them.
+inline constexpr std::array<std::string_view, 41> kHudBindings{"CfgCredits",
+                                                               "FlashRageBar",
                                                                "HUDSetChaseHUDState_DESTROY",
                                                                "ForceShowPlayerHud",
                                                                "HUDAddRadarHuman",
@@ -46,7 +49,9 @@ inline constexpr std::array<std::string_view, 38> kHudBindings{"FlashRageBar",
                                                                "HUDTurnOnRadar",
                                                                "HidePlayerHud",
                                                                "HideHud",
+                                                               "PreloadCredits",
                                                                "RestoreHud",
+                                                               "ShowCredits",
                                                                "ShowHud",
                                                                "ShowPlayerHud",
                                                                "W_ShowStopWatch"};
@@ -55,10 +60,10 @@ inline constexpr std::array<std::string_view, 38> kHudBindings{"FlashRageBar",
 inline constexpr double kNoCounterPanel = 4294967295.0;
 
 /// Registers kHudBindings in `vm`, acting on `context.hud` (a null one does nothing: `HUDGetNewPH` then returns
-/// kNoCounterPanel and `HUDCheckTutorialText` nil).
+/// kNoCounterPanel and `HUDCheckTutorialText` nil). `PreloadCredits` runs `credits.lua` through `scripts`.
 ///
 /// Research: docs/research/hud.md, docs/references/bindings/hud.md
-void addHudBindings(LuaVm& vm, const BindingContext& context);
+void addHudBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context);
 
 /// The HUD's services from a binding context: the HUD, tutorial and announcement strings of `context.strings`, and the
 /// HUD colours scripts gave `CfgHUDColor` and the interface cues `SoundCfgInterfaceSound` named (kept by their

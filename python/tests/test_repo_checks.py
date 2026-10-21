@@ -63,6 +63,7 @@ def test_the_real_repository_is_clean() -> None:
 RULES = conventions_with(
     ("commits.title.areas", {"docs": "documentation", "ci": "workflows"}),
     ("commits.title.verbs", ["Add", "Fix", "Update"]),
+    ("pull_requests.runtime.areas", ["docs"]),
 ).commits.title
 
 
@@ -761,3 +762,123 @@ def test_a_wrapped_line_that_starts_with_a_dash_continues_the_item(wrapped: str)
 def test_an_indented_real_bullet_still_ends_the_item_above() -> None:
     text = checklist_body("- [ ] First\n  - a nested note\n  wrapped?\n- [ ] Second\n")
     assert unfinished_items(text, BODY_RULES) == ["First", "Second"]
+
+
+# --- the runtime-evidence line for areas a player sees ------------------------------------------------------------
+
+PLAYER = "gameplay: Fix flag and teleport headings turning the wrong way"
+EVIDENCE = "Runtime: trace diff of 1,830 frames against the original, 0 differences"
+NONE_REASON = "Runtime: none (a refactor with no change to what the player sees)"
+
+
+def with_testing(*lines: str) -> str:
+    """A description whose Testing section holds `lines`, each a list item."""
+    return body(testing="\n".join(f"- {line}" for line in lines))
+
+
+def runtime_problems_of(text: str, title: str = PLAYER) -> list[str]:
+    """The problems about the Runtime line alone (`check_body` with the title, minus any other rule)."""
+    return [problem for problem in check_body(text, BODY_RULES, title=title) if "Runtime" in problem]
+
+
+def test_a_player_facing_title_with_evidence_passes() -> None:
+    assert check_body(with_testing("`pytest python/tests`: 120 passed", EVIDENCE), BODY_RULES, title=PLAYER) == []
+
+
+def test_a_player_facing_title_without_the_line_is_refused_with_the_rule() -> None:
+    (problem,) = runtime_problems_of(body())
+    assert "'## Testing'" in problem and "Runtime: <evidence>" in problem and "Runtime: none (<reason>)" in problem
+    assert "'gameplay'" in problem and "trace diff" in problem and "docs/guides/testing.md#done" in problem
+
+
+@pytest.mark.parametrize("area", ["gameplay", "graphics", "audio"])
+def test_every_player_facing_area_needs_the_line(area: str) -> None:
+    assert runtime_problems_of(body(), f"{area}: Fix the thing") != []
+    assert runtime_problems_of(with_testing(EVIDENCE), f"{area}: Fix the thing") == []
+
+
+@pytest.mark.parametrize("area", ["tools", "docs", "core", "tests", "research", "ci", "fileio", "platform", "build"])
+def test_the_other_areas_do_not_need_the_line(area: str) -> None:
+    assert check_body(body(), BODY_RULES, title=f"{area}: Fix the thing") == []
+
+
+def test_without_a_title_the_line_is_not_checked() -> None:
+    assert check_body(body(), BODY_RULES) == []
+
+
+def test_a_title_not_in_the_form_has_nothing_to_check_here() -> None:
+    assert check_body(body(), BODY_RULES, title="Fix the thing") == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        EVIDENCE,
+        "runtime: trace diff, 0 of 4,200 events differ",
+        "**Runtime:** PCSX2 read of 0x001490b8 (3 values) equals Coney's",
+        "Runtime:  an event diff over 600 updates: 0 differences",
+        NONE_REASON,
+        "Runtime: None (no behaviour change)",
+        "**Runtime:** none (docs only)",
+    ],
+)
+def test_accepted_runtime_lines(line: str) -> None:
+    assert runtime_problems_of(with_testing(line)) == []
+
+
+def test_the_line_may_be_wrapped_or_have_sub_items() -> None:
+    wrapped = "- Runtime: event diff of the heading\n  over 600 updates: 0 differences\n"
+    nested = "- Runtime:\n  - trace diff of 1,830 frames\n  - 0 differences\n"
+    assert runtime_problems_of(body(testing=wrapped)) == []
+    assert runtime_problems_of(body(testing=nested)) == []
+
+
+def test_a_line_outside_the_testing_section_does_not_count() -> None:
+    text = body(summary="Fixes the heading.\n\n" + EVIDENCE)
+    assert runtime_problems_of(text) != []
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("Runtime: none", "needs its reason"),
+        ("Runtime: none ()", "needs its reason"),
+        ("Runtime: none (<reason>)", "needs its reason"),
+        ("Runtime: none (...)", "needs its reason"),
+        ("Runtime: ...", "is empty"),
+        ("Runtime:", "is empty"),
+        ("Runtime: <reason>", "is empty"),
+        ("Runtime: looked right in play", "no numbers"),
+    ],
+)
+def test_empty_or_numberless_runtime_lines_are_refused(line: str, expected: str) -> None:
+    (problem,) = runtime_problems_of(with_testing(line))
+    assert expected in problem and "'## Testing' needs a line" in problem
+
+
+def test_an_unrelated_word_starting_with_none_is_evidence_not_a_none_line() -> None:
+    assert runtime_problems_of(with_testing("Runtime: nonexistent flags: 0 of 12 differ")) == []
+
+
+def test_the_untouched_template_is_refused_for_a_player_facing_title_and_still_blank() -> None:
+    problems = check_body(read_template(), BODY_RULES, title=PLAYER)
+    assert any("'## Testing' is empty" in problem for problem in problems), problems
+    assert any("Runtime" in problem for problem in problems), problems
+
+
+def test_a_filled_template_needs_its_runtime_line_for_a_player_facing_title() -> None:
+    filled = read_template().replace("## Summary\n", "## Summary\n\nAdds a check.\n", 1)
+    filled = filled.replace("## Testing\n", "## Testing\n\n- `pytest`: 3 passed\n", 1)
+    filled = filled.replace("## Screenshots\n", "## Screenshots\n\nScreenshots: none (no visible change)\n", 1)
+    filled = re.sub(r"(\*\*Commits written by:\*\*) <!--.*?-->", r"\1 an AI", filled)
+    filled = re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
+    problems = check_body(filled, BODY_RULES, title=PLAYER)
+    assert any("Runtime: ..." in problem or "'Runtime:' is empty" in problem for problem in problems), problems
+    fixed = filled.replace("- Runtime: ...", "- " + EVIDENCE)
+    assert check_body(fixed, BODY_RULES, title=PLAYER) == []
+
+
+def test_the_template_shows_the_runtime_line() -> None:
+    template = read_template()
+    assert f"{BODY_RULES.runtime.line} ..." in strip_comments(template)
+    assert f"`{BODY_RULES.runtime.none} (<reason>)`" in template

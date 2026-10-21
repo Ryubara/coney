@@ -248,6 +248,8 @@ def template_matches(context: FilesContext) -> Iterator[Problem]:
         (closing, "pull_requests.closing"),
         ("Done:", "pull_requests.checklist"),
         (f"`{rules.screenshots.none} (<reason>)`", "pull_requests.screenshots"),
+        (f"`{rules.runtime.none} (<reason>)`", "pull_requests.runtime"),
+        (f"{rules.runtime.line} ...", "pull_requests.runtime"),
     ):
         if text not in template:
             yield Problem(name, f"does not mention {text} ({key})")

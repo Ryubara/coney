@@ -10,7 +10,7 @@ include(FetchContent)
 # and for every preset, so the compiler cache sees the same command lines. Empty (the default): nothing changes.
 set(CONEY_DEPS_SOURCES "$ENV{CONEY_DEPS_SOURCES}" CACHE PATH "Folder that keeps the fetched dependency sources")
 file(SHA256 "${CMAKE_CURRENT_LIST_FILE}" _coney_deps_hash)
-set(_coney_deps SDL3 librw Catch2 imgui ffmpeg)
+set(_coney_deps SDL3 librw Catch2 imgui enet ffmpeg)
 foreach(_dep IN LISTS _coney_deps)
     # _coney_<name>_where: the SOURCE_DIR option for its declaration when it is fetched into the folder, else empty.
     set(_coney_${_dep}_where "")
@@ -70,7 +70,15 @@ FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.gi
 FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
                            GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab ${_coney_imgui_where} SYSTEM)
 
-FetchContent_MakeAvailable(SDL3 librw Catch2 imgui)
+# ENet v1.3.18 (a lightweight tag, so the commit is the tag's own), MIT licence: the UDP transport of network play
+# (docs/guides/multiplayer.md#enet), used only in src/platform/. Its own CMakeLists.txt would add a target named enet
+# with directory-wide flags, so SOURCE_SUBDIR points at a folder it does not have: FetchContent then only fetches, and
+# the library is made below from its C files, as Dear ImGui's is.
+FetchContent_Declare(enet GIT_REPOSITORY https://github.com/lsalzman/enet.git
+                          GIT_TAG 2662c0de09e36f2a2030ccc2c528a3e4c9e8138a ${_coney_enet_where}
+                          SOURCE_SUBDIR coney-no-cmake SYSTEM)
+
+FetchContent_MakeAvailable(SDL3 librw Catch2 imgui enet)
 
 # Dear ImGui as a static library. Its OpenGL 3 backend loads the GL functions itself (its bundled loader), so it
 # needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.
@@ -85,6 +93,21 @@ target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURC
 target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 target_compile_features(imgui PUBLIC cxx_std_23)
 target_link_libraries(imgui PUBLIC SDL3::SDL3-static ${CMAKE_DL_LIBS})
+
+# ENet as a static library. Its configure step only detects socket functions that every system Coney supports has:
+# macOS gets them from unix.c's own defaults, Linux from the definitions here; Windows needs Winsock and the
+# multimedia timer library it times itself with.
+add_library(enet STATIC
+    ${enet_SOURCE_DIR}/callbacks.c ${enet_SOURCE_DIR}/compress.c ${enet_SOURCE_DIR}/host.c ${enet_SOURCE_DIR}/list.c
+    ${enet_SOURCE_DIR}/packet.c ${enet_SOURCE_DIR}/peer.c ${enet_SOURCE_DIR}/protocol.c ${enet_SOURCE_DIR}/unix.c
+    ${enet_SOURCE_DIR}/win32.c)
+target_include_directories(enet SYSTEM PUBLIC ${enet_SOURCE_DIR}/include)
+if(WIN32)
+    target_link_libraries(enet PUBLIC ws2_32 winmm)
+elseif(NOT APPLE)
+    target_compile_definitions(enet PRIVATE HAS_FCNTL=1 HAS_POLL=1 HAS_GETADDRINFO=1 HAS_GETNAMEINFO=1 HAS_INET_PTON=1
+                                            HAS_INET_NTOP=1 HAS_MSGHDR_FLAGS=1 HAS_SOCKLEN_T=1)
+endif()
 
 # Catch2 builds as C++14 by default, which leaves out its std::string_view support (C++17 and later) from the
 # compiled library while our C++23 tests still see it declared, and the tests then fail to link. Build it with the

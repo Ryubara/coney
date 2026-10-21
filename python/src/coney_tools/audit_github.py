@@ -737,7 +737,7 @@ def pr_title(context: GithubContext) -> Iterator[Problem]:
 def pr_body(context: GithubContext) -> Iterator[Problem]:
     """An open pull request's description passes the template check (sections, no local paths, images uploaded)."""
     for pull in context.snapshot.pulls_in("open"):
-        problems = check_body(pull.body, context.conventions.pull_requests)
+        problems = check_body(pull.body, context.conventions.pull_requests, title=pull.title)
         if problems:
             shown = "; ".join(problems[:3]) + (f"; and {len(problems) - 3} more" if len(problems) > 3 else "")
             yield _problem(pull, shown)

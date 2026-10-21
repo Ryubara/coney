@@ -22,10 +22,9 @@ and prints what is missing ([Bootstrap](workspace.md#bootstrap)). When uv itself
 pinned version of it with Astral's installer, which adds uv to your `PATH` (shell profiles on Linux and macOS, user
 `PATH` on Windows).
 
-The C++ dependencies (SDL3, librw, Dear ImGui, Catch2, FFmpeg) are not installed by hand: CMake downloads them on the
-first configure,
-at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access and takes a few
-minutes; later builds reuse the copies under `build/<preset>/_deps/`.
+The C++ dependencies (SDL3, librw, Dear ImGui, ENet, Catch2, FFmpeg) are not installed by hand: CMake downloads them
+on the first configure, at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access
+and takes a few minutes; later builds reuse the copies under `build/<preset>/_deps/`.
 
 librw is built for its OpenGL 3 platform with SDL3 creating the window and the context, so the build also needs the
 OpenGL headers and libraries: part of the system on Windows and macOS, `libgl1-mesa-dev` on Linux (in the package
@@ -63,6 +62,16 @@ decodes a Bink file with `-Wl,-Map`, and take the objects the map lists.
 **To use a different or modified FFmpeg** (the LGPL's relinking right), point CMake at its sources and rebuild:
 `cmake --preset dev -DFETCHCONTENT_SOURCE_DIR_FFMPEG=/path/to/ffmpeg`. Coney's own code sees FFmpeg only through
 `src/platform/`, so any FFmpeg with the Bink components works.
+
+### ENet {#enet}
+
+Network play ([Network multiplayer](multiplayer.md)) sends its packets over UDP with ENet 1.3.18 (MIT).
+`cmake/deps.cmake` fetches the `v1.3.18` tag's commit and compiles ENet's nine C files into a static library,
+`enet`, linked by `src/platform/` alone, as Dear ImGui is built: ENet's own `CMakeLists.txt` is not used (it would
+add directory-wide flags), so the fetch names a `SOURCE_SUBDIR` it does not have. Its configure step only detects
+socket functions every supported system has, so the definitions are set in `cmake/deps.cmake` for Linux, macOS
+uses `unix.c`'s own defaults, and Windows links Winsock (`ws2_32`) and `winmm`, whose timer ENet times its resends
+with. To update ENet, change the commit and the tag comment together.
 
 ### Windows
 
@@ -501,8 +510,8 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   save it. A pull request's entry would be scoped to its own `refs/pull/N/merge` ref, which no other pull request can
   read, so it could only push `main`'s useful entries out: on 2026-10-13 the cache held 9.6 of its 10 GB in 28
   entries, one per job and commit. A pull request restores the newest entry of its job from `main`.
-- **The dependency sources** (`deps`, then `deps-save` after the configure step): SDL3, librw, Catch2, Dear ImGui and
-  FFmpeg as fetched, one entry per OS and version of `cmake/deps.cmake`, shared by every job and preset on that OS.
+- **The dependency sources** (`deps`, then `deps-save` after the configure step): SDL3, librw, Catch2, Dear ImGui, ENet
+  and FFmpeg as fetched, one entry per OS and version of `cmake/deps.cmake`, shared by every job and preset on that OS.
   `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<name>` and use a complete copy found
   there without downloading. The build trees under `build/<preset>/_deps/` are not kept: they belonged to one
   compiler and preset, a fresh job rebuilds them anyway (Ninja has no record of them), and they made eight entries of

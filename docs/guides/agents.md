@@ -151,6 +151,13 @@ instead of repeating it:
   ([Capturing and attaching](testing.md#pr-media)); video clips are recorded only with `coney --record` or
   `coney-tools pcsx2 clip` into `scratch/<branch>/clips/` and uploaded only with `coney-tools clips publish`, which
   deletes them ([Clips](testing.md#clips));
+- for gameplay work (anything a player sees: the title areas `gameplay`, `graphics` and `audio`), the brief names the
+  [runtime comparison](testing.md#runtime-comparison) with the original as part of "done", and the `Runtime:` line of
+  the pull request's Testing section that reports it ([the Runtime line](testing.md#runtime-line)); it points at
+  `coney-tools pcsx2 recipe` for the PCSX2 recipes that capture and read the original (a save state's values and
+  picture, a trace; being added, with its own guide page), and the agent works in a PCSX2 claim
+  ([Driving PCSX2](research-workflow.md#driving-pcsx2)). An agent that is not told compares nothing with the running
+  original, and the pull request is then refused;
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and

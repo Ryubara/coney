@@ -81,6 +81,7 @@ add_executable(coney_tests
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    hud/credits_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp
     hud/mash_meter_test.cpp
@@ -135,6 +136,7 @@ add_executable(coney_tests
     platform/disc_spawner_money_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
+    platform/disc_credits_test.cpp
     platform/disc_game_session_test.cpp
     platform/disc_level99_handover_test.cpp
     platform/disc_level99_player2_test.cpp
@@ -419,6 +421,11 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp
                                    audio/sound_data_test.cpp audio/sound_engine_test.cpp audio/sound_matrix_test.cpp scripting/sound_bindings_test.cpp
                                    audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp)
+# Network play: the bit stream, the transports, the protocol and the sessions over the loopback, and ENet on 127.0.0.1
+# (docs/guides/multiplayer.md).
+target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/link_conditioner_test.cpp net/link_quality_test.cpp
+                                   net/loopback_transport_test.cpp net/protocol_test.cpp net/sessions_test.cpp
+                                   platform/enet_transport_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)

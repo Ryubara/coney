@@ -208,7 +208,7 @@ def description_problems(description: str, conventions: Conventions, branch_mode
     rules = conventions.pull_requests
     draft_rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
     return [f"title: {problem}" for problem in check_title(title, conventions.commits.title)] + [
-        f"body: {problem}" for problem in check_body(body, draft_rules, branch_models)
+        f"body: {problem}" for problem in check_body(body, draft_rules, branch_models, title)
     ]
 
 

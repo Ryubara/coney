@@ -250,6 +250,46 @@ def test_incomplete_claim_folder_is_stale_only_after_a_while(registry: Registry)
     assert not just_made.status()[0].stale
 
 
+def test_an_incomplete_claim_with_a_live_pcsx2_is_never_stale(registry: Registry, procs: FakeProcesses) -> None:
+    # A claim folder with no readable owner file (agent "?") used to go stale by age alone, so a second agent was
+    # handed the copy while the first agent's PCSX2 ran in it.
+    (registry.claims_dir / "pcsx2.claim").mkdir(parents=True)
+    procs.pcsx2[900] = registry.copies()[0].path / "pcsx2-qt.exe"
+    far_future = Registry(registry.root, registry.claims_dir, clock=lambda: NOW + 10 * pcsx2_claims.DEFAULT_MAX_AGE)
+    row = far_future.status()[0]
+    assert row.claim is not None and row.claim.agent == "?"
+    assert row.running and not row.stale
+    claim, took_over = far_future.claim("bob")
+    assert claim.copy == "pcsx2-b" and took_over is None  # the running copy is skipped
+    with pytest.raises(ClaimError):
+        far_future.claim("bob", "pcsx2")
+
+
+def test_an_incomplete_claim_with_a_serving_port_is_never_stale(
+    registry: Registry, procs: FakeProcesses, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (registry.claims_dir / "pcsx2.claim").mkdir(parents=True)
+    monkeypatch.setattr(pcsx2_claims, "port_open", lambda port: port == 28011)  # started by hand, no pid known
+    far_future = Registry(registry.root, registry.claims_dir, clock=lambda: NOW + 10 * pcsx2_claims.DEFAULT_MAX_AGE)
+    assert not far_future.status()[0].stale
+    with pytest.raises(ClaimError):
+        far_future.claim("bob", "pcsx2")
+
+
+def test_a_claim_of_a_live_holder_pid_is_never_stale(registry: Registry, procs: FakeProcesses) -> None:
+    registry.claim("alice", "pcsx2", holder_pid=4242)
+    procs.alive.add(4242)
+    far_future = Registry(registry.root, registry.claims_dir, clock=lambda: NOW + 10 * pcsx2_claims.DEFAULT_MAX_AGE)
+    assert not far_future.status()[0].stale
+
+
+def test_an_incomplete_claim_with_nothing_running_is_still_taken_over(registry: Registry) -> None:
+    (registry.claims_dir / "pcsx2.claim").mkdir(parents=True)
+    far_future = Registry(registry.root, registry.claims_dir, clock=lambda: NOW + 10 * pcsx2_claims.DEFAULT_MAX_AGE)
+    claim, took_over = far_future.claim("bob", "pcsx2")
+    assert claim.agent == "bob" and took_over is not None and took_over.agent == "?"
+
+
 # --- commands that start PCSX2 ---------------------------------------------------------------------------------
 
 

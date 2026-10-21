@@ -56,19 +56,22 @@ jobs:
 
   # The description must follow the template (.github/pull_request_template.md): its sections, a Summary and a
   # Testing section with text, who wrote the commits (one of the template's choices) and, when an AI took part, the
-  # model. The rules are pull_requests in .github/conventions.yml. Editing the description re-runs the check.
+  # model, and for a title area a player sees (gameplay, graphics, audio) the Testing section's `Runtime:` line, which
+  # needs the title too. The rules are pull_requests in .github/conventions.yml. Editing the title or the description
+  # re-runs the check.
   body:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       # The description is attacker-controlled: it reaches the checker only through a file written from an
-      # environment variable, never expanded into the script's text. check-body exits 0 (pass), 1 (refused) or 2
-      # (rules file unusable); both failures fail the job.
+      # environment variable, never expanded into the script's text (the title likewise, as one quoted argument).
+      # check-body exits 0 (pass), 1 (refused) or 2 (rules file unusable); both failures fail the job.
       - name: Check the description against the template
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
-          uv run --project python coney-tools repo check-body --body "$RUNNER_TEMP/pr-body.md"
+          uv run --project python coney-tools repo check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE"
 # Re-registered after the repository was restored.

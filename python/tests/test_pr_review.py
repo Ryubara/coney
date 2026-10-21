@@ -311,6 +311,17 @@ def test_a_bad_title_is_refused_with_the_title_named(tmp_path: Path) -> None:
     assert any(problem.startswith("title:") for problem in problems)
 
 
+def test_a_player_facing_title_needs_the_runtime_line_in_the_draft_too(tmp_path: Path) -> None:
+    # Local gate and CI run the same check: the title is line 1 of the file, and the body is the rest.
+    player = BODY.replace("tools: Add a thing", "gameplay: Fix the heading")
+    pr = write_pr(tmp_path, player)
+    problems = check_review(pr, tmp_path, CONVENTIONS, head)
+    assert any(problem.startswith("body:") and "Runtime: <evidence>" in problem for problem in problems), problems
+    fixed = player.replace("- pytest: 3 passed", "- pytest: 3 passed\n- Runtime: none (a rename)")
+    pr = write_pr(tmp_path, fixed)
+    assert not any("Runtime" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
+
+
 def test_title_and_body_problems_are_reported_alongside_the_verdict(tmp_path: Path) -> None:
     pr = write_pr(tmp_path, BODY.replace("tools: Add a thing", "nope").replace("## Testing", "## Tests"))
     problems = check_review(pr, tmp_path, CONVENTIONS, head)

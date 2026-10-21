@@ -720,7 +720,7 @@ Adds one line to the credits list (a CreditData record, texts interned in the cr
 - **Evidence:** confirmed (code) at `0x001a8fb8`; detail: brief
 - **Wrapper** `0x0036ee48` (registered by `RegisterBindings`); **calls** `0x001a8fb8`
 - **Used by** 1 of 467 script chunks (578 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgCrimeMessage {#cfgcrimemessage}
 

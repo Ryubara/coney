@@ -25,7 +25,7 @@ is confronted and the Riffs arrive to deal with him.
 
 ## What it needs {#needs}
 
-Its scripts can call 219 script bindings. 8 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 219 script bindings. 8 of them are new, which no earlier level of the story calls: 3 are
 implemented in Coney and 8 are traced. The full list is on [the coverage page](../references/bindings/story.md#level84).
 
 | Family | New bindings | In Coney |
@@ -33,7 +33,7 @@ implemented in Coney and 8 are traced. The full list is on [the coverage page](.
 | [Characters](../references/bindings/character.md) | 3 | 0 |
 | [AI](../references/bindings/ai.md) | 1 | 0 |
 | [World and objects](../references/bindings/world.md) | 2 | 1 |
-| [HUD and menus](../references/bindings/hud.md) | 2 | 0 |
+| [HUD and menus](../references/bindings/hud.md) | 2 | 2 |
 
 Research:
 

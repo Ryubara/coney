@@ -376,3 +376,32 @@ def test_the_comment_settings_start_at_warn_level() -> None:
 
 def test_no_report_only_check_is_allowed() -> None:
     assert conventions_with(("hygiene.comments.report_only", [])).hygiene.comments.report_only == ()
+
+
+# --- pull_requests.runtime ----------------------------------------------------------------------------------------
+
+
+def test_the_real_runtime_rule() -> None:
+    runtime = load_conventions(REPO).pull_requests.runtime
+    assert {"gameplay", "graphics", "audio"} <= set(runtime.areas)
+    assert runtime.section == "Testing" and runtime.line == "Runtime:" and runtime.none == "Runtime: none"
+
+
+def test_a_runtime_area_must_be_a_commit_title_area() -> None:
+    with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.areas.*commits\.title\.areas"):
+        conventions_with(("pull_requests.runtime.areas", ["gameplay", "not-an-area"]))
+
+
+def test_the_runtime_none_line_must_start_with_the_runtime_line() -> None:
+    with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.none.*must start with"):
+        conventions_with(("pull_requests.runtime.none", "Original: none"))
+
+
+def test_the_runtime_section_must_be_one_of_the_sections() -> None:
+    with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.section"):
+        conventions_with(("pull_requests.runtime.section", "Evidence"))
+
+
+def test_a_misspelled_runtime_key_is_refused() -> None:
+    with pytest.raises(ConventionsError, match=r"pull_requests\.runtime"):
+        conventions_with(("pull_requests.runtime.area", ["gameplay"]))

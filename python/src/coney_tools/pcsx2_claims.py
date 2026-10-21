@@ -8,8 +8,10 @@ claims dir is one shared place every worktree sees (docs/guides/research-workflo
 reported (`status`) is rebuilt from the claim folders and the live processes each time; no cached state file exists
 to go stale, and nobody maintains one by hand.
 
-A claim is stale, and may be taken over, when no process of it lives (the recorded PCSX2 and holder pids are dead and
-nothing serves its PINE or debug server port) and it either names pids (all dead) or is older than the maximum age.
+A claim is stale, and may be taken over, when no process of it lives (the recorded PCSX2 and holder pids are dead,
+no PCSX2 runs from the copy's folder and nothing serves its PINE or debug server port) and it either names pids (all
+dead) or is older than the maximum age. A live process always wins: a claim whose owner file is unreadable (agent "?")
+is stale by age only while nothing runs in the copy.
 """
 
 from __future__ import annotations
@@ -260,13 +262,16 @@ class Registry:
         return tuple(sorted(pids))
 
     def is_stale(self, copy: Copy, claim: Claim, pids: tuple[int, ...]) -> bool:
-        """Whether a claim's holder is gone (see the module comment)."""
+        """Whether a claim's holder is gone (see the module comment). A live process of the copy (a PCSX2 running from
+        its folder or recorded, a live holder, or a served port) keeps any claim, one with an unreadable owner file
+        (agent "?") included: age alone never frees a copy somebody's PCSX2 runs in."""
+        if pids or _serves(copy):
+            return False
+        if claim.holder_pid is not None and pcsx2_proc.pid_alive(claim.holder_pid):
+            return False
         now = self.clock()
         if claim.agent == "?":
             return not claim.time or claim.age(now) > INCOMPLETE_SECONDS
-        holder = claim.holder_pid is not None and pcsx2_proc.pid_alive(claim.holder_pid)
-        if pids or holder or _serves(copy):
-            return False
         return claim.holder_pid is not None or claim.pcsx2_pid is not None or claim.age(now) > self.max_age
 
     def status(self) -> list[Row]:

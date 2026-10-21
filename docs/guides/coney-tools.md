@@ -426,16 +426,18 @@ uv run --project python coney-tools pcsx2 status [--json]
 
 `claim` takes a free copy (or the named one) atomically and prints its folder, PINE port and debug server port (a line
 `pcsx2-dir=... port=... debug-port=...`; `--json` has `port` and `debug_port`, which is `null` for a copy without the
-debug server); it hands back your own
-claim when you hold one, and takes over a stale one (its processes gone, or older than `--max-age-hours`, default 4,
-with no process) saying so. A copy running PCSX2 without a claim is never handed out. `release` closes the PCSX2 it
-recorded (only while that process is still a PCSX2) and drops the claim; another agent's claim needs `--force`.
-`status` lists every copy with its holder, the time, the PINE and debug ports, whether PCSX2 runs (by pid or by either
-port) and stale claims; it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*`
-folders with an `inis/PCSX2.ini` under `pcsx2_root` (default: `../../emulators`); two copies on one port (PINE or
-debug server) are refused, naming both. The claims are under `pcsx2_claims_dir` (default:
-`pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`, whatever a worktree's
-`scratch_dir` says, so every worktree sees the same claims).
+debug server); it hands back your own claim when you hold one, and takes over a stale one (its processes gone, or
+older than `--max-age-hours`, default 4, with no process) saying so. A claim whose copy has a live process is never
+stale, whatever its age or owner: a PCSX2 running from the copy's folder, a live recorded PCSX2 or holder pid, or a
+listening PINE or debug server port; that includes a claim whose owner file is unreadable (shown as holder `?`), which
+is stale only after a few seconds and only with nothing running in the copy. A copy running PCSX2 without a claim is
+never handed out. `release` closes the PCSX2 it recorded (only while that process is still a PCSX2) and drops the
+claim; another agent's claim needs `--force`. `status` lists every copy with its holder, the time, the PINE and debug
+ports, whether PCSX2 runs (by pid or by either port) and stale claims; it warns about copies whose ini has
+`[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an `inis/PCSX2.ini` under `pcsx2_root` (default:
+`../../emulators`); two copies on one port (PINE or debug server) are refused, naming both. The claims are under
+`pcsx2_claims_dir` (default: `pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`,
+whatever a worktree's `scratch_dir` says, so every worktree sees the same claims).
 
 ```sh
 uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]
@@ -684,7 +686,7 @@ from your disc, kept in scratch). It exits with 0 when Coney has every compared 
 uv run --project python coney-tools repo check
 uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
-uv run --project python coney-tools repo check-body [--body FILE|-] [--worktree WT [--base REF]]
+uv run --project python coney-tools repo check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
 uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
     [--claude EXE] [--timeout-minutes N]
 uv run --project python coney-tools repo check-review PR.md --worktree WT [--base REF]
@@ -711,7 +713,11 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 * `repo check-body` checks a pull request description against the template ([What a pull request
   shows](testing.md#pr-evidence)). Given `--worktree`, it also reads the branch's commits (`--base`, default
   `origin/main`, to `HEAD`) and requires the AI use `Model:` line to name every model a `Co-Authored-By` trailer on them
-  credits: see [the Model line](#repo-model-line).
+  credits: see [the Model line](#repo-model-line). Given `--title` (the `body` job passes the pull request's title), a
+  title area a player sees (`pull_requests.runtime.areas`: `gameplay`, `graphics`, `audio`) must have a line starting
+  `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
+  none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
+  output says so; `repo check-review` always has the title (line 1 of `PR.md`).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
   [review](#repo-review). All three refuse a description whose title or body fails the checks above.
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).

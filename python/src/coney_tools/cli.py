@@ -141,11 +141,14 @@ def _repo_check_docs(body_file: str | None) -> int:
     return 0
 
 
-def _repo_check_body(body_file: str | None, worktree: Path | None = None, base: str = DEFAULT_BASE) -> int:
+def _repo_check_body(
+    body_file: str | None, worktree: Path | None = None, base: str = DEFAULT_BASE, title: str | None = None
+) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused.
 
     With a `worktree`, the Model line must also name the models its commits after `base` credit in trailers; CI has
-    only the description and gives none.
+    only the description and gives none. With the pull request's `title` (CI gives it), a title area a player sees must
+    have the Testing section's `Runtime:` line; without one that rule is skipped, and the output says so.
     """
     conventions = _conventions()
     rules = conventions.pull_requests
@@ -158,11 +161,11 @@ def _repo_check_body(body_file: str | None, worktree: Path | None = None, base: 
             print(f"coney-tools: {body_file}: cannot be read ({error})", file=sys.stderr)
             return 2
     models = branch_trailer_models(worktree, base, conventions.commits.trailers) if worktree else []
-    problems = check_body(body, rules, models)
+    problems = check_body(body, rules, models, title)
     if problems:
         print(f"body refused: {'; '.join(problems)} (see .github/pull_request_template.md)")
         return 1
-    print("body: ok")
+    print("body: ok" if title is not None else "body: ok (no --title, so the Runtime: line was not checked)")
     return 0
 
 
@@ -268,6 +271,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_body_parser.add_argument(
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
+    )
+    check_body_parser.add_argument(
+        "--title",
+        help="the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the "
+        "Testing section's `Runtime:` line, as in CI; without it that rule is not checked",
     )
     check_body_parser.add_argument(
         "--worktree",
@@ -961,7 +969,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
-        return _repo_check_body(args.body, args.worktree, args.base)
+        return _repo_check_body(args.body, args.worktree, args.base, args.title)
     return _repo_check()
 
 
