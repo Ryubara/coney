@@ -10,13 +10,18 @@ up the brain core, the actions, the brain types and the tactics. [AI humans](ai.
 together and is the page to read first; this one names every function, says in a line what it does, and links to
 the section of [AI humans](ai.md) that covers it.
 
+## Original structure
+
+The AI code is part of `Human/` and the gangs' stretch before `Graphics/` ([Source map](source-map.md)). The sections
+below are the map: one per group of functions, in address order, with a row per function and its evidence level.
+
 ## The gang module {#gang-functions}
 
-Every function of the gang module (`0x00162518`-`0x0016e388`)
-not described in [Gangs, tactics and formations](ai.md#gangs), by address.
-Offsets are gang
-record offsets unless a spawner (0x130 at `+0x640`) or the configuration record (0x7a) is named. Script bindings
-are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
+Every function of the gang module (`0x00162518`-`0x0016e388`, a range inferred from where the gang functions lie; the
+first rows, from `0x001624e0`, are the load screens' objects that share the stretch) not described in [Gangs, tactics
+and formations](ai.md#gangs), by address. Offsets are gang record offsets unless a spawner (0x130 at `+0x640`) or the
+configuration record (0x7a) is named. Script bindings are given by their Lua name ([Gang
+bindings](../references/bindings/gang.md)).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -203,13 +208,14 @@ are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
 
 ## The brain core {#brain-core}
 
-The brain helpers in `0x00288000`-`0x0029f000`: the record, perception, enemies, formations, routes and the
-tables they share. Each table row is one function; names already in use are kept.
+The brain helpers from about `0x00288000` to `0x0029f000` (the rows run from `0x00288698` to `0x0029ed38`; the range is
+inferred, each row graded): the record, perception, enemies, formations, routes and the tables they share. Each table
+row is one function; names already in use are kept.
 
 ### Brain record helpers {#brain-record}
 
-Small helpers that read or reset fields of the 0x2f0-byte brain record at `0x006d53f0`; the record's layout is
-in [AI humans: the brain](ai.md#brain).
+Small helpers that read or reset fields of the 0x2f0-byte brain record at `0x006d53f0` (one per human slot,
+`Human_GetBrain`, `0x0021d408`; confirmed (code)); the record's layout is in [AI humans: the brain](ai.md#brain).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -508,8 +514,8 @@ The `Cfg...` workers that set the AI's global tuning values; the melee ranges ar
 
 ### Formations {#formation-code}
 
-The 42 formations (0x280 bytes at `0x006ceaf0`): slot sets, slot points and which follower takes which slot; see
-[AI humans: formations and follow slots](ai-gangs.md#formations).
+The 42 formations (0x280 bytes at `0x006ceaf0`, confirmed (code) in `Brains_Reset`, `0x00293840`): slot sets, slot
+points and which follower takes which slot; see [AI humans: formations and follow slots](ai-gangs.md#formations).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -546,8 +552,8 @@ The 42 formations (0x280 bytes at `0x006ceaf0`): slot sets, slot points and whic
 
 ### Waypoint queues {#queue-code}
 
-The 20 waypoint queues (0x90 bytes at `0x006cde30`) where humans wait their turn at a node; see
-[AI humans: waypoint queues](ai-moving.md#queues).
+The 20 waypoint queues (0x90 bytes at `0x006cde30`, confirmed (code) in `AI_ResetPools`, `0x002948c0`) where humans wait
+their turn at a node; see [AI humans: waypoint queues](ai-moving.md#queues).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -624,9 +630,9 @@ Goals use them to find targets, backup and partners ([AI humans: starting a figh
 
 ### Neighbour sectors {#sectors}
 
-Each human has a record of the eight sectors around him (0x48 bytes at `0x006e8318`, 60 records): which sector
-holds a near human or a wall. Steering, side-picking in melee and the attack check read it; see
-[AI humans: steering round humans](ai-moving.md#steering).
+Each human has a record of the eight sectors around him (0x48 bytes at `0x006e8318`, 60 records, confirmed (code) in
+`Sectors_ResetAll`, `0x0029ecd8`): which sector holds a near human or a wall. Steering, side-picking in melee and the
+attack check read it; see [AI humans: steering round humans](ai-moving.md#steering).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -878,7 +884,8 @@ events](../references/script-events.md); codes are `TacticGetString`'s.
 
 Pool and base-class helpers shared by every tactic; the base fields, the vtable slots and `Tactic_Start` /
 `Tactic_Process` are in [Tactics](ai-gangs.md#tactics). A tactic may own a coordinated **strategy** object at `+0x10` (a
-pool of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`), which only the Attack tactic starts.
+pool of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`, `SubTactic_Alloc` `0x00321838`), which only the Attack tactic
+starts (`AttackTactic_StartSubTactic` is its one caller). Confirmed (code).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -895,8 +902,8 @@ pool of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`), which only the Attack tac
 
 ### Address (type 0x1a) {#t1-address}
 
-`TacticAddress` (vtable `0x005432c0`): the gang's leader walks up to another gang's leader and the two play a paired
-scene. No script calls it.
+`TacticAddress` (vtable `0x005432c0`, stored by `AddressTactic_Init`, confirmed (code)): the gang's leader walks up to
+another gang's leader and the two play a paired scene. No script calls it.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -910,9 +917,9 @@ scene. No script calls it.
 
 ### Attack (type 0x00) {#t1-attack}
 
-`TacticAttack` (vtable `0x00543320`; constructor `AttackTactic_Construct` `0x003075c8`, Start `0x00307fe0`, Process
-`0x003081a8`, both outside this list): every member melees ([Scripted tactics](ai-gangs.md#tactic-kinds)). Start is
-`AttackTactic_Start` `0x00307fe0`.
+`TacticAttack` (vtable `0x00543320`, stored by `AttackTactic_Construct`, confirmed (code); constructor
+`AttackTactic_Construct` `0x003075c8`, Start `0x00307fe0`, Process `0x003081a8`, both outside this list): every member
+melees ([Scripted tactics](ai-gangs.md#tactic-kinds)). Start is `AttackTactic_Start` `0x00307fe0`.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -927,7 +934,8 @@ scene. No script calls it.
 
 ### AvoidEnemies (type 0x20) {#t1-avoid-enemies}
 
-`TacticAvoidEnemies` (vtable `0x00543380`): every member keeps away from enemies.
+`TacticAvoidEnemies` (vtable `0x00543380`, stored by `AvoidEnemiesTactic_Init`, confirmed (code)): every member keeps
+away from enemies.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -938,10 +946,10 @@ scene. No script calls it.
 
 ### Boss (type 0x09) {#t1-boss}
 
-`TacticBoss(gang, boss, stage, callback)` (vtable `0x005433e0`): an older single tactic for six bosses, chosen by
-`+0x24` (0 Diego, 1 Vargas, 2 Chatterbox, 3 Luther, 4 the Lizzies, 5 Big Mo). No script calls it; the
-`TacticBossScenarioA`-`H` tactics below replaced it, so its boss goals (types `0x93`-`0x96`) never run in the game.
-Which tactic each level uses: [AI: The boss fights](ai-gangs.md#boss-fights).
+`TacticBoss(gang, boss, stage, callback)` (vtable `0x005433e0`, stored by `BossTactic_Init`, confirmed (code)): an older
+single tactic for six bosses, chosen by `+0x24` (0 Diego, 1 Vargas, 2 Chatterbox, 3 Luther, 4 the Lizzies, 5 Big Mo). No
+script calls it; the `TacticBossScenarioA`-`H` tactics below replaced it, so its boss goals (types `0x93`-`0x96`) never
+run in the game. Which tactic each level uses: [AI: The boss fights](ai-gangs.md#boss-fights).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -953,8 +961,8 @@ Which tactic each level uses: [AI: The boss fights](ai-gangs.md#boss-fights).
 
 ### BossDiegoVargas (type 0x0a) {#t1-boss-diego-vargas}
 
-`TacticBossScenarioA` (vtable `0x00543440`); the fight is described in [The Diego and Vargas
-fight](ai-gangs.md#boss-diego-vargas).
+`TacticBossScenarioA` (vtable `0x00543440`, stored by `BossDiegoVargasTactic_Init`, confirmed (code)); the fight is
+described in [The Diego and Vargas fight](ai-gangs.md#boss-diego-vargas).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -975,8 +983,9 @@ fight](ai-gangs.md#boss-diego-vargas).
 
 ### BossLizzies (type 0x0b) {#t1-boss-lizzies}
 
-`TacticBossScenarioB` (vtable `0x005434a0`): the Lizzies' shooter (class `0xed`) fires from a fixed post while every
-player wears a target icon. The tactic never ends by itself.
+`TacticBossScenarioB` (vtable `0x005434a0`, stored by `BossLizziesTactic_Init`; the boss class is read in the tactic's
+own functions, confirmed (code)): the Lizzies' shooter (class `0xed`) fires from a fixed post while every player wears a
+target icon. The tactic never ends by itself.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -993,8 +1002,9 @@ player wears a target icon. The tactic never ends by itself.
 
 ### BossMoe (type 0x0c) {#t1-boss-moe}
 
-`TacticBossScenarioC(gang, stage, callback)` (vtable `0x00543500`): Big Mo (class `0x80`) as a BigFighter, his men with
-maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
+`TacticBossScenarioC(gang, stage, callback)` (vtable `0x00543500`, stored by `BossMoeTactic_Init`; the boss class is
+read in the tactic's own functions, confirmed (code)): Big Mo (class `0x80`) as a BigFighter, his men with maces. Stage
+`+0x20` (1-3); `+0x21` marks the last stage done.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1013,8 +1023,9 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### BossRoof (type 0x0d) {#t1-boss-roof}
 
-`TacticBossScenarioD(gang, stage, callback)` (vtable `0x00543560`): two bosses fight as a pair (classes `0xa0` and
-`0xa1`); each changes goal when the other goes down, and they trade lines every 7.5 s.
+`TacticBossScenarioD(gang, stage, callback)` (vtable `0x00543560`, stored by `BossRoofTactic_Init`; the boss class is
+read in the tactic's own functions, confirmed (code)): two bosses fight as a pair (classes `0xa0` and `0xa1`); each
+changes goal when the other goes down, and they trade lines every 7.5 s.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1037,7 +1048,8 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### BossLuther (type 0x0e) {#t1-boss-luther}
 
-`TacticBossScenarioE` (vtable `0x005435c0`): Luther (class `0x4f`) shoots (Shooter goal, `0x8e`); his men melee.
+`TacticBossScenarioE` (vtable `0x005435c0`, stored by `BossLutherTactic_Init`; the boss class is read in the tactic's
+own functions, confirmed (code)): Luther (class `0x4f`) shoots (Shooter goal, `0x8e`); his men melee.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1056,8 +1068,9 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### BossBirdie (type 0x0f) {#t1-boss-birdie}
 
-`TacticBossScenarioF` (vtable `0x00543620`): Birdie (class `0x62`) shoots from up to three positions
-(StationaryShooterB, `0x8f`); his men melee; the Warriors shout at him.
+`TacticBossScenarioF` (vtable `0x00543620`, stored by `BossBirdieTactic_Init`; the boss class is read in the tactic's
+own functions, confirmed (code)): Birdie (class `0x62`) shoots from up to three positions (StationaryShooterB, `0x8f`);
+his men melee; the Warriors shout at him.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1076,8 +1089,9 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### BossVirgil (type 0x10) {#t1-boss-virgil}
 
-`TacticBossScenarioG(gang, stage, flag, callback)` (vtable `0x00543680`): Virgil (class `0xb2`) throws from a ledge
-(stage 1), plays hide and seek (stage 2), then fights (BigFighter).
+`TacticBossScenarioG(gang, stage, flag, callback)` (vtable `0x00543680`, stored by `BossVirgilTactic_Init`; the boss
+class is read in the tactic's own functions, confirmed (code)): Virgil (class `0xb2`) throws from a ledge (stage 1),
+plays hide and seek (stage 2), then fights (BigFighter).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1094,8 +1108,9 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### BossChatterbox (type 0x11) {#t1-boss-chatterbox}
 
-`TacticBossScenarioH(gang, stage, callback)` (vtable `0x005436e0`): the boss of class `0x87` throws from a ledge (stage
-1), then fights (BigFighterA, stage 2).
+`TacticBossScenarioH(gang, stage, callback)` (vtable `0x005436e0`, stored by `BossChatterboxTactic_Init`; the boss class
+is read in the tactic's own functions, confirmed (code)): the boss of class `0x87` throws from a ledge (stage 1), then
+fights (BigFighterA, stage 2).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1112,8 +1127,9 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### Confront (type 0x23) {#t1-confront}
 
-`TacticConfront` (vtable `0x00543740`; constructor `ConfrontTactic_Construct` `0x0030e670`, Start `0x0030ec20`, Process
-`0x0030eec0`): the two gangs face off ([Scripted tactics](ai-gangs.md#tactic-kinds)).
+`TacticConfront` (vtable `0x00543740`, stored by `ConfrontTactic_Construct`, confirmed (code); constructor
+`ConfrontTactic_Construct` `0x0030e670`, Start `0x0030ec20`, Process `0x0030eec0`): the two gangs face off ([Scripted
+tactics](ai-gangs.md#tactic-kinds)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1125,7 +1141,8 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### Crowd (type 0x1b) {#t1-crowd}
 
-`TacticCrowd` (vtable `0x005437a0`): onlookers that watch or cheer; behaviour in [Tactics](ai-gangs.md#tactics).
+`TacticCrowd` (vtable `0x005437a0`, stored by `CrowdTactic_Init`, confirmed (code)): onlookers that watch or cheer;
+behaviour in [Tactics](ai-gangs.md#tactics).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1142,7 +1159,8 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### Defend (type 0x02) {#t1-defend}
 
-`TacticDefend` (vtable `0x00543800`): the gang guards one human in a formation round him and rescues him.
+`TacticDefend` (vtable `0x00543800`, stored by `DefendTactic_Init`, confirmed (code)): the gang guards one human in a
+formation round him and rescues him.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1156,8 +1174,8 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### Domination (type 0x07) {#t1-domination}
 
-`TacticDomination(gang, flag, range, callback)` (vtable `0x00543860`): every member holds a flag's radius
-([HoldFlag](ai-goals.md#goal-hold-flag)).
+`TacticDomination(gang, flag, range, callback)` (vtable `0x00543860`, stored by `DominationTactic_Init`, confirmed
+(code)): every member holds a flag's radius ([HoldFlag](ai-goals.md#goal-hold-flag)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1168,7 +1186,8 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### WarriorFollow (type 0x12) {#t1-warrior-follow}
 
-The follow command's tactic (vtable `0x005438c0`), described in [The default command](ai-gangs.md#warrior-follow).
+The follow command's tactic (vtable `0x005438c0`, stored by `WarriorFollowTactic_Init`, confirmed (code)), described in
+[The default command](ai-gangs.md#warrior-follow).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1182,8 +1201,9 @@ The follow command's tactic (vtable `0x005438c0`), described in [The default com
 
 ### HanginOut (type 0x18) {#t1-hangin-out}
 
-`TacticHanginOut` (vtable `0x00543920`; constructor `HanginOutTactic_Construct` `0x00311ad8`, Start `0x00312348`):
-members hang about a flag ([Scripted tactics](ai-gangs.md#tactic-kinds), [HangOut](ai-goals.md#goal-hang-out)).
+`TacticHanginOut` (vtable `0x00543920`, stored by `HanginOutTactic_Construct`, confirmed (code); constructor
+`HanginOutTactic_Construct` `0x00311ad8`, Start `0x00312348`): members hang about a flag ([Scripted
+tactics](ai-gangs.md#tactic-kinds), [HangOut](ai-goals.md#goal-hang-out)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1201,8 +1221,9 @@ members hang about a flag ([Scripted tactics](ai-gangs.md#tactic-kinds), [HangOu
 
 ### Hide (type 0x13) {#t1-hide}
 
-The hold command's hiding variant (`WarriorHoldTactic2_Create` `0x003128a0`, vtable `0x00543980`), used when the chief
-stands near a hiding flag ([Warrior commands](ai-gangs.md#warrior-commands)): every Warrior hides in shadow.
+The hold command's hiding variant (`WarriorHoldTactic2_Create` `0x003128a0`, vtable `0x00543980` stored by
+`HideTactic_Init`, confirmed (code)), used when the chief stands near a hiding flag ([Warrior
+commands](ai-gangs.md#warrior-commands)): every Warrior hides in shadow.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1216,8 +1237,8 @@ stands near a hiding flag ([Warrior commands](ai-gangs.md#warrior-commands)): ev
 ### Hold (type 0x03) {#t1-hold}
 
 The hold command's standing tactic and the first mission's player-gang tactic (`WarriorHoldTactic_Create` `0x00313400`,
-init `PlayerGangTactic_Init` `0x00313490`, vtable `0x005439e0`): each Warrior holds where he is
-([HoldPosition](ai-goals.md#goal-hold-position)), facing outward.
+init `PlayerGangTactic_Init` `0x00313490`, vtable `0x005439e0` stored by `PlayerGangTactic_Init`, confirmed (code)):
+each Warrior holds where he is ([HoldPosition](ai-goals.md#goal-hold-position)), facing outward.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1231,8 +1252,9 @@ init `PlayerGangTactic_Init` `0x00313490`, vtable `0x005439e0`): each Warrior ho
 
 ### HoldTheLine (type 0x04) {#t1-hold-the-line}
 
-`TacticHoldTheLine` (vtable `0x00543a40`; constructor `HoldTheLineTactic_Construct`): defenders along a line, attackers
-behind it ([Scripted tactics](ai-gangs.md#tactic-kinds)).
+`TacticHoldTheLine` (vtable `0x00543a40`, stored by `HoldTheLineTactic_Construct`, confirmed (code); constructor
+`HoldTheLineTactic_Construct`): defenders along a line, attackers behind it ([Scripted
+tactics](ai-gangs.md#tactic-kinds)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1243,8 +1265,9 @@ behind it ([Scripted tactics](ai-gangs.md#tactic-kinds)).
 
 ### Idle (type 0x24) {#t1-idle}
 
-`TacticIdle` (vtable `0x00543aa0`; constructor `IdleTactic_Construct` `0x003149f0`; its event slot `0x00315228` is in
-the next range): members idle where they stand and banter.
+`TacticIdle` (vtable `0x00543aa0`, stored by `IdleTactic_Construct`, confirmed (code); constructor
+`IdleTactic_Construct` `0x003149f0`; its event slot `0x00315228` is in the next range): members idle where they stand
+and banter.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1267,8 +1290,8 @@ Process and event slots, and the `Tactic<Name>` bindings. How tactics run, the b
 
 ### TacticIdle: the event slot {#t2-idle}
 
-The event slot of TacticIdle (type `0x24`, vtable `0x00543aa0`); the class is described in
-[Tactics](ai-gangs.md#tactic-kinds).
+The event slot of TacticIdle (type `0x24`, vtable `0x00543aa0` stored by `IdleTactic_Construct`, confirmed (code)); the
+class is described in [Tactics](ai-gangs.md#tactic-kinds).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1276,10 +1299,10 @@ The event slot of TacticIdle (type `0x24`, vtable `0x00543aa0`); the class is de
 
 ### TacticInfo (type 0x1f) {#t2-info}
 
-`TacticInfo` (vtable `0x00543b00`): this gang's leader walks up to the other gang's leader and the two trade three
-scripted lines (CRC32 hashes of the line names) with two anims. Field reading: `+0x20` the other gang, `+0x24` / `+0x28`
-the two anim names (interned by the script system `*(0x00512b04)` `+0xcc`), `+0x2c`-`+0x34` the three line hashes,
-`+0x38` the next check, `+0x3c` the range, `+0x40` the exchange state.
+`TacticInfo` (vtable `0x00543b00`, stored by `InfoTactic_Construct`, confirmed (code)): this gang's leader walks up to
+the other gang's leader and the two trade three scripted lines (CRC32 hashes of the line names) with two anims. Field
+reading: `+0x20` the other gang, `+0x24` / `+0x28` the two anim names (interned by the script system `*(0x00512b04)`
+`+0xcc`), `+0x2c`-`+0x34` the three line hashes, `+0x38` the next check, `+0x3c` the range, `+0x40` the exchange state.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1331,7 +1354,8 @@ Classes: [Tactics](ai-gangs.md#tactic-kinds).
 
 ### TacticManWeaponPile (type 0x06) {#t2-man-weapon-pile}
 
-Vtable `0x00543b60`; `+0x20` / `+0x24` the pile arguments, `+0x28` / `+0x2a` two shorts, `+0x2c` the next check.
+Vtable `0x00543b60` (stored by `ManWeaponPileTactic_Construct`, confirmed (code)); `+0x20` / `+0x24` the pile arguments,
+`+0x28` / `+0x2a` two shorts, `+0x2c` the next check.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1343,9 +1367,10 @@ Vtable `0x00543b60`; `+0x20` / `+0x24` the pile arguments, `+0x28` / `+0x2a` two
 
 ### TacticMoveToFlag (type 0x19) {#t2-move-to-flag}
 
-Vtable `0x00543bc0`: the leader walks to a flag and the others follow in his formation, with banter. Fields: `+0x20` the
-flag, `+0x24` the gait, `+0x28` the slot set, `+0x2c` banter, `+0x30` the next banter try, `+0x34` the banter state,
-`+0x38` / `+0x3c` the banter pair, `+0x40` the leader's set before. The banter is [shared](ai-gangs.md#tactic-kinds).
+Vtable `0x00543bc0` (stored by `MoveToFlagTactic_Construct`, confirmed (code)): the leader walks to a flag and the
+others follow in his formation, with banter. Fields: `+0x20` the flag, `+0x24` the gait, `+0x28` the slot set, `+0x2c`
+banter, `+0x30` the next banter try, `+0x34` the banter state, `+0x38` / `+0x3c` the banter pair, `+0x40` the leader's
+set before. The banter is [shared](ai-gangs.md#tactic-kinds).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1392,9 +1417,9 @@ Fields: `+0x20` the flag, `+0x24` the radius, `+0x28` the start angle, `+0x2c` t
 
 ### TacticRiotCop (type 0x05) {#t2-riot-cop}
 
-Vtable `0x00543ce0`: riot police in a formation round a point ([GoalRiot](ai-scripting.md#riot), [RiotCop
-goal](ai-goals.md#goal-riot-cop)). Fields: `+0x20` the point, `+0x30` the next check, `+0x34` the leave time, `+0x38`
-the leader's set before, `+0x3a` armed.
+Vtable `0x00543ce0` (stored by `RiotCopTactic_Construct`, confirmed (code)): riot police in a formation round a point
+([GoalRiot](ai-scripting.md#riot), [RiotCop goal](ai-goals.md#goal-riot-cop)). Fields: `+0x20` the point, `+0x30` the
+next check, `+0x34` the leave time, `+0x38` the leader's set before, `+0x3a` armed.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1407,10 +1432,11 @@ the leader's set before, `+0x3a` armed.
 
 ### WarriorScatter (type 0x25) {#t2-warrior-scatter}
 
-The scatter command's tactic ([Warrior commands](ai-gangs.md#warrior-commands); `WarriorScatterTactic_Create` `0x00319570`,
-vtable `0x00543d40`): each Warrior runs to one of up to six hiding flags (activity `0x21`) near the chief and lies low
-there (Scatter goal `0x37`). Fields: `+0x20` six flags, `+0x38` the radius (75.0), `+0x3c` the flag count, `+0x3d` the
-next flag, `+0x3e` the chief's line playing, `+0x3f` the answer said.
+The scatter command's tactic ([Warrior commands](ai-gangs.md#warrior-commands); `WarriorScatterTactic_Create`
+`0x00319570`, vtable `0x00543d40` stored by `WarriorScatterTactic_Init`, confirmed (code)): each Warrior runs to one of
+up to six hiding flags (activity `0x21`) near the chief and lies low there (Scatter goal `0x37`). Fields: `+0x20` six
+flags, `+0x38` the radius (75.0), `+0x3c` the flag count, `+0x3d` the next flag, `+0x3e` the chief's line playing,
+`+0x3f` the answer said.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1427,8 +1453,9 @@ next flag, `+0x3e` the chief's line playing, `+0x3f` the answer said.
 
 ### TacticScout and TacticPathScout (type 0x27) {#t2-scout}
 
-The rest of the Scout class (vtable `0x00543da0`; [Tactics](ai-gangs.md#tactic-kinds)). Fields of PathScout: `+0x30` up
-to 16 flag indices, `+0x50` / `+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = path scout.
+The rest of the Scout class (vtable `0x00543da0`, stored by `ScoutTactic_Construct` and `PathScoutTactic_Construct`,
+confirmed (code); [Tactics](ai-gangs.md#tactic-kinds)). Fields of PathScout: `+0x30` up to 16 flag indices, `+0x50` /
+`+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = path scout.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1442,10 +1469,10 @@ to 16 flag indices, `+0x50` / `+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = p
 
 ### TacticShadow (type 0x1e) {#t2-shadow}
 
-Vtable `0x00543e00`: the leader shadows another gang (Shadow goal, `ShadowGoal_Init`) with his members in formation
-behind, posing when they face the other leader. Fields: `+0x20` the target gang, `+0x24` the range, `+0x28` / `+0x2c`
-the 250 ms and 1 s checks, `+0x30` the leader's line (interned), `+0x34` / `+0x36` the leader's set before and the slot
-set, `+0x38` stop flag, `+0x3c` camera option, `+0x3d` line said.
+Vtable `0x00543e00` (stored by `ShadowTactic_Construct`, confirmed (code)): the leader shadows another gang (Shadow
+goal, `ShadowGoal_Init`) with his members in formation behind, posing when they face the other leader. Fields: `+0x20`
+the target gang, `+0x24` the range, `+0x28` / `+0x2c` the 250 ms and 1 s checks, `+0x30` the leader's line (interned),
+`+0x34` / `+0x36` the leader's set before and the slot set, `+0x38` stop flag, `+0x3c` camera option, `+0x3d` line said.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1459,7 +1486,8 @@ set, `+0x38` stop flag, `+0x3c` camera option, `+0x3d` line said.
 
 ### TacticStandGround (type 0x22) {#t2-stand-ground}
 
-Vtable `0x00543e60`: every member holds where he stands ([StandGround goal](ai-goals.md#goal-stand-ground)).
+Vtable `0x00543e60` (stored by `StandGroundTactic_Init`, confirmed (code)): every member holds where he stands
+([StandGround goal](ai-goals.md#goal-stand-ground)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1471,7 +1499,8 @@ Vtable `0x00543e60`: every member holds where he stands ([StandGround goal](ai-g
 
 ### TacticSteal (type 0x1d) {#t2-steal}
 
-Vtable `0x00543ec0`; `+0x20` the zone, `+0x24` the delay, `+0x30` `leaderRange`.
+Vtable `0x00543ec0` (stored by `StealTactic_Construct`, confirmed (code)); `+0x20` the zone, `+0x24` the delay, `+0x30`
+`leaderRange`.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1482,9 +1511,10 @@ Vtable `0x00543ec0`; `+0x20` the zone, `+0x24` the delay, `+0x30` `leaderRange`.
 
 ### TacticTaunt (type 0x28) {#t2-taunt}
 
-Vtable `0x00543f20`: the members idle and take turns playing taunt anims until an enemy gang comes in range. Fields:
-`+0x20` up to four taunt anims (default the four of `0x005113a8`), `+0x30` the range, `+0x34` / `+0x38` the 500 ms and
-250 ms checks, `+0x3c` the anim count, `+0x3d` the next member, `+0x3e` the next anim.
+Vtable `0x00543f20` (stored by `TauntTactic_Construct`, confirmed (code)): the members idle and take turns playing taunt
+anims until an enemy gang comes in range. Fields: `+0x20` up to four taunt anims (default the four of `0x005113a8`),
+`+0x30` the range, `+0x34` / `+0x38` the 500 ms and 250 ms checks, `+0x3c` the anim count, `+0x3d` the next member,
+`+0x3e` the next anim.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1529,8 +1559,9 @@ the banter timer, `+0x30` the sight range before, `+0x34` leaving, `+0x38`-`+0x4
 
 ### TacticVandalize (type 0x1c) {#t2-vandalize}
 
-Vtable `0x00544040`. Fields: `+0x20` up to four cars, `+0x30` the zone, `+0x34` the delay, `+0x38` the next check,
-`+0x3c` the last object reported, `+0x40` `leaderRange`, `+0x44` the car count.
+Vtable `0x00544040` (stored by `VandalizeTactic_Construct`, confirmed (code)). Fields: `+0x20` up to four cars, `+0x30`
+the zone, `+0x34` the delay, `+0x38` the next check, `+0x3c` the last object reported, `+0x40` `leaderRange`, `+0x44`
+the car count.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1544,8 +1575,9 @@ Vtable `0x00544040`. Fields: `+0x20` up to four cars, `+0x30` the zone, `+0x34` 
 
 ### TacticWalkinTall (type 0x15) {#t2-walkin-tall}
 
-Vtable `0x005440a0`: the gang walks to a flag in formation, posing when the leader sees an enemy gang's leader. Fields:
-`+0x20` the flag, `+0x24` / `+0x28` the range and its square, `+0x2c` / `+0x30` the 1 s and 250 ms checks.
+Vtable `0x005440a0` (stored by `WalkinTallTactic_Construct`, confirmed (code)): the gang walks to a flag in formation,
+posing when the leader sees an enemy gang's leader. Fields: `+0x20` the flag, `+0x24` / `+0x28` the range and its
+square, `+0x2c` / `+0x30` the 1 s and 250 ms checks.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1558,10 +1590,10 @@ Vtable `0x005440a0`: the gang walks to a flag in formation, posing when the lead
 
 ### TacticWander (type 0x16) {#t2-wander}
 
-Vtable `0x00544100`: the leader wanders (Wander goal) and the members follow at 4 m, with banter and three options: use
-flags (`+0x41`), smash things (`+0x42`), pick things up (`+0x43`). Fields: `+0x20` / `+0x28` the area, `+0x24` the 3 s
-timer, `+0x2c` the gait, `+0x30` / `+0x32` the leader's set before and the slot set, `+0x34`-`+0x3c` banter, `+0x40`
-banter on.
+Vtable `0x00544100` (stored by `WanderTactic_Construct`, confirmed (code)): the leader wanders (Wander goal) and the
+members follow at 4 m, with banter and three options: use flags (`+0x41`), smash things (`+0x42`), pick things up
+(`+0x43`). Fields: `+0x20` / `+0x28` the area, `+0x24` the 3 s timer, `+0x2c` the gait, `+0x30` / `+0x32` the leader's
+set before and the slot set, `+0x34`-`+0x3c` banter, `+0x40` banter on.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1580,8 +1612,9 @@ banter on.
 
 ### WarriorAttack (type 0x01) {#t2-warrior-attack}
 
-The attack command's tactic (vtable `0x00544160`, [Warrior commands](ai-gangs.md#warrior-commands)). Fields: `+0x18` the
-gang has a target, `+0x20` the chief's line playing, `+0x21` the answer said.
+The attack command's tactic (vtable `0x00544160`, stored by `WarriorAttackTactic_Init`, confirmed (code), [Warrior
+commands](ai-gangs.md#warrior-commands)). Fields: `+0x18` the gang has a target, `+0x20` the chief's line playing,
+`+0x21` the answer said.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1594,10 +1627,11 @@ gang has a target, `+0x20` the chief's line playing, `+0x21` the answer said.
 
 ### WarriorSteal (type 0x26) {#t2-warrior-steal}
 
-The steal / wreck command's tactic (`WarriorStealTactic_Create` `0x00320b60`, vtable `0x005441c0`). Near a store flag
-(activity `0xe`, within 12 m and reachable) its zone's objects are clustered and the Warriors steal from it; with none
-they wreck what is near (WarriorVandalSteal goal `0x83`). Fields: `+0x20` the store flag, `+0x24` the 2 s check, `+0x28`
-the zone (−1 none), `+0x2a` the chief's line playing, `+0x2b` the answer said.
+The steal / wreck command's tactic (`WarriorStealTactic_Create` `0x00320b60`, vtable `0x005441c0` stored by
+`WarriorStealTactic_Init`, confirmed (code)). Near a store flag (activity `0xe`, within 12 m and reachable) its zone's
+objects are clustered and the Warriors steal from it; with none they wreck what is near (WarriorVandalSteal goal
+`0x83`). Fields: `+0x20` the store flag, `+0x24` the 2 s check, `+0x28` the zone (−1 none), `+0x2a` the chief's line
+playing, `+0x2b` the answer said.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1696,3 +1730,26 @@ stance, `0x2a7`/`0x2a8` out of it), and the order goes out when his line ends. T
 | `0x00323060` | `ThrowSubTactic_Start` | Start | without the option the count is every living member | confirmed (code) |
 | `0x003230a0` | `ThrowSubTactic_End` | End | pops every member's ObjectPile goal | confirmed (code) |
 | `0x00323160` | `ThrowSubTactic_Process` | Process | the leader says `throw` (10) with a gesture; after the line, orders once | confirmed (code) |
+
+## Data
+
+The records these functions work on are described on the pages that own them: the brain record on
+[AI humans: the brain](ai.md#brain), the gang and spawner records on [Gangs](ai-gangs.md#gangs), the tactic base fields
+on [Tactics](ai-gangs.md#tactics). The pools and tables this index names (formations, queues, sectors, the strategy pool)
+carry their size and evidence where they are listed; each tactic's own fields are in its section above.
+
+## Behaviour
+
+This page is an index; what the code does is on [AI humans](ai.md) and the pages it links, each section above pointing
+to the one that covers it.
+
+## Coney's implementation
+
+The AI is in `repo:src/ai/`, each original function tagged with `@orig`; what Coney does differently is on
+[AI humans: Coney's implementation](ai.md#coney) and, for the gangs and tactics, on
+[Gangs: Coney's implementation](ai-gangs.md#coneys-implementation).
+
+## Open questions
+
+Each open point sits with its subject above (the WarriorSteal stand-ins in [WarriorSteal](#t2-warrior-steal)); the
+AI's open questions are on [AI humans](ai.md#open-questions).
