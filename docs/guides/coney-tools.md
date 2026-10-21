@@ -1173,7 +1173,8 @@ queue entry carries `--agent` (default: `CONEY_AGENT`, else the worktree's folde
 and most 40, inside an agent's prompt cache) bound the wait; a gate that gives up skips clang-tidy, runs the other steps
 and exits 75 unless one of them failed. `--detach` runs the whole gate in the background, apart from the shell (default
 wait 240 minutes), and returns at once; `check result` prints its output and exits with its code (75 while it runs, as
-`build result` does). `--no-cache` tidies every file again.
+`build result` does, and 1 when its process is gone; "still running" is judged as for `build result`, by the pid and
+when that process started). `--no-cache` tidies every file again.
 
 **Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
 default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The

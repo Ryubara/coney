@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import build_cli, check_cli, local_gate, pcsx2_proc
+from coney_tools import build_cli, check_cli, local_gate, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, TIDY_LANE, Slots, SlotTimeout
 from coney_tools.check_cli import TidyGate
 from coney_tools.cli import _build_parser, main
@@ -220,11 +220,15 @@ def test_check_result_reports_a_finished_run(
     )
     assert main(["check", "result"]) == 0
     assert "3 cached" in capsys.readouterr().out
-    build_cli._write_record(
-        folder / check_cli.RESULT_FILE, {"state": "running", "agent": "a", "pid": 1, "started": 0.0, "log": ""}
-    )
+    running = {"state": "running", "agent": "a", "pid": 1, "process_started": 100.0, "started": 0.0, "log": ""}
+    build_cli._write_record(folder / check_cli.RESULT_FILE, running)
     monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda _pid: True)
+    monkeypatch.setattr(process_lifetime, "process_started", lambda _pid: 100.0)
     assert main(["check", "result"]) == 75
+    # The pid now belongs to a process that started an hour later: the gate is gone, not still running.
+    monkeypatch.setattr(process_lifetime, "process_started", lambda _pid: 3700.0)
+    assert main(["check", "result"]) == 1
+    assert "ended without a result" in capsys.readouterr().out
 
 
 def test_a_file_edited_during_its_run_is_not_stored_as_clean(

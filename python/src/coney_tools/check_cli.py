@@ -570,7 +570,7 @@ def _start_detached(args: argparse.Namespace) -> int:
     folder = _scratch_folder(root)
     result = folder / RESULT_FILE
     previous = build_cli._read_record(result)
-    if previous is not None and previous.get("state") == "running" and build_cli._alive(previous.get("pid")):
+    if previous is not None and previous.get("state") == "running" and build_cli._alive(previous):
         raise ConfigError(
             f"a detached check of {previous.get('agent')} is still running (pid {previous.get('pid')}): "
             "`coney-tools check result` shows how it ends"
@@ -593,6 +593,8 @@ def _detached_child(args: argparse.Namespace, plain: tuple[object, ...], options
         "state": "running",
         "agent": args.agent,
         "pid": os.getpid(),
+        # When this process started, so a later process given the same pid is not taken for this run (build_cli._alive).
+        "process_started": process_lifetime.process_started(os.getpid()),
         "log": str(args.result_file.parent / DETACHED_OUTPUT),
         "started": time.time(),
     }
@@ -630,7 +632,7 @@ def run_result(directory: Path) -> int:
     except OSError:
         print(f"(no output in {output} yet)")
     if record.get("state") == "running":
-        if build_cli._alive(record.get("pid")):
+        if build_cli._alive(record):
             print(f"still running (pid {record.get('pid')}): look again later")
             return EXIT_QUEUED
         print(f"ended without a result (pid {record.get('pid')} is gone)")
