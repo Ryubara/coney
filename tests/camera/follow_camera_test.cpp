@@ -582,10 +582,10 @@ TEST_CASE("the follow camera's aim point leads less in a grab and lags more for 
 
 TEST_CASE("in a long straight fall the aim point's lag climbs past 0.18 and keeps it under 5 m above the look-at point",
           "[camera]") {
-    // The fall_high trace (docs/research/camera.md#long-fall): the player falls straight down at 35 m/s (1.167 m an
-    // update) for 70 updates from rest, the stick his. The lag's across test and its 2.5 × read the 3D velocity, so the
-    // lag climbs toward about 0.21 (0.188 at step 72) and the aim point trails 4.7 m above the look-at point; built
-    // from the horizontal speed alone it stayed 0.06 and the aim point trailed about 18 m above.
+    // The fall_high trace (docs/research/camera.md#long-fall): the player falls straight down from rest, gaining
+    // 0.52 m/s an update up to 35 m/s, for 70 updates, the stick his. The lag's across test and its 2.5 × read the 3D
+    // velocity, so the lag climbs to about 0.19 and the aim point trails 4.7 m above the look-at point, as in the
+    // original; built from the horizontal speed alone it stayed 0.06 and the aim point trailed about 18 m above.
     FollowCamera camera(Vec3{0.0F, 0.0F, 100.0F}, 0.0F);
     FollowTarget target = standing(Vec3{0.0F, 0.0F, 100.0F});
     target.walkSpeed = 1.6F;
@@ -596,10 +596,12 @@ TEST_CASE("in a long straight fall the aim point's lag climbs past 0.18 and keep
     }
     REQUIRE(camera.aimLag() == Approx(FollowCamera::kAimLag));
     constexpr float kFall = 35.0F;
-    target.velocity = Vec3{0.0F, 0.0F, -kFall};
+    constexpr float kGain = 0.52F; // m/s an update, read from the trace
     float highest = 0.0F;
     for (int i = 0; i < 70; ++i) {
-        target.feet.z -= kFall * kStep;
+        const float speed = std::min(kFall, kGain * static_cast<float>(i + 1));
+        target.velocity = Vec3{0.0F, 0.0F, -speed};
+        target.feet.z -= speed * kStep;
         camera.update(target, kRest, kRest, nullptr, kStep);
         highest = std::max(highest, camera.aimPoint().z - camera.lookAt().z);
     }

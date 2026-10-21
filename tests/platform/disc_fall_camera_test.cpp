@@ -35,10 +35,23 @@ constexpr float kStartX = 75.155F;
 constexpr float kStartY = 41.1354F;
 constexpr float kStartHeading = 91.909F;
 constexpr float kRise = 40.0F;
-// Updates of play before the teleport (checkpoint 3 opens with Vermin's fence lesson, which holds the pad for about
-// 9 s), and the updates of the fall looked at (the trace's 71 in the air).
-constexpr std::uint64_t kSettle = 300;
+// The updates of play allowed for a camera to come back (checkpoint 3 opens with a scene, then Vermin's fence
+// lesson; the street end has a locked camera of its own), the updates the follow camera then settles, and the
+// updates of the fall looked at (the trace's 71 in the air).
+constexpr int kCameraWait = 3000;
+constexpr int kFollowSettle = 150;
 constexpr int kFallUpdates = 70;
+
+// Runs `run` until the follow camera is the current camera, `first` updates at least, at most kCameraWait.
+bool runUntilFollow(coney::test::DiscSession& run, const coney::camera::Cameras& cameras, int first) {
+    for (int k = 0; k < kCameraWait; k += 10) {
+        run.run(10);
+        if (k + 10 >= first && cameras.current().kind == coney::camera::CameraKind::Follow) {
+            return true;
+        }
+    }
+    return false;
+}
 
 } // namespace
 
@@ -51,19 +64,24 @@ TEST_CASE("the disc's level99: in a 40 m fall the follow camera's aim point stay
     coney::test::DiscSession run(*wad, "");
     run.session().startAtLevel("level99", 3);
     REQUIRE(run.runUntilPlay());
-    run.run(kSettle);
     coney::platform::PlayLevelMode* play = run.session().play();
     REQUIRE(play != nullptr);
     coney::camera::Cameras* cameras = run.session().gameplay().cameras();
     REQUIRE(cameras != nullptr);
     const coney::camera::FollowCamera* follow = cameras->follow();
     REQUIRE(follow != nullptr);
+    // The checkpoint's opening scene hands the view back to the follow camera.
+    REQUIRE(runUntilFollow(run, *cameras, 0));
 
-    // Put him on the ground at the trace's spot first, so the camera settles behind him, then 40 m above it.
+    // Put him on the ground at the trace's spot first, so the camera settles behind him, then 40 m above it. The
+    // street end's locked camera takes the view for a while; the follow camera must have it back and settled, or the
+    // fall would measure a camera that is not running.
     const float ground = play->playerFeet().z;
     play->teleport(
         coney::debug::Place{.name = "street end", .feet = {kStartX, kStartY, ground}, .headingDegrees = kStartHeading});
-    run.run(60);
+    REQUIRE(runUntilFollow(run, *cameras, 60));
+    run.run(kFollowSettle);
+    REQUIRE(cameras->current().kind == coney::camera::CameraKind::Follow);
     const coney::anim::Vec3 feet = play->playerFeet();
     play->teleport(coney::debug::Place{
         .name = "40 m up", .feet = {feet.x, feet.y, feet.z + kRise}, .headingDegrees = kStartHeading});
