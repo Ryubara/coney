@@ -213,19 +213,21 @@ inherits `cacheable`, which also turns precompiled headers off, as a cache canno
 `coney-tools build` compiles through [ccache](https://ccache.dev), the cache CI uses, with one cache for the whole
 machine. Every agent's worktree is a fresh checkout of nearly the same sources, so without it each one compiled the
 whole engine, its thousand test files and the dependencies again; with it, the first build of a fresh worktree takes
-the objects another worktree already compiled. Measured on 2026-10-20 (Windows, MSVC, 16 cores, `dev` at `-j 3` with
-the other four slots building):
+the objects another worktree already compiled. Measured on 2026-10-20 (Windows, MSVC 19.44, 16 cores, `dev` at
+`-j 3`, other agents' builds in the remaining slots; each row a fresh build folder, its logs kept with the track's
+scratch files):
 
-| `dev` build of a fresh folder | Build step | Cache |
+| `dev` build of a fresh folder, same commit | Build step | Cache |
 | --- | --- | --- |
-| No cache, as before (the last five `dev` builds in `durations.json`) | 16.8 to 17.9 min | none |
-| Empty cache, worktree A | 13.5 min | 1,220 misses, 265 uncacheable (SDL3's precompiled header) |
-| Worktree B, same sources, before the two fixes below | 11.0 min | 806 hits, 414 misses (66 %) |
-| Worktree B, same sources, with them | 3.8 min | 1,466 hits, 18 misses (98.8 %) |
+| Cache disabled (`--env CCACHE_DISABLE=1`), worktree A | 10.9 min | none |
+| Empty cache, worktree B, at the same time | 12.8 min | 0 hits, 1,511 misses |
+| Worktree A again, after it | 2.1 min | 1,492 hits, 19 misses (98.7 %) |
+| Worktree B, `--target coney` in `build/play` | 47 s | 978 hits, 0 misses |
 
-The cache held 0.6 GB after one `dev` build and 1 GB after the runs above, so the 25 GB cap keeps many presets and
-branches. What is left of a cached build is mostly CMake's C++ module scanning (1,215 of its 1,594 CPU-seconds),
-which ccache does not cache.
+The first build fills the cache at a small cost over none; every later fresh folder of nearly the same sources takes
+it back. One `dev` build's objects are 0.6 GB in the cache, so the 25 GB cap keeps many presets and branches. What
+was left of the cached build was mostly CMake's C++ module scanning (733 of its 935 step-seconds, summed from
+`.ninja_log`), which ccache does not cache.
 
 - **Install it.** Windows: `coney-tools workspace init --fetch ccache` puts ccache 4.14.1 (the release CI's Windows
   job uses, checked by SHA-256) in `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
@@ -245,12 +247,22 @@ which ccache does not cache.
   absolute paths in a command line relative to the build folder, and the same source in two worktrees is one command
   line and one cache entry; `CCACHE_NOHASHDIR` keeps the build folder's own path out of the hash. ccache does not
   rewrite a path inside a compile definition, so **no target may get a definition holding a checkout path**: the
-  test target's `CONEY_ASSETS_DIR` and `CONEY_TEST_SUPPORT_DIR` made all 413 test objects miss in a second worktree
-  (the 66 % row). They now reach the tests through one file, `tests/support/test_paths.cpp`
+  test target's `CONEY_ASSETS_DIR` and `CONEY_TEST_SUPPORT_DIR` made every test object miss in a second worktree.
+  They now reach the tests through one file, `tests/support/test_paths.cpp`
   (`coney::test::assetsDir()`, `testSupportDir()`), and a Python test refuses such a definition on a target.
-- **Precompiled headers are off in every preset.** ccache cannot use them, and SDL3's made its 265 sources uncacheable
-  on every build. They are cheap without it: 37 CPU-seconds with the header, 152 the one time they compile without it,
-  next to nothing once cached. So `dev` and `release` inherit the hidden `cacheable` preset as `ci` and `asan` do.
+- **Precompiled headers are off in every preset.** ccache cannot use them, so SDL3's made its sources uncacheable on
+  every build (ccache counts them as `could_not_use_precompiled_header`). So `dev` and `release` inherit the hidden
+  `cacheable` preset as `ci` and `asan` do.
+- **What a hit carries.** A hit is the object another worktree compiled, with that worktree's absolute paths in it:
+  in its debug information (a debugger may open the source file in the other worktree) and in what `__FILE__` expanded
+  to (`CONEY_ASSERT` messages may name the other worktree). ccache's manual names `__FILE__` among the things such
+  sharing gets wrong, so no code may use `__FILE__` to find files: the tests use `coney::test::testSupportDir()`.
+- **ccache's path in a folder.** CMake writes the launcher's absolute path into the folder's `CMakeCache.txt` at the
+  first configure. A ccache moved or replaced by another version in another folder breaks the folders configured
+  with the old one (the compile cannot start the launcher): keep the old `tools/ccache-<version>` until they are
+  deleted, or delete those folders.
+- **Version.** ccache 4.10 or newer gives a run its own hits (`--print-log-stats`); with an older one the build still
+  uses the cache and the summary says `hits unavailable`.
 - **The report.** Each run gives ccache a stats log of its own (`CCACHE_STATSLOG`, beside the run's log), so the
   summary's `compiler cache: H hits, M misses (P %), U uncacheable` is that build's alone, although other builds use
   the cache at the same time.

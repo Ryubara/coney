@@ -164,7 +164,7 @@ instead of repeating it:
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - disk: it creates `.coney-busy` in its worktree as it starts and deletes it when it finishes, and before reporting a
   unit finished it deletes its own `build/` folder; a build is about 6 GB per preset, and with the shared
-  [compiler cache](building.md#compiler-cache) a fresh one takes about 4 minutes, not 18
+  [compiler cache](building.md#compiler-cache) a fresh one builds in about 2 minutes, not 11
   ([Cleanup](workspace.md#cleanup));
 - builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
   tests](#builds)); the brief does not paste the flags;

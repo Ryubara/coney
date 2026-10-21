@@ -206,12 +206,12 @@ worktree when its branch is merged: `coney-tools workspace clean` does it for yo
 
 ## Cleanup and free space {#cleanup}
 
-A build of the engine is about 6 GB per preset (`build/dev` measured 6.3 GB on 2026-10-20, with `/Z7` objects) and
-each track has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and
-broke builds. Two commands keep that from happening; run them from the main checkout or any worktree.
+A build of the engine is about 6 GB per preset (`build/dev` measured 6.4 GB on 2026-10-20, with `/Z7` objects) and each
+track has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke
+builds. Two commands keep that from happening; run them from the main checkout or any worktree.
 
 Deleting a `build/` folder is cheap since the shared [compiler cache](building.md#compiler-cache): a fresh `dev`
-folder of the same sources builds in about 4 minutes from the cache (98.8 % hits) instead of about 18, so the rules
+folder of the same sources builds in about 2 minutes from the cache (98.7 % hits) instead of about 11, so the rules
 below still delete idle folders and agents still delete their own when they finish a unit. The cache itself, in
 `cache/ccache`, is never deleted by `clean`: it keeps itself under `ccache_size_gb` (25 GB), which the drive's
 30 GB floor allows for.
