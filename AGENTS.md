@@ -23,8 +23,10 @@ first hour; the rest of this file is for agents.
 
 ## Build and test
 
-- Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` (presets `dev`, `release`,
-  `ci`, `asan`); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools.md#build).
+- Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` (presets `dev`, `playtest`,
+  `release`, `ci`, `ci-release`, `asan`; `release` is the game alone, without the debug tools:
+  `docs/guides/building.md#debug-tools`); a hook refuses raw `cmake --build`, `ctest`, `ninja`:
+  [`build`](docs/guides/coney-tools.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`; `coney-tools docs check`. Details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate; fix failures forward.

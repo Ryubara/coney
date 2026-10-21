@@ -452,52 +452,54 @@ add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_co
                              net/loopback_transport.cpp net/net_client.cpp net/net_server.cpp net/protocol.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)
-# The debug tools' platform-neutral half, apart from the game's libraries so the release build can leave them out
-# (docs/guides/building.md#debug-tools): the debug menus' model and pages (docs/guides/debug-menu.md), the pad menu's
-# renderer and its bitmap font, the sandbox's test worlds (docs/guides/sandbox.md) and the sheet and text viewers.
-add_library(
-    coney_debug STATIC
-    debug/anim_catalog.cpp
-    debug/anim_id_names.cpp
-    debug/combat_tunables.cpp
-    debug/debug_lines.cpp
-    debug/debug_session.cpp
-    debug/entity_inspect.cpp
-    debug/fighter_spawn.cpp
-    debug/game_tunables.cpp
-    debug/human_shapes.cpp
-    debug/human_watch.cpp
-    debug/input_gate.cpp
-    debug/lua_console.cpp
-    debug/menu_model.cpp
-    debug/menu_navigator.cpp
-    debug/native_caller.cpp
-    debug/native_signatures.cpp
-    debug/object_watch.cpp
-    debug/pad_menu_input.cpp
-    debug/pages_anim.cpp
-    debug/pages_engine.cpp
-    debug/pages_entity.cpp
-    debug/pages_hud.cpp
-    debug/pages_movies.cpp
-    debug/pages_net.cpp
-    debug/pages_play.cpp
-    debug/pages_scripts.cpp
-    debug/pages_time.cpp
-    debug/story_missions.cpp
-    debug/time_control.cpp
-    debug/time_series.cpp
-    debug/tunables.cpp
-    debug/ui_scale.cpp
-    gamemodes/sheet_viewer_mode.cpp
-    gamemodes/text_viewer_mode.cpp
-    graphics/bitmap_font.cpp
-    gui/debug_menu_view.cpp
-    gui/debug_text_painter.cpp
-    sandbox/sandbox_layout.cpp
-    sandbox/sandbox_lighting.cpp
-    sandbox/sandbox_mesh.cpp
-    sandbox/sandbox_world.cpp)
-coney_target_defaults(coney_debug)
-target_link_libraries(coney_debug PUBLIC coney_core)
+if(CONEY_DEBUG_TOOLS)
+    # The debug tools' platform-neutral half, apart from the game's libraries so the release build can leave them out
+    # (docs/guides/building.md#debug-tools): the debug menus' model and pages (docs/guides/debug-menu.md), the pad menu's
+    # renderer and its bitmap font, the sandbox's test worlds (docs/guides/sandbox.md) and the sheet and text viewers.
+    add_library(
+        coney_debug STATIC
+        debug/anim_catalog.cpp
+        debug/anim_id_names.cpp
+        debug/combat_tunables.cpp
+        debug/debug_lines.cpp
+        debug/debug_session.cpp
+        debug/entity_inspect.cpp
+        debug/fighter_spawn.cpp
+        debug/game_tunables.cpp
+        debug/human_shapes.cpp
+        debug/human_watch.cpp
+        debug/input_gate.cpp
+        debug/lua_console.cpp
+        debug/menu_model.cpp
+        debug/menu_navigator.cpp
+        debug/native_caller.cpp
+        debug/native_signatures.cpp
+        debug/object_watch.cpp
+        debug/pad_menu_input.cpp
+        debug/pages_anim.cpp
+        debug/pages_engine.cpp
+        debug/pages_entity.cpp
+        debug/pages_hud.cpp
+        debug/pages_movies.cpp
+        debug/pages_net.cpp
+        debug/pages_play.cpp
+        debug/pages_scripts.cpp
+        debug/pages_time.cpp
+        debug/story_missions.cpp
+        debug/time_control.cpp
+        debug/time_series.cpp
+        debug/tunables.cpp
+        debug/ui_scale.cpp
+        gamemodes/sheet_viewer_mode.cpp
+        gamemodes/text_viewer_mode.cpp
+        graphics/bitmap_font.cpp
+        gui/debug_menu_view.cpp
+        gui/debug_text_painter.cpp
+        sandbox/sandbox_layout.cpp
+        sandbox/sandbox_lighting.cpp
+        sandbox/sandbox_mesh.cpp
+        sandbox/sandbox_world.cpp)
+    coney_target_defaults(coney_debug)
+    target_link_libraries(coney_debug PUBLIC coney_core)
+endif()
 add_subdirectory(platform)

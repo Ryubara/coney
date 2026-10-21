@@ -340,12 +340,33 @@ inline constexpr std::string_view kSandboxLevelPrefix = "sandbox";
 /// Largest accepted `--frames` value: about 4.6 hours at 60 Hz, far beyond any test, and well inside `int`.
 inline constexpr int kMaxFrameLimit = 1'000'000;
 
-/// Parses the arguments after the program name. Never throws; a bad argument gives ErrorCode::InvalidArgument with
-/// a one-line message naming the argument.
-[[nodiscard]] std::expected<Options, Error> parseOptions(std::span<const std::string_view> args);
+/// Which options a build takes (docs/guides/building.md#debug-tools): every one in a build with the debug tools, a
+/// player's alone in the release build.
+enum class OptionSet : std::uint8_t {
+    All,    ///< Every option: the developers' and agents' tools as well as a player's.
+    Player, ///< A player's options and the three of test mode the release build's smoke tests use.
+};
+
+/// The options the release build takes, as typed (`--disc`): a player's (the disc, the language, the profiles, the
+/// frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window) and test mode's
+/// `--headless`, `--frames` and `--input-script`, which its smoke tests need.
+[[nodiscard]] std::span<const std::string_view> playerOptions();
+
+/// Whether `option` (as typed, `--disc`) is one of playerOptions().
+[[nodiscard]] bool isPlayerOption(std::string_view option);
+
+/// Parses the arguments after the program name, taking the options of `set`. Never throws; a bad argument gives
+/// ErrorCode::InvalidArgument with a one-line message naming the argument, and an option outside `set` says it needs
+/// a build with the debug tools.
+[[nodiscard]] std::expected<Options, Error> parseOptions(std::span<const std::string_view> args,
+                                                         OptionSet set = OptionSet::All);
 
 /// The usage text printed for `--help` and after an argument error. It ends with a newline. Print it by its size
 /// (`%.*s` or fwrite), as with any string_view: callers must not rely on data() being null-terminated.
 [[nodiscard]] std::string_view usageText();
+
+/// The usage text of the options of `set`: usageText() for OptionSet::All; for OptionSet::Player its synopsis of a
+/// player's options and their lines alone. It ends with a newline.
+[[nodiscard]] std::string usageText(OptionSet set);
 
 } // namespace coney

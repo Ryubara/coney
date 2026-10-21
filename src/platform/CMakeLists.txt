@@ -42,6 +42,8 @@ target_sources(coney_platform PRIVATE error_dialogs.cpp)
 target_sources(coney_platform PRIVATE game_session.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
+# What both entry points (main_release.cpp and main.cpp) set up the same way (docs/guides/building.md#debug-tools).
+target_sources(coney_platform PRIVATE game_run.cpp)
 # Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
 # themselves are coney_net (docs/guides/multiplayer.md).
 target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
@@ -51,39 +53,81 @@ coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net SDL3::SDL3-static librw::librw)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 
-# The debug tools' platform half (docs/guides/building.md#debug-tools), the only target that links Dear ImGui: the
-# debug menus' glue, the pad menu drawn over every frame (docs/guides/debug-menu.md); the developer overlay over the
-# same menus (docs/guides/debug-menu.md#the-developer-overlay); the menus' controls of the play mode with its Entity
-# inspector, Animation player, Debug draw lines and Spawner; the sandbox as the play mode's scenery and its renderer
-# (docs/guides/sandbox.md); the texture, character and sandbox viewers; the reference images of characters and objects
-# (docs/guides/running.md#reference-images); and `--bench`, the scripted benchmark run that spawns fighters through the
-# debug menus' controls (docs/guides/performance.md).
-add_library(
-    coney_devtools STATIC
-    character_viewer_mode.cpp
-    debug_menus.cpp
-    game_session_debug.cpp
-    imgui_model_view.cpp
-    imgui_overlay.cpp
-    imgui_ui_scale.cpp
-    perf_bench.cpp
-    play_level_anim.cpp
-    play_level_controls.cpp
-    play_level_inspect.cpp
-    reference_renderer.cpp
-    sandbox_play_scenery.cpp
-    sandbox_renderer.cpp
-    sandbox_viewer_mode.cpp
-    texture_viewer_mode.cpp)
-coney_target_defaults(coney_devtools)
-target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)
+# The executables (docs/guides/building.md#debug-tools). With the debug tools, `coney` is main.cpp over them, and
+# `coney_release` is the release build's entry point built beside it, so every build with the tools also links the
+# game without them. Without them (the release build), `coney` is the release build's entry point alone.
+if(CONEY_DEBUG_TOOLS)
+    # The debug tools' platform half (docs/guides/building.md#debug-tools), the only target that links Dear ImGui: the
+    # debug menus' glue, the pad menu drawn over every frame (docs/guides/debug-menu.md); the developer overlay over the
+    # same menus (docs/guides/debug-menu.md#the-developer-overlay); the menus' controls of the play mode with its Entity
+    # inspector, Animation player, Debug draw lines and Spawner; the sandbox as the play mode's scenery and its renderer
+    # (docs/guides/sandbox.md); the texture, character and sandbox viewers; the reference images of characters and objects
+    # (docs/guides/running.md#reference-images); and `--bench`, the scripted benchmark run that spawns fighters through
+    # the debug menus' controls (docs/guides/performance.md).
+    add_library(
+        coney_devtools STATIC
+        character_viewer_mode.cpp
+        debug_menus.cpp
+        game_session_debug.cpp
+        imgui_model_view.cpp
+        imgui_overlay.cpp
+        imgui_ui_scale.cpp
+        perf_bench.cpp
+        play_level_anim.cpp
+        play_level_controls.cpp
+        play_level_inspect.cpp
+        reference_renderer.cpp
+        sandbox_play_scenery.cpp
+        sandbox_renderer.cpp
+        sandbox_viewer_mode.cpp
+        texture_viewer_mode.cpp)
+    coney_target_defaults(coney_devtools)
+    target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)
 
-add_executable(coney main.cpp)
-coney_target_defaults(coney)
-target_link_libraries(coney PRIVATE coney_platform coney_devtools)
-# The build type a `--bench` report names (docs/guides/performance.md): Debug, RelWithDebInfo, Release.
-target_compile_definitions(coney PRIVATE CONEY_BUILD_TYPE="$<CONFIG>")
+    add_executable(coney main.cpp)
+    coney_target_defaults(coney)
+    target_link_libraries(coney PRIVATE coney_platform coney_devtools)
+    # The build type a `--bench` report names (docs/guides/performance.md): Debug, RelWithDebInfo, Release.
+    target_compile_definitions(coney PRIVATE CONEY_BUILD_TYPE="$<CONFIG>")
+    add_executable(coney_release main_release.cpp)
+    coney_target_defaults(coney_release)
+    target_link_libraries(coney_release PRIVATE coney_platform)
+    set(_coney_release_exe coney_release)
+else()
+    add_executable(coney main_release.cpp)
+    coney_target_defaults(coney)
+    target_link_libraries(coney PRIVATE coney_platform)
+    set(_coney_release_exe coney)
+endif()
 
+# The release build's smoke tests, on its entry point in every build: it starts and stops headless, prints a player's
+# options, refuses a developer's by name, plays a synthetic input script, and holds none of the debug tools (the
+# debug pages' titles and Dear ImGui's settings file are not in the executable).
+add_test(NAME coney.release.runs_headless COMMAND ${_coney_release_exe} --headless --frames 3)
+set_tests_properties(coney.release.runs_headless PROPERTIES TIMEOUT 30)
+add_test(NAME coney.release.help COMMAND ${_coney_release_exe} --help)
+set_tests_properties(coney.release.help PROPERTIES PASS_REGULAR_EXPRESSION "--skip-movies" FAIL_REGULAR_EXPRESSION
+                                                   "--play-level|--sandbox|--tunables")
+add_test(NAME coney.release.refuses_developer_option COMMAND ${_coney_release_exe} --headless --frames 1 --play-level
+                                                                level99)
+set_tests_properties(coney.release.refuses_developer_option PROPERTIES PASS_REGULAR_EXPRESSION
+                                                                       "--play-level is a developer's option")
+add_test(NAME coney.release.plays_input_script
+         COMMAND ${_coney_release_exe} --headless --frames 10 --input-script
+                 "${PROJECT_SOURCE_DIR}/tests/support/menu_input.txt")
+set_tests_properties(coney.release.plays_input_script PROPERTIES TIMEOUT 30)
+add_test(NAME coney.release.has_no_debug_tools
+         COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -DEXPECT=absent -P
+                 "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")
+if(CONEY_DEBUG_TOOLS)
+    # The same check on the debug tools' `coney` finds the markers, so the check above cannot pass by finding nothing.
+    add_test(NAME coney.debug_tools_markers_found
+             COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:coney> -DEXPECT=present -P
+                     "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")
+endif()
+
+# The debug tools' smoke tests, on their `coney`; the block is not indented, as the list is long and often added to.
+if(CONEY_DEBUG_TOOLS)
 # Headless smoke tests: the NULL renderer needs no display or GPU, so these run on CI and in a future test harness.
 add_test(NAME coney.runs_headless COMMAND coney --headless --frames 3)
 set_tests_properties(coney.runs_headless PROPERTIES TIMEOUT 30)
@@ -242,3 +286,4 @@ add_test(NAME coney.host_and_join_refused COMMAND coney --headless --frames 3 --
 set_tests_properties(coney.host_and_join_refused PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.bad_net_name_refused COMMAND coney --headless --frames 3 --net-name 0123456789012345678901234567890123)
 set_tests_properties(coney.bad_net_name_refused PROPERTIES WILL_FAIL TRUE)
+endif()

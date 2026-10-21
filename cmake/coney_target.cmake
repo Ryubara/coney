@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 option(CONEY_WARNINGS_AS_ERRORS "Fail the build on any compiler warning (CI turns this on)" OFF)
 option(CONEY_SANITIZERS "Build Coney's own targets with ASan and UBSan (GCC and Clang only)" OFF)
+# The debug tools (docs/guides/building.md#debug-tools): the debug menus, the developer overlay and Dear ImGui, the
+# viewers, the sandbox and the developer's command-line options. Off is the release build a player gets: the game alone,
+# which does not even fetch Dear ImGui.
+option(CONEY_DEBUG_TOOLS "Build the debug tools (off: the release build, the game alone)" ON)
 
 # Settings every Coney target gets. Applied per target, never globally, so dependencies keep their own flags.
 function(coney_target_defaults target)

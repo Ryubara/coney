@@ -14,7 +14,11 @@ set(CONEY_DEPS_SOURCES "$ENV{CONEY_DEPS_SOURCES}" CACHE PATH "Folder that keeps 
 # changed here neither re-fetches nor moves the folder. Each dependency's stamp holds it.
 file(STRINGS "${CMAKE_CURRENT_LIST_FILE}" _coney_pins REGEX "^[^#]*(GIT_REPOSITORY|GIT_TAG|URL|PATCH_COMMAND)")
 string(SHA256 _coney_deps_hash "${_coney_pins}")
-set(_coney_deps SDL3 librw Catch2 imgui enet ffmpeg)
+# Dear ImGui only with the debug tools (docs/guides/building.md#debug-tools): the release build fetches and builds none.
+set(_coney_deps SDL3 librw Catch2 enet ffmpeg)
+if(CONEY_DEBUG_TOOLS)
+    list(APPEND _coney_deps imgui)
+endif()
 # The sources of this version live in <CONEY_DEPS_SOURCES>/<first 16 hex digits of the version>, worked out on every
 # configure, never kept in the cache: a folder configured before a pin changed moves to the new version's folder at
 # its next configure instead of fetching the new pins into the old one under other worktrees' builds. Old versions'
@@ -100,8 +104,10 @@ FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.gi
 # Dear ImGui v1.92.9b (a lightweight tag, so the commit is the tag's own), MIT licence. The developer overlay of the
 # debug menus (docs/guides/debug-menu.md), used only in src/platform/. It ships no CMake build, so the library is
 # made below from its core, its std::string helpers and the SDL3 and OpenGL 3 backends.
-FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
-                           GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab ${_coney_imgui_where} SYSTEM)
+if(CONEY_DEBUG_TOOLS)
+    FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
+                               GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab ${_coney_imgui_where} SYSTEM)
+endif()
 
 # ENet v1.3.18 (a lightweight tag, so the commit is the tag's own), MIT licence: the UDP transport of network play
 # (docs/guides/multiplayer.md#enet), used only in src/platform/. Its own CMakeLists.txt would add a target named enet
@@ -111,21 +117,24 @@ FetchContent_Declare(enet GIT_REPOSITORY https://github.com/lsalzman/enet.git
                           GIT_TAG 2662c0de09e36f2a2030ccc2c528a3e4c9e8138a ${_coney_enet_where}
                           SOURCE_SUBDIR coney-no-cmake SYSTEM)
 
-FetchContent_MakeAvailable(SDL3 librw Catch2 imgui enet)
+FetchContent_MakeAvailable(SDL3 librw Catch2 enet)
 
-# Dear ImGui as a static library. Its OpenGL 3 backend loads the GL functions itself (its bundled loader), so it
-# needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.
-add_library(imgui STATIC
-    ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
-target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
-                                               ${imgui_SOURCE_DIR}/misc/cpp)
-# No ImGui API that a later version removes, so an update fails loudly instead of compiling against stale names.
-target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
-target_compile_features(imgui PUBLIC cxx_std_23)
-target_link_libraries(imgui PUBLIC SDL3::SDL3-static ${CMAKE_DL_LIBS})
+# Dear ImGui as a static library, with the debug tools only. Its OpenGL 3 backend loads the GL functions itself (its
+# bundled loader), so it needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.
+if(CONEY_DEBUG_TOOLS)
+    FetchContent_MakeAvailable(imgui)
+    add_library(imgui STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
+    target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+                                                   ${imgui_SOURCE_DIR}/misc/cpp)
+    # No ImGui API that a later version removes, so an update fails loudly instead of compiling against stale names.
+    target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+    target_compile_features(imgui PUBLIC cxx_std_23)
+    target_link_libraries(imgui PUBLIC SDL3::SDL3-static ${CMAKE_DL_LIBS})
+endif()
 
 # ENet as a static library. Its configure step only detects socket functions that every system Coney supports has:
 # macOS gets them from unix.c's own defaults, Linux from the definitions here; Windows needs Winsock and the

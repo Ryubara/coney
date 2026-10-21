@@ -35,6 +35,21 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
 ```
 
+That is the command line of a build with the debug tools (`dev`, `playtest`, `ci`). The release build a player gets
+(the `release` preset, [The debug tools and the game](building.md#debug-tools)) takes a player's options alone, and
+refuses any other with a message that names the debug tools; `coney --help` lists what a build takes:
+
+```text
+coney [--disc PATH] [--language CODE] [--profiles DIR]
+      [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
+      [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
+      [--headless] [--frames N] [--input-script FILE] [--help]
+```
+
+It plays the story from boot (or shows the idle screen without a disc). `--headless`, `--frames` and
+`--input-script` are there for its own smoke tests; everything else on this page (the viewers, `--play-level`, the
+sandbox, the traces, the event log, the pad pipe, screenshots, clips, the debug menus) needs the debug tools.
+
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
 ES). Where the driver offers less than OpenGL 3.3 (Windows' own OpenGL 1.1 renderer on a machine with no graphics
 driver, such as CI's), Coney stops at start-up with an error that names the version it was offered, since SDL would
