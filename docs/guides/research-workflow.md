@@ -363,9 +363,10 @@ render`.
   (checked 2026-10-20 on copy `pcsx2`: a 181-frame recording made in the front end, played while paused, put PCSX2's
   frame counter back to the recording's start at recording frame 0, ran on resume, and ended paused with
   `replay_ended`). Paths are relative to the copy's folder and must stay inside it, so recordings live
-  in the copy's `recordings/`; `coney-tools pcsx2 recordings push | pull` moves them (with the savestate, SHA-256
-  checked) to and from the shared scratch folder's `recordings/`, where they are kept like any capture. `pcsx2 record
-  --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same input
+  in the copy's `recordings/`; `coney-tools pcsx2 recordings make` writes one from a Coney input script (the same file
+  that drives Coney, so both games get the same pad), and `recordings push | pull` moves them (with the savestate,
+  SHA-256 checked) to and from the shared scratch folder's `recordings/`, where they are kept like any capture. `pcsx2
+  record --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same input
   ([`pcsx2`](coney-tools.md#pcsx2)). A recording is game data: never committed.
 - **States across versions.** The copies keep the states their stock PCSX2 2.9.94 saved in `sstates/`, but PCSX2
   2.9.129 may refuse them (a state is tied to the version that saved it): make the states a task needs again on the
