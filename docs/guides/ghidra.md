@@ -111,8 +111,8 @@ The pieces above are the maintainers' set-up. On a machine of your own, three th
   12.1.3; use the 12.1.4 that Coney pins and follow the README's build steps otherwise.
 * **The program itself.** The project the server keeps open starts empty. Import `SLUS_212.15` from your disc with
   `analyzeHeadless` as shown under [Loading a program](#loading-a-program). Measured on 2026-10-21 on a fresh
-  workspace (Windows, a busy 16-core machine): `workspace init --fetch ghidra` 35 s, compiling `r5900.sla` 11 s, the
-  headless import and analysis 152 s, which finds 13,789 functions, all with Ghidra's default names.
+  workspace (Windows, a busy 16-core machine): `workspace init --fetch ghidra` 29 s, compiling `r5900.sla` 9 s, the
+  headless import and analysis 143 s, which finds 13,789 functions, all with Ghidra's default names.
 
 **The function names are not in your project.** The maintainers' project holds the names they gave 11,530 of its
 13,971 functions, and the plate comments and types that go with them. Only the names, with each function's address and
