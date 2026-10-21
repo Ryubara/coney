@@ -77,7 +77,9 @@ commit. One document per subject, updated in place: findings in `docs/research/`
 why in code comments. Mission work updates `research/missions.yaml` (status, checkpoints) in the same commit and
 reruns `coney-tools missions render`. CI refuses a pull request that changes `src/` or `python/src/` without
 changing `docs/` or `research/`, unless its description has a line `Docs: none`. `HANDOFF.md` holds only the current
-state of the work (local, never committed).
+state of the work (local, never committed). Whoever changes a page brings the whole page up to
+`docs/guides/writing-docs.md`; `coney-tools docs check` (also in `check changed` and the docs workflow) fails on any
+touched page that breaks a rule.
 
 ## Commits and GitHub
 
