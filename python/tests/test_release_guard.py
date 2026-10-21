@@ -146,7 +146,16 @@ def test_an_unclosed_quote_fails_open() -> None:
     assert GUARD.check("gh pr create --title 'unclosed --fill", "", runner=FakeRunner()) is None
 
 
-def test_powershell_keeps_backslashes_in_paths(tmp_path: Path) -> None:
+def test_powershell_keeps_backslashes_in_paths() -> None:
+    windows = r"C:\Users\me\scratch\PR.md"
+    calls = GUARD.pr_calls(f'gh pr create --title "tools: Add x" --body-file "{windows}"', powershell=True)
+    assert calls is not None
+    assert calls[0].body_file == windows
+
+
+# A backslash path names the file only on Windows; elsewhere the hook finds no file and runs no check.
+@pytest.mark.skipif(os.name != "nt", reason="backslashes separate paths only on Windows")
+def test_powershell_backslash_path_reaches_the_check(tmp_path: Path) -> None:
     folder = tmp_path / "scratch"
     folder.mkdir()
     (folder / "PR.md").write_text("x", encoding="utf-8")
