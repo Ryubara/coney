@@ -22,7 +22,7 @@ from coney_tools.config import ConfigError, find_repo_root, load_config
 DEFAULT_FIGHTERS = (0, 10, 25, 50, 100)
 DEFAULT_FRAMES = 600
 DEFAULT_WARMUP = 60
-DEFAULT_LEVEL = "level99"
+DEFAULT_LEVEL = "level95"  # the hub: free play from the first frame, no scene holding the crowd back
 
 # The zones a table shows, in order, with their column titles: the frame's parts, then the humans' update and the
 # drawing of them (the rest are in the reports).
@@ -124,8 +124,9 @@ def bench_command(
     headless: bool,
     report: Path,
 ) -> list[str]:
-    """The command line of one bench run: windowed runs present without waiting for the display (`--vsync off`)."""
-    command = [str(coney), "--disc", disc, "--play-level", level, "--frames", str(frames + warmup)]
+    """The command line of one bench run: no movies first; windowed runs present without waiting for the display
+    (`--vsync off`)."""
+    command = [str(coney), "--disc", disc, "--play-level", level, "--skip-movies", "--frames", str(frames + warmup)]
     command += ["--bench", str(report), "--bench-fighters", str(fighters), "--bench-warmup", str(warmup)]
     command += ["--headless"] if headless else ["--vsync", "off", "--no-activate"]
     return command

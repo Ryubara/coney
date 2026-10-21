@@ -15,7 +15,7 @@ of play unmeasured (60 by default) while the crowd settles. `--frames` counts fr
 so the bench measures `frames - warmup` frames:
 
 ```sh
-build/release/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --frames 660 \
+build/release/src/platform/coney --disc /path/to/warriors.iso --play-level level95 --skip-movies --frames 660 \
     --bench ../../scratch/bench-100.json --bench-fighters 100 --vsync off --no-activate
 ```
 
@@ -27,7 +27,8 @@ work and only the times differ. Run it windowed with `--vsync off` (a frame then
 display's refresh) to see the whole cost, or `--headless` (librw's NULL renderer, so nothing is drawn or skinned) to see
 the simulation's alone.
 
-`coney-tools perf bench` runs the bench once per fighter count (0, 10, 25, 50 and 100 by default) from the `release`
+`coney-tools perf bench` runs the bench once per fighter count (0, 10, 25, 50 and 100 by default) in the hub,
+`level95` (free play from the first frame: in `level99` the opening scene holds the crowd back), from the `release`
 build and prints a Markdown table of them, keeping each report and log in `--out`
 ([coney-tools perf](coney-tools.md#perf)):
 

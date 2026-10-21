@@ -72,6 +72,7 @@ def test_the_bench_command_plays_the_level_with_the_fighters() -> None:
         "disc.iso",
         "--play-level",
         "level99",
+        "--skip-movies",
         "--frames",
         "660",
         "--bench",
