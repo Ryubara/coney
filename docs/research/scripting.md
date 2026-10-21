@@ -2241,12 +2241,14 @@ spawners and link to their subject pages; the rest are this mission's.
    spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
    `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
    sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
-   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Coney does not read `SetSpawnMax`
-   ([Coney's implementation](ai.md#coney)), so at checkpoint 3 the riot, wanted-gang and police spawners fill the
-   human pool. In 1,500 updates of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of
-   each cop gang. Once the pool was full, most of these calls failed (handle 0) on every update. Done: a test with
-   `SetSpawnMax(n)` and two spawners never has more than *n* spawned humans alive, and a removed human frees its
-   place.
+   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Before issue #325 Coney did not read
+   `SetSpawnMax`, so at checkpoint 3 the riot, wanted-gang and police spawners filled the human pool: in 1,500 updates
+   of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of each cop gang, and once the pool
+   was full most of these calls failed (handle 0) on every update. **Done**: Coney keeps both caps and counts
+   ([Coney's implementation](ai.md#coney)); with `SetSpawnMax(n)` two gangs' spawners never have more than *n*
+   spawned humans alive, a removed human frees its place, and the police gangs keep to `SetCopSpawnMax` the same way
+   (`tests/ai/spawners_test.cpp`). One gang's own spawners may pass the cap by the spawns of one update, as the
+   original's do.
 2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
    [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
    one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the

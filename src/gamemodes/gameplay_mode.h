@@ -311,6 +311,8 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] const std::optional<LevelStart>& start() const { return m_start; }
     /// The level's brains and gangs; null while no level is entered.
     [[nodiscard]] const ai::Brains* brains() const { return m_brains.get(); }
+    /// The scripts' hold on the level's brains (their humans' host and its spawners); null while no level is entered.
+    [[nodiscard]] const ai::ScriptedBrains* scripted() const { return m_scripted.get(); }
     /// Each level entered from now on makes its brains with `variation` (ai::Brains, `--ai-seed`); 0 (the default) is
     /// the usual run.
     void setAiVariation(std::uint32_t variation) { m_aiVariation = variation; }

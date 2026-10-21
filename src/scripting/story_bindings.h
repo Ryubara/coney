@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryBindings().
-inline constexpr std::array<std::string_view, 98> kStoryBindings{"AddPath",
+inline constexpr std::array<std::string_view, 99> kStoryBindings{"AddPath",
                                                                  "BrSetFOV",
                                                                  "BrSetInvestigateResponse",
                                                                  "BrSetReactToViolence",
@@ -101,6 +101,7 @@ inline constexpr std::array<std::string_view, 98> kStoryBindings{"AddPath",
                                                                  "setDetailFlag",
                                                                  "SetFlagPos",
                                                                  "SetSpawnMax",
+                                                                 "SetCopSpawnMax",
                                                                  "TacticAvoidEnemies",
                                                                  "TacticBossScenarioA",
                                                                  "TacticDefend",

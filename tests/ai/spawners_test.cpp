@@ -32,6 +32,7 @@ class TestWorld final : public coney::ai::SpawnerWorld {
         return spot;
     }
     [[nodiscard]] bool alive(double handle) const override { return !dead.contains(handle); }
+    [[nodiscard]] bool policeGang(int gang) const override { return police.contains(gang); }
     [[nodiscard]] bool seen(coney::anim::Vec3 centre, float radius) const override {
         looked.emplace_back(centre, radius);
         return camera;
@@ -49,6 +50,7 @@ class TestWorld final : public coney::ai::SpawnerWorld {
     std::optional<coney::anim::Vec3> spot = coney::anim::Vec3{1.0F, 2.0F, 3.0F};
     std::vector<std::pair<float, int>> asked;
     std::set<double> dead;
+    std::set<int> police;
     bool camera = false;
     mutable std::vector<std::pair<coney::anim::Vec3, float>> looked;
     std::vector<coney::ai::SpawnRequest> made;
@@ -333,4 +335,119 @@ TEST_CASE("the out-of-sight search makes no try when the player has no start nod
     // Far off every polygon: no node to start from.
     CHECK_FALSE(coney::ai::outOfSightNode(planner, {500.0F, 500.0F, 0.0F}, kCamera, 15.0F, random).has_value());
     CHECK(draws == 0);
+}
+
+// A spawner of gang `gang` named `name` in state `state` with room for ten alive, 500 ms apart.
+coney::script::SpawnerCall roomyCall(int gang, std::string_view name, int state) {
+    coney::script::SpawnerCall call = spawnerCall(state);
+    call.gang = gang;
+    call.name = std::string(name);
+    call.maxConcurrent = 10;
+    call.callback.clear();
+    return call;
+}
+
+TEST_CASE("the gangs' spawners together keep the spawned humans under SetSpawnMax, and a gone one frees a place",
+          "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    spawners.add(roomyCall(3, "A", 1));
+    spawners.add(roomyCall(4, "B", 1));
+    TestWorld world;
+    const coney::ai::SpawnCaps caps{.spawnMax = 3, .copSpawnMax = 16};
+    // Gang 3 then gang 4, each while the count is under the cap.
+    spawners.update(0, world, caps);
+    CHECK(world.made.size() == 2);
+    spawners.update(500, world, caps);
+    REQUIRE(world.made.size() == 3);
+    CHECK(world.made[2].name == "A1");
+    CHECK(spawners.spawnedCount() == 3);
+    spawners.update(1000, world, caps);
+    spawners.update(1500, world, caps);
+    CHECK(world.made.size() == 3);
+    // One of gang 4's goes down: one place, taken by the first gang to update.
+    world.dead.insert(102.0);
+    spawners.update(2000, world, caps);
+    REQUIRE(world.made.size() == 4);
+    CHECK(world.made[3].gang == 3);
+    CHECK(spawners.spawnedCount() == 3);
+}
+
+TEST_CASE("the cap is asked once per gang update, so one gang's spawners may each make one past it", "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    spawners.add(roomyCall(3, "A", 1));
+    spawners.add(roomyCall(3, "B", 1));
+    TestWorld world;
+    const coney::ai::SpawnCaps caps{.spawnMax = 1, .copSpawnMax = 16};
+    spawners.update(0, world, caps);
+    CHECK(world.made.size() == 2);
+    CHECK(spawners.spawnedCount() == 2);
+    spawners.update(500, world, caps);
+    CHECK(world.made.size() == 2);
+}
+
+TEST_CASE("a police gang's spawners keep under SetCopSpawnMax, and its dispatching spawns count in both",
+          "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    spawners.add(roomyCall(5, "COPS", 6));
+    spawners.add(roomyCall(3, "A", 1));
+    TestWorld world;
+    world.police.insert(5);
+    const coney::ai::SpawnCaps caps{.spawnMax = 1, .copSpawnMax = 2};
+    // Gang 3 updates first and takes the one place under SetSpawnMax; the police gang reads its own cap.
+    spawners.update(0, world, caps);
+    spawners.update(500, world, caps);
+    spawners.update(1000, world, caps);
+    REQUIRE(world.made.size() == 3);
+    CHECK(world.made[0].gang == 3);
+    CHECK(world.made[1].gang == 5);
+    CHECK(world.made[2].gang == 5);
+    CHECK(spawners.copSpawnedCount() == 2);
+    CHECK(spawners.spawnedCount() == 3);
+    // A police human gone frees a police place; gang 3 is still over its cap.
+    world.dead.insert(102.0);
+    spawners.update(1500, world, caps);
+    REQUIRE(world.made.size() == 4);
+    CHECK(world.made[3].gang == 5);
+    CHECK(spawners.copSpawnedCount() == 2);
+    CHECK(spawners.spawnedCount() == 3);
+}
+
+TEST_CASE("a police gang's spawner in another state adds to the spawned count only", "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    spawners.add(roomyCall(5, "COPS", 1));
+    TestWorld world;
+    world.police.insert(5);
+    const coney::ai::SpawnCaps caps{.spawnMax = 1, .copSpawnMax = 1};
+    for (std::uint64_t now = 0; now <= 2000; now += 500) {
+        spawners.update(now, world, caps);
+    }
+    CHECK(world.made.size() == 5);
+    CHECK(spawners.copSpawnedCount() == 0);
+    CHECK(spawners.spawnedCount() == 5);
+}
+
+TEST_CASE("the caps are 16 by default, and a spawner that made its total still frees its places", "[ai][spawners]") {
+    coney::ai::Spawners spawners;
+    coney::script::SpawnerCall call = roomyCall(3, "A", 1);
+    call.maxConcurrent = 30;
+    call.total = 16;
+    call.delayMs = 0;
+    spawners.add(call);
+    spawners.add(roomyCall(4, "B", 0));
+    TestWorld world;
+    for (std::uint64_t now = 0; now <= 2000; now += 100) {
+        spawners.update(now, world);
+    }
+    CHECK(world.made.size() == 16);
+    CHECK_FALSE(spawners.find(3, "A")->inUse);
+    // Gang 4's spawner, started with room for ten, finds the 16 places taken.
+    spawners.start(4, "B", 1, -1);
+    spawners.update(2100, world);
+    CHECK(world.made.size() == 16);
+    CHECK(spawners.spawnedCount() == 16);
+    // Gang 3's spawner is out of use; its human going down still frees a place.
+    world.dead.insert(101.0);
+    spawners.update(2200, world);
+    REQUIRE(world.made.size() == 17);
+    CHECK(world.made[16].gang == 4);
 }

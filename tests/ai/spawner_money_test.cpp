@@ -133,6 +133,7 @@ struct SpawnLevel final : public coney::ai::SpawnerWorld {
         const auto found = scripted->bound().find(handle);
         return found != scripted->bound().end() && found->second->human().alive();
     }
+    [[nodiscard]] bool policeGang(int /*gang*/) const override { return false; }
     [[nodiscard]] bool seen(coney::anim::Vec3 /*centre*/, float /*radius*/) const override { return false; }
     // A copy of the play mode's ScriptSpawnerWorld::spawn (gamemodes/gameplay_mode.cpp, in an anonymous namespace, so
     // the test cannot use the class): HuCreate(name, type, {x, y, z}, heading, model, 0, gang). It cannot see that

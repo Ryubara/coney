@@ -141,6 +141,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] const std::map<double, Brain*>& bound() const { return m_brains; }
     /// The character bindings' host on the same brains (ai::ScriptedHumans).
     [[nodiscard]] ScriptedHumans& humanHost() { return *m_humans; }
+    [[nodiscard]] const ScriptedHumans& humanHost() const { return *m_humans; }
     /// The story bindings' host on the same brains (ai::ScriptedStory).
     [[nodiscard]] ScriptedStory& storyHost() { return *m_story; }
     /// The hub bindings' host on the same brains (ai::ScriptedHub).

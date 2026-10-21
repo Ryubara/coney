@@ -25,6 +25,8 @@ inline constexpr std::size_t kTagPatternPoints = 64;
 /// The system music's moods (calm, fight, hunted) and the tracks each holds (`0x0010e9e0`).
 inline constexpr std::size_t kMusicMoods = 3;
 inline constexpr std::size_t kMoodTracks = 3;
+/// The caps on spawned humans the level reset sets (`0x00418c68`: game state `+0x326` and `+0x434` = 16).
+inline constexpr int kResetSpawnMax = 16;
 /// The models `SetCharacterModel` keeps (resource manager `+0xb4`, 32 slots).
 inline constexpr std::size_t kKeptModels = 32;
 
@@ -47,8 +49,12 @@ struct StoryState {
     /// `CfgGangSizeForCombatMusic` (`0x005148a8`): the rival gang size that can start the fight music. **Coney
     /// choice** before any call (not traced): 1.
     int combatMusicGangSize = 1;
-    /// `SetSpawnMax` (`+0x434`): the spawned characters' cap. **Coney choice** before any call: no cap read yet, 0.
-    int spawnMax = 0;
+    /// `SetSpawnMax` (`+0x434`): the cap on spawned humans alive, every gang but the police together (ai::Spawners).
+    /// The level reset sets it to 16.
+    int spawnMax = kResetSpawnMax;
+    /// `SetCopSpawnMax` (`+0x326`): the police gangs' cap on their dispatched humans alive. The level reset sets it
+    /// to 16.
+    int copSpawnMax = kResetSpawnMax;
     /// `CfgEnableGrappleCounters` (`+0x56e3`). **Coney choice** before any call (not traced): on.
     bool grappleCounters = true;
     /// `CfgCivilianAggression` (`0x00510ad8`, `0x00510ad9`): 20 % each by default.
@@ -99,6 +105,8 @@ struct StoryState {
         detailFlags.fill(0);
         garbage = -1;
         warriorWeapons = true;
+        spawnMax = kResetSpawnMax;
+        copSpawnMax = kResetSpawnMax;
     }
 };
 

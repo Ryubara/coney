@@ -31,6 +31,9 @@
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
 #include "ai/gangs.h"
+#include "ai/scripted_brains.h"
+#include "ai/scripted_humans.h"
+#include "ai/spawners.h"
 #include "animation/anim_math.h"
 #include "characters/character_types.h"
 #include "core/error.h"
@@ -108,6 +111,8 @@ struct MissionRun {
     bool standing = false;
     float travelled = 0.0F;
     std::size_t humans = 0;
+    int mostSpawned = 0;             // the most spawned humans alive at once in the first 18 s (ai::Spawners)
+    int spawnMax = 0;                // the level's SetSpawnMax cap then
     std::vector<std::string> errors; // the scripts' error lines
     std::vector<std::string> log;    // every printed line
 };
@@ -218,7 +223,16 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     stack.push(gameplay);
     coney::GameTimer timer;
     timer.setFixedStep(true);
-    stack.runUntilEmpty(timer, {}, 540);
+    // The 18 s in steps of 10 updates, the spawners' count read after each.
+    constexpr int kStill = 540;
+    constexpr int kSample = 10;
+    for (int update = 0; update < kStill; update += kSample) {
+        stack.runUntilEmpty(timer, {}, kSample);
+        if (const coney::ai::ScriptedBrains* scripted = gameplay.scripted(); scripted != nullptr) {
+            run.mostSpawned = std::max(run.mostSpawned, scripted->humanHost().spawners().spawnedCount());
+        }
+    }
+    run.spawnMax = scripts.state().story.spawnMax;
     const auto* play = dynamic_cast<const coney::platform::PlayLevelMode*>(gameplay.level());
     run.loaded = play != nullptr;
     if (play == nullptr) {
@@ -319,6 +333,26 @@ TEST_CASE("the disc's level34 plays each checkpoint without a script error or a 
                     checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
                     run.travelled);
     }
+}
+
+TEST_CASE("the disc's level34 checkpoint 3 keeps its spawned humans under SetSpawnMax", "[disc][story]") {
+    // docs/research/ai-gangs.md#spawners: the riot's, the wanted gangs' and the police's spawners run only while the
+    // level's spawned count is under its cap (SetSpawnMax(45) for level34), asked once per gang, so it is passed by at
+    // most three of one gang's spawners in the update it is reached. Before the cap, 18 s of checkpoint 3 filled the
+    // human pool (docs/research/scripting.md#level34-fixes, item 1).
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    const MissionRun run = playMission(*wad, "level34", 3);
+    REQUIRE(run.loaded);
+    CHECK(run.spawnMax == 45);
+    constexpr int kOneGangsUpdate = static_cast<int>(coney::ai::kGangSpawners) - 1;
+    CHECK(run.mostSpawned <= run.spawnMax + kOneGangsUpdate);
+    std::printf("  level34 checkpoint 3: at most %d spawned humans alive (cap %d), %zu humans created
+                ",
+                run.mostSpawned,
+                run.spawnMax, run.humans);
 }
 
 TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", "[disc][story]") {
