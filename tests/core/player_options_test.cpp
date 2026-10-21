@@ -107,8 +107,14 @@ TEST_CASE("the release build's usage text lists only a player's options", "[opti
     CHECK(usage.find("--tunables") == std::string::npos);
     CHECK(usage.find("--view-character") == std::string::npos);
     CHECK(usage.ends_with('\n'));
-    // A continuation line stays with its option: --input-script's description follows it.
-    CHECK(usage.find("--input-script") < usage.find("--headless"));
+    // A continuation line stays with its option: --input-script's description follows it, and the option skipped
+    // between them (--tunables) leaves with its own continuation. The options' lines start after the synopsis.
+    const std::string lines = usage.substr(usage.find("\n\n"));
+    const std::size_t script = lines.find("  --input-script FILE\n");
+    REQUIRE(script != std::string::npos);
+    CHECK(lines.find("play the pad input in FILE", script) != std::string::npos);
+    CHECK(lines.find("--tunables") == std::string::npos);
+    CHECK(script < lines.find("  --headless"));
 }
 
 TEST_CASE("the release build takes network play's options", "[options][net]") {
