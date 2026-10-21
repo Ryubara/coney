@@ -176,7 +176,9 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat.md#comm
 
 ### Targets: which human each move goes for {#targeting}
 
-Confirmed (code) at the addresses cited. Angles are measured from an **aim heading**; distances are flat squared
+Everything in this section is confirmed (code) at the addresses cited unless a line says otherwise.
+
+Angles are measured from an **aim heading**; distances are flat squared
 distances between the humans' positions; "nearest" sorts by that distance (`SortByKeyAscending` `0x003868d0`).
 
 | Move | Target it uses |
@@ -186,7 +188,7 @@ distances between the humans' positions; "nearest" sorts by that distance (`Sort
 | Cross (`X1`, 23, 24, 194, 661, 120) | always a fresh `Player_PickTarget(2.0 m)` for a player (`0x00287a18`) |
 | Armed square and cross | a fresh `Player_PickTarget(2.5 m)` |
 | A chain step | a cross step (`SX2`, `XX2`, `SSX3`) re-searches with `Player_FindAttackTarget(h, next id)` when not locked; a square step keeps the target |
-| Snaps 25 / 27 / 29 | their own search: nearest within 2.0 m and 45° of the stick, line clear ([Combat](combat.md#attacks)) |
+| Snaps 25 / 27 / 29 | their own search (`Player_FindSnapTarget`): nearest within 2.0 m and 45° of the stick that `TargetFilter_Enemy` accepts ([Combat](combat.md#attacks)) |
 | The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat.md#charge-aim)) |
 | The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat-grabs.md#strong-grapple)) |
 
@@ -407,10 +409,14 @@ bodies' shapes), `moves_reachX1_10_steer`, `moves_reachX1_16_steer` (the steer's
 of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain press and combo count are cleared first.
 
 1. **Not in a fight stance** (state bits `0x3`) and, for a pad player, `0x0051031c` clear:
-    - running freely and wanting to run (gait 4, `+0x08` clear, stick above 0.95): a low target (the
-      `0x00225200` test) → enter the stance and **193**; otherwise **24** (`Player_StartCharge`, `0x00264a80`);
+    - running freely and wanting to run (gait 4, `+0x08` clear, stick above 0.95): a low target (the `0x00225200` test,
+      `Human_IsHighOrBusy`: the attacker 1.3-1.8 m above the target by `Object_HeightDiff`, or, unless he is more than
+      0.7 m below it, the target in a grab, attack or down state its held and state flags name; confirmed (code)) →
+      enter the stance and **193**; otherwise **24** (`Player_StartCharge`, `0x00264a80`);
     - gait 1-3 with the stick at 0.12 or more: the same low-target test → 193, otherwise **23**;
-    - `0x00510270` set: **22** (`Attack_StartSolo`).
+    - `0x00510270` set (written only by `Cfg_SetAttackFromIdle`, `0x002364e0`; confirmed
+      (code)): **22** (`Attack_StartSolo`), or 193 at a low target, or `Player_ObjectAttack` at an object with no
+      human target.
     - Otherwise the player enters the stance and goes on.
 2. **Strafe attack** (pad player, locked on, speed at least the walk speed, stick above 0.95, a current target, and
    the stick within 135° of the facing): **33** within 45° of the facing, else **31** when the stick is to the
@@ -449,8 +455,9 @@ a tandem; the object attack; otherwise the swing slot `0x10`. No snaps, strafes,
   gives 193;
 - **no strafes and no snaps**;
 - in the stance a **low target gets 194** `GROUNDED_STRIKE_02` (the stomp), a **mid target 661**
-  `SPECIAL_BREAK_OBJECT_LOW` (the `carhit_low` kick) through `Attack_StartAtTarget` (`0x00261c80`), a front grab 120,
-  then the tandem, the counters 76 / 9 and **11 `X1`**.
+  `SPECIAL_BREAK_OBJECT_LOW` (the `carhit_low` kick) through `Attack_StartAtTarget` (`0x00261c80`; the mid test is
+  `Human_IsMidOrBusy` `0x002250a0`), a front grab 120 (confirmed (code) in `Player_Cross`), then the tandem, the
+  counters 76 / 9 and **11 `X1`**.
 
 Armed: as square's branch with slot `0x11`, combo count `+0xbc` = 2 before the swing (so cross never chains).
 
@@ -516,8 +523,8 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's
   intro and end values (50 + 350, or 50 + 500 with a bat, 50 + 600 with a knife) go on the victim as pending
-  damage; it is lethal when `Human_IsDamageDefeating` (`0x00265c28`: health ≤ damage, the damage tripled when
-  cuffed) says so, and then the death reaction plays (`Human_PlayDeathReaction`).
+  damage; it is lethal when `Human_IsDamageDefeating` (`0x00265c28`, confirmed (code): health ≤ damage, the damage
+  tripled when cuffed) says so, and then the death reaction plays (`Human_PlayDeathReaction`).
 - The grabber is let go into a fight stance afterwards. A player's tandem scores through `Grab_ScoreMove` (100
   points of category 6).
 
@@ -583,7 +590,8 @@ rear hold (85), the player 1.1 m in front of him facing him, stick centred, in t
 Each of the four tandems played the first set, 163-168.
 
 **To script it** (on the original, through the `scripted-pad` patch; the recorder writes the same bytes from a Coney
-input script): the second button byte `0x005de3ab` is active low, so circle alone is `0xdf`, cross `0xbf`, square
+input script; confirmed (runtime) by the runs above, PCSX2 2.9.94): the second button byte `0x005de3ab` is active
+low, so circle alone is `0xdf`, cross `0xbf`, square
 `0x7f`, cross and square `0x3f`, none `0xff`; the first byte `0x005de3aa` stays `0xff` and the four stick bytes
 `0x005de3ac`-`0x005de3af` stay `0x80`. A circle hold is `0xdf` written for at least 7 updates (the tandem starts on the
 7th); a circle tap is `0xdf` for 1-6 updates, then `0xff`. In a Coney input script: `60 tap circle`, or
@@ -723,7 +731,7 @@ Confirmed (code); confirmed (runtime) below:
 | circle (`0x1e`, `0xd`, `0xe`) | with the victim's human flag `0x2000000000` clear and `Grab_CanEscape(mounter)`: `Mount_GetOff` (`0x00271470`), which plays **246** `MOUNT_BREAK` / 247 |
 | R1 (command 3, `0x00510988`) or `0x19` | with the mounter's flag `0x40` and the victim's `0x100000000` clear and `Grab_CanEscape(mounter)`: the **reversal** (`Mount_StartReversal`, `0x002723e8`): 242 `MOUNT_REVERSAL` / 243, then the roles swap into 210 / 207 with the victim on top; statistics event 4 |
 
-`Grab_CanEscape` (`0x00225830`: at or below a quarter of the mounter's maximum power, half
+`Grab_CanEscape` (`0x00225830`, confirmed (code): at or below a quarter of the mounter's maximum power, half
 when hurt, always; above it, a 1 in floor(power / that) chance per press; never while the mounter rages) makes the
 mounter's power the gate: struggle first, then circle or R1. The AI does the same through its commands.
 

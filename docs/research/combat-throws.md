@@ -5,9 +5,31 @@ PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because t
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
 Every claim keeps the evidence level it had there.
 
-This page covers throws and where they go, a bat in hand, and the mugging with its cuffing hold.
+## Purpose
 
-## Throws {#throws}
+What happens when the player throws a human he holds (where the throw goes, a wall throw, what the flying body
+hits), what a bat in hand changes (picking it up, its swings, the moving attacks while armed) and how the mugging
+works (its stick game, who is hard to mug, the cuffing hold). The grab and the hold the throw and the mugging start
+from are on [Combat: grabs](combat-grabs.md); damage and reactions on [Combat: reactions](combat-reactions.md).
+
+## Original structure
+
+The throw is `Player_Throw` with the paired-move code it starts; a bat is the `melee_weapon` object's message
+handler, the human's pick-up clip and the dispatcher's armed branch; the mugging is `Player_UpdateMugging` with its
+parameter table and the tackle and cuffing holds. Each function, with its address and level, is in
+[Combat's code index](combat.md#code-index); the behaviour below names the one each step lives in.
+
+## Data
+
+The move table, the Anim Range List and the hit codes are on [Combat](combat.md#data). This page's own values
+(the wall clips' far ranges, a throw's power cost, the mugging record's times and angles) sit with the behaviour
+that uses them.
+
+## Behaviour
+
+Each subsection below grades its own claims.
+
+### Throws {#throws}
 
 `Player_Throw` (`0x0026dd08`) compares the camera-turned stick with the player's facing: within 45° → 147
 `THROW_01_FROM_GRAB_FRONT`, beyond 135° → 151 rear, otherwise 149 right or 153 left. A wall within reach of the
@@ -79,7 +101,7 @@ armed at `+0x3bd` (`Human_OnContact`, `0x00219d50`). The same frames carry a one
 head-slam clip or reaction beyond these four victim clips. `CfgPowerClass` flag 22 is not read here (it belongs to
 `Grabbing_PickMove`, [AI](ai.md#fight-reactions)).
 
-### Where a throw goes {#throw-direction}
+#### Where a throw goes {#throw-direction}
 
 How the original turns the stick into the thrown body's heading (issue #240). Confirmed (code) at `0x0026dd08`
 (`Player_Throw`), `0x00146078` (`PlayerRecord_Update`), `0x0023cf88` (`Human_TurnToOver`), `0x00262ac8`
@@ -179,7 +201,7 @@ the thrower about a third too far (149 −120° against −90° at runtime; rear
 lands 19.2° right of the stick (2.1° at runtime). See the open question on the root turn and the task's rate
 ([Open questions](combat.md#open-questions)).
 
-## A bat in hand {#bat}
+### A bat in hand {#bat}
 
 **At runtime** (confirmed (runtime), slot 6 copy, `Human_PlaceItemInHand(player, "dyn_bat_tuff")` (`0x00238540`)
 called on the game's thread, the civilian 1.3 m ahead):
@@ -198,7 +220,8 @@ comes first, [Crimes: triangle](crimes.md#triangle)). Confirmed (code) at `0x002
 
 1. A type other than 12 (`TYPE_SPECIAL`) or 24 is taken by a player only with empty hands (human `+0x338` Nil). With
    something in hand the search instead sets human `+0x5b8` = 1 and drops the held object (`0x00257f38`).
-2. The winner's record is pinned and it gets message 0. The weapon's handler (`0x003fead0`), while its state (data
+2. The winner's record is pinned and it gets message 0. The weapon's handler (`MeleeWeapon_OnMessage`,
+   `0x003fead0`; confirmed (code)), while its state (data
    `+0x10`) is 0, sets it to 3 and sends the human message `0x14`, which plays the pick-up clip (`0x0025e5a8`, below).
 3. The clip's event (message 3) applies the object's anim set (object type `+0x87`, 3 for a bat) when the human's
    differs (`0x00221ed0`); `Human_PickUpObject` has no case for type 3 and returns 0, so `0x00227010` puts the bat
@@ -276,7 +299,7 @@ baton and bat combos; the barrel idle 509 for 4, the ghetto idle 555 for 6; 5 in
 one-handed throw) and from `dyn_bat_tuff` being `CLUB_WEAPON_SET` with set 3 (confirmed (runtime)). Sets 7 and up
 are the human's own states (7 installs the grab hold 82 and the grab strikes 51 and 55), never an object's.
 
-### Moving attacks with something in hand {#armed-moves}
+#### Moving attacks with something in hand {#armed-moves}
 
 Square, cross and L2 + cross or square choose by the **held object's set** (`0x00231a80`: the held object's
 `+0x87`; `0x00231a38` gives its type, `+0x86`), not by the human's set stack. Confirmed (code) at `0x00286cc8`
@@ -349,7 +372,7 @@ runtime 12 bat hits on a civilian (64 damage each, 34 and 37 alternating) never 
 1, so hits alone do not wear a bat out. A weapon's wear is the hit counter `+0x10d` / `+0x10e`, one less on each `use`
 event; `+0x128` is not its hitpoints ([Combat moves](combat-moves.md#weapons)).
 
-## Mugging {#mugging}
+### Mugging {#mugging}
 
 Triangle in a front grab spins the victim to a rear hold (78 / 79, state `0x85`), then 338 / 339 intro and the
 340 / 341 loop (player `0x105`, victim `0x200`); 342 / 343 play while the stick is on target. Confirmed (runtime).
@@ -393,7 +416,7 @@ target allowed, 40° of tolerance, each new angle at least 80° from the last**;
 which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0x01` are read only by the hold's games
 (below).
 
-### Mug difficulty: who is hard to mug {#mug-difficulty}
+#### Mug difficulty: who is hard to mug {#mug-difficulty}
 
 How hard a mugging is comes from the record `Mug_GetParams` (`0x00284ca0`) builds for the pair, which differs by the
 **victim's category** (`CfgChar` byte `+0x11b` of the victim's class, [characters reference](../references/characters.md))
@@ -447,7 +470,7 @@ no victim limit):
    succeeds with the stick on each new angle within the update it appears; a category-4 civilian with `flag_14b`
    clear gives 3000 / 1000 / 7000; `SetInterrogateParam(…, 20000 …)` gives a 20 s limit.
 
-### The other stick games: mug meter modes 1-3 {#other-stick-games}
+#### The other stick games: mug meter modes 1-3 {#other-stick-games}
 
 Three more per-update state machines run the same stick game for the other player's side of a mugging and for both
 sides of the **cuffing hold** (the hold a tackle leads to, `Tackle_StartHold` `0x0022d030`, state `0x8000000000` for
@@ -486,7 +509,7 @@ the victim's mode 1 ends it in the victim's favour at the victim's required time
 too long hands the mugger the win. The hold is the same race between holder (mode 2) and held (mode 3). The modes'
 meter colours and prompts are on [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout).
 
-### The cuffing hold {#cuffing-hold}
+#### The cuffing hold {#cuffing-hold}
 
 The hold a tackle leads to when the tackler has handcuffs: both sides kneel in the arrest loop while the
 [stick games](#other-stick-games) of modes 2 (the holder) and 3 (the held player) race, and the holder either cuffs
@@ -626,3 +649,22 @@ ends the hold (`Tackle_EndHold`, so the tackle states come back) with neither `C
   pending damage is zeroed too, and **no clip** plays. The pair is left in the tackle states with the arrest loops
   still on their stacks, and the holder's mount update (`0x400`) runs again from the next update (inferred from the
   states).
+
+## Coney's implementation
+
+Coney's side is written beside the behaviour it follows: the throw's side, turn and spin in
+[Where a throw goes](#throw-direction) (`combat::updateGrab`, `Fighter::turnThrow`, `Fighter::throwAfterSpin`), and
+the mugging's single record and the fixes it needs in [Mug difficulty](#mug-difficulty). Every place where Coney's
+fight plays differently is listed on [Combat: where Coney differs](combat-diffs.md).
+
+## Open questions
+
+- **A throw's root turn**: the side clips turn the thrower about a third further in Coney than at runtime, and the
+  front victim lands 19.2° right of the stick against 2.1° ([Where a throw goes](#throw-direction);
+  [Combat: open questions](combat.md#open-questions)).
+- **What sends a weapon message 1** (the break, `0x003fd600`): hits alone do not, at runtime ([A bat in hand](#bat)).
+- **The inventory check for a type 44 object** on pick-up (`0x0041e420`, `0x0041ded0`).
+- **The armed branch's object attack** on a breakable with no human target (`0x00263eb8`), and what plays the knife's
+  `KNIFE_ATTACK_FROM_RUN` (490) ([Moving attacks with something in hand](#armed-moves)).
+- **The mugging angle's frame**, world or camera ([Mugging](#mugging)).
+- **Why `Tackle_StartHold` deals a zero-damage hit** ([The cuffing hold](#cuffing-hold)).
