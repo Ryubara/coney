@@ -16,28 +16,55 @@ so the main session, the coordinator, is never refused. Inside a subagent this h
 * `gh api` with a method other than GET, with fields or `--input` (gh then sends a POST), or a GraphQL mutation.
 
 `coney-tools issue create` and the other `coney-tools` commands run `gh` as their own subprocess, which is not a tool
-call, so an agent whose brief says to file an issue still can. A command counts only where it starts (the line start,
-or after `;`, `&`, `|`, `(` or `$(`), so text that mentions one passes, also inside a here-document or here-string.
-Exit code 2 blocks the call and shows stderr to the agent; every other outcome (also input it cannot read) exits 0.
-Standard library only.
+call, so an agent whose brief says to file an issue still can. A command counts only where it starts: the line start;
+after `;`, `&`, `|`, `(`, `{`, `$(`, a PowerShell assignment (`$url = gh ...`) or the `&` call operator; after `then`,
+`do`, `env`, `command`, `exec` and the like; or inside `bash -c "..."` or `pwsh -Command "..."`; `git` and `gh` also
+by a path. gh's own options before the command group (`gh -R owner/name pr merge`) do not hide it. Text that mentions
+one passes, also inside quotes, a here-document or a here-string. Exit code 2 blocks the call and shows stderr to the
+agent; every other outcome (also input it cannot read) exits 0. Standard library only.
+
+Not covered: a session that is not a subagent of this one (a separate `claude -p` run has no `agent_id`), a command
+started through another program (`xargs` with a placeholder, a script file, a quoted full path), and a GraphQL query
+read from a variable gh fills in (`-F query=@file` and `-f query="$Q"` are refused, since the hook cannot read them).
 """
 
 import json
 import re
 import sys
 
-#: Where a command starts: the line start or after `;`, `&`, `|`, `(` or `$(`, then optional `NAME=value` assignments.
-_START = r"(?:^|[;&|(]|\$\()[ \t]*(?:[A-Za-z_]\w*=\S*[ \t]+)*"
+#: Words that may stand before a program: shell keywords, `env`, `command`, `exec` and the like with their options,
+#: `NAME=value` assignments and PowerShell's `&` call operator.
+_PREFIX = (
+    r"(?:(?:then|do|else|elif|time|!|env|command|exec|nohup|sudo|xargs)(?:[ \t]+-[^\s;&|()]+)*[ \t]+"
+    r"|[A-Za-z_]\w*=[^\s;&|()]*[ \t]+|&[ \t]*)*"
+)
+#: Where a command starts: the line start, after `;`, `&`, `|`, `(`, `)`, `{`, `}` or `$(`, or after a PowerShell
+#: assignment (`$url =`); then the prefix words.
+_START = r"(?:^|[;&|(){}]|\$\(|\$[\w:]+[ \t]*=)[ \t]*" + _PREFIX
+#: A program's optional folder (`/usr/bin/`, `C:\Git\cmd\`).
+_PATH = r"(?:[^\s;&|()'\"]*[/\\])?"
 #: One argument, quoted or not.
 _ARG = r"(?:\"[^\"\n]*\"|'[^'\n]*'|[^\s;&|()]+)"
 #: `git push`, with git's own options (`-C dir`, `-c key=value`, `--no-pager`, `--git-dir=...`) in between.
 _GIT_PUSH = re.compile(
-    _START + r"git(?:\.exe)?(?:[ \t]+(?:-[Cc][ \t]+" + _ARG + r"|--?[\w-]+(?:=" + _ARG + r")?))*[ \t]+push\b",
+    _START
+    + _PATH
+    + r"git(?:\.exe)?(?:[ \t]+(?:-[Cc][ \t]+"
+    + _ARG
+    + r"|--?[\w-]+(?:="
+    + _ARG
+    + r")?))*[ \t]+push(?![\w-])",
     re.MULTILINE,
 )
-#: A `gh` command: its group (`pr`), its verb (`view`) when there is one, and the rest of its line.
+#: A `gh` command: gh's own options (`-R owner/name`), its group (`pr`), its verb (`view`) when there is one, and the
+#: rest of its line.
 _GH = re.compile(
-    _START + r"gh(?:\.exe)?[ \t]+(?P<group>[\w-]+)(?:[ \t]+(?P<verb>[a-z][\w-]*))?(?P<args>[^\n;&|]*)",
+    _START
+    + _PATH
+    + r"gh(?:\.exe)?(?:[ \t]+(?:(?:-R|--repo|--hostname)[ \t]+"
+    + _ARG
+    + r"|-[\w-]+=\S+|-R\S+))*"
+    + r"[ \t]+(?P<group>[\w-]+)(?:[ \t]+(?P<verb>[a-z][\w-]*))?(?P<args>[^\n;&|]*)",
     re.MULTILINE,
 )
 #: The `gh` commands an agent may run: they read GitHub or change only the local checkout. A group mapped to None
@@ -56,14 +83,19 @@ READS: dict[str, frozenset[str] | None] = {
     "auth": frozenset({"status"}),
     "config": frozenset({"get", "list"}),
     "search": None,
+    "browse": None,
     "status": None,
     "help": None,
     "version": None,
 }
 #: Options of `gh` itself that only print.
 _PRINTS = {"--version", "--help", "-h"}
-_METHOD = re.compile(r"(?:^|[ \t])(?:-X|--method)(?:[ \t]+|=)[\"']?(?P<method>\w+)", re.IGNORECASE)
-_FIELDS = re.compile(r"(?:^|[ \t])(?:-f|-F|--field|--raw-field|--input)(?=[ \t=])")
+#: The method of a `gh api` call: `-X POST`, `-XPOST`, `--method POST` or `--method=POST`.
+_METHOD = re.compile(r"(?:^|[ \t])(?:-X[ \t]*|--method(?:[ \t]+|=))[\"']?(?P<method>\w+)", re.IGNORECASE)
+#: A field or input of a `gh api` call, also with its value attached (`-ftitle=x`).
+_FIELDS = re.compile(r"(?:^|[ \t])(?:-[fF]|--field|--raw-field|--input)")
+#: A GraphQL query the hook cannot read: from a file (`query=@mut.graphql`) or a variable (`query="$Q"`).
+_HIDDEN_QUERY = re.compile(r"(?:^|[ \t])(?:-[fF]|--field|--raw-field)(?:[ \t]+|=)?[\"']?query=[\"']?[@$]")
 _MUTATION = re.compile(r"\bmutation\b")
 #: A here-document (`<<EOF`, `<<-'EOF'`): its head line is kept, its body is text, not commands.
 _HEREDOC = re.compile(
@@ -74,8 +106,14 @@ _HEREDOC = re.compile(
 _HERESTRING = re.compile(r"@(?P<quote>['\"])[ \t]*\n.*?\n(?P=quote)@", re.DOTALL)
 #: A line continuation (a backslash, or a backtick in PowerShell, at the end of a line).
 _CONTINUATION = re.compile(r"(?:\\|`)[ \t]*\n")
-#: A quoted string ('...' or "..."), which is text, not a command.
-_QUOTED = re.compile(r"'[^'\n]*'|\"(?:[^\"\\\n]|\\.)*\"")
+#: `bash -c "..."`, `sh -lc '...'`, `pwsh -Command "..."`: the quoted text is a command, not text.
+_SHELL_C = re.compile(
+    r"\b(?:(?:ba|z|da)?sh|pwsh|powershell)(?:\.exe)?(?:[ \t]+-\w+)*?[ \t]+-(?:[a-z]*c|Command)[ \t]+"
+    r"(?P<quote>[\"'])(?P<body>(?:\\.|(?!(?P=quote))[^\\])*)(?P=quote)",
+    re.IGNORECASE,
+)
+#: A quoted string ('...' or "...", over several lines too), which is text, not a command.
+_QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
 
 MESSAGE = (
     "Blocked: {what}. A subagent never pushes and never writes to GitHub (no pull request, comment, label, review, "
@@ -86,22 +124,32 @@ MESSAGE = (
 )
 
 
+def _shell_body(match: re.Match[str]) -> str:
+    """`bash -c "<body>"` as `bash -c (<body>)`, so the body's commands start like any other."""
+    body = match.group("body")
+    if match.group("quote") == '"':
+        body = re.sub(r"\\(.)", r"\1", body)
+    return match.group(0)[: match.start("quote") - match.start()] + "(" + body + ")"
+
+
 def _clean(command: str) -> str:
-    """The command without here-document and here-string bodies or line continuations: only what runs."""
+    """The command without here-document and here-string bodies or line continuations, with the commands inside
+    `bash -c "..."` unwrapped: only what runs."""
     text = command.replace("\r\n", "\n")
     text = _HEREDOC.sub(lambda match: match.group("head"), text)
     text = _HERESTRING.sub(" ", text)
-    return _CONTINUATION.sub(" ", text)
+    text = _CONTINUATION.sub(" ", text)
+    return _SHELL_C.sub(_shell_body, text)
 
 
 def _api_writes(args: str) -> bool:
     """Whether the arguments of a `gh api` call write: a method other than GET, fields or input without an explicit
-    GET (gh then sends a POST), or a GraphQL mutation."""
+    GET (gh then sends a POST), a GraphQL mutation, or a GraphQL query the hook cannot read."""
     method = _METHOD.search(args)
     if method is not None:
         return method.group("method").upper() != "GET"
     if re.search(r"(?:^|[ \t])graphql(?=[ \t]|$)", args):
-        return _MUTATION.search(args) is not None
+        return _MUTATION.search(args) is not None or _HIDDEN_QUERY.search(args) is not None
     return _FIELDS.search(args) is not None
 
 
@@ -115,7 +163,7 @@ def refused(command: str) -> str | None:
         return MESSAGE.format(what="`git push`")
     for call in _GH.finditer(bare):
         group, verb = call.group("group"), call.group("verb") or ""
-        if group in _PRINTS or group.startswith("-"):
+        if group in _PRINTS:
             continue
         if group == "api":
             # The arguments as written (the verb slot may hold the first one), with their quoted text.

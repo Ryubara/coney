@@ -105,6 +105,61 @@ def test_reads_and_mentions_pass(command: str) -> None:
     assert GUARD.refused(command) is None, command
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh -R Ryubara/coney pr create --title t --body x",
+        "gh --repo Ryubara/coney pr create --fill",
+        "gh -R Ryubara/coney pr merge 5 --squash",
+        "gh --repo=Ryubara/coney issue comment 5 --body hi",
+        "gh -RRyubara/coney pr close 5",
+        "gh --hostname github.com pr ready 5",
+        "gh -R Ryubara/coney api -X POST repos/o/r/issues/5/comments",
+        "gh api repos/o/r/issues -XPOST",
+        "gh api repos/o/r/issues/5/comments -fbody=x",
+        "gh api repos/o/r/issues -Ftitle=x",
+        "gh api --method=PATCH repos/o/r/issues/5",
+        "gh api graphql -F query=@mutation.graphql",
+        'gh api graphql -f query="$Q"',
+        "gh api graphql -fquery=@m.graphql",
+        "$url = gh pr create --title t --body-file PR.md",
+        "foreach ($n in 1, 2) { gh pr merge $n --squash }",
+        "& gh pr merge 5",
+        'bash -c "git push origin HEAD"',
+        "bash -lc 'cd x && gh pr merge 5'",
+        'pwsh -NoProfile -Command "gh issue close 5"',
+        "if true; then git push; fi",
+        "for b in a b; do git push origin $b; done",
+        "env GIT_TRACE=1 git push",
+        "command git push",
+        "/usr/bin/git push",
+        "C:\\Git\\cmd\\git.exe push",
+        "/c/tools/gh.exe pr merge 5",
+    ],
+)
+def test_wrapped_and_attached_forms_are_refused(command: str) -> None:
+    assert GUARD.refused(command) is not None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh -R Ryubara/coney pr view 5 --json body",
+        "gh --repo=Ryubara/coney issue list",
+        "gh api -XGET repos/o/r/issues -f state=open",
+        "gh api graphql -f query='{ viewer { login } }'",
+        "gh browse 5",
+        "git push-all-the-things --help",
+        "git commit -m 'first line\ngit push later\nlast line'",
+        'grep -E "(git push|gh pr merge)" docs/guides/*.md',
+        "bash -c 'git status'",
+        "$out = gh pr view 5",
+    ],
+)
+def test_reads_in_these_forms_pass(command: str) -> None:
+    assert GUARD.refused(command) is None
+
+
 def test_the_reason_names_the_release_queue() -> None:
     reason = GUARD.refused("git push")
     assert reason is not None and "release-queue" in reason and "coordinator" in reason

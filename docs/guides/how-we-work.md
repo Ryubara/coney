@@ -245,7 +245,8 @@ coordinator, who pushes them when CI has room.
   platform cannot see. A hook (`.claude/hooks/push_guard.py`) refuses `git push` and every `gh` command that writes
   (a pull request, a comment, a label, a review, a merge, a rerun, `gh api` with a method other than GET) when a
   subagent runs it; Claude Code marks a subagent's calls with an `agent_id`, so the coordinator's own session is never
-  refused.
+  refused. An agent started as a session of its own (`claude -p`) has no `agent_id` and is not covered: its brief
+  says it never pushes. Nor is a command run from a script file or through `xargs`.
 - **The unit is one pull request's worth,** not a whole task: one fix or feature with its tests and docs. For each,
   the agent writes the pull request's title and description (from `.github/pull_request_template.md`) to a file in
   its scratch folder (`PR.md`, or `PR-<n>.md` for several), messages the coordinator the branch, the commit range and
