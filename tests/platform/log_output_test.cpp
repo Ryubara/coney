@@ -78,7 +78,8 @@ TEST_CASE("a new log keeps the previous run's file beside it", "[log]") {
     const TempDir dir;
     const std::filesystem::path file = dir.path() / "coney.log";
     {
-        std::ofstream old(file);
+        // In binary mode, so that Windows adds no carriage return for linesOf to keep.
+        std::ofstream old(file, std::ios::binary);
         old << "the run before\n";
     }
     {

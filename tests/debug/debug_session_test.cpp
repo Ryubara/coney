@@ -328,7 +328,10 @@ TEST_CASE("the Time page writes a bug report: the run log's ring through the ser
         return std::string("bug report: the last 4 events written to coney.log");
     };
     DebugSession session(tunables, services, nullptr);
-    const MenuItem* report = session.model().openPage("Time")->find("Write bug report log");
+    // The page owns its items: keep it alive while the item is used.
+    const std::shared_ptr<MenuPage> time = session.model().openPage("Time");
+    REQUIRE(time != nullptr);
+    const MenuItem* report = time->find("Write bug report log");
     REQUIRE(report != nullptr);
     report->run();
     CHECK(asked == 1);
