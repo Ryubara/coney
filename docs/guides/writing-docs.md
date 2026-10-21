@@ -34,6 +34,9 @@ request, and a push to `main` also deploys that build to GitHub Pages (the `depl
 always those of `main`. There is nothing to run by hand; a page appears online a minute or two after its commit
 reaches `main`. Pull requests and other branches build the site as a check but never publish it.
 
+The site opens in the dark palette (`slate`) whatever the reader's system setting; the toggle in the header switches
+to light, and Material keeps that choice for the next visit. The order of `theme.palette` in `mkdocs.yml` decides it.
+
 ## The home page {#home-page}
 
 `docs/index.md` is the site's landing page: a full-height hero over a painting, then the page's own content. The hero's

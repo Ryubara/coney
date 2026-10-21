@@ -36,14 +36,13 @@ theme:
     - search.highlight
     - content.code.copy
     - toc.follow
+  # Dark is the default whatever the system's setting; the toggle switches to light and the choice is kept.
   palette:
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: slate
       primary: custom
       accent: amber
       toggle: { icon: material/brightness-4, name: Light mode }
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: custom
       accent: amber
       toggle: { icon: material/brightness-7, name: Dark mode }
