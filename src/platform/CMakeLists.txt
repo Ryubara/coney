@@ -53,7 +53,8 @@ target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
 coney_target_defaults(coney_platform)
 # Never coney_debug or Dear ImGui: the game reaches the debug tools only through hooks it offers
 # (docs/guides/building.md#debug-tools).
-target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_install coney_movies coney_net SDL3::SDL3-static librw::librw)
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_install coney_movies coney_net SDL3::SDL3-static
+                                            librw::librw)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 
 # The executables (docs/guides/building.md#debug-tools). With the debug tools, `coney` is main.cpp over them, and
