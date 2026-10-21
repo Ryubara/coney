@@ -1135,21 +1135,22 @@ also spelled `--slots-wait-timeout`), so that an agent never outlives its one-ho
 exits `75` with `still queued, position N of M, try again later` and the way on: do other work and run the same
 command again, or start it with `--detach`, write `STATUS.md` and stop ([Build waits](agents.md#build-waits)).
 
-**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default and most 45) caps the whole call,
-waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. A larger
+**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default and most 45) caps the whole call, waits
+and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. A larger
 `--max-wait` or `--budget`, or `--budget 0` (no budget), is refused with exit `2` unless the run is detached. Each
 finished step's duration is kept in `durations.json` in the claims directory, the last ten per preset, step and size
 (`ci/configure/main`, `ci/build/fast` or `ci/build/main` by lane, `ci/test/filtered` with `-R` or `-L`, `ci/test/full`
-without); a build of some targets only has them in its key (`dev/build/main:coney`) and a build through the
-compiler cache `+ccache` (`dev/build/main+ccache`), because both take a fraction of a full build without the cache
-and would otherwise pull its median down or up; a failed step is not recorded. While a run waits for a slot, it
-leaves the queue with exit `75` as soon as the time the call has taken plus the median of what it waits for (a
-phase's steps added up; with no history, the typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
-the budget, and says so with the numbers: `time budget: 25 min of the call so far; the build would take about 30 min
-(median of 4 runs) and the budget is 45 min`. It also leaves at its first look when the queue's own estimate of the
-wait still ahead (from the holders' steps), added to those, would pass the budget: `the queue ahead is about 50 min`.
-The test phase counts the build before it, and the wait for the build folder counts too. The budget only decides
-whether to keep waiting: a step that has started always runs to its end, and a free slot is always taken.
+without); a build of some targets only has them in its key (`dev/build/main:coney`) and a build through the compiler
+cache `+ccache` (`dev/build/main+ccache`), because both take a fraction of a full build without the cache and would
+otherwise pull its median down or up; a failed step is not recorded. While a run waits for a slot, it leaves the queue
+with exit `75` as soon as the time the call has taken plus the median of what it waits for (a phase's steps added up;
+with no history, the typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the
+fast lane) would pass the budget, and says so with the numbers:
+`time budget: 25 min of the call so far; the build would take about 30 min (median of 4 runs) and the budget is 45 min`.
+It also leaves at its first look when the queue's own estimate of the wait still ahead (from the holders' steps), added
+to those, would pass the budget: `the queue ahead is about 50 min`. The test phase counts the build before it, and the
+wait for the build folder counts too. The budget only decides whether to keep waiting: a step that has started always
+runs to its end, and a free slot is always taken.
 
 **Detached runs.** `--detach` checks the run as usual (precheck, refusals), then starts the same run in a process of
 its own, apart from the calling shell (on Windows `DETACHED_PROCESS` in a new process group, out of the caller's job
