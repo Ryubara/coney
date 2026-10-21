@@ -5,9 +5,10 @@ Every function defined in a folder of `paths.gameplay` (.github/conventions.yml)
 function it reimplements, or `@coney-only <reason>` (docs/guides/conventions.md#coney-only), unless it is exempt
 (orig_index.is_exempt). The functions that said neither before this check existed are the fidelity audit's backlog,
 not a gate, so the check refuses only what a change adds: a function that is untagged now and was not, under the same
-scope and name in the same folder, at the point where the branch left `base`. A function that loses its tag counts as
-new. Every folder of `src/` must also be in `paths.gameplay` or `paths.coney_only`, so a new subsystem cannot slip
-past.
+scope, name and parameter types in the same folder (a private helper: the same file), at the point where the branch
+left `base`. A function that loses its tag, an exempt accessor that grows, and a new function marked only by the older
+"Coney's own" wording count as new; a file renamed with `git mv` keeps its old functions. Every folder of `src/` must
+also be in `paths.gameplay` or `paths.coney_only`, so a new subsystem cannot slip past.
 """
 
 from __future__ import annotations
@@ -28,10 +29,13 @@ REMEDY = (
 )
 
 
-def _known(untagged: Untagged) -> tuple[str, str, str]:
-    """(folder, scope, name): an untagged function as recognised at another commit, even moved to another file."""
-    path, scope, name = untagged.key
-    return (PurePosixPath(path).parent.as_posix(), scope, name)
+def _known(untagged: Untagged) -> tuple[str, str, str, str]:
+    """(place, scope, name, parameter types): an untagged function as recognised at another commit. The place is its
+    folder, so a member or free function moved to another file of the folder is still known; a file's private helper
+    is known only in its own file (another file's helper of the same name is another function)."""
+    path, scope, name, params = untagged.key
+    place = path if untagged.kind == "helper" else PurePosixPath(path).parent.as_posix()
+    return (place, scope, name, params)
 
 
 def _base_text(root: Path, commit: str, path: str) -> str | None:
@@ -73,17 +77,25 @@ def check(root: Path, base: str) -> list[str]:
     # (a declaration's tag in an unchanged header still covers a changed definition).
     now = read_sources(root)
     since = local_gate.merge_base(root, base)
+    # A renamed file (`git mv`, to this folder or another) is read at the base under its new path, so its old
+    # functions are known where they are now.
+    renamed = local_gate.renamed_files(root, base)
     then: list[SourceFile] = [s for s in now if s.path not in changed]
     for path in changed:
-        text = _base_text(root, since, path)
+        text = _base_text(root, since, renamed.get(path, path))
         if text is not None:
             then.append(read_source(path, text))
-    current, _ = find_untagged(now, paths.gameplay)
-    before, _ = find_untagged(then, paths.gameplay)
-    old = {_known(u) for u in before}
+    current, _ = find_untagged(now, paths.gameplay, with_legacy=True)
+    before, _ = find_untagged(then, paths.gameplay, with_legacy=True)
+    # A function exempt at the base (an accessor) that is no longer exempt is new work and needs its tag.
+    old = {_known(u) for u in before if not u.exempt}
     for function in current:
         if not function.exempt and _known(function) not in old:
-            problems.append(f"{function.where}: {function.coney} has no @orig and no @coney-only; {REMEDY}")
+            wording = ' (the older "Coney\'s own" wording marks only code written before this check)'
+            problems.append(
+                f"{function.where}: {function.coney} has no @orig and no @coney-only"
+                f"{wording if function.legacy else ''}; {REMEDY}"
+            )
     return problems
 
 

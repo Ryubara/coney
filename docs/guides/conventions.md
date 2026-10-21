@@ -271,14 +271,15 @@ std::uint32_t targetChanges() const;
 The reason is a few words. A declaration's tag or marker covers its out-of-class definition, and a file that is wholly
 Coney's own says so once, in its header comment (`// @coney-only the debug menus' Time page; the original has
 none`). A file's private helpers (an anonymous namespace, `static`) are not exempt: one that does part of an original
-function's work carries that function's `@orig`, any other `@coney-only`. Exempt are only a member defined in its
-class whose body is one statement (an accessor, a setter, a forwarder) and a constructor or destructor with an empty
-body. The folders of `paths.coney_only` (`src/platform/`, `src/core/`, `src/fileio/`, `src/debug/`, `src/net/`,
-`src/sandbox/`) are Coney's own by nature and need no marker; every folder of `src/` is in one of the two lists.
+function's work carries that function's `@orig`, any other `@coney-only`. A tag on a class covers none of its
+members: each carries its own. Exempt are only a member defined in its class whose body is one statement with no
+branch or lambda (an accessor, a setter, a forwarder) and a constructor or destructor with an empty body. The
+folders of `paths.coney_only` (`src/platform/`, `src/core/`, `src/fileio/`, `src/debug/`, `src/net/`, `src/sandbox/`)
+are Coney's own by nature and need no marker; every folder of `src/` is in one of the two lists.
 `coney-tools orig check` ([orig](coney-tools.md#orig)), run by `check changed` and CI, refuses a new function that
 says neither, and a new folder in neither list. The functions written before the rule are the fidelity audit's
-backlog (`orig index`); the older wording ("Coney's own", "(no @orig)") is still read as a marker until they are
-converted.
+backlog (`orig index`); the older wording ("Coney's own", "(no @orig)") is still read as a marker on them until
+they are converted, never on a new function.
 
 ### Coney-only capabilities {#coney-only-capabilities}
 

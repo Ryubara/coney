@@ -123,3 +123,71 @@ def test_the_local_gate_runs_it_when_src_changed(repo: Path) -> None:
     add_to_brain(repo, "void freshWork() {}")
     result = check_cli._step_orig(repo, "HEAD", ["src/ai/brain.cpp"])
     assert not result.ok and result.output[0].startswith("src/ai/brain.cpp:8: freshWork")
+
+
+def commit(repo: Path, files: dict[str, str]) -> None:
+    """Write files and commit them, so they are part of the base."""
+    for name, text in files.items():
+        (repo / name).parent.mkdir(parents=True, exist_ok=True)
+        (repo / name).write_text(text, encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "more base")
+
+
+@pytest.mark.parametrize("target", ["src/ai/brain_impl.cpp", "src/human/brain.cpp"])
+def test_moving_a_file_with_old_untagged_functions_is_not_a_new_finding(repo: Path, target: str) -> None:
+    (repo / target).parent.mkdir(parents=True, exist_ok=True)
+    git(repo, "mv", "src/ai/brain.cpp", target)
+    assert orig_check.check(repo, "HEAD") == []
+
+
+def test_the_older_wording_does_not_mark_a_new_function(repo: Path) -> None:
+    add_to_brain(
+        repo, "// Like the original's targeting, but with Coney's own tie-break.\nvoid fresh() {\n    go();\n}"
+    )
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["fresh"]
+
+
+def test_the_older_wording_still_marks_a_function_written_before_the_check(repo: Path) -> None:
+    commit(repo, {"src/ai/old.cpp": "// Coney's own tally.\nvoid tally() {\n    go();\n}\n"})
+    (repo / "src/ai/old.cpp").write_text("// Coney's own tally.\nvoid tally() {\n    go();\n    go();\n}\n")
+    assert orig_check.check(repo, "HEAD") == []
+
+
+def test_a_new_untagged_overload_of_an_old_function_is_refused(repo: Path) -> None:
+    add_to_brain(repo, "void Brain::legacy(int times) {\n    think();\n}")
+    problems = orig_check.check(repo, "HEAD")
+    assert len(problems) == 1 and problems[0].startswith("src/ai/brain.cpp:8: Brain::legacy")
+
+
+def test_a_new_helper_is_not_excused_by_an_old_one_of_the_same_name_in_another_file(repo: Path) -> None:
+    commit(repo, {"src/ai/other.cpp": "namespace {\nint numberAt() {\n    return 1;\n}\n}\n"})
+    (repo / "src/ai/third.cpp").write_text("namespace {\nint numberAt() {\n    return 2;\n}\n}\n")
+    git(repo, "add", "-A")
+    problems = orig_check.check(repo, "HEAD")
+    assert [p.split(":")[0] for p in problems] == ["src/ai/third.cpp"]
+
+
+def test_an_exempt_accessor_that_grows_into_logic_is_refused(repo: Path) -> None:
+    header = "struct Small {\n    int get() const { return m_v; }\n    int m_v = 0;\n};\n"
+    commit(repo, {"src/ai/small.h": header})
+    grown = header.replace(
+        "{ return m_v; }", "{\n        if (m_v > 3) {\n            return 3;\n        }\n        return m_v;\n    }"
+    )
+    (repo / "src/ai/small.h").write_text(grown, encoding="utf-8")
+    assert [p.split(":")[0] for p in orig_check.check(repo, "HEAD")] == ["src/ai/small.h"]
+
+
+@pytest.mark.parametrize(
+    "member",
+    [
+        "void run() { each([](int v) { use(v); use(v); }); }",
+        "void set(int v) { if (v > 3) m_a = v; }",
+    ],
+)
+def test_a_one_line_member_with_a_lambda_or_a_condition_is_not_exempt(member: str) -> None:
+    from coney_tools.orig_index import is_exempt
+    from coney_tools.orig_scan import read_source
+
+    function = read_source("src/ai/s.h", f"struct S {{\n    {member}\n    int m_a = 0;\n}};\n").functions[0]
+    assert not is_exempt(function)

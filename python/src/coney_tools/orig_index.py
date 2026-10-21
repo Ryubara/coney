@@ -6,8 +6,8 @@ reimplemented function with the original function at its `@orig` address in Ghid
 
 * every tag: the Coney file, line and function, the original's address, name and source file, and the research
   pages the function's comment links;
-* the functions of the gameplay directories with no tag and no Coney-only marker (the proposed
-  `@coney-only <reason>`, docs/guides/coney-tools.md#orig);
+* the functions of the gameplay directories with no tag and no Coney-only marker
+  (docs/guides/conventions.md#coney-only);
 * the research sections that tagged code links which cite no original address, and the tags whose address the
   linked pages never cite, so an audit can put the address and name next to the behaviour the page describes.
 
@@ -71,13 +71,15 @@ class Untagged:
     kind: str  # "member", "free", "helper" (a file's private function) or "inline" (a member defined in its class)
     lines: int
     exempt: bool = False  # needs no tag or marker: a one-statement inline member, an empty constructor or destructor
+    params: str = ""  # the parameter types, which tell overloads apart
+    legacy: bool = False  # marked only by the older wording, which `orig check` reads as no marker on new code
 
     @property
-    def key(self) -> tuple[str, str, str]:
-        """(file, scope, name): what the function is recognised by at another commit."""
+    def key(self) -> tuple[str, str, str, str]:
+        """(file, scope, name, parameter types): what the function is recognised by at another commit."""
         path = self.where.rsplit(":", 1)[0]
         scope, _, name = self.coney.rpartition("::")
-        return (path, scope, name)
+        return (path, scope, name, self.params)
 
 
 @dataclass(frozen=True)
@@ -275,9 +277,9 @@ class _Coverage:
         return None
 
     def lookup(self, function: Function) -> str:
-        """The function's state, from its own comments, then its declaration's, then its file's header."""
+        """The function's state: the strongest of its own comments', its declaration's and its file header's."""
         own = self.state(function)
-        if own:
+        if own == "tagged":
             return own
         stem = _stem(function.path)
         tables = [self.by_file[function.path]]
@@ -285,11 +287,13 @@ class _Coverage:
             tables += [self.by_stem[stem], self.by_dir[stem[0]]]
             if function.scope:
                 tables.append(self.scoped)
+        declared = ""
         for table in tables:
             decided = self._decide(function, table.get(function.key, []))
             if decided is not None:
-                return decided or self.file_marks.get(stem, "")
-        return self.file_marks.get(stem, "")
+                declared = decided
+                break
+        return max(own, declared, self.file_marks.get(stem, ""), key=_STATE_ORDER.index)
 
 
 #: The states from weakest to strongest: a tag wins over a marker, a marker over the older wording.
@@ -319,10 +323,12 @@ def is_exempt(function: Function) -> bool:
 
 
 def find_untagged(
-    sources: list[SourceFile], gameplay: tuple[str, ...], paths: set[str] | None = None
+    sources: list[SourceFile], gameplay: tuple[str, ...], paths: set[str] | None = None, with_legacy: bool = False
 ) -> tuple[list[Untagged], dict[str, int]]:
     """The functions defined in the `gameplay` folders (or only in `paths` among them) with no tag and no marker, and
-    the counts of what was looked at: `in_scope`, `tagged`, `marker` and `legacy` (the older wording)."""
+    the counts of what was looked at: `in_scope`, `tagged`, `marker` and `legacy` (the older wording). With
+    `with_legacy`, the functions marked only by the older wording are listed too (`legacy` set): `orig check` accepts
+    that wording only on functions that had it before the check existed."""
     coverage = _Coverage(sources)
     untagged: list[Untagged] = []
     counts = {"in_scope": 0, "tagged": 0, "marker": 0, "legacy": 0}
@@ -336,9 +342,20 @@ def find_untagged(
             state = coverage.lookup(function)
             if state:
                 counts[state] += 1
+            if state and not (with_legacy and state == "legacy"):
                 continue
             where = f"{function.path}:{function.line}"
-            untagged.append(Untagged(where, function.qualified, _kind(function), function.lines, is_exempt(function)))
+            untagged.append(
+                Untagged(
+                    where,
+                    function.qualified,
+                    _kind(function),
+                    function.lines,
+                    is_exempt(function),
+                    function.params,
+                    state == "legacy",
+                )
+            )
     return untagged, counts
 
 

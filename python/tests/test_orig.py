@@ -368,7 +368,7 @@ def test_a_declaration_spelt_differently_covers_its_definition_when_not_overload
             "src/ai/go.cpp": "void Go::run(Thing const& thing) {}\n",
         },
     )
-    assert not [u for u in orig_index.build_index(checkout).untagged if u.coney == "Go::run"]
+    assert not [u for u in orig_index.build_index(checkout, GAMEPLAY).untagged if u.coney == "Go::run"]
 
 
 def test_a_member_defined_in_another_folder_takes_its_declaration_tag(checkout: Path) -> None:
@@ -379,7 +379,7 @@ def test_a_member_defined_in_another_folder_takes_its_declaration_tag(checkout: 
             "src/human/far_go.cpp": "void Far::go() {}\nvoid near() {}\n",
         },
     )
-    untagged = {u.coney for u in orig_index.build_index(checkout).untagged}
+    untagged = {u.coney for u in orig_index.build_index(checkout, ("src/ai/", "src/human/")).untagged}
     assert "Far::go" not in untagged and "near" in untagged
 
 
@@ -400,7 +400,7 @@ def test_a_tag_takes_its_research_link_from_the_declaration_the_class_or_the_hea
             ),
         },
     )
-    research = {r.name: r.research for r in orig_index.build_index(checkout).rows if r.path == "src/ai/r.cpp"}
+    research = {r.name: r.research for r in orig_index.build_index(checkout, GAMEPLAY).rows if r.path == "src/ai/r.cpp"}
     assert research == {
         "R_A": ("docs/research/made-up.md#thinking",),
         "S_C": ("docs/research/made-up.md#waiting",),
@@ -431,7 +431,7 @@ def test_a_coney_only_file_header_covers_its_untagged_functions_and_a_tag_wins(c
             )
         },
     )
-    index = orig_index.build_index(checkout)
+    index = orig_index.build_index(checkout, GAMEPLAY)
     assert not [u for u in index.untagged if u.where.startswith("src/ai/views.cpp")]
     assert (index.tagged, index.marked) == (3, 2)
 
