@@ -4,10 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "core/error.h"
+#include "core/pad.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
 #include "net/transport.h"
@@ -24,6 +26,10 @@ struct ServerConfig {
     std::uint32_t pingIntervalSteps = 6;       ///< a Ping to each player this often (5 a second at 30 Hz)
     std::uint32_t timeoutSteps = 300;          ///< a player heard from for this long is dropped (10 s at 30 Hz)
     std::uint32_t handshakeTimeoutSteps = 150; ///< a connection that sends no valid Hello for this long is closed
+    /// A player's pad is held as last heard for this many steps with no new PadInput, then let go (remotePad()); 15
+    /// is half a second at 30 Hz. Coney's choice, so a link that stalls does not leave a stick held until it times
+    /// out.
+    std::uint32_t padHoldSteps = 15;
 };
 
 /// One remote player as the server sees it.
@@ -35,6 +41,10 @@ struct ServerClient {
     std::uint32_t stepsSinceHeard = 0;
     std::uint32_t stepsConnected = 0;
     LinkQuality quality;
+    PadSample pad;              ///< the newest PadInput's pad; unplugged until one arrives
+    bool padHeard = false;      ///< a PadInput has arrived
+    std::uint32_t padStep = 0;  ///< its step, when padHeard
+    std::uint32_t padQuiet = 0; ///< steps begun since it arrived
 };
 
 /// Something the game should know happened, from takeEvents().
@@ -86,6 +96,10 @@ class NetServer {
     [[nodiscard]] const std::vector<ServerClient>& clients() const { return m_clients; }
     /// Joined players.
     [[nodiscard]] std::size_t joinedCount() const;
+    /// The pad of the player in `slot`, as the host's game should read it this step: nothing when no player has joined
+    /// in it; else his newest PadInput's pad, unplugged until the first arrives, and plugged in with nothing held and
+    /// the sticks centred once no new one has come for more than ServerConfig::padHoldSteps steps.
+    [[nodiscard]] std::optional<PadSample> remotePad(std::uint8_t slot) const;
     /// The events since the last call, oldest first.
     [[nodiscard]] std::vector<ServerEvent> takeEvents();
     /// The port the server listens on (the free one for port 0); 0 when not running.

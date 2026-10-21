@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -14,6 +15,8 @@
 #include <vector>
 
 #include "core/options.h"
+#include "core/pad.h"
+#include "core/pads.h"
 #include "debug/net_controls.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
@@ -27,7 +30,20 @@ namespace coney::platform {
 // The command line's default port is the protocol's; core cannot include the network library to share the constant.
 static_assert(kDefaultNetPort == net::kDefaultPort);
 
+namespace {
+
+// The host's remote player plays pad port 2; the console has no third (docs/research/frontend.md#pad-record).
+constexpr std::size_t kRemotePort = 1;
+constexpr std::uint8_t kRemoteSlot = 1;
+
+} // namespace
+
 std::unique_ptr<net::Transport> makeEnetTransport() { return std::make_unique<EnetTransport>(); }
+
+PortSamples NetInput::sample(std::uint64_t frame) {
+    const PortSamples local = m_inner != nullptr ? m_inner->sample(frame) : PortSamples{};
+    return m_net.pads(local);
+}
 
 NetPlay::NetPlay(TransportFactory factory, std::function<void(std::string_view)> print)
     : m_factory(std::move(factory)), m_print(std::move(print)), m_port(net::kDefaultPort) {}
@@ -84,6 +100,9 @@ bool NetPlay::hostOn(const std::string& bindAddress) {
     config.port = m_port;
     config.bindAddress = bindAddress;
     config.serverName = m_playerName;
+    // One remote player: he is the host's pad port 2, and the game has two players at most, as the original's two
+    // ports give (only pad records 0 and 4 are read, 0x001454a8).
+    config.maxClients = kPadPorts - 1;
     m_server = std::make_unique<net::NetServer>(*m_link, config);
     if (auto started = m_server->start(); !started) {
         note(std::format("cannot host on port {}: {}", m_port, started.error().message));
@@ -218,7 +237,7 @@ void NetPlay::afterStep() {
         m_server->send();
         for (const net::ServerEvent& event : m_server->takeEvents()) {
             if (event.kind == net::ServerEvent::Kind::Joined) {
-                note(std::format("{} joined as player {}", event.name, event.slot + 1));
+                note(std::format("{} joined as player {} on pad port {}", event.name, event.slot + 1, kRemotePort + 1));
             } else {
                 note(std::format("{} (player {}) {}", event.name, event.slot + 1,
                                  event.connectionLost ? std::string_view("lost the connection")
@@ -233,6 +252,18 @@ void NetPlay::afterStep() {
             note(state);
         }
     }
+}
+
+PortSamples NetPlay::pads(const PortSamples& local) {
+    PortSamples samples = local;
+    if (m_server) {
+        if (const std::optional<PadSample> remote = m_server->remotePad(kRemoteSlot); remote) {
+            samples.at(kRemotePort) = *remote;
+        }
+    } else if (m_client) {
+        m_client->setPad(local.at(0));
+    }
+    return samples;
 }
 
 debug::NetStatus NetPlay::status() const {

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "core/error.h"
+#include "core/pad.h"
 #include "net/transport.h"
 
 // The messages Coney's server and clients exchange, and their exact encoding. Coney's own; the original has no
@@ -22,7 +23,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 1;
+inline constexpr std::uint16_t kProtocolVersion = 2;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -38,6 +39,7 @@ enum class MessageId : std::uint8_t {
     Bye = 4,     ///< either way: the sender is closing the connection, and why
     Ping = 5,    ///< either way: answer with a Pong carrying the same sequence
     Pong = 6,    ///< either way: the answer to a Ping
+    PadInput = 7 ///< client to server: the client's pad in one of its steps (protocol 2)
 };
 
 /// Why a server refused a Hello.
@@ -84,18 +86,31 @@ struct Pong {
     std::uint32_t sequence = 0;
 };
 
+/// The client's pad in one of its steps: what its player 1 pad gave, which the host's game reads as its pad port 2.
+/// Sent every step, unreliably; the server keeps the one with the highest step, so a late or repeated packet never
+/// replaces a newer pad.
+///
+/// The pad travels as: connected (1 bit); then, only when connected, the button word (16 bits), the four stick bytes
+/// (8 bits each, PadSample::sticks order) and, for each of the 12 pressure bytes, a bit saying whether it is above 0
+/// and then the byte when it is. A disconnected pad decodes as PadSample{} (sticks centred, nothing held).
+struct PadInput {
+    std::uint32_t step = 0; ///< the client's steps since its Welcome, counted from 0
+    PadSample pad;
+};
+
 /// Any message.
-using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong>;
+using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, PadInput>;
 
 /// The packet for `message`. A Hello or Welcome whose name is over kMaxNameBytes is a programmer error.
 [[nodiscard]] std::vector<std::byte> encode(const Message& message);
 
 /// Reads one packet. Fails with Truncated when it is short and Invalid for anything else wrong: an unknown id or
-/// enumerator, the wrong magic, a name over kMaxNameBytes, trailing bytes. A Hello of another version decodes to its
+/// enumerator, the wrong magic, a name over kMaxNameBytes, a pressure byte flagged as above 0 but written as 0, trailing
+/// bytes. A Hello of another version decodes to its
 /// version alone (an empty name), since the rest of its layout is that version's.
 [[nodiscard]] std::expected<Message, Error> decode(std::span<const std::byte> packet);
 
-/// How a message travels: the handshake and Bye reliably and in order, Ping and Pong unreliably.
+/// How a message travels: the handshake and Bye reliably and in order, Ping, Pong and PadInput unreliably.
 [[nodiscard]] Delivery deliveryOf(const Message& message);
 
 /// Whether `name` may be a player's or a server's name: 1 to kMaxNameBytes printable ASCII characters (space to

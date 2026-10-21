@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The server and client sessions over the loopback (docs/guides/multiplayer.md#sessions): the handshake, slots,
 // refusals, leaving, timeouts counted in steps, protocol errors, and the round trip and loss through a link
-// conditioner.
+// conditioner, and the remote player's pad.
 #include "net/net_client.h"
 #include "net/net_server.h"
 
@@ -14,6 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/pad.h"
 #include "net/link_conditioner.h"
 #include "net/loopback_transport.h"
 #include "net/protocol.h"
@@ -90,6 +91,28 @@ struct Match {
         }
     }
 };
+
+// A pad with `buttons` held and the left stick at `leftX`.
+coney::PadSample padWith(std::uint16_t buttons, std::uint8_t leftX = coney::pad::kStickCentre) {
+    coney::PadSample pad;
+    pad.connected = true;
+    pad.buttons = buttons;
+    pad.sticks.at(2) = leftX;
+    return pad;
+}
+
+// A connection that says Hello by hand and has its Welcome, for sending packets a NetClient never would.
+PeerId rawJoin(Match& match, LoopbackTransport& raw) {
+    const PeerId peer = raw.connect("host", match.server.port()).value();
+    (void)drain(raw);
+    REQUIRE(raw.send(peer, Delivery::ReliableOrdered, encode(Hello{.version = kProtocolVersion, .playerName = "Raw"}))
+                .has_value());
+    match.run(1);
+    const auto events = drain(raw);
+    REQUIRE_FALSE(events.empty());
+    REQUIRE(std::holds_alternative<Welcome>(decode(events[0].data).value()));
+    return peer;
+}
 
 } // namespace
 
@@ -292,4 +315,99 @@ TEST_CASE("the handshake survives a lossy link, and the loss shows in the figure
     CHECK(client.quality().lossFraction() > 0.25F);
     CHECK(client.quality().lossFraction() < 0.75F);
     CHECK(client.quality().pingsSent() > 50);
+}
+
+TEST_CASE("a joined client's pad reaches the server every step, in the slot it holds", "[net][sessions][pad]") {
+    Match match;
+    CHECK_FALSE(match.server.remotePad(1).has_value()); // nobody in the slot
+    NetClient& client = match.join("Cleon");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+
+    // A step's pad leaves at the end of that step and is taken at the start of the server's next.
+    client.setPad(padWith(coney::pad::kStart, 200));
+    match.run(2);
+    const auto pad = match.server.remotePad(1);
+    REQUIRE(pad.has_value());
+    CHECK(pad->connected);
+    CHECK(pad->buttons == coney::pad::kStart);
+    CHECK(pad->sticks.at(2) == 200);
+    CHECK_FALSE(match.server.remotePad(2).has_value());
+
+    // The next step's pad replaces it.
+    client.setPad(padWith(coney::pad::kCross));
+    match.run(2);
+    CHECK(match.server.remotePad(1)->buttons == coney::pad::kCross);
+
+    // Gone with the player.
+    client.disconnect();
+    match.run(1);
+    CHECK_FALSE(match.server.remotePad(1).has_value());
+}
+
+TEST_CASE("a joined player's pad reads unplugged until his first pad input arrives", "[net][sessions][pad]") {
+    Match match;
+    LoopbackTransport raw(match.network, "raw");
+    (void)rawJoin(match, raw);
+    const auto pad = match.server.remotePad(1);
+    REQUIRE(pad.has_value());
+    CHECK_FALSE(pad->connected);
+}
+
+TEST_CASE("an older or repeated pad input never replaces a newer one", "[net][sessions][pad]") {
+    Match match;
+    LoopbackTransport raw(match.network, "raw");
+    const PeerId peer = rawJoin(match, raw);
+    const auto sendPad = [&](std::uint32_t step, std::uint16_t buttons) {
+        REQUIRE(raw.send(peer, Delivery::Unreliable, encode(PadInput{.step = step, .pad = padWith(buttons)}))
+                    .has_value());
+    };
+    sendPad(10, coney::pad::kCircle);
+    sendPad(9, coney::pad::kSquare); // arrives after step 10's: late, dropped
+    match.run(1);
+    CHECK(match.server.remotePad(1)->buttons == coney::pad::kCircle);
+    sendPad(10, coney::pad::kTriangle); // the same step again
+    match.run(1);
+    CHECK(match.server.remotePad(1)->buttons == coney::pad::kCircle);
+    sendPad(11, coney::pad::kTriangle);
+    match.run(1);
+    CHECK(match.server.remotePad(1)->buttons == coney::pad::kTriangle);
+}
+
+TEST_CASE("a pad input before the handshake is a protocol error", "[net][sessions][pad]") {
+    Match match;
+    LoopbackTransport raw(match.network, "eager");
+    const PeerId peer = raw.connect("host", match.server.port()).value();
+    (void)drain(raw);
+    REQUIRE(raw.send(peer, Delivery::Unreliable, encode(PadInput{.step = 0, .pad = padWith(0)})).has_value());
+    match.run(1);
+    const auto events = drain(raw);
+    REQUIRE(events.size() == 2);
+    CHECK(std::get<Bye>(decode(events[0].data).value()).reason == ByeReason::ProtocolError);
+    CHECK(match.server.clients().empty());
+}
+
+TEST_CASE("a pad that goes quiet is let go: held buttons released, sticks centred", "[net][sessions][pad]") {
+    ServerConfig config = Match::serverConfig();
+    config.padHoldSteps = 5;
+    Match match(config);
+    NetClient& client = match.join("Fox");
+    match.run(3);
+    client.setPad(padWith(coney::pad::kR1, 255));
+    match.run(2);
+    REQUIRE(match.server.remotePad(1)->buttons == coney::pad::kR1);
+
+    // Nothing the client sends from now on arrives (the link has not timed out yet); the pad already on its way
+    // arrives in the first step.
+    match.guests[0]->link.setConditions(LinkConditions{.lossFraction = 1.0F});
+    match.run(1);
+    match.run(5);
+    CHECK(match.server.remotePad(1)->buttons == coney::pad::kR1); // held through a short gap
+    match.run(1);
+    const auto quiet = match.server.remotePad(1);
+    REQUIRE(quiet.has_value());
+    CHECK(quiet->connected);
+    CHECK(quiet->buttons == 0);
+    CHECK(quiet->sticks == coney::PadSample{}.sticks);
+    CHECK(quiet->pressure == coney::PadSample{}.pressure);
 }

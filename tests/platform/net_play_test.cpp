@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The game's network play (docs/guides/multiplayer.md) over the loopback: hosting, joining by address, the figures the
-// Network page shows, the simulated network, leaving, and the refusals, two games in one process with no socket.
+// Network page shows, the simulated network, leaving, the refusals, and the guest's pad on the host's port 2, two games
+// in one process with no socket.
 #include "platform/net_play.h"
 
 #include <algorithm>
@@ -12,14 +13,20 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/pad.h"
+#include "core/pads.h"
 #include "debug/net_controls.h"
 #include "net/loopback_transport.h"
 #include "net/transport.h"
 
+using coney::InputSource;
+using coney::PadSample;
+using coney::PortSamples;
 using coney::debug::NetRole;
 using coney::debug::NetSimulation;
 using coney::net::LoopbackNetwork;
 using coney::net::LoopbackTransport;
+using coney::platform::NetInput;
 using coney::platform::NetPlay;
 
 namespace {
@@ -31,20 +38,46 @@ NetPlay::TransportFactory loopback(LoopbackNetwork& network, const char* name) {
     return [&network, name] { return std::make_unique<LoopbackTransport>(network, name); };
 }
 
+// A game's own pads: whatever the test sets, every step.
+struct HeldPads final : InputSource {
+    PortSamples samples{};
+    PortSamples sample(std::uint64_t /*frame*/) override { return samples; }
+};
+
+// A connected pad with `buttons` held and the left stick's x at `leftX`.
+PadSample padWith(std::uint16_t buttons, std::uint8_t leftX = coney::pad::kStickCentre) {
+    PadSample pad;
+    pad.connected = true;
+    pad.buttons = buttons;
+    pad.sticks.at(2) = leftX;
+    return pad;
+}
+
 // Two games, a host and a guest, stepped together as their main loops would.
 struct TwoGames {
     LoopbackNetwork network;
     std::vector<std::string> printed;
     NetPlay host{loopback(network, "host"), [this](std::string_view line) { printed.emplace_back(line); }};
     NetPlay guest{loopback(network, "guest"), {}};
+    // Each game's own pads, and the pads its game reads: its own through network play (NetInput).
+    HeldPads hostPads;
+    HeldPads guestPads;
+    NetInput hostInput{&hostPads, host};
+    NetInput guestInput{&guestPads, guest};
+    PortSamples hostSees{};  // what the host's game read in the last step
+    PortSamples guestSees{}; // what the guest's game read in the last step
+    std::uint64_t frame = 0;
 
-    // Runs `steps` steps on both games.
+    // Runs `steps` steps on both games, in the main loop's order: receive, read the pads, the step, send.
     void run(int steps) {
         for (int i = 0; i < steps; ++i) {
             host.advance(kStepNs);
             guest.advance(kStepNs);
             host.beforeStep();
             guest.beforeStep();
+            hostSees = hostInput.sample(frame);
+            guestSees = guestInput.sample(frame);
+            ++frame;
             host.afterStep();
             guest.afterStep();
         }
@@ -225,4 +258,68 @@ TEST_CASE("bad names, addresses and ports are refused with a reason", "[net][net
     CHECK_FALSE(second.host());
     CHECK(logged(second.log(), "cannot host on port 30000"));
     CHECK(second.status().role == NetRole::Offline);
+}
+
+TEST_CASE("a guest's pad is the host's port 2, as a second pad plugged into the host would be", "[net][net_play]") {
+    TwoGames games;
+    games.hostPads.samples[0] = padWith(coney::pad::kCross);
+    games.guestPads.samples[0] = padWith(coney::pad::kStart, 230);
+    games.connect();
+    games.run(1);
+
+    // The host's own port 1 is untouched; port 2 is the guest's port 1.
+    CHECK(games.hostSees[0].buttons == coney::pad::kCross);
+    CHECK(games.hostSees[1].connected);
+    CHECK(games.hostSees[1].buttons == coney::pad::kStart);
+    CHECK(games.hostSees[1].sticks.at(2) == 230);
+    // The guest's own game reads its own pads as before.
+    CHECK(games.guestSees[0].buttons == coney::pad::kStart);
+    CHECK_FALSE(games.guestSees[1].connected);
+
+    // A press in the guest's step leaves at its end, so the host's port 2 has it from the host's next step.
+    games.guestPads.samples[0] = padWith(coney::pad::kCircle);
+    games.run(1);
+    CHECK(games.hostSees[1].buttons == coney::pad::kStart);
+    games.run(1);
+    CHECK(games.hostSees[1].buttons == coney::pad::kCircle);
+}
+
+TEST_CASE("the host's own port 2 plays until a guest joins and again once he leaves", "[net][net_play]") {
+    TwoGames games;
+    games.hostPads.samples[1] = padWith(coney::pad::kTriangle);
+    games.guestPads.samples[0] = padWith(coney::pad::kSquare);
+    games.run(1);
+    CHECK(games.hostSees[1].buttons == coney::pad::kTriangle); // offline
+    games.connect();
+    games.run(1);
+    CHECK(games.hostSees[1].buttons == coney::pad::kSquare);
+    CHECK(logged(games.host.log(), "Guest joined as player 2 on pad port 2"));
+    games.guest.disconnect();
+    games.run(2);
+    CHECK(games.hostSees[1].buttons == coney::pad::kTriangle);
+}
+
+TEST_CASE("a guest with no pad plugged in leaves the host's port 2 unplugged", "[net][net_play]") {
+    TwoGames games;
+    games.hostPads.samples[1] = padWith(coney::pad::kTriangle);
+    games.connect(); // guestPads are all unplugged
+    games.run(1);
+    CHECK_FALSE(games.hostSees[1].connected);
+}
+
+TEST_CASE("a host takes one remote player, as the console has two pad ports", "[net][net_play]") {
+    TwoGames games;
+    games.connect();
+    NetPlay third(loopback(games.network, "third"), {});
+    third.setAddress("host:" + std::to_string(games.host.status().port));
+    REQUIRE(third.join());
+    for (int i = 0; i < 4; ++i) {
+        third.advance(kStepNs);
+        third.beforeStep();
+        games.run(1);
+        third.afterStep();
+    }
+    CHECK(third.status().role == NetRole::Offline);
+    CHECK(third.status().state == "refused: server full");
+    CHECK(games.host.status().players.size() == 1);
 }

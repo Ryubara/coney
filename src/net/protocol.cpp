@@ -13,12 +13,75 @@
 #include <vector>
 
 #include "core/error.h"
+#include "core/pad.h"
 #include "net/bit_stream.h"
 #include "net/transport.h"
 
 namespace coney::net {
 
 namespace {
+
+// Writes a pad as PadInput's comment lays it out: a disconnected pad is one bit.
+void writePad(BitWriter& out, const PadSample& pad) {
+    out.writeBool(pad.connected);
+    if (!pad.connected) {
+        return;
+    }
+    out.writeU16(pad.buttons);
+    for (const std::uint8_t stick : pad.sticks) {
+        out.writeU8(stick);
+    }
+    // Most pressure bytes are 0 at any moment (a button not held), so each costs one bit then.
+    for (const std::uint8_t pressure : pad.pressure) {
+        out.writeBool(pressure != 0);
+        if (pressure != 0) {
+            out.writeU8(pressure);
+        }
+    }
+}
+
+// Reads a pad written by writePad(); a pressure flagged as above 0 but written as 0 is Invalid.
+std::expected<PadSample, Error> readPad(BitReader& in) {
+    PadSample pad;
+    auto connected = in.readBool();
+    if (!connected) {
+        return std::unexpected(connected.error());
+    }
+    if (!*connected) {
+        return pad;
+    }
+    pad.connected = true;
+    auto buttons = in.readU16();
+    if (!buttons) {
+        return std::unexpected(buttons.error());
+    }
+    pad.buttons = *buttons;
+    for (std::uint8_t& stick : pad.sticks) {
+        auto value = in.readU8();
+        if (!value) {
+            return std::unexpected(value.error());
+        }
+        stick = *value;
+    }
+    for (std::uint8_t& pressure : pad.pressure) {
+        auto pressed = in.readBool();
+        if (!pressed) {
+            return std::unexpected(pressed.error());
+        }
+        if (!*pressed) {
+            continue;
+        }
+        auto value = in.readU8();
+        if (!value) {
+            return std::unexpected(value.error());
+        }
+        if (*value == 0) {
+            return fail(ErrorCode::Invalid, "network pad has a pressure flagged as pressed but 0");
+        }
+        pressure = *value;
+    }
+    return pad;
+}
 
 // Writes one message's id and fields.
 void writeMessage(BitWriter& out, const Message& message) {
@@ -45,10 +108,14 @@ void writeMessage(BitWriter& out, const Message& message) {
             } else if constexpr (std::is_same_v<T, Ping>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::Ping));
                 out.writeVarUint(m.sequence);
-            } else {
-                static_assert(std::is_same_v<T, Pong>);
+            } else if constexpr (std::is_same_v<T, Pong>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::Pong));
                 out.writeVarUint(m.sequence);
+            } else {
+                static_assert(std::is_same_v<T, PadInput>);
+                out.writeU8(static_cast<std::uint8_t>(MessageId::PadInput));
+                out.writeVarUint(m.step);
+                writePad(out, m.pad);
             }
         },
         message);
@@ -149,6 +216,17 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return Pong{.sequence = *sequence};
     }
+    case MessageId::PadInput: {
+        auto step = readSequence(in);
+        if (!step) {
+            return std::unexpected(step.error());
+        }
+        auto pad = readPad(in);
+        if (!pad) {
+            return std::unexpected(pad.error());
+        }
+        return PadInput{.step = *step, .pad = *pad};
+    }
     }
     return fail(ErrorCode::Invalid, "network message has an unknown id " + std::to_string(id));
 }
@@ -182,7 +260,9 @@ std::expected<Message, Error> decode(std::span<const std::byte> packet) {
 }
 
 Delivery deliveryOf(const Message& message) {
-    if (std::holds_alternative<Ping>(message) || std::holds_alternative<Pong>(message)) {
+    // A pad input is sent again every step, so a lost one is replaced at once; a resend would only arrive stale.
+    if (std::holds_alternative<Ping>(message) || std::holds_alternative<Pong>(message) ||
+        std::holds_alternative<PadInput>(message)) {
         return Delivery::Unreliable;
     }
     return Delivery::ReliableOrdered;
