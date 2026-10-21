@@ -214,6 +214,28 @@ test case that skips without the disc but lacks the tag fails a Python test.
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
 
+### The debug tools and the game {#debug-tools}
+
+Coney is getting two kinds of build (a maintainer decision, 2026-10-21): builds with the **debug tools**, which
+developers and agents use, and a **release** build a player will get, the game alone with none of the tools compiled
+in (the launcher will install it). The split lands in steps: today the tools have targets of their own, and every
+build still carries them. The debug tools are the [debug menus](debug-menu.md) and their pages, the developer
+overlay and Dear ImGui, the debug lines, the viewers, the cheats and tunables, the [sandbox](sandbox.md) and the
+developer command-line flags.
+
+The split is made by target, not by `#ifdef`. The game is `coney_core`, `coney_audio`, `coney_movies`, `coney_net`
+and `coney_platform`; the debug tools are two libraries of their own:
+
+| Target | Folder | Holds |
+| --- | --- | --- |
+| `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
+| `coney_devtools` | `src/platform/` | the menus' platform glue, the developer overlay (the only target that links Dear ImGui), the texture, character and sandbox viewers, the reference images |
+
+`coney` and `coney_tests` link both. Until the play mode, the game session and the sound output stop implementing
+the debug menus' interfaces, `coney_platform` still links `coney_debug`; the release preset follows once they do.
+`python/tests/test_debug_tools_split.py` reads the CMake files and fails when a game library lists a debug source or
+anything but `coney_devtools` links `imgui`.
+
 ### Debug information on MSVC {#debug-info}
 
 Every preset keeps the debug information inside each object (`/Z7`,
