@@ -370,7 +370,7 @@ sets the flag on both HUDs itself after a continue that leaves credits.
 - **Wrapper** `0x003701c8` (registered by `RegisterBindings`); **calls** `0x001b46a0` `HUD_ANEnableJoinMsg`
 - **Used by** 10 of 467 script chunks (78 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDANGetCredit {#hudangetcredit}
 
@@ -392,7 +392,7 @@ game-over screen ends the run.
 - **Wrapper** `0x00370290` (registered by `RegisterBindings`); **calls** `0x001b4700` `HUD_ANGetCredits`
 - **Used by** 5 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDANLaunchEndScreen {#hudanlaunchendscreen}
 
@@ -437,7 +437,7 @@ Sets the Armies of the Night credit counter (0x00619910). global.lua sets it to 
 - **Wrapper** `0x00370258` (registered by `RegisterBindings`); **calls** `0x001b46e0` `HUD_ANSetCredits`
 - **Used by** 7 of 467 script chunks (23 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDANSetGOSignMode {#hudansetgosignmode}
 
@@ -461,7 +461,7 @@ look like is open; inferred: 0 off, 1 and 2 two directions or styles.
 - **Wrapper** `0x00370c00` (registered by `RegisterBindings`); **calls** `0x001b4690` `HUD_ANSetGOSignMode`
 - **Used by** 19 of 467 script chunks (136 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDCenterComponents {#hudcentercomponents}
 
@@ -850,7 +850,7 @@ inferred, not traced to the button. Credits are the counter read by `HUDANGetCre
   `0x001557f8` `ANGameOver_Toggle`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDLaunchMissionComplete {#hudlaunchmissioncomplete}
 

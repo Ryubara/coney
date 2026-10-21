@@ -17,6 +17,7 @@
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/mission_complete_mode.h"
+#include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/mission_failed_mode.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/profile_manager_mode.h"
@@ -113,6 +114,8 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] PauseMode& pause() { return m_pause; }
     /// Mode 0xc.
     [[nodiscard]] MissionFailedMode& missionFailed() { return m_missionFailed; }
+    /// Mode 0xd.
+    [[nodiscard]] ArmiesGameOverMode& armiesGameOver() { return m_armiesGameOver; }
     /// Loads the sheets of sprite-sheet table records (the pause menu's background, the mission-failed title) through
     /// `loadRecord` from now on; until then they are not drawn.
     void setSheetRecordLoader(PauseRecordLoader loadRecord) { m_loadRecord = std::move(loadRecord); }
@@ -164,6 +167,7 @@ class StartUpFlow final : public script::BindingHost {
     /// @orig 0x00155308 Autosave_Request (unknown)
     void startSaveSequence() override;
     void launchMissionFailed(std::string_view reason) override;
+    void launchArmiesGameOver() override;
     void showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) override;
     void launchRumbleWin(std::string_view winner, std::string_view reason) override;
 
@@ -197,6 +201,7 @@ class StartUpFlow final : public script::BindingHost {
     PauseRecordLoader m_loadRecord; // the sheet-table records' loader, which the two modes below call through
     PauseMode m_pause;
     MissionFailedMode m_missionFailed;
+    ArmiesGameOverMode m_armiesGameOver;
     RumbleMenuMode m_rumbleMenu;
     RumbleIntroLayer m_rumbleIntro;
     RumbleResultMode m_rumbleResult;

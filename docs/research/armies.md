@@ -82,6 +82,17 @@ throughout, left stick centred (0, 0)):
 | 1667-7527 | nothing moves while the pad is idle; the timer counts down **one a second** (98 at 1667, 00 at 7527: 98 in 97.7 s) |
 | 7543 (126 s) | **"CONTINUE?"** in red over the scene, "Press the START button to continue" below it |
 
+**The walk out** (confirmed (runtime), PCSX2 2.9.129, 2026-10-21; `level60` checkpoint 1 loaded from a level99 state
+with `SetCheckPoint(1) MenuLoadLevel("level60")`, the player's transform and the tick count read four times a second,
+pad idle): Swan stands at (−93.5, 18.8), where the level script makes him, through the intro scene; at tick 1219-1233
+(20.3 s, `P1.Start03`'s `GoalMoveToFlag(player, Flag_02, 2, 0, 0, 0.5, 0, true)`) he walks (gait 2, 1.63 m/s) in a
+straight line out of the garage to (−94.78, 23.54), where he stops at tick 1399-1413: 0.48 m from `Flag_02`
+(−94.9, 24), inside the goal's 0.5 m radius. The flag's message 8 then runs `P1.Start04` (inferred, from the
+disassembly of `level60_destroyers.lua`), whose `F1.Restore01` and `F1.Restore02` bring the HUD back and start the
+timer (`F1.Time`: `W_SetStopWatch(99999, 0, "F1.TimerOut")`, shown in its seconds form); `F1.TimerOut` calls
+`HUDLaunchANGameOver(true)`, the "CONTINUE?" screen ([Pause: the game-over screen](pause.md#an-game-over)), whose
+countdown ends on "GAME OVER" with Replay and Quit over black.
+
 The HUD in play: top left Swan's portrait, his name and a seven-digit score (0000000) over a green health bar; top
 centre the two-digit **timer** (starting at 99); top right **"PRESS THE START BUTTON TO JOIN"**, blinking; at the right
 edge **"GO"** with an arrow pointing right, blinking; bottom right **"CREDITS: 07"** (`HUDANSetCredit(7)`). So the idle
@@ -95,12 +106,13 @@ Read in the engine and seen in a run of the 2026-10-10 release build (`--play-le
 That run is an observation of Coney, not of the original:
 
 - `level60` loads and its scripts run through the intro scene `l60_intro`, the music and `P1.Start03`'s rail. The
-  last frame shows the street in a fixed view. Of the stage's 15 new bindings, 11 are not implemented
+  last frame shows the street in a fixed view. Of the stage's 15 new bindings, 6 are not implemented
   ([Story coverage](../references/bindings/story.md#level60)): `HuColor`, `HuEnableController`, `GangSetMoney`,
-  `CamLockRail`, `HUDANEnableJoinMsg`, `HUDANGetCredit`, `HUDANSetCredit`, `HUDANSetGOSignMode`,
-  `HUDLaunchANGameOver`, `HUDSetANBossTexture`, `CfgBaseChanceToBlock`. The run goes on past them.
-- The rail's settings 5, 6 and 7 do nothing (`repo:src/camera/rail_camera.h`), so the rail camera does not trail the
-  fighters as mode 3 does.
+  `CamLockRail`, `HUDSetANBossTexture`, `CfgBaseChanceToBlock`. The run goes on past them. (`HUDANEnableJoinMsg`,
+  `HUDANGetCredit`, `HUDANSetCredit`, `HUDANSetGOSignMode` and `HUDLaunchANGameOver` came with issue #85.)
+- The rail's setting 5 switches mode 3 on with its pitch and setting 7 keeps its margin
+  (`repo:src/camera/rail_camera.h`); the keep-in-frame step that uses the margin is a marked stand-in, as Coney's rail
+  has one target.
 - `characters::isArmiesLevel` takes levels 60-69, as the original's test does (`repo:src/characters/character_class.cpp`;
   it took 60-64 until the fix for item 19).
 - **The black screen (item 19)**, reproduced in a disc test (`repo:tests/platform/disc_armies_test.cpp`): the debug
@@ -112,8 +124,14 @@ That run is an observation of Coney, not of the original:
   record with no `.lev` on the disc and names it under "No level file", a jump to one is refused with a log line
   (`GameSession::levelLoads`), and the Missions page lists the five flashbacks and the five Armies stages after the
   story (`repo:src/debug/story_missions.cpp`).
-- After the intro, Coney shows the street in front of the garage in a fixed view with no HUD: the Armies HUD, the
-  timer, the continue screen and the rail's mode 3 are not built (the fixes below from step 3).
+- **The frozen view after the intro** (issue #85, main of 2026-10-20): after `l60_intro` Coney showed the street in
+  front of the garage in a fixed view, with no player, no HUD and no timer. The cause was the garage's door: a
+  `dyn_door_rollup` is a sliding door, and Coney gave sliding doors no behaviour, so `P1.Start02`'s `OpenDoor` left
+  its triangles on and its links closed, `P1.Start03`'s walk to `Flag_02` found no way out of the garage (each move
+  ended at once), the flag's message 8 never came and `P1.Start04`, the HUD's return and the timer never ran. Coney
+  now has the sliding doors ([Sliding doors](script-types.md#sliding-doors)), the rail's mode 3, the Armies HUD's
+  credits, GO sign and join messages, the timer's seconds form and the game-over screen (mode 0xd); with the pad idle
+  the stage plays as [the original's first frames](#first-frames) do.
 
 ## Coney fixes (item 19) {#coney-fixes}
 

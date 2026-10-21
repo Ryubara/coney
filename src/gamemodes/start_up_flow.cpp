@@ -54,6 +54,9 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_missionFailed(
           device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_state,
           m_levelFlow, stack, log),
+      m_armiesGameOver(
+          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_state,
+          m_levelFlow, stack, &m_hud, log),
       m_rumbleMenu(device, loadSheet, stack, m_scripts, m_state, strings, m_rumbleData, m_services, m_fade,
                    legal.europe, log),
       m_rumbleIntro(loadSheet, strings, m_services, m_state, log),
@@ -75,6 +78,10 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_gameplay.setPause(&m_pause);
     m_pause.setWorld(&m_gameplay);
     m_missionFailed.setWorld(&m_gameplay);
+    m_armiesGameOver.setWorld(&m_gameplay);
+    m_armiesGameOver.setHooks(ArmiesGameOverHooks{
+        .playerUp = [this](int player) { return m_gameplay.playerStanding(player); },
+        .healPlayer = [this](int player) { m_gameplay.healPlayer(player); }});
     // A Rumble match: the intro over play, the result screen over the world going on.
     m_gameplay.addOverlay(&m_rumbleIntro);
     // `--ai-player`: when the countdown has ended (FinishCountdown and the rules' StartIt done), player 1 is handed to
@@ -191,6 +198,8 @@ void StartUpFlow::startSaveSequence() {
 }
 
 void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed.launch(reason); }
+
+void StartUpFlow::launchArmiesGameOver() { m_armiesGameOver.launch(); }
 
 void StartUpFlow::showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) {
     m_rumbleIntro.show(onDone, names);

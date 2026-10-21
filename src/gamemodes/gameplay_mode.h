@@ -332,6 +332,11 @@ class GameplayMode final : public GameMode {
     /// Player 1 handed to the AI in the loaded level (ScriptedPlayer::releasePlayerToAi()); false with no level, or
     /// none to hand.
     bool releasePlayerToAi();
+    /// Whether player `player` (0 or 1) is in the level and not knocked out (the Armies game over's continue).
+    [[nodiscard]] bool playerStanding(int player) const;
+    /// Player `player` (0 or 1) healed in full and stood up (`Human_Heal(human, 1)`, through `HuRevive`'s revive): an
+    /// Armies continue.
+    void healPlayer(int player);
     /// Player 1's cameras for the level; null while no level is entered.
     [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }
     /// The level's glass panes and doors (empty while no level is entered).

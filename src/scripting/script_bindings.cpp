@@ -463,6 +463,15 @@ NativeFunction makeHudLaunchMissionFailed(const Factory& factory) {
     };
 }
 
+// `HUDLaunchANGameOver(on)`: shows the Armies of the Night game-over mode; `on` is read and not used.
+// @orig 0x0036f1b8 HUDLaunchANGameOver (unknown)
+NativeFunction makeHudLaunchArmiesGameOver(const Factory& factory) {
+    return [host = factory.context->host](std::span<const Value> /*args*/) {
+        host->launchArmiesGameOver();
+        return binding::none();
+    };
+}
+
 // ---- Coney's scene stand-in (docs/research/scenes.md): with no scene system, a scene loads and ends at once ----
 
 // Schedules the Lua function named by string argument `i` (none for nil or a number) with the scene id, to run at the
@@ -532,6 +541,7 @@ constexpr std::array kMakers{
     Maker{"GetLevelId", makeGetLevelId},
     Maker{"GetPlatform", makeGetPlatform},
     Maker{"GetProfileDifficulty", makeGetProfileDifficulty},
+    Maker{"HUDLaunchANGameOver", makeHudLaunchArmiesGameOver},
     Maker{"HUDLaunchMissionComplete", makeHudLaunchMissionComplete},
     Maker{"HUDLaunchMissionFailed", makeHudLaunchMissionFailed},
     Maker{"HuCreate", makeHuCreate},
@@ -609,6 +619,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("ScreenQueueEffect"),
     real("HUDLaunchMissionComplete"),
     real("HUDLaunchMissionFailed"),
+    real("HUDLaunchANGameOver"),
     // A Rumble match: the intro, the result screen, the tactics and the fighters (rumble_match_bindings.h).
     real("ShowRumbleModeIntro"),
     real("HUDLaunchRumbleWin"),
@@ -1100,6 +1111,10 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HUDSetTutorialText"),
     real("HUDShowMissionSummaryText"),
     real("HUDTurnOffRadar"),
+    real("HUDANSetCredit"),
+    real("HUDANGetCredit"),
+    real("HUDANSetGOSignMode"),
+    real("HUDANEnableJoinMsg"),
     real("HUDTurnOnRadar"),
     real("HidePlayerHud"),
     real("HideHud"),

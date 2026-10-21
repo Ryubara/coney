@@ -897,6 +897,21 @@ bool GameplayMode::releasePlayerToAi() {
     return scripted != nullptr && scripted->releasePlayerToAi();
 }
 
+bool GameplayMode::playerStanding(int player) const {
+    const HumanCreation* created = m_humans.player(player + 1);
+    if (created == nullptr || !m_scripted) {
+        return false;
+    }
+    const ai::Brain* brain = m_scripted->brain(created->handle);
+    return brain != nullptr && !brain->knockedOut();
+}
+
+void GameplayMode::healPlayer(int player) {
+    if (const HumanCreation* created = m_humans.player(player + 1); created != nullptr && m_scripted) {
+        m_scripted->humanHost().revive(created->handle);
+    }
+}
+
 void GameplayMode::reportHumanSounds() {
     if (!m_scripted) {
         return;

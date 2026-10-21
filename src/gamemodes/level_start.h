@@ -101,6 +101,10 @@ class QuietBindingHost final : public script::BindingHost {
     void launchMissionComplete(int kind) override;
     /// Keeps and logs the reason.
     void launchMissionFailed(std::string_view reason) override;
+    /// Counts and logs the Armies of the Night game over.
+    void launchArmiesGameOver() override;
+    /// How many times `HUDLaunchANGameOver` was called.
+    [[nodiscard]] int armiesGameOvers() const { return m_armiesGameOvers; }
     /// The kind `HUDLaunchMissionComplete` passed, once it has been called.
     [[nodiscard]] const std::optional<int>& missionComplete() const { return m_complete; }
     /// The reason `HUDLaunchMissionFailed` passed, once it has been called.
@@ -129,6 +133,7 @@ class QuietBindingHost final : public script::BindingHost {
     std::function<void(std::string_view)> m_log;
     std::optional<int> m_complete;
     std::optional<std::string> m_failed;
+    int m_armiesGameOvers = 0;
     bool m_missionComplete = false;
     bool m_unlocking = false;
     std::optional<std::string> m_nextLevel;

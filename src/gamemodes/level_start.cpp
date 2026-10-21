@@ -156,6 +156,13 @@ void QuietBindingHost::launchMissionComplete(int kind) {
     }
 }
 
+void QuietBindingHost::launchArmiesGameOver() {
+    ++m_armiesGameOvers;
+    if (m_log) {
+        m_log("level: armies game over\n");
+    }
+}
+
 void QuietBindingHost::launchMissionFailed(std::string_view reason) {
     m_failed = std::string(reason);
     if (m_log) {

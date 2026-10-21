@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/route_planner.h"
+#include <cstdio> // DBG
 #include "raycast/collision_mesh.h"
 
 #include <algorithm>
@@ -90,6 +91,9 @@ RoutePlanner::RoutePlanner(const world::PathMap& map, PlannerSettings settings)
     : m_map(&map), m_settings(settings), m_uses(map.nodes().size(), 0) {}
 
 std::expected<RoutePlan, MoveFailure> RoutePlanner::request(anim::Vec3 from, anim::Vec3 to, std::uint16_t mask) {
+    std::fprintf(stderr, "DBGROUTE from %.2f %.2f %.2f to %.2f %.2f %.2f hole %d/%d poly %d/%d line %d\n", from.x, from.y, from.z, to.x, to.y, to.z,
+                 inHole(from) ? 1 : 0, inHole(to) ? 1 : 0, polygonUnder(from) ? static_cast<int>(*polygonUnder(from)) : -1,
+                 polygonUnder(to) ? static_cast<int>(*polygonUnder(to)) : -1, lineClear(from, to) ? 1 : 0);
     // A start standing in a hole (an obstacle's padding) plans from its edge or a probe; a destination in one has no
     // fallback, and the move ends at once.
     if (inHole(from)) {

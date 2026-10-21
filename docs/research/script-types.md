@@ -2032,6 +2032,33 @@ triangles off, 6 on, 10 / 11 the lock-pick glint on / off. Message `0x0c` answer
 along the axis until the length (or 0), then tells the door `0x13` and rests (`0xc`). Compare the
 [swinging doors](objects.md#door-states).
 
+In detail, re-read 2026-10-21 for issue #85 (confirmed (code) at the addresses in the table):
+
+- **The slide** (`SlidingDoor_SpawnLeaves`): with `CfgObj` property 7 (`f17`, `+0x70`) not 0 the length is property 7
+  (its sign kept) and the axis byte 2; otherwise the length is property 8 (`f18`, `+0x74`) and the axis byte 0;
+  `dyn_door_fence_s` and `dyn_door_pol` add 1. The leaf's direction (`SubSlidingDoor_PlaceLeaf`) is, in its own
+  frame, byte 0 up (+z), 1 down, 2 along +x, 3 along −x, turned by its pose. The door's step `+0x30` is twice property
+  6 (`f16`, `+0x6c`, `DynDoorSliding_Init`).
+- **The leaves and sounds by type name** (strings `0x00586450`-`0x00586590`): `dyn_door_rollup` one `dyn_dr_rollup`,
+  `dyn_door_ele` one `dyn_dr_ele` and `dyn_door_pol` one `dyn_dr_pol`; the portcullis, both fences, `dyn_door_ele_c`
+  and `dyn_door_subway` two leaves of their `dyn_dr_` type, `dyn_door_spook` `dyn_dr_spook_a` and `_b`. The first
+  leaf takes the door's pose; a second sits 2 × property 5 along the door's −x axis, turned (inferred: about the
+  vertical for the horizontal sliders; `dyn_door_ele_c` places its pair differently, not traced). The open and close
+  sound is `0xd2479dee` for the roll-up, the lift doors and the spook door, `0x8a2b8511` for the portcullis and
+  `0xf8638826` for the rest.
+- **A command** (`SlidingDoor_StateCommand`): 2 or 8 send the leaves state `0xd` (their update interval 2 ticks), set
+  the door's state byte `+0x2c` to 2 (what message `0x0c` answers "open" for) and play the open sound, then as 5: both
+  collision triangles off and **`NavLink_Open(number)`** (`0x003a4b00`, `NavLinks_OpenByNumber`: the links lose their
+  avoid bit and the doorway's hole gets flag 8). 3 or 7 do the same with `0xe`, state 3 and the close sound, then as 6:
+  triangles on and `NavLink_Close(number)`. Message `0x0b` (a human opens it) is command 2. The set-up ends with
+  command 7, so a sliding door starts shut, its links avoided and its doorway a hole in the walk mesh.
+- **The leaf's step** (`SubSlidingDoor_Update`, every 2 ticks while it slides): opening, while its offset is not past
+  the length it adds the step, else it sets the length and rests; closing, while the offset is not below 0 it takes
+  the step off, else it sets 0 and rests (interval `0x3c`). So it overshoots by up to one step before it settles.
+
+`level60`'s garage is a `dyn_door_rollup` (door number 5, at (−94.69, 19.66)): `P1.Start02`'s `OpenDoor` opens the way
+the player then walks out by ([Armies of the Night](armies.md#first-frames)).
+
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003f4950` | `SubSlidingDoor_PlaceLeaf` | helper (`sub_sliding_door` update and message 0x40) | Sliding door leaf: takes its closed pose from the door and its slide axis from the door's axis byte. | confirmed (code) |

@@ -84,6 +84,56 @@ constexpr std::array<std::string_view, 6> kBarrierClasses{"dyn_door_fence",   "d
                                                           "dyn_door_chain_s", "dyn_door_fence_o",  "dyn_door_parapet"};
 constexpr std::string_view kUnmarkedBarrierClass = "dyn_door_chain_s";
 constexpr std::string_view kSwingingClass = "dyn_door_swinging";
+constexpr std::string_view kSlidingClass = "dyn_door_sliding";
+
+// One sliding door type SlidingDoor_SpawnLeaves names (`0x003f4c80`): its leaves' types, whether its axis byte goes
+// one further (`dyn_door_fence_s`, `dyn_door_pol`) and whether it plays the roll-up's sound (else kSlidingDoorSound;
+// the portcullis has its own).
+struct SlidingRow {
+    std::string_view name;
+    std::string_view leaf;
+    std::string_view secondLeaf;
+    bool axisOneMore;
+    bool rollupSound;
+};
+constexpr std::string_view kPortcullis = "dyn_door_portcullis";
+constexpr std::array kSlidingRows{
+    SlidingRow{"dyn_door_rollup", "dyn_dr_rollup", "", false, true},
+    SlidingRow{kPortcullis, "dyn_dr_portcullis", "dyn_dr_portcullis", false, false},
+    SlidingRow{"dyn_door_fence_r", "dyn_dr_fence_r", "dyn_dr_fence_r", false, false},
+    SlidingRow{"dyn_door_fence_s", "dyn_dr_fence_s", "dyn_dr_fence_s", true, false},
+    SlidingRow{"dyn_door_ele", "dyn_dr_ele", "", false, true},
+    SlidingRow{"dyn_door_ele_c", "dyn_dr_ele_c", "dyn_dr_ele_c", false, true},
+    SlidingRow{"dyn_door_pol", "dyn_dr_pol", "", true, false},
+    SlidingRow{"dyn_door_subway", "dyn_dr_subway", "dyn_dr_subway", false, false},
+    SlidingRow{"dyn_door_spook", "dyn_dr_spook_a", "dyn_dr_spook_b", false, true},
+};
+// The portcullis' open and close sound.
+constexpr std::uint32_t kPortcullisSound = 0x8a2b8511U;
+constexpr std::string_view kSlidingClass = "dyn_door_sliding";
+
+// One sliding door type SlidingDoor_SpawnLeaves names: its leaves' type(s), whether its axis byte goes one further
+// (`dyn_door_fence_s`, `dyn_door_pol`) and whether it plays the roll-up's sound (else kSlidingDoorSound).
+struct SlidingRow {
+    std::string_view name;
+    std::string_view leaf;
+    std::string_view secondLeaf;
+    bool axisOneMore;
+    bool rollupSound;
+};
+constexpr std::array kSlidingRows{
+    SlidingRow{"dyn_door_rollup", "dyn_dr_rollup", "", false, true},
+    SlidingRow{"dyn_door_portcullis", "dyn_dr_portcullis", "dyn_dr_portcullis", false, false},
+    SlidingRow{"dyn_door_fence_r", "dyn_dr_fence_r", "dyn_dr_fence_r", false, false},
+    SlidingRow{"dyn_door_fence_s", "dyn_dr_fence_s", "dyn_dr_fence_s", true, false},
+    SlidingRow{"dyn_door_ele", "dyn_dr_ele", "", false, true},
+    SlidingRow{"dyn_door_ele_c", "dyn_dr_ele_c", "dyn_dr_ele_c", false, true},
+    SlidingRow{"dyn_door_pol", "dyn_dr_pol", "", true, false},
+    SlidingRow{"dyn_door_subway", "dyn_dr_subway", "dyn_dr_subway", false, false},
+    SlidingRow{"dyn_door_spook", "dyn_dr_spook_a", "dyn_dr_spook_b", false, true},
+};
+// The portcullis' sound (its open and close).
+constexpr std::uint32_t kPortcullisSound = 0x8a2b8511U;
 
 // The prefixes of a door type and of its leaves.
 constexpr std::string_view kDoorPrefix = "dyn_door_";
@@ -145,6 +195,54 @@ std::string fallbackModelOf(std::string_view type) {
         model.erase(kLeafPrefix.size(), kDouble.size());
     }
     return model;
+}
+
+// The unit direction axis byte `axis` names in a sliding leaf's frame: 0 up, 1 down, 2 along +x, 3 along -x.
+// @orig 0x003f4950 SubSlidingDoor_PlaceLeaf (unknown)
+anim::Vec3 slideDirection(std::uint8_t axis) {
+    switch (axis) {
+    case 0:
+        return anim::Vec3{0.0F, 0.0F, 1.0F};
+    case 1:
+        return anim::Vec3{0.0F, 0.0F, -1.0F};
+    case 2:
+        return anim::Vec3{1.0F, 0.0F, 0.0F};
+    case 3:
+        return anim::Vec3{-1.0F, 0.0F, 0.0F};
+    default:
+        return anim::Vec3{};
+    }
+}
+
+// One 60 Hz tick of a sliding door's leaf: on its update (every kSlideStepTicks while it slides) it moves `step`
+// toward the open `length` or back to 0, as the original tests it (a step is still taken while the offset has not
+// passed the end, so it may overshoot once before it settles there), and rests on reaching it.
+// @orig 0x003f5a68 SubSlidingDoor_Update (unknown)
+void stepSlidingLeaf(SlidingLeaf& leaf, float length, float step) {
+    if (leaf.motion == slide_motion::kRest || --leaf.countdown > 0) {
+        return;
+    }
+    leaf.countdown = kSlideStepTicks;
+    bool done = false;
+    if (leaf.motion == slide_motion::kOpening) {
+        if (leaf.offset <= length) {
+            leaf.offset += step;
+        } else {
+            leaf.offset = length;
+            done = true;
+        }
+    } else if (leaf.motion == slide_motion::kClosing) {
+        if (leaf.offset >= 0.0F) {
+            leaf.offset -= step;
+        } else {
+            leaf.offset = 0.0F;
+            done = true;
+        }
+    }
+    if (done) {
+        leaf.motion = slide_motion::kRest;
+        leaf.countdown = kSlideRestTicks;
+    }
 }
 
 // One 60 Hz tick of a leaf: a new target starts a swing from the last one (snapping to it first), then the pose is
@@ -238,6 +336,12 @@ DoorClass doorClassOf(std::string_view className) {
     if (className == kSwingingClass) {
         return DoorClass::Swinging;
     }
+    if (className == kSlidingClass) {
+        return DoorClass::Sliding;
+    }
+    if (className == kSlidingClass) {
+        return DoorClass::Sliding;
+    }
     return listed(kBarrierClasses, className) ? DoorClass::Barrier : DoorClass::Other;
 }
 
@@ -301,9 +405,91 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
         }
         door.interval = kBarrierInterval;
         door.countdown = kBarrierInterval;
+    } else if (door.doorClass == DoorClass::Sliding) {
+        setUpSliding(door, info, handles, world);
     }
     m_doors.push_back(std::move(door));
     return m_doors.back();
+}
+
+void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSource& handles, ObjectWorld& world) {
+    // The slide: property 7's length along the leaf's x axis (axis byte 2), or with none property 8's up its z axis
+    // (axis byte 0); the step twice property 6, taken every kSlideStepTicks while it slides.
+    const float lengthX = info != nullptr ? info->property7 : 0.0F;
+    door.slideLength = lengthX;
+    door.slideAxis = 2;
+    if (std::fabs(lengthX) == 0.0F) {
+        door.slideLength = info != nullptr ? info->property8 : 0.0F;
+        door.slideAxis = 0;
+    }
+    door.slideStep = info != nullptr ? info->property6 * 2.0F : 0.0F;
+    // The leaves by type name: the first at the door's pose, a second 2w along its x axis, turned about.
+    const auto* row = std::ranges::find(kSlidingRows, door.type, &SlidingRow::name);
+    if (row != kSlidingRows.end()) {
+        if (row->axisOneMore) {
+            ++door.slideAxis;
+        }
+        std::uint32_t sound = row->rollupSound ? kRollupDoorSound : kSlidingDoorSound;
+        if (row->name == kPortcullis) {
+            sound = kPortcullisSound;
+        }
+        door.slideOpenSound = sound;
+        door.slideCloseSound = sound;
+        for (const std::string_view model : {row->leaf, row->secondLeaf}) {
+            if (model.empty()) {
+                continue;
+            }
+            const bool second = !door.slidingLeaves.empty();
+            SlidingLeaf leaf;
+            leaf.handle = handles ? handles() : kNoObject;
+            leaf.model = std::string(model);
+            leaf.closed = second ? anim::add(door.position,
+                                             rotate(door.rotation, anim::Vec3{-2.0F * door.leafWidth, 0.0F, 0.0F}))
+                                 : door.position;
+            leaf.rotation = second ? turnAboutVertical(door.rotation, 180.0F) : door.rotation;
+            leaf.axis = rotate(leaf.rotation, slideDirection(door.slideAxis));
+            door.slidingLeaves.push_back(std::move(leaf));
+        }
+    }
+    // Its triangles two-sided with the door bit and the type's material, then closed (command 7).
+    markTriangles(world, door.triangles, raycast::kTriangleTwoSided | kTriangleDoorBit, door.material);
+    runSlidingCommand(door, door_command::kCloseToo, world);
+}
+
+void Doors::runSlidingCommand(Door& door, int command, ObjectWorld& world) {
+    NavLinks links(world.paths);
+    // The leaves take the door's command at once: a slide starts on their next step.
+    const auto slide = [&door](int motion) {
+        for (SlidingLeaf& leaf : door.slidingLeaves) {
+            leaf.motion = motion;
+            leaf.countdown = kSlideStepTicks;
+        }
+    };
+    switch (command) {
+    case door_command::kOpen:
+    case door_command::kOpenToo:
+        slide(slide_motion::kOpening);
+        door.slideState = slide_state::kSlideOpen;
+        playSound(door, door.slideOpenSound, world);
+        [[fallthrough]];
+    case door_command::kDisableCollision:
+        setTrianglesEnabled(world, door.triangles, false);
+        links.openByNumber(door.number);
+        return;
+    case door_command::kClose:
+    case door_command::kCloseToo:
+        slide(slide_motion::kClosing);
+        door.slideState = slide_state::kSlideClosed;
+        playSound(door, door.slideCloseSound, world);
+        [[fallthrough]];
+    case door_command::kEnableCollision:
+        setTrianglesEnabled(world, door.triangles, true);
+        links.closeByNumber(door.number);
+        return;
+    default:
+        // 10 and 11 (the lock-pick glint) and the rest: **Coney's stand-in**, no glint on a sliding door.
+        return;
+    }
 }
 
 void Doors::command(double handle, int command, ObjectWorld& world) {
@@ -313,6 +499,10 @@ void Doors::command(double handle, int command, ObjectWorld& world) {
 }
 
 void Doors::runCommand(Door& door, int command, ObjectWorld& world) {
+    if (door.doorClass == DoorClass::Sliding && !door.removed) {
+        runSlidingCommand(door, command, world);
+        return;
+    }
     if (door.doorClass != DoorClass::Swinging || door.ended) {
         return;
     }
@@ -414,6 +604,11 @@ void Doors::openToDegree(double handle, float degrees, ObjectWorld& world) {
 
 void Doors::openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world) {
     if (Door* door = findMutable(handle)) {
+        // A sliding door opened by a human takes command 2 (DynDoorSliding_OnMessage `0x0b`).
+        if (door->doorClass == DoorClass::Sliding) {
+            runSlidingCommand(*door, door_command::kOpen, world);
+            return;
+        }
         openAway(*door, humanAt, world);
     }
 }
@@ -438,6 +633,9 @@ void Doors::openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world) {
 
 bool Doors::isOpen(double handle) const {
     const Door* door = find(handle);
+    if (door != nullptr && door->doorClass == DoorClass::Sliding) {
+        return door->slideState == slide_state::kSlideOpen;
+    }
     return door != nullptr && door->doorClass == DoorClass::Swinging && door->state == door_state::kOpen;
 }
 
@@ -673,6 +871,9 @@ void Doors::tick(ObjectWorld& world) {
         for (DoorLeaf& leaf : door.leaves) {
             stepLeaf(leaf);
         }
+        for (SlidingLeaf& leaf : door.slidingLeaves) {
+            stepSlidingLeaf(leaf, door.slideLength, door.slideStep);
+        }
         // The boards a broken barrier threw end at their first update, the tick after the hit.
         if (!door.boards.empty()) {
             for (const double board : door.boards) {
@@ -798,6 +999,17 @@ std::vector<DoorDraw> doorDraws(const Doors& doors) {
     std::vector<DoorDraw> draws;
     for (const Door& door : doors.doors()) {
         if (door.ended || door.hidden || door.removed) {
+            continue;
+        }
+        if (door.doorClass == DoorClass::Sliding && !door.slidingLeaves.empty()) {
+            for (const SlidingLeaf& leaf : door.slidingLeaves) {
+                draws.push_back(DoorDraw{.handle = leaf.handle,
+                                         .modelHash = crc32(leaf.model),
+                                         .fallbackHash = crc32(fallbackModelOf(door.type)),
+                                         .position = leaf.position(),
+                                         .rotation = leaf.rotation,
+                                         .tint = door.tint});
+            }
             continue;
         }
         if (door.doorClass == DoorClass::Swinging) {

@@ -30,6 +30,9 @@ constexpr std::size_t kCfgObjHitpoints = 2;
 constexpr std::size_t kCfgObjSize = 7;
 constexpr std::size_t kCfgObjMaterial = 12;
 constexpr std::size_t kCfgObjLeafWidth = 14;
+constexpr std::size_t kCfgObjProperty6 = 15;
+constexpr std::size_t kCfgObjProperty7 = 16;
+constexpr std::size_t kCfgObjProperty8 = 17;
 constexpr std::size_t kCfgObjType = 18;
 // `CfgWarriorClass`'s argument (0-based) that sets the record's byte `+0x0a`, the lock pick's difficulty plus 1.
 constexpr std::size_t kCfgWarriorClassLockPick = 10;
@@ -344,6 +347,9 @@ std::optional<world_objects::ObjectTypeInfo> objectTypeFromCfgObj(const Recorded
         info.size = anim::Vec3{size[0], size[1], size[2]};
         info.material = static_cast<std::uint8_t>(intArg(args, kCfgObjMaterial));
         info.leafWidth = static_cast<float>(binding::number(args, kCfgObjLeafWidth));
+        info.property6 = static_cast<float>(binding::number(args, kCfgObjProperty6));
+        info.property7 = static_cast<float>(binding::number(args, kCfgObjProperty7));
+        info.property8 = static_cast<float>(binding::number(args, kCfgObjProperty8));
         info.objectType = intArg(args, kCfgObjType);
         return info;
     }

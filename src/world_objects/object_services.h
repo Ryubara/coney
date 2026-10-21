@@ -57,6 +57,11 @@ struct ObjectTypeInfo {
     anim::Vec3 size{};         ///< Argument 8: the object's box, metres.
     std::uint8_t material = 0; ///< Argument 13: the material its triangles take.
     float leafWidth = 0.0F;    ///< Argument 15 (`f15`, type `+0x68`, property 5): a door leaf's width, metres.
+    /// Arguments 16-18 (`f16`-`f18`, type `+0x6c`-`+0x74`, properties 6-8): a sliding door's speed and its two slide
+    /// lengths (docs/research/script-types.md#sliding-doors).
+    float property6 = 0.0F;
+    float property7 = 0.0F;
+    float property8 = 0.0F;
     int objectType = 0;        ///< Argument 19: `TYPE_*` (object_type).
 };
 

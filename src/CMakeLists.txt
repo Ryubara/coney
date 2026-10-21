@@ -53,6 +53,7 @@ add_library(coney_core STATIC
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
     gamemodes/mission_complete_mode.cpp
+    gamemodes/armies_game_over_mode.cpp
     gamemodes/mission_failed_mode.cpp
     gamemodes/movie_player.cpp
     gamemodes/pause_mode.cpp
@@ -95,6 +96,7 @@ add_library(coney_core STATIC
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
+    gui/pause_menu/armies_game_over_menu.cpp
     gui/pause_menu/mission_failed_menu.cpp
     gui/pause_menu/pause_items.cpp
     gui/pause_menu/pause_menu.cpp

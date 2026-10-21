@@ -8,6 +8,7 @@
 // variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -22,7 +23,11 @@
 #include "debug/menu_model.h"
 #include "debug/tunables.h"
 #include "fileio/wad.h"
+#include "camera/cameras.h"
+#include "camera/rail_camera.h"
+#include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/start_up_flow.h"
+#include "hud/armies_hud.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
@@ -40,6 +45,16 @@ std::size_t linesStarting(const std::vector<std::string>& lines, std::string_vie
 // How many frames of `level60` are watched after the jump: its intro scene ends about 21 s in
 // (docs/research/armies.md#first-frames).
 constexpr std::uint64_t kWatchFrames = 1200;
+
+// Flag_02, where P1.Start03 walks the player (level60.lua's AddFlag), and the walk's radius.
+constexpr float kFlag02X = -94.9F;
+constexpr float kFlag02Y = 24.0F;
+constexpr float kArrivalRadius = 0.5F;
+// Frames allowed for the intro scene and the walk (the original's timer starts about 28 s in), for the 99 s timer, and
+// for the game over's countdown (10 steps of 1 s) with a margin.
+constexpr std::uint64_t kWalkLimit = 40 * 30;
+constexpr std::uint64_t kTimerLimit = 110 * 30;
+constexpr std::uint64_t kCountdownFrames = 11 * 30;
 
 } // namespace
 
@@ -93,4 +108,57 @@ TEST_CASE("the disc's level60: the debug menus reach Armies of the Night's first
     CHECK(run.session().flow().state().currentLevel == 24);
     CHECK(scenes >= 2); // level99's intro scene, then level60's `l60_intro`
     CHECK(fade == 0.0F);
+}
+
+TEST_CASE("the disc's level60 with the pad idle: the walk out, the Armies HUD, the timer and the game over",
+          "[disc][story][armies]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // As the debug menus' and `--play-level`'s start, checkpoint 1 with the pad idle
+    // (docs/research/armies.md#first-frames).
+    coney::test::DiscSession run(*wad, "");
+    run.session().startAtLevel("level60", 1);
+    REQUIRE(run.runUntilPlay());
+    coney::StartUpFlow& flow = run.session().flow();
+    const auto feet = [&run]() -> std::optional<coney::anim::Vec3> {
+        const coney::platform::PlayLevelMode* play = run.session().play();
+        if (play == nullptr) {
+            return std::nullopt;
+        }
+        return play->player().human().position();
+    };
+
+    // The intro scene, then P1.Start03's walk out of the garage to Flag_02 (-94.9, 24): the original stops at
+    // (-94.78, 23.54) about 20.4 s in (PCSX2, 2026-10-21). Then F1.Restore02 starts the 99 s timer.
+    const bool timerRuns = run.runUntil([&flow] { return flow.state().player.stopWatch.running(); }, kWalkLimit);
+    const std::optional<coney::anim::Vec3> out = feet();
+    REQUIRE(out.has_value());
+    const coney::camera::Cameras* cameras = run.session().gameplay().cameras();
+    const coney::camera::RailCamera* rail = cameras != nullptr ? cameras->rail() : nullptr;
+    const coney::hud::ArmiesHud& armies = flow.hud().armies();
+    const std::uint32_t creditsAtStart = armies.credits();
+    const float walkedTo = std::hypot(out->x - kFlag02X, out->y - kFlag02Y);
+    std::printf("  level60 idle: timer running %d after %llu frames, player at %.2f from Flag_02, rail mode %d, "
+                "credits %u, GO sign %u\n",
+                timerRuns ? 1 : 0, static_cast<unsigned long long>(run.frames()), static_cast<double>(walkedTo),
+                rail != nullptr ? static_cast<int>(rail->mode()) : -1, creditsAtStart, armies.goSignMode());
+    CHECK(timerRuns);
+    CHECK(walkedTo <= kArrivalRadius);
+    REQUIRE(rail != nullptr);
+    CHECK(rail->mode() == coney::camera::RailMode::Trailing);
+    CHECK(creditsAtStart == 7);
+    CHECK(armies.active());
+
+    // The idle stage runs its timer out and the game-over screen opens (the original: "CONTINUE?" at about 126 s).
+    const bool over = run.runUntil([&run] { return run.stack().topId() == coney::ArmiesGameOverMode::kId; },
+                                   kTimerLimit);
+    const std::uint64_t overAt = run.frames();
+    std::printf("  level60 idle: game over %d at frame %llu, countdown %d\n", over ? 1 : 0,
+                static_cast<unsigned long long>(overAt), flow.armiesGameOver().menu().count());
+    CHECK(over);
+    // The countdown, then the end phase: about 10 s more with nobody pressing Start.
+    run.run(kCountdownFrames);
+    CHECK(flow.armiesGameOver().menu().ending());
 }
