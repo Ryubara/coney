@@ -75,16 +75,16 @@ define anything new: each colour is a measure this page already has.
 | Untouched | None of the above | |
 
 A function shows the furthest state it has reached, top to bottom. The headline above the picture counts squares by
-measure, each measure as the table defines it, so a square counts under every measure it meets: a reimplemented
-function that is also understood counts in both, while the legend counts squares by the colour they show. Researched
-is the source map's measure, not "researched or further": a function can be understood without the map placing it,
-so the Researched share can be below the Understood share. Blocks are the subsystems of `totals.toml`, the original's top-level source directories, in address
-order, so the picture follows the executable; code in no subsystem range comes last as *Unattributed*, and the game's
-link-once template code is the `link-once` block. A block's label is its share of reimplemented functions, and its
-tooltip (the browser's own) gives `reimplemented/total (share)` and the squares of each state. A reimplemented
-function whose address is not the start of a function in the Ghidra listing (an entry inside another function, or a
-listing that split a function differently) is counted in the bars but has no square and is not in the headline's
-Reimplemented count, which is therefore a few below the bar's; `progress.json` gives the number
+measure, each measure as the table defines it, so a square counts under every measure it meets: a reimplemented function
+that is also understood counts in both, while the legend counts squares by the colour they show. Researched is the
+source map's measure, not "researched or further": a function can be understood without the map placing it, so the
+Researched share can be below the Understood share. Blocks are the subsystems of `totals.toml`, the original's top-level
+source directories, in address order, so the picture follows the executable; code in no subsystem range comes last as
+*Unattributed*, and the game's link-once template code is the `link-once` block. A block's label is its share of
+reimplemented functions, and its tooltip (the browser's own) gives `reimplemented/total (share)` and the squares of each
+state. A reimplemented function whose address is not the start of a function in the Ghidra listing (an entry inside
+another function, or a listing that split a function differently) is counted in the bars but has no square and is not in
+the headline's Reimplemented count, which is therefore a few below the bar's; `progress.json` gives the number
 (`unlisted_reimplemented`).
 
 The picture has two views, switched above it. **One square per function** is the one that reads at a glance. Most
