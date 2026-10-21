@@ -280,3 +280,160 @@ def test_the_command_prints_json_and_text(layout: dict[str, Path]) -> None:
 def test_the_cli_registers_coord_status() -> None:
     args = cli._build_parser().parse_args(["coord", "status", "--json", "--github"])
     assert (args.group, args.command, args.json, args.github) == ("coord", "status", True, True)
+
+
+def ids_args(github: bool, *kinds: str) -> argparse.Namespace:
+    """The arguments of `coord status --ids [--github] [--kind K ...]`."""
+    return argparse.Namespace(json=False, github=github, ids=True, kind=list(kinds) or None)
+
+
+def test_ids_print_one_id_per_line_of_the_kinds_asked(layout: dict[str, Path]) -> None:
+    gh = FakeGh(github_answers())
+    lines: list[str] = []
+    assert coord_cli.run(ids_args(True, "unit"), sources(layout, gh), lines.append) == 0
+    assert lines == ["unit:unit-a:PR-2.md", "unit:unit-a:PR.md"]
+    # only what the release queue needs is read from GitHub: no issues, pull-request health or CI queue
+    assert [tuple(call[:3]) for call in gh.calls] == [("pr", "list", "--state")]
+
+
+def test_ids_of_a_local_kind_never_read_github(layout: dict[str, Path]) -> None:
+    gh = FakeGh({})
+    lines: list[str] = []
+    assert coord_cli.run(ids_args(False, "build"), sources(layout, gh), lines.append) == 0
+    assert lines == ["build:done:unit-a"]
+    assert gh.calls == []
+
+
+def test_ids_without_a_kind_print_every_id_of_the_read(layout: dict[str, Path]) -> None:
+    lines: list[str] = []
+    assert coord_cli.run(ids_args(True), sources(layout, FakeGh(github_answers())), lines.append) == 0
+    assert lines == [
+        "build:done:unit-a",
+        "issue:12:S-needs-triage",
+        "pr:7:checks-failed",
+        "pr:7:conflict",
+        "unit:unit-a:PR-2.md",
+        "unit:unit-a:PR.md",
+    ]
+
+
+def test_ids_fail_when_a_section_they_need_could_not_be_read(layout: dict[str, Path]) -> None:
+    answers = github_answers()
+    answers[("pr", "list", "--state", "all")] = OSError("gh pr list failed: not signed in")
+    lines: list[str] = []
+    errors: list[str] = []
+    code = coord_cli.run(ids_args(True, "unit"), sources(layout, FakeGh(answers)), lines.append, errors.append)
+    # an empty list would read as "nothing waits": the reader is told the read failed instead
+    assert code == 1
+    assert lines == []
+    assert errors == ["coord status: release not read: gh pr list failed: not signed in"]
+
+
+def test_ids_of_a_github_kind_need_github(layout: dict[str, Path]) -> None:
+    errors: list[str] = []
+    assert coord_cli.run(ids_args(False, "unit"), sources(layout), print, errors.append) == 2
+    assert errors == ["coord status: --kind unit needs --github"]
+
+
+def test_the_cli_takes_ids_and_kinds() -> None:
+    args = cli._build_parser().parse_args(["coord", "status", "--ids", "--github", "--kind", "unit", "--kind", "issue"])
+    assert (args.ids, args.github, args.kind) == (True, True, ["unit", "issue"])
+    with pytest.raises(SystemExit):
+        cli._build_parser().parse_args(["coord", "status", "--ids", "--kind", "nope"])
+
+
+def test_the_documented_tether_pollers_run_commands_that_parse() -> None:
+    # docs/guides/coney-tools.md#coord-wakes is the one source of the coordinator's wake settings: its commands must
+    # still be valid `coney-tools` command lines, and its issues poller must watch the triage label
+    page = (Path(__file__).resolve().parents[2] / "docs" / "guides" / "coney-tools.md").read_text(encoding="utf-8")
+    section = page[page.index("{#coord-wakes}") :]
+    block = section[section.index("```json") + len("```json") : section.index("```", section.index("```json") + 7)]
+    pollers = json.loads(block)["watch"]["pollers"]
+    assert {p["id"] for p in pollers} == {"triage", "release", "builds", "prs"}
+    triage = next(p for p in pollers if p["id"] == "triage")
+    assert (triage["kind"], triage["labels"]) == ("issues", [coord_cli.TRIAGE_LABEL])
+    for poller in pollers:
+        command = poller.get("command")
+        if not command:
+            continue
+        args = cli._build_parser().parse_args(command[command.index("coney-tools") + 1 :])
+        if args.group == "coord":
+            assert args.ids and args.kind
+            assert args.github == any(kind in coord_cli.GITHUB_KINDS for kind in args.kind)
+
+
+def broken(message: str) -> Any:
+    """A source that fails with `message`, as an unreadable one does."""
+
+    def read(*_: object) -> Any:
+        raise OSError(message)
+
+    return read
+
+
+@pytest.mark.parametrize(
+    ("kind", "github", "change", "reason"),
+    [
+        (
+            "unit",
+            True,
+            {"worktrees": broken("git worktree list failed")},
+            "worktrees not read: git worktree list failed",
+        ),
+        (
+            "build",
+            False,
+            {"worktrees": broken("git worktree list failed")},
+            "worktrees not read: git worktree list failed",
+        ),
+        ("build", False, {"build_result": broken("result unreadable")}, "results not read: result unreadable"),
+        ("pr", True, {"health": broken("pr-health failed")}, "prs not read: pr-health failed"),
+    ],
+)
+def test_ids_fail_when_any_section_their_kind_needs_failed(
+    layout: dict[str, Path], kind: str, github: bool, change: dict[str, Any], reason: str
+) -> None:
+    lines: list[str] = []
+    errors: list[str] = []
+    gh = FakeGh(github_answers())
+    assert coord_cli.run(ids_args(github, kind), sources(layout, gh, **change), lines.append, errors.append) == 1
+    assert lines == []
+    assert errors == [f"coord status: {reason}"]
+
+
+def test_ids_of_issues_fail_when_the_issues_were_not_read(layout: dict[str, Path]) -> None:
+    answers = github_answers()
+    answers[("issue", "list")] = OSError("gh issue list failed")
+    errors: list[str] = []
+    assert coord_cli.run(ids_args(True, "issue"), sources(layout, FakeGh(answers)), print, errors.append) == 1
+    assert errors == ["coord status: issues not read: gh issue list failed"]
+
+
+def test_a_failure_in_a_section_the_ids_do_not_need_leaves_them_standing(layout: dict[str, Path]) -> None:
+    answers = github_answers()
+    answers[("issue", "list")] = OSError("gh issue list failed")
+    lines: list[str] = []
+    # the release queue does not need the issues, and pcsx2 is never an id's section
+    src = sources(layout, FakeGh(answers), pcsx2=broken("no copies"))
+    assert coord_cli.run(ids_args(True, "unit"), src, lines.append) == 0
+    assert lines == ["unit:unit-a:PR-2.md", "unit:unit-a:PR.md"]
+    lines.clear()
+    assert coord_cli.run(ids_args(False), sources(layout, pcsx2=broken("no copies")), lines.append) == 0
+    assert lines == ["build:done:unit-a"]
+
+
+def test_a_kind_reads_only_its_sections(layout: dict[str, Path]) -> None:
+    gh = FakeGh({})
+    src = sources(layout, gh, pcsx2=broken("must not be read"), builds=broken("must not be read"))
+    report = collect(src, github=False, kinds=["build"])
+    assert report["pcsx2"] is None and report["builds"] is None and report["tracks"] is None
+    assert report["release"] is None and report["results"]["error"] is None
+    assert report["action"] == ["build:done:unit-a"]
+    assert gh.calls == []
+
+
+def test_ids_and_json_together_are_refused(layout: dict[str, Path]) -> None:
+    errors: list[str] = []
+    args = argparse.Namespace(json=True, github=False, ids=True, kind=None)
+    assert coord_cli.run(args, sources(layout), print, errors.append) == 2
+    assert errors == ["coord status: --ids and --json print different things; give one"]

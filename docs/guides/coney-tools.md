@@ -1218,30 +1218,39 @@ the slot but does not stop the process. How agents use it, and what exit `75` as
 
 ## coord {#coord}
 
-`coord status` answers "what waits for the coordinator?" in one read, for the coordinator's mod
-([The coordinator's mod](coordinator-mod.md)), which runs it every 15 seconds, and for anyone at a prompt:
+`coord status` answers "what waits for the coordinator?" in one read. Anyone can run it at a prompt, and the
+coordinator's [Tether](#coord-wakes) runs it to wake the session when new work arrives:
 
 ```sh
 uv run --project python coney-tools coord status            # one line per section, then the ids
 uv run --project python coney-tools coord status --json --github
+uv run --project python coney-tools coord status --ids --github --kind unit   # one id per line, for a poller
 ```
 
-Without `--github` it reads only the machine, in a few seconds, and never the network: the PCSX2 copies (the rows of
-`pcsx2 status --json`), the build slots and queues (`build status --json`), each worktree's last detached build
-(`build result`), the release queue (each `PR.md` or `PR-<n>.md` in the scratch folder of a branch that has a
-worktree, with whether `origin` has the branch as the local clone knows it) and the tracks (each scratch folder's
-`STATUS.md`, kept while its worktree exists or for three days after its last change). `--github` adds, through `gh`:
-the open issues (number, status, priority and area labels, the other labels and age; no titles), the open pull
-requests (branch, draft, mergeability, auto-merge, the required checks in one word, and the causes the
-[`repo pr-health`](#repo-pr-health) judge finds, whose report is included whole), the CI queue's counts
-(`gh run list --status queued` and `--status in_progress`) and, for each unit file, the pull request that released it:
-an open one for its branch, or one merged or closed after the file last changed. A unit with neither is queued.
+Without `--github` it reads only the machine, in a few seconds, and never touches the network. It reads:
+
+* the PCSX2 copies (the rows of `pcsx2 status --json`);
+* the build slots and queues (`build status --json`);
+* each worktree's last detached build (`build result`);
+* the release queue: each `PR.md` or `PR-<n>.md` in the scratch folder of a branch that has a worktree, and whether
+  `origin` has the branch, as the local clone knows it;
+* the tracks: each scratch folder's `STATUS.md`, kept while its worktree exists or for three days after its last
+  change.
+
+`--github` adds, through `gh`:
+
+* the open issues: number, status, priority and area labels, the other labels and age, but no titles;
+* the open pull requests: branch, draft, mergeability, auto-merge, the required checks in one word, and the causes
+  the [`repo pr-health`](#repo-pr-health) judge finds, whose report is included whole;
+* the CI queue's counts (`gh run list --status queued` and `--status in_progress`);
+* for each unit file, the pull request that released it: an open one for its branch, or one merged or closed after
+  the file last changed. A unit with neither is queued.
 
 `--json` prints one object: `time`, `checkout`, `github`, the sections `worktrees`, `pcsx2`, `builds`, `results`,
-`tracks`, `release`, `issues`, `prs` and `ci` (the last three `null` without `--github`), and `action`. Each section has
-`error`, `null` when it was read; a section that could not be read holds only `error`, and the others stand, so a
-failure is never taken for "nothing waits". The exit code is 0, and 2 when the command cannot run at all (outside a
-checkout). `action` lists the ids of what waits, sorted:
+`tracks`, `release`, `issues`, `prs` and `ci`, and `action`. The last three sections are `null` without `--github`.
+Each section has `error`, `null` when it was read. A section that could not be read holds only `error`, and the
+others stand, so a failure is never taken for "nothing waits". The exit code is 0, and 2 when the command cannot run
+at all (outside a checkout). `action` lists the ids of what waits, sorted:
 
 | Id | When |
 | --- | --- |
@@ -1251,8 +1260,95 @@ checkout). `action` lists the ids of what waits, sorted:
 | `build:done:<worktree>` | the worktree's detached build ended within the last hour |
 
 An id stays the same while the thing waits, and leaves the list once it has been dealt with, so a reader can tell new
-work from old by comparing lists. The `issue`, `pr` and `unit` ids need GitHub and appear only in a `--github` read; a
-reader that mixes the two kinds of read (the mod does) keeps those from its last `--github` read.
+work from old by comparing lists. The `issue`, `pr` and `unit` ids need GitHub and appear only in a `--github` read.
+
+`--ids` prints only the ids, one per line, for a program that watches them, and cannot be combined with `--json`.
+`--kind issue|pr|unit|build` (repeatable) reads only the sections those kinds come from, and prints only their ids,
+so a poller pays for one read. A GitHub kind needs `--github` (exit 2 without it). When a section the ids come from
+could not be read (for `unit` and `build` ids that includes the worktree list), `--ids` prints nothing, names the
+section and its error on stderr and exits 1, so a watcher reports a failed read instead of an empty list.
+
+### Waking the coordinator {#coord-wakes}
+
+Between turns the coordinator's session sees nothing, so new work would wait until someone typed. The
+[Tether](https://github.com/Ryubara/tether) plugin, which the maintainer runs in every session, watches for it and
+wakes the session when it arrives. It needs Tether 1.0.0-alpha.31 or later. Tether reads `.claude/tether.json` in the
+session's folder. The repository commits no such file, because Tether would then apply it to every agent's worktree
+too, and the maintainer's own file holds machine settings. The coordinator's local file (listed in
+`.git/info/exclude`) carries the `watch` settings below. This block is the source those settings are copied from:
+change it here first, then in the local file. `python/tests/test_coord_cli.py` checks that every `coney-tools`
+command in it parses.
+
+```json
+{
+  "watch": {
+    "storeName": "coney",
+    "wakePreamble": "Coordinator: new work. Handle it or say why it can wait:",
+    "idleWakeMinutes": 0,
+    "pollers": [
+      {
+        "id": "triage",
+        "kind": "issues",
+        "title": "Issues to triage",
+        "labels": ["S-needs-triage"],
+        "everySeconds": 120,
+        "remindMinutes": 30,
+        "remindMaxMinutes": 240
+      },
+      {
+        "id": "release",
+        "title": "Release queue",
+        "command": ["uv", "run", "-q", "--project", "python", "coney-tools", "coord", "status", "--ids", "--github", "--kind", "unit"],
+        "everySeconds": 120,
+        "timeoutMs": 240000,
+        "remindMinutes": 30,
+        "remindMaxMinutes": 240
+      },
+      {
+        "id": "builds",
+        "title": "Detached builds",
+        "command": ["uv", "run", "-q", "--project", "python", "coney-tools", "coord", "status", "--ids", "--kind", "build"],
+        "everySeconds": 15,
+        "timeoutMs": 90000
+      },
+      {
+        "id": "prs",
+        "kind": "prs",
+        "title": "Open pull requests",
+        "command": ["uv", "run", "-q", "--project", "python", "coney-tools", "repo", "pr-health", "--json"],
+        "everySeconds": 300,
+        "timeoutMs": 240000,
+        "worktrees": "<workspace>/worktrees/coney",
+        "busyMarker": ".coney-busy",
+        "assignHours": 4
+      }
+    ]
+  }
+}
+```
+
+Replace `<workspace>` in the `prs` poller with the folder that holds `repos/` and `worktrees/` on your machine, for
+example `D:/work/coney`. What each poller wakes for:
+
+* **`triage`** wakes for each issue waiting for [triage](issues.md#triage): an open issue carrying `S-needs-triage`,
+  read every two minutes. It wakes once per issue, keyed by its number, so the coordinator's own comment does not wake
+  it again.
+* **`release`** wakes for each `unit:` id, a [release queue](how-we-work.md#release-queue) file with no pull request
+  yet, read every two minutes.
+* **`builds`** wakes for each `build:done:` id, a detached build that ended within the hour, read every 15 seconds.
+* **`prs`** is Tether's pull-request guard, reading health through `repo pr-health`. It wakes for stuck pull
+  requests and keeps their owner and waiver records.
+
+Tether starts a turn only for ids it has not told before, and never while a turn runs or you type. Ids still waiting
+are told again 30 minutes later, then after 60, 120 and at most every four hours (`remindMinutes`). The `builds`
+poller has no reminders: a build result is news once.
+
+A wake the engine refuses (after you interrupt a turn) shows `wake refused`. It is tried again two minutes later, or
+as soon as your next turn starts. A wake that started no turn is sent again.
+
+`idleWakeMinutes` above 0 also wakes the session after that many idle minutes with nothing new, but never while a
+subagent is at work. A poller whose read fails shows as failing in the status line and in `/tether-watch`. Its ids
+are never taken for "nothing waits". `/tether-watch` reports each poller's last read.
 
 ## mcp {#mcp}
 

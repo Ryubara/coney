@@ -262,7 +262,6 @@ nav:
       - How we work: guides/how-we-work.md
       - From research to code: guides/research-to-code.md
       - Running agents: guides/agents.md
-      - The coordinator's mod: guides/coordinator-mod.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
       - Running Coney: guides/running.md
