@@ -24,5 +24,5 @@ tidy_jobs        = 0                                    # clang-tidy processes p
 tidy_cache_dir   = ""                                   # the clang-tidy result cache every checkout shares; default: ../../cache/clang-tidy beside the main checkout
 jdk_home        = ""                                    # JDK 21 home; required for Ghidra
 ghidra_mcp_repo = ""                                    # a built ghidra-mcp checkout (target/GhidraMCPHeadless.jar); read-only
-pcsx2_mcp_dir   = ""                                    # a PCSX2-MCP fork build (release/PCSX2-MCP-coney-v2.9.129.N-win64): the copies' PCSX2 and the MCP server
+pcsx2_mcp_dir   = ""                                    # a PCSX2-MCP fork build (release/PCSX2-MCP-coney-v2.9.129.N-win64, N 9 or newer): the copies' PCSX2 and the MCP server
 ffmpeg_dir      = ""                                    # folder with ffmpeg and ffprobe, for in-game clips (coney-tools clips); default: PATH

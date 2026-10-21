@@ -30,9 +30,11 @@ SERVERS: tuple[str, ...] = ("ghidra-mcp", "pcsx2")
 #: Where `tools/start-ghidra-mcp.ps1` serves the shared Ghidra project.
 GHIDRA_MCP_URL = "http://127.0.0.1:8090"
 
-#: What the pcsx2 server is always started with: PCSX2_REQUIRE_AGENT=1 makes the PCSX2-MCP fork's server (a release with
-#: per-caller connections) refuse a `pcsx2_*` call without an `agent` argument, so every agent of a session has a
-#: connection of its own (docs/guides/agents.md#pcsx2-guard). Servers without that feature ignore it.
+#: What the pcsx2 server is always started with: PCSX2_REQUIRE_AGENT=1 makes the PCSX2-MCP fork's server (build
+#: v2.9.129.9 or newer, with per-caller connections) refuse a `pcsx2_*` call without an `agent` argument, so every agent
+#: of a session has a connection of its own (docs/guides/agents.md#pcsx2-guard). That build also has `pcsx2_disconnect`
+#: and releases a connection idle for PCSX2_IDLE_MINUTES (default 30, taken from the environment this process has) when
+#: another caller wants its port. Older servers ignore all of it.
 PCSX2_ENV = {"PCSX2_REQUIRE_AGENT": "1"}
 
 _GUIDE = "see docs/guides/workspace.md"
