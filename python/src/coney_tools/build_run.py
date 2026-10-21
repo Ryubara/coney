@@ -334,7 +334,7 @@ def load_msvc_environment(
 
 # Windows: start console children with no console window of their own, so a build run from a process without a
 # console (a background task) does not pop up terminals that take the focus. Zero elsewhere.
-NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0  # CREATE_NO_WINDOW
+NO_WINDOW = process_lifetime.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
 
 def run_text(command: list[str], env: Mapping[str, str] | None = None) -> str | None:

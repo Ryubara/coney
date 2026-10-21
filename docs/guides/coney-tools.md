@@ -1178,17 +1178,17 @@ wait still ahead (from the holders' steps), added to those, would pass the budge
 The test phase counts the build before it, and the wait for the build folder counts too. The budget only decides
 whether to keep waiting: a step that has started always runs to its end, and a free slot is always taken.
 
-**Detached runs.** `--detach` checks the run as usual (precheck, refusals), then starts the same run in a process of
-its own, apart from the calling shell (on Windows `DETACHED_PROCESS` in a new process group, out of the caller's job
-when the job allows it; elsewhere a session of its own), and returns at once printing the log path and the child's
-pid. A detached run may wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and
-neither is capped. Its children still end with it, but nothing watches the shell that started it. It records itself
-in `build-result.json` in the worktree's scratch folder (state, agent, preset, pid, log, start time; at the end the
-exit code, the printed summary and the end time; its console output goes to `build-detached.out` beside it), however
-it ends, a refused precheck included. A second `--detach` in a worktree whose detached run still runs is refused.
-`build result` prints that record: the run's own exit code and summary once it has ended, `75` and `still running`
-while it runs, and `1` with `ended without a result` when its process is gone without writing one (killed);
-`--json` prints the record itself.
+**Detached runs.** `--detach` checks the run as usual (precheck, refusals), then starts the same run in a process of its
+own, apart from the calling shell (on Windows `CREATE_NO_WINDOW` in a new process group, never `DETACHED_PROCESS`, which
+makes Windows Terminal show an empty window for the venv launcher's child; out of the caller's job when the job allows
+it; elsewhere a session of its own), and returns at once printing the log path and the child's pid. A detached run may
+wait and run as long as it needs: `--max-wait` defaults to 240 and `--budget` to `0`, and neither is capped. Its
+children still end with it, but nothing watches the shell that started it. It records itself in `build-result.json` in
+the worktree's scratch folder (state, agent, preset, pid, log, start time; at the end the exit code, the printed summary
+and the end time; its console output goes to `build-detached.out` beside it), however it ends, a refused precheck
+included. A second `--detach` in a worktree whose detached run still runs is refused. `build result` prints that record:
+the run's own exit code and summary once it has ended, `75` and `still running` while it runs, and `1` with
+`ended without a result` when its process is gone without writing one (killed); `--json` prints the record itself.
 
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`

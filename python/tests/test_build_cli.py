@@ -6,9 +6,11 @@ temporary directory."""
 import json
 import os
 import re
+import subprocess
+import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pytest
 
@@ -711,3 +713,33 @@ def test_the_stats_log_is_removed_however_the_run_ends(tmp_path: Path) -> None:
     with pytest.raises(RuntimeError), build_cli._removed_after(stats_log):
         raise RuntimeError("configure failed")
     assert not stats_log.exists()
+
+
+# The Windows creation flags of the detached child: it must not open a console window of its own. The values are the
+# Win32 ones, written out here so the test checks the numbers Windows sees, not the module's names for them.
+
+
+CREATE_NO_WINDOW = 0x08000000
+CREATE_NEW_PROCESS_GROUP = 0x00000200
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+DETACHED_PROCESS = 0x00000008  # leaves the venv launcher's child with no console, which Windows Terminal then shows
+
+
+def test_the_detached_child_on_windows_has_no_window_and_a_group_of_its_own(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[int] = []
+
+    class FakePopen:
+        pid = 7
+
+        def __init__(self, command: list[str], **kwargs: Any) -> None:
+            seen.append(kwargs["creationflags"])
+            if kwargs["creationflags"] & CREATE_BREAKAWAY_FROM_JOB:
+                raise OSError("the job forbids leaving it")
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(subprocess, "Popen", FakePopen)
+    assert build_cli.spawn_detached(["x"], Path(), Path(os.devnull)) == 7
+    # First try leaves the job, then the retry stays in it; both hide the console and keep Ctrl+C away.
+    hidden = CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
+    assert seen == [hidden | CREATE_BREAKAWAY_FROM_JOB, hidden]
+    assert not any(flags & DETACHED_PROCESS for flags in seen)

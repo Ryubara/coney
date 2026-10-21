@@ -44,6 +44,9 @@ from coney_tools import pcsx2_proc
 BUILD_PROGRAMS = frozenset({"cmake", "ctest", "ninja", "coney_tests"})
 #: Shells: the watch goes up the ancestors as far as the first of these, the one that ran the tool.
 SHELLS = frozenset({"bash", "sh", "zsh", "dash", "fish", "pwsh", "powershell", "cmd"})
+#: Windows: the creation flag that starts a console child with no console window of its own. Spelt out so it exists
+#: on every platform; the tools that start hidden children share it.
+CREATE_NO_WINDOW = 0x08000000
 #: How many ancestors the watch looks through for the shell.
 MAX_ANCESTORS = 8
 #: Seconds two start times may differ and still be the same process (POSIX reports elapsed time in whole seconds).
@@ -277,7 +280,7 @@ def kill_tree(pid: int) -> None:
             ["taskkill", "/T", "/F", "/PID", str(pid)],
             capture_output=True,
             check=False,
-            creationflags=0x08000000,  # CREATE_NO_WINDOW
+            creationflags=CREATE_NO_WINDOW,
         )
         return
     for process in [*reversed(descendants(list_processes(), pid)), Process(pid, 0, "", None)]:
