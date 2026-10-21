@@ -4,8 +4,8 @@
 The coordinator opens each pull request from an agent's description file with `gh pr create --title ... --body-file
 <file>` (docs/guides/how-we-work.md#release-queue). The rule is that the file passed `coney-tools repo check-review`
 first, which runs the same title and body checks as CI's required `title` and `body` jobs; but nothing ran it, and on
-2026-10-20 and 21 six pull requests were pushed whose descriptions CI's `body` job then refused (a missing
-`## Summary` or `## Screenshots`, or a local image not attached), each costing a CI round and an edit. This hook, registered in
+2026-10-20 and 21 six pull requests were pushed whose descriptions CI's `body` job then refused (a missing section or
+a local image not attached), each costing a CI round and an edit. This hook, registered in
 `.claude/settings.json` for the Bash and PowerShell tools, runs those two checks before the command does, from the main
 checkout's `coney-tools`:
 
