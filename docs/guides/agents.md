@@ -326,6 +326,10 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
   of your claiming commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's
   name by mistake. Your tool list shows whether the installed server has it (`agent` among `pcsx2_connect`'s
   arguments).
+- **Release it when you finish.** `pcsx2_disconnect` closes your connection and frees your name and ports for the next
+  agent on the copy; one idle for 30 minutes (`PCSX2_IDLE_MINUTES`) is released by a connect that wants its port,
+  and the answer says so. Without that, the next agent to be handed your copy would be refused, and `share: true`
+  switches the check off.
 - **Nothing is locked.** There is no lease: every other agent of the session keeps using its own connection, and a
   lock on a shared one would let one engineer's task shut the others out of the emulator for hours.
 - It does nothing on a machine with no PCSX2 copies set up or in a payload without a session id, and when it fails
