@@ -9,6 +9,7 @@ runs are `coney-tools` commands in a subprocess; here a fake runner stands in fo
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 from types import ModuleType
 
@@ -160,6 +161,120 @@ def test_another_repository_passes(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(GUARD, "this_repository", lambda cwd: "ours/coney")
     assert GUARD.check("gh pr create --fill -R someone/else", "", runner=FakeRunner()) is None
     assert GUARD.check("gh pr create --fill -R ours/coney", "", runner=FakeRunner()) is not None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh -R ours/coney pr create --title 'tools: Add x' --body 'text'",
+        "gh --repo ours/coney pr create --fill",
+        "gh --repo=ours/coney pr create --web",
+        "gh --hostname github.com pr edit 5 --body x",
+        "/usr/bin/gh pr create --fill",
+    ],
+)
+def test_gh_options_before_pr_do_not_hide_the_command(monkeypatch: pytest.MonkeyPatch, command: str) -> None:
+    monkeypatch.setattr(GUARD, "this_repository", lambda cwd: "ours/coney")
+    reason = GUARD.check(command, "", runner=FakeRunner())
+    assert reason is not None and reason.startswith("Blocked: ")
+
+
+def test_a_repository_named_before_pr_is_still_another_repository(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(GUARD, "this_repository", lambda cwd: "ours/coney")
+    assert GUARD.check("gh -R someone/else pr create --fill", "", runner=FakeRunner()) is None
+
+
+@pytest.mark.parametrize(
+    ("command", "powershell"),
+    [
+        ("$url = gh pr create --fill", True),
+        ("foreach ($b in $bs) { gh pr create --fill }", True),
+        ("& gh pr create --fill", True),
+        ('bash -c "gh pr create --fill"', False),
+        ("pwsh -NoProfile -Command 'gh pr create --web'", True),
+        ("if true; then gh pr create --fill; fi", False),
+        ("env GH_REPO=x gh pr create --fill", False),
+        ("command gh pr create --fill", False),
+    ],
+)
+def test_wrapped_commands_are_found(command: str, powershell: bool) -> None:
+    reason = GUARD.check(command, "", powershell=powershell, runner=FakeRunner())
+    assert reason is not None and reason.startswith("Blocked: ")
+
+
+def test_a_quoted_pattern_is_not_a_command() -> None:
+    runner = FakeRunner()
+    assert GUARD.check('grep -E "(gh pr create|gh pr edit)" docs/guides/*.md', "", runner=runner) is None
+    assert runner.calls == []
+
+
+def test_a_leading_cd_moves_where_the_file_is_found(tmp_path: Path) -> None:
+    (tmp_path / "PR.md").write_text("decoy", encoding="utf-8")
+    scratch = tmp_path / "scratch" / "unit"
+    scratch.mkdir(parents=True)
+    (scratch / "PR.md").write_text("## Summary\n", encoding="utf-8")
+    runner = FakeRunner()
+    command = "cd scratch/unit && gh pr create --title 'tools: Add x' --body-file PR.md"
+    assert GUARD.check(command, str(tmp_path), runner=runner) is None
+    assert runner.calls[1][0][3] == str(scratch / "PR.md")
+    runner = FakeRunner()
+    command = f'Set-Location "{scratch}"; gh pr create --title "tools: Add x" --body-file PR.md'
+    assert GUARD.check(command, str(tmp_path), powershell=True, runner=runner) is None
+    assert runner.calls[1][0][3] == str(scratch / "PR.md")
+
+
+def test_a_cd_to_an_expansion_skips_the_file_check(tmp_path: Path) -> None:
+    (tmp_path / "PR.md").write_text("decoy", encoding="utf-8")
+    runner = FakeRunner()
+    command = 'cd "$UNIT" && gh pr create --title "tools: Add x" --body-file PR.md'
+    assert GUARD.check(command, str(tmp_path), runner=runner) is None
+    assert [args[1] for args, _ in runner.calls] == ["check-title"]
+
+
+@pytest.mark.parametrize(
+    ("command", "powershell"),
+    [
+        ('gh pr create --title "$T" --body-file PR.md', False),
+        ('gh pr create --title "$(head -1 PR.md)" --body-file PR.md', False),
+        ("gh pr create --title $(head -1 PR.md) --body-file PR.md", False),
+        ("gh pr create --title $t --body-file PR.md", True),
+        ("gh pr create --title (Get-Content TITLE -TotalCount 1) --body-file PR.md", True),
+    ],
+)
+def test_a_title_the_shell_fills_in_is_not_checked(tmp_path: Path, command: str, powershell: bool) -> None:
+    (tmp_path / "PR.md").write_text("## Summary\n", encoding="utf-8")
+    runner = FakeRunner(title_code=1)
+    assert GUARD.check(command, str(tmp_path), powershell=powershell, runner=runner) is None
+    assert [args for args, _ in runner.calls] == [["repo", "check-body", "--body", str(tmp_path / "PR.md")]]
+
+
+def test_powershell_quote_escapes_are_undone(body: Path) -> None:
+    runner = FakeRunner()
+    command = f"gh pr create --title 'docs: Fix the player''s guide' --body-file \"{body}\""
+    assert GUARD.check(command, "", powershell=True, runner=runner) is None
+    assert runner.calls[0][1] == "docs: Fix the player's guide\n"
+
+
+def test_a_dry_run_passes_without_a_check() -> None:
+    runner = FakeRunner()
+    assert GUARD.check("gh pr create --dry-run --fill", "", runner=runner) is None
+    assert runner.calls == []
+
+
+def test_a_check_that_crashes_fails_open(body: Path) -> None:
+    def crashing(args: list[str], stdin: str) -> tuple[int, str]:
+        return 1, "Traceback (most recent call last):\n  File x\nKeyError: 'y'"
+
+    assert GUARD.check(f"gh pr create -t 'tools: Add x' -F \"{body}\"", "", runner=crashing) is None
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Git Bash drive paths exist only on Windows")
+def test_git_bash_drive_paths_are_read_on_windows(body: Path) -> None:
+    drive, rest = str(body.parent).split(":", 1)
+    msys = f"/{drive.lower()}{rest.replace(chr(92), '/')}"
+    runner = FakeRunner()
+    assert GUARD.check(f"cd {msys}; gh pr create -t 'tools: Add x' -F {body.name}", "", runner=runner) is None
+    assert Path(runner.calls[1][0][3]) == body
 
 
 def run_main(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], stdin: str) -> tuple[int, str]:

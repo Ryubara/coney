@@ -253,8 +253,8 @@ coordinator, who pushes them when CI has room.
   commits are not replayed.
 - **The coordinator keeps the release queue** in its state file and releases units while the agents keep working:
   it checks the queue (`gh run list --status queued` and `--status in_progress`), pushes the branch and opens the
-  pull request with `gh pr create --body-file <PR.md>` when there is room, run from the author's scratch folder with
-  one `--attach ./shots/<file>.png` per capture the text refers to (gh 2.99+;
+  pull request with `gh pr create --title "<title>" --body-file <PR.md>` when there is room, run from the author's
+  scratch folder with one `--attach ./shots/<file>.png` per capture the text refers to (gh 2.99+;
   [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
@@ -266,8 +266,9 @@ coordinator, who pushes them when CI has room.
   or a body on stdin), and the title and the file must pass `repo check-title` and `repo check-body --title` (with
   `--local-images` when the command has `--attach`), the checks CI's required `title` and `body` jobs run; `edit`
   checks the title or file it changes. On 2026-10-20 and 21 CI's `body` job refused four pull requests for a missing
-  section, a mistake this finds before the push. A command that names only another repository passes, and the hook
-  lets a command through when it cannot run the checks.
+  section, a mistake this finds before the push. A relative `--body-file` is found from the folder a leading `cd`
+  moved to. A command that names only another repository passes, a title or file the shell fills in (`"$TITLE"`) is
+  not checked, and the hook lets a command through when it cannot run the checks.
 - **Stale failures restart themselves.** `coney-tools repo pr-health --rerun --apply` (run from the coordinator's
   watch loop) reruns a required check that failed because the runner or GitHub did (cancelled, never started, timed
   out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or
