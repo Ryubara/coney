@@ -16,13 +16,14 @@ PauseGridLayout pauseGrid(int level) {
     namespace s = pause_strings;
     const bool rumble = isRumbleLevel(level);
     PauseGridLayout layout;
-    // Each item with its separator as the table gives it: none after Options (the end of row 1) and Quit.
+    // Each item with its separator as the table gives it: none after the end of row 1 (Options in a story level,
+    // Controls in a Rumble level) and after Quit.
     layout.items.push_back({PauseItem::Objectives, rumble ? s::kRules : s::kObjectives, true});
     if (!rumble) {
         layout.items.push_back({PauseItem::Stats, s::kStats, true});
     }
-    layout.items.push_back({PauseItem::Options, s::kOptions, false});
-    layout.items.push_back({PauseItem::Controls, s::kControls, true});
+    layout.items.push_back({PauseItem::Options, s::kOptions, rumble});
+    layout.items.push_back({PauseItem::Controls, s::kControls, !rumble});
     if (rumble) {
         layout.items.push_back({PauseItem::Restart, s::kReplay, true});
     } else if (level != kHangoutLevel) {

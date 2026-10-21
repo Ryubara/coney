@@ -122,13 +122,15 @@ The grid items (`0x001dbee0`), each with the code `PauseMenu_SelectItem` acts on
 | --- | --- | --- | --- |
 | 0 | Objectives (`0xfa`) | Rules (`0xfb`) | yes |
 | 1 | Stats (`0xf8`) | (none) | yes |
-| 2 | Options (`0xf7`) | Options | no (end of row 1) |
-| 3 | Controls (`0xf9`) | Controls | yes |
+| 2 | Options (`0xf7`) | Options | story: no (end of row 1); Rumble: yes |
+| 3 | Controls (`0xf9`) | Controls | story: yes; Rumble: no (end of row 1) |
 | 4 | Restart (`0xfe`), not in `level95` | Replay (`0xff`) | yes |
 | 5 | Resume (`0xfc`) | Resume | yes |
 | 6 | Quit (`0xfd`) | Quit | no |
 
-The first item is selected when the menu opens. Confirmed (code); the story order and look confirmed (runtime).
+A Rumble level's grid reads Rules : Options : Controls / Replay : Resume : Quit (`PauseMenu_Open`
+`0x001dc56c`-`0x001dc5a4`, confirmed (code)). The first item is selected when the menu opens. Confirmed (code); the
+story order and look confirmed (runtime).
 
 ## Behaviour
 
@@ -153,9 +155,10 @@ stores the player in the menu's `+0x1bc0` and calls `PauseMenu_Toggle`. Confirme
    stop;
 3. remembers the menu clock, **pauses all sound** (`SoundPauseSound`'s worker `0x0010fb20`, [Sound](sound.md)) and
    sets `W_GameState + 0x56e0` = 1;
-4. stops the vibration of every pad (pad records `0x005dd810` + 0x50 × *n*, bytes `+0x40` and `+0x41` = 0);
-5. opens the menu (vtable `+0xa8`), saves the sound state into the mode (`0x001115a8`) and starts the sound group
-   `"pause"` (`0x0010fa50(sound, "pause", 0)`).
+4. clears the vibration bytes of the pad records in use (`PauseMode_Enter` `0x0015dbb8` loops over eight records at
+   `0x005dd810` + 0x50 × *n*, clearing `+0x40` and `+0x41` where `+0x4c` is non-zero);
+5. opens the menu (vtable `+0xa8`), saves the sound state into the mode (`0x001115a8`) and loads the sound bank
+   `"pause"` (`AudioManager_LoadBank` `0x0010fa50(sound, "pause", 0)`).
 
 **Mode 0xa `Update`** (`0x0015dd98`) runs the frame like mode 1 without the game: the tick, task-manager phase 1, the
 cameras, the humans' skeleton marking and phase 1's managers (when `0x005e536c` is 1), the world and resource managers,
@@ -172,17 +175,21 @@ the menu's `Update`. It always returns "stay"; the menu pops the mode itself. Co
 - tints both views' screen effects ([Graphics](graphics.md#screen-effects)) to **black over 1.4 s** (`0x0018c988(1.4,
   manager, black)`, `0x0050ee5c`), so the game world darkens behind the menu;
 - takes the pausing player's input record, prepares the Stats screen for that player (`0x001e5618`);
-- sets up the three headers and their checklists; the top header's text is the global string `0xe7` or `0xe8`
-  (chosen by whether the current checklist holds `<ROBJ_N>`), strings no front-end table sets (inferred: set per
-  mission from Lua; runtime, `level99`: the circled "1" and "B", "Coney" and "New Blood");
+- sets up the three headers and their checklists; the top header's text is the global string `0xe7` (and `0xe9`
+  and `0x106` for the other two), a string no front-end table sets (inferred: set per mission from Lua; runtime,
+  `level99`: the circled "1" and "B", "Coney" and "New Blood"). The open first chooses between `0xe8` (the current
+  checklist holds `<ROBJ_N>`, `+0x3a80` = 0) and `0xe7` (`+0x3a80` = 1) at `0x001dc914`, then sets `0xe7`
+  unconditionally at `0x001dc984`-`0x001dc994`, so the choice survives only in `+0x3a80`;
 - builds the grid ([The items](#the-items)) and focuses it;
 - starts the background's fade-in (3,000 ms) and colour cycle, sets the menu alpha to 255;
 - turns both radars off (`0x001b2658`, after setting each radar's `+0x04`).
 
 When the game state's `+0x11c` is set, it opens straight onto the Options screen (header "OPTIONS", `0x116`).
 
-**The background colour cycle** (`PauseMenu_Update`): three colours at `0x00635380`, **(150, 50, 50)**, **(50, 50,
-150)**, **(50, 150, 50)**, each blended linearly to the next over **5,000 ms** (`0x0050ee88`), forever; the alpha
+**The background colour cycle** (`PauseMenu_Update`): three colours at `0x00635380` (stored by `PauseMenu_StaticInit`
+`0x001dfc80`), in index order **(150, 50, 50)** red, **(50, 150, 50)** green and **(50, 50, 150)** blue
+(`0xff323296`, `0xff329632`, `0xff963232`), each blended linearly to the next, blue back to red, over
+**5,000 ms** (`0x0050ee88`), forever; the alpha
 rises from 0 to 255 over the first 3,000 ms. Confirmed (code); the cycle confirmed (runtime: screenshots a few seconds
 apart show the tagged background purple, blue, green and red-brown).
 
@@ -319,7 +326,7 @@ Camera, Audio and Vibration.
   (`0x0050ed74`), width 0.54, value = brightness / 100 (the game state's byte `+0x57a4`, 0-100). Left and right step
   the bar by 0.05 and the brightness by **5** (`0x0050ecfc`), clamped 0-100 (`OptionMenu_AddBrightness`). Two
   squares 0.09 × 0.065 (sheet 12 rectangle 6) at (0.68, 0.38) and (0.74, 0.38) (`0x0050ed48`, `0x0050ed4c`, read by
-  `LightingItem_Update` at `0x001d7d48`), the first tinted by the brightness value, the second black; a hint
+  `LightingItem_Update` `0x001d7d10`), the first tinted by the brightness value, the second black; a hint
   (`0x118`) in `0x005fd320`, size 1.0, font slot 3, at the label + (0, 0.06) (`0x0050ed3c`, `0x0050ed40`).
 
 **Sounds.** Front-end cues ([Front end](frontend.md#input)): 4 a move, `0xe` a move refused, 8 an accept (a title
@@ -597,7 +604,9 @@ checkpoint, `+0x7ac` to the hangout chosen; `+0x7b0` the `HUDSetMissionFailedCal
 
 ### `GUI/OptionMenu.cpp` {#fn-optionmenu}
 
-`0x001d5808`-`0x001dab30`: the pause menu's Options screen. `OptionMenu` (vtable `0x0053b9a8`, input `0x0053b980` at
+The functions run from `0x001d5808` to `0x001dab30` (inferred: the [Source map](source-map.md#gui) gives the file
+`0x001d5900`-`0x001dab10`; the range here is widened to the neighbouring unnamed functions): the pause menu's Options
+screen. `OptionMenu` (vtable `0x0053b9a8`, input `0x0053b980` at
 +0x5c, object `0x0062a1a0`, pointer `0x0050ecec`) owns 7 page titles (+0x7a0 step 0x1f0) and 7 `OptionPage`s (+0x1530
 step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description +0x20, confirm box +0x220, box open
 +0x210, changed +0x214). Items: `OptionItem` base (vtable `0x0053bcd0`), `OptionItemOnOffType` = `YesNoBox`
@@ -669,7 +678,7 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 | `0x001db7e8`, `0x001db870` | `PauseMenu_Shutdown`, `PauseMenu_ReleaseScreens` | Slot +0x68 checklists, background, usage, box; slot +0x98 headers, usage, background. | confirmed (code) |
 | `0x001db8e8` | `ArrayU32_Contains` | Linear search of a word array. | confirmed (code) |
 | `0x001db918` | `PauseMenu_Quit` | Slot +0xb8: quit chosen +0x1b70 and closing +0x1b80. | confirmed (code) |
-| `0x001db928` | `PauseMenu_GetLevelColour` | Top header colour by level number: (37,100,60), (38,61,94), (76,53,44) or (186,139,53) groups, else black; gold also calls `0x001e8658`. | confirmed (code) |
+| `0x001db928` | `PauseMenu_GetLevelColour` | Top header colour by level number: (37,100,60), (38,61,94), (76,53,44) or (186,139,53) groups, else black; it only tests the lists (`PauseMenu_Open` asks for the black letters with `CircledTextHeader_SetLetterColour` `0x001e8658` at `0x001dc1ec`). | confirmed (code) |
 | `0x001dbb78` | `PauseMenu_ApplyVideoMode` | Layout globals `0x0050edfc`-`0x0050ee6c` and `0x00635350`-`0x00635364` per device flags. | confirmed (code) |
 | `0x001dbee0`, `0x001dcb20` | `PauseMenu_Open`, `PauseMenu_Close` | Slots +0xa8 / +0xb0 (see the opening and leaving sections); close issues pending war commands and clears the screen tint byte +0x214. | confirmed (code) |
 | `0x001dcac0` | `PauseMenu_ReturnToOptions` | Screen and Options open (+0x1b88, +0x3a78); grid moved right twice (once in Rumble). | confirmed (code) |
@@ -704,7 +713,8 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 
 ### `GUI/ControlMenuHUD.cpp` {#fn-controlmenuhud}
 
-`0x001e3458`-`0x001e5478`: the pause menu's Controls screen, two entries opening the controller picture page or the
+The functions run from `0x001e3458` to `0x001e5478` (inferred: the [Source map](source-map.md#gui) gives the file
+`0x001e3520`-`0x001e5478`): the pause menu's Controls screen, two entries opening the controller picture page or the
 tutorial tips page. Both pages derive from a small `ControlPage` base and are static objects built at start-up.
 
 | Address | Name | What it does | Evidence |
@@ -747,7 +757,8 @@ tutorial tips page. Both pages derive from a small `ControlPage` base and are st
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+Functions in the address range `0x00417af0`-`0x00424e50` (inferred to be one module of the game state; the
+[Source map](source-map.md#gui) puts its first function in `W_ActionableManager.cpp`: inventory, statistics, flags, configuration
 workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
@@ -816,7 +827,7 @@ Coney stand-ins, each an open question below:
   0x14) is on [Rumble](rumble.md#result-screen).
 - What the menu's write to the screen-effects managers' `+0x214` does on close.
 - The Armies of the Night pause menu's items (`0x001cfec0`-`0x001d0a38`).
-- The mission title's choice between `0xe7` and `0xe8` (which one `<ROBJ_N>` selects), and the fonts, scales and
+- What `+0x3a80` (the `<ROBJ_N>` choice between `0xe8` and `0xe7`) is read for, and the fonts, scales and
   colours of the headers, the item screens, the Yes/No box's texts and the objective lists' gold and purple.
 - Which Rumble quit `0x001fe1a8` picks, and when the Rumble Quit screen offers To Hangout rather than To Main Menu.
 - What the tint `0x0018c988` reaches (Coney: opaque black), and whether the HUD is drawn under the paused menu.

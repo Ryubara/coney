@@ -67,7 +67,7 @@ struct PauseMenuSetup {
 /// The pause menu (the story one, `0x0062e790`): the menu mode 0xa opens over the paused game.
 ///
 /// - **Opening** (open()): the world is tinted to black over kTintMs (worldTint()); the background fades in over
-///   kBackgroundFadeMs while its colour cycles (150, 50, 50) → (50, 50, 150) → (50, 150, 50) → … over kCycleLegMs a
+///   kBackgroundFadeMs while its colour cycles (150, 50, 50) → (50, 150, 50) → (50, 50, 150) → … over kCycleLegMs a
 ///   leg; the top header shows the mission's title; the grid (pauseGrid()) is centred on x 0.5 from y 0.86 with the
 ///   first item selected; the usage line is at (0.5, 0.97).
 /// - **Input** (update()): while closing nothing is taken. START closes from anywhere once kStartDelayMs have passed
@@ -99,11 +99,11 @@ class PauseMenu : public Widget {
     static constexpr std::uint64_t kBackgroundFadeMs = 3000;
     /// One leg of the background's colour cycle (`0x0050ee88`).
     static constexpr std::uint64_t kCycleLegMs = 5000;
-    /// The background's three colours (`0x00635380`).
+    /// The background's three colours (`0x00635380`, in index order: red, green, blue).
     static constexpr std::array<graphics::Rgba, 3> kCycleColours{{
         {150, 50, 50, 255},
-        {50, 50, 150, 255},
         {50, 150, 50, 255},
+        {50, 50, 150, 255},
     }};
     /// START closes the menu only this long after it opened (`0x0050ee8c`).
     static constexpr std::uint64_t kStartDelayMs = 1500;

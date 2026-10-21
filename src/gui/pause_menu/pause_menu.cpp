@@ -388,11 +388,9 @@ void PauseMenu::refreshScreen() {
     namespace s = pause_strings;
     m_lines.clear();
 
-    // The top header: the mission's title, or the screen's name on Options and Controls.
-    const std::vector<std::string>& current = m_setup.objectives.at(0);
-    const bool robj = std::ranges::any_of(
-        current, [](const std::string& line) { return line.find("<ROBJ_N>") != std::string::npos; });
-    std::uint32_t top = robj ? s::kTitleB : s::kTitleA;
+    // The top header: string 0xe7 (PauseMenu_Open picks 0xe8 for a checklist holding `<ROBJ_N>` but then sets 0xe7
+    // whatever it picked, 0x001dc984), or the screen's name on Options and Controls.
+    std::uint32_t top = s::kTitleA;
     if (m_screen == PauseScreen::Options) {
         top = s::kOptionsHeader;
     } else if (m_screen == PauseScreen::Controls) {
