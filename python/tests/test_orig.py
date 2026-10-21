@@ -437,7 +437,7 @@ def test_fetch_issues_asks_gh_for_the_open_issues_with_the_label(monkeypatch: py
         seen.append(command)
         return Done()
 
-    monkeypatch.setattr(orig_queue.subprocess, "run", run)
+    monkeypatch.setattr("subprocess.run", run)
     issues = orig_queue.fetch_issues("bug")
     assert [i.number for i in issues] == [7, 8]
     assert seen[0][:5] == ["gh", "issue", "list", "--label", "bug"] and "open" in seen[0]
@@ -445,6 +445,6 @@ def test_fetch_issues_asks_gh_for_the_open_issues_with_the_label(monkeypatch: py
     def fail(command: list[str], **_: Any) -> Done:
         raise OSError("no gh")
 
-    monkeypatch.setattr(orig_queue.subprocess, "run", fail)
+    monkeypatch.setattr("subprocess.run", fail)
     with pytest.raises(ConfigError, match="--issues FILE"):
         orig_queue.fetch_issues()
