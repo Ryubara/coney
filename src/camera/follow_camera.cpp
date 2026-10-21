@@ -654,6 +654,12 @@ float FollowCamera::aimHeight(const FollowTarget& target, float lookAtZ) const {
 
 void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, bool wasBlocked,
                            const raycast::CollisionMesh* mesh, float seconds) {
+    // The view's direction as the last update left it, for the lag's across test below: the original reads its
+    // camera quaternion's forward (`Quat_AxisY`, called at `0x00133434`), which faces the aim point, not the look-at
+    // point. **Coney's reading**: from the camera's place before this update to the old aim point.
+    const anim::Vec3 toAim = anim::subtract(m_aim, cameraBefore);
+    const anim::Vec3 viewBefore = anim::length(toAim) > 1e-6F ? anim::normalise(toAim) : forward();
+
     // 1. The lead: a copy of the target's facing eased 35% an update; a ray along it from the look-at point, shorter
     // the more the facing runs along the view, gives the lead point.
     // Snapped while the target does not count for the cameras.
@@ -733,7 +739,7 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
     const float speed3d = anim::length(target.velocity);
     float across = 1.0F;
     if (speed3d > target.walkSpeed && speed3d > 1e-4F) {
-        across = std::abs(anim::dot(target.velocity, forward()) / speed3d);
+        across = std::abs(anim::dot(target.velocity, viewBefore) / speed3d);
     }
     float lag = kAimLag * (1.0F + (1.0F - across) * 0.5F);
     if (target.sprintSpeed > 0.0F) {
