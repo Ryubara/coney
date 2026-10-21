@@ -25,6 +25,7 @@ from coney_tools import (
     missions_render,
     movies_cli,
     natives_cli,
+    orig_cli,
     pcsx2_claims_cli,
     pcsx2_cli,
     pcsx2_clip,
@@ -316,6 +317,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_movies_commands(groups)
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
+    orig_cli.add_parser(groups)
     _add_natives_commands(groups)
     _add_refs_commands(groups)
     _add_missions_commands(groups)
@@ -939,6 +941,8 @@ def _run(args: argparse.Namespace) -> int:
         return movies_cli.run_list(args.disc)
     if args.group == "progress":
         return _run_progress(args)
+    if args.group == "orig":
+        return orig_cli.run(args)
     if args.group == "natives":
         if args.command == "render":
             return natives_cli.run_render(args.check)
