@@ -19,7 +19,8 @@ from pathlib import Path
 from coney_tools import local_gate
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
-from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.build_run import jobs_for
+from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.conventions import Paths, load_conventions
 from coney_tools.local_gate import StepResult
 
@@ -272,11 +273,29 @@ def _step_python(root: Path, changed: list[str]) -> StepResult:
     return StepResult("python", True, "ruff, pytest, mypy")
 
 
+def tidy_jobs(root: Path, cpus: int | None) -> int:
+    """How many clang-tidy processes run at once by default: a build's share of the cores (`build_slots` of
+    coney.local.toml, as `coney-tools build -j` defaults), not half the machine. The gate runs outside the build slots,
+    so on 2026-10-20 six clang-tidy processes of one agent's gate ran beside five full builds on 16 cores."""
+    try:
+        numbers = load_config(root).numbers if local_config_file(root) else dict(INT_KEYS)
+    except ConfigError:
+        numbers = dict(INT_KEYS)
+    return jobs_for(numbers["build_slots"], cpus)
+
+
 def run_changed(
-    base: str, build_dir: str, only: list[str] | None, skip: list[str] | None, jobs: int, clang_tidy: str | None
+    base: str,
+    build_dir: str,
+    only: list[str] | None,
+    skip: list[str] | None,
+    jobs: int | None,
+    clang_tidy: str | None,
 ) -> int:
-    """Check what the change since `base` touched; print a line per step; 0 when all pass, 1 when any fails."""
+    """Check what the change since `base` touched; print a line per step; 0 when all pass, 1 when any fails. `jobs`
+    None runs clang-tidy on a build's share of the cores (`tidy_jobs`)."""
     root = find_repo_root(Path.cwd())
+    jobs = jobs if jobs else tidy_jobs(root, os.cpu_count())
     wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
     changed = local_gate.changed_files(root, base)
     print(f"changed since {base}: {len(changed)} files")
