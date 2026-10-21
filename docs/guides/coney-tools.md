@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eighteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers nineteen groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which checks
 pages against the documentation standards, [`build`](#build), which
 configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
@@ -12,8 +12,9 @@ of the README and the docs current, [`natives`](#natives), which renders the scr
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
 and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
 [`clips`](#clips), which checks, publishes and cleans up in-game video clips,
-[`mcp`](#mcp), which starts the debugging servers for agent tools, and [`workspace`](#workspace), which sets up the
-local workspace. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
+[`mcp`](#mcp), which starts the debugging servers for agent tools, [`ghidra`](#ghidra), which sets up your own Ghidra
+project with our function names, and [`workspace`](#workspace), which sets up the local workspace. Everything is
+read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
 is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
@@ -1449,6 +1450,25 @@ as soon as your next turn starts. A wake that started no turn is sent again.
 `idleWakeMinutes` above 0 also wakes the session after that many idle minutes with nothing new, but never while a
 subagent is at work. A poller whose read fails shows as failing in the status line and in `/tether-watch`. Its ids
 are never taken for "nothing waits". `/tether-watch` reports each poller's last read.
+
+## ghidra {#ghidra}
+
+```sh
+uv run --project python coney-tools ghidra setup [--disc DISC] [--no-names] [--any-release] [--project-dir DIR]
+    [--project-name NAME] [--overwrite] [--dry-run]
+uv run --project python coney-tools ghidra import-names [--program NAME] [--listing FILE] [--project-dir DIR]
+    [--project-name NAME] [--overwrite] [--dry-run]
+```
+
+`setup` makes a contributor's own Ghidra project of `SLUS_212.15`: it fetches the pinned Ghidra and the Emotion
+Engine extension when `ghidra_install` has none, compiles `r5900.sla`, imports and analyses the executable from the
+disc (`--disc`, else `game_dir`) into `<ghidra_projects>/warriors` after checking its SHA-1 against the NTSC-U
+release, and then runs `import-names`. `import-names` applies the names of `docs/progress/ghidra-functions.tsv` to the
+program by address with a Ghidra script run by `analyzeHeadless`, and prints how many were matched, created and
+skipped. Both need a JDK 21, skip what is done, print counts and hashes only, and keep their logs in `ghidra/` in the
+scratch folder; `--dry-run` changes nothing (for `import-names` it opens the program read-only and prints the counts a
+real run would give). Exit codes: 0 done, 2 a missing piece, a refused disc or a failed Ghidra step (the message names
+its log). What each step does and what the counts mean: [Starting your own project](ghidra.md#own-project).
 
 ## mcp {#mcp}
 

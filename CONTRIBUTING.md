@@ -87,10 +87,11 @@ heavier. It needs a JDK 21, Ghidra 12.1.4 with the Emotion Engine extension and 
 ([Ghidra + ghidra-mcp](docs/guides/ghidra.md)), and a PCSX2 build with the debug server patch plus a BIOS dumped from
 your own console ([PCSX2 copies](docs/guides/workspace.md#pcsx2-copies)). The fork has no release to download: you
 build PCSX2 from source with its `prepare.ps1`, and only the Windows build is described, so on Linux and macOS
-only the Ghidra half is available today. `coney-tools workspace init --fetch ghidra` downloads Ghidra and the
-extension; the rest you set up by hand. Two things are
-not shared yet, so expect them to be missing on your machine: the maintainers' Ghidra project, with the names and
-comments they gave the functions (only the function names are published, in `docs/progress/ghidra-functions.tsv`,
+only the Ghidra half is available today. With a JDK 21 installed, `coney-tools ghidra setup` downloads Ghidra and the
+extension, imports `SLUS_212.15` from your disc into your own project and gives its functions the names the
+maintainers published ([Starting your own project](docs/guides/ghidra.md#own-project)); the rest you set up by hand.
+Two things are not shared yet, so expect them to be missing on your machine: the plate comments, types and structures
+of the maintainers' Ghidra project (only the function names are published, in `docs/progress/ghidra-functions.tsv`,
 and the research pages), and the PCSX2 save states and traces. Start from the research page for the subsystem you
 want ([Research workflow](docs/guides/research-workflow.md)).
 
