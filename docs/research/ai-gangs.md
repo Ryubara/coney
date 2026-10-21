@@ -886,16 +886,21 @@ The command tactics, by command (constructor, vtable, type id; confirmed (code))
 | 4 scatter | `WarriorScatterTactic_Create` `0x00319570` (init `0x00319600`, given 75.0) | `0x00543d40` | `0x25` | [`Scatter`](ai-goals.md#goal-scatter) (`0x37`) to one of up to six hiding flags within 75 m ([code](ai-code.md#t2-warrior-scatter)) |
 | 5 steal / wreck | `WarriorStealTactic_Create` `0x00320b60` (init `0x00320be0`) | `0x005441c0` | `0x26` | [`WarriorVandalSteal`](ai-goals.md#goal-warrior-vandal-steal) (`0x83`); dogs `AvoidEnemies` (7, 12, 12) ([code](ai-code.md#t2-warrior-steal)) |
 
-Confirmed (runtime), PCSX2 2.9.129, level 99's street with two Warriors spawned into the crew
-([PCSX2 recipes](../guides/pcsx2-recipes.md#crew-command)): `IssueWarriorCommand(c, true)` for each command left the
-gang's tactic (gang `+0x40`) with exactly the vtable in the table, and each member's goal stack held the type the table
-names: follow 50 (`FollowPlayer`, a member just added also 51), attack 52, defend 53, hold 54, scatter 55, wreck 131.
-The dispatcher keeps two bytes per player, read back there: game state `+0x41a` + player is the command in force
-(`GameState_StoreWarriorCommand`, stored when the tactic starts) and `+0x41c` + player the last one asked for (stored
-before the range check, so a refused command shows only there). The level's street leaves all seven commands disabled
-(`+0x41e`..), and the dispatcher refused the first command until `WCEnableCommand` set its byte. Automatic switching
-([below](#warrior-auto-commands)) is confirmed (runtime) too: attack was back to follow within 4 s with nobody to
-fight, and stayed after `WCEnableAutomaticSwitching(false)`.
+Confirmed (runtime), PCSX2 2.9.129, level 99's street with the level's Warrior Ash and one Warrior spawned into the
+crew ([PCSX2 recipes](../guides/pcsx2-recipes.md#crew-command)): `IssueWarriorCommand(c, true)` for each command left
+the gang's tactic (gang `+0x40`) with exactly the vtable in the table, and each member's goal stack held the type the
+table names: follow 50 (`FollowPlayer`, a member just added also 51), attack 52, defend 53, hold 54, scatter 55, wreck
+131. The dispatcher (`0x0041c4e0`) keeps two bytes per player: game state `+0x41a` + player is the command in force
+(`GameState_StoreWarriorCommand`, stored when the tactic starts) and `+0x41c` + player the last one asked for. Confirmed
+(code) at `0x0041c4e0`: it returns before storing `+0x41c` when the command's enabled byte (`+0x41e` + player × 7 +
+command) is clear, and stores it before the range check of an unforced command, so a command refused for range shows
+only in `+0x41c` and a disabled one in neither. Confirmed (runtime): the street's state had all seven enabled bytes
+clear; attack asked without `WCEnableCommand` left the tactic, both bytes and the goals unchanged, and the same call
+after it gave attack. Automatic switching ([below](#warrior-auto-commands)), confirmed (runtime): with
+`WCEnableAutomaticSwitching(true)` and nobody to fight, attack gave way to follow in six runs of seven, seen within 1 s
+of the recipe returning (polled every 0.25 s; the 1.5 s delay is from the code; the wall times logged include the
+tools' start-up); the first run, right after the state loaded, kept attack for 19 s (not explained). With
+`WCEnableAutomaticSwitching(false)` attack held for 15 s in each of three runs.
 
 The names follow, attack, hold, scatter and wreck are read from the lines (inferred). The follow, second hold,
 scatter and steal tactics are of type `0x12` or above, so they own their members' goals (`+0x3c`, [Tactics](#tactics)).

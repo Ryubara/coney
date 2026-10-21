@@ -234,7 +234,7 @@ a pedestrian by name (`humans` lists them); one that is walking is moved off its
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0021b0b8 Object_SetPosition`, `0x0023d440 Human_SetTransform` |
 | Research | [research/characters.md#ground](../research/characters.md#ground), [research/characters.md#teleport](../research/characters.md#teleport) |
-| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
 uv run --project python coney-tools pcsx2 recipe run drop-human --copy COPY --agent ID --arg who=<who> --arg x=<x> --arg y=<y> --arg ground=<ground> --arg height=5
@@ -490,9 +490,9 @@ hold, 4 scatter, 5 wreck; -1 no tactic). The members come from `members`: the ha
 stack bottom first (type ids, [goal types](../references/goal-types.md): 52 is `FollowAndAttack`) and the target. The
 game state record (`*0x0051489c`) holds the command bytes: `+0x411` commands locked, `+0x414` + player the out-of-range
 flag, `+0x41a` + player the command in force (stored when its tactic starts), `+0x41c` + player the last command asked
-for (stored before the range check, so a refused command shows only here), `+0x41e` + player * 7 + command the enabled
-bytes (a command is refused unless its byte is set; `enabled` gives them as bits, bit 0 follow) and `+0x42e` + player
-the menu lock.
+for (stored after the enabled check and before the range check: a command refused for range shows only here, a disabled
+one in neither), `+0x41e` + player * 7 + command the enabled bytes (a command is refused unless its byte is set;
+`enabled` gives them as bits, bit 0 follow) and `+0x42e` + player the menu lock.
 
 | | |
 | --- | --- |
@@ -501,7 +501,7 @@ the menu lock.
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0041c4e0 WarChief_IssueCommand`, `0x0016c388 Gang_Find`, `0x00165640 Gang_SetTactic` |
 | Research | [research/ai-gangs.md#warrior-commands](../research/ai-gangs.md#warrior-commands), [research/ai-gangs.md#gang-record](../research/ai-gangs.md#gang-record), [research/ai-gangs.md#tactics](../research/ai-gangs.md#tactics) |
-| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
 
 ```sh
 uv run --project python coney-tools pcsx2 recipe run crew --copy COPY --agent ID --arg who=<who>
@@ -555,7 +555,7 @@ updates and runs `crew`'s readings.
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0041c4e0 WarChief_IssueCommand`, `0x0041c2d0 GameState_IssueWarriorCommand`, `0x0041dbe8 WCEnableCommand` |
 | Research | [research/ai-gangs.md#warrior-commands](../research/ai-gangs.md#warrior-commands), [references/bindings/character.md#issuewarriorcommand](../references/bindings/character.md#issuewarriorcommand) |
-| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
 
 ```sh
 uv run --project python coney-tools pcsx2 recipe run crew-command --copy COPY --agent ID --arg command=<command> --arg forced=1 --arg enable=1 --arg keep=1
@@ -584,14 +584,14 @@ stick every update and highlights a slot, and R2's release (pad command 2) issue
 dispatcher `0x0041c4e0` (unforced, so the chief speaks and the crew's range is checked). The six slots lie 60 degrees
 apart, clockwise from up: 0 up follow, 1 up-right defend, 2 down-right scatter, 3 down hold, 4 down-left wreck, 5
 up-left attack. A push counts only past about 87 % deflection (radius 110 of 127), so the stick is held at full
-deflection toward the slot; for the two vertical slots it is nudged 4 % to the right, because a stick exactly vertical
-(raw x of 128) leaves the highlight where its last position put it. With `scripted-pad` and `right-stick` the recipe
-writes R2 and the stick into the pad bytes (as `pad` does), holds them `hold` updates, reads the display (the shown flag
-`+0x1554` and the highlight `+0x1540` of the panel's display at `+0x1ef0`), then releases R2 and lets the stick go.
-`enable` 1 first enables what the menu needs: the slot's command (`WCEnableCommand`), the display (`HUDShowWarCommand`)
-and the pad commands 1 and 2 for the player (`EnableCommand`; level 99's street leaves R2 off, and a disabled command is
-matched but kept in the record's pending `+0x24`, so the human never sees it). The state needs the `scripted-pad`,
-`right-stick` and `call-brains` patches.
+deflection toward the slot; for the two vertical slots it is nudged 4 % to the right, because a stick exactly up (raw x
+of 128) leaves the highlight where it was (exactly down works; the nudge does no harm there). With `scripted-pad` and
+`right-stick` the recipe writes R2 and the stick into the pad bytes (as `pad` does), holds them `hold` updates, reads
+the display (the shown flag `+0x1554` and the highlight `+0x1540` of the panel's display at `+0x1ef0`), then releases R2
+and lets the stick go. `enable` 1 first enables what the menu needs: the slot's command (`WCEnableCommand`), the display
+(`HUDShowWarCommand`) and the pad commands 1 and 2 for the player (`EnableCommand`; level 99's street leaves R2 off, and
+a disabled command is matched but kept in the record's pending `+0x24`, so the human never sees it). The state needs the
+`scripted-pad`, `right-stick` and `call-brains` patches.
 
 | | |
 | --- | --- |
@@ -600,7 +600,7 @@ matched but kept in the record's pending `+0x24`, so the human never sees it). T
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x002843f8 Player_UseItemCommand`, `0x001a6d28 WarCommandDisplay_Open`, `0x001a6c58 WarCommandDisplay_Issue` |
 | Research | [research/hud.md#warrior-command-menu](../research/hud.md#warrior-command-menu), [research/ai-gangs.md#warrior-commands](../research/ai-gangs.md#warrior-commands) |
-| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
 
 ```sh
 uv run --project python coney-tools pcsx2 recipe run crew-command-menu --copy COPY --agent ID --arg slot=<slot> --arg hold=20 --arg enable=1
@@ -649,7 +649,7 @@ list.
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00358428 lua_HuCreate`, `0x00233d60 Human_Create` |
 | Research | [research/characters.md#creation](../research/characters.md#creation), [research/ai-gangs.md#gang-record](../research/ai-gangs.md#gang-record) |
-| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); Crew2 appeared 3 m in front of Rembrandt as a type 3 brain in gang 1, listed among the members, and with attack in force (automatic switching off) had its goal 52 ten updates later |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); Crew1 appeared 3 m in front of Rembrandt as a type 3 brain in gang 1, listed among the members, and with attack in force (automatic switching off) had its goal 52 ten updates later |
 
 ```sh
 uv run --project python coney-tools pcsx2 recipe run spawn-crew --copy COPY --agent ID --arg name=ConeyCrew --arg like=Ash --arg distance=3

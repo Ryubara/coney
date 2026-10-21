@@ -359,13 +359,14 @@ chief goes down (`0x00227dd8`), and a lock that arrives while it is open ends it
 **Seen at runtime** (PCSX2 2.9.129, level 99's street, a war chief with two Warriors; the
 [`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu) recipe): with R2 held (pad command 1) and the right
 stick at full deflection toward a slot, the display's shown flag (`+0x1554`) read 1 and its highlight (`+0x1540`) the
-slot of the table above, for all six directions (60 degrees apart); releasing R2 (command 2) issued the slot's command:
-the gang's tactic and the crew's goals changed to it. The street disables pad commands 1 and 2 for the player (a
-disabled command is matched into the record's pending `+0x24`, so the human never sees it), so nothing happened until
-`EnableCommand(player, 1, true)` and `(player, 2, true)` ran, besides `WCEnableCommand` and `HUDShowWarCommand`. A stick
-exactly vertical (raw x of 128) did not reliably move the highlight; a raw x of 133 or 123 selected up. One run (stick
-at 128, 255) left the highlight on slot 1 instead of 3 (down): inferred to be the hysteresis and the quadrant test at
-the axis, not traced.
+slot of the table above, for all six directions (60 degrees apart), each reached from a different slot; releasing R2
+(command 2) issued the slot's command: the gang's tactic and the crew's goals changed to it. The street disables pad
+commands 1 and 2 for the player (a disabled command is matched into the record's pending `+0x24`, so the human never
+sees it): with only `WCEnableCommand` and `HUDShowWarCommand` run, R2 and the stick left the display hidden and the
+tactic unchanged, and after `EnableCommand(player, 1, true)` and `(player, 2, true)` the same input gave the command.
+A stick exactly up (raw 128, 0) left the highlight on slot 3 (down) in three runs of three; a raw x of 133 or 123 with
+y 0 selected up (two runs each). Exactly down (128, 255) moved it from slot 1 to slot 3 in three runs of three. Why up
+fails at x 128 and down does not is not traced.
 
 **Layout** (default video mode, GUI coordinates). The centre x is the layout record's (`0x006006a0` + player ×
 `0x80`): 0.5, set by `Open`; in a level numbered 100 or more with two players (`0x001fe198` = 1), 0.23 for player 1
