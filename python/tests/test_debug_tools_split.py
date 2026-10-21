@@ -19,16 +19,20 @@ GAME_TARGETS = ("coney_core", "coney_audio", "coney_movies", "coney_net", "coney
 DEBUG_TARGETS = ("coney_debug", "coney_devtools")
 
 #: Sources that are debug tools wherever they sit: the menus, their renderers, the overlay, the viewers, the sandbox.
+#: Matched by name, so it misses debug code whose file name does not say so (sandbox_renderer.cpp,
+#: play_level_inspect.cpp, pad_pipe.cpp, humans_trace.cpp, world/debug_camera.cpp): the later units move those.
 _DEBUG_SOURCE = re.compile(
     r"^(?:debug/.*|gui/debug_.*|graphics/bitmap_font\.cpp|sandbox/.*|imgui_.*|debug_menus\.cpp|"
     r"reference_renderer\.cpp|.*_viewer_mode\.cpp)$"
 )
 #: Debug sources still in a game library, each until the unit that moves it (scratch plan, units 2 and 3): the play
-#: mode and the streamed scenery use them. Shrinks to nothing; never grows.
+#: mode and the streamed scenery use them. It never grows.
 _NOT_MOVED_YET = {
     ("coney_platform", "world_viewer_mode.cpp"),
 }
 
+#: A CMake command and its arguments, up to the first `)`: a generator expression inside one would cut it short, so
+#: the targets' lists use none.
 _COMMAND = re.compile(r"\b(add_library|target_sources|target_link_libraries)\s*\(([^)]*)\)", re.DOTALL)
 
 
@@ -84,8 +88,15 @@ def test_only_the_devtools_link_dear_imgui() -> None:
 
 
 def test_the_debug_source_pattern() -> None:
-    for debug in ("debug/menu_model.cpp", "gui/debug_menu_view.cpp", "sandbox/sandbox_world.cpp", "imgui_overlay.cpp",
-                  "texture_viewer_mode.cpp", "debug_menus.cpp", "graphics/bitmap_font.cpp"):
+    for debug in (
+        "debug/menu_model.cpp",
+        "gui/debug_menu_view.cpp",
+        "sandbox/sandbox_world.cpp",
+        "imgui_overlay.cpp",
+        "texture_viewer_mode.cpp",
+        "debug_menus.cpp",
+        "graphics/bitmap_font.cpp",
+    ):
         assert _DEBUG_SOURCE.match(debug), debug
     for game in ("human/human.cpp", "gui/menu.cpp", "play_level_mode.cpp", "world/debug_camera_x.cpp"):
         assert not _DEBUG_SOURCE.match(game), game

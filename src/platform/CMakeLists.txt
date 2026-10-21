@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Everything that talks to SDL3 or librw, as a library so the tests can use it too (with the headless renderer).
+# Two libraries live here (docs/guides/building.md#debug-tools): coney_platform, the game's side of SDL3 and librw,
+# as a library so the tests can use it too (with the headless renderer); and coney_devtools, the debug tools'
+# platform half, at the end of this file.
 add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp
                                   window.cpp world_atomic.cpp)
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
