@@ -726,12 +726,15 @@ state, a handle number), or it will pass on one game for a reason the other does
 fails on the original, fix the course before reading anything into Coney's run.
 
 The `level3-chase` course (`research/traces/missions/level3_cp4.toml`, the rooftop chase from checkpoint 4) is the
-disc test's route driver in Python, leg for leg, so the two can be checked against each other. It taught two things.
+disc test's route driver in Python: the same route and the same moves, so the two can be checked against each
+other. It differs where a course sees less: it judges a leg done from where the player stands (the C++ driver also
+reads his climb, jump and charge state), and it backs off for another charge when he stops gaining ground short of
+the fence row (the C++ driver, when the charge ends short of it). It taught two things.
 The course steers by the camera that is shown (`Camera_GetPlayerCamera`'s `0x005d9150`), not the follow camera
 alone: the chase runs on rail and fixed cameras. And a course must play as fast as a player who wants to win: one that
 walked up to each climb lost Snow to the pursuers on the original as on Coney, and passed on Coney only for some AI
-seeds; sprinting into the climbs, holding triangle from a jump's take-off and charging again when a charge leaves the
-barrier standing, it reached checkpoint 5 on the original in 3,099 updates (issue #531).
+seeds; sprinting into the climbs, holding triangle from a jump's take-off and charging again when a charge stops short
+of the fence row, it reached checkpoint 5 on the original in 3,099 updates (issue #531).
 
 ## Lessons learned {#lessons-learned}
 

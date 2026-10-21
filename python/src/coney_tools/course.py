@@ -684,10 +684,11 @@ class Leg:
 
 class Level3Chase(Course):
     """level3 checkpoint 4, the rooftop chase (docs/research/scripting.md#level3): from vbStartRail east along the
-    roofs to vbEnterGallery, sprinting wherever it is not about to climb, as the disc test's RouteDriver plays it
-    (tests/platform/disc_story_playthrough_test.cpp, the same route). A leg is done by where the player stands, all
-    a player sees: a run or a climb within ARRIVED of its point, a jump once he is JUMP_PAST beyond its take-off, the
-    charge once he is past the fence row at FENCE_X."""
+    roofs to vbEnterGallery, sprinting all the way, into the climbs too, with the route and moves of the disc test's
+    RouteDriver (tests/platform/disc_story_playthrough_test.cpp). A leg is done by where the player stands, all a
+    player sees: a run within ARRIVED of its point, a climb within CLIMBED, a jump once he is JUMP_PAST beyond its
+    take-off, the charge once he is past the fence row at FENCE_X (the RouteDriver also reads his climb, jump and
+    charge state)."""
 
     name = "level3-chase"
     ROUTE = (
@@ -704,8 +705,8 @@ class Level3Chase(Course):
         Leg("run", 178.0, 368.2), Leg("jump", 191.5, 368.2), Leg("run", 206.0, 368.2),
     )  # fmt: skip
     #: Metres: a run's arrival, a climb's (its point is on top, beyond the face), where triangle starts being tapped
-    #: how far past a jump's take-off it counts as made, how far ahead on
-    #: the leg's line a jump or a charge steers, and the fence row the charge breaks.
+    #: before a climb, how far past a jump's take-off it counts as made, how far ahead on the leg's line a jump or a
+    #: charge steers, and the fence row the charge breaks.
     ARRIVED, CLIMBED, CLIMB_TAP, JUMP_PAST, LEAD, FENCE_X = 1.0, 1.2, 4.0, 3.0, 20.0, 85.5
     #: Updates between taps (a climb's: every other update), how far back a stalled charge runs for its run-up (m),
     #: and the updates without 0.3 m of progress east that count as stalled at the fence.
