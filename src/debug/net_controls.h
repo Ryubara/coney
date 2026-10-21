@@ -5,48 +5,19 @@
 #include <string>
 #include <vector>
 
+#include "net/net_status.h"
+
 namespace coney::debug {
 
-/// What this game is in network play.
-enum class NetRole : std::uint8_t {
-    Offline, ///< neither hosting nor joined (or a session ended)
-    Host,    ///< hosting: the server runs in this game
-    Client,  ///< joining or joined a game hosted elsewhere
-};
-
-/// One joined player, as the host sees him.
-struct NetPlayerStatus {
-    std::uint8_t slot = 0; ///< 1 for the first remote player (the host is 0)
-    std::string name;
-    std::uint64_t roundTripNs = 0; ///< smoothed; 0 before the first answer
-    float lossFraction = 0.0F;     ///< 0 to 1
-};
-
-/// What the Network page shows of network play now.
-struct NetStatus {
-    NetRole role = NetRole::Offline;
-    std::string state = "offline"; ///< one line: "hosting on port 27615", "connected to Coney as player 2", ...
-    std::uint16_t port = 0;        ///< the port listened on while hosting (the free one for port 0)
-    std::uint64_t roundTripNs = 0; ///< a client's to the server, smoothed; the host's worst player's
-    float lossFraction = 0.0F;     ///< a client's to the server; the host's worst player's
-    std::uint64_t bytesSent = 0;   ///< payload bytes of this session
-    std::uint64_t bytesReceived = 0;
-    std::uint64_t packetsSent = 0;
-    std::uint64_t packetsReceived = 0;
-    std::vector<NetPlayerStatus> players; ///< the host's joined players
-};
-
-/// The bad network the Simulate network menu plays on what this game sends (net::LinkConditions in the page's units).
-struct NetSimulation {
-    std::uint32_t latencyMs = 0;
-    std::uint32_t jitterMs = 0;
-    float lossPercent = 0.0F; ///< unreliable packets only, as every percent here
-    float duplicatePercent = 0.0F;
-    float reorderPercent = 0.0F;
-};
+/// Network play's figures and simulated network, as network play keeps them (src/net/net_status.h).
+using NetRole = net::NetRole;
+using NetPlayerStatus = net::NetPlayerStatus;
+using NetStatus = net::NetStatus;
+using NetSimulation = net::NetSimulation;
 
 /// What the debug menus can reach of network play: host, join, leave, the settings they use, the figures and the
-/// link conditioner. The platform's network play implements it (src/platform/net_play.h); the Network page
+/// link conditioner. Network play's own API (src/platform/net_play.h) does, through NetPlayControls on the debug
+/// tools' side (src/platform/net_play_controls.h); the Network page
 /// (src/debug/pages_net.cpp) is defined over it, so it is the same in every front end and needs no platform code of
 /// its own. Called on the game thread, between steps. Coney's own: the original has no network play
 /// (docs/guides/multiplayer.md).

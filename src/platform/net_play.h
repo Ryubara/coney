@@ -11,10 +11,10 @@
 #include <vector>
 
 #include "core/pads.h"
-#include "debug/net_controls.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
 #include "net/net_server.h"
+#include "net/net_status.h"
 #include "net/transport.h"
 
 namespace coney::platform {
@@ -26,7 +26,7 @@ namespace coney::platform {
 ///
 /// Each session gets a fresh transport from the factory it was made with: ENet in the game (makeEnetTransport()),
 /// the loopback in tests.
-class NetPlay final : public debug::NetControls {
+class NetPlay final {
   public:
     /// Makes the transport of each new session.
     using TransportFactory = std::function<std::unique_ptr<net::Transport>()>;
@@ -36,8 +36,10 @@ class NetPlay final : public debug::NetControls {
     NetPlay(TransportFactory factory, std::function<void(std::string_view)> print);
     NetPlay(const NetPlay&) = delete;
     NetPlay& operator=(const NetPlay&) = delete;
+    NetPlay(NetPlay&&) = delete;
+    NetPlay& operator=(NetPlay&&) = delete;
     /// Leaves any session (disconnect()).
-    ~NetPlay() override;
+    ~NetPlay();
 
     /// Hosts on `bindAddress` (empty: every interface) and port(). The Network page's Host is host() on every
     /// interface; `--host ADDR:PORT` names one.
@@ -71,20 +73,35 @@ class NetPlay final : public debug::NetControls {
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
 
-    // NetControls.
-    [[nodiscard]] debug::NetStatus status() const override;
-    [[nodiscard]] std::string playerName() const override { return m_playerName; }
-    bool setPlayerName(const std::string& name) override;
-    [[nodiscard]] std::uint16_t port() const override { return m_port; }
-    void setPort(std::uint16_t port) override { m_port = port; }
-    [[nodiscard]] std::string address() const override { return m_address; }
-    void setAddress(const std::string& address) override { m_address = address; }
-    bool host() override { return hostOn({}); }
-    bool join() override;
-    void disconnect() override;
-    [[nodiscard]] debug::NetSimulation simulation() const override { return m_simulation; }
-    void setSimulation(const debug::NetSimulation& simulation) override;
-    [[nodiscard]] std::vector<std::string> log() const override { return {m_log.begin(), m_log.end()}; }
+    /// The figures now.
+    [[nodiscard]] net::NetStatus status() const;
+    /// The name sent when joining (and the server's name when hosting).
+    [[nodiscard]] std::string playerName() const { return m_playerName; }
+    /// Sets the name from the next host or join; false, changing nothing, for one that is not 1 to 32 printable ASCII
+    /// characters.
+    bool setPlayerName(const std::string& name);
+    /// The port host() listens on, and join() connects to when the address names none.
+    [[nodiscard]] std::uint16_t port() const { return m_port; }
+    /// Sets port().
+    void setPort(std::uint16_t port) { m_port = port; }
+    /// The server join() connects to: a host name or IPv4 address, optionally with `:PORT`.
+    [[nodiscard]] std::string address() const { return m_address; }
+    /// Sets address().
+    void setAddress(const std::string& address) { m_address = address; }
+    /// Leaves any session and hosts on port() on every interface; false when the port cannot be opened (the log says
+    /// why).
+    bool host() { return hostOn({}); }
+    /// Leaves any session and joins address(); false when it cannot even start (the log says why). Whether it joined
+    /// shows in status() a few steps later.
+    bool join();
+    /// Leaves the session: says Bye to the server, or to every player when hosting.
+    void disconnect();
+    /// The simulated network.
+    [[nodiscard]] net::NetSimulation simulation() const { return m_simulation; }
+    /// Changes the simulated network, live, on the current session and the next.
+    void setSimulation(const net::NetSimulation& simulation);
+    /// What happened, oldest first: hosting, joins, leaves, refusals, errors.
+    [[nodiscard]] std::vector<std::string> log() const { return {m_log.begin(), m_log.end()}; }
 
   private:
     // Keeps a line for the page (the newest kLogLines) and prints it.
@@ -113,7 +130,7 @@ class NetPlay final : public debug::NetControls {
     std::string m_playerName = "Player";
     std::uint16_t m_port;
     std::string m_address = "127.0.0.1";
-    debug::NetSimulation m_simulation;
+    net::NetSimulation m_simulation;
     std::deque<std::string> m_log;
     std::vector<Closing> m_closing;
     std::uint64_t m_closingElapsedNs = 0; // time passed since the closing transports were last serviced

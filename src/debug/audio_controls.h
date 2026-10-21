@@ -6,18 +6,12 @@
 #include <string>
 #include <string_view>
 
+#include "audio/output_status.h"
+
 namespace coney::debug {
 
-/// What the Audio page shows of the sound output now.
-struct AudioStatus {
-    std::string device{};           ///< Where the sound goes: the device's name, or "offline (test mode)".
-    std::size_t voicesPlaying = 0;  ///< Voices playing now.
-    std::size_t voiceCount = 0;     ///< Voices there are.
-    std::uint64_t framesMixed = 0;  ///< Output frames mixed so far.
-    int sampleRate = 0;             ///< Output frames a second.
-    std::uint64_t voicesStolen = 0; ///< Plays that took a busy voice.
-    std::uint64_t playsDropped = 0; ///< Plays that found no voice to take.
-};
+/// What the Audio page shows of the sound output now (audio::OutputStatus, the output's own type).
+using AudioStatus = audio::OutputStatus;
 
 /// What the debug menus can reach of the sound output: its volumes and a test tone. The platform's audio output
 /// implements it; the Audio page (src/debug/pages_engine.cpp) is defined over it, so it is the same in every front end
