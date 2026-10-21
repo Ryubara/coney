@@ -85,6 +85,10 @@ build.
 
 - :material-hammer-wrench: **[Guides](guides/building.md)**
 
-    How to build and play Coney, use the tools, and contribute
+    How to build and play Coney, use the tools and the research workflow
+
+- :material-source-pull: **[Contribute](repo:CONTRIBUTING.md#your-first-hour)**
+
+    From a clone to a first pull request in an hour: what to install, how to build, run and test, and the rules
 
 </div>

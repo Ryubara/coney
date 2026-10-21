@@ -138,8 +138,10 @@ stopped by the next build that takes its slot ([Process lifetimes](coney-tools.m
 uv run --project python coney-tools build --agent <your id> --preset dev --test
 ```
 
-A hook in `.claude/settings.json` refuses `cmake --build`, `cmake --preset`, `ctest` and `ninja` typed directly.
-Underneath, and for a person alone on a machine, the everyday loop is:
+A hook in `.claude/settings.json` refuses `cmake --build`, `cmake --preset`, `ctest` and `ninja` typed directly (it
+only applies inside Claude Code). A person may use either way: `--agent` takes any name (`me` will do), and on Windows
+the tool loads the Visual Studio environment itself, so no special prompt is needed. Underneath, and for a person
+alone on a machine, the everyday loop is:
 
 ```sh
 cmake --preset dev
