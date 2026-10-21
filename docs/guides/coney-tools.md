@@ -1282,8 +1282,10 @@ uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url
 
 Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
 (`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
-`--fetch ghidra|ghidra-mcp|pcsx2-mcp|all`, downloads the research tools at pinned versions, checked by SHA-256 (the
-two MCP projects are cloned at a pinned commit; PCSX2 comes from the fork's own build, `pcsx2 setup-copies`).
+`--fetch ghidra|ghidra-mcp|pcsx2-mcp|ccache|all`, downloads the research tools and, on Windows, the
+[compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (the two MCP projects are cloned
+at a pinned commit; PCSX2 comes from the fork's own build, `pcsx2 setup-copies`; on Linux and macOS ccache comes from
+the package manager).
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
 `bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each

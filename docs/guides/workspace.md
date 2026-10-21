@@ -206,9 +206,15 @@ worktree when its branch is merged: `coney-tools workspace clean` does it for yo
 
 ## Cleanup and free space {#cleanup}
 
-A build of the engine is about 4 GB per preset (`build/dev`, `build/ci`) and each track has a worktree, so unremoved
-worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke builds. Two commands keep that from
-happening; run them from the main checkout or any worktree.
+A build of the engine is about 6 GB per preset (`build/dev` measured 6.3 GB on 2026-10-20, with `/Z7` objects) and
+each track has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and
+broke builds. Two commands keep that from happening; run them from the main checkout or any worktree.
+
+Deleting a `build/` folder is cheap since the shared [compiler cache](building.md#compiler-cache): a fresh `dev`
+folder of the same sources builds in about 4 minutes from the cache (98.8 % hits) instead of about 18, so the rules
+below still delete idle folders and agents still delete their own when they finish a unit. The cache itself, in
+`cache/ccache`, is never deleted by `clean`: it keeps itself under `ccache_size_gb` (25 GB), which the drive's
+30 GB floor allows for.
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
@@ -237,7 +243,7 @@ free space before and after.
   `workspace.disk_margin_gb`, 10). After the two steps above, if the drive still has less than the floor free, `clean`
   deletes the `build/` folders of the remaining worktrees, **the one last used longest ago first**, until the free
   space reaches the floor plus the margin (40 GB by default), re-reading the free space after each. This is what keeps
-  the drive above the floor when twenty-five open branches each hold a 4 GB build used within the last hours, which
+  the drive above the floor when twenty-five open branches each hold a 6 GB build used within the last hours, which
   the age rule alone never touches. Only `build/` folders go in this mode, never a worktree, a source file or a branch,
   so uncommitted and unmerged work is safe. Skipped: a worktree with the busy file, the folder you run it from, a
   `build/` that git does not ignore, and a worktree that holds a build slot or waits for one (a slot claim or ticket

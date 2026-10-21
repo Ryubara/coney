@@ -185,7 +185,8 @@ def _build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         choices=[*workspace_fetch.TOOLS, "all"],
-        help="also download a research tool at its pinned version (repeatable; never a BIOS or game files)",
+        help="also download a research tool, or ccache on Windows, at its pinned version (repeatable; never a BIOS "
+        "or game files)",
     )
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
