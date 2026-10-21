@@ -12,8 +12,8 @@ render backend are on [Enhancements plan](enhancements.md#foundations) (F4, F5);
 
 ## Where Coney stands {#where-coney-stands}
 
-Counted on `main` at `7300c566` (2026-10-07). The `repo check` rule below ([N4](#now)) keeps the first four rows
-current once it exists.
+Counted on `main` at `7300c566` (2026-10-07). A planned `repo check` rule ([N4](#now)) is to keep the first four
+rows current.
 
 | What | Count | Where |
 | --- | --- | --- |
@@ -283,7 +283,7 @@ not in `research/bindings/`, not in [Script bindings](../references/bindings/ind
 the original (the wrapper's address, the functions it calls, an evidence level, usage counts in the shipped
 scripts), and `natives render`, `natives cpp` and the Natives page all read it as the original's table. A Coney file
 would need every one of those fields faked or made optional, and a second origin threaded through three generators,
-for natives that do not exist yet. A table here costs no machinery. When the first one is exposed, the move is the
+for natives of which Coney has none. A table here costs no machinery. When the first one is exposed, the move is the
 `Native` struct above (its `origin` field already says `Coney`), and the generated pages can then grow a "Coney"
 section from that data; this table is its seed.
 
