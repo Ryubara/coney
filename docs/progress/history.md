@@ -5,9 +5,8 @@ How far Coney has come, one point per day of `main`: the share of the original's
 the last commit of its day (UTC).
 
 Nothing here is committed. The docs build reads `main`'s git history and measures each day with today's tracker, so
-every day is on the same definition, and publishes the points as `progress/history.json` beside the page. A deploy
-reuses the days of the previously published file and measures only the days it lacks
-([how it is built](../guides/coney-tools.md#progress)). A day is left out when the tracker's inputs cannot be read at
-its last commit (before the tracker existed, or in a format since replaced).
+every day is on the same definition ([how it is built](index.md#history), and how a deploy reuses the published days:
+[the coney-tools guide](../guides/coney-tools.md#progress)). A day is left out when the tracker's inputs cannot be
+read at its last commit (before the tracker existed, or in a format since replaced).
 
 <!-- progress:history -->

@@ -33,12 +33,18 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       # The progress history has one point per day, measured from git. The previously published file spares measuring
-      # the days it already holds; with none (the first deploy, or a changed schema) every day is measured.
+      # the days it already holds; with none (the first deploy, a changed schema or measuring code) every day is
+      # measured.
       - name: Fetch the published progress history
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
-        run: curl -fsSL "${SITE_URL%/}/progress/history.json" -o history-cache.json || rm -f history-cache.json
+        run: |
+          if ! curl -fsSL --max-time 60 --retry 2 --max-filesize 5000000 \
+              "${SITE_URL%/}/progress/history.json" -o history-cache.json; then
+            rm -f history-cache.json
+            echo "::notice::No published progress history: every day is measured from git."
+          fi
       - run: mkdocs build --strict
         env:
           CONEY_SITE_URL: ${{ steps.pages.outputs.base_url }}

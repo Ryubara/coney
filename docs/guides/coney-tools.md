@@ -271,7 +271,12 @@ The docs build does the same, with the history limited so a pull request's build
 file named by `CONEY_PROGRESS_HISTORY_CACHE` (the previously published `progress/history.json`) and today, and measures
 the missing days only when `CONEY_PROGRESS_HISTORY=full`. The `docs` workflow sets both on a push to `main`: it
 downloads the published file (a missing one just means every day is measured), builds with `full` and deploys the
-result, so each deploy extracts one commit.
+result, so each deploy extracts one commit. A cached day counts only for the commit it was measured at, and a day
+that could not be measured is recorded with its commit and not tried again. The file also records a digest of the
+tracker's measuring code (`progress.py`, `progress_research.py`): when that code changes, the cache is ignored and
+every day is measured again, so the chart never mixes two definitions. A pull request's build has no cache (only the
+deploy learns the site's address), so its History page shows today alone; locally, point
+`CONEY_PROGRESS_HISTORY_CACHE` at a downloaded `history.json` to see the days.
 
 ```sh
 uv run --project python coney-tools progress sizes [DISC] [--fill]

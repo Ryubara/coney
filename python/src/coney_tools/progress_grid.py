@@ -51,7 +51,8 @@ STATE_MEANINGS = {
     "untouched": "Not placed and not understood.",
 }
 #: Fill of each state, light and dark, validated with the dataviz skill's palette checker. The docs site repeats these
-#: in docs/stylesheets/extra.css as custom properties; this table is for the standalone files.
+#: in docs/stylesheets/progress-grid.css as custom properties (a test holds them equal); this table is for the
+#: standalone files.
 PALETTE = {
     "audited": ("#8250df", "#a371f7"),
     "reimplemented": ("#2ea043", "#3fb950"),
@@ -387,7 +388,7 @@ def square_count(size: int) -> int:
 
 
 def picture_blocks(grid: Grid, by_size: bool) -> list[progress_picture.Block]:
-    """The blocks to draw: one square per function, or (`by_size`) one per 256 bytes with a minimum of one each."""
+    """Blocks to draw: a square per function, or (`by_size`) one per `BYTES_PER_SQUARE` bytes (at least one)."""
     blocks = []
     for b in grid.blocks:
         done, _ = b.measure("reimplemented")
@@ -408,7 +409,7 @@ def picture_blocks(grid: Grid, by_size: bool) -> list[progress_picture.Block]:
 
 
 def render_functions_svg(grid: Grid, by_size: bool, *, uid: str, standalone: bool = False) -> str:
-    """The picture of every function, or of every 256 bytes (`by_size`), as SVG."""
+    """The picture of every function, or of every `BYTES_PER_SQUARE` bytes (`by_size`), as SVG."""
     count, size = grid.total()
     if by_size:
         what = f"one square per {BYTES_PER_SQUARE} bytes of the original's own code ({size:,} bytes)"

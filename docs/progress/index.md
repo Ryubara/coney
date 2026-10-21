@@ -74,14 +74,18 @@ define anything new: each colour is a measure this page already has.
 | Researched | Inside a source directory or file range of the source map, but not understood | The Researched bar |
 | Untouched | None of the above | |
 
-A function shows the furthest state it has reached, top to bottom. The headline's shares are cumulative like the
-bars (a reimplemented function that is also understood counts in both), while the legend counts squares by the
-colour they show. Blocks are the subsystems of `totals.toml`, the original's top-level source directories, in address
+A function shows the furthest state it has reached, top to bottom. The headline above the picture counts squares by
+measure, each measure as the table defines it, so a square counts under every measure it meets: a reimplemented
+function that is also understood counts in both, while the legend counts squares by the colour they show. Researched
+is the source map's measure, not "researched or further": a function can be understood without the map placing it,
+so the Researched share can be below the Understood share. Blocks are the subsystems of `totals.toml`, the original's top-level source directories, in address
 order, so the picture follows the executable; code in no subsystem range comes last as *Unattributed*, and the game's
 link-once template code is the `link-once` block. A block's label is its share of reimplemented functions, and its
 tooltip (the browser's own) gives `reimplemented/total (share)` and the squares of each state. A reimplemented
-function whose address is not the start of a function in the Ghidra listing is counted in the bars but has no
-square; the numbers file says how many.
+function whose address is not the start of a function in the Ghidra listing (an entry inside another function, or a
+listing that split a function differently) is counted in the bars but has no square and is not in the headline's
+Reimplemented count, which is therefore a few below the bar's; `progress.json` gives the number
+(`unlisted_reimplemented`).
 
 The picture has two views, switched above it. **One square per function** is the one that reads at a glance. Most
 functions are tiny (half are under 125 bytes, the largest is 30 KB), so it gives a four-byte accessor the area of a
@@ -96,10 +100,8 @@ or a tap keeps the tooltip so the link can be followed. The tooltip needs the sc
 show the same numbers. The mission picture below the milestones draws one square per checkpoint, a block per mission,
 with the checklist's colours; a mission's label links to its page.
 
-The same pictures and numbers are published as files beside the page, for other places to embed or read:
-`progress/progress.svg` and `progress/progress-size.svg` (the two views, each with its own light and dark colours),
-`progress/missions.svg`, `progress/history.svg`, the raw numbers in `progress/progress.json` (per state and per
-subsystem, functions and bytes) and `progress/history.json`.
+The same pictures and numbers are published as files beside the page, for other places to embed or read; the list
+is in [the coney-tools guide](../guides/coney-tools.md#progress).
 
 ### The history {#history}
 
@@ -107,10 +109,8 @@ subsystem, functions and bytes) and `progress/history.json`.
 as the bars measure them. Git has the days, so nothing is appended or committed: for each day's last commit the docs
 build extracts the tracker's inputs (`docs/progress/`, the research pages, the roadmap, the bindings and the `@orig`
 tags) into a temporary folder and measures them with the current code, so every day is on today's definition. A day
-before the tracker existed, or in a format it can no longer read, is left out. Measuring a day takes a few seconds, so
-the deploy fetches the previously published `progress/history.json`, keeps its days (a day counts only for the commit
-it was measured at) and measures the ones missing; a pull request's build, and a local one, show the cached days and
-today. `coney-tools progress render <folder>` rebuilds all of it from git.
+before the tracker existed, or in a format it can no longer read, is left out. How a deploy reuses the published days
+and what a pull request's build shows: [the coney-tools guide](../guides/coney-tools.md#progress).
 
 ## Keeping it current
 

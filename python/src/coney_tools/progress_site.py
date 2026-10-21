@@ -223,12 +223,13 @@ def build_site(
 
     date, commit = head or (progress_history.utc_day(int(time.time())), "")
     current = progress_history.point_of(state, date, commit)
-    cache = progress_history.load_cache(history_cache) if history_cache else []
+    cache, cache_skipped = progress_history.load_cache(history_cache) if history_cache else ([], [])
     if reconstruct_history:
-        points, skipped = progress_history.build(root, current, cache)
+        points, skipped = progress_history.build(root, current, cache, cache_skipped=cache_skipped)
     else:
-        points, skipped = [p for p in cache if p.date < date] + [current], []
-    site.history_html = progress_history.render_section(points, skipped)
+        points = [p for p in cache if p.date < date] + [current]
+        skipped = [s for s in cache_skipped if s[0] < date]
+    site.history_html = progress_history.render_section(points, [d for d, _ in skipped])
     site.files[progress_history.HISTORY_FILE] = json.dumps(progress_history.to_json(points, skipped), indent=1) + "\n"
     site.files[f"{SITE_DIR}/history.svg"] = _standalone_chart(points)
     return site

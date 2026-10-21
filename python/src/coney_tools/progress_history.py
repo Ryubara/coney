@@ -9,25 +9,28 @@ folder and loads them with today's code, so every day is measured by the same de
 be loaded (before the tracker existed, or a format since changed) is left out. Today's point is the build's own state.
 
 A previously published `history.json` can be passed in as a cache (`merge`): its days are kept, only missing days are
-extracted, so a deploy costs one snapshot instead of all of them. The file carries `SCHEMA`; a cache with another
-schema is ignored, and the history is rebuilt in full. Bump `SCHEMA` when a definition changes.
+extracted, so a deploy costs one snapshot instead of all of them. The file carries `SCHEMA` (its layout) and
+`definition()`, a digest of the tracker's measuring code; a cache with another of either is ignored and the history is
+rebuilt in full, so a change to how a measure is counted never mixes two definitions in one chart. Days that could not
+be measured are recorded with their commit and are not tried again while that commit stands.
 """
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import subprocess
 import tarfile
 import tempfile
 from collections.abc import Callable, Iterable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
-from coney_tools import progress
+from coney_tools import progress, progress_research
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
@@ -37,6 +40,18 @@ HISTORY_FILE = "progress/history.json"
 #: The inputs the tracker reads, as git paths: everything `progress.load` needs and nothing else (no images, no code).
 INPUTS = ("docs/progress", "docs/research", "docs/roadmap.md", "research/bindings", "src")
 MEASURES = ("reimplemented", "understood", "researched")
+#: The modules whose code decides what each measure counts: a change to any of them invalidates the cache.
+DEFINITION_MODULES = (progress, progress_research)
+#: A day left out of the history: (date, the commit it was tried at).
+Skipped = tuple[str, str]
+
+
+def definition() -> str:
+    """A digest of the tracker's measuring code (line endings ignored, so a Windows checkout agrees with CI)."""
+    digest = hashlib.sha256()
+    for module in DEFINITION_MODULES:
+        digest.update(Path(str(module.__file__)).read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()[:16]
 
 
 @dataclass(frozen=True)
@@ -85,20 +100,57 @@ def point_of(state: Progress, date: str, commit: str) -> Point:
     )
 
 
-def load_cache(text: str) -> list[Point]:
-    """The points of a published `history.json`, or none when it is not one of this schema (so it is rebuilt)."""
+def _valid_point(raw: object) -> bool:
+    """Whether `raw` has exactly Point's fields with their types (a date and a commit, counts that are integers)."""
+    if not isinstance(raw, dict) or set(raw) != {f.name for f in fields(Point)}:
+        return False
+    for f in fields(Point):
+        value = raw[f.name]
+        if f.name in ("date", "commit"):
+            if not isinstance(value, str) or not value:
+                return False
+        elif not (isinstance(value, int) and not isinstance(value, bool)) and not (value is None and f.default is None):
+            return False
+    return True
+
+
+def _valid_skipped(raw: object) -> bool:
+    """Whether `raw` is a recorded left-out day: `{"date": ..., "commit": ...}`, both non-empty strings."""
+    return (
+        isinstance(raw, dict)
+        and set(raw) == {"date", "commit"}
+        and all(isinstance(raw[k], str) and raw[k] for k in ("date", "commit"))
+    )
+
+
+def load_cache(text: str) -> tuple[list[Point], list[Skipped]]:
+    """The points and left-out days of a published `history.json`.
+
+    Nothing when it is not one of this schema and definition, or any entry is malformed: the history is then rebuilt,
+    and a bad cache never fails the build.
+    """
     try:
         data = json.loads(text)
-        if data.get("schema") != SCHEMA:
-            return []
-        return [Point(**p) for p in data["points"]]
-    except (ValueError, TypeError, KeyError, AttributeError):
-        return []
+    except ValueError:
+        return [], []
+    if not isinstance(data, dict) or data.get("schema") != SCHEMA or data.get("definition") != definition():
+        return [], []
+    points, skipped = data.get("points"), data.get("skipped", [])
+    if not isinstance(points, list) or not isinstance(skipped, list):
+        return [], []
+    if not all(_valid_point(p) for p in points) or not all(_valid_skipped(s) for s in skipped):
+        return [], []
+    return [Point(**p) for p in points], [(s["date"], s["commit"]) for s in skipped]
 
 
-def to_json(points: list[Point], skipped: list[str]) -> dict[str, Any]:
-    """The history as plain data (`history.json`): the schema, the points in date order and the days left out."""
-    return {"schema": SCHEMA, "points": [asdict(p) for p in points], "skipped": skipped}
+def to_json(points: list[Point], skipped: list[Skipped]) -> dict[str, Any]:
+    """The history as plain data (`history.json`): schema, definition, the points in date order, the days left out."""
+    return {
+        "schema": SCHEMA,
+        "definition": definition(),
+        "points": [asdict(p) for p in points],
+        "skipped": [{"date": d, "commit": c} for d, c in skipped],
+    }
 
 
 # --- git --------------------------------------------------------------------------------------------------------------
@@ -151,24 +203,37 @@ def snapshot_point(root: Path, date: str, commit: str) -> Point | None:
             return None
 
 
+def same_commit(a: str, b: str) -> bool:
+    """Whether two abbreviated hashes name the same commit (one is a prefix of the other); an empty one never does."""
+    return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
+
+
 def reconstruct(
     root: Path,
     days: Iterable[tuple[str, str]],
     known: dict[str, Point] | None = None,
     measure: Callable[[Path, str, str], Point | None] = snapshot_point,
-) -> tuple[list[Point], list[str]]:
-    """Points for `days` (date, commit), reusing `known` points by date; returns (points, dates left out)."""
+    known_skipped: dict[str, str] | None = None,
+) -> tuple[list[Point], list[Skipped]]:
+    """Points for `days` (date, commit), reusing `known` points and `known_skipped` days (date: commit) by date.
+
+    Returns (points, days left out with their commits).
+    """
     known = known or {}
+    known_skipped = known_skipped or {}
     points: list[Point] = []
-    skipped: list[str] = []
+    skipped: list[Skipped] = []
     for date, commit in days:
-        point = known.get(date)
         # A cached day counts only for the commit it was measured at: a rewritten history measures the day again.
-        if point is not None and not (commit.startswith(point.commit) or point.commit.startswith(commit)):
+        point = known.get(date)
+        if point is not None and not same_commit(point.commit, commit):
             point = None
+        if point is None and same_commit(known_skipped.get(date, ""), commit):
+            skipped.append((date, commit))  # already tried at this commit and could not be read
+            continue
         point = point or measure(root, date, commit)
         if point is None:
-            skipped.append(date)
+            skipped.append((date, commit))
         else:
             points.append(point)
     return points, skipped
@@ -179,7 +244,8 @@ def build(
     current: Point,
     cache: list[Point] | None = None,
     measure: Callable[[Path, str, str], Point | None] = snapshot_point,
-) -> tuple[list[Point], list[str]]:
+    cache_skipped: list[Skipped] | None = None,
+) -> tuple[list[Point], list[Skipped]]:
     """The history up to `current`: git's days before today (from the cache where it has them), then today's point.
 
     Without git history (a shallow clone, no repository) only `current` is known and the history is that one point.
@@ -188,7 +254,7 @@ def build(
         days = [d for d in day_commits(root) if d[0] < current.date]
     except ConfigError:
         days = []
-    points, skipped = reconstruct(root, days, {p.date: p for p in cache or []}, measure)
+    points, skipped = reconstruct(root, days, {p.date: p for p in cache or []}, measure, dict(cache_skipped or []))
     return [*points, current], skipped
 
 
@@ -219,7 +285,7 @@ def render_chart(points: list[Point], uid: str = "ph") -> str:
     """The line chart of the three measures over the days, as SVG with one titled marker per day and measure.
 
     Percent of each measure's own denominator, as the Progress page's bars. Lines are 2 px, markers 3 px with a
-    tooltip; the colours are the picture's state colours (extra.css). The standalone styling is the page's.
+    tooltip; the colours are the picture's state colours (progress-grid.css). The standalone styling is the page's.
     """
     xs = _x_positions(points)
     plot_h = _H - _TOP - _BOTTOM

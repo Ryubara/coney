@@ -77,7 +77,7 @@ def test_each_day_is_measured_at_its_commit_and_unreadable_days_are_left_out(tmp
     """The first day has no tracker inputs, so it is skipped; the others use the functions listed on that day."""
     repo, shas = make_repo(tmp_path)
     points, skipped = progress_history.build(repo, current_point(repo))
-    assert skipped == ["2026-10-04"]
+    assert skipped == [("2026-10-04", shas["early"])]
     assert [(p.date, p.commit, p.reimplemented_functions) for p in points] == [
         ("2026-10-05", shas["d5b"], 1),
         ("2026-10-06", shas["d6"], 2),
@@ -124,15 +124,72 @@ def test_the_history_file_round_trips_and_a_foreign_schema_is_ignored(tmp_path: 
     repo, _ = make_repo(tmp_path)
     points, skipped = progress_history.build(repo, current_point(repo))
     text = json.dumps(progress_history.to_json(points, skipped))
-    assert progress_history.load_cache(text) == points
+    assert progress_history.load_cache(text) == (points, skipped)
+    good = json.loads(text)
+    point = good["points"][0]
     for bad in (
         "",
         "[]",
         "{",
-        json.dumps({"schema": 99, "points": []}),
-        json.dumps({"schema": 1, "points": [{"x": 1}]}),
+        json.dumps({**good, "schema": 99}),
+        json.dumps({**good, "points": [{"x": 1}]}),
+        json.dumps({**good, "points": [{**point, "date": 5}]}),
+        json.dumps({**good, "points": [{**point, "commit": ""}]}),
+        json.dumps({**good, "points": [{**point, "game_bytes": "100"}]}),
+        json.dumps({**good, "points": [{**point, "game_bytes": True}]}),
+        json.dumps({**good, "points": [{**point, "game_bytes": None}]}),  # only the listing fields may be unknown
+        json.dumps({**good, "points": "x"}),
+        json.dumps({**good, "skipped": ["2026-10-04"]}),
     ):
-        assert progress_history.load_cache(bad) == []
+        assert progress_history.load_cache(bad) == ([], [])  # ignored, never an exception that fails the build
+
+
+def test_a_change_to_the_measuring_code_invalidates_the_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The cache is keyed on a digest of the tracker's code, so a new definition never mixes with old days."""
+    repo, _ = make_repo(tmp_path)
+    points, skipped = progress_history.build(repo, current_point(repo))
+    text = json.dumps(progress_history.to_json(points, skipped))
+    assert progress_history.load_cache(text)[0] == points
+    code = tmp_path / "measure.py"
+    code.write_bytes(b"COUNT = 1\n")
+    fake = type("Module", (), {"__file__": str(code)})
+    monkeypatch.setattr(progress_history, "DEFINITION_MODULES", (fake,))
+    before = progress_history.definition()
+    assert progress_history.load_cache(text) == ([], [])  # written under another definition: rebuilt
+    code.write_bytes(b"COUNT = 1\r\n")
+    assert progress_history.definition() == before  # a Windows checkout measures by the same definition as CI
+    code.write_bytes(b"COUNT = 2\n")
+    assert progress_history.definition() != before
+
+
+def test_the_definition_covers_every_module_that_measures() -> None:
+    from coney_tools import progress, progress_research
+
+    assert set(progress_history.DEFINITION_MODULES) == {progress, progress_research}
+
+
+def test_a_left_out_day_is_not_tried_again_at_the_same_commit(tmp_path: Path) -> None:
+    repo, shas = make_repo(tmp_path)
+    calls: list[str] = []
+
+    def measure(root: Path, date: str, commit: str) -> Point | None:
+        calls.append(date)
+        return None if date == "2026-10-04" else Point(date, commit, 100, 1, 1, 1)
+
+    _, skipped = progress_history.build(repo, current_point(repo), [], measure, [("2026-10-04", shas["early"])])
+    assert "2026-10-04" not in calls and skipped == [("2026-10-04", shas["early"])]
+    calls.clear()
+    progress_history.build(repo, current_point(repo), [], measure, [("2026-10-04", "0000000")])
+    assert "2026-10-04" in calls  # recorded at another commit: tried again
+
+
+def test_an_empty_commit_matches_nothing() -> None:
+    assert not progress_history.same_commit("", "abc1234") and not progress_history.same_commit("abc1234", "")
+    assert progress_history.same_commit("abc1234", "abc1234def") and not progress_history.same_commit("abc", "abd")
+    days = [("2026-10-05", "abc1234")]
+    cached = Point("2026-10-05", "", 100, 50, 7, 1)
+    points, _ = progress_history.reconstruct(Path(), days, {cached.date: cached}, lambda r, d, c: None)
+    assert points == []  # the cached point without a commit was not reused
 
 
 def test_chart_has_a_titled_marker_per_day_and_measure(tmp_path: Path) -> None:

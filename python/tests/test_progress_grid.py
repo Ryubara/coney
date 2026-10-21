@@ -395,3 +395,21 @@ def test_the_real_pictures_stay_lean() -> None:
     assert len(page.encode()) < 600_000, len(page)
     assert len(table.encode()) < 900_000, len(table)
     assert square_count(page) >= grid.total()[0]
+
+
+def test_the_stylesheet_uses_the_palettes_of_the_standalone_files() -> None:
+    """The page's colours (progress-grid.css) and the published SVGs' (the Python palettes) are the same, per theme."""
+    css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")
+    light = css[css.index(".progress-grid {") :].split("}", 1)[0]
+    dark = css[css.index('[data-md-color-scheme="slate"] .progress-grid {') :].split("}", 1)[0]
+
+    def value(block: str, name: str) -> str | None:
+        found = re.search(rf"--cg-{name}:\s*(#[0-9a-fA-F]{{6}});", block)
+        return found.group(1).lower() if found else None
+
+    for state, (day, night) in progress_grid.PALETTE.items():
+        assert value(light, state) == day.lower(), state
+        assert value(dark, state) == night.lower(), state
+    for status, (day, night) in progress_site.MISSION_PALETTE.items():
+        assert value(light, f"m-{status}") == day.lower(), status
+        assert (value(dark, f"m-{status}") or day.lower()) == night.lower(), status  # unset in dark: the light one
