@@ -329,15 +329,15 @@ TEST_CASE("a joined client's pad reaches the server every step, in the slot it h
     match.run(2);
     const auto pad = match.server.remotePad(1);
     REQUIRE(pad.has_value());
-    CHECK(pad->connected);
-    CHECK(pad->buttons == coney::pad::kStart);
-    CHECK(pad->sticks.at(2) == 200);
+    CHECK(pad.value_or(coney::PadSample{}).connected);
+    CHECK(pad.value_or(coney::PadSample{}).buttons == coney::pad::kStart);
+    CHECK(pad.value_or(coney::PadSample{}).sticks.at(2) == 200);
     CHECK_FALSE(match.server.remotePad(2).has_value());
 
     // The next step's pad replaces it.
     client.setPad(padWith(coney::pad::kCross));
     match.run(2);
-    CHECK(match.server.remotePad(1)->buttons == coney::pad::kCross);
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kCross);
 
     // Gone with the player.
     client.disconnect();
@@ -351,7 +351,7 @@ TEST_CASE("a joined player's pad reads unplugged until his first pad input arriv
     (void)rawJoin(match, raw);
     const auto pad = match.server.remotePad(1);
     REQUIRE(pad.has_value());
-    CHECK_FALSE(pad->connected);
+    CHECK_FALSE(pad.value_or(coney::PadSample{}).connected);
 }
 
 TEST_CASE("an older or repeated pad input never replaces a newer one", "[net][sessions][pad]") {
@@ -365,13 +365,13 @@ TEST_CASE("an older or repeated pad input never replaces a newer one", "[net][se
     sendPad(10, coney::pad::kCircle);
     sendPad(9, coney::pad::kSquare); // arrives after step 10's: late, dropped
     match.run(1);
-    CHECK(match.server.remotePad(1)->buttons == coney::pad::kCircle);
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kCircle);
     sendPad(10, coney::pad::kTriangle); // the same step again
     match.run(1);
-    CHECK(match.server.remotePad(1)->buttons == coney::pad::kCircle);
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kCircle);
     sendPad(11, coney::pad::kTriangle);
     match.run(1);
-    CHECK(match.server.remotePad(1)->buttons == coney::pad::kTriangle);
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kTriangle);
 }
 
 TEST_CASE("a pad input before the handshake is a protocol error", "[net][sessions][pad]") {
@@ -395,19 +395,20 @@ TEST_CASE("a pad that goes quiet is let go: held buttons released, sticks centre
     match.run(3);
     client.setPad(padWith(coney::pad::kR1, 255));
     match.run(2);
-    REQUIRE(match.server.remotePad(1)->buttons == coney::pad::kR1);
+    REQUIRE(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kR1);
 
     // Nothing the client sends from now on arrives (the link has not timed out yet); the pad already on its way
     // arrives in the first step.
     match.guests[0]->link.setConditions(LinkConditions{.lossFraction = 1.0F});
     match.run(1);
     match.run(5);
-    CHECK(match.server.remotePad(1)->buttons == coney::pad::kR1); // held through a short gap
+    CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons ==
+          coney::pad::kR1); // held through a short gap
     match.run(1);
     const auto quiet = match.server.remotePad(1);
     REQUIRE(quiet.has_value());
-    CHECK(quiet->connected);
-    CHECK(quiet->buttons == 0);
-    CHECK(quiet->sticks == coney::PadSample{}.sticks);
-    CHECK(quiet->pressure == coney::PadSample{}.pressure);
+    CHECK(quiet.value_or(coney::PadSample{}).connected);
+    CHECK(quiet.value_or(coney::PadSample{}).buttons == 0);
+    CHECK(quiet.value_or(coney::PadSample{}).sticks == coney::PadSample{}.sticks);
+    CHECK(quiet.value_or(coney::PadSample{}).pressure == coney::PadSample{}.pressure);
 }
