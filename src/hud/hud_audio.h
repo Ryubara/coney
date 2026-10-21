@@ -26,6 +26,7 @@ struct HudSound {
     void playCue(int cue) const { static_cast<void>(startCue(cue)); }
     /// Plays interface cue `cue` and returns its handle, to stop it later (the money count's looping 0x10); 0 when the
     /// table names none or nothing played.
+    /// @coney-only glue to the sound player; the original HUD calls its sound functions directly
     [[nodiscard]] HudSoundHandle startCue(int cue) const {
         if (play && cueName) {
             if (const std::string name = cueName(cue); !name.empty()) {
@@ -41,12 +42,14 @@ struct HudSound {
         }
     }
     /// Stops `sound`; nothing for 0 or without a stop.
+    /// @coney-only glue to the sound player; the original HUD calls its sound functions directly
     void stopSound(HudSoundHandle sound) const {
         if (sound != 0 && stop) {
             stop(sound);
         }
     }
     /// Whether `sound` still plays: false for 0, true for any other handle when the output cannot tell.
+    /// @coney-only glue to the sound player; the original HUD calls its sound functions directly
     [[nodiscard]] bool isPlaying(HudSoundHandle sound) const {
         if (sound == 0) {
             return false;

@@ -165,6 +165,7 @@ class Hud {
     [[nodiscard]] const HudServices& services() const { return m_services; }
     /// Connects the sound output: `play` plays a sound by name and returns its handle (audio::SoundPlayer::play),
     /// `stop` stops one and `playing` says whether one still plays (HudSound); empty for silence.
+    /// @coney-only glue between coney_core's HUD and coney_audio's player
     void setSoundOutput(std::function<HudSoundHandle(std::string_view name)> play,
                         std::function<void(HudSoundHandle sound)> stop = {},
                         std::function<bool(HudSoundHandle sound)> playing = {}) {

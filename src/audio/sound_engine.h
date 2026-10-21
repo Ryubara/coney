@@ -137,6 +137,7 @@ class SoundEngine {
     /// Whether the sound is still live (playing, virtually or for real, or fading).
     [[nodiscard]] bool isPlaying(SoundHandle sound) const;
     /// How many live sounds play the sound `hash` (for the tests that check a sound has ended).
+    /// @coney-only a test aid; the original keeps no such count
     [[nodiscard]] std::size_t liveCount(std::uint32_t hash) const;
     /// Whether the sound plays virtually (no voice).
     [[nodiscard]] bool isVirtual(SoundHandle sound) const;
