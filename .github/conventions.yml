@@ -702,8 +702,8 @@ workspace:
   scratch: "../../scratch/<branch>/"
   disk_min_free_gb: 30                           # under it, `workspace clean` deletes idle build/ folders
   disk_margin_gb: 10                             # ... until free space reaches disk_min_free_gb + this
-  build_idle_hours: 4                            # a build/ folder unused this long is deleted (cheap to rebuild)
-  busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
+  build_idle_hours: 24                           # a build/ folder unused this long is deleted (cheap to rebuild)
+  busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned; an empty one older than build_idle_hours does not count
   remove_worktree_when_merged: true
   # File types taken from the original (PCSX2 save states, traces, memory dumps): `repo audit --local` finds them in the
   # scratch folder of a branch that is merged or gone, where they have no use left. Screenshots are not on this list.

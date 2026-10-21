@@ -13,6 +13,7 @@ pcsx2_debug_base = 21512                                # debug server port of c
 pcsx2_claims_dir = ""                                   # where `pcsx2 claim` keeps its claims; default: pcsx2-claims in the main checkout's ../../scratch (not scratch_dir)
 build_claims_dir = ""                                   # where `build` keeps its slots and queue; default: build-claims in the main checkout's ../../scratch (not scratch_dir)
 build_slots      = 2                                    # how many `coney-tools build` runs may compile and test at once on this machine
+build_worktree_cap = 7                                 # at most this many worktrees may hold a build/ folder; `build` refuses to configure a new folder beyond it (`workspace clean --apply` makes room); 0 turns the cap off
 build_fast_lane_steps = 50                              # a build of fewer ninja steps than this uses the fast lane; 0 turns it off
 build_fast_lane_tests = 20                              # a ctest -R run selecting at most this many tests uses the fast lane; 0 turns it off
 build_fast_lane_test_seconds = 300                      # ... unless their recorded times add up to more seconds than this; 0 turns that off

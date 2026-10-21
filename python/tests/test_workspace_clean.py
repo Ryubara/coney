@@ -96,6 +96,7 @@ class Space:
             build_hours=kwargs.get("build_hours", 12.0),
             worktree_hours=kwargs.get("worktree_hours", 1.0),
             merged_heads=lambda branch: known.get(branch),
+            live=workspace_clean.live_slots(self.root, self.checkout),
         )
 
     def entries(self, **kwargs: object) -> dict[str, Entry]:

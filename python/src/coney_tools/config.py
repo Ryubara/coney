@@ -29,7 +29,8 @@ PATH_KEYS: tuple[str, ...] = (
 )
 
 #: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at
-#: once; `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
+#: once; `build_worktree_cap`: how many worktrees may hold a `build/` folder at once, 0 turning the cap off
+#: (build_cap.py); `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
 #: `build_fast_lane_test_seconds`: the recorded test time above which a filtered test run takes a main slot anyway, 0
 #: turning that off;
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
@@ -39,6 +40,7 @@ PATH_KEYS: tuple[str, ...] = (
 #: cores, check_cli.py).
 INT_KEYS: dict[str, int] = {
     "build_slots": 2,
+    "build_worktree_cap": 7,
     "build_fast_lane_steps": 50,
     "build_fast_lane_tests": 20,
     "build_fast_lane_test_seconds": 300,

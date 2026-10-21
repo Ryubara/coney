@@ -196,6 +196,29 @@ def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
     return Slots(directory, count, lane=lane, what=what, reap=reap_claim)
 
 
+def live_worktrees(claims_dir: Path) -> set[str]:
+    """The names of the worktrees that hold a build slot, a build folder's lock or a place in a queue right now, in
+    any lane. Read from the claim folders and ticket files of the build queue itself and judged with its own
+    liveness rules (`Slots.is_stale`: a claim whose process is gone, or that is older than the maximum age, is not
+    live; a ticket whose process is gone is not), each time it is called: nothing is cached, because a listing that
+    had gone stale once made `workspace clean` delete the build folders of two running builds.
+
+    An absent folder (no build queue here) names nobody. A claim with no readable owner file belongs to no worktree
+    we can name (it is being made, or damaged), so it protects none; the build that makes it names its worktree a
+    moment later."""
+    names: set[str] = set()
+    queues = [Slots(claims_dir, 1, lane=lane) for lane in LANES]
+    folders = claims_dir / "folders"
+    if folders.is_dir():
+        queues.extend(Slots(child, 1) for child in sorted(folders.iterdir()) if child.is_dir())
+    for queue in queues:
+        snapshot = queue.status()
+        names.update(row.claim.worktree for row in snapshot.slots if row.claim and not row.stale)
+        names.update(row.ticket.worktree for row in snapshot.queue if not row.stale)
+    names.discard("")
+    return names
+
+
 def reap_claim(claim: BuildClaim) -> list[object]:
     """Stop the build programs a dead claimant started after it made the claim (process_lifetime.reap)."""
     return list(process_lifetime.reap(claim.pid, datetime.fromisoformat(claim.started).timestamp()))
