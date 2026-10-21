@@ -131,6 +131,9 @@ TEST_CASE("pause items: the story grid is Objectives : Stats : Options / Control
     CHECK(rumble.items[0].text == s::kRules);
     CHECK(rumble.items[1].code == PauseItem::Options);
     CHECK(rumble.items[3].text == s::kReplay);
+    // Rules : Options : Controls / Replay : Resume : Quit: row 1 ends after Controls in a Rumble level.
+    CHECK(rumble.items[1].separator);
+    CHECK_FALSE(rumble.items[2].separator);
 }
 
 TEST_CASE("pause items: the hangout is offered in the 15 listed story levels only", "[pause_menu]") {
@@ -161,13 +164,16 @@ TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling 
 
     menu.update(GuiFrame{1000 + 1500, nullptr});
     CHECK(menu.background().colour().a == 127);
-    // At 5 s the cycle has reached its second colour, at 10 s its third.
+    // The cycle runs red, green, blue in index order: at 5 s it has reached green, at 10 s blue.
     menu.update(GuiFrame{1000 + 5000, nullptr});
     CHECK(menu.background().colour().r == 50);
-    CHECK(menu.background().colour().b == 150);
+    CHECK(menu.background().colour().g == 150);
+    CHECK(menu.background().colour().b == 50);
     CHECK(menu.background().colour().a == 255);
     menu.update(GuiFrame{1000 + 10000, nullptr});
-    CHECK(menu.background().colour().g == 150);
+    CHECK(menu.background().colour().r == 50);
+    CHECK(menu.background().colour().g == 50);
+    CHECK(menu.background().colour().b == 150);
 }
 
 TEST_CASE("pause menu: triangle resumes with a 1.5 s fade and a 0.5 s hold", "[pause_menu]") {
