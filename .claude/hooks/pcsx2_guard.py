@@ -27,7 +27,7 @@ from typing import Any
 
 #: The package, relative to this file (`.claude/hooks/` of the checkout): the hook runs without the project's venv.
 PACKAGE = Path(__file__).resolve().parents[2] / "python" / "src"
-#: The log of last resort, in the system temp folder (the same name as `coney_tools.pcsx2_guard.FALLBACK_LOG_FILE`).
+#: The log of last resort, in the system temp folder (the hook cannot import the package when it writes this one).
 FALLBACK_LOG_FILE = "coney-pcsx2-guard.log"
 
 
