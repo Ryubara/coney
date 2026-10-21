@@ -11,7 +11,7 @@ page says how the player reaches it, what loads, and which engine pieces exist o
 Coney needs to show it instead of a black screen (user checklist item 19). The pieces have their own pages, linked
 below. This page gathers them and does not repeat them.
 
-## What it is {#what-it-is}
+## Original structure: what it is {#what-it-is}
 
 - **Five levels.** `level60` to `level64`, records 24-28 of the level table, titled `Stage 1` to `Stage 5`, with 3,
   3, 3, 3 and 4 sections ([Levels](../references/levels.md#level-24)). Each one's last checkpoint script loads the
@@ -43,7 +43,13 @@ below. This page gathers them and does not repeat them.
   load as it stands. Its number is not 60-69 either, so it is not an Armies level. Inferred: a leftover test record,
   like the others with no `.lev` ([Level loading](level-loading.md)).
 
-## `level60`'s start {#level60-start}
+## Data
+
+Armies of the Night owns no structure of its own: the level records are the level table's
+([Levels](../references/levels.md#level-24)), and the two game-state fields it uses are named in the table above
+(`+0x14c`, `+0x56f4`).
+
+## Behaviour: `level60`'s start {#level60-start}
 
 What the first stage does before the player can move, inferred from the disassembly of `level60.lua` and
 `level60_destroyers.lua`. It shows which bindings the first frames need.
@@ -100,7 +106,7 @@ stage runs a 99-second timer that ends in the continue screen without any fight 
 panel](hud-functions-panels.md#fn-anhud) for the panel's code). Which script call starts the timer and the `P1.Start03`
 timing were not traced here.
 
-## In Coney {#coney}
+## Coney's implementation {#coney}
 
 Read in the engine and seen in a run of the 2026-10-10 release build (`--play-level level60`, 600 steps, pad idle).
 That run is an observation of Coney, not of the original:
@@ -133,7 +139,7 @@ That run is an observation of Coney, not of the original:
   credits, GO sign and join messages, the timer's seconds form and the game-over screen (mode 0xd); with the pad idle
   the stage plays as [the original's first frames](#first-frames) do.
 
-## Coney fixes (item 19) {#coney-fixes}
+### Coney fixes (item 19) {#coney-fixes}
 
 The minimum to show Armies of the Night instead of a black screen, in order. Steps 1 and 2 and the 60-69 test of
 step 4 are done (the black screen was step 1's record); the rest is open:
