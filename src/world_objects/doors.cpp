@@ -110,30 +110,6 @@ constexpr std::array kSlidingRows{
 };
 // The portcullis' open and close sound.
 constexpr std::uint32_t kPortcullisSound = 0x8a2b8511U;
-constexpr std::string_view kSlidingClass = "dyn_door_sliding";
-
-// One sliding door type SlidingDoor_SpawnLeaves names: its leaves' type(s), whether its axis byte goes one further
-// (`dyn_door_fence_s`, `dyn_door_pol`) and whether it plays the roll-up's sound (else kSlidingDoorSound).
-struct SlidingRow {
-    std::string_view name;
-    std::string_view leaf;
-    std::string_view secondLeaf;
-    bool axisOneMore;
-    bool rollupSound;
-};
-constexpr std::array kSlidingRows{
-    SlidingRow{"dyn_door_rollup", "dyn_dr_rollup", "", false, true},
-    SlidingRow{"dyn_door_portcullis", "dyn_dr_portcullis", "dyn_dr_portcullis", false, false},
-    SlidingRow{"dyn_door_fence_r", "dyn_dr_fence_r", "dyn_dr_fence_r", false, false},
-    SlidingRow{"dyn_door_fence_s", "dyn_dr_fence_s", "dyn_dr_fence_s", true, false},
-    SlidingRow{"dyn_door_ele", "dyn_dr_ele", "", false, true},
-    SlidingRow{"dyn_door_ele_c", "dyn_dr_ele_c", "dyn_dr_ele_c", false, true},
-    SlidingRow{"dyn_door_pol", "dyn_dr_pol", "", true, false},
-    SlidingRow{"dyn_door_subway", "dyn_dr_subway", "dyn_dr_subway", false, false},
-    SlidingRow{"dyn_door_spook", "dyn_dr_spook_a", "dyn_dr_spook_b", false, true},
-};
-// The portcullis' sound (its open and close).
-constexpr std::uint32_t kPortcullisSound = 0x8a2b8511U;
 
 // The prefixes of a door type and of its leaves.
 constexpr std::string_view kDoorPrefix = "dyn_door_";
@@ -335,9 +311,6 @@ DoorTypeSetup swingingDoorSetup(std::string_view type) {
 DoorClass doorClassOf(std::string_view className) {
     if (className == kSwingingClass) {
         return DoorClass::Swinging;
-    }
-    if (className == kSlidingClass) {
-        return DoorClass::Sliding;
     }
     if (className == kSlidingClass) {
         return DoorClass::Sliding;
