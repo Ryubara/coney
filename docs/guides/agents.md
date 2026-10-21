@@ -201,7 +201,7 @@ that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent tw
 Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
 each other. A hook (`.claude/hooks/trailer_guard.py`, registered in `.claude/settings.json` for `PostToolUse` on Bash
 and PowerShell commands that start `git commit` or `git -C ... commit`, and `git -c ... commit` on Bash) now checks
-every commit once it exists. Claude Code gives a hook no model, but it does give the main session's
+every new commit. Claude Code gives a hook no model, but it does give the main session's
 `transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`; the
 hook does not use it, because the role does not name the model). The agent's own transcript
 (`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every assistant entry
