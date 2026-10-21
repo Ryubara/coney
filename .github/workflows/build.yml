@@ -1,6 +1,6 @@
 # Build and test the engine on every supported OS and compiler and under the sanitizers, and check the formatting;
-# clang-tidy runs nightly and by hand only (see the clang-tidy job). A draft pull request, or one that changes no engine file (only documentation or the tools), skips all but
-# the formatting (see the changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# clang-tidy runs nightly and by hand only (see the clang-tidy job). A draft pull request, or one that changes no
+# engine file (only documentation or the tools), skips all but the formatting (see the changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: build
 
 on:
@@ -165,7 +165,9 @@ jobs:
   # files by .github/scripts/tidy-files.sh, ready if pull requests run it again.
   clang-tidy:
     needs: changes
-    if: needs.changes.outputs.build == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    if: >-
+      needs.changes.outputs.build == 'true' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     env:
       CC: clang-19
@@ -275,9 +277,9 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uvx pre-commit run --all-files --show-diff-on-failure
 
-  # The one required check for the jobs above but clang-tidy (nightly only). A skipped matrix job reports its name unexpanded ("build
-  # (${{ matrix.name }})"), so "build (windows-msvc)" could never be a required check that a docs-only pull request
-  # satisfies; this job always runs, passes when every needed job passed or was skipped on purpose, and fails when one
+  # The one required check for build and sanitizers (clang-tidy runs nightly, outside it). A skipped matrix job reports
+  # its name unexpanded ("build (${{ matrix.name }})"), so "build (windows-msvc)" could never be a required check that
+  # a docs-only pull request satisfies; this job always runs, passes when every needed job passed or was skipped on purpose, and fails when one
   # failed or was cancelled (including the changes job, which would skip the rest).
   build-ok:
     if: always()
