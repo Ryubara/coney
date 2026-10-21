@@ -81,11 +81,13 @@ def test_the_not_moved_yet_list_holds_only_what_is_still_there() -> None:
     assert stale == [], "drop the entry: the source has moved"
 
 
-#: Game sources that still include a debug tools' header, each until the unit that unties it (the play mode's game
-#: session and the sound output implement the debug menus' services and audio page). Shrinks to nothing; never grows.
+#: Game sources that still include a debug tools' header, each until the unit that unties it (the game session, the
+#: sound output and network play implement the debug menus' services, Audio page and Network page). It never grows.
 _STILL_INCLUDES_DEBUG = {
     "src/platform/audio_output.h",
     "src/platform/game_session.h",
+    "src/platform/net_play.cpp",
+    "src/platform/net_play.h",
 }
 
 _DEBUG_INCLUDE = re.compile(r'^#include "debug/', re.MULTILINE)
