@@ -35,6 +35,7 @@
 #include "gamemodes/movie_player.h"
 #include "platform/audio_output.h"
 #include "platform/game_session.h"
+#include "platform/game_session_debug.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"

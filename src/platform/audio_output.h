@@ -14,10 +14,10 @@
 #include "audio/game_sound.h"
 #include "audio/mixer.h"
 #include "audio/offline_device.h"
+#include "audio/output_status.h"
 #include "audio/pcm_sound.h"
 #include "audio/sound_player.h"
 #include "core/error.h"
-#include "debug/audio_controls.h"
 #include "platform/sdl_audio_device.h"
 
 namespace coney::io {
@@ -33,15 +33,16 @@ enum class AudioSink : std::uint8_t {
 };
 
 /// Coney's sound output for one run: the mixer, the game-facing SoundPlayer over it, and the device that pulls it
-/// (SDL's, or the offline one of test mode, which never opens a device and never reads a clock). It also implements
-/// the debug menus' AudioControls (volumes and the test tone).
-class AudioOutput final : public debug::AudioControls {
+/// (SDL's, or the offline one of test mode, which never opens a device and never reads a clock). The volumes, the test
+/// tone and the status are its own API; the debug menus' Audio page reaches them through AudioOutputControls in the
+/// debug tools (src/platform/audio_output_controls.h).
+class AudioOutput final {
   public:
     /// Starts the output on `sink`. Fails with ErrorCode::PlatformFailure when the device cannot be opened (no
     /// device, or SDL refuses); the offline sink cannot fail.
     [[nodiscard]] static std::expected<std::unique_ptr<AudioOutput>, Error> start(AudioSink sink);
 
-    ~AudioOutput() override;
+    ~AudioOutput();
     AudioOutput(const AudioOutput&) = delete;
     AudioOutput& operator=(const AudioOutput&) = delete;
     AudioOutput(AudioOutput&&) = delete;
@@ -77,14 +78,20 @@ class AudioOutput final : public debug::AudioControls {
     /// One line on what was mixed (offline: frames, peak and hash), for the log at the end. Counts only.
     [[nodiscard]] std::string summary() const;
 
-    // debug::AudioControls
-    [[nodiscard]] std::size_t volumeCount() const override { return audio::kBusCount + 1; }
-    [[nodiscard]] std::string_view volumeName(std::size_t index) const override;
-    [[nodiscard]] float volume(std::size_t index) const override;
-    void setVolume(std::size_t index, float volume) override;
-    [[nodiscard]] bool testTone() const override;
-    void setTestTone(bool on) override;
-    [[nodiscard]] debug::AudioStatus status() const override;
+    /// How many volumes there are: the master volume (index 0), then one per bus.
+    [[nodiscard]] std::size_t volumeCount() const { return audio::kBusCount + 1; }
+    /// Volume `index`'s name.
+    [[nodiscard]] std::string_view volumeName(std::size_t index) const;
+    /// Volume `index`, as the mixer holds it.
+    [[nodiscard]] float volume(std::size_t index) const;
+    /// Sets volume `index` on the mixer; an index past the buses does nothing.
+    void setVolume(std::size_t index, float volume);
+    /// Whether the looping test tone plays.
+    [[nodiscard]] bool testTone() const;
+    /// Starts or stops the looping test tone.
+    void setTestTone(bool on);
+    /// The output's state now.
+    [[nodiscard]] audio::OutputStatus status() const;
 
   private:
     AudioOutput();

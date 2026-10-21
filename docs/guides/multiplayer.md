@@ -201,9 +201,12 @@ fixed step in the tests), and only while something is closing.
 
 `NetPlay` (`src/platform/net_play.h`) is network play in the running game: it owns the session (a `NetServer` when
 hosting, a `NetClient` when joining), a fresh transport per session with a link conditioner in front, and the
-settings. It implements `debug::NetControls` (`src/debug/net_controls.h`), which the Network page
-(`src/debug/pages_net.cpp`, [The debug menus](debug-menu.md#pages)) is defined over, so the page needs no platform
-code, as the Audio page over `AudioControls`.
+settings. Its figures and simulated network are `net::NetStatus` and `net::NetSimulation` (`src/net/net_status.h`).
+The Network page (`src/debug/pages_net.cpp`, [The debug menus](debug-menu.md#pages)) is defined over
+`debug::NetControls` (`src/debug/net_controls.h`), so it needs no platform code, as the Audio page over
+`AudioControls`; `NetPlayControls` (`src/platform/net_play_controls.h`) turns `NetPlay`'s own API into it, on the debug
+tools' side ([The debug tools and the game](building.md#debug-tools)), so a build without the debug tools still has
+network play.
 
 **The main loop.** `FrameHooks` (`src/gamemodes/game_mode_stack.h`) has `beforeStep` and `afterStep`, called around
 every due step, a step the pause holds included, so a paused host keeps its players. Network play receives in

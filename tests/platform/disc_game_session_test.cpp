@@ -21,6 +21,7 @@
 #include "fileio/wad.h"
 #include "gamemodes/pause_mode.h"
 #include "platform/game_session.h"
+#include "platform/game_session_debug.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
 #include "warriors/game_state.h"

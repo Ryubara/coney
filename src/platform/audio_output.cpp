@@ -16,7 +16,7 @@ namespace coney::platform {
 
 namespace {
 
-// The name of the master volume, AudioControls' index 0; the buses follow.
+// The name of the master volume, index 0; the buses follow.
 constexpr std::string_view kMasterName = "Master";
 // The game time of one fixed step, ms.
 constexpr float kStepMilliseconds = 1000.0F / 30.0F;
@@ -140,15 +140,15 @@ void AudioOutput::setTestTone(bool on) {
     m_toneVoice = m_mixer->play(m_tone, audio::VoiceParams{.bus = audio::Bus::Sfx});
 }
 
-debug::AudioStatus AudioOutput::status() const {
+audio::OutputStatus AudioOutput::status() const {
     const audio::MixerStats stats = m_mixer->stats();
-    return debug::AudioStatus{.device = m_device ? m_device->name() : std::string("offline (test mode)"),
-                              .voicesPlaying = m_mixer->voicesPlaying(),
-                              .voiceCount = audio::kVoiceCount,
-                              .framesMixed = stats.framesMixed,
-                              .sampleRate = audio::kOutputRate,
-                              .voicesStolen = stats.voicesStolen,
-                              .playsDropped = stats.playsDropped};
+    return audio::OutputStatus{.device = m_device ? m_device->name() : std::string("offline (test mode)"),
+                               .voicesPlaying = m_mixer->voicesPlaying(),
+                               .voiceCount = audio::kVoiceCount,
+                               .framesMixed = stats.framesMixed,
+                               .sampleRate = audio::kOutputRate,
+                               .voicesStolen = stats.voicesStolen,
+                               .playsDropped = stats.playsDropped};
 }
 
 } // namespace coney::platform

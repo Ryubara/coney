@@ -15,17 +15,17 @@
 
 #include "core/pad.h"
 #include "core/pads.h"
-#include "debug/net_controls.h"
 #include "net/loopback_transport.h"
+#include "net/net_status.h"
 #include "net/transport.h"
 
 using coney::InputSource;
 using coney::PadSample;
 using coney::PortSamples;
-using coney::debug::NetRole;
-using coney::debug::NetSimulation;
 using coney::net::LoopbackNetwork;
 using coney::net::LoopbackTransport;
+using coney::net::NetRole;
+using coney::net::NetSimulation;
 using coney::platform::NetInput;
 using coney::platform::NetPlay;
 

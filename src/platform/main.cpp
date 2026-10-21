@@ -67,15 +67,18 @@
 #include "human/player.h"
 #include "movies/movie_mode.h"
 #include "platform/audio_output.h"
+#include "platform/audio_output_controls.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/clip_recorder.h"
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_session.h"
+#include "platform/game_session_debug.h"
 #include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
 #include "platform/net_play.h"
+#include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
 #include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
@@ -693,11 +696,13 @@ int main(int argc, char** argv) {
 
     // The debug menus (docs/guides/debug-menu.md), Coney's own tools: a session over the game's services whose input
     // gate sits between the pads and the game, drawn over every frame by the pad menu overlay.
+    coney::platform::AudioOutputControls audioControls; // the Audio page's view of the sound output
     coney::debug::DebugServices debugServices;
     // Network play (docs/guides/multiplayer.md): hosted or joined from the Network page, or from the start with
     // `--host` or `--join`; a port that cannot be opened ends the run, as any bad argument does.
     coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
-    debugServices.net = [&netPlay]() -> coney::debug::NetControls* { return &netPlay; };
+    coney::platform::NetPlayControls netControls(netPlay); // the Network page's view of network play
+    debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
     if (const std::optional<std::string> name = options->netName; name && !netPlay.setPlayerName(*name)) {
         return 1;
     }
@@ -769,7 +774,7 @@ int main(int argc, char** argv) {
                                  soundData.error().message.c_str());
                 }
             }
-            debugServices.audio = [&audio]() -> coney::debug::AudioControls* { return audio.get(); };
+            debugServices.audio = [&audio, &audioControls] { return audioControls.controlsOf(audio.get()); };
             audio->game().setLog(printText);
         } else {
             std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());

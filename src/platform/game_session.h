@@ -16,8 +16,6 @@
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/language.h"
-#include "debug/debug_session.h"
-#include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/loading_screen.h"
@@ -158,10 +156,5 @@ class GameSession {
     std::optional<LoadingScreen> m_loadingScreen;
     std::unique_ptr<StartUpFlow> m_flow; // after everything its modes point at
 };
-
-/// Points the debug menus' game services (the scripts the Lua console and the Cheats page call into, the recorded
-/// configuration, the game state) at the session `session` returns, whichever way it started; while it returns null
-/// they have none and the menus use their sandbox state. `session` is asked anew each time.
-void connectDebugServices(debug::DebugServices& services, const std::function<GameSession*()>& session);
 
 } // namespace coney::platform

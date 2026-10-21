@@ -38,6 +38,7 @@
 #include "human/human_animator.h"
 #include "human/player.h"
 #include "platform/game_session.h"
+#include "platform/game_session_debug.h"
 #include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"

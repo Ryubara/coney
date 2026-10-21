@@ -17,10 +17,10 @@
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
-#include "debug/net_controls.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
 #include "net/net_server.h"
+#include "net/net_status.h"
 #include "net/protocol.h"
 #include "net/transport.h"
 #include "platform/enet_transport.h"
@@ -80,7 +80,7 @@ bool NetPlay::setPlayerName(const std::string& name) {
     return true;
 }
 
-void NetPlay::setSimulation(const debug::NetSimulation& simulation) {
+void NetPlay::setSimulation(const net::NetSimulation& simulation) {
     m_simulation = simulation;
     if (m_link) {
         m_link->setConditions(conditions());
@@ -266,8 +266,8 @@ PortSamples NetPlay::pads(const PortSamples& local) {
     return samples;
 }
 
-debug::NetStatus NetPlay::status() const {
-    debug::NetStatus status;
+net::NetStatus NetPlay::status() const {
+    net::NetStatus status;
     if (m_wire) {
         const net::TransportStats stats = m_wire->stats();
         status.bytesSent = stats.bytesSent;
@@ -276,7 +276,7 @@ debug::NetStatus NetPlay::status() const {
         status.packetsReceived = stats.packetsReceived;
     }
     if (m_server) {
-        status.role = debug::NetRole::Host;
+        status.role = net::NetRole::Host;
         status.port = m_server->port();
         const std::size_t joined = m_server->joinedCount();
         status.state =
@@ -285,17 +285,17 @@ debug::NetStatus NetPlay::status() const {
             if (!client.joined) {
                 continue;
             }
-            status.players.push_back(debug::NetPlayerStatus{.slot = client.slot,
-                                                            .name = client.name,
-                                                            .roundTripNs = client.quality.roundTripNs(),
-                                                            .lossFraction = client.quality.lossFraction()});
+            status.players.push_back(net::NetPlayerStatus{.slot = client.slot,
+                                                          .name = client.name,
+                                                          .roundTripNs = client.quality.roundTripNs(),
+                                                          .lossFraction = client.quality.lossFraction()});
             // The host's figures are its slowest player's: the one a problem shows on first.
             status.roundTripNs = std::max(status.roundTripNs, client.quality.roundTripNs());
             status.lossFraction = std::max(status.lossFraction, client.quality.lossFraction());
         }
     } else if (m_client) {
         const bool ended = m_client->state() == net::ClientState::Disconnected;
-        status.role = ended ? debug::NetRole::Offline : debug::NetRole::Client;
+        status.role = ended ? net::NetRole::Offline : net::NetRole::Client;
         status.state = m_client->describe();
         status.roundTripNs = m_client->quality().roundTripNs();
         status.lossFraction = m_client->quality().lossFraction();
@@ -304,7 +304,7 @@ debug::NetStatus NetPlay::status() const {
 }
 
 std::string NetPlay::summary() const {
-    const debug::NetStatus now = status();
+    const net::NetStatus now = status();
     return std::format("net: {}; {} B sent, {} B received\n", now.state, now.bytesSent, now.bytesReceived);
 }
 

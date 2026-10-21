@@ -58,6 +58,7 @@ add_library(
     coney_devtools STATIC
     character_viewer_mode.cpp
     debug_menus.cpp
+    game_session_debug.cpp
     imgui_model_view.cpp
     imgui_overlay.cpp
     imgui_ui_scale.cpp
