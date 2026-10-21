@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/error.h"
+#include "core/pad.h"
 #include "net/protocol.h"
 #include "net/transport.h"
 
@@ -60,6 +61,10 @@ void NetServer::advance(std::uint64_t elapsedNs) {
 void NetServer::receive() {
     if (!m_running) {
         return;
+    }
+    // A new step for every pad: one that arrives below starts again at 0.
+    for (ServerClient& client : m_clients) {
+        ++client.padQuiet;
     }
     // Every event waiting now; the transport never blocks.
     while (std::optional<TransportEvent> event = m_transport.poll()) {
@@ -135,6 +140,21 @@ std::size_t NetServer::joinedCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_clients, [](const ServerClient& c) { return c.joined; }));
 }
 
+std::optional<PadSample> NetServer::remotePad(std::uint8_t slot) const {
+    const auto found =
+        std::ranges::find_if(m_clients, [slot](const ServerClient& c) { return c.joined && c.slot == slot; });
+    if (found == m_clients.end()) {
+        return std::nullopt;
+    }
+    if (found->padQuiet > m_config.padHoldSteps) {
+        // Let go: still plugged in (if it was), nothing held.
+        PadSample rest;
+        rest.connected = found->pad.connected;
+        return rest;
+    }
+    return found->pad;
+}
+
 std::vector<ServerEvent> NetServer::takeEvents() { return std::exchange(m_events, {}); }
 
 bool NetServer::handle(ServerClient& client, const Message& message) {
@@ -152,6 +172,20 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
     }
     if (const auto* pong = std::get_if<Pong>(&message)) {
         client.quality.pongReceived(pong->sequence, m_nowNs);
+        return true;
+    }
+    if (const auto* input = std::get_if<PadInput>(&message)) {
+        if (!client.joined) {
+            close(index, ByeReason::ProtocolError, true); // a pad belongs to a player, and they have not joined
+            return false;
+        }
+        // Unreliable delivery may reorder and repeat: only a newer step replaces the pad.
+        if (!client.padHeard || input->step > client.padStep) {
+            client.pad = input->pad;
+            client.padHeard = true;
+            client.padStep = input->step;
+            client.padQuiet = 0;
+        }
         return true;
     }
     if (std::holds_alternative<Bye>(message)) {

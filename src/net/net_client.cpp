@@ -101,6 +101,9 @@ void NetClient::receive() {
 
 void NetClient::send() {
     if (m_state == ClientState::Connected) {
+        // Every step's pad, numbered by the step so the server can tell a late one from a newer one. 32 bits of steps
+        // is four and a half years at 30 Hz.
+        sendToServer(PadInput{.step = static_cast<std::uint32_t>(m_steps), .pad = m_pad});
         if (m_config.pingIntervalSteps > 0 && m_steps % m_config.pingIntervalSteps == 0) {
             sendToServer(Ping{.sequence = m_quality.pingSent(m_nowNs)});
         }
@@ -130,7 +133,7 @@ void NetClient::handle(const Message& message) {
     } else if (const auto* pong = std::get_if<Pong>(&message); pong != nullptr) {
         m_quality.pongReceived(pong->sequence, m_nowNs);
     } else {
-        // A Hello only ever goes from a client to a server.
+        // A Hello or a PadInput only ever goes from a client to a server.
         finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
     }
 }

@@ -357,11 +357,32 @@ TEST_CASE("while the gate holds, the render shows the newest step and does not d
     CHECK(std::vector<float>(mode.alphas.begin() + 1, mode.alphas.end()) == std::vector<float>(3, 1.0F));
 }
 
-TEST_CASE("the step hooks run around every due step, held ones too", "[game_mode_stack]") {
+namespace {
+
+// An input source that notes in `log` each time it is read.
+class LoggingInput final : public coney::InputSource {
+  public:
+    explicit LoggingInput(std::vector<std::string>& log) : m_log(log) {}
+    [[nodiscard]] coney::PortSamples sample(std::uint64_t /*frame*/) override {
+        m_log.emplace_back("pads");
+        return {};
+    }
+
+  private:
+    std::vector<std::string>& m_log;
+};
+
+} // namespace
+
+TEST_CASE("the step hooks run around every due step, held ones too, and the pads are read after the first",
+          "[game_mode_stack]") {
     std::vector<std::string> log;
     LoggingMode mode("mode", 1, log, 100);
     GameModeStack stack;
     stack.push(mode);
+    // Network play receives in beforeStep, so a remote player's pad is in the same step's samples.
+    LoggingInput input(log);
+    stack.setInput(&input);
     // The second step is held, as a pause holds it: the hooks still run, the update does not.
     int gateCalls = 0;
     stack.setStepGate([&gateCalls] { return ++gateCalls != 2; });
@@ -373,6 +394,7 @@ TEST_CASE("the step hooks run around every due step, held ones too", "[game_mode
     const coney::LoopCounts counts = stack.runUntilEmpty(timer, lockstep, hooks, 3);
     CHECK(counts.steps == 2);
     CHECK(counts.held == 1);
-    CHECK(log == std::vector<std::string>{"before", "mode.enter", "mode.update", "after", "mode.render", "before",
-                                          "after", "mode.render", "before", "mode.update", "after", "mode.render"});
+    CHECK(log == std::vector<std::string>{"before", "pads", "mode.enter", "mode.update", "after", "mode.render",
+                                          "before", "pads", "after", "mode.render", "before", "pads", "mode.update",
+                                          "after", "mode.render"});
 }

@@ -12,8 +12,9 @@ architecture](network-architecture.md).
 
 **Built:** the platform-neutral library `coney_net` (bit stream, transport interface, loopback and link conditioner,
 protocol, the server and client sessions with their handshake, keep-alive and timeouts), the ENet transport, and the
-game's side: hosting and joining from the debug menus' Network page or the command line ([In the game](#in-the-game)).
-Nothing of the game itself is shared yet. **Next:** the layers under [The plan](#plan).
+game's side: hosting and joining from the debug menus' Network page or the command line ([In the game](#in-the-game)),
+and the guest's pad as the host's pad port 2 ([Player two](#player-two)). The guest does not see the host's game yet.
+**Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
 
@@ -83,7 +84,7 @@ Received.
 | --- | --- | --- | --- |
 | ReliableOrdered | exactly once, in order among reliable packets | handshake, Bye; later game events, mission state | `ENET_PACKET_FLAG_RELIABLE`, channel 0 |
 | UnreliableSequenced | at most once; one older than a packet already delivered is dropped | later: snapshots | no flag, channel 1 |
-| Unreliable | at most once, any order | Ping, Pong; later: input commands (redundant anyway) | `ENET_PACKET_FLAG_UNSEQUENCED`, channel 1 |
+| Unreliable | at most once, any order | Ping, Pong, PadInput (sent again every step anyway) | `ENET_PACKET_FLAG_UNSEQUENCED`, channel 1 |
 
 An unreliable packet too big for one datagram also gets `ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT`: without it ENet
 resends a big unreliable packet's fragments reliably, so a lost snapshot fragment would stall the channel instead of
@@ -109,7 +110,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 1)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 2)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -121,6 +122,13 @@ unnoticed.
 | 4 | Bye | either | reason (8): quit, timed out, protocol error | reliable |
 | 5 | Ping | either | sequence (varint, 32 bits at most) | unreliable |
 | 6 | Pong | either | the Ping's sequence | unreliable |
+| 7 | PadInput | client to server | the client's step (varint, 32 bits at most), its pad (below); since version 2 | unreliable |
+
+**PadInput's pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of
+`core/pad.h`), the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a
+bit saying whether it is above 0 followed by the byte when it is. A pad with nothing held costs 61 bits; a
+disconnected one, 1 bit, and decodes as a pad at rest. A pressure flagged as above 0 but written as 0 is refused, so
+each pad has one encoding.
 
 **Decoding is strict.** An unknown id or enumerator, the wrong magic, a short packet, a name over its limit or
 trailing bytes is an error, and the receiving session closes the connection with Bye (protocol error). The one
@@ -199,7 +207,8 @@ code, as the Audio page over `AudioControls`.
 
 **The main loop.** `FrameHooks` (`src/gamemodes/game_mode_stack.h`) has `beforeStep` and `afterStep`, called around
 every due step, a step the pause holds included, so a paused host keeps its players. Network play receives in
-`beforeStep` and sends and flushes in `afterStep`, so a step's result leaves in the same frame. Its time is the
+`beforeStep`, before the step's pads are read, so a guest's pad that has arrived is in the same step's samples; it
+sends and flushes in `afterStep`, so a step's result leaves in the same frame. Its time is the
 frame time the frame pacer measured, passed on once a frame; in test mode, which has no clock, each step passes a
 fixed 1/30 s, so a run is the same every time.
 
@@ -212,6 +221,51 @@ what this game sends, live); and a log of what happened, also printed as `net:` 
 **The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` and `--net-name NAME`
 ([Running Coney](running.md#network-play)).
 
+## Player two {#player-two}
+
+A guest plays the host's game as **player 2 on pad port 2**: their own player 1 pad, sampled by their game each step, is
+what the host's game reads on port 2, exactly as a second pad plugged into the host's machine would be. Nothing in
+the game knows the pad is remote, so whatever a second local pad does, a remote one does too, and gameplay stays the
+original's.
+
+- **Two ports, one remote player.** The PS2 has two pad ports, and the original reads only pad records 0 (port 1) and
+  4 (port 2, first multitap slot) (confirmed (code) at `0x001454a8`, [Pad record](../research/frontend.md#pad-record)),
+  so its games have two players at most. A host therefore takes one remote player (`ServerConfig::maxClients` 1 in
+  `NetPlay`); a second is told the server is full. The guest holds slot 1, which is port 2. Port 1 is always the host's.
+- **The path of a pad.** On the guest, `NetInput` (`src/platform/net_play.h`) sits between the debug menus' input gate
+  and the mode stack: port 1 as the guest's game reads it (never their debug menu's input, which the gate keeps) goes to
+  the session, which sends it as PadInput at the end of the step, numbered by the guest's step. On the host the server
+  keeps each player's newest pad by that number (a late or repeated packet never replaces a newer one), and the host's
+  `NetInput` puts it on port 2. On a link with no delay a press reaches the host's game in the host's step after the
+  one in which the guest's game saw it; over a network, add the one-way delay.
+- **The host's own port 2** plays while nobody has joined, and again once the guest leaves; while they are joined it is
+  set aside (Coney's choice: one pad per port).
+- **Until the first PadInput** arrives, port 2 reads unplugged; a guest with no pad plugged in sends an unplugged
+  pad, and port 2 stays unplugged.
+- **A stalled link lets go.** When no new PadInput has come for more than 15 steps (half a second;
+  `ServerConfig::padHoldSteps`), port 2 reads plugged in with nothing held and the sticks centred, rather than holding
+  the last buttons until the 10 s timeout drops the player (Coney's choice). The next PadInput takes over again.
+- **What a second pad does in Coney today.** The front end's two-player screens read port 2: the Story's number of
+  players (`PM_NumPlayers` and its "player 2 press START"; the main menu first counts the connected pads,
+  [Profile manager](../research/frontend.md#profile-manager)) and the Rumble mode's (`RM_NumPlayers`, No 2nd
+  Controller, Choose Gangs' second side). In play, the original lets a second pad join when `CfgMultiplayerJoin`
+  allows it: `GameState_SyncPlayers` (`0x0041a460`) makes the gang's next Warrior player 2 and calls the multiplayer
+  callback ([level99](../research/scripting.md#level99)). Coney has one player in play so far
+  (`PlayerState::multiplayerCallback` is kept, not called), so a remote pad 2 joins a level only once that two-player
+  sync is built; nothing in network play has to change for it.
+
+**Compared with the original** (2026-10-21). In the original, PCSX2 2.9.129 (the PCSX2-MCP fork) with a DualShock 2
+on port 2 and both driven through the debug server's pad: from a cold boot, both pad records read connected
+(`+0x4c` of records 0 and 4 at `0x005dd810`); STORY shows 1 PLAYER : 2 PLAYER; 2 PLAYER and cross shows "Player 2
+press the START button"; START on port 2 goes on to the Profile Manager. Confirmed (runtime). Coney, a host on the
+disc (`--skip-movies`, an input script on port 1) and a guest joined over ENet on 127.0.0.1 whose `--pad-pipe` pad
+pressed START: the host went `PM_Mode`, `PM_NumPlayers`, then `PM_Profile` after the guest's START, showing the same
+three screens; the host alone went from `PM_Mode` straight to `PM_Profile`. The network carrying the pad has no
+counterpart in the original.
+
+This is the plain form of the next layer: [The plan](#plan)'s input commands replace the one pad per packet with the
+last few steps' pads, and a buffer on the host that applies each on its own step.
+
 ## Testing {#testing}
 
 Everything above `EnetTransport` is tested on the loopback, frame by frame with no real time, in `tests/net/`: the
@@ -223,7 +277,11 @@ fragmented packet, closes, checks that a transport kept going until `closed()` d
 and runs the sessions' handshake over real UDP. `tests/platform/net_play_test.cpp` hosts
 and joins between two `NetPlay`s on the loopback (by address, the figures, the simulated latency in the ping,
 leaving and stopping, a leave over a slow link, a close that never completes, hosting again on a closing host's
-port, shutting down, refusals); `tests/debug/net_page_test.cpp` drives the Network page over a fake
+port, shutting down, refusals, the guest's pad on the host's port 2 and the host's own port 2 around it, one remote
+player at most); `tests/net/sessions_test.cpp` also covers the server's side of the pad (by slot, newest step wins, a
+pad before the handshake, letting go of a quiet pad); `tests/net/protocol_test.cpp` pins PadInput's bytes;
+`tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
+`tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
 
 ## The plan {#plan}
@@ -232,7 +290,7 @@ Each step is a pull request that builds and is tested on its own.
 
 1. **Foundation** (built): this page, ENet, `coney_net` and its tests.
 2. **The Network page and flags** (built): [In the game](#in-the-game).
-3. **A second player** joining on pad port 2 of the host's game.
+3. **A second player** (built): the guest's pad on pad port 2 of the host's game ([Player two](#player-two)).
 4. **Input commands:** the client's pad samples, tagged with the step, with the last few steps repeated in every
    packet; the server's buffer that applies each on its step.
 5. **Replicated players:** network ids, snapshots (quantized, delta-compressed against acknowledged baselines),

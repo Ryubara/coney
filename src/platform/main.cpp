@@ -891,7 +891,10 @@ int main(int argc, char** argv) {
         }
     }
     coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), printText);
-    modes.setInput(&debugSession.gate());
+    // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
+    // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
+    coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
+    modes.setInput(&netInput);
     std::optional<coney::graphics::Font> debugFont;
     if (wad) {
         if (auto sheet = loadSheet(coney::gui::kTextFontSheet); sheet) {

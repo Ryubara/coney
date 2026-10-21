@@ -95,11 +95,12 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
             if (empty()) {
                 break;
             }
-            // The pads are read once per step, after the window's events; a held step reads them too, for the menus.
-            samplePads(m_samples++);
+            // Network play receives first, so a remote player's pad is in this step's samples. The pads are read
+            // once per step, after the window's events; a held step reads them too, for the menus.
             if (hooks.beforeStep) {
                 hooks.beforeStep();
             }
+            samplePads(m_samples++);
             if (m_stepGate && !m_stepGate()) {
                 m_holding = true;
                 ++counts.held;
