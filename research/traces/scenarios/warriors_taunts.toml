@@ -4,7 +4,7 @@
 # goal's re-target test (fight-retarget-due) and every target set (set-target). Research:
 # docs/research/ai.md#fight-reposition and docs/research/gang-fights.md#waiting. The state is not a quick-save slot:
 # make it as ai.md#level99-save says.
-description = "level99 sparring fight against a still player: the waiting Warriors' taunts, gloats, re-targets and distances"
+description = "level99 sparring fight against a still player (no input): the waiting Warriors' taunts, gloats, re-targets and distances"
 research = "docs/research/ai.md#level99-fight"
 input = "warriors_passive.txt"
 updates = 1700

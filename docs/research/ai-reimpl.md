@@ -1,8 +1,8 @@
 # AI reimplementation plan: units and specifications
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on
-2026-10-12 (the ObjectPile goal, the fidget and taunt actions and the pattern block on 2026-10-13). No runtime check
-yet; each claim states its evidence level.
+2026-10-12 (the ObjectPile goal, the fidget and taunt actions and the pattern block on 2026-10-13). Every claim is
+confirmed (code) at the cited address unless it says otherwise; nothing on this page was checked at runtime.
 
 ## Purpose
 
@@ -35,6 +35,20 @@ counts resolving handles; confirmed (code) at `0x00166158`). The HUD's gang coun
 ([HUD](hud-functions-lua.md#gang-count-what)). Neither is `Gang_CountStanding` (`0x00166220`, `GangGetStandingCount`), which
 tests knocked out, state `0x100000000` and wounded separately (confirmed (code) at `0x00166220`). Goal kinds
 are the type ids of [Goals](ai.md#goals).
+
+## Original structure
+
+The AI code's layout (the `Human/` stretch, its classes and their vtables) is on the [AI code index](ai-code.md); each
+unit below names its own functions.
+
+## Data
+
+The records the units read are described on [The brain](ai.md#brain) and [The gang](ai-gangs.md#gang-record); each
+unit gives the offsets it uses.
+
+## Behaviour
+
+The units below, one section each, specify the behaviour to reimplement, function by function.
 
 ## Unit 1: threats and the gang's shared target {#unit-1}
 
@@ -777,7 +791,7 @@ current target, who is in a Fight goal with an empty queue (block goal pushed, c
 the same with the pattern below `t`, with a non-Fight top goal, with an action that refuses to abort, and with the
 attacker not his target (the ordinary chance, seeded).
 
-## Reimplementation plan {#plan}
+## Coney's implementation: the reimplementation plan {#plan}
 
 Units in order. 1-7 come first (gang combat is the project's top priority) and need little else. Then the brain
 core and the actions, which the rest call; then the fight goals and the tactics; then the **crew** units, which wait

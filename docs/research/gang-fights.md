@@ -3,15 +3,32 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on 2026-10-12;
 checked at runtime on Rumble's 9-a-side brawl in PCSX2 2.9.94 on 2026-10-12 and 2026-10-13 ([Runtime checks](#runtime)).
 
+Confirmed (code) at the addresses cited unless marked; the per-gang values are confirmed (disc) from
+`config_preload2.lua` through [Gangs](../references/gangs.md).
+
+## Purpose
+
 How the members of a gang share out a big fight: who goes for whom, how many may hit one man at once, what the rest
 do while they wait, when they switch, how they help each other and what the gang as a whole adds. There is **no
 fight coordinator**: no object owns a brawl and hands out targets. The coordination comes from five mechanisms that
 each brain meets on its own: the **target's own limits** (attack slots and active places), a **shared score** for
 choosing among enemies, **help calls** (event 20), the **gang's tactic** (whose Process and events push goals on the
 members) and, under TacticAttack, short **team-up orders** from the leader. The single fighter's side (the fight goal,
-the attack check, the reposition, the run-in) is on [AI humans](ai.md) and only linked here. Confirmed (code) at the
-addresses cited unless marked; the per-gang values are confirmed (disc) from `config_preload2.lua` through
-[Gangs](../references/gangs.md).
+the attack check, the reposition, the run-in) is on [AI humans](ai.md) and only linked here.
+
+## Original structure
+
+No object of its own: the mechanisms below live in the brains, the gang record and its tactic
+([AI code index](ai-code.md)); each section cites its functions.
+
+## Data
+
+The records involved are [the brain](ai.md#brain) and [the gang](ai-gangs.md#gang-record); each rule cites the offsets it
+reads.
+
+## Behaviour
+
+The rules follow, one section per mechanism.
 
 ## Who goes for whom {#targets}
 
@@ -518,7 +535,7 @@ the brief of issue #273 names have no site of their own:
   the goal ends and the next pick clears and sets (`0x0029f298`, `0x0029f368`), or a slot is lost (`0x0028e0fc`)
   ([switches](#switches) rule 1; inferred: none of the 102 call sites is such a handler).
 
-## Coney needs {#coney}
+## Coney's implementation: what Coney needs {#coney}
 
 Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule above it implements.
 
@@ -589,6 +606,6 @@ and whether Rumble enables the team-ups (its sides never get them, [Rumble](#rum
 page. Where the team-ups are on in the story is known from the scripts (`GangSetup` unless `AttackStratsOff`, and
 three chunks directly, [Rumble](#rumble) rule 5).
 
-- Not yet seen at runtime: a story gang with `+0xd9` set giving team-up orders in a fight. The `g_teamups` column of
-  a trace in a story fight against a `GangSetup` gang would confirm rule 5's script reading and show how often the
-  orders run.
+- Unseen in the recordings made so far: a story gang with `+0xd9` set giving team-up orders in a fight. The
+  `g_teamups` column of a trace in a story fight against a `GangSetup` gang would confirm rule 5's script reading and
+  show how often the orders run.
