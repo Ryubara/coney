@@ -24,6 +24,11 @@
             "type": "command",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/release_guard.py\"",
             "timeout": 200
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/push_guard.py\"",
+            "timeout": 10
           }
         ]
       },
