@@ -3,19 +3,52 @@
 # To update one: change the SHA and the tag comment together, rebuild from a clean build directory, run the tests.
 include(FetchContent)
 
-# A folder that keeps the fetched sources between builds, for CI (docs/guides/building.md#ci-caches): when
-# CONEY_DEPS_SOURCES names one (the environment variable of that name gives the default), each dependency is fetched
-# into <folder>/<name> instead of this build's _deps/, and once that folder holds a complete fetch made from this very
-# file (its stamp holds this file's SHA-256) it is used as it is, with no download. The path is the same on every run
-# and for every preset, so the compiler cache sees the same command lines. Empty (the default): nothing changes.
+# A folder that keeps the fetched sources between builds, for CI and for every worktree of a machine
+# (docs/guides/building.md#ci-caches, #shared-deps): when CONEY_DEPS_SOURCES names one (the environment variable of
+# that name gives the default), each dependency is fetched into <folder>/<version>/<name> instead of this build's
+# _deps/, and once that holds a complete fetch of these pins (its stamp holds their SHA-256) it is used as it is, with
+# no download. The path is the same on every run and for every preset, so the compiler cache sees the same command
+# lines. Empty (the default): nothing changes.
 set(CONEY_DEPS_SOURCES "$ENV{CONEY_DEPS_SOURCES}" CACHE PATH "Folder that keeps the fetched dependency sources")
-file(SHA256 "${CMAKE_CURRENT_LIST_FILE}" _coney_deps_hash)
+# The version of the sources: the pin lines alone (repositories, tags, URLs, patches), so a comment or a build option
+# changed here neither re-fetches nor moves the folder. Each dependency's stamp holds it.
+file(STRINGS "${CMAKE_CURRENT_LIST_FILE}" _coney_pins REGEX "^[^#]*(GIT_REPOSITORY|GIT_TAG|URL|PATCH_COMMAND)")
+string(SHA256 _coney_deps_hash "${_coney_pins}")
 set(_coney_deps SDL3 librw Catch2 imgui enet ffmpeg)
+# The sources of this version live in <CONEY_DEPS_SOURCES>/<first 16 hex digits of the version>, worked out on every
+# configure, never kept in the cache: a folder configured before a pin changed moves to the new version's folder at
+# its next configure instead of fetching the new pins into the old one under other worktrees' builds. Old versions'
+# folders are never removed by the build (docs/guides/building.md#shared-deps).
+set(_coney_deps_dir "")
+if(CONEY_DEPS_SOURCES)
+    string(SUBSTRING "${_coney_deps_hash}" 0 16 _coney_deps_version)
+    file(TO_CMAKE_PATH "${CONEY_DEPS_SOURCES}/${_coney_deps_version}" _coney_deps_dir)
+endif()
+# Several configures may share the folder: `coney-tools build` points every worktree of a machine at it
+# (docs/guides/building.md#shared-deps). So while any dependency in it lacks this file's stamp,
+# take the folder's lock before looking again: one configure fetches, the others wait for it and then find its
+# stamps. The lock is held until this file is done (GUARD FILE) and ends with the process if it dies.
+if(CONEY_DEPS_SOURCES)
+    set(_coney_deps_complete TRUE)
+    foreach(_dep IN LISTS _coney_deps)
+        set(_stamp "")
+        if(EXISTS "${_coney_deps_dir}/${_dep}/.coney-deps-hash")
+            file(READ "${_coney_deps_dir}/${_dep}/.coney-deps-hash" _stamp)
+        endif()
+        if(NOT _stamp STREQUAL _coney_deps_hash)
+            set(_coney_deps_complete FALSE)
+        endif()
+    endforeach()
+    if(NOT _coney_deps_complete)
+        file(MAKE_DIRECTORY "${_coney_deps_dir}")
+        file(LOCK "${_coney_deps_dir}" DIRECTORY GUARD FILE TIMEOUT 1800)
+    endif()
+endif()
 foreach(_dep IN LISTS _coney_deps)
     # _coney_<name>_where: the SOURCE_DIR option for its declaration when it is fetched into the folder, else empty.
     set(_coney_${_dep}_where "")
     if(CONEY_DEPS_SOURCES)
-        file(TO_CMAKE_PATH "${CONEY_DEPS_SOURCES}/${_dep}" _dir)
+        file(TO_CMAKE_PATH "${_coney_deps_dir}/${_dep}" _dir)
         string(TOUPPER "${_dep}" _upper)
         set(_stamp "")
         if(EXISTS "${_dir}/.coney-deps-hash")

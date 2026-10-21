@@ -16,7 +16,8 @@ runs:
       run: |
         complete=true
         # The relative path: on Windows CONEY_DEPS_SOURCES has backslashes, which a bash glob would misread.
-        for dir in build/_deps-sources/*/; do
+        # One folder per version of the pins (cmake/deps.cmake), each dependency in it.
+        for dir in build/_deps-sources/*/*/; do
           if [ ! -f "$dir/.coney-deps-hash" ]; then
             echo "Not saved: $dir has no stamp, so its fetch did not finish."
             complete=false
