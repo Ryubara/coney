@@ -269,7 +269,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x0012d4e8` | `Cam_Follow_Pitch` | Pitch about the look-at point, clamped to [`+0x3b0`, `+0x3ac`]. [pitch](#pitch). | confirmed (code) |
 | `0x0012d688` | `Cam_Follow_Yaw` | Yaw about the look-at point. [heading](#heading). | confirmed (code) |
 | `0x0012d7a8` | `Cam_Follow_MoveBand` | Moves the distance band and recomputes the lower pitch limit. [pitch](#pitch). | confirmed (code) |
-| `0x0012d908` | `Cam_Follow_GetViewPitch` | Current pitch of the view (from the camera to the look-at point). | confirmed (code) |
+| `0x0012d908` | `Cam_Follow_GetViewPitch` | The pitch of a point about the look-at point, from the unit direction to it; negative below. Update step 11 measures the wanted position with it. [update](#update). | confirmed (code) |
 | `0x0012da20` | `Cam_Follow_ReactToLedge` | Called by human code (`0x0023dc58`) at a ledge: heading target the given heading +-92°, target pitch the upper limit - 5° (old saved in `+0x3d4`), sprint zoom cancelled, over the given time (0.35 s for 0). | confirmed (code) |
 | `0x0012de48` | `Cam_Follow_TurnToQuat` | Converts an orientation quaternion to a matrix and calls Cam_Follow_TurnToMatrix (Cam_Mug, `0x00137e08` / `0x00138b90`). | confirmed (code) |
 | `0x0012ded8` | `Cam_Follow_TurnToMatrix` | Sets a timed heading target (`+0x350`, the matrix's heading turned 180°) and pitch override (`+0x354`) over the given times, `+0x475` set; optionally merges co-op views; with a camera passed, queues it as the hand-over (`+0x47c`, blend `+0x3c0`) and sets the pitch override. Used when mug and mini-game cameras cut in and hand back. | confirmed (code) |
@@ -734,8 +734,12 @@ single-player case.
 10. **Leash** to the distance band `+0x32c`-`+0x330`: when the distance from the wanted position to the look-at point
     leaves the band, the wanted position is moved along that line back to the nearer edge. `level99`'s band is
     3.0-3.5 m at checkpoint 1 and 4.8-5.3 m in the street.
-11. **Pitch toward its target** `+0x3b4` (`0x0012d4e8`, a rotation about the look-at point), skipped in the height
-    hold; see [Pitch](#pitch).
+11. **Pitch toward its target** `+0x3b4`, skipped in the height hold: the wanted position's pitch about the look-at
+    point is measured (`0x0012d908`, from the unit direction look-at point to wanted position, negative below) and
+    `0x0012d4e8` turns the wanted position about the look-at point by the **whole** difference to the target, the
+    new pitch kept within [`+0x3b0`, `+0x3ac`] (the call at `0x0012beac`). So the pitch is put back every update, not
+    eased: a leash pull along a steep line (a [long fall](#long-fall)) does not carry the wanted position up. See
+    [Pitch](#pitch).
 12. **Height hold** `+0x453` ([below](#height-hold)): the probe `0x0012a7d8` enters or leaves it; while it is set the
     wanted position's height moves 30% (close zoom), 40.5% (default) or 48% (far) of the way per update toward the
     look-at height plus the height it held (`+0x378` + `+0x324`), times `+0x398` (1, or 0.25 after `0x00125888`).

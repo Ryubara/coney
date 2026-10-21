@@ -608,3 +608,31 @@ TEST_CASE("in a long straight fall the aim point's lag climbs past 0.18 and keep
     // A camera held 3.5 m from the look-at point at its height would face the aim point under 60° up.
     CHECK(std::atan2(highest, 3.5F) < 60.0F * kDegree);
 }
+
+TEST_CASE("in a long straight fall the wanted position keeps the target pitch, so the camera stays off overhead",
+          "[camera]") {
+    // Update step 11 (Cam_Follow_Pitch 0x0012d4e8, called at 0x0012beac) measures the wanted position's pitch about
+    // the look-at point (0x0012d908) and turns it all the way to the target pitch every update, after the leash.
+    // So in a fall the leash cannot drag the wanted position up its line to the falling look-at point: the original's
+    // wanted stays near its pitch and its camera, 22% an update behind, climbs to about 52° above the look-at point
+    // at 40 m (docs/research/camera.md#long-fall). Turned at most 85°/s, Coney's ended 84° up.
+    FollowCamera camera(Vec3{0.0F, 0.0F, 100.0F}, 0.0F);
+    FollowTarget target = standing(Vec3{0.0F, 0.0F, 100.0F});
+    for (int i = 0; i < 300; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    constexpr float kFall = 35.0F;
+    target.velocity = Vec3{0.0F, 0.0F, -kFall};
+    float steepestWanted = 0.0F;
+    float steepestCamera = 0.0F;
+    for (int i = 0; i < 70; ++i) {
+        target.feet.z -= kFall * kStep;
+        camera.update(target, kRest, kRest, nullptr, kStep);
+        const Vec3 wanted = coney::anim::subtract(camera.wanted(), camera.lookAt());
+        const Vec3 held = coney::anim::subtract(camera.position(), camera.lookAt());
+        steepestWanted = std::max(steepestWanted, std::atan2(wanted.z, std::hypot(wanted.x, wanted.y)));
+        steepestCamera = std::max(steepestCamera, std::atan2(held.z, std::hypot(held.x, held.y)));
+    }
+    CHECK(steepestWanted == Approx(camera.targetPitch()).margin(0.5F * kDegree));
+    CHECK(steepestCamera < 65.0F * kDegree);
+}

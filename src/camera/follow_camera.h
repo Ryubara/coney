@@ -380,6 +380,10 @@ class FollowCamera {
     // Moves the wanted position's pitch about the look-at point toward the target pitch, at most `maxStep` radians.
     // @orig 0x0012d4e8 Cam_Follow_Pitch (Cam_Follow.cpp)
     void pitchToward(float maxStep);
+    // Turns the wanted position's pitch about the look-at point by `delta`, the new pitch kept within the limits, as
+    // the stick's rate does (docs/research/camera.md#pitch).
+    // @orig 0x0012d4e8 Cam_Follow_Pitch (Cam_Follow.cpp)
+    void turnPitch(float delta);
     // Steps the zoom distance (`+0x400`) to `distance`, which sets the upper pitch limit with it.
     // @orig 0x001254f0 Cam_Follow_StepZoom (Cam_Follow.cpp)
     void stepZoom(float distance);

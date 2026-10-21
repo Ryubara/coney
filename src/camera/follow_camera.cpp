@@ -443,6 +443,15 @@ void FollowCamera::pitchToward(float maxStep) {
     m_wanted = anim::add(m_lookAt, anim::Vec3{headingX * newAcross, headingY * newAcross, distance * std::sin(next)});
 }
 
+void FollowCamera::turnPitch(float delta) {
+    const float current = elevationOf(anim::subtract(m_wanted, m_lookAt));
+    const float wanted = std::clamp(current + delta, m_lowerPitch, upperPitch());
+    const float saved = m_targetPitch;
+    m_targetPitch = wanted;
+    pitchToward(kPi);
+    m_targetPitch = saved;
+}
+
 void FollowCamera::stepZoom(float distance) { m_zoomDistance = distance; }
 
 void FollowCamera::collide(const raycast::CollisionMesh& mesh, anim::Vec3 targetFeet) {
@@ -847,17 +856,27 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
         m_wanted = anim::add(m_lookAt, withLength(offset, bandNear()));
     }
 
-    // 6 and 9. The pitch: stick input moves the target pitch within its limits; the wanted position turns toward it
-    // at most 85°/s.
-    if (pitchRate != 0.0F) {
-        m_targetPitch = std::clamp(m_targetPitch + pitchRate * seconds, m_lowerPitch, upperPitch());
+    // 6. The pitch toward its target: the wanted position's pitch about the look-at point is measured and turned all
+    // the way to the target pitch, so a leash pull along a steep line (a long fall) cannot carry it up. Skipped in
+    // the height hold (the original's step 11, the call at 0x0012beac with the pitch 0x0012d908 measures).
+    if (!m_heightHold) {
+        pitchToward(kPi);
     }
-    pitchToward(kPitchReturnRate * seconds);
 
     // 7. The height hold: the wanted position's height eases back toward the height above the look-at point it held.
     if (m_heightHold) {
         const float goal = m_lookAt.z + m_heldHeight;
         m_wanted.z += (goal - m_wanted.z) * kHeightHoldShare * m_heightHoldScale;
+    }
+
+    // 9. Stick input moves the target pitch within its limits and turns the wanted position by the same rate;
+    // without it, the wanted position goes back to the target at most 85°/s (outside the height hold). The
+    // original's step 16 (0x0012c60c-0x0012c6a8).
+    if (pitchRate != 0.0F) {
+        m_targetPitch = std::clamp(m_targetPitch + pitchRate * seconds, m_lowerPitch, upperPitch());
+        turnPitch(pitchRate * seconds);
+    } else if (!m_heightHold) {
+        pitchToward(kPitchReturnRate * seconds);
     }
 
     // The right stick's yaw turns the wanted position at once; the lag smooths it.
