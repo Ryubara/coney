@@ -214,13 +214,15 @@ TEST_CASE("controls: the Controller labels end at x 0.235 and start at x 0.765, 
     CHECK(rows[6] - rows[5] > 1.7F * (rows[5] - rows[4]));
 }
 
-TEST_CASE("controls: the tips' list sits at (0.41, 0.35), wrapping at 0.53", "[pause_menu][controls]") {
+TEST_CASE("controls: the tips' list is centred at (0.41, 0.35), wrapping at 0.53", "[pause_menu][controls]") {
     Screen screen;
     const auto& tip = screen.menu.tip(0).style();
-    CHECK(tip.x == Approx(0.41F));
+    // The widgets are 0.3 wide and centred on 0.41, so their text starts at 0.26, the title's x.
+    CHECK(tip.x == Approx(0.26F));
     CHECK(tip.y == Approx(0.35F));
     CHECK(tip.wrapWidth == Approx(0.53F));
     CHECK(tip.fontSlot == 3);
+    CHECK(screen.menu.description().style().x == Approx(0.26F));
     CHECK(screen.menu.description().style().wrapWidth == Approx(0.53F));
 }
 

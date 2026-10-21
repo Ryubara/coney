@@ -364,8 +364,11 @@ cue `0xe`; back plays `0xf` and returns to the entries (`0x001e4618`).
 
 **Tutorial page** (`TutorialPage_Init` `0x001e3828`). A `ScrollingMenu` ([GUI](gui.md#fn-scrollingmenu)) at
 **(0.41, 0.35)** (`0x0050eef0`, `0x0050eef4`) of the **23 tips**, in order: tip *i* has the title string `0x145` +
-*i* and, as its description, the text `0x15c` + *i*. Each title and text is a `ScrollingTextWidget` 0.3 wide, font
-slot 3, size 1.0, wrapping at **0.53** (`0x0050eef8`; the first argument of `ScrollingTextWidget_SetText` is the wrap
+*i* and, as its description, the text `0x15c` + *i*. Each title and text is a `ScrollingTextWidget` 0.3 wide **centred**
+on that x (`ScrollingTextWidget_Update` `0x001e32a0` places the text at x − width / 2 + offset, the offset 0), so the
+text starts at 0.26 (confirmed (runtime): in PCSX2 at `level99` checkpoint 1 the first tip starts where the "Tutorial"
+title does, at 0.286 of the frame with the font's own left margin; the memory at `0x0050eef0` reads 0.41, 0.35, 0.53),
+font slot 3, size 1.0, wrapping at **0.53** (`0x0050eef8`; the first argument of `ScrollingTextWidget_SetText` is the wrap
 width that `MessageHUD_ReadAutoIndent` stores). A title is drawn in `0x005fd320`, and in **(134, 26, 26)** while
 selected; the selected tip's text unfolds under it (the menu's description reveal: 550 ms delay, step 0.25 per
 update, offset 0.01 below, `0x0050eefc`). The menu shows **8** tips at once (`0x0050ef00` and `0x0050ef10`, both 8
@@ -772,7 +775,7 @@ Coney stand-ins, each an open question below:
 - The Controls screen (`repo:src/gui/pause_menu/control_menu.h`, `ControlMenu`, written from
   [`GUI/ControlMenuHUD.cpp`](#fn-controlmenuhud) and [The Controls screen](#controls-layout)) follows this page: the
   entries, the cues, the pages' title, the pad picture (sheet-table record `0x18f`, loaded by the pause mode), the 14
-  labels on the table's rows (label 1 moved by the game state's language), the tips' list at (0.41, 0.35) with 8
+  labels on the table's rows (label 1 moved by the game state's language), the tips' list centred on (0.41, 0.35) with 8
   visible, the 0.5 clip, the 0.53 wrap, the 0.01 spacing and the text unfolding 0.01 under the focused tip 550 ms after
   the focus, a quarter a frame. `ControlLayout::forMode` holds the 16:9 and flag-`0x02` values, but Coney's pause
   mode always opens the default 4:3 layout (no video-mode setting yet). Coney's choices: the list's window jumps

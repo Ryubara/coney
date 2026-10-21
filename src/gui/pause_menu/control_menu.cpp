@@ -117,7 +117,7 @@ void ControlMenu::open(const GlobalStrings* strings, MenuInput& input, std::func
 
     // TutorialPage_Init: the tips, the first focused, the layout's count visible.
     for (std::size_t i = 0; i < kTutorialTips; ++i) {
-        m_tipTitles.at(i).setup(TextWidgetSetup{.x = kTipsX,
+        m_tipTitles.at(i).setup(TextWidgetSetup{.x = kTipsX - kTipWidth * 0.5F,
                                                 .y = kTipsY,
                                                 .scale = kTipSize,
                                                 .colour = kDimGrey,
@@ -125,7 +125,7 @@ void ControlMenu::open(const GlobalStrings* strings, MenuInput& input, std::func
                                                 .wrapWidth = kTipWrap});
         m_tipTitles.at(i).setText(string(s::kTipTitles + static_cast<std::uint32_t>(i)));
     }
-    m_description.setup(TextWidgetSetup{.x = kTipsX,
+    m_description.setup(TextWidgetSetup{.x = kTipsX - kTipWidth * 0.5F,
                                         .y = kTipsY,
                                         .scale = kTipSize,
                                         .colour = kMenuGrey,

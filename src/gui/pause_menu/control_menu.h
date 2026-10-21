@@ -108,8 +108,12 @@ class ControlMenu {
     /// The labels' size and font slot.
     static constexpr float kLabelSize = 1.0F;
     static constexpr int kLabelFontSlot = 3;
-    /// The tips' place (`0x0050eef0`, `0x0050eef4`), wrap width (`0x0050eef8`), size and font slot.
+    /// The tips' place (`0x0050eef0`, `0x0050eef4`), wrap width (`0x0050eef8`), size and font slot. The place is the
+    /// centre of each 0.3 wide `ScrollingTextWidget` (`ScrollingTextWidget_Update` `0x001e32a0` draws its text at
+    /// x - width / 2), so the text starts at kTipsX - kTipWidth / 2 = 0.26, the title's x (confirmed at runtime: the
+    /// original's first tip starts where the "Tutorial" title does).
     static constexpr float kTipsX = 0.41F;
+    static constexpr float kTipWidth = 0.3F;
     static constexpr float kTipsY = 0.35F;
     static constexpr float kTipWrap = 0.53F;
     static constexpr float kTipSize = 1.0F;
