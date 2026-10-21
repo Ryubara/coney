@@ -105,9 +105,9 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, PadInput>;
 [[nodiscard]] std::vector<std::byte> encode(const Message& message);
 
 /// Reads one packet. Fails with Truncated when it is short and Invalid for anything else wrong: an unknown id or
-/// enumerator, the wrong magic, a name over kMaxNameBytes, a pressure byte flagged as above 0 but written as 0, trailing
-/// bytes. A Hello of another version decodes to its
-/// version alone (an empty name), since the rest of its layout is that version's.
+/// enumerator, the wrong magic, a name over kMaxNameBytes, a pressure byte flagged as above 0 but written as 0,
+/// trailing bytes. A Hello of another version decodes to its version alone (an empty name), since the rest of its
+/// layout is that version's.
 [[nodiscard]] std::expected<Message, Error> decode(std::span<const std::byte> packet);
 
 /// How a message travels: the handshake and Bye reliably and in order, Ping, Pong and PadInput unreliably.

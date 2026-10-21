@@ -359,8 +359,8 @@ TEST_CASE("an older or repeated pad input never replaces a newer one", "[net][se
     LoopbackTransport raw(match.network, "raw");
     const PeerId peer = rawJoin(match, raw);
     const auto sendPad = [&](std::uint32_t step, std::uint16_t buttons) {
-        REQUIRE(raw.send(peer, Delivery::Unreliable, encode(PadInput{.step = step, .pad = padWith(buttons)}))
-                    .has_value());
+        REQUIRE(
+            raw.send(peer, Delivery::Unreliable, encode(PadInput{.step = step, .pad = padWith(buttons)})).has_value());
     };
     sendPad(10, coney::pad::kCircle);
     sendPad(9, coney::pad::kSquare); // arrives after step 10's: late, dropped

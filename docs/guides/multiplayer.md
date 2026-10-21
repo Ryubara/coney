@@ -247,8 +247,8 @@ original's.
   the last buttons until the 10 s timeout drops the player (Coney's choice). The next PadInput takes over again.
 - **What a second pad does in Coney today.** The front end's two-player screens read port 2: the Story's number of
   players (`PM_NumPlayers` and its "player 2 press START"; the main menu first counts the connected pads,
-  [Profile manager](../research/frontend.md#profile-manager)) and the Rumble mode's (`RM_NumPlayers`, No 2nd Controller, Choose
-  Gangs' second side). In play, the original lets a second pad join when `CfgMultiplayerJoin` allows it:
+  [Profile manager](../research/frontend.md#profile-manager)) and the Rumble mode's (`RM_NumPlayers`, No 2nd
+  Controller, Choose Gangs' second side). In play, the original lets a second pad join when `CfgMultiplayerJoin` allows it:
   `GameState_SyncPlayers` (`0x0041a460`) makes the gang's next Warrior player 2 and calls the multiplayer callback
   ([level99](../research/scripting.md#level99)). Coney has one player in play so far
   (`PlayerState::multiplayerCallback` is kept, not called), so a remote pad 2 joins a level only once that two-player

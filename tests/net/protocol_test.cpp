@@ -158,8 +158,7 @@ TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]"
 
 TEST_CASE("a Hello of another version decodes to its version, whatever follows", "[net][protocol]") {
     // A later version with a layout this version cannot know.
-    const auto decoded =
-        decode(bytes({0x01, 'C', 'O', 'N', 'Y', kProtocolVersion + 1, 0x00, 0xff, 0xff, 0xff}));
+    const auto decoded = decode(bytes({0x01, 'C', 'O', 'N', 'Y', kProtocolVersion + 1, 0x00, 0xff, 0xff, 0xff}));
     REQUIRE(decoded.has_value());
     const auto& hello = std::get<Hello>(*decoded);
     CHECK(hello.version == kProtocolVersion + 1);
