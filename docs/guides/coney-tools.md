@@ -340,7 +340,7 @@ name's words: the tag may name the wrong function), `renamed` (half or more, usu
 written) or `unnamed` (Ghidra still has its default `FUN_` name). Names agree when they are equal without case and
 punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's `lua_` wrapper prefix is ignored. A
 full live run asks the server about each of the 2,400 tagged functions twice (the function, its callees), one request
-at a time, and takes several minutes.
+at a time; on the development machine it took about 11 seconds.
 
 `orig queue` writes the same files and the audit's queue, `queue.md` (a table per `src/` directory, then the first
 `--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,
