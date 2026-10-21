@@ -22,6 +22,23 @@ and prints what is missing ([Bootstrap](workspace.md#bootstrap)). When uv itself
 pinned version of it with Astral's installer, which adds uv to your `PATH` (shell profiles on Linux and macOS, user
 `PATH` on Windows).
 
+### Check your setup {#doctor}
+
+```sh
+uv run --project python coney-tools doctor [--disc DISC]
+```
+
+One command checks everything above and the rest a contributor needs, and prints `ok`, `problem` or `note` per line,
+with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, clang-tidy 19, and on Linux
+an old default `g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
+folder, your disc (`--disc`, else `game_dir`: `SLUS_212.15` and `WARRIORS.DIR` by size and SHA-1, `WARRIORS.WAD` by
+size, against the NTSC-U release the research refers to), the research tools (JDK 21, Node.js, Ghidra, the compiled
+EE language, a project holding `SLUS_212.15`, and whether port 8090 is free or held by ghidra-mcp) and the free disk
+space (a `dev` build with its tests takes about 6.5 GB; under 10 GB free is a problem). It works in a plain clone,
+needs no `--agent` and no configuration, changes nothing and prints sizes and hashes only. A problem is something the
+engine's build or the disc needs, and makes the exit code 1; a note is optional (another release of the game, a
+missing research tool). On an idle machine it takes a few seconds; hashing the disc's two small files is most of it.
+
 The C++ dependencies (SDL3, librw, Dear ImGui, ENet, Catch2, FFmpeg) are not installed by hand: CMake downloads them
 on the first configure, at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access
 and takes a few minutes; later builds reuse the copies under `build/<preset>/_deps/`.

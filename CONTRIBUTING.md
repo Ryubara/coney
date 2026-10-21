@@ -24,7 +24,8 @@ Node.js 18+ makes the formatting hooks faster (otherwise pre-commit downloads it
 checked with clang-tidy 19 in step 6: on Windows add the Visual Studio component *C++ Clang tools for Windows*, on
 Linux install `clang-tidy-19`, on macOS `brew install llvm@19`. For step 4, your own copy of
 the North American (NTSC-U) game: the research is checked against its executable `SLUS_212.15`; other releases are
-untested.
+untested. Once uv is there, `uv run --project python coney-tools doctor` in the clone checks all of this, your disc
+included, and prints how to fix each problem ([Check your setup](docs/guides/building.md#doctor)).
 
 1. **Clone.** The command is in the [README](README.md#clone); without write access, fork first and follow
    [Working from a fork](#working-from-a-fork). The tools keep their logs and scratch files in `../../scratch`
@@ -55,7 +56,7 @@ untested.
 
     ```sh
     build/dev/src/platform/coney --disc /path/to/warriors.iso
-    uv run --project python coney-tools wad info /path/to/warriors.iso   # reads the archive: a quick check the disc is readable
+    uv run --project python coney-tools doctor --disc /path/to/warriors.iso   # checks it is the NTSC-U release
     ```
 
     The tests that need the disc skip without it. To run them, set `CONEY_DISC` to the same path and run the build

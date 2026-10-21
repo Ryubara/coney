@@ -18,6 +18,7 @@ from coney_tools import (
     clips,
     coord_cli,
     docs_cli,
+    doctor,
     ghidra_cli,
     issue_cli,
     mcp_serve,
@@ -325,6 +326,10 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_clips_commands(groups)
     build_cli.add_parser(groups)
     ghidra_cli.add_parser(groups)
+    doctor_parser = groups.add_parser(
+        "doctor", help="check this machine and your disc for building and contributing, with a fix for each problem"
+    )
+    doctor_parser.add_argument("--disc", help="a mounted disc, folder or .iso to check (default: game_dir)")
     coord_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
@@ -967,6 +972,8 @@ def _run(args: argparse.Namespace) -> int:
         return _run_clips(args)
     if args.group == "build":
         return build_cli.run(args)
+    if args.group == "doctor":
+        return doctor.run(Path.cwd(), args.disc)
     if args.group == "ghidra":
         return ghidra_cli.run(args)
     if args.group == "coord":
