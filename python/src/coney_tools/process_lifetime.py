@@ -256,20 +256,24 @@ def list_processes() -> list[Process]:
     return _windows_processes() if sys.platform == "win32" else _posix_processes()
 
 
+def process_started(pid: int) -> float | None:
+    """When a live process started, in epoch seconds (whole seconds on POSIX); None when it is gone or cannot be read.
+    A recorded pid plus this time names one process for good, as a pid alone does not: the system hands a dead
+    process's pid to a later one."""
+    if sys.platform == "win32":
+        return _windows_started(pid)
+    done = subprocess.run(["ps", "-o", "etime=", "-p", str(pid)], capture_output=True, text=True, check=False)
+    elapsed = _elapsed(done.stdout)
+    return None if elapsed is None else time.time() - elapsed
+
+
 def same_process(process: Process) -> bool:
     """Whether `process` still runs: its pid lives and started when it did (so a reused pid does not count)."""
     if not pcsx2_proc.pid_alive(process.pid):
         return False
     if process.started is None:
         return True
-    if sys.platform == "win32":
-        now = _windows_started(process.pid)
-    else:
-        done = subprocess.run(
-            ["ps", "-o", "etime=", "-p", str(process.pid)], capture_output=True, text=True, check=False
-        )
-        elapsed = _elapsed(done.stdout)
-        now = None if elapsed is None else time.time() - elapsed
+    now = process_started(process.pid)
     return now is None or abs(now - process.started) <= START_SLACK
 
 

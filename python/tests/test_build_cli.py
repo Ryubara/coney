@@ -14,7 +14,7 @@ from typing import Any, ClassVar
 
 import pytest
 
-from coney_tools import build_cli, build_run, compiler_cache, pcsx2_proc
+from coney_tools import build_cli, build_run, compiler_cache, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
 from coney_tools.process_lifetime import Process
@@ -153,6 +153,36 @@ def test_status_and_release_are_subcommands() -> None:
         2,
         "fast",
     )
+
+
+def test_dir_is_accepted_after_the_subcommand_and_before_it() -> None:
+    parser = _build_parser()
+    for name in ("status", "result"):
+        after = parser.parse_args(["build", name, "--dir", "/some/worktree"])
+        before = parser.parse_args(["build", "--dir", "/some/worktree", name])
+        assert after.dir == before.dir == Path("/some/worktree")
+    release = parser.parse_args(["build", "release", "--agent", "a", "--dir", "/some/worktree"])
+    assert release.dir == Path("/some/worktree")
+    # Not given after the subcommand: the value given before it is kept, not reset to None.
+    assert parser.parse_args(["build", "--dir", "/w", "result", "--json"]).dir == Path("/w")
+    assert parser.parse_args(["build", "result"]).dir is None
+
+
+def test_result_dir_reads_another_worktrees_record(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    other = tmp_path / "work" / "worktrees" / "coney" / "other"
+    other.mkdir(parents=True)
+    (other / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (other / "coney.local.toml").write_text(
+        (checkout / "coney.local.toml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    folder = tmp_path / "scratch" / "other"
+    folder.mkdir(parents=True)
+    record = {"state": "done", "agent": "bob", "preset": "dev", "log": "y.log", "started": 1.0, "exit_code": 0}
+    (folder / "build-result.json").write_text(json.dumps({**record, "summary": ["result: ok"]}), encoding="utf-8")
+    assert main(["build", "result", "--dir", str(other)]) == 0
+    assert "bob" in capsys.readouterr().out
 
 
 def test_a_build_needs_an_agent(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -606,6 +636,92 @@ def test_result_of_a_run_that_died_without_a_word(
     write_record(checkout, tmp_path, pid=4242)
     assert main(["build", "result"]) == 1
     assert "ended without a result" in capsys.readouterr().out
+
+
+def stub_started(monkeypatch: pytest.MonkeyPatch, started: float | None) -> None:
+    """The process a recorded pid names now was started at `started` (None: its start cannot be read)."""
+    monkeypatch.setattr(process_lifetime, "process_started", lambda pid: started)
+
+
+def test_result_of_a_run_whose_pid_now_belongs_to_another_process(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_record(checkout, tmp_path, pid=4242, process_started=1_700_000_000.0)
+    stub_started(monkeypatch, 1_700_090_000.0)  # the pid is alive, but its process began a day later
+    assert main(["build", "result"]) == 1
+    assert "ended without a result" in capsys.readouterr().out
+
+
+def test_result_of_a_run_whose_pid_is_still_its_own_process(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_record(checkout, tmp_path, pid=4242, process_started=1_700_000_000.0)
+    stub_started(monkeypatch, 1_700_000_001.0)  # POSIX reports whole seconds
+    assert main(["build", "result"]) == 75
+
+
+def test_a_start_time_that_cannot_be_read_counts_as_running(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_record(checkout, tmp_path, pid=4242, process_started=1_700_000_000.0)
+    stub_started(monkeypatch, None)
+    assert main(["build", "result"]) == 75
+
+
+def test_a_record_without_a_start_time_is_judged_by_the_record_time(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Records written before the start time was kept: the build process began just before the child wrote its record,
+    # so a process that began long after the record is a stranger holding a reused pid.
+    write_record(checkout, tmp_path, pid=4242, started=1_700_000_000.0)
+    stub_started(monkeypatch, 1_700_000_005.0)
+    assert main(["build", "result"]) == 75
+    stub_started(monkeypatch, 1_700_500_000.0)
+    assert main(["build", "result"]) == 1
+
+
+def test_a_stale_record_with_a_reused_pid_does_not_refuse_a_new_detached_run(
+    checkout: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    spawned: list[tuple[list[str], Path, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_record(checkout, tmp_path, pid=4242, process_started=1_700_000_000.0)
+    stub_started(monkeypatch, 1_700_090_000.0)
+    assert main(["build", "--agent", "alice", "--detach"]) == 0
+    assert len(spawned) == 1
+
+
+def test_the_detached_child_records_when_its_process_started(
+    checkout: Path,
+    tmp_path: Path,
+    fake_toolchain: type[FakeToolchain],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(build_cli, "_detached_lifetime", lambda: None)
+    stub_started(monkeypatch, 1_700_000_123.0)
+    folder = tmp_path / "scratch" / "wt"
+    folder.mkdir(parents=True)
+    log, result = folder / "x.log", folder / "build-result.json"
+    log.write_text("", encoding="utf-8")
+    main(
+        [
+            "build",
+            "--agent",
+            "alice",
+            "--configure",
+            "--budget",
+            "0",
+            "--log-file",
+            str(log),
+            "--result-file",
+            str(result),
+        ]
+    )
+    record = json.loads(result.read_text(encoding="utf-8"))
+    assert record["process_started"] == 1_700_000_123.0
 
 
 def test_result_as_json(checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
