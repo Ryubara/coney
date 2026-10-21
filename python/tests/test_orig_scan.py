@@ -205,3 +205,25 @@ def test_a_function_knows_its_parameter_types() -> None:
 def test_a_pointer_to_a_function_is_not_a_function() -> None:
     text = "void (*callback)(int, float) = nullptr;\nvoid real(int);\n"
     assert [f.name for f in read_source("src/ai/p.cpp", text).functions] == ["real"]
+
+
+def test_a_member_after_an_access_label_starts_on_its_own_line() -> None:
+    text = (
+        "namespace x {\nclass A {\n  public:\n    /// Makes one.\n    /// More words.\n"
+        "    static A create() { return A{}; }\n\n  private:\n    int m_a = 0;\n  protected: void g();\n};\n}\n"
+    )
+    found = [(f.name, f.line, f.lines, f.comment.count("///")) for f in read_source("src/ai/a.h", text).functions]
+    assert found == [("create", 6, 1, 2), ("g", 10, 1, 0)]
+
+
+def test_nested_braces_in_a_brace_initializer_keep_the_constructor() -> None:
+    text = (
+        "namespace x {\n"
+        "A::A() : m_v{Vec{1, 2}} {}\n"
+        "B::B() : m_v{{1, 2}}, m_w(3) {}\n"
+        "C::C() : m_f{[this] { go(); }} {}\n"
+        "void after() {}\n"
+        "}\n"
+    )
+    found = [(f.qualified, f.line) for f in read_source("src/ai/a.cpp", text).functions]
+    assert found == [("A::A", 2), ("B::B", 3), ("C::C", 4), ("after", 5)]

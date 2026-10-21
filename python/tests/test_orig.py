@@ -343,3 +343,108 @@ def test_each_research_page_is_scanned_once(checkout: Path, monkeypatch: pytest.
     monkeypatch.setattr(orig_index, "_ADDRESS", Counting())
     orig_index.check_research(checkout, rows)
     assert len(calls) == 1
+
+
+def test_a_research_link_wrapped_across_comment_lines_is_read_whole() -> None:
+    comment = "// it runs (docs/research/scripting.md#open-\n// questions, `RegisterUpdate`).\n"
+    assert orig_index._links(comment) == ("docs/research/scripting.md#open-questions",)
+
+
+def test_a_declaration_spelt_differently_covers_its_definition_when_not_overloaded(checkout: Path) -> None:
+    write(
+        checkout,
+        {
+            "src/ai/go.h": "class Go {\n  public:\n    /// @orig 0x00100500 Go_Run (unknown)\n"
+            "    void run(const Thing& t);\n};\n",
+            "src/ai/go.cpp": "void Go::run(Thing const& thing) {}\n",
+        },
+    )
+    assert not [u for u in orig_index.build_index(checkout).untagged if u.coney == "Go::run"]
+
+
+def test_a_member_defined_in_another_folder_takes_its_declaration_tag(checkout: Path) -> None:
+    write(
+        checkout,
+        {
+            "src/ai/far.h": "class Far {\n  public:\n    /// @orig 0x00100510 Far_Go (unknown)\n    void go();\n};\n",
+            "src/human/far_go.cpp": "void Far::go() {}\nvoid near() {}\n",
+        },
+    )
+    untagged = {u.coney for u in orig_index.build_index(checkout).untagged}
+    assert "Far::go" not in untagged and "near" in untagged
+
+
+def test_a_tag_takes_its_research_link_from_the_declaration_the_class_or_the_header(checkout: Path) -> None:
+    write(
+        checkout,
+        {
+            "src/ai/r.h": (
+                "// Research: docs/research/made-up.md#brain\n#pragma once\n"
+                "class R {\n  public:\n    /// Research: docs/research/made-up.md#thinking\n    void a();\n};\n"
+                "/// Research: docs/research/made-up.md#waiting\nclass S {\n  public:\n    void c();\n};\n"
+            ),
+            "src/ai/r.cpp": (
+                '#include "r.h"\n'
+                "void R::a() {\n    // @orig 0x00100600 R_A (unknown)\n}\n"
+                "void S::c() {\n    // @orig 0x00100601 S_C (unknown)\n}\n"
+                "void freeOne() {\n    // @orig 0x00100602 FreeOne (unknown)\n}\n"
+            ),
+        },
+    )
+    research = {r.name: r.research for r in orig_index.build_index(checkout).rows if r.path == "src/ai/r.cpp"}
+    assert research == {
+        "R_A": ("docs/research/made-up.md#thinking",),
+        "S_C": ("docs/research/made-up.md#waiting",),
+        "FreeOne": ("docs/research/made-up.md#brain",),
+    }
+
+
+def test_page_sections_skip_fences_and_read_explicit_and_inline_anchors() -> None:
+    page = (
+        "# Page\n\n## First part {#first}\n\nText.\n\n```\n## Not a heading\n```\n\n"
+        'A list item <span id="inline-spot"></span> at 0x00100010.\n\n## Second & last\n\nMore.\n'
+    )
+    sections = orig_index.page_sections(page)
+    assert "not-a-heading" not in sections
+    assert sections["first"][0] == "First part"
+    assert "## Not a heading" in sections["first"][1] and "Second" not in sections["first"][1]
+    assert "0x00100010" in sections["inline-spot"][1]
+    assert sections["second--last"][0] == "Second & last"
+
+
+def test_a_coney_only_file_header_covers_its_untagged_functions_and_a_tag_wins(checkout: Path) -> None:
+    write(
+        checkout,
+        {
+            "src/ai/views.cpp": (
+                "// SPDX-License-Identifier: GPL-3.0-or-later\n// Debug views. @coney-only a test aid\n"
+                "void view() {}\n/// @orig 0x00100700 View_Real (unknown)\nvoid real() {}\n"
+            )
+        },
+    )
+    index = orig_index.build_index(checkout)
+    assert not [u for u in index.untagged if u.where.startswith("src/ai/views.cpp")]
+    assert (index.tagged, index.marked) == (3, 2)
+
+
+def test_fetch_issues_asks_gh_for_the_open_issues_with_the_label(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[list[str]] = []
+
+    class Done:
+        stdout = json.dumps(ISSUES)
+
+    def run(command: list[str], **_: Any) -> Done:
+        seen.append(command)
+        return Done()
+
+    monkeypatch.setattr(orig_queue.subprocess, "run", run)
+    issues = orig_queue.fetch_issues("bug")
+    assert [i.number for i in issues] == [7, 8]
+    assert seen[0][:5] == ["gh", "issue", "list", "--label", "bug"] and "open" in seen[0]
+
+    def fail(command: list[str], **_: Any) -> Done:
+        raise OSError("no gh")
+
+    monkeypatch.setattr(orig_queue.subprocess, "run", fail)
+    with pytest.raises(ConfigError, match="--issues FILE"):
+        orig_queue.fetch_issues()

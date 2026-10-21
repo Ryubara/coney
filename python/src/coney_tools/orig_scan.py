@@ -21,7 +21,7 @@ ORIG_TAG = re.compile(r"@orig\s+0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s(
 #: The whole form, which every tag must have; `@orig 0x` without it is reported as malformed.
 _ORIG_FORM = re.compile(r"@orig 0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
 _ORIG_MENTION = re.compile(r"@orig\s+0x")
-#: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
+#: The proposed marker a Coney-only function or file carries, `@coney-only <reason>` (docs/guides/coney-tools.md#orig).
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
 #: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)".
 LEGACY_CONEY_ONLY = re.compile(r"Coney's own|Coney-only|\(no @orig\)|no @orig\b|the original has (?:nothing|no such)")
@@ -41,6 +41,8 @@ _CLASS = re.compile(
 )
 _ENUM = re.compile(r"^(?:enum)\b")
 _ACCESS = re.compile(r"\b(?:public|private|protected)\s*:(?!:)")
+#: A statement that is only an access label so far: the member below it is a new statement.
+_ACCESS_ONLY = re.compile(r"(?:public|private|protected)\s*:")
 _INIT_LIST = re.compile(r"\)\s*(?:noexcept\s*)?:(?!:)")
 _TRAILING_WORDS = frozenset({"const", "override", "final", "noexcept", "mutable", "volatile"})
 _NOT_FUNCTIONS = frozenset(
@@ -357,7 +359,9 @@ class _Reader:
         """A `}`: end what it closes."""
         frame = self.stack.pop() if self.stack else _Frame("block")
         if frame.kind == "init":
-            self.statement.append("{}")
+            # The statement goes on after the outermost initializer's `}`; a nested one is inside it.
+            if not (self.stack and self.stack[-1].kind == "init"):
+                self.statement.append("{}")
             return
         if frame.function is not None:
             frame.function.lines = self.line - frame.function.line + 1
@@ -386,6 +390,9 @@ class _Reader:
             self.statement_line = self.line
         if self.statement or not char.isspace():
             self.statement.append(char)
+        if char == ":" and _ACCESS_ONLY.fullmatch("".join(self.statement).strip()):
+            # `public:` ends nothing but is no part of the member below it, whose line and length start after it.
+            self._reset_statement()
 
     def _digit_separator(self, i: int) -> bool:
         """Whether the `'` at `i` separates digits (`48'000`, `0x1'0`) rather than starting a character literal."""
@@ -401,6 +408,12 @@ class _Reader:
         `= {}`, a lambda passed to a call, a `for` header)."""
         if self.paren > 0:
             self._code(c)
+        elif self.stack and self.stack[-1].kind == "init":
+            # Inside a brace initializer (`m_v{Vec{1, 2}}`, `m_f{[this] { go(); }}`) braces nest and `;` ends nothing.
+            if c == "{":
+                self.stack.append(_Frame("init"))
+            elif c == "}":
+                self._close()
         elif c == "{":
             self._open()
         elif c == "}":

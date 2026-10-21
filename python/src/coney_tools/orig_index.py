@@ -6,8 +6,8 @@ reimplemented function with the original function at its `@orig` address in Ghid
 
 * every tag: the Coney file, line and function, the original's address, name and source file, and the research
   pages the function's comment links;
-* the functions of the gameplay directories with no tag and no Coney-only marker
-  (docs/guides/conventions.md#coney-only);
+* the functions of the gameplay directories with no tag and no Coney-only marker (the proposed
+  `@coney-only <reason>`, docs/guides/coney-tools.md#orig);
 * the research sections that tagged code links which cite no original address, and the tags whose address the
   linked pages never cite, so an audit can put the address and name next to the behaviour the page describes.
 
@@ -34,6 +34,8 @@ SOURCE_SUFFIXES = frozenset({".h", ".hpp", ".cpp", ".cc", ".inl"})
 #: Coney's own, so a new directory is in scope until it is listed here.
 CONEY_ONLY_DIRS = ("platform", "core", "fileio", "debug", "net", "sandbox")
 _ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
+#: A research link cut after a hyphen of its anchor at a line's end, and the next line's comment opener.
+_WRAPPED_LINK = re.compile(r"(docs/research/[A-Za-z0-9_./-]+?\.md#[A-Za-z0-9_-]*-)[ \t]*\r?\n[ \t]*(?://+!?|\*)?[ \t]*")
 _EVIDENCE_WORDS = re.compile(r"\b(confirmed|inferred|speculative)\b", re.IGNORECASE)
 _HEADING = re.compile(r"^(?P<hashes>#{1,6})\s+(?P<name>.*?)\s*$")
 _EXPLICIT_ANCHOR = re.compile(r"\{#(?P<id>[A-Za-z0-9_-]+)\}")
@@ -131,6 +133,8 @@ def read_sources(root: Path) -> list[SourceFile]:
 def _links(text: str) -> tuple[str, ...]:
     """The research links in a comment, in order, each once."""
     found: list[str] = []
+    # A link whose anchor breaks at a hyphen at the end of a comment line goes on at the start of the next one.
+    text = _WRAPPED_LINK.sub(r"\1", text)
     for match in RESEARCH_LINK.finditer(text):
         if match.group(0) not in found:
             found.append(match.group(0))
