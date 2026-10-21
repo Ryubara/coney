@@ -433,6 +433,10 @@ def test_tidy_step_skips_when_no_cpp_changed(repo: Path) -> None:
         (["research/missions.yaml"], True),
         (["mkdocs_hooks.py"], True),
         (["requirements-docs.txt"], True),
+        # The home page's template and the artwork the site serves from assets/.
+        (["overrides/home.html"], True),
+        (["assets/art/hero.webp"], True),
+        (["assets/sandbox/default.layout"], False),
         (["README.md"], True),
         (["src/other.cpp"], False),
         (["python/src/coney_tools/cli.py"], False),

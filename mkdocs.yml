@@ -17,9 +17,15 @@ not_in_nav: |
 
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/home.css
+# The home page's scroll effect: docs/guides/writing-docs.md, "The home page".
+extra_javascript:
+  - javascripts/home.js
 
 theme:
   name: material
+  # overrides/home.html is the home page's template (docs/index.md names it in its front matter).
+  custom_dir: overrides
   features:
     - navigation.tabs
     - navigation.sections
@@ -30,14 +36,13 @@ theme:
     - search.highlight
     - content.code.copy
     - toc.follow
+  # Dark is the default whatever the system's setting; the toggle switches to light and the choice is kept.
   palette:
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: slate
       primary: custom
       accent: amber
       toggle: { icon: material/brightness-4, name: Light mode }
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: custom
       accent: amber
       toggle: { icon: material/brightness-7, name: Dark mode }
@@ -54,6 +59,9 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.inlinehilite
   - pymdownx.superfences:
       custom_fences:

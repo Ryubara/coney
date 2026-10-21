@@ -64,7 +64,9 @@ a listing long enough to carry the game's code or data into the repository.
 - Third-party assets in `assets/` keep theirs, with the licence file beside them. The sandbox's textures in
   `assets/sandbox/` are from Kenney's Prototype Textures (`www.kenney.nl`), released under CC0 1.0
   (`assets/sandbox/License.txt`); one is re-encoded, which CC0 allows. Only assets under CC0 or a licence compatible
-  with GPL-3.0-or-later go in, never anything from the original game ([No game data](#no-game-data)).
+  with GPL-3.0-or-later go in, never anything from the original game ([No game data](#no-game-data)). The one
+  exception is the film-poster artwork in `assets/art/`, which a maintainer decided to use
+  ([Site and launcher artwork](#site-and-launcher-artwork)).
 - Each source file states its licence with `SPDX-License-Identifier: GPL-3.0-or-later`.
 
 ## Provenance
@@ -78,6 +80,22 @@ By contributing you agree that:
 A commit an AI agent writes names the agent in a `Co-Authored-By:` line: the model's name and the vendor's noreply
 address (for Claude, `<noreply@anthropic.com>`), never a personal email address. The maintainer who merges the
 work answers for it.
+
+## Site and launcher artwork
+
+The docs site's home page shows a painting as its hero image (`assets/art/hero.webp`, with `hero.jpg` as the
+fallback), and the launcher is to use the same files.
+
+- **What it is:** the painting of the gang, by the artist David Jarvis, that was made for the poster of the 1979 film
+  *The Warriors*. It is not from the game and not from the disc, and it is not Coney's own work: its rights belong to
+  the film's studio and the artist, and it is under no open licence.
+- **Where it comes from:** the film's poster art.
+- **The decision:** a maintainer chose on 2026-10-21 to use it on the site and in the launcher. This is a decision of
+  the maintainers, not a licence the rights holder has granted.
+- **Removal:** it is removed from the repository, the site and the launcher on a request from the rights holder. The
+  artist is credited on the home page, beside the picture.
+- **Scope:** only these two image files. They are not game data ([No game data](#no-game-data)) and the documentation's
+  CC-BY-SA-4.0 licence ([Licences](#licences)) does not cover them.
 
 ## Trademarks
 
