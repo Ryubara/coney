@@ -310,9 +310,13 @@ def verdict_problems(verdict: Any, stamp: dict[str, Any], rubric_version: int, s
         if item.get("body_sha256") != function["body_sha256"]:
             problems.append(f"{function['coney']}: reviewed at another body (body_sha256 differs)")
         # A function that carries many tags (a binding table's lambdas) is compared where the change touches it, so
-        # one of its addresses is enough; the note says which.
-        if not any(a.lower() in listed for a in function["addresses"]):
-            problems.append(f"{function['coney']}: `reviewed` holds none of {', '.join(function['addresses'][:3])}")
+        # one of its addresses is enough; `addresses` says which.
+        compared = item.get("addresses")
+        own = {a.lower() for a in function["addresses"]}
+        if not isinstance(compared, list) or not compared:
+            problems.append(f"{function['coney']}: no compared `addresses`")
+        elif any(not isinstance(a, str) or a.lower() not in own or a.lower() not in listed for a in compared):
+            problems.append(f"{function['coney']}: `addresses` must be its own and listed in `reviewed`")
     if skipped and not (isinstance(verdict["sampled"], str) and verdict["sampled"].strip()):
         problems.append("functions are listed as not reviewed but `sampled` gives no reason")
     return problems

@@ -30,6 +30,23 @@ SDL3 in place of the PS2 pads, librw in place of the GS, ids in place of pointer
 the original's `rand`. Precision is a substitution too: the EE computes in single precision, and a computation that
 Coney does in `double`, or with a different evaluation order, must not change an outcome the player can see.
 
+**What makes a difference deliberate.** A comment makes a difference deliberate only when the reason it gives is one
+the conventions allow:
+
+- a platform substitution;
+- an id in place of a pointer;
+- network play;
+- a marked stand-in for a part of the original that is not ported yet ([Stand-ins](../testing.md#stand-ins)).
+
+A difference a player can see for any other reason (taste, simplicity, "Coney's version is cleaner") is a
+`diff-bug` even when it is commented, because gameplay matches the original until the game is complete. When the
+difference is known and commented, but only a run would show whether a player sees it, the class is
+`diff-deliberate-ok`, and the note says what to measure.
+
+**A tag on part of a function.** A Coney function may port only one part of a larger original function (the cap check
+of a per-gang update), with the rest elsewhere or not ported yet. That is not `wrong-address`. Its comment should
+say which part it ports (`the cap check of`); when it does not, say so in a note.
+
 ### 2. Own expression: ported, not transcribed {#expression}
 
 Ours looks like this:
@@ -112,15 +129,15 @@ has exactly these keys:
 | `reviewed` | Every `@orig` address that was compared, as `"0x%08x"` strings. For a function that carries many tags (a table of script bindings, each lambda tagged), list the ones the change touches, and say which in the note. |
 | `findings` | `{severity, where, text}` objects, as in `REVIEW.json`. `severity` is `blocker` or `note`, and `where` is `file:line`. |
 | `rubric_version` | The rubric version above, as an integer. |
-| `functions` | One `{key, body_sha256, class, evidence, note}` object per reviewed function, with `key` and `body_sha256` copied from the stamp. |
+| `functions` | One `{key, body_sha256, addresses, class, evidence, note}` object per reviewed function. `key` and `body_sha256` are copied from the stamp, and `addresses` lists the addresses compared for that function (a subset of the stamp's, each also in `reviewed`). |
 | `sampled` | `null`, or the reason some functions were not reviewed. |
 | `not_reviewed` | The stamp keys of the functions skipped. |
 
 `coney-tools orig check-review` (and the release step that calls it) passes a branch only when:
 
 - the verdict covers every `@orig` function the branch adds or changes;
-- each of those functions has a passing class, its stamp's body hash, and at least one of its addresses in
-  `reviewed`;
+- each of those functions has a passing class, its stamp's body hash, and at least one compared address, which is
+  one of its own and is in `reviewed`;
 - no finding is a blocker, and the rubric version matches.
 
 The verdict binds to the function bodies it reviewed, so a rebase that leaves them unchanged keeps it, and any

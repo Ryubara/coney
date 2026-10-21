@@ -96,7 +96,14 @@ def test_a_branch_lists_only_the_tagged_functions_it_changes(repo: Path) -> None
 def verdict(stamp: dict[str, Any], cls: str = "clean", **extra: Any) -> dict[str, Any]:
     """A verdict covering every stamped function with `cls`."""
     functions = [
-        {"key": f["key"], "body_sha256": f["body_sha256"], "class": cls, "evidence": "confirmed (code)", "note": "ok"}
+        {
+            "key": f["key"],
+            "body_sha256": f["body_sha256"],
+            "addresses": f["addresses"],
+            "class": cls,
+            "evidence": "confirmed (code)",
+            "note": "ok",
+        }
         for f in stamp["functions"]
     ]
     data = {
@@ -127,6 +134,7 @@ def test_a_passing_verdict_for_the_tip_passes(repo: Path) -> None:
         ({"verdict": "fail"}, "verdict"),
         ({"rubric_version": 0}, "rubric"),
         ({"reviewed": []}, "reviewed"),
+        ({"functions": [{"key": "Brain::think(int)", "class": "clean"}]}, "addresses"),
         ({"functions": []}, "Brain::think"),
         ({"findings": [{"severity": "blocker", "where": "x", "text": "y"}]}, "blocker"),
     ],

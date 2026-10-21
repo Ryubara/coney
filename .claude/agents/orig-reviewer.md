@@ -32,8 +32,8 @@ The task names a branch (or worktree), its base and the folder of its descriptio
    Decompile each address (`decompile_function`; use `disassemble_function` where the decompiler is unclear), and
    open callees as far as the comparison needs. Judge both counts and give the function exactly one class.
 4. **Write the verdict**, `ORIG-REVIEW.json`, next to `PR.md`, in exactly the rubric's format. Copy `tip`, `base`,
-   each `key` and `body_sha256` from the stamp, and set `rubric_version` to the rubric's version. List every
-   compared address in `reviewed`. Make each function that fails its class a `blocker` finding at its `file:line`;
+   each `key` and `body_sha256` from the stamp, give each function the `addresses` you compared for it, and set
+   `rubric_version` to the rubric's version. List every compared address in `reviewed`. Make each function that fails its class a `blocker` finding at its `file:line`;
    other remarks are `note`s. The `verdict` is `pass` only when no function's class fails and no finding is a
    blocker.
 5. **Write the report**, `ORIG-REVIEW.md`: the verdict on the first line, then one line per function (Coney name,
