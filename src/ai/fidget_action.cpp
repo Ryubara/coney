@@ -16,6 +16,7 @@ namespace coney::ai {
 namespace {
 
 // Whether `brain`'s human may start a fidget (`Human_IsFreeForFidget`, Coney's reading in the header).
+// @orig 0x00225f58 Human_IsFreeForFidget (unknown)
 bool freeToFidget(const Brain& brain) {
     const human::Human& body = brain.human();
     return body.heldFlags() == 0 && body.alive() && body.state() == human::TargetState::Standing && !body.attached() &&
@@ -23,6 +24,7 @@ bool freeToFidget(const Brain& brain) {
 }
 
 // Whether `brain`'s class may never fidget: a dog, or a class of role 6.
+// @orig 0x002f9f78 FidgetAction_Start (unknown)
 bool neverFidgets(const Brain& brain) {
     if (brain.characterClass() == kDogClass) {
         return true;

@@ -168,6 +168,7 @@ void retargetFromSectors(Brain& brain) {
 }
 
 // Whether `brain`'s gang runs a tactic that keeps its waiting members close (type 2 or `0xd`).
+// @orig 0x002b3ab0 FightGoal_Process (unknown)
 bool ringTactic(const Brain& brain) {
     const Gang* gang = brain.gang();
     const Tactic* tactic = gang != nullptr ? gang->tactic() : nullptr;
@@ -177,6 +178,7 @@ bool ringTactic(const Brain& brain) {
 // The reposition's taunt, its timer having run: a fight fidget saying `cheer2` when ai::repositionTaunts() allows
 // (T `distance` off, the humans holding slots on A, the gesture test). **Coney stand-in**: a Warrior's `turf_defend`
 // (`0xc3`, 31 % of the time while `CfgEnableTurfInvasion` is on) is not said, as the flag does not reach the brains.
+// @orig 0x002b3ab0 FightGoal_Process (unknown)
 void maybeTaunt(Brain& brain, const RepositionInput& ring, float distance) {
     ScriptServices* services = brain.services();
     const int slotsOnMe = static_cast<int>(brain.attackSlots().size());

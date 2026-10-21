@@ -4844,6 +4844,12 @@ subsystem = "Human"
 size = 260
 
 [[function]]
+address = 0x00225f58
+name = "Human_IsFreeForFidget"
+subsystem = "Human"
+size = 108
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -5111,6 +5117,12 @@ address = 0x00231590
 name = "Attack_GetNextAttackDelay"
 subsystem = "Human"
 size = 1192
+
+[[function]]
+address = 0x00231b60
+name = "Human_StopFidget"
+subsystem = "Human"
+size = 120
 
 [[function]]
 address = 0x00232538

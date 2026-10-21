@@ -313,6 +313,7 @@ class Human final : public Holdable {
     }
     /// Ends the scripted clip of anim `animId` with the idle while it still plays holding any of `held` (an AI's
     /// fidget or taunt cut short, `Human_StopFidget`); nothing otherwise.
+    /// @orig 0x00231b60 Human_StopFidget (unknown)
     void stopScripted(std::uint32_t animId, std::uint32_t held) {
         if ((m_animator.flags() & held) != 0 && m_animator.animId() == animId) {
             m_animator.stopToIdle();
