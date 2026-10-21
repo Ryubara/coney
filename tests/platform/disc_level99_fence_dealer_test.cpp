@@ -67,6 +67,17 @@ constexpr float kFenceReach = 2.0F;
 // the run's 0.95, short of full, as a thumb on a stick holds it.
 constexpr float kPressWithin = 3.0F;
 constexpr float kSprintStick = 0.98F;
+// A walk to a spot: the stick's deflection (between the walk's dead zone and the run's 0.95), and how near counts as
+// there, m.
+constexpr float kWalkStick = 0.5F;
+constexpr float kArrived = 0.4F;
+// Where a player who walks up first stands before he sprints: 4.8 m short of the fence, as the original's slot 10
+// stands him (docs/research/scripting.md#level99, item 44).
+constexpr float kStandShort = 4.8F;
+// How long such a player stands there before the sprint, frames: 2 s, long enough for the dealer to turn to him.
+constexpr std::uint64_t kStandFrames = 60;
+// The frames a walk up may take.
+constexpr std::uint64_t kWalkLimit = 600;
 // The frames the run may take to reach the lesson and from the charge to the dealer's cut.
 constexpr std::uint64_t kLessonLimit = 3000;
 constexpr std::uint64_t kCutLimit = 400;
@@ -99,12 +110,26 @@ class ChargeDriver final : public coney::InputSource {
             pad.buttons = coney::pad::kCross;
         }
         const coney::platform::PlayLevelMode* play = m_play();
-        if (play == nullptr || !m_charging) {
+        if (play == nullptr) {
             return samples;
         }
         const coney::anim::Vec3 feet = play->player().human().position();
+        // The walk to a spot, the stick at kWalkStick, until he stands within kArrived of it.
+        if (m_walking) {
+            const float dx = m_walkTo.x - feet.x;
+            const float dy = m_walkTo.y - feet.y;
+            if (std::hypot(dx, dy) < kArrived) {
+                m_walking = false;
+            } else {
+                steer(pad, play->player(), dx, dy, kWalkStick);
+            }
+            return samples;
+        }
+        if (!m_charging) {
+            return samples;
+        }
         if (m_pressed < 2) {
-            steer(pad, play->player(), m_targetX - feet.x, kFenceY - feet.y);
+            steer(pad, play->player(), m_targetX - feet.x, kFenceY - feet.y, kSprintStick);
         }
         pad.buttons |= coney::pad::kL2;
         if (m_pressed < 2 && (m_pressed > 0 || std::abs(kFenceY - feet.y) < kPressWithin)) {
@@ -121,11 +146,18 @@ class ChargeDriver final : public coney::InputSource {
         m_charging = true;
         m_targetX = x;
     }
+    // Walks to (x, y) and stands there.
+    void walkTo(float x, float y) {
+        m_walking = true;
+        m_walkTo = {x, y, 0.0F};
+    }
+    // Whether a walk is still under way.
+    [[nodiscard]] bool walking() const { return m_walking; }
 
   private:
-    // Sets the left stick toward (dx, dy) at kSprintStick, turned by the shown camera's heading: up is the camera's
+    // Sets the left stick toward (dx, dy) at `magnitude`, turned by the shown camera's heading: up is the camera's
     // view along the ground, right its right.
-    static void steer(coney::PadSample& pad, const coney::human::Player& player, float dx, float dy) {
+    static void steer(coney::PadSample& pad, const coney::human::Player& player, float dx, float dy, float magnitude) {
         const coney::human::PlayerSnapshot& shot = player.current();
         float fx = shot.cameraTarget.x - shot.cameraEye.x;
         float fy = shot.cameraTarget.y - shot.cameraEye.y;
@@ -138,8 +170,8 @@ class ChargeDriver final : public coney::InputSource {
         fy /= forward;
         const float up = ((dx * fx) + (dy * fy)) / wanted;
         const float right = ((dx * fy) - (dy * fx)) / wanted;
-        pad.sticks[2] = raw(right * kSprintStick);
-        pad.sticks[3] = raw(-up * kSprintStick);
+        pad.sticks[2] = raw(right * magnitude);
+        pad.sticks[3] = raw(-up * magnitude);
     }
 
     // The raw byte for `value` in [-1, 1] as an input script writes it (pad::stickValue reads it back).
@@ -152,6 +184,8 @@ class ChargeDriver final : public coney::InputSource {
     bool m_charging = false;
     float m_targetX = 0.0F;
     int m_pressed = 0;
+    bool m_walking = false;
+    coney::anim::Vec3 m_walkTo{};
 };
 
 // When, in frames of the run, the events of one charge happened (0: not yet), and what showed in between.
@@ -163,6 +197,7 @@ struct Timeline {
     std::uint64_t fenceBroken = 0;    // P3.FenceBroken ran
     std::uint64_t dealerPoizo = 0;    // P3.DealerPoizo ran
     std::uint64_t cut = 0;            // the camera jumped to the dealer's
+    std::uint64_t dealerHit = 0;      // P3.DealerHit ran (the dealer attacked)
     std::size_t effects = 0;          // ScreenQueueEffect calls from the charge to the cut
     float fadeMost = 0.0F;            // the greatest fade level from the charge to the cut
     std::size_t fenceDrawnBefore = 0; // doors drawn at the fence the update before the hit
@@ -187,8 +222,9 @@ std::size_t countLines(const std::vector<std::string>& trace, std::string_view t
 }
 
 // Runs checkpoint 3 of level99 to the charge at fence `fence` begun `delay` frames after control returns, and on to the
-// dealer's cut; the timeline, with 0 for what never came.
-Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t delay) {
+// dealer's cut; the timeline, with 0 for what never came. With `walkUp` the player first walks to kStandShort short of
+// the fence and stands there kStandFrames before the charge.
+Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t delay, bool walkUp = false) {
     coney::platform::PlayLevelMode* playPtr = nullptr;
     ChargeDriver driver([&playPtr] { return playPtr; });
     coney::test::DiscSession run(wad, driver);
@@ -230,6 +266,11 @@ Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t d
     REQUIRE(scripts.call("P3.WoodenFences", enter));
     REQUIRE(run.runUntil([&] { return traceAt("> P3.BreakFence") != 0; }, kLessonLimit));
     run.run(kLetterboxOut + delay);
+    if (walkUp) {
+        driver.walkTo(kFenceX.at(fence), kFenceY + kStandShort);
+        REQUIRE(run.runUntil([&driver] { return !driver.walking(); }, kWalkLimit));
+        run.run(kStandFrames);
+    }
 
     // The charge, watched update by update until the dealer's camera is on.
     Timeline timeline;
@@ -270,6 +311,7 @@ Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t d
         timeline.fadeMost = std::max(timeline.fadeMost, playPtr->stage().fadeLevel());
         timeline.fenceBroken = traceAt("> P3.FenceBroken");
         timeline.dealerPoizo = traceAt("> P3.DealerPoizo");
+        timeline.dealerHit = traceAt("> P3.DealerHit");
         const coney::anim::Vec3 nowEye = playPtr->cameraEye();
         if (timeline.dealerPoizo != 0 && coney::anim::distance(nowEye, eye) > kCutJump) {
             timeline.cut = now;
@@ -344,4 +386,35 @@ TEST_CASE("the disc's level99: the wooden fence's break to the dealer's cut is t
     }
     std::printf("  hit to cut: %llu to %llu updates over %zu charges (the original's window 15 to 44)\n",
                 static_cast<unsigned long long>(gapLeast), static_cast<unsigned long long>(gapMost), charges.size());
+}
+
+TEST_CASE("the disc's level99: a player who walks up to the wooden fence and then charges it sees no fade before it "
+          "breaks",
+          "[disc][story][fence]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // Issue #106: the player walks up to 4.8 m short of each fence, stands 2 s (within the dealer's 17 m, so he turns
+    // to face him) and only then sprints and charges. In the original the charge warns no one: its search finds nobody
+    // between 3.29 and 4.11 m ahead, so the dealer, about 13 m off behind the fence, never hears of it and P3.DealerHit
+    // never runs (docs/research/scripting.md#level99, item 44). So nothing fades and no screen effect is queued until
+    // the fence breaks and P3.DealerPoizo cuts to the dealer.
+    for (const std::size_t fence : {std::size_t{0}, std::size_t{1}}) {
+        const Timeline t = runCharge(*wad, fence, 0, true);
+        print(fence, 0, t);
+        std::printf("  walked up first: P3.DealerHit %s\n", t.dealerHit != 0 ? "ran" : "never ran");
+        INFO("fence " << fence << ", walked up first");
+        REQUIRE(t.hit != 0);
+        CHECK(t.dealerHit == 0);
+        CHECK(t.effects == 0);
+        CHECK(t.fadeMost == 0.0F);
+        // The dealer's set-up waits for the break: the removal, P3.FenceBroken, then P3.DealerPoizo 14 updates on.
+        REQUIRE(t.fenceBroken != 0);
+        CHECK(t.fenceBroken >= t.hit);
+        CHECK(t.dealerPoizo == t.fenceBroken + kScheduleUpdates);
+        REQUIRE(t.cut != 0);
+        CHECK(t.cut - t.hit >= kCutLeast);
+        CHECK(t.cut - t.hit <= kCutMost);
+    }
 }

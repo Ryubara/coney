@@ -1362,6 +1362,16 @@ Coney fixes (item 44):
    `P3.FenceBroken` runs at an update R with H ≤ R ≤ H + 30; the dealer camera is current and player 1 at
    `fHitDealer` at R + 14 or R + 15, so the cut lands within **H + 14 … H + 45**; between H and the cut no
    `ScreenQueueEffect` is called and the fade and letterbox levels stay 0.
+6. **A charge from a stand** (issue #106, the user's "the screen fades as soon as the charge starts"). The guess was
+   that the charge's attack warning reaches the flash dealer, whose message 16 runs `P3.DealerHit` and fades out. In
+   the original the charge warns no one (confirmed (runtime), PCSX2-MCP 2.9.129, slot 10 with the `charge_fence`
+   input and a hook on `Human_WarnOfAttack`: 0 calls over the charge, fade and letterbox 0, the hit at update 29,
+   `P3.FenceBroken` at 45 and `P3.DealerPoizo` 14 later, as in fix 3); inferred from the code, its search finds no one
+   between 3.29 and 4.11 m ahead of the charge, and the dealer stands about 13 m off behind the fence. Coney, as a
+   disc test (`repo:tests/platform/disc_level99_fence_dealer_test.cpp`, both fences, through the game session), with
+   the straight charge and with a player who first walks up to 4.8 m short of the fence and stands 2 s (inside the
+   dealer's 17 m, so he turns to face him): no `P3.DealerHit`, no screen effect and no fade before the break, on
+   `main` as it stands (2026-10-21). The fade the user saw on the build of 2026-10-08 does not reproduce.
 
 ### `level80.lua` (mission 2) {#level80}
 
@@ -2781,8 +2791,8 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
   message 8 ([AI](ai.md#coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
-  stands in. Coney leaves out props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
-  them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
+  stands in. Coney does not send it for props, has no 30 m alert after it, and updates the boxes every frame
+  instead of the original's every-fifth-frame round-robin. **`--script-trace`** (`ScriptSystem::traceCalls()`,
   [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
