@@ -1287,8 +1287,8 @@ queues a fidget now and then, and always a move-to-human action that **holds A i
    from their run-in (updates 502-1700): one Warrior once, the other two five times each, each one's taunts 37 to
    582 updates apart (the 1000-2000 ms timer allows one every 30-60 updates at most). Two earlier recordings of the
    same state gave the same taunts at the same updates, so the fight is deterministic from that state. Coney's count
-   over the same span, printed by the level99 sparring disc test for its eight AI sequences (2026-10-21), is 0-2: 2,
-   0, 0, 0, 1, 0, 1, 0. Coney's waiters taunt far less often than the original's; why is an
+   over the same span, printed by the level99 sparring disc test for its eight AI sequences (2026-10-21, two runs), is
+   0-2: 2 or 1, 0, 0, 0, 1, 0, 1, 0. Coney's waiters taunt far less often than the original's; why is an
    [open question](#open-questions).
 5. **The move-to-human action** (inner, outer, the limit above).
 
