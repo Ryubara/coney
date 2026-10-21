@@ -33,7 +33,9 @@ with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv
 an old default `g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
 folder, your disc (`--disc`, else `game_dir`: `SLUS_212.15` and `WARRIORS.DIR` by size and SHA-1, `WARRIORS.WAD` by
 size, against the NTSC-U release the research refers to), the research tools (JDK 21, Node.js, Ghidra, the compiled
-EE language, a project holding `SLUS_212.15`, and whether port 8090 is free or held by ghidra-mcp) and the free disk
+EE language, a project holding `SLUS_212.15`, whether port 8090 is free or held by ghidra-mcp, the PCSX2-MCP build
+`pcsx2_mcp_dir` names, with the command that downloads the fork's release when there is none, and a BIOS in the first
+copy) and the free disk
 space (a `dev` build with its tests takes about 6.5 GB; under 10 GB free is a problem). It works in a plain clone,
 needs no `--agent` and no configuration, changes nothing and prints sizes and hashes only. A problem is something the
 engine's build or the disc needs, and makes the exit code 1; a note is optional (another release of the game, a
@@ -277,8 +279,9 @@ it back. One `dev` build's objects are 0.6 GB in the cache, so the 25 GB cap kee
 was left of the cached build was mostly CMake's C++ module scanning (733 of its 935 step-seconds, summed from
 `.ninja_log`), which ccache does not cache; it is off now ([Module scanning](#module-scanning)).
 
-- **Install it.** Windows: `coney-tools workspace init --fetch ccache` puts ccache 4.14.1 (the release CI's Windows
-  job uses, checked by SHA-256) in `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
+- **Install it.** Windows: the bootstrap launchers fetch it by default, and `coney-tools workspace init --fetch
+  ccache` does the same: ccache 4.14.1 (the release CI's Windows job uses, checked by SHA-256) in
+  `tools/ccache-4.14.1`. Linux: `apt-get install ccache`; macOS: `brew install
   ccache`. `workspace init` lists it as an optional prerequisite. Without it builds work as before, and the summary
   says `compiler cache: off (ccache not found ...)`.
 - **Settings** ([coney.local.toml](workspace.md#local-config)): `ccache_dir`, the cache folder (default

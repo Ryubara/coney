@@ -18,12 +18,14 @@ from coney_tools.config import ConfigError
 from coney_tools.workspace_fetch import (
     CCACHE_VERSION,
     CLONED,
+    MOVE_ATTEMPTS,
     PINS,
     PLATFORMS,
     TOOLS,
     Pin,
     fetch_file,
     fetch_tool,
+    move_into_place,
     newest_release,
     packaged,
     tool_destination,
@@ -193,10 +195,26 @@ def test_a_failed_unpack_leaves_nothing_in_the_destination(tmp_path: Path) -> No
     assert list((tmp_path / "tools").iterdir()) == []
 
 
-def test_pcsx2_is_not_fetched_but_built_from_the_fork() -> None:
-    # The copies run the PCSX2-MCP fork's own build (pcsx2 setup-copies), not a stock release.
+def test_pcsx2_comes_from_the_forks_release_never_a_stock_one() -> None:
+    # The copies run the PCSX2-MCP fork's build (pcsx2 setup-copies), never a stock PCSX2: a newcomer downloads the
+    # fork's release, and the clone stays for changing the fork.
     assert "pcsx2" not in TOOLS
     assert [pin.url for pin in PINS["pcsx2-mcp"]("windows")] == ["https://github.com/Ryubara/PCSX2-MCP"]
+    (release,) = PINS["pcsx2-mcp-release"]("windows")
+    assert release.url.startswith("https://github.com/Ryubara/PCSX2-MCP/releases/download/")
+    assert release.url.endswith("-win64.zip")
+    # Windows only: there is no Linux or macOS build of the fork.
+    assert PINS["pcsx2-mcp-release"]("linux") == []
+    assert tool_destination("pcsx2-mcp-release", Path("ws")).parent == Path("ws") / "tools"
+
+
+def test_the_fork_release_unpacks_flat_with_its_server(tmp_path: Path) -> None:
+    data = make_zip({"pcsx2-qt.exe": b"exe", "pcsx2-mcp-server/dist/index.js": b"js"})
+    pin = pin_for("PCSX2-MCP-v9-win64.zip", data)
+    dest = tmp_path / "tools" / "PCSX2-MCP-v9-win64"
+    fetch_tool("pcsx2-mcp-release", dest, "windows", tmp_path / "cache", FakeWeb({pin.url: data}), [pin])
+    assert (dest / "pcsx2-qt.exe").is_file()
+    assert (dest / "pcsx2-mcp-server" / "dist" / "index.js").is_file()
 
 
 def test_the_newest_fork_build_is_found_by_version_then_build(tmp_path: Path) -> None:
@@ -265,3 +283,30 @@ def test_ccache_unpacks_to_a_folder_holding_the_program(tmp_path: Path) -> None:
     fetch_tool("ccache", dest, "windows", tmp_path / "cache", FakeWeb({pin.url: archive}), [pin])
     assert (dest / "ccache.exe").is_file()
     assert tool_destination("ccache", tmp_path) == tmp_path / "tools" / f"ccache-{CCACHE_VERSION}"
+
+
+def test_the_final_move_is_tried_again_while_windows_refuses_it(tmp_path: Path) -> None:
+    # A virus scanner still reading the unpacked files makes Windows refuse the rename for a few seconds.
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    refusals = [PermissionError("Access is denied")] * 2
+    waits: list[float] = []
+
+    def rename(source: Path, target: Path) -> None:
+        if refusals:
+            raise refusals.pop()
+        source.replace(target)
+
+    move_into_place(staging, tmp_path / "dest", rename, waits.append)
+    assert (tmp_path / "dest").is_dir()
+    assert len(waits) == 2
+
+
+def test_a_move_refused_every_time_says_to_run_again(tmp_path: Path) -> None:
+    def rename(source: Path, target: Path) -> None:
+        raise PermissionError("Access is denied")
+
+    waits: list[float] = []
+    with pytest.raises(ConfigError, match="run the command again"):
+        move_into_place(tmp_path / "staging", tmp_path / "dest", rename, waits.append)
+    assert len(waits) == MOVE_ATTEMPTS - 1

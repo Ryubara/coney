@@ -21,13 +21,14 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import local_gate, workspace, workspace_fetch
+from coney_tools import local_gate, pcsx2_claims, workspace, workspace_fetch
 from coney_tools.build_cli import scratch_root
 from coney_tools.config import (
     ConfigError,
     find_repo_root,
     load_config,
     local_config_file,
+    main_checkout,
     workspace_folder,
     workspace_root,
 )
@@ -166,6 +167,32 @@ def ghidra_checks(install: Path, project: GhidraProject) -> list[Check]:
     return checks
 
 
+def pcsx2_check(platform: str, build: Path | None) -> Check:
+    """The PCSX2-MCP fork's build that the PCSX2 copies run (`pcsx2_mcp_dir`): its PCSX2 and its MCP server."""
+    if platform == "windows":
+        hint = (
+            "download the fork's release: uv run --project python coney-tools workspace init "
+            "--fetch pcsx2-mcp-release, "
+            "then coney-tools pcsx2 setup-copies (docs/guides/workspace.md#pcsx2-copies)"
+        )
+    else:
+        hint = "the PCSX2-MCP fork's build is Windows only today (docs/guides/workspace.md#pcsx2-copies)"
+    if build is None:
+        return Check("PCSX2-MCP build", False, "pcsx2_mcp_dir is not set", hint, False)
+    program = (build / "pcsx2-qt.exe").is_file() or any(build.glob("*.AppImage"))
+    ok = program and (build / "pcsx2-mcp-server").is_dir()
+    detail = str(build) if ok else f"{build} holds no PCSX2 build with pcsx2-mcp-server/"
+    return Check("PCSX2-MCP build", ok, detail, hint, False)
+
+
+def bios_check(copy: Path) -> Check:
+    """Whether the first PCSX2 copy has a BIOS; it is the user's own, which Coney never downloads (LEGAL.md)."""
+    folder = copy / "bios"
+    count = sum(1 for entry in folder.iterdir() if entry.is_file()) if folder.is_dir() else 0
+    hint = f"dump the BIOS from your own console into {folder} (Coney never downloads one)"
+    return Check("PCSX2 BIOS", count > 0, f"{count} file(s) in {folder}", hint, False)
+
+
 def is_listening(port: int) -> bool:
     """True when something accepts connections on 127.0.0.1:`port`."""
     try:
@@ -260,13 +287,17 @@ def run(cwd: Path, disc_arg: str | None) -> int:
     research = [check for check in found if not check.required]
     research += ghidra_checks(install, GhidraProject(projects, PROJECT_NAME))
     research.append(port_check(GHIDRA_MCP_PORT, is_listening, _ghidra_server_answers))
+    research.append(pcsx2_check(name, paths.get("pcsx2_mcp_dir")))
+    # The first copy, where `pcsx2 setup-copies` makes it (pcsx2_dir names it outright when set).
+    copies = paths.get("pcsx2_root") or pcsx2_claims.default_pcsx2_root(main_checkout(root))
+    research.append(bios_check(paths.get("pcsx2_dir") or copies / "pcsx2"))
 
     print(f"coney-tools doctor: {root} ({name})")
     sections = [
         ("Build tools", build),
         ("Configuration", [config_check(root), Check("Scratch folder", True, str(scratch_root(root)), "", False)]),
         ("Disc", discs),
-        ("Research tools (optional: docs/guides/ghidra.md)", research),
+        ("Research tools (optional: docs/guides/ghidra.md, docs/guides/workspace.md#pcsx2-copies)", research),
         ("Disk", [disk_check(free_space(root))]),
     ]
     return report(sections)

@@ -215,3 +215,45 @@ def test_a_packaged_tool_is_left_to_the_package_manager(
     monkeypatch.setattr(workspace_fetch, "packaged", lambda _tool, _platform: True)  # ccache on Linux or macOS
     assert main(["workspace", "init", "--fetch", "ccache", "--dry-run"]) == 0
     assert "ccache: install it with your package manager" in capsys.readouterr().out
+
+
+def test_init_points_pcsx2_mcp_dir_at_the_downloaded_release(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    checkout = make_upstream(tmp_path / "ws" / "repos" / "coney")
+    release = workspace_fetch.tool_destination("pcsx2-mcp-release", tmp_path / "ws")
+    release.mkdir(parents=True)
+    monkeypatch.chdir(checkout)
+    assert main(["workspace", "init"]) == 0
+    config = tomllib.loads((checkout / "coney.local.toml").read_text(encoding="utf-8"))
+    assert config["pcsx2_mcp_dir"] == "../../" + release.relative_to(tmp_path / "ws").as_posix()
+
+
+def test_a_build_of_the_fork_wins_over_the_downloaded_release(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    checkout = make_upstream(tmp_path / "ws" / "repos" / "coney")
+    workspace_fetch.tool_destination("pcsx2-mcp-release", tmp_path / "ws").mkdir(parents=True)
+    build = tmp_path / "ws" / "tools" / "pcsx2-mcp" / "release" / "PCSX2-MCP-coney-v2.9.129.4-win64"
+    build.mkdir(parents=True)
+    monkeypatch.chdir(checkout)
+    assert main(["workspace", "init"]) == 0
+    config = tomllib.loads((checkout / "coney.local.toml").read_text(encoding="utf-8"))
+    assert config["pcsx2_mcp_dir"] == "../../tools/pcsx2-mcp/release/PCSX2-MCP-coney-v2.9.129.4-win64"
+
+
+def test_the_launchers_fetch_ccache_unless_told_what_to_fetch() -> None:
+    root = Path(__file__).parents[2]
+    for launcher in ("bootstrap.sh", "bootstrap.ps1"):
+        text = (root / launcher).read_text(encoding="utf-8")
+        assert "--fetch ccache" in text or '"--fetch", "ccache"' in text, launcher
+
+
+def test_the_fork_release_is_skipped_off_windows_and_never_configured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    checkout = make_upstream(tmp_path / "ws" / "repos" / "coney")
+    monkeypatch.chdir(checkout)
+    monkeypatch.setattr(workspace_fetch, "platform_name", lambda: "linux")
+    assert main(["workspace", "init", "--fetch", "pcsx2-mcp-release"]) in (0, 1)
+    out = capsys.readouterr().out
+    assert "pcsx2-mcp-release: Windows only" in out
+    assert "package manager" not in out
+    config = tomllib.loads((checkout / "coney.local.toml").read_text(encoding="utf-8"))
+    assert "PCSX2-MCP-v" not in config.get("pcsx2_mcp_dir", "")

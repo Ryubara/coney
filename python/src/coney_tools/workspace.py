@@ -158,6 +158,9 @@ def plan(layout: Layout, repo_url: str | None, fetch: Sequence[str], platform: s
     cache = layout.workspace / "scratch" / "downloads"
     for tool in fetch:
         dest = workspace_fetch.tool_destination(tool, layout.workspace)
+        if tool in workspace_fetch.WINDOWS_ONLY and platform != "windows":
+            steps.append(Step("skip", f"{tool}: Windows only, no build of it for {platform}", None))
+            continue
         if workspace_fetch.packaged(tool, platform):
             steps.append(Step("skip", f"{tool}: install it with your package manager (docs/guides/building.md)", None))
             continue
@@ -174,7 +177,11 @@ def plan(layout: Layout, repo_url: str | None, fetch: Sequence[str], platform: s
     for key, tool in (("ghidra_mcp_repo", "ghidra-mcp"), ("pcsx2_mcp_dir", "pcsx2-mcp")):
         if tool in fetch or workspace_fetch.tool_destination(tool, layout.workspace).exists():
             values[key] = "../../" + workspace_fetch.tool_destination(tool, Path()).as_posix()
-    # The PCSX2-MCP fork's newest build, when one was made: it is both the copies' PCSX2 and the MCP server.
+    # The fork's downloaded release, else (winning over it) the newest build made from the clone: either is both the
+    # copies' PCSX2 and the MCP server.
+    downloaded = workspace_fetch.tool_destination("pcsx2-mcp-release", layout.workspace)
+    if ("pcsx2-mcp-release" in fetch and platform == "windows") or downloaded.exists():
+        values["pcsx2_mcp_dir"] = "../../" + downloaded.relative_to(layout.workspace).as_posix()
     release = workspace_fetch.newest_release(workspace_fetch.tool_destination("pcsx2-mcp", layout.workspace))
     if release is not None:
         values["pcsx2_mcp_dir"] = "../../" + release.relative_to(layout.workspace).as_posix()
@@ -212,11 +219,18 @@ def _print_next(layout: Layout, fetch: Sequence[str]) -> None:
     print(
         f"  - Build and test from {layout.checkout}: docs/guides/building.md. Install the hooks: uvx pre-commit install"
     )
-    if "pcsx2-mcp" in fetch or workspace_fetch.tool_destination("pcsx2-mcp", layout.workspace).exists():
+    downloaded = workspace_fetch.tool_destination("pcsx2-mcp-release", layout.workspace)
+    if ("pcsx2-mcp-release" in fetch and workspace_fetch.platform_name() == "windows") or downloaded.exists():
         print(
-            "  - Build the PCSX2-MCP fork as its README says into its release/ folder, point pcsx2_mcp_dir at the "
-            "build and run `coney-tools pcsx2 setup-copies`; each copy needs a BIOS dumped from your own console, "
-            "and Coney never downloads one (docs/guides/workspace.md#pcsx2-copies)."
+            "  - Run `coney-tools pcsx2 setup-copies` to make the PCSX2 copies from the fork's release; each copy "
+            "needs a BIOS dumped from your own console, and Coney never downloads one "
+            "(docs/guides/workspace.md#pcsx2-copies)."
+        )
+    if "pcsx2-mcp" in fetch:
+        print(
+            "  - Only to change the fork: build the PCSX2-MCP clone as its README says into its release/ folder, "
+            "point pcsx2_mcp_dir at the build and run `coney-tools pcsx2 setup-copies` "
+            "(docs/guides/workspace.md#pcsx2-copies)."
         )
     if "ghidra" in fetch:
         print(

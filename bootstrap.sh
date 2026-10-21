@@ -19,6 +19,18 @@ if ! command -v uv >/dev/null 2>&1; then
     export PATH
 fi
 
+# ccache makes every build after the first one fast (docs/guides/building.md#compiler-cache), so it is fetched unless
+# the command line says what to fetch. On Linux and macOS init says to install it with apt or Homebrew instead.
+fetch_given=no
+for argument in "$@"; do
+    case "$argument" in
+        --fetch|--fetch=*) fetch_given=yes ;;
+    esac
+done
+if [ "$fetch_given" = no ]; then
+    set -- "$@" --fetch ccache
+fi
+
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 if [ -f "$here/python/pyproject.toml" ]; then
     # Inside a checkout: run its own coney-tools from the checkout, so init finds the workspace around it.

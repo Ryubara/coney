@@ -178,3 +178,24 @@ def test_doctor_runs_in_a_plain_clone_without_a_config(
     # The archive is missing from the made-up disc: a problem, so the exit code is 1.
     assert "problem  WARRIORS.WAD: missing" in out
     assert code == 1
+
+
+def test_pcsx2_check_points_a_newcomer_at_the_forks_release(tmp_path: Path) -> None:
+    missing = doctor.pcsx2_check("windows", None)
+    assert not missing.ok and not missing.required
+    assert "--fetch pcsx2-mcp-release" in missing.hint
+    build = tmp_path / "PCSX2-MCP-v1.1.0-win64"
+    (build / "pcsx2-mcp-server").mkdir(parents=True)
+    (build / "pcsx2-qt.exe").write_bytes(b"")
+    assert doctor.pcsx2_check("windows", build).ok
+    assert "Windows only" in doctor.pcsx2_check("linux", None).hint
+
+
+def test_bios_check_never_offers_a_download(tmp_path: Path) -> None:
+    copy = tmp_path / "pcsx2"
+    check = doctor.bios_check(copy)
+    assert not check.ok and "your own console" in check.hint
+    (copy / "bios").mkdir(parents=True)
+    (copy / "bios" / "dump.bin").write_bytes(b"")
+    assert doctor.bios_check(copy).ok
+    assert "dump.bin" not in doctor.bios_check(copy).detail
