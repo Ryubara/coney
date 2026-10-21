@@ -278,6 +278,12 @@ Windows and Linux ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tool
 the game's sources and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links
 a debug library, or anything but `coney_devtools` links `imgui`.
 
+**What it saves.** Measured with MSVC on Windows (2026-10-21): the `release` preset's `coney.exe` is 8.4 MB
+(Release, no tools); the `dev` preset's `coney.exe` is 33.0 MB and its `coney_release.exe`, the same Debug build
+without the tools, 27.4 MB, so the tools are about a sixth of a Debug executable. For comparison, the old
+`release` preset (RelWithDebInfo with the tools, debug information kept in the objects) made a 19.9 MB `coney.exe`.
+A release configure fetches no Dear ImGui (`build/release/_deps` has no `imgui` folder).
+
 ### Debug information on MSVC {#debug-info}
 
 Every preset keeps the debug information inside each object (`/Z7`,
