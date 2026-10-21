@@ -30,6 +30,7 @@
 #include "human/human_flags.h"
 #include "human/humans.h"
 #include "human/locomotion_gate.h"
+#include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
@@ -719,4 +720,27 @@ TEST_CASE("a player released to the AI takes his class's brain, loses his goals,
     log.clear();
     scene.run(5);
     CHECK(std::ranges::find(log, std::string("h start")) != log.end());
+}
+
+// docs/research/ai.md#fight-reposition: the gesture slots' kind (`Brain_GetReactionKind` 0x00291d48) and how many a
+// brain may take (`Brain_GetHelpLevel` 0x00291db8).
+TEST_CASE("a brain's reaction kind is its type, the player's a Warrior's; cops and Warriors take one gesture slot",
+          "[ai]") {
+    coney::test::AiScene scene;
+    using coney::ai::BrainType;
+    const coney::ai::Brain& player = scene.player();
+    const coney::ai::Brain& cop = scene.add(coney::anim::Vec3{41.0F, 40.0F, 0.0F}, 0.0F, BrainType::Cop);
+    const coney::ai::Brain& warrior = scene.add(coney::anim::Vec3{42.0F, 40.0F, 0.0F}, 0.0F, BrainType::Warrior);
+    const coney::ai::Brain& thug = scene.add(coney::anim::Vec3{43.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
+    const coney::ai::Brain& dealer = scene.add(coney::anim::Vec3{44.0F, 40.0F, 0.0F}, 0.0F, BrainType::Dealer);
+    CHECK(coney::ai::reactionKind(player) == 3);
+    CHECK(coney::ai::reactionKind(cop) == 1);
+    CHECK(coney::ai::reactionKind(warrior) == 3);
+    CHECK(coney::ai::reactionKind(thug) == 2);
+    CHECK(coney::ai::reactionKind(dealer) == 5);
+    CHECK(coney::ai::helpLevel(player) == 2);
+    CHECK(coney::ai::helpLevel(cop) == 1);
+    CHECK(coney::ai::helpLevel(warrior) == 1);
+    CHECK(coney::ai::helpLevel(thug) == 2);
+    CHECK(coney::ai::helpLevel(dealer) == 2);
 }

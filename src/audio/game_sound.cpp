@@ -249,25 +249,28 @@ bool GameSound::Voices::sayCommand(const script::HumanSoundCall& who, std::uint3
 
 bool GameSound::Voices::mayGesture(const script::HumanSoundCall& who) {
     constexpr float kGestureRange = 30.0F;
-    constexpr std::size_t kGestureSlots = 2;
-    // The slots of those who no longer speak free up.
-    std::erase_if(m_gesturing, [this](double human) { return !speaking(human); });
-    if (m_owner.m_context == nullptr || m_owner.m_context->cameras == nullptr) {
+    if (m_owner.m_context == nullptr || m_owner.m_context->cameras == nullptr || who.gestureKind < 0 ||
+        static_cast<std::size_t>(who.gestureKind) >= m_gesturing.size()) {
         return false;
     }
+    // The nearest camera within 30 m (`Cameras_MinDistanceSq` <= 900).
     const anim::Vec3 camera = m_owner.m_context->cameras->view().position;
     const float dx = camera.x - who.position[0];
     const float dy = camera.y - who.position[1];
     const float dz = camera.z - who.position[2];
-    const bool holds = std::ranges::find(m_gesturing, who.human) != m_gesturing.end();
-    if ((dx * dx) + (dy * dy) + (dz * dz) > kGestureRange * kGestureRange ||
-        (!holds && m_gesturing.size() >= kGestureSlots)) {
+    if ((dx * dx) + (dy * dy) + (dz * dz) > kGestureRange * kGestureRange) {
         return false;
     }
-    if (!holds) {
-        m_gesturing.push_back(who.human);
+    // The first of his kind's slots, up to his help level, whose holder is gone or silent; it holds him from now.
+    std::array<std::optional<double>, 2>& slots = m_gesturing.at(static_cast<std::size_t>(who.gestureKind));
+    const std::size_t usable = std::min<std::size_t>(static_cast<std::size_t>(std::max(who.gestureSlots, 0)), 2);
+    for (std::size_t k = 0; k < usable; ++k) {
+        if (!slots.at(k).has_value() || !speaking(*slots.at(k))) {
+            slots.at(k) = who.human;
+            return true;
+        }
     }
-    return true;
+    return false;
 }
 
 bool GameSound::Voices::scenePlaying() const {

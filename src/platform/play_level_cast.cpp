@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "ai/ai_config.h"
+#include "ai/brain.h"
 #include "ai/scripted_brains.h"
 #include "characters/character_types.h"
 #include "human/tag_colour.h"
@@ -65,6 +66,8 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
         who.human = brain.handle();
         who.characterType = brain.characterClass();
         who.position = {feet.x, feet.y, feet.z};
+        who.gestureKind = ai::reactionKind(brain);
+        who.gestureSlots = ai::helpLevel(brain);
         return m_sound->mayGesture(who);
     });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
