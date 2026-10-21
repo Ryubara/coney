@@ -159,9 +159,9 @@ through `analyzeHeadless` on the program, without analysing it again, and prints
 Names it applies get the source `IMPORTED`, so running it again after the listing changes replaces them, while your
 own names stay. `--dry-run` opens the program read-only: the script does everything, Ghidra saves none of it, and
 the counts are the ones a real run would give. Measured on 2026-10-21 on a project `ghidra setup` had just made
-(Windows, a busy 16-core machine; import, analysis and names 2 min 37 s in all): of the 11,527 names (the listing's
+(Windows, a busy 16-core machine; import, analysis and names 2 min 42 s in all): of the 11,527 names (the listing's
 11,530 less three that are Ghidra-style `FUN_` names), 11,345 were matched (11,290 renamed, 55 already the same) and
-182 created, none skipped; a second run found all 11,527 the same, in 10 s. Plate comments, structures and signatures
+182 created, none skipped; a second run found all 11,527 the same, in 15 s. Plate comments, structures and signatures
 are not shared at all until the
 research database exists ([The research database](research-workflow.md#the-research-database)).
 
