@@ -534,6 +534,23 @@ and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
 `CLIP` follows the [clips](#clips) rules. It needs FFmpeg as `clips` finds it, and Windows (keys by
 handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clip` made it.
 
+```sh
+uv run --project python coney-tools pcsx2 recipe list
+uv run --project python coney-tools pcsx2 recipe show NAME
+uv run --project python coney-tools pcsx2 recipe run NAME --copy COPY --agent ID [--arg NAME=VALUE ...] [--json]
+uv run --project python coney-tools pcsx2 recipe render [--check]
+```
+
+The shared [PCSX2 recipes](pcsx2-recipes.md) of `research/pcsx2-recipes.toml` (the schema is the docstring of
+`repo:python/src/coney_tools/recipes.py`). `list` names them by group, `show` prints one with its parameters,
+preconditions, evidence and steps. `run` makes its steps on a copy `--agent` holds a claim on and whose PCSX2 runs,
+over that copy's PINE port (and its debug server for `pause`, `resume` and `step`): it refuses another agent's copy, a
+copy that runs nothing, an emulation state the recipe does not take and a running state that lacks a patch or hook the
+recipe names (read back from memory). `--arg` gives a parameter, `--json` adds one line with every value shown.
+`render` writes [the page](pcsx2-recipes.md) from the file; with `--check` it writes nothing and exits with 1 when
+the page is out of date, as CI runs it. Every recipe must have an evidence level, a Ghidra address and a
+`confirmed_runtime` date, copy and state, or the file is refused.
+
 ## clips {#clips}
 
 ```sh

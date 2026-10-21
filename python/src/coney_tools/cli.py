@@ -28,6 +28,7 @@ from coney_tools import (
     pcsx2_clip,
     pcsx2_copies,
     progress_cli,
+    recipes_cli,
     refs_cli,
     stale_processes,
     trace_cli,
@@ -640,6 +641,7 @@ def _add_pcsx2_commands(groups: Any) -> None:
     clip.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
     _add_pcsx2_flags(clip)
     _add_claim_commands(commands)
+    recipes_cli.add_commands(commands)
     _add_pcsx2_flags(record)
 
 
@@ -847,6 +849,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         return pcsx2_copies.run_setup_copies(args.count, args.dry_run)
     if args.command == "recordings":
         return pcsx2_copies.run_recordings(args.direction, args.agent, args.copy, args.name, args.force)
+    if args.command == "recipe":
+        return recipes_cli.run_command(args)
     if args.command == "clip":
         return pcsx2_clip.run_clip(
             args.state, args.seconds, args.out, (args.pcsx2_dir, args.iso, args.scratch), args.agent

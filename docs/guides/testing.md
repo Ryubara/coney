@@ -113,7 +113,10 @@ When a play-tester sees a bug that a test does not, first ask which path each on
 ### Drive it like a gamepad {#gamepad}
 
 All movement is driven as a gamepad with analog sticks, in Coney (`--input-script` `stick` lines) and in the
-emulator (the pad patches in [Driving PCSX2](research-workflow.md#driving-pcsx2)). Use realistic partial deflections
+emulator: a PCSX2 [input recording](research-workflow.md#input-recordings) for a fixed run, or the
+[`pad`](pcsx2-recipes.md#pad) recipe for a driver that reacts to the game. The other things a runtime check sets up
+in the original (the player found, a human teleported or spawned, a checkpoint loaded) are
+[PCSX2 recipes](pcsx2-recipes.md) too. Use realistic partial deflections
 and state the magnitude, not only full deflection: the game's walk, run and dead-zone thresholds only show between
 the extremes, so keyboard-style input hides behaviour.
 
@@ -360,7 +363,7 @@ The whole gate:
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`; `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables are built into
   the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,
-  `refs render`, `missions render`). Rerun a generator without `--check` when you change what it reads.
+  `refs render`, `missions render`, `pcsx2 recipe render`). Rerun a generator without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
   `mkdocs build --strict` passes.
 

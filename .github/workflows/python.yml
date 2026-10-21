@@ -97,6 +97,9 @@ jobs:
       # The mission status pages (docs/missions/) must match research/missions.yaml.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools missions render --check
+      # The PCSX2 recipes page (docs/guides/pcsx2-recipes.md) must match research/pcsx2-recipes.toml, which must be valid.
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools pcsx2 recipe render --check
 
   # The one required check for python: the matrix's OSes vary by change and a skipped matrix job reports its name
   # unexpanded, so "python (macos-15)" cannot be required. Passes when python passed or was skipped on purpose, fails
