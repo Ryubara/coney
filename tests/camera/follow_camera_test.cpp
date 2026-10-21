@@ -428,18 +428,22 @@ TEST_CASE("the look-at point's move is limited by its length: 20% beyond 0.8 m, 
 }
 
 TEST_CASE("the height hold eases the wanted position's height 30% an update times its scale", "[camera]") {
-    // Two cameras alike but for the hold; the target jumps 1 m (the look-at point follows at once in the air).
+    // Two held cameras alike but for the hold's scale; the target jumps 1 m (the look-at point follows at once in the
+    // air). The baseline holds with scale 0, so it skips the pitch step as any held camera does (the original's step
+    // 11) but does not ease: the difference is the easing alone.
     for (const float scale : {1.0F, 0.25F}) {
-        FollowCamera free(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+        FollowCamera still(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
         FollowCamera held(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
         const float heldAbove = held.wanted().z - held.lookAt().z;
+        still.holdHeight(true, 0.0F);
         held.holdHeight(true, scale);
         FollowTarget air = standing(Vec3{40.0F, 40.0F, 1.0F});
         air.airborne = true;
-        free.update(air, kRest, kRest, nullptr, kStep);
+        still.update(air, kRest, kRest, nullptr, kStep);
         held.update(air, kRest, kRest, nullptr, kStep);
         const float goal = held.lookAt().z + heldAbove;
-        CHECK(held.wanted().z - free.wanted().z == Approx(0.3F * scale * (goal - free.wanted().z)).margin(1e-4));
+        REQUIRE(std::abs(goal - still.wanted().z) > 0.1F);
+        CHECK(held.wanted().z - still.wanted().z == Approx(0.3F * scale * (goal - still.wanted().z)).margin(1e-4));
     }
 }
 
