@@ -502,8 +502,8 @@ the items' actions are in `MissionFailedMenu_OnCommand` (`0x001d2a10`) and the Y
 ## Function index {#function-index}
 
 Every function of the pause, options and controls menus, by source file in address order, with the name it has in Ghidra
-(ours); each is confirmed (code) at its address unless its row says otherwise. Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
-[Source map](source-map.md#gui).
+(ours); each is confirmed (code) at its address unless its row says otherwise. Rows link to the section that
+describes the behaviour where there is one. The files and ranges are from the [Source map](source-map.md#gui).
 
 ### The Armies of the Night game-over screen {#an-game-over}
 
