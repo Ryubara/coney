@@ -60,8 +60,8 @@ def _cmake() -> str | None:
     found = shutil.which("cmake")
     if found:
         return found
-    pattern = "C:/Program Files*/Microsoft Visual Studio/*/*/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin"
-    copies = sorted(glob.glob(pattern + "/cmake.exe"))
+    studio = "C:/Program Files*/Microsoft Visual Studio/*/*"
+    copies = sorted(glob.glob(studio + "/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"))
     return copies[-1] if copies else None
 
 
