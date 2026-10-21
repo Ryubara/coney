@@ -532,6 +532,21 @@ resumes. The trace's steps then count from the recording's first frame. A record
 no patches. It cannot be combined with `--attach` or `--state`, and needs the copy's debug server.
 
 ```sh
+uv run --project python coney-tools pcsx2 recordings make NAME --script SCRIPT [--state STATE.p2s] [--updates N]
+    [--frames-per-update 2] [--author TEXT] [--force]
+```
+
+Writes an input script (Coney's format, [Input scripts](running.md#input-scripts)) as a PCSX2 input recording
+`NAME.p2m2` in the scratch folder's `recordings/`, so the original replays the script exactly, frame by frame, as Coney
+does. A script's frame is one character update of 1/30 s and PCSX2 takes the pad at 60 Hz, so each script frame becomes
+`--frames-per-update` frames (2). Port 1 follows the script with the pad bytes Coney makes (buttons with full
+pressure, sticks from the percentages), port 2 stays at rest. `--state` is the savestate it starts from, copied beside
+it as `NAME.p2m2_SaveState.p2s`; without it the recording starts from power-on. The length is the script's last frame
+plus one second unless `--updates` says. A recording already there needs `--force`. Then `recordings push` it to a copy
+and play it ([Input recordings](research-workflow.md#input-recordings)). The layout it writes is PCSX2's own, from
+`pcsx2/Recording/InputRecordingFile.h`.
+
+```sh
 uv run --project python coney-tools pcsx2 recordings push|pull NAME --agent ID --copy NAME [--force]
 ```
 
