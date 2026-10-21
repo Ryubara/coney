@@ -129,8 +129,8 @@ The grid items (`0x001dbee0`), each with the code `PauseMenu_SelectItem` acts on
 | 6 | Quit (`0xfd`) | Quit | no |
 
 A Rumble level's grid reads Rules : Options : Controls / Replay : Resume : Quit (`PauseMenu_Open`
-`0x001dc56c`-`0x001dc5a4`, confirmed (code)). The first item is selected when the menu opens. Confirmed (code); the
-story order and look confirmed (runtime).
+`0x001dc56c`-`0x001dc5a4`, confirmed (code); confirmed (runtime) in the `level102` War Party, 2026-10-21). The
+first item is selected when the menu opens. Confirmed (code); the story order and look confirmed (runtime).
 
 ## Behaviour
 
@@ -190,8 +190,9 @@ When the game state's `+0x11c` is set, it opens straight onto the Options screen
 `0x001dfc80`), in index order **(150, 50, 50)** red, **(50, 150, 50)** green and **(50, 50, 150)** blue
 (`0xff323296`, `0xff329632`, `0xff963232`), each blended linearly to the next, blue back to red, over
 **5,000 ms** (`0x0050ee88`), forever; the alpha
-rises from 0 to 255 over the first 3,000 ms. Confirmed (code); the cycle confirmed (runtime: screenshots a few seconds
-apart show the tagged background purple, blue, green and red-brown).
+rises from 0 to 255 over the first 3,000 ms. Confirmed (code); the order confirmed (runtime, 2026-10-21: about 3.6 s
+after START the background is mostly green (red blending into green) in `level99` checkpoint 1 and in the `level102`
+War Party alike, where blue would come first if the order ran the other way).
 
 ### The top header {#the-top-header}
 
