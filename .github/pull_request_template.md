@@ -24,13 +24,21 @@ Done:
      tests added or changed, any disc, playthrough or trace-diff run, and the results as counts, pass or fail and
      numbers ("412 passed, 0 failed", "playthrough reached checkpoint 4 in 1,830 updates"). For a docs-only or
      research change, say which checks ran and what runtime evidence (PCSX2 traces, memory reads) backs the claims.
-     Work that cannot be tested yet is listed as such, with the reason. -->
+     Work that cannot be tested yet is listed as such, with the reason.
+
+     A title area a player sees (`gameplay`, `graphics`, `audio`) needs one line starting `Runtime:` in this section,
+     and CI refuses the pull request without it: the evidence from the original running, with numbers (a trace diff,
+     an event diff, or named PCSX2 captures or reads compared with Coney's; docs/guides/testing.md#done), or
+     `Runtime: none (<reason>)` when the original cannot say anything about this change. The reviewer opens the log,
+     trace or capture behind it in the scratch folder and refuses a reason that is only convenience.
+     Any other title area deletes the line. -->
 
 - ...
+- Runtime: ...
 
 ## Screenshots
 
-<!-- For anything a player can see, show it: Coney before, Coney after and, where it applies, the original
+<!-- For anything a player can see, show it: Coney before, Coney after and the original
      (PCSX2) from the same place. Write each picture as a Markdown image, `![alt](./shots/file.png)`; it is
      uploaded with `gh pr create --body-file ... --attach ./shots/file.png` (gh 2.99+), or drag a PNG into this
      box on GitHub. A short video clip goes up with `coney-tools clips publish`, which deletes it afterwards

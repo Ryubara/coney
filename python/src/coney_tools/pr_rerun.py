@@ -157,7 +157,9 @@ def _stale_text(pull: PullChecks, check: FailedCheck, conventions: Conventions) 
     rules = conventions.hygiene.pr_health.rerun
     if check.name == rules.title_check and not check_title(first_line(pull.title), conventions.commits.title):
         return "title", "the title now passes check-title"
-    if check.name == rules.body_check and not check_body(pull.body, conventions.pull_requests):
+    if check.name == rules.body_check and not check_body(
+        pull.body, conventions.pull_requests, title=first_line(pull.title)
+    ):
         return "description", "the description now passes check-body"
     return None
 

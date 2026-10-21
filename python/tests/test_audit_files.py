@@ -575,3 +575,10 @@ def test_pushes_nightly_and_manual_runs_get_everything(root: Path, event: str) -
 def test_a_draft_runs_only_the_cheap_checks(root: Path, changed: list[str]) -> None:
     result = run_scope(root, changed, draft="true")
     assert result["build"] == "false" and result["python"] == "false"
+
+
+def test_a_template_that_forgets_the_runtime_line_is_found(root: Path) -> None:
+    edit(root, ".github/pull_request_template.md", "- Runtime: ...", "- ...")
+    edit(root, ".github/pull_request_template.md", "`Runtime: none (<reason>)`", "`Runtime: skip`")
+    messages = " | ".join(problem.message for problem in found(af.template_matches, context(root)))
+    assert "does not mention Runtime: ..." in messages and "does not mention `Runtime: none (<reason>)`" in messages
