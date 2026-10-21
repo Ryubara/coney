@@ -1,5 +1,6 @@
 # Copy to coney.local.toml (untracked) and adjust. Paths are relative to the repository root
-# or absolute. The defaults below assume the workspace layout in docs/guides/workspace.md.
+# or absolute. The defaults below assume the workspace layout in docs/guides/workspace.md; in a plain clone
+# (not in a workspace's repos/ folder) a key left out defaults to <clone>-workspace beside the clone instead.
 game_dir        = "../../game"                          # your disc image and files extracted from it
 ghidra_install  = "../../tools/ghidra_12.1.4_PUBLIC"    # Ghidra 12.1.4 with the Emotion Engine extension
 ghidra_projects = "../../ghidra"                        # local Ghidra projects (rebuildable)

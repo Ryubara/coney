@@ -172,7 +172,8 @@ def test_doctor_runs_in_a_plain_clone_without_a_config(
     monkeypatch.setattr(doctor, "is_listening", lambda port: False)
     code = main(["doctor", "--disc", str(disc.path)])
     out = capsys.readouterr().out
-    assert "coney.local.toml: none (defaults are used)" in out
+    assert "coney.local.toml: none (defaults are used, in" in out
+    assert "coney-workspace" in out  # beside the clone, never inside it
     assert "not the NTSC-U release" in out
     # The archive is missing from the made-up disc: a problem, so the exit code is 1.
     assert "problem  WARRIORS.WAD: missing" in out

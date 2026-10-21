@@ -57,6 +57,9 @@ INT_MINIMUM: dict[str, int] = {
 }
 
 LOCAL_FILE = "coney.local.toml"
+#: In a plain clone (one not in a workspace's `repos/` folder), what the workspace folder beside it is named after:
+#: `~/code/coney` keeps its scratch, cache, tools, Ghidra projects and emulators in `~/code/coney-workspace/`.
+PLAIN_CLONE_SUFFIX = "-workspace"
 EXAMPLE_FILE = "coney.local.example.toml"
 
 
@@ -154,3 +157,22 @@ def load_config(root: Path) -> Config:
             raise ConfigError(f"{path}: {key} must be a whole number of at least {least}, got {value!r}")
         numbers[key] = value
     return Config(paths=paths, numbers=numbers)
+
+
+def workspace_root(root: Path) -> Path:
+    """The folder that holds the workspace's sibling folders (`scratch/`, `cache/`, `tools/`, `ghidra/`) for the
+    checkout at `root`.
+
+    In the workspace layout (docs/guides/workspace.md) the main checkout is `<workspace>/repos/coney`, so it is the
+    workspace, two levels up; worktrees share their main checkout's. A plain clone anywhere else would otherwise
+    write two levels above itself (`~/code/coney` writing `~/scratch`), so there it is a folder beside the clone,
+    `<clone>-workspace`. It is never inside the clone: the Ghidra projects, the copied executable, the emulators and
+    the BIOS stay out of the repository (LEGAL.md). A path set in coney.local.toml always wins over this default.
+    """
+    main = main_checkout(root).resolve()
+    return main.parent.parent if main.parent.name == "repos" else main.parent / (main.name + PLAIN_CLONE_SUFFIX)
+
+
+def workspace_folder(root: Path, name: str) -> Path:
+    """`name` (such as `scratch` or `cache/ccache`) in the workspace of the checkout at `root` (`workspace_root`)."""
+    return workspace_root(root) / name

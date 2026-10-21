@@ -170,15 +170,20 @@ The first line only needs running again when a `CMakeLists.txt` or `cmake/deps.c
 does not pick up by itself (`coney-tools build --configure` forces it). Each preset builds into its own
 `build/<preset>/` folder, so presets never disturb each other.
 
-A build or a test run that takes minutes runs in the background with its output in a log. Waiting for it is bounded:
-never `until grep -q ... log; do sleep ...; done`, which waits for ever when the build dies first (a hook refuses it;
-[Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests; `coney-tools workspace
-clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
+!!! note "For the project's agents"
 
-No agent waits on a build past its prompt cache (about an hour): a call waits at most 40 minutes for a slot and takes
-at most 45 in all, and leaves at once with exit 75 when the queue says it cannot fit. A longer wait runs detached
-(`--detach`), the agent writes `STATUS.md` and stops, and whoever continues reads `coney-tools build result`
-([Build waits](agents.md#build-waits)).
+    The next two paragraphs are about several AI agents sharing one machine; a person building alone can skip them.
+    Alone on a machine, a build never waits for a slot.
+
+    A build or a test run that takes minutes runs in the background with its output in a log. Waiting for it is
+    bounded: never `until grep -q ... log; do sleep ...; done`, which waits for ever when the build dies first (a hook
+    refuses it; [Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests;
+    `coney-tools workspace clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
+
+    No agent waits on a build past its prompt cache (about an hour): a call waits at most 40 minutes for a slot and
+    takes at most 45 in all, and leaves at once with exit 75 when the queue says it cannot fit. A longer wait runs
+    detached (`--detach`), the agent writes `STATUS.md` and stops, and whoever continues reads `coney-tools build
+    result` ([Build waits](agents.md#build-waits)).
 
 | Preset | Build type | What it is for |
 | --- | --- | --- |

@@ -23,7 +23,14 @@ from pathlib import Path
 
 from coney_tools import local_gate, workspace, workspace_fetch
 from coney_tools.build_cli import scratch_root
-from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    workspace_folder,
+    workspace_root,
+)
 from coney_tools.disc import NTSC_U_SHA1, Disc
 from coney_tools.ghidra_headless import LANGUAGES, PROGRAM, PROJECT_NAME, GhidraProject, has_program
 from coney_tools.workspace_checks import GCC_MIN, Check, Run, Which, check_prerequisites, parse_version, run_command
@@ -128,10 +135,12 @@ def default_compiler_check(platform: str, which: Which, run: Run, env: Mapping[s
 
 
 def config_check(root: Path) -> Check:
-    """Whether a coney.local.toml applies; the tools work without one, with the workspace defaults."""
+    """Whether a coney.local.toml applies; the tools work without one, with the workspace defaults
+    (`config.workspace_root`: beside the main checkout in a workspace, `<clone>-workspace` beside a plain clone)."""
     path = local_config_file(root)
-    hint = "optional: copy coney.local.example.toml to coney.local.toml, or run bootstrap (docs/guides/workspace.md)"
-    return Check("coney.local.toml", path is not None, str(path) if path else "none (defaults are used)", hint, False)
+    hint = "optional: only to change a default (docs/guides/workspace.md#local-config)"
+    detail = str(path) if path else f"none (defaults are used, in {workspace_root(root)})"
+    return Check("coney.local.toml", path is not None, detail, hint, False)
 
 
 def ghidra_checks(install: Path, project: GhidraProject) -> list[Check]:
@@ -245,12 +254,9 @@ def run(cwd: Path, disc_arg: str | None) -> int:
     disc, problem = _open_disc(disc_arg, paths.get("game_dir"))
     discs = [problem] if problem is not None else disc_checks(disc)
 
-    main = main_checkout(root)
-    install = (
-        paths.get("ghidra_install")
-        or (main / ".." / ".." / "tools" / f"ghidra_{workspace_fetch.GHIDRA_VERSION}_PUBLIC").resolve()
-    )
-    projects = paths.get("ghidra_projects") or (main / ".." / ".." / "ghidra").resolve()
+    ghidra = f"tools/ghidra_{workspace_fetch.GHIDRA_VERSION}_PUBLIC"
+    install = paths.get("ghidra_install") or workspace_folder(root, ghidra)
+    projects = paths.get("ghidra_projects") or workspace_folder(root, "ghidra")
     research = [check for check in found if not check.required]
     research += ghidra_checks(install, GhidraProject(projects, PROJECT_NAME))
     research.append(port_check(GHIDRA_MCP_PORT, is_listening, _ghidra_server_answers))

@@ -27,7 +27,13 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    workspace_folder,
+)
 from coney_tools.conventions import Clips, load_conventions
 
 #: A clip's file name: letters, digits, '.', '_' and '-', ending in .mp4 (no path, no user or machine name).
@@ -115,9 +121,9 @@ def clip_rules(cwd: Path | None = None) -> Clips:
 
 
 def scratch_root(cwd: Path | None = None) -> Path:
-    """The workspace's shared scratch folder: `../../scratch` beside the main checkout (worktrees share it)."""
-    main = main_checkout(find_repo_root(cwd or Path.cwd()))
-    return (main / ".." / ".." / "scratch").resolve()
+    """The workspace's shared scratch folder: `../../scratch` beside the main checkout (worktrees share it), or the
+    one in `<clone>-workspace` beside a plain clone (`config.workspace_root`)."""
+    return workspace_folder(find_repo_root(cwd or Path.cwd()), "scratch")
 
 
 def git_checkout_around(path: Path) -> Path | None:
