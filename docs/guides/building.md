@@ -387,6 +387,8 @@ no second copy, and `coney-tools repo audit --files` fails a pull request when t
 <!-- conventions:begin docs-only-paths -->
 - `docs/`: the folder and everything under it
 - `research/`: the folder and everything under it
+- `overrides/`: the folder and everything under it
+- `assets/art/`: the folder and everything under it
 - `*.md`: matching files at the top level only
 - `.github/*.md`: matching files directly in `.github/`
 - `.github/conventions.yml`: that file

@@ -174,8 +174,16 @@ def _git_commits(root):
     return commits, None
 
 
+# Files that live outside `docs/` and are served at the same path in the site: the home page's artwork, kept in
+# `assets/art/` so the launcher can use the one copy too.
+_SERVED_ASSETS = ("assets/art/hero.webp", "assets/art/hero.jpg")
+
+
 def on_files(files, config):
-    """Adds the virtual `changelog.md` page and the progress badge files, so no generated file is committed."""
+    """Adds the virtual `changelog.md` page, the progress badge files and the shared artwork.
+
+    None of them is a committed file under `docs/`: the first two are generated, the artwork is served from `assets/`.
+    """
     # Imported here so the rendering function can be tested without MkDocs installed.
     from mkdocs.exceptions import PluginError
     from mkdocs.structure.files import File
@@ -188,6 +196,10 @@ def on_files(files, config):
         raise PluginError(f"progress: {error}") from error
     for uri, text in progress_badge_files(_progress_state).items():
         files.append(File.generated(config, uri, content=text))
+    for uri in _SERVED_ASSETS:
+        if not (root / uri).is_file():
+            raise PluginError(f"the home page's artwork is missing: {uri} (docs/guides/writing-docs.md, The home page)")
+        files.append(File(uri, str(root), config["site_dir"], config["use_directory_urls"]))
     commits, note = _git_commits(root)
     content = render_changelog(commits or [], config.get("repo_url"), note)
     files.append(File.generated(config, "changelog.md", content=content))

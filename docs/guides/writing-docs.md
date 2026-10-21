@@ -34,6 +34,36 @@ request, and a push to `main` also deploys that build to GitHub Pages (the `depl
 always those of `main`. There is nothing to run by hand; a page appears online a minute or two after its commit
 reaches `main`. Pull requests and other branches build the site as a check but never publish it.
 
+## The home page {#home-page}
+
+`docs/index.md` is the site's landing page: a full-height hero over a painting, then the page's own content. The hero's
+bottom blurs and fades into the page background, and as you scroll the art drifts at a slower pace than the page, the
+fade grows upwards and the text lifts and fades out, while the header takes its colour. The design follows the home page
+of Material for MkDocs; the files are Coney's own:
+
+| File | What it holds |
+| --- | --- |
+| `docs/index.md` | The page's text, and in its front matter (`template: home.html`, `hero:`) the hero's heading, tagline, buttons, art path, crop and credit |
+| `overrides/home.html` | The template (`theme.custom_dir` in `mkdocs.yml`): the hero's markup around the page content |
+| `docs/stylesheets/home.css` | The look and the effect, every rule scoped to a page that has a hero |
+| `docs/javascripts/home.js` | One scroll listener that writes how far the hero has scrolled (0 to 1) into `--coney-p`; the stylesheet does the rest |
+| `assets/art/hero.webp`, `hero.jpg` | The artwork, shared with the launcher ([LEGAL.md](repo:LEGAL.md#site-and-launcher-artwork)) |
+
+- **The art.** Replace `assets/art/hero.webp` and its fallback `assets/art/hero.jpg` with the new picture, same names,
+  16:9, about 1920 x 1080 and under 512 KB each (the large-file check, which is never excluded). The art is
+  `object-fit: cover`, so a phone shows its middle: set `hero.position` in the front matter (`50% 30%` is x and y) to
+  keep the faces in view. A different file name is the `hero.image` front matter line, without the extension.
+  `mkdocs_hooks.py` serves the two files from `assets/art/` (the build fails if one is missing), so there is one copy.
+- **The buttons.** Each `hero.actions` entry is `page:` (a page's path under `docs/`; a page that is not in the
+  navigation fails the build) or `repo: true` (the repository's address, which the build works out, so no file writes
+  it). `primary: true` fills the button.
+- **The text.** It sits above the fade, in light type, whatever the palette: the art is dark and a scrim darkens the
+  top and left of it. The artist's credit in `hero.credit` links to the licence note.
+- **Reduced motion.** With `prefers-reduced-motion` nothing moves: the hero is still and keeps the fade at its bottom.
+  Only the header's colour still follows the scroll, so that its text stays readable.
+- **Not Material's own parallax.** Material's page scrolls inside a 3D-transformed container; this one scrolls the
+  page, so the header, search, the back-to-top button, instant navigation and anchors behave as on every other page.
+
 ## Page kinds
 
 Each kind of document has one place and one set of rules. Every page on this site is a living document, one per

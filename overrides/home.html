@@ -1,0 +1,74 @@
+{#-
+  The home page: a full-height hero over the site's artwork that fades into the page below it.
+
+  Applied to docs/index.md by its front matter (`template: home.html`). The hero's title, pitch, buttons, art and
+  credit all come from that front matter, so nothing here is page text. The design follows the home page of
+  Material for MkDocs (MIT licence, Copyright (c) 2016-2025 Martin Donath): a hero over a full-bleed image with the
+  header and tabs on top of it, and the page content continuing underneath. The markup, styles and script are
+  written for Coney; see docs/guides/writing-docs.md ("The home page").
+-#}
+{% extends "main.html" %}
+
+{% set hero = page.meta.hero or {} %}
+{% set art = hero.image or "assets/art/hero" %}
+
+{% block extrahead %}
+  {{ super() }}
+  {# The art is the page's largest paint: start fetching it before the stylesheet and script are done. #}
+  <link rel="preload" as="image" type="image/webp" href="{{ (art ~ '.webp') | url }}" fetchpriority="high">
+{% endblock %}
+
+{% block hero %}
+  <section class="coney-hero" data-coney-hero aria-label="Introduction"
+           style="--coney-hero-position: {{ hero.position or '50% 35%' }}">
+    <div class="coney-hero__media" aria-hidden="true">
+      <picture>
+        <source type="image/webp" srcset="{{ (art ~ '.webp') | url }}">
+        <img src="{{ (art ~ '.jpg') | url }}" alt="" width="1920" height="1080" fetchpriority="high"
+             decoding="async" draggable="false">
+      </picture>
+    </div>
+    <div class="coney-hero__scrim" aria-hidden="true"></div>
+    <div class="coney-hero__blur" aria-hidden="true"></div>
+    <div class="coney-hero__fade" aria-hidden="true"></div>
+    <div class="coney-hero__inner">
+      <div class="coney-hero__teaser md-typeset">
+        <h1>{{ hero.heading or config.site_name }}</h1>
+        <p>{{ hero.tagline or config.site_description }}</p>
+        <div class="coney-hero__actions">
+          {% for action in hero.actions or [] %}
+            {% if action.repo %}
+              {# The repository's address is worked out at build time (mkdocs_hooks.py), never written in a file. #}
+              {% if config.repo_url %}
+                <a href="{{ config.repo_url }}" class="md-button" title="{{ action.title or action.label }}">
+                  <span class="twemoji">{% include ".icons/fontawesome/brands/github.svg" %}</span>
+                  {{ action.label }}
+                </a>
+              {% endif %}
+            {% else %}
+              {# The target is a page's source path; a path that matches no page in the navigation fails the build. #}
+              {% set target = (nav.pages | selectattr("file.src_uri", "equalto", action.page) | first) %}
+              <a href="{{ target.url | url }}" class="md-button{% if action.primary %} md-button--primary{% endif %}"
+                 title="{{ target.title | e }}">
+                {{ action.label }}
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% if hero.credit %}
+      <a class="coney-hero__credit" href="{{ (config.repo_url ~ '/blob/main/LEGAL.md#site-and-launcher-artwork') if config.repo_url else '#' }}"
+         title="Where this artwork comes from">{{ hero.credit }}</a>
+    {% endif %}
+    <a class="coney-hero__more" href="#coney-start" aria-label="Scroll to the content">
+      {% include ".icons/material/chevron-down.svg" %}
+    </a>
+  </section>
+{% endblock %}
+
+{# The page's own content follows the hero; this anchor is where the scroll arrow goes. #}
+{% block content %}
+  <span id="coney-start"></span>
+  {{ super() }}
+{% endblock %}

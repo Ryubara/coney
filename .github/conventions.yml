@@ -55,6 +55,8 @@ paths:
   docs_only:
     - "docs/"
     - "research/"
+    - "overrides/"
+    - "assets/art/"
     - "*.md"
     - ".github/*.md"
     - ".github/conventions.yml"

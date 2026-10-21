@@ -1,0 +1,357 @@
+/*
+ * The home page (overrides/home.html, docs/javascripts/home.js; docs/guides/writing-docs.md, "The home page").
+ *
+ * A full-height hero whose artwork drifts at a slower pace than the page, with its bottom blurring and fading into
+ * the page background as you scroll. The look follows the home page of Material for MkDocs (MIT licence,
+ * Copyright (c) 2016-2025 Martin Donath); the rules are written for Coney. Every rule is scoped to a page that has a
+ * hero, so the stylesheet changes nothing elsewhere.
+ *
+ * The script writes one number, --coney-p (0 at the top, 1 once the hero is scrolled past), on the root element.
+ * Everything that moves is a function of it and only uses transform and opacity, so the browser animates it on the
+ * GPU. With prefers-reduced-motion nothing moves: the hero is still, with the same fade at its bottom, and only the
+ * header's colour still follows the number, so that its text stays readable over the page below.
+ */
+
+/* The hero is a dark picture whatever the palette, so its text and controls are light in both. */
+.coney-hero {
+  --coney-hero-shift: 35svh; /* how far the art lags behind the page by the time the hero is scrolled past */
+  background-color: #14100f; /* shown for a moment before the art arrives */
+  color: #fff;
+  height: 100vh; /* fallback for browsers without svh */
+  height: 100svh;
+  isolation: isolate;
+  margin-top: -2.4rem; /* the hero starts under the header */
+  min-height: 30rem;
+  overflow: hidden;
+  position: relative;
+}
+
+/* The art is taller than the hero by the shift, so moving it down never uncovers an edge. */
+.coney-hero__media {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: calc(var(--coney-hero-shift) * -1);
+  transform: translate3d(0, calc(var(--coney-p, 0) * var(--coney-hero-shift)), 0);
+  will-change: transform;
+}
+
+.coney-hero__media img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--coney-hero-position, 50% 35%);
+  width: 100%;
+}
+
+/* Darkens the top, for the header and tabs, and the left, for the text, over art that is busy. */
+.coney-hero__scrim {
+  background:
+    linear-gradient(to bottom, rgb(10 8 8 / 70%), rgb(10 8 8 / 0%) 14rem),
+    linear-gradient(to right, rgb(10 8 8 / 78%), rgb(10 8 8 / 30%) 55%, rgb(10 8 8 / 0%)),
+    linear-gradient(to top, rgb(10 8 8 / 55%), rgb(10 8 8 / 0%) 60%);
+  inset: 0;
+  position: absolute;
+}
+
+/*
+ * The bottom of the art: a blur that grows towards the edge (a backdrop blur under a mask), then a fade into the
+ * page background, so the picture dissolves into the content below. Scrolling stretches both upwards.
+ */
+.coney-hero__blur,
+.coney-hero__fade {
+  bottom: 0;
+  height: 48%;
+  left: 0;
+  position: absolute;
+  right: 0;
+  transform: scaleY(calc(1 + var(--coney-p, 0) * 0.7));
+  transform-origin: bottom;
+}
+
+.coney-hero__blur {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 75%);
+  mask-image: linear-gradient(to bottom, transparent, #000 75%);
+}
+
+.coney-hero__fade {
+  background: linear-gradient(to bottom, transparent, var(--md-default-bg-color) 96%);
+  /* Eased stops where color-mix exists: a straight two-colour ramp shows a visible band. */
+  background:
+    linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--md-default-bg-color) 12%, transparent) 20%,
+      color-mix(in srgb, var(--md-default-bg-color) 40%, transparent) 45%,
+      color-mix(in srgb, var(--md-default-bg-color) 78%, transparent) 72%,
+      var(--md-default-bg-color) 96%
+    );
+}
+
+/* The text sits above the fade and, as the page scrolls, lifts and fades out before the hero is gone. */
+.coney-hero__inner {
+  bottom: clamp(5.5rem, 24svh, 15rem);
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.coney-hero__teaser {
+  margin: 0 auto;
+  max-width: 61rem; /* the page grid's width, so the text lines up with the content below */
+  opacity: max(0, calc(1 - var(--coney-p, 0) * 1.8));
+  padding: 0 0.8rem;
+  transform: translate3d(0, calc(var(--coney-p, 0) * -3rem), 0);
+}
+
+.coney-hero__teaser h1 {
+  color: inherit;
+  font-size: clamp(2.4rem, 7vw + 0.5rem, 4.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  margin: 0 0 0.6rem;
+}
+
+.coney-hero__teaser p {
+  font-size: clamp(0.8rem, 1.6vw + 0.4rem, 1.05rem);
+  margin: 0;
+  max-width: 26rem;
+}
+
+.coney-hero__teaser h1,
+.coney-hero__teaser p {
+  text-shadow: 0 0 0.4rem rgb(10 8 8 / 70%), 0 0.05rem 0.8rem rgb(10 8 8 / 60%);
+}
+
+.coney-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.coney-hero__actions .md-button {
+  background-color: rgb(10 8 8 / 35%);
+  border-color: rgb(255 255 255 / 85%);
+  border-radius: 1.2rem;
+  color: #fff;
+  margin: 0;
+  transition: background-color 125ms, border-color 125ms, color 125ms;
+}
+
+.coney-hero__actions .md-button:focus,
+.coney-hero__actions .md-button:hover {
+  background-color: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+}
+
+.coney-hero__actions .md-button--primary {
+  background-color: #fff;
+  border-color: #fff;
+  color: var(--md-primary-fg-color--dark);
+}
+
+.coney-hero__actions .md-button .twemoji {
+  margin-right: 0.2rem;
+}
+
+/* The artist's credit, small, in the corner of the art. */
+.coney-hero__credit {
+  background-color: rgb(10 8 8 / 55%);
+  border-radius: 0.1rem;
+  bottom: 0.8rem;
+  color: rgb(255 255 255 / 85%);
+  font-size: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  position: absolute;
+  right: 0.8rem;
+  transition: color 125ms, background-color 125ms;
+}
+
+.coney-hero__credit:focus,
+.coney-hero__credit:hover {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+}
+
+/* A hint that there is more below the fold. It bobs gently and goes away with the text. */
+.coney-hero__more {
+  bottom: 1.6rem;
+  color: var(--md-default-fg-color);
+  display: block;
+  left: 50%;
+  margin-left: -0.6rem;
+  opacity: max(0, calc(1 - var(--coney-p, 0) * 4));
+  position: absolute;
+}
+
+.coney-hero__more svg {
+  display: block;
+  fill: currentcolor;
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .coney-hero__more svg {
+    animation: coney-bounce 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
+@keyframes coney-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(0.4rem);
+  }
+}
+
+/*
+ * The header and the tabs sit on the art, then the header takes its usual background over the first quarter of the
+ * hero: white text over the light end of the fade would not be readable. Browsers without color-mix keep it solid.
+ */
+body:has(.coney-hero) .md-header {
+  background-color: color-mix(in srgb, var(--md-primary-fg-color) calc(min(1, var(--coney-p, 0) * 4) * 100%), transparent);
+}
+
+@supports not (background-color: color-mix(in srgb, red 50%, transparent)) {
+  body:has(.coney-hero) .md-header {
+    background-color: var(--md-primary-fg-color);
+  }
+}
+
+body:has(.coney-hero) .md-tabs {
+  background-color: transparent;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 2.4rem;
+  z-index: 1;
+}
+
+/* The page's own content: no sidebars (the navigation is the tabs and the cards), room to breathe. */
+body:has(.coney-hero) .md-main__inner {
+  margin-top: 0;
+}
+
+@media screen and (min-width: 60em) {
+  body:has(.coney-hero) .md-sidebar--secondary {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 76.25em) {
+  body:has(.coney-hero) .md-sidebar--primary {
+    display: none;
+  }
+}
+
+/* The hero shows the title, so the page's own heading is not repeated. */
+body:has(.coney-hero) .md-content__inner > h1 {
+  display: none;
+}
+
+body:has(.coney-hero) .md-content__inner {
+  margin-bottom: 0;
+  padding-bottom: 3rem;
+}
+
+body:has(.coney-hero) .md-content__inner::before {
+  display: none;
+}
+
+body:has(.coney-hero) .md-content__inner > h2 {
+  font-weight: 700;
+  margin-top: 2.4em;
+}
+
+body:has(.coney-hero) .md-content__inner > h1 + h2 {
+  margin-top: 1.2em;
+}
+
+/* Cards on the home page keep Material's grid; they only get a stronger hover and a rise as they scroll in. */
+body:has(.coney-hero) .grid.cards > ul > li,
+body:has(.coney-hero) .grid.cards > ol > li {
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+
+body:has(.coney-hero) .grid.cards > ul > li:hover,
+body:has(.coney-hero) .grid.cards > ol > li:hover {
+  transform: translateY(-2px);
+}
+
+body:has(.coney-hero) .grid.cards > ul > li > p:first-child .twemoji {
+  color: var(--md-primary-fg-color);
+}
+
+body[data-md-color-scheme="slate"]:has(.coney-hero) .grid.cards > ul > li > p:first-child .twemoji {
+  color: var(--md-accent-fg-color);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    body:has(.coney-hero) .grid.cards > ul > li {
+      animation: coney-rise linear backwards;
+      animation-range: entry 0% entry 45%;
+      animation-timeline: view();
+    }
+  }
+}
+
+@keyframes coney-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Phones: a shorter shift, the art centred on the figures and the text clear of the fade. */
+@media screen and (max-width: 44.984375em) {
+  .coney-hero {
+    --coney-hero-shift: 20svh;
+  }
+
+  .coney-hero__inner {
+    bottom: clamp(5rem, 20svh, 9rem);
+  }
+
+  /* The credit takes the corner; there is no room beside it for the arrow. */
+  .coney-hero__more {
+    display: none;
+  }
+
+  .coney-hero__scrim {
+    background:
+      linear-gradient(to bottom, rgb(10 8 8 / 70%), rgb(10 8 8 / 0%) 10rem),
+      linear-gradient(to top, rgb(10 8 8 / 80%), rgb(10 8 8 / 35%) 55%, rgb(10 8 8 / 0%));
+  }
+}
+
+/* Reduced motion: no drift, no lift, no bounce. The fade at the bottom stays, as a picture, not a movement. */
+@media (prefers-reduced-motion: reduce) {
+  .coney-hero__media,
+  .coney-hero__teaser,
+  .coney-hero__blur,
+  .coney-hero__fade {
+    transform: none;
+    will-change: auto;
+  }
+
+  .coney-hero__teaser,
+  .coney-hero__more {
+    opacity: 1;
+  }
+}
