@@ -61,6 +61,14 @@ const std::vector<std::byte>& installed(const MemoryInstallFolder& folder, const
     return it->second;
 }
 
+// The request for installing `disc` against the fixture release's list.
+InstallRequest requestFor(const Disc& disc, const FixtureRelease& release) {
+    InstallRequest request;
+    request.ps2 = &disc;
+    request.known = release.known();
+    return request;
+}
+
 } // namespace
 
 TEST_CASE("identifyDisc names the known disc and refuses others with a reason", "[install]") {
@@ -114,6 +122,8 @@ TEST_CASE("an install copies every file as it is, makes the layout and writes th
     const FixtureRelease release(releaseFiles());
     const Disc disc = discFolder(dir, release);
     MemoryInstallFolder folder;
+    InstallRequest withVersion = requestFor(disc, release);
+    withVersion.version = "9.9.9";
     std::vector<InstallStep> steps;
     std::uint64_t lastDone = 0;
     bool monotonic = true;
@@ -125,8 +135,7 @@ TEST_CASE("an install copies every file as it is, makes the layout and writes th
         lastDone = p.done;
         return true;
     };
-    const auto report =
-        coney::install::install(folder, {.ps2 = &disc, .known = release.known(), .version = "9.9.9"}, progress);
+    const auto report = coney::install::install(folder, withVersion, progress);
     REQUIRE(report.has_value());
     CHECK_FALSE(report->cancelled);
     CHECK(report->copied == 4);
@@ -162,7 +171,7 @@ TEST_CASE("an ISO image installs the same files and the same manifest but for it
     auto disc = Disc::open(dir.write("game.iso", image));
     REQUIRE(disc.has_value());
     MemoryInstallFolder folder;
-    const auto report = coney::install::install(folder, {.ps2 = &*disc, .known = release.known()}, {});
+    const auto report = coney::install::install(folder, requestFor(*disc, release), {});
     REQUIRE(report.has_value());
     CHECK(report->copied == 4);
     CHECK(installed(folder, "SUBDIR/BFW.SND") == files[3].second);
@@ -174,7 +183,7 @@ TEST_CASE("running the install again keeps what is there and writes the same man
     const FixtureRelease release(releaseFiles());
     const Disc disc = discFolder(dir, release);
     MemoryInstallFolder folder;
-    const InstallRequest request{.ps2 = &disc, .known = release.known()};
+    const InstallRequest request = requestFor(disc, release);
     const auto first = coney::install::install(folder, request, {});
     REQUIRE(first.has_value());
     const auto second = coney::install::install(folder, request, {});
@@ -189,7 +198,7 @@ TEST_CASE("a cancelled install keeps only finished files, and the next run finis
     const FixtureRelease release(releaseFiles());
     const Disc disc = discFolder(dir, release);
     MemoryInstallFolder folder;
-    const InstallRequest request{.ps2 = &disc, .known = release.known()};
+    const InstallRequest request = requestFor(disc, release);
     // Cancel once the large file is part copied.
     const auto cancelInSound = [](const InstallProgress& p) {
         return !(p.file == "game/ps2/IOP/BFW.SND" && p.fileDone > 0 && p.fileDone < p.fileSize);
@@ -216,7 +225,7 @@ TEST_CASE("a file whose SHA-1 is not the known one is not kept", "[install]") {
     const Disc disc = discFolder(dir, release);
     release.setSha1(2, "0000000000000000000000000000000000000000");
     MemoryInstallFolder folder;
-    const auto report = coney::install::install(folder, {.ps2 = &disc, .known = release.known()}, {});
+    const auto report = coney::install::install(folder, requestFor(disc, release), {});
     REQUIRE_FALSE(report.has_value());
     CHECK(report.error().code == ErrorCode::Invalid);
     CHECK(report.error().message.find("game/ps2/WARRIORS.WAD: SHA-1") != std::string::npos);
@@ -230,15 +239,16 @@ TEST_CASE("verifying an install copies again a file that changed since", "[insta
     const FixtureRelease release(releaseFiles());
     const Disc disc = discFolder(dir, release);
     MemoryInstallFolder folder;
-    REQUIRE(coney::install::install(folder, {.ps2 = &disc, .known = release.known()}, {}).has_value());
+    REQUIRE(coney::install::install(folder, requestFor(disc, release), {}).has_value());
     folder.files["game/ps2/WARRIORS.WAD"][10] ^= std::byte{0xFF}; // same size, other bytes
 
-    const auto quick = coney::install::install(folder, {.ps2 = &disc, .known = release.known()}, {});
+    const auto quick = coney::install::install(folder, requestFor(disc, release), {});
     REQUIRE(quick.has_value());
     CHECK(quick->kept == 4); // without verifying, the size is all that is checked
 
-    const auto verified =
-        coney::install::install(folder, {.ps2 = &disc, .verifyInstalled = true, .known = release.known()}, {});
+    InstallRequest verify = requestFor(disc, release);
+    verify.verifyInstalled = true;
+    const auto verified = coney::install::install(folder, verify, {});
     REQUIRE(verified.has_value());
     CHECK(verified->copied == 1);
     CHECK(verified->kept == 3);
@@ -251,7 +261,7 @@ TEST_CASE("an install refuses a folder without the space for the disc", "[instal
     const Disc disc = discFolder(dir, release);
     MemoryInstallFolder folder;
     folder.free = 1U << 20;
-    const auto report = coney::install::install(folder, {.ps2 = &disc, .known = release.known()}, {});
+    const auto report = coney::install::install(folder, requestFor(disc, release), {});
     REQUIRE_FALSE(report.has_value());
     CHECK(report.error().code == ErrorCode::Io);
     CHECK(report.error().message.find("free") != std::string::npos);
@@ -264,7 +274,7 @@ TEST_CASE("a drive that fills up mid-copy leaves no part file", "[install]") {
     const Disc disc = discFolder(dir, release);
     MemoryInstallFolder folder;
     folder.writeLimit = 1U << 20;
-    const auto report = coney::install::install(folder, {.ps2 = &disc, .known = release.known()}, {});
+    const auto report = coney::install::install(folder, requestFor(disc, release), {});
     REQUIRE_FALSE(report.has_value());
     CHECK(report.error().code == ErrorCode::Io);
     CHECK(folder.endingWith(".part").empty());
@@ -277,8 +287,9 @@ TEST_CASE("Coney's own files are copied into the root and listed with their SHA-
     const Disc disc = discFolder(dir, release);
     const auto program = dir.write("bin/coney.exe", payload(64, 9));
     MemoryInstallFolder folder;
-    const auto report =
-        coney::install::install(folder, {.ps2 = &disc, .programFiles = {program}, .known = release.known()}, {});
+    InstallRequest withProgram = requestFor(disc, release);
+    withProgram.programFiles = {program};
+    const auto report = coney::install::install(folder, withProgram, {});
     REQUIRE(report.has_value());
     CHECK(folder.files.at("coney.exe") == payload(64, 9));
     coney::Sha1 sha;

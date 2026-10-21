@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "install/installer.h"
 
+#include <algorithm>
 #include <format>
 #include <map>
 #include <optional>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 #include "core/sha1.h"
 #include "fileio/file_stream.h"
@@ -227,7 +229,9 @@ std::expected<InstallReport, Error> install(InstallFolder& folder, const Install
     const io::Disc& disc = *request.ps2;
     Tracker tracker{progress, {}};
     if (!tracker.report()) {
-        return InstallReport{.cancelled = true};
+        InstallReport cancelled;
+        cancelled.cancelled = true;
+        return cancelled;
     }
 
     // Identify the disc before writing anything.

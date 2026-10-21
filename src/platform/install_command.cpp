@@ -59,8 +59,11 @@ int runInstallCommand(const Options& options, std::span<const install::KnownDisc
         return true;
     };
 
-    install::InstallRequest request{
-        .ps2 = &*disc, .programFiles = programFiles, .verifyInstalled = options.verifyInstall, .known = known};
+    install::InstallRequest request;
+    request.ps2 = &*disc;
+    request.programFiles = programFiles;
+    request.verifyInstalled = options.verifyInstall;
+    request.known = known;
     const auto report = install::install(**folder, request, progress);
     if (!report) {
         say(out, report.error().message);
