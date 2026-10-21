@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.request
 import zipfile
 from collections.abc import Callable, Sequence
@@ -256,10 +257,37 @@ def fetch_tool(
     pins = list(pins) if pins is not None else PINS[tool](platform)
     files = [] if tool in CLONED else [fetch_file(pin, cache, download) for pin in pins]
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=dest.parent, prefix=f".{dest.name}-") as temp:
+    with tempfile.TemporaryDirectory(dir=dest.parent, prefix=f".{dest.name}-", ignore_cleanup_errors=True) as temp:
         staging = Path(temp) / dest.name
         _install(tool, pins, files, staging, platform)
-        staging.replace(dest)
+        move_into_place(staging, dest)
+
+
+#: How often, and how long apart, the final rename is tried when Windows refuses it.
+MOVE_ATTEMPTS = 20
+MOVE_WAIT_SECONDS = 1.5
+
+
+def move_into_place(
+    staging: Path,
+    dest: Path,
+    rename: Callable[[Path, Path], object] = Path.replace,
+    wait: Callable[[float], None] = time.sleep,
+) -> None:
+    """Rename the finished `staging` folder to `dest`. On Windows a virus scanner still reading the files just
+    unpacked (the PCSX2-MCP release holds thousands, in node_modules) makes the rename fail with "Access is denied"
+    for a few seconds, so it is tried again, at most MOVE_ATTEMPTS times (about half a minute)."""
+    for attempt in range(1, MOVE_ATTEMPTS + 1):
+        try:
+            rename(staging, dest)
+            return
+        except PermissionError as error:
+            if attempt == MOVE_ATTEMPTS:
+                raise ConfigError(
+                    f"could not move {staging} to {dest} after {MOVE_ATTEMPTS} tries ({error}); "
+                    "something holds its files open, such as a virus scanner: run the command again"
+                ) from error
+            wait(MOVE_WAIT_SECONDS)
 
 
 def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, platform: str) -> None:
