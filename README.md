@@ -11,8 +11,37 @@ runs levels as far as the [missions](docs/missions/index.md) page records.
 ## What Coney is
 
 Coney aims to run the whole of *The Warriors* natively on Windows, Linux and macOS, from a disc you own. It is a
-functional reimplementation: new C++ code that behaves like the original. Engineers study the original game, write
-down what they learn and implement it. The rules are in [LEGAL.md](LEGAL.md).
+functional reimplementation: new C++ code that behaves like the original.
+
+### How Coney is made
+
+Projects that bring old games to new platforms work in one of three ways:
+
+- A **decompilation** rewrites the original's machine code as source that compiles back to the same binary. It is
+  exact, but the result stays close to the original console and its design.
+- A **static recompilation** translates the binary itself into code for another machine. It runs soonest, but the
+  translated code is hard to read or change, and the PS2's graphics hardware makes it especially hard there.
+- A **reimplementation**, which is what Coney is, writes new code that behaves the same.
+
+Coney's contributors read the original in Ghidra and watch it run in PCSX2, so Coney follows the same rules, timings
+and maths. The code is our own: written in Coney's own structure and names, on our own engine, with no part of the
+original's code, data or binary inside it. It is not a clean-room reimplementation: the people writing the code also
+read the original.
+
+What this gives us:
+
+- **A native game, not an emulated one**, on Windows, Linux and macOS.
+- **Room to grow:** co-op over a network, higher frame rates, widescreen and mods need code that was designed for
+  them, which a translated or matched binary is not.
+- **Code anyone can read and change**, under our own licence.
+
+What it costs:
+
+- **Faithfulness has to be checked, not assumed.** Each ported function cites the original's address, every change
+  to one is compared side by side with the original, and tests check Coney against the running game.
+- **It takes longer:** every system has to be understood, not just matched or translated.
+
+The rules we work under are in [LEGAL.md](LEGAL.md).
 
 ## Progress
 

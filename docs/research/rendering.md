@@ -157,7 +157,7 @@ The second pass is the human material's MatFX **dual** texture, a shared **blood
 health *h* in percent: 60 and above `charblood_d1`, 30-60 `charblood_d2`, below 30 `charblood_d3` (resource manager
 `+0x74` / `+0x78` / `+0x7c`, set with `RpMatFXMaterialSetDualTexture`, `0x00465810`). The blend word of the material's
 effect is `0x44` when *h* is below 90 and `W_GameState + 0x454` is 0, otherwise `0x45`, so a human at 90% health or
-more shows no blood. Confirmed (code) at `HumanRender_Draw` (`0x00174320`, read by the graphics engineer; the texture
+more shows no blood. Confirmed (code) at `HumanRender_Draw` (`0x00174320`, read for the graphics work; the texture
 names confirmed (runtime) in `level99`); `+0x454` is only ever written as 0, so it is a no-blood switch the retail
 game never sets (inferred). In the store view Rembrandt, under 90%, shows blood on his arms. Characters are lit per
 vertex (prelit plus the lights, [Lighting](lighting.md)); the vertex colours of both passes are equal.
@@ -204,8 +204,8 @@ everything, **including the radar and the HUD text**, which were drawn before it
 level, from the level script's `SetLevelColour`, not a constant; confirmed (runtime).
 `GameMode_DrawOverlays` (`0x00156658`) normally runs the screen effects after the HUD (`0x001b1688`) and its overlay
 flush and before the captions, which stay on top of the tint; it runs them before the HUD instead while
-`W_GameState + 0x268` is above 0 or a blur pulse runs in either view. Confirmed (code) at `0x00156658` (read by the
-graphics engineer) and confirmed (runtime) for the normal order; no caption was on screen in these views.
+`W_GameState + 0x268` is above 0 or a blur pulse runs in either view. Confirmed (code) at `0x00156658` (read for the
+graphics work) and confirmed (runtime) for the normal order; no caption was on screen in these views.
 
 **Per level** (confirmed (runtime), a GS dump of each level in play, PCSX2 2026-10-07; the script values read from
 the compiled level scripts). The fog colour and the clear colour are the level script's `SetFogColor(r, g, b)`

@@ -7,7 +7,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 `SLUS_212.15` has no symbols, but its `.rodata` holds 153 source paths of the form
 `c:/Warriors/Source/<Subsystem>/<File>.cpp` (152 `.cpp` files plus `Scripting/ScriptLua.inl`). This page uses them to
 say which address ranges of `.text` came from which original source file, and where the middleware (Lua, tolua,
-RenderWare, Bink, the SCE libraries, the C and C++ runtimes) sits. It is the index for every later engineer: before
+RenderWare, Bink, the SCE libraries, the C and C++ runtimes) sits. It is the index for every contributor who follows: before
 studying a subsystem, look up its range here.
 
 ## How the map was made {#method}

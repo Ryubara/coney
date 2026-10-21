@@ -20,8 +20,8 @@ hero:
 ## What Coney is
 
 Coney aims to run the whole of *The Warriors* natively, from a disc you own. It is a functional reimplementation: new
-C++ code that behaves like the original. Engineers study the original
-game, write down what they learn on the [research pages](research/overview.md) and implement it in Coney's own code,
+C++ code that behaves like the original. Contributors study the original game,
+write down what they learn on the [research pages](research/overview.md) and implement it in Coney's own code,
 and the [progress page](progress/index.md) measures how far that has come.
 
 ## Bring your own disc

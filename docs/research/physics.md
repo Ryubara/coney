@@ -898,7 +898,7 @@ code:
   reads its normals, six of which point the wrong way ([The normal tables](physics-kernels.md#the-normal-tables)); how a
   held weapon's
   strike sphere reaches `Car_OnHit` as kind 1 (its hit goes to the held object's contact handler).
-- **Names that do not fit** (kept, as other engineers gave them): `CollTri_ComputeEdgeNormals` (`0x00343b20`)
+- **Names that do not fit** (kept, as other contributors gave them): `CollTri_ComputeEdgeNormals` (`0x00343b20`)
   normalises the edges; `Ray_InfiniteCylinder` (`0x0034d938`) is a capsule; `SphereBox_SweepCorner` (`0x0034b040`) is
   the face-region step, `SphereBox_SweepFaceEdges` (`0x0034b7b0`) the corner-region step and `SphereBox_ToBoxSpace`
   (`0x0034baf0`) goes from the box to the world. The plate comments say what each does.
