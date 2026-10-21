@@ -1,0 +1,19 @@
+# The gang-combat pass (issue #273, 2026-10-21): what the waiting attackers of a fight do, read in the level99
+# sparring fight (scenario warriors_taunts). Research: docs/research/ai.md#fight-reposition (the taunts),
+# docs/research/ai.md#fight (Start and Resume: the first re-target) and docs/research/gang-fights.md#waiting.
+
+[hook.taunt-init]
+description = "Each TauntAction_Init (0x002fb0f0): the caller, the brain, its human, the kind (4 the downed man's own opponent, 3 a cheer) and the line (0 none). Event 0x15's gloat in Brain_DefaultOnEvent (0x00292d80) calls it at 0x00293428 (ra 0x00293430)."
+research = "docs/research/ai.md#fight-reposition"
+address = 0x002fb0f0
+# lui v1,0x54; li t2,0x1
+original = [0x3c030054, 0x240a0001]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "brain" }, { value = "[a1 + 0x0]", name = "human" }, { value = "a2", name = "kind" }, { value = "t0", name = "line" }]
+
+[hook.fight-retarget-due]
+description = "FightGoal_Process (0x002b3ab0) at the re-target test, just after it loads the goal's +0x14 (0x002b3c14): the goal, its brain, +0x14 (the time the re-target is due) and now (game time, ms), one entry per process call that reaches the test."
+research = "docs/research/ai.md#fight"
+address = 0x002b3c18
+# lw v0,-0x48cc(a1); lw v1,0x48(v0)
+original = [0x8ca2b734, 0x8c430048]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "goal" }, { value = "[s1 + 0x0]", name = "brain" }, { value = "[s1 + 0x14]", name = "due" }, { value = "[[0x0050b734] + 0x48]", name = "now" }]
