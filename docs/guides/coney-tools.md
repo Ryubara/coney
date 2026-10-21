@@ -1013,7 +1013,8 @@ line, and any failure makes the command exit 1:
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
 changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in
 agreement. When the build or tidy setup changed (`CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, the
-build workflow) CI checks every file, an hour's work; the command says so and checks the changed ones only.
+build workflow) the nightly CI run checks every file, an hour's work; the command says so and checks the changed ones
+only. Pull requests get no clang-tidy in CI, so this is their gate ([building](building.md#clang-tidy)).
 
 **How it runs clang-tidy.** With the repository's `.clang-tidy` and the `compile_commands.json` of `--build-dir`
 (every preset writes one; configuring is enough, no build, and a stale or missing entry is reported with the

@@ -310,7 +310,7 @@ def run_changed(
         "python": lambda: _step_python(root, changed),
     }
     if local_gate.needs_full_tidy_pass(changed) and "clang-tidy" in wanted:
-        print("note: the build or tidy setup changed: CI tidies every file, this run only the changed ones")
+        print("note: the build or tidy setup changed: nightly CI tidies every file, this run the changed ones only")
     failed = False
     for name in wanted:
         result = _timed(name, steps[name])

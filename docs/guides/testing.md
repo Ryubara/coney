@@ -335,15 +335,16 @@ the files you touched, and fix what it prints:
 uv run --project python coney-tools check changed
 ```
 
-It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files CI's pull-request job
-would check (a changed header through the `.cpp` files that include it), `mkdocs build --strict` when docs changed,
-ruff, pytest and mypy when `python/` or `.claude/` changed, and `repo check`; it needs a `build/dev` that was
-configured once (`coney-tools build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets
+It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files a pull request changes
+(a changed header through the `.cpp` files that include it; the only clang-tidy a pull request gets, as CI's runs
+nightly), `mkdocs build --strict` when docs changed, ruff, pytest and mypy when `python/` or `.claude/` changed, and
+`repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only --agent <id>`:
+configure, no build). It catches what MSVC lets
 through: a designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked
 `std::optional` access (`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the
 options. It does not replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC
-emits, macOS, the sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed
-files only.
+emits, macOS, the sanitizers and the nightly full clang-tidy pass; a change to the build setup is checked on its
+changed files only.
 
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
@@ -372,7 +373,7 @@ suite holds one for 20 to 40 minutes, so running it for every step makes everyon
 
 ### Continuous integration {#ci}
 
-CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers and clang-tidy, and runs the Python
+CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers (clang-tidy nightly), and runs the Python
 and docs checks. It is the gate for the platforms you are not on: do not run virtual-machine or cross-platform builds
 locally to stand in for it, and fix a red CI forward rather than leaving `main` red. Code that MSVC accepts but the
 others reject is the usual cause: see [Portability traps](conventions.md#portability-traps).
