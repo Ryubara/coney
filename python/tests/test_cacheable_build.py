@@ -58,3 +58,11 @@ def test_every_configure_preset_is_cacheable() -> None:
 
     visible = [name for name, preset in by_name.items() if not preset.get("hidden")]
     assert visible and all("cacheable" in inherited(name) for name in visible), visible
+
+
+def test_module_scanning_stays_off() -> None:
+    # Nothing uses C++ modules, and the scans cannot be cached: they were most of a cached build's step time
+    # (docs/guides/building.md#module-scanning). It is set before any target is made, so it covers every one.
+    text = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+    setting = text.index("set(CMAKE_CXX_SCAN_FOR_MODULES OFF)")
+    assert setting < text.index("include(deps)") and setting < text.index("add_subdirectory(")

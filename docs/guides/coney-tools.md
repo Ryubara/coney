@@ -1181,15 +1181,16 @@ given) runs on a *copy* of `build.ninja`, and the
 **causes** it names are counted: each "output x older than most recent input y", "output x doesn't exist" or "command
 line changed for x". A plain `ninja -n` is no use here: the globs make ninja want to re-run CMake first, and a dry run
 stops there having planned nothing; and a dry run on a copy plans too much, because it cannot ask a `restat` step
-whether its output really changed, so CMake's C++ dependency scan (one for the whole target, in front of every object)
-drags every object in with it: 410 planned steps for a touched source whose real build is 10. The causes are what a
-real build must do whatever the `restat` steps find: one per touched source, and one for each source that includes a
-touched header. For a test run, `ctest -N` with the same `-R` and `-L` counts the tests selected. A build with fewer
-than `build_fast_lane_steps` causes (default 50) or a filtered test run of at most `build_fast_lane_tests` tests
-(default 20) takes the **fast lane**: one extra slot of its own (`fast-1.claim/`, queue `queue-fast/`), so at most one
-such job runs at once, with a short queue of its own. A first build, a `--configure`, a build that cannot be measured
-(the manifest refresh failed, ninja printed no cause) and any test run without a filter take a main slot. A threshold of
-`0` turns the lane off. The summary line says what decided it ("fast lane, 2 steps out of date").
+whether its output really changed, and everything behind such a step is planned too (CMake's module dependency collation
+was one, before [module scanning](building.md#module-scanning) was turned off: 410 planned steps for a touched source
+whose real build was 10). The causes are what a real build must do whatever the `restat` steps find: one per touched
+source, and one for each source that includes a touched header. For a test run, `ctest -N` with the same `-R` and `-L`
+counts the tests selected. A build with fewer than `build_fast_lane_steps` causes (default 50) or a filtered test run of
+at most `build_fast_lane_tests` tests (default 20) takes the **fast lane**: one extra slot of its own (`fast-1.claim/`,
+queue `queue-fast/`), so at most one such job runs at once, with a short queue of its own. A first build, a
+`--configure`, a build that cannot be measured (the manifest refresh failed, ninja printed no cause) and any test run
+without a filter take a main slot. A threshold of `0` turns the lane off. The summary line says what decided it ("fast
+lane, 2 steps out of date").
 
 **One run per build folder.** Two runs in one build folder collide: a second build's link fails
 with `LNK1168` while the first's tests hold `coney_tests.exe`, and the logs and the dependency log are written by both.

@@ -233,8 +233,8 @@ def count_dirty_steps(output: str) -> int | None:
     cannot be told (an error, no output, ninja stopping to re-run CMake, or steps planned with no reason given).
 
     The planned steps ("[n/m]") are no measure: a dry run cannot ask a `restat` step whether its output really changed,
-    so it plans everything behind one (CMake's C++ dependency scan is one, and it stands in front of every object) and
-    reports 410 steps for one touched source whose real build is 10. The explanation names the **cause** of each
+    so it plans everything behind one (CMake's dependency collation was one, in front of every object, before module
+    scanning was turned off: 410 planned steps for one touched source whose real build was 10). The explanation names the **cause** of each
     out-of-date step ("output x older than most recent input y", "output x doesn't exist", "command line changed for
     x"), and a step dirty only because something before it ran just says "x is dirty". The causes are what a real
     build must do whatever the restat steps find: one per touched source, and a header's includers one each
