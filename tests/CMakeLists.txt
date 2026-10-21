@@ -11,6 +11,7 @@ add_executable(coney_tests
     core/game_random_test.cpp
     core/game_timer_test.cpp
     core/input_script_test.cpp
+    core/json_test.cpp
     core/interpolation_test.cpp
     core/name_hash_test.cpp
     core/parse_number_test.cpp

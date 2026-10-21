@@ -15,6 +15,7 @@ add_library(coney_core STATIC
     core/game_random.cpp
     core/game_timer.cpp
     core/input_script.cpp
+    core/json.cpp
     core/name_hash.cpp
     core/parse_number.cpp
     core/clip_recording.cpp
