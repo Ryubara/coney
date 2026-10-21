@@ -1239,7 +1239,7 @@ the checkout or not a page the check covers (`README.md`, a generated page).
 ```sh
 uv run --project python coney-tools build [--agent ID] [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
-    [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
+    [--lane auto|main] [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast|tidy]
@@ -1401,6 +1401,16 @@ queue `queue-fast/`), so at most one such job runs at once, with a short queue o
 `--configure`, a build that cannot be measured (the manifest refresh failed, ninja printed no cause) and any test run
 without a filter take a main slot. A threshold of `0` turns the lane off. The summary line says what decided it ("fast
 lane, 2 steps out of date").
+
+A filtered test run is also measured by **time**: one disc playthrough of a single test can hold a slot for half an
+hour, which the fast lane exists to prevent. When any test the filter selects has a recorded time, and those times add
+up to more than `build_fast_lane_test_seconds` (default 300; `0` turns the rule off), the run takes a main slot
+whatever its count, and says so ("1 test expected to take 25.0 min by its recorded time, ... so the main lane"). A test
+with no recorded time adds nothing, so a run of only such tests goes by its count. The times are ctest's own averages
+(`Testing/Temporary/CTestCostData.txt` in the build folder) and, because a build folder is often new, a copy kept per
+preset in `claims/test-costs.json` that every test run updates from its folder's file; the folder's own times win.
+`--lane main` sends any run, build and tests, to a main slot without measuring, for a job you know is long; the
+default, `--lane auto`, chooses as above.
 
 **One run per build folder.** Two runs in one build folder collide: a second build's link fails
 with `LNK1168` while the first's tests hold `coney_tests.exe`, and the logs and the dependency log are written by both.

@@ -788,6 +788,19 @@ def test_targets_reach_the_build_command_and_the_detached_child(
     assert main(["build", "--agent", "alice", "--detach", "--target", "coney"]) == 0
     command = spawned[0][0]
     assert command[command.index("--target") + 1] == "coney"
+    assert "--lane" not in command  # the default, auto, is not spelt out
+
+
+def test_lane_main_skips_the_measure_and_reaches_the_detached_child(
+    checkout: Path,
+    fake_toolchain: type[FakeToolchain],
+    spawned: list[tuple[list[str], Path, Path]],
+) -> None:
+    assert main(["build", "--agent", "alice", "--lane", "main"]) == 0
+    assert not any(c[0] == "ninja" and "-n" in c for c in fake_toolchain.commands)  # no dry run: nothing measured
+    assert main(["build", "--agent", "alice", "--detach", "--lane", "main"]) == 0
+    command = spawned[0][0]
+    assert command[command.index("--lane") + 1] == "main"
 
 
 @pytest.mark.parametrize("flag", ["--test", "--configure-only"])

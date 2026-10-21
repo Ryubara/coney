@@ -18,6 +18,10 @@ runs to its end: the budget only decides whether to keep waiting.
 
 Everything that touches the machine is behind `Toolchain` (running a command, capturing a short one), so the order of
 a run, the lane choice, the claims and the summary are tested with canned output.
+
+A filtered test run is small by its **count and its time**: one disc playthrough can hold a slot for half an hour, so a
+run whose selected tests' recorded times (test_costs.py) add up to more than the limit takes a main slot whatever its
+count. `--lane main` sends any run to a main slot.
 """
 
 from __future__ import annotations
@@ -47,6 +51,7 @@ from coney_tools.build_claims import (
 )
 from coney_tools.build_history import History, step_key
 from coney_tools.config import ConfigError
+from coney_tools.test_costs import COST_DATA, TestCosts, parse_test_names
 
 #: Exit code of a run that gave up waiting for a slot (EX_TEMPFAIL): do other work and try again later.
 EXIT_QUEUED = 75
@@ -560,6 +565,8 @@ class Options:
     #: Whether the disc tests have the disc (set by the caller, who passes it to the run's environment); None: the
     #: summary says nothing of it.
     disc: DiscTests | None = None
+    #: `main` sends both phases to a main slot without measuring (`--lane main`); None chooses by size.
+    lane: str | None = None
 
     @property
     def folder(self) -> Path:
@@ -610,6 +617,12 @@ class Context:
     cached: bool = False
     #: The summary line on the compiler cache after the build step (its hits and misses), or None for none.
     cache_report: Callable[[], str | None] | None = None
+    #: Each test's recorded time, read for the test lane and updated after a test run (test_costs.py); None: the lane
+    #: goes by the count alone.
+    test_costs: TestCosts | None = None
+    #: A filtered test run whose selected tests' recorded times add up to more seconds than this takes a main slot
+    #: (0: the count alone decides).
+    fast_test_seconds: float = 0.0
 
 
 @dataclass
@@ -823,6 +836,8 @@ def _choose_build_lane(options: Options, context: Context) -> tuple[str, int | N
     To measure, the manifest is first brought up to date for real (`ninja build.ninja`: it re-checks the globs, which
     is cheap, and re-runs CMake only when a CMake file or a glob changed, which the build would do first anyway); then
     a dry run on a copy of it counts the steps that are out of date by themselves (count_dirty_steps)."""
+    if options.lane == MAIN_LANE:
+        return MAIN_LANE, None
     if options.configure or options.configure_only or not context.configured or context.fast_steps <= 0:
         return MAIN_LANE, None
     code, _ = context.toolchain.capture(["ninja", "build.ninja"], options.folder, REFRESH_SECONDS)
@@ -843,12 +858,27 @@ def _ctest(options: Options, *more: str) -> list[str]:
 
 def _choose_test_lane(options: Options, context: Context) -> tuple[str, int | None]:
     """The lane of the test phase and how many tests the filter selects (None when unknown). Only a `-R` or `-L` filter
-    can be small; a full run always takes a main slot."""
+    can be small, by its count and, when any selected test has a recorded time, by those times; a full run, and any run
+    with `--lane main`, takes a main slot. The count is still listed with `--lane main`: a filter that selects nothing
+    fails before it waits."""
     if not options.filters:
         return MAIN_LANE, None
     code, output = context.toolchain.capture(_ctest(options, "-N", *options.filters), None)
     tests = count_ctest_tests(output) if code == 0 else None
+    if options.lane == MAIN_LANE:
+        return MAIN_LANE, tests
     small = tests is not None and 0 < tests <= context.fast_tests
+    if small and context.test_costs is not None and context.fast_test_seconds > 0:
+        costs = context.test_costs.load(options.preset, options.folder / COST_DATA)
+        known = [costs[name] for name in parse_test_names(output) if name in costs]
+        expected = sum(known)
+        if known and expected > context.fast_test_seconds:
+            context.emit(
+                f"measured: {len(known)} test{'s' if len(known) != 1 else ''} expected to take {_duration(expected)} "
+                f"by {'their' if len(known) != 1 else 'its'} recorded time, more than the fast lane's "
+                f"{_duration(context.fast_test_seconds)}, so the {MAIN_LANE} lane"
+            )
+            small = False
     return (FAST_LANE if small else MAIN_LANE), tests
 
 
@@ -968,6 +998,8 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     ran = phase.run([("test", command, test_line)])
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
+    if context.test_costs is not None:
+        context.test_costs.record(options.preset, options.folder / COST_DATA)
     _, code, seconds = ran[0]
     counts = f"{tests.passed} passed, {tests.failed_count} failed of {tests.total}"
     # ctest counts a skipped test as passed, so the skips are named: a run in which every disc test skipped must not

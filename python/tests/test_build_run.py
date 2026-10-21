@@ -26,6 +26,7 @@ from coney_tools.build_run import (
     jobs_for,
     parse_environment,
 )
+from coney_tools.test_costs import COST_DATA, TestCosts
 
 NOW = 1_800_000_000.0
 
@@ -471,6 +472,9 @@ class Run:
         self.toolchain.advance = self.advance
         #: The duration history the run reads and writes; None: none.
         self.history: History | None = None
+        #: The shared record of test times and the limit of a fast-lane test run in seconds; None and 0: none.
+        self.test_costs: TestCosts | None = None
+        self.fast_test_seconds = 0.0
         self.lines: list[str] = []
         self.log = io.StringIO()
         settings: dict[str, object] = {"agent": "alice", "preset": "dev", "checkout": tmp_path / "wt", **options}
@@ -511,6 +515,8 @@ class Run:
             checkout_lock=self.lock,
             configured_now=lambda: self.configured if self.configured_now is None else self.configured_now,
             history=self.history,
+            test_costs=self.test_costs,
+            fast_test_seconds=self.fast_test_seconds,
         )
         return execute(self.options, context)
 
@@ -638,6 +644,70 @@ def test_a_test_run_selecting_many_tests_or_all_takes_a_main_slot(tmp_path: Path
     exactly = Run(tmp_path / "exactly", test=True, regex="smoke")
     exactly.toolchain.output["ctest-list"] = (0, "Total Tests: 20\n")
     assert exactly.go().ok and exactly.toolchain.during["test"] == (0, 1)
+
+
+CHASE = "the disc's level3 rooftop chase: every seed reaches the gallery"
+
+
+def _timed_run(tmp_path: Path, folder_costs: str | None, shared: str | None = None, **options: object) -> Run:
+    """A one-test `-R` run of the chase with a 300 s fast-lane limit, the build folder's cost file and the shared
+    record holding `folder_costs` and `shared` (None: no file)."""
+    run = Run(tmp_path, test=True, regex="chase", **options)
+    run.toolchain.output["ctest-list"] = (0, f"Test project x\n  Test #7: {CHASE}\n\nTotal Tests: 1\n")
+    run.fast_test_seconds = 300.0
+    run.test_costs = TestCosts(tmp_path / "claims" / "test-costs.json")
+    if folder_costs is not None:
+        own = run.options.folder / COST_DATA
+        own.parent.mkdir(parents=True)
+        own.write_text(folder_costs, encoding="utf-8")
+    if shared is not None:
+        other = tmp_path / "other" / "CTestCostData.txt"
+        other.parent.mkdir(parents=True)
+        other.write_text(shared, encoding="utf-8")
+        run.test_costs.record("dev", other)
+    return run
+
+
+def test_a_filtered_run_whose_recorded_time_is_long_takes_a_main_slot_whatever_its_count(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, f"{CHASE} 2 1500.0\n")
+    assert run.go().ok
+    assert run.toolchain.during["test"] == (1, 0)
+    assert any("1 test expected to take 25.0 min" in line and "main lane" in line for line in run.lines)
+
+
+def test_another_worktrees_record_sends_a_fresh_folders_long_run_to_a_main_slot(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, None, shared=f"{CHASE} 2 1500.0\n")
+    assert run.go().ok and run.toolchain.during["test"] == (1, 0)
+
+
+def test_a_filtered_run_whose_recorded_time_is_short_takes_the_fast_lane(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, f"{CHASE} 2 40.0\n")
+    assert run.go().ok and run.toolchain.during["test"] == (0, 1)
+
+
+def test_a_test_with_no_recorded_time_falls_back_to_the_count(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, "some other test 1 5000.0\n")
+    assert run.go().ok and run.toolchain.during["test"] == (0, 1)
+
+
+def test_the_time_limit_can_be_turned_off(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, f"{CHASE} 2 1500.0\n")
+    run.fast_test_seconds = 0.0
+    assert run.go().ok and run.toolchain.during["test"] == (0, 1)
+
+
+def test_lane_main_sends_a_small_build_and_a_small_test_run_to_a_main_slot(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, f"{CHASE} 2 40.0\n", lane="main")
+    assert run.go().ok
+    assert run.toolchain.during["build"] == (1, 0)  # two steps out of date, which would take the fast lane
+    assert run.toolchain.during["test"] == (1, 0)
+    assert not any(c[0] == "ninja" for c in run.toolchain.commands)  # nothing measured
+
+
+def test_a_test_run_keeps_its_folders_times_for_every_worktree(tmp_path: Path) -> None:
+    run = _timed_run(tmp_path, f"{CHASE} 3 1490.0\n")
+    assert run.go().ok
+    assert TestCosts(tmp_path / "claims" / "test-costs.json").load("dev", tmp_path / "none.txt") == {CHASE: 1490.0}
 
 
 def test_the_commands_carry_the_preset_the_job_count_and_the_filter(tmp_path: Path) -> None:
