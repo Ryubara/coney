@@ -154,6 +154,32 @@ class Playthrough:
     events: list[Event] = field(default_factory=list)
     updates: int = 0
     finished: bool = False
+    #: The route: one RouteRow per update in play, so two runs' paths can be laid side by side (route_csv()).
+    route: list[RouteRow] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class RouteRow:
+    """Where the player was after an update and the pad the course gave for the next one."""
+
+    step: int
+    player: tuple[float, float, float, float]
+    pad: PadState
+
+
+#: The route file's header (route_csv()).
+ROUTE_HEADER = "step,x,y,z,heading,buttons,lx,ly\n"
+
+
+def route_csv(route: Sequence[RouteRow]) -> str:
+    """A route as CSV: the step, the player's feet and heading, then the pad's buttons (Coney's bits, hexadecimal)
+    and the left stick's raw bytes."""
+    lines = [ROUTE_HEADER]
+    for row in route:
+        x, y, z, heading = row.player
+        stick_x, stick_y = row.pad.sticks[2], row.pad.sticks[3]
+        lines.append(f"{row.step},{x:.3f},{y:.3f},{z:.3f},{heading:.1f},{row.pad.buttons:04x},{stick_x},{stick_y}\n")
+    return "".join(lines)
 
 
 def play(
@@ -182,7 +208,10 @@ def play(
             stop_at = result.updates + after
         if stop_at is not None and result.updates >= stop_at:
             break
-        stepped = game.step(course.pad())
+        pad = course.pad()
+        if observation.play:
+            result.route.append(RouteRow(observation.frame, observation.player, pad))
+        stepped = game.step(pad)
         if stepped is None:
             break
         observation, events = stepped

@@ -674,7 +674,7 @@ original the spread is a point, so record several ([Comparing with Coney](resear
 
 ```sh
 uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
-    [--state STATE] [--agent ID] [--updates N]
+    [--state STATE] [--agent ID] [--updates N] [--follow ROUTE [--follow-from EVENT]]
 ```
 
 Plays a mission scenario (`research/traces/missions/*.toml`) on one game with its course, an adaptive pad that plays
@@ -683,7 +683,19 @@ text). `--side coney` runs Coney headless with `--pad-pipe` and `--event-log` (`
 coney`); `--side original` starts PCSX2 on the scenario's state with its patches and event hooks, as `pcsx2 record`
 does, under your claim (`--agent`), and reads the events from the hooks' ring. `--state` starts from another state
 file or `slot:N` (a copy, never the slot itself); `--updates` caps the run. It prints its progress every 1000 updates
-and ends when the scenario's `until` event comes, or at its `updates`.
+and ends when the scenario's `until` event comes, or at its `updates`. Beside the log it writes the run's route,
+`<CSV stem>.route.csv` (`step,x,y,z,heading,buttons,lx,ly`: the player's feet and heading after each update in play,
+then the pad given for the next one; the buttons are Coney's bits in hexadecimal, the left stick as raw bytes).
+
+`--follow ROUTE` (Coney only) plays another run's route instead of the course, usually the original's, so Coney's
+player goes where the original's went and what is heard and spawned on the way can be compared. The route is cut
+into walks (a waypoint each 0.5 m of the recorded travel, walked to with the stick at 60 %) and actions (the updates
+in which the recorded player pressed a button, or turned the stick while standing still, played back pad for pad once
+he stands within 0.25 m of where it began and faces its heading); updates out of play hold the pad at rest, so a
+scene or a load does not use up the route. `--follow-from "kind name"` lets the scenario's course play until that
+event (`"call CarSpawnRadio"`), then follows the route from the step its own run saw it, found in the event log beside
+the route: for a stretch one game's start state has half done. A route is followed, not replayed: Coney may take
+longer over it (a waypoint it cannot reach is given up after 40 updates without headway).
 
 ```sh
 uv run --project python coney-tools trace events-diff ORIGINAL CONEY [--rules RULES] [--kinds KIND ...] [--window N]

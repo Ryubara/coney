@@ -55,11 +55,15 @@ std::string humansJson(const PlayLevelMode& mode) {
         const ai::Brain* brain = fighters.brainOf(human);
         const bool enemy = brain != nullptr && ai::Gangs::enemies(own, brain->gang());
         const anim::Vec3 at = human.position();
+        // "Standing" is the original's reading of the record's state bits (any but the down flags, mission.py's
+        // DOWN_FLAGS): a held or mounted victim counts as standing, and only a grounded one (thrown, knocked down,
+        // out) as down, so a course keeps its sequence on the human it holds.
+        const bool standing = human.alive() && human.state() != human::TargetState::Grounded;
         if (out.size() > 1) {
             out += ',';
         }
-        out += std::format("[{},{},{},{},{}]", number(at.x), number(at.y), human.alive() ? 1 : 0,
-                           human.state() == human::TargetState::Standing ? 1 : 0, enemy ? 1 : 0);
+        out += std::format("[{},{},{},{},{}]", number(at.x), number(at.y), human.alive() ? 1 : 0, standing ? 1 : 0,
+                           enemy ? 1 : 0);
     }
     return out + ']';
 }

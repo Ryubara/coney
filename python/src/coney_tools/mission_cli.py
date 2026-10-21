@@ -11,7 +11,7 @@ from pathlib import Path
 
 from coney_tools import natives, pcsx2_claims
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.course import COURSES, Course
+from coney_tools.course import COURSES, Course, RouteFollower, load_route
 from coney_tools.events import (
     EventError,
     compare,
@@ -22,7 +22,16 @@ from coney_tools.events import (
     starting_at,
     text_labels,
 )
-from coney_tools.mission import ConeyGame, MissionError, MissionScenario, OriginalGame, Playthrough, load_mission, play
+from coney_tools.mission import (
+    ConeyGame,
+    MissionError,
+    MissionScenario,
+    OriginalGame,
+    Playthrough,
+    load_mission,
+    play,
+    route_csv,
+)
 from coney_tools.pcsx2_state import StateError
 from coney_tools.pine import PineClient, PineError
 from coney_tools.recorder import RecordError
@@ -67,7 +76,9 @@ def _progress(updates: int, course: Course) -> None:
 
 
 def _finish(result: Playthrough, scenario: MissionScenario, out: Path, side: str) -> int:
-    """Report a playthrough; 0 when it reached the scenario's end."""
+    """Report a playthrough and write its route beside the event log (`<out>.route.csv`); 0 when it reached the
+    scenario's end."""
+    out.with_suffix(".route.csv").write_text(route_csv(result.route), encoding="utf-8")
     end = f"{scenario.until[0]} {scenario.until[1]}" if scenario.until else "the update limit"
     state = "reached" if result.finished else "NOT reached"
     print(f"{out}: {len(result.events)} events in {result.updates} updates on {side}; {end} {state}")
@@ -94,10 +105,34 @@ def _coney_command(scenario: MissionScenario, executable: Path, disc: str, out: 
     ]
 
 
+def _follower(route_path: Path, start: str | None, lead: Course) -> RouteFollower:
+    """The RouteFollower for `--follow`: the route, and with `start` ("kind name") the lead course until that event,
+    the route cut to begin at the step its own run's event log (`<run>.csv` beside `<run>.route.csv`) saw it."""
+    route = load_route(route_path.read_text(encoding="utf-8"))
+    if start is None:
+        return RouteFollower(route, lead.objects)
+    kind, _, name = start.partition(" ")
+    log = route_path.with_name(route_path.name.removesuffix(".route.csv") + ".csv")
+    if not log.is_file():
+        raise ConfigError(f"{route_path}: no event log {log.name} beside it to find {start!r} in")
+    steps = [event.step for event in load_events(log) if (event.kind, event.name) == (kind, name)]
+    if not steps:
+        raise ConfigError(f"{log}: no event {start!r}")
+    return RouteFollower([point for point in route if point.step >= steps[0]], lead.objects, lead, (kind, name))
+
+
 def run_mission_coney(
-    scenario_path: Path, out: Path, executable: Path | None, disc: str | None, updates: int | None = None
+    scenario_path: Path,
+    out: Path,
+    executable: Path | None,
+    disc: str | None,
+    updates: int | None = None,
+    follow: Path | None = None,
+    follow_from: str | None = None,
 ) -> int:
-    """`trace mission --side coney`: play the scenario's course on Coney; Coney writes the event log to `out`."""
+    """`trace mission --side coney`: play the scenario's course on Coney, or with `follow` the route recorded there
+    (RouteFollower), from the event `follow_from` ("kind name", found in the event log beside the route) on when
+    given, the course playing until then; Coney writes the event log to `out`."""
     from coney_tools.trace_cli import _coney_executable, _disc
 
     refuse_inside_repo(out)
@@ -108,14 +143,15 @@ def run_mission_coney(
             scenario.updates = updates
     except (MissionError, EventError) as error:
         raise ConfigError(str(error)) from error
+    course = COURSES[scenario.course]()
+    if follow is not None:
+        course = _follower(follow, follow_from, course)
     out.parent.mkdir(parents=True, exist_ok=True)
     command = _coney_command(scenario, _coney_executable(executable), _disc(disc), out)
     with out.with_suffix(".stderr.txt").open("w", encoding="utf-8") as stderr:
         game = ConeyGame(command, stderr)
         try:
-            result = play(
-                game, COURSES[scenario.course](), rules, scenario.updates, scenario.until, scenario.after, _progress
-            )
+            result = play(game, course, rules, scenario.updates, scenario.until, scenario.after, _progress)
         except MissionError as error:
             raise ConfigError(str(error)) from error
         finally:
