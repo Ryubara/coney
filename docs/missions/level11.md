@@ -28,14 +28,14 @@ Warriors came to join the gang. The web sources found do not say which member th
 
 ## What it needs {#needs}
 
-Its scripts can call 260 script bindings. 7 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 260 script bindings. 7 of them are new, which no earlier level of the story calls: 2 are
 implemented in Coney and 7 are traced. The full list is on [the coverage page](../references/bindings/story.md#level11).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [AI](../references/bindings/ai.md) | 3 | 0 |
 | [Gangs](../references/bindings/gang.md) | 1 | 0 |
-| [Levels and game state](../references/bindings/level.md) | 2 | 1 |
+| [Levels and game state](../references/bindings/level.md) | 2 | 2 |
 | [Script flow](../references/bindings/script.md) | 1 | 0 |
 
 Research:

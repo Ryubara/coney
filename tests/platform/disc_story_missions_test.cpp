@@ -349,10 +349,8 @@ TEST_CASE("the disc's level34 checkpoint 3 keeps its spawned humans under SetSpa
     CHECK(run.spawnMax == 45);
     constexpr int kOneGangsUpdate = static_cast<int>(coney::ai::kGangSpawners) - 1;
     CHECK(run.mostSpawned <= run.spawnMax + kOneGangsUpdate);
-    std::printf("  level34 checkpoint 3: at most %d spawned humans alive (cap %d), %zu humans created
-                ",
-                run.mostSpawned,
-                run.spawnMax, run.humans);
+    std::printf("  level34 checkpoint 3: at most %d spawned humans alive (cap %d), %zu humans created\n",
+                run.mostSpawned, run.spawnMax, run.humans);
 }
 
 TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", "[disc][story]") {

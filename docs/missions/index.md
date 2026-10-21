@@ -54,7 +54,7 @@ to run it.
 | [Flashback 2: The Best](level92.md) | `level92` | ⬜ Not Started | 0 of 3 | 0 | 5 of 8 |
 | [Flashback 3: Heavy Muscle](level83.md) | `level83` | ⬜ Not Started | 0 of 6 | 0 | 1 of 1 |
 | [Flashback 4: Scout's Honor](level20.md) | `level20` | ⬜ Not Started | 0 of 6 | 0 | 5 of 11 |
-| [Flashback 5: Sharp Dressed Man](level11.md) | `level11` | ⬜ Not Started | 0 of 6 | 0 | 1 of 7 |
+| [Flashback 5: Sharp Dressed Man](level11.md) | `level11` | ⬜ Not Started | 0 of 6 | 0 | 2 of 7 |
 
 ## Armies of the Night {#armies}
 
