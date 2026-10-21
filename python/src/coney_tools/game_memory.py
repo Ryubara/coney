@@ -25,6 +25,11 @@ Names and functions (the layouts are on the research pages named; every address 
   `0x00390180`). A human's handle is its `u32` at `+0x90`, so `hidx` of it is `index(h)`.
 - `goal_type(vtable)`: a goal class's type id (docs/references/goal-types.md), -2 for a vtable not listed;
   `goal_at(brain, k)`: the type id of the goal in slot k of the brain's stack (`+0x40`), -1 above the top (`+0x2c`).
+- `game_state`: the game state record, `*(0x0051489c)` (its `+0x228` is player 1's handle; the Warrior command bytes
+  are at `+0x411`-`+0x42e`, docs/research/ai-gangs.md#warrior-commands).
+- `warrior_command(tactic)`: the Warrior command (0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck) the
+  tactic at that address belongs to, from its vtable (`+0x1c`); -1 for the null pointer (the gang has no tactic) and
+  -2 for a tactic that is not a command's (a script's).
 - `handles(address, n)`: how many of the n words from `address` are neither 0 nor the null handle (a handle
   list's length).
 - `sin cos atan2 hypot sqrt abs min max`, `deg(radians)`, `rad(degrees)`, `wrap(degrees)` (to -180..180), `pi`.
@@ -57,6 +62,18 @@ NULL_HANDLE = 0xFFFFFFFF
 CAMERA_POINTER = 0x005D9158
 GAME_TIMER_POINTER = 0x0050B734
 GAME_TIME_OFFSET = 0x48
+GAME_STATE_POINTER = 0x0051489C
+#: The vtable of each Warrior command's tactic class -> the command number (docs/research/ai-gangs.md#warrior-commands:
+#: follow, attack, defend, hold and its hiding variant, scatter, steal).
+WARRIOR_TACTICS = {
+    0x005438C0: 0,
+    0x00544160: 1,
+    0x00543800: 2,
+    0x005439E0: 3,
+    0x00543980: 3,
+    0x00543D40: 4,
+    0x005441C0: 5,
+}
 
 #: Each memory type: its size in bytes and the struct format that reads it.
 TYPES: dict[str, tuple[int, str]] = {
@@ -246,6 +263,7 @@ class GameMemory:
             "goal_type": self.goal_type,
             "goal_at": self.goal_at,
             "handles": self.handles,
+            "warrior_command": self.warrior_command,
         }
 
     def read(self, address: int, kind: str) -> Number:
@@ -329,6 +347,13 @@ class GameMemory:
         reads = [Read(int(address) + 4 * k, 4) for k in range(int(count))]
         return sum(1 for word in self.memory.batch(reads) if word not in (0, NULL_HANDLE))
 
+    def warrior_command(self, tactic: int) -> int:
+        """The Warrior command the tactic at `tactic` belongs to, by its vtable; -1 for no tactic (the null pointer),
+        -2 for a tactic that is not one of the chief's commands."""
+        if not int(tactic):
+            return -1
+        return WARRIOR_TACTICS.get(int(self.read(int(tactic) + 0x1C, "u32")), -2)
+
     def names(self, extra: Mapping[str, Value] | None = None) -> _Scope:
         """A name lookup for Expression.evaluate(): `extra` first, then the functions and the objects above."""
         return _Scope(self, {**self.functions, **(extra or {})})
@@ -350,6 +375,8 @@ class _Scope(dict[str, Any]):
             return self.game.player()
         if name == "camera":
             return self.game.read(CAMERA_POINTER, "u32")
+        if name == "game_state":
+            return self.game.read(GAME_STATE_POINTER, "u32")
         if name == "game_time":
             return int(self.game.read(GAME_TIMER_POINTER, "u32")) + GAME_TIME_OFFSET
         raise KeyError(name)

@@ -288,8 +288,9 @@ passes 5: on and off every 5 frames (1/6 s at 30 frames a second).
 A war chief (human `+0x3ac` = 1) orders his crew from a six-slot menu held open with **R2** and steered with the
 **right stick**; releasing R2 gives the highlighted order. Each player panel owns one (`WarCommandDisplay`, panel
 `+0x1ef0`, built by `WarCommandDisplay_Init`, `0x001a62c0`); the commands themselves are on
-[AI: Warrior commands](ai-gangs.md#warrior-commands). Confirmed (code) at the addresses given unless marked; not seen at
-runtime.
+[AI: Warrior commands](ai-gangs.md#warrior-commands). Confirmed (code) at the addresses given unless marked. The
+menu's input and issue steps are confirmed (runtime)
+([`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu)): see the end of this section.
 
 **Input** (`Player_UseItemCommand`, `0x002843f8`; pad commands from [Combat](combat.md#commands): 1 is R2 held, 2 R2
 released). Nothing happens while the human has a state flag of `0x80040000`, or `0x20000` (that branch only handles
@@ -354,6 +355,17 @@ plate over 1,500 ms (`0x0050d310`), everything else over 500 ms (`0x0050d30c`); 
 every 4 updates (`0x0050d24c` = 2, `WarCommandDisplay_BlinkSlot`, `0x001a7d10`). The display closes (`Shutdown`)
 when its text has expired (`MarkupText_IsExpired`: the text's `<DISPLAYTIME>`, inferred). It closes at once if the
 chief goes down (`0x00227dd8`), and a lock that arrives while it is open ends it as if issued, with no command.
+
+**Seen at runtime** (PCSX2 2.9.129, level 99's street, a war chief with two Warriors; the
+[`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu) recipe): with R2 held (pad command 1) and the right
+stick at full deflection toward a slot, the display's shown flag (`+0x1554`) read 1 and its highlight (`+0x1540`) the
+slot of the table above, for all six directions (60 degrees apart); releasing R2 (command 2) issued the slot's command:
+the gang's tactic and the crew's goals changed to it. The street disables pad commands 1 and 2 for the player (a
+disabled command is matched into the record's pending `+0x24`, so the human never sees it), so nothing happened until
+`EnableCommand(player, 1, true)` and `(player, 2, true)` ran, besides `WCEnableCommand` and `HUDShowWarCommand`. A stick
+exactly vertical (raw x of 128) did not reliably move the highlight; a raw x of 133 or 123 selected up. One run (stick
+at 128, 255) left the highlight on slot 1 instead of 3 (down): inferred to be the hysteresis and the quadrant test at
+the axis, not traced.
 
 **Layout** (default video mode, GUI coordinates). The centre x is the layout record's (`0x006006a0` + player ×
 `0x80`): 0.5, set by `Open`; in a level numbered 100 or more with two players (`0x001fe198` = 1), 0.23 for player 1

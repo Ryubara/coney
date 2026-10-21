@@ -136,6 +136,8 @@ Steps:
 
 - [position](#position): Read a human's position, heading, speed and gait.
 - [teleport](#teleport): Move a human to x, y, z and turn it to a heading (degrees), by writing its transform.
+- [drop-human](#drop-human): Teleport a human high above a point and let it fall: read its height as it drops and where
+  it lands.
 - [health](#health): Read a human's health, maximum, power, stamina and rage.
 - [set-health](#set-health): Set a human's health (record +0x144, s16).
 - [set-rage](#set-rage): Fill (or empty) a human's rage meter (human +0x650, s32).
@@ -214,6 +216,45 @@ Steps:
 { show = "f32(tf(h) + 0x0)", label = "x" }
 { show = "f32(tf(h) + 0x4)", label = "y" }
 { show = "wrap(deg(heading(h)))", label = "heading_deg" }
+```
+
+### drop-human {#drop-human}
+
+Teleport a human high above a point and let it fall: read its height as it drops and where it lands.
+
+Writes the human's transform as `teleport` does, with z `height` metres above the ground height you give, then reads z
+after 1, 10, 20 and 40 updates. A human that is not standing on anything falls under the character step's gravity: in
+the run below the height went 5.223, 4.596, 2.244 and 0.223 at 1, 10, 20 and 40 updates, the ground it stopped on. Pick
+a pedestrian by name (`humans` lists them); one that is walking is moved off its route.
+
+| | |
+| --- | --- |
+| Parameters | `who` (human): the human's name; empty for the player; `x` (number): metres; `y` (number): metres; `ground` (number): the ground's height at x, y (read it with position); `height` (number, default `5`): metres above the ground to drop from |
+| Preconditions | patches: none; emulation running |
+| Evidence | confirmed (runtime) |
+| Ghidra | `0x0021b0b8 Object_SetPosition`, `0x0023d440 Human_SetTransform` |
+| Research | [research/characters.md#ground](../research/characters.md#ground), [research/characters.md#teleport](../research/characters.md#teleport) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
+
+```sh
+uv run --project python coney-tools pcsx2 recipe run drop-human --copy COPY --agent ID --arg who=<who> --arg x=<x> --arg y=<y> --arg ground=<ground> --arg height=5
+```
+
+Steps:
+
+```text
+{ let = { h = "who" } }
+{ write = "tf(h) + 0x0", type = "f32", value = "x" }
+{ write = "tf(h) + 0x4", type = "f32", value = "y" }
+{ write = "tf(h) + 0x8", type = "f32", value = "ground + height" }
+{ wait = 1 }
+{ show = "f32(tf(h) + 0x8)", label = "z_after_1" }
+{ wait = 9 }
+{ show = "f32(tf(h) + 0x8)", label = "z_after_10" }
+{ wait = 10 }
+{ show = "f32(tf(h) + 0x8)", label = "z_after_20" }
+{ wait = 20 }
+{ show = "f32(tf(h) + 0x8)", label = "z_after_40" }
 ```
 
 ### health {#health}
@@ -423,6 +464,210 @@ Steps:
 { show = "f32(tf(h))", label = "x" }
 { show = "f32(tf(h) + 0x4)", label = "y" }
 { show = "wrap(deg(heading(h)))", label = "heading_deg" }
+```
+
+## The crew
+
+- [crew](#crew): Read a war chief's crew: the gang's tactic and the command it belongs to, the command bytes, and each
+  member's goals.
+- [crew-command](#crew-command): Give the crew a Warrior command from the script's side (IssueWarriorCommand), then read
+  back the tactic and the members' goals.
+- [crew-command-menu](#crew-command-menu): Give the crew a Warrior command through the pad, as a player does: hold R2,
+  push the right stick to a slot, let go.
+- [spawn-crew](#spawn-crew): Add a Warrior to the war chief's crew: create one next to the player, in the player's gang,
+  and read the crew back.
+
+### crew {#crew}
+
+Read a war chief's crew: the gang's tactic and the command it belongs to, the command bytes, and each member's goals.
+
+A war chief (a player human whose `+0x3ac` is 1) orders his gang, the crew. His brain's gang pointer (`+0x20c`) is a
+gang record (`0x005e6e30 + id * 0xb10`): id `+0x30`, alert `+0x32`, the current tactic `+0x40` (0 for none), the leader
+`+0x44` and sixteen member handles from `+0x48`. A command's tactic is told by its vtable (`+0x1c`): follow
+`0x005438c0`, attack `0x00544160`, defend `0x00543800`, hold `0x005439e0` (`0x00543980` when hiding), scatter
+`0x00543d40`, wreck `0x005441c0`, which the `command` line gives as the command number (0 follow, 1 attack, 2 defend, 3
+hold, 4 scatter, 5 wreck; -1 no tactic). The members come from `members`: the handle list's humans with the brain's goal
+stack bottom first (type ids, [goal types](../references/goal-types.md): 52 is `FollowAndAttack`) and the target. The
+game state record (`*0x0051489c`) holds the command bytes: `+0x411` commands locked, `+0x414` + player the out-of-range
+flag, `+0x41a` + player the command in force (stored when its tactic starts), `+0x41c` + player the last command asked
+for (stored before the range check, so a refused command shows only here), `+0x41e` + player * 7 + command the enabled
+bytes (a command is refused unless its byte is set; `enabled` gives them as bits, bit 0 follow) and `+0x42e` + player
+the menu lock.
+
+| | |
+| --- | --- |
+| Parameters | `who` (human): the war chief's name; empty for the player |
+| Preconditions | patches: none; running or paused |
+| Evidence | confirmed (runtime) |
+| Ghidra | `0x0041c4e0 WarChief_IssueCommand`, `0x0016c388 Gang_Find`, `0x00165640 Gang_SetTactic` |
+| Research | [research/ai-gangs.md#warrior-commands](../research/ai-gangs.md#warrior-commands), [research/ai-gangs.md#gang-record](../research/ai-gangs.md#gang-record), [research/ai-gangs.md#tactics](../research/ai-gangs.md#tactics) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
+
+```sh
+uv run --project python coney-tools pcsx2 recipe run crew --copy COPY --agent ID --arg who=<who>
+```
+
+Steps:
+
+```text
+{ let = { h = "who" } }
+{ let = { g = "u32(brain(h) + 0x20c)", p = "s8(h + 0x1b0)" } }
+{ let = { t = "u32(g + 0x40)" } }
+{ show = "s32(h + 0x3ac)", label = "war_chief", format = "int" }
+{ show = "s16(g + 0x30)", label = "gang", format = "int" }
+{ show = "g", label = "gang_record" }
+{ show = "s16(g + 0x32)", label = "alert", format = "int" }
+{ show = "hidx(u32(g + 0x44))", label = "leader_index", format = "int" }
+{ show = "t", label = "tactic" }
+{ show = "u32(t + 0x1c) * min(t, 1)", label = "tactic_vtable" }
+{ show = "u32(t + 0x4) * min(t, 1)", label = "tactic_started", format = "int" }
+{ show = "warrior_command(t)", label = "command", format = "int" }
+{ show = "u8(game_state + 0x41a + p)", label = "command_in_force", format = "int" }
+{ show = "u8(game_state + 0x41c + p)", label = "last_asked", format = "int" }
+{ show = "u8(game_state + 0x41e + p * 7) | (u8(game_state + 0x41f + p * 7) << 1) | (u8(game_state + 0x420 + p * 7) << 2) | (u8(game_state + 0x421 + p * 7) << 3) | (u8(game_state + 0x422 + p * 7) << 4) | (u8(game_state + 0x423 + p * 7) << 5) | (u8(game_state + 0x424 + p * 7) << 6)", label = "enabled", format = "int" }
+{ show = "u8(game_state + 0x411)", label = "commands_locked", format = "int" }
+{ show = "u8(game_state + 0x42e + p)", label = "menu_locked", format = "int" }
+{ show = "u8(game_state + 0x414 + p)", label = "out_of_range", format = "int" }
+{ members = "g + 0x48" }
+```
+
+### crew-command {#crew-command}
+
+Give the crew a Warrior command from the script's side (IssueWarriorCommand), then read back the tactic and the members'
+goals.
+
+The same path as the command menu and `WCIssueCommand`: the dispatcher `0x0041c4e0` refuses a command that is disabled
+for the player (the `enabled` bytes of `crew`; a level's script disables them, level 99's street has all seven off), so
+the recipe first enables it with `WCEnableCommand(handle, command, true)` when `enable` is 1. Then
+`IssueWarriorCommand(command, forced)` runs as player 1's chief and the gang's tactic is replaced by the command's,
+whose Start gives each member his goal on the first gang update after. `forced` 1 restarts the command even when it is
+the current one and says nothing; 0 behaves as the menu does (the chief speaks and plays his gesture, the crew's range
+is checked). Commands: 0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck. The chief's own brain switches attack
+and defend back to follow 1.5 s after no member has an enemy (`WarChief_AutoCommand` `0x00303988`, while game state
+`+0x431` is set), which in a street with nobody to fight happens within seconds; `keep` 1 switches that off first with
+`WCEnableAutomaticSwitching(false)` (restore it with `lua` `WCEnableAutomaticSwitching(true)`). The recipe waits 10
+updates and runs `crew`'s readings.
+
+| | |
+| --- | --- |
+| Parameters | `command` (number): 0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck; `forced` (number, default `1`): 1 restarts it silently, 0 as the menu does (the chief speaks); `enable` (number, default `1`): 1 to enable the command for the chief first; `keep` (number, default `1`): 1 to switch the chief's automatic switching back to follow off first |
+| Preconditions | patches: `call-brains`; emulation running |
+| Evidence | confirmed (runtime) |
+| Ghidra | `0x0041c4e0 WarChief_IssueCommand`, `0x0041c2d0 GameState_IssueWarriorCommand`, `0x0041dbe8 WCEnableCommand` |
+| Research | [research/ai-gangs.md#warrior-commands](../research/ai-gangs.md#warrior-commands), [references/bindings/character.md#issuewarriorcommand](../references/bindings/character.md#issuewarriorcommand) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
+
+```sh
+uv run --project python coney-tools pcsx2 recipe run crew-command --copy COPY --agent ID --arg command=<command> --arg forced=1 --arg enable=1 --arg keep=1
+```
+
+Steps:
+
+```text
+{ let = { h = "player" } }
+{ lua = "if {keep} == 1 then WCEnableAutomaticSwitching(0) end if {enable} == 1 then WCEnableCommand(HuGetPlayer(0), {command}, 1) end IssueWarriorCommand({command}, {forced})" }
+{ require = "1 - min(result, 1)", message = "the Lua chunk failed" }
+{ wait = 10 }
+{ let = { g = "u32(brain(h) + 0x20c)" } }
+{ show = "warrior_command(u32(g + 0x40))", label = "command", format = "int" }
+{ show = "u8(game_state + 0x41a + s8(h + 0x1b0))", label = "command_in_force", format = "int" }
+{ members = "g + 0x48" }
+```
+
+### crew-command-menu {#crew-command-menu}
+
+Give the crew a Warrior command through the pad, as a player does: hold R2, push the right stick to a slot, let go.
+
+The command menu is `Player_UseItemCommand` (`0x002843f8`): R2 held (pad command 1) opens the display
+(`WarCommandDisplay_Open` `0x001a6d28`, which also switches the camera's right stick off), the display reads the right
+stick every update and highlights a slot, and R2's release (pad command 2) issues the highlighted slot through the
+dispatcher `0x0041c4e0` (unforced, so the chief speaks and the crew's range is checked). The six slots lie 60 degrees
+apart, clockwise from up: 0 up follow, 1 up-right defend, 2 down-right scatter, 3 down hold, 4 down-left wreck, 5
+up-left attack. A push counts only past about 87 % deflection (radius 110 of 127), so the stick is held at full
+deflection toward the slot; for the two vertical slots it is nudged 4 % to the right, because a stick exactly vertical
+(raw x of 128) leaves the highlight where its last position put it. With `scripted-pad` and `right-stick` the recipe
+writes R2 and the stick into the pad bytes (as `pad` does), holds them `hold` updates, reads the display (the shown flag
+`+0x1554` and the highlight `+0x1540` of the panel's display at `+0x1ef0`), then releases R2 and lets the stick go.
+`enable` 1 first enables what the menu needs: the slot's command (`WCEnableCommand`), the display (`HUDShowWarCommand`)
+and the pad commands 1 and 2 for the player (`EnableCommand`; level 99's street leaves R2 off, and a disabled command is
+matched but kept in the record's pending `+0x24`, so the human never sees it). The state needs the `scripted-pad`,
+`right-stick` and `call-brains` patches.
+
+| | |
+| --- | --- |
+| Parameters | `slot` (number): the menu slot 0-5: 0 up (follow), 1 up-right (defend), 2 down-right (scatter), 3 down (hold), 4 down-left (wreck), 5 up-left (attack); `hold` (number, default `20`): updates R2 is held with the stick pushed; `enable` (number, default `1`): 1 to enable the slot's command for the chief first |
+| Preconditions | patches: `scripted-pad`, `right-stick`, `call-brains`; emulation running |
+| Evidence | confirmed (runtime) |
+| Ghidra | `0x002843f8 Player_UseItemCommand`, `0x001a6d28 WarCommandDisplay_Open`, `0x001a6c58 WarCommandDisplay_Issue` |
+| Research | [research/hud.md#warrior-command-menu](../research/hud.md#warrior-command-menu), [research/ai-gangs.md#warrior-commands](../research/ai-gangs.md#warrior-commands) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6), a Warrior spawned into the crew |
+
+```sh
+uv run --project python coney-tools pcsx2 recipe run crew-command-menu --copy COPY --agent ID --arg slot=<slot> --arg hold=20 --arg enable=1
+```
+
+Steps:
+
+```text
+{ let = { h = "player" } }
+{ let = { cmd = "(0x153420 >> (4 * slot)) & 0xf", sx = "100 * sin(rad(60 * slot)) + 4 * (1 - min(slot % 3, 1))", sy = "100 * cos(rad(60 * slot))" } }
+{ lua = "if {enable} == 1 then WCEnableCommand(HuGetPlayer(0), {cmd}, 1) HUDShowWarCommand(1, 0) EnableCommand(HuGetPlayer(0), 1, 1) EnableCommand(HuGetPlayer(0), 2, 1) end" }
+{ write = "0x005de3aa", type = "u16", value = "((0xffff ^ buttons("r2")) >> 8) | (((0xffff ^ buttons("r2")) & 0xff) << 8)" }
+{ write = "0x005de3ac", type = "u32", value = "stick(sx) | (stick(0 - sy) << 8) | (stick(0) << 16) | (stick(0) << 24)" }
+{ wait = "hold" }
+{ let = { d = "u32(0x00600848 + 4 * u32(h + 0x380)) + 0x1ef0" } }
+{ show = "u32(d + 0x1554)", label = "menu_shown", format = "int" }
+{ show = "u32(d + 0x1540)", label = "highlighted_slot", format = "int" }
+{ write = "0x005de3aa", type = "u16", value = "0xffff" }
+{ wait = 1 }
+{ write = "0x005de3ac", type = "u32", value = "0x80808080" }
+{ wait = 10 }
+{ let = { g = "u32(brain(h) + 0x20c)" } }
+{ show = "cmd", label = "slot_command", format = "int" }
+{ show = "warrior_command(u32(g + 0x40))", label = "command", format = "int" }
+{ show = "u8(game_state + 0x41a)", label = "command_in_force", format = "int" }
+{ show = "u8(game_state + 0x41c)", label = "last_asked", format = "int" }
+{ members = "g + 0x48" }
+```
+
+### spawn-crew {#spawn-crew}
+
+Add a Warrior to the war chief's crew: create one next to the player, in the player's gang, and read the crew back.
+
+Runs `HuCreate(name, type, {x, y, z}, heading, nil, 0, gang, nil)` through `lua` as `spawn-human` does, with the gang
+taken from the player's brain (`+0x20c` -> gang record `+0x30`) and the type from the human named by `like`, which must
+be a Warrior whose model is resident (`Ash`, a member of the player's gang in level 99; the type is human `+0xd0`). The
+new human is a Warrior brain (type 3) in the crew and takes the goals of the command in force within 10 updates (hold
+one with `crew-command`, which turns the chief's automatic switching off). Its handle is left in the global
+`coney_spawned`. Remove it with `lua` `HuDelete(coney_spawned)`. The recipe waits 10 updates and runs `crew`'s member
+list.
+
+| | |
+| --- | --- |
+| Parameters | `name` (text, default `ConeyCrew`): the new human's name (15 characters at most); `like` (human, default `Ash`): a Warrior whose type the new human takes; `distance` (number, default `3`): metres in front of the player |
+| Preconditions | patches: `call-brains`; emulation running |
+| Evidence | confirmed (runtime) |
+| Ghidra | `0x00358428 lua_HuCreate`, `0x00233d60 Human_Create` |
+| Research | [research/characters.md#creation](../research/characters.md#creation), [research/ai-gangs.md#gang-record](../research/ai-gangs.md#gang-record) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2-c`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); Crew2 appeared 3 m in front of Rembrandt as a type 3 brain in gang 1, listed among the members, and with attack in force (automatic switching off) had its goal 52 ten updates later |
+
+```sh
+uv run --project python coney-tools pcsx2 recipe run spawn-crew --copy COPY --agent ID --arg name=ConeyCrew --arg like=Ash --arg distance=3
+```
+
+Steps:
+
+```text
+{ let = { p = "player", a = "heading(player)" } }
+{ let = { x = "f32(tf(p)) - distance * sin(a)", y = "f32(tf(p) + 0x4) + distance * cos(a)", z = "f32(tf(p) + 0x8) + 0.5" } }
+{ let = { type = "s32(like + 0xd0)", gang = "s16(u32(brain(p) + 0x20c) + 0x30)", facing = "deg(a) + 180" } }
+{ lua = "coney_spawned = HuCreate("{name}", {type}, {{{x:.3f}, {y:.3f}, {z:.3f}}}, {facing:.1f}, nil, 0, {gang}, nil)" }
+{ require = "1 - min(result, 1)", message = "HuCreate's chunk failed" }
+{ wait = 10 }
+{ show = "index(human(name))", label = "index", format = "int" }
+{ show = "s32(brain(human(name)) + 0x04)", label = "brain_type", format = "int" }
+{ show = "goal_at(brain(human(name)), 0)", label = "goal_0", format = "int" }
+{ members = "u32(brain(p) + 0x20c) + 0x48" }
 ```
 
 ## Player state

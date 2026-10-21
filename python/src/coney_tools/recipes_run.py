@@ -14,7 +14,17 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol
 
 from coney_tools import hooks as hook_tools
-from coney_tools.game_memory import TYPES, ExpressionError, GameMemory, Number, parse, to_raw
+from coney_tools.game_memory import (
+    BRAIN_SIZE,
+    BRAIN_TABLE,
+    HANDLE_TABLE,
+    TYPES,
+    ExpressionError,
+    GameMemory,
+    Number,
+    parse,
+    to_raw,
+)
 from coney_tools.input_script import BUTTONS, stick_byte
 from coney_tools.pcsx2_state import Patch
 from coney_tools.pine import Memory, Read, Write
@@ -107,6 +117,12 @@ def check_patches(memory: Memory, names: Sequence[str], patches: Mapping[str, Pa
                 )
 
 
+def stick_percent(value: float) -> int:
+    """The raw stick byte for a deflection of `value` percent, rounded to a whole percent first, so a direction worked
+    out with sin and cos (`100 * sin(rad(60))`) can be given as it is. Raises ValueError outside -100 to 100."""
+    return stick_byte(round(value))
+
+
 def _format(value: Any, fmt: str | None) -> str:
     """A shown value: floats with four decimals, integers in hex unless `fmt` says otherwise."""
     if isinstance(value, str):
@@ -163,7 +179,7 @@ class Runner:
         """One expression over the game and the names bound so far, with the pad helpers: `stick(percent)`, the raw
         stick byte Coney makes from a percentage (y up as an input script's, so pass -y for a y byte), and
         `buttons("cross+l2")`, the mask of Coney's button names (coney_tools.input_script)."""
-        helpers: dict[str, Any] = {"stick": stick_byte, "buttons": button_mask, **names}
+        helpers: dict[str, Any] = {"stick": stick_percent, "buttons": button_mask, **names}
         return parse(text).evaluate(self.game.names(helpers))
 
     def _step(self, step: dict[str, Any], names: dict[str, Any], where: str) -> None:
@@ -189,6 +205,8 @@ class Runner:
             self._write(step, names)
         elif "humans" in step:
             self._humans()
+        elif "members" in step:
+            self._members(int(self._eval(step["members"], names)), int(step.get("count", 16)))
         elif "globals" in step:
             self._globals(str(self._eval(step["globals"], names)), int(step.get("limit", 200)))
         elif "call" in step:
@@ -261,6 +279,22 @@ class Runner:
         words = self.memory.batch([Read(start + 4 * k, 4) for k in range((address - start + size + 3) // 4)])
         data = b"".join(w.to_bytes(4, "little") for w in words)[address - start : address - start + size]
         return hook_tools.decode_text(data)
+
+    def _members(self, address: int, count: int) -> None:
+        """Print the humans a handle list names: each live handle's human (the handle table's pointer, `0x006ebd38`
+        + index * 8), its name and player number, its brain's goal stack and its target."""
+        self.out(f"{'idx':>3}  {'name':<15} {'pl':>3}  {'goals (bottom first)':<24} target")
+        for handle in self.memory.batch([Read(address + 4 * k, 4) for k in range(count)]):
+            index = self.game.hidx(handle)
+            if index < 0:
+                continue
+            human = self.memory.batch([Read(HANDLE_TABLE + index * 8, 4)])[0]
+            brain = BRAIN_TABLE + index * BRAIN_SIZE
+            top = int(self.game.read(brain + 0x2C, "s8"))
+            goals = " ".join(str(self.game.goal_at(brain, k)) for k in range(top + 1)) or "-"
+            target = self.game.hidx(int(self.game.read(brain + 0x124, "u32")))
+            player = int(self.game.read(human + 0x1B0, "s8"))
+            self.out(f"{index:>3}  {self.game.name(human):<15} {player:>3}  {goals:<24} {target}")
 
     def _humans(self) -> None:
         """Print every human in use with its index, name, player number, position and heading."""
