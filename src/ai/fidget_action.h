@@ -26,10 +26,6 @@ inline constexpr int kKnifeAnimSet = 1;
 /// The fidget's blend in, seconds (`Human_PushScriptOverlay`'s 0.1 s overlay).
 inline constexpr float kFidgetFade = 0.1F;
 
-/// The clip in slot `slot` of group `0x25b` while the gang fights (`Gang_AddCombatFidgetClips`, table `0x0050cab8`);
-/// empty for a slot the group leaves free (4-7) or out of range.
-/// @orig 0x001694b8 Gang_AddCombatFidgetClips (unknown)
-[[nodiscard]] std::string_view combatFidgetClip(int slot);
 /// Whether `brain`'s human may start a fidget or a taunt (`Human_IsFreeForFidget`). **Coney stand-in**: no held record
 /// flag, alive, up, not held and empty-handed (the state-flag word `0x7bf9e9f7ff0` is not built).
 /// @orig 0x00225f58 Human_IsFreeForFidget (unknown)
