@@ -1,6 +1,6 @@
 # Research review checklist
 
-For a reviewer of pages under `docs/research/` and, once it exists, the research database in `research/`.
+For a reviewer of pages under `docs/research/` and the planned research database in `research/`.
 This is reverse-engineering work, so it is reviewed on Opus 5.5 ([index](index.md#which-model-reviews-what)). The
 reviewer may consult the original binary; it reports findings in the
 [format on the index page](index.md#finding-format) and never edits.
@@ -35,14 +35,19 @@ is in [Writing these docs](../writing-docs.md#subsystem-page). This page says wh
 - [ ] **The subsystem page has all six parts, in order:** Purpose, Original structure, Data, Behaviour, Coney's
   implementation, Open questions. A part with nothing known says so in one line. File-format pages follow the same
   order.
-- [ ] **An engineer could write the code from the page alone.** Imagine writing the code with only this page.
-  For every point where you would have to look at the original, the report names what is missing: a field offset,
-  a unit, a byte order, a constant, the order of two steps, an edge case. Each gap is a finding: Important when
-  code cannot be written without it, Minor otherwise.
+- [ ] **The page is a map to the original code.** Every described behaviour names the original function that
+  implements it (address and name) where its logic lives, so an engineer can open that function in Ghidra from the
+  page. Where the code alone would not tell the engineer a field offset, a unit, a byte order, a constant, the order
+  of two steps or an edge case, the page says it. Each gap is a finding: Important when a behaviour names no
+  function or a number the port needs is missing, Minor otherwise.
+- [ ] **The page meets the standard as a whole.** `coney-tools docs check` passes on it (a page the change touches
+  is held to all of [Writing these docs](../writing-docs.md#touch-it)), and where the page grades its claims by a
+  lead line or an opening sentence ([the evidence rule](../writing-docs.md#checking)), that grade is true of what
+  follows.
 - [ ] **Open questions are real.** Each says what is unknown, what depends on it and how it could be found out.
-- [ ] **The research database matches the page** (once it exists): each function, global and type the page names
-  has a YAML entry with the same address, name and evidence level, and no entry contradicts the page. A page
-  claim with a higher level than its entry, or the other way round, is Important.
+- [ ] **The research database matches the page** (planned; applies when it exists): each function, global and type
+  the page names has a YAML entry with the same address, name and evidence level, and no entry contradicts the page.
+  A page claim with a higher level than its entry, or the other way round, is Important.
 - [ ] **The living page was updated in place.** No new dated notes page where a living page for the subject
   exists; cross-links work.
 - [ ] **`mkdocs build --strict` passes.** Run it (`.venv/Scripts/python -m mkdocs build --strict`); every new page

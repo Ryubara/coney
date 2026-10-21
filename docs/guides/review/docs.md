@@ -31,6 +31,8 @@ Report findings in the [format on the index page](index.md#finding-format) and n
   line.
 - [ ] **No game data.** No file bytes, game text or script source, and no decompiler output
   ([LEGAL.md](repo:LEGAL.md#no-game-data)).
+- [ ] **The page standards pass.** `uv run --project python coney-tools docs check` is clean for every page the diff
+  touches ([Checking a page](../writing-docs.md#checking)); a touched page is held to the whole standard.
 - [ ] **`mkdocs build --strict` passes.** Run it (`.venv/Scripts/python -m mkdocs build --strict`) and
   `uvx pre-commit run --files <changed files>`.
 

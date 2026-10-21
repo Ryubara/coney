@@ -17,6 +17,7 @@ from coney_tools import (
     check_cli,
     clips,
     coord_cli,
+    docs_cli,
     issue_cli,
     mcp_serve,
     mission_cli,
@@ -300,6 +301,7 @@ def _build_parser() -> argparse.ArgumentParser:
     add_review_parsers(repo_commands)
     add_hygiene_parser(repo_commands)
     _add_check_commands(groups)
+    _add_docs_commands(groups)
     labels_parser = repo_commands.add_parser(
         "labels",
         help="print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply",
@@ -321,6 +323,20 @@ def _build_parser() -> argparse.ArgumentParser:
     coord_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
+
+
+def _add_docs_commands(groups: Any) -> None:
+    """Register `coney-tools docs ...`."""
+    group = groups.add_parser("docs", help="the page standards of docs/guides/writing-docs.md")
+    commands = group.add_subparsers(dest="command", required=True)
+    check = commands.add_parser(
+        "check",
+        help="check pages against their kind's rules; without PATHS, the pages changed against the base",
+    )
+    check.add_argument("paths", nargs="*", help="pages or folders to check (default: the pages changed since --base)")
+    check.add_argument("--base", default="origin/main", help="the branch the change is measured from")
+    check.add_argument("--summary", action="store_true", help="also count the pages that pass, per kind, and per rule")
+    check.add_argument("--quiet", action="store_true", help="print only the counts, not each finding")
 
 
 def _add_check_commands(groups: Any) -> None:
@@ -863,6 +879,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
+    if args.group == "docs":
+        return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet)
     if args.group == "check":
         return check_cli.run_changed(args.base, args.build_dir, args.only, args.skip, args.jobs, args.clang_tidy)
     if args.group == "issue":

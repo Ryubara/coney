@@ -1,23 +1,27 @@
 # From research to code
 
 This page follows a finding from the original to Coney's code: what an engineer puts on a research page so that the
-code (and the next engineer) can be built from it, what the implementation does with it, and three real features
-traced from the page to the merged result. The rules behind it are in
+next engineer finds the original code and trusts the claim, what the implementation does with it, and three real
+features traced from the page to the merged result. The rules behind it are in
 [Research workflow](research-workflow.md#studying-the-original) and [Testing](testing.md); this page shows them
 working.
 
 ## What goes on the page
 
 The engineer writes a research page in `docs/research/`. Every claim on it carries an
-[evidence level](research-workflow.md#evidence-levels) and a cited address. A page meant to be coded from contains:
+[evidence level](research-workflow.md#evidence-levels) and a cited address. The page is a **map**, not a substitute for
+the original: the engineer who ports a behaviour reads the original function in Ghidra, and the page says which
+function that is and what the code alone does not show. A page that serves that contains:
 
-- **What each function does, in prose.** Its inputs and outputs, and when it is called; its branches and
-  conditions, in order; its edge cases; its constants, with units, such as "radius 0.75 m with a slot, 2.5 m
-  without".
+- **Where each behaviour lives.** Every behaviour the page describes names the original function that implements
+  it: its address and its name, and the function where the logic sits when several take part. Then, in prose, what
+  the function does that is worth knowing before reading it: its inputs and outputs, and when it is called; its
+  branches and conditions, in order; its edge cases; its constants, with units, such as "radius 0.75 m with a slot,
+  2.5 m without".
 - **Data layouts.** Each structure's fields as offset, size, meaning and who reads or writes them, such as "human
   `+0xd0` is the character type".
-- **Short snippets only.** A line or two of disassembly next to an address, never a whole function
-  ([Writing up a finding](research-workflow.md#writing-up-a-finding)).
+- **Short snippets only.** A line or two next to an address, never a whole function listing from Ghidra or a
+  disassembly ([Writing up a finding](research-workflow.md#writing-up-a-finding)).
 - **Runtime numbers from the real game.** The engineer hooks addresses in PCSX2 and logs values per update
   ([Recording a trace](research-workflow.md#recording-a-trace)). The fence work's "the cut comes 15-44 updates
   after the hit" is one example. These become the test values.
@@ -131,15 +135,19 @@ with a cause (the barrier's phase) and the exact moment it is measured from can.
 timing was corrected by the second run (3-17 became 0-29), the page changed in place, so the test value an
 engineer reads is always the current one.
 
-## Writing the page so it can be coded from
+## Writing the page as a map
 
 A checklist before calling a page ready:
 
-1. Could someone write the function from the page alone? If a branch, a constant or a unit is missing, add it.
+1. Does every behaviour name the original function (address and name) where its logic lives? An engineer should
+   reach the code from the page in one step. If a branch, a constant or a unit that the code does not make obvious is
+   missing, add it.
 2. Is every number's unit stated, and is it clear whether a time is in updates, ticks or seconds?
 3. For each structure field the code reads, is there an offset, a size and a meaning?
 4. Is there a runtime number for every behaviour that has a duration, a distance or an order? Those are the tests.
 5. Are the unknowns listed as open questions, so the code's stand-ins have a page to point at?
 6. Are the fixes numbered, in order, each with how to tell it is done?
+7. Does `coney-tools docs check` pass on the page? A page you touched is brought wholly up to the standard
+   ([Touch a page, fix the page](writing-docs.md#touch-it)).
 
 The page kinds and the skeleton are in [Writing these docs](writing-docs.md#subsystem-page).

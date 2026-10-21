@@ -372,7 +372,7 @@ render`.
   fork build, as files in your scratch folder.
 - **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 keys`, `WM_KEYDOWN`) reach
   the hotkeys in `[Hotkeys]` (verified: a posted Space paused and resumed the game with the window unfocused) and the
-  pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; not yet checked with posted
+  pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; unchecked with posted
   keys). The hotkeys: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
   game's 640 × 448), F4 toggles the frame limiter. Hold a pad key for about 300 ms so that a 30 Hz game sees it.
   Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
@@ -794,7 +794,7 @@ A finding is done when someone else can use it without asking you. For each one:
    `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Every address in the project refers to that one file, so a reader
    with the same disc can check any claim.
 5. **Describe, don't reproduce.** Explain behaviour in prose, with short pseudocode or a short snippet where it
-   makes the point clearer. Never paste a whole function, decompiled or disassembled, and never paste a long
+   makes the point clearer. Never paste a whole function listing from Ghidra or a disassembly, and never paste a long
    stretch of one: it puts the original's code in the repository. See
    [LEGAL.md](repo:LEGAL.md#research-limits).
 6. **No game data.** Tables of offsets, constants and counts are facts and belong on the page; the bytes of a game
@@ -827,6 +827,6 @@ uv run --project python coney-tools progress check     # the inputs agree; the d
 uv run --project python coney-tools progress backlog "<scratch>/research-backlog"   # per-subsystem to-do lists
 ```
 
-The backlog writes one Markdown file per subsystem, outside the repository: every function not yet understood,
+The backlog writes one Markdown file per subsystem, outside the repository: every function that is not understood,
 largest first, with what it lacks (`name`, `cite` or `evidence`), whether it has a plate comment, and the name a page
 already gives it. A row that lacks only `name` is documented already; renaming it in Ghidra is the cheapest step.

@@ -27,6 +27,14 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements-docs.txt
+      # The page standards of docs/guides/writing-docs.md, on the pages the pull request changes and on those only
+      # (HEAD^1 of a pull request's merge commit is the branch it merges into), so the standard ratchets: a page that
+      # is touched is brought wholly up to it. It sits in this job, which is a required check ("mkdocs"), so it gates the
+      # merge without a new required check.
+      - if: github.event_name == 'pull_request'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - if: github.event_name == 'pull_request'
+        run: uv run --project python coney-tools docs check --base HEAD^1
       # Only main publishes. Pages reports the site's address, which mkdocs_hooks.py makes the site_url, so no file
       # names it.
       - id: pages

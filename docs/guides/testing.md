@@ -24,7 +24,7 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 | A bug fix | A test that fails before the fix and passes after it; in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
 | A research finding | An address and an [evidence level](research-workflow.md#evidence-levels) on every claim; runtime claims checked in the emulator; a [trace diff](research-workflow.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
-| Docs | `mkdocs build --strict` and markdownlint |
+| Docs | `mkdocs build --strict`, markdownlint and [`docs check`](writing-docs.md#checking) on the pages touched |
 
 ### The runtime comparison {#runtime-comparison}
 
