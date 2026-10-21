@@ -338,12 +338,9 @@ render`.
   false` so the user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim`
   and `status` warn when it is on. Claims live in `pcsx2-claims/` of the main checkout's shared scratch folder
   (`../../scratch`), never a worktree's own `scratch_dir`, so every worktree sees them (`pcsx2_root` and
-  `pcsx2_claims_dir` in `coney.local.toml` move the copies and the claims). **Act only on your own copy:** the ports of
-  every copy are readable, but a client may use only the ports of the claim it holds. The `pcsx2` MCP server is one
-  connection for a whole agent session, so a hook refuses a `pcsx2_connect` to a copy you have not claimed and keeps the
-  other agents of the session off the server while you hold it; your own scripts use `DebugClient.claimed("<id>")`, and
-  `pcsx2 check-ports` checks a pair of ports ([The PCSX2 MCP guard](agents.md#pcsx2-guard)). Check `pcsx2_status`
-  before the first write of a task.
+  `pcsx2_claims_dir` in `coney.local.toml` move the copies and the claims). **Act only on your own copy:** the ports of every copy are readable, but a client may use only the
+  ports of the claim it holds ([The PCSX2 MCP guard](agents.md#pcsx2-guard) says what is enforced and what to check
+  yourself).
 - **What PINE gives.** Memory reads and writes, game info, the emulator's status and save/load state slots; no
   breakpoints, registers, pause or frame capture. PCSX2 serves **one PINE client at a time**: a second client (`pcsx2
   record`, a script of your own) blocks while another is connected, so the MCP server connects in `mode: "debug"`,

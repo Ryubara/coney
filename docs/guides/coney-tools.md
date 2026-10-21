@@ -550,8 +550,7 @@ did not get from its own claim. `check-ports` succeeds (and prints `ok: ID holds
 the debug server and PINE ports of one copy whose live claim ID holds, and exits 2 naming the holder otherwise
 (`Registry.require_ports`, the check everything else below calls). From a script, `DebugClient.claimed("ID")`
 (`coney_tools.debug_server`) connects to the debug port of the claim ID holds and to no other. For the shared `pcsx2`
-MCP server, a hook makes the same check before `pcsx2_connect` and keeps one connection per session
-([The PCSX2 MCP guard](agents.md#pcsx2-guard)).
+MCP server, a hook makes the same check before `pcsx2_connect` ([The PCSX2 MCP guard](agents.md#pcsx2-guard)).
 
 ```sh
 uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]

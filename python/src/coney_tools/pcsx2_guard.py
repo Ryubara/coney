@@ -2,27 +2,25 @@
 """The decisions of the hook that keeps an agent off a PCSX2 copy it has not claimed (`.claude/hooks/pcsx2_guard.py`).
 
 **Why.** Every agent of a session shares one `pcsx2` MCP server, and the server holds one connection. When one agent
-calls `pcsx2_connect`, the connection of every other agent in the session moves with it: on 2026-10-21 a memory write
-landed in another agent's game that way, and another agent's emulator was paused for 10 to 20 seconds. The server
-cannot tell its callers apart, and the ports of every copy are readable by anyone, so the check has to sit in front
-of the tool, where Claude Code names the caller (`session_id`, and inside a subagent `agent_id`).
+calls `pcsx2_connect` with the ports of a copy it does not own, the connection of every other agent in the session
+moves with it: on 2026-10-21 a memory write landed in another agent's game that way. The ports of every copy are
+readable by anyone, and the server cannot tell its callers apart, so the check sits in front of the tool, where Claude
+Code names the caller (`session_id`, and inside a subagent `agent_id`).
 
-**What it enforces** (docs/guides/agents.md#setup, docs/guides/research-workflow.md#several-at-once):
+**What it enforces** (docs/guides/agents.md#pcsx2-guard): `pcsx2_connect` is allowed only with **both** ports given
+(the server's defaults belong to whichever copy it was started for, and the arguments stay consistent whatever the
+mode), both of one copy whose claim is live and held by an id the caller goes by (`Registry.require_ports`). The caller
+goes by the ids of its own `coney-tools pcsx2 claim | launch | record ... --agent ID` commands, which the same hook
+reads from the shell tools (`agents_in`, `Guard.bind`), so an agent that never claimed through a shell is told to.
+Nothing else is refused, and nothing is locked: no lease, no per-session state beyond those ids.
 
-* `pcsx2_connect` is allowed only with the ports the connection needs given explicitly (the server's defaults belong
-  to whichever copy it was started for), both of one copy, whose claim is live and held by an id the caller goes by
-  (`Registry.require_ports`). The caller goes by the ids of its own `coney-tools pcsx2 ... --agent ID` commands, which
-  the same hook reads from the shell tools (`agents_in`, `Guard.bind`), so an agent that never claimed through a shell
-  is told to.
-* One **lease** per session says whose connection the server holds: the caller of the last allowed connect. While the
-  lease is valid (its claim still held by the same id, and used within `LEASE_IDLE_SECONDS`), another caller's connect
-  is refused, and so is every other `pcsx2_*` tool of another caller: they cannot move, pause or write to the holder's
-  game. They reach their own copy with `coney-tools pcsx2 ...` or `DebugClient.claimed` instead, which are not shared.
-* `pcsx2_status` (reads only what the server says about itself) and the `ps2recomp_*` tools (no emulator) always pass.
+**What it cannot do.** The server holds one connection per process, so another agent's `pcsx2_connect` to its *own*
+claim still moves this agent's connection, and `mode: debug` leaves the previous PINE half. Both are the server's to
+fix (a connection per caller, `pcsx2_connect` replacing both halves; the plan is in the track's STATUS.md).
 
-The guard fails open where it cannot work: no PCSX2 copies set up on the machine, no session id in the payload,
-anything unexpected. State is a few small files below the claims folder (`<claims dir>/mcp/`), one per caller and one
-lease per session, replaced whole; nothing here needs a server.
+The guard fails open where it cannot work (no PCSX2 copies set up, no session id in the payload, anything unexpected),
+and writes one line to `guard.log` beside its state when it fails itself. State is a few small files below the claims
+folder (`<claims dir>/mcp/`), one per caller, replaced whole and pruned after `BINDING_KEEP_SECONDS`.
 """
 
 from __future__ import annotations
@@ -32,8 +30,7 @@ import os
 import re
 import time
 import uuid
-from collections.abc import Callable, Collection
-from dataclasses import asdict, dataclass
+from collections.abc import Collection
 from pathlib import Path
 from typing import Any
 
@@ -43,24 +40,34 @@ from coney_tools.pcsx2_claims import ClaimError, Registry
 
 #: The prefix of the `pcsx2` MCP server's tools.
 SERVER_PREFIX = "mcp__pcsx2__"
-#: A connection nobody has used for this many seconds is given up (15 minutes), so an agent that stopped without
-#: releasing its copy does not keep the others out of the server.
-LEASE_IDLE_SECONDS = 900.0
-#: The `pcsx2_connect` ports each mode needs.
-_MODE_PORTS = {"auto": ("debug_port", "pine_port"), "debug": ("debug_port",), "pine": ("pine_port",)}
+#: The two ports `pcsx2_connect` is given whatever its mode: the debug server's and PINE's.
+_PORTS = ("debug_port", "pine_port")
+#: How long a caller's binding file is kept (3 days); older ones are removed when the next is written.
+BINDING_KEEP_SECONDS = 3 * 86400.0
+#: Where the hook notes its own failures, below the guard's folder.
+LOG_FILE = "guard.log"
 
 _AGENT_ID = r"[A-Za-z0-9._-]{1,64}"
-#: A `coney-tools pcsx2 <command>` invocation, up to the end of the line or the next shell separator.
-_PCSX2_COMMAND = re.compile(r"coney-tools(?:\.exe)?\s+pcsx2\s+[a-z][\w-]*(?P<rest>[^\n;&|]*)")
-_AGENT_FLAG = re.compile(rf"(?:^|\s)--agent(?:=|\s+)(?P<id>{_AGENT_ID})(?=\s|$)")
+#: The `coney-tools pcsx2` commands that run under the caller's own claim (making one when it holds none), so their
+#: `--agent` names the caller. `release`, `status`, `keys` and the rest can name anyone and bind nobody.
+CLAIMING_COMMANDS = ("claim", "launch", "record", "clip", "mission", "recipe")
+#: A `coney-tools pcsx2 <claiming command>` invocation, up to the end of the line or the next shell separator.
+_PCSX2_COMMAND = re.compile(
+    r"coney-tools(?:\.exe)?[\"']?\s+pcsx2\s+(?:" + "|".join(CLAIMING_COMMANDS) + r")(?=\s|$)(?P<rest>[^\n;&|]*)"
+)
+#: `--agent ID`, `--agent=ID`, with the id bare or in single or double quotes.
+_AGENT_FLAG = re.compile(rf"(?:^|\s)--agent(?:=|\s+)(?P<q>['\"]?)(?P<id>{_AGENT_ID})(?P=q)(?=\s|$)")
+#: A line continuation: a backslash (POSIX) or a backtick (PowerShell) at the end of a line.
+_CONTINUATION = re.compile(r"[\\`][ \t]*\r?\n")
 
 
 def agents_in(command: str) -> list[str]:
-    """The agent ids a shell command passes to `coney-tools pcsx2 ...` (`--agent ID` or `--agent=ID`), in order. An id
-    after another coney-tools command (`build --agent x`) is not one: only a PCSX2 command makes the caller its
-    claim's holder."""
+    """The agent ids a shell command passes to a claiming `coney-tools pcsx2 ...` command (`--agent ID`, `--agent=ID`,
+    quoted or not, also over continued lines), in order. An id after another coney-tools command (`build --agent x`)
+    or after a PCSX2 command that can name anyone (`release --agent x`) is not one: only a command that runs under
+    the caller's own claim says who the caller is."""
     found: list[str] = []
-    for call in _PCSX2_COMMAND.finditer(command):
+    for call in _PCSX2_COMMAND.finditer(_CONTINUATION.sub(" ", command)):
         found.extend(flag.group("id") for flag in _AGENT_FLAG.finditer(call.group("rest")))
     return found
 
@@ -70,118 +77,76 @@ def _key(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "_", text)[:80] or "main"
 
 
-@dataclass(frozen=True)
-class Lease:
-    """Whose connection the session's server holds: the caller (`agent_id`, the agent tool's id for it) that made the
-    last allowed `pcsx2_connect`, the claim id it went by, the copy, and when it last used the server."""
-
-    agent_id: str
-    agent: str
-    copy: str
-    used: float
-
-
 class Guard:
     """The guard's state (below `folder`) and decisions, over a registry of copies and claims."""
 
-    def __init__(self, registry: Registry, folder: Path, clock: Callable[[], float] = time.time) -> None:
-        """`folder` holds the bindings and leases; `clock` returns epoch seconds (tests pass a fake one)."""
+    def __init__(self, registry: Registry, folder: Path) -> None:
+        """`folder` holds the callers' bindings."""
         self.registry = registry
         self.folder = folder
-        self.clock = clock
 
-    # -- files
-
-    def _write(self, path: Path, data: dict[str, Any]) -> None:
-        """Replace a state file whole (a temporary file, then an atomic replace)."""
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f"{path.name}.{os.getpid()}.{uuid.uuid4().hex[:6]}")
-        temporary.write_text(json.dumps(data), encoding="utf-8")
-        temporary.replace(path)
-
-    def _read(self, path: Path) -> dict[str, Any] | None:
-        """A state file's object, None when there is none or it cannot be read."""
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
-        return data if isinstance(data, dict) else None
+    # -- who is calling
 
     def _binding(self, session: str, agent_id: str) -> Path:
         """The file that holds the claim ids one caller of a session goes by."""
         return self.folder / f"{_key(session)}.bind.{_key(agent_id)}.json"
 
-    def _lease_file(self, session: str) -> Path:
-        """The file that holds a session's lease."""
-        return self.folder / f"{_key(session)}.lease.json"
-
-    # -- who is calling
-
     def bind(self, session: str, agent_id: str, names: Collection[str]) -> None:
-        """Note that this caller goes by `names` (the ids of its `pcsx2 ... --agent` commands) from now on."""
+        """Note that this caller goes by `names` (the ids of its claiming `pcsx2 ... --agent` commands) from now on,
+        and drop the bindings nobody has renewed for BINDING_KEEP_SECONDS."""
         known = self.bound(session, agent_id)
-        if set(names) <= known:
-            return
-        self._write(self._binding(session, agent_id), {"names": sorted(known | set(names))})
+        path = self._binding(session, agent_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if set(names) <= known and path.exists():
+            path.touch()  # renewed: a caller that keeps claiming keeps its binding
+        else:
+            temporary = path.with_name(f"{path.name}.{os.getpid()}.{uuid.uuid4().hex[:6]}")
+            temporary.write_text(json.dumps({"names": sorted(known | set(names))}), encoding="utf-8")
+            temporary.replace(path)
+        self._prune()
+
+    def _prune(self) -> None:
+        """Remove binding files not renewed for BINDING_KEEP_SECONDS (a session's file is never read again once it
+        ends)."""
+        now = time.time()
+        for path in self.folder.glob("*.bind.*.json"):
+            try:
+                if now - path.stat().st_mtime > BINDING_KEEP_SECONDS:
+                    path.unlink()
+            except OSError:
+                continue
 
     def bound(self, session: str, agent_id: str) -> set[str]:
         """The claim ids this caller goes by."""
-        data = self._read(self._binding(session, agent_id))
-        names = data.get("names") if data else None
+        try:
+            data = json.loads(self._binding(session, agent_id).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return set()
+        names = data.get("names") if isinstance(data, dict) else None
         return {name for name in names if isinstance(name, str)} if isinstance(names, list) else set()
 
-    # -- the lease
-
-    def _lease(self, session: str) -> Lease | None:
-        """The session's lease when it is still valid: its claim is live and held by the id it went by, and it was
-        used lately. An invalid lease is as good as none."""
-        data = self._read(self._lease_file(session))
-        try:
-            lease = Lease(**(data or {}))
-        except TypeError:
-            return None
-        if self.clock() - lease.used > LEASE_IDLE_SECONDS:
-            return None
-        row = next((r for r in self.registry.status() if r.copy.name == lease.copy), None)
-        if row is None or row.claim is None or row.stale or row.claim.agent != lease.agent:
-            return None
-        return lease
-
-    def _set_lease(self, session: str, lease: Lease) -> None:
-        """Make `lease` the session's."""
-        self._write(self._lease_file(session), asdict(lease))
-
-    # -- the decisions
+    # -- the decision
 
     def decide(self, session: str, agent_id: str, tool: str, arguments: dict[str, Any]) -> str | None:
-        """None when the call may go ahead, else why it is refused (shown to the agent). Fails open when no copies are
-        set up."""
-        name = tool.removeprefix(SERVER_PREFIX)
-        if name == tool or not name.startswith("pcsx2_") or name == "pcsx2_status":
+        """None when the call may go ahead, else why it is refused (shown to the agent). Only `pcsx2_connect` is
+        refused; fails open when no copies are set up."""
+        if tool != f"{SERVER_PREFIX}pcsx2_connect":
             return None
         try:
             self.registry.copies()
         except (ClaimError, ConfigError):
             return None  # no managed copies on this machine: nothing to protect, and no claims to check against
-        if name == "pcsx2_connect":
-            return self._connect(session, agent_id, arguments)
-        return self._use(session, agent_id, name)
-
-    def _connect(self, session: str, agent_id: str, arguments: dict[str, Any]) -> str | None:
-        """The decision on `pcsx2_connect`: the ports must be those of a copy the caller claimed, and the session's
-        connection must not be another caller's."""
-        mode = arguments.get("mode", "auto")
-        needed = _MODE_PORTS.get(mode if isinstance(mode, str) else "auto", _MODE_PORTS["auto"])
         ports: dict[str, int] = {}
-        for key in needed:
+        for key in _PORTS:
             value = arguments.get(key)
             if isinstance(value, bool) or not isinstance(value, int | float | str) or not str(value).isdigit():
                 return (
-                    f"Blocked: pcsx2_connect needs `{key}` of your claimed copy. The server's defaults belong to "
-                    "whichever copy it was started for, and a connect moves the connection of every agent of this "
-                    "session. Run `uv run --project python coney-tools pcsx2 claim --agent <your id>` (it returns your "
-                    "claim again if you hold one), then connect with the `debug-port` and `port` (PINE) it prints, "
-                    '`mode: "debug"`, and check `pcsx2_status` before the first write.'
+                    f"Blocked: pcsx2_connect needs both `debug_port` and `pine_port` (`{key}` is missing), of your "
+                    "claimed copy, in every mode. The server's defaults belong to whichever copy it was started for, "
+                    "and a connect moves the connection of every agent of this session. Run `uv run --project python "
+                    "coney-tools pcsx2 claim --agent <your id>` (it returns your claim again if you hold one), connect "
+                    'with the `debug-port` and `port` (PINE) it prints and `mode: "debug"`, and check `pcsx2_status` '
+                    "before the first write."
                 )
             ports[key] = int(value)
         names = self.bound(session, agent_id)
@@ -192,40 +157,10 @@ class Guard:
                 "the id from that command, then lets you connect to the ports it prints."
             )
         try:
-            claim = self.registry.require_ports(
-                names, debug_port=ports.get("debug_port"), pine_port=ports.get("pine_port")
-            )
+            self.registry.require_ports(names, debug_port=ports["debug_port"], pine_port=ports["pine_port"])
         except ClaimError as error:
             return f"Blocked: {error}."
-        lease = self._lease(session)
-        if lease is not None and lease.agent_id != agent_id:
-            return self._in_use(lease)
-        self._set_lease(session, Lease(agent_id, claim.agent, claim.copy, self.clock()))
         return None
-
-    def _use(self, session: str, agent_id: str, name: str) -> str | None:
-        """The decision on any other tool that reaches the emulator: only the holder of the session's lease may."""
-        lease = self._lease(session)
-        if lease is None:
-            return (
-                f"Blocked: {name} acts on whatever copy the shared pcsx2 server is connected to, and no connection of "
-                "yours is on record. Call pcsx2_connect with the `debug_port` and `pine_port` of your own claim "
-                "(`coney-tools pcsx2 claim --agent <your id>` prints them) first."
-            )
-        if lease.agent_id != agent_id:
-            return self._in_use(lease)
-        self._set_lease(session, Lease(lease.agent_id, lease.agent, lease.copy, self.clock()))
-        return None
-
-    def _in_use(self, lease: Lease) -> str:
-        """The refusal for a caller that is not the lease's holder."""
-        return (
-            f"Blocked: the pcsx2 server of this session is connected to {lease.copy} for {lease.agent}, another agent; "
-            "one connect or one write from you would move or change that agent's game. Use your own copy without the "
-            "shared server: `coney-tools pcsx2 ...` (record, recipe, clip) or, from a script, "
-            '`DebugClient.claimed("<your id>")` (coney_tools.debug_server), both bound to your claim. The server frees '
-            f"up when {lease.agent} releases its copy or leaves it unused for {LEASE_IDLE_SECONDS / 60:.0f} minutes."
-        )
 
 
 def default_guard(start: Path) -> Guard:
@@ -235,10 +170,23 @@ def default_guard(start: Path) -> Guard:
     return Guard(registry, registry.claims_dir / "mcp")
 
 
+def log_failure(start: Path, error: BaseException) -> None:
+    """Note one line about a failure of the hook itself in `guard.log` (the hook lets the call through, so without
+    this a broken guard would be invisible). Best effort: a failure here is dropped."""
+    try:
+        folder = pcsx2_claims.default_registry(start).claims_dir / "mcp"
+        folder.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+        with (folder / LOG_FILE).open("a", encoding="utf-8") as log:
+            log.write(f"{stamp} {type(error).__name__}: {error}\n")
+    except Exception:
+        return
+
+
 def handle(payload: dict[str, Any], guard: Guard) -> str | None:
-    """What the hook does with one payload of Claude Code: a shell command that runs `coney-tools pcsx2 ... --agent ID`
-    binds the caller to ID (nothing is refused), and a call of the pcsx2 MCP server is decided. Returns the reason to
-    refuse, or None. A payload with no session is let through (there is nothing to key the connection on)."""
+    """What the hook does with one payload of Claude Code: a shell command that runs a claiming `coney-tools pcsx2 ...
+    --agent ID` binds the caller to ID (nothing is refused), and a `pcsx2_connect` of the pcsx2 MCP server is decided.
+    Returns the reason to refuse, or None. A payload with no session is let through."""
     session = payload.get("session_id")
     if not isinstance(session, str) or not session:
         return None

@@ -4,14 +4,14 @@
 script `.claude/hooks/pcsx2_guard.py`.
 
 The MCP server is one process for a whole agent session, so one agent's `pcsx2_connect` moves the connection of every
-other agent in it. The guard lets an agent connect only to the ports of a copy it claimed, keeps one lease per session
-and refuses the server's other tools to anyone but the lease's holder. No PCSX2 runs: the process layer is replaced by
-a fake, as in test_pcsx2_claims.py.
+other agent in it. The guard lets an agent connect only to the ports of a copy it claimed (both ports, whatever the
+mode) and locks nothing else. No PCSX2 runs: the process layer is replaced by a fake, as in test_pcsx2_claims.py.
 """
 
 import importlib.util
 import io
 import json
+import os
 import socket
 import threading
 from collections.abc import Iterator
@@ -25,7 +25,7 @@ from test_pcsx2_claims import FakeProcesses, make_copy
 from coney_tools import pcsx2_claims, pcsx2_claims_cli, pcsx2_guard, pcsx2_proc
 from coney_tools.debug_server import DebugClient, DebugServerError
 from coney_tools.pcsx2_claims import ClaimError, Registry
-from coney_tools.pcsx2_guard import LEASE_IDLE_SECONDS, Guard
+from coney_tools.pcsx2_guard import BINDING_KEEP_SECONDS, Guard
 
 NOW = 1_800_000_000.0
 CONNECT = "mcp__pcsx2__pcsx2_connect"
@@ -66,8 +66,8 @@ def registry(tmp_path: Path, procs: FakeProcesses, clock: Clock) -> Registry:
 
 
 @pytest.fixture
-def guard(registry: Registry, tmp_path: Path, clock: Clock) -> Guard:
-    return Guard(registry, tmp_path / "claims" / "mcp", clock=clock)
+def guard(registry: Registry, tmp_path: Path) -> Guard:
+    return Guard(registry, tmp_path / "claims" / "mcp")
 
 
 # -- Registry.require_ports ----------------------------------------------------------------------------------------
@@ -225,6 +225,13 @@ def test_a_debug_client_of_a_copy_without_a_debug_server_says_so(tmp_path: Path,
         ("coney-tools build --agent alice", []),
         ("echo coney-tools pcsx2x --agent alice", []),
         ("coney-tools pcsx2 claim --agent 'bad name'", []),
+        ("coney-tools pcsx2 claim --agent 'alice'", ["alice"]),
+        ('coney-tools pcsx2 claim --agent "alice"', ["alice"]),
+        ("coney-tools pcsx2 claim \\\n  --agent alice", ["alice"]),
+        ("coney-tools pcsx2 claim `\r\n  --agent alice", ["alice"]),
+        ("coney-tools pcsx2 release --agent other", []),
+        ("coney-tools pcsx2 keys --agent other --copy pcsx2 space", []),
+        ("coney-tools pcsx2 recipe --agent alice list", ["alice"]),
     ],
 )
 def test_the_agent_ids_of_a_pcsx2_command_are_read_from_its_agent_flags(command: str, names: list[str]) -> None:
@@ -251,16 +258,10 @@ def connect(guard: Guard, agent_id: str = "agent-1", **arguments: object) -> str
     return guard.decide("s1", agent_id, CONNECT, {"mode": "debug", **arguments})
 
 
-def use(guard: Guard, agent_id: str = "agent-1", tool: str = "pcsx2_write_memory") -> str | None:
-    """The guard's answer to another tool of the server."""
-    return guard.decide("s1", agent_id, f"mcp__pcsx2__{tool}", {"address": "0x100000", "value": "00"})
-
-
 def test_a_connect_to_the_ports_of_the_callers_claim_is_allowed(guard: Guard, registry: Registry) -> None:
     registry.claim("alice", "pcsx2-b")
     guard.bind("s1", "agent-1", ["alice"])
     assert connect(guard, debug_port=21513, pine_port=28012) is None
-    assert use(guard) is None
 
 
 def test_a_connect_by_someone_who_never_claimed_through_a_shell_says_how(guard: Guard, registry: Registry) -> None:
@@ -274,7 +275,6 @@ def test_a_connect_to_the_ports_of_another_agents_claim_is_refused(guard: Guard,
     guard.bind("s1", "agent-1", ["recipes-1"])
     reason = connect(guard, debug_port=21513, pine_port=28012)
     assert reason is not None and "held by coop-1, not recipes-1" in reason
-    assert use(guard) is not None  # and it did not become the connection either
 
 
 def test_a_connect_to_a_copy_nobody_claimed_is_refused(guard: Guard) -> None:
@@ -283,20 +283,18 @@ def test_a_connect_to_a_copy_nobody_claimed_is_refused(guard: Guard) -> None:
     assert reason is not None and "not claimed" in reason
 
 
-def test_a_connect_without_ports_is_refused_for_the_servers_defaults_belong_to_some_copy(guard: Guard) -> None:
-    guard.bind("s1", "agent-1", ["alice"])
-    reason = guard.decide("s1", "agent-1", CONNECT, {})  # mode auto: both ports
-    assert reason is not None and "debug_port" in reason and "pcsx2_status" in reason
-    reason = guard.decide("s1", "agent-1", CONNECT, {"debug_port": 21512})
-    assert reason is not None and "pine_port" in reason
-    reason = guard.decide("s1", "agent-1", CONNECT, {"mode": "debug"})
-    assert reason is not None and "debug_port" in reason
-
-
-def test_mode_pine_needs_only_the_pine_port(guard: Guard, registry: Registry) -> None:
+@pytest.mark.parametrize("mode", ["auto", "debug", "pine"])
+def test_both_ports_are_needed_whatever_the_mode(guard: Guard, registry: Registry, mode: str) -> None:
     registry.claim("alice", "pcsx2")
     guard.bind("s1", "agent-1", ["alice"])
-    assert guard.decide("s1", "agent-1", CONNECT, {"pine_port": 28011, "mode": "pine"}) is None
+    both = {"debug_port": 21512, "pine_port": 28011, "mode": mode}
+    assert guard.decide("s1", "agent-1", CONNECT, both) is None
+    for missing in ("debug_port", "pine_port"):
+        given = {key: value for key, value in both.items() if key != missing}
+        reason = guard.decide("s1", "agent-1", CONNECT, given)
+        assert reason is not None and missing in reason and "pcsx2_status" in reason
+    reason = guard.decide("s1", "agent-1", CONNECT, {})
+    assert reason is not None and "debug_port" in reason
 
 
 def test_ports_of_two_copies_in_one_connect_are_refused(guard: Guard, registry: Registry) -> None:
@@ -307,65 +305,16 @@ def test_ports_of_two_copies_in_one_connect_are_refused(guard: Guard, registry: 
     assert reason is not None and "two different copies" in reason
 
 
-def test_a_second_agent_cannot_move_the_connection_of_the_first(guard: Guard, registry: Registry) -> None:
+def test_nothing_is_locked_for_the_other_agents_of_a_session(guard: Guard, registry: Registry) -> None:
     registry.claim("fixer-4", "pcsx2")
     registry.claim("recipes-1", "pcsx2-b")
     guard.bind("s1", "agent-fixer", ["fixer-4"])
     guard.bind("s1", "agent-recipes", ["recipes-1"])
     assert connect(guard, "agent-fixer", debug_port=21512, pine_port=28011) is None
-    reason = connect(guard, "agent-recipes", debug_port=21513, pine_port=28012)
-    assert reason is not None and "fixer-4" in reason and "pcsx2" in reason and "DebugClient.claimed" in reason
-    # The first agent's connection is intact, and the second cannot use it either.
-    assert use(guard, "agent-fixer") is None
-    reason = use(guard, "agent-recipes", "pcsx2_pause")
-    assert reason is not None and "fixer-4" in reason
-
-
-def test_the_first_agent_may_move_its_own_connection(guard: Guard, registry: Registry) -> None:
-    registry.claim("alice", "pcsx2")
-    registry.claim("alice", "pcsx2-b")
-    guard.bind("s1", "agent-1", ["alice"])
-    assert connect(guard, debug_port=21512, pine_port=28011) is None
-    assert connect(guard, debug_port=21513, pine_port=28012) is None
-    assert use(guard) is None
-
-
-def test_the_next_agent_connects_once_the_claim_of_the_connection_is_released(guard: Guard, registry: Registry) -> None:
-    registry.claim("fixer-4", "pcsx2")
-    registry.claim("recipes-1", "pcsx2-b")
-    guard.bind("s1", "agent-fixer", ["fixer-4"])
-    guard.bind("s1", "agent-recipes", ["recipes-1"])
-    assert connect(guard, "agent-fixer", debug_port=21512, pine_port=28011) is None
-    registry.release("fixer-4", "pcsx2")
-    assert use(guard, "agent-fixer") is not None  # its claim is gone
     assert connect(guard, "agent-recipes", debug_port=21513, pine_port=28012) is None
-    assert use(guard, "agent-recipes") is None
-
-
-def test_an_idle_connection_is_given_up_after_a_while(guard: Guard, registry: Registry, clock: Clock) -> None:
-    registry.claim("fixer-4", "pcsx2")
-    registry.claim("recipes-1", "pcsx2-b")
-    guard.bind("s1", "agent-fixer", ["fixer-4"])
-    guard.bind("s1", "agent-recipes", ["recipes-1"])
     assert connect(guard, "agent-fixer", debug_port=21512, pine_port=28011) is None
-    clock.now += LEASE_IDLE_SECONDS - 1
-    assert use(guard, "agent-fixer") is None  # a use keeps the connection
-    clock.now += LEASE_IDLE_SECONDS - 1
-    assert connect(guard, "agent-recipes", debug_port=21513, pine_port=28012) is not None
-    clock.now += 2
-    assert connect(guard, "agent-recipes", debug_port=21513, pine_port=28012) is None
-
-
-def test_a_tool_without_a_connection_of_the_callers_says_to_connect_first(guard: Guard) -> None:
-    reason = use(guard)
-    assert reason is not None and "pcsx2_connect" in reason
-
-
-def test_sessions_do_not_share_a_connection(guard: Guard, registry: Registry) -> None:
-    registry.claim("alice", "pcsx2")
-    guard.bind("s1", "agent-1", ["alice"])
-    assert connect(guard, debug_port=21512, pine_port=28011) is None
-    assert guard.decide("s2", "agent-1", "mcp__pcsx2__pcsx2_pause", {}) is not None
+    for tool in ("pcsx2_write_memory", "pcsx2_pause", "pcsx2_read_memory"):
+        assert guard.decide("s1", "agent-recipes", f"mcp__pcsx2__{tool}", {}) is None
 
 
 @pytest.mark.parametrize(
@@ -378,9 +327,24 @@ def test_other_tools_are_not_the_guards_business(guard: Guard, tool: str) -> Non
 
 def test_with_no_copies_set_up_the_guard_stays_out_of_the_way(tmp_path: Path, procs: FakeProcesses) -> None:
     empty = Registry(tmp_path / "nothing", tmp_path / "claims", clock=lambda: NOW)
-    guard = Guard(empty, tmp_path / "claims" / "mcp", clock=lambda: NOW)
+    guard = Guard(empty, tmp_path / "claims" / "mcp")
     assert guard.decide("s1", "agent-1", CONNECT, {"debug_port": 21512, "pine_port": 28011}) is None
-    assert guard.decide("s1", "agent-1", "mcp__pcsx2__pcsx2_pause", {}) is None
+
+
+def test_bindings_nobody_renewed_for_days_are_pruned(guard: Guard) -> None:
+    guard.bind("old", "agent-1", ["alice"])
+    guard.bind("kept", "agent-1", ["bob"])
+    old = guard.folder / "old.bind.agent-1.json"
+    long_ago = old.stat().st_mtime - BINDING_KEEP_SECONDS - 60
+    os.utime(old, (long_ago, long_ago))
+    guard.bind("new", "agent-1", ["carol"])
+    assert not old.exists()
+    assert guard.bound("kept", "agent-1") == {"bob"} and guard.bound("new", "agent-1") == {"carol"}
+    # A caller that claims again renews its binding.
+    os.utime(guard.folder / "kept.bind.agent-1.json", (long_ago, long_ago))
+    guard.bind("kept", "agent-1", ["bob"])
+    guard.bind("other", "agent-1", ["dave"])
+    assert guard.bound("kept", "agent-1") == {"bob"}
 
 
 # -- the hook's payloads ---------------------------------------------------------------------------------------------
@@ -465,8 +429,20 @@ def test_the_script_lets_through_what_it_cannot_read(
         raise RuntimeError("boom")
 
     monkeypatch.setattr(pcsx2_guard, "default_guard", broken)
+    logged: list[BaseException] = []
+    monkeypatch.setattr(pcsx2_guard, "log_failure", lambda start, error: logged.append(error))
     code, err = run_script(monkeypatch, capsys, {"session_id": "s1", "tool_name": CONNECT, "tool_input": {}})
-    assert code == 0 and err == ""
+    assert code == 0 and err == "" and [str(error) for error in logged] == ["boom"]
+
+
+def test_a_failure_of_the_hook_leaves_one_line_in_the_log(
+    registry: Registry, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda start=None: registry)
+    pcsx2_guard.log_failure(tmp_path, RuntimeError("boom"))
+    pcsx2_guard.log_failure(tmp_path, ValueError("again"))
+    lines = (registry.claims_dir / "mcp" / pcsx2_guard.LOG_FILE).read_text(encoding="utf-8").splitlines()
+    assert [line.split(" ", 1)[1] for line in lines] == ["RuntimeError: boom", "ValueError: again"]
 
 
 def test_the_hook_is_registered_for_the_mcp_tools_and_the_shell() -> None:
@@ -478,5 +454,5 @@ def test_the_hook_is_registered_for_the_mcp_tools_and_the_shell() -> None:
         if "pcsx2_guard.py" in hook["command"]
     ]
     matchers = {matcher for matcher, _ in registered}
-    assert "mcp__pcsx2__.*" in matchers, "the pcsx2 MCP tools are not guarded"
+    assert "mcp__pcsx2__pcsx2_connect" in matchers, "pcsx2_connect is not guarded"
     assert {"Bash", "PowerShell"} <= matchers, "the shell commands that claim a copy are not read"
