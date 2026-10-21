@@ -166,3 +166,23 @@ def test_the_release_presets_leave_the_debug_tools_out() -> None:
     assert tools["release"] == "OFF"
     assert tools["ci-release"] == "OFF"
     assert all(tools[name] == "ON" for name in ("dev", "playtest", "ci", "asan"))
+
+
+_TEST_DEBUG_INCLUDE = re.compile(
+    r'^#include "(?:debug/|sandbox/|gui/debug_|gamemodes/(?:sheet|text)_viewer_mode|'
+    r"platform/(?:play_level_controls|sandbox_|imgui_|debug_menus|game_session_debug|audio_output_controls|"
+    r"texture_viewer_mode|character_viewer_mode|reference_renderer))",
+    re.MULTILINE,
+)
+
+
+def test_the_release_build_compiles_no_test_of_the_debug_tools() -> None:
+    # The tests before the `if(CONEY_DEBUG_TOOLS)` block are the release build's: none may include a debug tools'
+    # header, or the release build would not compile them.
+    text = (ROOT / "tests" / "CMakeLists.txt").read_text(encoding="utf-8")
+    game = text[: text.index("if(CONEY_DEBUG_TOOLS)")]
+    sources = {word.rstrip(")") for word in re.findall(r"[\w/]+_test\.cpp\)?", game)}
+    offenders = sorted(
+        name for name in sources if _TEST_DEBUG_INCLUDE.search((ROOT / "tests" / name).read_text(encoding="utf-8"))
+    )
+    assert offenders == [], "list these in the if(CONEY_DEBUG_TOOLS) block of tests/CMakeLists.txt"

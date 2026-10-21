@@ -273,7 +273,10 @@ it starts headless, prints a player's options, refuses `--play-level`, plays an 
 build, and `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug
 pages' titles, the developer overlay's settings file, Dear ImGui's default one; `cmake/debug_tools_markers.cmake`) and
 fails when it finds one. On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`),
-so the check cannot pass by finding nothing. The release build does not build the unit tests yet; CI builds it on
+so the check cannot pass by finding nothing. The release build also builds and runs every unit test of the game; the
+tests of the debug tools (the menus, the overlay, the sandbox, the viewers and the disc tests that drive the game
+through them) are listed apart in `tests/CMakeLists.txt` and built only with the tools, and a Python test refuses a test
+of the release build's list that includes a debug tools' header. CI builds the release build and runs its tests on
 Windows and Linux ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and
 the game's sources and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links
 a debug library, or anything but `coney_devtools` links `imgui`.
@@ -559,7 +562,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 
 | Workflow | Jobs |
 | --- | --- |
-| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its smoke tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (nightly and manual runs only); pre-commit over every file; the `build-ok` gate |
+| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (nightly and manual runs only); pre-commit over every file; the `build-ok` gate |
 | `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, `orig check` and `orig copy-check` with `--base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, the page standards on a pull request's changed pages ([`docs check`](writing-docs.md#checking)), markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
@@ -724,7 +727,7 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   under it, had 93.1 %. The saved entry is trimmed to what the job used (below), so it stays about one build's size,
   0.3 to 0.7 GB. Eight jobs save (six `build`, two `sanitizers`): at most 8 × 1 GB = 8 GB even untrimmed, plus three
   dependency entries (one per OS, about 0.1 to 0.2 GB each) and the `setup-uv` caches (about 50 MB per OS), under
-  9 GB of the 10 GB; the two release jobs compile no unit tests, so their entries are the smallest. While a `main`
+  9 GB of the 10 GB. While a `main`
   run is between its saves and `cache-prune`, the old and new entries of a job both exist for a few minutes. When a
   job's summary shows the cache at its cap and a rebuild of an unchanged commit hits little, raise that cap and redo
   this sum.
