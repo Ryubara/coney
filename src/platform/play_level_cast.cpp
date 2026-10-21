@@ -61,8 +61,11 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
             return true;
         }
         const anim::Vec3 feet = brain.human().position();
-        return m_sound->mayGesture(script::HumanSoundCall{
-            .human = brain.handle(), .characterType = brain.characterClass(), .position = {feet.x, feet.y, feet.z}});
+        script::HumanSoundCall who;
+        who.human = brain.handle();
+        who.characterType = brain.characterClass();
+        who.position = {feet.x, feet.y, feet.z};
+        return m_sound->mayGesture(who);
     });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
