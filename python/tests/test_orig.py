@@ -9,12 +9,13 @@ from typing import Any
 import pytest
 from conventions_support import write_checkout
 
-from coney_tools import orig_cli, orig_ghidra, orig_index, orig_queue, orig_report
+from coney_tools import orig_check, orig_cli, orig_ghidra, orig_index, orig_queue, orig_report
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
+from coney_tools.conventions import load_conventions
 from coney_tools.progress_research import ListedFunction
 
-GAMEPLAY = ("src/ai/",)
+GAMEPLAY = ("src/ai/", "src/audio/")
 
 BRAIN_H = """// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
@@ -279,7 +280,7 @@ def test_a_private_helper_is_not_covered_by_a_tag_in_another_file(checkout: Path
             "src/ai/b.cpp": "namespace {\nvoid scan() {}\n}\n",
         },
     )
-    untagged = [u.where for u in orig_index.build_index(checkout).untagged if u.coney == "scan"]
+    untagged = [u.where for u in orig_index.build_index(checkout, GAMEPLAY).untagged if u.coney == "scan"]
     assert untagged == ["src/ai/b.cpp:2"]
 
 
@@ -294,14 +295,15 @@ def test_a_tagged_overload_does_not_cover_its_untagged_sibling(checkout: Path) -
             "src/audio/player.cpp": "void Player::play(int id) {}\nvoid Player::play(const Clip& clip) {}\n",
         },
     )
-    untagged = [u.where for u in orig_index.build_index(checkout).untagged if u.coney == "Player::play"]
+    untagged = [u.where for u in orig_index.build_index(checkout, GAMEPLAY).untagged if u.coney == "Player::play"]
     assert untagged == ["src/audio/player.cpp:2"]
 
 
-def test_a_new_folder_of_src_is_in_scope_unless_it_is_coney_only(checkout: Path) -> None:
+def test_a_new_folder_of_src_is_reported_until_it_is_listed(checkout: Path) -> None:
     write(checkout, {"src/newthing/a.cpp": "void a() {}\n", "src/debug/b.cpp": "void b() {}\n"})
-    coneys = {u.coney for u in orig_index.build_index(checkout).untagged}
-    assert "a" in coneys and "b" not in coneys
+    paths = load_conventions(checkout).paths
+    assert orig_check.unlisted_folders(checkout, paths.gameplay, paths.coney_only) == ["src/newthing/"]
+    assert not {"a", "b"} & {u.coney for u in orig_index.build_index(checkout, paths.gameplay).untagged}
 
 
 def test_a_malformed_tag_is_counted_in_the_report(checkout: Path) -> None:
@@ -335,7 +337,7 @@ def test_ranking_many_entries_against_many_issues_is_quick(checkout: Path) -> No
 
 
 def test_each_research_page_is_scanned_once(checkout: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    rows = orig_index.build_index(checkout).rows * 50
+    rows = orig_index.build_index(checkout, GAMEPLAY).rows * 50
     calls = []
     real = orig_index._ADDRESS
 

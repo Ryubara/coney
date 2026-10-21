@@ -319,7 +319,10 @@ uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [-
   class or file), and the research links that document it (the function's comment, else its declaration's, its
   class's or its file's);
 * `untagged.tsv`: the functions defined in the gameplay folders (`paths.gameplay` of `.github/conventions.yml`) that
-  have no tag, through their own comment or their declaration's, and no Coney-only marker. Each is a `member`, a
+  have no tag and no Coney-only marker. A tag covers a function through its own comment, or through its declaration's:
+  the declaration with the same scope, name and parameter types (any one, when the name is not overloaded), in the
+  same file pair, folder or, for a member, anywhere; a file's private helper only through a declaration in its own
+  file. Each is a `member`, a
   `free` function, a file's private `helper` (an anonymous namespace or `static`) or an `inline` member defined in its
   class, and its `exempt` column is 1 when it needs neither ([Coney-only code](conventions.md#coney-only)). A marker
   is `@coney-only <reason>` in the function's comment or its file's header comment, or the older wording ("Coney's

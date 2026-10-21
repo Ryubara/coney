@@ -81,6 +81,7 @@ class Function:
     def signature(self) -> tuple[str, str, str]:
         """(scope, name, parameter types): what a declaration and its definition share, overloads apart."""
         return (self.scope, self.name, self.params)
+
     statements: int = 0  # `;` in its body, nested ones included: an accessor's `return m_x;` is 1
     blocks: int = 0  # braces opened inside its body (an `if`, a loop, a lambda, a brace initializer)
 
