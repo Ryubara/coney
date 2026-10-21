@@ -151,9 +151,11 @@ scored when any of these holds:
   out scores and every blow after it does not.
 
 **Coney status (2026-10-21):** `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose
-health ran out before the hit (**Coney's reading**, inferred: Coney has no state word, and all three states follow a
-man's health running out) and a category-13 victim with flag `0x10`; a hit only reaches an opponent, so the friends
-test holds; the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed player's
+health ran out before the hit (**Coney's reading**, inferred: Coney has no state word, and in Coney all three states
+follow a man's health running out; in the original a knocked-out man can keep some health, issue #592, so once Coney
+has that state the test reads it instead) and a category-13 victim with flag `0x10`; a hit only reaches an opponent,
+so the friends test holds; the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed
+player's
 counters and strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
 
 **The points** come from the stats system, which also adds them to the per-player score at `0x006fe490 + player ×
