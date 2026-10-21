@@ -24,7 +24,7 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 | A bug fix | A test that fails before the fix and passes after it; in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
 | A research finding | An address and an [evidence level](research-workflow.md#evidence-levels) on every claim; runtime claims checked in the emulator; a [trace diff](research-workflow.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
-| Docs | `mkdocs build --strict` and markdownlint |
+| Docs | `mkdocs build --strict`, markdownlint and [`docs check`](writing-docs.md#checking) on the pages touched |
 
 ### The runtime comparison {#runtime-comparison}
 
@@ -340,14 +340,13 @@ uv run --project python coney-tools check changed
 
 It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files a pull request changes
 (a changed header through the `.cpp` files that include it; the only clang-tidy a pull request gets, as CI's runs
-nightly), `mkdocs build --strict` when docs changed, ruff, pytest and mypy when `python/` or `.claude/` changed, and
-`repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only --agent <id>`:
-configure, no build). It catches what MSVC lets
-through: a designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked
-`std::optional` access (`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the
-options. It does not replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC
-emits, macOS, the sanitizers and the nightly full clang-tidy pass; a change to the build setup is checked on its
-changed files only.
+nightly), the page standards on the changed pages and `mkdocs build --strict` when docs changed, ruff, pytest and mypy
+when `python/` or `.claude/` changed, and `repo check`; it needs a `build/dev` that was configured once (`coney-tools
+build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets through: a designated initializer
+that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
+(`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not replace
+the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the sanitizers and the
+nightly full clang-tidy pass; a change to the build setup is checked on its changed files only.
 
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
@@ -365,8 +364,8 @@ The whole gate:
   the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,
   `refs render`, `missions render`, `pcsx2 recipe render`). Rerun a generator without `--check` when you change what it
   reads.
-- **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
-  `mkdocs build --strict` passes.
+- **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
+  `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.
 
 Commands and presets: [Building and testing](building.md).
 

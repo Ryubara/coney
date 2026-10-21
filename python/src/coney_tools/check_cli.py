@@ -16,7 +16,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from coney_tools import local_gate
+from coney_tools import docs_check, docs_cli, local_gate
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
 from coney_tools.build_run import jobs_for
@@ -210,10 +210,33 @@ def _python_changed(changed: list[str]) -> bool:
     return any(name.startswith(("python/", ".claude/")) for name in changed)
 
 
+def _standards(root: Path, changed: list[str]) -> tuple[int, list[str], list[str]]:
+    """The page standards (`coney-tools docs check`) on the pages among `changed`: how many pages were checked, the
+    findings of the pages that fail, and the warnings of those that pass."""
+    result = docs_check.check_files(root, changed, docs_check.context_for(root))
+    failed = result.failed
+    problems = [line for page in result.pages if page in failed for line in docs_cli.page_lines(result, page)]
+    notes = [line for page in result.pages if page not in failed for line in docs_cli.page_lines(result, page)]
+    return len(result.pages), problems, notes
+
+
 def _step_docs(root: Path, changed: list[str]) -> StepResult:
-    """`mkdocs build --strict` into a throwaway folder, when docs or the site setup changed."""
+    """The page standards on the changed pages, then `mkdocs build --strict` into a throwaway folder, when docs or the
+    site setup changed. Both run, so one run shows every problem."""
     if not _docs_changed(changed, load_conventions(root).paths):
         return _skipped("docs", "no docs changed")
+    pages, problems, notes = _standards(root, changed)
+    built = _mkdocs_build(root)
+    ok = built.ok and not problems
+    parts = [f"{pages} pages meet the standards" if not problems else "page standards failed"]
+    if problems:
+        problems.append("bring each failing page wholly up to docs/guides/writing-docs.md; `coney-tools docs check`")
+    parts.append(built.detail)
+    return StepResult("docs", ok, ", ".join(parts), output=_tail([*problems, *built.output, *notes]))
+
+
+def _mkdocs_build(root: Path) -> StepResult:
+    """`mkdocs build --strict` into a throwaway folder."""
     with tempfile.TemporaryDirectory(prefix="coney-site-") as site:
         venv_python = (
             root / ".venv" / ("Scripts" if os.name == "nt" else "bin") / ("python.exe" if os.name == "nt" else "python")
@@ -243,7 +266,7 @@ def _step_docs(root: Path, changed: list[str]) -> StepResult:
     lines = [
         line for line in output.splitlines() if line.startswith(("WARNING", "ERROR", "Aborted")) or "Error" in line
     ]
-    return StepResult("docs", False, "mkdocs build --strict failed", output=_tail(lines or output.splitlines()))
+    return StepResult("docs", False, "mkdocs build --strict failed", output=tuple(lines or output.splitlines()))
 
 
 def _step_python(root: Path, changed: list[str]) -> StepResult:

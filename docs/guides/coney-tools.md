@@ -1,7 +1,8 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers seventeen groups:
-[`check`](#check), which runs what CI would fail on for the files a change touched, [`build`](#build), which
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eighteen groups:
+[`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which checks
+pages against the documentation standards, [`build`](#build), which
 configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
 the repository's own rules (titles, descriptions, labels), `wad`, which reads the game's
 archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
@@ -1024,7 +1025,7 @@ line, and any failure makes the command exit 1:
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | `mkdocs build --strict` into a throwaway folder |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
 | `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
@@ -1064,6 +1065,23 @@ handling of paths, programs and long command lines is tested on all three.
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
+
+## docs {#docs}
+
+```sh
+uv run --project python coney-tools docs check [PATHS ...] [--base origin/main] [--summary] [--quiet]
+```
+
+Checks Markdown pages against the standard of [Writing these docs](writing-docs.md#checking): the skeleton, the
+"Verified against" line and the evidence levels of a research page, and the Style rules every page keeps. Writing-docs
+owns the rules and the heuristics; this entry is the command. Without `PATHS` it checks the pages changed since
+`--base` (committed or not, untracked included), as [`check changed`](#check) does in its `docs` step and the `docs`
+workflow does on a pull request. With `PATHS` it checks those files, or every page under a folder, whether or not they
+changed. It prints `path:line: rule: message` for each finding (`--quiet` prints only the counts), a warning (a long
+page) never fails, and `--summary` adds how many pages of each kind pass and how many pages break each rule: run it
+on `docs` for the standing of the whole tree. Exit 0 when no page has an error, 1 when one has, 2 when the command is
+not run inside a checkout, the conventions cannot be read, `--base` is unknown, or a named path is missing, outside
+the checkout or not a page the check covers (`README.md`, a generated page).
 
 ## build {#build}
 
@@ -1358,8 +1376,8 @@ command in it parses.
 }
 ```
 
-Replace `<workspace>` in the `prs` poller with the folder that holds `repos/` and `worktrees/` on your machine, for
-example `D:/work/coney`. What each poller wakes for:
+Replace `<workspace>` in the `prs` poller with the folder that holds `repos/` and `worktrees/` on your machine. What
+each poller wakes for:
 
 * **`triage`** wakes for each issue waiting for [triage](issues.md#triage): an open issue carrying `S-needs-triage`,
   read every two minutes. It wakes once per issue, keyed by its number, so the coordinator's own comment does not wake

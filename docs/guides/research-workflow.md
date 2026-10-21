@@ -372,7 +372,7 @@ render`.
   fork build, as files in your scratch folder.
 - **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 keys`, `WM_KEYDOWN`) reach
   the hotkeys in `[Hotkeys]` (verified: a posted Space paused and resumed the game with the window unfocused) and the
-  pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; not yet checked with posted
+  pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; unchecked with posted
   keys). The hotkeys: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
   game's 640 × 448), F4 toggles the frame limiter. Hold a pad key for about 300 ms so that a 30 Hz game sees it.
   Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
@@ -775,8 +775,9 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
   but do not revert another engineer's names; a disagreement goes on the page as an open question.
 - **Do not guess in code.** A gap in a page becomes an open question on the page and a marked stand-in in code, never
   a silent guess ([When a research page isn't enough](#when-a-research-page-isnt-enough)).
-- **Research is done when a reader can implement from it:** a name and plate comment in Ghidra, and a page that cites
-  the address with an evidence level and says what the function does ([The Understood measure](#understood)).
+- **Research is done when the page maps the behaviour to the code:** a name and plate comment in Ghidra, and a page
+  that names the function, cites its address with an evidence level and says what the code alone does not show
+  ([The Understood measure](#understood)). The engineer who ports it reads the function itself.
 - **Weak evidence stays labelled.** A screenshot is a source of measurements, not a claim; a claim quotes numbers, the
   scenario that produced them and the build or state they came from.
 
@@ -794,13 +795,14 @@ A finding is done when someone else can use it without asking you. For each one:
    `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Every address in the project refers to that one file, so a reader
    with the same disc can check any claim.
 5. **Describe, don't reproduce.** Explain behaviour in prose, with short pseudocode or a short snippet where it
-   makes the point clearer. Never paste a whole function, decompiled or disassembled, and never paste a long
+   makes the point clearer. Never paste a whole function listing from Ghidra or a disassembly, and never paste a long
    stretch of one: it puts the original's code in the repository. See
    [LEGAL.md](repo:LEGAL.md#research-limits).
 6. **No game data.** Tables of offsets, constants and counts are facts and belong on the page; the bytes of a game
    file, a dump or an extracted asset never do.
-7. **Build the docs** with `mkdocs build --strict` (see [Writing these docs](writing-docs.md)), which catches broken
-   links and pages missing from the navigation.
+7. **Check and build the docs:** `coney-tools docs check` holds every page you touched to the standard
+   ([Checking a page](writing-docs.md#checking)), and `mkdocs build --strict` catches broken links and pages missing
+   from the navigation.
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with
@@ -827,6 +829,6 @@ uv run --project python coney-tools progress check     # the inputs agree; the d
 uv run --project python coney-tools progress backlog "<scratch>/research-backlog"   # per-subsystem to-do lists
 ```
 
-The backlog writes one Markdown file per subsystem, outside the repository: every function not yet understood,
+The backlog writes one Markdown file per subsystem, outside the repository: every function that is not understood,
 largest first, with what it lacks (`name`, `cite` or `evidence`), whether it has a plate comment, and the name a page
 already gives it. A row that lacks only `name` is documented already; renaming it in Ghidra is the cheapest step.
