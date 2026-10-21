@@ -3,7 +3,7 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
 PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim keeps the evidence level it had there.
+Every claim carries the level written beside it.
 
 ## Purpose
 
@@ -77,14 +77,18 @@ every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their da
    own value is 0.3). Confirmed (code).
 3. A cuffed victim (state `0x20000`, `Human_IsCuffed`, `0x00223b70`) takes triple damage; allies hurt each other only
    when both are players. Confirmed (code).
-4. Health drops; the flash clip 665 prevents death. A grabber hit by a third human loses 0.6 of its power.
+4. Health drops; the flash clip 665 prevents death. Any human in a pair or a block (state `0x18003ff0`,
+   `Human_IsInPairOrBlock`, `0x00227fd8`) hit by someone other than his partner (`+0xc4`) spends 0.6 of his power (the
+   constant at `0x00510274`). Confirmed (code).
 5. **Hit armour**: no reaction plays (the damage still lands) while the victim is a player in an attack's wind-up or
    chain window (`+0x08` & 3), or a class 13 human with `+0x08` & `0x13`, unless the attacker is a player, class 13,
    raging, has flag `0x200000` or `0x4000`, or plays 617-620.
-6. Otherwise the reaction by state, each a function of its own: in a jump, falling, on fire, cuffing or being
-   cuffed, in a mini-game, mugging or mugged, grabbed (`HitReact_WhileGrabbed`, `0x002688d0`), tackled, grabbing
-   (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, in a special; a normal hit
-   `Hit_PlayReaction` (`0x0026b0a0`, [Hit codes](combat.md#hit-codes)). Confirmed (code).
+6. Otherwise the reaction by state, each a function of its own, among them: in a jump, falling, on fire, cuffing or
+   being cuffed, in a mini-game, mugging or mugged, grabbed (`HitReact_WhileGrabbed`, `0x002688d0`), tackled,
+   grabbing (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, in a special, knocked out
+   (`HitReact_WhileOut`), wounded (`Hit_PlayBegReaction`) and hit by an object (`HitReact_FromObject`); a normal hit
+   `Hit_PlayReaction` (`0x0026b0a0`, [Hit codes](combat.md#hit-codes)). Confirmed (code); the list is not every
+   branch.
 
 ## Attacking a busy target {#busy-target}
 
@@ -126,7 +130,8 @@ The pick also weighs a rear-grabbed target held by a gang mate +200 toward the g
 
 **A player's moves.** Square and cross strike whatever their shapes meet. The player's grab and tackle search uses
 `Human_CanBeGrabbed` (`0x002256a0`, confirmed (code)). It refuses the state bits `0x7bfdc8f7ff0` (grabbed, mini-game,
-but not tagging), the held flags `0x8fc57a60`, a human down or dead (`Human_IsDownOrDead`), in a scene, more than
+but not tagging), the held flags `0x8fc57a60`, a human knocked out, wounded, dying or dead (`Human_IsDownOrDead`,
+`0x00227e60`, state `0x180050000`), in a scene, more than
 0.25 m above or below, or with human flag `0x40`. A knocked-down human is tested without the knock-down bit
 (`0x7bfdc877ff0`), so he may be grabbed (the grounded mount), unless he holds `0x48000` with his clip half played. So a
 tagger can be grabbed or tackled; a stereo thief or a held human cannot.
@@ -158,7 +163,7 @@ armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
       and stuns the victim first.
     - The grabber hit by a third human goes to `HitReact_WhileGrabbing` (`0x00268ea8`), which ends or keeps the grab
       by the same tests from his side (a front grab ends with 144 on him and 145 on the victim). The 0.6 of his power
-      he loses is spent before it, in `Human_ApplyPendingDamage` (`0x00510274`). Confirmed (code).
+      he loses is spent before it, in `Human_ApplyPendingDamage` ([Damage](#damage), step 4). Confirmed (code).
 
 ### Moves a hit cannot stop: the dive, the charge and the paired moves {#protected-moves}
 
@@ -722,10 +727,9 @@ downed player himself. Players count as members like anyone else. Confirmed (cod
 - **`Gang_NoneAbleToHelp(gang, player)`** (`0x00169dd8`) returns 1 when no other member is free. A member is free when
   he is not cuffed (state `0x20000`), not knocked out (`Human_IsKnockedOut` `0x00227dd8`: state `0x40000`) and not
   wounded (`Human_IsWounded`, `0x00227d98`: state `0x10000`, which `Human_StartWounded` sets;
-  [Combat](combat.md#state-flags) also names it on a tackled victim). Both state tests also count a human with no
-  record (`+0xd4` = 0) as not free. The "busy" of case 4 is only that `0x10000`
-  test. **An empty gang (no live handle) returns 0**, so it does not fail at once and goes on to the route test, which
-  then says no.
+  [Combat](combat.md#state-flags) also names it on a tackled victim). Both state tests also count a human with no record
+  (`+0xd4` = 0) as not free. The "wounded" of case 4 is that `0x10000` test. **An empty gang (no live handle) returns
+  0**, so it does not fail at once and goes on to the route test, which then says no.
 - **`Gang_CanReachToHelp(gang, player)`** (`0x00169ea0`) returns 1 when some member has a route to him; 0 when the
   player is null or the gang has no live handle. The goal is the player's position (`+0x2b0`) put on the navigation
   mesh: `Nav_FindPolygonUnder` (`0x00252410`, height 0) drops it to marked ground within 10 m, else to the nearest

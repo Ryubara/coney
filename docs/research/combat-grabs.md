@@ -3,7 +3,7 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
 PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim keeps the evidence level it had there.
+Every claim carries the level written beside it.
 
 ## Purpose
 
@@ -51,7 +51,8 @@ are below; each was read in the function named.
 | human `+0xa0`, `+0xb0` | the held body's offset and relative rotation in the grabber's frame (`Pair_Attach`, `0x002802a0`) | confirmed (code) |
 | human `+0x348`, `+0x34c` | the carried prop's handles, such as the spray can ([Rembrandt's power move](#power-move-props)) | confirmed (code) |
 | human `+0x5e0` | the grab turn's previous rate, smoothed by `k` (`Human_MoveGrabbing`) | confirmed (code) |
-| `0x005102e0`-`0x00510318` | the grab turn's constants, written by `CfgTurnRate` ([Moving a grab](#grab-turn)) | confirmed (code) |
+| `0x005102e8` | the stick magnitude a grab walk needs (0.95), written by `Cfg_SetStickDeflection` | confirmed (code) |
+| `0x00510304`-`0x00510318` | the grab turn's smoothing constants, written by `CfgTurnRate` (`Cfg_SetTurnRate`; [Moving a grab](#grab-turn)) | confirmed (code) |
 
 ## Behaviour
 
@@ -68,11 +69,13 @@ at the addresses they cite, the runtime ones measured in PCSX2 2.9.94 as each on
 2. When its brain's `+0x04` is 0, it searches afresh with `Player_FindCounterTarget(far × 1.25)` (`0x0027ac30`) and
    makes the result its target: for a tackle the far range of id 3 (2.999 m, so 3.75 m), for a grab that of id 70
    `GRAB_INTRO` (2.499 m, so 3.12 m). Confirmed (code); the ranges are Rembrandt's, read from the disc.
-3. It clears the buffered chain, enters a fight stance if not in one (`0x00280068`), then: a grounded target is mounted
-   (`Mount_StartOnGrounded`, `0x00271b30`); a target already grabbable from behind (`Tandem_CanStart`, `0x00258e10`)
-   starts a [tandem](combat-moves.md#tandem) (`Tandem_Start`, `0x0026f860`); a tackle starts `Tackle_Start(h, 3, 5)`
-   (`0x002707a8`); a grab of a target that is itself tackling pulls it off (`Grab_PullOffTackler`); otherwise a grab
-   starts `Grab_Start(h, 0, 0x48)` (`0x0026c548`). Confirmed (code).
+3. It clears the buffered chain, enters a fight stance if not in one (`0x00280068`), then, in this order: a grounded
+   target is mounted (`Mount_StartOnGrounded`, `0x00271b30`). For a tackle, a target already grabbable from behind
+   (`Tandem_CanStart`, `0x00258e10`) starts a [tandem](combat-moves.md#tandem) (`Tandem_Start`, `0x0026f860`), else
+   `Tackle_Start(h, 3, 5)` (`0x002707a8`). For a grab, a target that is itself tackling and holds no held flag is
+   pulled off (`Grab_PullOffTackler`); one that is not tackling may start a tandem as above; with no target, the
+   global `0x005109a4` lets `Player_OnCommand33` act first; otherwise `Grab_Start(h, 0, 0x48)` (`0x0026c548`).
+   Confirmed (code).
 
 At runtime (confirmed (runtime)):
 

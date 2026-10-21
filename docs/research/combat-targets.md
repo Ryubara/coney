@@ -3,7 +3,7 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
 PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim keeps the evidence level it had there.
+Every claim carries the level written beside it.
 
 ## Purpose
 

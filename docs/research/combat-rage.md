@@ -3,7 +3,7 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
 PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
 large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim keeps the evidence level it had there.
+Every claim carries the level written beside it.
 
 ## Purpose
 
@@ -475,7 +475,7 @@ whatever the flags; `Human_HoldsKind4Or6` `0x00224000` reads the set). Confirmed
 | Helper | Then drops any other held object when | Called on |
 | --- | --- | --- |
 | `Human_EndThrowAimIfHurt` (`0x00257e38`) | the human is **hurt**, flag `0x2000` is clear, and he is not a cop (brain type 1) holding set 1 or 2 | the victim, by `Human_KnockDown` (`0x0022f100`, always, first thing) and `Human_Stun` (`0x0022f658`, see below) |
-| `Human_EndThrowAimDropHeavy` (`0x00257d70`) | flag `0x2000` is clear, he is not a cop holding set 1 or 2, and he is **hurt or holds set 3** (a bat) | the victim, by `Grab_Link` (`0x0022c730`, a grab), `Pair_LinkMount` (`0x0022bfd0`, a mount), the paired-move link `0x0022b960` (from `Attack_StartPaired`, `Grab_StartPairedMove`, `Grab_Strike`, `Grab_Reverse` and the mount strikes, reversal and get-off) and `Human_PlayLethalReaction` (`0x00267e48`) |
+| `Human_EndThrowAimDropHeavy` (`0x00257d70`) | flag `0x2000` is clear, he is not a cop holding set 1 or 2, and he is **hurt or holds set 3** (a bat) | the victim, by `Grab_Link` (`0x0022c730`, a grab), `Pair_LinkMount` (`0x0022bfd0`, a mount), the paired-move link `Grab_BreakOnHit` (`0x0022b960`, from `Attack_StartPaired`, `Grab_StartPairedMove`, `Grab_Strike`, `Grab_Reverse` and the mount strikes, reversal and get-off)) and `Human_PlayLethalReaction` (`0x00267e48`) |
 | `Human_EndThrowAim` (`0x00257ce8`) | flag `0x2000` is clear and the set is not 1 or 2 (no hurt test, no brain test) | the human **starting** the move: the grabber in `Grab_Start` (`0x0026c548`), `Grab_Link`, `Pair_LinkMount`, the tackler in `Tackle_Start` (`0x002707a8`), and in `0x0022b960` the attacker when he holds set 2 or 3 (not for clip 642, nor set 1 with clip 640) |
 
 The test in `0x00257e38`, as read (snippet; confirmed (code)):
@@ -699,11 +699,12 @@ Readings and stand-ins:
 - **Human_Init's other flags**: cops and dealers get `0x2000` and `0x40000`; **stand-in**: the 1-in-2 woundable `0x8`
   of the other brain types is not given (no Coney code reads it, and the roll would shift every seeded run).
 - **Not built**: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)) and a co-op partner's flash.
-  Nothing in the original wakes a knocked-out human when record `+0xf0` passes: `Humans_Update` (`0x00249108`) reads
-  it only to make a non-revivable one (and a revivable player whose crew is all out) dead, so a revivable Warrior
-  stays down until a revive, a flash or the script wakes him ([Who sets and clears the knocked-out
-  bit](combat-reactions.md#knocked-out-bit)). Confirmed (code) for `Humans_Update`'s reads; that no other code reads
-  `+0xf0` is inferred.
+  Nothing in the original wakes a knocked-out human when record `+0xf0` passes. `Humans_Update` (`0x00249108`) reads
+  it to set a wounded human dying (`0x80000000`) once it has passed; to make a knocked-out one without flag `0x4` dead
+  when no camera sees him (otherwise it moves 14 s on), and a revivable player whose crew is all out dead; and to
+  start a dead body's fade (`0x200000000`) when no camera sees it. So a revivable Warrior stays down until a revive,
+  a flash or the script wakes him ([Who sets and clears the knocked-out bit](combat-reactions.md#knocked-out-bit)).
+  Confirmed (code) for `Humans_Update`'s reads; that no other code reads `+0xf0` is inferred.
 
 ## Coney's implementation
 
