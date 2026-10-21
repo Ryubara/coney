@@ -45,8 +45,11 @@ bool startCharacterSkin();
 /// Destroys the shaders and the pipeline, before the device stops.
 void stopCharacterSkin();
 
-/// Whether the skinned pipeline is running (startCharacterSkin() succeeded).
+/// Whether the skinned pipeline is running (startCharacterSkin() succeeded) and allowed.
 [[nodiscard]] bool characterSkinOn();
+
+/// Allows or forbids GPU skinning for meshes made from now on (`--cpu-skinning` forbids it, to compare the two).
+void allowCharacterSkin(bool allowed);
 
 /// Puts `atomic` on the skinned pipeline, its geometry's weights from `vertices` and its bones from `palette`; both
 /// must outlive the atomic, and `vertices` must hold one entry per geometry vertex. Needs characterSkinOn().

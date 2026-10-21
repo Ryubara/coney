@@ -111,4 +111,5 @@ node's vertices as the node's matrix moves it (`posedBox()`), which holds every 
 vertices' own box (**Coney's choice**: the original's choice of sphere is not traced). Where the pipeline cannot start
 (OpenGL 2.1 or ES 2, a model with more than 64 skin nodes), the mesh skins on the CPU as before, straight into librw's
 geometry with the placement folded into the bone matrices. The character viewer and the reference images skin on the
-CPU.
+CPU. `--cpu-skinning` skins every human on the CPU in any run, to compare the two paths' pictures and times in one
+build.

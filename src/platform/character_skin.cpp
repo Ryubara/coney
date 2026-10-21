@@ -30,6 +30,7 @@ struct SkinShaders {
 };
 SkinShaders shaders;
 rw::gl3::ObjPipeline* pipeline = nullptr;
+bool allowed = true;
 
 // Plugin constructors: no data until useCharacterSkin().
 void* constructNull(void* object, rw::int32 offset, rw::int32 /*size*/) {
@@ -213,10 +214,12 @@ void stopCharacterSkin() {
     }
 }
 
-bool characterSkinOn() { return pipeline != nullptr; }
+bool characterSkinOn() { return pipeline != nullptr && allowed; }
+
+void allowCharacterSkin(bool allow) { allowed = allow; }
 
 void useCharacterSkin(rw::Atomic* atomic, const SkinVertexData& vertices, const BonePalette& palette) {
-    CONEY_ASSERT(pipeline != nullptr && atomic != nullptr);
+    CONEY_ASSERT(characterSkinOn() && atomic != nullptr);
     *PLUGINOFFSET(const SkinVertexData*, atomic->geometry, verticesOffset) = &vertices;
     *PLUGINOFFSET(const BonePalette*, atomic, paletteOffset) = &palette;
     atomic->pipeline = pipeline;

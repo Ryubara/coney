@@ -69,6 +69,7 @@
 #include "install/known_discs.h"
 #include "platform/audio_output.h"
 #include "platform/audio_output_controls.h"
+#include "platform/character_skin.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/clip_recorder.h"
 #include "platform/debug_menus.h"
@@ -311,6 +312,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     const std::unique_ptr<coney::platform::LogOutput> runLog = std::move(*logOutput);
+    // `--cpu-skinning`: the humans skinned as before GPU skinning, to compare the two (docs/guides/performance.md).
+    coney::platform::allowCharacterSkin(!options->cpuSkinning);
 
     // `--event-log` and `--pad-pipe`: the events go to the file, and to the driver as `@ev` lines (a hint's line
     // breaks become spaces there, one event a line). Opened before anything runs, so the first event is in it; the

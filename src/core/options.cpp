@@ -58,7 +58,7 @@ constexpr std::string_view kUsage =
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
-    "             [--no-audio | --audio-test] [--skip-movies]\n"
+    "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
     "             [--record FILE [--record-seconds N]]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "\n"
@@ -168,6 +168,7 @@ constexpr std::string_view kUsage =
     "  --net-name NAME    the player name a network game shows (1 to 32 printable ASCII characters)\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
+    "  --cpu-skinning     skin the humans on the CPU instead of the GPU, to compare the two\n"
     "  --audio-test       play a synthesised tone sweep, looping, and print what was mixed at the end;\n"
     "                     in test mode no device opens and the sound is mixed offline\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI. Test mode: with\n"
@@ -1084,6 +1085,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.noAudio = true;
         } else if (arg == "--skip-movies") {
             options.skipMovies = true;
+        } else if (arg == "--cpu-skinning") {
+            options.cpuSkinning = true;
         } else if (arg == "--audio-test") {
             options.audioTest = true;
         } else if (arg == "--no-activate") {
