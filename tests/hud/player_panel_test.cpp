@@ -189,7 +189,7 @@ TEST_CASE("money is clamped, counts with its cue and a changed item count is act
     CHECK(panel.fade() == 1.0F);
 }
 
-// Owner item 22: the count's cue 0x10 is a looping sound, so a count that started it and never stopped it left it
+// User item 22: the count's cue 0x10 is a looping sound, so a count that started it and never stopped it left it
 // looping for good (docs/research/sound-events.md#money-count-sound).
 TEST_CASE("the money count's looping sound plays while it counts, comes back if lost and stops when it ends",
           "[hud][audio]") {

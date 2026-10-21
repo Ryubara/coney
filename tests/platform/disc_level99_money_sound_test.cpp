@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that the money count's sound ends with the count (owner item 22,
+// Checks against the player's own disc that the money count's sound ends with the count (user item 22,
 // docs/research/sound-events.md#money-count-sound): player 1 walks into a `dyn_money` pick-up put 2.5 m ahead of him,
 // with the left stick at 65 % toward it; the HUD counts the money with the looping cue 16 (`vags/misc/count_money2`),
 // which must not be playing a few seconds later. `level99` checkpoint 1 plays in the game session as `--play-level`
@@ -94,8 +94,8 @@ TEST_CASE("the disc's level99: the money count's looping sound stops when a pick
     std::printf("  level99 money count: $%d -> $%d; count sound asked %zu, live while counting %zu, live after %zu\n",
                 before, after, asked, liveWhileCounting, liveAfter);
     CHECK(after == before + static_cast<int>(kDollars));
-    // The count played its sound, one voice at a time, and nothing of it plays once the count is over.
-    CHECK(asked >= 1);
+    // The count asked for its sound once and kept that one voice, and nothing of it plays once the count is over.
+    CHECK(asked == 1);
     CHECK(liveWhileCounting == 1);
     CHECK(liveAfter == 0);
 }
