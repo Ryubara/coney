@@ -28,9 +28,9 @@ Triangle climbs a fence or wall in front of the player or, at a run, jumps.
 
 ## Original structure
 
-`Human/` (`0x00217a70`-`0x00323298`, inferred from the path strings and calls on [Source map](source-map.md), which
-starts it at `0x002176b8`; the four functions from there to `Human_GetClump` at `0x00217a70` belong to
-`GameStatsSubItem.cpp`, confirmed (code)) holds the human; the model side is in `Graphics/Character.cpp`,
+`Human/` (`0x00217a70`-`0x00323298`, inferred from the path strings and calls on [Source map](source-map.md); the four
+functions before `Human_GetClump` at `0x00217a70` belong to `GameStatsSubItem.cpp`, inferred from the vtable
+`0x0053ef48` they share with that file's anchor) holds the human; the model side is in `Graphics/Character.cpp`,
 `CharacterModel.cpp` and `Animations.cpp`. Names are ours unless a path or class string gives them.
 
 | Address | Name | Role | Evidence |
