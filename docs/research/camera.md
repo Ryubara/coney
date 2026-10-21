@@ -35,6 +35,7 @@ each camera class in turn, in the order of their vtables (`0x00535250`-`0x005378
 `{delta, function}` slots). Function names are ours unless a class string gives them; every address below has the
 same name and a plate comment in the Ghidra project. "Vtable `+0xNN`" is the slot whose function word is at that
 offset (the call reads its delta at `+0xNN − 4`). Unless a row says otherwise its evidence is the code at that address.
+Confirmed (code).
 
 Outside `Camera/`, the functions this page relies on:
 
@@ -49,6 +50,7 @@ Outside `Camera/`, the functions this page relies on:
 ### Script helpers {#fn-script}
 
 The functions the camera bindings call ([camera bindings](../references/bindings/camera.md)), `0x0011b770`-`0x0011e1b0`.
+Confirmed (code).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -97,7 +99,7 @@ The functions the camera bindings call ([camera bindings](../references/bindings
 ### The camera manager {#fn-manager}
 
 `Cam_ICamera.cpp`: the factory, the per-player slots ([Globals](#globals)), the update, the camera stack and the
-visibility tests, `0x0011e1b0`-`0x001204f0`.
+visibility tests, `0x0011e1b0`-`0x001204f0`. Confirmed (code).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -142,7 +144,7 @@ visibility tests, `0x0011e1b0`-`0x001204f0`.
 ### The base class `Cam_ICamera` {#fn-base}
 
 The base camera's own methods, the frustum, the views and the shake, `0x00120868`-`0x00123630`. Its fields are in
-[The base camera object](#the-base-camera-object).
+[The base camera object](#the-base-camera-object). Confirmed (code).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -208,7 +210,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 
 ### `Cam_Follow` (type 2) {#fn-follow}
 
-`Cam_Follow.cpp`, `0x00124778`-`0x00134b90`; the behaviour is under [Behaviour](#setting-up).
+`Cam_Follow.cpp`, `0x00124778`-`0x00134b90`; the behaviour is under [Behaviour](#setting-up). Confirmed (code).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -483,7 +485,7 @@ code at the cited addresses:
   switch 13 keeps both views. With switch 3 off both views always show. Switches 4 and 12 apply the same test to
   the follow and rail cameras' targets.
 - **Shake** (`0x00121298`): the shake amount drives the pad's rumble byte (pad record `+0x41`) in every case; the
-  random view offset is added only while switch 6 is on.
+  random view offset is added only while switch 6 is on. Inferred, as above.
 - **Right stick** (`0x00129050`): returns at once while `0x0050b1b0[player]` or switch 0 (`0x0050b1b8[player]`) is
   0, so neither the stick nor the zoom buttons act.
 - **Look-behind** (switch 11, `0x0050b23c`, confirmed (code) at `0x0012b4b4`): passed to `0x00129050` as its eighth
@@ -720,14 +722,15 @@ single-player case.
    remaining time `+0x40c` when one runs (then `|fov − wanted| / +0x40c` per second).
 7. **Reset when lost** (only with one player camera, `0x0050b19c` = 1): when the held position `+0x260` is more than
    **1.3 × the maximum distance** `+0x304` from the look-at point, or the camera is more than **30 m** above or below
-   it, `0x00124d00` puts the camera behind the player as `CameraReset` does.
+   it, `0x00124d00` puts the camera behind the player as `CameraReset` does. Confirmed (code).
 8. **Look-behind** (`0x001298c0`, [below](#reverse)) while the reverse button is held, and on the update it is let go.
+   Confirmed (code).
 9. **Framing rules**, only while the stick has been still for 0.334 s (`+0x368` = 0) and the view is not pulled out
    behind (`+0x455` = 0), or while a hand-over is queued (`+0x47c`): the [combat camera](#combat-camera) (player 1
    with the lock-on button, `0x0012e9a8`), else [keep in view](#combat-camera) of the fight target (0.4) or of a
    secondary target (`+0x320`, 0.25); a queued **heading from `+0x43c`** (`+0x462`: the heading target `+0x350` =
    `+0x43c` with a 0.1 s timer, and the band moved to the default distance when it was at the minimum); then
-   **auto-follow** (`0x00129c78`, [Heading](#heading)) when nothing above framed the player.
+   **auto-follow** (`0x00129c78`, [Heading](#heading)) when nothing above framed the player. Confirmed (code).
 10. **Leash** to the distance band `+0x32c`-`+0x330`: when the distance from the wanted position to the look-at point
     leaves the band, the wanted position is moved along that line back to the nearer edge. `level99`'s band is
     3.0-3.5 m at checkpoint 1 and 4.8-5.3 m in the street.
@@ -757,7 +760,7 @@ single-player case.
     override** `+0x354` (when above −FLT_MAX) is reached: with the timer `+0x40c` = 0 at once (when not aiming) or at
     **10°/s** (when aiming, cleared within 0.001°), with the timer by `(override − pitch) × dt / +0x40c`; the target
     pitch follows the camera's pitch meanwhile. With neither, outside the height hold, the pitch returns to its
-    target at most **85°/s** (`1.4835` rad/s).
+    target at most **85°/s** (`1.4835` rad/s). Confirmed (code).
 17. **Head look** (`0x00128b20`, [below](#head-look)) while the stick gave a head angle, with one target, the player
     idle and not in a fight stance.
 18. **Position lag**, only when there is no heading target and `+0x46b` (set by `PlaceBehind`) is clear, and not
@@ -829,6 +832,7 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
      (`0x00335420`), 0.0035-0.007 m an update; past ±0.028 it is held at `+0x3f4` × 0.028 and the direction `+0x3f4`
      (1.0 at construction) flips. The aim point moves sideways by the sway along the view's horizontal side axis (the
      unit cross product made at `0x00130b68`) and up by (2 × |sway| − 0.028) × 0.6, so between −0.017 and +0.017 m.
+     Confirmed (code).
 3. **Push.** Unless the camera aims, `P` is pushed out of the world by a sphere of radius 1.0 (0.95 with two targets ×
    the target's scale; `CollisionMesh_SpherePush`).
 4. **Lag** `+0x418`, worked out afresh each update from 0.06: × (1 + (1 − `c`) × 0.5) where `c` = `|unit(velocity) ·
@@ -961,7 +965,7 @@ height (`tf(player) + 0x8`, `f32`) at frame 5, once; for a single frame, launch 
 with `pcsx2 launch`, pause through the debug server, write the scripted pad's rest bytes (`0x005de3aa`-`0x005de3af`:
 `ff ff 80 80 80 80`), find the player's transform as the entry of the table at `0x00714b00` (0x20 each) whose
 position is the trace's first row (entry 2 in slot 1), add the height at `+0x8`, and `pcsx2_frame_advance` two
-frames per update before `pcsx2_screenshot`.
+frames per update before `pcsx2_screenshot`. Confirmed (runtime).
 
 #### Coney's difference {#long-fall-coney}
 
@@ -978,8 +982,9 @@ this: with the release build of 2026-10-10 the trace's camera columns stayed con
 The fix, now in `stepAim()`: it takes `c` from the 3D velocity against the view's 3D direction as the last update
 left it (from the camera's place before the update to the old aim point; **Coney's reading** of the orientation
 `+0x20`), with its gate on the 3D speed; keeps `s` on the horizontal speed; gates the ×2.5 on the 3D speed and
-applies it when |`P` − look-at|² > 10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the old aim point) × the lag being
-built, which the original keeps in `+0x418` while it builds it: written at `0x00133be8` and `0x00133d4c`, read for the
+applies it when |`P` − look-at|² > 10⁻⁵ and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the
+old aim point) × the lag being built, which the original keeps in `+0x418` while it builds it: written at
+`0x00133be8` and `0x00133d4c`, read for the
 test at `0x00133e20`; confirmed (code), re-read 2026-10-20), else when the stick is not the player's. **Open
 question**: the slope latch `+0x460`, which also passes the first test, is not modelled (Coney has no slope latches
 yet), a marked stand-in in the code. A first version took `c` against the direction to the look-at point, which in
@@ -1197,7 +1202,7 @@ camera options `0x0050b1b0` and `0x0050b1b8` allow it.
 | Between | | no turn: a dead zone of ±48 horizontally and nearly the whole travel vertically |
 
 - Inversion flags per pad swap the signs: `0x0050b1f0` for yaw (it also swaps the two side factors before they are
-  read), `0x0050b1f8` for pitch.
+  read), `0x0050b1f8` for pitch. Confirmed (code).
 - Any turn sets `+0x368` to 0.334 s, which holds off the framing and auto-follow rules (update step 9).
 - **Side factors.** A left turn's rate is capped at `+0x438 × 150°/s` and happens only while `+0x438` > 0 (a right
   turn: `+0x434`); a turn sets the other side's factor back to 1. The [collision step](#collision) sets both to 1
@@ -1226,7 +1231,7 @@ camera options `0x0050b1b0` and `0x0050b1b8` allow it.
       clears it (`0x0012b428`). Tagging is the first target's state `0x2000000` (`0x002238c0`) with one target, or
       both targets' (`s5`, `0x0012b2b0`-`0x0012b2d8`).
     - **Ninth argument (pitch allowed)**: the stick's pitch acts only when the views shown equal the player cameras
-      (`0x0050b198` = `0x0050b19c`) or the camera has one target.
+      (`0x0050b198` = `0x0050b19c`) or the camera has one target. Confirmed (code).
     - The whole call is skipped when the camera has no target (`+0x444` = 0).
 
 #### Buttons {#buttons}
@@ -1248,12 +1253,12 @@ to 0 (none) for the wheelchair mini-game.
   hold timer (`+0x370` for the first pad) grows by `dt` while it is held: a press zooms at once (the timer has only
   just started) and resets the timer; holding it past **0.17 s** also counts as the reverse button. A press that
   follows a hold longer than 0.17 s only resets the timer, unless the look-behind switch (11) is off, when every press
-  zooms. With separate buttons a zoom is any new press.
+  zooms. With separate buttons a zoom is any new press. Confirmed (code).
 - **Centre** (`0x00129050` at `0x00129338`-`0x001293a0`): with one target, no clear heading latched (`+0x463` = 0,
   [helpers](#collision-helpers)), not in a mini-game (`0x00233c50`) and not player 1 in the [combat
   camera](#combat-camera), a new press sets the heading target `+0x350` to the player's facing (the heading of his
   rotation, `0x00335f48`) and, when no timer runs, `+0x40c` = **0.2 s**; the stick does nothing that update. So the
-  camera swings behind the player over 0.2 s ([update step 15](#update)).
+  camera swings behind the player over 0.2 s ([update step 15](#update)). Confirmed (code).
 - **Reverse**: see [Looking behind](#reverse).
 
 #### Looking behind {#reverse}
@@ -1348,13 +1353,13 @@ plane is the camera's vtable `+0x5c`.
   at `feet` + **2.395 m** and then `feet` + **2.148 m**: forward, and when that is clear, backward from its far end.
   The first height clear both ways is taken. If both hit, a last try at `feet` + `H`; if that hits either way there
   is no hold. Otherwise the hold starts: `+0x453` = 1 and `+0x324` = the height − the near plane − `+0x378`, so
-  step 12 eases the wanted position's height to that height less the near plane.
+  step 12 eases the wanted position's height to that height less the near plane. Confirmed (code).
 - **In player terms**: the camera stands higher than the player's head, something steep sits between it and the
   look-at point about 0.75 m above head height, and there is clear space 2.0-2.4 m above his feet: the camera comes
   down into that space and stays there.
 - **Leaving** (`0x0012c048`): when the slope flag `+0x460` is set, the probe did not run or hit nothing, or (holding)
   the wanted position is no longer in front of the stored plane (its distance in plan under 10⁻⁵): `+0x453` = 0 and
-  the plane is cleared. So the hold also needs the probe ray to keep hitting something every update.
+  the plane is cleared. So the hold also needs the probe ray to keep hitting something every update. Confirmed (code).
 - **While holding**: update step 12 eases the height and step 11 (the pitch toward its target) and the 85°/s pitch
   return of step 16 are skipped.
 
@@ -1383,12 +1388,12 @@ the camera looks, confirmed (code):
   does not twist to look behind). **Pitch**: the stick's head pitch (above).
 - `HeadLook_AtAngles` (`0x00299f98`) stores them in the human's head-look state (`+0x284`) with weight **0.75**, flags
   `0x20 | 4`, for `(dt × 1000 & 0xff) + 100` ms (133 ms at 30 Hz), so the look lapses about 4 updates after the
-  stick is let go.
+  stick is let go. Confirmed (code).
 - **The turn** (`Human_UpdateHeadLook` `0x00248428`, each human update): the yaw is clamped to **±55°** (±90° with
   flag `0x40`, not set here) and the pitch to **±45°**; each update the head's angles step toward them by **weight ×
   12°** (9° at 0.75; `Angle_StepToward`, last argument 30°, not traced); flag `0x20` keeps the look from relaxing when
   the yaw passes 60°. `CharacterInstance_SetHeadLook` (`0x00175c58`) then clamps the pitch to −30°..22.5° for the
-  bones ([graphics](graphics.md)).
+  bones ([graphics](graphics.md)). Confirmed (code).
 
 ### World collision {#collision}
 
@@ -1455,8 +1460,10 @@ calls and constants; the overall reading is inferred:
        allowed distance of the last update, it is put at that distance plus 4% of the gap (blocked) or 3% (clearing).
        A pull-in nearer than last update's distance stands at once.
     4. `Camera_PushOutOfHumans` (`0x00122728`) when `C` is more than min(`+0x300`, `+0x32c`) or 1 m from `L`.
+       Confirmed (code).
     5. The aim point `P` work, including both radius-1.0 sphere pushes ([The aim point](#aim-point) step 3, and again
        in `0x0012f858` after it raises `P`): those pushes move `P` (or `+0x240` with two targets), **never `C`**.
+       Confirmed (code).
     6. **Raise when blocked** (helpers, below) lifts `C`'s height only; its plan distance is unchanged.
     7. The **wall push** (below), only while `+0x464` is set: the one sphere push of the camera itself, radius the
        near plane + 10⁻⁵.
@@ -1940,10 +1947,10 @@ orientation quaternion the same way: `CamLocked_BuildOrientation` (`0x001353e0`)
 2. `q = qh ⊗ qp ⊗ qr`, Hamilton products (the vector-unit sequence at `0x00135568` computes
    `(w1·v2 + w2·v1 + v1 × v2, w1·w2 − v1·v2)` with `qh` on the left, then the result times `qr`). With column
    vectors that is `R = Rz(h) · Rx(p) · Ry(r)`: the pitch turns about the camera's own right axis after the
-   heading, and the roll about its own forward axis; the pitch is not about world x.
+   heading, and the roll about its own forward axis; the pitch is not about world x. Confirmed (code).
 3. `q` (x, y, z, w) is stored at `+0x20` (and `+0x1f0` for a locked camera, the orientation it keeps). It maps the
    camera's local axes to the world ([Axes](#the-base-camera-object): +x right, +y forward, +z up), as
-   `Quat_AxisY` (`0x003363b0`: `(2(xy − wz), 1 − 2(x² + z²), 2(yz + wx))`) reads it.
+   `Quat_AxisY` (`0x003363b0`: `(2(xy − wz), 1 − 2(x² + z²), 2(yz + wx))`) reads it. Confirmed (code).
 
 So, with `h`, `p`, `r` the script's angles:
 
@@ -1966,6 +1973,7 @@ So, with `h`, `p`, `r` the script's angles:
   of 15° or 11° ([Mini-game and mugging cameras](#mini-mug)), and the follow camera's eased roll
   (`Cam_Follow_EaseRoll` `0x0012ac58`: `q` = orientation ⊗ (0, sin(r/2), 0, cos(r/2)), a turn about the camera's
   own +y, its view axis), whose target `+0x404` only the constructor writes (0), so it stays 0.
+  Confirmed (code) for the roll's maths and `+0x404`; the counts are a survey of the disc's scripts.
 - **What the view needs for a roll**: nothing beyond the camera's own axes. The original draws through the current
   camera's orientation quaternion (`+0x20`): the view matrix below takes **up = `Quat_AxisZ(q)`** with right and
   forward from the same `q`, so a roll tips the picture with no separate step. A port that rebuilds the view from
@@ -1974,7 +1982,7 @@ So, with `h`, `p`, `r` the script's angles:
 - The locked update (`0x00135680`) then rebuilds the same orientation each frame: the eye is the position
   (`+0x1e0`, also `+0x10`), the target the eye + 3 m × `Quat_AxisY(q)`, the up hint `Quat_AxisZ(q)` (`0x00336458`),
   through `Mat_LookAtUp` (`0x00337168`) and `Mat_ToQuat`, so the roll survives (the default up hint of
-  `Mat_LookAt` would drop it). Its look-at point is that target.
+  `Mat_LookAt` would drop it). Its look-at point is that target. Confirmed (code).
 - The **view matrix** (world to camera) is the inverse of `[right, forward, up]` placed at the eye: camera-space
   `(x, y, z) = (right · (P − eye), forward · (P − eye), up · (P − eye))`, with +y the depth; the lens is on
   [The streamed world](world.md#player-camera).
@@ -2036,7 +2044,7 @@ seconds, nil, player)`).
 **Settings.** [`CamModifyRail(setting, value, seconds, player)`](../references/bindings/camera.md#cammodifyrail)
 (`Camera_ModifyRail` `0x0011d228`) stores a target and an ease time; every update `CamRail_EaseValue` (`0x0013f930`)
 moves each current value toward its target by `(target − current) × dt / time left` and takes the frame's time off,
-so the value arrives linearly in `seconds` (0: at once).
+so the value arrives linearly in `seconds` (0: at once). Confirmed (code), as is the table.
 
 | Setting | Target / time / current | Unit | Used by mode 0 as |
 | --- | --- | --- | --- |
@@ -2054,7 +2062,7 @@ so the value arrives linearly in `seconds` (0: at once).
 Settings 0 and 1 start from the camera's present distance and height when they are switched on from off, and a
 height set negative eases back to the present height before it switches off. Setting 2 eases the lens itself.
 
-**One update** (`CamRail_Update`, `0x0013d010`, skipped when the frame time is 0), in order:
+**One update** (`CamRail_Update`, `0x0013d010`, skipped when the frame time is 0; confirmed (code)), in order:
 
 1. Ease the settings (above) and the lead (`+0x35c` toward `+0x370`,
    [`CamLeadRail`](../references/bindings/camera.md#camleadrail)).
@@ -2066,10 +2074,10 @@ height set negative eases back to the present height before it switches off. Set
    on, unless player 0's current camera is type 5 or (one player camera, or as many views as cameras) and both view
    flags are set, each rail keeps only the entry of its own player index (none when the list is shorter). When the
    count grows, `+0x3e5` and (not in mode 3) `+0x3e7` are set and the split timer is armed. None: the update stops
-   here. So a one-player list [player 1, Diego] with switch 3 off gives two targets, the player first.
+   here. So a one-player list [player 1, Diego] with switch 3 off gives two targets, the player first. Confirmed (code).
 3. **The target point** (`CamRail_UpdateTargetPoint`, `0x0013bad0`) `P` = the plain mean of the targets'
    transform-table positions (their feet), each weighted equally.
-   In mode 0, with `d` the current segment's direction flattened to the ground plane and normalised:
+   In mode 0, with `d` the current segment's direction flattened to the ground plane and normalised (confirmed (code)):
    - the look-at point starts as `P`; `P.z` += the offset's z (setting 9);
    - setting 3 non-zero: `P` += `d` × setting 3, and the look-at point = `P` + `d` × setting 4;
    - setting 3 zero, one target: the look-at point += the whole offset `(x, y, z)` when setting 4 is 0, else its z and
@@ -2085,14 +2093,14 @@ height set negative eases back to the present height before it switches off. Set
    `dz` > 0.5 → old + `Δ` × 0.5, then its z keeps only a quarter of its rise; else `h` > 1 → old + `Δ` × 0.25;
    else `dz` > 0.1 → with `f` = 1 − 1.875 (`dz` − 0.1), old + `Δ` × min(2`f`, 1), then its z keeps `f` of its
    rise; else `h` > 0.4 → old + `Δ` × (1 − 1.25 (`h` − 0.4)); else no damping. While `+0x3ec` is 1 the look-at
-   point moves only 40% of the way each frame, until it arrives (then `+0x3ec` = 0).
+   point moves only 40% of the way each frame, until it arrives (then `+0x3ec` = 0). Confirmed (code).
 4. **Placement** by mode (`+0x3ed`): 0 `CamRail_UpdatePosition` (`0x0013d6b0`, below), 1 and 2 `CamRail_PlaceLeading`
    (`0x0013e708`, set by `CamLeadRail`: the camera stands the lead ahead of or behind the target's place on the
-   rail, [below](#rail-leading)), 3 `0x0013dcc8` ([below](#rail-mode3)).
+   rail, [below](#rail-leading)), 3 `0x0013dcc8` ([below](#rail-mode3)). Confirmed (code).
 5. Split-screen extras (`0x0013cf20`, only with two player cameras); a timer at `+0x3e0` fades the co-op flash,
    alpha 225 on both colour controllers' byte `+0x1b4` ([Two players](#two-players)); then the camera's distance to
    `P` is kept at `+0x3d8` and the flags
-   `+0x3e5`, `+0x3e7`, `+0x3e8`, `+0x3e9` cleared.
+   `+0x3e5`, `+0x3e7`, `+0x3e8`, `+0x3e9` cleared. Confirmed (code).
 
 **Mode 0 placement** (`CamRail_UpdatePosition`):
 
@@ -2100,24 +2108,25 @@ height set negative eases back to the present height before it switches off. Set
    point nearest `P` (3D) starts the segment, the last point giving the last segment (a tie between two points takes
    the later one only when `P` projects inside its segment); then, when `P` projects inside that segment
    (0 ≤ t ≤ length) it stays, else it moves to the previous or the next segment, whichever `P` projects inside. A
-   change of segment sets a blend `+0x3cc` = 0.1.
+   change of segment sets a blend `+0x3cc` = 0.1. Confirmed (code).
 2. **Project** `P` on the segment (`CamRail_ProjectOnSegment`, `0x00140308`): `Q` = the foot of the perpendicular,
    clamped to the segment's ends. With setting 0 on, when `Q` is farther than it from `P` in plan, `Q` moves toward
-   `P` (in plan) until it is exactly that far: the camera leaves the rail to stay within reach.
+   `P` (in plan) until it is exactly that far: the camera leaves the rail to stay within reach. Confirmed (code).
 3. While the blend is on, `Q` = camera + (`Q` − camera) × blend and the blend grows by 5% a frame until it reaches
    1 or the step is under 1 cm: a soft hand-over between segments. `Q` += the vector at `+0x330`, which is always zero:
    only the constructor (zero, `0x0013b25c`) and `CamRail_CopySettings` (`0x0013b3d0`) write it (mode 3 also
-   subtracts it, `0x0013e4a8`).
+   subtracts it, `0x0013e4a8`). Confirmed (code).
 4. **Height**: with setting 1 on, `Q.z` is lowered to the first target's feet + setting 1 when it is higher (a
    ceiling, it never raises the camera). The first target is entry 0 of the gathered list (`+0x340`, read at
    `0x0013d848`): the first kept entry of the shared list, so player 1 on a [player, Diego] rail. The camera stands at `Q`.
+   Confirmed (code).
 5. **Look-at**: with setting 8 on, the look-at point is replaced by the point 6 m from `Q` toward the targets in plan,
    raised by 6 × tan(setting 8). The camera then faces the look-at point.
 6. **Ends**: when `Q` is the rail's first point and the look-at point lies behind the rail's start, or `Q` is the
    last point and the look-at point lies beyond the end, the hold `+0x3e4` is set (`0x0013dafc`) and the camera is
    put back as it was at the start of the update (position, orientation, `P`, look-at point), then faces the
    look-at point again. This hold lasts one update: step 7 clears it. So the camera stands still while the look-at
-   point is past an end and follows again on the first update it is not.
+   point is past an end and follows again on the first update it is not. Confirmed (code).
 7. **Collision** (`0x0013dbbc`-`0x0013dc1c`): when the camera is held (by step 6 or by `CamLockRail`), or with
    switch 3 off, switch 8 on and two or more targets, `CamRail_CollideTwoTargets` (`0x00140708`) runs and the hold
    is then set back to its value at the start of placement. Otherwise `CamRail_Collide` (`0x00140830`) runs for the
@@ -2135,7 +2144,7 @@ height set negative eases back to the present height before it switches off. Set
   `CamRail_CopySettings` (`0x0013b498`, copies player 1's, so a joining player inherits his lock); the mode 0 ends
   test (1) and step 7 (the start value); mode 3 (1, below). `CamRail_Reset` (`0x0013b2b8`), `CamRail_Activate`
   (`0x0013b508`), `CamSetupRail` and switching modes never write it: a lock survives `CamSetupRail` and
-  `CameraMakeActive`.
+  `CameraMakeActive`. Confirmed (code).
 - **Modes 1 and 2** (`CamRail_PlaceLeading`, `0x0013e708`) never read it: a lock does not stop them.
 - **Mode 3** (`0x0013dcc8`) sets it when the camera reaches the rail's first or last point (squared distance under
   10⁻¹⁰, `0x0013e260`, `0x0013e2ec`) and, while it is set, no longer moves along the rail toward the target: the
@@ -2160,7 +2169,7 @@ his own update (human `+0x10`, vtable `+0x9c`) plus the same offset. The helper 
   pushed along the plane's normal to 2 m (plus 10⁻⁵). If any plane pushed, the player is placed at `A` minus the
   offset with his current rotation (`Human_SetTransform` `0x0023d440`, his vtable `+0x6c`). When he is jumping or in a
   long fall (state flags `0x400000000` or `0x1000000000`) he is landed first (`Human_Land` `0x0023e090`). The camera
-  is neither moved nor turned.
+  is neither moved nor turned. Confirmed (code).
 - `CamRail_Collide` also builds a vertical plane 2 m in front of the camera along its level forward and passes it
   with a 0.3 m margin. The helper uses that plane only for a rail in modes 1-3 (it would push `A` to 0.3 m beyond
   it), which never call `CamRail_Collide`: the 0.3 m and 2 m have no effect.
@@ -2180,10 +2189,11 @@ a player's scale × 0.5, or for a non-player (`+0x1b0` = −1) his capsule radiu
 - **`CamRail_CollideTwoTargets`** (`0x00140708`): when that test fails and the camera is not held, the camera's
   position, orientation, target point `P` (`+0x180`) and look-at point (`+0x2f0`) go back to their values at the start
   of the update and it faces the look-at point again (frustum rebuilt); held or not, it then calls the keeper. The
-  camera is never pulled back or up.
+  camera is never pulled back or up. Confirmed (code).
 - **`CamRail_KeepTargetsInFrame`** (`0x00140d68`) **moves the targets, not the camera**: one pass, one correction of
   each kind per target, no loop. Before it, `zmax` / `zmin` are the highest and lowest of all the targets' feet and
-  start-of-update heights, and `zmax` += max(offset z `+0x328`, 1 m). Per target, in order:
+  start-of-update heights, and `zmax` += max(offset z `+0x328`, 1 m). Per target, in order
+  (confirmed (code) unless marked):
     1. With switch 2 on: in mode 0, the same 2 m push off the previous, current and next segments' vertical planes as
        `CamRail_Collide` ([above](#rail-collide)); in modes 1-3, `A` is pushed beyond the plane 2 m in front of the
        camera by `r`.
@@ -2221,11 +2231,11 @@ it, each with `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, t
   (`CamRail_ChooseSegment`, `CamRail_ProjectOnSegment`); the camera is placed at that point `Q`; the look-at point at
   2 m from `Q` toward `P` in plan, at the pitch; the goal `+0x310` = the look-at point. `+0x3ea` = 1 when the first
   target stands to the left of the segment's direction (z of the cross product > 0). Switching setting 5 on later
-  does not restart: the next start is the next activation.
+  does not restart: the next start is the next activation. Confirmed (code).
 - **Projection in mode 3** (`0x00140308`): along the segment **in plan** (the plan distance divided by the plan
   length of the segment's unit vector, so the height follows the rail), and clamped only before the rail's first
   point and past its last; on an inner segment the point may run past the segment's end. Setting 0's reach is
-  applied in mode 0 only.
+  applied in mode 0 only. Confirmed (code).
 - **Each later update**, with at least one target (none: the camera keeps its place, still shakes and faces the
   look-at point):
     1. **Which target.** With two or more, the one **farthest back** along the current segment's direction (smallest
@@ -2233,7 +2243,7 @@ it, each with `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, t
     2. `CamRail_KeepTargetsInFrame` (`0x00140d68`, [above](#rail-frame)) moves the targets back into frame, with the
        margin setting 7 and the line of sight from the 2 m point while `+0x3e5` is set (the update a target joined).
        Mode 3 passes `+0x3ea` and its negation in `a2` / `a3`, but the keeper overwrites both registers before
-       reading them (`0x00140dd0`-`0x00140dd4`): `+0x3ea` is dead.
+       reading them (`0x00140dd0`-`0x00140dd4`): `+0x3ea` is dead. Confirmed (code).
     3. `P` (`+0x180`) = that target's feet + (0, 0, offset z `+0x328`): only the offset's height; in mode 3 the
        mean and the damping of update step 3 are replaced.
     4. **Goal.** Segment chosen for `P`, `P` projected to `Q'`; the goal = `Q'` + 2 m toward `P` in plan, at the
@@ -2342,7 +2352,7 @@ update at `0x0012bb00`-`0x0012bbe8`; confirmed (runtime) as noted.
   and the angle at the look-at point between the camera's horizontal view and the direction to the enemy; outside
   25°-29° it yaws by `(angle − 27°) × 0.455` toward 27°; the turn is capped at 640°/s (`11.17` rad/s) when the enemy is
   more than 29° off, not when it is under 25°. So **the enemy is held 27° off the view's centre**, beside the player.
-  This counts as this update's turn: auto-follow and keep-in-view do not run.
+  This counts as this update's turn: auto-follow and keep-in-view do not run. Confirmed (code).
 - **On exit**: the wanted near edge is set back to the saved `+0x3cc`, which is cleared; the band eases back the same
   way (runtime: 2.4 → 2.76, 3.066, …, 4.8). **The target pitch stays 15°** until the next `CameraReset` or
   `CfgFollowCamera` (runtime: 15° 150 updates later).
@@ -2368,6 +2378,7 @@ overhead icons. It is the game-over shot's start (below) with the two times as a
    level (`+0x1f0`) and the music volume (`+0x1f4`).
 5. **Target**: `CamFailed_SetTarget(failed, human)` (`0x00123888`) then sets `+0x1e0` = `human` and places the camera
    again (a new random heading). So `human` is the one the shot looks down on; the activation's pick is overwritten.
+   Confirmed (code).
 6. **Tint**: `ScreenFx_BlendTintTo(ms / 1000, 0x005fdeb8, 0xd0000014)` blends player 1's screen-effects manager
    (`0x005fdeb8`, the colour controller the death camera watches) from its current tint to `0xd0000014`, the same dark
    red at 81% as the game-over shot ([Rendering](rendering.md#tint)), over `ms` milliseconds.
@@ -2391,10 +2402,10 @@ elsewhere).
 The parts of the shot itself:
 
 - **Target** (`0x001236e0`): the last target (`0x005d91b8`) when it is a player, else whichever player stands nearer
-  the camera it replaced; `CamUseDeathCamera` then overrides it with its `human` (step 5).
+  the camera it replaced; `CamUseDeathCamera` then overrides it with its `human` (step 5). Confirmed (code).
 - **Placement** (`0x001238a8`): the look-at point is the human's position; a ray straight up from it, near plane + 5 m
   long (mask `0x200`), gives the height: the camera sits that far above the body, less the near plane, looking
-  straight down (a pitch of about −88°) at a random yaw (one of 36 steps of 10° from −180°).
+  straight down (a pitch of about −88°) at a random yaw (one of 36 steps of 10° from −180°). Confirmed (code).
 - **Each update** (`0x00123bf0`): it turns about the vertical at 15°/s and sinks toward the body at 0.18 m/s, no nearer
   than 2.5 m, until player 1's screen-effects manager has faded out fully ([Fade](graphics.md#fade)); it then ends
   the blur pulse at once and stops moving.
@@ -2430,7 +2441,7 @@ cited addresses:
    from it, near plane + 5 m long, gives the height (hit distance − near plane: **5 m** with nothing above); the
    camera is put that far above the feet, pitched **−88.28°** about its x axis (a half-angle of −0.7704 rad), then
    turned about its own forward axis, which points almost straight down, by a random multiple of 10° from −180°
-   (`Random_Int(36)`): to the eye, a top-down shot at a random heading.
+   (`Random_Int(36)`): to the eye, a top-down shot at a random heading. Confirmed (code).
 4. **Motion**, each update while rotating (`+0x1fe` = 1): it turns about its own forward (view) axis at turn rate
    (`+0x1ec`, 1) × **15°/s**, and its distance to the look-at point shrinks by **0.18 m/s** × the step, never below
    **2.5 m**; the camera stays on the view axis, so it sinks straight down toward the body while the picture turns.
@@ -2476,7 +2487,7 @@ the shot tables' purpose (variety) is inferred.
   in. The shot (`0x00138078`) is 2.5 m from the pair (1.8 m when the world is in the way) at a random yaw and pitch
   from small tables. Each update (`0x00138b90`) eases the field of view to 50° over 0.33 s, turns at up to 135°/s to
   keep both humans framed and stays 3 m from other humans (`Camera_PushOutOfHumans`, `0x00122728`). When the mugger or
-  the victim leaves the hold it stops the intro, plays `vags/misc/mug_outro` and blends back.
+  the victim leaves the hold it stops the intro, plays `vags/misc/mug_outro` and blends back. Confirmed (code).
 
 #### Shot tables {#mini-mug-shots}
 
@@ -2489,12 +2500,12 @@ turn about the vertical, "pitch" about the shot's side axis. Confirmed (code) at
    (`+0x254`).
 2. The base direction is his side axis: both sides are tested at 3 m (`CamMini_TestShot` `0x001374d8`, a sphere
    sweep from the point that must stay clear for at least **2.3 m**); the clear side wins, a frame-counter bit
-   breaks a tie, and nothing is placed when neither is clear.
+   breaks a tie, and nothing is placed when neither is clear. Confirmed (code).
 3. Up to three draws: pitch one of **10, 16.7, 27, 0, 22.5**, yaw one of **−22, 21, 0, 12, −14**. A draw of 0 and
    0 is placed without a test; any other is turned (pitch, then yaw) and tested. The fourth try is **pitch 36°, yaw
    0**; if that fails too the shot is not placed.
 
-**Stereo theft** (`CamMini_PlaceKind2`, `0x00136f68`; `+0x1e0` the stereo, whose car gives the axes):
+**Stereo theft** (`CamMini_PlaceKind2`, `0x00136f68`; `+0x1e0` the stereo, whose car gives the axes; confirmed (code)):
 
 1. The point is the stereo's position + 0.3 m, the distance 3 m (tested for 2.3 m).
 2. One roll of the dice per shot (`Random_Int(100)`): under 80 the yaw comes from all eight entries **10, −15, 90,
@@ -2503,7 +2514,7 @@ turn about the vertical, "pitch" about the shot's side axis. Confirmed (code) at
    traced). The pitch is 0 for yaws under 21.5° or over 91.5°, else one of **17.1, 21.8, 28**.
 4. Three tries, then a fixed **pitch 30°, yaw 25°**.
 
-**Mugging** (`CamMug_PlaceShot`, `0x00138078`; `+0x1e0` the mugger, `+0x1e4` the victim):
+**Mugging** (`CamMug_PlaceShot`, `0x00138078`; `+0x1e0` the mugger, `+0x1e4` the victim; confirmed (code)):
 
 1. The point is the mugger's position + the offset `+0x200`, whose height starts at **1.45 m**; the base
    orientation is the victim's turned 90° about the vertical (so the camera looks across the pair).
@@ -2523,14 +2534,14 @@ turn about the vertical, "pitch" about the shot's side axis. Confirmed (code) at
    - **How it is applied**: the orientation is multiplied on the right by a rotation about the camera's own **+y**
      (its view axis; the constant `0x00511730` = (0, 1, 0, 1)), `q' = q ⊗ (0, sin(r/2), 0, cos(r/2))`, as the
      scripted roll is ([Scripted camera angles](#scripted-angles)): a positive angle tips the top of the picture
-     toward its right.
+     toward its right. Confirmed (code).
    - **Held for the whole shot**: each update (`CamMug_Update`) rebuilds the orientation by looking from the eye at
      the aim point `+0x210` with the world's up (`Mat_LookAt` `0x00337028`, then `Mat_ToQuat` into `+0x20`),
      keeps that un-rolled orientation in `+0x220`, and applies the same roll again; the angle never eases. The
      shot keeps the tilt until the blend back to the follow camera (0.3 s). When the follow camera is in its
      state 2 (its vtable `+0x1ec`), it is first turned (`Cam_Follow_TurnToQuat`) to the shot's base orientation
      with **no roll** (the victim's facing turned 90°, then the shot's yaw `+0x238` and pitch `+0x23c`); the tilt
-     goes away through the blend.
+     goes away through the blend. Confirmed (code).
    - To draw it, a port needs only the camera's up from the rolled quaternion (`Quat_AxisZ(q)`), as for the
      scripted rolls.
 
@@ -2983,9 +2994,9 @@ view or split the screen. Confirmed (code) at `0x00126c40` and `0x0013c710`; the
   `+0x41c` / `+0x420`) or 0.5 s (rail, `+0x3dc`).
 - On a change (`0x001276a0`) the views are re-laid out (`0x00122ed0`: one view, or the grid of the split mode), the
   band and zoom step re-applied for the new count, the target pitch set to 25°, and one or two updates later a short
-  shake and a white flash (alpha 225, fading over 0.2 s) on the colour controller (`0x00126a88`).
+  shake and a white flash (alpha 225, fading over 0.2 s) on the colour controller (`0x00126a88`). Confirmed (code).
 - When the screen splits, each view's field of view is scaled by `0x0050b200` (at least 40°), and split mode 0 halves
-  the view window's width ([The camera manager](#fn-manager)).
+  the view window's width ([The camera manager](#fn-manager)). Confirmed (code).
 
 ### Shake and rumble {#shake}
 
@@ -2998,12 +3009,12 @@ view, 0 makes it a rumble only. The callers:
   3) while the attacker has bit `0x80000` in his word `+0xe0` (raging, inferred); and, from strength 2, on the victim's
   camera with view 0 (`0x0026a988`): **the one hit only feels it in the pad**;
 - rage start (`Human_StartRageMode`, `0x00236e90`): level 1, view 1;
-- a landing (`Human_Land`, `0x0023e090`, under the follow camera above): view 1;
+- a landing (`Human_Land`, `0x0023e090`, under the follow camera above): view 1; Confirmed (code).
 - the animation event of **type `0x20`** (`Anim_FireFrameEvents` `0x00101dd8`, at `0x0010354c`): level = the
   event's value, view 1, on a player's camera. The human is the clip's own unless he has a state of `0x82830`, when it
   is his foe or his grab partner (or the human of handle `+0xc4`); a target whose `+0xcc` kind is one of `0x77`,
   `0x78`, `0x6a`, `0x80`, `0xa0`, `0xa1`, `0xb2`, `0xb3`, `0x4d`-`0x4f`, `0xed` gives the shake back to the clip's
-  human (the kinds' meaning not traced).
+  human (the kinds' meaning not traced). Confirmed (code).
 
 Levels: **1**: amplitude 0.5, 0.10 s, rumble base 0; **2**: 0.75, 0.15 s, `0x30`;
 **3**: 1.0, 0.18 s, `0x60`; 0 stops it. The update (`0x00121298`, every camera kind): the amplitude eases 65% per
@@ -3024,7 +3035,7 @@ draws for x, y, z),
 so each axis stays within ±`A` / 2 m and changes smoothly (half the last offset carried over). It is added only when
 `A` > 0, `+0x1d7` is set and switch 6 (`0x0050b1d0`) is on. Each caller passes the point it moves: the follow camera
 passes its **aim point** `+0x240` (`0x0012cf94`, just before `Mat_LookAt`), so its shake turns the view and does not
-move the camera; with no point given the base adds it to the look-at point `+0x180`.
+move the camera; with no point given the base adds it to the look-at point `+0x180`. Confirmed (code).
 
 #### Shakes from the world: the passing train {#world-shake}
 
