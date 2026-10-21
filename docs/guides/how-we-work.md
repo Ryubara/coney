@@ -13,19 +13,33 @@ Every feature goes through the same steps:
    in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)). Then the engineer studies
    the original executable `SLUS_212.15` in Ghidra: names the functions, writes plate comments and works out what
    each one does.
-2. **Watch it run.** Where the code alone is unclear, the engineer checks it in the original game running in PCSX2:
-   memory reads and writes, scripted input, per-update traces and reference frames.
+2. **Watch it run.** For behaviour a player sees, always, not only when the code is unclear: the engineer makes the
+   behaviour happen in the original running in PCSX2 and records it (a per-update trace, memory reads, reference
+   frames). Play to it with input (a PCSX2 input recording, or scripted input); when that is slow or unreliable,
+   trigger it directly, using a [recipe](#recipes) or, where none exists, finding in Ghidra and the debugger which
+   state, call or event starts it and setting that over PINE. A new way of triggering something becomes a recipe for
+   the next engineer. What the recording shows is read against the code in Ghidra, and the debugger's breakpoints and
+   memory reads fill in what neither shows alone.
 3. **Write it down.** The finding goes on a research page in `docs/research/`, in prose, with the address it comes
    from and an [evidence level](research-workflow.md#evidence-levels) on every claim.
 4. **Implement it.** The engineer first re-reads the addresses the page cites in Ghidra and records any disagreement on
-   the page ([the runtime comparison](testing.md#runtime-comparison)); then writes Coney's version in Coney's own code
-   and cites the original with `@orig` plus the page link ([Conventions](conventions.md)).
+   the page ([the runtime comparison](testing.md#runtime-comparison)). Then the same behaviour is run in Coney: where
+   Coney already has it, the engineer adjusts it until it matches the recording; where it does not, adds it. Coney's
+   version is in Coney's own code and cites the original with `@orig` plus the page link
+   ([Conventions](conventions.md)).
 5. **Compare.** Work a player sees is checked against the original running, not only against our reading of its code:
    the same scenario runs on both games, or the same moment is taken from a PCSX2 save state and from Coney, and
    traces, values or frames are compared ([Comparing with Coney](research-workflow.md#comparing-with-coney),
    [the runtime comparison](testing.md#runtime-comparison)). A difference goes back to step 1 or 4 as a question or a
    fix. The pull request states the result in its `Runtime:` line.
 6. **Merge.** Finished work goes to `main` after the full set of checks.
+
+### Recipes {#recipes}
+
+Recipes are the shared ways of making things happen in the running original: finding, moving and spawning humans,
+editing their attributes and the player's stats, giving the crew orders, raising events, going to a level, mission or
+checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipe` (being added,
+issue #533). Until it lands, the techniques are in [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
 ## One role: the engineer {#engineer}
 
