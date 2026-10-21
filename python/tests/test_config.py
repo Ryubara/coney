@@ -163,3 +163,14 @@ def test_a_worktree_uses_its_main_checkouts_workspace(tmp_path: Path, monkeypatc
     worktree = make_repo(tmp_path / "ws" / "worktrees" / "coney" / "branch", None)
     monkeypatch.setattr(config, "main_checkout", lambda root: main)
     assert config.workspace_root(worktree) == (tmp_path / "ws").resolve()
+
+
+def test_the_disc_for_coney_is_the_one_iso_in_the_folder_else_the_folder(tmp_path: Path) -> None:
+    folder = tmp_path / "game"
+    folder.mkdir()
+    assert config.disc_for_coney(folder) == folder  # extracted files, or no image yet
+    (folder / "warriors.iso").write_bytes(b"")
+    assert config.disc_for_coney(folder) == folder / "warriors.iso"
+    (folder / "other.iso").write_bytes(b"")
+    assert config.disc_for_coney(folder) == folder  # two images: not guessed
+    assert config.disc_for_coney(folder / "warriors.iso") == folder / "warriors.iso"  # an image named itself

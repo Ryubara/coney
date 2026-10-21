@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 from coney_tools import fight_report
-from coney_tools.config import ConfigError, find_repo_root, load_config
+from coney_tools.config import ConfigError, disc_for_coney, find_repo_root, load_config
 from coney_tools.scenario import Scenario, ScenarioError, load_scenario
 from coney_tools.trace_diff import TraceError, compare, load_trace, report, to_start_frame
 from coney_tools.wad import refuse_inside_repo
@@ -93,8 +93,7 @@ def _disc(given: str | None) -> str:
     game = load_config(find_repo_root(Path.cwd())).paths["game_dir"]
     if game is None:
         raise ConfigError("no disc: pass --disc or set game_dir in coney.local.toml")
-    images = sorted(game.glob("*.iso")) if game.is_dir() else [game]
-    return str(images[0] if len(images) == 1 else game)
+    return str(disc_for_coney(game))
 
 
 def shifted_script(text: str, by: int) -> str:

@@ -40,6 +40,7 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     )
     monkeypatch.chdir(root)
     monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda pid: True)
+    monkeypatch.delenv("CONEY_DISC", raising=False)  # the machine's own disc must not change what a test sees
     return root
 
 
@@ -900,3 +901,119 @@ def test_the_detached_child_on_windows_has_no_window_and_a_group_of_its_own(monk
     hidden = CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
     assert seen == [hidden | CREATE_BREAKAWAY_FROM_JOB, hidden]
     assert not any(flags & DETACHED_PROCESS for flags in seen)
+
+
+def set_game_dir(checkout: Path, game: Path) -> None:
+    """Name `game` as the checkout's game_dir in its coney.local.toml."""
+    config = checkout / "coney.local.toml"
+    config.write_text(config.read_text(encoding="utf-8") + f"game_dir = '{game}'\n", encoding="utf-8")
+
+
+def disc_line(out: str) -> str:
+    """The summary line about the disc tests of a run's output."""
+    return next(line for line in out.splitlines() if line.startswith("disc tests:"))
+
+
+def test_the_configured_disc_reaches_the_tests_as_coney_disc(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    game = tmp_path / "game"
+    game.mkdir()
+    set_game_dir(checkout, game)
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert fake_toolchain.env["CONEY_DISC"] == str(game)
+    line = disc_line(capsys.readouterr().out)
+    assert "ran" in line and "game_dir" in line and "SKIPPED" not in line
+
+
+def test_the_one_iso_in_the_game_folder_is_the_disc(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    game = tmp_path / "game"
+    game.mkdir()
+    (game / "warriors.iso").write_bytes(b"")
+    set_game_dir(checkout, game)
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert fake_toolchain.env["CONEY_DISC"] == str(game / "warriors.iso")
+
+
+def test_a_disc_in_the_environment_is_kept_over_game_dir(
+    checkout: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    game = tmp_path / "game"
+    game.mkdir()
+    set_game_dir(checkout, game)
+    monkeypatch.setenv("CONEY_DISC", "somewhere/else.iso")
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert fake_toolchain.env["CONEY_DISC"] == "somewhere/else.iso"
+    line = disc_line(capsys.readouterr().out)
+    assert "ran" in line and "environment" in line
+
+
+def test_an_env_setting_of_the_disc_is_kept_over_game_dir(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    game = tmp_path / "game"
+    game.mkdir()
+    set_game_dir(checkout, game)
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--env", "CONEY_DISC=mine.iso"]) == 0
+    assert fake_toolchain.env["CONEY_DISC"] == "mine.iso"
+    assert "environment" in disc_line(capsys.readouterr().out)
+
+
+def test_an_empty_disc_in_the_environment_counts_as_not_set(
+    checkout: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    game = tmp_path / "game"
+    game.mkdir()
+    set_game_dir(checkout, game)
+    monkeypatch.setenv("CONEY_DISC", "")  # the tests read an empty value as not set
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert fake_toolchain.env["CONEY_DISC"] == str(game)
+
+
+def test_without_a_disc_the_summary_says_the_disc_tests_were_skipped(
+    checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert "CONEY_DISC" not in fake_toolchain.env
+    line = disc_line(capsys.readouterr().out)
+    assert "SKIPPED" in line and "game_dir" in line and "CONEY_DISC" in line
+
+
+def test_a_game_dir_that_does_not_exist_is_not_passed_on(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    set_game_dir(checkout, tmp_path / "no-such-folder")
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert "CONEY_DISC" not in fake_toolchain.env
+    line = disc_line(capsys.readouterr().out)
+    assert "SKIPPED" in line and "does not exist" in line
+
+
+def test_a_checkout_without_a_local_config_runs_with_the_disc_tests_skipped(
+    checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    (checkout / "coney.local.toml").unlink()
+    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert "SKIPPED" in disc_line(capsys.readouterr().out)
+
+
+def test_the_disc_is_set_for_the_configure_too_and_a_build_without_tests_says_nothing_of_it(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    game = tmp_path / "game"
+    game.mkdir()
+    set_game_dir(checkout, game)
+    # CMake registers the extra `coney --disc` smoke tests when CONEY_DISC is in the environment of the configure.
+    assert main(["build", "--agent", "alice", "--configure-only"]) == 0
+    assert fake_toolchain.env["CONEY_DISC"] == str(game)
+    assert "disc tests:" not in capsys.readouterr().out

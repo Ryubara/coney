@@ -699,6 +699,70 @@ def test_passing_tests_report_their_count(tmp_path: Path) -> None:
     assert result.ok and "3 passed, 0 failed of 3" in "\n".join(result.summary)
 
 
+SKIPPING_CTEST = """\
+1/4 Test #1: core.math .........................   Passed    0.01 sec
+2/4 Test #2: the disc's level80 ................***Skipped   0.01 sec
+3/4 Test #3: the disc's level99 ................***Skipped   0.01 sec
+4/4 Test #4: core.parse ........................   Passed    0.30 sec
+
+100% tests passed, 0 tests failed out of 4
+
+The following tests did not run:
+\t  2 - the disc's level80 (Skipped)
+\t  3 - the disc's level99 (Skipped)
+"""
+
+
+def test_the_scan_counts_the_tests_that_skipped_apart_from_those_that_passed() -> None:
+    scan = scan_tests(SKIPPING_CTEST)
+    assert (scan.total, scan.skipped, scan.failed_count) == (4, 2, 0)
+    assert scan_tests("1/1 Test #1: a ... Passed 0.1 sec\n100% tests passed, 0 tests failed out of 1\n").skipped == 0
+
+
+def test_the_test_line_counts_the_skipped_tests_so_a_skipping_run_does_not_look_whole(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    result = run.go()
+    assert result.ok
+    assert any("4 passed, 0 failed of 4, 2 skipped" in line for line in result.summary)
+
+
+def test_a_run_without_skips_does_not_mention_them(tmp_path: Path) -> None:
+    result = Run(tmp_path, test=True).go()
+    assert "skipped" not in "\n".join(result.summary)
+
+
+def test_the_summary_says_the_disc_tests_ran_with_the_disc_and_where_it_came_from(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, disc=build_run.DiscTests("game_dir in coney.local.toml"))
+    result = run.go()
+    line = next(line for line in result.summary if line.startswith("disc tests:"))
+    assert "ran" in line and "SKIPPED" not in line and "game_dir in coney.local.toml" in line
+    assert result.summary.index(line) < next(i for i, text in enumerate(result.summary) if text.startswith("test:"))
+
+
+def test_the_summary_says_the_disc_tests_were_skipped_and_how_to_run_them(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, disc=build_run.DiscTests(None, "CONEY_DISC is not set and game_dir is not set"))
+    run.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    result = run.go()
+    line = next(line for line in result.summary if line.startswith("disc tests:"))
+    assert "SKIPPED" in line and "CONEY_DISC is not set and game_dir is not set" in line
+    assert "game_dir" in line and "--env CONEY_DISC=" in line  # the two ways to run them
+
+
+def test_the_disc_line_is_kept_when_the_tests_fail_and_left_out_of_a_build_without_tests(tmp_path: Path) -> None:
+    disc = build_run.DiscTests("the environment")
+    failing = Run(tmp_path / "a", test=True, disc=disc)
+    failing.toolchain.output["test"] = (8, CTEST_FAILURE)
+    assert any(line.startswith("disc tests:") for line in failing.go().summary)
+    plain = Run(tmp_path / "b", disc=disc)
+    assert not any(line.startswith("disc tests:") for line in plain.go().summary)
+
+
+def test_a_run_given_no_disc_setting_reports_none(tmp_path: Path) -> None:
+    result = Run(tmp_path, test=True).go()
+    assert not any(line.startswith("disc tests:") for line in result.summary)
+
+
 def test_a_run_that_selects_no_tests_fails(tmp_path: Path) -> None:
     run = Run(tmp_path, test=True, regex="nothing")
     run.toolchain.output["ctest-list"] = (0, "Total Tests: 0\n")
