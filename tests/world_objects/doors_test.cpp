@@ -83,7 +83,7 @@ TEST_CASE("the swinging door types' set-up", "[world_objects][doors]") {
     CHECK(coney::world_objects::swingingDoorSetup("dyn_door_liz").marksLinks);
     CHECK(coney::world_objects::swingingDoorSetup("dyn_door_woodp").leaves == 0);
     CHECK(coney::world_objects::doorClassOf("dyn_door_parapet") == DoorClass::Barrier);
-    CHECK(coney::world_objects::doorClassOf("dyn_door_sliding") == DoorClass::Other);
+    CHECK(coney::world_objects::doorClassOf("dyn_door_sliding") == DoorClass::Sliding);
 }
 
 TEST_CASE("a spawned double door: leaves, triangles, hitpoints", "[world_objects][doors]") {
