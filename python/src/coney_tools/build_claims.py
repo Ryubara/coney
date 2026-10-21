@@ -47,7 +47,15 @@ from pathlib import Path
 
 from coney_tools import claim_files, pcsx2_proc, process_lifetime
 from coney_tools.claim_files import OWNER_FILE, TAKEOVER_ATTEMPTS
-from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    INT_KEYS,
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    main_checkout,
+    workspace_folder,
+)
 from coney_tools.pcsx2_claims import AGENT_NAME, INCOMPLETE_SECONDS
 
 #: How many builds may run at once when `build_slots` is not set.
@@ -183,7 +191,7 @@ def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
         count = 1
     elif lane == TIDY_LANE:
         count = config.numbers["tidy_slots"] if config else INT_KEYS["tidy_slots"]
-    directory = claims or (main / ".." / ".." / "scratch" / "build-claims").resolve()
+    directory = claims or workspace_folder(main, "scratch") / "build-claims"
     what = "clang-tidy slot" if lane == TIDY_LANE else "build slot"
     return Slots(directory, count, lane=lane, what=what, reap=reap_claim)
 

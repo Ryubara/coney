@@ -17,7 +17,7 @@ from typing import Any
 
 from coney_tools import ghidra_names, ghidra_setup, workspace_fetch
 from coney_tools.build_cli import scratch_root
-from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, workspace_folder
 from coney_tools.disc import NTSC_U_SHA1, Disc
 from coney_tools.ghidra_headless import PROGRAM, PROJECT_NAME, GhidraProject, has_program, run_logged
 from coney_tools.progress_research import LISTING_FILE, ListedFunction, load_listing
@@ -65,19 +65,14 @@ def _server_up() -> bool:
         return False
 
 
-def _workspace_default(root: Path, relative: str) -> Path:
-    """A workspace folder as coney.local.example.toml defaults it: `../../<relative>` from the main checkout."""
-    return (main_checkout(root) / ".." / ".." / relative).resolve()
-
-
 def _setup_paths(root: Path, args: argparse.Namespace) -> ghidra_setup.Setup:
     """The folders and programs for `root`, from the flags, coney.local.toml and the workspace defaults."""
     paths = load_config(root).paths if local_config_file(root) else {}
     platform = workspace_fetch.platform_name()
-    install = paths.get("ghidra_install") or _workspace_default(
+    install = paths.get("ghidra_install") or workspace_folder(
         root, f"tools/ghidra_{workspace_fetch.GHIDRA_VERSION}_PUBLIC"
     )
-    projects = args.project_dir or paths.get("ghidra_projects") or _workspace_default(root, "ghidra")
+    projects = args.project_dir or paths.get("ghidra_projects") or workspace_folder(root, "ghidra")
     jdk = find_jdk(platform, shutil.which, run_command, os.environ, paths.get("jdk_home"))
     scratch = scratch_root(root)
 

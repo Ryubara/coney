@@ -30,7 +30,14 @@ from pathlib import Path
 
 from coney_tools import claim_files, pcsx2_proc
 from coney_tools.claim_files import OWNER_FILE, TAKEOVER_ATTEMPTS
-from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    main_checkout,
+    workspace_folder,
+)
 from coney_tools.pine import DEFAULT_PORT
 
 #: The debug server's port when a copy's ini enables it without naming one (the fork's own default).
@@ -178,14 +185,14 @@ def default_registry(start: Path | None = None) -> Registry:
     root = find_repo_root(start or Path.cwd())
     main = main_checkout(root)
     paths: dict[str, Path | None] = load_config(root).paths if local_config_file(root) else {}
-    claims = paths.get("pcsx2_claims_dir") or (main / ".." / ".." / "scratch" / "pcsx2-claims").resolve()
+    claims = paths.get("pcsx2_claims_dir") or workspace_folder(main, "scratch") / "pcsx2-claims"
     return Registry(paths.get("pcsx2_root") or default_pcsx2_root(main), claims)
 
 
 def default_pcsx2_root(main: Path) -> Path:
-    """Where the copies live when coney.local.toml names no `pcsx2_root`: the workspace's `emulators/` folder, two
-    levels above the main checkout (docs/guides/workspace.md#the-layout)."""
-    return (main / ".." / ".." / "emulators").resolve()
+    """Where the copies live when coney.local.toml names no `pcsx2_root`: the workspace's `emulators/` folder
+    (docs/guides/workspace.md#the-layout; `config.workspace_root`)."""
+    return workspace_folder(main, "emulators")
 
 
 class Registry:

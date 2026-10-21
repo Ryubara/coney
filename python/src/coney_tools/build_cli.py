@@ -23,7 +23,14 @@ from typing import Any
 from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
-from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
+from coney_tools.config import (
+    INT_KEYS,
+    ConfigError,
+    find_repo_root,
+    load_config,
+    local_config_file,
+    workspace_folder,
+)
 from coney_tools.pcsx2_claims import AGENT_NAME
 
 PRESETS = ("dev", "release", "ci", "asan")
@@ -180,9 +187,9 @@ def _numbers(root: Path) -> dict[str, int]:
 
 
 def scratch_root(root: Path) -> Path:
-    """The scratch directory: `scratch_dir`, else the shared scratch beside the main checkout."""
+    """The scratch directory: `scratch_dir`, else the workspace's shared scratch (`config.workspace_root`)."""
     configured = load_config(root).paths.get("scratch_dir") if local_config_file(root) else None
-    return configured or (main_checkout(root) / ".." / ".." / "scratch").resolve()
+    return configured or workspace_folder(root, "scratch")
 
 
 def _log_folder(root: Path) -> Path:

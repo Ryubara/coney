@@ -28,12 +28,13 @@ untested. Once uv is there, `uv run --project python coney-tools doctor` in the 
 included, and prints how to fix each problem ([Check your setup](docs/guides/building.md#doctor)).
 
 1. **Clone.** The command is in the [README](README.md#clone); without write access, fork first and follow
-   [Working from a fork](#working-from-a-fork). The tools keep their logs and scratch files in `../../scratch`
-   beside the checkout, so the tidy layout is to clone into `<workspace>/repos/coney` and run `./bootstrap.sh` there
-   (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1` on Windows). It makes the sibling folders, writes
+   [Working from a fork](#working-from-a-fork). A clone anywhere works: the tools then keep their logs, scratch
+   files and compiler cache in a folder beside it, `<clone>-workspace` (`~/code/coney` uses `~/code/coney-workspace`),
+   never inside the repository. The tidy layout for more than a first change is to clone into
+   `<workspace>/repos/coney` and run `./bootstrap.sh` there (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1`
+   on Windows): it makes the sibling folders (`scratch/`, `tools/`, ...) the tools then use, writes
    `coney.local.toml`, installs uv when it is missing and prints what else you lack
-   ([Bootstrap](docs/guides/workspace.md#bootstrap)). A clone anywhere else builds too, and its logs land in a
-   `scratch` folder two levels above it.
+   ([Bootstrap](docs/guides/workspace.md#bootstrap)).
 2. **Build and run the tests.** No game files are needed. `--agent` is only a name for your build log and slot, so use
    any name, such as your handle:
 

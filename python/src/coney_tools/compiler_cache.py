@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools import workspace_fetch
-from coney_tools.config import ConfigError, load_config, local_config_file, main_checkout
+from coney_tools.config import ConfigError, load_config, local_config_file, workspace_root
 
 #: The default cap in GB when coney.local.toml sets none (the `ccache_size_gb` default of config.INT_KEYS).
 DEFAULT_SIZE_GB = 25
@@ -116,7 +116,7 @@ def find(root: Path, which: Callable[[str], str | None] = shutil.which) -> Compi
     """The compiler cache of the checkout at `root`, from coney.local.toml (this checkout's, else the main checkout's)
     and the defaults: `ccache_program`, else the fetched copy in the workspace's tools folder, else `ccache` on PATH;
     `ccache_dir`, else `cache/ccache` in the workspace; `ccache_size_gb`, else 25."""
-    workspace = (main_checkout(root) / ".." / "..").resolve()
+    workspace = workspace_root(root)
     try:
         config = load_config(root) if local_config_file(root) else None
     except ConfigError:

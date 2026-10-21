@@ -253,6 +253,11 @@ other title area leaves the line out.
 
 ### Capturing and attaching {#pr-media}
 
+!!! note "For the project's agents"
+
+    The parts about `scratch/<branch>/shots/`, the coordinator attaching pictures and PCSX2 claims are for the project's
+    agents. A person opening their own pull request drags the PNG into its description box.
+
 - **Attach, never commit.** Gameplay screenshots and short videos of Coney or of the original are uploaded to the
   pull request or issue as GitHub attachments, with `gh --attach` (below) or, for a person, by dragging the file into
   the description box. They are never committed:
@@ -297,6 +302,11 @@ other title area leaves the line out.
   merged ([Sharing one machine](how-we-work.md#shared-machine)).
 
 ### Clips {#clips}
+
+!!! note "For the project's agents"
+
+    `coney-tools clips publish` and the rules below are how the project's agents publish clips. A person drags a short
+    clip into the pull request or issue on GitHub; the no-game-data rule still applies.
 
 A short video shows a bug or a fix better than screenshots: a before and after of Coney, and the original from the
 same place. Agents record and publish them themselves (the user's request, 2026-10-12), under five rules. Each is
