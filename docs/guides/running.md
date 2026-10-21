@@ -126,7 +126,7 @@ The install is a library (`src/install/`, the folder writes in `src/platform/ins
 callback that can cancel, so a launcher can run the same steps behind its own screen.
 
 **Playing from an install.** `--data DIR` without `--install` plays the installed game: it stands in for `--disc` in
-every mode (`coney --data D:/Games/Coney --play-level level99`), reading `DIR/game/ps2/`, the disc's files as they are,
+every mode (`coney --data ../../Coney --play-level level99`), reading `DIR/game/ps2/`, the disc's files as they are,
 with the same code as a disc folder. It refuses a folder whose install has not finished (no `index/install.json`) and
 says how to finish it, and cannot be given with `--disc`. With neither `--disc` nor `--data`, Coney looks in its own
 folder: run from a finished install (the `coney` that `--install` copied there), it plays that install, so a player
