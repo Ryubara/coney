@@ -89,7 +89,7 @@ def test_github_writes_are_refused_inside_a_subagent(command: str) -> None:
         "gh label list",
         "gh api repos/o/r/pulls/3",
         "gh api -X GET repos/o/r/issues -f state=open",
-        "gh api graphql -f query='{ repository(owner: \"o\", name: \"r\") { id } }'",
+        'gh api graphql -f query=\'{ repository(owner: "o", name: "r") { id } }\'',
         "gh --version",
         "git pull",
         "git fetch origin",
