@@ -265,7 +265,7 @@ TEST_CASE("a guest's pad is the host's port 2, as a second pad plugged into the 
     games.hostPads.samples[0] = padWith(coney::pad::kCross);
     games.guestPads.samples[0] = padWith(coney::pad::kStart, 230);
     games.connect();
-    games.run(1);
+    games.run(2); // one step to arrive, one in the host's input buffer
 
     // The host's own port 1 is untouched; port 2 is the guest's port 1.
     CHECK(games.hostSees[0].buttons == coney::pad::kCross);
@@ -276,9 +276,10 @@ TEST_CASE("a guest's pad is the host's port 2, as a second pad plugged into the 
     CHECK(games.guestSees[0].buttons == coney::pad::kStart);
     CHECK_FALSE(games.guestSees[1].connected);
 
-    // A press in the guest's step leaves at its end, so the host's port 2 has it from the host's next step.
+    // A press in the guest's step leaves at its end, arrives in the host's next step and plays in the one after
+    // (the input buffer's one step of delay).
     games.guestPads.samples[0] = padWith(coney::pad::kCircle);
-    games.run(1);
+    games.run(2);
     CHECK(games.hostSees[1].buttons == coney::pad::kStart);
     games.run(1);
     CHECK(games.hostSees[1].buttons == coney::pad::kCircle);
@@ -291,7 +292,7 @@ TEST_CASE("the host's own port 2 plays until a guest joins and again once they l
     games.run(1);
     CHECK(games.hostSees[1].buttons == coney::pad::kTriangle); // offline
     games.connect();
-    games.run(1);
+    games.run(2);
     CHECK(games.hostSees[1].buttons == coney::pad::kSquare);
     CHECK(logged(games.host.log(), "Guest joined as player 2 on pad port 2"));
     games.guest.disconnect();
