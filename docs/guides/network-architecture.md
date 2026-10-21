@@ -68,25 +68,26 @@ behind a session rule ([Phases](#phases)).
 
 The goal: online story co-op with friends first, then servers that anyone can host, whose own scripts drive the game
 and talk to scripts on the players' machines, in the spirit of FiveM. Each phase is usable on its own and none
-rewrites the one before.
+rewrites the one before. P4 and P5 are **ConeyMP**, a separate later product on the same network stack
+([Two products, one stack](#products)).
 
 ```mermaid
 flowchart LR
     P0["P0 Foundation<br/>coney_net, ENet<br/>(built)"] --> P1["P1 Online two-player<br/>the original's co-op,<br/>player 2 remote"]
-    P1 --> P2["P2 Smooth and safe<br/>prediction, encryption,<br/>NAT and relay"]
+    P1 --> P2["P2 Smooth and safe<br/>prediction, encryption,<br/>LAN discovery"]
     P2 --> P3["P3 Dedicated server<br/>headless coney-server,<br/>2-4 players"]
     P3 --> P4["P4 Scripted servers<br/>server and client resources,<br/>events, state"]
-    P4 --> P5["P5 Large sessions<br/>many players, routing<br/>buckets, server list"]
+    P4 --> P5["P5 Large sessions<br/>many players, routing<br/>buckets (ConeyMP)"]
 ```
 
 | Phase | What a player gets | Faithful? | Depends on |
 | --- | --- | --- | --- |
 | **P0 Foundation** (built) | nothing visible: the library, ENet, the tests | n/a | |
 | **P1 Online two-player** | a friend joins the story, Rumble or Armies as player 2 over LAN or a direct address; the host's game is the one true game | **yes**: the original's two-player game, only the pad and the view travel | the original's two-player game built offline first |
-| **P2 Smooth and safe** | the joining player's own Warrior answers at once (prediction); the session is encrypted; joining across the internet works through NAT, with a relay when it must | yes (presentation and transport only) | P1 |
+| **P2 Smooth and safe** | the joining player's own Warrior answers at once (prediction); the session is encrypted; a host on the same network is found by LAN discovery, one across the internet by its address and a forwarded port | yes (presentation and transport only) | P1 |
 | **P3 Dedicated server** | a server program with no window hosts a session; players join and leave at any time; three or four players | two players: yes; more: **no**, Coney's rule set | the simulation out of `src/platform/` ([Readiness](#subsystems)) |
-| **P4 Scripted servers** | a server runs its own resources: server scripts that drive the game, client scripts that add screens and effects, events between them | no: Coney's own, a modded session | P3, the script split ([Asset and script architecture](asset-and-script-architecture.md#scripts)) |
-| **P5 Large sessions** | dozens of players, several worlds on one server, a server list | no | P4 |
+| **P4 Scripted servers** (ConeyMP) | a server runs its own resources: server scripts that drive the game, client scripts that add screens and effects, events between them | no: Coney's own, a modded session | P3, the script split ([Asset and script architecture](asset-and-script-architecture.md#scripts)) |
+| **P5 Large sessions** (ConeyMP) | dozens of players, several worlds on one server | no | P4 |
 
 **Faithful first.** The original's game is complete before anything beyond it ([AGENTS.md](repo:AGENTS.md), Rules).
 P1 needs no exception: the second player is the original's. P2 adds nothing to the simulation. From P3 on, everything
@@ -540,7 +541,7 @@ has none of these limits and needs none: it runs only the disc's scripts.
 | Client in P3+ (public servers) | the server's game state | the server's client scripts: they run sandboxed and can only draw, play and request |
 | Everyone | | other clients: a client never talks to another client and never learns another client's address |
 
-The topology is a **star**: every client talks only to the server (or to a relay that forwards to it). No client
+The topology is a **star**: every client talks only to the server. No client
 learns another's address, which removes the class of attacks on other players' connections that peer meshes such as
 GTA Online's suffer ([sources](#sources)).
 
@@ -563,15 +564,10 @@ GTA Online's suffer ([sources](#sources)).
 
 ### Encryption and authentication (P2) {#crypto}
 
-ENet sends plain UDP and its connect handshake is not authenticated. Before a session is offered across the internet
-(P2), every packet after the handshake is encrypted and authenticated:
-
-- **Joining a host (P2):** the transport encrypts and authenticates every packet: GameNetworkingSockets does it
-  built in (Curve25519 key exchange, AES-GCM), [recommended below](#transport-recommendation). A session password or
-  room code, if set, is checked inside the encrypted channel. Issue #561.
-- **Dedicated servers with accounts (P3+):** the netcode.io connect-token pattern ([sources](#sources)): a web service
-  the operator trusts issues short-lived tokens bound to the server's address; the server checks the token and sends
-  a challenge before it keeps any state for the client. Whether Coney has any such service is a maintainer decision.
+ENet sends plain UDP and its connect handshake is not authenticated. From P2, a challenge comes before the server
+keeps any state for a peer, and every later packet is encrypted and authenticated with libsodium
+([Encryption and the connect challenge](#transport-crypto), issue #561). ConeyMP servers (P4) authenticate players
+the way their admins choose (passwords, allow lists); Coney runs no account or token service.
 
 ### Limits a client cannot raise {#limits}
 
@@ -582,65 +578,65 @@ cannot ask for more.
 
 ## Transport {#transport}
 
-Today: ENet over UDP, behind the `Transport` interface, with three deliveries
-([Transport and delivery](multiplayer.md#transport)). Nothing above `Transport` knows which library carries the
-packets, so the choice below changes one file in `src/platform/` and its tests.
+**Decided:** ENet over UDP stays the transport, with libsodium for encryption and a connect challenge, behind the
+`Transport` interface ([Transport and delivery](multiplayer.md#transport)). Players connect by address or by LAN
+discovery; across the internet the host forwards one UDP port (27615 by default). **Coney runs no services**: no
+signaling, no relay, no server list.
 
-What a player needs from it: **the least delay** (UDP, no waiting behind lost packets for data that does not need
-it), and **joining a friend with nothing to set up**: no port forwarding, no IP address to read out, behind ordinary
-home routers. Today a guest needs the host's address and, across the internet, a forwarded port.
+Why ENet: it has the least delay a UDP transport can have, it is small, and it is what FiveM itself is built on (FiveM
+vendors its own copy of ENet, `vendor/citizen_enet` in [its repository](https://github.com/citizenfx/fivem)). The
+alternative studied, Valve's GameNetworkingSockets (BSD-3), would have brought built-in encryption and hole punching;
+with joining by address and a forwarded port, hole punching is not needed, and encryption is a small layer of our
+own over libsodium. Nothing above `Transport` knows which library carries the packets, so a later change of library
+touches one file in `src/platform/` and its tests.
 
-### The options {#transport-options}
+### Joining {#joining}
 
-| | ENet + libsodium + our own NAT code | GameNetworkingSockets (open source) | Steamworks networking | Epic Online Services P2P |
-| --- | --- | --- | --- | --- |
-| Delay | UDP, minimal | UDP, minimal; send with the no-delay flag so it does not batch (not re-checked) | UDP, minimal | UDP, minimal |
-| Encryption | none built in: we seal every packet with libsodium ourselves | built in: AES-GCM-256, Curve25519 key exchange | built in | built in |
-| Hole punching | none: we write the rendezvous protocol and the punching, or add libjuice (MPL-2.0) for ICE | built in: a native ICE client (out of beta in 1.6.0) | built in | built in |
-| Relay when punching fails | none: we run a TURN server (coturn, BSD-3) and write the client side | TURN through its ICE client (1.6.0); we run the TURN server | Valve's relay network (SDR), Steam only | Epic's relays |
-| IPv6 | not in ENet 1.3.18 (the enet6 fork adds it) | yes | yes | yes |
-| What we must run | a rendezvous service, STUN (public ones work), TURN | a **signaling service** (a few KB a connection), STUN (public ones work), TURN only for hard routers | nothing; needs the Steam client and an App ID | nothing; needs an Epic account and product |
-| Dependency | ENet (tiny, MIT) + libsodium (ISC) + libjuice | protobuf, and OpenSSL or libsodium for its crypto (BSD-3 itself) | proprietary SDK | proprietary SDK |
-| Licence with GPL-3.0 | compatible | compatible | Valve's own docs call GPL "generally problematic" with the SDK: a legal question | proprietary SDK; terms not checked |
-| Maintenance | ENet's last release April 2024; the rest is our code to keep secure | Valve, four releases in 2026 | Valve | Epic |
-
-Sources: [GameNetworkingSockets](https://github.com/ValveSoftware/GameNetworkingSockets) (README, README_P2P,
-BUILDING, releases), [ENet ChangeLog](https://github.com/lsalzman/enet/blob/master/ChangeLog),
-[enet6](https://github.com/SirLynix/enet6), [libjuice](https://github.com/paullouisageneau/libjuice),
-[coturn](https://github.com/coturn/coturn), [Steamworks: distributing open source](https://partner.steamgames.com/doc/sdk/uploading/distributing_opensource).
-
-**Is Steam needed for a relay?** No. Valve's relay network is Steam-only and is not in the open-source library; the
-open-source GameNetworkingSockets relays through a standard TURN server that whoever runs Coney's services hosts.
-
-### Recommendation {#transport-recommendation}
-
-**GameNetworkingSockets** (BSD-3) as the transport for internet play, replacing ENet behind the same interface, in
-P2 (issues #561 and #562). Delay is the same as ENet's; it brings, already written and maintained, the three things
-that make joining easy and safe and that we would otherwise write and secure ourselves: encryption, hole punching
-(ICE) and relay fallback, plus IPv6. ENet stays for P1 (LAN and direct addresses), where none of that is needed.
-
-What it costs: protobuf and a crypto library in the build (`cmake/deps.cmake`), and a few weeks of one engineer to
-port `EnetTransport` and its tests. Both a new dependency and replacing ENet are maintainer decisions.
-
-**Services Coney would run** (a maintainer decision; none is needed for LAN or direct-address play):
-
-| Service | Needed for | Cost |
+| How | Where | What the host does |
 | --- | --- | --- |
-| **Signaling** (a room-code lookup: the host gets a short code, a guest types it, the service passes each side's connection candidates to the other) | joining by code across the internet | tiny: a few KB a connection; one small server |
-| STUN | each side learning its public address | none: public STUN servers work; or our own, cheap |
-| TURN relay | the few players behind routers that defeat hole punching | real bandwidth (every relayed packet); start without it, count how often punching fails, then decide |
-| Server list | P5 | later |
+| **LAN discovery** | the same local network | nothing: the host answers a broadcast on the local network with its name, players and protocol; the guest picks it from a list (issue #562) |
+| **Direct address** | anywhere | gives the guest an address (IPv4, or IPv6 where both have it) and, across the internet, forwards the UDP port on the router once |
 
-Without any service, a host can still offer **LAN discovery** (a broadcast on the local network; GameNetworkingSockets
-has none, so Coney writes it) and **direct addresses**, with UPnP or NAT-PMP asking the host's router to open the port.
+UPnP or NAT-PMP (the host's game asking the router to forward the port itself) would make the second row easier; it
+is not planned and would be its own decision.
+
+### Encryption and the connect challenge {#transport-crypto}
+
+On top of ENet, with libsodium (ISC licence; issue #561):
+
+1. **Challenge before state.** A new peer's first packet gets a small challenge back (a token the server can check
+   without remembering it); only a peer that returns it is given a slot. A spoofed source address therefore costs the
+   server nothing, and no reply is larger than the packet that caused it (no amplification).
+2. **Key exchange.** X25519 in the handshake; each side derives a key per direction.
+3. **Every later packet sealed** with an AEAD (XChaCha20-Poly1305), the packet's sequence as nonce, and a replay
+   window. A packet that fails is dropped and counted; many failures close the connection.
+4. **An optional session password**, checked inside the encrypted channel.
+
+The handshake's Hello keeps its magic and version first, unencrypted, so a client of another protocol is still told
+"version mismatch" ([Protocol](multiplayer.md#protocol)).
+
+### Two products, one stack {#products}
+
+Co-op and ConeyMP share one network stack and are kept apart by protocol:
+
+| | Coney co-op | ConeyMP |
+| --- | --- | --- |
+| What | the original's two-player game online (P1, P2), later Coney's three and four players (P3) | a separate, later product in the spirit of FiveM: dedicated servers running server and client scripts (P4, P5) |
+| Hosting | a player's game hosts; guests join by LAN discovery or address | port-forwarded dedicated servers running all the time, with admins |
+| Shared | transport, encryption, network ids, snapshots, input commands, interest, the tests | the same |
+| Kept apart | its own protocol id and version in Hello | its own protocol id and version |
+
+A co-op client cannot join a ConeyMP server or the other way round: the server answers a Hello of another protocol id
+with a Reject, as it does a version mismatch. Finding ConeyMP servers (a server list) is a later, separate decision.
 
 ### Other transport needs {#transport-needs}
 
 | Need | When | Plan |
 | --- | --- | --- |
+| IPv6 | P2 | ENet 1.3.18 is IPv4; the enet6 fork ([SirLynix/enet6](https://github.com/SirLynix/enet6), MIT) adds dual stack, or our own patch |
 | MTU | P1 | payloads of at most 1,200 bytes, below every common path's MTU, VPNs and IPv6 included |
 | Bandwidth control | P1 | the snapshot budget and rate per client from link quality |
-| Authentication on dedicated servers | P3 | the connect-token pattern ([above](#crypto)) on top of the encrypted transport |
+| Authentication of players on ConeyMP servers | P4 | a server admin's own choice (passwords, allow lists); no Coney service |
 
 ## Saves and persistence {#saves}
 
@@ -895,27 +891,25 @@ The work in order; each row is about one pull request. Each is an issue, a sub-i
 | 13a | Measure press to screen at 30 and 60 Hz ([Tick rate](#sixty-measure)) | P2 | 10, 14 | #568 |
 | 14 | Prediction of the client's own Warrior | P2 | 10 | #559 |
 | 15 | Lag compensation for strikes | P2 | 14 | #560 |
-| 16 | Encryption and authentication: GameNetworkingSockets in place of ENet | P2 | maintainer decision | #561 |
-| 17 | Joining across home routers: LAN discovery, UPnP, ICE hole punching, signaling, relay | P2 | 16, maintainer decision | #562 |
+| 16 | Encryption and the connect challenge over ENet, with libsodium | P2 | | #561 |
+| 17 | LAN discovery and joining by address (IPv4 and IPv6) | P2 | 16 | #562 |
 | 18 | The simulation out of `src/platform/`, so a server needs no renderer | P3 | | #563 |
 | 19 | `coney-server`, the headless dedicated server | P3 | 18 | #564 |
 | 20 | Coney's rule set: three and four players | P3 | maintainer decision | #565 |
 | 21 | Resources: manifest, Lua 5.4 sandbox, events, replicated state | P4 | the script split | #566 |
-| 22 | Server list, routing buckets, many players | P5 | maintainer decision | #567 |
+| 22 | ConeyMP large sessions: routing buckets, many players; a server list only if the maintainer decides one | P5 | | #567 |
 
 ## Maintainer decisions {#decisions}
 
 Decided: the networking checklist is adopted; the tick rate stays 30 Hz, subject to [the measurement](#sixty-measure);
-the original's two-player game is built offline first (roadmap 3-6). Open:
+the original's two-player game is built offline first (roadmap 3-6); the transport stays ENet with libsodium,
+players join by LAN discovery or address with a forwarded port, Coney runs no services, and ConeyMP is a separate
+product on the same stack ([Transport](#transport)). Open:
 
-1. **Moving the transport to GameNetworkingSockets** in P2 ([Transport](#transport-recommendation)): a new dependency
-   (with protobuf and a crypto library) and the end of ENet.
-2. **Services Coney would run:** a signaling service for joining by room code (P2), a TURN relay once its need is
-   measured (P2), a token service (P3), a server list (P5). Each costs money and operation, and raises legal
-   questions.
-3. **Coney's rule set** (P3): more than two players, which humans they take, how the AI and cameras treat them.
-4. **A guest's co-op record** in Coney's own store ([Saves](#saves)).
-5. **A second Lua runtime** (5.4) for resources (P4).
+1. **Coney's rule set** (P3): more than two players, which humans they take, how the AI and cameras treat them.
+2. **A guest's co-op record** in Coney's own store ([Saves](#saves)).
+3. **A second Lua runtime** (5.4) for resources (P4).
+4. **A server list for ConeyMP** (later, a separate decision): Coney runs no service until it is decided.
 
 ## Prior art and sources {#sources}
 
@@ -931,7 +925,8 @@ could not be fetched when this page was written.
 | Events; latent events with a rate cap | FiveM, [Triggering events](https://docs.fivem.net/docs/scripting-manual/working-with-events/triggering-events/) |
 | Never trust event arguments | FiveM, [Server security](https://docs.fivem.net/docs/developers/server-security/) |
 | Snapshots, prediction, interpolation delay, lag compensation | Valve, [Source Multiplayer Networking](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking) and [Latency Compensating Methods](https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization) *(not re-checked)* |
-| Encryption and ICE in one transport | Valve, [GameNetworkingSockets](https://github.com/ValveSoftware/GameNetworkingSockets) (BSD-3) |
+| A transport with encryption and hole punching built in (studied, not chosen) | Valve, [GameNetworkingSockets](https://github.com/ValveSoftware/GameNetworkingSockets) (BSD-3) |
+| ENet under a large scripted-server platform | FiveM's vendored ENet, `vendor/citizen_enet` in [its repository](https://github.com/citizenfx/fivem) |
 | RPC kinds, validation that disconnects, relevancy, the replication graph | Epic, [Remote procedure calls](https://dev.epicgames.com/documentation/en-us/unreal-engine/remote-procedure-calls-in-unreal-engine), [Replication Graph](https://dev.epicgames.com/documentation/en-us/unreal-engine/replication-graph-in-unreal-engine) |
 | Deltas against the last acknowledged snapshot; field tables | Fabien Sanglard, [Quake 3 network model](https://fabiensanglard.net/quake3/network.php) |
 | Command frames, tuning the server's input buffer | Tim Ford, *Overwatch Gameplay Architecture and Netcode*, [GDC 2017](https://gdcvault.com/play/1024001) |
@@ -939,5 +934,4 @@ could not be fetched when this page was written.
 | Choosing a model; snapshot compression; fixed steps; connect tokens | Glenn Fiedler, [What every programmer needs to know](https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/), [Snapshot compression](https://gafferongames.com/post/snapshot_compression/), [Fix your timestep](https://gafferongames.com/post/fix_your_timestep/), [netcode standard](https://github.com/mas-bandwidth/netcode/blob/main/STANDARD.md) |
 | Rollback, and why it does not fit here | [GGPO](https://github.com/pond3r/ggpo) (MIT) |
 | Host-owned story with guests as visitors; the risks of a peer mesh | GTA Online, Dark Souls, Borderlands *(general knowledge, no single source)* |
-| NAT traversal | [ICE, RFC 8445](https://www.rfc-editor.org/rfc/rfc8445), [STUN, RFC 8489](https://www.rfc-editor.org/rfc/rfc8489), [TURN, RFC 8656](https://www.rfc-editor.org/rfc/rfc8656) |
 | Lua sandboxing: instruction hook, allocator cap | [Lua 5.4 manual](https://www.lua.org/manual/5.4/manual.html#lua_sethook), [lua-users: Sand boxes](http://lua-users.org/wiki/SandBoxes) |
