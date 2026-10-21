@@ -84,7 +84,7 @@ def test_the_not_moved_yet_list_holds_only_what_is_still_there() -> None:
 #: Game sources that still include a debug tools' header, each until the unit that unties it. Empty: keep it so.
 _STILL_INCLUDES_DEBUG: set[str] = set()
 
-_DEBUG_INCLUDE = re.compile(r'^#include "debug/', re.MULTILINE)
+_DEBUG_INCLUDE = re.compile(r'^#include "(?:debug|sandbox)/', re.MULTILINE)
 
 
 def _game_files() -> list[Path]:
@@ -116,6 +116,14 @@ def test_the_still_includes_list_holds_only_files_that_do() -> None:
         if not _DEBUG_INCLUDE.search((ROOT / name).read_text(encoding="utf-8"))
     ]
     assert stale == [], "drop the entry: the file no longer includes a debug header"
+
+
+def test_no_game_library_links_the_debug_tools() -> None:
+    _, links = _targets()
+    offenders = sorted(
+        f"{name}: {library}" for name in GAME_TARGETS for library in links.get(name, []) if library in DEBUG_TARGETS
+    )
+    assert offenders == []
 
 
 def test_only_the_devtools_link_dear_imgui() -> None:

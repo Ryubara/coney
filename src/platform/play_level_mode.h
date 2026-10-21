@@ -52,7 +52,6 @@
 #include "platform/texture_dictionary.h"
 #include "platform/throw_arc_renderer.h"
 #include "platform/world_renderer.h"
-#include "sandbox/sandbox_world.h"
 #include "warriors/created_humans.h"
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
@@ -171,13 +170,13 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
            std::function<void(std::string_view)> print, std::optional<human::PlayerStart> start = std::nullopt,
            const PlayerSetup& setup = {}, const ScriptedCast* cast = nullptr);
 
-    /// The player in the sandbox `world` (SandboxPlayScenery::create()), at spawn point `spawn` (the layout's first
-    /// when unset), with the character loaded from `wad`, as `setup` says (its start is always snapped). Fails as the
-    /// scenery and the character loader do.
+    /// The mode round `scenery` (a level's, or another the caller made: the debug tools' sandbox,
+    /// createPlayInSandbox()), with the character and its texture loaded from `wad` as `setup` says. Fails as the
+    /// character loader does.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
-    createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
-                    const std::optional<std::string>& spawn, std::function<void(std::string_view)> print,
-                    const PlayerSetup& setup = {});
+    createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
+               std::function<void(std::string_view)> print, const PlayerSetup& setup = {},
+               const ScriptedCast* cast = nullptr);
 
     ~PlayLevelMode() override;
     PlayLevelMode(const PlayLevelMode&) = delete;
@@ -282,12 +281,15 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] const raycast::CollisionMesh& collision() const { return m_scenery->collision(); }
     /// Whether objects can be spawned into the scenery (spawn()).
     [[nodiscard]] bool canSpawn() const { return m_scenery->canSpawn(); }
-    /// Adds a sandbox primitive to the scenery and its collision (the Spawner page).
-    std::expected<void, Error> spawn(const sandbox::Primitive& primitive);
-    /// How many spawned objects there are.
-    [[nodiscard]] std::size_t spawnedCount() const { return m_spawned.size(); }
-    /// Removes every spawned object, the collision back as loaded.
-    std::expected<void, Error> clearSpawned();
+    /// Puts `extras` in the scenery and its collision in place of those added before (the debug tools' Spawner,
+    /// PlayLevelControls::spawn()); empty: the scenery as made. Fails as PlayScenery::setExtras() does.
+    std::expected<void, Error> setSceneExtras(SceneExtras extras) {
+        return m_scenery->setExtras(m_engine, std::move(extras));
+    }
+    /// The objects added to the scenery now.
+    [[nodiscard]] const SceneExtras& sceneExtras() const { return m_scenery->extras(); }
+    /// How many objects were added to the scenery.
+    [[nodiscard]] std::size_t spawnedCount() const { return m_scenery->extras().count; }
     /// Makes an AI fighter at `feet` facing `headingDegrees`, drawn as the scene's character.
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees);
     /// The models a fighter can be drawn as: the distinct models of characterChoices(), sorted.
@@ -421,11 +423,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
                   LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
                   const PlayerSetup& setup, const ScriptedCast* cast, std::unique_ptr<PlayLevelEffects> levelEffects);
 
-    // The character and its texture from `wad`, then the mode round `scenery`: what both create functions share.
-    [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
-    createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
-               std::function<void(std::string_view)> print, const PlayerSetup& setup = {},
-               const ScriptedCast* cast = nullptr);
     // Loads the character `model` names from `wad` and its textures, converted for drawing when `engine` draws: the
     // player's creation, at the start and at a change of character (src/platform/play_level_character.cpp).
     [[nodiscard]] static std::expected<LoadedCharacter, Error> loadCharacter(RenderEngine& engine, const io::Wad& wad,
@@ -815,7 +812,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     bool m_freezeWorld = false;                                   // `--freeze-world`
     std::optional<std::uint64_t> m_frozenSince;                   // the game ticks of the step the world froze after
     std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
-    std::vector<sandbox::Primitive> m_spawned;
     // The sandbox's targets, each drawn with its own copy of the character's mesh.
     struct Target {
         std::unique_ptr<human::TargetHuman> human;

@@ -91,6 +91,7 @@
 #include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
+#include "platform/sandbox_play_scenery.h"
 #include "platform/sandbox_viewer_mode.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
@@ -615,8 +616,8 @@ int main(int argc, char** argv) {
         // A level, or a sandbox layout (`sandbox:NAME`) with the same player and camera on its collision mesh.
         if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
             auto world = loadSandbox(*options, *layout);
-            auto playMode = world ? coney::platform::PlayLevelMode::createInSandbox(
-                                        renderer, *wad, std::move(*world), options->spawn, logText, sandboxSetup(*wad))
+            auto playMode = world ? coney::platform::createPlayInSandbox(renderer, *wad, std::move(*world),
+                                                                         options->spawn, logText, sandboxSetup(*wad))
                                   : std::unexpected(std::move(world.error()));
             if (!playMode) {
                 logError(std::format("{}: {}", *playName, playMode.error().message));
@@ -1009,8 +1010,8 @@ int main(int argc, char** argv) {
             return;
         }
         if (wad) {
-            auto mode = coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world), std::nullopt,
-                                                                        logText, sandboxSetup(*wad));
+            auto mode = coney::platform::createPlayInSandbox(renderer, *wad, std::move(*world), std::nullopt, logText,
+                                                             sandboxSetup(*wad));
             if (!mode) {
                 debugSession.print("levels: " + mode.error().message);
                 return;

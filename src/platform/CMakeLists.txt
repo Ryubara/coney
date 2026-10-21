@@ -16,8 +16,6 @@ target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.c
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
 target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
-# The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
-target_sources(coney_platform PRIVATE sandbox_renderer.cpp)
 # The run log's outputs: the console, the log file and the crash handlers (docs/guides/run-log.md).
 target_sources(coney_platform PRIVATE log_output.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
@@ -48,18 +46,18 @@ target_sources(coney_platform PRIVATE profile_folder.cpp)
 # themselves are coney_net (docs/guides/multiplayer.md).
 target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
 coney_target_defaults(coney_platform)
-# coney_debug only until the play mode, the game session and the sound output are untied from the debug menus'
-# interfaces (docs/guides/building.md#debug-tools); the release build will not link it.
-target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net coney_debug SDL3::SDL3-static
-                                            librw::librw)
+# Never coney_debug or Dear ImGui: the game reaches the debug tools only through hooks it offers
+# (docs/guides/building.md#debug-tools).
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net SDL3::SDL3-static librw::librw)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 
 # The debug tools' platform half (docs/guides/building.md#debug-tools), the only target that links Dear ImGui: the
 # debug menus' glue, the pad menu drawn over every frame (docs/guides/debug-menu.md); the developer overlay over the
 # same menus (docs/guides/debug-menu.md#the-developer-overlay); the menus' controls of the play mode with its Entity
-# inspector, Animation player and Debug draw lines; the texture, character and sandbox viewers; the reference images of
-# characters and objects (docs/guides/running.md#reference-images); and `--bench`, the scripted benchmark run that
-# spawns fighters through the debug menus' controls (docs/guides/performance.md).
+# inspector, Animation player, Debug draw lines and Spawner; the sandbox as the play mode's scenery and its renderer
+# (docs/guides/sandbox.md); the texture, character and sandbox viewers; the reference images of characters and objects
+# (docs/guides/running.md#reference-images); and `--bench`, the scripted benchmark run that spawns fighters through the
+# debug menus' controls (docs/guides/performance.md).
 add_library(
     coney_devtools STATIC
     character_viewer_mode.cpp
@@ -73,6 +71,8 @@ add_library(
     play_level_controls.cpp
     play_level_inspect.cpp
     reference_renderer.cpp
+    sandbox_play_scenery.cpp
+    sandbox_renderer.cpp
     sandbox_viewer_mode.cpp
     texture_viewer_mode.cpp)
 coney_target_defaults(coney_devtools)

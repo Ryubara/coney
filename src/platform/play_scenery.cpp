@@ -9,7 +9,6 @@
 #include "camera/camera_lens.h"
 #include "core/assert.h"
 #include "core/game_timer.h"
-#include "sandbox/sandbox_mesh.h"
 #include "world/view_frustum.h"
 #include "world/world_streamer.h"
 
@@ -21,8 +20,6 @@ namespace {
 constexpr float kStandInDrop = 500.0F;
 // A level's character light shines down and away from the usual camera side (game axes, z up): Coney's choice.
 constexpr anim::Vec3 kLevelLightDirection{0.3F, 0.5F, -0.8F};
-// How far above a sandbox spawn point the player is dropped onto the ground from.
-constexpr float kSpawnDrop = 2.0F;
 
 } // namespace
 
@@ -151,13 +148,13 @@ void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::ui
                             const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
     // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects;
     // the debug menus' spawned objects go first among those, in the world's camera, states and fog.
-    if (!m_extraRenderer) {
+    if (!m_extras.draw) {
         m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects, {},
                           afterWorlds);
         return;
     }
     const auto withExtras = [this, &engine, &drawObjects] {
-        m_extraRenderer->drawGeometry(engine);
+        m_extras.draw(engine);
         if (drawObjects) {
             drawObjects();
         }
@@ -166,38 +163,19 @@ void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::ui
                       afterWorlds);
 }
 
-std::expected<void, Error> LevelPlayScenery::setExtras(const RenderEngine& engine,
-                                                       const std::vector<sandbox::Primitive>& extra) {
+std::expected<void, Error> LevelPlayScenery::setExtras(const RenderEngine& /*engine*/, SceneExtras extras) {
     raycast::CollisionMesh& mesh = *m_scenery.level->collision;
-    if (extra.empty()) {
-        mesh.clearExtraTriangles();
-        m_extraSolid.clear();
-        m_extraRenderer.reset();
-        return {};
-    }
-    // 1. The objects as a sandbox builds them (the drawn mesh with its baked light, and the solid triangles), and
-    // their renderer, before anything in the level changes.
-    sandbox::SandboxLayout layout;
-    layout.primitives = extra;
-    auto world = sandbox::SandboxWorld::build(std::move(layout));
-    if (!world) {
-        return std::unexpected(std::move(world.error()));
-    }
-    auto renderer = SandboxRenderer::create(engine, *world);
-    if (!renderer) {
-        return std::unexpected(std::move(renderer.error()));
-    }
-    std::vector<raycast::BuildTriangle> solid = sandbox::sandboxCollisionTriangles(world->layout());
-    // 2. The level's mesh: the old objects' triangles out, the new ones in; on a refusal the old ones go back (they
-    // fitted before, so they fit again).
+    // The old objects' triangles out, the new ones in; on a refusal the old ones go back (they fitted before, so they
+    // fit again).
     mesh.clearExtraTriangles();
-    if (auto added = mesh.addExtraTriangles(solid); !added) {
-        const bool restored = mesh.addExtraTriangles(m_extraSolid).has_value();
-        CONEY_ASSERT(restored);
-        return added;
+    if (!extras.solid.empty()) {
+        if (auto added = mesh.addExtraTriangles(extras.solid); !added) {
+            const bool restored = mesh.addExtraTriangles(m_extras.solid).has_value();
+            CONEY_ASSERT(restored);
+            return added;
+        }
     }
-    m_extraSolid = std::move(solid);
-    m_extraRenderer = std::move(*renderer);
+    m_extras = std::move(extras);
     return {};
 }
 
@@ -205,8 +183,8 @@ anim::Vec3 LevelPlayScenery::lightDirection() const { return kLevelLightDirectio
 
 std::string LevelPlayScenery::summary() const {
     return std::format("; parts read {}, freed {}, failed {}", m_loads, m_unloads, m_failures) +
-           (m_extraSolid.empty() ? std::string{}
-                                 : std::format(", spawned collision triangles {}", m_extraSolid.size()));
+           (m_extras.solid.empty() ? std::string{}
+                                   : std::format(", spawned collision triangles {}", m_extras.solid.size()));
 }
 
 std::vector<human::Place> PlayScenery::places() const {
@@ -214,98 +192,13 @@ std::vector<human::Place> PlayScenery::places() const {
     return {human::Place{startSource(), s.position, s.headingDegrees}};
 }
 
-std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/,
-                                                  const std::vector<sandbox::Primitive>& /*extra*/) {
+std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/, SceneExtras /*extras*/) {
     return fail(ErrorCode::InvalidArgument, "objects cannot be spawned here");
 }
 
-std::expected<std::unique_ptr<SandboxPlayScenery>, Error>
-SandboxPlayScenery::create(const RenderEngine& engine, sandbox::SandboxWorld world,
-                           const std::optional<std::string>& spawn) {
-    if (world.collision() == nullptr) {
-        return fail(ErrorCode::NotFound, "the sandbox layout has nothing solid to stand on");
-    }
-    // The spawn point, dropped onto the ground below it as a level's start is.
-    const auto& spawns = world.layout().spawns;
-    const auto found =
-        spawn ? std::ranges::find_if(spawns, [&spawn](const auto& s) { return s.name == *spawn; }) : spawns.begin();
-    if (found == spawns.end()) {
-        std::string known;
-        for (const sandbox::SpawnPoint& s : spawns) {
-            known += (known.empty() ? "" : ", ") + s.name;
-        }
-        return fail(ErrorCode::NotFound, std::format("the sandbox layout has no spawn point \"{}\" (there are: {})",
-                                                     spawn.value_or(""), known));
-    }
-    raycast::Vec3 point{found->position.x, found->position.y, found->position.z + kSpawnDrop};
-    if (!raycast::dropToGround(*world.collision(), kSpawnDrop * 2.0F, point)) {
-        point.z = found->position.z;
-    }
-    const human::PlayerStart start{.position = anim::Vec3{point.x, point.y, point.z},
-                                   .headingDegrees = found->headingDegrees};
-    auto renderer = SandboxRenderer::create(engine, world);
-    if (!renderer) {
-        return std::unexpected(std::move(renderer.error()));
-    }
-    std::string name = found->name;
-    return std::unique_ptr<SandboxPlayScenery>(
-        new SandboxPlayScenery(std::move(world), std::move(*renderer), start, std::move(name)));
-}
-
-SandboxPlayScenery::SandboxPlayScenery(sandbox::SandboxWorld world, std::unique_ptr<SandboxRenderer> renderer,
-                                       const human::PlayerStart& start, std::string spawn)
-    : m_world(std::move(world)), m_made(m_world.layout()), m_renderer(std::move(renderer)), m_start(start),
-      m_spawn(std::move(spawn)) {}
-
-std::vector<human::Place> SandboxPlayScenery::places() const {
-    std::vector<human::Place> places;
-    for (const sandbox::SpawnPoint& spawn : m_world.layout().spawns) {
-        places.push_back(human::Place{spawn.name, spawn.position, spawn.headingDegrees});
-    }
-    return places;
-}
-
-std::expected<void, Error> SandboxPlayScenery::setExtras(const RenderEngine& engine,
-                                                         const std::vector<sandbox::Primitive>& extra) {
-    // Build the new world and its renderer first, so a failure leaves the scenery as it was.
-    sandbox::SandboxLayout layout = m_made;
-    layout.primitives.insert(layout.primitives.end(), extra.begin(), extra.end());
-    auto world = sandbox::SandboxWorld::build(std::move(layout), m_world.folder());
-    if (!world) {
-        return std::unexpected(std::move(world.error()));
-    }
-    if (world->collision() == nullptr) {
-        return fail(ErrorCode::InvalidArgument, "the sandbox would have nothing solid to stand on");
-    }
-    auto renderer = SandboxRenderer::create(engine, *world);
-    if (!renderer) {
-        return std::unexpected(std::move(renderer.error()));
-    }
-    m_world = std::move(*world);
-    m_renderer = std::move(*renderer);
-    return {};
-}
-
-void SandboxPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-                              const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
-    // The manager's viewport pass (the ambients and the cull) before anything is lit with it.
-    if (m_lighting != nullptr) {
-        m_lighting->beginFrame(view.pose, view.nearClip, view.drawDistance, nowMs);
-    }
-    // The sandbox has one world, so what follows the worlds comes straight after the objects.
-    m_renderer->render(engine, view, [&drawObjects, &afterWorlds] {
-        if (drawObjects) {
-            drawObjects();
-        }
-        if (afterWorlds) {
-            afterWorlds();
-        }
-    });
-}
-
-std::string SandboxPlayScenery::summary() const {
-    return std::format("; sandbox \"{}\", {} collision triangles", m_world.layout().title,
-                       m_world.collision()->triangles().size());
+const SceneExtras& PlayScenery::extras() const {
+    static const SceneExtras kNone;
+    return kNone;
 }
 
 } // namespace coney::platform
