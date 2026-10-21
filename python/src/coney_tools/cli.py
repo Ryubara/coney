@@ -30,6 +30,7 @@ from coney_tools import (
     pcsx2_copies,
     progress_cli,
     recipes_cli,
+    recordings_make,
     refs_cli,
     stale_processes,
     trace_cli,
@@ -596,15 +597,26 @@ def _add_claim_commands(commands: Any) -> None:
     setup.add_argument("--count", type=int, help="how many copies: pcsx2, pcsx2-b, ... (default: pcsx2_copies, 5)")
     setup.add_argument("--dry-run", action="store_true", help="print what would change, change nothing")
     recordings = commands.add_parser(
-        "recordings", help="move an input recording (.p2m2 and its savestate) between scratch and a claimed copy"
+        "recordings",
+        help="make an input recording from an input script, or move one (.p2m2 and its savestate) between scratch "
+        "and a claimed copy",
     )
     recordings.add_argument(
-        "direction", choices=("push", "pull"), help="push: scratch to the copy's recordings/; pull: back"
+        "direction",
+        choices=("push", "pull", "make"),
+        help="push: scratch to the copy's recordings/; pull: back; make: write one from an input script",
     )
     recordings.add_argument("name", help="the recording below recordings/, such as fights/rumble-1.p2m2")
-    recordings.add_argument("--agent", required=True, help="your id (must hold the claim)")
-    recordings.add_argument("--copy", required=True, help="the copy")
+    recordings.add_argument("--agent", help="push and pull: your id (must hold the claim)")
+    recordings.add_argument("--copy", help="push and pull: the copy")
     recordings.add_argument("--force", action="store_true", help="replace a different file of that name")
+    recordings.add_argument("--script", type=Path, help="make: the input script (Coney's format)")
+    recordings.add_argument("--state", type=Path, help="make: the savestate it starts from (none: from power-on)")
+    recordings.add_argument("--updates", type=int, help="make: how many 1/30 s updates (default: the script and 1 s)")
+    recordings.add_argument(
+        "--frames-per-update", type=int, default=2, help="make: PCSX2 frames in one script frame (default 2)"
+    )
+    recordings.add_argument("--author", default="", help="make: the author written into the header")
 
 
 def _add_pcsx2_commands(groups: Any) -> None:
@@ -864,6 +876,14 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
     if args.command == "setup-copies":
         return pcsx2_copies.run_setup_copies(args.count, args.dry_run)
     if args.command == "recordings":
+        if args.direction == "make":
+            if args.script is None:
+                raise ConfigError("recordings make needs --script")
+            return recordings_make.run_make(
+                args.name, args.script, args.state, args.updates, args.frames_per_update, args.author, args.force
+            )
+        if not args.agent or not args.copy:
+            raise ConfigError(f"recordings {args.direction} needs --agent and --copy")
         return pcsx2_copies.run_recordings(args.direction, args.agent, args.copy, args.name, args.force)
     if args.command == "recipe":
         return recipes_cli.run_command(args)
