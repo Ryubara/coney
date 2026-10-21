@@ -348,6 +348,12 @@ that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `st
 the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the sanitizers and the
 nightly full clang-tidy pass; a change to the build setup is checked on its changed files only.
 
+clang-tidy waits for a slot of the machine's tidy lane, like a build, and skips every file the shared cache has seen
+clean in the same state, so a rerun after a fix tidies only what the fix reaches ([building](building.md#clang-tidy-cache)).
+A first run on a header change can reach hundreds of files: when the queue or the run would outlast your prompt cache,
+start it with `--detach`, write STATUS.md and stop; `coney-tools check result` shows the outcome. Exit 75 means it gave
+up waiting, not that anything failed.
+
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
 merge commit joins), and a step that works on one system and not another fails there. A person on Linux or macOS who

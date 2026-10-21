@@ -3,26 +3,39 @@
 
 It is the step before handing a unit over (docs/guides/testing.md#local-gate). Each step runs only when the change
 touches what it checks; the command prints one line per step and exits 1 when any step fails.
+
+clang-tidy is the heavy step (about a minute and a gigabyte per file, and a header change reaches hundreds of files),
+so it runs as the builds do: under the machine's **tidy slots** (build_claims.py, `tidy_slots` of coney.local.toml),
+waiting in their queue, and only on the files the shared **result cache** (tidy_cache.py) has not seen clean in the
+same state. A run whose files are all cached takes no slot. `--detach` runs the whole gate in the background, as
+`build --detach` does, and `check result` reads its outcome.
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import shutil
+import sys
 import tempfile
 import time
-from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable, Iterator, Mapping
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import docs_check, docs_cli, local_gate
+from coney_tools import build_claims, build_cli, docs_check, docs_cli, local_gate, process_lifetime, tidy_cache
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
-from coney_tools.build_run import jobs_for
+from coney_tools.build_claims import FAST_LANE, TIDY_LANE, Slots, SlotTimeout, Waiting
+from coney_tools.build_run import EXIT_QUEUED, jobs_for
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.conventions import Paths, load_conventions
 from coney_tools.local_gate import StepResult
+from coney_tools.pcsx2_claims import AGENT_NAME
+from coney_tools.tidy_cache import TidyCache
 
 #: The steps, in the order they run and print; `--only` and `--skip` take these names.
 STEPS: tuple[str, ...] = ("repo", "pre-commit", "clang-tidy", "docs", "python")
@@ -51,6 +64,27 @@ RUFF_COMMANDS: tuple[tuple[str, ...], ...] = tuple(
 )
 #: Lines of a failed clang-tidy run shown when nothing in it looks like a diagnostic.
 FALLBACK_TAIL_LINES = 30
+#: The files in the worktree's scratch folder that a --detach run records itself in, and its console output.
+RESULT_FILE = "check-result.json"
+DETACHED_OUTPUT = "check-detached.out"
+#: A clang-tidy run of at most this many files (a rerun after a fix, a change that reaches a few sources) takes the
+#: fast lane's slot instead of a tidy slot: a couple of minutes, which must not wait behind a 250-file gate.
+SMALL_TIDY_FILES = 6
+
+
+@dataclass(frozen=True)
+class TidyGate:
+    """How the clang-tidy step shares the machine: who runs it (for the queue), the result cache (None: off), the
+    tidy slots (None: none taken, as in a test), the most seconds to wait for one (None: no limit), where the
+    waiting lines go, and the fast lane a run of at most SMALL_TIDY_FILES files takes instead (None: the tidy slots)."""
+
+    agent: str
+    worktree: str
+    cache: TidyCache | None
+    slots: Slots | None
+    max_wait: float | None
+    say: Callable[[str], None] = print
+    small_slots: Slots | None = None
 
 
 def _timed(name: str, work: Callable[[], StepResult]) -> StepResult:
@@ -135,8 +169,69 @@ def _is_diagnostic(line: str) -> bool:
     return line.startswith(("  ", "/")) or re.match(r"[A-Za-z]:", line) is not None or "error" in line.lower()
 
 
-def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang_tidy: str | None) -> StepResult:
-    """clang-tidy on what the change touches, with the GCC and Clang warnings on."""
+def _plural(count: int, word: str) -> str:
+    """`count word`, with an s unless the count is one."""
+    return f"{count} {word}{'' if count == 1 else 's'}"
+
+
+@contextmanager
+def _tidy_slot(gate: TidyGate | None, files: int) -> Iterator[Callable[[int], None]]:
+    """Hold a tidy slot while `files` files are tidied (none when the gate has no slots), or the fast lane's slot
+    for at most SMALL_TIDY_FILES files; yields the function that notes how many are done in the slot's owner file,
+    which `build status` shows. Raises SlotTimeout after the gate's wait."""
+    if gate is None or gate.slots is None:
+        yield lambda _done: None
+        return
+    small = gate.small_slots is not None and files <= SMALL_TIDY_FILES
+    slots = gate.small_slots if small and gate.small_slots is not None else gate.slots
+    lane = "fast-lane" if small else "clang-tidy"
+
+    def report(waiting: Waiting) -> None:
+        held = ", ".join(f"{h.agent} ({h.step})" for h in waiting.holders) or "nobody"
+        gate.say(
+            f"     waiting for a {lane} slot: {waiting.place} of {waiting.total} in the queue, held by {held}; "
+            f"about {waiting.minutes:.0f} min"
+        )
+
+    size = _plural(files, "file")
+    with slots.hold(gate.agent, gate.worktree, size, False, os.getpid(), timeout=gate.max_wait, report=report) as held:
+        current = held
+
+        def progress(done: int) -> None:
+            nonlocal current
+            current = slots.set_step(current, f"tidy {done}/{files}") or current
+
+        yield progress
+
+
+def _run_tidy(
+    commands: list[tuple[list[str], str]],
+    root: Path,
+    jobs: int,
+    progress: Callable[[int], None],
+    finished: Callable[[str, int], None] = lambda _name, _code: None,
+) -> list[tuple[str, int, list[str], list[str]]]:
+    """Run the clang-tidy commands, `jobs` at a time, handing each finished file and its exit code to `finished` and
+    the count so far to `progress`; results in the commands' order."""
+    pool = ThreadPoolExecutor(max_workers=max(1, min(jobs, len(commands))))
+    try:
+        futures = [pool.submit(_tidy_one, command, root, name) for command, name in commands]
+        for done, future in enumerate(as_completed(futures), start=1):
+            name, code, _lines, _everything = future.result()
+            finished(name, code)
+            progress(done)
+        return [future.result() for future in futures]
+    finally:
+        # On Ctrl+C or a kill the files not started yet are dropped, so the slot is let go now rather than after
+        # every queued file has run (the `with` form waits for all of them); after a normal end nothing is left.
+        pool.shutdown(wait=False, cancel_futures=True)
+
+
+def _step_tidy(
+    root: Path, changed: list[str], build_dir: Path, jobs: int, clang_tidy: str | None, gate: TidyGate | None = None
+) -> StepResult:
+    """clang-tidy on what the change touches, with the GCC and Clang warnings on: the files the cache has not seen
+    clean, under a tidy slot (both from `gate`; without one, every file and no slot)."""
     sources = local_gate.tidy_sources(root, changed)
     if not sources:
         return _skipped("clang-tidy", "no C++ changed")
@@ -160,13 +255,41 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
             f"--build-dir build/tidy --env CC=clang-{local_gate.TIDY_MAJOR} --env CXX=clang++-{local_gate.TIDY_MAJOR}` "
             "and pass `--build-dir build/tidy` here"
         )
-    with tempfile.TemporaryDirectory(prefix="coney-tidy-") as scratch:
-        database_dir = local_gate.without_missing_response_files(database, Path(scratch))
-        commands = [(local_gate.clean_tidy_command(tool, database_dir, checks, extra, name), name) for name in sources]
-        with ThreadPoolExecutor(max_workers=max(1, min(jobs, len(commands)))) as pool:
-            results = list(pool.map(lambda item: _tidy_one(item[0], root, item[1]), commands))
+    # The cache: a key per file from everything that decides its result; a file found clean before is not run again.
+    cache = gate.cache if gate is not None else None
+    entries = {name: database[local_gate.comparable(root / name)] for name in sources}
+    keys: dict[str, str] = {}
+    setup = ""
+    if cache is not None:
+        setup = tidy_cache.setup_text(root, local_gate.tidy_version(tool), checks, extra)
+        maker = tidy_cache.KeyMaker(root, setup)
+        keys = {name: maker.key(name, entries[name]) for name in sources}
+
+    def uncached(names: list[str]) -> list[str]:
+        """The names the cache has not seen clean in their current state."""
+        return [name for name in names if cache is None or not cache.hit(keys[name])]
+
+    def finished(name: str, code: int) -> None:
+        """Store a clean file at once, if its key is still the one it was run under: a file edited while the gate
+        waited or ran was tidied in one state and would be stored under another."""
+        if cache is not None and code == 0 and tidy_cache.KeyMaker(root, setup).key(name, entries[name]) == keys[name]:
+            cache.store(keys[name], name)
+
+    todo = uncached(sources)
+    results: list[tuple[str, int, list[str], list[str]]] = []
+    if todo:
+        with tempfile.TemporaryDirectory(prefix="coney-tidy-") as scratch:
+            database_dir = local_gate.without_missing_response_files(database, Path(scratch))
+            with _tidy_slot(gate, len(todo)) as progress:
+                # Another worktree's gate may have tidied some of these while this one waited for the slot.
+                todo = uncached(todo)
+                commands = [(local_gate.clean_tidy_command(tool, database_dir, checks, extra, n), n) for n in todo]
+                results = _run_tidy(commands, root, jobs, progress, finished)
+    cached = len(sources) - len(results)
     failed = [(name, lines, everything) for name, code, lines, everything in results if code != 0]
     version = f"clang-tidy {major}" if major is not None else "clang-tidy"
+    if cached:
+        version += f", {cached} cached"
     if major != local_gate.TIDY_MAJOR:
         notes.append(f"note: CI runs clang-tidy {local_gate.TIDY_MAJOR}, this is {major}")
     if not failed:
@@ -297,14 +420,37 @@ def _step_python(root: Path, changed: list[str]) -> StepResult:
 
 
 def tidy_jobs(root: Path, cpus: int | None) -> int:
-    """How many clang-tidy processes run at once by default: a build's share of the cores (`build_slots` of
-    coney.local.toml, as `coney-tools build -j` defaults), not half the machine. The gate runs outside the build slots,
-    so on 2026-10-20 six clang-tidy processes of one agent's gate ran beside five full builds on 16 cores."""
+    """How many clang-tidy processes one tidy slot runs by default: `tidy_jobs` of coney.local.toml, else (0) a build
+    slot's share of the cores (`build_slots`, as `coney-tools build -j` defaults). With `tidy_slots`, that bounds the
+    clang-tidy processes of every gate on the machine together: on 2026-10-21, before the tidy slots, eight gates ran
+    22 clang-tidy processes (about 1 GB each) beside five full builds on 16 cores."""
     try:
         numbers = load_config(root).numbers if local_config_file(root) else dict(INT_KEYS)
     except ConfigError:
         numbers = dict(INT_KEYS)
-    return jobs_for(numbers["build_slots"], cpus)
+    return numbers["tidy_jobs"] or jobs_for(numbers["build_slots"], cpus)
+
+
+def default_agent(root: Path, env: Mapping[str, str]) -> str:
+    """Who the gate's place in the tidy queue is for when `--agent` is not given: `CONEY_AGENT`, else the worktree's
+    folder name, with any character an agent id may not hold replaced by `_`."""
+    named = env.get("CONEY_AGENT") or root.name
+    cleaned = re.sub(r"[^A-Za-z0-9._-]", "_", named)[:64] or "gate"
+    return cleaned if AGENT_NAME.match(cleaned) else "gate"
+
+
+def max_wait_minutes(requested: float | None, detached: bool) -> float:
+    """The most minutes the gate waits for a tidy slot: `--max-wait`, else the build command's caps (MAX_WAIT_CAP for a
+    call its caller waits on, DETACHED_MAX_WAIT for a --detach run). A caller that waits may not ask for more than the
+    cap, or it outlasts its prompt cache (docs/guides/agents.md#build-waits)."""
+    if requested is None:
+        return build_cli.DETACHED_MAX_WAIT if detached else build_cli.MAX_WAIT_CAP
+    if not detached and requested > build_cli.MAX_WAIT_CAP:
+        raise ConfigError(
+            f"--max-wait {requested:g}: a gate you wait on may wait at most {build_cli.MAX_WAIT_CAP:.0f} min for a "
+            "clang-tidy slot; use --detach, write STATUS.md and stop: `coney-tools check result` shows the outcome"
+        )
+    return requested
 
 
 def run_changed(
@@ -314,9 +460,14 @@ def run_changed(
     skip: list[str] | None,
     jobs: int | None,
     clang_tidy: str | None,
+    *,
+    agent: str | None = None,
+    max_wait: float | None = None,
+    use_cache: bool = True,
+    detached: bool = False,
 ) -> int:
-    """Check what the change since `base` touched; print a line per step; 0 when all pass, 1 when any fails. `jobs`
-    None runs clang-tidy on a build's share of the cores (`tidy_jobs`)."""
+    """Check what the change since `base` touched; print a line per step; 0 when all pass, 1 when any fails, 75 when
+    clang-tidy gave up waiting for a slot and nothing failed. `jobs` None runs clang-tidy on `tidy_jobs` processes."""
     root = find_repo_root(Path.cwd())
     jobs = jobs if jobs else tidy_jobs(root, os.cpu_count())
     wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
@@ -325,26 +476,167 @@ def run_changed(
     build_path = Path(build_dir)
     if not build_path.is_absolute():
         build_path = root / build_path
+    gate = TidyGate(
+        agent or default_agent(root, os.environ),
+        root.name,
+        tidy_cache.default_cache(root) if use_cache else None,
+        build_claims.default_slots(TIDY_LANE, root),
+        max_wait_minutes(max_wait, detached) * 60,
+        lambda line: print(line, flush=True),
+        build_claims.default_slots(FAST_LANE, root),
+    )
     steps: dict[str, Callable[[], StepResult]] = {
         "repo": lambda: _step_repo(root),
         "pre-commit": lambda: _step_pre_commit(root, changed),
-        "clang-tidy": lambda: _step_tidy(root, changed, build_path, jobs, clang_tidy),
+        "clang-tidy": lambda: _step_tidy(root, changed, build_path, jobs, clang_tidy, gate),
         "docs": lambda: _step_docs(root, changed),
         "python": lambda: _step_python(root, changed),
     }
     if local_gate.needs_full_tidy_pass(changed) and "clang-tidy" in wanted:
         print("note: the build or tidy setup changed: nightly CI tidies every file, this run the changed ones only")
     failed = False
+    queued = False
     for name in wanted:
-        result = _timed(name, steps[name])
+        try:
+            result = _timed(name, steps[name])
+        except SlotTimeout as timeout:
+            queued = True
+            print(f"wait {name}: gave up at place {timeout.position} of {timeout.total}: {timeout}")
+            print("     run the gate again later, or with --detach (then `coney-tools check result`)")
+            continue
         mark = "skip" if result.skipped else "ok  " if result.ok else "FAIL"
         timing = "" if result.skipped else f" ({result.seconds:.0f}s)"
-        print(f"{mark} {name}: {result.detail}{timing}")
+        print(f"{mark} {name}: {result.detail}{timing}", flush=True)
         for line in result.output:
             print(f"     {line}")
         failed = failed or not result.ok
+    if gate.cache is not None:
+        gate.cache.prune()
     if failed:
         print("coney-tools check changed: FAILED (CI would fail too)")
         return 1
+    if queued:
+        print("coney-tools check changed: INCOMPLETE (clang-tidy did not run)")
+        return EXIT_QUEUED
     print("coney-tools check changed: ok. CI only: GCC-only warnings, macOS, sanitizers, a full clang-tidy pass.")
     return 0
+
+
+def run_check(args: argparse.Namespace) -> int:
+    """`check changed` (in the foreground, as a --detach run's child, or starting one) and `check result`."""
+    if args.command == "result":
+        return run_result(Path.cwd())
+    options = {"agent": args.agent, "max_wait": args.max_wait, "use_cache": not args.no_cache}
+    plain = (args.base, args.build_dir, args.only, args.skip, args.jobs, args.clang_tidy)
+    if args.result_file is not None:
+        return _detached_child(args, plain, options)
+    if args.detach:
+        max_wait_minutes(args.max_wait, detached=True)
+        return _start_detached(args)
+    process_lifetime.bind_children()  # an interrupted gate leaves no clang-tidy behind
+    return run_changed(*plain, **options)
+
+
+def _scratch_folder(root: Path) -> Path:
+    """The worktree's folder in the scratch directory, where `build` keeps its logs and results too."""
+    return build_cli.scratch_root(root) / root.name
+
+
+def _child_command(args: argparse.Namespace, root: Path, result: Path) -> list[str]:
+    """The command line of a --detach run's child: this run's flags, its agent and wait spelt out, and its result."""
+    agent = args.agent or default_agent(root, os.environ)
+    command = [sys.executable, "-m", "coney_tools.cli", "check", "changed", "--base", args.base]
+    command += [
+        "--build-dir",
+        args.build_dir,
+        "--agent",
+        agent,
+        "--max-wait",
+        str(max_wait_minutes(args.max_wait, True)),
+    ]
+    for flag, values in (("--only", args.only), ("--skip", args.skip)):
+        for value in values or []:
+            command += [flag, value]
+    for flag, value in (("--jobs", args.jobs), ("--clang-tidy", args.clang_tidy)):
+        command += [flag, str(value)] if value is not None else []
+    command += ["--no-cache"] if args.no_cache else []
+    return [*command, "--result-file", str(result)]
+
+
+def _start_detached(args: argparse.Namespace) -> int:
+    """--detach: record the run as started, start its child apart from this shell and return at once. Refuses a
+    second detached gate in a worktree whose last one still runs (they would share one result file)."""
+    root = find_repo_root(Path.cwd())
+    folder = _scratch_folder(root)
+    result = folder / RESULT_FILE
+    previous = build_cli._read_record(result)
+    if previous is not None and previous.get("state") == "running" and build_cli._alive(previous):
+        raise ConfigError(
+            f"a detached check of {previous.get('agent')} is still running (pid {previous.get('pid')}): "
+            "`coney-tools check result` shows how it ends"
+        )
+    output = folder / DETACHED_OUTPUT
+    record = {"state": "running", "agent": args.agent, "pid": None, "log": str(output), "started": time.time()}
+    build_cli._write_record(result, record)
+    pid = build_cli.spawn_detached(_child_command(args, root, result), root, output)
+    print(f"detached: pid {pid}, output in {output}")
+    print(
+        "write STATUS.md and stop, or do other work: `coney-tools check result` shows the outcome "
+        "(exit 75 while it runs)"
+    )
+    return 0
+
+
+def _detached_child(args: argparse.Namespace, plain: tuple[object, ...], options: dict[str, object]) -> int:
+    """The child of a --detach run: the gate itself, its exit code recorded in --result-file however it ends."""
+    record = {
+        "state": "running",
+        "agent": args.agent,
+        "pid": os.getpid(),
+        # When this process started, so a later process given the same pid is not taken for this run (build_cli._alive).
+        "process_started": process_lifetime.process_started(os.getpid()),
+        "log": str(args.result_file.parent / DETACHED_OUTPUT),
+        "started": time.time(),
+    }
+    build_cli._write_record(args.result_file, record)
+    code = 1
+    try:
+        process_lifetime.bind_children()
+        process_lifetime.stop_on_signals()
+        code = run_changed(*plain, **options, detached=True)  # type: ignore[arg-type]
+        return code
+    except ConfigError as error:
+        print(f"coney-tools: {error}")
+        code = 2
+        return code
+    except KeyboardInterrupt:
+        code = 130
+        raise
+    finally:
+        sys.stdout.flush()
+        build_cli._write_record(args.result_file, {**record, "state": "done", "exit_code": code, "ended": time.time()})
+
+
+def run_result(directory: Path) -> int:
+    """`check result`: the output and outcome of the worktree's last --detach gate. Exit: the gate's own code once it
+    has ended, 75 while it runs, 1 when there is none or it ended without a result."""
+    root = find_repo_root(directory)
+    folder = _scratch_folder(root)
+    record = build_cli._read_record(folder / RESULT_FILE)
+    if record is None:
+        print("no detached check recorded for this worktree")
+        return 1
+    output = folder / DETACHED_OUTPUT
+    try:
+        print(output.read_text(encoding="utf-8", errors="replace").rstrip())
+    except OSError:
+        print(f"(no output in {output} yet)")
+    if record.get("state") == "running":
+        if build_cli._alive(record):
+            print(f"still running (pid {record.get('pid')}): look again later")
+            return EXIT_QUEUED
+        print(f"ended without a result (pid {record.get('pid')} is gone)")
+        return 1
+    code = int(record.get("exit_code", 1))
+    print(f"exit {code}")
+    return code

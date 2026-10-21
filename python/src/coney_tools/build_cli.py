@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime
-from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaimError, Slots
+from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
 from coney_tools.pcsx2_claims import AGENT_NAME
@@ -131,7 +131,9 @@ def add_parser(groups: Any) -> None:
     group.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
-    status = commands.add_parser("status", help="who holds the slots, who waits, and stale entries")
+    status = commands.add_parser(
+        "status", help="who holds the slots (build lanes and the clang-tidy lane), who waits, and stale entries"
+    )
     _add_dir(status)
     status.add_argument("--json", action="store_true", help="print JSON instead of text")
     result = commands.add_parser("result", help="the outcome of the worktree's last --detach run")
@@ -140,8 +142,8 @@ def add_parser(groups: Any) -> None:
     release = commands.add_parser("release", help="manual cleanup: free an agent's slots and drop its queue places")
     release.add_argument("--agent", dest="release_agent", required=True, help="the agent whose entries to remove")
     release.add_argument("--force", action="store_true", help="also another agent's, or a build that still runs")
-    release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast lane)")
-    release.add_argument("--lane", choices=(MAIN_LANE, FAST_LANE), help="one lane only (default: both)")
+    release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast or tidy lane)")
+    release.add_argument("--lane", choices=LANES, help="one lane only (default: all)")
     _add_dir(release)
 
 
@@ -622,7 +624,7 @@ def _status_json(snapshots: dict[str, Any]) -> dict[str, Any]:
 
 def status_json(root: Path) -> dict[str, Any]:
     """What `build status --json` prints for the checkout at `root` (also what `coord status` shows of the slots)."""
-    return _status_json({lane: build_claims.default_slots(lane, root).status() for lane in (MAIN_LANE, FAST_LANE)})
+    return _status_json({lane: build_claims.default_slots(lane, root).status() for lane in LANES})
 
 
 def result_record(root: Path) -> dict[str, Any] | None:
@@ -635,9 +637,10 @@ def result_record(root: Path) -> dict[str, Any] | None:
 
 
 def run_status(directory: Path | None, as_json: bool) -> int:
-    """`build status`: the slots of both lanes with their holders, the queues in order, and stale entries."""
+    """`build status`: the slots of every lane (main, fast, and the clang-tidy lane of `check changed`) with their
+    holders, the queues in order, and stale entries."""
     root = _root(directory)
-    lanes = {lane: build_claims.default_slots(lane, root) for lane in (MAIN_LANE, FAST_LANE)}
+    lanes = {lane: build_claims.default_slots(lane, root) for lane in LANES}
     snapshots = {lane: slots.status() for lane, slots in lanes.items()}
     now = lanes[MAIN_LANE].clock()
     if as_json:
@@ -679,9 +682,7 @@ def _epoch(iso: str) -> float:
 def run_release(directory: Path | None, agent: str, force: bool, slot: int | None, lane: str | None) -> int:
     """`build release`: free an agent's slots and drop its queue places (manual cleanup after a crash)."""
     root = _root(directory)
-    chosen: list[Slots] = [
-        build_claims.default_slots(name, root) for name in ([lane] if lane else [MAIN_LANE, FAST_LANE])
-    ]
+    chosen: list[Slots] = [build_claims.default_slots(name, root) for name in ([lane] if lane else LANES)]
     if slot is not None:
         chosen = chosen[:1]  # a slot number belongs to one lane: --lane, else the main slots
     released = 0
