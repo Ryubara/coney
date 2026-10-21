@@ -51,6 +51,9 @@ more (`0x0041d160`), where the same menu offers other items.
 
 ## Data
 
+Every value in this section is confirmed (code) at the address it cites unless its line says it is inferred or
+confirmed (runtime).
+
 ### The menu's fields
 
 The story menu (at least `0x4354` bytes: the Stats screen at `+0x3bb0` reaches `+0x4350`); confirmed (code) at the
@@ -128,6 +131,9 @@ The grid items (`0x001dbee0`), each with the code `PauseMenu_SelectItem` acts on
 The first item is selected when the menu opens. Confirmed (code); the story order and look confirmed (runtime).
 
 ## Behaviour
+
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred or
+confirmed (runtime).
 
 ### Pausing
 
@@ -496,7 +502,7 @@ the items' actions are in `MissionFailedMenu_OnCommand` (`0x001d2a10`) and the Y
 ## Function index {#function-index}
 
 Every function of the pause, options and controls menus, by source file in address order, with the name it has in Ghidra
-(ours). Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
+(ours); each is confirmed (code) at its address unless its row says otherwise. Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
 [Source map](source-map.md#gui).
 
 ### The Armies of the Night game-over screen {#an-game-over}
