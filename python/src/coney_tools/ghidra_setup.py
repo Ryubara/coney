@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 
-from coney_tools import ghidra_names
+from coney_tools import ghidra_names, wad
 from coney_tools.config import ConfigError
 from coney_tools.disc import Disc
 from coney_tools.ghidra_headless import (
@@ -113,6 +113,9 @@ def _compile_language(setup: Setup) -> None:
 
 def _import(setup: Setup, disc: Disc) -> None:
     """Copy the executable from the disc to a temporary folder, import and analyse it, and delete the copy."""
+    # The project holds the game's code and the copy is the executable itself: neither may land in a checkout.
+    wad.refuse_inside_repo(setup.project.folder)
+    wad.refuse_inside_repo(setup.work)
     setup.project.folder.mkdir(parents=True, exist_ok=True)
     setup.work.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=setup.work, prefix=".ghidra-import-") as temp:

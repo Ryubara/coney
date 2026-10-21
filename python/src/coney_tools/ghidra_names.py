@@ -32,11 +32,12 @@ LOG_NAME = "ghidra-import-names.log"
 
 #: What the script did with a name, by group. Matched: Ghidra has a function at the address (renamed; already has
 #: the name; or kept, as the contributor named it by hand). Created: no function there, and the one created has the
-#: listed size. Skipped: the address lies inside another function, holds data, cannot be disassembled, the function
-#: could not be created or came out another size (it is removed again), or Ghidra refused the name.
+#: listed size. Skipped: Ghidra's function there is a thunk (renaming it would rename its target), the address lies
+#: inside another function, holds data, cannot be disassembled, the function could not be created or came out another
+#: size (it is removed again; instructions disassembled for it stay), or Ghidra refused the name.
 MATCHED = ("renamed", "same", "kept")
 CREATED = ("created",)
-SKIPPED = ("inside", "data", "nocode", "failed", "size", "error")
+SKIPPED = ("thunk", "inside", "data", "nocode", "failed", "size", "error")
 OUTCOMES = (*MATCHED, *CREATED, *SKIPPED)
 
 

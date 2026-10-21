@@ -46,6 +46,10 @@ public class ImportNames extends GhidraScript {
     /** Names the function at `address`, creating it when analysis found none; returns "outcome\tsize". */
     private String apply(Address address, long size, String name, boolean overwrite) {
         Function function = getFunctionAt(address);
+        if (function != null && function.isThunk()) {
+            // Renaming a thunk renames the function it jumps to, which has a listed name of its own.
+            return "thunk	-1";
+        }
         if (function != null) {
             long actual = size(function);
             if (function.getName().equals(name)) {

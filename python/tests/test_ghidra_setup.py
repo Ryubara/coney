@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.ghidra_setup: `coney-tools ghidra setup` on made-up folders, with stand-ins for Ghidra."""
 
+import dataclasses
 import hashlib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -183,3 +184,15 @@ def test_a_failed_step_names_its_log(tmp_path: Path) -> None:
     setup = ghidra_setup.Setup(**{**setup.__dict__, "runner": failing})
     with pytest.raises(ConfigError, match=r"ghidra-sleigh\.log"):
         ghidra_setup.run_setup(setup, make_disc(tmp_path), LISTING, ghidra_setup.Options(sha1(EXECUTABLE)))
+
+
+def test_a_project_inside_the_checkout_is_refused(tmp_path: Path) -> None:
+    # A Ghidra project holds the game's code: it never goes into the repository, not even a git-ignored folder.
+    recorder = Recorder()
+    setup = make_setup(tmp_path, make_ghidra(tmp_path, sla=True), recorder)
+    inside = Path(__file__).resolve().parents[2] / "build" / "ghidra-test-project"
+    setup = dataclasses.replace(setup, project=GhidraProject(inside, "warriors"))
+    with pytest.raises(ConfigError, match="inside the repository"):
+        ghidra_setup.run_setup(setup, make_disc(tmp_path), LISTING, ghidra_setup.Options(sha1(EXECUTABLE)))
+    assert not inside.exists()
+    assert recorder.commands == []

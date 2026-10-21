@@ -151,16 +151,18 @@ through `analyzeHeadless` on the program, without analysing it again, and prints
   from the listing is renamed anyway and counted on a line of its own.
 * **created**: analysis found no function there, so one is created, and kept with the name only when its size is the
   listed size.
-* **skipped**: the address lies *inside* another function, holds *data*, cannot be disassembled (*nocode*), the
-  function could not be created (*failed*) or came out another *size* (it is removed again), or Ghidra refused the
-  name (*error*).
+* **skipped**: Ghidra's function there is a *thunk* (renaming it would rename the function it jumps to), the address
+  lies *inside* another function, holds *data*, cannot be disassembled (*nocode*), the function could not be created
+  (*failed*) or came out another *size* (the function is removed again, though the instructions disassembled for it
+  stay), or Ghidra refused the name (*error*).
 
 Names it applies get the source `IMPORTED`, so running it again after the listing changes replaces them, while your
 own names stay. `--dry-run` opens the program read-only: the script does everything, Ghidra saves none of it, and
 the counts are the ones a real run would give. Measured on 2026-10-21 on a project `ghidra setup` had just made
 (Windows, a busy 16-core machine; import, analysis and names 2 min 37 s in all): of the 11,527 names (the listing's
 11,530 less three that are Ghidra-style `FUN_` names), 11,345 were matched (11,290 renamed, 55 already the same) and
-182 created, none skipped; a second run found all 11,527 the same, in 10 s. Plate comments, structures and signatures are not shared at all until the
+182 created, none skipped; a second run found all 11,527 the same, in 10 s. Plate comments, structures and signatures
+are not shared at all until the
 research database exists ([The research database](research-workflow.md#the-research-database)).
 
 ### ghidra-mcp on your machine {#own-ghidra-mcp}
