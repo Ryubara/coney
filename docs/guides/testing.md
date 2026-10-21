@@ -65,8 +65,8 @@ either ([Studying the original](research-workflow.md#studying-the-original)).
 - **Disc tests** need the player's own disc, which they read from `CONEY_DISC`. `coney-tools build --test` sets it from
   `game_dir` in `coney.local.toml` when the environment does not, and its summary says whether the disc tests ran or
   were skipped ([the disc for the tests](coney-tools.md#build)); without a disc they skip, and ctest counts a skip as
-  a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2 tag `[disc]`), so `coney-tools build --test -L disc` runs them
-  and nothing else ([`build`](coney-tools.md#build)).
+  a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2
+  tag `[disc]`), so `coney-tools build --test -L disc` runs them and nothing else ([`build`](coney-tools.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
