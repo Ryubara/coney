@@ -37,6 +37,10 @@ def publish(folder: Path, owner_text: str) -> bool:
     staging.mkdir()
     try:
         (staging / OWNER_FILE).write_text(owner_text, encoding="utf-8")
+        # Linux and macOS rename over an empty folder, so an owner-less claim (left by a crash) would be replaced
+        # without the takeover checks. publish never makes an empty claim folder, so this check races with nothing.
+        if folder.exists():
+            return False
         staging.rename(folder)
         return True
     except OSError as error:
