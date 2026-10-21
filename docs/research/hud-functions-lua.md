@@ -133,7 +133,8 @@ default mode.
 - **Marks**: `part_page0` rectangle 366 (`0x16e`, a short upright stroke, 7 × 14 texels) for the strokes and 367
   (`0x16f`, a long flat bar, 37 × 6 texels) for every fifth, blue, all rotated **3.3 rad** (about 189°, so tilted
   about 9° off their art). Size (an overlay height; the width follows from the rectangle's aspect): 0.04 × 1.2 =
-  **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` × `0x0050d604`; confirmed (code)).
+  **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` ×
+  `0x0050d604`; confirmed (code)).
 - **Where mark *i* goes** (0-based, *i* < the standing count; confirmed (code)), in GUI units, `NumIndicator_Update`
   (`0x001b67b8`) with
   the default mode's layout (`NumIndicator_ApplyLayout`, `0x001b6168`: origin (0.09, 0.94) `0x0050d5f0`/`0x0050d5f8`,
@@ -231,14 +232,15 @@ every mark        y = base.y + T+0x1f8 + shift
 ```
 
 Every mark is turned by `0x005100a8` = **3.3 rad**, as the [gang-count indicator](#gang-count-indicator)'s, and its
-size is the table's times `0x00510050` = 1.0 (confirmed (code)). With the bases (0.10, 0.05) and (0.785, 0.05) the strokes of player 0
-start at x 0.005 (bar at 0.025, the sixth stroke at 0.075) and player 1's at 0.779 (bar 0.799, sixth 0.85).
+size is the table's times `0x00510050` = 1.0 (confirmed (code)). With the bases (0.10, 0.05) and
+(0.785, 0.05) the strokes of player 0 start at x 0.005 (bar at 0.025, the sixth stroke at 0.075) and player 1's at
+0.779 (bar 0.799, sixth 0.85).
 
 **The shift** moves the tally below the money and the item counters:
 
 - `shifted` is 0 → no shift. `PlayerHUD_Update` (`0x00214138`, each update while the tally is on, `+0x4130`) passes
-  what `PlayerHUD_UpdateCounters` (`0x00213770`) returned (confirmed (code)): **1** when the money (`+0x444`) is 1-999 or any item
-  counter is shown, else 0 (money 0 or less, or 1,000 or more, with no counter).
+  what `PlayerHUD_UpdateCounters` (`0x00213770`) returned (confirmed (code)): **1** when the money
+  (`+0x444`) is 1-999 or any item counter is shown, else 0 (money 0 or less, or 1,000 or more, with no counter).
 - `shifted` is 1 → **0.09** (`0x005100a4`) when slot 2 or slot 3 of the [counter slots](hud.md#item-counters) sits on
   line 2
   (its y equals 0.146) and holds an item (its `+0x20` is not 4); otherwise **0.045** (`0x005100a0`). Confirmed

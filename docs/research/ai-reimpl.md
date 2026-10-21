@@ -62,8 +62,8 @@ Coney use a stand-in threat test today (`repo:src/ai/brain_events.cpp`, `repo:sr
 `Gang_IsEnemyOf(a, b)`: whether gang *a* treats gang *b* as an enemy. Confirmed (code) at `0x00168fe0`.
 
 1. False when one gang's kind (*gang* `+0x2c`) is 1 (the police) and the other's is `0x17`, either way round.
-2. False during a **truce**: the global `0x0050cb7c` holds an end time (confirmed (code): written by `Gangs_SetTruce`); while it is not 0 and *now* is below it,
-   no gang is anyone's enemy.
+2. False during a **truce**: the global `0x0050cb7c` holds an end time (confirmed (code): written by
+   `Gangs_SetTruce`); while it is not 0 and *now* is below it, no gang is anyone's enemy.
 3. Otherwise bit (*b*'s id, *gang* `+0x30`, masked to 0-31) of *a*'s enemy mask (*gang* `+0x38`). The test reads
    *a*'s mask only, so it is not symmetric by itself; `GangMakeEnemies` sets both masks.
 
