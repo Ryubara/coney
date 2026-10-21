@@ -1262,11 +1262,11 @@ at all (outside a checkout). `action` lists the ids of what waits, sorted:
 An id stays the same while the thing waits, and leaves the list once it has been dealt with, so a reader can tell new
 work from old by comparing lists. The `issue`, `pr` and `unit` ids need GitHub and appear only in a `--github` read.
 
-`--ids` prints only the ids, one per line, for a program that watches them. `--kind issue|pr|unit|build`
-(repeatable) reads only the sections those kinds come from, and prints only their ids, so a poller pays for one read.
-A GitHub kind needs `--github` (exit 2 without it). When a section the ids come from could not be read, `--ids`
-prints nothing, names the section and its error on stderr and exits 1, so a watcher reports a failed read instead of
-an empty list.
+`--ids` prints only the ids, one per line, for a program that watches them, and cannot be combined with `--json`.
+`--kind issue|pr|unit|build` (repeatable) reads only the sections those kinds come from, and prints only their ids,
+so a poller pays for one read. A GitHub kind needs `--github` (exit 2 without it). When a section the ids come from
+could not be read (for `unit` and `build` ids that includes the worktree list), `--ids` prints nothing, names the
+section and its error on stderr and exits 1, so a watcher reports a failed read instead of an empty list.
 
 ### Waking the coordinator {#coord-wakes}
 
@@ -1327,15 +1327,17 @@ command in it parses.
 }
 ```
 
-What each poller wakes for:
+Replace `<workspace>` in the `prs` poller with the folder that holds `repos/` and `worktrees/` on your machine, for
+example `C:/Repositories/Coney`. What each poller wakes for:
 
 * **`triage`** wakes for each issue waiting for [triage](issues.md#triage): an open issue carrying `S-needs-triage`,
-  read every two minutes. It wakes once per issue, and again when the issue changes.
+  read every two minutes. It wakes once per issue, keyed by its number, so the coordinator's own comment does not wake
+  it again.
 * **`release`** wakes for each `unit:` id, a [release queue](how-we-work.md#release-queue) file with no pull request
   yet, read every two minutes.
 * **`builds`** wakes for each `build:done:` id, a detached build that ended within the hour, read every 15 seconds.
 * **`prs`** is Tether's pull-request guard, reading health through `repo pr-health`. It wakes for stuck pull
-  requests and keeps their owner and waiver records. Set `worktrees` to the folder that holds Coney's worktrees.
+  requests and keeps their owner and waiver records.
 
 Tether starts a turn only for ids it has not told before, and never while a turn runs or you type. Ids still waiting
 are told again 30 minutes later, then after 60, 120 and at most every four hours (`remindMinutes`). The `builds`

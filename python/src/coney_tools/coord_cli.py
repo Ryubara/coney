@@ -3,16 +3,16 @@
 
 Anyone at a prompt reads the whole report; the coordinator's Tether watch runs `--ids --kind ...` as command pollers to
 wake the session when new ids appear (docs/guides/coney-tools.md#coord-wakes). The local parts are fast and never touch
-the network: the PCSX2
-copies (the rows of `pcsx2 status --json`), the build slots and queues (`build status --json`), each worktree's last
-detached build (`build result`), the release queue (the `PR*.md` files in the scratch folders) and the tracks (each
-scratch folder's `STATUS.md`). `--github` adds the open issues (ids and labels, no titles), the open pull requests with
-the `repo pr-health` report, the CI queue's counts and, for the release queue, which units already have a pull request.
+the network: the PCSX2 copies (the rows of `pcsx2 status --json`), the build slots and queues (`build status --json`),
+each worktree's last detached build (`build result`), the release queue (the `PR*.md` files in the scratch folders) and
+the tracks (each scratch folder's `STATUS.md`). `--github` adds the open issues (ids and labels, no titles), the open
+pull requests with the `repo pr-health` report, the CI queue's counts and, for the release queue, which units already
+have a pull request.
 
 `action` lists what waits for the coordinator as stable ids: a new id is new work, and an id that leaves the list was
-dealt with. The GitHub kinds (`GITHUB_KINDS`) appear only in a `--github` read; a reader that mixes both kinds of read
-keeps them from its last `--github` one. Each section is an object with `error` (None when it was read); a section that
-could not be read says why and leaves the others standing, so a failure is never taken for "nothing waits".
+dealt with. The GitHub kinds (`GITHUB_KINDS`) appear only in a `--github` read. Each section is an object with `error`
+(None when it was read); a section that could not be read says why and leaves the others standing, so a failure is never
+taken for "nothing waits".
 """
 
 from __future__ import annotations
@@ -36,8 +36,14 @@ from coney_tools.workspace_clean import list_worktrees
 
 #: Action kinds that only a `--github` read can tell.
 GITHUB_KINDS = ("issue", "pr", "unit")
-#: Every action kind, and the report sections its ids come from: `--kind` reads only those (and the worktrees).
-KIND_SECTIONS = {"issue": ("issues",), "pr": ("prs",), "unit": ("release",), "build": ("results",)}
+#: Every action kind, and the report sections its ids come from: `--kind` reads only those. The worktrees are always
+#: read; the release queue and the build results are built from them, so their ids depend on that read too.
+KIND_SECTIONS = {
+    "issue": ("issues",),
+    "pr": ("prs",),
+    "unit": ("worktrees", "release"),
+    "build": ("worktrees", "results"),
+}
 #: The issue status label that waits for the coordinator (triage is its job).
 TRIAGE_LABEL = "S-needs-triage"
 #: A finished detached build is news for this long after it ended.
@@ -498,6 +504,9 @@ def run(
 ) -> int:
     """Run `coord status`."""
     kinds: list[str] | None = getattr(args, "kind", None)
+    if getattr(args, "ids", False) and args.json:
+        err("coord status: --ids and --json print different things; give one")
+        return 2
     for kind in kinds or []:
         if kind in GITHUB_KINDS and not args.github:
             err(f"coord status: --kind {kind} needs --github")
