@@ -68,7 +68,7 @@ first hour; the rest of this file is for agents.
   or a human. Tests for everything testable without the game, written first: `docs/guides/testing.md`.
 - Write for networked play: state owned by the game mode, player slots not one player, ids not pointers, gameplay
   randomness only from `GameRandom`, simulated effects as events: `docs/guides/network-architecture.md#checklist`.
-- Style and the rest: `docs/guides/conventions.md`.
+- Port, never transcribe: keep the logic, write Coney's own code (`conventions.md#porting`); the rest: `conventions.md`.
 
 ## Documentation
 

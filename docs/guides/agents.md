@@ -19,7 +19,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
-| `.claude/agents/` | The roles: `engineer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
+| `.claude/agents/` | The roles: `engineer`, `reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/release_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call, and their `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
@@ -81,6 +81,29 @@ that runs anything else with a window puts it on the same display.
 Another agent tool needs only its own MCP entries for the two servers (the same
 `uv run --isolated --frozen --project python coney-tools mcp serve <name>` command, run from the checkout) and reads
 the rules from `AGENTS.md`.
+
+## The orig reviewer {#orig-reviewer}
+
+The `orig-reviewer` agent (`.claude/agents/orig-reviewer.md`, Opus, since it reads the original) compares Coney
+functions that carry `@orig` with the original functions in Ghidra, on fidelity and own expression. It follows one
+rubric, [Orig review](review/orig.md). Its tools are Read, Glob, Grep, Bash (read-only commands and the
+`coney-tools orig` commands), Write (its own report files only) and the ghidra-mcp read tools (`decompile_function`,
+`disassemble_function` and the like). It has no Edit tool and no Ghidra tool that writes.
+
+Run it in one of two modes:
+
+- **pr mode, on every branch whose diff adds or changes an `@orig` function,** after the code review and before
+  pr-reviewer. A fix to the code would otherwise make the description's review stale. Give it the branch (or its
+  worktree), the base and the scratch folder that holds `PR.md`. It runs `coney-tools orig review-stamp --branch`,
+  reviews each listed function, and writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When the stamp lists no
+  function, no run is needed, and the release check passes without one. Any later change to a reviewed function
+  makes the verdict stale; a rebase that leaves the functions as they were does not.
+- **sweep mode, on existing code,** for the [fidelity audit](how-we-work.md#fidelity-audit). Give it a `src/` folder
+  or a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what
+  `orig review-stamp --folder` lists as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the
+  findings with `coney-tools orig record`, and returns a summary that the launcher saves as `SUMMARY.md`. Run one
+  agent per folder, and leave out the folders that another audit or open branch owns. The coordinator turns each
+  finding that is not `clean` or `diff-deliberate-ok` into a fix unit.
 
 ## What a run costs {#cost}
 

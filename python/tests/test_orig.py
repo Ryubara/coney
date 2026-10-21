@@ -246,7 +246,8 @@ def test_the_queue_puts_what_an_issue_names_first(checkout: Path) -> None:
     entries = orig_queue.rank(inputs)
     assert entries[0].key == "0x00100020"
     assert entries[0].reasons[0] == "#7 names it"
-    assert entries[0].score == 10 * 3 + 3  # named by a high-priority issue, its file named by #8 (#8 has no P- label)
+    # Named by a high-priority issue, its file named by #8 (#8 has no P- label), and not yet reviewed.
+    assert entries[0].score == 10 * 3 + 3 + orig_queue.WEIGHTS["unreviewed"]
     forget = next(e for e in entries if e.title.startswith("Brain::forget"))
     assert "#8 names its file" in forget.reasons
     summary = orig_queue.subsystems(entries)

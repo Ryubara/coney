@@ -307,6 +307,22 @@ class Review:
 
 
 @dataclass(frozen=True)
+class OrigReview:
+    """The release gate on the orig-reviewer agent's verdict (`coney-tools orig check-review`), and its ledger."""
+
+    #: The agent's name; its definition is `.claude/agents/<agent>.md`.
+    agent: str
+    #: The verdict (JSON) the agent writes next to the description file; `orig check-review` reads it.
+    verdict_file: str
+    #: The readable report the agent writes beside the verdict.
+    report_file: str
+    #: The record of every review, relative to the workspace's scratch folder (never committed).
+    ledger: str
+    #: The rubric's version (docs/guides/review/orig.md); a verdict made under another version is refused.
+    rubric_version: int
+
+
+@dataclass(frozen=True)
 class Stacked:
     """The rules for a pull request whose base is not the default branch."""
 
@@ -336,6 +352,7 @@ class PullRequests:
     runtime: RuntimeEvidence
     ai_use: AiUse
     review: Review
+    orig_review: OrigReview
     stacked: Stacked
 
 
@@ -951,6 +968,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "runtime",
         "ai_use",
         "review",
+        "orig_review",
         "stacked",
     )
     table = _table(data, where, keys)
@@ -976,6 +994,18 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     report_file = _text(review["report_file"], _at(review_where, "report_file"))
     if report_file == verdict_file:
         raise _fail(_at(review_where, "report_file"), "must differ from verdict_file")
+    orig, orig_where = sub("orig_review", "agent", "verdict_file", "report_file", "ledger", "rubric_version")
+    orig_agent = _text(orig["agent"], _at(orig_where, "agent"))
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", orig_agent):
+        raise _fail(_at(orig_where, "agent"), f"'{orig_agent}' must be an agent name (lower case, digits and dashes)")
+    orig_files = [_text(orig[name], _at(orig_where, name)) for name in ("verdict_file", "report_file")]
+    if len({*orig_files, verdict_file, report_file}) != 4:
+        raise _fail(
+            _at(orig_where, "verdict_file"), "the orig verdict and report must differ from each other and from review's"
+        )
+    orig_ledger = _text(orig["ledger"], _at(orig_where, "ledger"))
+    if orig_ledger.startswith(("/", "\\")) or ".." in orig_ledger.replace("\\", "/").split("/"):
+        raise _fail(_at(orig_where, "ledger"), "must be a path inside the scratch folder")
     stacked, stacked_where = sub(
         "stacked", "depends_line", "merge_into_base", "auto_merge_on_non_default_base", "after_base_merges"
     )
@@ -1048,6 +1078,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             report_file=report_file,
             body_hash=_choice(review["body_hash"], _at(review_where, "body_hash"), ("sha256-lf",)),
             identical_images=_choice(review["identical_images"], _at(review_where, "identical_images"), ("refused",)),
+        ),
+        orig_review=OrigReview(
+            agent=orig_agent,
+            verdict_file=orig_files[0],
+            report_file=orig_files[1],
+            ledger=orig_ledger,
+            rubric_version=_count(orig["rubric_version"], _at(orig_where, "rubric_version")),
         ),
         stacked=Stacked(
             depends_line=_text(stacked["depends_line"], _at(stacked_where, "depends_line")),

@@ -87,6 +87,10 @@ jobs:
       # request's merge commit joins, so only what the pull request adds is checked.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools orig check --base HEAD^1
+      # No line the pull request adds to a C++ file of src/ carries a decompiler fingerprint (Ghidra's names, its
+      # undefined types, a raw read at a byte offset, goto): docs/guides/conventions.md#porting.
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools orig copy-check --base HEAD^1
       # The script-binding pages (docs/references/bindings/) must match research/bindings/, which must be valid.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools natives render --check

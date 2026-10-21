@@ -33,6 +33,7 @@ from coney_tools import (
     docs_cli,
     local_gate,
     orig_check,
+    orig_copy,
     process_lifetime,
     tidy_cache,
 )
@@ -133,16 +134,20 @@ def _step_repo(root: Path) -> StepResult:
 
 
 def _step_orig(root: Path, base: str, changed: list[str]) -> StepResult:
-    """`coney-tools orig check`, which CI runs: a new function in a gameplay folder carries `@orig` or `@coney-only`,
-    and every folder of `src/` is listed as gameplay or Coney-only."""
+    """`coney-tools orig check` and `orig copy-check`, which CI runs: a new function in a gameplay folder carries
+    `@orig` or `@coney-only`, every folder of `src/` is listed as gameplay or Coney-only, and no changed C++ line
+    carries a decompiler fingerprint (docs/guides/conventions.md#porting)."""
     if not any(name.startswith("src/") for name in changed):
         return _skipped("orig", "src/ unchanged")
-    problems = orig_check.check(root, base)
+    problems = orig_check.check(root, base) + [str(finding) for finding in orig_copy.check(root, base)]
     if problems:
         return StepResult(
-            "orig", False, f"{len(problems)} new functions or folders say neither", output=_tail(problems)
+            "orig",
+            False,
+            f"{len(problems)} untagged functions, unlisted folders or fingerprints",
+            output=_tail(problems),
         )
-    return StepResult("orig", True, "every new gameplay function carries @orig or @coney-only")
+    return StepResult("orig", True, "every new gameplay function carries @orig or @coney-only; no fingerprints")
 
 
 def _chunks(names: list[str], budget: int = COMMAND_LINE_BUDGET) -> list[list[str]]:
