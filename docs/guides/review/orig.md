@@ -109,7 +109,7 @@ has exactly these keys:
 | `verdict` | `"pass"` when every reviewed function's class passes and no finding is a blocker; otherwise `"fail"`. |
 | `tip` | The full hash of the commit reviewed (the stamp's `tip`). |
 | `base` | The full hash where the branch left its base (the stamp's `base`). |
-| `reviewed` | Every `@orig` address that was compared, as `"0x%08x"` strings. |
+| `reviewed` | Every `@orig` address that was compared, as `"0x%08x"` strings. For a function that carries many tags (a table of script bindings, each lambda tagged), list the ones the change touches, and say which in the note. |
 | `findings` | `{severity, where, text}` objects, as in `REVIEW.json`. `severity` is `blocker` or `note`, and `where` is `file:line`. |
 | `rubric_version` | The rubric version above, as an integer. |
 | `functions` | One `{key, body_sha256, class, evidence, note}` object per reviewed function, with `key` and `body_sha256` copied from the stamp. |
@@ -119,7 +119,8 @@ has exactly these keys:
 `coney-tools orig check-review` (and the release step that calls it) passes a branch only when:
 
 - the verdict covers every `@orig` function the branch adds or changes;
-- each of those functions has a passing class, its stamp's body hash, and its addresses in `reviewed`;
+- each of those functions has a passing class, its stamp's body hash, and at least one of its addresses in
+  `reviewed`;
 - no finding is a blocker, and the rubric version matches.
 
 The verdict binds to the function bodies it reviewed, so a rebase that leaves them unchanged keeps it, and any
