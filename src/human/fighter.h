@@ -174,7 +174,8 @@ class Fighter {
     void update(const FighterInput& input, HumanAnimator& animator, float& heading);
 
     /// What the run log calls this fighter (`human 12 warr_cl`), set by whoever names the human (the AI's brains);
-    /// `player` or `human` until then. Coney's own, for the log only (docs/guides/run-log.md).
+    /// `player` or `human` until then (docs/guides/run-log.md).
+    /// @coney-only a name for Coney's run log (docs/guides/run-log.md)
     void setLogName(std::string name) { m_logName = std::move(name); }
     [[nodiscard]] const std::string& logName() const;
 

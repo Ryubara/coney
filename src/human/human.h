@@ -413,7 +413,8 @@ class Human final : public Holdable {
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }
     /// What the run log calls this human (`human 12 warr_cl`), kept for its fighter across a new fighting profile or a
-    /// spawn (Fighter::setLogName()). Coney's own, for the log only.
+    /// spawn (Fighter::setLogName()).
+    /// @coney-only a name for Coney's run log (docs/guides/run-log.md)
     void setLogName(std::string name) {
         m_logName = std::move(name);
         m_fighter.setLogName(m_logName);

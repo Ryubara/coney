@@ -72,6 +72,8 @@ Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const 
       m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
       m_grabbedRandom(seed + 1U), m_player(profile.player), m_bossClass(profile.bossClass) {}
 
+/// The fighter's name in the run log, or `player` or `human` before anyone names it.
+/// @coney-only a name for Coney's run log (docs/guides/run-log.md)
 const std::string& Fighter::logName() const {
     static const std::string kPlayer = "player";
     static const std::string kHuman = "human";
