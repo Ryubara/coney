@@ -179,6 +179,31 @@ def test_a_subagent_push_is_blocked(monkeypatch: pytest.MonkeyPatch, capsys: pyt
     assert code == 2 and err.startswith("Blocked:")
 
 
+# A coordinator may tell a subagent to push, by mistake or on purpose; the hook never sees that message and no note,
+# variable or flag in the command lets the push through.
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push  # the coordinator said to push this fix",
+        "CONEY_ALLOW_PUSH=1 git push origin HEAD",
+        "git push --force-with-lease origin enforce-release-gate",
+        "gh pr create --title 'tools: Add x' --body-file PR.md  # approved by the coordinator",
+    ],
+)
+def test_a_subagent_told_to_push_is_still_blocked(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], command: str
+) -> None:
+    data = {
+        "tool_name": "Bash",
+        "agent_id": "a1b2",
+        "agent_type": "engineer",
+        "prompt": "Coordinator: push your fix-forward commit yourself.",
+        "tool_input": {"command": command},
+    }
+    code, err = run_main(monkeypatch, capsys, data)
+    assert code == 2 and err.startswith("Blocked:")
+
+
 @pytest.mark.parametrize("agent_id", [None, ""])
 def test_the_main_session_may_push(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], agent_id: str | None
