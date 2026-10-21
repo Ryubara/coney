@@ -7,7 +7,7 @@ How far Coney has come, measured three ways:
   a function counts once Coney has code that does its job and cites it with an `@orig` tag
   ([Conventions](../guides/conventions.md#comments-and-orig)), not when its machine code matches.
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
-  least an original source file or directory. It says how much of the executable an engineer can already find their
+  least an original source file or directory. It says how much of the executable a contributor can already find their
   way around in, not how much is understood.
 - **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
   function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
@@ -57,7 +57,7 @@ source map by hand. A function counts in full once it is listed; there is no par
 The executable has no symbols, so a function's size has to come from somewhere. `coney-tools progress sizes`
 estimates it from your own disc as the distance to the next address that a call or a function pointer reaches, and
 checks a size given by hand against that bound. It is an upper bound: a function that nothing calls directly (only
-a tail jump reaches it) is folded into the one before it. An engineer who has the function in Ghidra can give the
+a tail jump reaches it) is folded into the one before it. A contributor who has the function in Ghidra can give the
 exact size instead. How to use the commands: [The coney-tools command line](../guides/coney-tools.md#progress).
 
 ## How the picture is drawn {#the-picture}
@@ -114,7 +114,7 @@ and what a pull request's build shows: [the coney-tools guide](../guides/coney-t
 
 ## Keeping it current
 
-- An engineer adds a `[[function]]` block to `functions.toml` in the same commit as the code carrying its `@orig`
+- Whoever writes the code adds a `[[function]]` block to `functions.toml` in the same commit as the code carrying its `@orig`
   tag ([Conventions](../guides/conventions.md#comments-and-orig)).
 - A source-map change that moves a range or a coverage figure updates `totals.toml` in the same commit.
 - A roadmap status change needs nothing extra: the milestones are read from the roadmap's table.

@@ -278,7 +278,7 @@ def index(
         "statistics, animations, controls and commands, colours, text tags and labels, script constants, sounds,",
         "speech, script events and the names of the files in the game's archive. They play the part FiveM's",
         "[game references](https://docs.fivem.net/docs/game-references/) play for GTA V: a modder looks up the id or",
-        "name to pass, an engineer the value to expect.",
+        "name to pass, a contributor the value to expect.",
         "",
         '**Characters are "humans".** The game calls every person, the player included, a human: scripts create one',
         "with `HuCreate`, the engine updates them all in `Humans_Update`, and most character bindings start with `Hu`.",

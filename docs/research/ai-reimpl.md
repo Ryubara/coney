@@ -8,7 +8,7 @@ confirmed (code) at the cited address unless it says otherwise; nothing on this 
 
 The AI's goal, tactic and action engine is mostly named and cited ([AI humans](ai.md), [AI code index](ai-code.md),
 [AI goals](ai-goals.md)), but a citation is not something to code from. This page splits what Coney
-has not reimplemented yet into **units** an engineer can finish with tests in one sitting (about 5 to 15
+has not reimplemented yet into **units** a contributor can finish with tests in one sitting (about 5 to 15
 functions each), ordered by dependency and payoff, and gives the first units a full specification: inputs and
 outputs, the fields read and written with their offsets, constants, branches and edge cases. Later units point at
 the sections that describe them, which get the same treatment before their unit starts.
@@ -22,7 +22,7 @@ particles, cars, scenes. On 2026-10-12 the AI stretch holds 2,008 functions, of 
 units.
 
 **Already tagged is not finished.** Several functions in the gang-fight units carry an `@orig` tag in Coney but are
-built as stand-ins (for example, TacticAttack's melee goal). A unit lists those under "to correct": the engineer
+built as stand-ins (for example, TacticAttack's melee goal). A unit lists those under "to correct": the contributor
 replaces the stand-in, and the function stays in `functions.toml`.
 
 Shared conventions on this page: *brain* `+n` is the AI brain record ([The brain](ai.md#brain)), *human* `+n` the

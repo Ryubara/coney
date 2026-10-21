@@ -38,9 +38,11 @@ what they show).
 
 ## Studying the original
 
-Engineers study the original game, in Ghidra and running in PCSX2, to reimplement it. What they learn goes into
-`docs/research/` and into Coney's own code; none of the game's data does ([No game data](#no-game-data)). Ghidra
-databases and emulator saves stay outside the repository.
+Contributors study the original game, in Ghidra and running in PCSX2, to reimplement it. Coney is a reimplementation,
+not a clean-room one: the people who write the code also read the original, the code is our own, and each ported
+function cites the original's address with `@orig`. What contributors learn goes into `docs/research/` and into
+Coney's own code; none of the game's data does ([No game data](#no-game-data)). Ghidra databases and emulator saves
+stay outside the repository.
 
 ## Research limits
 

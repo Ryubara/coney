@@ -336,7 +336,7 @@ def index_page(masterlist: Masterlist) -> str:
     out.append("")
     for item in (
         "**Evidence:** the [evidence level](../../guides/research-workflow.md#evidence-levels) of the description"
-        " and meanings, and the detail: *traced* means the engineer followed the function behind the wrapper far"
+        " and meanings, and the detail: *traced* means a contributor followed the function behind the wrapper far"
         " enough to describe every argument; *brief* means a shorter description from a quick read of that function,"
         " the binding's name and how the game's scripts call it (the evidence level says which of these it rests"
         " on). The signature itself (argument count, order, Lua types, results) is always confirmed (code) at the"

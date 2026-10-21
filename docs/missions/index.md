@@ -68,7 +68,7 @@ to run it.
 
 ## Lifecycle {#lifecycle}
 
-A mission starts Not Started and becomes In Progress when its first checkpoint is being built. The engineer moves it to
+A mission starts Not Started and becomes In Progress when its first checkpoint is being built. A contributor moves it to
 Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the user, after play-testing it against
 the original, moves it to Needs Fixes (the play-test found something; the known issues are listed on its page) or to
 Approved. A merged fix moves a Needs Fixes mission back to Pending Gameplay Approval for another play-test. Each
