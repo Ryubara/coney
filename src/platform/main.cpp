@@ -891,7 +891,7 @@ int main(int argc, char** argv) {
         }
     }
     coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), printText);
-    // The game reads its pads through network play, after the gate: a guest sends what his game reads, and a host's
+    // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
     // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
     coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
     modes.setInput(&netInput);

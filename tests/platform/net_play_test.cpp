@@ -284,7 +284,7 @@ TEST_CASE("a guest's pad is the host's port 2, as a second pad plugged into the 
     CHECK(games.hostSees[1].buttons == coney::pad::kCircle);
 }
 
-TEST_CASE("the host's own port 2 plays until a guest joins and again once he leaves", "[net][net_play]") {
+TEST_CASE("the host's own port 2 plays until a guest joins and again once they leave", "[net][net_play]") {
     TwoGames games;
     games.hostPads.samples[1] = padWith(coney::pad::kTriangle);
     games.guestPads.samples[0] = padWith(coney::pad::kSquare);

@@ -129,7 +129,7 @@ class NetPlay final : public debug::NetControls {
 
 /// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().
 /// The main loop puts it between the debug menus' input gate and the mode stack, so a guest sends what their own game
-/// reads (never his debug menu's input) and a host's port 2 is the guest's pad.
+/// reads (never their debug menu's input) and a host's port 2 is the guest's pad.
 class NetInput final : public InputSource {
   public:
     /// Network play's input over `inner`; both must outlive it.

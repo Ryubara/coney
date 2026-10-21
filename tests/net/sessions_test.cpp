@@ -345,7 +345,7 @@ TEST_CASE("a joined client's pad reaches the server every step, in the slot it h
     CHECK_FALSE(match.server.remotePad(1).has_value());
 }
 
-TEST_CASE("a joined player's pad reads unplugged until his first pad input arrives", "[net][sessions][pad]") {
+TEST_CASE("a joined player's pad reads unplugged until their first pad input arrives", "[net][sessions][pad]") {
     Match match;
     LoopbackTransport raw(match.network, "raw");
     (void)rawJoin(match, raw);
