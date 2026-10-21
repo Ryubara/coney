@@ -71,6 +71,9 @@ class LinkConditioner final : public Transport {
     void flush() override;
     /// Closes the connection once its held reliable packets are sent; held unreliable ones are dropped then.
     void disconnect(PeerId peer) override;
+    /// True once no connection is up or closing here (a closing one waits for its held reliable packets) and the
+    /// transport underneath is closed too.
+    [[nodiscard]] bool closed() const override { return m_peers.empty() && m_inner.closed(); }
     [[nodiscard]] std::uint16_t boundPort() const override { return m_inner.boundPort(); }
     [[nodiscard]] TransportStats stats() const override { return m_inner.stats(); }
 

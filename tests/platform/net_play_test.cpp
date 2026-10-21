@@ -129,6 +129,80 @@ TEST_CASE("leaving tells the host, and stopping tells the guest", "[net][net_pla
     CHECK(logged(games.guest.log(), "the server closed the connection (left)"));
 }
 
+TEST_CASE("a guest who leaves over a slow link is still seen to leave, not to lose the connection", "[net][net_play]") {
+    // The Bye waits in the simulated link; the transport must outlive the session until it has gone, or the host
+    // reads the close alone as a lost connection (as ENet did when its transport was destroyed behind the Bye).
+    TwoGames games;
+    games.connect();
+    games.guest.setSimulation(NetSimulation{.latencyMs = 100});
+    games.run(10);
+    games.guest.disconnect();
+    CHECK(games.guest.closingTransports() == 1);
+    games.run(8);
+    CHECK(logged(games.host.log(), "Guest (player 2) left"));
+    CHECK_FALSE(logged(games.host.log(), "lost the connection"));
+    CHECK(games.guest.closingTransports() == 0);
+}
+
+TEST_CASE("a closing transport that never closes is dropped after its steps", "[net][net_play]") {
+    TwoGames games;
+    games.connect();
+    // Everything the guest sends is lost, so his Bye is never acknowledged and his connection never closes.
+    games.guest.setSimulation(NetSimulation{.lossPercent = 100});
+    games.guest.disconnect();
+    games.run(static_cast<int>(NetPlay::kCloseSteps) - 1);
+    CHECK(games.guest.closingTransports() == 1);
+    games.run(1);
+    CHECK(games.guest.closingTransports() == 0);
+}
+
+TEST_CASE("hosting again on the port a closing host holds closes it at once", "[net][net_play]") {
+    TwoGames games;
+    games.host.setPort(30002);
+    REQUIRE(games.host.host());
+    games.guest.setAddress("host:30002");
+    REQUIRE(games.guest.join());
+    games.run(4);
+    REQUIRE(games.host.status().players.size() == 1);
+    games.host.setSimulation(NetSimulation{.latencyMs = 100});
+    games.run(10);
+    games.host.disconnect();
+    REQUIRE(games.host.closingTransports() == 1);
+    // The closing host's socket holds the port; Host again must free it rather than fail.
+    REQUIRE(games.host.host());
+    CHECK(games.host.closingTransports() == 0);
+    CHECK(games.host.status().port == 30002);
+}
+
+TEST_CASE("shutting down waits, on the time it is given, for the Bye to reach the other game", "[net][net_play]") {
+    TwoGames games;
+    games.connect();
+    games.host.setSimulation(NetSimulation{.latencyMs = 100});
+    games.run(10);
+    int waits = 0;
+    // The wait the end of a run gives: here one step of the guest's game and a step's time, with no real clock.
+    games.host.shutdown([&games, &waits] {
+        ++waits;
+        games.guest.advance(kStepNs);
+        games.guest.beforeStep();
+        games.guest.afterStep();
+        return kStepNs;
+    });
+    CHECK(games.host.closingTransports() == 0);
+    CHECK(waits > 0);
+    CHECK(static_cast<std::uint64_t>(waits) * kStepNs <= NetPlay::kQuitWaitNs);
+    games.run(2);
+    CHECK(logged(games.guest.log(), "the server closed the connection (left)"));
+
+    // With nothing closing, it returns without waiting.
+    waits = 0;
+    games.host.shutdown([&waits] {
+        ++waits;
+        return kStepNs;
+    });
+    CHECK(waits == 0);
+}
+
 TEST_CASE("bad names, addresses and ports are refused with a reason", "[net][net_play]") {
     LoopbackNetwork network;
     NetPlay first(loopback(network, "host"), {});

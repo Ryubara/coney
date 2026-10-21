@@ -178,6 +178,17 @@ channels, fragmentation, resends and its own connection timeouts.
 play Coney does not feed; `advance()` is ignored. A server listens on every interface by default; the tests listen
 on 127.0.0.1 only, so no desktop firewall asks about the test program. The default port is **27615** (UDP).
 
+**Closing without losing the Bye.** ENet throws away a peer's packets not yet handed to the program when that peer's
+close arrives, so a transport destroyed straight behind the Bye lost it, and the other game read a player who quit as
+one whose connection was lost (seen on the Network page's log, 2026-10-21). So a session that ends never takes its
+transport with it: `NetPlay` keeps the transport and its link conditioner going, serviced once a step and never
+waited on, until `Transport::closed()` says every connection is gone (after the far end acknowledged what was sent
+before the close), for at most 15 steps (`NetPlay::kCloseSteps`, half a second; Coney's choice), then destroys it,
+which closes what is left at once. Hosting again on the port a closing host still holds closes that host at once. At
+the end of a run, after the last frame, `NetPlay::shutdown()` does the same with a short real wait: at most half a
+second (`kQuitWaitNs`) of the time the wait it is given reports (a `FramePacer` at 100 frames a second in the game, a
+fixed step in the tests), and only while something is closing.
+
 ## In the game {#in-the-game}
 
 `NetPlay` (`src/platform/net_play.h`) is network play in the running game: it owns the session (a `NetServer` when
@@ -208,9 +219,11 @@ bit stream's encodings and refusals, the loopback, the link conditioner's contra
 round trips, pinned bytes and refusals, link quality, and the sessions (handshake, slots, refusals, leaving, every
 timeout, protocol errors, and the round trip and loss through a conditioned link). `tests/platform/
 enet_transport_test.cpp` connects two ENet transports on a free port of 127.0.0.1, sends every delivery kind and a
-fragmented packet, closes, and runs the sessions' handshake over real UDP. `tests/platform/net_play_test.cpp` hosts
+fragmented packet, closes, checks that a transport kept going until `closed()` delivers its Bye before its close,
+and runs the sessions' handshake over real UDP. `tests/platform/net_play_test.cpp` hosts
 and joins between two `NetPlay`s on the loopback (by address, the figures, the simulated latency in the ping,
-leaving and stopping, refusals); `tests/debug/net_page_test.cpp` drives the Network page over a fake
+leaving and stopping, a leave over a slow link, a close that never completes, hosting again on a closing host's
+port, shutting down, refusals); `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
 
 ## The plan {#plan}

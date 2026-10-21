@@ -95,6 +95,11 @@ class Transport {
     /// side reports Disconnected too, once the close is done. Unknown or closed peers are ignored.
     virtual void disconnect(PeerId peer) = 0;
 
+    /// Whether every connection this transport had is gone: none is up or still closing, so nothing it was asked to
+    /// send is waiting to go out. A listening transport with no connection is closed. A game that leaves keeps its
+    /// transport going (advance(), poll(), flush()) until this is true, so the far end gets its Bye before the close.
+    [[nodiscard]] virtual bool closed() const = 0;
+
     /// The port this transport listens on (the free one it was given for port 0); 0 when it is not listening.
     [[nodiscard]] virtual std::uint16_t boundPort() const = 0;
 

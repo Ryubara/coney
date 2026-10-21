@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <memory>
@@ -72,6 +73,9 @@ void NetPlay::setSimulation(const debug::NetSimulation& simulation) {
 
 bool NetPlay::hostOn(const std::string& bindAddress) {
     disconnect();
+    // A host that is still closing on this port holds its socket: close it at once so the port can be bound again.
+    std::erase_if(m_closing,
+                  [this](const Closing& closing) { return m_port != 0 && closing.link->boundPort() == m_port; });
     // A fresh transport per session: a stopped server's socket is closed with its transport.
     m_wire = m_factory();
     m_link = std::make_unique<net::LinkConditioner>(*m_wire);
@@ -148,11 +152,48 @@ void NetPlay::disconnect() {
 void NetPlay::teardown() {
     m_server.reset();
     m_client.reset();
+    if (m_link) {
+        if (m_link->closed()) {
+            m_link.reset();
+            m_wire.reset();
+        } else {
+            m_closing.push_back(
+                Closing{.wire = std::move(m_wire), .link = std::move(m_link), .stepsLeft = kCloseSteps});
+        }
+    }
     m_link.reset();
     m_wire.reset();
 }
 
+void NetPlay::serviceClosing(std::uint64_t elapsedNs, bool countStep) {
+    for (Closing& closing : m_closing) {
+        closing.link->advance(elapsedNs);
+        while (closing.link->poll()) {
+            // A closing transport's events matter to nobody; reading them is what moves its connections along.
+        }
+        closing.link->flush();
+        if (countStep && closing.stepsLeft > 0) {
+            --closing.stepsLeft;
+        }
+    }
+    std::erase_if(m_closing, [](const Closing& closing) { return closing.link->closed() || closing.stepsLeft == 0; });
+}
+
+void NetPlay::shutdown(const std::function<std::uint64_t()>& wait) {
+    disconnect();
+    // A backstop on the calls as well as the time, in case `wait` reports no time passing.
+    constexpr int kMaxWaits = 1000;
+    std::uint64_t waited = 0;
+    for (int calls = 0; !m_closing.empty() && waited < kQuitWaitNs && calls < kMaxWaits; ++calls) {
+        const std::uint64_t elapsedNs = wait();
+        waited += elapsedNs;
+        serviceClosing(elapsedNs, false);
+    }
+    m_closing.clear();
+}
+
 void NetPlay::advance(std::uint64_t elapsedNs) {
+    m_closingElapsedNs += elapsedNs;
     if (m_server) {
         m_server->advance(elapsedNs);
     } else if (m_client) {
@@ -169,6 +210,10 @@ void NetPlay::beforeStep() {
 }
 
 void NetPlay::afterStep() {
+    if (!m_closing.empty()) {
+        serviceClosing(m_closingElapsedNs, true);
+    }
+    m_closingElapsedNs = 0;
     if (m_server) {
         m_server->send();
         for (const net::ServerEvent& event : m_server->takeEvents()) {

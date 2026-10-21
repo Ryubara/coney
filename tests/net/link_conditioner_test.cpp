@@ -168,7 +168,9 @@ TEST_CASE("a close waits for the reliable packets held before it", "[net][link_c
     // At 50 ms the unreliable packet goes; the close waits for the reliable one at 60 ms.
     link.client.advance(40 * kMs);
     CHECK(link.received() == std::vector<std::string>{"gone"});
+    CHECK_FALSE(link.client.closed());
     link.client.advance(10 * kMs);
+    CHECK(link.client.closed());
     const auto events = drain(link.server);
     REQUIRE(events.size() == 2);
     CHECK(text(events[0].data) == "bye");

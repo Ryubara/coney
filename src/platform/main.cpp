@@ -1230,6 +1230,19 @@ int main(int argc, char** argv) {
     if (options->netHost || options->netJoin) {
         printText(netPlay.summary());
     }
+    // Leaving network play: the other games get this one's Bye before its connections close. This is after the last
+    // frame, so a short real wait does no harm, even in test mode; a pacer at 100 frames a second times it, the one
+    // real clock Coney reads, and is made only when a transport is still closing.
+    {
+        std::optional<coney::platform::FramePacer> closePacer;
+        netPlay.shutdown([&closePacer] {
+            if (!closePacer) {
+                closePacer.emplace(100);
+                (void)closePacer->waitForFrame(); // the first call only starts the count
+            }
+            return closePacer->waitForFrame();
+        });
+    }
     // A game played in test mode, from the story or a level: what its humans asked to be heard and what the glass and
     // doors played (counts only).
     if (audio && testMode && session) {
