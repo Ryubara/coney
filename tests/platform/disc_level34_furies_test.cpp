@@ -49,6 +49,10 @@ constexpr std::uint64_t kAfterScene = 600;
 // `P3.FuryTimeout` is scheduled 5000 ms on: 150 updates, give or take one for the schedule's rounding.
 constexpr std::uint64_t kTimeoutUpdates = 150;
 constexpr std::uint64_t kTimeoutSlack = 2;
+// The latest first hit on the standing player, in updates after the scene: Coney's came at +185 to +295 across
+// `--ai-seed` 0-5 and at +391 in this test's own run (2026-10-21, docs/research/scripting.md#level34-fixes item 14),
+// so 500 leaves a margin over the widest while a Fury that turns but does not come for him fails.
+constexpr std::uint64_t kFirstHitLatest = 500;
 
 // The script calls the run watches for, by the frame they came on (the trace's text, matched on its start only).
 struct ScriptMarks {
@@ -216,10 +220,11 @@ TEST_CASE("the disc's level34 checkpoint 5: the Furies hit no Warrior until the 
     }
     CHECK(targeted.has_value());
     CHECK(firstHit.has_value());
-    // Only after the turn: when exactly depends on the AI's draws (the original's came 276 and 294 updates after the
-    // scene, docs/research/scripting.md#level34-fixes item 14; Coney's differs from one `--ai-seed` to the next), so
-    // a window around one sequence would pass or fail by luck.
+    // After the turn, and not slow: when exactly depends on the AI's draws (the original's came 276 and 294 updates
+    // after the scene, docs/research/scripting.md#level34-fixes item 14; Coney's differs from one `--ai-seed` to the
+    // next), so a window around one sequence would pass or fail by luck.
     CHECK(firstHit.value_or(0) > hostile);
+    CHECK(firstHit.value_or(0) <= kFirstHitLatest);
     std::printf("  level34 checkpoint 5: Furies turned %llu updates after the scene, a Warrior targeted at %lld, "
                 "the player first hit at %lld (the original: 276 and 294)\n",
                 static_cast<unsigned long long>(hostile), targeted ? static_cast<long long>(*targeted) : -1LL,

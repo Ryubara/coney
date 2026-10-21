@@ -2367,15 +2367,16 @@ spawners and link to their subject pages; the rest are this mission's.
     player at +474 (anim 289); test `disc_level34_furies_test.cpp`. On main of 2026-10-21 (with the waiting attackers'
     taunts, #599) the same run has `P3.FuryTimeout` at +149, the first hit on a Warrior at +157 and on the player at
     +295; with `--ai-seed` 1 to 5 the player's first hit comes at +185 to +284, and in the disc test's own run at +391,
-    so when it comes depends on the AI's draws, and the test holds only that it comes after the turn. Still different:
-    Coney's first hits are small reactions (18-54 health) where the original's are knock-downs of 90. **Why the
-    original's hits are 90-health knock-downs** (issue #492): every park and fence Fury holds a `dyn_bat` from
-    `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the unarmed 193 / 194, which deal 25, at a man
-    down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy
-    high reaction 292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
-    hit](combat-reactions.md#bat-knockdown)). Open: whether the original's AI Warriors run out to meet the Furies
-    (Coney's do, under `FollowPlayer`). Note: the original's player had 1,170 health here and Coney's 900; the original
-    state came from a save with progress, so that may be upgrades, not a difference (not checked).
+    so when it comes depends on the AI's draws, and the test holds it to after the turn and at most +500 (the widest
+    seen, +391, with a margin, so a Fury that turns but does not come for him still fails). Still different: Coney's
+    first hits are small reactions (18-54 health) where the original's are knock-downs of 90. **Why the original's hits
+    are 90-health knock-downs** (issue #492): every park and fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings
+    the bat's clips (501 at a run, 36, and 37 or the unarmed 193 / 194, which deal 25, at a man down), and each bat-clip
+    hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy high reaction 292-295 of the
+    clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Open:
+    whether the original's AI Warriors run out to meet the Furies (Coney's do, under `FollowPlayer`). Note: the
+    original's player had 1,170 health here and Coney's 900; the original state came from a save with progress, so that
+    may be upgrades, not a difference (not checked).
 15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
     (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
     `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held
