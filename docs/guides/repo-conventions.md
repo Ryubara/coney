@@ -16,6 +16,9 @@ arguments.
 | Tool configuration (`.clang-format`, `.pre-commit-config.yaml`, `mkdocs.yml`, `CMakePresets.json`, ...) | Its own file, in its own format | `repo.tools` names the file; its values are never copied |
 | Judgement and reasons (evidence levels, roles, how to write a good issue) | The guide that owns the topic | Prose explains why; where it needs a value it names the key |
 
+Which rules a program enforces, and at which point (a hook, pre-commit, the local gate, CI or review), is the
+[Enforcement map](enforcement.md).
+
 The file is the answer when two places disagree: the old rule files (`commit-conventions.json`, `pr-body-rules.json`
 and `labels.yml`) are gone, and so are the constants that repeated their values in the Python code.
 
@@ -25,7 +28,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | --- | --- | --- |
 | `repo` | The default branch, the wording (the "user" is whoever tested, was affected or created the issue or pull request; the "maintainers" are whoever decides; never "owner" for a person), the decisions only a maintainer takes (`maintainer_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
 | `paths` | Which paths are code and documentation; the CI scope classes (`docs_only`, `tools_only`, `engine`); generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths`, `tools-only-paths` and `engine-paths` blocks); `ci-scope.sh` reads the three scope lists itself, and `repo audit` holds it and pre-commit to the file |
-| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
+| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the `title` job and `repo check-review` run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
 | `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the `runtime` rule (the title areas a player sees need a `Runtime:` line in Testing), the AI use choices, the review gate (`review`: the reviewer agent, its verdict and report files, the description hash), stacked pull requests | `repo check-body`, `repo check-docs`, `repo review` and `repo check-review`; `repo render` (the `pr-rules` and `pr-review` blocks); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |

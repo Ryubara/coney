@@ -441,7 +441,7 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   clears and continues from it at a natural boundary ([Running agents](agents.md#cache)).
 - **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
   written into the guide where it applies, generally (why and the method), alongside its fix; briefs only point to
-  it.
+  it. Which rules a program checks, and at which point, is the [Enforcement map](enforcement.md).
 
 ## How the rules are enforced {#enforcement}
 
