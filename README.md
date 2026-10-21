@@ -2,7 +2,8 @@
 
 An open-source reimplementation of *The Warriors* (PS2, 2005) for Windows, Linux and macOS.
 
-Status: early research. Nothing playable yet.
+Status: in development, not yet a complete game. With your disc Coney plays the start-up movies and the front end and
+runs levels as far as the [missions](docs/missions/index.md) page records.
 
 > [!IMPORTANT]
 > Coney contains no game data. You need your own copy of the game to use it. See [LEGAL.md](LEGAL.md).
@@ -122,7 +123,8 @@ is a MkDocs site built from `docs/`. To build or preview it locally, see
 ## Contributing
 
 Contributions are welcome, from people and from AI agents, under the same rules. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) before you start; it covers setup, commit format and pull requests.
+[CONTRIBUTING.md](CONTRIBUTING.md) before you start; its [first hour](CONTRIBUTING.md#your-first-hour) takes you from a
+clone to a pull request, and it covers commit format and pull requests.
 Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). [AGENTS.md](AGENTS.md) holds the
 instructions for AI agents. Report security problems as described in [SECURITY.md](SECURITY.md).
 

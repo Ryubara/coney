@@ -80,7 +80,7 @@ The repository's `.mcp.json` registers the bridge for Claude Code as `ghidra-mcp
 not pick up groups loaded later). Start the server **before** the Claude Code session. Tools:
 `ToolSearch select:mcp__ghidra-mcp__<name>`.
 
-## Loading a program
+## Loading a program {#loading-a-program}
 
 Raw blobs (memory dumps, overlays, IOP modules as raw): HTTP POST JSON (forward-slash paths) or MCP tools:
 `load_program {file, language: "r5900:LE:32:default"}`, then `run_analysis`, then (a raw blob has no entry point:
@@ -100,6 +100,27 @@ set JAVA_HOME=<jdk_home>
 When `analyzeHeadless` has finished, `open_project {path: "<dir>/elfproj/warriors_elf.gpr"}` (closes `warriors`) or
 copy the program into a copy of the project folder, then `load_program_from_project {path: "/SLUS_xxx.xx"}`. Reopen
 `<ghidra_projects>/warriors.gpr` with `open_project` when done.
+
+## Starting your own project {#own-project}
+
+The pieces above are the maintainers' set-up. On a machine of your own, three things are not there yet:
+
+* **A JDK 21** (for example Eclipse Temurin 21). Ghidra 12.1.4 and `sleigh` need it, and `workspace init` only
+  reports it as missing; put its home in `jdk_home` and `JAVA_HOME`.
+* **Apache Maven 3.9+**, which ghidra-mcp's own README lists for building the headless server. Its README names Ghidra
+  12.1.3; use the 12.1.4 that Coney pins and follow the README's build steps otherwise.
+* **The program itself.** The project the server keeps open starts empty. Import `SLUS_212.15` from your disc with
+  `analyzeHeadless` as shown under [Loading a program](#loading-a-program). Measured on 2026-10-21 on a fresh
+  workspace (Windows, a busy 16-core machine): `workspace init --fetch ghidra` 29 s, compiling `r5900.sla` 9 s, the
+  headless import and analysis 143 s, which finds 13,789 functions, all with Ghidra's default names.
+
+**The function names are not in your project.** The maintainers' project holds the names they gave 11,530 of its
+13,971 functions, and the plate comments and types that go with them. Only the names, with each function's address and
+size, are published, in `docs/progress/ghidra-functions.tsv` ([The Understood measure](research-workflow.md#understood)),
+and the research pages cite the same addresses. A fresh analysis finds 13,789 of the listed functions and 11,348 of the
+11,530 named ones at the same addresses, so the names can be applied by address; no command does that yet, so for now
+look a function up by address in the file or on its research page. Plate comments, structures and signatures are not
+shared at all until the research database exists ([The research database](research-workflow.md#the-research-database)).
 
 ## Gotchas
 

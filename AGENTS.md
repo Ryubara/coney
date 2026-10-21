@@ -14,11 +14,12 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 
 ## How we work
 
-Read `docs/guides/how-we-work.md` before starting: the pipeline, the engineer role, the coordinator, sharing one
-machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model,
-briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the automated tests
-are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the
-player's path, gamepad input, playthrough tests, the checks to run before reporting).
+Read `docs/guides/how-we-work.md` before starting: the pipeline, the engineer role, the coordinator, sharing one machine
+and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model, briefs, long commands
+and the prompt cache). Nobody waits for a person to play their work: the automated tests are the gate, so every piece of
+work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the player's path, gamepad input,
+playthrough tests, the checks to run before reporting). A person contributing starts at CONTRIBUTING.md, section Your
+first hour; the rest of this file is for agents.
 
 ## Build and test
 
@@ -58,9 +59,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 
 ## Code
 
-- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides
-  layout; no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants
-  `CONEY_ASSERT`.
+- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides layout;
+  no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
 - Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
 - A Coney-only capability a script could use joins the native-candidates registry: `conventions.md#coney-only`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,

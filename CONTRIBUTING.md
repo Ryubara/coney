@@ -11,9 +11,98 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 - Research lives in `docs/research/`. If the page you need does not exist or is wrong, fixing the research is a
   contribution in its own right. Each claim carries an evidence level and, where it applies, an address.
 
+## Your first hour
+
+From nothing to a first pull request, as a person on Windows, Linux or macOS. It needs no AI tooling, no Ghidra, no
+emulator and no BIOS, and no disc until step 4. Each step links to the page that holds the detail.
+
+**What you need.** A C++23 toolchain (Windows: Visual Studio 2022 17.8 or the Build Tools with *Desktop development
+with C++*; Linux: GCC 13+ or Clang 19+ and the SDL packages; macOS: Xcode 16+), CMake 3.28+ and Ninja, Git, and
+[uv](https://docs.astral.sh/uv/) for the `coney-tools` command line. The exact versions and the Linux package list
+are in the [README](README.md#requirements) and [Building and testing](docs/guides/building.md#what-you-need).
+Node.js 18+ makes the formatting hooks faster (otherwise pre-commit downloads its own). A change to C++ is also
+checked with clang-tidy 19 in step 6: on Windows add the Visual Studio component *C++ Clang tools for Windows*, on
+Linux install `clang-tidy-19`, on macOS `brew install llvm@19`. For step 4, your own copy of
+the North American (NTSC-U) game: the research is checked against its executable `SLUS_212.15`; other releases are
+untested.
+
+1. **Clone.** The command is in the [README](README.md#clone); without write access, fork first and follow
+   [Working from a fork](#working-from-a-fork). The tools keep their logs and scratch files in `../../scratch`
+   beside the checkout, so the tidy layout is to clone into `<workspace>/repos/coney` and run `./bootstrap.sh` there
+   (`powershell -ExecutionPolicy Bypass -File bootstrap.ps1` on Windows). It makes the sibling folders, writes
+   `coney.local.toml`, installs uv when it is missing and prints what else you lack
+   ([Bootstrap](docs/guides/workspace.md#bootstrap)). A clone anywhere else builds too, and its logs land in a
+   `scratch` folder two levels above it.
+2. **Build and run the tests.** No game files are needed. `--agent` is only a name for your build log and slot, so use
+   any name, such as your handle:
+
+    ```sh
+    uv run --project python coney-tools build --agent me --preset dev --test
+    ```
+
+    It downloads and builds the dependencies, then Coney, then runs the tests (2,688 of them, none needing the game).
+    On Windows it loads the Visual Studio environment itself, so any shell works. The first time is long: about 11
+    minutes to build on an idle 16-core machine, 57 on a busy one without a compiler cache, then up to half an hour of
+    tests. To get going sooner, build only the program with `--target coney` (no tests), and later run only the tests
+    you need with `-R <regex>`. Install [ccache](docs/guides/building.md#compiler-cache) and the next fresh build takes
+    minutes; later builds recompile only what changed. Without uv, `cmake --preset dev`, `cmake --build --preset dev`
+    and `ctest --preset dev` do the same, in a shell with the compiler on its path
+    ([README](README.md#build-and-test)).
+3. **Run it.** `build/dev/src/platform/coney` (`coney.exe` on Windows). With no arguments it opens a window; `--headless
+   --frames 3` runs with no window or GPU. Escape closes it.
+4. **Run it with your disc.** Give `--disc` a mounted disc, a folder holding `WARRIORS.DIR`, `WARRIORS.WAD` and
+   `SLUS_212.15`, or an ISO image you made of your own disc with any disc-imaging tool:
+
+    ```sh
+    build/dev/src/platform/coney --disc /path/to/warriors.iso
+    uv run --project python coney-tools wad info /path/to/warriors.iso   # reads the archive: a quick check the disc is readable
+    ```
+
+    The tests that need the disc skip without it. To run them, set `CONEY_DISC` to the same path and run the build
+    command with `-L disc` ([Building and testing](docs/guides/building.md#build-and-test)). Never copy anything from
+    the disc into the repository, an issue or a pull request ([LEGAL.md](LEGAL.md)). What every option does:
+    [Running Coney](docs/guides/running.md).
+5. **Pick a first change.** The safest first pull requests change no gameplay: a fix to a docs or research page
+   (every page ends with what it was checked against; a wrong claim is worth fixing), a test, a tool or build
+   problem, or an issue labelled `good first issue` or `help wanted` in the issue tracker. A change to what a player sees
+   (`gameplay`, `graphics`, `audio`) must also be compared with the original running, which needs the research tools
+   below; talk to a maintainer in the issue first. Write the test first ([Testing](docs/guides/testing.md)) and
+   keep the code in the style of [Conventions](docs/guides/conventions.md).
+6. **Check, commit, open the pull request.** Branch from `main`, make the change, then run the one command that does
+   what CI would fail on for the files you touched (it needs the `build/dev` folder from step 2 and, for the docs
+   check, the setup in [Writing these docs](docs/guides/writing-docs.md#setup-once)):
+
+    ```sh
+    uv run --project python coney-tools check changed
+    ```
+
+    Commit with a title of the form `area: Verb the rest` ([Commits](#commits)), push the branch to your fork and
+    open the pull request. Start its description from the [template](.github/pull_request_template.md), answer every
+    section (a docs-only change says `Screenshots: none (no visible change)`), and check it with `coney-tools repo
+    check-body` ([Setting up](#setting-up)). A maintainer approves CI for a first pull request and reviews it; you
+    do not merge it yourself.
+
+**Beyond the first hour: studying the original.** Reading the game's code and watching it run is optional and
+heavier. It needs a JDK 21, Ghidra 12.1.4 with the Emotion Engine extension and Maven to build ghidra-mcp
+([Ghidra + ghidra-mcp](docs/guides/ghidra.md)), and a PCSX2 build with the debug server patch plus a BIOS dumped from
+your own console ([PCSX2 copies](docs/guides/workspace.md#pcsx2-copies)). The fork has no release to download: you
+build PCSX2 from source with its `prepare.ps1`, and only the Windows build is described, so on Linux and macOS
+only the Ghidra half is available today. `coney-tools workspace init --fetch ghidra` downloads Ghidra and the
+extension; the rest you set up by hand. Two things are
+not shared yet, so expect them to be missing on your machine: the maintainers' Ghidra project, with the names and
+comments they gave the functions (only the function names are published, in `docs/progress/ghidra-functions.tsv`,
+and the research pages), and the PCSX2 save states and traces. Start from the research page for the subsystem you
+want ([Research workflow](docs/guides/research-workflow.md)).
+
+**What is for the project's agents, not for you.** The coordinator's build queue and claims (`pcsx2 claim`,
+`build` slots, `STATUS.md`), the release queue that pushes pull requests, the Tether and Claude Code configuration
+(`.claude/`, `.mcp.json`), `PR.md` and the `pr-reviewer`, and most of [How we work](docs/guides/how-we-work.md) and
+[Running agents](docs/guides/agents.md). You can ignore all of it; a pull request you open yourself follows the
+same rules in the template.
+
 ## Setting up
 
-Clone the repository. To build and test the engine, follow [docs/guides/building.md](docs/guides/building.md).
+The checks below are what CI runs on every pull request; `coney-tools check changed` runs them for you.
 
 CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
 title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
