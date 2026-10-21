@@ -2449,7 +2449,7 @@ human whose last move failed runs straight at
   old). **Coney choices**: the detail level is 0, so a decision is made every update; a speed tie goes to the lower
   brain slot, and the brain's slot stands for the human's index; the mover's line for giving way is unbounded.
   **Stand-in**: with no waypoint claims (`Nav_ClaimWaypoint`), "held at the node" (route state `+0x16`) is read as
-  "he is nearer the shared node than I am", the human the claim would keep. **Not yet**: the waypoint claims and
+  "he is nearer the shared node than I am", the human the claim would keep. **Left out**: the waypoint claims and
   queues.
 - **Giving way** (`repo:src/ai/give_way.h`, [Giving way](ai-moving.md#giving-way); the step in `repo:src/human/step_control.h`,
   [Characters: Step control](characters.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside another
@@ -2466,7 +2466,7 @@ human whose last move failed runs straight at
   finished action is aborted before it is freed (`Action_AbortAndDestroy`), so the boost goes back in Abort alone.
   **Stand-ins**: the 2 s look at the mover (no head look-ats); the push sphere stays on during the step; a Warrior's
   `+0x2e5` mode in the threat test; brain flag
-  `+0xcc` bit 2. **Not yet**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
+  `+0xcc` bit 2. **Left out**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
   `WarriorBrain_Think`, `SaveHumanGoal_Process`).
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
@@ -2934,6 +2934,6 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
 - What stopped Vermin's route jump at the `level99` window (x 47.76, by the panes at x 47.40) in the window-jump
-  state, and whether a normal play-through clears it first; a jump that lands on its point is not yet seen at runtime.
+  state, and whether a normal play-through clears it first; no run has seen a jump land on its point.
 - What reads `RunCarrotGoal`'s hostile flag (goal `+0x25`, set by `RunCarrotGoal_Init` `0x002e1230`,
   [AI goals](ai-goals.md#by-address)); Coney does not model it.

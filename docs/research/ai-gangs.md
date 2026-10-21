@@ -5,11 +5,33 @@ every claim is confirmed (code) at the cited address unless it says otherwise, a
 was split from because that page had grown too large. The brain a gang member runs is on [AI humans](ai.md#brain); the
 tactic and goal classes are indexed on [AI code index](ai-code.md) and [AI goals](ai-goals.md).
 
+## Purpose
+
+A gang is the group a human fights with: the Warriors around the player, each enemy gang of a level, the police
+and a riot's crowd. The gang decides who its members fight and how (its tactic and formation), makes new members
+through its spawners while the level allows it, answers the scripts' gang messages, and for the Warriors carries the
+player's commands and the follow that keeps the crew beside him. The AI brains ([AI humans](ai.md#brain)), the
+crimes and police ([Crimes](crimes.md)) and every mission's encounters depend on it.
+
+## Original structure
+
+The gang module is `0x00162518`-`0x0016e388`; its function-by-function index is on
+[AI code index: the gang module](ai-code.md#gang-functions), and the tactic and goal classes are on
+[AI code index](ai-code.md) and [AI goals](ai-goals.md). The functions this page's behaviour starts from:
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x0016d170` | `Gangs_Update` | Each update: every gang's update, its spawners asked once per gang | confirmed (code) |
+| `0x00166708` | `Gang_CachePlayerInfo` | The players' state for the gang, and whether its spawners may run (the cap) | confirmed (code) |
+| `0x001681a0` | `GangSpawner_Update` | One spawner's update and spawn | confirmed (code) |
+| `0x001672a8` | `GangSpawner_OnHumanGone` | A spawned human gone: the counts taken off | confirmed (code) |
+| `0x001664d8` | `Gang_RemoveMember` | A member leaves the gang | confirmed (code) |
+
 ## Gang fights {#gang-fights}
 
 How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights](gang-fights.md).
 
-## The gang {#gang-record}
+## Data: the gang record {#gang-record}
 
 32 records of 0xb10 at `0x005e6e30` (`0x0016c388(id)`). Confirmed (code):
 
@@ -36,6 +58,11 @@ How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights
 - **Alert state** (`0x00164a28`), on a change: 1 installs the fight anim substitutions (`0x00169508`), 0 removes them;
   every AI member's brain `+0x14d` = 0 when fighting, 1 when calm. With no tactic, `0x00166cf8` returns a fighting
   gang to calm once no member has a fight goal (8 or `0x3f`) or an active goal `0xc`.
+
+## Behaviour
+
+The sections from here to [Formations and follow slots](#formations) describe what a gang does, each naming the
+original function where its logic lives.
 
 ## Events and GangSetMsgHandler {#gang-events}
 
@@ -1405,7 +1432,17 @@ the point (gait 2, arrival radius `distance`, option 1, no delay, facing the tar
 more than 15° off the target. Confirmed (code); this corrects the binding's "walks to the target
 when it has no slot".
 
-## Gang functions
+## Coney's implementation
 
-The function-by-function index of the gang module (`0x00162518`-`0x0016e388`) is on
-[AI code index: the gang module](ai-code.md#gang-functions).
+The gang and its update are `repo:src/ai/gangs.h`, the spawners `repo:src/ai/spawners.h`, the tactics
+`repo:src/ai/tactic.h` and its `tactic_*.h` files with the scripted ones in `repo:src/ai/story_tactics.h`, the
+formations `repo:src/ai/formations.h`, the Warrior commands `repo:src/ai/set_command_action.h` and the boss goals
+`repo:src/ai/boss_goals.h`. What Coney does differently and what it leaves out is on
+[AI humans: Coney's implementation](ai.md#coney); the sections above say where Coney differs on their subject (the
+attack on sight, the follow).
+
+## Open questions
+
+Each open point sits with its subject above (the attack on sight's fix list, the scripted tactics Coney stands in
+for, the boss program's unused operations); the reimplementation units still to do are on
+[AI reimplementation plan](ai-reimpl.md).
