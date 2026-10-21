@@ -93,7 +93,7 @@ constexpr std::string_view kUsage =
     "  --log-verbose CATEGORIES\n"
     "                     keep the detail lines of these run log categories too: player, ai,\n"
     "                     combat, script, world, engine, comma-separated, or all\n"
-    "  --pad-pipe        read player 1's pad from standard input, one line per frame, after\n"
+    "  --pad-pipe         read player 1's pad from standard input, one line per frame, after\n"
     "                     writing what is on screen to standard output; for a driver program\n"
     "  --camera X,Y,Z,QX,QY,QZ,QW[,FOV]\n"
     "                     with --play-level: pin player 1's view for the whole run at the eye X,Y,Z\n"
