@@ -443,6 +443,15 @@ void FollowCamera::pitchToward(float maxStep) {
     m_wanted = anim::add(m_lookAt, anim::Vec3{headingX * newAcross, headingY * newAcross, distance * std::sin(next)});
 }
 
+void FollowCamera::turnPitch(float delta) {
+    const float current = elevationOf(anim::subtract(m_wanted, m_lookAt));
+    const float wanted = std::clamp(current + delta, m_lowerPitch, upperPitch());
+    const float saved = m_targetPitch;
+    m_targetPitch = wanted;
+    pitchToward(kPi);
+    m_targetPitch = saved;
+}
+
 void FollowCamera::stepZoom(float distance) { m_zoomDistance = distance; }
 
 void FollowCamera::collide(const raycast::CollisionMesh& mesh, anim::Vec3 targetFeet) {
@@ -654,6 +663,12 @@ float FollowCamera::aimHeight(const FollowTarget& target, float lookAtZ) const {
 
 void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, bool wasBlocked,
                            const raycast::CollisionMesh* mesh, float seconds) {
+    // The view's direction as the last update left it, for the lag's across test below: the original reads its
+    // camera quaternion's forward (`Quat_AxisY`, called at `0x00133434`), which faces the aim point, not the look-at
+    // point. **Coney's reading**: from the camera's place before this update to the old aim point.
+    const anim::Vec3 toAim = anim::subtract(m_aim, cameraBefore);
+    const anim::Vec3 viewBefore = anim::length(toAim) > 1e-6F ? anim::normalise(toAim) : forward();
+
     // 1. The lead: a copy of the target's facing eased 35% an update; a ray along it from the look-at point, shorter
     // the more the facing runs along the view, gives the lead point.
     // Snapped while the target does not count for the cameras.
@@ -723,15 +738,17 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
     }
 
     // 4. The lag, from 0.06: longer the more the target moves across the view and the faster he goes, its speed share
-    // coming back after a blocked view clears; 2.5 × when a script walks him fast; eased 3% an update.
+    // coming back after a blocked view clears; 2.5 × when he is fast and the aim point trails, or a script walks him
+    // fast; eased 3% an update. The across test and the 2.5 × gate read the 3D velocity (a fall counts), the speed
+    // share the horizontal speed (docs/research/camera.md#aim-point, #long-fall-coney).
     if (wasBlocked && !m_viewBlocked) {
         m_unblockTimer = kUnblockSeconds;
     }
     const float speed = std::hypot(target.velocity.x, target.velocity.y);
+    const float speed3d = anim::length(target.velocity);
     float across = 1.0F;
-    if (speed > target.walkSpeed && speed > 1e-4F) {
-        const anim::Vec3 ahead = forward();
-        across = std::abs((target.velocity.x * ahead.x + target.velocity.y * ahead.y) / speed);
+    if (speed3d > target.walkSpeed && speed3d > 1e-4F) {
+        across = std::abs(anim::dot(target.velocity, viewBefore) / speed3d);
     }
     float lag = kAimLag * (1.0F + (1.0F - across) * 0.5F);
     if (target.sprintSpeed > 0.0F) {
@@ -743,8 +760,19 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
         }
         lag += share * lag * ((1.0F - across) * 0.5625F + 0.1875F);
     }
-    if (!target.stickOwned && speed > target.walkSpeed + 0.18F * (target.runSpeed - target.walkSpeed)) {
-        lag *= 2.5F;
+    // The overshoot test: × 2.5 when this update's aim point, moved by the lag built so far, would still end farther
+    // from the goal than the look-at point is (squared 3D distances); only when it would not, a target the stick does
+    // not move (`0x00133dcc`-`0x00133ec8`, docs/research/camera.md#aim-point). **Coney's choice** (a stand-in): the
+    // slope latch that also passes the first test (`+0x460`) is not modelled, as Coney has no slope latches yet.
+    if (speed3d > target.walkSpeed + 0.18F * (target.runSpeed - target.walkSpeed)) {
+        const anim::Vec3 next = anim::add(m_aim, anim::scale(anim::subtract(goal, m_aim), lag));
+        const anim::Vec3 toLookAt3d = anim::subtract(goal, m_lookAt);
+        const anim::Vec3 toNext = anim::subtract(goal, next);
+        const float leadSquared = anim::dot(toLookAt3d, toLookAt3d);
+        const bool trails = leadSquared > 1e-5F && leadSquared < anim::dot(toNext, toNext);
+        if (trails || !target.stickOwned) {
+            lag *= 2.5F;
+        }
     }
     m_aimLag += (lag - m_aimLag) * kAimLagEase;
     // **Coney's reading**: the long fall's 0.6 and the halving for a target that does not count apply to this
@@ -828,17 +856,27 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
         m_wanted = anim::add(m_lookAt, withLength(offset, bandNear()));
     }
 
-    // 6 and 9. The pitch: stick input moves the target pitch within its limits; the wanted position turns toward it
-    // at most 85°/s.
-    if (pitchRate != 0.0F) {
-        m_targetPitch = std::clamp(m_targetPitch + pitchRate * seconds, m_lowerPitch, upperPitch());
+    // 6. The pitch toward its target: the wanted position's pitch about the look-at point is measured and turned all
+    // the way to the target pitch, so a leash pull along a steep line (a long fall) cannot carry it up. Skipped in
+    // the height hold (the original's step 11, the call at 0x0012beac with the pitch 0x0012d908 measures).
+    if (!m_heightHold) {
+        pitchToward(kPi);
     }
-    pitchToward(kPitchReturnRate * seconds);
 
     // 7. The height hold: the wanted position's height eases back toward the height above the look-at point it held.
     if (m_heightHold) {
         const float goal = m_lookAt.z + m_heldHeight;
         m_wanted.z += (goal - m_wanted.z) * kHeightHoldShare * m_heightHoldScale;
+    }
+
+    // 9. Stick input moves the target pitch within its limits and turns the wanted position by the same rate;
+    // without it, the wanted position goes back to the target at most 85°/s (outside the height hold). The
+    // original's step 16 (0x0012c60c-0x0012c6a8).
+    if (pitchRate != 0.0F) {
+        m_targetPitch = std::clamp(m_targetPitch + pitchRate * seconds, m_lowerPitch, upperPitch());
+        turnPitch(pitchRate * seconds);
+    } else if (!m_heightHold) {
+        pitchToward(kPitchReturnRate * seconds);
     }
 
     // The right stick's yaw turns the wanted position at once; the lag smooths it.

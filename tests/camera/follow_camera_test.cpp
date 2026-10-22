@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "camera/follow_camera.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -427,18 +428,22 @@ TEST_CASE("the look-at point's move is limited by its length: 20% beyond 0.8 m, 
 }
 
 TEST_CASE("the height hold eases the wanted position's height 30% an update times its scale", "[camera]") {
-    // Two cameras alike but for the hold; the target jumps 1 m (the look-at point follows at once in the air).
+    // Two held cameras alike but for the hold's scale; the target jumps 1 m (the look-at point follows at once in the
+    // air). The baseline holds with scale 0, so it skips the pitch step as any held camera does (the original's step
+    // 11) but does not ease: the difference is the easing alone.
     for (const float scale : {1.0F, 0.25F}) {
-        FollowCamera free(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+        FollowCamera still(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
         FollowCamera held(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
         const float heldAbove = held.wanted().z - held.lookAt().z;
+        still.holdHeight(true, 0.0F);
         held.holdHeight(true, scale);
         FollowTarget air = standing(Vec3{40.0F, 40.0F, 1.0F});
         air.airborne = true;
-        free.update(air, kRest, kRest, nullptr, kStep);
+        still.update(air, kRest, kRest, nullptr, kStep);
         held.update(air, kRest, kRest, nullptr, kStep);
         const float goal = held.lookAt().z + heldAbove;
-        CHECK(held.wanted().z - free.wanted().z == Approx(0.3F * scale * (goal - free.wanted().z)).margin(1e-4));
+        REQUIRE(std::abs(goal - still.wanted().z) > 0.1F);
+        CHECK(held.wanted().z - still.wanted().z == Approx(0.3F * scale * (goal - still.wanted().z)).margin(1e-4));
     }
 }
 
@@ -577,4 +582,63 @@ TEST_CASE("the follow camera's aim point leads less in a grab and lags more for 
     CHECK(scripted.aimLag() ==
           Approx(0.06F * (1.0F + across * 0.5F) * (1.0F + 4.4F / 10.2F * (across * 0.5625F + 0.1875F)) * 2.5F)
               .margin(0.001F));
+}
+
+TEST_CASE("in a long straight fall the aim point's lag climbs past 0.18 and keeps it under 5 m above the look-at point",
+          "[camera]") {
+    // The fall_high trace (docs/research/camera.md#long-fall): the player falls straight down from rest, gaining
+    // 0.52 m/s an update up to 35 m/s, for 70 updates, the stick his. The lag's across test and its 2.5 × read the 3D
+    // velocity, so the lag climbs to about 0.19 and the aim point trails 4.7 m above the look-at point, as in the
+    // original; built from the horizontal speed alone it stayed 0.06 and the aim point trailed about 18 m above.
+    FollowCamera camera(Vec3{0.0F, 0.0F, 100.0F}, 0.0F);
+    FollowTarget target = standing(Vec3{0.0F, 0.0F, 100.0F});
+    target.walkSpeed = 1.6F;
+    target.runSpeed = 7.8F;
+    target.sprintSpeed = 10.2F;
+    for (int i = 0; i < 300; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    REQUIRE(camera.aimLag() == Approx(FollowCamera::kAimLag));
+    constexpr float kFall = 35.0F;
+    constexpr float kGain = 0.52F; // m/s an update, read from the trace
+    float highest = 0.0F;
+    for (int i = 0; i < 70; ++i) {
+        const float speed = std::min(kFall, kGain * static_cast<float>(i + 1));
+        target.velocity = Vec3{0.0F, 0.0F, -speed};
+        target.feet.z -= speed * kStep;
+        camera.update(target, kRest, kRest, nullptr, kStep);
+        highest = std::max(highest, camera.aimPoint().z - camera.lookAt().z);
+    }
+    CHECK(camera.aimLag() > 0.18F);
+    CHECK(highest < 5.0F);
+    // A camera held 3.5 m from the look-at point at its height would face the aim point under 60° up.
+    CHECK(std::atan2(highest, 3.5F) < 60.0F * kDegree);
+}
+
+TEST_CASE("in a long straight fall the wanted position keeps the target pitch, so the camera stays off overhead",
+          "[camera]") {
+    // Update step 11 (Cam_Follow_Pitch 0x0012d4e8, called at 0x0012beac) measures the wanted position's pitch about
+    // the look-at point (0x0012d908) and turns it all the way to the target pitch every update, after the leash.
+    // So in a fall the leash cannot drag the wanted position up its line to the falling look-at point: the original's
+    // wanted stays near its pitch and its camera, 22% an update behind, climbs to about 52° above the look-at point
+    // at 40 m (docs/research/camera.md#long-fall). Turned at most 85°/s, Coney's ended 84° up.
+    FollowCamera camera(Vec3{0.0F, 0.0F, 100.0F}, 0.0F);
+    FollowTarget target = standing(Vec3{0.0F, 0.0F, 100.0F});
+    for (int i = 0; i < 300; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    constexpr float kFall = 35.0F;
+    target.velocity = Vec3{0.0F, 0.0F, -kFall};
+    float steepestWanted = 0.0F;
+    float steepestCamera = 0.0F;
+    for (int i = 0; i < 70; ++i) {
+        target.feet.z -= kFall * kStep;
+        camera.update(target, kRest, kRest, nullptr, kStep);
+        const Vec3 wanted = coney::anim::subtract(camera.wanted(), camera.lookAt());
+        const Vec3 held = coney::anim::subtract(camera.position(), camera.lookAt());
+        steepestWanted = std::max(steepestWanted, std::atan2(wanted.z, std::hypot(wanted.x, wanted.y)));
+        steepestCamera = std::max(steepestCamera, std::atan2(held.z, std::hypot(held.x, held.y)));
+    }
+    CHECK(steepestWanted == Approx(camera.targetPitch()).margin(0.5F * kDegree));
+    CHECK(steepestCamera < 65.0F * kDegree);
 }
