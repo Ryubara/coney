@@ -266,6 +266,14 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     for (const coney::ai::Brain* member : gang->members()) {
         CHECK(member->threatResponse() == coney::ai::kDefaultThreatResponse);
     }
+    // Their gesture slots (docs/research/ai.md#fight-reposition): gang brains of reaction kind 2 with help level 2,
+    // so they may take both of kind 2's slots, as the original's sparring Warriors did (scenario warriors_gestures).
+    for (const coney::ai::Brain* member : gang->members()) {
+        std::printf("  level99 sparring Warrior (seed %u): reaction kind %d, help level %d\n", seed,
+                    coney::ai::reactionKind(*member), coney::ai::helpLevel(*member));
+        CHECK(coney::ai::reactionKind(*member) == 2);
+        CHECK(coney::ai::helpLevel(*member) == 2);
+    }
     int crowds = 0;
     for (std::size_t id = 0; id < coney::ai::kGangSlots; ++id) {
         const coney::ai::Gang* other = level.fighters().brains().gangs().find(static_cast<int>(id));
