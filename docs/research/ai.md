@@ -2389,11 +2389,13 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   is not built; with no target but a valid enemy Melee spectates (without the shadow and may-spectate tests); a
 human whose last move failed runs straight at
   the target for 2 s and may approach again (the weapon pick-up, throw and positioning moves are not traced); the type-3
-  AttackTarget gate and goal `0x35` are not built; past its deadline a fight goal ends only without an attack slot (the
-  slot standing in for the target's active attackers). `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the
-  sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring Warriors*"`
-  checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than the run's
-  7.80 m/s) and that the other two stop short of the player, as in the original. The [steering](ai-moving.md#steering)
+  AttackTarget gate and goal `0x35` are not built (so the deadline's FollowAndDefend test never applies); past its
+  deadline a fight goal ends as [the deadline](#fight-durations) says, reading the target's active places, and a
+  re-target ends that update with the kind kept (since 2026-10-21). `level99`'s sparring Warriors are sent from
+  8.6-9.0 m ([the sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring
+  Warriors*"` checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than
+  the run's 7.80 m/s) and that the other two stop short of the player, as in the original. The
+  [steering](ai-moving.md#steering)
   round each other puts those two a little behind the first, so his charge has made the player busy when their re-plan tests
   step 9; without it the three ran in abreast and all charged at once (clip 1, up to 9.6 m/s), ending 2.1-2.9 m past
   him. Their run-ins end at 2.5 and 4.0 m from the player; the original's ended at 2.1-2.6 m, and why one of Coney's

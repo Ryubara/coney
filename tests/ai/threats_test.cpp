@@ -224,7 +224,7 @@ TEST_CASE("the fight goal's re-target takes the threat straight ahead, forcing a
     mate.setTarget(&player);
     REQUIRE(player.attackSlots().size() == 1);
     fighter.setTarget(&target);
-    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>()));
+    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     scene.run(32);
     CHECK(fighter.target() == &player);
     CHECK(fighter.hasAttackSlot());
@@ -250,7 +250,7 @@ TEST_CASE("the fight goal's first re-target runs on the update after it starts",
         calm->setThreatResponse(0);
     }
     fighter.setTarget(&target);
-    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>()));
+    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     // The start makes it due at once: the second update re-targets, not one a second later.
     scene.run(1);
     CHECK(fighter.target() == &target);

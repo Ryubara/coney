@@ -47,6 +47,7 @@ enum class GoalType : std::uint8_t {
     FollowPlayer = 0x32,       ///< FollowPlayerGoal: keeps to the war chief's formation.
     FollowFormation = 0x33,    ///< FollowFormationGoal: walks to its formation slot.
     FollowAndAttack = 0x34,    ///< FollowAndAttackGoal: fights the best enemy near the war chief, or stays with him.
+    FollowAndDefend = 0x35,    ///< FollowAndDefendGoal: not built; the fight goal reads whether one is on the stack.
     HoldPosition = 0x36,       ///< HoldPositionGoal: keeps to a radius round a point and fights from there.
     TravelPath = 0x38,         ///< TravelPathGoal.
     LeftTurf = 0x3f,           ///< LeftTurfGoal: not built; a fight goal to Brain::hasFightGoal().
