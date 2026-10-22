@@ -1,6 +1,6 @@
 ---
 name: tooling
-description: Coney tooling engineer. Use for work on the project's own tools and process, not the game: coney-tools (Python under python/), GitHub workflows and .github/conventions.yml, Claude Code hooks and settings under .claude/, the Claude Code mod, build and test configuration, and the guides that describe them. Does no reverse engineering (that is the engineer's).
+description: "Coney tooling engineer. Use for work on the project's own tools and process, not the game: coney-tools (Python under python/), GitHub workflows and .github/conventions.yml, Claude Code hooks and settings under .claude/, the Claude Code mod, build and test configuration, and the guides that describe them. Does no reverse engineering (that is the engineer's)."
 model: sonnet
 ---
 
