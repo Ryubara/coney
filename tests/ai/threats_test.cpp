@@ -254,6 +254,13 @@ TEST_CASE("the fight goal's first re-target runs on the update after it starts",
     // The start makes it due at once: the second update re-targets, not one a second later.
     scene.run(1);
     CHECK(fighter.target() == &target);
+    const auto* goal = dynamic_cast<const coney::ai::FightGoal*>(fighter.findGoal(coney::ai::GoalType::Fight));
+    REQUIRE(goal != nullptr);
+    fighter.clearActions();
+    const int kind = goal->kind();
     scene.run(1);
     CHECK(fighter.target() == &player);
+    // The update that re-targets stops there (FightGoal_Process 0x002b3ab0): nothing queued, the kind kept.
+    CHECK(fighter.actionCount() == 0);
+    CHECK(goal->kind() == kind);
 }
