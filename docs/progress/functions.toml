@@ -4636,6 +4636,11 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x0021d5c0
+name = "Human_WarnOfAttack"
+subsystem = "Human"
+
+[[function]]
 address = 0x0021e3a8
 name = "Human_GetSoundVolumeScale"
 subsystem = "Human"

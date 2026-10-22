@@ -82,10 +82,8 @@ void Fighter::startTandem(Holdable& victim, int base, const FighterInput& input,
                                         .attackerIsPlayer = m_player})) {
         return;
     }
-    // The start announces the attack to the humans around, as any attack's does.
-    for (Combatant* other : input.targets) {
-        other->announceAttack(input.position);
-    }
+    // The start warns its victim alone, as any attack's does (docs/research/combat.md#attack-warnings).
+    victim.announceAttack(input.position);
     alignTandem(victim, base, input, animator, heading);
     const std::array<std::uint32_t, 2> clips{static_cast<std::uint32_t>(set.attackerIntro),
                                              static_cast<std::uint32_t>(set.attackerEnd)};

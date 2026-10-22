@@ -411,3 +411,64 @@ TEST_CASE("the charge takes no target and never steers, but the stick turns it",
     const MovingAim steered = moveAt("cross", 40.0F, 0.0F, "65 stick left 70 70\n");
     CHECK(turned(steered, 15) < -5.0F);
 }
+
+namespace {
+
+// The attack warnings (event 0x10) of a sprint with L2 held and `button` tapped at kPress: on the update before the
+// press is read the fight yard's target is put `distance` m straight ahead of the player and a bystander
+// `bystanderDistance` m ahead and `bystanderSide` m to his right. Returns the warnings each got.
+struct Warned {
+    int target = 0;
+    int bystander = 0;
+};
+
+Warned warnedAt(std::string_view button, float distance, float bystanderDistance, float bystanderSide) {
+    const coney::test::FightCharacter character(movingClips());
+    coney::test::Fight fight(character, 60.0F);
+    coney::human::TargetHuman& bystander = fight.addTarget(character, 70.0F, 0.0F);
+    const int start = kPress; // with L2 held, cross (the charge) starts on its press, as square does
+    fight.run(script(0, 100, button, true), 90, [&](std::uint64_t frame) {
+        if (static_cast<int>(frame) != start - 1) {
+            return;
+        }
+        // Forward is (-sin h, cos h) and right (cos h, sin h).
+        const float h = fight.human().heading();
+        const coney::anim::Vec3 at = fight.human().position();
+        const auto place = [&](coney::human::TargetHuman& who, float ahead, float side) {
+            who.place(coney::anim::Vec3{at.x - (std::sin(h) * ahead) + (std::cos(h) * side),
+                                        at.y + (std::cos(h) * ahead) + (std::sin(h) * side), at.z},
+                      0.0F);
+        };
+        place(fight.target(), distance, 0.0F);
+        place(bystander, bystanderDistance, bystanderSide);
+    });
+    return Warned{.target = fight.target().attacksAnnounced(), .bystander = bystander.attacksAnnounced()};
+}
+
+} // namespace
+
+TEST_CASE("the dive warns the human its own search dives at, not the nearest one", "[human][combat][moving]") {
+    // **Coney choice** (docs/research/combat.md#attack-warnings): the dive's search skips humans inside its reach
+    // (2.22 m here), so a bystander 1.0 m ahead, nearer than the one 2.6 m ahead it dives at, is not warned.
+    const Warned dive = warnedAt("square", 2.6F, 1.0F, 0.0F);
+    CHECK(dive.target == 1);
+    CHECK(dive.bystander == 0);
+    // Nobody in its band: no one is warned.
+    const Warned none = warnedAt("square", 3.4F, 1.0F, 0.0F);
+    CHECK(none.target == 0);
+    CHECK(none.bystander == 0);
+}
+
+TEST_CASE("the charge of a player with no target warns the one his search finds, and no one else",
+          "[human][combat][moving]") {
+    // docs/research/combat.md#charge-aim: the charge takes no target, but warns the nearest human its reach search
+    // finds (Player_StartCharge's Attack_FindNearestInReach, between the charge's reach and far range, 3.29-4.11 m); a
+    // bystander 6 m off to the side is not warned.
+    const Warned charge = warnedAt("cross", 3.7F, 2.0F, 6.0F);
+    CHECK(charge.target == 1);
+    CHECK(charge.bystander == 0);
+    // A human inside the reach is not in the band: no one is warned.
+    const Warned inside = warnedAt("cross", 2.0F, 2.0F, 6.0F);
+    CHECK(inside.target == 0);
+    CHECK(inside.bystander == 0);
+}

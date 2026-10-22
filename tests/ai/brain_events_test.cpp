@@ -11,6 +11,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
+#include "ai/enemy_scan.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "support/ai_fixtures.h"
@@ -124,4 +125,39 @@ TEST_CASE("a knocked-out attacker lets go of his target's slot and place and his
     attacker.human().fighter().health().set(500);
     scene.run(1);
     CHECK_FALSE(attacker.knockedOut());
+}
+
+TEST_CASE("Warriors who see two strange gangs fight take no side, and the strangers list them only once made enemies",
+          "[ai][events]") {
+    // level34 checkpoint 5 (docs/research/scripting.md#level34-fixes, item 14): the Furies (kind 8) fight the hurt
+    // Rogues (kind 4) the script made their enemies, next to the Warriors (kind 0), who are friends of neither. The
+    // Warriors stay out of it (Brain_PickSideInFight: neither a friend hit nor a threat), and the Furies leave them be
+    // until the script's GangMakeEnemies, after which a Fury's own scan lists them. This guards the brains' side of
+    // issue #372 and passed before its fix too; the regression tests are combat_test.cpp's attack-warning cases and
+    // disc_level34_furies_test.cpp.
+    AiScene scene;
+    scene.brains.setCollision(scene.mesh.get());
+    Brain& fury = member(scene, 8, "Furies", {44.0F, 40.0F, 0.0F});
+    Brain& rogue = member(scene, 4, "Rogues", {45.0F, 40.0F, 0.0F});
+    const int warriorsGang = scene.brains.gangs().create(0, "Warriors");
+    Brain& warrior = scene.add({44.0F, 48.0F, 0.0F}, 180.0F, coney::ai::BrainType::Warrior);
+    scene.brains.gangs().addMember(warriorsGang, warrior);
+    scene.brains.gangs().makeEnemies(fury.gang()->id(), rogue.gang()->id());
+    scene.run(1);
+
+    // The Rogue hits the Fury, who calls for help: the Warrior, 8 m off, hears it and does nothing.
+    static_cast<void>(coney::ai::deliverEvent(
+        fury, coney::ai::BrainEvent{.id = coney::ai::kEventDamaged, .other = &rogue, .value = 10}));
+    coney::ai::broadcastHelpCall(fury, coney::ai::kHelpCallShared, &rogue);
+    CHECK(warrior.target() == nullptr);
+    CHECK(warrior.findGoal(GoalType::HelpRespond) == nullptr);
+    CHECK_FALSE(coney::ai::Gangs::enemies(warrior.gang(), rogue.gang()));
+    CHECK_FALSE(coney::ai::Gangs::enemies(warrior.gang(), fury.gang()));
+    CHECK(coney::ai::scanEnemies(scene.brains.gangs(), fury) == 0);
+    CHECK(std::ranges::find(fury.enemies(), &warrior) == fury.enemies().end());
+
+    // The script turns the Furies: now the scan of the Fury, who faces him, lists the Warrior.
+    scene.brains.gangs().makeEnemies(warriorsGang, fury.gang()->id());
+    static_cast<void>(coney::ai::scanEnemies(scene.brains.gangs(), fury));
+    CHECK(std::ranges::find(fury.enemies(), &warrior) != fury.enemies().end());
 }
