@@ -28,6 +28,9 @@ struct AiHuman {
     human::TargetSnapshot previous; ///< The last step but one.
     human::TargetSnapshot current;  ///< The last step.
     bool removed = false;           ///< Deleted (`HuDelete`): out of the step and the brains, not drawn.
+    /// Made by the debug menus' AI fighters page (AiHumans::markDebugSpawned()), not by a level's scripts or its
+    /// layout: the one kind AiHumans::removeDebugSpawned() takes out.
+    bool debugSpawned = false;
 };
 
 /// The kind of the sandbox fighters' gang: the level scripts' combat gangs' kind (`GangCreate(19, ...)` in
@@ -75,6 +78,16 @@ class AiHumans {
     void remove(const human::Human& human);
     /// Removes every AI human.
     void clear();
+    /// Marks `human` (one of these) as made by the debug menus' AI fighters page, for removeDebugSpawned(). Nothing for
+    /// another human.
+    /// @coney-only debug tooling: the original has no spawner
+    void markDebugSpawned(const human::Human& human);
+    /// Takes out every human markDebugSpawned() marked and still in the world, through the normal removal (remove(),
+    /// then the same take-out capture() does), and returns how many it took. Never the human the pad drives (one a
+    /// switchPlayer() handed it), a level script's human, the crew or a layout's fighter: they were not marked. Call it
+    /// between steps, as the debug menus' actions are.
+    /// @coney-only debug tooling: the original has no spawner
+    std::size_t removeDebugSpawned();
     /// Makes `fighter`'s brain fight the player at once (`GoalFight(fighter, player, 0)`); nothing for a human that is
     /// not one of these.
     void fightPlayer(const human::Human& fighter);
@@ -110,6 +123,8 @@ class AiHumans {
 
     /// The AI humans spawned, their brains and the player's brain.
     [[nodiscard]] std::size_t count() const { return m_humans.size(); }
+    /// The AI humans still in the world: count() less those removed (`HuDelete`) and those about to be.
+    [[nodiscard]] std::size_t liveCount() const;
     [[nodiscard]] const std::vector<AiHuman>& humans() const { return m_humans; }
     [[nodiscard]] Brains& brains() { return *m_brains; }
     [[nodiscard]] const Brains& brains() const { return *m_brains; }

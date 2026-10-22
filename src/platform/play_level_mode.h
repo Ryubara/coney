@@ -294,9 +294,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] std::vector<std::string> fighterModels() const;
     /// Makes an AI fighter drawn as `model`.
     std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model);
-    /// How many AI humans there are.
-    [[nodiscard]] std::size_t fighterCount() const { return m_ai->count(); }
-    /// Removes the AI fighters.
+    /// How many AI humans there are in the world.
+    [[nodiscard]] std::size_t fighterCount() const { return m_ai->liveCount(); }
+    /// Removes the AI fighters the debug menus spawned (spawnFighter(), spawnFighterAs()), through the game's removal;
+    /// the player, his crew, the level's scripts' humans and the layout's fighters stay.
+    /// @coney-only debug tooling: the original has no spawner
     void clearFighters();
     /// Whether idle fighters take the player on.
     [[nodiscard]] bool fightersEngage() const { return m_ai->engaging(); }
@@ -454,7 +456,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void makeTargets(rw::Texture* texture);
     // Spawns a fighter dropped onto the ground below `spot`, with its mesh, as the character of `model` (empty: the
     // scene's own).
-    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {});
+    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {}, bool debugSpawned = false);
     // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
     // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
