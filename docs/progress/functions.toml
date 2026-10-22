@@ -6179,6 +6179,12 @@ subsystem = "Human"
 size = 476
 
 [[function]]
+address = 0x0024c6d8
+name = "Human_PlaceObjectInHandByPickupClip"
+subsystem = "Human"
+size = 216
+
+[[function]]
 address = 0x0024cbb0
 name = "Human_CreateCarriedProp"
 subsystem = "Human"
