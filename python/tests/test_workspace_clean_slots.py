@@ -6,6 +6,7 @@ import os
 import shutil
 import time
 from collections import namedtuple
+from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 
@@ -114,7 +115,8 @@ def test_live_worktrees_ignores_dead_builds_and_a_missing_folder(tmp_path: Path)
 
 def test_a_build_that_starts_during_a_clean_is_not_deleted(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
     path = space.worktree("done", build=100)
-    answers = iter([set()])  # the first look (judging the worktree) finds no build, every later one finds one
+    # The first look (judging the worktree) finds no build, every later one finds one.
+    answers: Iterator[set[str]] = iter([set()])
     monkeypatch.setattr(workspace_clean, "live_slots", lambda workspace, checkout: lambda: next(answers, {"done"}))
     monkeypatch.setattr(workspace_clean, "gh_merged_heads", lambda checkout: lambda branch: None)
     assert run_clean(space.checkout, None, True) == 0
