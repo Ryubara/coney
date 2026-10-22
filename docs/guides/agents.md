@@ -188,7 +188,8 @@ instead of repeating it:
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
-- disk: it creates `.coney-busy` in its worktree as it starts and deletes it when it finishes, and before reporting a
+- disk: it writes its id into `.coney-busy` in its worktree as it starts (`echo <id> > .coney-busy`; an empty marker
+  older than a day is ignored by the cleanup) and deletes it when it finishes, and before reporting a
   unit finished it deletes its own `build/` folder; a build is about 6 GB per preset, and with the shared
   [compiler cache](building.md#compiler-cache) a fresh one builds in about 2 minutes, not 11
   ([Cleanup](workspace.md#cleanup));
@@ -306,6 +307,31 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   `coney-tools build` command, and everything under it goes with it.
 - The coordinator sets the number of slots for the machine with `build_slots` in `coney.local.toml`
   ([Local workspace](workspace.md#local-config)) and does not stagger builds by hand any more.
+- **A new build folder may be refused** when too many worktrees already hold one ([The cap on build
+  folders](#build-cap)).
+
+### The cap on build folders {#build-cap}
+
+On 2026-10-21 the maintainer capped the agents that build the engine at about 7 at a time (research, tools and docs
+agents, which build nothing, stay unlimited). The reason is the drive, not the cores (the slots above already share
+those): a `build/` folder is about 7 GB, the drive must keep 30 GB free, and every worktree that has built once keeps
+its folder until somebody removes it. A rule written in a brief is not enough, so the tool enforces it:
+
+- `coney-tools build` refuses to configure a **new** build folder while the worktrees that already hold a `build/`
+  folder (any preset) are at `build_worktree_cap` (default 7; `0` turns it off; `coney.local.toml`, [Local
+  workspace](workspace.md#local-config)). It exits `2` at once and lists those worktrees: size, hours idle, and
+  whether the branch's pull request merged or the worktree is busy. Builds that already have a folder keep building,
+  the main checkout's `build/release` (the coordinator's play build) does not count, and a second folder in a
+  worktree that already holds one (the gate's `build/tidy`) adds none.
+- **On a refusal**, run `uv run --project python coney-tools workspace clean` (a dry run: it lists what it would do),
+  then with `--apply`. It removes worktrees whose pull request merged (when nothing in them is uncommitted) and
+  deletes the `build/` folders idle over a day, and never touches a worktree that holds or waits for a build slot,
+  or one with a `.coney-busy` marker ([Cleanup](workspace.md#cleanup)). Then run the build again.
+- If it frees nothing, every holder is busy or recent: do not delete another agent's build by hand. Delete your own
+  `build/` when you hand over a unit (the [brief](#briefs) says so), do other work, and ask the coordinator.
+- **The busy marker** is how a worktree says "leave me alone". Write your agent id into it
+  (`echo <id> > .coney-busy`): a marker with something in it always protects, while an empty one older than a day
+  is taken for a dead agent's and ignored, so a crashed agent no longer protects its worktree for ever.
 
 ## Build waits {#build-waits}
 

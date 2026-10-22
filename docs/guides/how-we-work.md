@@ -397,7 +397,9 @@ something:
   fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools.md#build)), and
   a hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of slots is `build_slots` in
   `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tracks that only read, write docs or drive
-  the emulator need no slot.
+  the emulator need no slot. Beyond the slots, at most `build_worktree_cap` worktrees (7) hold a build folder at
+  once: `coney-tools build` refuses a new one past that, and `coney-tools workspace clean --apply` makes room
+  ([The cap](agents.md#build-cap)); research, tools and docs tracks are not counted.
 - **Share the long-lived tools, one user per copy.** One Ghidra server serves every engineer: use it as it is, never
   restart or stop it, and start it only if it is down ([Ghidra + ghidra-mcp](ghidra.md)). An emulator copy has one
   user at a time, through a claim that is released when done ([Driving PCSX2](research-workflow.md#driving-pcsx2)).

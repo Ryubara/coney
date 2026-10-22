@@ -28,6 +28,7 @@ from coney_tools.workspace_clean import (
     Settings,
     gh_merged_heads,
     list_worktrees,
+    live_slots,
     plan,
 )
 
@@ -215,6 +216,8 @@ def build_context(
             worktree_hours=1.0,
             merged_heads=merged_heads or gh_merged_heads(checkout),
             busy_file=conventions.workspace.busy_marker,
+            marker_hours=float(conventions.workspace.build_idle_hours),
+            live=live_slots(layout.workspace, checkout),
             measure=False,
             builds=False,
         )

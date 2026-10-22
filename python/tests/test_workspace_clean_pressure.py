@@ -3,8 +3,11 @@
 deleted, oldest last use first, until the floor plus a margin is free (coney_tools.workspace_clean)."""
 
 import json
+import os
 import shutil
+import time
 from collections import namedtuple
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -38,18 +41,36 @@ def claims(space: Space) -> Path:
     return space.root / "scratch" / "build-claims"
 
 
-def claim_slot(space: Space, worktree: str) -> None:
-    """A slot claim held by a running build of `worktree`."""
+def claim_slot(space: Space, worktree: str, pid: int | None = None) -> None:
+    """A slot claim held by a running build of `worktree` (by default this very process, which is alive)."""
     held = claims(space) / "slot-1.claim"
     held.mkdir(parents=True)
-    (held / "owner.json").write_text(json.dumps({"slot": 1, "worktree": worktree}), encoding="utf-8")
+    owner = {
+        "slot": 1,
+        "agent": "a",
+        "worktree": worktree,
+        "preset": "dev",
+        "step": "build",
+        "pid": os.getpid() if pid is None else pid,
+        "started": datetime.now(UTC).isoformat(timespec="seconds"),
+        "lane": "main",
+    }
+    (held / "owner.json").write_text(json.dumps(owner), encoding="utf-8")
 
 
 def queue_ticket(space: Space, worktree: str, lane: str = "queue") -> None:
-    """A ticket of `worktree` waiting in a queue folder."""
+    """A ticket of `worktree` waiting in a queue folder, written by this (live) process."""
     waiting = claims(space) / lane
     waiting.mkdir(parents=True, exist_ok=True)
-    (waiting / f"0001-{worktree}.json").write_text(json.dumps({"worktree": worktree}), encoding="utf-8")
+    ticket = {
+        "agent": "a",
+        "worktree": worktree,
+        "preset": "dev",
+        "pid": os.getpid(),
+        "priority": False,
+        "time": time.time(),
+    }
+    (waiting / f"0001-{worktree}.json").write_text(json.dumps(ticket), encoding="utf-8")
 
 
 def drive(monkeypatch: pytest.MonkeyPatch, space: Space, free_gb: float) -> None:
@@ -222,15 +243,15 @@ def test_the_floor_and_margin_default_to_the_conventions(space: Space, monkeypat
     assert len(kept(trees)) == 8  # 19 + 2 = 21: the floor plus the margin
 
 
-def test_the_build_age_defaults_to_the_conventions_then_to_four_hours(space: Space) -> None:
-    assert workspace_clean.DEFAULT_BUILD_HOURS == 4.0
-    three = space.worktree("three", commits=1, build=100, age=3)
-    six = space.worktree("six", commits=1, build=100, age=6)
+def test_the_build_age_defaults_to_the_conventions_then_to_a_day(space: Space) -> None:
+    assert workspace_clean.DEFAULT_BUILD_HOURS == 24.0
+    young = space.worktree("young", commits=1, build=100, age=20)
+    old = space.worktree("old", commits=1, build=100, age=30)
     assert run_clean(space.checkout, space.root, True, merged_heads=lambda branch: None) == 0
-    assert (three / "build").exists() and not (six / "build").exists()
-    write_checkout(space.checkout, changed(("workspace.build_idle_hours", 2)))
+    assert (young / "build").exists() and not (old / "build").exists()
+    write_checkout(space.checkout, changed(("workspace.build_idle_hours", 12)))
     assert run_clean(space.checkout, space.root, True, merged_heads=lambda branch: None) == 0
-    assert not (three / "build").exists()
+    assert not (young / "build").exists()
 
 
 def test_the_pressure_options_reach_clean_from_the_command_line(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:

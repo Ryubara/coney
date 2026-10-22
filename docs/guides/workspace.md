@@ -196,6 +196,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_states_dir` | `state-library` in the main checkout's `../../emulators` (`<clone>-workspace/emulators` in a plain clone) | the shared [PCSX2 state library](pcsx2-states.md) (`coney-tools pcsx2 states`): save states are game memory, so it sits beside the repository; one place every worktree sees |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
+| `build_worktree_cap` | `7` | a number: how many worktrees may hold a `build/` folder at once; `coney-tools build` refuses to configure a new build folder beyond it and lists the holders ([`build`](coney-tools.md#build), [The cap](agents.md#build-cap)); `0` turns the cap off |
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
 | `build_fast_lane_test_seconds` | `300` | a number: such a run takes a main slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools.md#build)); `0` turns that off |
@@ -256,15 +257,17 @@ what it would do, then the bytes it would reclaim, then the stale processes; wit
 free space before and after.
 
 * **Removes a worktree** (`git worktree remove`, then its local branch) when all of these hold: no uncommitted
-  changes (untracked files count), no `.coney-busy` file, not locked by git, not the folder you run it from, untouched
+  changes (untracked files count), no live `.coney-busy` file (below), no build slot held or waited for, not locked
+  by git, not the folder you run it from, untouched
   for `--worktree-hours` (default 1, so a branch just created from `main` is not taken for a merged one), and every
   commit is merged. A branch is merged when `origin/main` contains it, or when GitHub's merged pull requests
   (read once for all worktrees: `gh pr list --state merged --limit 1000 --json headRefName,headRefOid`) include one
   from the branch whose head is the branch's tip or a later commit; squash merges leave the branch's
   commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
   what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
-* **Deletes `build/`** (generated, ignored by git) from every worktree that is not busy and has not been touched for
-  `--build-hours` (default `workspace.build_idle_hours`, 4; it is only a rebuild): the newest modification time of
+* **Deletes `build/`** (generated, ignored by git) from every worktree that is not busy (no live busy file, no build
+  slot held or waited for) and has not been touched for
+  `--build-hours` (default `workspace.build_idle_hours`, 24; it is only a rebuild): the newest modification time of
   its tracked and untracked files, of git's `HEAD` for it and of the build folder and the entries one and two levels
   in (a running build writes there). Sources are never touched this way, so it also applies to a worktree with
   uncommitted or unmerged work.
@@ -275,10 +278,9 @@ free space before and after.
   the drive above the floor when twenty-five open branches each hold a 6 GB build used within the last hours, which
   the age rule alone never touches. Only `build/` folders go in this mode, never a worktree, a source file or a branch,
   so uncommitted and unmerged work is safe. Skipped: a worktree with the busy file, the folder you run it from, a
-  `build/` that git does not ignore, and a worktree that holds a build slot or waits for one (a slot claim or ticket
-  in `scratch/build-claims/` naming it; without that folder, nothing is skipped on that account). Each deletion is
-  printed with the free space before and after, and a line says so when the drive is still under the floor with no
-  build folder left to delete. A dry run lists the deletions it would make, adding up the sizes.
+  `build/` that git does not ignore, and a worktree that holds a build slot or waits for one (see "Build slots"
+  below). Each deletion is printed with the free space before and after, and a line says so when the drive is still
+  under the floor with no build folder left to delete. A dry run lists the deletions it would make, adding up the sizes.
 * **Never touches** the main checkout, a worktree outside `worktrees/`, or folders git does not know as worktrees (it
   only names them; the loose files and logs in `worktrees/coney/` are for you to delete). A worktree whose folder is
   gone has its record pruned.
@@ -297,11 +299,21 @@ free space before and after.
   tree. On 2026-10-12 twenty such shells, hours old, and an orphaned `ctest` were found and killed by hand; the
   [bounded-waits hook](agents.md#bounded-waits) keeps new ones from being started.
 
-**The busy file.** An agent creates an empty `.coney-busy` in its worktree root as it starts and deletes it when it is
-done (`touch .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and its `build/`
-entirely alone, however old its files look: use it for any stretch where files may not change for hours (a long
-build, a test sweep, a wait on the emulator). A file left behind by a dead agent protects its worktree for good;
-delete it once you know the work is over. The file's name is `workspace.busy_marker` of the conventions file.
+**Build slots.** A worktree that holds a build slot, a build folder's lock, or a place in the build queue (the main,
+fast or tidy lane) is never removed and never loses its `build/`, in any mode. `clean` reads that from the build
+queue's own claim and ticket files (`build_claims_dir`, else `scratch/build-claims`; [`build`](coney-tools.md#build))
+with the queue's rules for a dead claim (its process is gone, or it is over four hours old), never from a listing
+made earlier, and reads it again just before each deletion: a stale listing once deleted the build folders of two
+running builds. The same reading tells `coney-tools build` which worktrees hold a build folder, to enforce [the cap
+on them](agents.md#build-cap).
+
+**The busy file.** An agent writes its id into `.coney-busy` in its worktree root as it starts and deletes the file
+when it is done (`echo <id> > .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and
+its `build/` entirely alone, however old its files look: use it for any stretch where files may not change for hours
+(a long build, a test sweep, a wait on the emulator). A file with something in it left behind by a dead agent
+protects its worktree for good; delete it once you know the work is over. An **empty** file older than
+`--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
+protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 
 **`workspace disk`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default: 30, the
 `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts

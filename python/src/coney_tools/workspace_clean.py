@@ -11,8 +11,10 @@ died, and test runs whose caller is gone (stale_processes.py).
 
 `clean` is a dry run unless asked to `--apply`. What it will never do:
 
-* touch the main checkout, the folder it is run from, or a worktree that holds a `.coney-busy` file (an agent
-  creates that file while it works and deletes it when it is done);
+* touch the main checkout, the folder it is run from, a worktree that holds or waits for a build slot, or a worktree
+  that holds a `.coney-busy` file (an agent creates that file while it works and deletes it when it is done). An
+  empty marker older than the idle threshold no longer counts: its agent is long gone. A marker with something in
+  it (an agent id) always counts;
 * remove a worktree with uncommitted changes (untracked files count) or with commits that are not merged. A branch
   is merged when `origin/main` contains it, or when GitHub says a pull request from it was merged at that very
   commit or a later one (a squash merge leaves the branch's commits out of `main`, so `git branch --merged` alone
@@ -20,7 +22,7 @@ died, and test runs whose caller is gone (stale_processes.py).
 * delete a local branch that is not merged in the same sense.
 
 A `build/` folder is generated and ignored by git, so it is deleted from any worktree that is not busy and has not
-been touched for `build_hours` (`workspace.build_idle_hours`, 4 by default), whatever state its sources are in.
+been touched for `build_hours` (`workspace.build_idle_hours`, 24 by default), whatever state its sources are in.
 "Touched" is the newest modification time of the worktree's tracked and untracked files, of its `HEAD` and of the
 build folder itself.
 
@@ -28,7 +30,12 @@ build folder itself.
 the `build/` folders of the other worktrees, oldest last use first, until the free space reaches the floor plus
 `workspace.disk_margin_gb`. Only `build/` folders go in this mode, never a worktree or a source file, so uncommitted
 and unmerged work is safe. A worktree that is busy, that the command runs from, or that holds or waits for a build
-slot (`scratch/build-claims`, kept by the build queue) is skipped.
+slot is skipped.
+
+Who holds a slot is read from the build queue's own claim and ticket files each time (`build_claims.live_worktrees`,
+with the queue's liveness rules), never from a listing kept earlier, and read again just before each deletion: a
+stale listing once deleted the build folders of two running builds. The same functions tell `coney-tools build` which
+worktrees hold a build folder (build_cap.py).
 """
 
 from __future__ import annotations
@@ -46,7 +53,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import stale_processes
+from coney_tools import build_claims, stale_processes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.workspace import find_layout
@@ -55,12 +62,12 @@ from coney_tools.workspace import find_layout
 BUSY_FILE = ".coney-busy"
 
 #: Default idle hours before a `build/` folder is deleted (it is only a rebuild; `workspace.build_idle_hours`).
-DEFAULT_BUILD_HOURS = 4.0
+DEFAULT_BUILD_HOURS = 24.0
 
 #: Default GB above the floor that disk-pressure mode frees (`workspace.disk_margin_gb`).
 DEFAULT_MARGIN_GB = 10.0
 
-#: The build queue's folder under the workspace's `scratch/`: slot claims and waiting tickets, each naming a worktree.
+#: The build queue's folder under the workspace's `scratch/` when `coney.local.toml` does not name one.
 BUILD_CLAIMS_DIR = "build-claims"
 
 #: Default idle hours before a merged worktree is removed (so one just created from `main` is not taken for merged).
@@ -115,6 +122,11 @@ class Entry:
     #: Bytes of that build folder and hours since the worktree was last used (set with `build_deletable`).
     build_bytes: int = 0
     build_idle: float = 0.0
+    #: Why the worktree is busy (the marker, or a build slot); empty when it is not. A busy worktree is judged no
+    #: further.
+    busy: str = ""
+    #: Its branch is merged (into `origin/main` or by a merged pull request), whatever else keeps it.
+    merged: bool = False
 
     @property
     def name(self) -> str:
@@ -333,6 +345,11 @@ class Settings:
     base: str = "origin/main"
     #: The file whose presence marks a worktree as in use (`workspace.busy_marker` of the conventions).
     busy_file: str = BUSY_FILE
+    #: Hours after which an empty busy file no longer protects its worktree (its agent died without deleting it).
+    marker_hours: float = DEFAULT_BUILD_HOURS
+    #: The names of the worktrees that hold a build slot or wait for one, read from the build queue each time it is
+    #: called (never kept): see `build_claims.live_worktrees`.
+    live: Callable[[], set[str]] = lambda: set()
     #: Whether to add up the sizes a removal frees (a walk over every build folder; the audit skips it).
     measure: bool = True
     #: Whether to judge `build/` folders too. That needs every worktree's last activity (a stat of every tracked
@@ -342,12 +359,32 @@ class Settings:
     workers: int = 8
 
 
+def busy_reason(path: Path, settings: Settings) -> str:
+    """Why the worktree at `path` is in use, or "" when it is not: its busy file, or a build slot or queue place.
+
+    An empty busy file older than `marker_hours` is ignored (an agent that dies leaves one behind, and it would
+    protect its worktree for ever); a busy file with something in it always protects.
+    """
+    try:
+        marker = os.lstat(path / settings.busy_file)
+    except OSError:
+        marker = None
+    if marker is not None:
+        forgotten = marker.st_size == 0 and (settings.now - marker.st_mtime) / 3600.0 > settings.marker_hours
+        if not forgotten:
+            return f"busy ({settings.busy_file})"
+    if path.name in settings.live():
+        return "holds or waits for a build slot"
+    return ""
+
+
 def assess(tree: GitWorktree, settings: Settings) -> Entry:
     """Decide what to do with one worktree. Reads the file system and git; changes nothing."""
     entry = Entry(tree.path, tree.branch)
     path = tree.path
-    if (path / settings.busy_file).exists():
-        entry.why = f"busy ({settings.busy_file})"
+    entry.busy = busy_reason(path, settings)
+    if entry.busy:
+        entry.why = entry.busy
         return entry
     if settings.cwd.resolve().is_relative_to(path.resolve()):
         entry.why = "the folder this runs from"
@@ -399,7 +436,8 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
                 entry.why = f"{ahead} unmerged commit(s)"
         else:
             entry.why = f"merged into {settings.base}"
-        if entry.why.startswith(("merged into", "pull request merged")):
+        entry.merged = entry.why.startswith(("merged into", "pull request merged"))
+        if entry.merged:
             if idle() < settings.worktree_hours:
                 entry.why = f"{entry.why}, but used {idle():.1f} h ago"
             else:
@@ -499,21 +537,18 @@ def run_clean(
     if _git(checkout, "rev-parse", "--verify", "--quiet", "origin/main").returncode != 0:
         raise ConfigError("origin/main does not exist here, so nothing can be judged merged (git fetch origin)")
 
-    if build_hours is None:
-        build_hours = float(known.build_idle_hours) if known is not None else DEFAULT_BUILD_HOURS
     if min_gb is None:
         min_gb = float(known.disk_min_free_gb) if known is not None else DEFAULT_MIN_GB
     if margin_gb is None:
         margin_gb = float(known.disk_margin_gb) if known is not None else DEFAULT_MARGIN_GB
-    settings = Settings(
-        root=layout.workspace / "worktrees",
-        checkout=checkout,
-        cwd=cwd,
-        now=time.time() if now is None else now,
+    settings = default_settings(
+        layout.workspace,
+        checkout,
+        cwd,
         build_hours=build_hours,
         worktree_hours=worktree_hours,
-        merged_heads=merged_heads or gh_merged_heads(checkout),
-        busy_file=known.busy_marker if known is not None else BUSY_FILE,
+        now=now,
+        merged_heads=merged_heads,
     )
     free_before = shutil.disk_usage(layout.workspace).free
     print(f"Workspace: {layout.workspace}" + ("" if apply else " (dry run: nothing is changed; --apply acts)"))
@@ -527,6 +562,9 @@ def run_clean(
             line = f"{entry.name}: {entry.why} ({_gb(entry.reclaim)}" + (", delete branch)" if entry.branch else ")")
             verb = "remove" if apply else "would remove"
             print(f"  {verb:<13}{line}", flush=True)
+            if apply and _started_building(entry, settings):
+                print("    skipped: a build started in it")
+                continue
             problem = _remove_worktree(entry, checkout) if apply else None
             if problem:
                 failures += 1
@@ -537,6 +575,9 @@ def run_clean(
         elif entry.delete_build:
             verb = "delete build" if apply else "would delete"
             print(f"  {verb:<13}{entry.name}: {entry.build_why}, {_gb(entry.reclaim)}; kept: {entry.why}", flush=True)
+            if apply and _started_building(entry, settings):
+                print("    skipped: a build started in it")
+                continue
             problem = _delete_build(entry) if apply else None
             if problem:
                 failures += 1
@@ -556,7 +597,7 @@ def run_clean(
     def free_now() -> int:
         return shutil.disk_usage(layout.workspace).free if apply else free_before + reclaimed
 
-    pressure = _relieve_pressure(entries, layout.workspace, min_gb, margin_gb, free_now, apply)
+    pressure = _relieve_pressure(entries, settings, min_gb, margin_gb, free_now, apply)
     failures += pressure.failures
     reclaimed += pressure.reclaimed
     builds += pressure.deleted
@@ -580,26 +621,61 @@ class Pressure:
     failures: int = 0
 
 
-def build_queue_worktrees(claims: Path) -> set[str]:
-    """The names of the worktrees that hold a build slot or wait for one, from the build queue's folder `claims`
-    (slot and folder claims `owner.json`, tickets in every `queue*` folder, each naming its `worktree`). An absent
-    folder (no build queue here) or an unreadable file names nobody."""
-    names: set[str] = set()
-    if not claims.is_dir():
-        return names
-    for file in {*claims.glob("**/owner.json"), *claims.glob("**/queue*/*.json")}:
+def _started_building(entry: Entry, settings: Settings) -> bool:
+    """Whether a build took a slot or a place in the queue in this worktree since it was judged: the build queue is
+    read again just before each deletion, because a listing from the start of a long run can be out of date."""
+    return entry.name in settings.live()
+
+
+def live_slots(workspace: Path, checkout: Path) -> Callable[[], set[str]]:
+    """A function that reads, each time it is called, the names of the worktrees holding or waiting for a build slot
+    from the build queue of `checkout` (its `build_claims_dir`, else `scratch/build-claims` of `workspace`)."""
+
+    def live() -> set[str]:
         try:
-            data = json.loads(file.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if isinstance(data, dict) and isinstance(data.get("worktree"), str):
-            names.add(data["worktree"])
-    return names
+            claims = build_claims.default_slots(build_claims.MAIN_LANE, checkout).claims_dir
+        except ConfigError:
+            claims = workspace / "scratch" / BUILD_CLAIMS_DIR
+        return build_claims.live_worktrees(claims)
+
+    return live
+
+
+def default_settings(
+    workspace: Path,
+    checkout: Path,
+    cwd: Path,
+    *,
+    build_hours: float | None = None,
+    worktree_hours: float = DEFAULT_WORKTREE_HOURS,
+    now: float | None = None,
+    merged_heads: MergedHeads | None = None,
+) -> Settings:
+    """The settings of a run in `workspace` (the folder holding `repos/`, `worktrees/` and `scratch/`): the idle
+    hours from the conventions file (`workspace.build_idle_hours`; the built-in value when it cannot be read), the
+    busy marker's name from it, GitHub asked with `gh`, and the live build slots read from the build queue of the
+    checkout (its `build_claims_dir`, else `scratch/build-claims`) each time `Settings.live` is called."""
+    known = _conventions_workspace(checkout)
+    if build_hours is None:
+        build_hours = float(known.build_idle_hours) if known is not None else DEFAULT_BUILD_HOURS
+
+    return Settings(
+        root=workspace / "worktrees",
+        checkout=checkout,
+        cwd=cwd,
+        now=time.time() if now is None else now,
+        build_hours=build_hours,
+        worktree_hours=worktree_hours,
+        merged_heads=merged_heads or gh_merged_heads(checkout),
+        busy_file=known.busy_marker if known is not None else BUSY_FILE,
+        marker_hours=build_hours,
+        live=live_slots(workspace, checkout),
+    )
 
 
 def _relieve_pressure(
     entries: list[Entry],
-    workspace: Path,
+    settings: Settings,
     floor_gb: float,
     margin_gb: float,
     free_now: Callable[[], int],
@@ -617,22 +693,20 @@ def _relieve_pressure(
         f"Disk pressure: {_gb(free)} free is under the {floor_gb:g} GB floor; deleting idle build folders, "
         f"oldest first, up to {_gb(target)}"
     )
-    queued = build_queue_worktrees(workspace / "scratch" / BUILD_CLAIMS_DIR)
     candidates = sorted(
         (
             entry
             for entry in entries
-            if entry.build_deletable
-            and not entry.delete_build
-            and not entry.remove
-            and entry.name not in queued
-            and (entry.path / "build").is_dir()
+            if entry.build_deletable and not entry.delete_build and not entry.remove and (entry.path / "build").is_dir()
         ),
         key=lambda entry: -entry.build_idle,
     )
     for entry in candidates:
         if free >= target:
             break
+        if apply and _started_building(entry, settings):
+            print(f"  {entry.name}: skipped, a build started in it")
+            continue
         problem = _delete_build(entry) if apply else None
         if problem:
             result.failures += 1

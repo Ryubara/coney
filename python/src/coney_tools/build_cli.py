@@ -21,7 +21,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime, shared_deps
+from coney_tools import build_cap, build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime, shared_deps
 from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import (
@@ -343,6 +343,9 @@ def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
         raise ConfigError(f"agent id {args.agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
     root = _root(args.dir)
     build_run.check_preset(root, args.preset)
+    # A new build folder is refused when too many worktrees already hold one (build_cap.py); an existing one builds.
+    new_folder = (root / args.build_dir).resolve() if args.build_dir else root / "build" / args.preset
+    build_cap.check(root, new_folder, _numbers(root)["build_worktree_cap"])
     _environment({}, args.env)  # a malformed --env is refused now; it is applied after the Visual Studio environment
     env = _environment(build_run.load_msvc_environment(os.environ, build_run.run_text), args.env)
     build_run.find_programs(env)

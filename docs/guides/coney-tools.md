@@ -1373,10 +1373,11 @@ stays required whenever the output is not a terminal, as under every agent tool,
 
 **What a run does.** From the checkout (the current one, or `--dir`):
 
-1. *Precheck*, before it waits for anything: `CMakePresets.json` names the preset, and `cmake`, `ctest` and `ninja`
-   are found. On Windows it runs `vcvars64.bat` once and captures the environment (found with `vswhere` in the
-   installer folder under `Program Files (x86)`, which is not on `PATH`; inside a Developer shell it does nothing), so
-   no special shell is needed.
+1. *Precheck*, before it waits for anything: `CMakePresets.json` names the preset, a new build folder is within the
+   cap (see "The cap on build folders" below), and `cmake`, `ctest` and `ninja` are found. On Windows it runs
+   `vcvars64.bat` once and captures the environment (found with `vswhere` in the installer folder under
+   `Program Files (x86)`, which is not on `PATH`; inside a Developer shell it does nothing), so no special shell is
+   needed.
 2. *The build folder's lock*, held to the very end (see "One run per build folder" below).
 3. *Configure and build*, one claim: `cmake --preset P` when the build folder has no `CMakeCache.txt` or with
    `--configure`, then `cmake --build --preset P -j N`, through the [compiler cache](building.md#compiler-cache).
@@ -1523,6 +1524,21 @@ with no recorded time adds nothing, so a run of only such tests goes by its coun
 preset in `claims/test-costs.json` that every test run updates from its folder's file; the folder's own times win.
 `--lane main` sends any run, build and tests, to a main slot without measuring, for a job you know is long; the
 default, `--lane auto`, chooses as above.
+
+**The cap on build folders.** A build folder is about 7 GB and the drive must keep 30 GB free, so only so many
+worktrees can hold one. `build` refuses to configure a **new** build folder (one that is not on disk) while the
+worktrees that already hold a `build/` folder, in any preset, are at `build_worktree_cap` (default 7, in
+[`coney.local.toml`](workspace.md#local-config); `0` turns the cap off). It exits `2` before it waits for anything and
+prints the worktrees holding builds, longest idle first, each with the size of its `build/`, the hours since it was
+last touched and its state (busy with the marker or a build slot; its branch merged, by `origin/main` or by a merged
+pull request; or unmerged work), saying which of them
+[`workspace clean --apply`](#workspace) would free now. Only the worktrees under the workspace's `worktrees/` folder
+are counted: the main checkout's `build/release`, the coordinator's play build, never counts and a run in the main
+checkout is never refused. A folder that exists keeps building whatever the count is, and a second folder in a
+worktree that already holds one (the `build/tidy` of the gate, a `release` beside a `dev`) adds no worktree, so it is
+allowed. Two runs that configure at the very same moment may both pass: the cap is a brake, not a lock. Why it is
+needed and what to do on a refusal: [The cap on build folders](agents.md#build-cap)
+([`build_cap.py`](repo:python/src/coney_tools/build_cap.py)).
 
 **One run per build folder.** Two runs in one build folder collide: a second build's link fails
 with `LNK1168` while the first's tests hold `coney_tests.exe`, and the logs and the dependency log are written by both.
@@ -1774,9 +1790,13 @@ uv run --project python coney-tools workspace clean [--apply] [--build-hours N] 
 uv run --project python coney-tools workspace disk [--min-gb N]
 ```
 
-`clean` removes the worktrees whose work is merged (with their local branches) and deletes the `build/` folders
-nobody has touched for `--build-hours` (default `workspace.build_idle_hours`, 4), skipping any worktree holding the
-busy file (`workspace.busy_marker`, `.coney-busy`). When the drive is still under `--min-gb` (default
+`clean` removes the worktrees whose pull request merged (with their local branches) when they have no uncommitted
+changes, and deletes the `build/` folders nobody has touched for `--build-hours` (default
+`workspace.build_idle_hours`, 24), skipping any worktree that holds or waits for a build slot and any worktree
+holding the busy file (`workspace.busy_marker`, `.coney-busy`; an empty one older than `--build-hours` is ignored, as
+its agent is gone, and one with an id in it always counts). The slots are read from the build queue's own claim and
+ticket files each time and again just before each deletion, with the queue's rules for a dead claim, never from an
+earlier listing. It never touches the main checkout. When the drive is still under `--min-gb` (default
 `workspace.disk_min_free_gb`, 30) after that, it deletes more `build/` folders, oldest last use first and never a
 worktree's sources, until `--margin-gb` (default `workspace.disk_margin_gb`, 10) above the floor is free, skipping
 worktrees that are busy or hold or wait for a build slot (disk pressure). It is a dry run without `--apply`, and
