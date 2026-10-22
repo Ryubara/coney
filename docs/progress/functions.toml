@@ -5028,6 +5028,12 @@ subsystem = "Human"
 size = 560
 
 [[function]]
+address = 0x0022d628
+name = "MiniGame_Abort"
+subsystem = "Human"
+size = 356
+
+[[function]]
 address = 0x0022d790
 name = "LockPick_Start"
 subsystem = "Human"
@@ -5998,6 +6004,12 @@ address = 0x0023cd30
 name = "Human_UpdateLedSlots"
 subsystem = "Human"
 size = 392
+
+[[function]]
+address = 0x0023cf70
+name = "Human_ClearTurn"
+subsystem = "Human"
+size = 20
 
 [[function]]
 address = 0x0023cf88

@@ -53,7 +53,8 @@ bool friendlyTo(const ai::Brain& brain, const ai::Brain& player) {
 }
 
 // Whether a held weapon of anim set `animSet` leaves the freer's hand as the mash starts: set 3 (a club: a pipe, a
-// bat, a crowbar) or 4 (an overhead weapon), `Uncuff_BeginMash` (0x0022d3f8).
+// bat, a crowbar) or 4 (an overhead weapon).
+// @orig 0x0022d3f8 Uncuff_BeginMash (unknown)
 constexpr bool uncuffDropsHeld(int animSet) { return animSet == 3 || animSet == 4; }
 
 } // namespace
