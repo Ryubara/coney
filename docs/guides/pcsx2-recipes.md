@@ -16,6 +16,11 @@ PINE port (and its debug server for the emulation steps), so the `pcsx2` MCP ser
 running or paused as the recipe needs, and that the running state holds every patch the recipe names: a patch goes into
 a copy of a state with `coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
 
+Start from the shared state library rather than driving to the same place again: `coney-tools pcsx2 states list` shows
+the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states use ID --copy COPY --agent ID --launch`
+starts your copy on one. A recipe that needs a particular scene names its state among its preconditions (`recipe run`
+prints it; the runner cannot tell which state the copy was started from).
+
 Many recipes call the game through the `call-brains` call hook (`research/traces/patches/hooks-core.toml`): the runner
 writes a function address and its arguments into the call block, and the game makes the call on its own thread at the
 start of the next brains update. The `lua` recipe and the recipes built on it run a Lua chunk in the level's script
@@ -440,7 +445,7 @@ coney`); `HuCreate` returns the null handle when all 60 slots are taken. Remove 
 | | |
 | --- | --- |
 | Parameters | `name` (text, default `ConeyPed`): the new human's name (15 characters at most); `like` (human, default `Civilians0`): an existing human whose type and gang the new one takes; `distance` (number, default `1.5`): metres in front of the player |
-| Preconditions | patches: `call-brains`; emulation running |
+| Preconditions | patches: `call-brains`; emulation running; start state: `pedestrian-grab` ([state library](pcsx2-states.md)) |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00358428 lua_HuCreate`, `0x00233d60 Human_Create` |
 | Research | [research/characters.md#creation](../research/characters.md#creation) |
@@ -645,7 +650,7 @@ list.
 | | |
 | --- | --- |
 | Parameters | `name` (text, default `ConeyCrew`): the new human's name (15 characters at most); `like` (human, default `Ash`): a Warrior whose type the new human takes; `distance` (number, default `3`): metres in front of the player |
-| Preconditions | patches: `call-brains`; emulation running |
+| Preconditions | patches: `call-brains`; emulation running; start state: `pedestrian-grab` ([state library](pcsx2-states.md)) |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00358428 lua_HuCreate`, `0x00233d60 Human_Create` |
 | Research | [research/characters.md#creation](../research/characters.md#creation), [research/ai-gangs.md#gang-record](../research/ai-gangs.md#gang-record) |
@@ -1105,8 +1110,10 @@ inventories, the statistics and the object list for it; `MenuLoadLevel(name)` (`
 level's record by name (`0x0015c7b0`), sets mode 8's next level (`0x005e5d90 + 0x20`) and the game state's `+0x14c` to
 3, and the front end then loads the level, whose script starts at that checkpoint
 ([InitLevel](../research/level-loading.md#initlevel)). The recipe runs both in one `lua` chunk. The load takes several
-seconds; run `where` afterwards. A save state is the faster way to come back to the same place: make one with the debug
-server's save (`pcsx2_save_state` to a file of your own), never a quick-save slot.
+seconds; run `where` afterwards. A save state is the faster way back to the same place: take one from the [state
+library](pcsx2-states.md) (`coney-tools pcsx2 states list --level LEVEL`, then `states use`), or, when it is not there,
+make one with the debug server's save (`pcsx2_save_state` to a file of your own, never a quick-save slot) and add it
+with `states add`, so nobody has to load the level again.
 
 | | |
 | --- | --- |

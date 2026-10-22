@@ -31,6 +31,7 @@ The source state is only read: copies go wherever the caller says, never over th
 
 from __future__ import annotations
 
+import re
 import tomllib
 import zipfile
 from dataclasses import dataclass
@@ -197,6 +198,51 @@ def read_state(source: Path) -> list[tuple[zipfile.ZipInfo, bytes]]:
     if not any(info.filename == EE_MEMORY for info, _ in entries):
         raise StateError(f"{source}: has no {EE_MEMORY}; not a PCSX2 save state")
     return entries
+
+
+def read_entry(source: Path, name: str) -> bytes:
+    """The contents of one entry (`name`) of the state `source`, without reading the others. Raises StateError when
+    the state cannot be read or lacks the entry."""
+    try:
+        with zipfile.ZipFile(source) as state:
+            return state.read(name)
+    except NotImplementedError as error:
+        raise StateError(f"{source}: {error}; PCSX2 states use zstd, which Python reads from 3.14") from error
+    except KeyError as error:
+        raise StateError(f"{source}: has no {name}; not a PCSX2 save state") from error
+    except (OSError, zipfile.BadZipFile) as error:
+        raise StateError(f"{source}: not a readable PCSX2 save state ({error})") from error
+
+
+def read_ee_memory(source: Path) -> bytes:
+    """The Emotion Engine's RAM of the state `source` (an address below `0x02000000` is its offset in the result)."""
+    return read_entry(source, EE_MEMORY)
+
+
+#: The version entry of a state: a 4-byte format id, then the PCSX2 version that saved it as a NUL-ended string
+#: (`v2.9.94`); the rest of its 36 bytes is not meaningful.
+VERSION_ENTRY = "PCSX2 Savestate Version.id"
+_VERSION = re.compile(rb"v?\d+(?:\.\d+)+")
+
+
+def read_version(source: Path) -> str | None:
+    """The PCSX2 version that saved the state `source` (`v2.9.94`), or None when its version entry does not say."""
+    try:
+        data = read_entry(source, VERSION_ENTRY)
+    except StateError:
+        return None
+    match = _VERSION.match(data[4:].split(b"\0", 1)[0])
+    return match.group().decode("ascii") if match else None
+
+
+def saved_on(source: Path) -> str | None:
+    """The date (`YYYY-MM-DD`) the state `source` was saved, from its version entry's time stamp, or None."""
+    try:
+        with zipfile.ZipFile(source) as state:
+            year, month, day = state.getinfo(VERSION_ENTRY).date_time[:3]
+    except (OSError, KeyError, zipfile.BadZipFile):
+        return None
+    return f"{year:04d}-{month:02d}-{day:02d}"
 
 
 def _write_state(target: Path, entries: list[tuple[zipfile.ZipInfo, bytes]]) -> None:

@@ -11,6 +11,7 @@ pcsx2_copies     = 5                                    # how many copies `pcsx2
 pcsx2_pine_base  = 28011                                # PINE port of copy pcsx2; copy i uses this + i
 pcsx2_debug_base = 21512                                # debug server port of copy pcsx2; copy i uses this + i
 pcsx2_claims_dir = ""                                   # where `pcsx2 claim` keeps its claims; default: pcsx2-claims in the main checkout's ../../scratch (not scratch_dir)
+pcsx2_states_dir = ""                                   # the shared PCSX2 save-state library (`pcsx2 states`); default: state-library in the main checkout's ../../emulators; game memory, never in the repo
 build_claims_dir = ""                                   # where `build` keeps its slots and queue; default: build-claims in the main checkout's ../../scratch (not scratch_dir)
 build_slots      = 2                                    # how many `coney-tools build` runs may compile and test at once on this machine
 build_fast_lane_steps = 50                              # a build of fewer ninja steps than this uses the fast lane; 0 turns it off

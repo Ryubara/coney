@@ -292,6 +292,14 @@ rather than working an address out again, and add a recipe when you find a new t
 `research/pcsx2-recipes.toml`, run in PCSX2 and its `confirmed_runtime` filled in, then `coney-tools pcsx2 recipe
 render`.
 
+**States first.** Do not drive the original to a place someone has already been: the [state
+library](pcsx2-states.md) keeps shared save states (a pedestrian to grab, a fence to jump, a store door, a window to
+break), each with its level, checkpoint, the player's position and what it is set up for. **Check it first** with
+`coney-tools pcsx2 states list`, start a claimed copy on one with `states use ID --copy COPY --agent ID --launch` (it
+hands out a copy, so the library file is never changed), and **add any state you make that others could use** with
+`states add`, saying in `--made-by` how you got there. It is also the fast way back to a level or checkpoint, in place
+of the `load-checkpoint` recipe's slow reload.
+
 - **Set-up.** `coney-tools pcsx2 setup-copies` puts the fork's build (`pcsx2_mcp_dir`) into every copy and sets its
   ini: `[EmuCore]` `EnablePINE = true` with `PINESlot` 28011 + *i*, `EnableDebugServer = true` with
   `DebugServerPort` 21512 + *i* for copy *i* (`pcsx2` is 0, `pcsx2-b` 1, ...), and `[InputSources]` `SDL = false`
@@ -374,8 +382,9 @@ render`.
   record --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same input
   ([`pcsx2`](coney-tools.md#pcsx2)). A recording is game data: never committed.
 - **States across versions.** The copies keep the states their stock PCSX2 2.9.94 saved in `sstates/`, but PCSX2
-  2.9.129 may refuse them (a state is tied to the version that saved it): make the states a task needs again on the
-  fork build, as files in your scratch folder.
+  2.9.129 may refuse them (a state is tied to the version that saved it). The maintainer's slots 1 to 10 are in the
+  [state library](pcsx2-states.md), saved by 2.9.94, and the 2.9.129 fork loaded the two tried (2026-10-21); a state
+  that is refused is made again on the fork build from its catalog entry's steps and added under a new id.
 - **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 keys`, `WM_KEYDOWN`) reach
   the hotkeys in `[Hotkeys]` (verified: a posted Space paused and resumed the game with the window unfocused) and the
   pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; unchecked with posted
@@ -450,11 +459,12 @@ render`.
   relative path fails ("Requested filename ... does not exist" in its `logs/emulog.txt`) and the tool only reports
   that the state did not run within 60 s. A state that already holds a patch (`scripted-pad` in most saved states)
   is refused by that patch: leave it out of the scenario's `patches`.
-- **Leave the quick-save slots alone.** Load existing slots read-only (they may hold someone else's test spots), and
-  keep your own states as files in your scratch folder, made as above. PINE can only save to a slot number: when a
-  state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch folder
-  at once. A state saved from a patched copy still holds the patches; put each patched word back to the original that
-  `research/traces/patches/` lists before using it as a scenario's `state`, or the copy is refused.
+- **Leave the quick-save slots alone.** Load existing slots read-only (they may hold someone else's test spots; the
+  [state library](pcsx2-states.md) holds copies of the maintainer's, so use those), and keep your own states as files
+  in your scratch folder, made as above, and add the useful ones to the library. PINE can only save to a slot number:
+  when a state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch
+  folder at once. A state saved from a patched copy still holds the patches; put each patched word back to the
+  original that `research/traces/patches/` lists before using it as a scenario's `state`, or the copy is refused.
 - **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
   `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
   committed; a claim quotes the numbers.
