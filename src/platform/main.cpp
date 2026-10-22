@@ -42,6 +42,9 @@
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "core/language.h"
+#include "core/log.h"
+#include "core/log_filter.h"
+#include "core/log_record.h"
 #include "core/options.h"
 #include "debug/combat_tunables.h"
 #include "debug/debug_session.h"
@@ -77,6 +80,7 @@
 #include "platform/game_session_debug.h"
 #include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
+#include "platform/log_output.h"
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
@@ -103,10 +107,25 @@
 
 namespace {
 
-// Writes `text` to stdout by its size and flushes, so each line shows at once even when stdout is a pipe.
+// Writes `text` to stdout by its size and flushes, so each line shows at once even when stdout is a pipe: for the
+// usage text, which is not a log line.
 void printText(std::string_view text) {
     std::fwrite(text.data(), 1, text.size(), stdout);
     std::fflush(stdout);
+}
+
+// Writes `text` to the run log, each line in the category its prefix names (logging::routeOf()): how the subsystems'
+// text callbacks reach the log, each line keeping its text (docs/guides/run-log.md).
+void logText(std::string_view text) { coney::logging::writeRouted(text); }
+
+// A failure the run reports and stops or goes on without: an engine error in the run log, `coney: ` and `text`.
+void logError(std::string_view text) {
+    coney::logging::error(coney::logging::Category::Engine, std::format("coney: {}", text));
+}
+
+// Something the run goes on without: an engine warning in the run log, `coney: ` and `text`.
+void logWarning(std::string_view text) {
+    coney::logging::warn(coney::logging::Category::Engine, std::format("coney: {}", text));
 }
 
 // Loads the texture dictionaries of the WAD entry `request` names for the viewer, converts them for drawing when the
@@ -138,7 +157,7 @@ loadForViewer(const coney::io::Wad& wad, const coney::chunk::ChunkHandlerTable& 
             }
         }
     }
-    printText(text);
+    logText(text);
     return dictionaries;
 }
 
@@ -159,9 +178,9 @@ loadSheetForViewer(const coney::io::Wad& wad, const coney::chunk::ChunkHandlerTa
         return sheet;
     }
     const coney::graphics::Texture* texture = sheet->texture.get();
-    printText(std::format("{}: {} rectangles, first glyph {}, texture {}x{}\n", request, sheet->page.rects.size(),
-                          sheet->page.firstGlyph, texture != nullptr ? texture->width() : 0,
-                          texture != nullptr ? texture->height() : 0));
+    logText(std::format("{}: {} rectangles, first glyph {}, texture {}x{}\n", request, sheet->page.rects.size(),
+                        sheet->page.firstGlyph, texture != nullptr ? texture->width() : 0,
+                        texture != nullptr ? texture->height() : 0));
     return sheet;
 }
 
@@ -190,8 +209,8 @@ std::expected<std::string, coney::Error> resolveViewText(const coney::io::Wad& w
         return std::unexpected(std::move(loaded.error()));
     }
     const std::string_view text = strings.get(id);
-    printText(std::format("UI strings ({}): {} HUD strings; string {:#x} has {} bytes\n", coney::languageCode(language),
-                          strings.size(coney::gui::StringTable::Hud), id, text.size()));
+    logText(std::format("UI strings ({}): {} HUD strings; string {:#x} has {} bytes\n", coney::languageCode(language),
+                        strings.size(coney::gui::StringTable::Hud), id, text.size()));
     if (text.empty()) {
         return coney::fail(coney::ErrorCode::NotFound, std::format("no UI string has the id {:#x}", id));
     }
@@ -218,12 +237,12 @@ std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const cone
         return world;
     }
     const coney::sandbox::BakeStats& bake = world->bakeStats();
-    printText(std::format("sandbox {}: {} primitives, {} spawn points, {} viewpoints; {} vertices, {} triangles; {} "
-                          "collision triangles; light baked with {} occlusion and {} shadow rays\n",
-                          name, world->layout().primitives.size(), world->layout().spawns.size(),
-                          world->layout().views.size(), world->mesh().vertices.size(), world->mesh().triangles.size(),
-                          world->collision() != nullptr ? world->collision()->triangles().size() : 0,
-                          bake.occlusionRays, bake.shadowRays));
+    logText(std::format("sandbox {}: {} primitives, {} spawn points, {} viewpoints; {} vertices, {} triangles; {} "
+                        "collision triangles; light baked with {} occlusion and {} shadow rays\n",
+                        name, world->layout().primitives.size(), world->layout().spawns.size(),
+                        world->layout().views.size(), world->mesh().vertices.size(), world->mesh().triangles.size(),
+                        world->collision() != nullptr ? world->collision()->triangles().size() : 0, bake.occlusionRays,
+                        bake.shadowRays));
     return world;
 }
 
@@ -252,8 +271,8 @@ coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
     coney::platform::PlayerSetup setup;
     setup.ai = coney::ai::aiConfigFrom(run.recorded);
     setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
-    printText(std::format("fighters: level99's configuration ({} calls read); {} character types\n", setup.ai.callsRead,
-                          setup.types.all().size()));
+    logText(std::format("fighters: level99's configuration ({} calls read); {} character types\n", setup.ai.callsRead,
+                        setup.types.all().size()));
     return setup;
 }
 
@@ -284,6 +303,33 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    // The run log (docs/guides/run-log.md): every line stamped, to the console and to the log file, `--log-file` or
+    // `coney.log` in the user's data folder (the previous run's kept as `coney.prev.log`); a test-mode run touches no
+    // user folder, so it has a file only when given one. A default file that cannot be opened leaves the console.
+    coney::logging::LogFilter logFilter;
+    for (const coney::logging::Category category : options->logVerbose) {
+        logFilter.setVerbose(category);
+    }
+    std::optional<std::filesystem::path> logPath;
+    if (const std::optional<std::string> given = options->logFile; given) {
+        logPath = std::filesystem::path(*given);
+    } else if (!coney::isTestMode(*options)) {
+        if (std::filesystem::path path = coney::platform::defaultLogPath(); !path.empty()) {
+            logPath = std::move(path);
+        }
+    }
+    auto logOutput = coney::platform::LogOutput::start(logPath, logFilter, !options->logFile.has_value());
+    if (!logOutput && options->logFile) {
+        std::fprintf(stderr, "coney: %s\n", logOutput.error().message.c_str());
+        return 1;
+    }
+    if (!logOutput) {
+        const std::string why = logOutput.error().message;
+        logOutput = coney::platform::LogOutput::start(std::nullopt, logFilter, false);
+        logWarning(std::format("{}; logging to the console only", why));
+    }
+    const std::unique_ptr<coney::platform::LogOutput> runLog = logOutput ? std::move(*logOutput) : nullptr;
+
     // `--event-log` and `--pad-pipe`: the events go to the file, and to the driver as `@ev` lines (a hint's line
     // breaks become spaces there, one event a line). Opened before anything runs, so the first event is in it; the
     // guard closes the log before the file goes. With `--play-level` the log starts with the level's fresh Lua state
@@ -294,7 +340,7 @@ int main(int argc, char** argv) {
     if (const std::optional<std::string> eventPath = options->eventLogFile; eventPath) {
         eventFile = std::make_shared<std::ofstream>(*eventPath, std::ios::binary | std::ios::trunc);
         if (!*eventFile) {
-            std::fprintf(stderr, "coney: --event-log: cannot write %s\n", eventPath->c_str());
+            logError(std::format("--event-log: cannot write {}", *eventPath));
             return 1;
         }
         *eventFile << coney::events::kCsvHeader;
@@ -335,12 +381,12 @@ int main(int argc, char** argv) {
     if (discPath) {
         auto disc = coney::io::Disc::open(*discPath);
         if (!disc) {
-            std::fprintf(stderr, "coney: %s\n", disc.error().message.c_str());
+            logError(disc.error().message);
             return 1;
         }
         auto opened = coney::io::Wad::open(std::move(*disc));
         if (!opened) {
-            std::fprintf(stderr, "coney: %s: %s\n", discPath->c_str(), opened.error().message.c_str());
+            logError(std::format("{}: {}", *discPath, opened.error().message));
             return 1;
         }
         coney::io::Wad& openedWad = wad.emplace(std::move(*opened));
@@ -383,7 +429,7 @@ int main(int argc, char** argv) {
     auto engine = coney::platform::RenderEngine::start(
         headless ? coney::platform::RenderBackend::Null : coney::platform::RenderBackend::OpenGl, windowDesc);
     if (!engine) {
-        std::fprintf(stderr, "coney: %s\n", engine.error().message.c_str());
+        logError(engine.error().message);
         return 1;
     }
     coney::platform::RenderEngine& renderer = **engine;
@@ -395,7 +441,7 @@ int main(int argc, char** argv) {
         if (!wad) {
             return 2; // parseOptions refuses --load without --disc, so this is never reached
         }
-        coney::LoadEntryMode loader(*wad, chunkHandlers, options->loads, printText);
+        coney::LoadEntryMode loader(*wad, chunkHandlers, options->loads, logText);
         modes.push(loader);
         modes.runUntilEmpty(timer, {}, frameLimit);
         return loader.failures() == 0 ? 0 : 1;
@@ -420,9 +466,9 @@ int main(int argc, char** argv) {
         settings.particles = renders(coney::ReferenceKind::Particles);
         settings.only = options->only;
         settings.namesFile = options->namesFile.value_or(std::string{});
-        auto report = coney::platform::renderReferences(renderer, *wad, settings, printText);
+        auto report = coney::platform::renderReferences(renderer, *wad, settings, logText);
         if (!report) {
-            std::fprintf(stderr, "coney: %s\n", report.error().message.c_str());
+            logError(report.error().message);
             return 1;
         }
         std::printf("reference images: %zu characters, %zu objects, %zu cars, %zu radar icons and %zu particle "
@@ -475,7 +521,7 @@ int main(int argc, char** argv) {
     if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {
         auto opened = coney::platform::HumansTrace::open(*humansTracePath);
         if (!opened) {
-            std::fprintf(stderr, "coney: %s\n", opened.error().message.c_str());
+            logError(opened.error().message);
             return 1;
         }
         humansTrace = std::move(*opened);
@@ -485,7 +531,7 @@ int main(int argc, char** argv) {
     sessionSettings.cardCheckingMs = coney::MemoryCardMode::kCheckingMessageMs;
     const auto makeSession = [&]() -> coney::platform::GameSession& {
         return session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
-                               sessionSettings, printText);
+                               sessionSettings, logText);
     };
     // The level `--play-level` names: the session starts there directly once the sound exists, so the preloads
     // configure the sound.
@@ -500,7 +546,7 @@ int main(int argc, char** argv) {
         }
         auto dictionaries = loadForViewer(*wad, chunkHandlers, *viewTxd, renderer);
         if (!dictionaries) {
-            std::fprintf(stderr, "coney: %s: %s\n", viewTxd->c_str(), dictionaries.error().message.c_str());
+            logError(std::format("{}: {}", *viewTxd, dictionaries.error().message));
             return 1;
         }
         modes.push(viewer.emplace(renderer, std::move(*dictionaries)));
@@ -510,7 +556,7 @@ int main(int argc, char** argv) {
         }
         auto sheet = loadSheetForViewer(*wad, chunkHandlers, *viewSheet, renderer);
         if (!sheet) {
-            std::fprintf(stderr, "coney: %s: %s\n", viewSheet->c_str(), sheet.error().message.c_str());
+            logError(std::format("{}: {}", *viewSheet, sheet.error().message));
             return 1;
         }
         modes.push(sheetViewer.emplace(renderer, *sheet));
@@ -524,7 +570,7 @@ int main(int argc, char** argv) {
         auto text = font ? resolveViewText(*wad, viewText->text, options->language)
                          : std::expected<std::string, coney::Error>(std::unexpected(font.error()));
         if (!text) {
-            std::fprintf(stderr, "coney: %s: %s\n", viewText->font.c_str(), text.error().message.c_str());
+            logError(std::format("{}: {}", viewText->font, text.error().message));
             return 1;
         }
         // <BIGFONT> needs big_font beside the chosen font.
@@ -543,9 +589,9 @@ int main(int argc, char** argv) {
         if (!wad) {
             return 2; // parseOptions refuses --view-world without --disc, so this is never reached
         }
-        auto viewerMode = coney::platform::WorldViewerMode::create(renderer, *wad, *viewWorld, sectorBudget, printText);
+        auto viewerMode = coney::platform::WorldViewerMode::create(renderer, *wad, *viewWorld, sectorBudget, logText);
         if (!viewerMode) {
-            std::fprintf(stderr, "coney: %s: %s\n", viewWorld->c_str(), viewerMode.error().message.c_str());
+            logError(std::format("{}: {}", *viewWorld, viewerMode.error().message));
             return 1;
         }
         worldViewer = std::move(*viewerMode);
@@ -555,9 +601,9 @@ int main(int argc, char** argv) {
             return 2; // parseOptions refuses --view-character without --disc, so this is never reached
         }
         auto viewerMode = coney::platform::CharacterViewerMode::create(
-            renderer, *wad, *viewCharacter, options->animClip.value_or(std::string{}), printText);
+            renderer, *wad, *viewCharacter, options->animClip.value_or(std::string{}), logText);
         if (!viewerMode) {
-            std::fprintf(stderr, "coney: %s: %s\n", viewCharacter->c_str(), viewerMode.error().message.c_str());
+            logError(std::format("{}: {}", *viewCharacter, viewerMode.error().message));
             return 1;
         }
         characterViewer = std::move(*viewerMode);
@@ -569,12 +615,11 @@ int main(int argc, char** argv) {
         // A level, or a sandbox layout (`sandbox:NAME`) with the same player and camera on its collision mesh.
         if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
             auto world = loadSandbox(*options, *layout);
-            auto playMode =
-                world ? coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world),
-                                                                        options->spawn, printText, sandboxSetup(*wad))
-                      : std::unexpected(std::move(world.error()));
+            auto playMode = world ? coney::platform::PlayLevelMode::createInSandbox(
+                                        renderer, *wad, std::move(*world), options->spawn, logText, sandboxSetup(*wad))
+                                  : std::unexpected(std::move(world.error()));
             if (!playMode) {
-                std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), playMode.error().message.c_str());
+                logError(std::format("{}: {}", *playName, playMode.error().message));
                 return 1;
             }
             playLevel = std::move(*playMode);
@@ -590,7 +635,7 @@ int main(int argc, char** argv) {
             }
             if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                 if (auto traced = playLevel->traceTo(*tracePath); !traced) {
-                    std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());
+                    logError(traced.error().message);
                     return 1;
                 }
             }
@@ -602,7 +647,7 @@ int main(int argc, char** argv) {
             // The level as the story reaches it, started directly in the game session (GameSession::startAtLevel(),
             // once the sound exists) so that it is set up as the story sets it up. A level with no world fails here.
             if (auto worlds = coney::platform::worldNamesFor(*wad, *playName); !worlds) {
-                std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), worlds.error().message.c_str());
+                logError(std::format("{}: {}", *playName, worlds.error().message));
                 return 1;
             }
             commandLineLevel = *playName;
@@ -611,10 +656,10 @@ int main(int argc, char** argv) {
     } else if (const std::optional<std::string> sandboxName = options->sandbox; sandboxName) {
         // The sandbox with the free camera: no disc needed.
         auto world = loadSandbox(*options, *sandboxName);
-        auto viewerMode = world ? coney::platform::SandboxViewerMode::create(renderer, std::move(*world), printText)
+        auto viewerMode = world ? coney::platform::SandboxViewerMode::create(renderer, std::move(*world), logText)
                                 : std::unexpected(std::move(world.error()));
         if (!viewerMode) {
-            std::fprintf(stderr, "coney: %s: %s\n", sandboxName->c_str(), viewerMode.error().message.c_str());
+            logError(std::format("{}: {}", *sandboxName, viewerMode.error().message));
             return 1;
         }
         sandboxViewer = std::move(*viewerMode);
@@ -640,7 +685,7 @@ int main(int argc, char** argv) {
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
         if (!events) {
-            std::fprintf(stderr, "coney: %s\n", events.error().message.c_str());
+            logError(events.error().message);
             return 1;
         }
         auto scripted = std::make_unique<coney::ScriptedInput>(std::move(*events));
@@ -693,10 +738,10 @@ int main(int argc, char** argv) {
         auto started = coney::platform::SdlInput::start();
         if (started) {
             devices = started->get();
-            devices->setLog(printText);
+            devices->setLog(logText);
             input = std::move(*started);
         } else {
-            std::fprintf(stderr, "coney: %s; running without pads\n", started.error().message.c_str());
+            logWarning(std::format("{}; running without pads", started.error().message));
         }
     }
 
@@ -725,6 +770,10 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    // The Time page's bug report: the run log's ring into the log file.
+    if (runLog) {
+        debugServices.writeBugReport = [&runLog] { return runLog->writeBugReport(); };
+    }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
     // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it
     // into fixed steps, rendering blended between them; a cap of 30 is the original's rhythm, one step per frame,
@@ -738,7 +787,7 @@ int main(int argc, char** argv) {
     coney::FrameClock clock(testMode ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
     std::optional<coney::platform::FramePacer> pacer;
     if (!testMode) {
-        pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(printText)
+        pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(logText)
                                                : std::function<void(std::string_view)>());
     }
     // The real time of each frame and the rates, for the Time and Display pages, and the cap and vsync, changed live
@@ -768,7 +817,7 @@ int main(int argc, char** argv) {
         if (started) {
             audio = std::move(*started);
             if (!testMode) {
-                printText(audio->startLine());
+                logText(audio->startLine());
             }
             if (options->audioTest) {
                 audio->setTestTone(true);
@@ -776,14 +825,13 @@ int main(int argc, char** argv) {
             // The game's sound (docs/research/sound.md): the tables, banks and streams from the disc.
             if (wad) {
                 if (auto soundData = audio->startEngine(*wad); !soundData) {
-                    std::fprintf(stderr, "coney: %s; the game's sounds stay silent\n",
-                                 soundData.error().message.c_str());
+                    logWarning(std::format("{}; the game's sounds stay silent", soundData.error().message));
                 }
             }
             debugServices.audio = [&audio, &audioControls] { return audioControls.controlsOf(audio.get()); };
-            audio->game().setLog(printText);
+            audio->game().setLog(logText);
         } else {
-            std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
+            logWarning(std::format("{}; running without sound", started.error().message));
         }
     }
     // The game session gets the sound before its first frame, then starts: from boot, or directly at the command
@@ -828,7 +876,7 @@ int main(int argc, char** argv) {
             if (const std::optional<std::string> scriptTrace = options->scriptTraceFile; scriptTrace) {
                 scriptTraceFile = std::make_shared<std::ofstream>(*scriptTrace, std::ios::binary | std::ios::trunc);
                 if (!*scriptTraceFile) {
-                    std::fprintf(stderr, "coney: --script-trace: cannot write %s\n", scriptTrace->c_str());
+                    logError(std::format("--script-trace: cannot write {}", *scriptTrace));
                     return 1;
                 }
             }
@@ -895,13 +943,13 @@ int main(int argc, char** argv) {
     if (!debugServices.tunablesFile.empty()) {
         auto loaded = tunables.load(debugServices.tunablesFile);
         if (loaded) {
-            printText(std::format("tunables: {} overrides from {}\n", *loaded, debugServices.tunablesFile));
+            logText(std::format("tunables: {} overrides from {}\n", *loaded, debugServices.tunablesFile));
         } else if (loaded.error().code != coney::ErrorCode::NotFound) {
-            std::fprintf(stderr, "coney: %s\n", loaded.error().message.c_str());
+            logError(loaded.error().message);
             return 1;
         }
     }
-    coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), printText);
+    coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), logText);
     // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
     // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
     coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
@@ -962,7 +1010,7 @@ int main(int argc, char** argv) {
         }
         if (wad) {
             auto mode = coney::platform::PlayLevelMode::createInSandbox(renderer, *wad, std::move(*world), std::nullopt,
-                                                                        printText, sandboxSetup(*wad));
+                                                                        logText, sandboxSetup(*wad));
             if (!mode) {
                 debugSession.print("levels: " + mode.error().message);
                 return;
@@ -978,7 +1026,7 @@ int main(int argc, char** argv) {
             modes.push(*playLevel);
             return;
         }
-        auto viewerMode = coney::platform::SandboxViewerMode::create(renderer, std::move(*world), printText);
+        auto viewerMode = coney::platform::SandboxViewerMode::create(renderer, std::move(*world), logText);
         if (!viewerMode) {
             debugSession.print("levels: " + viewerMode.error().message);
             return;
@@ -1021,7 +1069,7 @@ int main(int argc, char** argv) {
                 devOverlay->showForFrames(static_cast<std::uint64_t>(*shownFor));
             }
         } else {
-            std::fprintf(stderr, "coney: %s; running without the developer overlay\n", started.error().message.c_str());
+            logWarning(std::format("{}; running without the developer overlay", started.error().message));
         }
     }
     // Both menus draw over every frame, the overlay last so it stays on top.
@@ -1069,7 +1117,7 @@ int main(int argc, char** argv) {
             }
         }
         if (!playOrigin && frame >= kPlayStartFrames) {
-            std::fprintf(stderr, "coney: %s never started playing\n", commandLineLevel->c_str());
+            logError(std::format("{} never started playing", *commandLineLevel));
             return true;
         }
         const bool done = playOrigin && frame - *playOrigin >= *playFrameLimit;
@@ -1235,7 +1283,7 @@ int main(int argc, char** argv) {
         audio->setStepTap({});
     }
     if (pacer && options->showFps) {
-        printText(pacer->summary());
+        logText(pacer->summary());
     }
     if (bench) {
         auto line = bench->finish({{"level", commandLineLevel.value_or(std::string{})},
@@ -1253,32 +1301,32 @@ int main(int argc, char** argv) {
     }
 
     if (worldViewer) {
-        printText(worldViewer->summary());
+        logText(worldViewer->summary());
     }
     if (characterViewer) {
-        printText(characterViewer->summary());
+        logText(characterViewer->summary());
     }
     if (playLevel) {
-        printText(playLevel->summary());
+        logText(playLevel->summary());
     }
     if (const coney::platform::PlayLevelMode* level = sessionPlayMode(); level != nullptr) {
-        printText(level->summary());
+        logText(level->summary());
     }
     if (session && session->movies().counts().movies > 0) {
         const coney::movies::MovieMode::Counts& counts = session->movies().counts();
-        printText(std::format("movies: {} played ({} skipped, {} failed), {} frames decoded, {} shown, {} sound "
-                              "samples, {} captions\n",
-                              counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
-                              counts.samples, counts.captionsShown));
+        logText(std::format("movies: {} played ({} skipped, {} failed), {} frames decoded, {} shown, {} sound "
+                            "samples, {} captions\n",
+                            counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
+                            counts.samples, counts.captionsShown));
     }
     if (sandboxViewer) {
-        printText(sandboxViewer->summary());
+        logText(sandboxViewer->summary());
     }
     if (audio && options->audioTest) {
-        printText(audio->summary());
+        logText(audio->summary());
     }
     if (options->netHost || options->netJoin) {
-        printText(netPlay.summary());
+        logText(netPlay.summary());
     }
     // Leaving network play: the other games get this one's Bye before its connections close. This is after the last
     // frame, so a short real wait does no harm, even in test mode; a pacer at 100 frames a second times it, the one
@@ -1296,9 +1344,9 @@ int main(int argc, char** argv) {
     // A game played in test mode, from the story or a level: what its humans asked to be heard and what the glass and
     // doors played (counts only).
     if (audio && testMode && session) {
-        printText(audio->game().summary());
-        printText(std::format("object sounds: {} played, {} material pairs, {} unplayed\n", objectSounds.played(),
-                              objectSounds.materialPairs(), objectSounds.unplayed()));
+        logText(audio->game().summary());
+        logText(std::format("object sounds: {} played, {} material pairs, {} unplayed\n", objectSounds.played(),
+                            objectSounds.materialPairs(), objectSounds.unplayed()));
     }
 
     // The game session goes before the sound output (declared further down, so destroyed first), whose game sound its
@@ -1309,13 +1357,13 @@ int main(int argc, char** argv) {
     // Report the screenshot: where it went and a summary that says whether anything was drawn.
     if (const auto& capture = renderer.capture(); capture) {
         if (!capture->has_value()) {
-            std::fprintf(stderr, "coney: %s\n", capture->error().message.c_str());
+            logError(capture->error().message);
             return 1;
         }
         const coney::platform::CapturedFrame& frame = capture->value();
-        printText(std::format("screenshot {} ({}x{}): {} of {} pixels differ from the background, hash {:#018x}\n",
-                              frame.path, frame.size.width, frame.size.height, frame.stats.notBackground,
-                              frame.stats.pixels, frame.stats.hash));
+        logText(std::format("screenshot {} ({}x{}): {} of {} pixels differ from the background, hash {:#018x}\n",
+                            frame.path, frame.size.width, frame.size.height, frame.stats.notBackground,
+                            frame.stats.pixels, frame.stats.hash));
     }
     return clipFailed ? 1 : 0;
 }

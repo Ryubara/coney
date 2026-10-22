@@ -314,6 +314,7 @@ caller, not new logic ([Debug menus: adding a feature](debug-menu.md#adding-a-fe
 | `Coney.SetVolume(bus, volume)`, `Coney.SetTestTone(on)` | `debug::AudioControls::setVolume()`, `setTestTone()` | Sets the master or a bus volume; plays Coney's synthesised test tone | engine-only |
 | `Coney.Notice(text)` | `debug::DebugSession::notice()` (the debug noclip change, not on main yet) | Prints a line and shows it as a short notice under the corner lines | engine-only, on its branch |
 | `Coney.TraceCalls(path)` | `script::ScriptSystem::traceCalls()` (`--script-trace`) | Writes every binding call the scripts make, and every call into them, to a log | engine-only |
+| `Coney.Log(category, level, text)`, `Coney.WriteBugReport()` | `logging::write()`, `logging::dump()` (`src/core/log.h`, [The run log](run-log.md)) | Writes a stamped line to the run log in one of its categories; writes the last 30 s of it into the log file | engine-only |
 
 Not candidates, because a script has no use for them or the original already has the native: the debug menus'
 navigation and front ends; the Lua console (a script can run Lua itself); the test aids `--start`, `--frames`,

@@ -412,6 +412,13 @@ class Human final : public Holdable {
     /// The fighting: combat's state, meters and what it last did.
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }
+    /// What the run log calls this human (`human 12 warr_cl`), kept for its fighter across a new fighting profile or a
+    /// spawn (Fighter::setLogName()).
+    /// @coney-only a name for Coney's run log (docs/guides/run-log.md)
+    void setLogName(std::string name) {
+        m_logName = std::move(name);
+        m_fighter.setLogName(m_logName);
+    }
     /// The Anim Range List its hits take their damage from (its own copy when made with a class damage table); null
     /// for none.
     [[nodiscard]] const combat::AnimRangeList* ranges() const { return m_ranges; }
@@ -911,6 +918,7 @@ class Human final : public Holdable {
     const combat::AnimRangeList* m_ranges;
     FighterProfile m_profile;
     Fighter m_fighter;
+    std::string m_logName;                          // setLogName()
     std::vector<anim::Vec3> m_announced;            // attacks announced since the brain last looked (event 0x10)
     std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
     std::optional<std::uint32_t> m_actionEvent;     // the anim whose action event (0x41) the last update passed

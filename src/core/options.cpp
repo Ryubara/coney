@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "core/clip_recording.h"
+#include "core/log_record.h"
 #include "core/parse_number.h"
 
 namespace coney {
@@ -34,6 +35,7 @@ constexpr std::string_view kUsage =
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
     "             [--ai-player] [--ai-seed N]\n"
     "             [--bench FILE [--bench-fighters N] [--bench-warmup N]]\n"
+    "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
@@ -86,6 +88,11 @@ constexpr std::string_view kUsage =
     "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
     "                     hints, sounds, humans in and out) to FILE, one CSV line per event\n"
+    "  --log-file FILE    write the run log (every line stamped with its step) to FILE; by default\n"
+    "                     coney.log in the user's data folder, none in test mode\n"
+    "  --log-verbose CATEGORIES\n"
+    "                     keep the detail lines of these run log categories too: player, ai,\n"
+    "                     combat, script, world, engine, comma-separated, or all\n"
     "  --pad-pipe         read player 1's pad from standard input, one line per frame, after\n"
     "                     writing what is on screen to standard output; for a driver program\n"
     "  --camera X,Y,Z,QX,QY,QZ,QW[,FOV]\n"
@@ -771,6 +778,22 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--log-file") {
+            if (auto value = takeValue(args, i, options.logFile, "--log-file", "the path of a text file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--log-verbose") {
+            if (!options.logVerbose.empty()) {
+                return invalidArgument("--log-verbose given twice: list the categories once, such as ai,combat");
+            }
+            if (i + 1 == args.size()) {
+                return invalidArgument("--log-verbose needs log categories, such as ai,combat");
+            }
+            auto categories = logging::parseCategoryList(args[++i]);
+            if (!categories) {
+                return invalidArgument(std::format("--log-verbose: {}", categories.error().message));
+            }
+            options.logVerbose = std::move(*categories);
         } else if (arg == "--pad-pipe") {
             if (options.padPipe) {
                 return invalidArgument("--pad-pipe given twice");

@@ -259,6 +259,7 @@ void Human::setFighterProfile(const FighterProfile& profile) {
     // Its stamina is its power class's, full (`Human_Init`'s defaults, docs/research/characters.md#stats).
     m_stamina =
         Stamina(m_profile.powerClass.staminaMax, static_cast<float>(m_profile.powerClass.staminaRefillPerSecond));
+    m_fighter.setLogName(m_logName);
 }
 
 void Human::changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
@@ -347,6 +348,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     const std::optional<TargetState> broken = m_fighter.takeBrokenHold();
     m_fighter = Fighter(m_ranges, 1, m_profile);
     m_fighter.setFlags(flags);
+    m_fighter.setLogName(m_logName);
     m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();

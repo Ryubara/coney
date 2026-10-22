@@ -29,6 +29,7 @@
 #include "characters/character_types.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
+#include "core/log.h"
 #include "effects/ground_fog.h"
 #include "effects/level_effects.h"
 #include "gamemodes/game_mode_stack.h"
@@ -602,6 +603,9 @@ void GameplayMode::loadLevel() {
     const LevelStart& start =
         m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords,
                                        m_effects ? &m_effects->particles : nullptr));
+    // The run log's level load: its lines carry the checkpoint the level started at from here on.
+    logging::setCheckpoint(start.checkpoint);
+    logging::info(logging::Category::World, std::format("level load: {} checkpoint {}", start.level, start.checkpoint));
     const HumanCreation* player = start.player ? &*start.player : nullptr;
     m_playerTeleports = player != nullptr ? player->teleports : 0;
     if (player != nullptr) {

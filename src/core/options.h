@@ -11,6 +11,7 @@
 
 #include "core/error.h"
 #include "core/language.h"
+#include "core/log_record.h"
 
 namespace coney {
 
@@ -182,6 +183,12 @@ struct Options {
     /// event stamped with its step (coney::events), for a differential playthrough against the original
     /// (docs/guides/research-workflow.md#differential-playthroughs). Works on any path through the game.
     std::optional<std::string> eventLogFile;
+    /// `--log-file`: write the run log (core/log.h) to this file, in place of `coney.log` in the user's data folder
+    /// (none in test mode without it) (docs/guides/run-log.md).
+    std::optional<std::string> logFile;
+    /// `--log-verbose`: the run log categories whose detail lines the log file and the console keep too
+    /// (`ai,combat`, or `all`); empty: info and up only.
+    std::vector<logging::Category> logVerbose;
     /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
     /// the `assets` folder beside the executable.
     std::optional<std::string> assetsDir;

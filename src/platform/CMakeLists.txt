@@ -18,6 +18,8 @@ target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.c
 target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
 # The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
 target_sources(coney_platform PRIVATE sandbox_renderer.cpp)
+# The run log's outputs: the console, the log file and the crash handlers (docs/guides/run-log.md).
+target_sources(coney_platform PRIVATE log_output.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # A driver program's pad and the frame's observation (`--pad-pipe`), and the humans for the event log (docs/guides/running.md#pad-pipe).

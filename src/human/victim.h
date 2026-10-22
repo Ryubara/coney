@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 #include "animation/anim_math.h"
 #include "combat/power_class.h"
@@ -33,6 +34,8 @@ struct IncomingHit {
     std::uint32_t strikeMaterial = 0;
     /// The attacker holds `0x1400000` (the run attack, the charge or the dive): the bodies' `HUMAN` pair sounds too.
     bool charge = false;
+    /// Who struck, as the run log names him (Fighter::logName()); empty when no human did. Coney's own, for the log.
+    std::string attackerName{};
 };
 
 /// What a human taking hits is, for its reaction (docs/research/combat.md#hit-codes).

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <format>
 #include <optional>
 
 #include "animation/anim_task.h"
@@ -13,6 +14,7 @@
 #include "combat/rage_awards.h"
 #include "combat/reactions.h"
 #include "combat/tandem.h"
+#include "core/log.h"
 #include "human/fighter_clips.h"
 
 // The fighter's victim side: the player hit (a duck, a block, the health floor, the hit armour, the reaction, the stun,
@@ -131,6 +133,11 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     }
     m_health.apply(damage);
     ++m_hitsTaken;
+    // The run log: who hit whom, for how much, and what is left (a detail line: `--log-verbose combat` shows them).
+    const std::string_view attacker = hit.attackerName.empty() ? std::string_view("no one") : hit.attackerName;
+    logging::detail(logging::Category::Combat,
+                    std::format("damage: {} hit {} with anim {} for {}, health {} of {} left", attacker, logName(),
+                                hit.attackAnim, damage, m_health.value(), m_health.maximum()));
     // 4. A grabber hit by a third human loses power.
     const combat::CombatMode mode = m_combat.mode();
     if (mode == combat::CombatMode::Grabbing || mode == combat::CombatMode::Tackling) {
@@ -187,7 +194,9 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     m_combat.interrupt();
     m_slideUpdates = 0;
     m_steer.clear();
-    m_victim.react(hit, here, animator, kAnimFightIdle, input.nowMs);
+    if (m_victim.react(hit, here, animator, kAnimFightIdle, input.nowMs) == ReactionKind::Knockdown) {
+        logging::info(logging::Category::Combat, std::format("knock-down: {} by {}", logName(), attacker));
+    }
     m_reacting = true;
     // The reaction shakes the players' cameras at the hit code's strength (docs/research/camera.md#shake).
     m_reactionShake =
@@ -210,6 +219,8 @@ void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAni
     m_deathPending.reset();
     m_victim.die(hit, frame(input), animator);
     m_reacting = true;
+    const std::string_view attacker = hit.attackerName.empty() ? std::string_view("no one") : hit.attackerName;
+    logging::info(logging::Category::Combat, std::format("death: {} by {}", logName(), attacker));
 }
 
 void Fighter::reportHitSound(const IncomingHit& hit, std::uint32_t struck) {
@@ -547,6 +558,7 @@ void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::u
         m_victim.clear();
     } else if (!m_victim.grounded()) {
         m_victim.knockDown(nowMs, false);
+        logging::info(logging::Category::Combat, std::format("knock-down: {} by a hold", logName()));
     }
     // The hold's side is told afresh by the grabber each update (setRearHeld()).
     m_rearHeld = false;

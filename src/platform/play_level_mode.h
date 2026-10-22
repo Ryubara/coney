@@ -583,6 +583,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // @orig 0x002586d8 Human_ReleaseThrow (unknown)
     // @orig 0x003fe6b8 MeleeWeapon_Detach (unknown)
     void dropHeld(human::Human& human, double held, bool thrown = false);
+    // What the run log says of the object `handle` a player holds or lets go: its type name, its kind (`CfgObj`'s
+    // objectKind) and its hold style (the anim set it gives the hand), as ` (type NAME, kind K, hold style S)`; empty
+    // when its type is unknown (docs/guides/run-log.md).
+    [[nodiscard]] std::string heldObjectLogText(double handle) const;
     // The loose objects in flight: their fall, bounce and settle (docs/research/physics.md#settle), their poses written
     // back into their spawn records, each level impact's sound (impactSound()); an object that wears out on a contact
     // breaks (flyingBreak()).

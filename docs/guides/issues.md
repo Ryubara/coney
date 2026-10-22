@@ -13,7 +13,8 @@ Start from a form; blank issues are off.
   debug-menu jump or Rumble), the mission and checkpoint, numbered steps to reproduce, the position and heading from
   the [debug menu](debug-menu.md) if you know them, what happens, what the original game does (optional, but it
   tells us whether Coney differs from it), and how often it happens. The exact steps matter most: a bug that can be
-  repeated is a bug that can get a regression test ([Testing](testing.md#done)).
+  repeated is a bug that can get a regression test ([Testing](testing.md#done)). Its *Log* box takes `coney.log`,
+  written right after the bug with the debug menus' *Write bug report log* ([The run log](run-log.md#bug-reports)).
 - **Task** (`.github/ISSUE_TEMPLATE/task.yml`) is for maintainers and agents. It asks for a summary that opens with the
   problem ([Writing an issue a newcomer can read](#writing)), the area, the research page that covers it, what "done"
   means (the acceptance test [Testing](testing.md#done) defines for this kind of work), a fix list or steps, and the

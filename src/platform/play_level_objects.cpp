@@ -796,7 +796,8 @@ void PlayLevelMode::stepPickups() {
         dropHeld(human, held, true);
         const world_objects::LooseObject* flying = m_looseObjects.find(held);
         const anim::Vec3 v = flying != nullptr ? flying->velocity : anim::Vec3{};
-        m_print(std::format("pickup: threw object {:.0f} at ({:.2f}, {:.2f}, {:.2f}) m/s\n", held, v.x, v.y, v.z));
+        m_print(std::format("pickup: threw object {:.0f} at ({:.2f}, {:.2f}, {:.2f}) m/s{}\n", held, v.x, v.y, v.z,
+                            heldObjectLogText(held)));
     }
     if (std::optional<double> taken = human.takePickedUp()) {
         // A weapon pile stays: its take makes a new object, which goes into the hand instead.
@@ -809,10 +810,11 @@ void PlayLevelMode::stepPickups() {
             script.heldObject = *taken;
             script.heldObjectName = m_pickups->typeOf(*taken);
         }
-        m_print(std::format("pickup: took object {:.0f}{}\n", *taken,
+        m_print(std::format("pickup: took object {:.0f}{}{}\n", *taken,
                             result == TakeResult::Gone     ? " (gone)"
                             : result == TakeResult::InHand ? " in hand"
-                                                           : ""));
+                                                           : "",
+                            result == TakeResult::Gone ? std::string() : heldObjectLogText(*taken)));
     }
     // An object let go some other way (HuDropWeapon, ObjDestroy) falls from the hand too; the anim set follows the
     // hand. The triangle drop has already let it go.
@@ -895,7 +897,20 @@ void PlayLevelMode::stepLockPickDial() {
     dial.setPins(pins.pins(), std::max(pins.good(), 0));
 }
 
+std::string PlayLevelMode::heldObjectLogText(double handle) const {
+    const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(handle) : nullptr;
+    if (record == nullptr) {
+        return {};
+    }
+    const world_objects::ObjectType* type = m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+    return std::format(" (type {}, kind {}, hold style {})", record->typeName, type != nullptr ? type->objectKind : 0,
+                       m_pickups->animSetOf(record->typeName));
+}
+
 void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
+    if (!thrown) {
+        m_print(std::format("pickup: dropped object {:.0f}{}\n", held, heldObjectLogText(held)));
+    }
     world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(held) : nullptr;
     if (record == nullptr || m_objectTypes == nullptr) {
         m_pickups->drop(held, human.position());

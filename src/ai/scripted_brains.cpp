@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <format>
 #include <functional>
 #include <memory>
 #include <numbers>
@@ -94,6 +95,8 @@ void ScriptedBrains::runAnimCallbacks() {
 void ScriptedBrains::bind(double handle, Brain& brain, int gang) {
     m_brains[handle] = &brain;
     brain.setHandle(handle);
+    // The run log names its human by the handle (docs/guides/run-log.md); humanCreated() adds the model.
+    brain.human().setLogName(std::format("human {:.0f}", handle));
     brain.setServices(this);
     // Its anim starts, for the scripts' animation callbacks (the queue is bounded by what one step can start).
     brain.human().setAnimStartHook([this, handle](std::uint32_t anim) { m_animStarts.emplace_back(handle, anim); });
@@ -775,6 +778,9 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
         m_priorities[human.handle] = human.playerIndex;
         made->setCharacterClass(human.type);
         bind(human.handle, *made, human.gang);
+        made->human().setLogName(std::format("{}human {:.0f}{}{}",
+                                             human.playerIndex > 0 ? std::format("player {} ", human.playerIndex) : "",
+                                             human.handle, human.model.empty() ? "" : " ", human.model));
         // Player 1's human, now in his gang: his crew's follow is given at once, before what the script gives it next.
         // Not when the script gave his gang a tactic after creating him (the hold's choice, setPlayerMade()).
         const Gang* gang = m_owner->gangs().find(human.gang);

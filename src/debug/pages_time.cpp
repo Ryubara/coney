@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "core/log.h"
 #include "debug/debug_pages.h"
 #include "debug/debug_session.h"
 #include "debug/time_control.h"
@@ -50,7 +51,7 @@ void addTimePage(DebugSession& session) {
     };
     session.model().addPage(
         "Time",
-        [&time, frameMilliseconds, setScale](MenuPage& page) {
+        [&session, &time, frameMilliseconds, setScale](MenuPage& page) {
             page.add(toggleItem(
                          "Paused", [&time] { return time.paused(); }, [&time](bool paused) { time.setPaused(paused); }))
                 .withHelp("Stops the game's steps; the menus keep running.");
@@ -88,6 +89,18 @@ void addTimePage(DebugSession& session) {
                         "Time/Frame ms"))
                     .withHelp("Real time per frame, measured by the platform; the steps stay 1/30 s.");
             }
+            // The bug report (docs/guides/run-log.md#bug-reports): the last 30 s of the run log, every level, into
+            // the log file, to attach to an issue. On this page because it is about what just happened, and the page
+            // is there in every run.
+            page.add(actionItem("Write bug report log",
+                                [&session] {
+                                    const std::function<std::string()>& write = session.services().writeBugReport;
+                                    session.notice(write ? write()
+                                                         : std::format("bug report: the last {} events written to "
+                                                                       "the log",
+                                                                       logging::dump("bug report")));
+                                }))
+                .withHelp("Writes the last 30 s of the run log, every level, into the log file for a bug report.");
         },
         "Pause, single step and the time scale; every step stays 1/30 s.");
 }

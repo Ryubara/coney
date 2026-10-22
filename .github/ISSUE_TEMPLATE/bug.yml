@@ -106,7 +106,8 @@ body:
     id: log
     attributes:
       label: Log
-      description: Attach Coney's log, the text it prints in the terminal you started it from (copy it into a `.txt` file and drag it here). It is public, so first replace your user name in any path with `~` and remove email addresses; the hygiene workflow checks.
+      description: |
+        Attach Coney's log, `coney.log` in your data folder (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application Support/Coney/Coney/` on macOS); drag the file here. Right after the bug, open the debug menu and choose Time, then "Write bug report log": the log then holds everything from the last 30 seconds. After a crash, attach `coney.prev.log` if you started Coney again since. The log holds no game text: names, ids, numbers and positions. It is public, so first replace your user name in any path with `~` and remove email addresses; the hygiene workflow checks.
   - type: checkboxes
     id: no-game-files
     attributes:
