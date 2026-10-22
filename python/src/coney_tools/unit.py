@@ -101,3 +101,10 @@ def dirty_paths(root: Path, paths: Sequence[str]) -> list[str]:
     out = _git(root, "status", "--porcelain", "--untracked-files=all", "-z", "--", *paths)
     changed = {entry[3:] for entry in out.split("\0") if len(entry) > 3}
     return [p for p in paths if p in changed]
+
+
+def tracked_files(root: Path) -> dict[str, str]:
+    """Every file git tracks in `root`: lower-case name -> the name as git stores it (case and all), so a path spelt
+    another way still finds its file."""
+    out = _git(root, "ls-files", "-z")
+    return {name.casefold(): name for name in out.split(chr(0)) if name}

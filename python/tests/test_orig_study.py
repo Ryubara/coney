@@ -267,3 +267,50 @@ def test_freshness_against_live_ghidra(tmp_path: Path) -> None:
     reshaped = FakeGhidra()
     reshaped.text = WIDGET.replace("return 2;", "Foo(); return 2;")
     assert orig_study.freshness(saved, reshaped) == "stale"
+
+
+def test_recut_refuses_a_decompile_that_was_edited_after_the_study(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    saved = tmp_path / "t" / "study" / ADDRESS / "decompile.c"
+    saved.write_text(
+        saved.read_text(encoding="utf-8").replace("  Widget_PlaySound(param_1,0x2a);\n", ""), encoding="utf-8"
+    )
+    before = len(stamp_list(tmp_path))
+    with pytest.raises(StudyError, match="original study"):
+        run(tmp_path, None)
+    assert len(stamp_list(tmp_path)) == before
+
+
+def test_a_text_edit_with_the_same_shape_is_not_a_rename(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    edited = FakeGhidra()
+    edited.text = WIDGET.replace("param_2 < iVar1", "param_2 <= iVar1")
+    assert run(tmp_path, edited).change == "changed"
+    saved = orig_study.load_study(Unit("t", tmp_path / "t"), ADDRESS)
+    assert orig_study.freshness(saved, edited) == "fresh"
+    original = FakeGhidra()
+    assert orig_study.freshness(saved, original) == "stale"
+
+
+def test_a_broken_log_stops_a_study_before_anything_is_saved(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    segment = tmp_path / "t" / "stamps" / "0001.jsonl"
+    segment.write_bytes(segment.read_bytes().replace(b'"pass"', b'"fail"', 1) + b"{")
+    changed = FakeGhidra()
+    changed.text = WIDGET.replace("return 1;", "Foo(); return 1;")
+    saved = tmp_path / "t" / "study" / ADDRESS / "decompile.c"
+    before = saved.read_bytes()
+    with pytest.raises(StudyError, match="not intact"):
+        run(tmp_path, changed)
+    assert saved.read_bytes() == before
+
+
+def test_an_unusable_entry_point_is_a_study_error(tmp_path: Path) -> None:
+    class Odd(FakeGhidra):
+        def __call__(self, path: str) -> Any:
+            if urlparse(path).path == "/get_function_by_address":
+                return {"name": "Widget_Update", "entry_point": "not hex"}
+            return super().__call__(path)
+
+    with pytest.raises(StudyError, match="entry point"):
+        run(tmp_path, Odd())

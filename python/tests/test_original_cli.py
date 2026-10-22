@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from conventions_support import write_checkout
 from git_support import git
+from stamp_support import allowed_signers, make_key, needs_ssh_keygen
 from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS, FakeGhidra
 
@@ -131,3 +132,108 @@ def test_only_signed_steps_get_a_signer(checkout: Path) -> None:
     rules = load_conventions(checkout)
     assert original_cli.signer_for(checkout, rules, "studied") is None
     assert original_cli.signer_for(checkout, rules, "checked") is None  # no coney.local.toml: unsigned
+
+
+def signed_log(root: Path, tmp_path: Path, key: object) -> Path:
+    """A one-stamp log of the signed step `checked`, signed with `key`'s private file."""
+    from stamp_support import Key
+
+    assert isinstance(key, Key)
+    rules = load_conventions(root).stamps
+
+    def sign(body: bytes) -> dict[str, object]:
+        from coney_tools import stamp_sign
+
+        return {"signer": "x", "armor": stamp_sign.sign(body, key.private, rules.namespace, use_agent=False)}
+
+    folder = tmp_path / "log"
+    stamps.append(
+        folder,
+        rules=rules,
+        task="main",
+        step="checked",
+        subject="",
+        result="pass",
+        commit="ab" * 20,
+        covers={},
+        detail={},
+        who={"kind": "tool", "tool": "test"},
+        sign=sign,
+    )
+    return folder
+
+
+@needs_ssh_keygen
+def test_a_key_added_in_the_working_tree_does_not_vouch_for_itself(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    alice = make_key(tmp_path / "a", comment="alice")
+    mallory = make_key(tmp_path / "m", comment="mallory")
+    signers = checkout / ".github" / "stamp-signers"
+    allowed_signers(signers, ("alice", alice))
+    git(checkout, "add", "-A")
+    git(checkout, "commit", "-q", "-m", "signers")
+    folder = signed_log(checkout, tmp_path, mallory)
+    allowed_signers(signers, ("alice", alice), ("mallory", mallory))  # the change under review adds the signer
+    base = ["stamp", "verify", "--release", "--dir", str(folder)]
+    assert main(base) == 0  # the working tree vouches for itself
+    capsys.readouterr()
+    assert main([*base, "--signers-ref", "main"]) == 1
+    assert "signature" in capsys.readouterr().out
+    git(checkout, "commit", "-q", "-am", "add mallory")
+    assert main([*base, "--signers-ref", "main"]) == 0  # merged first: now trusted
+
+
+@needs_ssh_keygen
+def test_the_namespace_and_the_signed_steps_come_from_the_trusted_ref_too(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    alice = make_key(tmp_path / "a", comment="alice")
+    allowed_signers(checkout / ".github" / "stamp-signers", ("alice", alice))
+    git(checkout, "add", "-A")
+    git(checkout, "commit", "-q", "-m", "signers")
+    folder = signed_log(checkout, tmp_path, alice)
+    conventions = checkout / ".github" / "conventions.yml"
+    conventions.write_text(
+        conventions.read_text(encoding="utf-8").replace("namespace: coney-stamp", "namespace: other"), encoding="utf-8"
+    )
+    base = ["stamp", "verify", "--release", "--dir", str(folder)]
+    assert main(base) == 1  # the working tree's namespace no longer matches the signature
+    capsys.readouterr()
+    assert main([*base, "--signers-ref", "main"]) == 0
+
+
+def test_a_missing_ref_is_a_usage_error(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["stamp", "verify", "--signers-ref", "nowhere"]) == 2
+    assert "nowhere" in capsys.readouterr().err
+
+
+def test_a_release_check_refuses_an_empty_log_and_a_log_of_another_task(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["stamp", "verify", "--release"]) == 1
+    assert "no stamps" in capsys.readouterr().out
+    assert main(["original", "fails-first", "--none", "docs only", "--task", "elsewhere"]) == 0
+    other = Unit.of(checkout, "elsewhere").stamps
+    assert main(["stamp", "verify", "--dir", str(other)]) == 0  # a folder named without a task: any
+    assert main(["stamp", "verify", "--dir", str(other), "--task", "main"]) == 1
+    assert "task" in capsys.readouterr().out
+
+
+def test_show_marks_signatures_it_could_not_check_and_fails_on_a_broken_log(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["original", "fails-first", "--none", "docs only"]) == 0
+    capsys.readouterr()
+    assert main(["stamp", "show"]) == 0
+    assert "unsigned" in capsys.readouterr().out
+    segment = log(checkout) / "0001.jsonl"
+    segment.write_bytes(segment.read_bytes().replace(b'"result":"pass"', b'"result":"fail"', 1))
+    assert main(["stamp", "show"]) == 1
+    assert "prev does not match" in capsys.readouterr().out
+
+
+def test_none_is_not_combined_with_tests(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["original", "fails-first", "--none", "docs", "--test", "x"]) == 2
+    assert main(["original", "fails-first", "--none", "two\nlines"]) == 2

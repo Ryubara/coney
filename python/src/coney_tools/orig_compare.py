@@ -24,7 +24,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import Stamps
 from coney_tools.orig_pairs import PairsFile
 from coney_tools.orig_study import Study
-from coney_tools.unit import Unit, dirty_paths
+from coney_tools.unit import Unit, dirty_paths, tracked_files
 
 #: The columns of the side-by-side view.
 LEFT_WIDTH = 74
@@ -107,14 +107,13 @@ def side_by_side(study: Study, file: PairsFile | None, source_path: str, source:
                 for line in range(int(location["first"]), end + 1):
                     pointers.setdefault(line, []).append(index)
     left = []
-    first_of = {s.first_line: s for s in study.cut.statements}
+    starts = orig_cut.statements_by_line(study.cut)
     for row, text in enumerate(orig_cut.normalise(study.text).split("\n"), start=1):
-        statement = first_of.get(row)
-        mark = numeral = ""
-        if statement is not None:
-            numeral = str(statement.number)
-            mark = f"[{pair_of_piece.get(owner[statement.number], '?')}]" if file is not None else ""
-        left.append(_cut(f"{mark:<5}{numeral:>3}  {text.rstrip()}", LEFT_WIDTH))
+        found = starts.get(row, [])
+        numeral = ",".join(str(st.number) for st in found)
+        pairs = sorted({pair_of_piece.get(owner[st.number], "?") for st in found}, key=str)
+        mark = "[" + ",".join(str(i) for i in pairs) + "]" if found and file is not None else ""
+        left.append(_cut(f"{mark:<7}{numeral:>7}  {text.rstrip()}", LEFT_WIDTH))
     right = []
     for number in range(first, last + 1):
         marks = ",".join(str(i) for i in pointers.get(number, []))
@@ -167,6 +166,8 @@ def compare(
     """
     study = orig_study.load_study(unit, address)
     report = stamps.verify(unit.stamps, rules)
+    if not report.ok:
+        raise CompareError(f"{unit.stamps}: the stamp log is not intact, so nothing is compared: {report.problems[0]}")
     wanted = {k: study.covers[k] for k in ("decompile_sha256", "ghidra_function_hash", "cut_sha256")}
     if report.current("studied", address, wanted) is None:
         raise CompareError(f"{address}: no current `studied` stamp for the saved study; run `original study {address}`")
@@ -197,20 +198,21 @@ def compare(
         result.counts = _counts(blank, study.cut)
         return result
     file = orig_pairs.load(path)
-    if carry and file.header.cut_sha256 != header.cut_sha256:
+    if carry and orig_pairs.studies_differ(file.header, header):
         backup = path.with_suffix(".toml.old")
         backup.write_bytes(path.read_bytes())
         file, result.dropped = orig_pairs.carry(file, header, study.cut)
         orig_pairs.write(path, file)
     show(file)
     result.counts = _counts(file, study.cut)
-    problems = orig_pairs.check_structure(file, study.cut, address, rules.pairs)
+    tracked = tracked_files(root)
+    problems = orig_pairs.check_structure(file, study.cut, address, rules.pairs, header)
     if not problems:
-        problems += orig_pairs.check_code(file, root, rules.pairs)
+        problems += orig_pairs.check_code(file, root, rules.pairs, tracked)
     if problems:
         result.problems = problems
         return result
-    files = sorted({coney.path, *(_location_path(pair.coney) for pair in file.pairs if pair.coney.strip())} - {""})
+    files = sorted({coney.path, *orig_pairs.pair_files(file, tracked)})
     dirty = dirty_paths(root, files)
     if dirty:
         result.problems = [
@@ -248,9 +250,3 @@ def compare(
     )
     result.status = "stamped"
     return result
-
-
-def _location_path(location: str) -> str:
-    """The file of a `path:line` Coney location, or "" when it has none."""
-    match = orig_pairs.LOCATION.match(location.strip())
-    return match["path"] if match else ""

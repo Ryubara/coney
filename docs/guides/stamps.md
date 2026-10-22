@@ -79,7 +79,11 @@ a `prev` that is not the hash of the stamp before; a `time` that goes back; a st
 a `pr-opened` seal whose `chain_head` is not the stamp before it; and every signature that does not verify. The chain
 detects edits, removals and reordering inside the log; it does not detect that the unsigned tail of an unsealed log was
 cut off. That is covered by the signatures on `checked` and `reviewed`, by the seal, and by `pr open` recomputing every
-hash it relies on.
+hash it relies on. `stamp verify --task T` fails when the log is another task's; `--release` also refuses a missing or
+empty log. `current(...)` (the question a later stage asks) ignores a pass that a later stamp of the same step and
+subject replaced with a fail. A stamp's `time` is written by the tool, not attested by anything else: someone with a key
+could write back-dated stamps, and a retired key's `valid-before` is checked against that stamp time. `pr open` is to
+bound each stamp's time by its commit's date; until it does, treat the time as a record, not a proof.
 
 ## Signing {#signing}
 
@@ -92,7 +96,9 @@ agent, its public half is a line of [.github/stamp-signers](repo:.github/stamp-s
 <principal> namespaces="coney-stamp"[,valid-before="YYYYMMDDHHMMSSZ"] ssh-ed25519 AAAA... comment
 ```
 
-A key is added or retired by pull request. A retired key gets a `valid-before` in UTC with the `Z` suffix; verification
+A key is added or retired by pull request, and **a new signer's key merges in its own pull request first**: a release
+check reads the allowed-signers file and the `stamps` rules from a trusted commit, not from the change under review (below),
+so a pull request cannot vouch for a key it adds. A retired key gets a `valid-before` in UTC with the `Z` suffix; verification
 passes the stamp's own time (`-Overify-time`), so what a key signed before its retirement keeps verifying. The signer's
 principal is found by `ssh-keygen -Y find-principals`, never read from the stamp.
 
@@ -101,6 +107,11 @@ The setting `stamp_key` of `coney.local.toml` names the public key file; the pri
 `stamp verify --release` (what `pr open` and CI run) refuses, and the coordinator re-runs the check and the review on
 a machine with a key. A signature covers the stamp's body, and so the whole earlier chain through `prev`. It sits
 outside the body, so a stamp can be signed after the fact without breaking the chain.
+
+**The trust anchor.** `coney-tools stamp verify --release --signers-ref <ref>` reads `.github/stamp-signers` and the
+`stamps:` section of `.github/conventions.yml` (the namespace, the signed steps, the steps) from the commit `<ref>` with
+`git show`. CI passes the pull request's base (`origin/main`). Without `--signers-ref` the check reads the working tree,
+which is what a person verifying their own log wants and what a release check must not do.
 
 Every `ssh-keygen` call is in `coney_tools/stamp_sign.py`, in two functions with one command line each, so the hook
 that keeps agents from signing has one pattern to recognise. Tests use throwaway keys in a temporary folder, never a
@@ -116,17 +127,21 @@ real one.
   the globals. It does not go through the MCP bridge, which exists only inside a Claude Code session. See
   [Ghidra](ghidra.md#start-and-stop-the-server) for the server.
 * **When Ghidra is down** (connection refused, no program open) the command exits with 3 and writes nothing, not a
-  file and not a stamp. `--recut` re-cuts the saved decompile without Ghidra.
+  file and not a stamp. `--recut` re-cuts the saved decompile without Ghidra, and refuses a `decompile.c` whose hash
+  is not the one that was studied: an edited text is fetched from Ghidra again with `original study`, never stamped.
 * **What is saved**, in `study/<addr>/` of the scratch folder: `decompile.c` (newlines normalised; its hash is the
   stamp's), `numbered.txt` (a reading copy: each statement's number and its piece), `callers.json`, `callees.json`,
   `globals.json` and `study.json` (hashes and the cut). The decompile is text from the game: it stays in scratch and is
-  never committed ([LEGAL.md](repo:LEGAL.md#no-game-data)).
+  never committed ([LEGAL.md](repo:LEGAL.md#no-game-data)). A test against a running server, `test_orig_study_live`, is
+  left out of a normal run and runs with `pytest -m ghidra`.
 * **The stamp** `studied` (subject: the address) covers the decompile, Ghidra's function hash, the cut and its shape,
   and the addresses of the callers, callees and globals. A study that changes nothing writes no new stamp.
 * **Freshness.** The shared Ghidra project is renamed all the time, so the decompile's text changes while the function
   does not. A saved study is *fresh* when Ghidra's function hash and the cut's shape are unchanged, even when the text
-  differs (*renamed*), and *stale* otherwise; `original verify <addr>` says which. A study whose function or cut
-  changed makes its pairs file stale (`original compare --carry` brings it forward).
+  differs only by names (*renamed*: identifiers, types and comments; an operator, a number or the structure is a
+  change), and *stale* otherwise; `original verify <addr>` says which. A study whose function or cut changed makes its
+  pairs file stale (`original compare --carry` brings it forward). A study refuses to run on a log that is not intact,
+  before it saves anything.
 
 ### Lines and pieces {#pieces}
 
@@ -161,6 +176,10 @@ The anchors start pieces; the rest attach, in this order:
    else to the previous.
 4. **Labels** belong to the next statement's piece (a case label belongs to the code it selects), and `goto`, `break`
    and `continue` to the previous one. Where that would loop (`case 3: goto L;`) the group is one branch piece.
+
+A group with no anchor (labels and jumps pointing at each other, or a body of one statement that nothing attaches to) is
+one `branch` piece, a transfer of control. Several statements that start on one physical line (`Foo(); return 2;`) all
+show their numbers in `numbered.txt` and in the side-by-side view.
 
 Pieces are numbered in order of their first line, and list their lines (`3-5`, or `1,8-9` when a feeder is not
 adjacent). A switch with many constant cases is many pieces; they are adjacent, so a pair may merge them with a reason.
@@ -239,8 +258,13 @@ verdicts, not drafts. The same holds for every environment fault (Ghidra down, a
 compile). Only the steps whose result is a verdict write a `fail` stamp: `fails-first`, `checked`, `reviewed` and a
 `compared` that a reviewer later rejects.
 
-If the study changed, the pairs file's cut no longer matches and `compare` refuses; `--carry` rebuilds the file from
-the new cut (the old one is kept as `<addr>.toml.old`). With an unchanged shape every pair whose lines are still whole
+The pairs file is bound to its study: its header carries the program and the decompile, function, shape and cut
+hashes, and `compare` refuses a file whose header differs from the saved study's in any of them. A Coney location is
+read as git stores it (forward slashes, `./` and `//` collapsed, the case of the tracked name), must be a tracked file
+under `src/`, and that same name is the one checked for uncommitted changes and for copy-check findings.
+
+If the study changed, the file is bound to the old one and `compare` refuses; `--carry` rebuilds the file from the new
+study (the old one is kept as `<addr>.toml.old`). With an unchanged shape every pair whose lines are still whole
 pieces is kept; with another shape the line numbers mean other statements, so nothing is kept and the dropped pairs
 are listed.
 
@@ -262,19 +286,27 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 * **Stubs.** A test for a function that is new cannot compile on a test-only commit, so the test commit may also
   hold the minimal stubs that let it compile. A stub must not implement the behaviour: it returns a default or an empty
   result. The stamp lists every non-test file the commit touches (`detail.stubs`) for the reviewer.
-* **Verdict.** `pass`: built at both commits, the test failed on the first and passed on the second. A test that
+* Each name must appear in a test file the test commit adds or changes. The branch to come back to is written to
+  `fails-first/restore.json` in the unit's scratch folder before the first checkout and removed after the last: if a
+  run is killed, the next one refuses while the worktree is detached and says `git checkout <branch>`; a restore that
+  fails is reported as `COULD NOT RESTORE` with that command.
+* **Verdict.** `pass`: built at both commits, the test failed on the first and passed on the second. A failed run's
+  list of failed tests may be cut off (`... and N more`); a name missing from a cut-off list is not known to pass, so
+  that test is run alone. A test that
   passes on the test commit detects nothing, and one that still fails on the fix does not prove it: both write a
   `fail` stamp. A build that does not compile, a build left queued for a slot, or names that match no test are errors
   with no stamp.
-* One stamp per test name (`--test` is repeatable), covering both commits, the test files and the hashes of both runs'
-  logs (the logs stay in scratch).
-* A docs or tooling task has nothing to run: `--none REASON` stamps `result: none` with the reason.
+* One stamp per test name (`--test` is repeatable; they are written together or not at all), covering both commits,
+  the test files and the hashes of both runs' logs (kept in scratch as `red-` and `green-<test commit>-<fix commit>.log`).
+* A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps
+  `result: none` with the reason.
 
 ## For the commands that write more stamps {#api}
 
 `task start`, `task check`, `task review`, `pr open` and the hooks call the same small API in `coney_tools/stamps.py`:
 `append(folder, rules=, task=, step=, subject=, result=, commit=, covers=, detail=, who=, sign=)`,
-`verify(folder, rules, signers=, require_signatures=)` returning a `Report` (`ok`, `problems`, `head`, `latest(step,
+`append_many(folder, rules=, task=, entries=, sign=)` (several stamps, all or none),
+`verify(folder, rules, signers=, require_signatures=, task=)` returning a `Report` (`ok`, `problems`, `head`, `latest(step,
 subject)`, `current(step, subject, covers)`) and `who_from_env(tool)`. Signing is `stamp_sign.signer_for(key,
 namespace)`, which gives the `sign` argument or `None` without a key. A `pr-opened` stamp gets `chain_head` filled in by
 `append`. `current(...)` is how a later stage asks "does the newest passing stamp cover the hash I just recomputed?".

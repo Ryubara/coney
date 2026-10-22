@@ -37,12 +37,12 @@ class CutError(ConfigError):
 
 #: The statement kinds that start a piece.
 ANCHORS = frozenset({"branch", "loop", "call", "field", "constant", "return"})
-#: The kinds of a pair (docs/guides/stamps.md#pairs): the anchors' kinds.
-PAIR_KINDS = tuple(sorted(ANCHORS))
 _KEYWORDS = frozenset(
     {"if", "else", "while", "for", "do", "switch", "case", "default", "return", "goto", "break", "continue", "sizeof"}
 )
 _IDENT = re.compile(r"[A-Za-z_]\w*")
+#: A name that does not start inside a number (`0x2a` holds no name).
+_NAME = re.compile(r"(?<!\w)[A-Za-z_]\w*")
 _LABEL = re.compile(r"^(?:case\b[^?]*|default|[A-Za-z_]\w*)$")
 _DECLARATION = re.compile(r"^(?:[A-Za-z_]\w*[\s*]+)+[A-Za-z_]\w*(?:\s*\[[^\]]*\])?\s*;$")
 _LITERAL = re.compile(r"^[-+]?(?:0[xX][0-9a-fA-F]+|\d+\.?\d*|\.\d+)(?:[fFuUlL]*)$|^(?:true|false|NULL)$")
@@ -288,6 +288,13 @@ def _readers(statements: list[Statement], defs: dict[int, set[str]], uses: dict[
     return found
 
 
+def _next_to(n: int, count: int) -> int:
+    """The statement after `n`, else the one before it, else `n` itself (a body of one statement)."""
+    if n < count:
+        return n + 1
+    return n - 1 if n > 1 else n
+
+
 def _pieces(statements: list[Statement], defs: dict[int, set[str]], uses: dict[int, set[str]]) -> tuple[Piece, ...]:
     """Group the statements into pieces by the attachment rules."""
     count = len(statements)
@@ -312,11 +319,11 @@ def _pieces(statements: list[Statement], defs: dict[int, set[str]], uses: dict[i
                 target[n] = readers[0]
         elif st.kind == "compute":
             readers = _readers(statements, defs, uses, n) if defs[n] else []
-            target[n] = readers[0] if readers else (n + 1 if n < count else n - 1)
+            target[n] = readers[0] if readers else _next_to(n, count)
         elif st.kind == "label":
-            target[n] = n + 1 if n < count else n - 1
+            target[n] = _next_to(n, count)
         elif st.kind == "jump":
-            target[n] = n - 1 if n > 1 else n + 1
+            target[n] = n - 1 if n > 1 else _next_to(n, count)
     roots: dict[int, int] = {}
     for st in statements:
         seen: list[int] = []
@@ -333,9 +340,9 @@ def _pieces(statements: list[Statement], defs: dict[int, set[str]], uses: dict[i
     ordered = sorted(groups.values(), key=lambda members: members[0])
     pieces = []
     for piece_id, members in enumerate(ordered, start=1):
-        anchor = next((by[m].kind for m in members if by[roots[m]].kind in ANCHORS and m == roots[m]), "")
+        # A group with no anchor (labels and jumps pointing at each other, or a lone statement) transfers control.
         root_kind = by[roots[members[0]]].kind
-        pieces.append(Piece(piece_id, anchor or (root_kind if root_kind in ANCHORS else "branch"), tuple(members)))
+        pieces.append(Piece(piece_id, root_kind if root_kind in ANCHORS else "branch", tuple(members)))
     return tuple(pieces)
 
 
@@ -388,17 +395,38 @@ def piece_of_line(cut: Cut) -> dict[int, int]:
     return {n: piece.id for piece in cut.pieces for n in piece.lines}
 
 
+def statements_by_line(cut: Cut) -> dict[int, list[Statement]]:
+    """The statements that start on each physical line (several when a line holds `Foo(); return 2;`)."""
+    found: dict[int, list[Statement]] = {}
+    for statement in cut.statements:
+        found.setdefault(statement.first_line, []).append(statement)
+    return found
+
+
+def skeleton_sha256(text: str) -> str:
+    """The hash of a decompile with comments, string contents and every name blanked: it changes when an operator, a
+    number or the structure changes, not when Ghidra renames a function, variable or type."""
+    code = code_only(normalise(text))
+    bare = _NAME.sub(lambda m: m.group(0) if m.group(0) in _KEYWORDS else "_", code)
+    return hashlib.sha256(_collapse(bare).encode("utf-8")).hexdigest()
+
+
 def render_numbered(text: str, cut: Cut) -> str:
-    """The reading copy of a decompile: each statement's number at its first physical line and its piece in the right
-    gutter (`P3`); lines that are no statement (braces, declarations, comments) keep a blank number column."""
+    """The reading copy of a decompile: the numbers of the statements that start on each line and their pieces in the
+    right gutter (`P3`); lines that start no statement (braces, declarations, comments) keep a blank number column."""
     lines = normalise(text).split("\n")
     owner = piece_of_line(cut)
-    first = {s.first_line: s for s in cut.statements}
+    starts = statements_by_line(cut)
+    labels = {row: ",".join(str(s.number) for s in found) for row, found in starts.items()}
+    column = max((len(label) for label in labels.values()), default=3)
+    column = max(column, 3)
     width = max((len(line) for line in lines), default=0)
     out = []
     for number, line in enumerate(lines, start=1):
-        statement = first.get(number)
-        label = f"{statement.number:>3} " if statement else "    "
-        gutter = f"  P{owner[statement.number]}" if statement else ""
-        out.append(f"{label}{line.ljust(width) if statement else line}{gutter}".rstrip())
+        found = starts.get(number)
+        if not found:
+            out.append(f"{' ' * (column + 1)}{line}".rstrip())
+            continue
+        pieces = ",".join(f"P{i}" for i in sorted({owner[s.number] for s in found}))
+        out.append(f"{labels[number]:>{column}} {line.ljust(width)}  {pieces}".rstrip())
     return "\n".join(out) + "\n"

@@ -199,7 +199,14 @@ def test_a_study_with_the_same_cut_keeps_the_pairs_and_a_new_cut_needs_carry(set
     renamed = FakeGhidra()
     renamed.text = renamed.text.replace("DAT_00501234 + 1", "DAT_00501234 + 2")
     orig_study.study(setup.unit, ADDRESS, renamed, rules=rules(), commit=COMMIT, who=WHO, clock=setup.clock)
-    assert setup.run().status == "stamped"  # same cut: the old pairs still fit the new study
+    bound = setup.run()  # same cut, other text: the file is still bound to the old study
+    assert bound.status == "refused" and "decompile_sha256" in bound.problems[0] and "--carry" in bound.problems[0]
+    brought = setup.run(carry=True)  # nothing is dropped: every pair still fits
+    assert brought.status == "stamped" and brought.dropped == []
+    assert (
+        orig_pairs.load(setup.path).header.decompile_sha256
+        == orig_study.load_study(setup.unit, ADDRESS).decompile_sha256
+    )
     reshaped = FakeGhidra()
     reshaped.hash = "22" * 32
     reshaped.text = reshaped.text.replace("return 1;", "Widget_Log(); return 1;")
@@ -228,3 +235,65 @@ def test_two_functions_with_one_tag_need_a_key(setup: Setup) -> None:
     with pytest.raises(CompareError, match="--coney-function"):
         setup.run()
     assert orig_compare.find_unit(setup.root, ADDRESS, "Gadget::update(int)").coney == "Gadget::update"
+
+
+def respell(setup: Setup, location: str) -> None:
+    """Complete the pairs file, then point the first pair at `location` (the same file written another way)."""
+    setup.run()
+    setup.fill()
+    file = orig_pairs.load(setup.path)
+    first = file.pairs[0]
+    file.pairs[0] = orig_pairs.Pair(first.lines, first.kind, location, "same")
+    orig_pairs.write(setup.path, file)
+
+
+@pytest.mark.parametrize(
+    "spelling", ["src/./widget.cpp:5", "src//widget.cpp:5", "src/WIDGET.cpp:5", "src/x/../widget.cpp:5"]
+)
+def test_a_path_written_another_way_is_still_checked_for_changes_and_flags(setup: Setup, spelling: str) -> None:
+    respell(setup, spelling)
+    other = setup.root / "src" / "other.cpp"
+    other.write_text("int other;\n", encoding="utf-8")
+    git(setup.root, "add", "-A")
+    git(setup.root, "commit", "-q", "-m", "other")
+    (setup.root / "src" / "widget.cpp").write_text(SOURCE + "// edited\n", encoding="utf-8")
+    result = setup.run()
+    assert result.status == "refused" and "uncommitted" in result.problems[0]
+    git(setup.root, "commit", "-q", "-am", "edit")
+    setup.findings = [orig_copy.Finding("src/widget.cpp", 5, "goto", "goto")]
+    flagged = setup.run()
+    assert flagged.status == "refused" and "goto" in flagged.problems[0]
+
+
+def test_a_file_git_does_not_track_is_not_a_coney_location(setup: Setup) -> None:
+    (setup.root / "src" / "new.cpp").write_text("int new_one;\n", encoding="utf-8")
+    respell(setup, "src/new.cpp:1")
+    result = setup.run()
+    assert result.status == "refused" and "not a file tracked by git" in result.problems[0]
+
+
+def test_the_header_binds_the_file_to_the_study_it_was_made_from(setup: Setup) -> None:
+    setup.run()
+    setup.fill()
+    file = orig_pairs.load(setup.path)
+    header = orig_pairs.Header(**{**file.header.__dict__, "ghidra_function_hash": "cc" * 32})
+    orig_pairs.write(setup.path, orig_pairs.PairsFile(header, file.pairs))
+    result = setup.run()
+    assert result.status == "refused" and "ghidra_function_hash differs" in result.problems[0]
+
+
+def test_a_broken_log_stops_the_comparison(setup: Setup) -> None:
+    setup.run()
+    segment = setup.unit.stamps / "0001.jsonl"
+    segment.write_bytes(segment.read_bytes() + b"{")
+    with pytest.raises(CompareError, match="not intact"):
+        setup.run()
+
+
+def test_statements_on_one_line_show_all_their_numbers_in_the_view(setup: Setup) -> None:
+    study = orig_study.load_study(setup.unit, ADDRESS)
+    text = study.text.replace("  return 0;\n", "  Foo(); return 0;\n")
+    other = orig_study.Study(**{**study.__dict__, "text": text, "cut": orig_cut.cut_decompile(text)})
+    view = orig_compare.side_by_side(other, None, "src/widget.cpp", SOURCE.splitlines(), 4)
+    row = next(line for line in view.splitlines() if "Foo(); return 0;" in line)
+    assert "3,4" in row.split("|")[0]

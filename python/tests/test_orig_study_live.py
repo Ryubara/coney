@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""An optional test against a running ghidra-mcp: skipped when none answers or the function is absent. It asserts
-counts and hashes only, never any text of the game."""
+"""An optional test against a running ghidra-mcp (`pytest -m ghidra`): skipped when none answers or the function is
+absent. It asserts counts and hashes only, never any text of the game."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,6 +12,8 @@ from coney_tools import orig_study
 from coney_tools.orig_ghidra import server_answers
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
 from coney_tools.unit import Unit
+
+pytestmark = pytest.mark.ghidra
 
 #: A small function every project built from the disc has (docs/research/combat.md#code-index).
 ADDRESS = "0x00230d00"

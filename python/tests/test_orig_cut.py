@@ -275,3 +275,81 @@ def test_numbered_listing_marks_statements_and_pieces() -> None:
     )
     assert any("return 2;" in line and line.rstrip().endswith("P7") for line in lines)
     assert any(line.startswith("    ") and line.strip() == "}" for line in lines)
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "x++;",
+        "goto LAB_00100010;",
+        "LAB_00100010:",
+        "iVar1 = iVar1 * 2;",
+        "x = 0;",
+        "return;",
+        "Foo();",
+        "break;",
+        "case 3:",
+    ],
+)
+def test_a_body_of_one_statement_cuts_into_one_piece(statement: str) -> None:
+    text = body(statement, decls="  int iVar1;\n  int x;\n")
+    cut = cut_decompile(text)
+    assert [format_lines(p.lines) for p in cut.pieces] == ["1"]
+    assert cut.pieces[0].kind in orig_cut.ANCHORS
+
+
+def test_two_statements_of_the_kinds_that_attach_cut_without_a_crash() -> None:
+    for first in ("x++;", "goto LAB_1;", "LAB_1:", "break;", "case 3:", "iVar1 = iVar1 * 2;"):
+        for second in ("x++;", "goto LAB_2;", "LAB_2:", "break;", "default:", "iVar1 = iVar1 + 1;"):
+            cut = cut_decompile(body(first, second, decls="  int iVar1;\n  int x;\n"))
+            assert sorted(n for p in cut.pieces for n in p.lines) == [1, 2]
+
+
+def test_random_bodies_never_crash_the_cutter() -> None:
+    import random
+
+    templates = [
+        "iVar1 = *(int *)(param_1 + 0x1c);", "x = 0;", "lVar2 = Foo(param_1);", "Bar(param_1,2);",
+        "*(int *)(param_1+4) = iVar1;", "DAT_00501234 = DAT_00501234 + 1;", "iVar1 = iVar1 * 2;", "return iVar1;",
+        "return 0;", "goto LAB_001;", "LAB_001:", "break;", "case 3:", "default:", "if (iVar1 < 3) {",
+        "if (lVar2 == 0) {", "} else {", "}", "while (x < 3) {", "switch(iVar1) {", "do {", "} while (x < 3);",
+        "(*(code *)p)(param_1);", "iVar1 = (*(code *)p)(2);", "if (a &&\n   b) goto LAB_002;", "x = a ? b : c;",
+        "x += 1;", "x++;",
+    ]  # fmt: skip
+    for seed in range(400):
+        rnd = random.Random(seed)
+        text = body(
+            *(rnd.choice(templates) for _ in range(rnd.randint(1, 25))), decls="  int iVar1;\n  long lVar2;\n  int x;\n"
+        )
+        try:
+            cut = cut_decompile(text)
+        except CutError:
+            continue
+        assert sorted(n for p in cut.pieces for n in p.lines) == [s.number for s in cut.statements], seed
+        assert all(p.kind in orig_cut.ANCHORS for p in cut.pieces), seed
+        assert orig_cut.cut_sha256(cut_decompile(text.replace("\n", "\r\n"))) == orig_cut.cut_sha256(cut), seed
+
+
+def test_the_anchor_kinds_are_the_pair_kinds_of_the_conventions() -> None:
+    from stamp_support import rules
+
+    assert set(orig_cut.ANCHORS) == set(rules().pairs.kinds)
+
+
+def test_statements_on_one_line_keep_every_number_in_the_reading_copy() -> None:
+    text = body("Foo(param_1); return 2;", "Bar(param_2);")
+    cut = cut_decompile(text)
+    assert [s.first_line for s in cut.statements][:2] == [cut.statements[0].first_line] * 2
+    listing = orig_cut.render_numbered(text, cut)
+    row = next(line for line in listing.splitlines() if "Foo(param_1);" in line)
+    assert row.lstrip().startswith("1,2") and "P1" in row and "P2" in row
+    other = next(line for line in listing.splitlines() if "Bar(param_2);" in line)
+    assert other.lstrip().startswith("3 ")
+
+
+def test_the_skeleton_ignores_names_and_comments_but_not_operators() -> None:
+    base = orig_cut.skeleton_sha256(WIDGET)
+    assert orig_cut.skeleton_sha256(WIDGET.replace("Widget_GetOwner", "Owner_Of").replace("iVar1", "uVar9")) == base
+    assert orig_cut.skeleton_sha256(WIDGET.replace("Widget_Update:", "Widget_Update: changed")) == base
+    assert orig_cut.skeleton_sha256(WIDGET.replace("param_2 < iVar1", "param_2 <= iVar1")) != base
+    assert orig_cut.skeleton_sha256(WIDGET.replace("0x2a", "0x2b")) != base

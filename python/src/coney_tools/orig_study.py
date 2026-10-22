@@ -31,7 +31,7 @@ from coney_tools.unit import Unit
 
 #: The program whose addresses the research cites (docs/guides/ghidra.md).
 PROGRAM = "SLUS_212.15"
-#: The endpoints read (all reading ones; the orig-reviewer agent is allowed the same).
+#: The most callers or callees asked of Ghidra for one function.
 LIMIT = 1000
 
 
@@ -135,7 +135,10 @@ def _fetch_all(fetch: Fetch, address: str) -> dict[str, Any]:
         raise GhidraDown(str(error)) from error
     if not isinstance(info, dict) or "error" in info or "entry_point" not in info:
         raise StudyError(f"Ghidra has no function at {address}")
-    start = f"0x{int(str(info['entry_point']), 16):08x}"
+    try:
+        start = f"0x{int(str(info['entry_point']), 16):08x}"
+    except ValueError:
+        raise StudyError(f"Ghidra gave an unusable entry point for {address}: {info['entry_point']!r}") from None
     if start != address:
         raise StudyError(f"{address} is inside {info.get('name', 'a function')}, which starts at {start}; study that")
     decompiled = _ask(fetch, f"/decompile_function{query}")
@@ -277,6 +280,7 @@ def _classify_change(before: Study | None, after: Study) -> str:
         before.ghidra_function_hash != after.ghidra_function_hash
         or before.shape_sha256 != after.shape_sha256
         or before.cut_sha256 != after.cut_sha256
+        or orig_cut.skeleton_sha256(before.text) != orig_cut.skeleton_sha256(after.text)
     ):
         return "changed"
     return "unchanged" if before.covers == after.covers else "renamed"
@@ -297,8 +301,13 @@ def study(
     the saved text; save the files under the unit; append a `studied` stamp unless the log already holds one that
     covers the same hashes.
 
-    Raises GhidraDown (nothing written) when no server answers, StudyError for a function that cannot be studied.
+    Raises GhidraDown (nothing written) when no server answers, StudyError for a function that cannot be studied, when
+    the log is not intact, or (with `fetch=None`) when the saved decompile is not the one that was studied: a saved
+    text cannot be edited and re-cut into a stamp, only fetched again from Ghidra.
     """
+    report = stamps.verify(unit.stamps, rules)
+    if not report.ok:
+        raise StudyError(f"{unit.stamps}: the stamp log is not intact, so nothing is studied: {report.problems[0]}")
     try:
         before: Study | None = load_study(unit, address)
     except StudyError:
@@ -309,9 +318,15 @@ def study(
             raise StudyError(f"{address}: nothing saved to re-cut; run `original study {address}` with Ghidra up")
         meta = _read_json(folder / "study.json")
         try:
-            raw = (folder / "decompile.c").read_bytes().decode("utf-8")
+            saved = (folder / "decompile.c").read_bytes()
         except OSError as error:
             raise StudyError(f"{address}: nothing saved to re-cut ({error})") from error
+        if stamps.sha256_hex(saved) != meta["decompile_sha256"]:
+            raise StudyError(
+                f"{folder / 'decompile.c'} is not the text that was studied (its hash differs); "
+                f"fetch it from Ghidra again with `original study {address}`"
+            )
+        raw = saved.decode("utf-8")
         fetched: Mapping[str, Any] = {
             **meta,
             "text": raw,
@@ -325,7 +340,6 @@ def study(
     after = _build(address, fetched)
     change = _classify_change(before, after)
     _save(unit.study(address), after)
-    report = stamps.verify(unit.stamps, rules)
     stamped = False
     if report.current("studied", address, after.covers) is None:
         stamps.append(
@@ -355,8 +369,13 @@ def study(
 
 def freshness(saved: Study, fetch: Fetch) -> str:
     """Whether a saved study still describes Ghidra's function: "fresh", "renamed" (the text differs only by names) or
-    "stale" (the function's bytes or the cut's shape changed). Reads Ghidra; raises GhidraDown when it is down."""
+    "stale" (the function's bytes, the cut's shape or anything in the text but names changed). Reads Ghidra; raises
+    GhidraDown when it is down."""
     live = _build(saved.address, _fetch_all(fetch, saved.address))
-    if live.ghidra_function_hash != saved.ghidra_function_hash or live.shape_sha256 != saved.shape_sha256:
+    if (
+        live.ghidra_function_hash != saved.ghidra_function_hash
+        or live.shape_sha256 != saved.shape_sha256
+        or orig_cut.skeleton_sha256(live.text) != orig_cut.skeleton_sha256(saved.text)
+    ):
         return "stale"
     return "fresh" if live.decompile_sha256 == saved.decompile_sha256 else "renamed"

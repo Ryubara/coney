@@ -16,6 +16,7 @@ byte-identical in both commits: a test that had to change to pass is a question 
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -31,6 +32,8 @@ from coney_tools.unit import Unit
 
 #: `build` exits with this when it gave up waiting for a slot (build_run.EXIT_QUEUED).
 EXIT_QUEUED = 75
+#: The longest reason `--none` takes (it goes in a stamp).
+MAX_REASON = 200
 #: Where a test file lives.
 TEST_DIR = "tests/"
 
@@ -46,6 +49,7 @@ class BuildOutcome:
     built: bool  # configure and build succeeded
     ok: bool  # the whole run succeeded: every selected test passed
     failed: tuple[str, ...]  # names of the failed tests
+    failed_truncated: bool  # the list ended in `... and N more`: a name missing from it is not known to pass
     no_tests: bool  # the filter matched no test
     queued: bool  # the build gave up waiting for a slot
     output: str  # the summary the build printed
@@ -64,13 +68,17 @@ def parse_build_output(text: str, exit_code: int) -> BuildOutcome:
     """Read the summary lines `coney-tools build` prints (`result: ok`, `result: FAILED at test: a, b`, ...)."""
     failed_at = re.search(r"^result: FAILED at (\w+)", text, re.MULTILINE)
     names: list[str] = []
+    truncated = False
     for line in text.splitlines():
         if line.startswith("  failed: "):
-            names = [n.strip() for n in line[len("  failed: ") :].split(", ") if n.strip() and not n.startswith("...")]
+            parts = [n.strip() for n in line[len("  failed: ") :].split(", ") if n.strip()]
+            truncated = any(part.startswith("...") for part in parts)
+            names = [part for part in parts if not part.startswith("...")]
     return BuildOutcome(
         built=exit_code != EXIT_QUEUED and (failed_at is None or failed_at.group(1) == "test"),
         ok=exit_code == 0 and bool(re.search(r"^result: ok", text, re.MULTILINE)),
         failed=tuple(names),
+        failed_truncated=truncated,
         no_tests="no tests match" in text,
         queued=exit_code == EXIT_QUEUED or "result: QUEUED" in text,
         output=text,
@@ -183,6 +191,43 @@ def _original_ref(root: Path) -> tuple[str, bool]:
 # --- the run -----------------------------------------------------------------------------------------------------
 
 
+def _states(
+    root: Path, preset: str, runner: Runner, names: tuple[str, ...], outcome: BuildOutcome, commit: str, logs: list[str]
+) -> dict[str, str]:
+    """Each name's state at the checked-out commit, "failed" or "passed". A name the run's own words settle is settled;
+    one that a cut-off failed list leaves unknown (or a run that failed without saying which) is run alone."""
+    states: dict[str, str] = {}
+    for name in names:
+        if name in outcome.failed:
+            states[name] = "failed"
+        elif outcome.ok:
+            states[name] = "passed"
+        elif outcome.failed and not outcome.failed_truncated:
+            states[name] = "passed"  # a whole list of failures, and not this name among them
+        elif len(names) == 1:
+            states[name] = "failed"  # alone already, and it did not pass
+        else:
+            alone = runner(root, preset, (name,))
+            logs.append(alone.output)
+            _need_a_run("rerun", commit, alone)
+            states[name] = "passed" if alone.ok else "failed"
+    return states
+
+
+def _marker(unit: Unit) -> Path:
+    """The file that remembers which branch to come back to while the worktree is detached."""
+    return unit.dir / "fails-first" / "restore.json"
+
+
+def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
+    """Every name must appear in a test file the test commit adds or changes (a typo would run nothing)."""
+    text = "".join(_git(root, "show", f"{commit}:{path}") for path in test_files)
+    missing = [name for name in names if name not in text]
+    if missing:
+        where = ", ".join(test_files)
+        raise FailsFirstError(f"{', '.join(missing)}: not found in the test files of {commit[:12]} ({where})")
+
+
 def run(
     unit: Unit,
     root: Path,
@@ -199,8 +244,10 @@ def run(
 ) -> list[stamps.Stamp]:
     """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
 
-    Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, commits out of order, a test file
-    that changed between the commits, or a run that could not build or find the tests.
+    Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, a worktree an earlier run left
+    detached, commits out of order, a test file that changed between the commits, names the test commit's files do not
+    hold, or a run that could not build or find the tests. The branch to come back to is written to scratch before the
+    first checkout; if putting it back fails, the error says so and how to do it by hand.
     """
     names = tuple(tests)
     if not names:
@@ -208,60 +255,70 @@ def run(
     dirty = _git(root, "status", "--porcelain", "--untracked-files=no").strip()
     if dirty:
         raise FailsFirstError("the worktree has uncommitted changes; commit or stash them first")
-    test, fix, test_files, stubs = _plan(root, test_commit, fix_commit)
     original = _original_ref(root)
-    outcomes: dict[str, BuildOutcome] = {}
+    marker = _marker(unit)
+    if marker.is_file():
+        if not original[1]:
+            try:
+                left = json.loads(marker.read_text(encoding="utf-8")).get("ref", "the branch")
+            except (OSError, json.JSONDecodeError):
+                left = "the branch"
+            raise FailsFirstError(
+                f"an earlier fails-first run left this worktree detached; put it back with `git checkout {left}` "
+                f"(and delete {marker}), then run again"
+            )
+        marker.unlink()
+    test, fix, test_files, stubs = _plan(root, test_commit, fix_commit)
+    _check_names(root, test, test_files, names)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    note = {"ref": original[0], "branch": original[1], "head": _commit(root, "HEAD")}
+    marker.write_text(json.dumps(note), encoding="utf-8")
+    runs: dict[str, tuple[BuildOutcome, dict[str, str], list[str]]] = {}
     try:
         for label, commit in (("red", test), ("green", fix)):
             _checkout(root, commit)
-            outcomes[label] = runner(root, preset, names)
-            _need_a_run(label, commit, outcomes[label])
+            first = runner(root, preset, names)
+            _need_a_run(label, commit, first)
+            logs = [first.output]
+            runs[label] = (first, _states(root, preset, runner, names, first, commit, logs), logs)
     finally:
-        _checkout(root, original[0], detach=not original[1])
-    red, green = outcomes["red"], outcomes["green"]
+        try:
+            _checkout(root, original[0], detach=not original[1])
+        except FailsFirstError as error:
+            raise FailsFirstError(
+                f"COULD NOT RESTORE the worktree: run `git checkout {original[0]}` in {root} yourself ({error})"
+            ) from error
+        marker.unlink(missing_ok=True)
     folder = unit.dir / "fails-first"
-    folder.mkdir(parents=True, exist_ok=True)
     digests = {}
-    for label, outcome in outcomes.items():
-        data = outcome.output.encode("utf-8")
-        (folder / f"{label}-{fix[:12]}.log").write_bytes(data)
+    for label, (_, _, logs) in runs.items():
+        data = "".join(logs).encode("utf-8")
+        (folder / f"{label}-{test[:12]}-{fix[:12]}.log").write_bytes(data)
         digests[label] = stamps.sha256_hex(data)
     tests_hash = stamps.sha256_hex(
-        "".join(f"{path}\n{_blob(root, fix, path)}\n" for path in test_files).encode("utf-8")
+        "".join(f"{path}" + chr(10) + _blob(root, fix, path) + chr(10) for path in test_files).encode("utf-8")
     )
-    written = []
+    entries = []
     for name in names:
-        failed_red = name in red.failed
-        passed_green = green.ok or (bool(green.failed) and name not in green.failed)
-        result = "pass" if failed_red and passed_green else "fail"
-        written.append(
-            stamps.append(
-                unit.stamps,
-                rules=rules,
-                task=unit.task,
-                step="fails-first",
-                subject=name,
-                result=result,
-                commit=fix,
-                covers={
+        red, green = runs["red"][1][name], runs["green"][1][name]
+        entries.append(
+            {
+                "step": "fails-first",
+                "subject": name,
+                "result": "pass" if red == "failed" and green == "passed" else "fail",
+                "commit": fix,
+                "covers": {
                     "test_commit": test,
                     "fix_commit": fix,
                     "tests_sha256": tests_hash,
                     "red_log_sha256": digests["red"],
                     "green_log_sha256": digests["green"],
                 },
-                detail={
-                    "red": "failed" if failed_red else "passed",
-                    "green": "passed" if passed_green else "failed",
-                    "test_files": test_files,
-                    "stubs": stubs,
-                },
-                who=dict(who),
-                sign=sign,
-                clock=clock,
-            )
+                "detail": {"red": red, "green": green, "test_files": test_files, "stubs": stubs},
+                "who": dict(who),
+            }
         )
-    return written
+    return stamps.append_many(unit.stamps, rules=rules, task=unit.task, entries=entries, sign=sign, clock=clock)
 
 
 def _need_a_run(label: str, commit: str, outcome: BuildOutcome) -> None:
@@ -285,8 +342,8 @@ def record_none(
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> stamps.Stamp:
     """Stamp that a task has no fails-first test (docs, tooling), with the reason; nothing is run."""
-    if not reason.strip():
-        raise FailsFirstError("--none needs a reason")
+    if not reason.strip() or len(reason.strip()) > MAX_REASON or len(reason.strip().splitlines()) > 1:
+        raise FailsFirstError(f"--none needs a reason of one line and at most {MAX_REASON} characters")
     return stamps.append(
         unit.stamps,
         rules=rules,

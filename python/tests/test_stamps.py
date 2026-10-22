@@ -348,3 +348,72 @@ def test_who_is_hook_sourced_only_when_the_marker_is_set() -> None:
     }
     assert stamps.who_from_env("t", {"CONEY_AGENT_INJECTED": "yes"})["source"] == "unverified"
     assert empty["kind"] == "tool" and empty["tool"] == "t"
+
+
+def test_a_release_check_refuses_a_missing_or_empty_log(tmp_path: Path) -> None:
+    for folder in (tmp_path / "none", tmp_path):
+        report = stamps.verify(folder, rules(), require_signatures=True)
+        assert not report.ok and "no stamps" in report.problems[0].text
+        assert stamps.verify(folder, rules()).ok  # outside a release an empty log is just a start
+
+
+def test_the_log_must_belong_to_the_expected_task(tmp_path: Path) -> None:
+    seed(tmp_path, 2)
+    assert stamps.verify(tmp_path, rules(), task="t").ok
+    report = stamps.verify(tmp_path, rules(), task="another")
+    assert not report.ok and "task" in report.problems[0].text
+
+
+def test_a_hash_with_a_trailing_newline_or_a_boolean_version_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(StampError, match="covers"):
+        add(tmp_path, covers={"x": SHA + "\n"})
+    seed(tmp_path, 2)
+    edit_line(tmp_path, 0, lambda o: o.update(v=True))
+    assert any("version" in text for text in problems(tmp_path))
+    other = tmp_path / "seq"
+    seed(other, 1)
+    edit_line(other, 0, lambda o: o.update(seq=True))
+    assert problems(other)
+
+
+def test_a_pass_that_a_later_fail_replaced_is_not_current(tmp_path: Path) -> None:
+    clock = Clock()
+    covers = {"decompile_sha256": SHA}
+    add(tmp_path, step="compared", subject="0x1", covers=covers, clock=clock)
+    assert stamps.verify(tmp_path, rules()).current("compared", "0x1", covers) is not None
+    add(tmp_path, step="compared", subject="0x1", result="fail", covers=covers, clock=clock)
+    assert stamps.verify(tmp_path, rules()).current("compared", "0x1", covers) is None
+    add(tmp_path, step="compared", subject="0x1", covers=covers, clock=clock)
+    assert stamps.verify(tmp_path, rules()).current("compared", "0x1", covers) is not None
+
+
+def entry(subject: str, **more: Any) -> dict[str, Any]:
+    """The arguments of one stamp for append_many."""
+    base: dict[str, Any] = {
+        "step": "fails-first",
+        "subject": subject,
+        "result": "pass",
+        "commit": COMMIT,
+        "covers": {"x": SHA},
+        "detail": {},
+        "who": {"kind": "tool", "tool": "test"},
+    }
+    return {**base, **more}
+
+
+def test_append_many_writes_all_or_none(tmp_path: Path) -> None:
+    written = stamps.append_many(tmp_path, rules=rules(), task="t", entries=[entry("a"), entry("b")], clock=Clock())
+    assert [s.subject for s in written] == ["a", "b"] and [s.seq for s in written] == [1, 2]
+    assert written[1].prev == written[0].hash and stamps.verify(tmp_path, rules()).ok
+    with pytest.raises(StampError, match="result"):
+        stamps.append_many(tmp_path, rules=rules(), task="t", entries=[entry("c"), entry("d", result="maybe")])
+    assert [s.subject for s in stamps.verify(tmp_path, rules()).stamps] == ["a", "b"]
+
+    def broken(body: bytes) -> dict[str, Any]:
+        raise stamp_sign.SignError("no key")
+
+    with pytest.raises(StampError, match="no key"):
+        stamps.append_many(
+            tmp_path, rules=rules(), task="t", entries=[entry("e"), entry("f", step="checked")], sign=broken
+        )
+    assert len(stamps.verify(tmp_path, rules()).stamps) == 2

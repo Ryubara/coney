@@ -216,6 +216,9 @@ def _fails_first(
     """`original fails-first`."""
     rules = conventions.stamps
     sign = signer_for(root, conventions, "fails-first")
+    if args.none is not None and (args.test or args.test_commit or args.fix_commit):
+        print("original fails-first: --none runs nothing; give it alone, without --test or --test-commit")
+        return 2
     if args.none is not None:
         stamp = fails_first.record_none(folder, root, args.none, rules=rules, who=who, sign=sign)
         print(f"original fails-first: none ({stamp.detail['reason']}); stamp #{stamp.seq}")

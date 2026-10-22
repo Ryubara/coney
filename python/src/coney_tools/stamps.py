@@ -25,7 +25,7 @@ import os
 import re
 import sys
 import time
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -44,7 +44,7 @@ FIELDS = ("v", "seq", "task", "step", "subject", "result", "commit", "covers", "
 #: The biggest `detail`, canonical bytes (a stamp stays under about a kilobyte).
 MAX_DETAIL = 2048
 _SEGMENT = re.compile(r"^(\d{4})\.jsonl$")
-HEX = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$")
+HEX = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 _TIME = "%Y-%m-%dT%H:%M:%SZ"
 #: The environment a hook fills in on every `coney-tools` command (docs/guides/stamps.md#who).
 AGENT_VARIABLES = (("id", "CONEY_AGENT_ID"), ("type", "CONEY_AGENT_TYPE"), ("model", "CONEY_AGENT_MODEL"))
@@ -147,7 +147,7 @@ def _check_fields(
     if commit and not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise StampError("commit must be a full 40-digit hash (or empty)")
     if not isinstance(covers, dict) or not all(
-        isinstance(k, str) and isinstance(v, str) and HEX.match(v) for k, v in covers.items()
+        isinstance(k, str) and isinstance(v, str) and HEX.fullmatch(v) for k, v in covers.items()
     ):
         raise StampError("covers must map names to hex hashes (SHA-256, or a commit)")
     if not isinstance(who, dict) or not who.get("kind"):
@@ -221,8 +221,10 @@ class Report:
     def current(self, step: str, subject: str, covers: Mapping[str, str]) -> Stamp | None:
         """The newest passing stamp of `step` and `subject` when it covers exactly these hashes (the ones the caller
         recomputed for the key names given), else None."""
-        stamp = self.latest(step, subject, "pass")
-        if stamp is None or any(stamp.covers.get(name) != value for name, value in covers.items()):
+        stamp = self.latest(step, subject)  # the newest of any result: a later fail replaces an earlier pass
+        if stamp is None or stamp.result != "pass":
+            return None
+        if any(stamp.covers.get(name) != value for name, value in covers.items()):
             return None
         return stamp
 
@@ -278,7 +280,7 @@ def _parse(row: bytes, where: str, rules: Stamps, report: Report) -> Stamp | Non
     except StampError as error:
         report.problems.append(Problem("error", where, str(error)))
         return None
-    if data["v"] != VERSION:
+    if isinstance(data["v"], bool) or data["v"] != VERSION:
         report.problems.append(Problem("error", where, f"unknown version {data['v']!r} (this tool reads {VERSION})"))
         return None
     try:
@@ -295,7 +297,11 @@ def _parse(row: bytes, where: str, rules: Stamps, report: Report) -> Stamp | Non
         )
         stamp = Stamp(data)
         _ = stamp.moment
-        if not isinstance(data["seq"], int) or not re.fullmatch(r"[0-9a-f]{64}", str(data["prev"])):
+        if (
+            not isinstance(data["seq"], int)
+            or isinstance(data["seq"], bool)
+            or not re.fullmatch(r"[0-9a-f]{64}", str(data["prev"]))
+        ):
             raise StampError("seq or prev is malformed")
     except (StampError, ValueError) as error:
         report.problems.append(Problem("error", where, str(error)))
@@ -328,14 +334,22 @@ def verify(
     signers: Path | None = None,
     require_signatures: bool = False,
     verifier: Verifier | None = None,
+    task: str | None = None,
 ) -> Report:
     """Read the log in `folder` and report every problem: the chain, each field, and the signatures.
 
     A signature that is present is always checked (with `verifier`, else ssh-keygen against `signers`). A stamp of a
     signed step (`rules.signed`) without one is a warning, or an error with `require_signatures` (what `pr open` and
-    CI use). A `pr-opened` stamp must name the stamp before it as `chain_head`.
+    CI use), which also refuses a missing or empty log. With `task`, a log of another task is an error. A `pr-opened`
+    stamp must name the stamp before it as `chain_head`.
     """
     report = _read(folder, rules)
+    if require_signatures and not report.stamps:
+        report.problems.append(Problem("error", str(folder), "no stamps: a release needs the unit's log"))
+    if task is not None and report.stamps and report.stamps[0].task != task:
+        report.problems.append(
+            Problem("error", str(folder), f"the log is task {report.stamps[0].task!r}'s, not {task!r}'s")
+        )
     check = verifier or _ssh_verifier(signers, rules.namespace)
     for index, stamp in enumerate(report.stamps):
         where = f"{folder.name}: seq {stamp.seq}"
@@ -424,13 +438,48 @@ def append(
     sign: Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> Stamp:
-    """Add one stamp to the log in `folder` and return it.
+    """Add one stamp to the log in `folder` and return it (see `append_many`)."""
+    entry = {
+        "step": step,
+        "subject": subject,
+        "result": result,
+        "commit": commit,
+        "covers": covers,
+        "detail": detail,
+        "who": who,
+    }
+    return append_many(folder, rules=rules, task=task, entries=[entry], sign=sign, clock=clock)[0]
 
-    Refuses (StampError, nothing written) when the fields are not allowed, when the log is not intact, or when `sign`
-    fails. Under the lock it assigns `seq` and `prev`, never lets `time` go backwards, and for `pr-opened` fills
-    `chain_head`. `sign` is given for the signed steps when a key is configured; without it the stamp is unsigned.
+
+def append_many(
+    folder: Path,
+    *,
+    rules: Stamps,
+    task: str,
+    entries: Sequence[Mapping[str, Any]],
+    sign: Sign | None = None,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+) -> list[Stamp]:
+    """Add the stamps `entries` describe (each a mapping of step, subject, result, commit, covers, detail, who) to the
+    log in `folder` as one write: all of them or none.
+
+    Refuses (StampError, nothing written) when a field is not allowed, when the log is not intact, or when `sign` fails
+    for any of them. Under the lock it assigns `seq` and `prev`, never lets `time` go backwards, and for `pr-opened`
+    fills `chain_head`. `sign` is given for the signed steps when a key is configured; without it the stamps are
+    unsigned.
     """
-    _check_fields(rules, task, step, subject, result, commit, dict(covers), dict(detail), dict(who))
+    for entry in entries:
+        _check_fields(
+            rules,
+            task,
+            entry["step"],
+            entry["subject"],
+            entry["result"],
+            entry["commit"],
+            dict(entry["covers"]),
+            dict(entry["detail"]),
+            dict(entry["who"]),
+        )
     with _locked(folder):
         report = _read(folder, rules)
         if not report.ok:
@@ -438,40 +487,44 @@ def append(
         previous = report.stamps[-1] if report.stamps else None
         if previous is not None and previous.task != task:
             raise StampError(f"{folder}: the log is task {previous.task!r}'s, not {task!r}'s")
-        moment = clock().astimezone(UTC)
-        if previous is not None:
-            moment = max(moment, previous.moment)
-        covered = dict(covers)
-        if step == "pr-opened":
-            covered["chain_head"] = report.head
-        data: dict[str, Any] = {
-            "v": VERSION,
-            "seq": (previous.seq + 1) if previous else 1,
-            "task": task,
-            "step": step,
-            "subject": subject,
-            "result": result,
-            "commit": commit,
-            "covers": covered,
-            "detail": dict(detail),
-            "who": dict(who),
-            "time": moment.strftime(_TIME),
-            "prev": report.head,
-            "sig": None,
-        }
-        stamp = Stamp(data)
-        if sign is not None:
-            try:
-                data["sig"] = sign(stamp.body)
-            except stamp_sign.SignError as error:
-                raise StampError(f"the {step} stamp could not be signed: {error}") from error
+        written: list[Stamp] = []
+        for entry in entries:
+            moment = clock().astimezone(UTC)
+            if previous is not None:
+                moment = max(moment, previous.moment)
+            covered = dict(entry["covers"])
+            if entry["step"] == "pr-opened":
+                covered["chain_head"] = previous.hash if previous else ZERO
+            data: dict[str, Any] = {
+                "v": VERSION,
+                "seq": (previous.seq + 1) if previous else 1,
+                "task": task,
+                "step": entry["step"],
+                "subject": entry["subject"],
+                "result": entry["result"],
+                "commit": entry["commit"],
+                "covers": covered,
+                "detail": dict(entry["detail"]),
+                "who": dict(entry["who"]),
+                "time": moment.strftime(_TIME),
+                "prev": previous.hash if previous else ZERO,
+                "sig": None,
+            }
             stamp = Stamp(data)
-        _write_line(folder, stamp.line + "\n", rules.segment_bytes)
-    return stamp
+            if sign is not None:
+                try:
+                    data["sig"] = sign(stamp.body)
+                except stamp_sign.SignError as error:
+                    raise StampError(f"the {entry['step']} stamp could not be signed: {error}") from error
+                stamp = Stamp(data)
+            written.append(stamp)
+            previous = stamp
+        _write_lines(folder, "".join(stamp.line + "\n" for stamp in written), rules.segment_bytes)
+    return written
 
 
-def _write_line(folder: Path, text: str, limit: int) -> None:
-    """Append `text` to the newest segment, or to a new one when it would pass `limit` bytes."""
+def _write_lines(folder: Path, text: str, limit: int) -> None:
+    """Append `text` (whole lines) to the newest segment, or to a new one when it would pass `limit` bytes."""
     segments = _segments(folder)
     path = segments[-1] if segments else folder / "0001.jsonl"
     data = text.encode("utf-8")

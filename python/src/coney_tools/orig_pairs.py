@@ -16,8 +16,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import posixpath
 import re
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
@@ -201,12 +203,35 @@ def load(path: Path) -> PairsFile:
 # --- checks ------------------------------------------------------------------------------------------------------
 
 
-def check_structure(file: PairsFile, cut: Cut, address: str, rules: PairRules) -> list[str]:
-    """Why the file does not cover the cut properly (empty: it does). Reads no file but the arguments."""
+#: The header fields that bind a pairs file to one study.
+BOUND_FIELDS = ("program", "decompile_sha256", "ghidra_function_hash", "shape_sha256", "cut_sha256")
+
+
+def studies_differ(header: Header, study: Header) -> str:
+    """The first field in which a pairs file's header is bound to another study than `study`, or ""."""
+    return next((name for name in BOUND_FIELDS if getattr(header, name) != getattr(study, name)), "")
+
+
+def check_structure(
+    file: PairsFile, cut: Cut, address: str, rules: PairRules, study: Header | None = None
+) -> list[str]:
+    """Why the file does not cover the cut properly (empty: it does). Reads no file but the arguments.
+
+    With `study` (the header made from the saved study) the file must also be bound to it: the same program and
+    the same decompile, function, shape and cut hashes.
+    """
     problems: list[str] = []
     header = file.header
     if header.address != address:
         problems.append(f"the file is for address {header.address}, not {address}")
+    if study is not None:
+        differs = studies_differ(header, study)
+        if differs:
+            problems.append(
+                f"the file is bound to another study ({differs} differs); bring its pairs forward with "
+                f"`original compare {address} --carry`"
+            )
+            return problems
     expected = tuple(orig_cut.format_lines(p.lines) for p in cut.pieces)
     if (
         header.cut_sha256 != orig_cut.cut_sha256(cut)
@@ -288,9 +313,28 @@ def _relation_problems(name: str, pair: Pair, rules: PairRules) -> list[str]:
     return problems
 
 
-def check_code(file: PairsFile, root: Path, rules: PairRules) -> list[str]:
-    """Why a pair's Coney location is not real (empty: all are): under `src/`, an existing line, and for a stand-in a
-    comment with one of the markers on that line or the three above it."""
+def normal_path(path: str, tracked: Mapping[str, str] | None = None) -> str:
+    """`path` as git stores it: forward slashes, `./` and `//` collapsed and, with `tracked` (lower-case name to stored
+    name, see unit.tracked_files), the stored case; "" when it names no tracked file."""
+    text = posixpath.normpath(path.strip().replace(chr(92), "/"))
+    if tracked is None:
+        return text
+    return tracked.get(text.casefold(), "")
+
+
+def pair_files(file: PairsFile, tracked: Mapping[str, str] | None = None) -> set[str]:
+    """The files the pairs' Coney locations name, normalised (a location that names no tracked file is left out)."""
+    found = set()
+    for pair in file.pairs:
+        match = LOCATION.match(pair.coney.strip())
+        if match and (path := normal_path(match["path"], tracked)):
+            found.add(path)
+    return found
+
+
+def check_code(file: PairsFile, root: Path, rules: PairRules, tracked: Mapping[str, str] | None = None) -> list[str]:
+    """Why a pair's Coney location is not real (empty: all are): a tracked file under `src/` (with `tracked`), an
+    existing line, and for a stand-in a comment with one of the markers on that line or the three above it."""
     problems = []
     for index, pair in enumerate(file.pairs, start=1):
         if not pair.coney.strip():
@@ -300,9 +344,13 @@ def check_code(file: PairsFile, root: Path, rules: PairRules) -> list[str]:
         if match is None:
             problems.append(f"{name}: coney {pair.coney!r} is not path:line (or path:first-last)")
             continue
-        relative = PurePosixPath(match["path"])
+        stored = normal_path(match["path"], tracked)
+        relative = PurePosixPath(stored or posixpath.normpath(match["path"].strip().replace(chr(92), "/")))
         if relative.is_absolute() or ".." in relative.parts or relative.parts[:1] != ("src",):
             problems.append(f"{name}: coney {pair.coney!r} must be a file under src/")
+            continue
+        if tracked is not None and not stored:
+            problems.append(f"{name}: coney {pair.coney!r}: {relative} is not a file tracked by git (commit it first)")
             continue
         path = root / relative
         text = path.read_text(encoding="utf-8", errors="replace").splitlines() if path.is_file() else None

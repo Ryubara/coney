@@ -466,13 +466,16 @@ uv run --project python coney-tools original fails-first --none REASON
 ## stamp {#stamp}
 
 ```sh
-uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE]
+uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE] [--signers-ref REF]
 uv run --project python coney-tools stamp show [--task T] [--dir LOG]
 ```
 
 `verify` checks a stamp log's chain, every field and every signature that is present, against
-[.github/stamp-signers](repo:.github/stamp-signers); `--release` also refuses a signed step without a signature, as
-`pr open` and CI do. `show` lists the stamps. Both only read: no command appends a stamp by hand, the stage commands are
+[.github/stamp-signers](repo:.github/stamp-signers) and fails when the log is another task's; `--release` also refuses a
+signed step without a signature and a missing or empty log, as `pr open` and CI do, and `--signers-ref REF` takes the
+signers file and the stamp rules from that commit instead of the working tree (CI passes the pull request's base:
+[the trust anchor](stamps.md#signing)). `show` lists the stamps, marks a signature it could not check, and exits 1 when
+the log has errors. Both only read: no command appends a stamp by hand, the stage commands are
 the only writers ([Stamps](stamps.md#log)).
 
 ## natives {#natives}

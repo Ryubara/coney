@@ -12,6 +12,7 @@ instead of leaving a rule silently off.
 from __future__ import annotations
 
 import re
+import subprocess
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -1581,6 +1582,24 @@ def parse_conventions(data: object) -> Conventions:
         workspace=_read_workspace(table["workspace"], "workspace"),
         stamps=_read_stamps(table["stamps"], "stamps"),
     )
+
+
+def load_conventions_at(root: Path, ref: str) -> Conventions:
+    """The conventions as the commit `ref` has them (`git show`), not as the working tree has them: what a check that
+    must not trust the change under review reads. ConventionsError when the ref or its file cannot be read."""
+    done = subprocess.run(
+        ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"],
+        capture_output=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if done.returncode != 0:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: cannot be read ({done.stderr.strip() or 'git failed'})")
+    try:
+        data = yaml.load(done.stdout, Loader=_Loader)
+    except yaml.YAMLError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
+    return parse_conventions(data)
 
 
 def load_conventions(root: Path) -> Conventions:
