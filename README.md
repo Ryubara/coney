@@ -151,6 +151,9 @@ is a MkDocs site built from `docs/`. To build or preview it locally, see
 
 ## Contributing
 
+> **Heads-up:** a new contributor workflow is being built and will be ready soon. Please hold off on starting new work
+> until it lands; the guides below are about to change.
+
 Contributions are welcome, from people and from AI agents, under the same rules. Read
 [CONTRIBUTING.md](CONTRIBUTING.md) before you start; its [first hour](CONTRIBUTING.md#your-first-hour) takes you from a
 clone to a pull request, and it covers commit format and pull requests.
