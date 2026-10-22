@@ -16,8 +16,8 @@ namespace coney::platform {
 void reportErrorsToConsole() {
 #ifdef _WIN32
     // The debug runtime's warnings, errors and assertions go to stderr instead of a dialog; the assertion then aborts
-    // (these calls compile to nothing in a release runtime, which has no such reports).
-    for (const int type : std::array<int, 3>{_CRT_WARN, _CRT_ERROR, _CRT_ASSERT}) {
+    // (these calls compile to nothing in a release runtime, which has no such reports, so there `type` goes unused).
+    for ([[maybe_unused]] const int type : std::array<int, 3>{_CRT_WARN, _CRT_ERROR, _CRT_ASSERT}) {
         _CrtSetReportMode(type, _CRTDBG_MODE_FILE);
         _CrtSetReportFile(type, _CRTDBG_FILE_STDERR);
     }
