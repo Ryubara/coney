@@ -38,6 +38,7 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/fidget_action.h"
+#include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/tactic_crowd.h"
@@ -137,7 +138,24 @@ struct Watched {
     const coney::ai::Action* lastTaunt = nullptr; // the taunt last counted, so that one is counted once
     int gloats = 0;                               // gloats over the downed player started (a taunt action, kind 3 or 4)
     const coney::ai::Action* lastGloat = nullptr; // the gloat last counted
+    int fightStarts = 0;                          // fight goals started (a new one on top, its update count afresh)
+    const coney::ai::Goal* lastFight = nullptr;   // the fight goal last seen on top
+    std::uint32_t lastFightUpdates = 0;           // its update count then
 };
+
+// Counts `watched`'s fight goal starts: a fight goal on top that is another than the last seen, or whose update count
+// went back (a new one where the last was freed). One a block covered is the same goal, its count running on.
+void countFightStart(Watched& watched) {
+    const auto* fight = dynamic_cast<const coney::ai::FightGoal*>(watched.brain->topGoal());
+    if (fight == nullptr) {
+        return;
+    }
+    if (fight != watched.lastFight || fight->updates() < watched.lastFightUpdates) {
+        ++watched.fightStarts;
+    }
+    watched.lastFight = fight;
+    watched.lastFightUpdates = fight->updates();
+}
 
 // Counts `watched`'s reposition taunt when one has just started at the front of its actions: the fight fidget that
 // says `cheer2` (the original's FidgetAction_Start says it, 0x002fa090).
@@ -339,6 +357,7 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
             }
             countTaunt(watched);
             countGloat(watched);
+            countFightStart(watched);
         }
     }
     // The rest of the recorded fight, for the taunts and the gloats alone.
@@ -347,6 +366,7 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
         for (Watched& watched : warriors) {
             countTaunt(watched);
             countGloat(watched);
+            countFightStart(watched);
         }
     }
     const int healthAfter = play()->player().human().fighter().health().value();
@@ -359,12 +379,13 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     for (const Watched& watched : warriors) {
         taunts += watched.taunts;
         gloats += watched.gloats;
-        std::printf(
-            "  level99 sparring Warrior (seed %u): %.2f m from the player when sent, %s at up to %.1f m/s, %s, "
-            "charge at %.2f m, run-in ended at %.2f m, nearest %.2f m, %d attacks, %d taunts, %d gloats, %zu goals\n",
-            seed, watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
-            watched.tackled ? "tackled" : "no tackle", watched.chargeAt, watched.engageEnd, watched.nearest,
-            watched.attacks, watched.taunts, watched.gloats, watched.brain->goalCount());
+        std::printf("  level99 sparring Warrior (seed %u): %.2f m from the player when sent, %s at up to %.1f m/s, %s, "
+                    "charge at %.2f m, run-in ended at %.2f m, nearest %.2f m, %d attacks, %d taunts, %d gloats, %d "
+                    "fight goals started, "
+                    "%zu goals\n",
+                    seed, watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
+                    watched.tackled ? "tackled" : "no tackle", watched.chargeAt, watched.engageEnd, watched.nearest,
+                    watched.attacks, watched.taunts, watched.gloats, watched.fightStarts, watched.brain->goalCount());
         engaged += watched.engaged ? 1 : 0;
         closed += watched.nearest < kCloseRange ? 1 : 0;
         attacked += watched.attacks > 0 ? 1 : 0;
