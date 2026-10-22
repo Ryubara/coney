@@ -6532,6 +6532,11 @@ subsystem = "Human"
 size = 696
 
 [[function]]
+address = 0x0025f028
+name = "Human_BuildAnimState"
+subsystem = "Human"
+
+[[function]]
 address = 0x0025f770
 name = "Human_BuildIdleTasks"
 subsystem = "Human"

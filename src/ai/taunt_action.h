@@ -23,8 +23,8 @@ inline constexpr int kAlwaysTauntRole = 13;
 /// The taunt's blend in, seconds.
 inline constexpr float kTauntFade = 0.05F;
 
-/// The anim of taunt kind `kind` (kTauntFirstAnim + kind).
-/// @orig 0x002fb0f0 TauntAction_Init (unknown)
+/// The anim of taunt kind `kind` (kTauntFirstAnim + kind), as the anim-state builder maps a taunt's kind.
+/// @orig 0x0025f028 Human_BuildAnimState (unknown)
 [[nodiscard]] constexpr int tauntAnim(int kind) { return kTauntFirstAnim + kind; }
 
 /// The taunt action (vtable `0x00542e60`).
@@ -38,13 +38,19 @@ class TauntAction final : public Action {
     /// (FidgetAction's test) unless his class's role is 13; else anim tauntAnim(kind), the gang's clip for it at a
     /// random variant (Gang::randomClip()) or the character's own. Then the line, and it waits for the clip for kinds
     /// 3-7 (the others are done on their next update). **Coney stand-ins**: the clip holds kScriptedClipHeld rather
-    /// than the taunt flags `0x100000` / `0x200000`; the line is said at one volume.
+    /// than the taunt flags `0x100000` / `0x200000`; it is a scripted clip, not the original's overlay, so the human's
+    /// move is stopped while it plays; the line is said at one volume.
     /// @orig 0x002fb128 TauntAction_Start (unknown)
     [[nodiscard]] ActionStatus start(Brain& brain) override;
-    /// Done at once without the wait, else once the clip holds none of its record flags.
+    /// Done at once without the wait, else once the clip holds none of its record flags; either way a normal end.
     /// @orig 0x002fb2f0 TauntAction_Update (unknown)
     [[nodiscard]] ActionStatus update(Brain& brain) override;
-    /// Stops the taunt (`Human_StopTaunt`: the idle again while its clip still plays) and accepts.
+    /// After a normal end (update() done; the original's mode 0) accepts and leaves the clip playing. Otherwise
+    /// stops the taunt (`Human_StopTaunt`: the idle again while its clip still plays) and refuses when the taunt waits
+    /// for its clip and the clip still holds its flags (`0x300000` in the original, kScriptedClipHeld's in Coney).
+    /// **Coney reading**: Coney has no abort mode, so a normal end is the action's own update() having ended it,
+    /// which is the only way Brain::finishAction() reaches it; the original's count at `0x005112ac` (read by nothing)
+    /// is not kept.
     /// @orig 0x002fb278 TauntAction_Abort (unknown)
     [[nodiscard]] bool abort(Brain& brain) override;
 
@@ -57,6 +63,7 @@ class TauntAction final : public Action {
     int m_line;                    // +0x18
     bool m_wait = true;            // +0x14
     std::uint32_t m_heldFlags = 0; // the record flags the clip holds; 0 when none plays
+    bool m_ended = false;          // update() ended it: a normal end
     int m_playing = -1;            // the anim it plays
 };
 

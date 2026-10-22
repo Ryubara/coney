@@ -48,18 +48,24 @@ ActionStatus TauntAction::start(Brain& brain) {
 }
 
 ActionStatus TauntAction::update(Brain& brain) {
-    if (!m_wait) {
-        return ActionStatus::Done;
+    if (m_wait && (brain.human().animator().flags() & m_heldFlags) != 0) {
+        return ActionStatus::Running;
     }
-    return (brain.human().animator().flags() & m_heldFlags) == 0 ? ActionStatus::Done : ActionStatus::Running;
+    m_ended = true;
+    return ActionStatus::Done;
 }
 
 bool TauntAction::abort(Brain& brain) {
+    // A normal end (the original's mode 0) accepts and leaves the clip to play out.
+    if (m_ended) {
+        return true;
+    }
+    // Else the taunt stops (the idle again while its clip still plays), and a taunt that waits for its clip refuses
+    // while the clip still holds its flags.
     if (m_heldFlags != 0) {
         brain.human().stopScripted(static_cast<std::uint32_t>(m_playing), m_heldFlags);
     }
-    m_heldFlags = 0;
-    return true;
+    return !(m_wait && m_heldFlags != 0 && (brain.human().animator().flags() & m_heldFlags) != 0);
 }
 
 } // namespace coney::ai

@@ -182,6 +182,7 @@ void gloatOver(Brain& downed) {
     constexpr int kPileOnSpacing = 4;
     constexpr int kDefendTactic = 2;
     constexpr int kCheerLinePercent = 50;
+    constexpr int kPercentDraw = 100;
     constexpr int kCheerLine = 0x10;
     constexpr int kCheerLineOther = 0x8f;
     constexpr int kTurnDelayLowMs = 50;
@@ -206,7 +207,9 @@ void gloatOver(Brain& downed) {
         if (taunter->type() == BrainType::Warrior && tactic != nullptr && tactic->type() == kDefendTactic) {
             continue;
         }
-        const int line = taunter->rand100() < kCheerLinePercent ? kCheerLine : kCheerLineOther;
+        // `Random_Int(100)` draws 0-100 inclusive.
+        const int line =
+            rollRange(taunter->random(), 0, kPercentDraw) < kCheerLinePercent ? kCheerLine : kCheerLineOther;
         const bool isTarget = taunter == fighting;
         if (!isTarget && taunter->distanceTo(downed) < middle) {
             continue;
@@ -225,7 +228,8 @@ void gloatOver(Brain& downed) {
             // His next attack waits twice the cheer's length.
             ScriptServices* services = taunter->services();
             const float seconds = services != nullptr ? services->playTime(*taunter, tauntAnim(kind)) : 0.0F;
-            const auto delay = static_cast<std::uint64_t>(2.0F * 1000.0F * seconds);
+            // The cheer's length in whole ms, doubled.
+            const auto delay = 2U * static_cast<std::uint64_t>(1000.0F * seconds);
             taunter->setNextAttackMs(std::max(taunter->nextAttackMs(), taunter->nowMs()) + delay);
         }
     }
