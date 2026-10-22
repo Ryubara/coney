@@ -1229,20 +1229,27 @@ type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
 (`repo:src/gamemodes/gameplay_uncuff.cpp`) the kind-0 record is a cuffed AI human friendly to player 1 within
 `CfgActionDistance` 0 in plan and 1.5 m of his waist, not being freed: its prompt is `GSTRING.HUD` 2, chosen before the
 action object and hidden while a mash runs, and triangle tries it before the level's own records. The start has the
-freer say 68, turn to the cuffed human over 325 (holding `0x2000000`, so the mash's input waits) then loop 329, and
-runs the mash ([above](#uncuffing), `combat::ButtonMash`) with his class's byte `+0x08` (`script::warriorMashByte()`,
-`combat::mashFactor()`); the cuffed human plays 326 paired, then 330. Success: he says 67 and is released (and revived
-when knocked out and revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed
-human gone or released some other way): 332 and back to 320. A body something else takes before the outcome (a hit)
-plays 331. Player 1's [mash meter](hud-functions-parts.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to
-the outcome, filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages
-meanwhile. A disc test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
-`level80` checkpoint 2 and reaches checkpoint 3; a cuffed friendly AI human wears the `dyn_cuffs` icon until his
-release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs' friendship
-(`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight, the partner and
-the shared body group are not kept; after a hit the cuffed human goes back to 320; the cuffs icon stays attached over
-his feet rather than detached where it appeared (he does not move while cuffed). Not yet: hint 19, the key path, the 0.2
-m capsule test, players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
+freer say 68 and, as `Uncuff_Start` does, clears the cuffed human's steer and steers the freer with the attacks' plain
+steer for 325 (`human::Fighter::steerUncuff()`: 0.1 s, to 325's reach from him, turned by 325's direction, [the freer's
+place](#uncuff-pose)), whose own root turn then faces him; the freer plays 325 after a 0.01 s blend (holding
+`0x2000000`, so the mash's input waits) then loops 329, drops a held weapon of anim set 3 or 4 (a club, an overhead
+one), and is linked with the cuffed human until the outcome (their walks pass through each other and his push weight is
+1e9, `Human::linkedWith()`, `Human::pushWeight()`); it then runs the mash ([above](#uncuffing), `combat::ButtonMash`)
+with his class's byte `+0x08` (`script::warriorMashByte()`, `combat::mashFactor()`); the cuffed human plays 326 paired
+after a 0.01 s blend, then 330, and is not moved. Success: he says 67 and is released (and revived when knocked out and
+revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed human gone or
+released some other way): 332 and back to 320. A body something else takes before the outcome (a hit) plays 331. Player
+1's [mash meter](hud-functions-parts.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to the outcome,
+filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
+test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at `level80` checkpoint 2 and
+reaches checkpoint 3, and another (`[disc][uncuff][pose]`) checks the freer's distance and headings against the
+original's numbers [above](#uncuff-pose) and that the cuffed human does not move; a cuffed friendly AI human wears the
+`dyn_cuffs` icon until his release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly
+is the gangs' friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the
+partner is not kept (the link stands for the shared body group); after a hit the cuffed human goes back to 320; the
+cuffs icon stays attached over his feet rather than detached where it appeared (he does not move while cuffed). Not yet:
+hint 19, the key path, the 0.2 m capsule test, leaving the fight stance and the lock and cancelling a throw's aim as the
+mash starts, players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
