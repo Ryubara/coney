@@ -635,9 +635,11 @@ not something `Brain_PickSideInFight` returns.
    **At runtime** (confirmed (runtime), PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the
    `taunt-init` hook on `TauntAction_Init` `0x002fb0f0`): in level99's sparring fight against a still player, one
    gloat was queued in 1,198 updates: a cheer (kind 3, line `0x10`) by one Warrior at update 1507, as a mount let the
-   player go (the call at `0x00293428`). It never said its line,
-   so no gloat played. Nothing taunted at kind 4: the still player has no target of his own. Coney's sparring disc
-   test over the same span saw no gloat start in any of its eight AI sequences.
+   player go (the call at `0x00293428`). It started 57 updates later, at update 1564, once his queued actions had
+   ended (inferred), and said its line there (`Human_SayCommand` `0x002205e0` called from `TauntAction_Start`,
+   return address `0x002fb224`). Nothing taunted at kind 4: the still player has no target of his own. Coney's
+   sparring disc test over the same span saw no gloat start in any of its eight AI sequences. Why Coney's sparring
+   fight gives none where this run of the original gave one is open; it is compared with the taunts on #596.
 
 Event `0x15` is sent to a man as he is put on the ground: by `HitReact_OnSpecialEnd` (`0x0026a1f8`, the end of a
 knock-down clip) and by `Throw_ClearVictimLink` (`0x0022bdc0`, a throw, grab or mount putting its victim down).
