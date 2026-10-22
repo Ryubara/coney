@@ -17,6 +17,7 @@
 #include "ai/story_goals.h"
 #include "ai/swap_prompt.h"
 #include "ai/tactic.h"
+#include "ai/tactic_confront.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
@@ -780,7 +781,6 @@ int reactionKind(const Brain& brain) {
 
 int helpLevel(const Brain& brain) {
     constexpr int kSoloRole = 6;
-    constexpr int kConfrontTacticType = 0x23;
     switch (brain.type()) {
     case BrainType::Cop:
     case BrainType::Warrior:
@@ -793,7 +793,7 @@ int helpLevel(const Brain& brain) {
             return 2;
         }
         const Tactic* tactic = gang->tactic();
-        const bool confront = tactic != nullptr && tactic->type() == kConfrontTacticType;
+        const bool confront = tactic != nullptr && tactic->type() == kConfrontTactic;
         return gang->owner().roleOf(brain) == kSoloRole || confront ? 1 : 2;
     }
     default:

@@ -733,8 +733,9 @@ bool deliverEvent(Brain& brain, const BrainEvent& event);
 void releaseToAi(Brain& brain, BrainType leftAs);
 
 /// `brain`'s reaction kind, which picks its gesture slots (docs/research/ai.md#fight-reposition): its type, but 0 for
-/// a gang brain of class role 13, and 3 for the player. **Coney stand-in**: the player's 0 in co-op (game state
-/// `+0x158` set) is not read; the AI has no co-op word, so the player is taken as alone.
+/// a gang brain of class role 13, and 3 for the player. **Coney stand-ins**: the player's 0 in co-op (game state
+/// `+0x158` set) is not read; the AI has no co-op word, so the player is taken as alone. The class role is read
+/// through the gang's lookups (as helpLevel()'s is), so a gang brain with no gang keeps its type, 2.
 /// @orig 0x00291d48 Brain_GetReactionKind (unknown)
 [[nodiscard]] int reactionKind(const Brain& brain);
 

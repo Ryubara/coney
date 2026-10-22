@@ -253,7 +253,8 @@ bool GameSound::Voices::mayGesture(const script::HumanSoundCall& who) {
         static_cast<std::size_t>(who.gestureKind) >= m_gesturing.size()) {
         return false;
     }
-    // The nearest camera within 30 m (`Cameras_MinDistanceSq` <= 900).
+    // A camera within 30 m (`Cameras_MinDistanceSq` <= 900). **Coney stand-in**: only player 1's view is read; the
+    // original takes the nearest of every player's cameras.
     const anim::Vec3 camera = m_owner.m_context->cameras->view().position;
     const float dx = camera.x - who.position[0];
     const float dy = camera.y - who.position[1];

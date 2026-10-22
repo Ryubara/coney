@@ -217,9 +217,10 @@ brain or a civilian of class role 6 or whose gang's tactic is the confront (`0x2
 while he talks takes the other one when his help level allows it.
 
 **Coney status (2026-10-21):** `GameSound::Voices::mayGesture` (`repo:src/audio/game_sound.h`) keeps the slots per
-kind, given `ai::reactionKind` and `ai::helpLevel` through the sound call. Stand-ins: the player is always taken as
-alone (the AI has no co-op word), and the class role is read through the gang's lookups, so a brain with no gang has
-help level 2.
+kind, given `ai::reactionKind` and `ai::helpLevel` through the sound call: the AI's taunts' (the cast's gesture
+test) and the anim sounds' (a mount, a wave or point, a kiyap; gameplay's `humanSoundCallOf`). Stand-ins: the player
+is always taken as alone (the AI has no co-op word); the class role is read through the gang's lookups, so a brain
+with no gang has help level 2 and keeps its type as its kind; only player 1's camera is measured.
 
 ### Crew lines while tagging {#tag-lines}
 

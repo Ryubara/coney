@@ -958,7 +958,9 @@ script::HumanSoundCall humanSoundCallOf(double handle, const ai::Brain& brain, c
                                   .heldMaterial = std::nullopt,
                                   .heldModel = 0,
                                   .heldType = 0,
-                                  .sound = {}};
+                                  .sound = {},
+                                  .gestureKind = ai::reactionKind(brain),
+                                  .gestureSlots = ai::helpLevel(brain)};
 }
 
 void GameplayMode::syncSystemLights() {
