@@ -22,13 +22,13 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "combat/attacks.h"
-#include "debug/play_controls.h"
 #include "fileio/wad.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_pickups.h"
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/locomotion.h"
+#include "human/place.h"
 #include "human/player.h"
 #include "human/script_state.h"
 #include "platform/game_session.h"
@@ -159,7 +159,7 @@ TEST_CASE("the disc's level80 checkpoint 3: a bat given to a Warrior is held, dr
     REQUIRE(run.runUntil(standsStill(), kLimit));
     warrior->setSuspended(true);
     const coney::anim::Vec3 at = member.position();
-    play->teleport(coney::debug::Place{
+    play->teleport(coney::human::Place{
         .name = "give", .feet = coney::anim::Vec3{at.x + 1.0F, at.y, at.z}, .headingDegrees = 90.0F});
     REQUIRE(run.runUntil(standsStill(), kLimit));
 
