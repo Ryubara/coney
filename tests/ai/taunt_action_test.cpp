@@ -14,7 +14,9 @@
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/turn_action.h"
+#include "animation/anim_clip.h"
 #include "human/human.h"
+#include "human/human_animator.h"
 #include "support/ai_fixtures.h"
 
 // The taunt action and the gloating over a man put on the ground (event 0x15): who taunts, who cheers, who is left
@@ -147,4 +149,31 @@ TEST_CASE("a man knocked down hears that he is down once, as he comes to lie the
     REQUIRE(groundedAt >= 0);
     CHECK(putDowns() == 1);
     CHECK(sentAt > groundedAt);
+}
+
+// TauntAction_Abort (0x002fb278): a taunt that waits for its clip refuses to be cleared while the clip still holds its
+// flags; once they are gone, or for a taunt that does not wait, the clear is accepted.
+TEST_CASE("a waiting taunt refuses to be cleared while its clip still holds its flags", "[ai]") {
+    AiScene scene;
+    Brain& soldier = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    soldier.setServices(&scene.services);
+    scene.services.clipHeld = 0x80000;
+    // A 1 s clip holding the taunt's flags stands in for the taunt's own clip (the fake services play nothing).
+    coney::anim::AnimClip clip;
+    clip.duration = 1.0F;
+    const coney::human::HeldFlags held{.held = 0x80000, .set = 0x80000};
+    TauntAction cheer(coney::ai::kCheerTaunt, 0x10);
+    REQUIRE(cheer.start(soldier) == ActionStatus::Running);
+    soldier.human().playScripted(clip, 999, 1.0F, 0.0F, held);
+    REQUIRE((soldier.human().animator().flags() & 0x80000U) != 0);
+    CHECK_FALSE(cheer.abort(soldier));
+    // Once the clip is over the clear is accepted.
+    scene.run(45);
+    REQUIRE((soldier.human().animator().flags() & 0x80000U) == 0);
+    CHECK(cheer.abort(soldier));
+    // Kind 0 does not wait: cleared at once even with the flags held.
+    TauntAction advance(0, 0);
+    REQUIRE(advance.start(soldier) == ActionStatus::Running);
+    soldier.human().playScripted(clip, 999, 1.0F, 0.0F, held);
+    CHECK(advance.abort(soldier));
 }
