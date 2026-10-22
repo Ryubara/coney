@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,8 @@ struct NetPlayerStatus {
     std::string name;
     std::uint64_t roundTripNs = 0; ///< smoothed; 0 before the first answer
     float lossFraction = 0.0F;     ///< 0 to 1
+    std::int64_t inputLead = 0;    ///< steps of their input commands waiting to play (net::InputBuffer::lead())
+    std::uint64_t inputLost = 0;   ///< their steps played with the step before's pad or skipped, since they joined
 };
 
 /// Network play's state now (platform::NetPlay::status(), which the debug menus' Network page shows).
@@ -34,6 +37,10 @@ struct NetStatus {
     std::uint64_t packetsSent = 0;
     std::uint64_t packetsReceived = 0;
     std::vector<NetPlayerStatus> players; ///< the host's joined players
+    /// A client's: what the host last said of its input commands (net::InputTiming); nothing before the first.
+    std::optional<std::int64_t> inputLead;
+    std::uint32_t inputTarget = 0;
+    std::uint32_t clockSpeedPercent = 100; ///< a client's game clock (net::NetClient::clockSpeedPercent())
 };
 
 /// The bad network played on what this game sends: net::LinkConditions in whole milliseconds and percent, as the

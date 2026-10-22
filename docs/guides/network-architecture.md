@@ -240,10 +240,11 @@ step ([Input: commands](../research/input.md#commands)): buttons, pressures and 
 belongs to. Each packet repeats the last several commands, so a lost packet costs nothing. The server keeps a short
 buffer per client and applies each command on its step to that player's **pad record**, the place where the
 original's per-player record already reads a pad; from there on, the server's game cannot tell a remote pad from a
-local one. This is the step in progress on pad port 2 ([The plan](multiplayer.md#plan)).
+local one. Built: [Input commands](multiplayer.md#input-commands).
 
 If a command is late, the server repeats the last one (a held button stays held), and tells the client to send a
-little earlier; if commands pile up, a little later (Overwatch's command-frame tuning, [sources](#sources)).
+little earlier; if commands pile up, a little later (Overwatch's command-frame tuning, [sources](#sources); built as
+[Input timing](multiplayer.md#input-timing)).
 
 ### Prediction (P2) {#prediction}
 
@@ -881,7 +882,7 @@ The work in order; each row is about one pull request. Each is an issue, a sub-i
 | 4 | Two players' cameras: the split decision and the layout, offline | P1 | 3 | #549 |
 | 5 | The AI's two-player rules | P1 | 3 | #550 |
 | 6 | Players by slot everywhere: the single-player assumptions in gameplay, HUD and bindings | P1 | 3 | #551 |
-| 7 | Input commands: tagged, redundant, the server's buffer and timing feedback | P1 | 2 | #552 |
+| 7 | Input commands: tagged, redundant, the server's buffer and timing feedback (built) | P1 | 2 | #552 |
 | 8 | Network ids and the replicated-field tables | P1 | | #553 |
 | 9 | Snapshots: humans first, deltas against acknowledged baselines, the budget | P1 | 8 | #554 |
 | 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 | #555 |

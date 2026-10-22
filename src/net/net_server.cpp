@@ -62,16 +62,13 @@ void NetServer::receive() {
     if (!m_running) {
         return;
     }
-    // A new step for every pad: one that arrives below starts again at 0.
-    for (ServerClient& client : m_clients) {
-        ++client.padQuiet;
-    }
     // Every event waiting now; the transport never blocks.
     while (std::optional<TransportEvent> event = m_transport.poll()) {
         switch (event->kind) {
         case TransportEventKind::Connected: {
             ServerClient client;
             client.peer = event->peer;
+            client.input = InputBuffer(m_config.input);
             m_clients.push_back(std::move(client));
             break;
         }
@@ -118,6 +115,13 @@ void NetServer::receive() {
             close(i, ByeReason::TimedOut, true);
         }
     }
+
+    // Each player's pad for this step, from the commands that have arrived.
+    for (ServerClient& client : m_clients) {
+        if (client.joined) {
+            (void)client.input.take();
+        }
+    }
 }
 
 void NetServer::send() {
@@ -127,8 +131,16 @@ void NetServer::send() {
     // Pings on a fixed schedule of steps, to joined players only (a handshaking one has nothing to measure yet).
     if (m_config.pingIntervalSteps > 0 && m_steps % m_config.pingIntervalSteps == 0) {
         for (ServerClient& client : m_clients) {
-            if (client.joined) {
-                sendTo(client, Ping{.sequence = client.quality.pingSent(m_nowNs)});
+            if (!client.joined) {
+                continue;
+            }
+            sendTo(client, Ping{.sequence = client.quality.pingSent(m_nowNs)});
+            // How early their commands come, once they come at all, so the client can send earlier or later.
+            if (client.input.started()) {
+                const std::int64_t lead = std::clamp<std::int64_t>(client.input.lead(), -1000, 1000);
+                sendTo(client, InputTiming{.lead = static_cast<std::int32_t>(lead),
+                                           .target = static_cast<std::uint8_t>(
+                                               std::min<std::uint32_t>(m_config.input.delaySteps, 255))});
             }
         }
     }
@@ -146,13 +158,7 @@ std::optional<PadSample> NetServer::remotePad(std::uint8_t slot) const {
     if (found == m_clients.end()) {
         return std::nullopt;
     }
-    if (found->padQuiet > m_config.padHoldSteps) {
-        // Let go: still plugged in (if it was), nothing held.
-        PadSample rest;
-        rest.connected = found->pad.connected;
-        return rest;
-    }
-    return found->pad;
+    return found->input.current();
 }
 
 std::vector<ServerEvent> NetServer::takeEvents() { return std::exchange(m_events, {}); }
@@ -174,17 +180,14 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
         client.quality.pongReceived(pong->sequence, m_nowNs);
         return true;
     }
-    if (const auto* input = std::get_if<PadInput>(&message)) {
+    if (const auto* commands = std::get_if<InputCommands>(&message)) {
         if (!client.joined) {
             close(index, ByeReason::ProtocolError, true); // a pad belongs to a player, and they have not joined
             return false;
         }
-        // Unreliable delivery may reorder and repeat: only a newer step replaces the pad.
-        if (!client.padHeard || input->step > client.padStep) {
-            client.pad = input->pad;
-            client.padHeard = true;
-            client.padStep = input->step;
-            client.padQuiet = 0;
+        // Unreliable delivery may reorder and repeat; the buffer keeps each step once and plays it on its own step.
+        for (std::size_t i = 0; i < commands->pads.size(); ++i) {
+            client.input.add(commands->newestStep - static_cast<std::uint32_t>(i), commands->pads[i]);
         }
         return true;
     }
@@ -193,7 +196,7 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
         close(index, std::get<Bye>(message).reason, false);
         return false;
     }
-    // Welcome and Reject only ever go from a server to a client.
+    // Welcome, Reject and InputTiming only ever go from a server to a client.
     close(index, ByeReason::ProtocolError, true);
     return false;
 }

@@ -55,21 +55,45 @@ TEST_CASE("every message round-trips", "[net][protocol]") {
     CHECK(std::get<Bye>(roundTrip(Bye{.reason = ByeReason::TimedOut})).reason == ByeReason::TimedOut);
     CHECK(std::get<Ping>(roundTrip(Ping{.sequence = 0xfffffffeU})).sequence == 0xfffffffeU);
     CHECK(std::get<Pong>(roundTrip(Pong{.sequence = 5})).sequence == 5);
+    const auto timing = std::get<InputTiming>(roundTrip(InputTiming{.lead = -3, .target = 2}));
+    CHECK(timing.lead == -3);
+    CHECK(timing.target == 2);
 }
 
-TEST_CASE("a pad input round-trips every field of a connected pad", "[net][protocol]") {
+TEST_CASE("input commands round-trip every field of a connected pad", "[net][protocol]") {
     coney::PadSample pad;
     pad.connected = true;
     pad.buttons = coney::pad::kCross | coney::pad::kL2 | coney::pad::kLeft;
     pad.sticks = {0, 255, 31, 200};
     pad.pressure.at(static_cast<std::size_t>(coney::pad::Pressure::Cross)) = 255;
     pad.pressure.at(static_cast<std::size_t>(coney::pad::Pressure::L2)) = 17;
-    const auto input = std::get<PadInput>(roundTrip(PadInput{.step = 123456, .pad = pad}));
-    CHECK(input.step == 123456);
-    CHECK(input.pad.connected);
-    CHECK(input.pad.buttons == pad.buttons);
-    CHECK(input.pad.sticks == pad.sticks);
-    CHECK(input.pad.pressure == pad.pressure);
+    const auto commands = std::get<InputCommands>(roundTrip(InputCommands{.newestStep = 123456, .pads = {pad}}));
+    CHECK(commands.newestStep == 123456);
+    REQUIRE(commands.pads.size() == 1);
+    CHECK(commands.pads[0].connected);
+    CHECK(commands.pads[0].buttons == pad.buttons);
+    CHECK(commands.pads[0].sticks == pad.sticks);
+    CHECK(commands.pads[0].pressure == pad.pressure);
+}
+
+TEST_CASE("input commands carry the steps before the newest, a repeated pad as one bit", "[net][protocol]") {
+    coney::PadSample cross;
+    cross.connected = true;
+    cross.buttons = coney::pad::kCross;
+    coney::PadSample circle = cross;
+    circle.buttons = coney::pad::kCircle;
+    const InputCommands sent{.newestStep = 40, .pads = {cross, cross, circle, coney::PadSample{}}};
+    const auto commands = std::get<InputCommands>(roundTrip(sent));
+    CHECK(commands.newestStep == 40);
+    REQUIRE(commands.pads.size() == 4);
+    CHECK(commands.pads[0].buttons == coney::pad::kCross);
+    CHECK(commands.pads[1].buttons == coney::pad::kCross);
+    CHECK(commands.pads[2].buttons == coney::pad::kCircle);
+    CHECK_FALSE(commands.pads[3].connected);
+    // The repeat is one bit: the same message with step 39's pad changed is longer.
+    InputCommands changed = sent;
+    changed.pads[1].buttons = coney::pad::kSquare;
+    CHECK(encode(sent).size() < encode(changed).size());
 }
 
 TEST_CASE("a disconnected pad travels as one bit and comes back as a pad at rest", "[net][protocol]") {
@@ -77,12 +101,14 @@ TEST_CASE("a disconnected pad travels as one bit and comes back as a pad at rest
     pad.connected = false;
     pad.buttons = coney::pad::kStart; // ignored: a disconnected sample's other fields mean nothing
     pad.sticks = {1, 2, 3, 4};
-    const auto input = std::get<PadInput>(roundTrip(PadInput{.step = 1, .pad = pad}));
-    CHECK_FALSE(input.pad.connected);
-    CHECK(input.pad.buttons == 0);
-    CHECK(input.pad.sticks == coney::PadSample{}.sticks);
-    // Id, the step, and one bit padded to a byte.
-    CHECK(encode(PadInput{.step = 1, .pad = pad}) == bytes({0x07, 0x01, 0x00}));
+    const auto commands = std::get<InputCommands>(roundTrip(InputCommands{.newestStep = 1, .pads = {pad}}));
+    REQUIRE(commands.pads.size() == 1);
+    CHECK_FALSE(commands.pads[0].connected);
+    CHECK(commands.pads[0].buttons == 0);
+    CHECK(commands.pads[0].sticks == coney::PadSample{}.sticks);
+    // Id, the step, then 3 bits of count and one bit of pad, padded to a byte.
+    CHECK(encode(InputCommands{.newestStep = 1, .pads = {pad}}) == bytes({0x08, 0x01, 0x00}));
+    CHECK(samePadOnTheWire(pad, coney::PadSample{}));
 }
 
 TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "[net][protocol]") {
@@ -92,24 +118,28 @@ TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "
     // Ping: id 5, the sequence as a varint (300 is two groups: 0x2c with "more", then 0x02).
     CHECK(encode(Ping{.sequence = 300}) == bytes({0x05, 0xac, 0x02}));
     CHECK(encode(Bye{.reason = ByeReason::Quit}) == bytes({0x04, 0x01}));
-    // PadInput: id 7, the step as a varint, then from bit 0: connected (1), the button word (16 bits, START is bit
-    // 11), the four stick bytes (centred, 0x80) and one "pressed" bit per pressure byte (none here).
+    // InputCommands: id 8, the newest step as a varint, then from bit 0: the count less one (3 bits, 1 here); the
+    // newest pad in full: connected (1), the button word (16 bits, START is bit 11), the four stick bytes (centred,
+    // 0x80) and one "pressed" bit per pressure byte (none here); then the older step's "same pad" bit (set).
     coney::PadSample start;
     start.connected = true;
     start.buttons = coney::pad::kStart;
-    CHECK(encode(PadInput{.step = 5, .pad = start}) ==
-          bytes({0x07, 0x05, 0x01, 0x10, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00}));
-    CHECK(kProtocolVersion == 2);
+    CHECK(encode(InputCommands{.newestStep = 5, .pads = {start, start}}) ==
+          bytes({0x08, 0x05, 0x09, 0x80, 0x00, 0x08, 0x08, 0x08, 0x08, 0x00, 0x01}));
+    // InputTiming: id 9, the lead as a zigzag varint (2 is 4), the target (8 bits).
+    CHECK(encode(InputTiming{.lead = 2, .target = 1}) == bytes({0x09, 0x04, 0x01}));
+    CHECK(kProtocolVersion == 3);
 }
 
-TEST_CASE("handshake and Bye go reliably, Ping and Pong unreliably", "[net][protocol]") {
+TEST_CASE("handshake and Bye go reliably, Ping, Pong and input unreliably", "[net][protocol]") {
     CHECK(deliveryOf(Hello{}) == Delivery::ReliableOrdered);
     CHECK(deliveryOf(Welcome{}) == Delivery::ReliableOrdered);
     CHECK(deliveryOf(Reject{}) == Delivery::ReliableOrdered);
     CHECK(deliveryOf(Bye{}) == Delivery::ReliableOrdered);
     CHECK(deliveryOf(Ping{}) == Delivery::Unreliable);
     CHECK(deliveryOf(Pong{}) == Delivery::Unreliable);
-    CHECK(deliveryOf(PadInput{}) == Delivery::Unreliable);
+    CHECK(deliveryOf(InputCommands{}) == Delivery::Unreliable);
+    CHECK(deliveryOf(InputTiming{}) == Delivery::Unreliable);
 }
 
 TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]") {
@@ -127,8 +157,10 @@ TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]"
     refused(bytes({0x03, 0x00, 0x01, 0x00}), ErrorCode::Invalid);                     // an unknown Reject reason
     refused(bytes({0x02, 0x01, 0x00, 0x00, 0x00}), ErrorCode::Invalid);               // a step rate of 0
     refused(bytes({0x01, 'N', 'O', 'P', 'E', 0x01, 0x00, 0x00}), ErrorCode::Invalid); // not Coney's magic
-    refused(bytes({0x07, 0x01}), ErrorCode::Truncated);                               // a PadInput with no pad
-    refused(bytes({0x07, 0x01, 0x02}), ErrorCode::Invalid); // a disconnected pad with set padding bits
+    refused(bytes({0x07, 0x01, 0x00}), ErrorCode::Invalid);                           // PadInput is retired
+    refused(bytes({0x08, 0x01}), ErrorCode::Truncated);                               // input commands with no pad
+    refused(bytes({0x08, 0x01, 0x10}), ErrorCode::Invalid); // a disconnected pad with set padding bits
+    refused(bytes({0x08, 0x00, 0x01}), ErrorCode::Invalid); // two pads at step 0: one is for step -1
     // A sequence over 32 bits.
     BitWriter big;
     big.writeU8(static_cast<std::uint8_t>(MessageId::Pong));
@@ -143,8 +175,9 @@ TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]"
     refused(longName.take(), ErrorCode::Invalid);
     // A pressure byte flagged as pressed but written as 0: one encoding per pad, so it is refused.
     BitWriter zeroPressure;
-    zeroPressure.writeU8(static_cast<std::uint8_t>(MessageId::PadInput));
+    zeroPressure.writeU8(static_cast<std::uint8_t>(MessageId::InputCommands));
     zeroPressure.writeVarUint(1);
+    zeroPressure.writeBits(0, 3);
     zeroPressure.writeBool(true);
     zeroPressure.writeU16(0);
     zeroPressure.writeU32(0x80808080U);
@@ -154,6 +187,15 @@ TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]"
         zeroPressure.writeBool(false);
     }
     refused(zeroPressure.take(), ErrorCode::Invalid);
+    // An older pad written in full that is the same as the step after it: it must be the one "same" bit.
+    BitWriter repeated;
+    repeated.writeU8(static_cast<std::uint8_t>(MessageId::InputCommands));
+    repeated.writeVarUint(1);
+    repeated.writeBits(1, 3);
+    repeated.writeBool(false); // step 1: unplugged
+    repeated.writeBool(false); // step 0: not "same"...
+    repeated.writeBool(false); // ...yet unplugged in full
+    refused(repeated.take(), ErrorCode::Invalid);
 }
 
 TEST_CASE("a Hello of another version decodes to its version, whatever follows", "[net][protocol]") {

@@ -70,6 +70,10 @@ class NetPlay final {
     /// they leave; port 1 is always the host's. Joined to a host, port 1 is what the session sends them, and the pads
     /// come back unchanged. Offline, they pass through. NetInput calls it.
     [[nodiscard]] PortSamples pads(const PortSamples& local);
+    /// The speed this game's clock should run at, percent: joined to a host, the session's
+    /// (net::NetClient::clockSpeedPercent()), a little fast or slow so its input commands reach the host as early as
+    /// the host wants them; else 100. The main loop multiplies the debug menus' time scale by it.
+    [[nodiscard]] std::uint32_t clockSpeedPercent() const;
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
 

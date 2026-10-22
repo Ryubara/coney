@@ -1129,8 +1129,10 @@ int main(int argc, char** argv) {
         // The pacer's measure of each frame is also the debug menus' frame time.
         hooks.waitForFrame = [&paced, &frameMilliseconds, &clock, &debugSession, &netPlay] {
             // The Time page's scale above 1x makes more fixed steps due per real second (below 1x the time controls
-            // hold steps instead). Only a real clock is sped up: test mode stays one step a frame.
-            clock.setSpeed(debugSession.time().dueSpeedPercent());
+            // hold steps instead), times network play's nudge while joined to a host (a step in 50 or so faster or
+            // slower, so this game's input reaches the host in time). Only a real clock is sped up: test mode stays
+            // one step a frame.
+            clock.setSpeed(debugSession.time().dueSpeedPercent() * netPlay.clockSpeedPercent() / 100);
             const std::uint64_t nanoseconds = paced.waitForFrame();
             frameMilliseconds = static_cast<double>(nanoseconds) / 1'000'000.0;
             netPlay.advance(nanoseconds);
