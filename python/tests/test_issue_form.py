@@ -20,13 +20,13 @@ TASK = issue_form.load_form(REPO, CONVENTIONS, "task")
 BUG = issue_form.load_form(REPO, CONVENTIONS, "bug")
 
 
-def problems(text: str, title: str = "Reimplement the Throw orders", **options: Any) -> list[IssueProblem]:
+def problems(text: str, title: str = "gameplay: Add the Throw orders", **options: Any) -> list[IssueProblem]:
     """The problems of `text` as a task issue with the made-up tree."""
     options.setdefault("tree", TREE)
     return issue_form.check_issue(title, text, TASK, CONVENTIONS, CheckOptions(**options)).problems
 
 
-def messages(text: str, title: str = "Reimplement the Throw orders", **options: Any) -> str:
+def messages(text: str, title: str = "gameplay: Add the Throw orders", **options: Any) -> str:
     """All problem messages of `text` joined, to search in."""
     return "\n".join(problem.message for problem in problems(text, title, **options))
 
@@ -103,7 +103,7 @@ def test_the_bug_draft_has_checkboxes_and_the_dropdown_choices() -> None:
 
 def test_a_draft_left_blank_fails_the_check_on_content_but_not_on_headings() -> None:
     result = issue_form.check_issue(
-        "A title", issue_form.draft_body(TASK, CONVENTIONS), TASK, CONVENTIONS, CheckOptions(tree=TREE)
+        "tools: Add a title", issue_form.draft_body(TASK, CONVENTIONS), TASK, CONVENTIONS, CheckOptions(tree=TREE)
     )
     assert result.problems
     assert "headings" not in {problem.kind for problem in result.problems}
@@ -114,7 +114,7 @@ def test_a_draft_left_blank_fails_the_check_on_content_but_not_on_headings() -> 
 
 
 def test_a_body_in_the_structure_of_issue_340_passes() -> None:
-    result = issue_form.check_issue("Reimplement the Throw orders", GOOD, TASK, CONVENTIONS, CheckOptions(tree=TREE))
+    result = issue_form.check_issue("gameplay: Add the Throw orders", GOOD, TASK, CONVENTIONS, CheckOptions(tree=TREE))
     assert result.problems == []
     assert result.area == "A-ai"
     assert result.notices == []
@@ -217,14 +217,14 @@ def test_a_required_checkbox_must_be_ticked_in_the_bug_form() -> None:
         "- [ ] I attached no game files: no disc images, BIOS, extracted assets, save files or game text.\n"
     )
     options = CheckOptions(tree=TREE)
-    found = issue_form.check_issue("A crash", bug, BUG, CONVENTIONS, options).problems
+    found = issue_form.check_issue("gameplay: Fix a crash", bug, BUG, CONVENTIONS, options).problems
     assert [problem.kind for problem in found] == ["choices"] and "tick" in found[0].message
     ticked = bug.replace("- [ ]", "- [x]")
-    assert issue_form.check_issue("A crash", ticked, BUG, CONVENTIONS, options).problems == []
+    assert issue_form.check_issue("gameplay: Fix a crash", ticked, BUG, CONVENTIONS, options).problems == []
     wrong = ticked.replace("Story", "Pause")
     assert (
         "How did you start the game? is 'Pause'"
-        in issue_form.check_issue("A crash", wrong, BUG, CONVENTIONS, options).problems[0].message
+        in issue_form.check_issue("gameplay: Fix a crash", wrong, BUG, CONVENTIONS, options).problems[0].message
     )
 
 
@@ -238,7 +238,7 @@ def test_the_frequency_may_be_unknown() -> None:
         "- [x] I attached no game files: no disc images, BIOS, extracted assets, save files or game text.\n"
     )
     options = CheckOptions(tree=TREE)
-    assert issue_form.check_issue("A crash", bug, BUG, CONVENTIONS, options).problems == []
+    assert issue_form.check_issue("gameplay: Fix a crash", bug, BUG, CONVENTIONS, options).problems == []
 
 
 def test_a_dropdown_option_that_starts_with_a_dash_is_accepted_plain_or_in_backticks() -> None:
@@ -253,7 +253,7 @@ def test_a_dropdown_option_that_starts_with_a_dash_is_accepted_plain_or_in_backt
     options = CheckOptions(tree=TREE)
     for written in ("--play-level", "`--play-level`", "- --play-level", "- `--play-level`"):
         text = bug.replace("\n--play-level\n", f"\n{written}\n", 1)
-        assert issue_form.check_issue("A crash", text, BUG, CONVENTIONS, options).problems == [], written
+        assert issue_form.check_issue("gameplay: Fix a crash", text, BUG, CONVENTIONS, options).problems == [], written
 
 
 # --- links to pages ---------------------------------------------------------------------------------------------
@@ -298,7 +298,7 @@ def test_a_link_on_another_branch_or_without_the_blob_prefix_is_refused() -> Non
 
 def test_without_the_main_tree_the_links_are_not_checked_and_a_notice_says_so() -> None:
     result = issue_form.check_issue(
-        "A title",
+        "tools: Add a title",
         body(summary="See [x](../blob/main/docs/research/nope.md)."),
         TASK,
         CONVENTIONS,
@@ -412,22 +412,39 @@ def test_the_bug_form_does_not_need_an_area_label() -> None:
     assert labels == ["bug", "S-needs-triage"] and found == []
 
 
-def test_the_form_is_found_from_the_headings_the_title_or_the_command_line_default() -> None:
-    assert issue_form.detect_form("A title", GOOD, CONVENTIONS) == "task"
-    assert issue_form.detect_form("Bug: a crash", "nothing", CONVENTIONS) == "bug"
-    assert (
-        issue_form.detect_form("A title", "### Steps to reproduce\n\n1. x\n\n### What happens\n\nx", CONVENTIONS)
-        == "bug"
-    )
-    assert issue_form.detect_form("A title", "no headings", CONVENTIONS) == CONVENTIONS.issues.cli_uses_form
+def test_the_form_is_found_from_the_headings_or_the_command_line_default() -> None:
+    assert issue_form.detect_form("tools: Add a thing", GOOD, CONVENTIONS) == "task"
+    bug_body = "### Steps to reproduce\n\n1. x\n\n### What happens\n\nx"
+    assert issue_form.detect_form("tools: Fix a crash", bug_body, CONVENTIONS) == "bug"
+    assert issue_form.detect_form("tools: Fix a crash", "no headings", CONVENTIONS) == CONVENTIONS.issues.cli_uses_form
 
 
-def test_a_bug_title_on_a_task_form_body_is_still_a_task() -> None:
-    """#461: the headings decide first; the title prefix only breaks a tie or names a body with no known headings."""
+def test_the_title_says_nothing_about_the_form() -> None:
+    """#461: the headings decide; a tie (only the shared Screenshots heading) goes to the command line's form."""
     shared = "### Screenshots\n\nScreenshots: none (x)"
-    assert issue_form.detect_form("Bug: a crash", GOOD, CONVENTIONS) == "task"
-    assert issue_form.detect_form("Task: a fix", shared, CONVENTIONS) == "task"
-    assert issue_form.detect_form("Bug: a crash", shared, CONVENTIONS) == "bug"
+    assert issue_form.detect_form("gameplay: Fix a crash", GOOD, CONVENTIONS) == "task"
+    assert issue_form.detect_form("gameplay: Fix a crash", shared, CONVENTIONS) == CONVENTIONS.issues.cli_uses_form
+
+
+@pytest.mark.parametrize(
+    ("title", "reason"),
+    [
+        ("Bug: Camera clips through a wall", "unknown area 'Bug'"),
+        ("Task: Add a thing", "unknown area 'Task'"),
+        ("Fix the camera", "not in the form"),
+        ("gameplay: fix the camera", "is not one of the verbs"),
+        ("nowhere: Fix the camera", "unknown area"),
+        ("gameplay: Fix the camera.", "ends with a period"),
+        ("gameplay: Fix " + "x" * 80, "72 at most"),
+    ],
+)
+def test_an_issue_title_reads_like_a_pull_request_title(title: str, reason: str) -> None:
+    found = problems(GOOD, title)
+    assert [p.message for p in found if p.kind == "title" and reason in p.message], found
+
+
+def test_a_good_issue_title_passes() -> None:
+    assert not [p for p in problems(GOOD, "gameplay: Fix the fight goal (BREAKING)") if p.kind == "title"]
 
 
 def test_state_names_and_kinds_are_what_the_docs_say() -> None:

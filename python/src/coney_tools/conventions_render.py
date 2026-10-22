@@ -279,6 +279,36 @@ def _scope_paths(patterns: tuple[str, ...]) -> list[str]:
     return lines
 
 
+def _claim_rules(conventions: Conventions) -> list[str]:
+    """The numbers and names of claiming an issue (docs/guides/issues.md#claiming)."""
+    claims = conventions.claims
+    limits = claims.limits
+    lines = _bullet(
+        f"An issue can be claimed only when it carries `{claims.claimable_status}`, whoever claims it. A claim sets "
+        f"`{claims.working_label}` (`{claims.review_label}` while its pull request is open); a release or "
+        f"`/unclaim` sets `{claims.released_label}`."
+    )
+    lines += _bullet(
+        f"A maintainer (a commenter whose GitHub association is one of {_codes(claims.maintainer_associations)}) "
+        f"holds {limits.maintainer} open claims at most, a contributor {limits.contributor}. Issues whose cards "
+        "share a `task:` id count as one claim."
+    )
+    lines += _bullet(
+        f"While an open `{claims.critical_label}` issue has no claim, only a `{claims.critical_label}` issue can be "
+        "claimed."
+    )
+    lines += _bullet(
+        f"A claim is released after {claims.deadline_hours} hours without activity (`/progress`, a push to its pull "
+        f"request, `/claim renew`); the claimant is mentioned at {claims.warn_hours} hours. The stages `/progress` "
+        f"accepts: {_codes(claims.stages)}."
+    )
+    lines += _bullet(
+        f"The sweep runs on the cron `{claims.sweep}` (UTC): it repairs cards, answers unhandled commands, warns and "
+        "releases."
+    )
+    return lines
+
+
 def _audit_checks(conventions: Conventions) -> list[str]:
     """The checks `coney-tools repo audit` runs (`hygiene.checks`) as a table: scope, severity, fix class, finds."""
     lines = ["| Check | Scope | Severity | Fix | Finds |", "| --- | --- | --- | --- | --- |"]
@@ -300,6 +330,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "tools-only-paths": lambda conventions: _scope_paths(conventions.paths.tools_only),
     "engine-paths": lambda conventions: _scope_paths(conventions.paths.engine),
     "audit-checks": _audit_checks,
+    "claim-rules": _claim_rules,
 }
 
 

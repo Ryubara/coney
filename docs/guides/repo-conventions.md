@@ -31,7 +31,9 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the `title` job and `repo check-review` run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
 | `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the `runtime` rule (the title areas a player sees need a `Runtime:` line in Testing), the AI use choices, the review gate (`review`: the reviewer agent, its verdict and report files, the description hash), stacked pull requests | `repo check-body`, `repo check-docs`, `repo review` and `repo check-review`; `repo render` (the `pr-rules` and `pr-review` blocks); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
-| `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
+| `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links, how many labels of each family an issue carries and which title area an old title gets from a label (`title_area_by_label`; the title rule itself is `commits.title`) | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line); `issue check`; `issue titles` |
+| `claims` | Claiming an issue: the exact shape of each command, the stages, the labels it sets, the limits of open claims, the 48 h and 72 h deadlines, the waits of `task create` and the sweep's schedule | `claim run` and `claim sweep` (`.github/workflows/claim.yml`), `task create`; `repo render` (the `claim-rules` block) |
+| `tasks` | The task kinds, the task file's name and the leads search's limits | `task create`, `task leads` |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
 | `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr-health --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
@@ -216,6 +218,18 @@ required check. The report issue is the one thing it creates besides comments, a
 title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it
 explicitly when merging the pull request that added the workflow. Turning on `on_sweep` is a one-line change to the
 conventions.
+
+A third, from the workflow plan the maintainer approved on 2026-10-22: `claim.yml` ([Claiming an
+issue](issues.md#claiming)) assigns an issue, sets its status label, posts and edits one claim card, and deletes the
+`/claim`, `/unclaim`, `/progress` and `/claim renew` comments after acting on them; its hourly sweep releases a claim
+idle for 72 hours. It has `contents: read`, `issues: write` and `pull-requests: read`, checks out the default branch
+only (it runs on `issue_comment` and `pull_request_target`, so a stranger's comment and a fork's pull request are
+served), passes the event to the script as a file and never expands a comment into a script. Its concurrency group is
+one run per issue number, and a comment that does not start with a slash gets a group of its own so that it cannot
+replace the pending run of a real command. Each run handles every unhandled command of the issue, so a run GitHub drops
+is covered by the next run or the sweep. The workflow needs the maintainer's approval as the other writing workflows
+did; whether the Actions token may delete another person's comment is checked on the real repository, and the design
+works without it (the card remembers which commands it acted on).
 
 ## The /repo-hygiene skill {#hygiene-skill}
 

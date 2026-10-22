@@ -426,6 +426,12 @@ refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh 
 the `issue-check` workflow checks every issue opened or edited on the website or through the API and keeps one
 comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
 
+**Claiming is one comment.** Whoever takes an issue (a person, an agent, the coordinator) claims it with `/claim`, and a
+GitHub Action assigns it, sets the status label and keeps a claim card with the deadline; a claim idle for 72 hours is
+released. The coordinator's `coney-tools task create` makes the claim and writes the task file
+([Claiming an issue](issues.md#claiming), [Task files](issues.md#task-files)). It is available now and becomes
+required with the new workflow's cutover.
+
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
 CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
 message to the coordinator (title, area, research page, what "done" means) and the coordinator files it as an issue of

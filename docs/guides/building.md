@@ -635,6 +635,7 @@ no second copy, and `coney-tools repo audit --files` fails a pull request when t
 - `.github/workflows/docs.yml`: that file
 - `.github/workflows/pr.yml`: that file
 - `.github/workflows/hygiene.yml`: that file
+- `.github/workflows/claim.yml`: that file
 - `.github/workflows/issue-status.yml`: that file
 - `mkdocs.yml`: that file
 - `mkdocs_hooks.py`: that file

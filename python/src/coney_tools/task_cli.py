@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""The `coney-tools task ...` commands: create a task from issues, search the leads, refresh the index.
+
+`task create` is the coordinator's triage step (docs/guides/issues.md#task-files): it claims the issues through the
+claim Action, waits until the claim is certain and then writes `<scratch>/<task>/TASK.md`. `task leads` runs the same
+search without claiming, and `task index` rebuilds the cached index. `gh`, the clock and the sleep are injected, so
+the tests never touch the network or wait.
+"""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+import time
+from collections.abc import Callable
+from datetime import UTC, datetime
+from pathlib import Path
+
+from coney_tools.audit_github import Runner, run_gh
+from coney_tools.config import ConfigError, find_repo_root, load_config, workspace_folder
+from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.issue_claim_model import parse_scope
+from coney_tools.issue_claim_remote import GhRemote, Remote
+from coney_tools.task_create import CreateEnv, CreateRequest, create_task, match_lines
+from coney_tools.task_leads import LeadsResult, Searcher
+from coney_tools.task_leads_index import CachedIndex, prepare_index
+
+
+def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    """Add the `task` group: `create`, `leads` and `index`."""
+    group = groups.add_parser("task", help="claim issues and write a task file (docs/guides/issues.md#task-files)")
+    commands = group.add_subparsers(dest="command", required=True)
+    create = commands.add_parser(
+        "create",
+        help="claim the issues through the claim Action, wait until the claim holds, write <scratch>/<task>/TASK.md",
+    )
+    create.add_argument(
+        "issues", nargs="*", type=int, metavar="ISSUE", help="the issues of the task (before the options)"
+    )
+    create.add_argument("--terms", nargs="+", default=[], metavar="TERM", help="names to search the indexes for")
+    create.add_argument("--scope", help="the planned folders, files and addresses, comma separated")
+    create.add_argument("--kind", help="the task kind (default: from the labels)")
+    create.add_argument("--name", help="the task id (default: <first issue>-<words of its title>)")
+    create.add_argument("--fix-of", type=int, metavar="ISSUE", help="a fix task: reuse your claim on this issue")
+    create.add_argument("--resume", action="store_true", help="continue a claim of yours that landed late")
+    create.add_argument("--dry-run", action="store_true", help="check and print; post and write nothing")
+    leads = commands.add_parser("leads", help="search the indexes for the terms (no claim, nothing written)")
+    leads.add_argument("--terms", nargs="+", required=True, metavar="TERM", help="names to search for")
+    leads.add_argument("--issue", type=int, metavar="N", help="also match the identifiers this issue writes")
+    leads.add_argument("--refresh", action="store_true", help="rebuild the index first")
+    index = commands.add_parser("index", help="rebuild the cached leads index")
+    index.add_argument("--no-gh", action="store_true", help="leave the merged pull requests out")
+
+
+def _head(root: Path) -> str:
+    """The commit `HEAD` points at, or `unknown` when git cannot say (the index is then rebuilt by age only)."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+        )
+    except OSError:
+        return "unknown"
+    return done.stdout.strip() if done.returncode == 0 else "unknown"
+
+
+def scratch_folder(root: Path) -> Path:
+    """The scratch folder: `scratch_dir` of the local config, else the workspace's `scratch/`."""
+    try:
+        configured = load_config(root).paths.get("scratch_dir")
+    except ConfigError:
+        configured = None
+    return configured or workspace_folder(root, "scratch")
+
+
+def _index(root: Path, conventions: Conventions, run: Runner | None, refresh: bool, now: datetime) -> CachedIndex:
+    """The prepared index (cached under the scratch folder)."""
+    cache = scratch_folder(root) / "leads" / "index.json"
+    return prepare_index(root, conventions, cache, _head(root), now, run, refresh)
+
+
+def run_task(
+    args: argparse.Namespace,
+    run: Runner = run_gh,
+    now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    sleep: Callable[[float], None] = time.sleep,
+    remote: Remote | None = None,
+) -> int:
+    """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused."""
+    root = find_repo_root(Path.cwd())
+    conventions = load_conventions(root)
+    rules = conventions.claims
+    if args.command == "index":
+        index = _index(root, conventions, None if args.no_gh else run, True, now())
+        print(f"index: {len(index.entries)} entries at {index.head[:10]}")
+        for notice in index.notices:
+            print(f"note: {notice}")
+        return 0
+    github: Remote = remote or GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, run)
+    if args.command == "leads":
+        text = ""
+        if args.issue is not None:
+            issue = github.issue(args.issue)
+            text = f"{issue.title}\n{issue.body}"
+        index = _index(root, conventions, run, args.refresh, now())
+        result = Searcher(index.entries, conventions.tasks.leads).search(list(args.terms), text)
+        for line in match_lines(result.matches()):
+            print(line)
+        if result.unmatched:
+            print("no match for: " + ", ".join(result.unmatched))
+        for notice in index.notices:
+            print(f"note: {notice}")
+        return 0
+    try:
+        scope = parse_scope(args.scope) if args.scope else ()
+    except ValueError as error:
+        raise ConfigError(f"--scope: {error}") from error
+    if not args.issues and args.fix_of is None:
+        raise ConfigError("task create: name at least one issue")
+
+    def leads(terms: list[str], text: str) -> LeadsResult:
+        index = _index(root, conventions, run, False, now())
+        for notice in index.notices:
+            print(f"note: {notice}")
+        return Searcher(index.entries, conventions.tasks.leads).search(terms, text)
+
+    env = CreateEnv(github, conventions, scratch_folder(root), now, sleep, leads)
+    request = CreateRequest(
+        issues=tuple(args.issues),
+        terms=tuple(args.terms),
+        scope=scope,
+        kind=args.kind,
+        name=args.name,
+        fix_of=args.fix_of,
+        resume=args.resume,
+        dry_run=args.dry_run,
+    )
+    return create_task(request, env)

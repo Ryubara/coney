@@ -19,7 +19,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from coney_tools import audit_files, audit_github, audit_text, issue_form
+from coney_tools import audit_files, audit_github, audit_text, issue_form, issue_titles
 from coney_tools.audit_github import Runner
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
@@ -78,6 +78,17 @@ def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
     body_options(edit, False)
     edit.add_argument("--offline", action="store_true", help="do not read the cited issues' states with gh")
     edit.add_argument("--dry-run", action="store_true", help="check and print what would run; write nothing")
+
+    titles = commands.add_parser(
+        "titles",
+        help="list the open issues whose title breaks 'area: Verb the rest', with a proposed title and its gh command",
+    )
+    titles.add_argument("--json", action="store_true", help="print the proposals as JSON")
+    titles.add_argument("--apply", action="store_true", help="rename the issues (the coordinator's, once)")
+    titles.add_argument(
+        "--include-review", action="store_true", help="with --apply, also rename the proposals marked 'review'"
+    )
+    titles.add_argument("--limit", type=int, default=500, help="how many open issues to read (default: %(default)s)")
 
     link = commands.add_parser("link", help="make issue N a sub-issue of issue --parent")
     link.add_argument("number", type=int, help="the child issue")
@@ -334,8 +345,49 @@ def run_link(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> int
     return 0
 
 
+def run_titles(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> int:
+    """`issue titles`: list the open issues with a title that breaks the rule and what to rename each to.
+
+    Prints the proposals and, below them, the `gh issue edit` commands; with `--apply` it runs the `auto` ones (and the
+    `review` ones with `--include-review`). Exit 1 when some issue still needs a new title, 0 when none does.
+    """
+    conventions = load_conventions(find_repo_root(Path.cwd()))
+    try:
+        issues = json.loads(
+            run(["issue", "list", "--state", "open", "--limit", str(args.limit), "--json", "number,title,labels"])
+        )
+    except (OSError, ValueError) as error:
+        raise ConfigError(f"cannot read the open issues with gh ({error})") from error
+    proposals = issue_titles.list_retitles(issues, conventions)
+    if args.json:
+        print(json.dumps([retitle.__dict__ for retitle in proposals], indent=2))
+    else:
+        for retitle in proposals:
+            print(f"#{retitle.number} [{retitle.confidence}] {retitle.current!r}")
+            print(f"    -> {retitle.proposed!r}  ({retitle.why})")
+        print(f"{len(proposals)} of {len(issues)} open issue(s) break the title rule")
+        for retitle in proposals:
+            print(retitle.command())
+    if not args.apply:
+        return 1 if proposals else 0
+    failed = 0
+    for retitle in proposals:
+        if retitle.confidence != "auto" and not args.include_review:
+            continue
+        try:
+            run(["issue", "edit", str(retitle.number), "--title", retitle.proposed])
+        except OSError as error:
+            print(f"coney-tools: #{retitle.number} was not renamed: {error}", file=sys.stderr)
+            failed += 1
+        else:
+            print(f"renamed #{retitle.number}")
+    return 1 if failed else 0
+
+
 def run_issue(args: argparse.Namespace) -> int:
     """Dispatch an `issue` command."""
+    if args.command == "titles":
+        return run_titles(args)
     if args.command == "draft":
         return run_draft(args.form)
     if args.command == "check":

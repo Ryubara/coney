@@ -63,6 +63,7 @@ paths:
     - ".github/workflows/docs.yml"
     - ".github/workflows/pr.yml"
     - ".github/workflows/hygiene.yml"
+    - ".github/workflows/claim.yml"
     - ".github/workflows/issue-status.yml"
     - "mkdocs.yml"
     - "mkdocs_hooks.py"
@@ -258,7 +259,6 @@ issues:
   forms:
     bug:
       file: .github/ISSUE_TEMPLATE/bug.yml
-      title_prefix: "Bug: "
       labels: [bug, S-needs-triage]
       sections:
         version: ["Coney version or commit", true]
@@ -277,7 +277,6 @@ issues:
         no-game-files: ["No game files", true]
     task:
       file: .github/ISSUE_TEMPLATE/task.yml
-      title_prefix: "Task: "
       labels: [task, S-needs-triage]
       sections:
         summary: ["Summary", true]
@@ -289,6 +288,22 @@ issues:
         screenshots: ["Screenshots", true]
   # An issue filed from the command line uses this form's headings, at the form's level (`###`).
   cli_uses_form: task
+  # An issue title is a pull request title: `area: Verb the rest` (commits.title decides everything about it, so there
+  # is one definition). `coney-tools issue titles` proposes the area of an old title from the issue's labels with this
+  # table; every value is a key of commits.title.areas and the first label of the issue found here wins.
+  title_area_by_label:
+    docs: docs
+    A-combat: gameplay
+    A-ai: gameplay
+    A-missions: gameplay
+    A-hud: gameplay
+    A-physics: gameplay
+    A-camera: gameplay
+    A-graphics: graphics
+    A-audio: audio
+    A-platform: platform
+    A-core: core
+    A-tools: tools
   screenshots_none: "Screenshots: none"
   provenance: {line: "From:", required_for: leftovers}
   sub_issues: {leftover_parent: source_pr_fixes}  # a leftover is a sub-issue of the issue its source pull request fixes
@@ -304,6 +319,50 @@ issues:
     priority: exactly-one-after-triage
     status: exactly-one
     closed_keeps_status: false
+
+claims:
+  # Claiming an issue (docs/guides/issues.md#claiming): a `/claim` comment is handled by .github/workflows/claim.yml
+  # (coney-tools claim run), which assigns, labels, keeps one claim card per claim and deletes the command comment.
+  # `coney-tools task create` posts the same comment for the coordinator. Everything the Action and the tools check is here.
+  bot_login: "github-actions[bot]"               # only comments by this login are cards or replies
+  card_marker: coney-claim                        # a card starts with <!-- coney-claim -->
+  reply_marker: coney-claim-reply                 # a refusal starts with <!-- coney-claim-reply:ID --> (ID: the command's comment)
+  # A comment is a command only when its whole body matches one of these (Python regular expressions). The user-level
+  # no-comment hook allows exactly these shapes on Coney issues, read from here. `scope` is folders, files and addresses
+  # separated by commas; `task` is the task id, so issues of one task count as one claim.
+  commands:
+    claim: '^/claim(?: scope: (?P<scope>[A-Za-z0-9_./*+, -]{1,400}?))?(?: task: (?P<task>[a-z0-9][a-z0-9-]{0,59}))?$'
+    renew: '^/claim renew$'
+    unclaim: '^/unclaim$'
+    progress: '^/progress (?P<stage>[a-z][a-z-]{0,30})$'
+  stages: [assigned, claimed, studied, fails-first, compared, checked, reviewed, pr-opened, fix, finished]
+  maintainer_associations: [OWNER, MEMBER, COLLABORATOR]   # GitHub's author_association of the commenter
+  limits: {maintainer: 3, contributor: 2}         # open claims; issues of one task count once; a fix task reuses its claim
+  critical_label: P-critical                      # while one has no claim, only a P-critical issue can be claimed
+  claimable_status: S-ready-to-start              # the only status an issue can be claimed in, for everyone
+  working_label: S-in-progress                    # on a claimed issue
+  review_label: S-pending-review                  # on a claimed issue whose pull request is open
+  released_label: S-ready-to-start                # on an issue after /unclaim, an idle release or a lost claim
+  deadline_hours: 72                              # idle time (no /progress, push to the pull request or renew) before release
+  warn_hours: 48                                  # idle time at which the claimant is mentioned once
+  reply_keep_hours: 24                            # the sweep deletes a refusal reply this long after its command is gone
+  command_lookback_hours: 24                      # the sweep looks for unhandled command comments this far back
+  poll_interval_seconds: 10                       # task create: how often it looks for the card
+  create_wait_seconds: 300                        # task create: the longest wait for the card or a refusal
+  settle_seconds: 60                              # task create: the card must stay true for this long before the task file
+  # Must equal the cron of .github/workflows/claim.yml (a test checks it).
+  sweep: "7 * * * *"
+
+tasks:
+  # Task files (docs/guides/issues.md#task-files) and the leads search (`task create --terms`, `task leads`).
+  kinds: [feature, fix, docs, tooling, ci-fix]
+  file: TASK.md
+  leads:
+    rare_max_entries: 12                          # a name part in at most this many index entries is rare: ranked first
+    common_min_entries: 200                       # in at least this many it is common: not a match on its own
+    max_per_source: 8                             # ranked matches listed per source (matches named in the issue are extra)
+    index_max_age_hours: 24                       # the cached index is rebuilt when older
+    merged_prs: 400                               # merged pull requests read for the index
 
 labels:
   description_max: 100                           # GitHub's limit
@@ -331,6 +390,7 @@ labels:
     - {name: A-platform, color: c5def5, description: "Area: window, input, gamepad, rumble, saves, loading, disc files"}
     - {name: A-core, color: c5def5, description: "Area: engine core: memory, chunks, tasks, scripting runtime"}
     - {name: A-tools, color: c5def5, description: "Area: coney-tools, build, CI, the sandbox"}
+    - {name: P-critical, color: b60205, description: "Priority: main or a nightly run is broken; before everything else"}
     - {name: P-high, color: e11d21, description: "Priority: blocks play or other work"}
     - {name: P-medium, color: fbca04, description: "Priority: next in line"}
     - {name: P-low, color: 0e8a16, description: "Priority: when there is room"}
@@ -352,7 +412,7 @@ hygiene:
   # The one issue the weekly sweep reports on: one comment on it, edited in place; the workflow creates the issue if it
   # is missing (docs/guides/repo-conventions.md, "Workflows").
   report_issue:
-    title: "Repo hygiene"
+    title: "tools: Update the repo hygiene report"
     labels: [task, A-tools, P-low, S-in-progress]
   sweep: "0 6 * * 1"                             # weekly, Monday 06:00 UTC
   # What `coney-tools repo hygiene` and .github/workflows/hygiene.yml do (docs/guides/repo-conventions.md, "Workflows").

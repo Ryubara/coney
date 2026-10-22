@@ -89,7 +89,11 @@ def test_the_real_hygiene_thresholds_follow_the_owners_decisions() -> None:
 def test_the_real_labels_are_in_their_families() -> None:
     labels = load_conventions(REPO).labels
     assert labels.names("type") == ("bug", "parity", "task", "docs", "enhancement")
-    assert len(labels.names("area")) == 11 and len(labels.names("priority")) == 3
+    assert (
+        len(labels.names("area")) == 11
+        and labels.names("priority")[0] == "P-critical"
+        and len(labels.names("priority")) == 4
+    )
     assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 9
     assert labels.names("other") == ("good first issue", "help wanted", "duplicate", "wontfix")
     assert labels.names() == tuple(label.name for label in labels.list)
@@ -174,6 +178,34 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
     ("an unknown top-level key", (("titles", {}),), r"unknown key 'titles'"),
     ("a missing section", (("merge", REMOVE),), r"missing the key 'merge'"),
     ("an unknown nested key", (("commits.title.verb", ["Add"]),), r"commits\.title: unknown key 'verb'"),
+    (
+        "a claim command that does not compile",
+        (("claims.commands.renew", "(/claim"),),
+        r"claims\.commands\.renew: not a valid",
+    ),
+    (
+        "a claim pattern without its scope group",
+        (("claims.commands.claim", "^/claim$"),),
+        r"claims\.commands\.claim: the pattern needs a named group 'scope'",
+    ),
+    (
+        "a claim label that is not a label",
+        (("claims.working_label", "S-nope"),),
+        r"claims: 'S-nope' is not in labels\.list",
+    ),
+    (
+        "a warning after the deadline",
+        (("claims.warn_hours", 80),),
+        r"claims\.warn_hours: must be less than deadline_hours",
+    ),
+    ("a bad claim marker", (("claims.card_marker", "a b"),), r"claims\.card_marker: letters, digits and hyphens"),
+    ("a task file with a path", (("tasks.file", "a/TASK.md"),), r"tasks\.file: a file name"),
+    ("rare above common", (("tasks.leads.rare_max_entries", 500),), r"must be less than common_min_entries"),
+    (
+        "a form with the old title prefix",
+        (("issues.forms.task.title_prefix", "Task: "),),
+        r"unknown key 'title_prefix'",
+    ),
     ("a missing nested key", (("commits.title.max_length", REMOVE),), r"commits\.title: missing the key 'max_length'"),
     ("another version", (("version", 2),), r"version: this coney-tools reads version 1"),
     ("a boolean version", (("version", True),), r"version: "),
@@ -435,3 +467,19 @@ def test_the_gameplay_and_coney_only_folders_are_read() -> None:
     paths = conventions_with().paths
     assert "src/ai/" in paths.gameplay and "src/debug/" in paths.coney_only
     assert paths.gameplay_dir("src/ai/brain.cpp") and not paths.gameplay_dir("src/debug/menu.cpp")
+
+
+def test_the_real_claim_rules() -> None:
+    claims = load_conventions(REPO).claims
+    assert claims.limits.maintainer == 3 and claims.limits.contributor == 2
+    assert (claims.warn_hours, claims.deadline_hours) == (48, 72)
+    assert claims.claimable_status == claims.released_label == "S-ready-to-start"
+    assert claims.critical_label == "P-critical" and claims.bot_login == "github-actions[bot]"
+    assert "assigned" in claims.stages and "fix" in claims.stages
+    assert load_conventions(REPO).tasks.kinds == ("feature", "fix", "docs", "tooling", "ci-fix")
+
+
+def test_every_title_area_of_a_label_is_a_title_area() -> None:
+    conventions = load_conventions(REPO)
+    assert set(conventions.issues.title_area_by_label.values()) <= set(conventions.commits.title.areas)
+    assert set(conventions.issues.title_area_by_label) <= set(conventions.labels.names())

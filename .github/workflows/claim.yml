@@ -1,0 +1,66 @@
+# Claiming an issue (docs/guides/issues.md#claiming): a `/claim` comment makes the commenter the issue's assignee, sets
+# its status label, posts one claim card and deletes the command; `/claim renew`, `/unclaim` and `/progress <stage>`
+# keep the card true; an hourly sweep repairs what drifted, answers command comments nobody handled, warns a claimant at
+# 48 h of idleness and releases the claim at 72 h. All the logic is `coney-tools claim run` (python/src/coney_tools/
+# issue_claim_*.py); this file only starts it. The rules (the command shapes, the limits, the labels, the hours and
+# this schedule) are `claims` in .github/conventions.yml.
+#
+# Every run reads the whole issue from GitHub and handles every command comment not yet handled, oldest first, so a run
+# that GitHub drops (it keeps one pending run per concurrency group) is covered by the next run or by the sweep.
+#
+# The token writes issues (assignees, labels, comments) and reads pull requests (the `Fixes #N` links). The events
+# reach the script as a file ($GITHUB_EVENT_PATH), never as text on a command line: nothing a comment or an issue says
+# is expanded into a script. It runs with `pull_request_target` and `issue_comment` so a fork's pull request and a
+# stranger's comment are served; for that reason it checks out the default branch only (no `ref`, no `repository`:
+# never a pull request's own code). Events caused by this token start no workflow, so it cannot trigger itself.
+# Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: claim
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [closed, reopened, assigned, unassigned]
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize, closed]
+  # Must equal claims.sweep in .github/conventions.yml (a test checks it).
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+# One run per issue (or pull request: they share one number space) at a time, in order. A comment that does not start
+# with a slash cannot be a command: it gets a group of its own and its job is skipped, so it never replaces the pending
+# run of a real `/claim`.
+concurrency:
+  group: >-
+    ${{ (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/'))
+    && format('claim-{0}', github.event.issue.number || github.event.pull_request.number || 'sweep')
+    || format('claim-skip-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+jobs:
+  claim:
+    # A comment on a pull request is no claim; a comment that does not start with a slash is no command.
+    if: >-
+      github.event_name != 'issue_comment'
+      || (!github.event.issue.pull_request && startsWith(github.event.comment.body, '/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # No `with:`: the default is the default branch for an issue, a comment, a schedule or a dispatch, and the base
+      # branch for pull_request_target, which is the point.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Handle the event
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          uv run --project python coney-tools claim run --event "$EVENT_NAME" --payload "$GITHUB_EVENT_PATH"

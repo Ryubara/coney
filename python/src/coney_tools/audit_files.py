@@ -178,8 +178,9 @@ def _check_form(context: FilesContext, form: IssueForm) -> Iterator[str]:
     if not isinstance(data, dict):
         yield "cannot be read as an issue form"
         return
-    if data.get("title") != form.title_prefix:
-        yield f"title is {data.get('title')!r}, the conventions say {form.title_prefix!r}"
+    if data.get("title"):
+        # An issue title is `area: Verb the rest`, like a pull request's; a prefix would put the title out of form.
+        yield f"title is {data.get('title')!r}, but a form has no title prefix (issues.title_area_by_label)"
     if data.get("labels") != list(form.labels):
         yield f"labels are {data.get('labels')!r}, the conventions say {list(form.labels)!r}"
     try:

@@ -388,7 +388,6 @@ class IssueForm:
 
     name: str
     file: str
-    title_prefix: str
     labels: tuple[str, ...]
     sections: tuple[IssueSection, ...]
 
@@ -439,6 +438,8 @@ class Issues:
     links: IssueLinks
     status_text: str
     labels: IssueLabelRules
+    #: Label name to the title area (a key of `commits.title.areas`) that `issue titles` proposes for an old title.
+    title_area_by_label: Mapping[str, str]
 
 
 @dataclass(frozen=True)
@@ -701,6 +702,80 @@ class Stamps:
 
 
 @dataclass(frozen=True)
+class ClaimCommands:
+    """The shapes of the claim commands: a comment is a command only when its whole body matches one (a regex)."""
+
+    #: `/claim`, optionally with `scope: ...` and `task: ...` (named groups `scope` and `task`).
+    claim: str
+    renew: str
+    unclaim: str
+    #: `/progress <stage>` (named group `stage`).
+    progress: str
+
+
+@dataclass(frozen=True)
+class ClaimLimits:
+    """How many open claims one account may hold."""
+
+    maintainer: int
+    contributor: int
+
+
+@dataclass(frozen=True)
+class Claims:
+    """Claiming an issue: the commands, the claim card, the limits, the labels and the deadlines."""
+
+    #: The login of the Actions bot: only its comments are cards or replies.
+    bot_login: str
+    #: A card's comment starts with `<!-- card_marker -->`.
+    card_marker: str
+    #: A refusal reply starts with `<!-- reply_marker:ID -->`, ID being the command comment it answers.
+    reply_marker: str
+    commands: ClaimCommands
+    #: The stages `/progress` may name.
+    stages: tuple[str, ...]
+    #: The `author_association` values of a comment that make its author a maintainer.
+    maintainer_associations: tuple[str, ...]
+    limits: ClaimLimits
+    critical_label: str
+    #: The one status an issue can be claimed in.
+    claimable_status: str
+    working_label: str
+    review_label: str
+    released_label: str
+    deadline_hours: int
+    warn_hours: int
+    reply_keep_hours: int
+    command_lookback_hours: int
+    poll_interval_seconds: int
+    create_wait_seconds: int
+    settle_seconds: int
+    #: The cron schedule of the hourly sweep.
+    sweep: str
+
+
+@dataclass(frozen=True)
+class LeadsRules:
+    """How the leads search ranks and limits what it finds."""
+
+    rare_max_entries: int
+    common_min_entries: int
+    max_per_source: int
+    index_max_age_hours: int
+    merged_prs: int
+
+
+@dataclass(frozen=True)
+class Tasks:
+    """Task files and the leads search."""
+
+    kinds: tuple[str, ...]
+    #: The task file's name inside the task's scratch folder.
+    file: str
+    leads: LeadsRules
+
+
+@dataclass(frozen=True)
 class Conventions:
     """Everything in `.github/conventions.yml`."""
 
@@ -711,6 +786,8 @@ class Conventions:
     pull_requests: PullRequests
     merge: Merge
     issues: Issues
+    claims: Claims
+    tasks: Tasks
     labels: Labels
     hygiene: Hygiene
     workspace: Workspace
@@ -1168,7 +1245,7 @@ def _read_section(item: object, where: str, section_id: str) -> IssueSection:
 
 def _read_form(name: str, data: object, where: str) -> IssueForm:
     """One issue form under `issues.forms`."""
-    table = _table(data, where, ("file", "title_prefix", "labels", "sections"))
+    table = _table(data, where, ("file", "labels", "sections"))
     sections_where = _at(where, "sections")
     raw = table["sections"]
     if not isinstance(raw, dict) or not raw or not all(isinstance(key, str) for key in raw):
@@ -1180,7 +1257,6 @@ def _read_form(name: str, data: object, where: str) -> IssueForm:
     return IssueForm(
         name=name,
         file=_text(table["file"], _at(where, "file")),
-        title_prefix=_text(table["title_prefix"], _at(where, "title_prefix")),
         labels=_texts(table["labels"], _at(where, "labels")),
         sections=sections,
     )
@@ -1199,6 +1275,7 @@ def _read_issues(data: object, where: str) -> Issues:
         "links",
         "status_text",
         "labels",
+        "title_area_by_label",
     )
     table = _table(data, where, keys)
     forms_where = _at(where, "forms")
@@ -1241,7 +1318,103 @@ def _read_issues(data: object, where: str) -> Issues:
             status=_choice(labels["status"], _at(labels_where, "status"), _LABEL_COUNTS),
             closed_keeps_status=_flag(labels["closed_keeps_status"], _at(labels_where, "closed_keeps_status")),
         ),
+        title_area_by_label=MappingProxyType(
+            {
+                label: _text(area, _at(_at(where, "title_area_by_label"), label))
+                for label, area in _mapping(table["title_area_by_label"], _at(where, "title_area_by_label")).items()
+            }
+        ),
     )
+
+
+_COMMAND_GROUPS = {"claim": ("scope", "task"), "renew": (), "unclaim": (), "progress": ("stage",)}
+
+
+def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Claims:
+    """The `claims` section: commands that compile with their groups, labels that exist, deadlines in order."""
+    counts = (
+        "deadline_hours",
+        "warn_hours",
+        "reply_keep_hours",
+        "command_lookback_hours",
+        "poll_interval_seconds",
+        "create_wait_seconds",
+        "settle_seconds",
+    )
+    labels = ("critical_label", "claimable_status", "working_label", "review_label", "released_label")
+    table = _table(
+        data,
+        where,
+        (
+            "bot_login",
+            "card_marker",
+            "reply_marker",
+            "commands",
+            "stages",
+            "maintainer_associations",
+            "limits",
+            "sweep",
+            *labels,
+            *counts,
+        ),
+    )
+    commands_where = _at(where, "commands")
+    commands = _table(table["commands"], commands_where, tuple(_COMMAND_GROUPS))
+    for name, groups in _COMMAND_GROUPS.items():
+        pattern = _text(commands[name], _at(commands_where, name))
+        try:
+            compiled = re.compile(pattern)
+        except re.error as error:
+            raise _fail(_at(commands_where, name), f"not a valid regular expression ({error})") from None
+        for group in groups:
+            if group not in compiled.groupindex:
+                raise _fail(_at(commands_where, name), f"the pattern needs a named group '{group}'")
+    markers = {}
+    for key in ("card_marker", "reply_marker"):
+        markers[key] = _text(table[key], _at(where, key))
+        if not _MARKER.match(markers[key]):
+            raise _fail(_at(where, key), "letters, digits and hyphens only (it sits inside an HTML comment)")
+    limits_where = _at(where, "limits")
+    limits = _table(table["limits"], limits_where, ("maintainer", "contributor"))
+    names = {key: _text(table[key], _at(where, key)) for key in labels}
+    _names_in(names.values(), label_names, where, "in labels.list")
+    numbers = {key: _count(table[key], _at(where, key)) for key in counts}
+    if numbers["warn_hours"] >= numbers["deadline_hours"]:
+        raise _fail(_at(where, "warn_hours"), "must be less than deadline_hours")
+    return Claims(
+        bot_login=_text(table["bot_login"], _at(where, "bot_login")),
+        card_marker=markers["card_marker"],
+        reply_marker=markers["reply_marker"],
+        commands=ClaimCommands(**{name: str(commands[name]) for name in _COMMAND_GROUPS}),
+        stages=_texts(table["stages"], _at(where, "stages")),
+        maintainer_associations=_texts(table["maintainer_associations"], _at(where, "maintainer_associations")),
+        limits=ClaimLimits(
+            maintainer=_count(limits["maintainer"], _at(limits_where, "maintainer")),
+            contributor=_count(limits["contributor"], _at(limits_where, "contributor")),
+        ),
+        critical_label=names["critical_label"],
+        claimable_status=names["claimable_status"],
+        working_label=names["working_label"],
+        review_label=names["review_label"],
+        released_label=names["released_label"],
+        sweep=_text(table["sweep"], _at(where, "sweep")),
+        **numbers,
+    )
+
+
+def _read_tasks(data: object, where: str) -> Tasks:
+    """The `tasks` section: the task kinds, the task file's name and the leads limits."""
+    table = _table(data, where, ("kinds", "file", "leads"))
+    leads_where = _at(where, "leads")
+    keys = ("rare_max_entries", "common_min_entries", "max_per_source", "index_max_age_hours", "merged_prs")
+    leads = _table(table["leads"], leads_where, keys)
+    numbers = {key: _count(leads[key], _at(leads_where, key)) for key in keys}
+    if numbers["rare_max_entries"] >= numbers["common_min_entries"]:
+        raise _fail(_at(leads_where, "rare_max_entries"), "must be less than common_min_entries")
+    file = _text(table["file"], _at(where, "file"))
+    if "/" in file or "\\" in file:
+        raise _fail(_at(where, "file"), "a file name, not a path")
+    return Tasks(kinds=_texts(table["kinds"], _at(where, "kinds")), file=file, leads=LeadsRules(**numbers))
 
 
 def _read_label(item: object, where: str, description_max: int) -> Label:
@@ -1544,7 +1717,20 @@ def _read_stamps(data: object, where: str) -> Stamps:
 
 def parse_conventions(data: object) -> Conventions:
     """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key."""
-    keys = ("repo", "paths", "commits", "pull_requests", "merge", "issues", "labels", "hygiene", "workspace", "stamps")
+    keys = (
+        "repo",
+        "paths",
+        "commits",
+        "pull_requests",
+        "merge",
+        "issues",
+        "claims",
+        "tasks",
+        "labels",
+        "hygiene",
+        "workspace",
+        "stamps",
+    )
     table = _table(data, "", ("version", *keys))
     version = table["version"]
     if version != SUPPORTED_VERSION or isinstance(version, bool):
@@ -1565,6 +1751,8 @@ def parse_conventions(data: object) -> Conventions:
     if not pull_requests.runtime.none.startswith(runtime_line):
         raise _fail("pull_requests.runtime.none", f"must start with the line '{runtime_line}'")
     names = labels.names()
+    claims = _read_claims(table["claims"], "claims", names)
+    _names_in(issues.title_area_by_label, names, "issues.title_area_by_label", "in labels.list")
     for form in issues.forms.values():
         _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")
     _names_in(hygiene.report_issue.labels, names, "hygiene.report_issue.labels", "in labels.list")
@@ -1577,6 +1765,8 @@ def parse_conventions(data: object) -> Conventions:
         pull_requests=pull_requests,
         merge=_read_merge(table["merge"], "merge"),
         issues=issues,
+        claims=claims,
+        tasks=_read_tasks(table["tasks"], "tasks"),
         labels=labels,
         hygiene=hygiene,
         workspace=_read_workspace(table["workspace"], "workspace"),

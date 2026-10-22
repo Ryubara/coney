@@ -51,7 +51,7 @@ def bug_body(frequency: str = "Always", log: str = "") -> str:
 def issue(
     number: int,
     *,
-    title: str = "Check the repository",
+    title: str = "tools: Add a repository check",
     body: str | None = None,
     labels: tuple[str, ...] = ("task", "A-tools", "P-medium", "S-in-progress"),
     state: str = "OPEN",
