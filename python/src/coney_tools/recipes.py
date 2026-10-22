@@ -16,6 +16,7 @@ ghidra = ["0x00390180 Handle_Resolve"]
 evidence = "confirmed-runtime"
 patches = []                    # patches or hooks of research/traces/patches/ the running state must hold
 emulation = "either"            # "running", "paused" or "either"
+state = "pedestrian-grab"       # optional: the PCSX2 state library state it starts from (`pcsx2 states use`)
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129", state = "level99 street" }
 params = [ { name = "who", kind = "text", default = "", help = "a human's name; empty for the player" } ]
 steps = [
@@ -53,6 +54,7 @@ Research: docs/guides/pcsx2-recipes.md
 
 from __future__ import annotations
 
+import re
 import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -69,6 +71,9 @@ PATCHES_DIR = Path("research/traces/patches")
 #: The evidence levels of docs/guides/research-workflow.md#evidence-levels, as the YAML values spell them.
 EVIDENCE = ("confirmed-code", "confirmed-runtime", "inferred", "speculative")
 EMULATION = ("running", "paused", "either")
+#: A PCSX2 state library id (`coney-tools pcsx2 states`, docs/guides/pcsx2-states.md): a short slug, also the state's
+#: file name. A recipe's `state` names one.
+STATE_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,47}$")
 PARAM_KINDS = ("number", "text", "expr", "human")
 FORMATS = ("hex", "int", "float")
 #: The step keys: exactly one per step, with the extra keys each allows.
@@ -136,6 +141,8 @@ class Recipe:
     steps: tuple[dict[str, Any], ...]
     group: str = "Other"
     example: str = ""
+    #: The id of a library state the recipe starts from (a precondition), or "".
+    state: str = ""
 
 
 @dataclass
@@ -271,7 +278,7 @@ def parse_recipe(name: str, raw: object, groups: Sequence[str], known_patches: s
         raise RecipeError(f"{where}: must be a table")
     allowed = {
         "summary", "how", "research", "ghidra", "evidence", "patches", "emulation", "confirmed_runtime",
-        "params", "steps", "group", "example",
+        "params", "steps", "group", "example", "state",
     }  # fmt: skip
     unknown = set(raw) - allowed
     if unknown:
@@ -304,6 +311,9 @@ def parse_recipe(name: str, raw: object, groups: Sequence[str], known_patches: s
         raise RecipeError(f"{where}: a recipe with no steps gives an `example` of what to run instead")
     if any("call" in step or "lua" in step for step in steps) and not patches:
         raise RecipeError(f"{where}: a call step needs a call hook among patches")
+    state = raw.get("state", "")
+    if not isinstance(state, str) or (state and not STATE_ID.match(state)):
+        raise RecipeError(f"{where}: state is the id of a library state (lower-case letters, digits and '-')")
     return Recipe(
         name=name,
         summary=_text(raw, "summary", where),
@@ -318,6 +328,7 @@ def parse_recipe(name: str, raw: object, groups: Sequence[str], known_patches: s
         steps=steps,
         group=group,
         example=_text(raw, "example", where, required=False),
+        state=state,
     )
 
 

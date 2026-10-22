@@ -16,6 +16,7 @@ Coney/                          the workspace (a plain folder, not a repository)
   cache/deps/<version>/         the fetched dependency sources they share (building.md#shared-deps)
   game/                         your disc image and files extracted from it
   emulators/pcsx2, pcsx2-b, ... portable PCSX2 copies of the PCSX2-MCP fork build (plus BIOS), one per agent
+  emulators/state-library/      the shared library of PCSX2 save states (pcsx2-states.md); game memory, so never in a repo
   tools/                        local installs: Ghidra (with the EE extension), RenderDoc, a JDK if needed
   ghidra/                       local Ghidra projects (rebuildable caches)
 ```
@@ -192,6 +193,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_pine_base` | `28011` | a number: the PINE port of copy `pcsx2`; copy *i* uses this + *i* |
 | `pcsx2_debug_base` | `21512` | a number: the debug server port of copy `pcsx2`; copy *i* uses this + *i* |
 | `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
+| `pcsx2_states_dir` | `state-library` in the main checkout's `../../emulators` (`<clone>-workspace/emulators` in a plain clone) | the shared [PCSX2 state library](pcsx2-states.md) (`coney-tools pcsx2 states`): save states are game memory, so it sits beside the repository; one place every worktree sees |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |

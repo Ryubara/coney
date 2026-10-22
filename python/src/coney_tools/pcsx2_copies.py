@@ -44,6 +44,7 @@ USER_DATA: frozenset[str] = frozenset(
         "memcards",
         "sstates",
         "recordings",
+        "library-states",
         "snaps",
         "snapshots",
         "videos",

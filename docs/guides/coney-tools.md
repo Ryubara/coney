@@ -736,7 +736,34 @@ copy that runs nothing, an emulation state the recipe does not take and a runnin
 recipe names (read back from memory). `--arg` gives a parameter, `--json` adds one line with every value shown.
 `render` writes [the page](pcsx2-recipes.md) from the file; with `--check` it writes nothing and exits with 1 when
 the page is out of date, as CI runs it. Every recipe must have an evidence level, a Ghidra address and a
-`confirmed_runtime` date, copy and state, or the file is refused.
+`confirmed_runtime` date, copy and state, or the file is refused. A recipe may name a library state it starts from
+(`state = "ID"`, shown among its preconditions; `recipe show` prints it).
+
+```sh
+uv run --project python coney-tools pcsx2 states list [--level LEVEL] [--tag TAG] [--json]
+uv run --project python coney-tools pcsx2 states show ID [--json]
+uv run --project python coney-tools pcsx2 states add FILE --id ID --desc TEXT [--level L] [--checkpoint N] [--tag T ...]
+    [--made-by TEXT] [--author NAME] [--copy COPY --agent ID] [--position X,Y,Z] [--heading DEG] [--no-read]
+uv run --project python coney-tools pcsx2 states use ID --copy COPY --agent ID [--patch NAME ...] [--launch]
+uv run --project python coney-tools pcsx2 states verify [ID ...]
+uv run --project python coney-tools pcsx2 states render [--out PAGE]
+```
+
+The shared [state library](pcsx2-states.md): save states of the original, each with a description, so nobody drives
+to the same place twice. The library is a folder beside the repository (save states are game memory), the
+`pcsx2_states_dir` of `coney.local.toml` or else `state-library` in the workspace's `emulators/` folder, holding one
+read-only `ID.p2s` per state and a `catalog.json` (the fields: [The catalog](pcsx2-states.md#the-catalog)). `list`
+filters by level or tag and `show` prints an entry in full. `add` copies a `.p2s` file (or `slot:N`, only read) in
+under a new id (an existing id, or a file already there, is refused), checks the copy's SHA-256, makes it read-only
+and records the level, checkpoint, player position and heading by running the `where` and `position` recipes over the
+state's own memory, or over a claimed copy's PINE port with `--copy`; flags win over both, and `unknown` is allowed for
+the level and checkpoint. The PCSX2 version and the date come from the file, and the patches it holds from comparing
+its memory with `research/traces/patches/`. Catalog writes hold a lock file, so two agents adding at once both
+land. `use` writes a copy of a state into the claimed copy's `library-states/` folder (after checking the library file
+against the catalog), with any `--patch` applied as `prepare-state` does, and prints the path; `--launch` starts PCSX2
+on it. The library file is never played on or changed. `verify` hashes the files against the catalog and lists any
+that is missing, changed or not listed (exit code 1). `render` rewrites the list between the markers of
+[the page](pcsx2-states.md#the-states) from the catalog.
 
 ## clips {#clips}
 

@@ -32,6 +32,7 @@ from coney_tools import (
     pcsx2_cli,
     pcsx2_clip,
     pcsx2_copies,
+    pcsx2_states_cli,
     perf_cli,
     progress_cli,
     recipes_cli,
@@ -728,6 +729,7 @@ def _add_pcsx2_commands(groups: Any) -> None:
     _add_pcsx2_flags(clip)
     _add_claim_commands(commands)
     recipes_cli.add_commands(commands)
+    pcsx2_states_cli.add_commands(commands)
     _add_pcsx2_flags(record)
 
 
@@ -955,6 +957,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         if not args.agent or not args.copy:
             raise ConfigError(f"recordings {args.direction} needs --agent and --copy")
         return pcsx2_copies.run_recordings(args.direction, args.agent, args.copy, args.name, args.force)
+    if args.command == "states":
+        return pcsx2_states_cli.run_command(args)
     if args.command == "recipe":
         return recipes_cli.run_command(args)
     if args.command == "clip":

@@ -79,6 +79,10 @@ you hold a claim on; the list, with the address and evidence behind each recipe,
 A new way of triggering something becomes a recipe there ([Driving PCSX2](research-workflow.md#driving-pcsx2) explains
 the techniques underneath).
 
+The places to start from are shared too: the [PCSX2 state library](pcsx2-states.md) keeps save states of the original
+(a pedestrian to grab, a fence to jump, a store door) with a catalog saying what each shows. Check it before driving
+the game anywhere, and add a state you made that others could use.
+
 ## How the work is run {#how-it-runs}
 
 Coney is written by agents (AI models) under a maintainer, and a person can take any of the same roles. The parts:

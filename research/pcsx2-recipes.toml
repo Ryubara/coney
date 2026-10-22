@@ -33,6 +33,10 @@ the copy runs, that you hold its claim, that the emulation is running or paused 
 running state holds every patch the recipe names: a patch goes into a copy of a state with
 `coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
 
+Start from the shared state library rather than driving to the same place again: `coney-tools pcsx2 states list`
+shows the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states use ID --copy COPY --agent ID
+--launch` starts your copy on one. A recipe that needs a particular scene names its state among its preconditions.
+
 Many recipes call the game through the `call-brains` call hook (`research/traces/patches/hooks-core.toml`): the
 runner writes a function address and its arguments into the call block, and the game makes the call on its own
 thread at the start of the next brains update. The `lua` recipe and the recipes built on it run a Lua chunk in the
@@ -464,6 +468,7 @@ ghidra = ["0x00358428 lua_HuCreate", "0x00233d60 Human_Create"]
 evidence = "confirmed-runtime"
 patches = ["call-brains"]
 emulation = "running"
+state = "pedestrian-grab"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)", note = "a pedestrian like Civilians0 appeared 1.5 m in front of Rembrandt, facing him" }
 params = [
   { name = "name", kind = "text", default = "ConeyPed", help = "the new human's name (15 characters at most)" },
@@ -638,6 +643,7 @@ ghidra = ["0x00358428 lua_HuCreate", "0x00233d60 Human_Create"]
 evidence = "confirmed-runtime"
 patches = ["call-brains"]
 emulation = "running"
+state = "pedestrian-grab"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)", note = "Crew1 appeared 3 m in front of Rembrandt as a type 3 brain in gang 1, listed among the members, and with attack in force (automatic switching off) had its goal 52 ten updates later" }
 params = [
   { name = "name", kind = "text", default = "ConeyCrew", help = "the new human's name (15 characters at most)" },
@@ -874,8 +880,10 @@ inventories, the statistics and the object list for it; `MenuLoadLevel(name)` (`
 the level's record by name (`0x0015c7b0`), sets mode 8's next level (`0x005e5d90 + 0x20`) and the game state's
 `+0x14c` to 3, and the front end then loads the level, whose script starts at that checkpoint
 ([InitLevel](../research/level-loading.md#initlevel)). The recipe runs both in one `lua` chunk. The load takes several
-seconds; run `where` afterwards. A save state is the faster way to come back to the same place: make one with the
-debug server's save (`pcsx2_save_state` to a file of your own), never a quick-save slot.
+seconds; run `where` afterwards. A save state is the faster way back to the same place: take one from the
+[state library](pcsx2-states.md) (`coney-tools pcsx2 states list --level LEVEL`, then `states use`), or, when it is
+not there, make one with the debug server's save (`pcsx2_save_state` to a file of your own, never a quick-save slot)
+and add it with `states add`, so nobody has to load the level again.
 """
 research = ["docs/research/level-loading.md#initlevel", "docs/research/ai.md#level99-save"]
 ghidra = ["0x0041abc0 Script_SetCheckPoint", "0x00160d78 LevelFlow_LoadLevelByName"]
