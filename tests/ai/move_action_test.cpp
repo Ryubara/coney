@@ -486,7 +486,9 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
     const double flag = flags.add(100.0, "fWorkout", {41.2F, 41.0F, 0.0F}, 93.0F).handle;
     coney::ai::ScriptedBrains scripted(scene.brains, flags);
     Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, 90.0F);
-    scene.add({41.7F, 41.0F, 0.0F}, 90.0F);
+    // The bag does not fight back: a fight of its own (its first fight goal ends at once past its deadline, and the
+    // Melee goal sends it in again) would knock the player about.
+    scene.add({41.7F, 41.0F, 0.0F}, 90.0F).setThreatResponse(0);
     scene.lockOn(player);
     REQUIRE(player.human().fighter().lockTarget() != nullptr);
     // DeactivateWarchief: the pad given up.
@@ -839,6 +841,9 @@ namespace {
 // over; then neither starts a fight of his own, which would push a goal and clear the actions.
 void lockOnto(MoveScene& scene, Brain& brain, Brain& other) {
     scene.step.setOpposition([](const Human& /*one*/, const Human& /*other*/) { return true; });
+    // Neither fights back meanwhile (a fight goal past its deadline ends at once and Melee sends him in again).
+    brain.setThreatResponse(0);
+    other.setThreatResponse(0);
     brain.setTarget(&other);
     REQUIRE(brain.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
     scene.runUntil(
