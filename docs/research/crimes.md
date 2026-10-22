@@ -1242,14 +1242,15 @@ released some other way): 332 and back to 320. A body something else takes befor
 1's [mash meter](hud-functions-parts.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to the outcome,
 filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
 test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at `level80` checkpoint 2 and
-reaches checkpoint 3, and another (`[disc][uncuff][pose]`) checks the freer's distance and headings against the
-original's numbers [above](#uncuff-pose) and that the cuffed human does not move; a cuffed friendly AI human wears the
-`dyn_cuffs` icon until his release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly
-is the gangs' friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the
-partner is not kept (the link stands for the shared body group); after a hit the cuffed human goes back to 320; the
-cuffs icon stays attached over his feet rather than detached where it appeared (he does not move while cuffed). Not yet:
-hint 19, the key path, the 0.2 m capsule test, leaving the fight stance and the lock and cancelling a throw's aim as the
-mash starts, players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
+reaches checkpoint 3, and another (`[disc][uncuff][pose]`) checks the freer's distance and heading after the steer
+against the original's numbers [above](#uncuff-pose) (his heading as 325 ends is a `[!mayfail]` case until issue #263,
+[below](#open-questions)) and that the cuffed human does not move; a cuffed friendly AI human wears the `dyn_cuffs` icon
+until his release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs'
+friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the partner is not
+kept (the link stands for the shared body group); after a hit the cuffed human goes back to 320; the cuffs icon stays
+attached over his feet rather than detached where it appeared (he does not move while cuffed). Not yet: hint 19, the key
+path, the 0.2 m capsule test, leaving the fight stance and the lock and cancelling a throw's aim as the mash starts,
+players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
@@ -1266,6 +1267,15 @@ the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
 
 ## Open questions
 
+- **The freer's turn during the uncuff's steer** ([the freer's place](#uncuff-pose)): in the original the freer's
+  heading moves only by the steer's even turn over its three updates (the start at heading -90 gave -60.79, -31.57,
+  -2.36) and 325's root turn shows only after it; in Coney 325's root turn runs from the clip's first update, about
+  1.3 degrees an update on top of the steer, so the steer ends some 3 to 4 degrees further round. Whether the
+  original's 325 holds no turn in its first keys or the steer's turn replaces the root's while it lasts
+  (`Human_ApplyTurnAndSlide`, `0x0023f5e0`) is not read. Then 325's root turn itself comes out a third larger in
+  Coney (108.8 degrees against 81.0), because Coney does not scale a clip's root turn by the task's rate (issue #263,
+  [Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
+  that is fixed (the `[!mayfail]` disc case of `repo:tests/platform/disc_level80_test.cpp`).
 - **GetItem's swing at glass** ([AI: GetItem](ai.md#get-item)): at level80's pharmacy (scenario `steal_store`) two Warriors
   reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all (the
   anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point, and

@@ -958,7 +958,7 @@ std::string PlayLevelMode::heldObjectType() const {
     return script.heldObject != world_objects::kNoObject ? script.heldObjectName : std::string();
 }
 
-void PlayLevelMode::dropHeldForTag() {
+void PlayLevelMode::dropHeldObject() {
     // Out of the hand at once, with no clip: it falls from where the hand holds it.
     human::Human& human = m_player->human();
     human::ScriptState& script = human.script();

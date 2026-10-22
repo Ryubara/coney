@@ -53,6 +53,9 @@ constexpr float kStrikeBroadReach = 3.0F;
 constexpr float kChargeStopShare = 0.5F;
 // The idle a pick-up returns to (388, the plain idle).
 constexpr std::uint32_t kPickUpIdle = 388;
+// The blend into the uncuff's clips, the freer's 325 and the cuffed human's 326 (AnimTaskBlendOut 0.01 s in
+// Uncuff_Start, 0x00260ca8).
+constexpr float kUncuffFade = 0.01F;
 // The sweep slides along what it hits up to this many times.
 constexpr int kSweepPasses = 3;
 // A push smaller than this means the body is clear of the wall.
@@ -645,13 +648,15 @@ bool Human::linkedWith(const Human& other) const {
     const Holdable* self = this;
     const Holdable* that = &other;
     return (m_fighter.held() != nullptr && m_fighter.held() == that) ||
-           (other.m_fighter.held() != nullptr && other.m_fighter.held() == self);
+           (other.m_fighter.held() != nullptr && other.m_fighter.held() == self) ||
+           (m_uncuffing != nullptr && m_uncuffing == &other) ||
+           (other.m_uncuffing != nullptr && other.m_uncuffing == this);
 }
 
 float Human::pushWeight() const {
     // Every link sets both humans' weight to 1e9, and so does an arrest.
     constexpr float kImmovable = 1e9F;
-    return m_fighter.inPair() || m_script.arrested ? kImmovable : 1.0F;
+    return m_fighter.inPair() || m_script.arrested || m_uncuffing != nullptr ? kImmovable : 1.0F;
 }
 
 anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
@@ -1118,14 +1123,20 @@ void Human::restartTagSpray() {
     m_animator.playCombat(clips::one(clips::kTaggingRestart), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
 }
 
-void Human::startUncuff(anim::Vec3 cuffed, float mashFactor) {
-    // He turns to the cuffed human over 325 (Attack_SteerToTarget), which holds 0x2000000 and so keeps the mash's
-    // input closed until it ends, then loops 329 while the mash runs.
-    constexpr std::uint32_t kMashClosed = 0x2000000;
-    turnOverClip(clips::kReleaseIntro, cuffed, 1.0F);
+void Human::startUncuff(Human& cuffed, float mashFactor) {
+    // Attack_SteerToTarget(0.1, freer, cuffed, 325): the cuffed human's turn is cleared, then the freer is turned and
+    // slid onto 325's place from him; 325's own root turn faces him after (docs/research/crimes.md#uncuff-pose).
+    cuffed.m_fighter.clearSteer();
+    m_clipTurn.reset();
     m_velocity = anim::Vec3{};
-    m_animator.playCombat(clips::one(clips::kReleaseIntro), clips::kReleaseLoop, AnimState::Hold, kCombatFade,
+    m_fighter.steerUncuff(cuffed, m_position, m_heading, m_animator);
+    // 325 after a 0.01 s blend, holding 0x2000000 (the mash's input closed until it ends), then 329 while the mash
+    // runs.
+    constexpr std::uint32_t kMashClosed = 0x2000000;
+    m_animator.playCombat(clips::one(clips::kReleaseIntro), clips::kReleaseLoop, AnimState::Hold, kUncuffFade,
                           HeldFlags{.held = kMashClosed, .set = kMashClosed});
+    // Uncuff_BeginMash: the two linked (one body group, push weight 1e9) and the mash (mode 1, meter 0).
+    m_uncuffing = &cuffed;
     m_fighter.combat().startTheft(combat::TheftKind::Mash, nowMs(), 1.0F, mashFactor);
 }
 
@@ -1136,6 +1147,7 @@ bool Human::uncuffPlaying() const {
 
 void Human::endUncuff(bool hit) {
     m_clipTurn.reset();
+    m_uncuffing = nullptr;
     m_fighter.combat().abortTheft();
     // 332 after the mash, 331 after a hit; then the idle.
     m_animator.playCombat(clips::one(hit ? clips::kReleaseHitReact : clips::kReleaseEnd), clips::kIdle,
@@ -1145,7 +1157,7 @@ void Human::endUncuff(bool hit) {
 void Human::playUncuffReact(const Human& freer) {
     m_velocity = anim::Vec3{};
     m_animator.playPaired(clips::one(clips::kReleaseIntroReact), freer.animator().anims(), clips::kReleaseLoopReact,
-                          AnimState::Hold);
+                          AnimState::Hold, kUncuffFade);
 }
 
 void Human::endUncuffReact(const Human& freer, bool freed) {

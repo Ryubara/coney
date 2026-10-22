@@ -978,6 +978,17 @@ void Fighter::steerRevive(const Combatant& downed, anim::Vec3 position, float he
     m_steer.moveToOver(position, goal.stand, time);
 }
 
+void Fighter::steerUncuff(const Combatant& cuffed, anim::Vec3 position, float heading, const HumanAnimator& animator) {
+    // Uncuff_Start passes 0.1 s and clip 325; the plain steer aims at his position (he stands still, so no lead).
+    constexpr auto kAnim = static_cast<int>(clips::kReleaseIntro);
+    constexpr float kUncuffSteerSeconds = 0.1F;
+    m_steer.clear();
+    FighterInput input;
+    input.position = position;
+    input.heading = heading;
+    steerOnto(kAnim, cuffed, input, timeToEvent(kAnim, animator), kUncuffSteerSeconds, heading, false);
+}
+
 bool Fighter::ledSteer(int animId) const {
     const combat::AnimRange* range =
         m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(clips::clipOf(animId))) : nullptr;

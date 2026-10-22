@@ -348,8 +348,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void teleportPlayer(const world_objects::Placement& placement) override;
     /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
     bool startTagSpray(const std::array<float, 3>& point) override;
-    /// ScriptedPlayer: player 1's held object falls from his hand as a spray begins.
-    void dropHeldForTag() override;
+    /// ScriptedPlayer: player 1's held object falls from his hand as a spray or an uncuff begins.
+    void dropHeldObject() override;
     /// ScriptedPlayer: the type name of the object in player 1's hand.
     [[nodiscard]] std::string heldObjectType() const override;
     /// ScriptedPlayer: whether player 1's spray loop plays.
