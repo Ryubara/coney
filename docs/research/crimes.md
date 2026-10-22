@@ -305,12 +305,14 @@ press of triangle give the same numbers):
 | Start (player 1, Cleon) | Cuffed human | After the steer (3 updates) | When 325 ends |
 | --- | --- | --- | --- |
 | (-196.0, 231.65), heading 0 | Snow at (-194.9, 231.8), heading 105, in front | 0.747 m from him, heading -2.36 | heading -83.34 |
-| (-196.0, 231.65), heading -90 | Snow, as above | the same, heading -2.36 | heading -83.34 |
+| (-196.0, 231.65), heading -90 | Snow, as above | 0.779 m from him, heading -2.36 | heading -83.34 |
 | (-196.95, 233.9), heading 0 | Cowboy at (-197.5, 234.8), heading 43, behind him | 0.683 m from him, heading 111.31 | heading 30.32 |
 
-Snow's and Cowboy's positions and headings stayed the same to four decimals through 325 and 329; the heading the
-steer reaches does not depend on the freer's start heading. The freer stands about 0.06 m nearer a cuffed human he
-frees from behind (Cowboy), close to the steer's 0.1 m once 325's own small root movement is counted.
+Snow's and Cowboy's positions and headings stayed the same to four decimals through 325 and 329; the heading the steer
+reaches does not depend on the freer's start heading, and the distance differs by 3 cm (0.747 m against 0.779 m),
+inferred to be 325's first root movement taken along the two different turns. The freer stands about 0.06 m nearer a
+cuffed human he frees from behind (Cowboy), close to the steer's 0.1 m once 325's own small root movement is counted
+(inferred).
 
 ### Lock picking {#lockpick}
 
