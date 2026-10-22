@@ -288,8 +288,7 @@ int main(int argc, char** argv) {
     // The run log (docs/guides/run-log.md): the console and the log file, as the release build starts it.
     auto logOutput = coney::platform::startRunLog(*options);
     if (!logOutput) {
-        std::fprintf(stderr, "coney: %s
-", logOutput.error().message.c_str());
+        std::fprintf(stderr, "coney: %s\n", logOutput.error().message.c_str());
         return 1;
     }
     const std::unique_ptr<coney::platform::LogOutput> runLog = std::move(*logOutput);

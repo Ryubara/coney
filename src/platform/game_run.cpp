@@ -128,16 +128,16 @@ void printGameSummary(GameSession& session, AudioOutput* audio, const audio::Obj
     if (session.movies().counts().movies > 0) {
         const movies::MovieMode::Counts& counts = session.movies().counts();
         logText(std::format("movies: {} played ({} skipped, {} failed), {} frames decoded, {} shown, {} sound "
-                              "samples, {} captions\n",
-                              counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
-                              counts.samples, counts.captionsShown));
+                            "samples, {} captions\n",
+                            counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
+                            counts.samples, counts.captionsShown));
     }
     // A game played in test mode, from the story or a level: what its humans asked to be heard and what the glass and
     // doors played (counts only).
     if (audio != nullptr && testMode) {
         logText(audio->game().summary());
         logText(std::format("object sounds: {} played, {} material pairs, {} unplayed\n", objectSounds.played(),
-                              objectSounds.materialPairs(), objectSounds.unplayed()));
+                            objectSounds.materialPairs(), objectSounds.unplayed()));
     }
 }
 
