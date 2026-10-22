@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <format>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -44,6 +45,9 @@
 #include "platform/window.h"
 #include "world/sector_budget.h"
 
+using coney::platform::logError;
+using coney::platform::logText;
+using coney::platform::logWarning;
 using coney::platform::printText;
 
 // Coney throws no exceptions; what could escape is a failed allocation inside the standard library or librw, which
@@ -68,10 +72,19 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    // The run log (docs/guides/run-log.md), as the debug tools' entry point starts it: the console and `coney.log` in
+    // the player's data folder, which a bug report attaches, with the crash handlers that write the last 30 s into it.
+    auto logOutput = coney::platform::startRunLog(*options);
+    if (!logOutput) {
+        std::fprintf(stderr, "coney: %s\n", logOutput.error().message.c_str());
+        return 1;
+    }
+    const std::unique_ptr<coney::platform::LogOutput> runLog = std::move(*logOutput);
+
     // The disc, then the chunk handlers, then the game-mode stack, in the original's order (docs/research/boot.md).
     auto disc = coney::platform::openGameDisc(*options);
     if (!disc) {
-        std::fprintf(stderr, "coney: %s\n", disc.error().message.c_str());
+        logError(disc.error().message);
         return 1;
     }
     std::optional<coney::io::Wad> wad = std::move(*disc);
@@ -94,7 +107,7 @@ int main(int argc, char** argv) {
                                                                          : coney::platform::RenderBackend::OpenGl,
                                                        coney::platform::gameWindow(*options));
     if (!engine) {
-        std::fprintf(stderr, "coney: %s\n", engine.error().message.c_str());
+        logError(engine.error().message);
         return 1;
     }
     coney::platform::RenderEngine& renderer = **engine;
@@ -110,7 +123,7 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::GameSession> session;
     if (wad) {
         session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
-                        coney::platform::gameSessionSettings(*options), printText);
+                        coney::platform::gameSessionSettings(*options), logText);
     } else {
         modes.push(idle);
     }
@@ -121,17 +134,17 @@ int main(int argc, char** argv) {
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
         if (!events) {
-            std::fprintf(stderr, "coney: %s\n", events.error().message.c_str());
+            logError(events.error().message);
             return 1;
         }
         input = std::make_unique<coney::ScriptedInput>(std::move(*events));
     } else if (renderer.window()) {
         auto started = coney::platform::SdlInput::start();
         if (started) {
-            started->get()->setLog(printText);
+            started->get()->setLog(logText);
             input = std::move(*started);
         } else {
-            std::fprintf(stderr, "coney: %s; running without pads\n", started.error().message.c_str());
+            logWarning(std::format("{}; running without pads", started.error().message));
         }
     }
     // Network play (docs/guides/multiplayer.md), hosted or joined from the start with `--host` or `--join`; a port that
@@ -155,7 +168,7 @@ int main(int argc, char** argv) {
                                                                   : coney::FramePacing::Interpolated);
     std::optional<coney::platform::FramePacer> pacer;
     if (!testMode) {
-        pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(printText)
+        pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(logText)
                                                : std::function<void(std::string_view)>());
     }
 
@@ -198,7 +211,7 @@ int main(int argc, char** argv) {
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {
-        printText(pacer->summary());
+        logText(pacer->summary());
     }
     coney::platform::finishNetPlay(netPlay, *options);
     if (session) {

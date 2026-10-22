@@ -39,6 +39,9 @@ play instead, so the two differ by the steps before it.
   last run's to `coney.prev.log`, so the log of a run that crashed survives the next start. `--log-file FILE` writes
   to `FILE` instead. A test-mode run (`--headless`, `--frames`, `--input-script`, ...) touches no user folder, so it
   writes a file only when given `--log-file`. Each line is flushed as it is written, so a crash loses nothing.
+- **In the release build.** The build a player gets ([without the debug tools](building.md#debug-tools)) starts the
+  same outputs: the console, `coney.log` and the crash handlers. It refuses `--log-file` and `--log-verbose`, which
+  are developers' options, and has no Time page to write a bug report from.
 
 ## Levels and categories {#categories}
 
