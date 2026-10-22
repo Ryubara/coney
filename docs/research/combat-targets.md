@@ -417,7 +417,7 @@ addresses cited):
 
 **Turning into an attack** (`Attack_Start`, `0x002625a8`): with the target within the attack's far range, it tells
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
-the time to the hit + 0.1 s, sits at the clip's reach (+0.07 m for a target scaled above 1.1, -0.1 m from behind).
+the time to the hit + 0.1 s, sits at the clip's reach (+0.07 m for a target scaled above 1.1, else -0.1 m from behind).
 Beyond the range it only turns (`0x00276008`), capped at 8. Confirmed (code).
 
 **The steer in detail** (`Attack_SteerToTarget`, `0x002761c8`; confirmed (code) unless marked):

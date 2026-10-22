@@ -290,7 +290,7 @@ Only the freer moves; the cuffed human stays where he was cuffed, facing the way
   velocity, which is none), clears the cuffed human's turn and the freer's (`Human_ClearTurn`, `0x0023cf70`), then
   turns the freer (`Human_TurnToOver`, `0x0023cf88`) so that the cuffed human lies along 325's direction in the Anim
   Range List (`AttackTable_GetOffset`) and slides him (`Human_MoveToOver`, `0x0023d2b8`) to 325's reach from the
-  cuffed human (`AttackTable_GetReach`, 0.07 m more for a human of scale above 1.1, 0.1 m less from behind him),
+  cuffed human (`AttackTable_GetReach`, 0.07 m more for a human of scale above 1.1, else 0.1 m less from behind him),
   both at an even rate over that time.
 - **The clip's turn.** 325's direction is far to one side, so the steer leaves the freer turned away from the cuffed
   human; 325's own root motion then turns him by about 81 degrees, 3.375 degrees an update, to face him as the clip

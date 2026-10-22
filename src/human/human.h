@@ -662,7 +662,7 @@ class Human final : public Holdable {
     /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
     /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest), or one frees
     /// the other from his cuffs (`Uncuff_BeginMash`). **Coney stand-in**: the scenes' shared group is not set.
-    /// @orig 0x0022c760 Grab_Link (unknown)
+    /// @orig 0x0022c730 Grab_Link (unknown)
     [[nodiscard]] bool linkedWith(const Human& other) const;
     /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, or freeing a
     /// cuffed human), else 1.

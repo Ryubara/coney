@@ -1005,10 +1005,10 @@ float Fighter::steerReach(std::uint32_t clipId, const Combatant& target, const F
                           float distance) const {
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clipId) : nullptr;
     float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
+    // Either-or (0x002762f8-0x00276344): a big target takes the longer reach and skips the side test.
     if (target.bodyScale() > kSteerBigScale) {
         reach += kSteerBigReach;
-    }
-    if (combat::victimSide(target.position(), target.heading(), input.position) == combat::Side::Rear) {
+    } else if (combat::victimSide(target.position(), target.heading(), input.position) == combat::Side::Rear) {
         reach -= kSteerRearReach;
     }
     return reach;

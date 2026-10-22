@@ -213,8 +213,8 @@ class Fighter {
     /// The uncuff's steer (`Uncuff_Start` calls `Attack_SteerToTarget` for clip 325 with 0.1 s,
     /// docs/research/crimes.md#uncuff-pose): from `position` and `heading`, the attacks' plain steer onto `cuffed`
     /// (steerOnto() without the lead): turned so that he lies along 325's direction and slid to 325's reach from him
-    /// (longer for a big human, shorter from behind him), both over the smaller of 0.1 s and 325's time to its first
-    /// event + 0.1 s. 325's own root turn then brings the freer round to face him.
+    /// (longer for a big human, else shorter from behind him), both over the smaller of 0.1 s and 325's time to its
+    /// first event + 0.1 s. 325's own root turn then brings the freer round to face him.
     /// @orig 0x002761c8 Attack_SteerToTarget (unknown)
     void steerUncuff(const Combatant& cuffed, anim::Vec3 position, float heading, const HumanAnimator& animator);
     /// Drops what is left of the steer's turn and slide (`Human_ClearTurn`, which `Attack_SteerToTarget` calls on its
@@ -529,7 +529,8 @@ class Fighter {
     // The time from the start of attack `animId`'s clip to its first contact event; 0 without the clip.
     [[nodiscard]] static float timeToEvent(int animId, const HumanAnimator& animator);
     // Where an attack of clip `clipId` at `target`, `distance` away, should stand from it: the clip's reach, 0.07 m
-    // longer for a big target and 0.1 m shorter from behind it; without a reach, where the target stands.
+    // longer for a big target, else 0.1 m shorter from behind it (never both); without a reach, where the target
+    // stands.
     [[nodiscard]] float steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input,
                                    float distance) const;
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise.

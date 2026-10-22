@@ -1136,6 +1136,9 @@ void Human::startUncuff(Human& cuffed, float mashFactor) {
     m_animator.playCombat(clips::one(clips::kReleaseIntro), clips::kReleaseLoop, AnimState::Hold, kUncuffFade,
                           HeldFlags{.held = kMashClosed, .set = kMashClosed});
     // Uncuff_BeginMash: the two linked (one body group, push weight 1e9) and the mash (mode 1, meter 0).
+    // **Coney stand-in**, not built (docs/research/crimes.md#uncuffing): Uncuff_BeginMash's exit from the fight stance
+    // and the lock, its cancel of a throw's aim, its state flags and hint 19, and Uncuff_Start's action 0x15 and its
+    // push spheres turned off. The freer's final heading is off by 325's unscaled root turn (#263).
     m_uncuffing = &cuffed;
     m_fighter.combat().startTheft(combat::TheftKind::Mash, nowMs(), 1.0F, mashFactor);
 }

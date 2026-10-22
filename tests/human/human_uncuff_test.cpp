@@ -116,3 +116,28 @@ TEST_CASE("an uncuff from behind the cuffed human stands 0.1 m nearer, as 325's 
     CHECK(std::hypot(cuffedAt.x - freer.position().x, cuffedAt.y - freer.position().y) == Approx(0.9F).margin(0.01F));
     CHECK(std::fabs(coney::human::wrapAngle(freer.heading() + kQuarter)) < 0.01F);
 }
+
+TEST_CASE("an uncuff from behind a big cuffed human stands 0.07 m farther, as the rear cut is skipped for him",
+          "[human][uncuff]") {
+    const coney::test::FightCharacter character(uncuffClips());
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human freer(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                &character.ranges);
+    // Scaled 1.2, above the big-target scale 1.1: Attack_SteerToTarget adds 0.07 m and then skips the side test
+    // (0x002762f8-0x00276344), so the reach is 1.07 m, not 0.97 m, though the freer comes from behind him.
+    Human cuffed(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.2F,
+                 &character.ranges);
+    constexpr float kQuarter = std::numbers::pi_v<float> / 2.0F;
+    freer.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    cuffed.spawn(mesh.get(), Vec3{42.0F, 40.0F, 0.0F}, -90.0F);
+    freer.step(still(), mesh.get());
+    cuffed.step(still(), mesh.get());
+    const Vec3 cuffedAt = cuffed.position();
+    freer.startUncuff(cuffed, 1.0F);
+    for (int update = 0; update < 3; ++update) {
+        freer.step(still(), mesh.get());
+        cuffed.step(still(), mesh.get());
+    }
+    CHECK(std::hypot(cuffedAt.x - freer.position().x, cuffedAt.y - freer.position().y) == Approx(1.07F).margin(0.01F));
+    CHECK(std::fabs(coney::human::wrapAngle(freer.heading() + kQuarter)) < 0.01F);
+}

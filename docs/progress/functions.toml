@@ -4998,10 +4998,10 @@ name = "Tandem_LinkThree"
 subsystem = "Human"
 
 [[function]]
-address = 0x0022c760
+address = 0x0022c730
 name = "Grab_Link"
 subsystem = "Human"
-size = 928
+size = 976
 
 [[function]]
 address = 0x0022ceb8
