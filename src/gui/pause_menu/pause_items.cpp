@@ -16,6 +16,8 @@ PauseGridLayout pauseGrid(int level) {
     namespace s = pause_strings;
     const bool rumble = isRumbleLevel(level);
     PauseGridLayout layout;
+    // Room for the most items up front: GCC 13 at -O3 otherwise warns a false stringop-overflow on the pushes below.
+    layout.items.reserve(7);
     // Each item with its separator as the table gives it: none after the end of row 1 (Options in a story level,
     // Controls in a Rumble level) and after Quit.
     layout.items.push_back({PauseItem::Objectives, rumble ? s::kRules : s::kObjectives, true});
