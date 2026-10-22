@@ -2958,10 +2958,10 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 
 - Why Coney's waiting attackers taunt about a tenth as often as the original's (the level99 sparring fight: 11
   `cheer2` taunts in 1,198 updates in the original, 0-2 in Coney; [The reposition](#fight-reposition)). To check, in
-  this order: how long each Warrior waits in the reposition (Coney may let more of them attack at once); the gesture
-  slots, which the original keeps per reaction kind (`Brain_GetReactionKind`) with as many as the brain's help level
-  (`Brain_GetHelpLevel`, 1 or 2) in `Ambient_MayGesture` (`0x00291ed0`), where Coney keeps two for everyone; and the
-  close-in test, which reads the player's own target.
+  this order: how long each Warrior waits in the reposition (Coney may let more of them attack at once); and the
+  close-in test, which reads the player's own target. The gesture slots are ruled out: Coney keeps them as the original
+  does, per reaction kind and help level ([Gestures](sound-events.md#command-ids)), and the sparring Warriors (type 2)
+  have two, as everyone had before.
 - Movement and world use: MoveToUseFlag's clip states once he is on the flag; the pedestrian's flag re-use timer
   (goal `+0x6c`, 65 s inferred); the gait AvoidEnemies keeps in its `+0x3c`; why ChaseSupport jogs within 3 m;
   ManWeaponPile's Process (`0x002a3498`, not read).

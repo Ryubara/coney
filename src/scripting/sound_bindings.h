@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -54,6 +55,9 @@ struct CommandCall {
     bool cutting = false;
 };
 
+/// The reaction kinds the gesture slots are kept by (`Brain_GetReactionKind`: the brain types 0-6).
+inline constexpr std::size_t kGestureKinds = 7;
+
 /// A human's sound as gameplay hands it to the game's sound (docs/research/sound-events.md): what his update asked for
 /// and what choosing its sounds reads of him.
 struct HumanSoundCall {
@@ -72,6 +76,10 @@ struct HumanSoundCall {
     std::uint32_t heldModel = 0;               ///< That object's model hash (`+0xc4`).
     int heldType = 0;                          ///< That object's type (`+0x86`; 8 a Molotov).
     human::HumanSound sound;                   ///< What he asked for.
+    /// His brain's reaction kind (`Brain_GetReactionKind` `0x00291d48`), which picks his gesture slots.
+    int gestureKind = 0;
+    /// How many of that kind's two gesture slots he may take (`Brain_GetHelpLevel` `0x00291db8`: 1 or 2).
+    int gestureSlots = 2;
 };
 
 /// What the sound bindings and gameplay ask of the game's sound: configuration, the ambience, the music, the listener,

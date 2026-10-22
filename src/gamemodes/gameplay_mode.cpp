@@ -925,24 +925,7 @@ void GameplayMode::reportHumanSounds() {
             continue;
         }
         const anim::Vec3 feet = body.position();
-        const ai::Brain* target = brain->target();
-        script::HumanSoundCall call{.human = handle,
-                                    .characterType = brain->characterClass(),
-                                    .position = {feet.x, feet.y, feet.z},
-                                    .headingDegrees = body.heading() * 180.0F / std::numbers::pi_v<float>,
-                                    .player = brain == player,
-                                    .ground = body.groundMaterial(),
-                                    .hiddenInShadow = false,
-                                    .combatFraming = brain == player && framing,
-                                    .burning = false,
-                                    .targetIsPlayer = target != nullptr && target == player,
-                                    .hasThrowTarget = false,
-                                    .heldMaterial = std::nullopt,
-                                    .heldModel = 0,
-                                    .heldType = 0,
-                                    .sound = {}};
-        // **Coney's stand-ins** for what Coney's humans do not have yet: no sneaking in shadow, no burning, no world
-        // object in hand, no throw.
+        script::HumanSoundCall call = humanSoundCallOf(handle, *brain, player, framing);
         for (const human::HumanSound& sound : sounds) {
             call.sound = sound;
             // A scene's role clip sounds where the scene holds him, on the ground there.
@@ -953,6 +936,31 @@ void GameplayMode::reportHumanSounds() {
             m_context.sound->humanSound(call);
         }
     }
+}
+
+script::HumanSoundCall humanSoundCallOf(double handle, const ai::Brain& brain, const ai::Brain* player, bool framing) {
+    const human::Human& body = brain.human();
+    const anim::Vec3 feet = body.position();
+    const ai::Brain* target = brain.target();
+    // **Coney's stand-ins** for what Coney's humans do not have yet: no sneaking in shadow, no burning, no world object
+    // in hand, no throw.
+    return script::HumanSoundCall{.human = handle,
+                                  .characterType = brain.characterClass(),
+                                  .position = {feet.x, feet.y, feet.z},
+                                  .headingDegrees = body.heading() * 180.0F / std::numbers::pi_v<float>,
+                                  .player = &brain == player,
+                                  .ground = body.groundMaterial(),
+                                  .hiddenInShadow = false,
+                                  .combatFraming = &brain == player && framing,
+                                  .burning = false,
+                                  .targetIsPlayer = target != nullptr && target == player,
+                                  .hasThrowTarget = false,
+                                  .heldMaterial = std::nullopt,
+                                  .heldModel = 0,
+                                  .heldType = 0,
+                                  .sound = {},
+                                  .gestureKind = ai::reactionKind(brain),
+                                  .gestureSlots = ai::helpLevel(brain)};
 }
 
 void GameplayMode::syncSystemLights() {

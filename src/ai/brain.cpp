@@ -17,6 +17,7 @@
 #include "ai/story_goals.h"
 #include "ai/swap_prompt.h"
 #include "ai/tactic.h"
+#include "ai/tactic_confront.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
@@ -762,6 +763,42 @@ void releaseToAi(Brain& brain, BrainType leftAs) {
     const std::uint64_t released = releasedFlags(human.flags(), leftAs);
     human.setFlag(~released, false);
     human.setFlag(released, true);
+}
+
+int reactionKind(const Brain& brain) {
+    constexpr int kBossRole = 13;
+    if (brain.type() == BrainType::Player) {
+        return static_cast<int>(BrainType::Warrior);
+    }
+    if (brain.type() == BrainType::Gang) {
+        const Gang* gang = brain.gang();
+        if (gang != nullptr && gang->owner().roleOf(brain) == kBossRole) {
+            return 0;
+        }
+    }
+    return static_cast<int>(brain.type());
+}
+
+int helpLevel(const Brain& brain) {
+    constexpr int kSoloRole = 6;
+    switch (brain.type()) {
+    case BrainType::Cop:
+    case BrainType::Warrior:
+        return 1;
+    case BrainType::Gang:
+    case BrainType::Civilian: {
+        // The class role and the gang's tactic each bring it down to one.
+        const Gang* gang = brain.gang();
+        if (gang == nullptr) {
+            return 2;
+        }
+        const Tactic* tactic = gang->tactic();
+        const bool confront = tactic != nullptr && tactic->type() == kConfrontTactic;
+        return gang->owner().roleOf(brain) == kSoloRole || confront ? 1 : 2;
+    }
+    default:
+        return 2;
+    }
 }
 
 } // namespace coney::ai

@@ -33,6 +33,7 @@
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "scripting/sound_bindings.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "warriors/tag_session.h"
@@ -48,6 +49,13 @@
 #include "world_objects/volume_boxes.h"
 
 namespace coney {
+
+/// The sound call for the human of `brain` (script handle `handle`) as gameplay hands his anim sounds to the game's
+/// sound: who he is and what choosing his sounds reads of him; `player` is player 1's brain and `framing` whether the
+/// camera frames player 1's fight. The sound itself and where it sounds are the caller's.
+/// @coney-only glue between the play mode and the game's sound; the original's sound reads the human itself
+[[nodiscard]] script::HumanSoundCall humanSoundCallOf(double handle, const ai::Brain& brain, const ai::Brain* player,
+                                                      bool framing);
 
 /// A loaded level whose player 1 a script can move while it plays: a `TeleportToFlag` on player 1 after the level
 /// loaded (the hub's door walk starts 100 ms into play) reaches the level through this. The play mode implements it.

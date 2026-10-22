@@ -173,15 +173,17 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
         bool sayLine(const script::HumanSoundCall& who, std::uint32_t hash, float volume, bool cut) override;
         bool sayCommand(const script::HumanSoundCall& who, std::uint32_t command, float volume, bool interrupt,
                         bool duckable) override;
-        // **Coney's stand-in** for the brains' reaction-kind slots (not built): a camera within 30 m, and at most two
-        // humans saying gesture lines at a time.
+        // A camera within 30 m and a free slot among the first `who.gestureSlots` of his reaction kind's two
+        // (`0x006cddf8`, 8 bytes a kind): one whose holder no longer resolves or no longer speaks. The slot then holds
+        // him, so a speaker still talking keeps his and may take the other.
         // @orig 0x00291ed0 Ambient_MayGesture (unknown)
         bool mayGesture(const script::HumanSoundCall& who) override;
         [[nodiscard]] bool scenePlaying() const override;
 
       private:
         GameSound& m_owner;
-        std::vector<double> m_gesturing; // who holds a gesture slot while his line plays
+        // The gesture slots (`0x006cddf8`): two per reaction kind, the holder's handle or nothing.
+        std::array<std::array<std::optional<double>, 2>, script::kGestureKinds> m_gesturing{};
     };
 
     // The traits of a human of `type` from the `CfgChar` records (and `CfgBreathingSound`), and whether `human` may

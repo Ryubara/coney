@@ -739,4 +739,17 @@ bool deliverEvent(Brain& brain, const BrainEvent& event);
 /// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
 void releaseToAi(Brain& brain, BrainType leftAs);
 
+/// `brain`'s reaction kind, which picks its gesture slots (docs/research/ai.md#fight-reposition): its type, but 0 for
+/// a gang brain of class role 13, and 3 for the player. **Coney stand-ins**: the player's 0 in co-op (game state
+/// `+0x158` set) is not read; the AI has no co-op word, so the player is taken as alone. The class role is read
+/// through the gang's lookups (as helpLevel()'s is), so a gang brain with no gang keeps its type, 2.
+/// @orig 0x00291d48 Brain_GetReactionKind (unknown)
+[[nodiscard]] int reactionKind(const Brain& brain);
+
+/// How many of its reaction kind's two gesture slots `brain` may take: 1 for a cop or a Warrior, and for a gang
+/// brain or a civilian of class role 6 or whose gang runs the confront tactic (`0x23`); else 2. **Coney stand-in**:
+/// the class role is read through the gang's lookups, so a gang brain or a civilian with no gang takes 2.
+/// @orig 0x00291db8 Brain_GetHelpLevel (unknown)
+[[nodiscard]] int helpLevel(const Brain& brain);
+
 } // namespace coney::ai
