@@ -19,7 +19,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
-| `.claude/agents/` | The roles: `engineer`, `reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer` | Claude Code |
+| `.claude/agents/` | The roles: `engineer`, `tooling`, `reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/release_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call, and their `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
@@ -58,7 +58,9 @@ the description, the diff, the logs and every picture, and writes only its verdi
 (`REVIEW.md`) next to `PR.md`. Its tools are Read, Glob, Grep, Bash and Write; its instructions keep Bash to
 read-only commands and Write to those two files. The coordinator runs it headlessly with `coney-tools repo review`
 ([repo review](coney-tools.md#repo-review)), or starts it as an agent on a `PR.md`, a worktree and a base branch.
-The engineer uses the Ghidra and PCSX2 MCP tools and writes `src/`; the code and research reviewers report and never
+The engineer uses the Ghidra and PCSX2 MCP tools and writes `src/`. The `tooling` engineer is set to Sonnet: it builds
+the project's own tools and process (`python/`, `.github/`, `.claude/`, the Claude Code mod, build configuration and
+their guides) and does no reverse engineering. The code and research reviewers report and never
 edit (`disallowedTools` withholds Edit, Write and NotebookEdit). Effort, turn and token limits are each user's own
 settings and stay out of the repository.
 
