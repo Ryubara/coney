@@ -763,6 +763,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
         m_attachedDraws.clear();
         poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
+        poseHeldObject(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         poseCarriedProp(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         m_mesh->update(m_positions, m_normals);
         const raycast::CollisionMesh& ground = m_scenery->collision();
@@ -796,6 +797,8 @@ void PlayLevelMode::render(const RenderTime& time) {
             FighterMesh& mesh = m_fighterMeshes[i];
             skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
+            // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
+            poseHeldObject(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             poseCarriedProp(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             mesh.mesh->update(mesh.positions, mesh.normals);
             m_lights->addShadow(ground, pose.feet);
@@ -834,10 +837,10 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
     };
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
-    const auto drawObjects = [this, &drawCars, &snapshot, alpha] {
+    const auto drawObjects = [this, &drawCars, alpha] {
         drawCharacter();
         drawCars(graphics::CarPass::Opaque);
-        drawWorldObjects(snapshot, alpha);
+        drawWorldObjects(alpha);
     };
     // After the `d` world, as the world pass orders it (docs/research/world.md#a-frame, steps 9-10): the water, then
     // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world
