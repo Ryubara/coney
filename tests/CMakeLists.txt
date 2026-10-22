@@ -106,7 +106,6 @@ add_executable(coney_tests
     platform/disc_hub_test.cpp
     platform/disc_level80_end_test.cpp
     platform/disc_level80_test.cpp
-    platform/disc_fall_camera_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_given_weapon_test.cpp
@@ -436,6 +435,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_change_character_test.cpp
         platform/disc_debug_clear_fighters_test.cpp
         platform/disc_debug_movies_test.cpp
+        platform/disc_fall_camera_test.cpp
         platform/disc_fighter_models_test.cpp
         platform/disc_game_session_test.cpp
         platform/disc_hub_doors_test.cpp
