@@ -83,7 +83,7 @@ void GameplayMode::startTag(double human, double tag, double flag) {
         const std::string held = scripted->heldObjectType();
         if (!held.empty() && tagDropsHeld(m_pickups->animSetOf(held))) {
             m_log(std::format("tag: player drops his {} to spray\n", held));
-            scripted->dropHeldForTag();
+            scripted->dropHeldObject();
         }
     }
     const std::optional<anim::Vec3> at = promptObjectPosition(tag);

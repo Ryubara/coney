@@ -62,7 +62,8 @@ inline constexpr float kSteerLeadExtraSeconds = 0.1F;
 inline constexpr float kSteerLeadHalveBeyond = 1.0F;
 /// ... and is cut to this long (m).
 inline constexpr float kSteerLeadCut = 0.5F;
-/// The reach is longer by this for a target scaled above kSteerBigScale, and shorter by kSteerRearReach from behind.
+/// The reach is longer by this for a target scaled above kSteerBigScale; only a smaller target's is shorter by
+/// kSteerRearReach from behind.
 inline constexpr float kSteerBigReach = 0.07F;
 inline constexpr float kSteerBigScale = 1.1F;
 inline constexpr float kSteerRearReach = 0.1F;

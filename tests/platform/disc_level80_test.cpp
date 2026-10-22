@@ -593,6 +593,185 @@ float aimStick(int steps) {
 
 } // namespace
 
+namespace {
+
+// One uncuff start the original was traced through (PCSX2 2.9.129, level80 checkpoint 2, issue #714): player 1 put at
+// `start` facing heading 0 next to the cuffed Warrior at `flag`, then triangle. `steered` is the freer's distance from
+// the cuffed human and his heading (degrees) when Attack_SteerToTarget's 0.1 s turn and slide have ended, three
+// updates after he first moves; `faced` his heading when 325's own root turn has ended
+// (docs/research/crimes.md#uncuff-pose).
+struct UncuffPose {
+    double flag = 0;
+    std::array<float, 3> start{};
+    float steeredDistance = 0.0F;
+    float steeredHeading = 0.0F;
+    float facedHeading = 0.0F;
+};
+
+// The original's numbers, read per update in PCSX2 from the same starts.
+constexpr std::array<UncuffPose, 2> kUncuffPoses{
+    UncuffPose{.flag = 20,
+               .start = {-196.0F, 231.65F, 1.23F},
+               .steeredDistance = 0.747F,
+               .steeredHeading = -2.36F,
+               .facedHeading = -83.34F},
+    UncuffPose{.flag = 21,
+               .start = {-196.95F, 233.9F, 1.22F},
+               .steeredDistance = 0.683F,
+               .steeredHeading = 111.31F,
+               .facedHeading = 30.32F},
+};
+
+// What Coney did from one of kUncuffPoses' starts, and whether the cuffed human stayed where he was.
+struct UncuffMeasured {
+    float steeredDistance = 0.0F;
+    float steeredHeading = 0.0F;
+    float facedHeading = 0.0F;
+    bool cuffedStill = true;
+};
+
+// Degrees from `from` to `to`, wrapped to [-180, 180).
+float degreesBetween(float from, float to) {
+    constexpr float kTurn = 360.0F;
+    constexpr float kHalf = 180.0F;
+    float d = std::fmod(to - from + kHalf, kTurn);
+    if (d < 0.0F) {
+        d += kTurn;
+    }
+    return d - kHalf;
+}
+
+// level80 checkpoint 2 played to Snow and Cowboy cuffed (as the uncuff test above does: the scene's box, the marker,
+// the scene skipped), then each of kUncuffPoses: player 1 put at its start, triangle, 325 played out, circle to quit.
+std::vector<UncuffMeasured> measureUncuffPoses(coney::platform::RenderEngine& engine, const coney::io::Wad& wad) {
+    std::vector<UncuffMeasured> measured;
+    Level80 level(engine, wad, 2);
+    constexpr int kWait = 30 * 60;
+    REQUIRE(
+        level.runUntil([&level] { return level.play() != nullptr && level.play()->player().padControlled(); }, kWait));
+    level.play()->teleportPlayer(
+        coney::world_objects::Placement{.position = {-191.0F, 213.0F, 1.3F}, .headingDegrees = 0.0F});
+    level.run(60);
+    level.play()->teleportPlayer(
+        coney::world_objects::Placement{.position = {-195.8F, 226.6F, 1.3F}, .headingDegrees = 0.0F});
+    int frame = 0;
+    REQUIRE(level.runUntil(
+        [&level, &frame] {
+            constexpr int kTapEvery = 30;
+            level.pad.buttons = (++frame % kTapEvery == 0) ? coney::pad::kCross : 0;
+            return std::ranges::count_if(level.log, [](const std::string& line) {
+                       return line.starts_with("uncuff: human ") && line.contains(" arrested");
+                   }) >= 2;
+        },
+        kWait));
+    level.pad.buttons = 0;
+    REQUIRE(skipToPad(level, kWait));
+
+    constexpr float kDegrees = 180.0F / 3.14159265F;
+    for (const UncuffPose& pose : kUncuffPoses) {
+        const coney::world_objects::WorldFlag* flag = level.scripts->flags().find(pose.flag);
+        REQUIRE(flag != nullptr);
+        level.play()->teleportPlayer(coney::world_objects::Placement{.position = pose.start, .headingDegrees = 0.0F});
+        level.run(3);
+        // The cuffed human nearest the flag.
+        const coney::ai::Brains* brains = level.gameplay->brains();
+        REQUIRE(brains != nullptr);
+        const coney::human::Human* cuffed = nullptr;
+        float best = 4.0F;
+        for (std::size_t i = 0; i < brains->size(); ++i) {
+            const coney::human::Human& human = brains->at(i).human();
+            const float d = std::hypot(human.position().x - flag->position[0], human.position().y - flag->position[1]);
+            if (human.script().arrested && d < best) {
+                cuffed = &human;
+                best = d;
+            }
+        }
+        REQUIRE(cuffed != nullptr);
+        const coney::human::Human& freer = level.play()->player().human();
+        const coney::anim::Vec3 cuffedAt = cuffed->position();
+        const float cuffedHeading = cuffed->heading();
+        UncuffMeasured result;
+        // Whether the cuffed human is still where he was cuffed, facing the same way.
+        const auto still = [&] {
+            return std::hypot(cuffed->position().x - cuffedAt.x, cuffed->position().y - cuffedAt.y) < 0.001F &&
+                   std::fabs(degreesBetween(cuffedHeading * kDegrees, cuffed->heading() * kDegrees)) < 0.1F;
+        };
+        level.pad.buttons = coney::pad::kTriangle;
+        level.run(1);
+        level.pad.buttons = 0;
+        REQUIRE(freer.animator().animId() == 325);
+        // The steer's three updates from the first in which he moves.
+        const coney::anim::Vec3 pressedAt = freer.position();
+        int updates = 0;
+        while (std::hypot(freer.position().x - pressedAt.x, freer.position().y - pressedAt.y) < 1e-4F && updates < 3) {
+            level.run(1);
+            ++updates;
+        }
+        level.run(2);
+        result.steeredDistance = std::hypot(freer.position().x - cuffedAt.x, freer.position().y - cuffedAt.y);
+        result.steeredHeading = freer.heading() * kDegrees;
+        // Then 325 plays out, its root turning him to face the cuffed human.
+        updates = 0;
+        while (freer.animator().animId() == 325 && updates < 120) {
+            level.run(1);
+            ++updates;
+            result.cuffedStill = result.cuffedStill && still();
+        }
+        result.facedHeading = freer.heading() * kDegrees;
+        std::printf("  level80 uncuff pose (flag %g): steered %.3f m at %.2f deg (original %.3f, %.2f), 325 ended at "
+                    "%.2f deg (original %.2f), cuffed human %s\n",
+                    pose.flag, result.steeredDistance, result.steeredHeading, pose.steeredDistance, pose.steeredHeading,
+                    result.facedHeading, pose.facedHeading, result.cuffedStill ? "still" : "moved");
+        measured.push_back(result);
+        // The mash abandoned (circle quits it), so the next one starts from the arrest again.
+        level.pad.buttons = coney::pad::kCircle;
+        level.run(1);
+        level.pad.buttons = 0;
+        level.run(60);
+    }
+    return measured;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level80: the uncuff steers the freer onto 325's reach from the cuffed human, who does not move",
+          "[disc][story][uncuff][pose]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const std::vector<UncuffMeasured> measured = measureUncuffPoses(**engine, *wad);
+    REQUIRE(measured.size() == kUncuffPoses.size());
+    for (std::size_t i = 0; i < measured.size(); ++i) {
+        const UncuffPose& pose = kUncuffPoses.at(i);
+        const UncuffMeasured& got = measured.at(i);
+        CHECK(std::fabs(got.steeredDistance - pose.steeredDistance) < 0.03F);
+        // Within 5 degrees: Coney's 325 turns the root during the steer's three updates as well (about 1.3 degrees an
+        // update), where the original's steer alone turns him (docs/research/crimes.md#uncuff-pose, open question).
+        CHECK(std::fabs(degreesBetween(pose.steeredHeading, got.steeredHeading)) < 5.0F);
+        CHECK(got.cuffedStill);
+    }
+}
+
+// 325's root turn comes out a third larger in Coney than in the original because Coney does not scale a clip's root
+// turn by the task's rate (issue #263), so the freer ends about 30 degrees past facing the cuffed human.
+TEST_CASE("the disc's level80: 325's root turn ends the freer facing the cuffed human as in the original",
+          "[disc][story][uncuff][pose][!mayfail]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const std::vector<UncuffMeasured> measured = measureUncuffPoses(**engine, *wad);
+    REQUIRE(measured.size() == kUncuffPoses.size());
+    for (std::size_t i = 0; i < measured.size(); ++i) {
+        CHECK(std::fabs(degreesBetween(kUncuffPoses.at(i).facedHeading, measured.at(i).facedHeading)) < 2.0F);
+    }
+}
+
 TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from the aim, the thefts, the back door",
           "[disc][story][throw][steal]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();

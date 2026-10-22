@@ -52,6 +52,11 @@ bool friendlyTo(const ai::Brain& brain, const ai::Brain& player) {
     return ai::Gangs::friends(brain.gang(), player.gang());
 }
 
+// Whether a held weapon of anim set `animSet` leaves the freer's hand as the mash starts: set 3 (a club: a pipe, a
+// bat, a crowbar) or 4 (an overhead weapon).
+// @orig 0x0022d3f8 Uncuff_BeginMash (unknown)
+constexpr bool uncuffDropsHeld(int animSet) { return animSet == 3 || animSet == 4; }
+
 } // namespace
 
 void GameplayMode::onArrest(ai::Brain& brain, bool arrested) {
@@ -150,16 +155,25 @@ bool GameplayMode::startUncuff(human::Human& freer) {
     if (cuffed == nullptr || player == nullptr || m_uncuff) {
         return false;
     }
-    // Uncuff_Start without a key: the freer says 68 and turns to the cuffed human over 325; the mash runs with his
-    // Warrior class's factor; the cuffed human plays his half. **Coney's readings**: the 0.2 m capsule test between the
-    // two and the key path (`Uncuff_WithKey`, `0x00260fd0`) are not built.
+    // Uncuff_Start without a key: the freer says 68 and is steered onto the cuffed human for 325
+    // (docs/research/crimes.md#uncuff-pose); the mash runs with his Warrior class's factor; the cuffed human plays his
+    // half where he stands. **Coney's readings**: the 0.2 m capsule test between the two and the key path
+    // (`Uncuff_WithKey`, `0x00260fd0`) are not built.
     const int mashByte = script::warriorMashByte(&m_recorded, characters::warriorClassOf(player->type));
     const float factor = combat::mashFactor(static_cast<std::uint8_t>(mashByte));
     if (m_context.sound != nullptr) {
         static_cast<void>(m_context.sound->sayCommand(
             script::CommandCall{.human = player->handle, .command = kReassureCommand, .interrupt = true}, {}));
     }
-    freer.startUncuff(cuffed->human().position(), factor);
+    // Uncuff_BeginMash drops a held weapon of anim set 3 (a club) or 4 (an overhead one) first.
+    if (auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get()); scripted != nullptr && m_pickups) {
+        const std::string held = scripted->heldObjectType();
+        if (!held.empty() && uncuffDropsHeld(m_pickups->animSetOf(held))) {
+            m_log(std::format("uncuff: player drops his {} to free him\n", held));
+            scripted->dropHeldObject();
+        }
+    }
+    freer.startUncuff(cuffed->human(), factor);
     // The triangle press shows player 1's mash meter: button id 1, the L1-R1 sprite word.
     if (m_context.hud != nullptr) {
         m_context.hud->mashMeter(0).show(1, hud::MashMeter::kUncuffWord);

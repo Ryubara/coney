@@ -89,8 +89,8 @@ class ScriptedPlayer {
     /// Whether player 1's spray clips still play (false: something else took the body).
     [[nodiscard]] virtual bool tagSprayPlaying() const { return true; }
     /// Player 1's held object leaves his hand, falling where he stands: a spray begins with an overhead or ghetto
-    /// weapon in it (GameplayMode::startTag()).
-    virtual void dropHeldForTag() {}
+    /// weapon in it (GameplayMode::startTag()), an uncuff with a club or an overhead one (GameplayMode::startUncuff()).
+    virtual void dropHeldObject() {}
     /// The type name of the object in player 1's hand (`dyn_pipe_a`); empty with nothing held.
     [[nodiscard]] virtual std::string heldObjectType() const { return {}; }
     /// A pause of player 1's stick game began (a slip or a new charge): his spray clips restart

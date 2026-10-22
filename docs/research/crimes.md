@@ -2,7 +2,8 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
 (Ghidra), with the disc's compiled scripts read through `coney-tools`' Lua walker for string ids. Runtime reads (the
-mugging's starting money) are over PINE in PCSX2 2.9.94.
+mugging's starting money) are over PINE in PCSX2 2.9.94, and the uncuff's placement in PCSX2 2.9.129. Every claim that
+cites an address is confirmed (code) there unless it says otherwise.
 
 ## Purpose
 
@@ -277,6 +278,41 @@ The script values in force are on [Combat](combat-targets.md#stereo-theft).
 
 While the mash runs, the meter's fill is meter ÷ target each update (`HUD_MashMeterUpdate`), and the action prompt
 is hidden (action `0x15`).
+
+#### The freer's place {#uncuff-pose}
+
+Only the freer moves; the cuffed human stays where he was cuffed, facing the way he faced. Confirmed (code) at
+`0x00260ca8` and `0x002761c8`, and confirmed (runtime) below.
+
+- **The steer.** `Uncuff_Start` calls `Attack_SteerToTarget(0.1, freer, cuffed, 325)` (`0x002761c8`), the attacks'
+  plain steer (the one without the lead, [the two steers](combat-moves.md#two-steers)). It takes the time as the
+  smaller of 0.1 s and 325's time to its first event + 0.1 s, aims at the cuffed human's position (led by his
+  velocity, which is none), clears the cuffed human's turn and the freer's (`Human_ClearTurn`, `0x0023cf70`), then
+  turns the freer (`Human_TurnToOver`, `0x0023cf88`) so that the cuffed human lies along 325's direction in the Anim
+  Range List (`AttackTable_GetOffset`) and slides him (`Human_MoveToOver`, `0x0023d2b8`) to 325's reach from the
+  cuffed human (`AttackTable_GetReach`, 0.07 m more for a human of scale above 1.1, else 0.1 m less from behind him),
+  both at an even rate over that time.
+- **The clip's turn.** 325's direction is far to one side, so the steer leaves the freer turned away from the cuffed
+  human; 325's own root motion then turns him by about 81 degrees, 3.375 degrees an update, to face him as the clip
+  ends.
+- **The cuffed human.** 326 and 330, paired to the freer's clips, neither move nor turn him; only the freed human's
+  333 at the end moves him a few centimetres.
+
+Confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), `level80` checkpoint 2 with Snow and Cowboy cuffed, the
+transform table read every update (`0x00714b00`, [the `uncuff` recipe](../guides/pcsx2-recipes.md#uncuff) and a pad
+press of triangle give the same numbers):
+
+| Start (player 1, Cleon) | Cuffed human | After the steer (3 updates) | When 325 ends |
+| --- | --- | --- | --- |
+| (-196.0, 231.65), heading 0 | Snow at (-194.9, 231.8), heading 105, in front | 0.747 m from him, heading -2.36 | heading -83.34 |
+| (-196.0, 231.65), heading -90 | Snow, as above | 0.779 m from him, heading -2.36 | heading -83.34 |
+| (-196.95, 233.9), heading 0 | Cowboy at (-197.5, 234.8), heading 43, behind him | 0.683 m from him, heading 111.31 | heading 30.32 |
+
+Snow's and Cowboy's positions and headings stayed the same to four decimals through 325 and 329; the heading the steer
+reaches does not depend on the freer's start heading, and the distance differs by 3 cm (0.747 m against 0.779 m),
+inferred to be 325's first root movement taken along the two different turns. The freer stands about 0.06 m nearer a
+cuffed human he frees from behind (Cowboy), close to the steer's 0.1 m once 325's own small root movement is counted
+(inferred).
 
 ### Lock picking {#lockpick}
 
@@ -960,7 +996,7 @@ only). **Coney fixes**:
 2. Implement `queueResponders` in the level's crime services as `Responders_Queue`: nearest spawner in state 4 or 6
    to the crime scene with a free queue slot, delay in seconds.
 3. Gate type 1 as the original does: responders, the strobe and the buyers only when a store front (activity `0xe`)
-   lies within 10 m of the report and is not yet robbed; today Coney asks for responders before and regardless of
+   lies within 10 m of the report and has not been robbed; today Coney asks for responders before and regardless of
    the store test.
 4. Report a lock pick's break-in with **no offender** (Coney passes the picker), so the pick sets no wanted time,
    no hostility and no callback.
@@ -1085,7 +1121,7 @@ miss, unlocks and opens the door on success (a break-in unless all three presses
 [World objects](objects.md#coneys-implementation). In play (`repo:src/platform/play_level_objects.cpp`), triangle
 within 1.5 m of a pickable door (**Coney's stand-in** for the kind-2 record's reach, not traced) starts a pick at the
 difficulty of the player's `CfgWarriorClass` byte `+0x0a` less 1; the pick takes the pad until it ends, the dial
-turning each step, cross judging and any button but cross, L1, R2, the d-pad and SELECT abandoning. Not yet: the
+turning each step, cross judging and any button but cross, L1, R2, the d-pad and SELECT abandoning. Not built: the
 lock-pick animations (689, 690), the hint and the HUD dial.
 
 **Crime reports** (`repo:src/warriors/crime_reports.h`, `CrimeReports` in `GameState::player`), written from [AI:
@@ -1152,7 +1188,7 @@ alpha in byte 0 ([above](#tag-look)). An unfinished end (no cans, a 301st cell) 
 `Tag_GetProgress`'s 1.0 (**Coney's reading**: whether `0x41` carries that 1.0 before the end is not on the page). A
 finished or abandoned spray of player 1 ends through 336, holding `0x800000`, then the idle, or 359 and the fight idle
 when he is locked onto a target (**Coney's reading** of the state word's `0x3`); a spray cut short plays no end clip.
-Not yet: the slip's rumble, the bonus event on a clean finish, the spray particles and the tag's drawing, hint `0x10`,
+Not built: the slip's rumble, the bonus event on a clean finish, the spray particles and the tag's drawing, hint `0x10`,
 and buttons other than the stick ending a session.
 
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;
@@ -1184,8 +1220,8 @@ item 2 with the money and inventory callbacks, then item 2's pick-up sound); his
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
 let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
 rolled object is not given to the human; `HuSetInterrogation` keeps the lines and callback
-(`ScriptState::interrogationLines`, `interrogationCallback`) and the prompt reads "interrogate", but not yet its
-mugging (the set lines, no pay, the callback once); not yet: the pocket items, the half-way `no_item` stop, ped
+(`ScriptState::interrogationLines`, `interrogationCallback`) and the prompt reads "interrogate", but not its
+mugging (the set lines, no pay, the callback once); not built: the pocket items, the half-way `no_item` stop, ped
 type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
 (`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout)).
 
@@ -1196,20 +1232,28 @@ type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
 (`repo:src/gamemodes/gameplay_uncuff.cpp`) the kind-0 record is a cuffed AI human friendly to player 1 within
 `CfgActionDistance` 0 in plan and 1.5 m of his waist, not being freed: its prompt is `GSTRING.HUD` 2, chosen before the
 action object and hidden while a mash runs, and triangle tries it before the level's own records. The start has the
-freer say 68, turn to the cuffed human over 325 (holding `0x2000000`, so the mash's input waits) then loop 329, and
-runs the mash ([above](#uncuffing), `combat::ButtonMash`) with his class's byte `+0x08` (`script::warriorMashByte()`,
-`combat::mashFactor()`); the cuffed human plays 326 paired, then 330. Success: he says 67 and is released (and revived
-when knocked out and revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed
-human gone or released some other way): 332 and back to 320. A body something else takes before the outcome (a hit)
-plays 331. Player 1's [mash meter](hud-functions-parts.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to
-the outcome, filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages
-meanwhile. A disc test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
-`level80` checkpoint 2 and reaches checkpoint 3; a cuffed friendly AI human wears the `dyn_cuffs` icon until his
-release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs' friendship
-(`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight, the partner and
-the shared body group are not kept; after a hit the cuffed human goes back to 320; the cuffs icon stays attached over
-his feet rather than detached where it appeared (he does not move while cuffed). Not yet: hint 19, the key path, the 0.2
-m capsule test, players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
+freer say 68 and, as `Uncuff_Start` does, clears the cuffed human's steer and steers the freer with the attacks' plain
+steer for 325 (`human::Fighter::steerUncuff()`: 0.1 s, to 325's reach from him, turned by 325's direction, [the freer's
+place](#uncuff-pose)), whose own root turn then faces him; the freer plays 325 after a 0.01 s blend (holding
+`0x2000000`, so the mash's input waits) then loops 329, drops a held weapon of anim set 3 or 4 (a club, an overhead
+one), and is linked with the cuffed human until the outcome (their walks pass through each other and his push weight is
+1e9, `Human::linkedWith()`, `Human::pushWeight()`); it then runs the mash ([above](#uncuffing), `combat::ButtonMash`)
+with his class's byte `+0x08` (`script::warriorMashByte()`, `combat::mashFactor()`); the cuffed human plays 326 paired
+after a 0.01 s blend, then 330, and is not moved. Success: he says 67 and is released (and revived when knocked out and
+revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed human gone or
+released some other way): 332 and back to 320. A body something else takes before the outcome (a hit) plays 331. Player
+1's [mash meter](hud-functions-parts.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to the outcome,
+filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
+test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at `level80` checkpoint 2 and
+reaches checkpoint 3, and another (`[disc][uncuff][pose]`) checks the freer's distance and heading after the steer
+against the original's numbers [above](#uncuff-pose) (his heading as 325 ends is a `[!mayfail]` case until issue #263,
+[below](#open-questions)) and that the cuffed human does not move; a cuffed friendly AI human wears the `dyn_cuffs` icon
+until his release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs'
+friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the partner is not
+kept (the link stands for the shared body group); after a hit the cuffed human goes back to 320; the cuffs icon stays
+attached over his feet rather than detached where it appeared (he does not move while cuffed). Not built: hint 19, the key
+path, the 0.2 m capsule test, leaving the fight stance and the lock and cancelling a throw's aim as the mash starts,
+players in cuffs, the leaderless gang's follow after a release and `0x00280fd8`.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
@@ -1221,11 +1265,20 @@ NTSC-U, counts only). Whoever takes one, the player with triangle or a Warrior f
 to every enabled kind-0 volume box round the object's spot as message 7, `(taker, object)`
 (`VolumeBoxes::sendTheft`, `repo:src/world_objects/volume_boxes.h`); an AI's take of a `TYPE_SPECIAL` removes it with
 nothing given. **Coney's readings**: the page names the inside test (`0x00412a18`) but not which boxes are asked nor
-whether the point is the object's or the taker's, so they are the boxes message 6 asks and the object's spot. Not yet:
+whether the point is the object's or the taker's, so they are the boxes message 6 asks and the object's spot. Not built:
 the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
 
 ## Open questions
 
+- **The freer's turn during the uncuff's steer** ([the freer's place](#uncuff-pose)): in the original the freer's
+  heading moves only by the steer's even turn over its three updates (the start at heading -90 gave -60.79, -31.57,
+  -2.36) and 325's root turn shows only after it; in Coney 325's root turn runs from the clip's first update, about
+  1.3 degrees an update on top of the steer, so the steer ends some 3 to 4 degrees further round. Whether the
+  original's 325 holds no turn in its first keys or the steer's turn replaces the root's while it lasts
+  (`Human_ApplyTurnAndSlide`, `0x0023f5e0`) is not read. Then 325's root turn itself comes out a third larger in
+  Coney (108.8 degrees against 81.0), because Coney does not scale a clip's root turn by the task's rate (issue #263,
+  [Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
+  that is fixed (the `[!mayfail]` disc case of `repo:tests/platform/disc_level80_test.cpp`).
 - **GetItem's swing at glass** ([AI: GetItem](ai.md#get-item)): at level80's pharmacy (scenario `steal_store`) two Warriors
   reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all (the
   anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point, and

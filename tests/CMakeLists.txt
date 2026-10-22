@@ -303,6 +303,7 @@ target_sources(coney_tests PRIVATE
     human/human_test.cpp
     human/workout_test.cpp
     human/human_revive_test.cpp
+    human/human_uncuff_test.cpp
     human/debug_clip_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp

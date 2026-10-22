@@ -660,11 +660,12 @@ class Human final : public Holdable {
     /// Takes `BLOCKHUMANS` away (blocksHumans()): a knock-out, a wound, the health running out or an arrest.
     void loseBlockHumans() { m_blockHumansFlag = false; }
     /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
-    /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest). **Coney
-    /// stand-in**: the scenes' shared group is not set.
-    /// @orig 0x0022c760 Grab_Link (unknown)
+    /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest), or one frees
+    /// the other from his cuffs (`Uncuff_BeginMash`). **Coney stand-in**: the scenes' shared group is not set.
+    /// @orig 0x0022c730 Grab_Link (unknown)
     [[nodiscard]] bool linkedWith(const Human& other) const;
-    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, or arrested), else 1.
+    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, or freeing a
+    /// cuffed human), else 1.
     [[nodiscard]] float pushWeight() const;
     /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
     /// `0x200`), when it is only slid along.
@@ -710,18 +711,24 @@ class Human final : public Holdable {
     /// body (a hit, a knock-down, death, a scene) ends it with no outcome at the next update (`MiniGame_Abort`, from
     /// the hit `0x00268c50` and from leaving normal mode `0x002325e0`, docs/research/crimes.md#uncuffing).
     [[nodiscard]] bool stereoTheftPlaying() const;
-    /// Starts freeing a cuffed human at `cuffed` by the mash (`Uncuff_Start`, docs/research/crimes.md#uncuffing): he
-    /// turns to him over 325 `ANIM_ARREST_RELEASE_INTRO_FRONT`, which holds `0x2000000` and so keeps the mash's input
-    /// closed, then loops 329; the mash (mode 1) runs with the Warrior factor `mashFactor` (combat::mashFactor()).
+    /// Starts freeing `cuffed` by the mash (`Uncuff_Start`, docs/research/crimes.md#uncuffing): the cuffed human's
+    /// steer is dropped and this human is steered onto him for 325 (Fighter::steerUncuff(),
+    /// docs/research/crimes.md#uncuff-pose); after a 0.01 s blend he plays 325 `ANIM_ARREST_RELEASE_INTRO_FRONT`,
+    /// which holds `0x2000000` and so keeps the mash's input closed, then loops 329; the two are linked until
+    /// endUncuff() (linkedWith(), pushWeight(): `Uncuff_BeginMash`'s shared body group and push weight 1e9); the mash
+    /// (mode 1) runs with the Warrior factor `mashFactor` (combat::mashFactor()).
     /// @orig 0x00260ca8 Uncuff_Start (unknown)
     /// @orig 0x0022d3f8 Uncuff_BeginMash (unknown)
-    void startUncuff(anim::Vec3 cuffed, float mashFactor);
+    void startUncuff(Human& cuffed, float mashFactor);
     /// Whether the freer's clips (325 or 329) still play: false once a hit or anything else took the body.
     [[nodiscard]] bool uncuffPlaying() const;
-    /// The freer's end: the mash stops and he plays 332 `ANIM_ARREST_RELEASE_END`, or 331
+    /// The freer's end: the mash stops, the link to the cuffed human goes (`MiniGame_Abort` gives the freer his own
+    /// body group and push weight 1 again) and he plays 332 `ANIM_ARREST_RELEASE_END`, or 331
     /// `ANIM_ARREST_RELEASE_HIT_REACT` after a hit, then his idle.
+    /// @orig 0x0022d628 MiniGame_Abort (unknown)
     void endUncuff(bool hit);
-    /// The cuffed human's half while `freer` frees him: 326 paired to the freer, then the loop 330.
+    /// The cuffed human's half while `freer` frees him: 326 paired to the freer after a 0.01 s blend, then the loop
+    /// 330; he is not moved.
     void playUncuffReact(const Human& freer);
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
@@ -989,6 +996,9 @@ class Human final : public Holdable {
         float turnStep = 0.0F;
     };
     std::optional<ClipTurn> m_clipTurn;
+    // The cuffed human this one is freeing, from startUncuff() to endUncuff(): the two are linked (linkedWith()) and
+    // this one's push weight is 1e9 (pushWeight()), as Uncuff_BeginMash's shared body group and attribute 7 make them.
+    const Human* m_uncuffing = nullptr;
     // Starts a turn to `point` spread over `share` of `clip`'s playing time; nothing when the clip is not loaded.
     void turnOverClip(std::uint32_t clip, anim::Vec3 point, float share);
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()

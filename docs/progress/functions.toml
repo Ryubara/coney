@@ -4998,10 +4998,10 @@ name = "Tandem_LinkThree"
 subsystem = "Human"
 
 [[function]]
-address = 0x0022c760
+address = 0x0022c730
 name = "Grab_Link"
 subsystem = "Human"
-size = 928
+size = 976
 
 [[function]]
 address = 0x0022ceb8
@@ -5026,6 +5026,12 @@ address = 0x0022d3f8
 name = "Uncuff_BeginMash"
 subsystem = "Human"
 size = 560
+
+[[function]]
+address = 0x0022d628
+name = "MiniGame_Abort"
+subsystem = "Human"
+size = 356
 
 [[function]]
 address = 0x0022d790
@@ -5998,6 +6004,12 @@ address = 0x0023cd30
 name = "Human_UpdateLedSlots"
 subsystem = "Human"
 size = 392
+
+[[function]]
+address = 0x0023cf70
+name = "Human_ClearTurn"
+subsystem = "Human"
+size = 20
 
 [[function]]
 address = 0x0023cf88
