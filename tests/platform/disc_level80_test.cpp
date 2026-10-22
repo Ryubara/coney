@@ -702,8 +702,7 @@ TEST_CASE("the disc's level80: the uncuff steers the freer into the original's p
         }
         const float facedHeading = freer.heading() * kDegrees;
         std::printf("  level80 uncuff pose (flag %g): steered %.3f m at %.2f deg (original %.3f, %.2f), 325 ended after "
-                    "%d updates at %.2f deg (original %.2f)
-",
+                    "%d updates at %.2f deg (original %.2f)\n",
                     pose.flag, steeredDistance, steeredHeading, pose.steeredDistance, pose.steeredHeading, updates,
                     facedHeading, pose.facedHeading);
         CHECK(std::fabs(steeredDistance - pose.steeredDistance) < 0.03F);
