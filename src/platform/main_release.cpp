@@ -178,7 +178,10 @@ int main(int argc, char** argv) {
     };
     if (pacer) {
         coney::platform::FramePacer& paced = *pacer;
-        hooks.waitForFrame = [&paced, &netPlay] {
+        hooks.waitForFrame = [&paced, &clock, &netPlay] {
+            // Joined to a host, network play's nudge (a step in 50 or so faster or slower, so this game's input
+            // reaches the host in time); else 100 %. Only a real clock is sped up: test mode has no pacer.
+            clock.setSpeed(netPlay.clockSpeedPercent());
             const std::uint64_t nanoseconds = paced.waitForFrame();
             netPlay.advance(nanoseconds);
             return nanoseconds;
