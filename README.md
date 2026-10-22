@@ -1,5 +1,9 @@
 # Coney
 
+> [!WARNING]
+> **A new contributor workflow is being built and will be ready soon.** Please hold off on starting new work until it
+> lands; the contributing guides are about to change.
+
 An open-source reimplementation of *The Warriors* (PS2, 2005) for Windows, Linux and macOS.
 
 Status: in development, not yet a complete game. With your disc Coney plays the start-up movies and the front end and
