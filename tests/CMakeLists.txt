@@ -39,6 +39,7 @@ add_executable(coney_tests
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
     gamemodes/gameplay_objects_test.cpp
+    gamemodes/gameplay_sound_call_test.cpp
     gamemodes/gameplay_tag_test.cpp
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
