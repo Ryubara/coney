@@ -921,6 +921,8 @@ Steps:
   pattern.
 - [human-event](#human-event): Send a game event (an event record with an id) to a human: its script handler, its gang,
   then its brain.
+- [uncuff](#uncuff): Start freeing a cuffed human by the mash, as triangle does, and read where the freer and the cuffed
+  human stand.
 
 ### call {#call}
 
@@ -1062,6 +1064,58 @@ Steps:
 { show = "u32(brain(h) + 0x28)", label = "brain_handler" }
 { call = "0x0021d480", args = ["h", "record"] }
 { show = "result", label = "consumed", format = "int" }
+```
+
+### uncuff {#uncuff}
+
+Start freeing a cuffed human by the mash, as triangle does, and read where the freer and the cuffed human stand.
+
+`Uncuff_Start` (`0x00260ca8`, the mash path of the kind-0 record's triangle,
+[Uncuffing](../research/crimes.md#uncuffing)) refuses unless the cuffed human is cuffed and not already held `0x10000`;
+then the freer says 68, is steered by `Attack_SteerToTarget` (`0x002761c8`) for clip 325 over 0.1 s, his action becomes
+`0x15`, `Uncuff_BeginMash` (`0x0022d3f8`) starts mode 1 and the two play 325 into 329 and 326 into 330, the cuffed
+human's partner (`+0xc8`) becoming the freer (as a handle, not the address). The recipe makes the call through the call
+hook with the freer and the cuffed human, so it skips the record's own checks (the 0.2 m capsule test, the record's
+user) and the mash meter; put the freer next to the cuffed human first (`teleport`). It reads both humans' positions and
+headings before, two waited updates after the call (the steer's three updates done, the call's own update counted: the
+freer at 325's reach from the cuffed human, turned so that he lies along 325's direction) and 30 updates after (325's
+root turn done: the freer facing him). The cuffed human does not move or turn. Circle (a quit command) ends the mash;
+with no input it never ends, as the decay waits for a first L1 or R1.
+
+| | |
+| --- | --- |
+| Parameters | `freer` (human): the freer's name; empty for the player; `cuffed` (human): the cuffed human's name |
+| Preconditions | patches: `call-brains`; emulation running |
+| Evidence | confirmed (runtime) |
+| Ghidra | `0x00260ca8 Uncuff_Start`, `0x002761c8 Attack_SteerToTarget`, `0x0022d3f8 Uncuff_BeginMash` |
+| Research | [research/crimes.md#uncuff-pose](../research/crimes.md#uncuff-pose), [research/crimes.md#uncuffing](../research/crimes.md#uncuffing) |
+| Confirmed at runtime | 2026-10-21, copy `pcsx2-b`, PCSX2 2.9.129 (PCSX2-MCP fork), level80 checkpoint 2, Snow and Cowboy cuffed (loaded from slot 6 with load-checkpoint); Cleon put at (-196.0, 231.65) facing 0 by Snow: 3 updates later 0.747 m from him at -2.36 degrees, 30 later at -83.34 degrees; Snow never moved |
+
+```sh
+uv run --project python coney-tools pcsx2 recipe run uncuff --copy COPY --agent ID --arg freer=<freer> --arg cuffed=<cuffed>
+```
+
+Steps:
+
+```text
+{ let = { f = "freer", c = "cuffed" } }
+{ show = "f32(tf(f) + 0x0)", label = "freer_x" }
+{ show = "f32(tf(f) + 0x4)", label = "freer_y" }
+{ show = "wrap(deg(heading(f)))", label = "freer_heading_deg" }
+{ show = "f32(tf(c) + 0x0)", label = "cuffed_x" }
+{ show = "f32(tf(c) + 0x4)", label = "cuffed_y" }
+{ show = "wrap(deg(heading(c)))", label = "cuffed_heading_deg" }
+{ call = "0x00260ca8", args = ["f", "c"] }
+{ wait = 2 }
+{ show = "hypot(f32(tf(f) + 0x0) - f32(tf(c) + 0x0), f32(tf(f) + 0x4) - f32(tf(c) + 0x4))", label = "steered_distance" }
+{ show = "wrap(deg(heading(f)))", label = "steered_heading_deg" }
+{ wait = 28 }
+{ show = "f32(tf(f) + 0x0)", label = "freer_x" }
+{ show = "f32(tf(f) + 0x4)", label = "freer_y" }
+{ show = "wrap(deg(heading(f)))", label = "freer_heading_deg" }
+{ show = "f32(tf(c) + 0x0)", label = "cuffed_x" }
+{ show = "f32(tf(c) + 0x4)", label = "cuffed_y" }
+{ show = "wrap(deg(heading(c)))", label = "cuffed_heading_deg" }
 ```
 
 ## Levels and missions

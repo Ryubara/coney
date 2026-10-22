@@ -238,6 +238,39 @@ When a player frees himself with his own key, he plays only his half.
 
 The cuffed human's kind-0 record stays registered during the mash; only `Human_Unarrest` removes it.
 
+#### The freer's place {#uncuff-pose}
+
+Only the freer moves; the cuffed human stays where he was cuffed, facing the way he faced. Confirmed (code) at
+`0x00260ca8` and `0x002761c8`, and confirmed (runtime) below.
+
+- **The steer.** `Uncuff_Start` calls `Attack_SteerToTarget(0.1, freer, cuffed, 325)` (`0x002761c8`), the attacks'
+  plain steer (the one without the lead, [the two steers](combat-moves.md#two-steers)). It takes the time as the
+  smaller of 0.1 s and 325's time to its first event + 0.1 s, aims at the cuffed human's position (led by his
+  velocity, which is none), clears the cuffed human's turn and the freer's (`Human_ClearTurn`, `0x0023cf70`), then
+  turns the freer (`Human_TurnToOver`, `0x0023cf88`) so that the cuffed human lies along 325's direction in the Anim
+  Range List (`AttackTable_GetOffset`) and slides him (`Human_MoveToOver`, `0x0023d2b8`) to 325's reach from the
+  cuffed human (`AttackTable_GetReach`, 0.07 m more for a human of scale above 1.1, 0.1 m less from behind him),
+  both at an even rate over that time.
+- **The clip's turn.** 325's direction is far to one side, so the steer leaves the freer turned away from the cuffed
+  human; 325's own root motion then turns him by about 81 degrees, 3.375 degrees an update, to face him as the clip
+  ends.
+- **The cuffed human.** 326 and 330, paired to the freer's clips, neither move nor turn him; only the freed human's
+  333 at the end moves him a few centimetres.
+
+Confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), `level80` checkpoint 2 with Snow and Cowboy cuffed, the
+transform table read every update (`0x00714b00`, [the `uncuff` recipe](../guides/pcsx2-recipes.md#uncuff) and a pad
+press of triangle give the same numbers):
+
+| Start (player 1, Cleon) | Cuffed human | After the steer (3 updates) | When 325 ends |
+| --- | --- | --- | --- |
+| (-196.0, 231.65), heading 0 | Snow at (-194.9, 231.8), heading 105, in front | 0.747 m from him, heading -2.36 | heading -83.34 |
+| (-196.0, 231.65), heading -90 | Snow, as above | the same, heading -2.36 | heading -83.34 |
+| (-196.95, 233.9), heading 0 | Cowboy at (-197.5, 234.8), heading 43, behind him | 0.683 m from him, heading 111.31 | heading 30.32 |
+
+Snow's and Cowboy's positions and headings stayed the same to four decimals through 325 and 329; the heading the
+steer reaches does not depend on the freer's start heading. The freer stands about 0.06 m nearer a cuffed human he
+frees from behind (Cowboy), close to the steer's 0.1 m once 325's own small root movement is counted.
+
 **Each update** (`Player_UpdateTheft` mode 1, `0x0027e6d8`, while `+0x08` has none of `0x7c7eee0`):
 
 - An **alternation** between commands 6 (L1 held) and 4 (R1 held) adds the gain. `Mash_IsAlternation`
