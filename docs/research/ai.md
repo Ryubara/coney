@@ -1001,6 +1001,18 @@ a class-13 fighter without `+0x29` ends at once ([GoalRiot](ai-scripting.md#riot
 −1, so its deadline (now − 1, unsigned) is already past and these checks run from the first update. This corrects the
 earlier reading of these checks as attack pacing.
 
+**Start and Resume** (`FightGoal_Start` `0x002b2cd8` calls `FightGoal_Resume` `0x002b2d00`, confirmed (code)): with a
+target that passes `Brain_ValidateEnemy`, a kind is picked at once (`Brain_PickAttack` with `Human_CanUseAttackKind`)
+and the re-target is made due (`+0x14` = now; step 6 runs when `+0x14` < now, so on the next update). Without one
+both are left (`+0x14` starts at 0, also due). So every fight goal re-targets on its second update, and again one
+second apart, and a resumed one (after a block or a reaction) picks its kind afresh.
+
+At runtime (confirmed (runtime), PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the
+`fight-retarget-due` hook at `0x002b3c18`): in level99's sparring fight the three Warriors' fight goals started or
+resumed 28 times in 1,198 updates. Each time the first re-target test read `+0x14` equal to now (no re-target), and
+the test on the next update read now 33-34 ms past it and re-targeted: the update after that, `+0x14` was 966-967 ms
+ahead. Four times a goal started or resumed twice in one update, and the second test also read `+0x14` equal to now.
+
 #### The fight goal in order {#fight-order}
 
 `FightGoal_Process` (`0x002b3ab0`), every update. Confirmed (code); this corrects an earlier reading that put the
@@ -2377,11 +2389,13 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   is not built; with no target but a valid enemy Melee spectates (without the shadow and may-spectate tests); a
 human whose last move failed runs straight at
   the target for 2 s and may approach again (the weapon pick-up, throw and positioning moves are not traced); the type-3
-  AttackTarget gate and goal `0x35` are not built; past its deadline a fight goal ends only without an attack slot (the
-  slot standing in for the target's active attackers). `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the
-  sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring Warriors*"`
-  checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than the run's
-  7.80 m/s) and that the other two stop short of the player, as in the original. The [steering](ai-moving.md#steering)
+  AttackTarget gate and goal `0x35` are not built (so the deadline's FollowAndDefend test never applies); past its
+  deadline a fight goal ends as [the deadline](#fight-durations) says, reading the target's active places, and a
+  re-target ends that update with the kind kept (since 2026-10-21). `level99`'s sparring Warriors are sent from
+  8.6-9.0 m ([the sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring
+  Warriors*"` checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than
+  the run's 7.80 m/s) and that the other two stop short of the player, as in the original. The
+  [steering](ai-moving.md#steering)
   round each other puts those two a little behind the first, so his charge has made the player busy when their re-plan tests
   step 9; without it the three ran in abreast and all charged at once (clip 1, up to 9.6 m/s), ending 2.1-2.9 m past
   him. Their run-ins end at 2.5 and 4.0 m from the player; the original's ended at 2.1-2.6 m, and why one of Coney's

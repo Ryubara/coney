@@ -151,7 +151,9 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
    4000 ms for every fight goal Melee pushes ([The durations](ai.md#fight-durations)), unless at that moment he still holds
    an active place on an attackable target and has no FollowAndDefend goal. So in a long brawl **every member
    re-chooses at least every 4 s**.
-2. **The re-target** (`FightGoal_Process` `0x002b3ab0`, at most once a second, `+0x14`): the first word of his
+2. **The re-target** (`FightGoal_Process` `0x002b3ab0`, at most once a second, `+0x14`; the first on the update after
+   the goal starts or resumes, as `FightGoal_Resume` `0x002b2d00`, which Start calls, sets `+0x14` to now and the test
+   is `+0x14` < now, confirmed (code) 2026-10-20): the first word of his
    [sector record](ai-moving.md#neighbour-sectors), refreshed when older than 1 s, which is the **nearest human within
    1.5 m in sector 0** (straight ahead, ±22.5°). When that human is someone other than the target, a threat
    (`Brain_IsThreat` `0x00290138`: an enemy gang, or both players) and no GrabTarget goal (`0x1f`) is on the stack, he

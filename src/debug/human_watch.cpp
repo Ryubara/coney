@@ -473,6 +473,8 @@ std::string_view goalTypeName(ai::GoalType type) {
         return "FollowFormation";
     case FollowAndAttack:
         return "FollowAndAttack";
+    case FollowAndDefend:
+        return "FollowAndDefend";
     case HoldPosition:
         return "HoldPosition";
     case TravelPath:

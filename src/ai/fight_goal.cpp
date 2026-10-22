@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -193,12 +194,27 @@ void maybeTaunt(Brain& brain, const RepositionInput& ring, float distance) {
 } // namespace
 
 void FightGoal::start(Brain& brain) {
-    m_deadlineMs = m_durationMs < 0 ? brain.nowMs() : brain.nowMs() + static_cast<std::uint64_t>(m_durationMs);
-    m_retargetAtMs = brain.nowMs() + kRetargetMs;
+    // **Coney reading**: Init sets these in the original (`0x002b2c20`, when the goal is made); Coney's goal has no
+    // clock until it starts, which is the same update. A negative duration is already past, as the original's
+    // unsigned sum is.
+    const auto now = static_cast<std::int64_t>(brain.nowMs());
+    m_deadlineMs = static_cast<std::uint64_t>(std::max<std::int64_t>(now + m_durationMs, 0));
     m_tauntAtMs =
         brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kFirstTauntLowMs, kFirstTauntHighMs));
     m_kind = kNoAttackKind;
     m_angle.reset();
+    resume(brain);
+}
+
+void FightGoal::resume(Brain& brain) {
+    // With a valid target, a kind for him and the re-target due at once.
+    Brain* target = brain.target();
+    if (target == nullptr || !validEnemy(brain, *target)) {
+        return;
+    }
+    m_kind = pickAttackFor(brain, *target, PickFilter::CanUse).value_or(kNoAttackKind);
+    m_angle.reset();
+    m_retargetAtMs = brain.nowMs();
 }
 
 void FightGoal::suspend(Brain& brain) { releasePlace(brain); }
@@ -233,17 +249,14 @@ GoalStatus FightGoal::process(Brain& brain) {
         return GoalStatus::Done;
     }
     // 5. Once a second, the re-target.
-    if (brain.nowMs() >= m_retargetAtMs) {
+    if (brain.nowMs() > m_retargetAtMs) {
         m_retargetAtMs = brain.nowMs() + kRetargetMs;
         Brain* before = target;
         retargetFromSectors(brain);
-        target = brain.target();
-        if (target == nullptr || !brain.hasAttackSlot()) {
-            return GoalStatus::Done;
-        }
-        if (target != before) {
+        // A new target: this update stops there, the kind kept (step 1 checks him on the next).
+        if (brain.target() != before) {
             m_place = false; // the old target's slot list gave it up with the slot
-            m_kind = kNoAttackKind;
+            return GoalStatus::Stop;
         }
     }
     // 6. The block try: the block goal is then the top, processed at once.
@@ -256,9 +269,13 @@ GoalStatus FightGoal::process(Brain& brain) {
         return GoalStatus::Stop;
     }
     releasePlace(brain);
-    // 8. The deadline.
-    if (brain.nowMs() >= m_deadlineMs && !brain.hasAttackSlot()) {
-        return GoalStatus::Done;
+    // 8. Past the deadline: done for a class-13 fighter not made to stay, or once A is out of T's active places, T is
+    // attackable by no one, or a FollowAndDefend goal is on the stack.
+    if (brain.nowMs() > m_deadlineMs) {
+        if ((brain.characterClass() == kBossClass && !m_bossStays) || !target->fightBook().places.holds(&brain) ||
+            !attackableBy(*target, nullptr) || brain.findGoal(GoalType::FollowAndDefend) != nullptr) {
+            return GoalStatus::Done;
+        }
     }
     // 9. The kind.
     if (m_kind == kNoAttackKind) {

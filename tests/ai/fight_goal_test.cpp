@@ -20,6 +20,7 @@
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/humans.h"
+#include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
@@ -87,7 +88,7 @@ TEST_CASE("two attackers on a man with a spacing of one take turns at his one ac
     Brain& back = scene.add({40.0F, 39.1F, 0.0F}, 0.0F, BrainType::Gang, square);
     for (Brain* brain : {&front, &back}) {
         brain->setTarget(&scene.playerBrain());
-        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>()));
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     }
     REQUIRE(scene.playerBrain().fightBook().spacing.inUse(false) == 1);
     bool frontPressed = false;
@@ -123,7 +124,7 @@ TEST_CASE("the fight goal tackles once the tackle meter passes the gang's thresh
     gang.fightBook().tackle.think(true, 4); // one more: the brain's own think may lower it by 2 first
     gang.fightBook().tackle.think(true, 4);
     REQUIRE(gang.fightBook().tackle.ready(6));
-    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>()));
+    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     scene.run(1);
     coney::combat::CombatRandom random(1);
     CHECK(gang.human().record().command == coney::ai::commandOf(21, random));
@@ -137,7 +138,7 @@ TEST_CASE("without the gang's tackle value the meter is emptied and the fight go
     gang.setTarget(&scene.playerBrain());
     gang.fightBook().tackle.think(true, 4);
     gang.fightBook().tackle.think(true, 4);
-    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>()));
+    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     scene.run(1);
     CHECK(gang.fightBook().tackle.value() == 0);
 }
@@ -242,4 +243,32 @@ TEST_CASE("the EngageEnemy run-in raises the turn boost by one until it ends", "
     CHECK(gang.turnBoost() == 1);
     gang.clearGoals();
     CHECK(gang.turnBoost() == 0);
+}
+// FightGoal_Process (0x002b3ab0): past its deadline a fight goal ends once its fighter holds none of the man's active
+// places (a place is given up after each press), and a class-13 fighter ends whatever he holds.
+TEST_CASE("past its deadline the fight goal ends for a fighter out of the man's places, and for a boss", "[ai]") {
+    Scene scene;
+    const FightSettings square = onlyKind(1);
+    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
+    Brain& back = scene.add({40.0F, 39.1F, 0.0F}, 0.0F, BrainType::Gang, square);
+    for (Brain* brain : {&front, &back}) {
+        brain->setTarget(&scene.playerBrain());
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(1000)));
+    }
+    // Before the deadline both fight on.
+    scene.run(20);
+    CHECK(front.findGoal(coney::ai::GoalType::Fight) != nullptr);
+    CHECK(back.findGoal(coney::ai::GoalType::Fight) != nullptr);
+    // Within 3 s both have ended: each is out of the one place once its turn is over.
+    scene.run(90);
+    CHECK(front.findGoal(coney::ai::GoalType::Fight) == nullptr);
+    CHECK(back.findGoal(coney::ai::GoalType::Fight) == nullptr);
+
+    Scene bossScene;
+    Brain& boss = bossScene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
+    boss.setCharacterClass(13);
+    boss.setTarget(&bossScene.playerBrain());
+    REQUIRE(boss.pushGoal(std::make_unique<coney::ai::FightGoal>(500)));
+    bossScene.run(60);
+    CHECK(boss.findGoal(coney::ai::GoalType::Fight) == nullptr);
 }

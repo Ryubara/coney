@@ -28,21 +28,33 @@ inline constexpr float kInReachShare = 0.9F;
 /// @orig 0x002b2c20 FightGoal_Init (unknown)
 class FightGoal final : public Goal {
   public:
-    /// A fight goal whose deadline is `durationMs` after its start (kNoFightLimit: already past, as `GoalFight`'s).
-    explicit FightGoal(int durationMs = kNoFightLimit) : Goal(GoalType::Fight), m_durationMs(durationMs) {}
+    /// A fight goal whose deadline is `durationMs` after its start (kNoFightLimit: already past, as `GoalFight`'s);
+    /// `bossStays` is Init's last argument (`+0x29`), which keeps a class-13 fighter past the deadline (every caller
+    /// Coney builds passes 0).
+    explicit FightGoal(int durationMs = kNoFightLimit, bool bossStays = false)
+        : Goal(GoalType::Fight), m_durationMs(durationMs), m_bossStays(bossStays) {}
 
-    /// Sets the deadline (`+0x24`, now + the duration) and the re-target's second.
+    /// Sets the deadline (`+0x24`, now + the duration) and the first taunt time (`+0x20`, now + 750-1000 ms), Init's
+    /// work in the original (`0x002b2c20`), then resumes (all that `FightGoal_Start` does).
+    /// @orig 0x002b2cd8 FightGoal_Start (unknown)
     void start(Brain& brain) override;
+    /// With a valid target (validEnemy()), picks a kind for him (`Human_CanUseAttackKind`, ai::pickAttackFor()) and
+    /// makes the re-target due at once (`+0x14` = now), so it runs on the next update; without one, both are left.
+    /// @orig 0x002b2d00 FightGoal_Resume (unknown)
+    void resume(Brain& brain) override;
     /// One update, in the original's order (`FightGoal_Process`):
     /// 1. done when the target is not a valid enemy or holds no attack slot for this brain;
     /// 2. the tackle try (tryTackle());
     /// 3. done beyond the far melee range × 1.1 (it never closes a distance: the Melee goal beneath does);
     /// 4. every 30 updates, done without a walkable straight line to the target (the route planner's, when it has one);
-    /// 5. once a second, the re-target to the nearest human straight ahead in the sector record when he is a threat
-    ///    (ai::isThreat()), his slot forced;
+    /// 5. once a second (the first on the update after a start or a resume), the re-target to the nearest human
+    ///    straight ahead in the sector record when he is a threat
+    ///    (ai::isThreat()), his slot forced; a re-target ends the update there, the kind kept;
     /// 6. the block try, giving up the active-attacker place;
     /// 7. while actions are queued, wait; once they end, give up the place;
-    /// 8. past the deadline, done unless it still holds an attack slot;
+    /// 8. past the deadline, done for a class-13 fighter without `bossStays`, or once it holds none of T's active
+    ///    places (it gave its place up after the press), T is attackable by no one, or a FollowAndDefend goal (`0x35`)
+    ///    is on the stack;
     /// 9. pick a kind when none is chosen (ai::pickAttackFor(), `Human_CanUseAttackKind`);
     /// 10. may it attack now (ai::checkAttack())? If not, the reposition: once its taunt timer (first 750-1000 ms
     ///     after the start, then every 1000-2000 ms) has run, a taunt (a FidgetAction on anim `0x25b` saying `cheer2`)
@@ -86,6 +98,7 @@ class FightGoal final : public Goal {
     std::optional<float> m_angle;     // the stick angle the grab try set
     std::uint32_t m_updates = 0;      // +0x18
     std::uint64_t m_deadlineMs = 0;   // +0x24
+    bool m_bossStays = false;         // +0x29
     std::uint64_t m_retargetAtMs = 0; // +0x14
     std::uint64_t m_tauntAtMs = 0;    // +0x20
     bool m_place = false;             // +0x28

@@ -91,7 +91,7 @@ TEST_CASE("over a man put down, the one he fought taunts, the far ones cheer, th
     for (Brain* brain : {&fought, &far, &near, &turnbull}) {
         brain->setServices(&scene.services);
         brain->setTarget(&player);
-        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>()));
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     }
     REQUIRE(player.attackSlots().size() == 4);
     player.setTarget(&fought);

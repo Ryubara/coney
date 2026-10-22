@@ -147,7 +147,7 @@ TEST_CASE("a waiting attacker taunts every 1-2 s, the one his man is fighting ne
     for (Brain* brain : {&front, &back}) {
         brain->setServices(&scene.services);
         brain->setTarget(&player);
-        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>()));
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     }
     // The first in the player's slot list is the one he fights (he has no target): close in, no taunt.
     REQUIRE(player.attackSlots().front() == &front);
@@ -168,7 +168,7 @@ TEST_CASE("without a gesture slot a waiting attacker does not taunt", "[ai]") {
     for (Brain* brain : {&front, &back}) {
         brain->setServices(&scene.services);
         brain->setTarget(&player);
-        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>()));
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     }
     scene.run(300);
     CHECK(saidBy(scene, back, 0x11) == 0);

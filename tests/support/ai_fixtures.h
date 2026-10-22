@@ -29,6 +29,10 @@
 
 namespace coney::test {
 
+/// A fight goal's duration for tests that push one with nothing beneath it: long enough that its deadline never
+/// ends it (a goal already past its deadline ends once its fighter holds none of the man's places).
+inline constexpr int kLongFightMs = 60000;
+
 /// One call the services were asked for: the function, its arguments, and the delay (0 for a call now).
 struct ScriptCall {
     std::string function;

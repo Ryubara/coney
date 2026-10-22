@@ -295,7 +295,7 @@ TEST_CASE("the fight goal's forced re-target counts as front, and the attacker i
     player.setAttackSlotCount(1);
     mate.setTarget(&player);
     fighter.setTarget(&target);
-    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>()));
+    REQUIRE(fighter.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
     scene.run(32);
     REQUIRE(fighter.target() == &player);
     REQUIRE(mate.target() == nullptr);
