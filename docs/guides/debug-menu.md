@@ -257,6 +257,10 @@ used and kept, so a first click with many models stalls briefly. Without a list 
 *Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change character*
 makes the fighters again.
 
+*Clear fighters* removes only the fighters *Spawn fighters* made, through the game's own removal of a human (a level
+script's `HuDelete`): never the player, the human the pad drives after a hand-over, his crew, a level script's human or
+a sandbox layout's fighter. The page's *Fighters* count is the AI humans still in the world.
+
 **Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
 way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by
 anyone) and the fence material 30 (`LOW_FENCE`), as the parkour course's blocks and fences do, so the climbs take them

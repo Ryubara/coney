@@ -165,6 +165,35 @@ void AiHumans::clear() {
     m_humans.clear();
 }
 
+void AiHumans::markDebugSpawned(const human::Human& human) {
+    for (AiHuman& entry : m_humans) {
+        if (entry.human.get() == &human) {
+            entry.debugSpawned = true;
+        }
+    }
+}
+
+std::size_t AiHumans::removeDebugSpawned() {
+    // The human the pad drives is never taken, whoever made it.
+    const human::Human* driven = &m_playerBrain->human();
+    std::size_t taken = 0;
+    for (const AiHuman& entry : m_humans) {
+        if (entry.debugSpawned && !entry.removed && entry.human.get() != driven) {
+            remove(*entry.human);
+            ++taken;
+        }
+    }
+    // Out of the step and the brains now, as capture() does it for the others.
+    takeOutRemoved();
+    return taken;
+}
+
+std::size_t AiHumans::liveCount() const {
+    return static_cast<std::size_t>(std::ranges::count_if(m_humans, [this](const AiHuman& entry) {
+        return !entry.removed && std::ranges::find(m_removing, entry.human.get()) == m_removing.end();
+    }));
+}
+
 void AiHumans::fightPlayer(const human::Human& fighter) {
     if (Brain* brain = m_brains->find(fighter); brain != nullptr && brain != m_playerBrain) {
         brain->startFight(*m_playerBrain);

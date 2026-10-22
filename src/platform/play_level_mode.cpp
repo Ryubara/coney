@@ -327,7 +327,7 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
@@ -337,7 +337,11 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
     // does not load falls back to the scene's, with a line saying so).
     const CastLook look =
         model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
-    m_ai->spawnFighter(*look.character, &m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+    human::Human& made = m_ai->spawnFighter(*look.character, &m_scenery->collision(),
+                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+    if (debugSpawned) {
+        m_ai->markDebugSpawned(made);
+    }
     const std::size_t vertices = look.character->assets().model.vertices.size();
     FighterMesh mesh;
     mesh.character = look.character;
@@ -349,7 +353,7 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
 }
 
 std::expected<void, Error> PlayLevelMode::spawnFighter(anim::Vec3 feet, float headingDegrees) {
-    addFighter(feet, headingDegrees);
+    addFighter(feet, headingDegrees, {}, true);
     return {};
 }
 
@@ -364,13 +368,14 @@ std::vector<std::string> PlayLevelMode::fighterModels() const {
 
 std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
                                                          std::string_view model) {
-    addFighter(feet, headingDegrees, std::string(model));
+    addFighter(feet, headingDegrees, std::string(model), true);
     return {};
 }
 
 void PlayLevelMode::clearFighters() {
-    m_ai->clear();
-    m_fighterMeshes.clear();
+    // Only the fighters the menus spawned, taken out as a level's script deletes a human: their entries stay (so the
+    // meshes keep their indexes and the scripts' handles on the others stay good) and are no longer drawn.
+    m_ai->removeDebugSpawned();
 }
 
 std::string PlayLevelMode::fightersState() const {

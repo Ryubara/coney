@@ -138,16 +138,21 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     const human::PlayerStart here{.position = before.position(), .headingDegrees = degreesOf(before.heading())};
     const human::PlayerStart start = m_player->start();
     std::vector<human::PlayerStart> fighters;
-    // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look.
+    // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look, and whether
+    // the debug menus spawned it, so Clear fighters still finds it.
     std::vector<std::string> fighterModels;
-    fighterModels.reserve(m_fighterMeshes.size());
-    for (const FighterMesh& drawn : m_fighterMeshes) {
-        fighterModels.push_back(drawn.model);
-    }
+    std::vector<bool> fighterDebug;
     fighters.reserve(m_ai->humans().size());
-    for (const ai::AiHuman& fighter : m_ai->humans()) {
+    for (std::size_t i = 0; i < m_ai->humans().size(); ++i) {
+        const ai::AiHuman& fighter = m_ai->humans()[i];
+        // A fighter already removed (cleared, or deleted) is not made again.
+        if (fighter.removed) {
+            continue;
+        }
         fighters.push_back(human::PlayerStart{.position = fighter.human->position(),
                                               .headingDegrees = degreesOf(fighter.human->heading())});
+        fighterModels.push_back(i < m_fighterMeshes.size() ? m_fighterMeshes[i].model : std::string{});
+        fighterDebug.push_back(fighter.debugSpawned);
     }
     const ai::AiConfig aiConfig = m_ai->config();
     const bool engaging = m_ai->engaging();
@@ -180,8 +185,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     }
     m_ai->brains().setCollision(&m_scenery->collision());
     for (std::size_t i = 0; i < fighters.size(); ++i) {
-        addFighter(fighters[i].position, fighters[i].headingDegrees,
-                   i < fighterModels.size() ? fighterModels[i] : std::string{});
+        addFighter(fighters[i].position, fighters[i].headingDegrees, fighterModels[i], fighterDebug[i]);
     }
     m_type = type;
     m_model = *model;

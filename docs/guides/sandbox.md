@@ -154,8 +154,8 @@ the configuration `level99`'s scripts give (its attack table, power class and at
 model. It takes the player on once he comes within 5 m, then walks or runs to him, attacks by its class's weights and
 waits about 4 s between attacks (2 s while he targets it). It never blocks, as an AI cannot in the original. The debug
 menu's *AI fighters* page spawns more in front of the player (any human model, or a random one each, one or many at
-a click, [Player, Camera, Spawner and AI fighters](debug-menu.md#pages)), clears them and switches their engaging on or
-off.
+a click, [Player, Camera, Spawner and AI fighters](debug-menu.md#pages)), clears the ones it spawned (never the
+layout's) and switches their engaging on or off.
 
 ### Shapes
 
