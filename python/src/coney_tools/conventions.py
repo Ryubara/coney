@@ -669,6 +669,37 @@ class Workspace:
 
 
 @dataclass(frozen=True)
+class PairRules:
+    """What a pairs file (`mapping/<addr>.toml`) may hold (docs/guides/stamps.md#pairs)."""
+
+    #: The kinds of a pair: the kinds of the anchor statements `original study` cuts pieces from.
+    kinds: tuple[str, ...]
+    #: How a piece of the original relates to Coney's code.
+    relations: tuple[str, ...]
+    #: Words a comment at a stand-in must contain one of (docs/guides/testing.md#stand-ins).
+    stand_in_markers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Stamps:
+    """The stamp log's rules (docs/guides/stamps.md): its steps, which are signed, and how signatures are checked."""
+
+    #: The signature namespace (`ssh-keygen -Y sign -n`).
+    namespace: str
+    #: The allowed-signers file, relative to the repository root: one public key per maintainer.
+    signers_file: str
+    #: A log segment is closed before it would pass this many bytes (the repository's file check is 512 KB).
+    segment_bytes: int
+    #: Every step a stamp may name, in the order of the workflow.
+    steps: tuple[str, ...]
+    #: The steps whose stamps must carry a valid signature.
+    signed: tuple[str, ...]
+    #: The results a stamp may have.
+    results: tuple[str, ...]
+    pairs: PairRules
+
+
+@dataclass(frozen=True)
 class Conventions:
     """Everything in `.github/conventions.yml`."""
 
@@ -682,6 +713,7 @@ class Conventions:
     labels: Labels
     hygiene: Hygiene
     workspace: Workspace
+    stamps: Stamps
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
@@ -1485,9 +1517,33 @@ def _read_workspace(data: object, where: str) -> Workspace:
     )
 
 
+def _read_stamps(data: object, where: str) -> Stamps:
+    """The `stamps` section: the stamp log's steps, signing and pairs rules."""
+    table = _table(data, where, ("namespace", "signers_file", "segment_bytes", "steps", "signed", "results", "pairs"))
+    steps = _texts(table["steps"], _at(where, "steps"))
+    signed = _texts(table["signed"], _at(where, "signed"))
+    _names_in(signed, steps, _at(where, "signed"), "a step in stamps.steps")
+    pairs_where = _at(where, "pairs")
+    pairs = _table(table["pairs"], pairs_where, ("kinds", "relations", "stand_in_markers"))
+    relations = _texts(pairs["relations"], _at(pairs_where, "relations"))
+    return Stamps(
+        namespace=_text(table["namespace"], _at(where, "namespace")),
+        signers_file=_text(table["signers_file"], _at(where, "signers_file")),
+        segment_bytes=_count(table["segment_bytes"], _at(where, "segment_bytes"), minimum=4096),
+        steps=steps,
+        signed=signed,
+        results=_texts(table["results"], _at(where, "results")),
+        pairs=PairRules(
+            kinds=_texts(pairs["kinds"], _at(pairs_where, "kinds")),
+            relations=relations,
+            stand_in_markers=_texts(pairs["stand_in_markers"], _at(pairs_where, "stand_in_markers")),
+        ),
+    )
+
+
 def parse_conventions(data: object) -> Conventions:
     """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key."""
-    keys = ("repo", "paths", "commits", "pull_requests", "merge", "issues", "labels", "hygiene", "workspace")
+    keys = ("repo", "paths", "commits", "pull_requests", "merge", "issues", "labels", "hygiene", "workspace", "stamps")
     table = _table(data, "", ("version", *keys))
     version = table["version"]
     if version != SUPPORTED_VERSION or isinstance(version, bool):
@@ -1523,6 +1579,7 @@ def parse_conventions(data: object) -> Conventions:
         labels=labels,
         hygiene=hygiene,
         workspace=_read_workspace(table["workspace"], "workspace"),
+        stamps=_read_stamps(table["stamps"], "stamps"),
     )
 
 

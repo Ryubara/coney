@@ -727,3 +727,18 @@ workspace:
     max_seconds: 10
     warn_mb: 10
     keep_hours: 24
+
+stamps:
+  # The proof log of a unit of work (docs/guides/stamps.md): one signed-where-it-matters, append-only chain of stamps
+  # per task, written only by the stage commands. The signed steps are the ones CI and `pr open` trust without
+  # recomputing; the key is a dedicated ed25519 key, its private half in the SSH agent, its public half below.
+  namespace: coney-stamp                         # ssh-keygen -Y sign -n
+  signers_file: .github/stamp-signers            # allowed-signers format; changed by pull request
+  segment_bytes: 262144                          # a log file is closed before it passes this (the file check is 512 KB)
+  steps: [assigned, claimed, studied, fails-first, compared, checked, reviewed, pr-opened, finished]
+  signed: [checked, reviewed, pr-opened]
+  results: [pass, fail, none]
+  pairs:                                         # mapping/<addr>.toml (docs/guides/stamps.md#pairs)
+    kinds: [branch, loop, call, field, constant, return]
+    relations: [same, stand-in, not-ported]
+    stand_in_markers: [stand-in, "Coney's choice"]   # a comment at the code carries one (testing.md#stand-ins)

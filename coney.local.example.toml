@@ -29,3 +29,4 @@ jdk_home        = ""                                    # JDK 21 home; required 
 ghidra_mcp_repo = ""                                    # a built ghidra-mcp checkout (target/GhidraMCPHeadless.jar); read-only
 pcsx2_mcp_dir   = ""                                    # a PCSX2-MCP fork build (release/PCSX2-MCP-coney-v2.9.129.N-win64, N 9 or newer): the copies' PCSX2 and the MCP server
 ffmpeg_dir      = ""                                    # folder with ffmpeg and ffprobe, for in-game clips (coney-tools clips); default: PATH
+stamp_key       = ""                                    # the PUBLIC half of your stamp signing key (the private half stays in the SSH agent); only maintainers sign: docs/guides/stamps.md#signing

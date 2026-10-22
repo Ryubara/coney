@@ -1,0 +1,6 @@
+# Public keys that may sign stamps (docs/guides/stamps.md#signing), allowed-signers format, one line per maintainer:
+#
+#   <principal> namespaces="coney-stamp"[,valid-before="YYYYMMDD"] ssh-ed25519 AAAA... comment
+#
+# A key is added or retired by pull request only. The namespace is the `stamps.namespace` of .github/conventions.yml.
+# Private halves live in each maintainer's SSH agent and are never in this repository.

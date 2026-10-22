@@ -1,22 +1,22 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty groups:
-[`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which checks
-pages against the documentation standards, [`build`](#build), which
-configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
-the repository's own rules (titles, descriptions, labels), `wad`, which reads the game's
-archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
-the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies'
-headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables
-of the README and the docs current, [`orig`](#orig), which indexes the `@orig` tags for the fidelity audit,
-[`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
-which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
-and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
-[`clips`](#clips), which checks, publishes and cleans up in-game video clips,
-[`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
-contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and
-[`workspace`](#workspace), which sets up the local workspace. Everything is read in place and streamed, so the 1.4 GB
-WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-two
+groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
+checks pages against the documentation standards, [`build`](#build), which configures, builds and tests the engine
+under the machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions,
+labels), `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
+[`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio), which reads its sound
+data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which reads the Xbox disc's archive,
+[`progress`](#progress), which keeps the progress tables of the README and the docs current, [`orig`](#orig), which
+indexes the `@orig` tags for the fidelity audit, [`original`](#original), which studies an original function and
+compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log, [`natives`](#natives), which renders
+the script-binding masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which
+builds the mission status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update
+traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks, publishes and cleans up in-game video
+clips, [`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
+contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names,
+and [`workspace`](#workspace), which sets up the local workspace. Everything is read in place and streamed, so the 1.4
+GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -436,6 +436,44 @@ It is one JSON object per review and is never committed. `orig queue` reads it:
 * an address whose units were all reviewed `clean` or `diff-deliberate-ok` at their current bodies leaves the queue;
 * an unreviewed one gains 3 points, and a stale one 5;
 * a review finding adds its class's weight, from `unclear` (6) to `diff-bug` (40).
+
+## original {#original}
+
+The commands of the study-and-compare stage ([Stamps, studies and pairs](stamps.md)). Each writes into the task's
+folder in the scratch folder (the task is `--task`, else `CONEY_TASK`, else the branch) and appends a stamp when its
+step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start, 3 no ghidra-mcp answers.
+
+```sh
+uv run --project python coney-tools original study ADDR [--task T] [--url URL] [--recut] [--print]
+uv run --project python coney-tools original verify ADDR [--task T] [--url URL]
+uv run --project python coney-tools original compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
+uv run --project python coney-tools original fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools original fails-first --none REASON
+```
+
+* `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
+  callees and globals in scratch (never committed), numbers the statements, cuts the pieces and appends `studied`. It writes
+  nothing when Ghidra is down. `--recut` cuts the saved decompile again without Ghidra; `--print` prints the numbered text.
+  [Details](stamps.md#study)
+* `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (only names changed) or `stale`.
+* `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
+  the Coney function, check the pairs, the committed Coney file and `orig copy-check`, and append `compared` when all of
+  it holds. A refusal writes no stamp. `--carry` brings the pairs onto a changed study. [Details](stamps.md#compare)
+* `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
+  must pass) and appends a `fails-first` stamp per test; `--none` records that a docs or tooling task has no such test.
+  [Details](stamps.md#fails-first)
+
+## stamp {#stamp}
+
+```sh
+uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE]
+uv run --project python coney-tools stamp show [--task T] [--dir LOG]
+```
+
+`verify` checks a stamp log's chain, every field and every signature that is present, against
+[.github/stamp-signers](repo:.github/stamp-signers); `--release` also refuses a signed step without a signature, as
+`pr open` and CI do. `show` lists the stamps. Both only read: no command appends a stamp by hand, the stage commands are
+the only writers ([Stamps](stamps.md#log)).
 
 ## natives {#natives}
 
