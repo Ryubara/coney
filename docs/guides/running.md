@@ -30,7 +30,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
-      [--record FILE [--record-seconds N]]
+      [--record FILE [--record-seconds N]] [--bench FILE [--bench-fighters N] [--bench-warmup N]]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
 ```
 
@@ -158,6 +158,10 @@ this way ([Running Coney](research-workflow.md#running-coney)).
 build/dev/src/platform/coney --disc /path/to/warriors.iso --show-fps
 build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fps-cap 144 --vsync off --show-fps
 ```
+
+`--bench FILE` measures a `--play-level ... --frames N` run with Coney's profiler and writes the frame times, the
+zones' times and the counters (draw calls, uploads, allocations) as JSON; `--bench-fighters N` spawns N AI fighters
+in front of the player first. How to benchmark and what the numbers say: [Performance](performance.md#bench).
 
 ### Sound {#sound}
 

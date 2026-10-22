@@ -360,23 +360,14 @@ void addFightersPage(DebugSession& session) {
             page.add(std::move(amount));
             page.add(playAction(session, "Spawn fighters",
                                 [&session, distance, spawn](PlayControls& p) {
-                                    const int amount = static_cast<int>(spawn->amount);
-                                    const std::vector<std::string> picks =
-                                        pickFighterModels(p.fighterModels(), spawn->model, amount, spawn->random);
-                                    const float heading = p.playerHeadingDegrees();
-                                    const std::vector<anim::Vec3> spots =
-                                        fighterSpots(p.playerFeet(), heading, static_cast<float>(*distance), amount);
-                                    std::size_t made = 0;
-                                    for (std::size_t i = 0; i < spots.size(); ++i) {
-                                        // Each faces the player.
-                                        auto spawned = p.spawnFighterAs(spots[i], heading + 180.0F, picks[i]);
-                                        if (!spawned) {
-                                            session.print("fighters: " + spawned.error().message);
-                                            break;
-                                        }
-                                        ++made;
+                                    const SpawnedFighters spawned =
+                                        spawnFighters(p, spawn->model, static_cast<int>(spawn->amount),
+                                                      static_cast<float>(*distance), spawn->random);
+                                    if (spawned.error) {
+                                        session.print("fighters: " + spawned.error->message);
                                     }
-                                    session.print(std::format("fighters: {} spawned of {}", made, spots.size()));
+                                    session.print(
+                                        std::format("fighters: {} spawned of {}", spawned.made, spawned.asked));
                                 }))
                 .withHelp("AI humans with a sparring Warrior's brain, facing the player, as the model and amount "
                           "above; they fight him when he is in their melee range and engaging is on.");

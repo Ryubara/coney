@@ -14,6 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/perf.h"
 #include "debug/menu_model.h"
 
 using coney::debug::DebugServices;
@@ -89,7 +90,8 @@ TEST_CASE("every page of a session opens and every item on it is well formed", "
                                                                    "Display",
                                                                    "Audio",
                                                                    "Network",
-                                                                   "Input"});
+                                                                   "Input",
+                                                                   "Performance"});
     for (const MenuItem& top : root->items()) {
         checkWellFormed(top);
         const auto page = top.open();
@@ -287,4 +289,30 @@ TEST_CASE("the Display page's Debug UI scale choice sets the overlay's scale ove
     CHECK(coney::debug::valueText(*now) == "1x");
     session.display().uiScaleApplied = 1.5F;
     CHECK(coney::debug::valueText(*now) == "1.5x");
+}
+
+TEST_CASE("the Performance page turns the profiler on and shows its zones", "[debug]") {
+    coney::perf::resetForTests();
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    const auto page = session.model().openPage("Performance");
+    REQUIRE(page != nullptr);
+    const MenuItem* measure = page->find("Measure");
+    REQUIRE(measure != nullptr);
+    CHECK_FALSE(measure->getBool());
+    const MenuItem* frame = page->find("Frame");
+    REQUIRE(frame != nullptr);
+    CHECK(frame->watch() == "off");
+    measure->setBool(true);
+    CHECK(coney::perf::enabled());
+    // A zone that has run is listed when the page is made again.
+    {
+        CONEY_PERF_ZONE("test.page_zone");
+    }
+    coney::perf::endFrame();
+    const auto again = session.model().openPage("Performance");
+    REQUIRE(again != nullptr);
+    CHECK(again->find("test.page_zone") != nullptr);
+    CHECK(again->find("Frame")->watch().find("over 1 frames") != std::string::npos);
+    coney::perf::resetForTests();
 }

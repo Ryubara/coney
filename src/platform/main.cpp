@@ -80,6 +80,8 @@
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
+#include "platform/perf_bench.h"
+#include "platform/perf_probes.h"
 #include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
@@ -263,6 +265,10 @@ coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
 int main(int argc, char** argv) {
     // A failure must end the run on stderr, not wait on a dialog: scripted and headless runs have nobody to click.
     coney::platform::reportErrorsToConsole();
+    // The profiler's clock and allocation counter, for `--bench` and the debug menus' Performance page; it measures
+    // nothing until one of them turns it on (docs/guides/performance.md).
+    coney::platform::installPerfClock();
+    coney::platform::addAllocationCounters();
 
     // Parse the command line; exit 2 on a usage error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);
@@ -1029,6 +1035,12 @@ int main(int argc, char** argv) {
     // frame still renders the game's last step.
     modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
 
+    // `--bench`: the profiler on for the run, its fighters and recording started from the frame hook below
+    // (docs/guides/performance.md).
+    std::optional<coney::platform::PerfBench> bench;
+    if (options->benchFile) {
+        bench.emplace(*options);
+    }
     // `--frames` (and so the screenshot of the last frame, which needs it: parseOptions makes sure of it). With
     // `--play-level` they count from the level's first frame of play, like the input script, so a run is as long
     // however long the loading screen and an intro movie take: the loop is stopped by the frame hook below instead.
@@ -1060,7 +1072,12 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "coney: %s never started playing\n", commandLineLevel->c_str());
             return true;
         }
-        return playOrigin && frame - *playOrigin >= *playFrameLimit;
+        const bool done = playOrigin && frame - *playOrigin >= *playFrameLimit;
+        // `--bench`: the fighters on the first frame of play, the recording from the end of the warm-up.
+        if (bench && playOrigin && !done) {
+            bench->playFrame(frame - *playOrigin, debugSession.play());
+        }
+        return done;
     };
 
     // The main loop, paced as set up above.
@@ -1217,6 +1234,20 @@ int main(int argc, char** argv) {
     }
     if (pacer && options->showFps) {
         printText(pacer->summary());
+    }
+    if (bench) {
+        auto line = bench->finish({{"level", commandLineLevel.value_or(std::string{})},
+                                   {"checkpoint", std::to_string(options->checkpoint.value_or(1))},
+                                   {"frames", std::to_string(options->frameLimit.value_or(0))},
+                                   {"headless", options->headless ? "yes" : "no"},
+                                   {"vsync", options->vsync ? "on" : "off"},
+                                   {"build", CONEY_BUILD_TYPE},
+                                   {"renderer", coney::platform::glRendererName()}});
+        if (!line) {
+            std::fprintf(stderr, "coney: %s\n", line.error().message.c_str());
+            return 1;
+        }
+        printText(*line);
     }
 
     if (worldViewer) {

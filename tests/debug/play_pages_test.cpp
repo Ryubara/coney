@@ -12,6 +12,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -20,6 +21,7 @@
 #include "core/pad.h"
 #include "core/pads.h"
 #include "debug/debug_session.h"
+#include "debug/fighter_spawn.h"
 #include "debug/menu_model.h"
 #include "debug/play_controls.h"
 #include "hud/hud.h"
@@ -177,7 +179,8 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
                                              "Display",
                                              "Audio",
                                              "Network",
-                                             "Input"});
+                                             "Input",
+                                             "Performance"});
     CHECK(session.model().openPage("Debug draw")->items().size() == 11);
 }
 
@@ -569,4 +572,24 @@ TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawne
     CHECK(play.fighters.size() == 2);
     CHECK(play.fighters[0].model.empty());
     CHECK(session.log().last(1).front() == "fighters: 2 spawned of 5");
+}
+
+TEST_CASE("spawning more fighters than one click places each batch beyond the last", "[debug][fighters]") {
+    FakePlay play;
+    play.models = {"model_a", "model_b"};
+    coney::debug::SpawnRandom random(1);
+    const coney::debug::SpawnedFighters spawned = coney::debug::spawnFighters(play, 0, 120, 4.0F, random);
+    CHECK(spawned.made == 120);
+    CHECK(spawned.asked == 120);
+    CHECK_FALSE(spawned.error.has_value());
+    REQUIRE(play.fighters.size() == 120);
+    // Two clicks of 50 (ten rows each) and one of 20: no two fighters on one spot, the last row 24 rows out.
+    std::set<std::pair<float, float>> spots;
+    for (const auto& fighter : play.fighters) {
+        spots.emplace(fighter.feet.x, fighter.feet.y);
+        CHECK(fighter.heading == 180.0F);
+    }
+    CHECK(spots.size() == 120);
+    CHECK(play.fighters[50].feet.y == Catch::Approx(4.0F + (10.0F * 1.2F)));
+    CHECK(play.fighters.back().feet.y == Catch::Approx(4.0F + (23.0F * 1.2F)));
 }

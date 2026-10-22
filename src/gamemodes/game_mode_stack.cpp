@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "core/assert.h"
+#include "core/perf.h"
 
 namespace coney {
 
@@ -83,7 +84,12 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
     while (!empty() && belowLimit()) {
         // Wait out the frame cap first and then read the events, so the steps see the freshest input.
         const std::uint64_t elapsed = hooks.waitForFrame ? hooks.waitForFrame() : 0;
-        if (hooks.beginFrame && !hooks.beginFrame()) {
+        bool running = true;
+        if (hooks.beginFrame) {
+            CONEY_PERF_ZONE("frame.begin");
+            running = hooks.beginFrame();
+        }
+        if (!running) {
             break;
         }
         const FramePlan plan = clock.advance(elapsed);
@@ -115,7 +121,10 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
             const bool clockStill = top()->stopsGameClock();
             const std::uint64_t advanced = clockStill ? 0 : timer.update();
             const double seconds = GameTimer::toSeconds(clockStill ? GameTimer::kFixedStepTicks : advanced);
-            updateTop(FrameTime{m_steps, seconds, timer.ticks(), advanced});
+            {
+                CONEY_PERF_ZONE("step");
+                updateTop(FrameTime{m_steps, seconds, timer.ticks(), advanced});
+            }
             ++m_steps;
             ++counts.steps;
             if (hooks.afterStep) {
@@ -128,12 +137,17 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
         const float alpha = m_holding ? 1.0F : plan.alpha;
         const auto behind =
             static_cast<std::uint64_t>((1.0 - static_cast<double>(alpha)) * static_cast<double>(m_lastStep.stepTicks));
-        render(RenderTime{.alpha = alpha, .gameTicks = m_lastStep.gameTicks - behind, .index = m_renders});
+        {
+            CONEY_PERF_ZONE("render");
+            render(RenderTime{.alpha = alpha, .gameTicks = m_lastStep.gameTicks - behind, .index = m_renders});
+        }
         finishPop();
         ++counts.frames;
         if (hooks.endFrame) {
             hooks.endFrame(ran);
         }
+        // The profiler's frame ends with the loop's (docs/guides/performance.md); nothing while it is off.
+        perf::endFrame();
     }
     finishPop();
     return counts;

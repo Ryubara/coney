@@ -198,6 +198,15 @@ struct Options {
     /// `--render-size WxH`: the frame's size (RenderSize) in place of the window's usual one. Needs a window (not
     /// headless, `--load` or `--render-references`).
     std::optional<RenderSize> renderSize;
+    /// `--bench`: measure a `--play-level` run with the profiler (core/perf.h) and write its summary as JSON to this
+    /// file at the end (docs/guides/performance.md). Coney's own debug tooling. Requires playLevel and frameLimit.
+    std::optional<std::string> benchFile;
+    /// `--bench-fighters N`: spawn N AI fighters in front of the player on the level's first frame of play, as the
+    /// debug menus' AI fighters page does, to measure the cost of many (0 to kMaxBenchFighters). Requires benchFile.
+    std::optional<int> benchFighters;
+    /// `--bench-warmup N`: the frames after the first frame of play that the bench does not measure (the fighters
+    /// settling, the caches filling); unset: kDefaultBenchWarmup. Must leave frames to measure. Requires benchFile.
+    std::optional<int> benchWarmup;
     /// `--input-script`: play the pad input in this file (src/core/input_script.h) instead of reading the keyboard
     /// and gamepads: the scripted input of test mode.
     std::optional<std::string> inputScript;
@@ -291,6 +300,10 @@ inline constexpr int kMaxFpsCap = 1000;
 
 /// The largest `--checkpoint`: far beyond any level's (the most is 12, the hub's), but a script reads any number.
 inline constexpr int kMaxCheckpoint = 99;
+/// The most fighters `--bench-fighters` spawns.
+inline constexpr int kMaxBenchFighters = 1000;
+/// The frames a bench leaves unmeasured after the first frame of play unless `--bench-warmup` says otherwise.
+inline constexpr int kDefaultBenchWarmup = 60;
 
 /// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot` or
 /// `--record`. Test mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a

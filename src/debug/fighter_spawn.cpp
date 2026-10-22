@@ -7,6 +7,8 @@
 #include <cmath>
 #include <numbers>
 
+#include "debug/play_controls.h"
+
 namespace coney::debug {
 
 namespace {
@@ -61,6 +63,35 @@ std::vector<anim::Vec3> fighterSpots(anim::Vec3 playerFeet, float playerHeadingD
                                    playerFeet.y + forwardY * ahead + std::sin(radians) * across, playerFeet.z});
     }
     return spots;
+}
+
+SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random) {
+    SpawnedFighters result;
+    result.asked = static_cast<std::size_t>(std::max(amount, 0));
+    const std::vector<std::string> models = play.fighterModels();
+    const float heading = play.playerHeadingDegrees();
+    const anim::Vec3 feet = play.playerFeet();
+    // A click's worth at a time; the next starts a row beyond the last row of the one before.
+    float ahead = distance;
+    for (int left = std::max(amount, 0); left > 0;) {
+        const int batch = std::min(left, kMaxFighterAmount);
+        const std::vector<std::string> picks = pickFighterModels(models, choice, batch, random);
+        const std::vector<anim::Vec3> spots = fighterSpots(feet, heading, ahead, batch);
+        for (std::size_t i = 0; i < spots.size(); ++i) {
+            // Each faces the player.
+            auto spawned = play.spawnFighterAs(spots[i], heading + 180.0F, picks[i]);
+            if (!spawned) {
+                result.error = std::move(spawned.error());
+                return result;
+            }
+            ++result.made;
+        }
+        left -= batch;
+        // The next batch stands behind this one's rows (whole rows: a part row counts as one).
+        const int rows = (batch + kPerRow - 1) / kPerRow;
+        ahead += static_cast<float>(rows) * kSpacing;
+    }
+    return result;
 }
 
 } // namespace coney::debug

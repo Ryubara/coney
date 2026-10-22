@@ -47,6 +47,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addAudioPage(*this);
     addNetworkPage(*this);
     addInputPage(*this);
+    addPerformancePage(*this);
 }
 
 DebugSession::~DebugSession() = default;
