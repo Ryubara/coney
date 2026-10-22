@@ -124,6 +124,7 @@ class AiHumans {
     /// The AI humans spawned, their brains and the player's brain.
     [[nodiscard]] std::size_t count() const { return m_humans.size(); }
     /// The AI humans still in the world: count() less those removed (`HuDelete`) and those about to be.
+    /// @coney-only the debug menus' fighter count: the original keeps no such count
     [[nodiscard]] std::size_t liveCount() const;
     [[nodiscard]] const std::vector<AiHuman>& humans() const { return m_humans; }
     [[nodiscard]] Brains& brains() { return *m_brains; }

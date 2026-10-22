@@ -214,8 +214,8 @@ TEST_CASE("the AI fighters page leaves the layout's fighters, and a change of ch
     REQUIRE_FALSE(models.empty());
     for (int i = 0; i < kAmount; ++i) {
         REQUIRE(mode.spawnFighterAs(coney::debug::spotAhead(mode.playerFeet(), mode.playerHeadingDegrees(), 4.0F + i),
-                                    mode.playerHeadingDegrees() + 180.0F, models[static_cast<std::size_t>(i) %
-                                                                                 models.size()]));
+                                    mode.playerHeadingDegrees() + 180.0F,
+                                    models[static_cast<std::size_t>(i) % models.size()]));
     }
     REQUIRE(mode.fighterCount() == layout + kAmount);
     (void)modes.runUntilEmpty(timer, {}, 10);
