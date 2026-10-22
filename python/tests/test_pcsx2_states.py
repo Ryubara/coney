@@ -27,6 +27,7 @@ from coney_tools import (
     pcsx2_states,
     pcsx2_states_cli,
     recipes,
+    recipes_cli,
     recipes_render,
 )
 from coney_tools import hooks as hook_tools
@@ -466,6 +467,15 @@ def test_flags_override_what_the_state_says_and_unknown_is_allowed(
     assert (blind.level, blind.checkpoint, blind.position, blind.patches) == ("unknown", None, None, ())
 
 
+def test_a_position_is_kept_to_the_millimetre(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    make_checkout(tmp_path, monkeypatch)
+    precise = make_state(
+        tmp_path / "precise.p2s", make_ram(position=(75.15495300292969, -41.13535690307617, 0.2230907))
+    )
+    assert run("add", str(precise), "--id", "precise", "--desc", "d", "--author", "me") == 0
+    assert Library(tmp_path / "library").get("precise").position == (75.155, -41.135, 0.223)
+
+
 def test_add_refuses_what_it_cannot_describe_or_already_holds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
 ) -> None:
@@ -549,7 +559,24 @@ def test_add_over_pine_reads_the_running_copy_under_a_claim(
     assert [e.id for e in Library(tmp_path / "library").entries()] == ["live"]
 
 
-def test_a_pine_failure_is_a_clean_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state_file: Path) -> None:
+def test_a_copy_that_cannot_be_reached_is_a_clean_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
+) -> None:
+    make_checkout(tmp_path, monkeypatch)
+
+    def refuse(port: int) -> FakePine:
+        raise PineError("connection refused")
+
+    monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: StubRegistry(tmp_path / "pcsx2-x"))
+    monkeypatch.setattr(pcsx2_states_cli, "PineClient", refuse)
+    assert run("add", str(state_file), "--id", "x", "--desc", "d", "--copy", "pcsx2-x", "--agent", "me") == 2
+    assert "pcsx2-x: connection refused" in capsys.readouterr().err
+    assert not Library(tmp_path / "library").entries()
+
+
+def test_a_game_that_answers_nothing_leaves_the_level_to_be_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
+) -> None:
     make_checkout(tmp_path, monkeypatch)
 
     class Broken(FakePine):
@@ -560,6 +587,10 @@ def test_a_pine_failure_is_a_clean_error(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.setattr(pcsx2_states_cli, "PineClient", lambda port: Broken(b""))
     # The recipes' reads fail, so the scene is empty and the level has to be given.
     assert run("add", str(state_file), "--id", "x", "--desc", "d", "--copy", "pcsx2-x", "--agent", "me") == 2
+    assert "the level could not be read" in capsys.readouterr().err
+    assert run("add", str(state_file), "--id", "x", "--desc", "d", "--copy", "pcsx2-x", "--agent", "me",
+               "--level", "unknown") == 0  # fmt: skip
+    assert Library(tmp_path / "library").get("x").position is None
 
 
 def add_standard(tmp_path: Path, state_file: Path, state_id: str = "street") -> None:
@@ -642,8 +673,11 @@ def test_use_applies_patches_to_the_copy_only(
     assert "1 edit(s) from demo" in capsys.readouterr().out
 
     # A patch the state cannot take (its original words are not there) is refused, and nothing is left behind.
+    patched = handed.read_bytes()
     assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "scripted-pad") == 2
     assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "nosuch") == 2
+    assert handed.read_bytes() == patched
+    assert sorted(p.name for p in handed.parent.iterdir()) == ["street.p2s"]
 
 
 def test_use_can_launch_the_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state_file: Path) -> None:
@@ -693,6 +727,72 @@ def test_the_list_block_is_rendered_between_the_markers(
     page.write_text("no markers\n", encoding="utf-8")
     assert run("render", "--out", str(page)) == 2
     assert not root.joinpath(pcsx2_states_cli.PAGE).exists()
+
+
+def test_the_library_is_never_inside_the_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state_file: Path
+) -> None:
+    root = make_checkout(tmp_path, monkeypatch)
+    with pytest.raises(ConfigError, match="inside the repository"):
+        Library(root / "state-library").add(entry(), state_file)
+    assert not (root / "state-library").exists()
+
+
+def test_a_lock_another_run_took_over_is_not_removed(tmp_path: Path) -> None:
+    library = Library(tmp_path / "library")
+    with library.locked():
+        (tmp_path / "library" / pcsx2_states.LOCK_FILE).write_text("someone else's", encoding="ascii")
+    assert (tmp_path / "library" / pcsx2_states.LOCK_FILE).read_text(encoding="ascii") == "someone else's"
+
+
+def test_a_catalog_list_must_be_a_list(tmp_path: Path) -> None:
+    row = {"id": "a", "level": "l", "description": "d", "sha256": "", "size": 1, "tags": "grab"}
+    (tmp_path / "catalog.json").write_text(json.dumps({"format": 1, "states": [row]}), encoding="utf-8")
+    with pytest.raises(LibraryError, match="tags is a list of strings"):
+        Library(tmp_path).entries()
+
+
+def test_a_game_with_no_player_gives_no_position(book: recipes.RecipeBook) -> None:
+    ram = make_ram()
+    # A player whose transform holds NaN: not a position.
+    ram[TRANSFORM_TABLE + 2 * 0x20 : TRANSFORM_TABLE + 2 * 0x20 + 4] = (0x7FC00000).to_bytes(4, "little")
+    scene = read_scene(StateMemory(bytes(ram)), book)
+    assert (scene.level, scene.position, scene.heading_deg) == ("level99", None, None)
+    assert "not finite" in scene.notes[0]
+
+
+def test_add_checks_what_the_flags_say(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state_file: Path) -> None:
+    make_checkout(tmp_path, monkeypatch)
+    base = ["add", str(state_file), "--desc", "d", "--author", "me"]
+    assert run(*base, "--id", "a", "--level", "not a level") == 2
+    assert run(*base, "--id", "b", "--made", "5 October") == 2
+    assert run(*base, "--id", "c", "--position", "nan,0,0") == 2
+    assert run(*base, "--id", "d", "--tag", "grab", "--level", "unknown", "--no-read") == 0
+    assert run("add", "slot:x", "--id", "e", "--desc", "d", "--author", "me") == 2
+    assert [e.id for e in Library(tmp_path / "library").entries()] == ["d"]
+
+
+def test_no_read_says_the_patches_were_not_looked_for(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
+) -> None:
+    make_checkout(tmp_path, monkeypatch)
+    assert (
+        run("add", str(state_file), "--id", "a", "--desc", "d", "--author", "me", "--level", "unknown", "--no-read")
+        == 0
+    )
+    assert "unchecked" in capsys.readouterr().out
+
+
+def test_running_a_recipe_with_a_start_state_names_it(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], book: recipes.RecipeBook
+) -> None:
+    def no_registry() -> None:
+        raise ConfigError("stop here")
+
+    monkeypatch.setattr(pcsx2_claims, "default_registry", no_registry)
+    with pytest.raises(ConfigError, match="stop here"):
+        recipes_cli.run_recipe(book, "spawn-human", "pcsx2-z", "me", [], False)
+    assert "states use pedestrian-grab --copy pcsx2-z --agent me --launch" in capsys.readouterr().out
 
 
 # -- recipes name a library state

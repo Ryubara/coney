@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 import re
 import textwrap
 from collections.abc import Sequence
@@ -25,6 +26,7 @@ from coney_tools import pcsx2_cli, pcsx2_state, recipes
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.pcsx2_copies import copy_checked, sha256
 from coney_tools.pcsx2_states import (
+    LEVEL_NAME,
     UNKNOWN,
     Entry,
     Library,
@@ -178,6 +180,8 @@ def _parse_position(text: str) -> tuple[float, float, float]:
         x, y, z = (float(part) for part in text.split(","))
     except ValueError as error:
         raise ConfigError(f"--position {text!r}: write X,Y,Z in metres, such as 1.5,-20,0.25") from error
+    if not all(math.isfinite(v) for v in (x, y, z)):
+        raise ConfigError(f"--position {text!r}: the numbers must be finite")
     return x, y, z
 
 
@@ -221,6 +225,8 @@ def _live_scene(copy: str, agent: str | None) -> Scene:
 
 def _source(file: str, pcsx2_dir: Path | None) -> Path:
     """The state file to add: a path, or `slot:N` (only read)."""
+    if file.startswith("slot:") and not file[5:].isdigit():
+        raise ConfigError(f"{file}: write slot:N with the number of a quick-save slot, such as slot:3")
     pcsx2 = pcsx2_dir or pcsx2_cli._config_paths().get("pcsx2_dir")
     return pcsx2_cli._source_state(file, pcsx2)
 
@@ -248,6 +254,13 @@ def run_add(library: Library, args: Any) -> int:
     except pcsx2_state.StateError as error:
         raise ConfigError(str(error)) from error
     level = args.level or scene.level
+    if args.level and args.level != UNKNOWN and not LEVEL_NAME.match(args.level):
+        raise ConfigError(f"--level {args.level!r}: a level's name as the game spells it (level99), or {UNKNOWN}")
+    if args.made:
+        try:
+            datetime.date.fromisoformat(args.made)
+        except ValueError as error:
+            raise ConfigError(f"--made {args.made!r}: write a date as YYYY-MM-DD") from error
     if level is None:
         raise ConfigError(
             "the level could not be read"
@@ -256,6 +269,9 @@ def run_add(library: Library, args: Any) -> int:
         )
     checkpoint = _parse_checkpoint(args.checkpoint) if args.checkpoint else scene.checkpoint
     position = _parse_position(args.position) if args.position else scene.position
+    if position is not None:
+        # Millimetres: the game's floats carry more digits than a position means, and the catalog is read by people.
+        position = (round(position[0], 3), round(position[1], 3), round(position[2], 3))
     heading = args.heading if args.heading is not None else scene.heading_deg
     entry = Entry(
         id=args.id,
@@ -278,6 +294,8 @@ def run_add(library: Library, args: Any) -> int:
     print(f"({how})")
     for note in scene.notes:
         print(f"note: {note}")
+    if args.no_read:
+        print("note: --no-read: the patches the state holds were not looked for, so 'patches none' means unchecked")
     return 0
 
 

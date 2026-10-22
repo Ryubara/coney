@@ -18,7 +18,8 @@ a copy of a state with `coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME 
 
 Start from the shared state library rather than driving to the same place again: `coney-tools pcsx2 states list` shows
 the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states use ID --copy COPY --agent ID --launch`
-starts your copy on one. A recipe that needs a particular scene names its state among its preconditions.
+starts your copy on one. A recipe that needs a particular scene names its state among its preconditions (`recipe run`
+prints it; the runner cannot tell which state the copy was started from).
 
 Many recipes call the game through the `call-brains` call hook (`research/traces/patches/hooks-core.toml`): the runner
 writes a function address and its arguments into the call block, and the game makes the call on its own thread at the

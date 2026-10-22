@@ -103,6 +103,12 @@ def run_recipe(book: recipes.RecipeBook, name: str, copy: str, agent: str, pairs
     """`recipe run`: check the claim, the emulation state and the patches, then make the steps."""
     recipe = _recipe(book, name)
     values = recipes_run.bind_args(recipe, parse_args(pairs))
+    if recipe.state:
+        # Informational: the runner cannot tell which state the copy was started from.
+        print(
+            f"note: {name} was confirmed from the library state {recipe.state} "
+            f"(`coney-tools pcsx2 states use {recipe.state} --copy {copy} --agent {agent} --launch`)"
+        )
     registry = claims.default_registry()
     registry.require_claim(agent, copy)
     held = registry.copy(copy)

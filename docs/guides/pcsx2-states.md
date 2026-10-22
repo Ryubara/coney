@@ -54,13 +54,17 @@ Got a place others would want? Save it, then add it, whoever you are:
    own words. The level, checkpoint, the player's position and heading come from the state itself: `add` runs the
    [`where`](pcsx2-recipes.md#where) and [`position`](pcsx2-recipes.md#position) recipes over the state's own
    memory, which gives what the game held when it was saved. With `--copy COPY --agent ME` it reads a running
-   copy over PINE instead, when you hold the claim; flags (`--level`, `--checkpoint`, `--position`, `--heading`) win
-   over both, and `unknown` is allowed for a level or a checkpoint nobody can tell. The PCSX2 version and the date come
+   copy over PINE instead, when you hold the claim (the copy must be running the state you add, as the level and
+   position are the live game's, while the version, date and patches are the file's); flags (`--level`,
+   `--checkpoint`, `--position`, `--heading`) win over both, and `unknown` is allowed for a level or a checkpoint
+   nobody can tell. The PCSX2 version and the date come
    from the file, and the patches it holds (`scripted-pad`, `call-brains`, ...) are found by comparing its memory with
-   `research/traces/patches/`.
+   `research/traces/patches/` (a patch that a later one overwrote in part is not listed; `--no-read` skips all of
+   this, and then "patches: none" means unchecked).
 3. Check it with `states verify`.
 
-`add` refuses an id that exists, copies the file in with its SHA-256 checked, and makes the copy read-only. A wrong
+`add` refuses an id that exists and a library folder inside a repository checkout, copies the file in with its
+SHA-256 checked, and makes the copy read-only. A wrong
 entry is not edited in place: add the corrected state under a new id and ask a maintainer to remove the old one (delete
 its file and its catalog row together). `states verify [ID ...]` hashes the files against the catalog, and lists any
 file that is missing, changed or not in the catalog; it exits 1 when it finds one.

@@ -28,10 +28,12 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import re
 import stat
 import time
+import uuid
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields, replace
 from pathlib import Path
@@ -51,6 +53,7 @@ from coney_tools.game_memory import ExpressionError
 from coney_tools.pcsx2_copies import copy_checked, sha256
 from coney_tools.pcsx2_state import EE_MEMORY_SIZE, Patch
 from coney_tools.pine import Memory, PineError, Read, Write
+from coney_tools.wad import refuse_inside_repo
 
 CATALOG_FILE = "catalog.json"
 LOCK_FILE = "catalog.lock"
@@ -64,7 +67,7 @@ SLUG = recipes.STATE_ID
 #: A level's name as the game's level table spells it (`level99`).
 LEVEL_NAME = re.compile(r"^[A-Za-z0-9_]{1,15}$")
 #: The seconds a lock file may be held before it is taken for a dead run's.
-LOCK_STALE_SECONDS = 60.0
+LOCK_STALE_SECONDS = 300.0
 
 
 class LibraryError(ConfigError):
@@ -148,11 +151,11 @@ class Entry:
                 level=str(raw["level"]),
                 checkpoint=None if raw.get("checkpoint") is None else int(raw["checkpoint"]),
                 description=str(raw["description"]),
-                tags=tuple(str(t) for t in raw.get("tags", [])),
+                tags=_strings(raw.get("tags", []), "tags"),
                 position=None if position is None else (float(position[0]), float(position[1]), float(position[2])),
                 heading_deg=None if raw.get("heading_deg") is None else float(raw["heading_deg"]),
                 pcsx2=str(raw.get("pcsx2", UNKNOWN)),
-                patches=tuple(str(p) for p in raw.get("patches", [])),
+                patches=_strings(raw.get("patches", []), "patches"),
                 author=str(raw.get("author", "")),
                 made=str(raw.get("made", "")),
                 added=str(raw.get("added", "")),
@@ -164,6 +167,13 @@ class Entry:
             raise LibraryError(f"{where}: a field has the wrong type ({error})") from error
         check_slug(entry.id)
         return entry
+
+
+def _strings(value: object, what: str) -> tuple[str, ...]:
+    """`value`, a list of strings, as a tuple; ValueError for anything else (a bare string would split into letters)."""
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"{what} is a list of strings")
+    return tuple(value)
 
 
 class Library:
@@ -223,13 +233,17 @@ class Library:
     def locked(self, timeout: float = 20.0) -> Iterator[None]:
         """Hold the catalog's lock file while the block runs (a lock older than LOCK_STALE_SECONDS belongs to a run
         that died and is taken over). LibraryError when it stays held for `timeout` seconds."""
-        self.path.mkdir(parents=True, exist_ok=True)
+        try:
+            self.path.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise LibraryError(f"{self.path}: {error}") from error
         lock = self.path / LOCK_FILE
         deadline = time.monotonic() + timeout
+        # A token in the lock file says whose it is, so a run never removes the lock another run took over.
+        token = uuid.uuid4().hex
         while True:
             try:
-                os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
-                break
+                descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
                 with contextlib.suppress(OSError):
                     if time.time() - lock.stat().st_mtime > LOCK_STALE_SECONDS:
@@ -238,11 +252,18 @@ class Library:
                 if time.monotonic() > deadline:
                     raise LibraryError(f"{lock}: held by another run for {timeout:.0f} s; try again") from None
                 time.sleep(0.05)
+            except OSError as error:
+                raise LibraryError(f"{lock}: {error}") from error
+            else:
+                with os.fdopen(descriptor, "w", encoding="ascii") as handle:
+                    handle.write(token)
+                break
         try:
             yield
         finally:
             with contextlib.suppress(OSError):
-                lock.unlink()
+                if lock.read_text(encoding="ascii") == token:
+                    lock.unlink()
 
     def _write_catalog(self, entries: Sequence[Entry]) -> None:
         """Write the catalog through a temporary file, so a failed write leaves the old catalog."""
@@ -254,8 +275,16 @@ class Library:
     def add(self, entry: Entry, source: Path) -> Entry:
         """Copy the file `source` into the library as `entry.id` and add the entry (its hash and size filled in from
         the copy), returning it. The copy is made read-only; `source` is only read. Raises LibraryError when the id or
-        its file is already there."""
+        its file is already there, or when the library would be inside the repository (game memory never goes there)."""
+        refuse_inside_repo(self.path)
         target = self.state_path(entry.id)
+        try:
+            return self._add(entry, source, target)
+        except OSError as error:
+            raise LibraryError(f"{self.path}: {error}") from error
+
+    def _add(self, entry: Entry, source: Path, target: Path) -> Entry:
+        """`add` once the library is known to be outside the repository."""
         with self.locked():
             entries = self.entries()
             if any(e.id == entry.id for e in entries):
@@ -379,6 +408,9 @@ def read_scene(memory: Memory, book: recipes.RecipeBook) -> Scene:
         shown = _run_recipe(memory, book, "position")
         position = (float(shown["x"]), float(shown["y"]), float(shown["z"]))
         heading = float(shown["heading_deg"])
+        if not all(math.isfinite(v) for v in (*position, heading)):
+            position, heading = None, None
+            notes.append("position and heading: the memory holds no player (the numbers are not finite)")
     except (recipes.RecipeError, ExpressionError, PineError, KeyError) as error:
         notes.append(f"position and heading: {error}")
     return Scene(level, checkpoint, position, heading, tuple(notes))
@@ -388,7 +420,8 @@ def detect_patches(
     memory: Memory, patches: Mapping[str, Patch], hooks: Mapping[str, hook_tools.Hook]
 ) -> tuple[str, ...]:
     """The names of the patches and hooks the state behind `memory` holds: a patch when every one of its edits' words
-    is there, a hook when its address holds a jump into the hook caves (`recipes_run.check_patches`' tests)."""
+    is there, a hook when its address holds a jump into the hook caves (`recipes_run.check_patches`' tests). A patch
+    that a later one overwrote in part is not listed."""
     found = []
     for name, patch in patches.items():
         if any(any(edit.data) for edit in patch.edits) and _holds(memory, patch):
