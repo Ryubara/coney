@@ -42,11 +42,30 @@
       }
     },
     {
-      "name": "release",
-      "displayName": "Release with debug info",
+      "name": "playtest",
+      "displayName": "Play-test (optimised, with debug info and the debug tools)",
       "inherits": ["base", "cacheable"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (the game as a player gets it: optimised, no debug tools)",
+      "inherits": ["base", "cacheable"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CONEY_DEBUG_TOOLS": "OFF"
+      }
+    },
+    {
+      "name": "ci-release",
+      "displayName": "CI release (Release, no debug tools, warnings as errors)",
+      "inherits": ["base", "cacheable"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CONEY_DEBUG_TOOLS": "OFF",
+        "CONEY_WARNINGS_AS_ERRORS": "ON"
       }
     },
     {
@@ -76,13 +95,17 @@
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
+    { "name": "playtest", "configurePreset": "playtest" },
     { "name": "release", "configurePreset": "release" },
+    { "name": "ci-release", "configurePreset": "ci-release" },
     { "name": "ci", "configurePreset": "ci" },
     { "name": "asan", "configurePreset": "asan" }
   ],
   "testPresets": [
     { "name": "dev", "configurePreset": "dev", "output": { "outputOnFailure": true } },
+    { "name": "playtest", "configurePreset": "playtest", "output": { "outputOnFailure": true } },
     { "name": "release", "configurePreset": "release", "output": { "outputOnFailure": true } },
+    { "name": "ci-release", "configurePreset": "ci-release", "output": { "outputOnFailure": true } },
     { "name": "ci", "configurePreset": "ci", "output": { "outputOnFailure": true } },
     {
       "name": "asan",

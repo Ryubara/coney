@@ -77,9 +77,21 @@ jobs:
             compiler-packages: clang-19 clang-tools-19
           - name: macos-appleclang
             os: macos-15          # Xcode 16 is the image's default
+          # The release build a player gets, without the debug tools (docs/guides/building.md#debug-tools), so it
+          # cannot rot: on Windows, where most players are, and on Linux.
+          - name: windows-msvc-release
+            os: windows-2022
+            preset: ci-release
+          - name: linux-gcc-13-release
+            os: ubuntu-24.04
+            cc: gcc-13
+            cxx: g++-13
+            compiler-packages: gcc-13 g++-13
+            preset: ci-release
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
+      PRESET: ${{ matrix.preset || 'ci' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up the MSVC environment
@@ -107,11 +119,11 @@ jobs:
         with:
           key: ci-${{ matrix.name }}
       - uses: ./.github/actions/deps
-      - run: cmake --preset ci
+      - run: cmake --preset ${{ env.PRESET }}
       - uses: ./.github/actions/deps-save
       # -k 0: keep compiling after a failure, so one run lists every error.
-      - run: cmake --build --preset ci -- -k 0
-      - run: ctest --preset ci
+      - run: cmake --build --preset ${{ env.PRESET }} -- -k 0
+      - run: ctest --preset ${{ env.PRESET }}
       - if: ${{ !cancelled() }}
         uses: ./.github/actions/ccache-save
 

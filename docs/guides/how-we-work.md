@@ -442,7 +442,7 @@ is the open issues.
 
 Tracks never wait for a person to play their work, so the automated tests stand in for one. Every track proves its
 work the same way: tests that start through the player's path, input driven like a gamepad, an adaptive playthrough
-for every mission checkpoint, and diffs against the original. People play release builds at milestones and their
+for every mission checkpoint, and diffs against the original. People play play-test builds at milestones and their
 findings come back as fixes. The standard, including what "done" means for each kind of work and the checks to run
 before reporting: [Testing](testing.md). A pull request shows the result: what was run with its numbers, and
 before and after screenshots of anything visible ([What a pull request shows](testing.md#pr-evidence)).
@@ -548,8 +548,8 @@ Issues are guarded the same way: the `issue_guard` hook, `coney-tools issue chec
 - **Run the local gate again after merging `main` into a branch or rebasing it**
   ([The local gate](testing.md#local-gate)), and fix a red `main` forward rather than leaving it red. Before editing a
   page many tracks share, rebase on `main` first.
-- **Rebuild the release build after an engine merge.** When a merged change touches the engine, the coordinator
-  builds the `release` preset ([Build and test](building.md#build-and-test)) from the updated `main`, so the
+- **Rebuild the play-test build after an engine merge.** When a merged change touches the engine, the coordinator
+  builds the `playtest` preset ([Build and test](building.md#build-and-test)) from the updated `main`, so the
   maintainer can play the latest `main`. A merge that changes only docs or research needs no build.
 - **Make a new pull-request check required only once every open branch has it.** Editing a pull request's
   description reruns the `pr` workflow from that pull request's own merge commit, so a branch made before a new job

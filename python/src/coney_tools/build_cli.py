@@ -37,7 +37,8 @@ from coney_tools.pcsx2_claims import AGENT_NAME
 from coney_tools.test_costs import FILE_NAME as TEST_COSTS_FILE
 from coney_tools.test_costs import TestCosts
 
-PRESETS = ("dev", "release", "ci", "asan")
+#: The configure presets of CMakePresets.json (a test keeps the two the same): docs/guides/building.md#build-and-test.
+PRESETS = ("dev", "playtest", "release", "ci", "ci-release", "asan")
 #: How many logs of one worktree are kept; older ones are removed when a run starts.
 KEEP_LOGS = 20
 #: Seconds a run whose caller is gone gets to stop on its own before the process ends at once (its claims then go

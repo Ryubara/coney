@@ -21,6 +21,21 @@ namespace coney {
 
 namespace {
 
+// The options of OptionSet::Player (playerOptions()).
+constexpr std::array<std::string_view, 18> kPlayerOptions{
+    "--disc",     "--language", "--profiles",    "--fps-cap",     "--vsync",          "--line-blend",
+    "--show-fps", "--no-audio", "--skip-movies", "--no-activate", "--window-display", "--host",
+    "--join",     "--net-name", "--help",        "--headless",    "--frames",         "--input-script"};
+
+// The synopsis of usageText(OptionSet::Player), before its options' lines.
+constexpr std::string_view kPlayerSynopsis =
+    "Usage: coney [--disc PATH] [--language CODE] [--profiles DIR]\n"
+    "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
+    "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
+    "             [--headless] [--frames N] [--input-script FILE] [--help]\n"
+    "\n";
+
 // The text usageText() returns (see its doc comment in options.h).
 constexpr std::string_view kUsage =
     "Usage: coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
@@ -676,7 +691,7 @@ bool activatesWindow(const Options& options) {
     return !options.noActivate && !isTestMode(options) && !options.renderReferences.has_value();
 }
 
-std::expected<Options, Error> parseOptions(std::span<const std::string_view> args) {
+std::expected<Options, Error> parseOptions(std::span<const std::string_view> args, OptionSet set) {
     Options options;
     std::optional<std::string> languageArg;      // as typed, so a repeat is refused like any other option
     std::optional<std::string> fpsCapArg;        // as typed, likewise
@@ -697,6 +712,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> renderSizeArg;    // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
+        // The release build's command line: a developer's option is refused by name, before its value is read.
+        if (set == OptionSet::Player && arg.starts_with("--") && !isPlayerOption(arg)) {
+            return invalidArgument(std::format(
+                "{} is a developer's option: it needs a build with the debug tools (docs/guides/building.md)", arg));
+        }
         if (arg == "--help") {
             options.showHelp = true;
         } else if (arg == "--frames") {
@@ -1137,6 +1157,39 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
 }
 
 std::string_view usageText() { return kUsage; }
+
+std::span<const std::string_view> playerOptions() { return kPlayerOptions; }
+
+bool isPlayerOption(std::string_view option) {
+    return std::ranges::find(kPlayerOptions, option) != kPlayerOptions.end();
+}
+
+std::string usageText(OptionSet set) {
+    if (set == OptionSet::All) {
+        return std::string(kUsage);
+    }
+    // The options' lines of the full text, each option with its continuation lines, kept for a player's options.
+    std::string text(kPlayerSynopsis);
+    const std::string_view usage = kUsage.substr(kUsage.find("\n\n") + 2);
+    bool keep = false;
+    std::size_t at = 0;
+    while (at < usage.size()) {
+        const std::size_t end = usage.find('\n', at);
+        const std::size_t next = end == std::string_view::npos ? usage.size() : end + 1;
+        const std::string_view line = usage.substr(at, next - at);
+        if (line.starts_with("  --")) {
+            const std::string_view name = line.substr(2, line.find_first_of(" \n", 2) - 2);
+            keep = isPlayerOption(name);
+        } else if (!line.starts_with("   ")) {
+            keep = false; // a line that is neither an option nor its continuation ends the option before it
+        }
+        if (keep) {
+            text += line;
+        }
+        at = next;
+    }
+    return text;
+}
 
 std::span<const RumbleModeName> rumbleModeNames() { return kRumbleModes; }
 

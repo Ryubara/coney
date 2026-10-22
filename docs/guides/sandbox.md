@@ -4,7 +4,8 @@ The sandbox is a set of test worlds made of simple shapes for trying out movemen
 gaps and drops of known sizes, drawn with prototype grid textures and baked lighting, the way a level designer's
 blockout looks in Unity or Unreal. It is **Coney's own feature, not part of the original game**: nothing in it is
 reimplemented, and nothing in it comes from the disc. Its sizes cite the research where a value comes from the game;
-every other size is a Coney choice.
+every other size is a Coney choice. It is one of the debug tools, in every build with them and in none a player gets
+([The debug tools and the game](building.md#debug-tools)).
 
 You can use it two ways:
 

@@ -1,4 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# The unit tests need the debug tools for now: the release build (CONEY_DEBUG_TOOLS off) runs its smoke tests alone
+# (src/platform/CMakeLists.txt, docs/guides/building.md#debug-tools).
+if(NOT CONEY_DEBUG_TOOLS)
+    return()
+endif()
 add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
@@ -18,6 +23,7 @@ add_executable(coney_tests
     core/options_test.cpp
     core/perf_test.cpp
     core/pad_test.cpp
+    core/player_options_test.cpp
     core/window_display_test.cpp
     effects/effect_culling_test.cpp
     effects/glints_test.cpp

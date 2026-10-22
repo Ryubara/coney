@@ -1349,7 +1349,7 @@ the checkout or not a page the check covers (`README.md`, a generated page).
 ## build {#build}
 
 ```sh
-uv run --project python coney-tools build [--agent ID] [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
+uv run --project python coney-tools build [--agent ID] [--preset dev|playtest|release|ci|ci-release|asan] [--test] [-R REGEX] [-L LABEL]
     [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
     [--lane auto|main] [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]

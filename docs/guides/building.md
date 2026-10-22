@@ -189,12 +189,14 @@ does not pick up by itself (`coney-tools build --configure` forces it). Each pre
     detached (`--detach`), the agent writes `STATUS.md` and stops, and whoever continues reads `coney-tools build
     result` ([Build waits](agents.md#build-waits)).
 
-| Preset | Build type | What it is for |
-| --- | --- | --- |
-| `dev` | Debug | day-to-day work |
-| `release` | RelWithDebInfo | an optimised build that can still be debugged |
-| `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
-| `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
+| Preset | Build type | Debug tools | What it is for |
+| --- | --- | --- | --- |
+| `dev` | Debug | yes | day-to-day work |
+| `playtest` | RelWithDebInfo | yes | an optimised build that can still be debugged, with the debug menus: the one the maintainers play-test |
+| `release` | Release | no | the game as a player gets it, the build the launcher installs ([below](#debug-tools)) |
+| `ci` | Debug, warnings as errors | yes | what CI builds; run it before a pull request |
+| `ci-release` | Release, warnings as errors | no | what CI builds of the release build |
+| `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | yes | memory and undefined-behaviour bugs; Linux and macOS only |
 
 On MSVC every preset keeps debug information in each object (`/Z7`): [Debug information](#debug-info).
 
@@ -227,12 +229,13 @@ when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
 
 ### The debug tools and the game {#debug-tools}
 
-Coney is getting two kinds of build (a maintainer decision, 2026-10-21): builds with the **debug tools**, which
-developers and agents use, and a **release** build a player will get, the game alone with none of the tools compiled
-in (the launcher will install it). The split lands in steps: today the tools have targets of their own, and every
-build still carries them. The debug tools are the [debug menus](debug-menu.md) and their pages, the developer
-overlay and Dear ImGui, the debug lines, the viewers, the cheats and tunables, the [sandbox](sandbox.md) and the
-developer command-line flags.
+Coney has two kinds of build (a maintainer decision, 2026-10-21): builds with the **debug tools**, which developers
+and agents use (`dev`, `playtest`, `ci`, `asan`), and the **release** build a player gets (`release`, `ci-release`),
+the game alone with none of the tools compiled in; the launcher installs it. The debug tools are the
+[debug menus](debug-menu.md) and their pages, the developer overlay and Dear ImGui, the debug lines, the viewers, the
+cheats and tunables, the [sandbox](sandbox.md) and the developers' command-line options. The CMake option
+`CONEY_DEBUG_TOOLS` (on by default) chooses: off, the debug libraries are not made and Dear ImGui is not even fetched,
+so nothing can link them by mistake.
 
 The split is made by target, not by `#ifdef`. The game is `coney_core`, `coney_audio`, `coney_movies`, `coney_net`
 and `coney_platform`; the debug tools are two libraries of their own:
@@ -252,10 +255,34 @@ simulated network are `NetPlay`'s own (the figures are `net/net_status.h`), whic
 Network page's `debug::NetControls`; and the menus' game services are connected to the game session by
 `connectDebugServices()` (`platform/game_session_debug.h`), all on the debug tools' side. The sandbox is a scenery the
 play mode is given (`SandboxPlayScenery`, `createPlayInSandbox()`), and the Spawner's objects reach a level as generic
-extras (`PlayScenery::setExtras()`), both made in `coney_devtools`. So no game library links `coney_debug`, and the
-release preset can leave both debug libraries out. `python/tests/test_debug_tools_split.py` reads the CMake files and
+extras (`PlayScenery::setExtras()`), both made in `coney_devtools`. So no game library links `coney_debug`.
+
+**The two entry points.** `main.cpp` is the debug tools' `coney`: every option, the viewers, the sandbox, the menus.
+`main_release.cpp` is the release build's: a player's options alone (`OptionSet::Player`: the disc, the language, the
+profiles, the frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window, network play)
+and test mode's `--headless`, `--frames` and `--input-script` for its smoke tests; any other option is refused with a
+message that names the debug tools. It plays the story from boot, or the idle screen without a disc. Network play is
+there too, from the command line (`--host`, `--join`, `--net-name`, set up by `platform/game_run.h` as in the debug
+tools' `coney`); the Network page is a debug page. What both set up the same way (the disc, the window, the session's
+settings, the sound, the end-of-run counts) is `platform/game_run.h`, so a player's game is set up as the tested one. A
+build with the tools also builds `main_release.cpp` as `coney_release`, so every build checks that the game links
+without them; without the tools it is `coney` itself.
+
+**What proves it.** Besides the Python test below, ctest runs the release entry point's smoke tests (`coney.release.*`:
+it starts headless, prints a player's options, refuses `--play-level`, plays an input script, hosts and joins) in every
+build, and `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug
+pages' titles, the developer overlay's settings file, Dear ImGui's default one; `cmake/debug_tools_markers.cmake`) and
+fails when it finds one. On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`),
+so the check cannot pass by finding nothing. The release build does not build the unit tests yet; CI builds it on
+Windows and Linux ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and
 the game's sources and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links
 a debug library, or anything but `coney_devtools` links `imgui`.
+
+**What it saves.** Measured with MSVC on Windows (2026-10-21): the `release` preset's `coney.exe` is 8.4 MB
+(Release, no tools); the `dev` preset's `coney.exe` is 33.0 MB and its `coney_release.exe`, the same Debug build
+without the tools, 27.4 MB, so the tools are about a sixth of a Debug executable. For comparison, the old
+`release` preset (RelWithDebInfo with the tools, debug information kept in the objects) made a 19.9 MB `coney.exe`.
+A release configure fetches no Dear ImGui (`build/release/_deps` has no `imgui` folder).
 
 ### Debug information on MSVC {#debug-info}
 
@@ -314,8 +341,8 @@ was left of the cached build was mostly CMake's C++ module scanning (733 of its 
   They now reach the tests through one file, `tests/support/test_paths.cpp`
   (`coney::test::assetsDir()`, `testSupportDir()`), and a Python test refuses such a definition on a target.
 - **Precompiled headers are off in every preset.** ccache cannot use them, so SDL3's made its sources uncacheable on
-  every build (ccache counts them as `could_not_use_precompiled_header`). So `dev` and `release` inherit the hidden
-  `cacheable` preset as `ci` and `asan` do.
+  every build (ccache counts them as `could_not_use_precompiled_header`). So `dev`, `playtest` and `release` inherit
+  the hidden `cacheable` preset as `ci`, `ci-release` and `asan` do.
 - **What a hit carries.** A hit is the object another worktree compiled, with that worktree's absolute paths in it:
   in its debug information (a debugger may open the source file in the other worktree) and in what `__FILE__` expanded
   to (`CONEY_ASSERT` messages may name the other worktree). ccache's manual names `__FILE__` among the things such
@@ -532,7 +559,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 
 | Workflow | Jobs |
 | --- | --- |
-| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (nightly and manual runs only); pre-commit over every file; the `build-ok` gate |
+| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its smoke tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (nightly and manual runs only); pre-commit over every file; the `build-ok` gate |
 | `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, `orig check` and `orig copy-check` with `--base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, the page standards on a pull request's changed pages ([`docs check`](writing-docs.md#checking)), markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
@@ -695,10 +722,11 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   At the earlier 700 MB, about one build's objects, the Windows, GCC, macOS and macOS sanitizer jobs of a pull
   request's run on 2026-10-21 all ended at their cap, with 72.5, 79.8, 80.0 and 34.3 % hits, while the Clang jobs,
   under it, had 93.1 %. The saved entry is trimmed to what the job used (below), so it stays about one build's size,
-  0.3 to 0.7 GB. Six jobs save (four `build`, two `sanitizers`): at most 6 × 1 GB = 6 GB even untrimmed, plus three
+  0.3 to 0.7 GB. Eight jobs save (six `build`, two `sanitizers`): at most 8 × 1 GB = 8 GB even untrimmed, plus three
   dependency entries (one per OS, about 0.1 to 0.2 GB each) and the `setup-uv` caches (about 50 MB per OS), under
-  7 GB of the 10 GB. While a `main` run is between its saves and `cache-prune`, the old and new entries of a job both
-  exist for a few minutes. When a job's summary shows the cache at its cap and a rebuild of an unchanged commit hits
-  little, raise that cap and redo this sum.
+  9 GB of the 10 GB; the two release jobs compile no unit tests, so their entries are the smallest. While a `main`
+  run is between its saves and `cache-prune`, the old and new entries of a job both exist for a few minutes. When a
+  job's summary shows the cache at its cap and a rebuild of an unchanged commit hits little, raise that cap and redo
+  this sum.
 - **Hit rates.** Each job's summary shows `ccache --show-stats` for that job alone (the counters are zeroed after the
   restore): cacheable calls, hits, misses, uncacheable calls and the cache size.

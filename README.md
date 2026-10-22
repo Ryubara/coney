@@ -137,7 +137,7 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso
 ```
 
 `coney --help` lists every option, and [Running Coney](docs/guides/running.md) says what they do.
-[Building and testing](docs/guides/building.md) covers the other presets (`release`, `ci`, `asan`), switching
+[Building and testing](docs/guides/building.md) covers the other presets (`playtest`, `release`, `ci`, `asan`), switching
 compilers and the Python tools.
 
 ## Documentation

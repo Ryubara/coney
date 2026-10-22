@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Entry point. SDL_main.h lets SDL provide the right entry on each OS (WinMain on Windows), which is why main lives
-// in src/platform/: it is the one function that is part of the operating-system boundary.
+// The entry point of a build with the debug tools (docs/guides/building.md#debug-tools): the game as the release
+// build runs it (main_release.cpp; the set-up both share is platform/game_run.h), with every developer's option, the
+// viewers, the sandbox, the debug menus and the developer overlay. SDL_main.h lets SDL provide the right entry on each
+// OS (WinMain on Windows), which is why main lives in src/platform/: it is the one function that is part of the
+// operating-system boundary.
 
 #include <algorithm>
 #include <array>
@@ -42,15 +45,11 @@
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "core/language.h"
-#include "core/log.h"
-#include "core/log_filter.h"
-#include "core/log_record.h"
 #include "core/options.h"
 #include "debug/combat_tunables.h"
 #include "debug/debug_session.h"
 #include "debug/game_tunables.h"
 #include "debug/tunables.h"
-#include "fileio/disc.h"
 #include "fileio/executable.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
@@ -58,7 +57,6 @@
 #include "gamemodes/idle_mode.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/load_entry_mode.h"
-#include "gamemodes/memory_card_mode.h"
 #include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
 #include "gamemodes/start_up_flow.h"
@@ -68,7 +66,6 @@
 #include "gui/text_layout.h"
 #include "human/locomotion.h"
 #include "human/player.h"
-#include "movies/movie_mode.h"
 #include "platform/audio_output.h"
 #include "platform/audio_output_controls.h"
 #include "platform/character_viewer_mode.h"
@@ -76,6 +73,7 @@
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
+#include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/game_session_debug.h"
 #include "platform/humans_trace.h"
@@ -88,7 +86,6 @@
 #include "platform/perf_probes.h"
 #include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
-#include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
 #include "platform/sandbox_play_scenery.h"
@@ -108,26 +105,10 @@
 
 namespace {
 
-// Writes `text` to stdout by its size and flushes, so each line shows at once even when stdout is a pipe: for the
-// usage text, which is not a log line.
-void printText(std::string_view text) {
-    std::fwrite(text.data(), 1, text.size(), stdout);
-    std::fflush(stdout);
-}
-
-// Writes `text` to the run log, each line in the category its prefix names (logging::routeOf()): how the subsystems'
-// text callbacks reach the log, each line keeping its text (docs/guides/run-log.md).
-void logText(std::string_view text) { coney::logging::writeRouted(text); }
-
-// A failure the run reports and stops or goes on without: an engine error in the run log, `coney: ` and `text`.
-void logError(std::string_view text) {
-    coney::logging::error(coney::logging::Category::Engine, std::format("coney: {}", text));
-}
-
-// Something the run goes on without: an engine warning in the run log, `coney: ` and `text`.
-void logWarning(std::string_view text) {
-    coney::logging::warn(coney::logging::Category::Engine, std::format("coney: {}", text));
-}
+using coney::platform::logError;
+using coney::platform::logText;
+using coney::platform::logWarning;
+using coney::platform::printText;
 
 // Loads the texture dictionaries of the WAD entry `request` names for the viewer, converts them for drawing when the
 // renderer draws, and prints how many there are: counts only, never the data.
@@ -304,32 +285,13 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    // The run log (docs/guides/run-log.md): every line stamped, to the console and to the log file, `--log-file` or
-    // `coney.log` in the user's data folder (the previous run's kept as `coney.prev.log`); a test-mode run touches no
-    // user folder, so it has a file only when given one. A default file that cannot be opened leaves the console.
-    coney::logging::LogFilter logFilter;
-    for (const coney::logging::Category category : options->logVerbose) {
-        logFilter.setVerbose(category);
-    }
-    std::optional<std::filesystem::path> logPath;
-    if (const std::optional<std::string> given = options->logFile; given) {
-        logPath = std::filesystem::path(*given);
-    } else if (!coney::isTestMode(*options)) {
-        if (std::filesystem::path path = coney::platform::defaultLogPath(); !path.empty()) {
-            logPath = std::move(path);
-        }
-    }
-    auto logOutput = coney::platform::LogOutput::start(logPath, logFilter, !options->logFile.has_value());
-    if (!logOutput && options->logFile) {
+    // The run log (docs/guides/run-log.md): the console and the log file, as the release build starts it.
+    auto logOutput = coney::platform::startRunLog(*options);
+    if (!logOutput) {
         std::fprintf(stderr, "coney: %s\n", logOutput.error().message.c_str());
         return 1;
     }
-    if (!logOutput) {
-        const std::string why = logOutput.error().message;
-        logOutput = coney::platform::LogOutput::start(std::nullopt, logFilter, false);
-        logWarning(std::format("{}; logging to the console only", why));
-    }
-    const std::unique_ptr<coney::platform::LogOutput> runLog = logOutput ? std::move(*logOutput) : nullptr;
+    const std::unique_ptr<coney::platform::LogOutput> runLog = std::move(*logOutput);
 
     // `--event-log` and `--pad-pipe`: the events go to the file, and to the driver as `@ev` lines (a hint's line
     // breaks become spaces there, one event a line). Opened before anything runs, so the first event is in it; the
@@ -376,23 +338,12 @@ int main(int argc, char** argv) {
 
     // The order follows the original's start-up where Coney has the subsystem (docs/research/boot.md): the WAD is
     // opened, then the chunk handlers are registered, then the game-mode stack runs.
-    std::optional<coney::io::Wad> wad;
-    // Local copies: clang-tidy cannot prove that an optional inside `options` stays set between the check and the use.
-    const std::optional<std::string> discPath = options->discPath;
-    if (discPath) {
-        auto disc = coney::io::Disc::open(*discPath);
-        if (!disc) {
-            logError(disc.error().message);
-            return 1;
-        }
-        auto opened = coney::io::Wad::open(std::move(*disc));
-        if (!opened) {
-            logError(std::format("{}: {}", *discPath, opened.error().message));
-            return 1;
-        }
-        coney::io::Wad& openedWad = wad.emplace(std::move(*opened));
-        std::printf("%s: WARRIORS.DIR lists %zu entries\n", discPath->c_str(), openedWad.index().entries().size());
+    auto disc = coney::platform::openGameDisc(*options);
+    if (!disc) {
+        std::fprintf(stderr, "coney: %s\n", disc.error().message.c_str());
+        return 1;
     }
+    std::optional<coney::io::Wad> wad = std::move(*disc);
     coney::chunk::ChunkHandlerTable chunkHandlers = coney::chunk::ChunkHandlerTable::withDefaults();
     coney::platform::addTextureDictionaryHandlers(chunkHandlers);
     coney::platform::addSpriteSheetHandlers(chunkHandlers);
@@ -411,16 +362,8 @@ int main(int argc, char** argv) {
     // librw runs either way, because the texture dictionary handlers read through it.
     // --render-references draws offscreen with OpenGL, so its window stays hidden.
     const bool headless = options->headless || !options->loads.empty();
-    coney::platform::WindowDesc windowDesc;
+    coney::platform::WindowDesc windowDesc = coney::platform::gameWindow(*options);
     windowDesc.hidden = options->renderReferences.has_value();
-    // Runs started by agents and tools (test mode, --no-activate) must not take the focus from someone typing.
-    windowDesc.activate = coney::activatesWindow(*options);
-    // `--window-display` (else CONEY_WINDOW_DISPLAY): agents put their runs on a display nobody works on.
-    // A local copy, as with discPath above; it outlives the start, which keeps a view of it.
-    const std::optional<std::string> windowDisplay = options->windowDisplay;
-    if (windowDisplay) {
-        windowDesc.display = *windowDisplay;
-    }
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
     if (const std::optional<coney::RenderSize> size = options->renderSize; size) {
         windowDesc.width = size->width;
@@ -512,9 +455,7 @@ int main(int argc, char** argv) {
     // (docs/guides/testing.md#test-through-the-players-path). Made below when the run plays the game, or by the debug
     // menus' first level jump.
     std::optional<coney::platform::GameSession> session;
-    coney::platform::GameSessionSettings sessionSettings;
-    sessionSettings.language = options->language;
-    sessionSettings.skipMovies = options->skipMovies;
+    coney::platform::GameSessionSettings sessionSettings = coney::platform::gameSessionSettings(*options);
     sessionSettings.rumble = options->rumble;
     sessionSettings.aiSeed = options->aiSeed.value_or(0);
     // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
@@ -527,9 +468,6 @@ int main(int argc, char** argv) {
         }
         humansTrace = std::move(*opened);
     }
-    // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
-    sessionSettings.profiles = coney::platform::profileFolder(*options);
-    sessionSettings.cardCheckingMs = coney::MemoryCardMode::kCheckingMessageMs;
     const auto makeSession = [&]() -> coney::platform::GameSession& {
         return session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
                                sessionSettings, logText);
@@ -755,21 +693,8 @@ int main(int argc, char** argv) {
     coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
     coney::platform::NetPlayControls netControls(netPlay); // the Network page's view of network play
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
-    if (const std::optional<std::string> name = options->netName; name && !netPlay.setPlayerName(*name)) {
+    if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
-    }
-    if (const std::optional<coney::NetEndpoint> host = options->netHost; host) {
-        netPlay.setPort(host->port);
-        if (!netPlay.hostOn(host->address)) {
-            return 1;
-        }
-    }
-    if (const std::optional<coney::NetEndpoint> join = options->netJoin; join) {
-        netPlay.setAddress(join->address);
-        netPlay.setPort(join->port);
-        if (!netPlay.join()) {
-            return 1;
-        }
     }
     // The Time page's bug report: the run log's ring into the log file.
     if (runLog) {
@@ -811,29 +736,13 @@ int main(int argc, char** argv) {
     // The sound output (docs/research/sound.md#coneys-implementation): SDL's playback device, or in test mode the
     // offline one, which opens no device and mixes a fixed step of frames per frame. A device that cannot open leaves
     // the run silent, never stopped. Declared after the renderer, so it is destroyed before SDL stops.
-    std::unique_ptr<coney::platform::AudioOutput> audio;
-    if (!options->noAudio) {
-        auto started = coney::platform::AudioOutput::start(testMode ? coney::platform::AudioSink::Offline
-                                                                    : coney::platform::AudioSink::Device);
-        if (started) {
-            audio = std::move(*started);
-            if (!testMode) {
-                logText(audio->startLine());
-            }
-            if (options->audioTest) {
-                audio->setTestTone(true);
-            }
-            // The game's sound (docs/research/sound.md): the tables, banks and streams from the disc.
-            if (wad) {
-                if (auto soundData = audio->startEngine(*wad); !soundData) {
-                    logWarning(std::format("{}; the game's sounds stay silent", soundData.error().message));
-                }
-            }
-            debugServices.audio = [&audio, &audioControls] { return audioControls.controlsOf(audio.get()); };
-            audio->game().setLog(logText);
-        } else {
-            logWarning(std::format("{}; running without sound", started.error().message));
+    std::unique_ptr<coney::platform::AudioOutput> audio =
+        coney::platform::startGameSound(*options, wad ? &*wad : nullptr);
+    if (audio) {
+        if (options->audioTest) {
+            audio->setTestTone(true);
         }
+        debugServices.audio = [&audio, &audioControls] { return audioControls.controlsOf(audio.get()); };
     }
     // The game session gets the sound before its first frame, then starts: from boot, or directly at the command
     // line's level, where the run's own options (`--start`, `--camera`, `--freeze-world`, `--trace`, `--scene`,
@@ -1196,16 +1105,8 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
-    // Network play receives before each step and sends after it. Test mode has no real clock, so there each step
-    // passes the network a fixed step's time, keeping a run the same every time.
-    const bool netRealTime = pacer.has_value();
-    hooks.beforeStep = [&netPlay, netRealTime] {
-        if (!netRealTime) {
-            netPlay.advance(coney::FrameClock::kNanosecondsPerSecond / kStepsPerSecond);
-        }
-        netPlay.beforeStep();
-    };
-    hooks.afterStep = [&netPlay] { netPlay.afterStep(); };
+    // Network play receives before each step and sends after it.
+    coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
     // `--record`: a clip of the frames as the game draws them (read back before the menus above are drawn) and of
     // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
     // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.
@@ -1313,41 +1214,16 @@ int main(int argc, char** argv) {
     if (const coney::platform::PlayLevelMode* level = sessionPlayMode(); level != nullptr) {
         logText(level->summary());
     }
-    if (session && session->movies().counts().movies > 0) {
-        const coney::movies::MovieMode::Counts& counts = session->movies().counts();
-        logText(std::format("movies: {} played ({} skipped, {} failed), {} frames decoded, {} shown, {} sound "
-                            "samples, {} captions\n",
-                            counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
-                            counts.samples, counts.captionsShown));
-    }
     if (sandboxViewer) {
         logText(sandboxViewer->summary());
     }
     if (audio && options->audioTest) {
         logText(audio->summary());
     }
-    if (options->netHost || options->netJoin) {
-        logText(netPlay.summary());
-    }
-    // Leaving network play: the other games get this one's Bye before its connections close. This is after the last
-    // frame, so a short real wait does no harm, even in test mode; a pacer at 100 frames a second times it, the one
-    // real clock Coney reads, and is made only when a transport is still closing.
-    {
-        std::optional<coney::platform::FramePacer> closePacer;
-        netPlay.shutdown([&closePacer] {
-            if (!closePacer) {
-                closePacer.emplace(100);
-                (void)closePacer->waitForFrame(); // the first call only starts the count
-            }
-            return closePacer->waitForFrame();
-        });
-    }
-    // A game played in test mode, from the story or a level: what its humans asked to be heard and what the glass and
-    // doors played (counts only).
-    if (audio && testMode && session) {
-        logText(audio->game().summary());
-        logText(std::format("object sounds: {} played, {} material pairs, {} unplayed\n", objectSounds.played(),
-                            objectSounds.materialPairs(), objectSounds.unplayed()));
+    // Leaving network play: the other games get this one's Bye before its connections close.
+    coney::platform::finishNetPlay(netPlay, *options);
+    if (session) {
+        coney::platform::printGameSummary(*session, audio.get(), objectSounds, testMode);
     }
 
     // The game session goes before the sound output (declared further down, so destroyed first), whose game sound its

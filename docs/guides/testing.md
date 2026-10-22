@@ -407,7 +407,8 @@ others reject is the usual cause: see [Portability traps](conventions.md#portabi
 
 ## Play-testing {#play-testing}
 
-People play a release build at milestones, from one list of what changed and how to reach it (commands that start
+People play a play-test build (the `playtest` preset: optimised, with the debug menus) at milestones, from one list
+of what changed and how to reach it (commands that start
 through the player's path). Nobody waits for them: work merges on the automated gate. A finding comes back as a fix
 on the owning track, starting with a test that reproduces it. A mission stays **Pending approval** until a maintainer
 has played it ([Missions](research-workflow.md#missions)).

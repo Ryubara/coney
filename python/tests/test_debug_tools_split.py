@@ -8,8 +8,11 @@ debug menus, the developer overlay (Dear ImGui), the viewers and the sandbox liv
 CMake files, so a source added to the wrong target, or `imgui` linked by a game library, fails before any build.
 """
 
+import json
 import re
 from pathlib import Path
+
+from coney_tools.build_cli import PRESETS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -96,6 +99,8 @@ def _game_files() -> list[Path]:
         for source in sources.get(name, []):
             path = folder / source
             files += [p for p in (path, path.with_suffix(".h")) if p.exists()]
+    # The release build's entry point, and what it shares with the debug tools' one.
+    files.append(ROOT / "src" / "platform" / "main_release.cpp")
     return sorted(set(files))
 
 
@@ -145,3 +150,19 @@ def test_the_debug_source_pattern() -> None:
         assert _DEBUG_SOURCE.match(debug), debug
     for game in ("human/human.cpp", "gui/menu.cpp", "play_level_mode.cpp", "world/debug_camera_x.cpp"):
         assert not _DEBUG_SOURCE.match(game), game
+
+
+def test_the_build_tool_offers_every_preset() -> None:
+    presets = json.loads((ROOT / "CMakePresets.json").read_text(encoding="utf-8"))["configurePresets"]
+    visible = [preset["name"] for preset in presets if not preset.get("hidden")]
+    assert sorted(PRESETS) == sorted(visible)
+
+
+def test_the_release_presets_leave_the_debug_tools_out() -> None:
+    presets = json.loads((ROOT / "CMakePresets.json").read_text(encoding="utf-8"))["configurePresets"]
+    tools = {
+        p["name"]: p.get("cacheVariables", {}).get("CONEY_DEBUG_TOOLS", "ON") for p in presets if not p.get("hidden")
+    }
+    assert tools["release"] == "OFF"
+    assert tools["ci-release"] == "OFF"
+    assert all(tools[name] == "ON" for name in ("dev", "playtest", "ci", "asan"))
