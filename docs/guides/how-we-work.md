@@ -3,41 +3,98 @@
 This page is the map of Coney's reverse-engineering process: what happens between the original game and a line of
 Coney code, which tools sit at each step, and how many people (or agents) work at once without stepping on each
 other. It stays high level and links to the guide that holds the detail. Read it first; read the linked guide when
-you are about to do that step. [How the work is run](#how-it-runs) explains who does what, for a newcomer, and
-[How the rules are enforced](#enforcement) shows which check stops what, from the first line of code to `main`. The
-diagrams on this page illustrate; the text beside each is the rule.
+you are about to do that step. Start with [Who is who](#who-is-who), the roles in one table, then
+[The pipeline](#the-pipeline), the road from an issue to `main`. [How the work is run](#how-it-runs) shows how the
+roles fit together, and [How the rules are enforced](#enforcement) shows which check stops what, from the first line
+of code to `main`. The diagrams on this page illustrate; the text beside each is the rule.
+
+## Who is who {#who-is-who}
+
+Every role in the work: person, agent, plugin or service. The agent roles are the files in `.claude/agents/`, and a
+hook holds each to its own commands and files ([Which role to start](agents.md#roles)); a person can take any of them.
+
+| Role | What it is | What it reads | What it writes | When it runs |
+| --- | --- | --- | --- | --- |
+| **Maintainer** | A person | What the coordinator escalates | The [maintainer decisions](repo:AGENTS.md) only; may merge | When one is due |
+| **`coordinator`** | The main session ([The coordinator](#coordinator)) | The state file, issues, the release queue, GitHub | Tasks, briefs, pull requests and merges; the only role that writes to GitHub. No code, tests or research, and none of the commands of steps 2 to 7 | Always; Tether starts its turns |
+| **Tether** | A Claude Code plugin ([Waking the coordinator](coney-tools-setup.md#coord-wakes)) | The machine and GitHub | Nothing; it starts a coordinator turn | Between the coordinator's turns |
+| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)) | Its brief, the guides, the original, research pages | Code, tests, pages and docs on its own branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One per task, in a [standing team](#teams) |
+| **`tooling`** | Agent, Sonnet; the engineer's rules for the project's own tools | The guides and the tool's code; no Ghidra or PCSX2 | Tools, workflows, hooks and their guides, on its own branch. Never pushes | One per task about the tools or the process |
+| **`reviewer`** | Agent, Opus for research and `@orig`, smaller for docs and tooling ([The reviewer](agents.md#reviewer)) | The diff, the packet, the [checklists](review/index.md), the original (read only) | Its verdict and report, nothing else; it never edits | Once per committed change, by someone other than its author; again after a later commit |
+| **Standing teams** | Five lists of work, staffed by engineers ([Standing teams](#teams)) | Their team's list | Units for the release queue | Always staffed |
+| **GitHub CI** | The required checks and the ruleset on `main` ([What CI runs](building.md#what-ci-runs)) | Each pushed pull request | Check results; the squash merge, once every check passes and auto-merge is on | After the coordinator pushes |
 
 ## The pipeline
 
-A piece of work travels from an issue to `main` like this:
+A piece of work travels from an issue to `main` in ten steps. The coordinator claims the task and later releases it;
+between them the engineer works alone in its own worktree and a reviewer checks the result. Each stage ends with a
+command that writes a [stamp](stamps.md#log) into the task's log (study and compare once per ported function; a task
+with no function or test records that with a reason), and the release checks those stamps
+([Releasing a pull request](pr.md)).
 
 ```mermaid
 ---
 config:
   layout: elk
+  flowchart:
+    rankSpacing: 30
 ---
-flowchart LR
-  issue(["Issue"]) --> study["Study the original<br/>Ghidra and PCSX2,<br/>write the page"]
-  study --> port["Tests first,<br/>then port to Coney"]
-  port --> compare["Compare with<br/>the original"]
-  compare --> local["Local checks"]
-  local --> review["reviewer<br/>code, docs, research,<br/>@orig, PR text"]
-  review --> queue["Release queue"]
-  queue --> push["Coordinator<br/>pushes and<br/>opens the PR"]
-  push --> ci["CI required<br/>checks"]
-  ci --> merge["Squash merge"]
-  merge --> main(["main"])
-  review -. "findings" .-> port
-  ci -. "red: fixed forward" .-> push
+flowchart TB
+  subgraph claim ["Coordinator"]
+    task["1 task create: claim, write TASK.md"]
+  end
+  subgraph eng ["Engineer, in its own worktree"]
+    start["2 task start: branch, worktree"]
+    study["3 original study: read the original"]
+    port["4 Tests, then port: original fails-first"]
+    compare["5 original compare: check the port"]
+    check["6 Commit, then task check"]
+  end
+  subgraph rev ["Reviewer, which never edits"]
+    review["7 PR.md, then task review"]
+  end
+  subgraph rel ["Release"]
+    open["8 pr open: verify, push, open"]
+    ci["9 CI: gh pr checks"]
+    merge["10 Squash merge: auto-merge"]
+  end
+  main(["main"])
+  task --> start --> study --> port --> compare --> check
+  check --> review --> open --> ci --> merge --> main
 ```
 
-*Figure: the road from an issue to `main`. Solid arrows are the usual way; dotted arrows are where a failure sends the
-work back.*
+*Figure: the road from an issue to `main`, top to bottom. A finding in step 7 sends the work back to the engineer, who
+fixes it in a new commit and runs steps 6 and 7 again; a red CI check is fixed forward, as step 9 says.*
 
-The numbered steps below are the engineer's part (from the issue to the local checks). Everything after it is the
-[release queue](#release-queue) and [merging](#merging).
+1. **Claim.** The coordinator turns a triaged issue into a task: `coney-tools task create` claims it and writes
+   `TASK.md` ([Task files](issues.md#task-files), [Claiming](issues.md#claiming)).
+2. **Start.** The engineer runs `task start`, which makes the branch, the worktree, the unit record and the first
+   stamps ([Starting a task](issues.md#starting)). The coordinator never does.
+3. **Study** the original in Ghidra (`original study`) and the running game in PCSX2, and write what was found on a
+   research page ([The engineer's steps](#engineer-steps), items 1 to 3).
+4. **Tests first, then port** the behaviour into Coney's own code, tagged `@orig`; `original fails-first` stamps each
+   new test that failed before the code and passes with it ([item 4](#engineer-steps)).
+5. **Compare** each ported function with the original, side by side with `original compare` and, for what a player
+   sees, with the original running ([item 5](#engineer-steps), [Compare](stamps.md#compare)).
+6. **Check.** The engineer commits, because `task check` refuses uncommitted changes, then runs it: the local gate for
+   the change's kind, which writes the `checked` stamp so CI finds only what this machine cannot see
+   ([The local gate](testing.md#local-gate), [task check](coney-tools-repo.md#task-check)).
+7. **Review.** The engineer writes `PR.md` ([The engineer's file](pr.md#file)). One `reviewer` runs `task review`, which
+   may run while `task check` does, judges everything the change touches, the description included, and records the
+   `reviewed` stamp ([Task review](review/task.md)). Findings go back to the engineer.
+8. **Release.** The coordinator runs `pr open`: it proves the stamps (`pr verify`), writes the text (`pr text`),
+   rebases, pushes, opens the pull request and turns on auto-merge, except for a change to a path the maintainer
+   merges by hand (`merge.manual_paths`: the conventions, `AGENTS.md`, the hooks and settings)
+   ([pr open](pr.md#open), [Local first](#release-queue)). A refusal lists the stages to redo and goes back to the
+   engineer.
+9. **CI** runs the required checks on GitHub. A trivial failure the coordinator fixes itself; otherwise a fresh agent
+   fixes it forward on the same branch ([When a pull request fails checks](agents.md#ci-failures)).
+10. **Squash merge.** GitHub merges once every required check passes, as one commit on `main`; a maintainer merges the
+    changes `pr open` left to them ([Merging safely](#merging)).
 
-Every feature goes through the same steps:
+### The engineer's steps {#engineer-steps}
+
+Steps 3 to 5 in detail, for every feature:
 
 1. **Read the code.** Before starting, an engineer checks `docs/research/` and the open pull requests for existing or
    in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)). Then the engineer studies
@@ -63,9 +120,8 @@ Every feature goes through the same steps:
 5. **Compare.** Work a player sees is checked against the original running, not only against our reading of its code:
    the same scenario runs on both games, or the same moment is taken from a PCSX2 save state and from Coney, and
    traces, values or frames are compared ([Comparing with Coney](research-traces.md#comparing-with-coney),
-   [the runtime comparison](testing.md#runtime-comparison)). A difference goes back to step 1 or 4 as a question or a
+   [the runtime comparison](testing.md#runtime-comparison)). A difference goes back to item 1 or 4 as a question or a
    fix. The pull request states the result in its `Runtime:` line.
-6. **Merge.** Finished work goes to `main` after the full set of checks.
 
 ### Recipes {#recipes}
 
@@ -115,22 +171,18 @@ flowchart TB
 *Figure: who does what. The maintainer decides, the coordinator runs the work, engineers in five standing teams do it,
 and reviewers check it; only the coordinator writes to GitHub.*
 
-- **The maintainer decides.** What only a maintainer may decide is a short list in [AGENTS.md](repo:AGENTS.md);
-  everything else is decided by the coordinator or the engineer on the spot.
-- **The coordinator runs the work** day to day: it starts and briefs engineers, keeps the state, pushes finished
-  units and merges ([The coordinator](#coordinator)).
+What each role is, reads and writes is in [Who is who](#who-is-who); what is left here is how they fit together:
+
+- **The maintainer decides** only what a short list in [AGENTS.md](repo:AGENTS.md) names; the coordinator or the
+  engineer decides everything else on the spot.
 - **Engineers each own one issue or unit.** An engineer works in its own worktree and branch, briefed as
   [Briefing](agents.md#briefs) describes (a brief may be just "issue #N"), follows the [pipeline](#the-pipeline)
   above, commits locally and hands the finished unit over. The model is chosen per task
   ([Which model](agents.md#models)).
-- **The reviewer reads what someone else wrote** and reports; it never edits. One `reviewer` takes code, tests, tools,
-  docs and commits, research pages and the research database, `@orig` functions against the original and every pull
-  request description before it is pushed ([Task review](review/task.md), [The description review](#pr-review); the
-  roles are in [Setting up an agent tool](agents.md#setup)).
+- **The reviewer reads what someone else wrote** and reports; it never edits. One `reviewer` takes every kind of change
+  and the description ([Task review](review/task.md), [The description review](#pr-review)).
 - **The release queue** is how work reaches GitHub: engineers never push; the coordinator does, when CI has room
   ([below](#release-queue)).
-- **Tether wakes the coordinator.** Between turns the coordinator sees nothing, so the Tether plugin starts a turn
-  when there is new work ([Let Tether wake it](#coordinator)).
 
 ### Standing teams {#teams}
 
@@ -507,12 +559,12 @@ config:
 flowchart LR
   hooks["Claude Code hooks<br/>refuse the wrong<br/>command"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
   pre --> gate["check changed<br/>what CI would<br/>fail on"]
-  gate --> text["check-title,<br/>check-body,<br/>check-docs"]
-  text --> stamp["reviewer's verdict,<br/>check-review"]
-  stamp --> push["Only the coordinator<br/>pushes"]
+  gate --> stamp["task check and<br/>task review: the whole gate<br/>and the reviewer's verdict"]
+  stamp --> push["pr open<br/>verifies the stamps,<br/>only the coordinator"]
   push --> ci["CI required<br/>checks"]
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
   rules --> main(["main"])
+  text["check-title,<br/>check-body,<br/>check-docs"] -.-> push
   tether["Tether pull request guard<br/>wakes for a stuck PR"] -.-> push
   conv[".github/conventions.yml<br/>one source of the rules"] -.-> text
   conv -.-> ci
@@ -529,7 +581,8 @@ The guards, with the rule each one holds (the diagram only orders them):
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | `coney-tools check changed` | What CI would fail on, for the files the change touched: the repository audit, pre-commit, `mkdocs build --strict`, ruff, mypy and pytest | [The local gate](testing.md#local-gate) |
 | `repo check-title`, `check-body`, `check-docs` | A title that is not `area: Verb the rest`; a description that breaks the template; a change under `src/` or `python/src/` with no docs change and no `Docs: none` line | [Repository conventions](repo-conventions.md#workflows) |
-| `reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
+| `task check`, `task review` | A change that has not passed the whole gate for its kind, or that no `reviewer` has judged (code, `@orig` functions, research pages and the description with its pictures); a stamp that is stale after a new commit or edit | [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
+| `reviewer`, `repo check-review` | The same for a description, in the release check that predates `task review`: pictures or claims that do not match the diff, a verdict stale after a new commit or edit | [The description review](#pr-review) |
 | Release queue, `pr open` | An agent pushing: only the coordinator pushes, through `pr open`, which refuses an engineer or reviewer identity and a unit whose stages are stale. The stages are enforced here, locally, not in CI | [Local first](#release-queue), [pr open](pr.md#open) |
 | Tether pull request guard | A pull request left with a failed required check, a conflict, a stuck check or auto-merge off: the `prs` poller (`repo pr-health`) wakes the coordinator | [Waking the coordinator](coney-tools-setup.md#coord-wakes) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint` | [What CI runs](building.md#what-ci-runs) |
