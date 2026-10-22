@@ -22,6 +22,7 @@ import pytest
 from coney_tools import (
     config,
     pcsx2_claims,
+    pcsx2_cli,
     pcsx2_copies,
     pcsx2_state,
     pcsx2_states,
@@ -271,7 +272,7 @@ def test_adding_copies_the_file_hashes_it_and_makes_it_read_only(tmp_path: Path,
 
     stored = library.state_path("pedestrian-grab")
     assert stored.read_bytes() == before
-    assert (added.size, added.sha256) == (len(before), pcsx2_states.sha256(stored))
+    assert (added.size, added.sha256) == (len(before), pcsx2_copies.sha256(stored))
     assert not stored.stat().st_mode & stat.S_IWUSR
     assert state_file.read_bytes() == before
     assert state_file.stat().st_mode & stat.S_IWUSR
@@ -691,7 +692,7 @@ def test_use_can_launch_the_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         launched.append(args)
         return 0
 
-    monkeypatch.setattr(pcsx2_states_cli.pcsx2_cli, "run_launch", record_launch)
+    monkeypatch.setattr(pcsx2_cli, "run_launch", record_launch)
     assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--launch") == 0
     assert launched == [(copy_folder / "library-states" / "street.p2s", copy_folder, None, None, "me")]
 
