@@ -2807,7 +2807,7 @@ Around the commands:
 | [Automatic commands](ai-gangs.md#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
 | Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
 | Revive ([Combat](combat-rage.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](combat-rage.md#revive)); no AI rescue (`SaveHuman`) |
-| [Weapon swap](#warrior-swap) | instant; the object is attached to the bone of the low pick-up clip's first type-9 event and drawn there; 146 `give_me` | **partial**: the hands swap, the anim set follows, the line plays; the Warrior's object is **not drawn** |
+| [Weapon swap](#warrior-swap) | instant; the object is attached to the bone of the low pick-up clip's first type-9 event and drawn there; 146 `give_me` | **matches**: the hands swap, the anim set follows, the line plays, and the object is drawn in his right hand (issue #78) |
 
 **Item 37: the given weapon.** In the original the swap puts the object in the Warrior's hand exactly as
 `HuPlaceItemInHand` does (`Human_PlaceObjectInHandByPickupClip`, `0x0024c6d8`: the bone and offset of the low pick-up
@@ -2819,10 +2819,14 @@ far range ([pick-ups: using](ai-gangs.md#warrior-pickups)). He keeps a knife, ba
 kind 4 or 6 is **dropped** at his next think with no enemies unless the steal tactic runs
 ([Think, step 3](#think-warrior)). In Coney, `ai::swapHeldObjects` (`repo:src/ai/swap_prompt.cpp`) moves the handle
 and `PlayLevelMode::trySwap` (`repo:src/platform/play_level_objects.cpp`) sets his anim set, so his attack pick
-counts him armed (`repo:src/ai/attack_views.cpp`); but `PlayLevelMode::drawWorldObjects`
-(`repo:src/platform/play_level_world.cpp`) places only **player 1's** held object (`heldPose` takes the player's
-snapshot), so nothing is drawn in the Warrior's hand. Whether his swings then hit with the weapon's clips and wear
-it was not run (Coney reading); the kind 4 / 6 drop is not built.
+counts him armed (`repo:src/ai/attack_views.cpp`), and `PlayLevelMode::heldDrawOf`
+(`repo:src/platform/play_level_world.cpp`) draws the object in his own right hand, as player 1's
+([Objects: a weapon given to a Warrior](objects.md#given-weapon), issue #78). The disc test
+`repo:tests/platform/disc_given_weapon_test.cpp` gives a bat through the swap at `level80` checkpoint 3 and checks that
+his anim set makes the attack dispatcher's square and cross the bat's swings (34, 36; 37 at a grounded target). A live
+fight was not staged there: a `Brain::fight` order on a passer-by put 2 m in front of him started no attack in 60 s
+(whether he would unarmed was not checked; an open question for the fight goal, Coney reading). Whether his swings hit
+with the weapon's damage and wear it is not checked, and the kind 4 / 6 drop is not built.
 
 **Fix for the implementer**, in the order the player notices:
 

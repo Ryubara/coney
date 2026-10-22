@@ -184,25 +184,71 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
 
 std::optional<world_objects::WorldPose> PlayLevelMode::heldPose(double held,
                                                                 const human::PlayerSnapshot& snapshot) const {
-    // The pick-up clip's take event gives the bone and the local pose, composed with the bone of the snapshot's pose
-    // and the body's placement (the lean left out). **Coney's reading**: the bone's position is not scaled by the
-    // human's scale, as Coney draws the body unscaled.
+    const std::optional<HeldDraw> draw =
+        heldDrawOf(held, m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
+    return draw ? std::optional<world_objects::WorldPose>(draw->pose) : std::nullopt;
+}
+
+// @orig 0x0024c6d8 Human_PlaceObjectInHandByPickupClip (unknown)
+// @orig 0x003a19b0 Obj_GetWorldPose (unknown)
+std::optional<PlayLevelMode::HeldDraw> PlayLevelMode::heldDrawOf(double held, const human::Human& human,
+                                                                 const human::PlayerCharacter& character,
+                                                                 const anim::Pose& pose, anim::Vec3 feet,
+                                                                 float heading) const {
+    // The pick-up clip's take event in his own animations gives the bone and the local pose, at his scale, as the
+    // swap and HuPlaceItemInHand place it for any human (docs/research/objects.md#given-weapon); composed with the
+    // bone of his pose and the body's placement (the lean left out). **Coney's reading**: the bone's position is not
+    // scaled by the human's scale, as Coney draws the body unscaled.
     const world_objects::SpawnRecord* record =
         held != world_objects::kNoObject && m_records != nullptr ? m_records->find(held) : nullptr;
     const world_objects::ObjectType* type =
         record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
-    const human::PlayerCharacter& character = playerCharacter();
     const anim::AnimClip* clip =
         type != nullptr
             ? character.anims().clip(static_cast<std::size_t>(world_objects::pickupClip(type->pickupAnim, 0.0F)))
             : nullptr;
     const std::optional<world_objects::HeldAttachment> attachment =
-        clip != nullptr ? world_objects::heldAttachment(*clip, m_player->human().scale(), type->grip) : std::nullopt;
+        clip != nullptr ? world_objects::heldAttachment(*clip, human.scale(), type->grip) : std::nullopt;
     if (!attachment || attachment->bone >= anim::kPoseBones) {
         return std::nullopt;
     }
-    const auto bones = anim::boneTransforms(character.skeleton(), snapshot.pose);
-    return world_objects::heldWorldPose(snapshot.feet, snapshot.heading, bones.at(attachment->bone), 1.0F, *attachment);
+    const auto bones = anim::boneTransforms(character.skeleton(), pose);
+    return HeldDraw{.holder = &human,
+                    .handle = held,
+                    .bone = attachment->bone,
+                    .pose = world_objects::heldWorldPose(feet, heading, bones.at(attachment->bone), 1.0F, *attachment)};
+}
+
+void PlayLevelMode::poseHeldObject(const human::Human& human, const human::PlayerCharacter& character,
+                                   const anim::Pose& pose, anim::Vec3 feet, float heading) {
+    if (const std::optional<HeldDraw> draw =
+            heldDrawOf(human.script().heldObject, human, character, pose, feet, heading)) {
+        m_attachedDraws.emplace_back(draw->handle, draw->pose);
+    }
+}
+
+std::vector<PlayLevelMode::HeldDraw> PlayLevelMode::heldDraws() const {
+    // Player 1 and each AI human not deleted, at the newest step's pose, skinned as render() skins them.
+    std::vector<HeldDraw> draws;
+    const human::PlayerSnapshot& player = m_player->current();
+    if (std::optional<HeldDraw> draw = heldDrawOf(m_player->human().script().heldObject, m_player->human(),
+                                                  playerCharacter(), player.pose, player.feet, player.heading)) {
+        draws.push_back(*draw);
+    }
+    const std::vector<ai::AiHuman>& fighters = m_ai->humans();
+    for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
+        const human::PlayerCharacter* character = m_fighterMeshes[i].character;
+        if (fighters[i].removed || character == nullptr) {
+            continue;
+        }
+        const human::Human& human = *fighters[i].human;
+        const human::TargetSnapshot& now = fighters[i].current;
+        if (std::optional<HeldDraw> draw =
+                heldDrawOf(human.script().heldObject, human, *character, now.pose, now.feet, now.heading)) {
+            draws.push_back(*draw);
+        }
+    }
+    return draws;
 }
 
 void PlayLevelMode::recordDrawnPoses() {
@@ -247,7 +293,7 @@ void PlayLevelMode::recordIconPoses() {
     }
 }
 
-void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot, float alpha) {
+void PlayLevelMode::drawWorldObjects(float alpha) {
     if (!m_placed) {
         return;
     }
@@ -279,13 +325,6 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot, floa
         for (const world_objects::StereoDraw& stereo : world_objects::stereoDraws(*m_cars)) {
             m_placed->place(stereo.handle, stereo.modelHash, stereo.position, stereo.rotation, PlacedObjects::Look{});
         }
-    }
-    // The object in player 1's hand (docs/research/objects.md#held).
-    const double held = m_player->human().script().heldObject;
-    if (const std::optional<world_objects::WorldPose> pose = heldPose(held, snapshot)) {
-        const world_objects::SpawnRecord* record = m_records->find(held);
-        m_placed->place(held, m_objectTypes->find(record->typeName)->modelHash, pose->position, pose->rotation,
-                        PlacedObjects::Look{.tint = record->tint, .sizeCullExempt = true});
     }
     // The spinning icons over the humans that wear one (a dealer's, a script's `HuAttachSpinningIcon`), blended
     // between their last two steps' poses like the objects. Their ids are negative, apart from the handles.

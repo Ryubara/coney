@@ -390,6 +390,19 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
+    /// One object in a human's hand as a frame draws it: who holds it, its handle, the pose bone it hangs from and its
+    /// world pose (game axes).
+    struct HeldDraw {
+        const human::Human* holder = nullptr;
+        double handle = 0.0;
+        std::size_t bone = 0;
+        world_objects::WorldPose pose;
+    };
+    /// The objects in every human's hand at the newest step, player 1's and each AI human's, posed by his own hand
+    /// bone as render() places them (docs/research/objects.md#given-weapon): a disc test's way to ask what is drawn in
+    /// a hand, whatever the renderer. An object that is not a spawn record of a type with a pick-up clip's take event
+    /// is left out, as the draw leaves it out.
+    [[nodiscard]] std::vector<HeldDraw> heldDraws() const;
     /// How many objects made as `typeName` the level's spawn records still hold (not removed): a disc test's way to ask
     /// whether the boards a broken fence threw are still standing, whatever the renderer.
     [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
@@ -653,13 +666,22 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] std::vector<IconDraw> iconDraws() const;
     // Records where this step's spinning icons are, for render() to blend from (after the HUD's step).
     void recordIconPoses();
-    // Draws the world objects (lit as objects) `alpha` of the way from the step before to the newest, and the object
-    // in player 1's hand at `snapshot`'s pose (docs/research/objects.md#held).
-    void drawWorldObjects(const human::PlayerSnapshot& snapshot, float alpha);
+    // Draws the world objects (lit as objects) `alpha` of the way from the step before to the newest, then what the
+    // humans hold and wear (drawAttachedObjects()).
+    void drawWorldObjects(float alpha);
     // Where object `held` hangs in player 1's hand at `snapshot`'s pose; nothing when it is not a record in the hand
     // with a pick-up clip's take event (docs/research/objects.md#held).
     [[nodiscard]] std::optional<world_objects::WorldPose> heldPose(double held,
                                                                    const human::PlayerSnapshot& snapshot) const;
+    // Where object `held` hangs in `human`'s hand, `character` posed by `pose` at `feet` facing `heading`: the bone
+    // and offset of its type's pick-up clip's take event in his own animations, at his scale. Nothing when it is not a
+    // record of a type with such an event (docs/research/objects.md#given-weapon).
+    [[nodiscard]] std::optional<HeldDraw> heldDrawOf(double held, const human::Human& human,
+                                                     const human::PlayerCharacter& character, const anim::Pose& pose,
+                                                     anim::Vec3 feet, float heading) const;
+    // Queues the object in `human`'s hand for this frame's draw (drawAttachedObjects()), posed as heldDrawOf() says.
+    void poseHeldObject(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
+                        anim::Vec3 feet, float heading);
     // Draws this step's health rings and L1 markers, each under where its human is drawn (`feet` by ring id).
     void drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const;
 

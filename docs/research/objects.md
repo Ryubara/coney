@@ -779,6 +779,12 @@ addresses cited unless marked.
    object (`pickup_anim` 5 or 6) has no type-9 event and stays on the ground (inferred, as for the scripted
    placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
    `+0x338` ([AI: the Warriors' think](ai.md#think-warrior), step 7).
+   **At runtime** (confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), copy `pcsx2-c`, 2026-10-21, `level99`
+   checkpoint 2 street (slot 6) with the `call-brains` hook): a Warrior made with the `spawn-crew` recipe 2 m in front
+   of Rembrandt, a `dyn_bat` put in Rembrandt's hand with `HuPlaceItemInHand`, then `Human_SwapHeldObjects`
+   (`0x00233b08`) called with the Warrior as receiver: Rembrandt's `+0x338` became the null handle, the Warrior's the
+   bat's handle, and the bat object read `+0x54` = `0x8021a091` (bit `0x10`, attached), parent `+0x58` = the Warrior,
+   bone `+0x6d` = 25 and local position (0.151, −0.288, −0.005); the frame showed the bat in the Warrior's right hand.
 2. **He fights with it.** An AI attacks through the player's dispatcher ([Combat: an AI's
    attacks](combat-targets.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
    (`0x00231a80`, [Combat: moving attacks with something in hand](combat-throws.md#armed-moves)), so a Warrior holding a
@@ -812,11 +818,14 @@ addresses cited unless marked.
 **Coney fixes** (user item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
 
-1. Draw every human's held object, not only player 1's: Coney's world-object draw places just
-   `m_player->human().script().heldObject` (`play_level_world.cpp`); each AI human's `script().heldObject` needs the
-   same attached pose (his hand bone from his own pose, his scale, the type's grip slide `CfgObj` `+0x70`).
-2. Attach the given object to the receiver's right hand with the pick-up clip's type-9 offset, as the player's
-   pick-up does, and leave a left-hand or hat object on the ground.
+1. **Done** (issue #78): every human's held object is drawn, not only player 1's. `PlayLevelMode::heldDrawOf`
+   (`repo:src/platform/play_level_world.cpp`) poses any human's `script().heldObject` from his own animations' pick-up
+   clip (the take event's bone and offset at his scale, the type's grip slide `CfgObj` `+0x70`) and his own pose, and
+   `render()` queues player 1's and each AI human's with the hats and carried props (`drawAttachedObjects()`), a
+   hidden record left out as `HuRender` leaves out flag 4. `heldDraws()` lists them for the tests.
+2. **Done**: the given object hangs from the receiver's right hand at the pick-up clip's type-9 offset, as the
+   player's pick-up does (fix 1), and a left-hand or hat object stays on the ground (`ai::swapPlaceable`,
+   `repo:src/ai/swap_prompt.cpp`).
 3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
    bat) and that an AI's bat hit deals the bat's `CfgObj` `+0x58` × his class float, as the bat's own contact does
    ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Only `dyn_bat` in an AI's hand was measured; the knife,
