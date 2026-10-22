@@ -110,11 +110,11 @@ def side_by_side(study: Study, file: PairsFile | None, source_path: str, source:
     first_of = {s.first_line: s for s in study.cut.statements}
     for row, text in enumerate(orig_cut.normalise(study.text).split("\n"), start=1):
         statement = first_of.get(row)
-        mark = number = ""
+        mark = numeral = ""
         if statement is not None:
-            number = str(statement.number)
+            numeral = str(statement.number)
             mark = f"[{pair_of_piece.get(owner[statement.number], '?')}]" if file is not None else ""
-        left.append(_cut(f"{mark:<5}{number:>3}  {text.rstrip()}", LEFT_WIDTH))
+        left.append(_cut(f"{mark:<5}{numeral:>3}  {text.rstrip()}", LEFT_WIDTH))
     right = []
     for number in range(first, last + 1):
         marks = ",".join(str(i) for i in pointers.get(number, []))
