@@ -5,10 +5,13 @@
 #include "platform/play_level_controls.h"
 
 #include <cstddef>
+#include <memory>
 #include <numbers>
+#include <utility>
 #include <vector>
 
 #include "human/human.h"
+#include "platform/sandbox_play_scenery.h"
 #include "raycast/collision_mesh.h"
 
 namespace coney::platform {
@@ -94,6 +97,32 @@ SceneLines PlayLevelControls::sceneLinesFor(const debug::DebugDrawOptions& optio
     return [&options](const PlayLevelMode& mode, const human::PlayerSnapshot& snapshot, float alpha) {
         return sceneLines(mode, options, snapshot, alpha);
     };
+}
+
+std::expected<void, Error> PlayLevelControls::spawn(const sandbox::Primitive& primitive) {
+    std::vector<sandbox::Primitive> next = sandboxPrimitivesOf(m_mode->sceneExtras());
+    next.push_back(primitive);
+    return setSpawned(std::move(next));
+}
+
+std::expected<void, Error> PlayLevelControls::clearSpawned() { return setSpawned({}); }
+
+std::expected<void, Error> PlayLevelControls::setSpawned(std::vector<sandbox::Primitive> primitives) {
+    if (dynamic_cast<const SandboxPlayScenery*>(m_mode->m_scenery.get()) != nullptr) {
+        // The sandbox rebuilds its own world from the primitives: they need no mesh or drawing of their own.
+        const std::size_t count = primitives.size();
+        return m_mode->setSceneExtras(SceneExtras{
+            .solid = {},
+            .draw = {},
+            .count = count,
+            .source =
+                count == 0 ? nullptr : std::make_shared<const std::vector<sandbox::Primitive>>(std::move(primitives))});
+    }
+    auto extras = sandboxExtras(m_mode->m_engine, std::move(primitives));
+    if (!extras) {
+        return std::unexpected(std::move(extras.error()));
+    }
+    return m_mode->setSceneExtras(std::move(*extras));
 }
 
 void PlayLevelControls::stopAnim() { m_mode->m_player->human().stopDebugClip(); }

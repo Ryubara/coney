@@ -80,9 +80,11 @@ class PlayLevelControls final : public debug::PlayControls {
     [[nodiscard]] bool freeCamera() const override { return m_mode->freeCamera(); }
     void setFreeCamera(bool on) override { m_mode->setFreeCamera(on); }
     [[nodiscard]] bool canSpawn() const override { return m_mode->canSpawn(); }
-    std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override { return m_mode->spawn(primitive); }
+    /// Adds a sandbox primitive to the scenery and its collision (sandboxExtras(), PlayLevelMode::setSceneExtras()).
+    std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
     [[nodiscard]] std::size_t spawnedCount() const override { return m_mode->spawnedCount(); }
-    std::expected<void, Error> clearSpawned() override { return m_mode->clearSpawned(); }
+    /// Removes every spawned object, the collision back as loaded.
+    std::expected<void, Error> clearSpawned() override;
     [[nodiscard]] bool canSpawnFighter() const override { return true; }
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees) override {
         return m_mode->spawnFighter(feet, headingDegrees);
@@ -136,6 +138,9 @@ class PlayLevelControls final : public debug::PlayControls {
     // (play_level_inspect.cpp).
     static void addInspectorLines(const PlayLevelMode& mode, const debug::DebugDrawOptions& options,
                                   debug::DebugLines& lines, const human::PlayerSnapshot& snapshot, float alpha);
+    // Puts `primitives` in the mode's scenery in place of those spawned before: a level takes them as extras of their
+    // own (sandboxExtras()), a sandbox rebuilds its world with them.
+    std::expected<void, Error> setSpawned(std::vector<sandbox::Primitive> primitives);
     // The Animation player's anim set `set` (animSets()), a model's loaded on first use and kept by the mode; fails for
     // a set that does not exist and as loading the model does.
     [[nodiscard]] std::expected<const characters::AnimSet*, Error> animSetAt(std::size_t set);

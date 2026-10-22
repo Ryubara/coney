@@ -32,6 +32,7 @@
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
+#include "platform/sandbox_play_scenery.h"
 #include "sandbox/sandbox_world.h"
 #include "scripting/config_strings.h"
 #include "support/test_paths.h"
@@ -75,7 +76,7 @@ TEST_CASE("Change character rebuilds the player as another type where he stands"
     setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
     auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
-    auto made = coney::platform::PlayLevelMode::createInSandbox(
+    auto made = coney::platform::createPlayInSandbox(
         **engine, *wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);
     REQUIRE(made.has_value());
     coney::platform::PlayLevelMode& mode = **made;

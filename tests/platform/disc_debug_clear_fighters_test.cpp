@@ -39,6 +39,7 @@
 #include "platform/play_level_controls.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
+#include "platform/sandbox_play_scenery.h"
 #include "sandbox/sandbox_world.h"
 #include "scripting/config_strings.h"
 #include "support/disc_play_fixtures.h"
@@ -199,7 +200,7 @@ TEST_CASE("the AI fighters page leaves the layout's fighters, and a change of ch
     setup.types = coney::characters::CharacterTypes::fromRecorded(scriptRun.recorded);
     auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
     REQUIRE(world.has_value());
-    auto made = coney::platform::PlayLevelMode::createInSandbox(
+    auto made = coney::platform::createPlayInSandbox(
         **engine, *wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);
     REQUIRE(made.has_value());
     coney::platform::PlayLevelMode& mode = **made;

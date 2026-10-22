@@ -140,19 +140,6 @@ PlayLevelMode::create(RenderEngine& engine, const io::Wad& wad, std::string_view
 }
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
-PlayLevelMode::createInSandbox(RenderEngine& engine, const io::Wad& wad, sandbox::SandboxWorld world,
-                               const std::optional<std::string>& spawn, std::function<void(std::string_view)> print,
-                               const PlayerSetup& setup) {
-    auto scenery = SandboxPlayScenery::create(engine, std::move(world), spawn);
-    if (!scenery) {
-        return std::unexpected(std::move(scenery.error()));
-    }
-    PlayerSetup used = setup;
-    used.snapToGround = true;
-    return createWith(engine, wad, std::move(*scenery), std::move(print), used);
-}
-
-std::expected<std::unique_ptr<PlayLevelMode>, Error>
 PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                           std::function<void(std::string_view)> print, const PlayerSetup& setup,
                           const ScriptedCast* cast) {
@@ -247,8 +234,8 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
         m_ai->brains().setPlanner(m_planner.get());
         m_ai->brains().setCollision(&m_scenery->collision());
-        for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
-            addFighter(point.position, point.headingDegrees);
+        for (const human::Place& point : m_scenery->fighters()) {
+            addFighter(point.feet, point.headingDegrees);
         }
         if (m_ai->count() > 0) {
             m_print(std::format("fighters: {} from the layout ({} configuration calls read)\n", m_ai->count(),
@@ -303,11 +290,11 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     const raycast::CollisionMesh& mesh = m_scenery->collision();
     const std::size_t vertices = m_character->assets().model.vertices.size();
     std::uint32_t seed = 1;
-    for (const sandbox::TargetPoint& point : m_scenery->targets()) {
+    for (const SceneTarget& point : m_scenery->targets()) {
         // Dropped onto the ground below its spot, as a teleport is.
-        raycast::Vec3 feet{point.position.x, point.position.y, point.position.z + kTeleportDrop};
+        raycast::Vec3 feet{point.feet.x, point.feet.y, point.feet.z + kTeleportDrop};
         if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, feet)) {
-            feet.z = point.position.z;
+            feet.z = point.feet.z;
         }
         // **Coney's choice**: a target looks like the player (the one character Coney loads); its own model waits
         // for the character classes.
@@ -995,24 +982,6 @@ void PlayLevelMode::setFreeCamera(bool on) {
     const anim::Vec3 look = directionToRenderWare(m_player->camera().forward());
     camera.setOrientation(std::atan2(look.x, look.z), std::asin(std::clamp(look.y, -1.0F, 1.0F)));
     m_freeCamera.emplace(camera);
-}
-
-std::expected<void, Error> PlayLevelMode::spawn(const sandbox::Primitive& primitive) {
-    std::vector<sandbox::Primitive> next = m_spawned;
-    next.push_back(primitive);
-    if (auto rebuilt = m_scenery->setExtras(m_engine, next); !rebuilt) {
-        return rebuilt;
-    }
-    m_spawned = std::move(next);
-    return {};
-}
-
-std::expected<void, Error> PlayLevelMode::clearSpawned() {
-    if (auto rebuilt = m_scenery->setExtras(m_engine, {}); !rebuilt) {
-        return rebuilt;
-    }
-    m_spawned.clear();
-    return {};
 }
 
 std::string PlayLevelMode::summary() const {

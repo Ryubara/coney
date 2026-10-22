@@ -240,21 +240,22 @@ and `coney_platform`; the debug tools are two libraries of their own:
 | Target | Folder | Holds |
 | --- | --- | --- |
 | `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
-| `coney_devtools` | `src/platform/` | the menus' platform glue, the developer overlay (the only target that links Dear ImGui), the texture, character and sandbox viewers, the reference images |
+| `coney_devtools` | `src/platform/` | the menus' platform glue and their controls of the play mode, the sound output and network play, the developer overlay (the only target that links Dear ImGui), the sandbox as a scenery and its renderer, the texture, character and sandbox viewers, the reference images |
 
-`coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other
-way round: the play mode has Coney's own capabilities as its own API (teleport, freeze, noclip, spawn, change
-character), and `PlayLevelControls` in `coney_devtools` turns them into the debug menus' `debug::PlayControls`, with
-the Entity inspector, the Animation player and the Debug draw lines, which it hands the mode as a hook
+`coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other way
+round: the play mode has Coney's own capabilities as its own API (teleport, freeze, noclip, spawn, change character),
+and `PlayLevelControls` in `coney_devtools` turns them into the debug menus' `debug::PlayControls`, with the Entity
+inspector, the Animation player and the Debug draw lines, which it hands the mode as a hook
 (`PlayLevelMode::setSceneLines()`). The sound output's volumes, test tone and status are its own API too, which
 `AudioOutputControls` turns into the Audio page's `debug::AudioControls`; network play's host, join, figures and
 simulated network are `NetPlay`'s own (the figures are `net/net_status.h`), which `NetPlayControls` turns into the
 Network page's `debug::NetControls`; and the menus' game services are connected to the game session by
-`connectDebugServices()` (`platform/game_session_debug.h`), all on the debug tools' side. The play
-mode still plays the sandbox's worlds, which are in `coney_debug`, so `coney_platform` still links it; the release
-preset follows once the sandbox moves out.
-`python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources and fails when a game library
-lists a debug source or includes a `debug/` header, or anything but `coney_devtools` links `imgui`.
+`connectDebugServices()` (`platform/game_session_debug.h`), all on the debug tools' side. The sandbox is a scenery the
+play mode is given (`SandboxPlayScenery`, `createPlayInSandbox()`), and the Spawner's objects reach a level as generic
+extras (`PlayScenery::setExtras()`), both made in `coney_devtools`. So no game library links `coney_debug`, and the
+release preset can leave both debug libraries out. `python/tests/test_debug_tools_split.py` reads the CMake files and
+the game's sources and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links
+a debug library, or anything but `coney_devtools` links `imgui`.
 
 ### Debug information on MSVC {#debug-info}
 

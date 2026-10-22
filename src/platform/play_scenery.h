@@ -20,16 +20,33 @@
 #include "human/place.h"
 #include "human/player.h"
 #include "platform/render_engine.h"
-#include "platform/sandbox_renderer.h"
 #include "platform/world_renderer.h"
 #include "platform/world_viewer_mode.h"
 #include "raycast/collision_builder.h"
 #include "raycast/collision_mesh.h"
-#include "sandbox/sandbox_world.h"
 #include "world/path_map.h"
 #include "world/sector_budget.h"
 
 namespace coney::platform {
+
+/// A passive human to fight placed by the scenery (human::TargetHuman, Coney's own test target): its feet, heading and
+/// health. Only a sandbox layout places them (docs/guides/sandbox.md).
+struct SceneTarget {
+    anim::Vec3 feet;
+    float headingDegrees = 0.0F; ///< 0 faces +y.
+    int health = 0;
+};
+
+/// Objects added to a scenery after it was made: Coney's own, the debug tools' Spawner (PlayLevelControls::spawn(),
+/// docs/guides/debug-menu.md#pages). Their solid triangles join the collision mesh after the scenery's own, `draw`
+/// draws them among the scenery's objects in its camera, states and fog, and `source` is what they were made from,
+/// kept for whoever made them. Empty: none.
+struct SceneExtras {
+    std::vector<raycast::BuildTriangle> solid;
+    std::function<void(RenderEngine&)> draw;
+    std::size_t count = 0; ///< How many objects.
+    std::shared_ptr<const void> source;
+};
 
 /// Where the play mode's player stands and what is drawn round him: a level's streamed scenery or a sandbox. The play
 /// mode (PlayLevelMode) owns the player, the follow camera and the character; the scenery owns the ground they collide
@@ -83,9 +100,9 @@ class PlayScenery {
     /// The named places the debug menus' teleport offers: the start (a level), or the spawn points (a sandbox).
     [[nodiscard]] virtual std::vector<human::Place> places() const;
     /// The passive humans to fight (Coney's own sandbox targets): a sandbox layout's `target` lines; none in a level.
-    [[nodiscard]] virtual std::vector<sandbox::TargetPoint> targets() const { return {}; }
-    /// The AI humans that fight the player: a sandbox layout's `fighter` lines; none in a level.
-    [[nodiscard]] virtual std::vector<sandbox::FighterPoint> fighters() const { return {}; }
+    [[nodiscard]] virtual std::vector<SceneTarget> targets() const { return {}; }
+    /// Where the AI humans that fight the player start: a sandbox layout's `fighter` lines; none in a level.
+    [[nodiscard]] virtual std::vector<human::Place> fighters() const { return {}; }
     /// The level's path data, decoded, for the AI's route planner; null where there is none (a sandbox, or a level
     /// whose path data does not decode).
     [[nodiscard]] virtual const world::PathMap* pathMap() const { return nullptr; }
@@ -93,13 +110,13 @@ class PlayScenery {
     /// (world_objects::ObjectWorld); null where the scenery has no such objects (a sandbox).
     [[nodiscard]] virtual raycast::CollisionMesh* objectCollision() { return nullptr; }
     [[nodiscard]] virtual world::PathMap* objectPaths() { return nullptr; }
-    /// Whether the debug menus' Spawner can add objects (a sandbox and a level can).
+    /// Whether objects can be added (setExtras(): a sandbox and a level can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
-    /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
-    /// ErrorCode::InvalidArgument where nothing can be added, and as the rebuild does; the scenery is then
-    /// unchanged.
-    virtual std::expected<void, Error> setExtras(const RenderEngine& engine,
-                                                 const std::vector<sandbox::Primitive>& extra);
+    /// Puts `extras` in the scenery in place of those added before (empty: as made). Fails with
+    /// ErrorCode::InvalidArgument where nothing can be added, and as adding them does; the scenery is then unchanged.
+    virtual std::expected<void, Error> setExtras(const RenderEngine& engine, SceneExtras extras);
+    /// The objects added now (setExtras()).
+    [[nodiscard]] virtual const SceneExtras& extras() const;
 };
 
 /// A level's scenery for the play mode: its streamed worlds and level file (loadLevelScenery()), streamed around the
@@ -134,14 +151,13 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] world::PathMap* objectPaths() override { return m_paths ? &*m_paths : nullptr; }
     /// A level can take the Spawner's objects: they join its collision mesh and are drawn among its scenery.
     [[nodiscard]] bool canSpawn() const override { return true; }
-    /// Puts `extra` in the level in place of the objects added before: their solid triangles (the sandbox's,
-    /// sandbox::sandboxCollisionTriangles()) are added to the level's collision mesh after its own
-    /// (raycast::CollisionMesh::addExtraTriangles()), so the player, the AI, the climbs and the cameras meet them
-    /// through the queries they use for the level, and they are drawn by a SandboxRenderer of their own with the
-    /// sandbox's baked light and tints. None leaves the mesh as the disc has it. Fails as building them or adding the
-    /// triangles does; the level is then unchanged.
-    std::expected<void, Error> setExtras(const RenderEngine& engine,
-                                         const std::vector<sandbox::Primitive>& extra) override;
+    /// Puts `extras` in the level in place of the objects added before: their solid triangles are added to the
+    /// level's collision mesh after its own (raycast::CollisionMesh::addExtraTriangles()), so the player, the AI, the
+    /// climbs and the cameras meet them through the queries they use for the level, and they are drawn first among
+    /// the world's objects. None leaves the mesh as the disc has it. Fails as adding the triangles does; the level is
+    /// then unchanged.
+    std::expected<void, Error> setExtras(const RenderEngine& engine, SceneExtras extras) override;
+    [[nodiscard]] const SceneExtras& extras() const override { return m_extras; }
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
@@ -160,54 +176,7 @@ class LevelPlayScenery final : public PlayScenery {
     std::uint32_t m_loads = 0;
     std::uint32_t m_unloads = 0;
     std::uint32_t m_failures = 0;
-    std::vector<raycast::BuildTriangle> m_extraSolid; // the spawned objects' triangles in the collision mesh
-    std::unique_ptr<SandboxRenderer> m_extraRenderer; // draws the spawned objects; null with none
-};
-
-/// A sandbox for the play mode (docs/guides/sandbox.md): its collision mesh to stand on, drawn by the sandbox
-/// renderer, the player starting at one of the layout's spawn points. Nothing streams; the draw distance is the
-/// layout's fog end.
-class SandboxPlayScenery final : public PlayScenery {
-  public:
-    /// The scenery of `world`, the player starting at spawn point `spawn` (the layout's first when unset). Fails with
-    /// ErrorCode::NotFound for an unknown spawn and for a layout with nothing solid, and as SandboxRenderer::create().
-    [[nodiscard]] static std::expected<std::unique_ptr<SandboxPlayScenery>, Error>
-    create(const RenderEngine& engine, sandbox::SandboxWorld world, const std::optional<std::string>& spawn);
-
-    [[nodiscard]] const raycast::CollisionMesh& collision() const override { return *m_world.collision(); }
-    [[nodiscard]] human::PlayerStart start() const override { return m_start; }
-    [[nodiscard]] std::string startSource() const override { return "spawn point " + m_spawn; }
-    void preload(world::Vec3 /*camera*/) override {}
-    void step(world::Vec3 /*camera*/, const FrameTime& /*frame*/) override {}
-    [[nodiscard]] float drawDistance() const override { return m_world.layout().lighting.fogEnd; }
-    void findVisible(const WorldView& /*newest*/) override {}
-    void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-              const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) override;
-    /// The lights the humans and objects are drawn with; each frame starts their viewport pass before drawing.
-    void setLighting(SceneLighting* lighting) override { m_lighting = lighting; }
-    [[nodiscard]] anim::Vec3 lightDirection() const override { return m_world.layout().lighting.sunDirection; }
-    [[nodiscard]] std::string summary() const override;
-
-    [[nodiscard]] const sandbox::SandboxWorld& world() const { return m_world; }
-
-    [[nodiscard]] std::string name() const override { return "sandbox " + m_world.layout().title; }
-    [[nodiscard]] std::vector<human::Place> places() const override;
-    [[nodiscard]] bool canSpawn() const override { return true; }
-    [[nodiscard]] std::vector<sandbox::TargetPoint> targets() const override { return m_world.layout().targets; }
-    [[nodiscard]] std::vector<sandbox::FighterPoint> fighters() const override { return m_world.layout().fighters; }
-    std::expected<void, Error> setExtras(const RenderEngine& engine,
-                                         const std::vector<sandbox::Primitive>& extra) override;
-
-  private:
-    SandboxPlayScenery(sandbox::SandboxWorld world, std::unique_ptr<SandboxRenderer> renderer,
-                       const human::PlayerStart& start, std::string spawn);
-
-    sandbox::SandboxWorld m_world;
-    sandbox::SandboxLayout m_made; // the layout as made, before any extras: the base setExtras() builds on
-    std::unique_ptr<SandboxRenderer> m_renderer;
-    human::PlayerStart m_start;
-    std::string m_spawn;                 // the spawn point's name
-    SceneLighting* m_lighting = nullptr; // the play mode's lights, started each frame for the humans and objects
+    SceneExtras m_extras; // the added objects (setExtras()), their triangles in the collision mesh
 };
 
 /// **Coney's choice** for a level whose player start is not researched: above the middle of the first world's part 1
