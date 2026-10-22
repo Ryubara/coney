@@ -608,6 +608,39 @@ not something `Brain_PickSideInFight` returns.
    (`TauntAction_Init`); a non-target also delays his next attack by twice the taunt clip's length (anim 598 or 599).
    Under the Moe boss tactic (`0xc`), a BigFighter's taunt tells the tactic (`BossMoeTactic_FireAnimDone`).
 
+   The detail, confirmed (code) at `0x00292d80` (read 2026-10-20):
+    - The brain handling the event is the **downed man's**; "his own target" is the downed man's target (brain
+      `+0x124`), or, when the top of the downed man's stack is a Grounded goal (`0x17`), the target that goal noted
+      as he went down (goal `+0x10`, `GroundedGoal_Start` `0x002b4a38`). So the one he was fighting taunts him and
+      the rest cheer.
+    - The gang field read is `+0x6d` of the taunter's gang kind (`GangConfig_GetField6D`): `CfgGang` v3, the
+      downed spacing ([Gangs](../references/gangs.md)). A gang that lets four swing at a downed man (Gang1, the
+      Turnbulls, the Huns) does not gloat; it keeps hitting.
+    - `Random_Int(100)` is drawn for every candidate that passes the class, gang, goal and Warrior tests, before
+      the distance test, and picks the line (under 50 `0x10`, else `0x8f`); the target's kind 4 says no line
+      (`0xf` under BigFighter; class `0x80` taunts only with a hat, `+0x364`).
+    - The distance is the taunter's to the downed man against the **downed man's** melee ranges, (near + far) / 2
+      squared. A downed man driven by a pad gets kind 4 from a BigFighter whatever the distance.
+    - The two actions are queued only when clearing left no action (`+0x2e` < 1); the taunt's delay is −1 (a random
+      0-500 ms).
+    - The put-off is `Brain_SetNextAttackTime` (`0x00290e48`): `+0x1e8` = max(`+0x1e8`, now) + 2 × the clip's
+      play time (`Anim_GetPlayTime` `0x00101a00`, the clip the human's lookup gives for 598 or 599, over its
+      rate).
+    - It returns 1 (handled) whatever happens.
+
+   **Coney status (2026-10-20):** built as `gloatOver` (`repo:src/ai/brain_events.h`), with the taunt action, the
+   gang clip table's names and the event sent as a man comes to lie on the ground
+   (`repo:src/ai/brains.h`, `reportPutDowns`); the BigFighter branch and class `0x80`'s hat are not.
+
+   **At runtime** (confirmed (runtime), PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the
+   `taunt-init` hook on `TauntAction_Init` `0x002fb0f0`): in level99's sparring fight against a still player, one
+   gloat was queued in 1,198 updates: a cheer (kind 3, line `0x10`) by one Warrior at update 1507, as a mount let the
+   player go (the call at `0x00293428`). It started 57 updates later, at update 1564, once his queued actions had
+   ended (inferred), and said its line there (`Human_SayCommand` `0x002205e0` called from `TauntAction_Start`,
+   return address `0x002fb224`). Nothing taunted at kind 4: the still player has no target of his own. Coney's
+   sparring disc test over the same span saw no gloat start in any of its eight AI sequences. Why Coney's sparring
+   fight gives none where this run of the original gave one is open; it is compared with the taunts on #596.
+
 Event `0x15` is sent to a man as he is put on the ground: by `HitReact_OnSpecialEnd` (`0x0026a1f8`, the end of a
 knock-down clip) and by `Throw_ClearVictimLink` (`0x0022bdc0`, a throw, grab or mount putting its victim down).
 Confirmed (code); the detail is in [Gang fights](gang-fights.md#waiting) rule 5.

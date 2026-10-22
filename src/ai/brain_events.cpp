@@ -2,14 +2,19 @@
 #include "ai/brain_events.h"
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
+#include "ai/attack_kinds.h"
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/move_action.h"
 #include "ai/reaction_goals.h"
 #include "ai/route_planner.h"
+#include "ai/script_services.h"
+#include "ai/taunt_action.h"
 #include "ai/threats.h"
 #include "ai/turn_action.h"
 #include "combat/ai_counter.h"
@@ -161,12 +166,74 @@ bool sharedEvent(Brain& brain, const BrainEvent& event) {
         }
         return true;
     }
+    case kEventPutDown:
+        gloatOver(brain);
+        return true;
     default:
         return false;
     }
 }
 
 } // namespace
+
+void gloatOver(Brain& downed) {
+    // The classes that never gloat, the downed spacing of a gang that piles on, the Defend tactic, the line draw.
+    constexpr std::array<int, 3> kNoGloatClasses{0x77, 0x6a, 0xb2};
+    constexpr int kPileOnSpacing = 4;
+    constexpr int kDefendTactic = 2;
+    constexpr int kCheerLinePercent = 50;
+    constexpr int kPercentDraw = 100;
+    constexpr int kCheerLine = 0x10;
+    constexpr int kCheerLineOther = 0x8f;
+    constexpr int kTurnDelayLowMs = 50;
+    constexpr int kTurnDelayHighMs = 100;
+    const Brain* fighting = downed.target();
+    const float middle = (downed.meleeNear() + downed.meleeFar()) / 2.0F;
+    const anim::Vec3 where = downed.human().position();
+    // A copy: a taunter's cleared actions may change the slot list.
+    const std::vector<Brain*> holders = downed.attackSlots();
+    for (Brain* taunter : holders) {
+        if (taunter == nullptr ||
+            std::ranges::find(kNoGloatClasses, taunter->characterClass()) != kNoGloatClasses.end() ||
+            taunter->gangFight().downSpacing == kPileOnSpacing) {
+            continue;
+        }
+        const Goal* top = taunter->topGoal();
+        if (top == nullptr || top->type() != GoalType::Fight) {
+            continue;
+        }
+        const Gang* gang = taunter->gang();
+        const Tactic* tactic = gang != nullptr ? gang->tactic() : nullptr;
+        if (taunter->type() == BrainType::Warrior && tactic != nullptr && tactic->type() == kDefendTactic) {
+            continue;
+        }
+        // `Random_Int(100)` draws 0-100 inclusive.
+        const int line =
+            rollRange(taunter->random(), 0, kPercentDraw) < kCheerLinePercent ? kCheerLine : kCheerLineOther;
+        const bool isTarget = taunter == fighting;
+        if (!isTarget && taunter->distanceTo(downed) < middle) {
+            continue;
+        }
+        const int kind = isTarget ? kTauntAtTaunt : kCheerTaunt;
+        taunter->clearActions();
+        if (taunter->actionCount() >= 1) {
+            continue;
+        }
+        taunter->stopMove();
+        const auto turnDelay =
+            static_cast<std::int16_t>(rollRange(taunter->random(), kTurnDelayLowMs, kTurnDelayHighMs));
+        static_cast<void>(taunter->queueAction(TurnAction::toPoint(where, turnDelay)));
+        static_cast<void>(taunter->queueAction(std::make_unique<TauntAction>(kind, isTarget ? 0 : line, kRandomDelay)));
+        if (!isTarget) {
+            // His next attack waits twice the cheer's length.
+            ScriptServices* services = taunter->services();
+            const float seconds = services != nullptr ? services->playTime(*taunter, tauntAnim(kind)) : 0.0F;
+            // The cheer's length in whole ms, doubled.
+            const auto delay = 2U * static_cast<std::uint64_t>(1000.0F * seconds);
+            taunter->setNextAttackMs(std::max(taunter->nextAttackMs(), taunter->nowMs()) + delay);
+        }
+    }
+}
 
 bool answerEvent(Brain& brain, const BrainEvent& event) {
     switch (brain.type()) {

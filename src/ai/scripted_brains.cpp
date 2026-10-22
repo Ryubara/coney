@@ -8,12 +8,14 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "ai/address_person_goal.h"
 #include "ai/dealer_goal.h"
 #include "ai/engage_goals.h"
+#include "ai/gangs.h"
 #include "ai/give_way.h"
 #include "ai/pedestrian_goal.h"
 #include "ai/play_dyn_animation_goal.h"
@@ -844,6 +846,22 @@ std::optional<std::uint32_t> ScriptedBrains::playClip(Brain& human, int animId) 
     }
     human.human().playScripted(*clip, static_cast<std::uint32_t>(animId), rate, kScriptedClipFade, kScriptedClipHeld);
     return kScriptedClipHeld.held;
+}
+
+float ScriptedBrains::playTime(Brain& human, int animId) {
+    if (Gang* gang = human.gang(); gang != nullptr && m_clipSource) {
+        if (const std::string_view name = gang->randomClip(animId); !name.empty()) {
+            if (const anim::AnimClip* clip = m_clipSource(name); clip != nullptr) {
+                return clip->duration;
+            }
+        }
+    }
+    if (animId < 0) {
+        return 0.0F;
+    }
+    const characters::AnimSet& anims = human.human().animator().anims();
+    const anim::AnimClip* clip = anims.clip(static_cast<std::size_t>(animId));
+    return clip != nullptr ? clip->duration / anims.rate(static_cast<std::size_t>(animId)) : 0.0F;
 }
 
 std::optional<std::uint32_t> ScriptedBrains::playNamedClip(Brain& human, int animId, std::string_view name,

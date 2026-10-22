@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -57,9 +58,16 @@ inline constexpr int kGangFighting = 1;
 /// the combat fidgets, the advancing taunts (`taunt*_adv`), the taunts (`gen_tnt_*`) and the cheers (`gen_tnt_cheer*`).
 inline constexpr int kCowerClips = 0x29c;
 inline constexpr int kCombatFidgetClips = 0x25b;
+inline constexpr int kIdleFidgetClips = 0x25c;
 inline constexpr int kTauntAdvanceClips = 0x253;
 inline constexpr int kTauntClips = 0x257;
 inline constexpr int kCheerClips = 0x256;
+/// How many slots group `group` has in a gang's clip table (`GangClips_GetGroup`): 8 for the combat fidgets, 5 for the
+/// advancing taunts, 4 for the idle fidgets (`0x25c`) and the cower clips, 3 for the taunts and the cheers; 0 for any
+/// other anim id.
+/// @orig 0x00163f10 GangClips_GetGroup (unknown)
+[[nodiscard]] int clipGroupSlots(int group);
+
 /// The gang kinds the alert state special-cases: 5 takes no clips, `0x18` no combat fidgets (and kPoliceLikeKind no
 /// taunts); and the kind whose team-ups (GangOrders::attackStrategies) take the two cower clips.
 inline constexpr int kNoAlertClipsKind = 5;
@@ -185,11 +193,21 @@ class Gang {
     /// Research: docs/research/ai-reimpl.md#alert-state
     /// @orig 0x00164a28 Gang_SetAlertState (unknown)
     void setAlertState(int state);
-    /// How many clips group `group` of the gang's clip table (`+0x1b0`) holds; 0 when it is not installed. **Coney
-    /// stand-in**: only the counts are kept; the clips' names are not all on the page, and nothing plays them yet.
+    /// How many clips group `group` of the gang's clip table (`+0x1b0`) holds; 0 when it is not installed.
     [[nodiscard]] int clipGroup(int group) const;
-    /// Installs `clips` clips as group `group`, in place of what it held.
-    void setClipGroup(int group, int clips);
+    /// The clip name in slot `slot` of group `group`; empty for a free slot or a group not installed.
+    /// @orig 0x00163fc0 GangClips_Get (unknown)
+    [[nodiscard]] std::string_view clip(int group, int slot) const;
+    /// Fills group `group` from `names` (`GangClips_Set`): in order when they fit its slots (clipGroupSlots()), else a
+    /// random subset in order, each name taken on a 1-in-2 draw while more names are left than free slots.
+    /// @orig 0x00164178 GangClips_Set (unknown)
+    void setClipGroup(int group, std::span<const std::string_view> names);
+    /// The clip for anim `group` at a random variant (`GangClips_Get` with variant −1): a draw from 0 to the group's
+    /// slot count inclusive, the clip in that slot; empty for the last draw, a free slot or a group not installed (the
+    /// human then plays the character's own clip for the id). **Coney stand-in**: group `0x29c`'s draw among the
+    /// entries made for that anim id is the same plain draw.
+    /// @orig 0x00163fc0 GangClips_Get (unknown)
+    [[nodiscard]] std::string_view randomClip(int group);
     /// Releases group `group` (`GangClips_ReleaseGroup`); nothing when it is not installed.
     void releaseClipGroup(int group);
 
@@ -244,10 +262,10 @@ class Gang {
     std::uint32_t m_tacticsSet = 0; // tactics set so far
     std::map<int, std::string> m_handlers;
     GangOrders m_orders;
-    std::map<int, int> m_clipGroups; // +0x1b0: group → clips installed
-    int m_alertState = kGangCalm;    // +0x32
-    int m_fleeCount = -1;            // +0xe0
-    bool m_canFlee = true;           // +0xdf
+    std::map<int, std::vector<std::string_view>> m_clipGroups; // +0x1b0: group → its slots' clip names
+    int m_alertState = kGangCalm;                              // +0x32
+    int m_fleeCount = -1;                                      // +0xe0
+    bool m_canFlee = true;                                     // +0xdf
 };
 
 /// The gangs of a level, by id.

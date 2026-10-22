@@ -714,7 +714,7 @@ idle 0 (line, then done); an AI Warrior's idle fidget cleared while the chief st
 with command 4 (stopped); a normal end (stopped).
 
 **Coney status (implemented, 2026-10-20).** `repo:src/ai/fidget_action.h` (`FidgetAction`), queued by the fight
-goal's reposition taunt (`repo:src/ai/fight_goal.cpp`) with the gang's combat fidgets (`combatFidgetClip`). Stand-ins:
+goal's reposition taunt (`repo:src/ai/fight_goal.cpp`) with the gang's combat fidgets (`Gang::randomClip`). Stand-ins:
 "free to fidget" is no held record flag, alive, up, not held and empty-handed (the state-flag word is not built), the
 line is said at one volume, the clip is a scripted clip rather than an overlay, and Abort's refusal for an idle
 Warrior is not built (no caller queues an idle fidget yet).
@@ -759,6 +759,15 @@ flag) are set, else done.
 **Tests (synthetic):** a cop and a class-6 human (done); kind 8 with a line (no clip, done on the next update); kind 3
 on a free human (anim `0x256`, flag `0x200000`, waits); kind 0 (anim `0x253`, no wait); a busy human (done) and a busy
 class-13 human (plays); cleared while the clip plays (stopped; refused while the flags remain).
+
+**Coney status (implemented, 2026-10-20).** `repo:src/ai/taunt_action.h` (`TauntAction`), queued by the gloating over
+a man put down (`gloatOver`, [The shared event handler](ai.md#shared-events)). The clip is the gang's for the
+kind's anim at a random variant (`Gang::randomClip`) or the character's own; the kind-to-anim map is
+`ai::tauntAnim` (`Human_BuildAnimState`'s). Abort is ported: a normal end (Coney has no abort mode, so its own
+update having ended it) accepts and leaves the clip playing; otherwise the taunt stops, and a waiting taunt refuses
+while its clip still holds its flags; the vestigial count is not kept. Stand-ins: the clip holds Coney's
+scripted-clip flag rather than `0x100000` / `0x200000`, and as a scripted clip rather than an overlay it stops the
+human's move while it plays; the line is said at one volume.
 
 ### `Brain_TryPatternBlock(brain, attacker)` (`0x00292158`) {#pattern-block}
 

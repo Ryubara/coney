@@ -71,18 +71,19 @@ class KeepingServices final : public ai::ScriptServices {
         if (!clipsPlay) {
             return std::nullopt;
         }
-        return 0U; // held by no flag: the action ends on its next update
+        return clipHeld;
     }
     [[nodiscard]] std::optional<std::uint32_t> playNamedClip(ai::Brain& human, int animId, std::string_view name,
                                                              float /*fade*/) override {
         namedClips.emplace_back(&human, animId, std::string(name));
-        return 0U;
+        return clipHeld;
     }
     [[nodiscard]] bool clipAvailable(std::string_view /*name*/) const override { return clipsAvailable; }
     [[nodiscard]] bool mayGesture(ai::Brain& /*human*/) override {
         ++gesturesAsked;
         return gesturesAllowed;
     }
+    [[nodiscard]] float playTime(ai::Brain& /*human*/, int /*animId*/) override { return clipSeconds; }
     void say(ai::Brain& human, int command, bool /*interrupt*/, double /*target*/) override {
         said.emplace_back(&human, static_cast<std::uint32_t>(command));
     }
@@ -109,9 +110,11 @@ class KeepingServices final : public ai::ScriptServices {
     int freed = 0;
     std::vector<int> clips;
     bool clipsPlay = true;
+    std::uint32_t clipHeld = 0; // the record flags a clip played holds (0: the action ends on its next update)
     std::vector<std::tuple<ai::Brain*, int, std::string>> namedClips; // (human, anim id, clip) played by name
     bool clipsAvailable = false;                                      // what clipAvailable() answers
     std::vector<std::pair<ai::Brain*, std::uint32_t>> said;           // (human, speech command)
+    float clipSeconds = 0.0F;                                         // what playTime() answers
     bool gesturesAllowed = true;                                      // what mayGesture() answers
     int gesturesAsked = 0;
 };

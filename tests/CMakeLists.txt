@@ -426,6 +426,7 @@ target_sources(coney_tests PRIVATE
     ai/rumble_tactics_test.cpp
     ai/swap_prompt_test.cpp
     ai/tactic_attack_test.cpp
+    ai/taunt_action_test.cpp
     ai/tactics_test.cpp
     ai/targeting_test.cpp
     ai/threats_test.cpp)

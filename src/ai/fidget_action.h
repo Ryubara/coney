@@ -2,7 +2,7 @@
 #pragma once
 
 #include <cstdint>
-#include <string_view>
+#include <optional>
 
 #include "ai/action.h"
 
@@ -18,9 +18,6 @@ namespace coney::ai {
 inline constexpr int kKnifeFidgetAnim = 0x25a;
 inline constexpr int kFightFidgetAnim = 0x25b;
 inline constexpr int kIdleFidgetAnim = 0x25c;
-/// The slots of group `0x25b` in a gang's clip table (`GangClips_GetGroup`): eight, of which the fighting state fills
-/// the first four.
-inline constexpr int kFightFidgetSlots = 8;
 /// The class of a dog (human `+0xcc`) and the class role (`CharClass` `+0x11b`) that never fidget.
 inline constexpr int kDogClass = 0xdd;
 inline constexpr int kNoFidgetRole = 6;
@@ -29,10 +26,13 @@ inline constexpr int kKnifeAnimSet = 1;
 /// The fidget's blend in, seconds (`Human_PushScriptOverlay`'s 0.1 s overlay).
 inline constexpr float kFidgetFade = 0.1F;
 
-/// The clip in slot `slot` of group `0x25b` while the gang fights (`Gang_AddCombatFidgetClips`, table `0x0050cab8`);
-/// empty for a slot the group leaves free (4-7) or out of range.
-/// @orig 0x001694b8 Gang_AddCombatFidgetClips (unknown)
-[[nodiscard]] std::string_view combatFidgetClip(int slot);
+/// Whether `brain`'s human may start a fidget or a taunt (`Human_IsFreeForFidget`). **Coney stand-in**: no held record
+/// flag, alive, up, not held and empty-handed (the state-flag word `0x7bf9e9f7ff0` is not built).
+/// @orig 0x00225f58 Human_IsFreeForFidget (unknown)
+[[nodiscard]] bool freeToFidget(const Brain& brain);
+/// `brain`'s class role (`CharClass` `+0x11b`) through his gang's lookups; nothing without a gang or a lookup.
+/// @coney-only lookup glue; the original reads the class record's byte directly
+[[nodiscard]] std::optional<int> classRole(const Brain& brain);
 
 /// The fidget action (vtable `0x00542c60`).
 /// @orig 0x002f9f48 FidgetAction_Init (unknown)
@@ -46,12 +46,11 @@ class FidgetAction final : public Action {
     /// Done at once for a cop, a dog or a class of role 6, and when he is not free to fidget (a knife in hand excused
     /// without `idle`); otherwise says the line, and (unless a dealer without `idle`) plays the clip
     /// (`Human_PlayHeldIdle`): the idle fidgets with `idle`, else `0x25a` with a knife in hand, else the anim, which
-    /// for `0x25b` is a random slot of the gang's group (`GangClips_Get` with variant −1: 0-8, of which only the
-    /// filled slots give a gang clip) or else the character's own clip. Done when nothing plays.
-    /// **Coney stand-ins**: "free to fidget" is no held record flag, alive, up, not held and empty-handed (the
-    /// state-flag word `0x7bf9e9f7ff0` is not built); the line is said at one volume (the original's 1.5 × at a
-    /// player's man is not built); the clip is a scripted clip holding kScriptedClipHeld, not an overlay holding
-    /// `0x100`.
+    /// for `0x25b` is the gang's clip at a random variant (Gang::randomClip()) or else the character's own clip. Done
+    /// when nothing plays.
+    /// **Coney stand-ins**: "free to fidget" is freeToFidget()'s reading; the line is said at one volume (the
+    /// original's 1.5 × at a player's man is not built); the clip is a scripted clip holding kScriptedClipHeld, not an
+    /// overlay holding `0x100`.
     /// @orig 0x002f9f78 FidgetAction_Start (unknown)
     [[nodiscard]] ActionStatus start(Brain& brain) override;
     /// Done once the clip holds none of the record flags it started with.

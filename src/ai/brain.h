@@ -137,6 +137,9 @@ inline constexpr int kEventEnemyAdded = 0x0b;
 inline constexpr int kEventAttackWarning = 0x10;
 inline constexpr int kEventViolence = 0x14;
 inline constexpr int kEventDown = 18;
+/// Put on the ground (`0x15`): sent to a man as he comes to lie there after a knockdown, a throw, a grab or a mount
+/// (docs/research/gang-fights.md#waiting rule 5); his attackers gloat (ai::gloatOver()).
+inline constexpr int kEventPutDown = 0x15;
 
 /// One event to a human: its id, the other human it is about (null for none) and a value; for violence (`0x14`, a
 /// help call among them) the victim who called (`+0x24`) and the new-enemy flag (`+0x0c`).
@@ -265,6 +268,9 @@ class Brain {
     /// Whether its human's health running out has been told (event 18).
     [[nodiscard]] bool downReported() const { return m_downReported; }
     void setDownReported(bool reported) { m_downReported = reported; }
+    /// Whether its human's lying on the ground has been told (event kEventPutDown) since he last stood.
+    [[nodiscard]] bool lyingReported() const { return m_lyingReported; }
+    void setLyingReported(bool reported) { m_lyingReported = reported; }
     /// Its human's health when the brains last looked (Brains::reportDamage()); -1 before the first look.
     [[nodiscard]] int seenHealth() const { return m_seenHealth; }
     void setSeenHealth(int health) { m_seenHealth = health; }
@@ -695,6 +701,7 @@ class Brain {
     bool m_suspended = false;                      // +0x0a
     bool m_wantsWeapon = true;                     // +0x265
     bool m_downReported = false;
+    bool m_lyingReported = false;
     bool m_mayApproach = true;  // +0x2d3
     bool m_attackable = true;   // +0x11f
     bool m_hittingBack = false; // +0x2e5

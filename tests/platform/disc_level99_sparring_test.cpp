@@ -41,6 +41,7 @@
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/tactic_crowd.h"
+#include "ai/taunt_action.h"
 #include "characters/character_types.h"
 #include "core/error.h"
 #include "core/game_random.h"
@@ -134,6 +135,8 @@ struct Watched {
     std::uint64_t lastNextAttack = 0;
     int taunts = 0;                               // reposition taunts started (a `cheer2` fight fidget)
     const coney::ai::Action* lastTaunt = nullptr; // the taunt last counted, so that one is counted once
+    int gloats = 0;                               // gloats over the downed player started (a taunt action, kind 3 or 4)
+    const coney::ai::Action* lastGloat = nullptr; // the gloat last counted
 };
 
 // Counts `watched`'s reposition taunt when one has just started at the front of its actions: the fight fidget that
@@ -143,6 +146,18 @@ void countTaunt(Watched& watched) {
     if (fidget != nullptr && fidget->started() && fidget->line() == kTauntLine && fidget != watched.lastTaunt) {
         watched.lastTaunt = fidget;
         ++watched.taunts;
+    }
+}
+
+// Counts `watched`'s gloat over the downed player when one has just started at the front of its actions: the taunt
+// action of kind 3 (a cheer) or 4 (the downed man's own opponent) that event 0x15 queues (Brain_DefaultOnEvent,
+// 0x00292d80; the original's call of TauntAction_Init is 0x00293428).
+void countGloat(Watched& watched) {
+    const auto* taunt = dynamic_cast<const coney::ai::TauntAction*>(watched.brain->frontAction());
+    if (taunt != nullptr && taunt != watched.lastGloat &&
+        (taunt->kind() == coney::ai::kCheerTaunt || taunt->kind() == coney::ai::kTauntAtTaunt)) {
+        watched.lastGloat = taunt;
+        ++watched.gloats;
     }
 }
 
@@ -315,13 +330,15 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
                 ++watched.attacks;
             }
             countTaunt(watched);
+            countGloat(watched);
         }
     }
-    // The rest of the recorded fight, for the taunts alone.
+    // The rest of the recorded fight, for the taunts and the gloats alone.
     for (int i = kFightFrames; i < kTauntFrames; ++i) {
         step();
         for (Watched& watched : warriors) {
             countTaunt(watched);
+            countGloat(watched);
         }
     }
     const int healthAfter = play()->player().human().fighter().health().value();
@@ -330,13 +347,16 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     int engaged = 0;
     int charged = 0;
     int taunts = 0;
+    int gloats = 0;
     for (const Watched& watched : warriors) {
         taunts += watched.taunts;
-        std::printf("  level99 sparring Warrior (seed %u): %.2f m from the player when sent, %s at up to %.1f m/s, %s, "
-                    "charge at %.2f m, run-in ended at %.2f m, nearest %.2f m, %d attacks, %d taunts, %zu goals\n",
-                    seed, watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
-                    watched.tackled ? "tackled" : "no tackle", watched.chargeAt, watched.engageEnd, watched.nearest,
-                    watched.attacks, watched.taunts, watched.brain->goalCount());
+        gloats += watched.gloats;
+        std::printf(
+            "  level99 sparring Warrior (seed %u): %.2f m from the player when sent, %s at up to %.1f m/s, %s, "
+            "charge at %.2f m, run-in ended at %.2f m, nearest %.2f m, %d attacks, %d taunts, %d gloats, %zu goals\n",
+            seed, watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
+            watched.tackled ? "tackled" : "no tackle", watched.chargeAt, watched.engageEnd, watched.nearest,
+            watched.attacks, watched.taunts, watched.gloats, watched.brain->goalCount());
         engaged += watched.engaged ? 1 : 0;
         closed += watched.nearest < kCloseRange ? 1 : 0;
         attacked += watched.attacks > 0 ? 1 : 0;
@@ -347,9 +367,9 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
         }
     }
     std::printf(
-        "  level99 sparring fight (seed %u): %zu Warriors, %d closed in, %d attacked, %d charged, %d taunts in %d "
-        "updates; player health %d -> %d\n",
-        seed, warriors.size(), closed, attacked, charged, taunts, kTauntFrames, healthBefore, healthAfter);
+        "  level99 sparring fight (seed %u): %zu Warriors, %d closed in, %d attacked, %d charged, %d taunts and %d "
+        "gloats in %d updates; player health %d -> %d\n",
+        seed, warriors.size(), closed, attacked, charged, taunts, gloats, kTauntFrames, healthBefore, healthAfter);
     if (closed < 3 || attacked == 0) {
         for (const std::string& line : log) {
             UNSCOPED_INFO(line);

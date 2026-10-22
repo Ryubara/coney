@@ -85,6 +85,12 @@ class Brains {
 
     // Event 18 for each human whose health has run out since the last step.
     void reportDowns();
+    // Event kEventPutDown for each human who has come to lie on the ground since the last step: a knockdown's
+    // reaction over (`HitReact_OnSpecialEnd`) or a throw, grab or mount letting go of him (`Throw_ClearVictimLink`),
+    // not knocked out. **Coney stand-in**: both read as "grounded, not held, his health not out and no reaction clip
+    // driving him", once per time down; the original sends from the two places themselves.
+    // @coney-only stand-in poll for the event HitReact_OnSpecialEnd and Throw_ClearVictimLink send
+    void reportPutDowns();
     // The health each human lost since the last step, kept before the gangs' tactics run: a tactic that holds a boss
     // above his cap gives the health back at once, and the hit must still reach reportDamage().
     void noteDamage();

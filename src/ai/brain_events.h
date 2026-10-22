@@ -21,6 +21,19 @@ struct BrainEvent;
 inline constexpr float kHelpCallShared = 20.0F; ///< The shared handler's, the Big* goals' and the mugging's.
 inline constexpr float kHelpCallBusy = 30.0F;   ///< A busy gang soldier hit by a player.
 
+/// The gloating over `downed`, just put on the ground (event kEventPutDown, the shared handler's `0x15`): every human
+/// holding an attack slot on him whose top goal is Fight, of a class other than `0x77`, `0x6a` and `0xb2`, whose gang
+/// does not pile on a downed man (CfgGang v3, the downed spacing, not 4) and who is not a Warrior under a Defend
+/// tactic, draws a line (`0x10` under 50, else `0x8f`), then: the one the downed man was fighting (his target) taunts
+/// him (kind 4, no line); any other farther than the middle of the downed man's melee ranges cheers (kind 3, the
+/// line) and puts his next attack off by twice the cheer's length. Each clears his actions and, with none left,
+/// stands, turns to the downed man (after 50-100 ms) and taunts (after 0-500 ms). **Coney stand-ins**: the BigFighter
+/// goals' branch (`0x85`, kind 4 with line `0xf`, the boss Moe's tactic told) and class `0x80`'s hat test are not
+/// built, as Coney has no BigFighter goal; the downed man's target is his brain's (a Grounded goal on top of his
+/// stack, which keeps the target he had going down, is the same here). Research: docs/research/gang-fights.md#waiting
+/// @orig 0x00292d80 Brain_DefaultOnEvent (unknown)
+void gloatOver(Brain& downed);
+
 /// `brain`'s answer to `event` (dead brains are left out by the caller): the type's handler, then the shared one for
 /// the ids the type did not take. Returns whether it was used.
 /// @orig 0x00304fa8 GangBrain_OnEvent (unknown)

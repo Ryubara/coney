@@ -559,10 +559,13 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
    `repo:src/ai/fidget_action.h`); a Warrior's `turf_defend` line is not. Coney's ring only steps out to the outer
    radius and turns to face; the original's move-to-human holds them inside 4-4.75 m (they keep moving). Wait reasons
    4, 6 and 8 are never raised (their inputs are not computed).
-8. **Event `0x15`'s slot-holder taunts** are not built: sent to a man as he is knocked down by a hit or put down by a
-   throw or grab ([waiting](#waiting) rule 5).
-9. **The gang's alert state** (`+0x32`): built (Unit 2) as state, clip-group counts and the members' `+0x14d`;
-   nothing plays the clip groups or reads `+0x14d` yet (Coney has no turf-only target test).
+8. **Event `0x15`'s slot-holder taunts**: built (2026-10-20, `gloatOver`, `repo:src/ai/brain_events.h`); Coney sends
+   the event once a downed man lies still on the ground (no reaction clip driving him, not held), standing in for
+   the original's two senders ([waiting](#waiting) rule 5).
+9. **The gang's alert state** (`+0x32`): built (Unit 2) as state, the clip groups (with their names and
+   `GangClips_Set`'s random subset since 2026-10-20) and the members' `+0x14d`; the waiting taunts play the combat
+   fidgets and the gloating the cheers and taunts, the advancing taunts (`0x253`) have no player yet, and nothing
+   reads `+0x14d` (Coney has no turf-only target test).
 10. **Flight**: TacticAttack's flee check (v9 × the starting count, class 11 only) under `GangCanFlee`: built (Unit 2).
 11. **The tandem on a held enemy** ([Combat moves](combat-moves.md#tandem-ai), issue #84): not built.
 12. **FightBackOff** for the guard-and-back-off order and the [pusher](ai.md#fight-back-off-pusher): not built.

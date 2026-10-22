@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/fidget_action.h"
 
-#include <array>
-#include <cstddef>
 #include <optional>
+#include <string_view>
 
-#include "ai/attack_kinds.h"
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/script_services.h"
@@ -13,36 +11,26 @@
 
 namespace coney::ai {
 
-namespace {
-
-// Whether `brain`'s human may start a fidget (`Human_IsFreeForFidget`, Coney's reading in the header).
-// @orig 0x00225f58 Human_IsFreeForFidget (unknown)
 bool freeToFidget(const Brain& brain) {
     const human::Human& body = brain.human();
     return body.heldFlags() == 0 && body.alive() && body.state() == human::TargetState::Standing && !body.attached() &&
            body.fighter().animSet() == 0;
 }
 
+std::optional<int> classRole(const Brain& brain) {
+    const Gang* gang = brain.gang();
+    return gang != nullptr ? gang->owner().roleOf(brain) : std::nullopt;
+}
+
+namespace {
+
 // Whether `brain`'s class may never fidget: a dog, or a class of role 6.
 // @orig 0x002f9f78 FidgetAction_Start (unknown)
 bool neverFidgets(const Brain& brain) {
-    if (brain.characterClass() == kDogClass) {
-        return true;
-    }
-    const Gang* gang = brain.gang();
-    return gang != nullptr && gang->owner().roleOf(brain) == kNoFidgetRole;
+    return brain.characterClass() == kDogClass || classRole(brain) == kNoFidgetRole;
 }
 
 } // namespace
-
-std::string_view combatFidgetClip(int slot) {
-    static constexpr std::array<std::string_view, 4> kClips{"combat_fidget_call_front", "combat_fidget_shift",
-                                                            "combat_fidget_boxersdance", "combat_fidget_shuffle"};
-    if (slot < 0 || static_cast<std::size_t>(slot) >= kClips.size()) {
-        return {};
-    }
-    return kClips.at(static_cast<std::size_t>(slot));
-}
 
 ActionStatus FidgetAction::start(Brain& brain) {
     ScriptServices* services = brain.services();
@@ -64,10 +52,9 @@ ActionStatus FidgetAction::start(Brain& brain) {
     // group, which gives one of its clips when the slot is filled and else the character's own.
     const int anim = m_idle ? kIdleFidgetAnim : (knife ? kKnifeFidgetAnim : m_animId);
     std::optional<std::uint32_t> held;
-    if (const Gang* gang = brain.gang(); anim == kFightFidgetAnim && gang != nullptr) {
-        const int slot = rollRange(brain.random(), 0, kFightFidgetSlots);
-        if (slot < gang->clipGroup(kCombatFidgetClips)) {
-            held = services->playNamedClip(brain, anim, combatFidgetClip(slot), kFidgetFade);
+    if (Gang* gang = brain.gang(); anim == kFightFidgetAnim && gang != nullptr) {
+        if (const std::string_view clip = gang->randomClip(kCombatFidgetClips); !clip.empty()) {
+            held = services->playNamedClip(brain, anim, clip, kFidgetFade);
         }
     }
     if (!held) {
