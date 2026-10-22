@@ -7434,6 +7434,18 @@ subsystem = "Human"
 size = 936
 
 [[function]]
+address = 0x00291d48
+name = "Brain_GetReactionKind"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00291db8
+name = "Brain_GetHelpLevel"
+subsystem = "Human"
+size = 192
+
+[[function]]
 address = 0x00291ed0
 name = "Ambient_MayGesture"
 subsystem = "Human"
