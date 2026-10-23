@@ -169,6 +169,8 @@ def test_the_coordinator_may_not_commit_in_a_unit_worktree_but_may_in_the_main_c
         ("/home/me/unit", "sub", "/home/me/unit/sub"),
         ("/home/me/unit", "/srv/main", "/srv/main"),
         ("/home/me/unit", "/c/x", "/c/x"),
+        # A rooted POSIX path stays one even after a `cd` to a drive path.
+        ("C:/Repositories/unit", "/srv/main", "/srv/main"),
     ],
 )
 def test_a_drive_path_is_absolute_on_every_system(base: str, text: str, folder: str) -> None:

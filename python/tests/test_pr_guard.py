@@ -242,6 +242,26 @@ def test_a_drive_path_is_absolute_on_every_system() -> None:
     assert not GUARD._absolute(PurePosixPath("scratch/PR.md"))
 
 
+class _PosixPath(PurePosixPath):
+    """A path with Linux and macOS rules (`C:/x` is a relative name) whose files all exist, for the call sites."""
+
+    def is_file(self) -> bool:
+        return True
+
+
+def test_a_windows_path_in_the_command_is_followed_with_posix_rules(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both call sites must read `C:/x` as a folder of its own, not a name under the working directory."""
+    monkeypatch.setattr(GUARD, "Path", _PosixPath)
+    monkeypatch.setattr(GUARD, "native", _PosixPath)
+    command = "cd C:/Repositories/scratch && gh pr create --title 'tools: Add x' --body-file PR.md"
+    calls = GUARD.pr_calls(command, cwd="/home/me/unit")
+    assert calls is not None and calls[0].cwd == "C:/Repositories/scratch"
+    runner = FakeRunner()
+    named = GUARD.PrCall("create", title="tools: Add x", body_file="C:/Repositories/scratch/PR.md", cwd="/home/me/unit")
+    assert GUARD.problems(named, runner) == []
+    assert runner.calls[1][0][3] == "C:/Repositories/scratch/PR.md"
+
+
 def test_a_cd_to_an_expansion_skips_the_file_check(tmp_path: Path) -> None:
     (tmp_path / "PR.md").write_text("decoy", encoding="utf-8")
     runner = FakeRunner()

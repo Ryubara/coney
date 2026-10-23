@@ -52,7 +52,8 @@ _CD = re.compile(
     re.MULTILINE | re.IGNORECASE,
 )
 _MSYS = re.compile(r"^/(?P<drive>[A-Za-z])/(?P<rest>.*)$")
-#: A Windows drive path (`C:/x`, or `C:` and a backslash), which is absolute whatever system the hook runs on.
+#: A Windows drive path (`C:/x`, or `C:` and a backslash), absolute whatever system the hook runs on. `pr_guard.py` and
+#: `trailer_guard.py` keep a copy of this pattern: they stand alone and must work when this module does not import.
 _DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
 
 _guards: dict[str, ModuleType] = {}
@@ -142,8 +143,11 @@ def _folder(base: str, text: str, windows: bool | None = None) -> str:
     drive = _MSYS.match(target) if windows else None
     if drive:
         target = f"{drive.group('drive')}:/{drive.group('rest')}"
-    style = ntpath if windows or is_drive_path(target) or is_drive_path(base) else posixpath
-    return style.normpath(style.join(base, target) if base else target)
+    if not windows and target.startswith("/"):
+        return posixpath.normpath(target)
+    if windows or is_drive_path(target) or is_drive_path(base):
+        return ntpath.normpath(ntpath.join(base, target) if base else target)
+    return posixpath.normpath(posixpath.join(base, target) if base else target)
 
 
 def commit_folders(command: str, cwd: str, windows: bool | None = None) -> list[str]:

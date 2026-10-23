@@ -71,6 +71,7 @@ _AGENT_ID = re.compile(r"[A-Za-z0-9_-]+")
 #: A path in the style Git Bash prints (`/c/Users/x`), which Windows programs need as `c:/Users/x`.
 _MSYS = re.compile(r"^/(?P<drive>[A-Za-z])/(?P<rest>.*)$")
 #: A Windows drive path (`C:/x`): a directory of its own on any system, not a name under the working directory.
+#: A copy of `hooklib._DRIVE`: this guard stands alone and must work when `hooklib` does not import.
 _DRIVE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
 
 

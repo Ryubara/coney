@@ -93,6 +93,7 @@ _QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
 #: Git Bash's form of a Windows drive (`/c/...`).
 _MSYS_DRIVE = re.compile(r"^/(?P<drive>[A-Za-z])(?:/|$)")
 #: A Windows drive path (`C:/x`), absolute on any system although `Path` on Linux and macOS reads it as relative.
+#: A copy of `hooklib._DRIVE`: this guard stands alone and must work when `hooklib` does not import.
 _DRIVE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
 #: A value the shell fills in (`$TITLE`, `$(...)`, PowerShell's `(...)`), which the hook cannot read.
 EXPANSION = "$(...)"
