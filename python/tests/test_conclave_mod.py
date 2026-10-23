@@ -171,6 +171,17 @@ def verdict() -> Verdict:
     return verdicts()
 
 
+def test_a_missing_tool_is_named_where_the_check_skips(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # CI has no Claude Code, so there the check skips: it says why, and never skips for a reason of the mod's.
+    unchecked = unavailable.__wrapped__
+    monkeypatch.setattr("conclave_boundary.shutil.which", lambda _name: None)
+    assert unchecked() == "needs Node.js"
+    monkeypatch.setattr("conclave_boundary.shutil.which", lambda name: "node" if name == "node" else None)
+    monkeypatch.setattr("conclave_boundary.ENGINE_TYPES", tmp_path / "missing" / "index.d.ts")
+    reason = unchecked()
+    assert reason is not None and reason.startswith("needs the engine's types")
+
+
 def test_the_mod_has_sources() -> None:
     names = {path.name for path in mod_sources()}
     assert names >= {"register.tsx", "band.tsx", "pane.tsx", "snapshot.ts", "format.ts", "state.ts"}

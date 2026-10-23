@@ -26,7 +26,7 @@ import {
   visibleUnits,
   wrapTokens,
 } from './format'
-import type { MarkKind, Surface, Tone } from './format'
+import type { BandItem, MarkKind, Surface, Tone } from './format'
 import { getHeld, getNow, getOpen, toggleOpen } from './state'
 
 type PaneInput = RenderInputOf<'Pane', Surface>
@@ -239,7 +239,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     from += texts.length
     return items.slice(from - texts.length, from)
   })
-  const summaryLine = (row: (typeof items)[number][], index: number) => (
+  const summaryLine = (row: BandItem[], index: number) => (
     <Box key={`summary-${index}`}>
       {row.flatMap((item, at) => [
         ...(at > 0 ? [<Text key={`sep-${item.key}`} dimColor>{' · '}</Text>] : []),
