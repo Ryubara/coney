@@ -35,10 +35,10 @@ checked](#how-this-was-checked)), not a level. An address of the game's own load
 ### The game's side
 
 The game links stock Lua 4.0.1's loader and virtual machine, compiled as C++. Inferred from the source path
-`lua-4.0.1/src/lmem.cpp` at `0x0032c758` and Lua's own messages in the same block of code
-([Source map](../source-map.md#middleware)), and from the interpreter loop at `0x00334478`, which dispatches 49 cases,
-one per opcode of 4.0's `lopcodes.h`. The functions that matter here (names are ours, after Lua's), all confirmed
-(code) on the pages that own them:
+`lua-4.0.1/src/lmem.cpp` that the function at `0x0032c758` (`Lua_Realloc`) cites, Lua's own messages in the same
+block of code ([Source map](../source-map.md#middleware)), and from the interpreter loop at `0x00334478`, which
+dispatches 49 cases, one per opcode of 4.0's `lopcodes.h`. The functions that matter here (names are ours, after
+Lua's), all confirmed (code) on the pages that own them:
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -206,7 +206,7 @@ The patterns, each with how the decompiler (`decompiler.py`, `expressions.py`) r
 
 | Construct | What it compiles to | How it is recognised |
 | --- | --- | --- |
-| `local a, b = x, y` | the values pushed (missing ones as `PUSHNIL`, extra ones popped); no instruction of its own | values still on the stack when a statement ends, or left under the next statement's operands (also when that statement is an assignment that drops surplus values), or a slot a `GETLOCAL`, `SETLOCAL` or `GETINDEXED` names |
+| `local a, b = x, y` | the values pushed (missing ones as `PUSHNIL`, extra ones popped); no instruction of its own | values still on the stack when a statement ends, or left under the next statement's operands (also when that statement is an assignment that drops surplus values, unless one of them is a call: `a, b = 1, 2, h()` is reported unread, and no disc chunk has one), or a slot a `GETLOCAL`, `SETLOCAL` or `GETINDEXED` names |
 | `x = e` (global, local) | `e`, then `SETGLOBAL` or `SETLOCAL` | the store ends the statement |
 | `t.k = e`, `t[k] = e` | t, k, e, then `SETTABLE 3 3` | `SETTABLE` with its table and key under the value |
 | `a, t.k = x, y` | every target's table and key, then the values, then stores from the last target to the first; `SETTABLE`'s A counts the values above its table | the run of stores after the values, matched from the end |
@@ -286,17 +286,29 @@ that call it) hashed the same way ([Name hashing](../name-hash.md)).
 
 ### Whether the game links Lua's parser {#q-parser}
 
-Nobody has looked at whether the executable also links Lua's parser (`lparser.c`, `llex.c`, `dostring` of source
-text). The lead: Lua's `syntax error` message, which only the lexer and parser raise, sits at `0x0032e6d0` inside
-the Lua block ([Source map](../source-map.md#middleware)), which suggests the parser is linked. What depends on it:
+The parser is linked; whether the game ever uses it is open. Confirmed (code): the function at `0x0032e6d0` (unnamed
+in Ghidra) checks a limit with the message "variables in a multiple assignment" (`0x00575dd0`), on a `,` token reads
+the next target and checks it with "syntax error" (`0x00575df8`), calls itself, and otherwise expects `=` and reads
+the values; for an indexed target it emits opcode 20 (`SETTABLE`). Inferred from that shape and those messages: it
+is `restassign` of `lparser.c`. Its one caller besides itself, `0x0032f048`, is called by `0x0032f1e8`, which
+`0x0032f538` reaches; `0x0032d828` calls `0x0032f538` after setting up a lexer and then checks `<eof> expected`
+(`0x00575d08`), the shape of `luaY_parser`. The one caller of `0x0032d828`, `0x00328d98`, calls it when its input is
+text and `0x00333588` otherwise, as `ldo.c`'s `f_parser` chooses between the parser and the binary loader, and
+`0x00328d98` is passed as a function to `0x00328df0` (the calls confirmed (code); the `lparser.c` and `ldo.c` names
+inferred from the same shapes). So, inferred from `ldo.c`, the parser runs for any buffer the game hands to Lua that
+does not start with the chunk signature. What depends on it:
 whether Coney's VM must also compile source text (a script or console that passes Lua source) or only load compiled
-chunks, which is all the game is known to do. How to find out: in Ghidra, follow the function that loads that message
-to the parser's entry (`luaY_parser`) and the lexer (`luaX_*`), and see whether anything outside the Lua block calls
-them.
+chunks, which is all the game is known to do. How to find out: in Ghidra, follow the callers of `0x00328df0` out of
+the Lua block (`lua_dostring`, `lua_dobuffer`, `lua_dofile`) and see whether any game code passes them text rather
+than a chunk from the WAD.
 
 ## How this was checked
 
 The disc checks are the output of `coney-tools lua decompile --all --roundtrip` on the NTSC-U disc (counts only:
 chunks, functions, unread functions and the round trip's result), with a stock Lua 4.0.1 `luac` built from the
-authors' pinned source by `coney-tools workspace init --fetch lua`, and the opcode and construct counts of a script
-that reads the same chunks ([coney-tools](../../guides/coney-tools.md#lua)).
+authors' pinned source by `coney-tools workspace init --fetch lua` ([coney-tools](../../guides/coney-tools.md#lua)).
+No command prints the opcode and construct counts; they come from a short script, not in the repository, over the
+same chunks (the `scripts/` folder of `coney-tools extract`). To repeat them: load each chunk with `lua4.load`, walk
+its functions with `Proto.walk()`, decode every instruction with `lua4.opcodes.decode` and count by opcode; for the
+constructs, decompile each main function with `lua4.decompile_function` and count the nodes of the tree it returns
+(`lua4.ast`) by type. Print counts only, never a name or a string.

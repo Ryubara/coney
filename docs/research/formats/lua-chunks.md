@@ -17,7 +17,10 @@ into readable Lua outside the repository, for research ([coney-tools](../../guid
 
 ## Original structure
 
-The loader is stock Lua 4.0's `lundump.c`, linked into the executable. Names are ours (after Lua's).
+The loader is stock Lua 4.0.1's `lundump.c`, linked into the executable: inferred from the source path and messages
+of Lua 4.0.1 in the same block of code and from its interpreter loop, as graded on
+[Lua 4.0 bytecode](lua-bytecode.md#the-games-side), and from the four functions below reading the fields in
+`lundump.c`'s order. Names are ours (after Lua's).
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -48,7 +51,9 @@ Confirmed (code) at `0x00333380` for every check. **Disc check:** all 467 Lua en
 
 ### Function prototype
 
-Repeated for the main function and, recursively, every nested one (stock Lua 4.0):
+Repeated for the main function and, recursively, every nested one, in this order: confirmed (code) at `0x00333168`
+`Lua4_LoadFunctionPrototype` and `0x00332db0` `Lua4_LoadFunctionCode`. It is the order of stock Lua 4.0.1's
+`LoadFunction` in `lundump.c`: inferred from Lua 4.0.1's source, read beside those two functions.
 
 ```text
 string  source            "=(none)" on the disc (what `luac -s` writes)
@@ -72,12 +77,16 @@ source is `=(none)`; only `lineDefined` is kept. So no chunk names its locals or
 with `coney-tools lua decompile --all`; what that means for a decompile is on
 [Lua 4.0 bytecode](lua-bytecode.md#what-a-chunk-keeps-and-what-stripping-removes).
 
-Table constructors flush every 62 items. That is stock Lua 4.0.1 (`LFIELDS_PER_FLUSH`, 64 capped at a quarter of
-`MAXSTACK`), not a change in the game's build ([Lua 4.0 bytecode](lua-bytecode.md#limits)).
+Table constructors flush every 62 items: the game's `SETLIST` multiplies its A operand by 62 (confirmed (code) in
+`0x00334478` `luaV_execute`). That is stock Lua 4.0.1 (`LFIELDS_PER_FLUSH`, 64 capped at a quarter of `MAXSTACK`), not
+a change in the game's build: inferred from Lua 4.0.1's `llimits.h`, with the disc's 62,099 `SETLIST`s reproduced by a
+stock `luac` as a disc check ([Lua 4.0 bytecode](lua-bytecode.md#limits)).
 
 ## Behaviour
 
-`doFile` finds a chunk by its WAD name and runs it ([Scripting](../scripting.md)).
+The binding `doFile` finds a chunk by its WAD name (`name .. ".lua"`) and runs it at once in the current Lua state:
+confirmed (code) at `0x003579a0` `ScriptSystem_DoFileLua`, which its wrapper `0x0036d648` `lua_doFile` calls
+([`doFile`](../../references/bindings/script.md#dofile), [Scripting](../scripting.md)).
 
 ## Coney's implementation
 
@@ -87,4 +96,5 @@ Coney's VM loads the same bytecode (`src/scripting/`); `coney-tools` reads it fo
 
 ## Open questions
 
-- 111 of the 467 chunks have no recovered name (the extractor writes them as `<hash>.lua`).
+- 111 of the 467 chunks have no recovered name (the extractor writes them as `<hash>.lua`). What depends on it and how
+  to find out: [Lua 4.0 bytecode](lua-bytecode.md#q-unnamed-chunks).
