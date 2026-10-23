@@ -101,6 +101,7 @@ as a courtesy.
 | Never restart or stop the shared Ghidra server; never undo another engineer's names | [Ghidra](ghidra.md) | None | judgement |
 | Keep Python virtual environments out of worktrees | [How we work](how-we-work.md#shared-machine) | None | written; best point `repo audit --local` |
 | Repository rules override a brief; read the guides first | [AGENTS.md](repo:AGENTS.md) | `.claude/agents/*.md` say so | judgement |
+| The Conclave mod leaves session health (context, prompt cache, `/clear`, HANDOFF, the idle wake) to Tether and only reads | [Conclave](conclave.md#boundary) | `python/tests/test_conclave_mod.py`: the events the mod hooks, the names its sources may not use, the one command it runs | enforced (CI `python`) |
 
 ## Commits and pull requests {#pull-requests}
 

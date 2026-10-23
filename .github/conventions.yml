@@ -909,3 +909,17 @@ runs:
   max_values: 64                                 # values, addresses and run args together
   max_text: 600                                  # characters of the method, and of any other text field
   kinds: [recipe, trace, method]                 # recipe: pcsx2 recipe run; trace: pcsx2 record; method: pcsx2 record-run
+
+conclave:
+  # Conclave, the Claude Code mod in tools/claude-mod (docs/guides/conclave.md). The mod only draws what
+  # `coney-tools conclave snapshot` prints; these are the numbers that command sends along, so the mod holds none.
+  # Tether keeps the session's health (context window, prompt cache, /clear, HANDOFF); nothing here touches that.
+  claude_code: "2.1.309"                         # the Claude Code version the mod is tested on
+  hooks_file: .claude/hooks/hooks.toml           # the roles and helpers the mod's agent list is made from
+  local_seconds: 15                              # between reads of the local snapshot (a `uv` start costs 1-2 s)
+  github_seconds: 60                             # between reads with --github while the pane is open
+  github_idle_seconds: 300                       # ... and while it is closed
+  pane_min_columns: 110                          # under it only the band and the status line show
+  merged_visible_minutes: 10                     # a merged unit stays on the pane this long
+  unit_days: 3                                   # a unit with no worktree stays on the pane this long after its last change
+  claim_red_hours: 6                             # a claim's countdown is red in its last hours (amber from claims.warn_hours)

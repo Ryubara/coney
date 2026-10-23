@@ -18,6 +18,7 @@ from coney_tools import (
     check_cli,
     clips,
     commit_message,
+    conclave_cli,
     coord_cli,
     docs_cli,
     doctor,
@@ -400,6 +401,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     doctor_parser.add_argument("--disc", help="a mounted disc, folder or .iso to check (default: game_dir)")
     coord_cli.add_parser(groups)
+    conclave_cli.add_parser(groups)
     perf_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
@@ -1128,6 +1130,8 @@ def _run(args: argparse.Namespace) -> int:
         return ghidra_cli.run(args)
     if args.group == "coord":
         return coord_cli.run(args)
+    if args.group == "conclave":
+        return conclave_cli.run(args)
     if args.group == "perf":
         return perf_cli.run(args)
     if args.group == "trace":

@@ -889,6 +889,28 @@ class Research:
 
 
 @dataclass(frozen=True)
+class Conclave:
+    """Conclave, the Claude Code mod (docs/guides/conclave.md): what its snapshot sends and how it draws."""
+
+    #: The Claude Code version the mod is tested on; an older engine gets a note in the band.
+    claude_code: str
+    #: The hook settings the snapshot reads the roles and helpers from, relative to the checkout.
+    hooks_file: str
+    #: Seconds between reads of the local snapshot, and of the GitHub one while the pane is open and while it is not.
+    local_seconds: int
+    github_seconds: int
+    github_idle_seconds: int
+    #: The terminal width below which only the band and the status line show.
+    pane_min_columns: int
+    #: How long a merged unit stays on the pane, in minutes.
+    merged_visible_minutes: int
+    #: A unit without a worktree stays on the pane this many days after its last change.
+    unit_days: int
+    #: A claim's countdown turns red in its last hours (it turns amber at `claims.warn_hours`).
+    claim_red_hours: int
+
+
+@dataclass(frozen=True)
 class Conventions:
     """Everything in `.github/conventions.yml`."""
 
@@ -907,6 +929,7 @@ class Conventions:
     stamps: Stamps
     research: Research
     runs: Runs
+    conclave: Conclave
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
@@ -1548,6 +1571,31 @@ def _read_tasks(data: object, where: str) -> Tasks:
     return Tasks(kinds=_texts(table["kinds"], _at(where, "kinds")), file=file, leads=LeadsRules(**numbers))
 
 
+def _read_conclave(data: object, where: str) -> Conclave:
+    """The `conclave` section: what the mod's snapshot reads and how often the mod reads it."""
+    keys = (
+        "claude_code",
+        "hooks_file",
+        "local_seconds",
+        "github_seconds",
+        "github_idle_seconds",
+        "pane_min_columns",
+        "merged_visible_minutes",
+        "unit_days",
+        "claim_red_hours",
+    )
+    table = _table(data, where, keys)
+    numbers = {key: _count(table[key], _at(where, key)) for key in keys[2:]}
+    hooks_file = _text(table["hooks_file"], _at(where, "hooks_file"))
+    if hooks_file.startswith(("/", "\\")) or ".." in hooks_file or ":" in hooks_file:
+        raise _fail(_at(where, "hooks_file"), "a path inside the checkout")
+    if numbers["github_idle_seconds"] < numbers["github_seconds"]:
+        raise _fail(_at(where, "github_idle_seconds"), "must not be less than github_seconds")
+    return Conclave(
+        claude_code=_text(table["claude_code"], _at(where, "claude_code")), hooks_file=hooks_file, **numbers
+    )
+
+
 def _read_label(item: object, where: str, description_max: int) -> Label:
     """One entry of `labels.list`; a colour YAML read as a number must have been quoted."""
     table = _table(item, where, ("name", "color", "description"))
@@ -1968,6 +2016,7 @@ def parse_conventions(data: object) -> Conventions:
         "stamps",
         "research",
         "runs",
+        "conclave",
     )
     table = _table(data, "", ("version", *keys))
     version = table["version"]
@@ -2012,6 +2061,7 @@ def parse_conventions(data: object) -> Conventions:
         stamps=_read_stamps(table["stamps"], "stamps"),
         research=research,
         runs=_read_runs(table["runs"], "runs", research.files.runs),
+        conclave=_read_conclave(table["conclave"], "conclave"),
     )
 
 

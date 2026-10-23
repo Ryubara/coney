@@ -1,0 +1,7 @@
+{
+  "name": "conclave",
+  "version": "0.1.0",
+  "description": "Coney's coordination view: a status band, a status line and a units pane over coney-tools conclave snapshot. Read-only.",
+  "author": { "name": "Coney contributors" },
+  "types": "./types/index.d.ts"
+}

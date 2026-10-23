@@ -305,6 +305,7 @@ nav:
           - Repository commands: guides/coney-tools-repo.md
           - Check, build and benchmark commands: guides/coney-tools-build.md
           - Coordination and setup commands: guides/coney-tools-setup.md
+      - Conclave, the Claude Code mod: guides/conclave.md
       - The debug menus: guides/debug-menu.md
       - Performance: guides/performance.md
       - The run log: guides/run-log.md
