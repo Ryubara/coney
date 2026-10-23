@@ -655,7 +655,8 @@ std::vector<UncuffMeasured> measureUncuffPoses(coney::platform::RenderEngine& en
     level.play()->teleportPlayer(
         coney::world_objects::Placement{.position = {-195.8F, 226.6F, 1.3F}, .headingDegrees = 0.0F});
     int frame = 0;
-    // A local, not written inside REQUIRE: clang-tidy reads the whole lambda as part of REQUIRE's condition.
+    // A local, not written inside REQUIRE (clang-tidy reads a lambda there as part of REQUIRE's condition), and
+    // `++frame` its own statement: bugprone-inc-dec-in-conditions flagged it inside the `?:` condition.
     const auto tapUntilBothCuffed = [&level, &frame] {
         constexpr int kTapEvery = 30;
         ++frame;
