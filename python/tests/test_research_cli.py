@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools research render` and `research import-table`, end to end on a made-up checkout."""
+"""Tests for `research render`, `research where` and `research import-table`, end to end on a made-up checkout."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -216,3 +217,212 @@ def test_import_of_a_page_without_a_function_table_fails(
     assert main(import_args()) == 1
     assert "no function" in capsys.readouterr().err
     assert not (root / "research" / "functions" / "throws.toml").exists()
+
+
+# --- the source files ------------------------------------------------------------------------------------------------
+
+SOURCE_FILES = """\
+[[file]]
+directory = "Combat"
+path = "Combat/Grab.cpp"
+start = 0x00100000
+end = 0x00100400
+functions = 2
+"""
+TOTALS = """\
+[text]
+start = 0x00100000
+end = 0x00300000
+
+[[coverage]]
+key = "k"
+label = "k"
+kind = "researched"
+bytes = 2000000
+
+[[subsystem]]
+name = "Combat"
+ranges = [[0x00100000, 0x00100800]]
+"""
+
+
+def with_source_files(root: Path, files: str = SOURCE_FILES, totals: str = TOTALS) -> None:
+    """Add the source files data and the totals file it is held to."""
+    (root / "research").mkdir(exist_ok=True)
+    (root / "research" / "source-files.toml").write_text(files, encoding="utf-8")
+    (root / "docs" / "progress").mkdir(parents=True, exist_ok=True)
+    (root / "docs" / "progress" / "totals.toml").write_text(totals, encoding="utf-8")
+
+
+def test_check_covers_the_source_files_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A source file outside its directory's range in totals.toml fails the check, and a good one passes."""
+    root = checkout(tmp_path, monkeypatch)
+    with_source_files(root)
+    assert main(["research", "render", "--check"]) == 0
+    with_source_files(root, totals=TOTALS.replace("0x00100800", "0x00100200"))
+    assert main(["research", "render", "--check"]) == 1
+    assert "Combat/Grab.cpp" in capsys.readouterr().err
+
+
+def test_check_reports_a_malformed_source_files_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A schema problem in research/source-files.toml is an error line, like one in the function database."""
+    root = checkout(tmp_path, monkeypatch)
+    with_source_files(root, SOURCE_FILES.replace("functions = 2", "functions = 0"))
+    assert main(["research", "render", "--check"]) == 1
+    assert "source-files.toml" in capsys.readouterr().err
+
+
+SOURCE_MAP = "# Source map\n\n## Files\n\n<!-- source-files:generated -->\n"
+
+
+def test_render_writes_the_source_map_with_its_tables_filled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`render OUT` writes `OUT/research/source-map.md` as the docs build shows it, beside the function lists."""
+    root = checkout(tmp_path / "repo", monkeypatch)
+    with_source_files(root)
+    (root / "docs" / "research" / "source-map.md").write_text(SOURCE_MAP, encoding="utf-8")
+    out = tmp_path / "out"
+    assert main(["research", "render", str(out)]) == 0
+    page = (out / "research" / "source-map.md").read_text(encoding="utf-8")
+    assert "#### Combat" in page
+    assert "`Grab.cpp`" in page
+    assert "source-files:generated" not in page
+    assert (out / "research" / "combat" / "functions.md").is_file()
+
+
+def test_check_wants_the_marker_in_the_source_map(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A source map without its marker would show no files; the check says so."""
+    root = checkout(tmp_path, monkeypatch)
+    with_source_files(root)
+    page = root / "docs" / "research" / "source-map.md"
+    page.write_text(SOURCE_MAP, encoding="utf-8")
+    assert main(["research", "render", "--check"]) == 0
+    page.write_text("# Source map\n", encoding="utf-8")
+    assert main(["research", "render", "--check"]) == 1
+    assert "exactly one" in capsys.readouterr().err
+
+
+def with_glossary(root: Path, text: str) -> None:
+    """Add the glossary file."""
+    (root / "research").mkdir(exist_ok=True)
+    (root / "research" / "glossary.yaml").write_text(text, encoding="utf-8")
+
+
+GLOSSARY = "- term: grab\n  page: combat/grabs.md#grab\n  functions: [0x00100200]\n  also: [hold]\n"
+
+
+def test_render_writes_the_find_pages(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`render OUT` writes the address page, and the words page once the glossary file exists."""
+    root = checkout(tmp_path / "repo", monkeypatch)
+    out = tmp_path / "out"
+    assert main(["research", "render", str(out)]) == 0
+    assert (out / "research" / "find" / "addresses.md").is_file()
+    assert not (out / "research" / "find" / "words.md").exists()
+    with_glossary(root, GLOSSARY)
+    assert main(["research", "render", str(out)]) == 0
+    words = (out / "research" / "find" / "words.md").read_text(encoding="utf-8")
+    assert "| grab | [combat/grabs.md#grab](../combat/grabs.md#grab) | `0x00100200` `Grab_Start` | hold |" in words
+
+
+def test_check_covers_the_glossary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A word whose page, section or function does not exist fails the check, naming the word."""
+    root = checkout(tmp_path, monkeypatch)
+    with_glossary(root, GLOSSARY)
+    assert main(["research", "render", "--check"]) == 0
+    with_glossary(root, GLOSSARY.replace("#grab", "#nowhere").replace("0x00100200", "0x00100999"))
+    assert main(["research", "render", "--check"]) == 1
+    err = capsys.readouterr().err
+    assert "grab: the page docs/research/combat/grabs.md has no section 'nowhere'" in err
+    assert "0x00100999 is no function entry" in err
+
+
+def test_check_reports_a_malformed_glossary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A glossary that is no list of entries is an error line naming the file."""
+    root = checkout(tmp_path, monkeypatch)
+    with_glossary(root, "term: grab\n")
+    assert main(["research", "render", "--check"]) == 1
+    assert "research/glossary.yaml" in capsys.readouterr().err
+
+
+def test_where_answers_an_address(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An address gives the function, its owning page and its database entry."""
+    checkout(tmp_path, monkeypatch)
+    assert main(["research", "where", "0x00100200"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("0x00100200 Grab_Start (function, 64 bytes)")
+    assert "owning page: none" in out
+    assert "function database: combat.toml: confirmed-code" in out
+
+
+def test_where_answers_a_name_and_a_glossary_word(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A Ghidra name is an address query, and a glossary word names its page and functions."""
+    root = checkout(tmp_path, monkeypatch)
+    with_glossary(root, GLOSSARY)
+    assert main(["research", "where", "Grab_Start"]) == 0
+    assert capsys.readouterr().out.startswith("0x00100200 Grab_Start")
+    assert main(["research", "where", "hold"]) == 0
+    out = capsys.readouterr().out
+    assert "the glossary term 'grab'" in out
+    assert "function: 0x00100200 Grab_Start" in out
+
+
+def test_where_prints_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """`--json` prints one document with the same facts."""
+    checkout(tmp_path, monkeypatch)
+    assert main(["research", "where", "0x00100200", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["query"] == "0x00100200"
+    assert data["addresses"][0]["name"] == "Grab_Start"
+
+
+def test_where_exits_1_with_a_hint_when_nothing_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Nothing found is exit 1 and a line saying what to give, in JSON mode too."""
+    checkout(tmp_path, monkeypatch)
+    assert main(["research", "where", "zzzz"]) == 1
+    assert "nothing found for 'zzzz'" in capsys.readouterr().err
+    assert main(["research", "where", "zzzz", "--json"]) == 1
+
+
+def test_where_exits_2_for_a_query_that_is_no_address_and_for_bad_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`0xzz` is a usage error, and a malformed data file is a configuration error."""
+    root = checkout(tmp_path, monkeypatch)
+    assert main(["research", "where", "0xzz"]) == 2
+    assert "not an address" in capsys.readouterr().err
+    with_glossary(root, "term: grab\n")
+    assert main(["research", "where", "0x00100200"]) == 2
+
+
+def test_check_says_what_it_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The success line counts the functions, the source files and the glossary words, so a missing file shows."""
+    root = checkout(tmp_path, monkeypatch)
+    assert main(["research", "render", "--check"]) == 0
+    assert capsys.readouterr().out.strip() == "1 function in 1 system, 0 source files, 0 words: ok"
+    with_source_files(root)
+    with_glossary(root, GLOSSARY)
+    assert main(["research", "render", "--check"]) == 0
+    assert capsys.readouterr().out.strip() == "1 function in 1 system, 1 source file, 1 word: ok"
+
+
+def test_where_rejects_an_empty_query(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An empty query matches every name, so it is a usage error (exit 2), not an answer."""
+    checkout(tmp_path, monkeypatch)
+    assert main(["research", "where", ""]) == 2

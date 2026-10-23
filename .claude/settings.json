@@ -70,6 +70,7 @@
       "Bash(uv run --project python coney-tools natives render*)",
       "Bash(uv run --project python coney-tools refs render*)",
       "Bash(uv run --project python coney-tools research render*)",
+      "Bash(uv run --project python coney-tools research where*)",
       "Bash(uv run --project python coney-tools research import-table*)",
       "Bash(uv run --project python coney-tools progress show*)",
       "Bash(uv run --project python pytest *)",

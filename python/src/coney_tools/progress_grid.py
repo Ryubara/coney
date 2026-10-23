@@ -12,25 +12,26 @@ colour never invents a definition. A function is in exactly one state, the furth
 * `untouched`: none of the above.
 
 Blocks are the tracker's subsystems (the original's top-level source directories) in address order, the unplaced
-code last. Each function also knows its source file when the source map's per-file tables place it, and the Coney
-source line that carries its `@orig` tag, for the page's tooltips. Nothing generated is committed: the docs build
-calls `build_grid` and writes the pictures and numbers into the site (progress_site.py).
+code last. Each function also knows its source file when the source map's per-file ranges
+(research/source-files.toml) place it, and the Coney source line that carries its `@orig` tag, for the page's tooltips.
+Nothing generated is committed: the docs build calls `build_grid` and writes the pictures and numbers into the site
+(progress_site.py).
 
-Research: docs/research/source-map.md (the file tables), docs/guides/research-workflow.md#understood
+Research: docs/research/source-map.md (the file ranges, as research/source-files.toml),
+docs/guides/research-workflow.md#understood
 """
 
 from __future__ import annotations
 
-import bisect
 import math
-import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from coney_tools import progress, progress_picture, progress_render
+from coney_tools import progress, progress_picture, progress_render, source_files
 from coney_tools.progress import UNATTRIBUTED, Progress
+from coney_tools.source_files import FileRange
 
 #: States from furthest to least; a function shows the first one that holds.
 STATES = ("audited", "reimplemented", "understood", "researched", "untouched")
@@ -65,10 +66,6 @@ CLASSES = {state: f"cg-s-{state}" for state in STATES}
 UNPLACED = frozenset({UNATTRIBUTED, "link-once"})
 #: Bytes one square stands for in the picture by size (a function gets at least one square).
 BYTES_PER_SQUARE = 512
-SOURCE_MAP = Path("docs/research/source-map.md")
-_FILE_ROW = re.compile(r"^\|\s*`(?P<file>[^`|]+)`\s*\|\s*`0x(?P<start>[0-9a-fA-F]+)`-`0x(?P<end>[0-9a-fA-F]+)`\s*\|")
-_HEADING = re.compile(r"^###\s+(?P<name>\S.*?)\s*$")
-_FILES_SECTION = "## Files by subsystem"
 
 
 # --- the audit hook ---------------------------------------------------------------------------------------------------
@@ -84,54 +81,6 @@ def load_audited(root: Path) -> frozenset[int]:
     """
     del root
     return frozenset()
-
-
-# --- the source map's file tables -------------------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class FileRange:
-    """A source file of the original and the `[start, end)` addresses the source map attributes to it."""
-
-    path: str
-    start: int
-    end: int
-
-
-def parse_source_files(text: str) -> list[FileRange]:
-    """The file ranges of the source map's "Files by subsystem" tables, sorted by address.
-
-    A `### Directory` heading names the directory of the rows below it; a row's first cell is the file inside it
-    (`fileio/Wad.cpp` under `Device/ps2` is `Device/ps2/fileio/Wad.cpp`). A file with no range ("none (...)") is
-    skipped. Ranges the map gives are inferred, except around an anchor: the evidence is on the source map's page.
-    """
-    ranges: list[FileRange] = []
-    section = False
-    directory = ""
-    for line in text.splitlines():
-        if line.startswith("## "):
-            section = line.strip() == _FILES_SECTION
-            continue
-        if not section:
-            continue
-        heading = _HEADING.match(line)
-        if heading:
-            directory = heading["name"]
-            continue
-        row = _FILE_ROW.match(line)
-        if row and directory:
-            start, end = int(row["start"], 16), int(row["end"], 16)
-            if end > start:
-                ranges.append(FileRange(f"{directory}/{row['file']}", start, end))
-    return sorted(ranges, key=lambda r: r.start)
-
-
-def file_of(ranges: list[FileRange], starts: list[int], address: int) -> str:
-    """The source file whose range holds `address`, or an empty string."""
-    i = bisect.bisect_right(starts, address) - 1
-    if i >= 0 and address < ranges[i].end:
-        return ranges[i].path
-    return ""
 
 
 # --- the model --------------------------------------------------------------------------------------------------------
@@ -221,24 +170,21 @@ class Grid:
         return len(chosen), sum(f.size for f in chosen)
 
 
-def build_grid(state: Progress, root: Path, audited: Iterable[int] = (), source_map: str | None = None) -> Grid | None:
+def build_grid(
+    state: Progress, root: Path, audited: Iterable[int] = (), files: Iterable[FileRange] | None = None
+) -> Grid | None:
     """The picture's model for the checkout at `root`, or None when it has no Ghidra listing (nothing to draw).
 
-    `audited` is the set of addresses the fidelity audit passed (`load_audited`). `source_map` is the page's text; it
-    is read from `root` when not given.
+    `audited` is the set of addresses the fidelity audit passed (`load_audited`). `files` are the source files'
+    ranges; they are read from `research/source-files.toml` under `root` when not given.
     """
     understanding = state.understanding
     if understanding is None:
         return None
     audit = frozenset(audited)
     reimplemented = {f.address for f in state.functions}
-    if source_map is None:
-        try:
-            source_map = (root / SOURCE_MAP).read_text(encoding="utf-8")
-        except OSError:
-            source_map = ""
-    files = parse_source_files(source_map)
-    starts = [r.start for r in files]
+    ranges = sorted(files, key=lambda r: r.start) if files is not None else list(source_files.load_ranges(root))
+    starts = [r.start for r in ranges]
     coney: dict[int, str] = {}
     for tag in progress.scan_orig_tags(root):
         coney.setdefault(tag.address, tag.where)
@@ -266,7 +212,7 @@ def build_grid(state: Progress, root: Path, audited: Iterable[int] = (), source_
                 level,
                 status.understood,
                 placed,
-                file_of(files, starts, f.address),
+                source_files.file_of(ranges, starts, f.address),
                 coney.get(f.address, ""),
             )
         )

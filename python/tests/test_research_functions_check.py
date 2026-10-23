@@ -180,16 +180,12 @@ def owning(owns: str) -> str:
     return f"---\nkind: topic\nsystem: combat\nowns:\n{owns}\n---\n" + GRABS
 
 
-SOURCE_MAP = """\
-# Source map
-
-## Files by subsystem
-
-### Combat
-
-| File | Range |
-| --- | --- |
-| `Grab.cpp` | `0x00100000`-`0x00100400` |
+SOURCE_FILES = """[[file]]
+directory = "Combat"
+path = "Combat/Grab.cpp"
+start = 0x00100000
+end = 0x00100400
+functions = 2
 """
 
 
@@ -218,11 +214,9 @@ def test_an_entry_on_a_page_that_owns_other_addresses_is_an_error(tmp_path: Path
 
 
 def test_a_page_owns_an_address_through_its_source_file(tmp_path: Path) -> None:
-    """`owns.files` names a source file; the source map's range for that file holds the address."""
-    root = make_root(
-        tmp_path,
-        extra_pages={"combat/grabs.md": owning('  files: ["Combat/Grab.cpp"]'), "source-map.md": SOURCE_MAP},
-    )
+    """`owns.files` names a source file; the range research/source-files.toml gives that file holds the address."""
+    root = make_root(tmp_path, extra_pages={"combat/grabs.md": owning('  files: ["Combat/Grab.cpp"]')})
+    (root / "research" / "source-files.toml").write_text(SOURCE_FILES, encoding="utf-8")
     assert run(root).errors == []
 
 

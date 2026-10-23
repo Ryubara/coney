@@ -1,6 +1,7 @@
 # The denominators of the progress tracker (docs/progress/index.md), taken by hand from the source map,
 # docs/research/source-map.md. Update this file in the same commit as a source-map change that moves a range or a
-# coverage figure, then run `uv run --project python coney-tools progress check`.
+# coverage figure, then run `uv run --project python coney-tools progress check`. A file's own range is
+# research/source-files.toml; `coney-tools research render --check` holds each file inside its directory's range below.
 #
 # Everything here is about SLUS_212.15 (NTSC-U). Addresses are virtual addresses; a range is [start, end): `end` is
 # the first byte after it. Evidence: the ranges and the per-subsystem totals derived from them are inferred, like the

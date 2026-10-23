@@ -592,12 +592,6 @@ history = 4
 length = 146
 stale-wording = 2
 
-["docs/research/source-map.md"]
-front-matter = 1
-skeleton = 7
-evidence = 197
-address-resolve = 2
-
 ["docs/research/stealth.md"]
 front-matter = 1
 skeleton = 1

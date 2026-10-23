@@ -839,6 +839,8 @@ research:
     runs: research/runs                                    # one <id>.toml per run record a runtime claim cites
     legacy: research/legacy.toml                           # pages that do not meet the standard yet
     functions: research/functions                          # the function database, one <system>.toml each
+    source_files: research/source-files.toml               # the original's source files and their addresses (the source map's file tables)
+    glossary: research/glossary.yaml                       # the player's words, each linked to its page and functions
   front_matter: [kind, system, owns]                       # the keys a page's YAML front matter may hold
   owns_keys: [files, ranges, functions]                    # the keys of its `owns`
   verified_max_chars: 200                                  # the "Verified against" line: one line, at most this long

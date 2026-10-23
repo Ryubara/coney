@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from coney_tools import fails_first, orig_compare, orig_study, stamp_sign, stamps, unit
+from coney_tools import fails_first, orig_compare, orig_study, research_where, stamp_sign, stamps, unit
 from coney_tools.config import find_repo_root, load_config, local_config_file
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
@@ -31,8 +31,9 @@ def add_parser(groups: Any) -> None:
         description=(
             "Reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, "
             "callers, callees and globals under the task's scratch folder (never committed), numbers the statements, "
-            "cuts them into pieces and appends a `studied` stamp. With --recut it re-cuts the saved decompile without "
-            "Ghidra. Exit 3 when no ghidra-mcp answers."
+            "cuts them into pieces and appends a `studied` stamp. It ends with the lines of `research where` for the "
+            "address (the owning page, the function database entry, the pages that cite it). With --recut it re-cuts "
+            "the saved decompile without Ghidra. Exit 3 when no ghidra-mcp answers."
         ),
     )
     study.add_argument("address", help="the function's address, such as 0x00230d00")
@@ -177,6 +178,9 @@ def _study(
     # The pairs header binds the decompile's hash, so a rename makes the file stale as much as a change does.
     if result.change in ("changed", "renamed") and mapping.is_file():
         print(f"  the pairs file {mapping} was made for the old study: run `original compare {address} --carry`")
+    # Where the function is already described, so a study starts from the page that owns it (research where).
+    for line in research_where.study_lines(root, int(address, 16)):
+        print(line)
     return 0
 
 

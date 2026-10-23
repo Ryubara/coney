@@ -4,7 +4,8 @@ No file names the repository's or the site's address: they come from the build. 
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
 built from. It also adds the Changelog page, written from the git history at build time, fills the progress page's
 tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress numbers into the
-site, and writes each research system's function list page from research/functions/, so none of those is committed.
+site, writes each research system's function list page from research/functions/ and fills the source map's file
+tables from research/source-files.toml, so none of those is committed.
 """
 
 import os
@@ -56,6 +57,8 @@ _progress_site = None
 # The committed progress pages, whose markers the build fills.
 _PROGRESS_PAGE = "progress/index.md"
 _HISTORY_PAGE = "progress/history.md"
+# The committed source map, whose marker the build fills with the file tables of research/source-files.toml.
+_SOURCE_MAP_PAGE = "research/source-map.md"
 
 
 def _use_checkout_tools(root):
@@ -138,20 +141,35 @@ def build_progress_site(root, state, repo_url=None):
     )
 
 
-def research_function_pages(root):
-    """The function list page of each research system, as {path in the site: Markdown}.
+def research_generated_pages(root):
+    """The pages made from the research data, as {path in the site: Markdown}.
 
-    They are made from research/functions/*.toml (coney_tools.research_render) and never committed. Raises
-    RuntimeError, naming every problem, when the function database does not pass `coney-tools research render --check`.
+    The function list of each research system is made from research/functions/*.toml (coney_tools.research_data) and
+    never committed. Raises RuntimeError, naming every problem, when the research data does not pass
+    `coney-tools research render --check`.
     """
     _use_checkout_tools(root)
-    from coney_tools import research_functions, research_functions_check, research_render
+    from coney_tools import research_data
 
-    findings = research_functions_check.check_root(Path(root))
+    findings = research_data.check_root(Path(root))
     if findings.errors:
-        raise RuntimeError("the function database has problems:\n  " + "\n  ".join(findings.errors))
-    systems = research_functions.load_all(Path(root), research_functions_check.functions_dir(Path(root)))
-    return research_render.render_pages(Path(root), systems)
+        raise RuntimeError("the research data has problems:\n  " + "\n  ".join(findings.errors))
+    return research_data.generated_pages(Path(root))
+
+
+def fill_source_map_page(markdown, root):
+    """The source map page's Markdown with its marker replaced by the file tables of research/source-files.toml.
+
+    Raises RuntimeError, naming the problem, when the data or the marker is wrong.
+    """
+    _use_checkout_tools(root)
+    from coney_tools import research_data
+    from coney_tools.config import ConfigError
+
+    try:
+        return research_data.fill_source_map(Path(root), markdown)
+    except ConfigError as error:
+        raise RuntimeError(str(error)) from error
 
 
 def progress_badge_files(state):
@@ -165,12 +183,14 @@ def on_page_markdown(markdown, config, page=None, **_):
     """Rewrites `repo:<path>` links to the file on the default branch, before MkDocs validates links.
 
     On the progress page it first replaces the marker with the generated tables and pictures, on the history page with
-    the chart and the table of days.
+    the chart and the table of days, on the source map with the file tables.
     """
     if page is not None and page.file.src_uri == _PROGRESS_PAGE and _progress_state is not None:
         markdown = fill_progress_page(markdown, _progress_state, _progress_site)
     if page is not None and page.file.src_uri == _HISTORY_PAGE and _progress_site is not None:
         markdown = fill_history_page(markdown, _progress_site)
+    if page is not None and page.file.src_uri == _SOURCE_MAP_PAGE:
+        markdown = fill_source_map_page(markdown, Path(config.config_file_path).parent)
     base = config.get("repo_url")
     if not base:
         # No repository to point at (a copy without git): an empty anchor keeps the strict build passing.
@@ -275,10 +295,10 @@ def on_files(files, config):
     for uri, text in _progress_site.files.items():
         files.append(File.generated(config, uri, content=text))
     try:
-        function_pages = research_function_pages(root)
+        research_pages = research_generated_pages(root)
     except (RuntimeError, ImportError, OSError) as error:
-        raise PluginError(f"research functions: {error}") from error
-    for uri, text in function_pages.items():
+        raise PluginError(f"research data: {error}") from error
+    for uri, text in research_pages.items():
         files.append(File.generated(config, uri, content=text))
     for uri in _SERVED_ASSETS:
         if not (root / uri).is_file():

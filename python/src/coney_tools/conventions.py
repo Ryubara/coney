@@ -843,6 +843,10 @@ class ResearchFiles:
     legacy: str
     #: The function database: one `<system>.toml` per system (docs/guides/research-function-database.md).
     functions: str
+    #: The source files of the executable with the addresses the source map gives each (coney_tools.source_files).
+    source_files: str
+    #: The player's words linked to the pages and functions that describe them (coney_tools.research_glossary).
+    glossary: str
 
 
 @dataclass(frozen=True)
@@ -1859,7 +1863,11 @@ def _read_research(data: object, where: str) -> Research:
     )
     table = _table(data, where, keys)
     files_where = _at(where, "files")
-    files = _table(table["files"], files_where, ("ghidra_functions", "elf_sections", "runs", "legacy", "functions"))
+    files = _table(
+        table["files"],
+        files_where,
+        ("ghidra_functions", "elf_sections", "runs", "legacy", "functions", "source_files", "glossary"),
+    )
     inferred_where = _at(where, "inferred_kind")
     inferred = _table(table["inferred_kind"], inferred_where, ("default", "folders"))
     aliases = _mapping(table["aliases"], _at(where, "aliases"))
@@ -1907,6 +1915,8 @@ def _read_research(data: object, where: str) -> Research:
             runs=_text(files["runs"], _at(files_where, "runs")),
             legacy=_text(files["legacy"], _at(files_where, "legacy")),
             functions=_text(files["functions"], _at(files_where, "functions")),
+            source_files=_text(files["source_files"], _at(files_where, "source_files")),
+            glossary=_text(files["glossary"], _at(files_where, "glossary")),
         ),
         front_matter=_texts(table["front_matter"], _at(where, "front_matter")),
         owns_keys=_texts(table["owns_keys"], _at(where, "owns_keys")),

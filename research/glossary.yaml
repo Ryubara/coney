@@ -1,0 +1,11 @@
+# The player's words, each linked to the research page that describes it and the functions where its logic lives.
+# A player says "sprint", "stamina" or "mount"; the original's code calls it something else. A study adds a word here
+# when it finds where the behaviour lives. `coney-tools research where WORD` and research/find/words.md answer from it.
+# The file is a list; the schema, the checks and how to add a word: docs/guides/research-where.md#words.
+#
+#   - term: mount                          # the word a player uses (required)
+#     page: combat/grabs.md#mount          # page below docs/research, optionally with a section (required)
+#     functions: [0x0026f008, 0x0027ec20]  # entry addresses of the functions where it lives (optional)
+#     also: [pin, ground and pound]        # other words for the same thing (optional)
+#
+# No word is listed yet.

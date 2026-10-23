@@ -1,0 +1,1653 @@
+# The source files of the executable (SLUS_212.15) and the addresses the source map gives each: one [[file]] each,
+# in the source map's order (by directory, then by name). A range is inferred; an anchor, a function that loads the
+# file's path string, is confirmed (code). Fields: docs/research/source-map.md; checks: `research render --check`;
+# the docs build fills the file tables of docs/research/source-map.md from this file.
+
+[[file]]
+directory = "Animation"
+path = "Animation/Animation.cpp"
+start = 0x00104630
+end = 0x001048a0
+functions = 3
+anchors = [
+  {address = 0x00104818, tags = ["AnimationSystem"]},
+]
+
+[[file]]
+directory = "Animation"
+path = "Animation/AnimationBlend.cpp"
+start = 0x001048a0
+end = 0x00105570
+functions = 9
+stub = 0x0010b9d0
+anchors = [
+  {address = 0x001048a0, tags = ["FreeList<AnimTask>"]},
+]
+
+[[file]]
+directory = "Animation"
+path = "Animation/AnimationMgr.cpp"
+start = 0x0010b9f0
+end = 0x0010bc38
+functions = 3
+stub = 0x0010d738
+anchors = [
+  {address = 0x0010b9f0, tags = ["FreeList<WarAnimInstance>"]},
+]
+
+[[file]]
+directory = "Audio"
+path = "Audio/MusicList.cpp"
+start = 0x0010edd0
+end = 0x0010ee90
+functions = 1
+stub = 0x0010f5f0
+anchors = [
+  {address = 0x0010edd0, tags = ["MusicTrack"]},
+]
+
+[[file]]
+directory = "Audio"
+path = "Audio/SoundCallBack.cpp"
+path_string = 0x00546ec0
+functions = 0
+
+[[file]]
+directory = "Audio"
+path = "Audio/SoundList.cpp"
+start = 0x001118d0
+end = 0x00111990
+functions = 1
+anchors = [
+  {address = 0x001118d0, tags = ["Sound"]},
+]
+
+[[file]]
+directory = "Audio"
+path = "Audio/SoundListener.cpp"
+start = 0x00111ac0
+end = 0x00112d00
+functions = 21
+anchors = [
+  {address = 0x00111ac0, tags = ["FreeList<SoundTask>"]},
+]
+
+[[file]]
+directory = "Audio"
+path = "Audio/SoundMatrix.cpp"
+start = 0x001164a8
+end = 0x001167b8
+functions = 1
+anchors = [
+  {address = 0x001164a8, tags = ["SoundVoice", "vags/character/voices/"]},
+]
+
+[[file]]
+directory = "Camera"
+path = "Camera/Cam_ICamera.cpp"
+start = 0x0011e1b0
+end = 0x00120230
+functions = 22
+stub = 0x00123610
+anchors = [
+  {address = 0x0011e1b0, tags = ["Cam_Scene", "Cam_Locked"]},
+  {address = 0x0011e440, tags = []},
+  {address = 0x0011f9e0, tags = ["Cam_Follow"]},
+]
+more_anchors = 9
+
+[[file]]
+directory = "Camera"
+path = "Camera/Cam_Follow.cpp"
+start = 0x001303c8
+end = 0x00130990
+functions = 1
+stub = 0x00134b70
+anchors = [
+  {address = 0x001303c8, tags = ["TPhysicsBoundSphere"]},
+]
+
+[[file]]
+directory = "Camera"
+path = "Camera/Cam_Mini.cpp"
+start = 0x00137670
+end = 0x00137808
+functions = 1
+stub = 0x00137cb0
+anchors = [
+  {address = 0x00137670, tags = ["TPhysicsBoundSphere"]},
+]
+
+[[file]]
+directory = "Camera"
+path = "Camera/Cam_Mug.cpp"
+start = 0x00138078
+end = 0x00139d48
+functions = 3
+stub = 0x00139d48
+anchors = [
+  {address = 0x00138078, tags = ["TPhysicsBoundSphere"]},
+  {address = 0x00138b90, tags = ["TPhysicsBoundSphere", "vags/misc/mug_outro"]},
+]
+
+[[file]]
+directory = "Camera"
+path = "Camera/Cam_Power.cpp"
+start = 0x0013a818
+end = 0x0013b118
+functions = 1
+anchors = [
+  {address = 0x0013a818, tags = ["TPhysicsBoundSphere"]},
+]
+
+[[file]]
+directory = "Core"
+path = "Core/ChunkSystem.cpp"
+start = 0x001440a0
+end = 0x001446d0
+functions = 9
+stub = 0x001449e8
+anchors = [
+  {address = 0x00144180, tags = []},
+  {address = 0x00144398, tags = []},
+]
+
+[[file]]
+directory = "Debug"
+path = "Debug/DebugStream.cpp"
+path_string = 0x00549cc0
+functions = 0
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/DS_PS2Device.cpp"
+start = 0x001483e8
+end = 0x00148580
+functions = 3
+stub = 0x001485a8
+anchors = [
+  {address = 0x001483e8, tags = ["PS2StreamFileSys"]},
+  {address = 0x00148460, tags = ["PS2FileSys", "debug/"]},
+  {address = 0x001484d8, tags = ["FS_FSToStreamFSFileSys"]},
+]
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/DS_PS2FileSys.cpp"
+start = 0x00148608
+end = 0x00148828
+functions = 5
+anchors = [
+  {address = 0x00148608, tags = ["PS2DbgFile"]},
+  {address = 0x001486c0, tags = []},
+]
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/DS_PS2TCPSocket.cpp"
+path_string = 0x0054a438
+functions = 0
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/fileio/DVDWadIndexPS2.cpp"
+start = 0x00149040
+end = 0x00149248
+functions = 3
+anchors = [
+  {address = 0x00149040, tags = ["DVDWadIndex"]},
+  {address = 0x00149160, tags = ["DVDWadEntry"]},
+]
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/fileio/RockWadIndexPS2.cpp"
+path_string = 0x0054a6b8
+functions = 0
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/memorycard/mcbase.cpp"
+start = 0x00149f30
+end = 0x0014b9d0
+functions = 25
+anchors = [
+  {address = 0x00149f30, tags = ["QueueDataType", "Queue<MC_FILE *>"]},
+]
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/sound/msaudiodevice.cpp"
+start = 0x0014ba18
+end = 0x0014d528
+functions = 55
+stub = 0x0014d508
+anchors = [
+  {address = 0x0014bbd8, tags = ["cdrom0:\\IOP\\BFW.SND;1", "cdrom0:\\SLUS_212.15;1"]},
+]
+
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/Shell/Core/shellMemory.cpp"
+path_string = 0x0054d720
+functions = 0
+
+[[file]]
+directory = "FileIO"
+path = "FileIO/FS_MemoryFile.cpp"
+start = 0x001541e0
+end = 0x00154440
+functions = 8
+anchors = [
+  {address = 0x001541e0, tags = []},
+  {address = 0x00154290, tags = []},
+  {address = 0x001543e0, tags = []},
+]
+
+[[file]]
+directory = "FileIO"
+path = "FileIO/FS_TCPSocketFileSys.cpp"
+path_string = 0x0054e1a8
+functions = 0
+
+[[file]]
+directory = "FileIO"
+path = "FileIO/FS_WriteCachedFile.cpp"
+path_string = 0x0054e4d8
+functions = 0
+
+[[file]]
+directory = "FileIO"
+path = "FileIO/StreamManager.cpp"
+start = 0x001547b0
+end = 0x001549a8
+functions = 3
+stub = 0x00155b10
+anchors = [
+  {address = 0x001547b0, tags = ["FileManager"]},
+  {address = 0x001548c0, tags = ["File Stream Buffer"]},
+  {address = 0x00154950, tags = []},
+]
+
+[[file]]
+directory = "GameModes"
+path = "GameModes/Gm_Error.cpp"
+start = 0x00156dd8
+end = 0x00157df8
+functions = 11
+stub = 0x00157e28
+anchors = [
+  {address = 0x00156dd8, tags = []},
+  {address = 0x00156f90, tags = []},
+]
+
+[[file]]
+directory = "GameModes"
+path = "GameModes/Gm_MemoryCard.cpp"
+start = 0x0015a270
+end = 0x0015c450
+functions = 38
+stub = 0x0015c450
+anchors = [
+  {address = 0x0015baa0, tags = []},
+  {address = 0x0015c2c0, tags = []},
+]
+
+[[file]]
+directory = "GameModes"
+path = "GameModes/Gm_XboxSaveSystem.cpp"
+start = 0x0015f560
+end = 0x0015fe30
+functions = 11
+stub = 0x0015fe30
+anchors = [
+  {address = 0x0015f830, tags = []},
+  {address = 0x0015fd20, tags = []},
+]
+
+[[file]]
+directory = "GameModes"
+path = "GameModes/InitLevel.cpp"
+start = 0x0015fe50
+end = 0x001607b8
+functions = 2
+stub = 0x00160dd8
+anchors = [
+  {address = 0x0015fe90, tags = ["load", "Wind_Manager"]},
+]
+
+[[file]]
+directory = "GameModes"
+path = "GameModes/Initialize.cpp"
+start = 0x00160df8
+end = 0x00161218
+functions = 1
+stub = 0x00162568
+anchors = [
+  {address = 0x00160df8, tags = ["Timer", "GameTimer"]},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Animations.cpp"
+start = 0x0016e388
+end = 0x0016fcc8
+functions = 12
+anchors = [
+  {address = 0x0016e420, tags = []},
+  {address = 0x0016e740, tags = []},
+  {address = 0x0016eb10, tags = []},
+]
+more_anchors = 2
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/CameraGarbage.cpp"
+start = 0x0016fcc8
+end = 0x00170600
+functions = 8
+anchors = [
+  {address = 0x0016fcc8, tags = ["ICameraGarbage"]},
+  {address = 0x00170330, tags = ["TGarbageData"]},
+  {address = 0x00170550, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/CameraGroundFog.cpp"
+start = 0x00171540
+end = 0x00171b18
+functions = 6
+anchors = [
+  {address = 0x00171540, tags = ["ICameraGroundFog"]},
+  {address = 0x00171920, tags = ["TGroundFogData"]},
+  {address = 0x00171a68, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Car.cpp"
+start = 0x00173170
+end = 0x00173928
+functions = 4
+anchors = [
+  {address = 0x00173170, tags = []},
+  {address = 0x00173718, tags = ["CarInstance"]},
+  {address = 0x00173878, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/CarModel.cpp"
+start = 0x00173bd0
+end = 0x00174200
+functions = 1
+anchors = [
+  {address = 0x00173bd0, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Character.cpp"
+start = 0x001775d8
+end = 0x00177eb8
+functions = 5
+anchors = [
+  {address = 0x001775d8, tags = []},
+  {address = 0x00177b80, tags = ["CharacterInstance"]},
+  {address = 0x00177e00, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/CharacterList.cpp"
+path_string = 0x00551e28
+functions = 0
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/CharacterModel.cpp"
+start = 0x00178178
+end = 0x00178b30
+functions = 5
+anchors = [
+  {address = 0x00178208, tags = []},
+  {address = 0x001784f0, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/DependencyList.cpp"
+path_string = 0x00551f60
+functions = 0
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/FallingEmbers.cpp"
+start = 0x00178fd8
+end = 0x00179138
+functions = 2
+stub = 0x0017b1c0
+anchors = [
+  {address = 0x00178fd8, tags = ["IFallingEmbers"]},
+  {address = 0x001790a8, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/LightManager.cpp"
+start = 0x0017d640
+end = 0x0017e6c0
+functions = 5
+anchors = [
+  {address = 0x0017d640, tags = ["LightManager", "part_page1"]},
+  {address = 0x0017e680, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Model.cpp"
+start = 0x0017f380
+end = 0x0017f608
+functions = 2
+anchors = [
+  {address = 0x0017f4a0, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Object.cpp"
+start = 0x001809c0
+end = 0x00181170
+functions = 4
+anchors = [
+  {address = 0x001809c0, tags = []},
+  {address = 0x00180f58, tags = ["Object"]},
+  {address = 0x001810c0, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/ObjectList.cpp"
+path_string = 0x005525b0
+functions = 0
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/ObjectModel.cpp"
+start = 0x001814f0
+end = 0x00181b20
+functions = 1
+anchors = [
+  {address = 0x001814f0, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/ParticlePage.cpp"
+start = 0x00181b68
+end = 0x00182820
+functions = 10
+anchors = [
+  {address = 0x00181ca0, tags = []},
+  {address = 0x001821d0, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/ParticlePageList.cpp"
+path_string = 0x005527c8
+functions = 0
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/RainDrops.cpp"
+start = 0x00183510
+end = 0x001835d8
+functions = 1
+anchors = [
+  {address = 0x00183510, tags = ["IRainDrops"]},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/ResourceMgr.cpp"
+start = 0x00184918
+end = 0x00187960
+functions = 17
+anchors = [
+  {address = 0x00184918, tags = ["ResourceManager", "global.pak"]},
+  {address = 0x00184eb0, tags = ["MemoryPoolClump", "generic_header"]},
+  {address = 0x00186710, tags = ["MemoryPoolClump"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/ScreenEffectsManager.cpp"
+start = 0x0018b1e0
+end = 0x0018ce58
+functions = 21
+anchors = [
+  {address = 0x0018ba10, tags = ["ScreenEffectsManager"]},
+  {address = 0x0018bae0, tags = ["OE_Rain", "OE_Fog"]},
+  {address = 0x0018bd48, tags = []},
+]
+more_anchors = 2
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Texture.cpp"
+start = 0x0018e7e8
+end = 0x0018f230
+functions = 6
+anchors = [
+  {address = 0x0018e898, tags = []},
+  {address = 0x0018ec00, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/WarTexture.cpp"
+path_string = 0x005531d8
+functions = 0
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/WaterEffect.cpp"
+start = 0x00190810
+end = 0x00191230
+functions = 2
+anchors = [
+  {address = 0x00190810, tags = ["MemoryPoolClump", "Water"]},
+  {address = 0x00191158, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Devices/Renderware/DevRWDebug.cpp"
+path_string = 0x00553368
+functions = 0
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/Devices/Renderware/DevRWGeneric.cpp"
+start = 0x00192908
+end = 0x00197cd0
+functions = 57
+anchors = [
+  {address = 0x00192908, tags = ["Renderware"]},
+  {address = 0x00192a08, tags = []},
+  {address = 0x00192ac8, tags = ["Renderware"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/OverlayEffects/OE_FilmGrain.cpp"
+start = 0x001990b8
+end = 0x00199230
+functions = 2
+anchors = [
+  {address = 0x001990b8, tags = ["OE_Particle"]},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/OverlayEffects/OE_Fog.cpp"
+start = 0x00199380
+end = 0x001995e8
+functions = 2
+anchors = [
+  {address = 0x00199380, tags = ["OE_Particle"]},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/OverlayEffects/OE_Rain.cpp"
+start = 0x0019a1b8
+end = 0x0019a648
+functions = 1
+anchors = [
+  {address = 0x0019a1b8, tags = ["OE_Particle"]},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/OverlayEffects/OE_RoomSmoke.cpp"
+start = 0x0019add0
+end = 0x0019aff8
+functions = 2
+anchors = [
+  {address = 0x0019add0, tags = ["OE_Particle"]},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/OverlayEffects/OverlayEffect.cpp"
+start = 0x0019ba70
+end = 0x0019bbb0
+functions = 2
+anchors = [
+  {address = 0x0019bab8, tags = []},
+]
+
+[[file]]
+directory = "Graphics"
+path = "Graphics/DistortionEffectManager.cpp"
+start = 0x0019bf50
+end = 0x0019c3f0
+functions = 6
+stub = 0x0019c5c8
+anchors = [
+  {address = 0x0019bf50, tags = []},
+  {address = 0x0019c070, tags = ["HeatDistortionEffect"]},
+  {address = 0x0019c1d0, tags = ["HeatWaveEffect"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "GUI"
+path = "GUI/BaseWidget.cpp"
+start = 0x001a1f10
+end = 0x001a2060
+functions = 2
+anchors = [
+  {address = 0x001a1f10, tags = []},
+  {address = 0x001a1fc8, tags = ["ParticleContainer"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/ChecklistMessageHUD.cpp"
+start = 0x001a4690
+end = 0x001a5d28
+functions = 24
+stub = 0x001a5d60
+anchors = [
+  {address = 0x001a46d0, tags = []},
+  {address = 0x001a47d0, tags = []},
+  {address = 0x001a4930, tags = ["TextItemContainer"]},
+]
+more_anchors = 4
+
+[[file]]
+directory = "GUI"
+path = "GUI/Credits.cpp"
+start = 0x001a8fb8
+end = 0x001a9960
+functions = 10
+stub = 0x001aad70
+anchors = [
+  {address = 0x001a8fb8, tags = ["CreditData"]},
+  {address = 0x001a9130, tags = ["CreditList", "StringTableCache"]},
+  {address = 0x001a94e8, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/GridContainer.cpp"
+start = 0x001abbf8
+end = 0x001abee8
+functions = 3
+anchors = [
+  {address = 0x001abbf8, tags = []},
+  {address = 0x001abe10, tags = ["GridContainerItem"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/HUDInterface.cpp"
+start = 0x001ad588
+end = 0x001b1640
+functions = 11
+stub = 0x001b3ea8
+anchors = [
+  {address = 0x001ad588, tags = ["HUDArmyNight"]},
+  {address = 0x001ae4d8, tags = ["VirtualPad"]},
+  {address = 0x001ae980, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/HUDLua.cpp"
+start = 0x001b44d8
+end = 0x001b4690
+functions = 1
+stub = 0x001b8f78
+anchors = [
+  {address = 0x001b44d8, tags = ["BaseWidget"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/MessageHUD.cpp"
+start = 0x001b9290
+end = 0x001b9370
+functions = 1
+anchors = [
+  {address = 0x001b9290, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/MissionSelectHUD.cpp"
+start = 0x001bc328
+end = 0x001be848
+functions = 23
+stub = 0x001c1688
+anchors = [
+  {address = 0x001bc5a8, tags = ["CircledTextHeader"]},
+  {address = 0x001bc930, tags = ["MS_Mission"]},
+  {address = 0x001bca70, tags = ["MS_Area"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "GUI"
+path = "GUI/RadarHUD.cpp"
+start = 0x001c41a0
+end = 0x001c6878
+functions = 25
+anchors = [
+  {address = 0x001c41a0, tags = []},
+  {address = 0x001c4a40, tags = ["BaseWidget"]},
+  {address = 0x001c4d00, tags = ["BaseWidget", "hud_radar_dot"]},
+]
+more_anchors = 1
+
+[[file]]
+directory = "GUI"
+path = "GUI/ScreenFlowController.cpp"
+start = 0x001c7e80
+end = 0x001c8628
+functions = 8
+anchors = [
+  {address = 0x001c7e80, tags = ["SFC_States", "SFC_SharedData"]},
+  {address = 0x001c8590, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/ScrollInHUD.cpp"
+start = 0x001c8880
+end = 0x001c8db0
+functions = 3
+anchors = [
+  {address = 0x001c8880, tags = ["STL_List(QueueElement*)", "QueueDataType"]},
+  {address = 0x001c8aa0, tags = []},
+  {address = 0x001c8b08, tags = ["PedReactNoise"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/SubTitle.cpp"
+start = 0x001cafa0
+end = 0x001cb000
+functions = 1
+anchors = [
+  {address = 0x001cafa0, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/TextEntryPad.cpp"
+start = 0x001cc240
+end = 0x001cc998
+functions = 2
+anchors = [
+  {address = 0x001cc240, tags = []},
+  {address = 0x001cc2f0, tags = ["TextWidget", "UsageInfo"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/TutorialHUD.cpp"
+start = 0x001cd988
+end = 0x001ce9a8
+functions = 11
+stub = 0x001cfea0
+anchors = [
+  {address = 0x001cd988, tags = ["TutorialItemPQueue", "QueueDataType"]},
+  {address = 0x001cdc20, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/OptionGrid.cpp"
+start = 0x001d4000
+end = 0x001d43e8
+functions = 4
+anchors = [
+  {address = 0x001d4000, tags = []},
+  {address = 0x001d4230, tags = ["OptionGridItem", "OptionGridTextWidget"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/OptionMenu.cpp"
+start = 0x001d5900
+end = 0x001dab10
+functions = 77
+stub = 0x001dab10
+anchors = [
+  {address = 0x001d5b30, tags = []},
+  {address = 0x001d86a8, tags = ["OptionItemLightingType", "OptionItemOnOffType"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/ScrollingMenu.cpp"
+start = 0x001e0a98
+end = 0x001e1a38
+functions = 16
+anchors = [
+  {address = 0x001e0a98, tags = []},
+  {address = 0x001e1550, tags = []},
+  {address = 0x001e1830, tags = ["ScrollingMenuItem"]},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/ControlMenuHUD.cpp"
+start = 0x001e3520
+end = 0x001e5478
+functions = 29
+stub = 0x001e5478
+anchors = [
+  {address = 0x001e3828, tags = ["ScrollingMenu"]},
+  {address = 0x001e3d98, tags = []},
+]
+
+[[file]]
+directory = "GUI"
+path = "GUI/GameStats.cpp"
+start = 0x00214d08
+end = 0x00216908
+functions = 13
+stub = 0x00216e90
+anchors = [
+  {address = 0x00215150, tags = ["861A1AFF", "806400FF"]},
+  {address = 0x002155a8, tags = ["ScrollingMenu", "CircledTextHeader"]},
+  {address = 0x00215ce8, tags = ["GS_Mission"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "GUI"
+path = "GUI/GameStatsSubItem.cpp"
+start = 0x00216eb0
+end = 0x002176b8
+functions = 3
+anchors = [
+  {address = 0x00216eb0, tags = ["861A1AFF", "806400FF"]},
+  {address = 0x00217350, tags = ["BaseWidget", "ScrollingTextWidget"]},
+  {address = 0x002175f8, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_BuySoldiers.cpp"
+path_string = 0x00556aa0
+functions = 0
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_ChooseArea.cpp"
+start = 0x001eaa30
+end = 0x001ebe00
+functions = 11
+anchors = [
+  {address = 0x001eaa30, tags = ["RM_ChooseAreaWidget"]},
+  {address = 0x001eabc0, tags = ["ScrollingMenu", "rumble_mode_arenas_%d"]},
+  {address = 0x001eb0c8, tags = ["RM_AreaList", "TextWidget"]},
+]
+more_anchors = 1
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_ChooseGangs.cpp"
+start = 0x001ec980
+end = 0x001f0420
+functions = 16
+anchors = [
+  {address = 0x001ec980, tags = ["RM_ChooseGangsWidget"]},
+  {address = 0x001ecae0, tags = ["RM_GangsList", "RM_ChooseGangs2ndInput"]},
+  {address = 0x001eecc0, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_Controller.cpp"
+start = 0x001f0e60
+end = 0x001f23c0
+functions = 10
+stub = 0x001f27b0
+anchors = [
+  {address = 0x001f0e60, tags = ["RM_CharData"]},
+  {address = 0x001f1000, tags = ["RM_Main", "RM_No2ndController"]},
+  {address = 0x001f1748, tags = ["StringTableCache", "CharDataMap"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_CreateGang.cpp"
+start = 0x001f2a00
+end = 0x001f30c0
+functions = 3
+anchors = [
+  {address = 0x001f2a00, tags = ["TextWidget", "MultiLineTextWidget"]},
+  {address = 0x001f2ff8, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_EditGang.cpp"
+start = 0x001f3610
+end = 0x001f5bd0
+functions = 19
+stub = 0x001f5bd0
+anchors = [
+  {address = 0x001f3610, tags = ["TextWidget", "BaseWidget"]},
+  {address = 0x001f47c8, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_EditGangs.cpp"
+start = 0x001f5e48
+end = 0x001f6f60
+functions = 2
+anchors = [
+  {address = 0x001f5e48, tags = ["TextWidget", "SimpleHeader"]},
+  {address = 0x001f6d90, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_GameMode.cpp"
+start = 0x001f8110
+end = 0x001f9228
+functions = 11
+anchors = [
+  {address = 0x001f8110, tags = ["RM_GameModeWidget"]},
+  {address = 0x001f82c0, tags = ["ScrollingMenu", "ScrollingTextWidget"]},
+  {address = 0x001f85c0, tags = ["RM_GameModesList", "TextWidget"]},
+]
+more_anchors = 1
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_Intro.cpp"
+start = 0x001f9418
+end = 0x001fa170
+functions = 7
+anchors = [
+  {address = 0x001f9418, tags = []},
+  {address = 0x001f9558, tags = ["MultiLineTextWidget", "BaseWidget"]},
+  {address = 0x001f9b38, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_Main.cpp"
+start = 0x001fb290
+end = 0x001fb868
+functions = 2
+anchors = [
+  {address = 0x001fb290, tags = ["TextWidget", "UsageInfo"]},
+  {address = 0x001fb790, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_No2ndController.cpp"
+start = 0x001fbe68
+end = 0x001fc118
+functions = 2
+anchors = [
+  {address = 0x001fbe68, tags = ["MultiLineTextWidget", "UsageInfo"]},
+  {address = 0x001fc078, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_NumPlayers.cpp"
+start = 0x001fc5b0
+end = 0x001fdaf8
+functions = 8
+stub = 0x001fe818
+anchors = [
+  {address = 0x001fc5b0, tags = ["TextWidget", "BaseWidget"]},
+  {address = 0x001fcff8, tags = []},
+]
+
+[[file]]
+directory = "GUI/RumbleModeGUI"
+path = "GUI/RumbleModeGUI/RM_SwapSoldier.cpp"
+start = 0x001feb30
+end = 0x00201b50
+functions = 15
+stub = 0x002030f0
+anchors = [
+  {address = 0x001feb30, tags = ["RMSwapGang"]},
+  {address = 0x001fee10, tags = ["ScrollingMenu", "ScrollingTextWidget"]},
+  {address = 0x001ff1c8, tags = ["ScrollingMenu", "ScrollingTextWidget"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Continue.cpp"
+start = 0x00203300
+end = 0x00203788
+functions = 2
+anchors = [
+  {address = 0x00203300, tags = ["TextWidget", "OptionGrid"]},
+  {address = 0x002036d8, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Controller.cpp"
+start = 0x00203f48
+end = 0x00204ea8
+functions = 28
+anchors = [
+  {address = 0x002040c8, tags = ["PM_Greet", "PM_NoSpace"]},
+  {address = 0x00204d18, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Create.cpp"
+start = 0x002050f0
+end = 0x00205660
+functions = 3
+anchors = [
+  {address = 0x002050f0, tags = ["TextWidget", "MultiLineTextWidget"]},
+  {address = 0x002055b0, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Delete.cpp"
+start = 0x00205b38
+end = 0x002061c0
+functions = 2
+anchors = [
+  {address = 0x00205b38, tags = ["TextWidget", "MultiLineTextWidget"]},
+  {address = 0x002060e8, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Difficulty.cpp"
+start = 0x002067d8
+end = 0x00206d10
+functions = 2
+anchors = [
+  {address = 0x002067d8, tags = ["TextWidget", "OptionGrid"]},
+  {address = 0x00206c60, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Extras.cpp"
+start = 0x002071d8
+end = 0x00207480
+functions = 2
+anchors = [
+  {address = 0x002071d8, tags = ["OptionGrid", "UsageInfo"]},
+  {address = 0x002073e8, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Greet.cpp"
+start = 0x002079a0
+end = 0x00207d48
+functions = 2
+anchors = [
+  {address = 0x002079a0, tags = ["BaseWidget", "TextWidget"]},
+  {address = 0x00207cb8, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Light.cpp"
+start = 0x00208510
+end = 0x00208cc0
+functions = 2
+anchors = [
+  {address = 0x00208510, tags = ["BaseWidget", "MessageHUD"]},
+  {address = 0x00208b40, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Load.cpp"
+start = 0x00209250
+end = 0x00209838
+functions = 2
+anchors = [
+  {address = 0x00209250, tags = ["TextWidget", "OptionGrid"]},
+  {address = 0x00209788, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Mode.cpp"
+start = 0x00209da8
+end = 0x0020a1f0
+functions = 2
+anchors = [
+  {address = 0x00209da8, tags = ["OptionGrid", "UsageInfo"]},
+  {address = 0x0020a158, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_NoSpace.cpp"
+start = 0x0020a7a8
+end = 0x0020ad30
+functions = 2
+anchors = [
+  {address = 0x0020a7a8, tags = ["%s%d%s", "MultiLineTextWidget"]},
+  {address = 0x0020ac48, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_NumPlayers.cpp"
+start = 0x0020b208
+end = 0x0020b698
+functions = 2
+anchors = [
+  {address = 0x0020b208, tags = ["TextWidget", "OptionGrid"]},
+  {address = 0x0020b5e8, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Profile.cpp"
+start = 0x0020be68
+end = 0x0020c510
+functions = 2
+anchors = [
+  {address = 0x0020be68, tags = ["TextWidget", "OptionGrid"]},
+  {address = 0x0020c460, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_Subtitles.cpp"
+start = 0x0020cab8
+end = 0x0020ceb8
+functions = 2
+anchors = [
+  {address = 0x0020cab8, tags = ["TextWidget", "OptionGrid"]},
+  {address = 0x0020ce08, tags = []},
+]
+
+[[file]]
+directory = "GUI/ProfileManagementGUI"
+path = "GUI/ProfileManagementGUI/PM_TooManyProfiles.cpp"
+start = 0x0020d3a0
+end = 0x0020d890
+functions = 2
+anchors = [
+  {address = 0x0020d3a0, tags = ["%s%d%s", "MultiLineTextWidget"]},
+  {address = 0x0020d7a8, tags = []},
+]
+
+[[file]]
+directory = "Human"
+path = "Human/Human.cpp"
+start = 0x0021c7c8
+end = 0x0021cb78
+functions = 1
+anchors = [
+  {address = 0x0021c7c8, tags = []},
+]
+
+[[file]]
+directory = "Human"
+path = "Human/HumanInterface.cpp"
+start = 0x0022e848
+end = 0x0022eb40
+functions = 1
+anchors = [
+  {address = 0x0022e848, tags = []},
+]
+
+[[file]]
+directory = "Human"
+path = "Human/pathfinding/path_waypoint.cpp"
+path_string = 0x0055d320
+functions = 0
+
+[[file]]
+directory = "Human"
+path = "Human/cns/cnsplayertag.cpp"
+start = 0x00273c60
+end = 0x00273fa0
+functions = 1
+anchors = [
+  {address = 0x00273c60, tags = ["CNSPlayerTag"]},
+]
+
+[[file]]
+directory = "lua-4.0.1"
+path = "lua-4.0.1/src/lmem.cpp"
+start = 0x0032c758
+end = 0x0032c860
+functions = 1
+anchors = [
+  {address = 0x0032c758, tags = []},
+]
+
+[[file]]
+directory = "Memory"
+path = "Memory/FreeListMemoryPool.cpp"
+path_string = 0x00576ab8
+functions = 0
+
+[[file]]
+directory = "Memory"
+path = "Memory/MemoryClump.cpp"
+start = 0x00338420
+end = 0x00338578
+functions = 3
+anchors = [
+  {address = 0x00338420, tags = ["MemoryPoolClumpInternal"]},
+  {address = 0x003384b0, tags = []},
+]
+
+[[file]]
+directory = "Memory"
+path = "Memory/MemoryFilter.cpp"
+start = 0x003388c0
+end = 0x003389a0
+functions = 1
+anchors = [
+  {address = 0x003388c0, tags = []},
+]
+
+[[file]]
+directory = "Memory"
+path = "Memory/MemoryHeap.cpp"
+start = 0x003389a0
+end = 0x00338bf0
+functions = 3
+anchors = [
+  {address = 0x003389a0, tags = []},
+  {address = 0x00338b38, tags = []},
+]
+
+[[file]]
+directory = "Memory"
+path = "Memory/MemoryPriv.cpp"
+start = 0x00338e10
+end = 0x00339a20
+functions = 11
+anchors = [
+  {address = 0x00338e10, tags = ["MemoryPoolHeap", "All System"]},
+  {address = 0x003398f0, tags = ["MemoryPoolTrack"]},
+  {address = 0x00339988, tags = ["MemoryPoolTrack"]},
+]
+
+[[file]]
+directory = "Memory"
+path = "Memory/MemoryTrack.cpp"
+start = 0x00339e28
+end = 0x0033a640
+functions = 2
+anchors = [
+  {address = 0x00339e28, tags = ["TrackInfo", "none"]},
+  {address = 0x0033a050, tags = []},
+]
+
+[[file]]
+directory = "Memory"
+path = "Memory/WarriorsMemory.cpp"
+start = 0x0033afe0
+end = 0x0033b128
+functions = 1
+stub = 0x0033b168
+anchors = [
+  {address = 0x0033afe0, tags = ["MemoryPoolHeap", "Level Dynamic & LUA Memory"]},
+]
+
+[[file]]
+directory = "Physics"
+path = "Physics/physics.cpp"
+start = 0x003418f8
+end = 0x00341a68
+functions = 3
+anchors = [
+  {address = 0x00341a00, tags = []},
+]
+
+[[file]]
+directory = "RayCast"
+path = "RayCast/CollisionMesh.cpp"
+start = 0x00350688
+end = 0x00350778
+functions = 1
+anchors = [
+  {address = 0x00350688, tags = []},
+]
+
+[[file]]
+directory = "Scene"
+path = "Scene/SceneCache.cpp"
+start = 0x00351da0
+end = 0x00354bb8
+functions = 44
+anchors = [
+  {address = 0x00351da0, tags = []},
+  {address = 0x003524a8, tags = ["Scene", "%s.scn"]},
+  {address = 0x00352a48, tags = ["%s.scn", "SceneSubChunk"]},
+]
+more_anchors = 2
+
+[[file]]
+directory = "Scene"
+path = "Scene/WarMovement.cpp"
+path_string = 0x00578e98
+functions = 0
+
+[[file]]
+directory = "Scripting"
+path = "Scripting/ScriptLua.cpp"
+start = 0x00356390
+end = 0x003564d8
+functions = 2
+anchors = [
+  {address = 0x00356390, tags = ["ScriptLua"]},
+  {address = 0x00356450, tags = []},
+]
+
+[[file]]
+directory = "Scripting"
+path = "Scripting/ScriptLua.inl"
+start = 0x0036bb10
+end = 0x0036bcb8
+functions = 1
+anchors = [
+  {address = 0x0036bb10, tags = []},
+]
+
+[[file]]
+directory = "Scripting"
+path = "Scripting/ScriptObject.cpp"
+start = 0x00384688
+end = 0x00384a10
+functions = 4
+anchors = [
+  {address = 0x00384688, tags = ["FreeList<ScriptObject>"]},
+  {address = 0x00384840, tags = []},
+]
+
+[[file]]
+directory = "Scripting"
+path = "Scripting/ScriptUtilities.cpp"
+start = 0x003864e0
+end = 0x003865d8
+functions = 1
+anchors = [
+  {address = 0x003864e0, tags = []},
+]
+
+[[file]]
+directory = "StringTable"
+path = "StringTable/StringTableCache.cpp"
+start = 0x00386b30
+end = 0x00386f58
+functions = 2
+anchors = [
+  {address = 0x00386b30, tags = []},
+  {address = 0x00386d08, tags = []},
+]
+
+[[file]]
+directory = "TaskEngine"
+path = "TaskEngine/ObjectTaskManager.cpp"
+start = 0x00397a48
+end = 0x0039aef0
+functions = 40
+anchors = [
+  {address = 0x00397c58, tags = []},
+  {address = 0x00397e08, tags = ["ObjectTaskRec"]},
+  {address = 0x00398130, tags = []},
+]
+more_anchors = 2
+
+[[file]]
+directory = "TaskEngine"
+path = "TaskEngine/SceneTask.cpp"
+start = 0x0039d278
+end = 0x0039d618
+functions = 3
+anchors = [
+  {address = 0x0039d278, tags = []},
+  {address = 0x0039d3a8, tags = ["WarMoveInstance"]},
+]
+
+[[file]]
+directory = "TaskEngine"
+path = "TaskEngine/TaskManager.cpp"
+start = 0x003a2728
+end = 0x003a2b48
+functions = 2
+stub = 0x003a8678
+anchors = [
+  {address = 0x003a2728, tags = ["ParticleTaskManager", "ObjectTaskManager"]},
+  {address = 0x003a2a30, tags = []},
+]
+
+[[file]]
+directory = "tolua"
+path = "tolua/System/tolua/src/lib/tolua_tm.cpp"
+start = 0x0040a270
+end = 0x0040bb20
+functions = 32
+anchors = [
+  {address = 0x0040a5b0, tags = ["tolua_tbl_class", "tolua_raw_delete"]},
+]
+
+[[file]]
+directory = "Utils"
+path = "Utils/Dictionary.cpp"
+path_string = 0x005884f0
+functions = 0
+
+[[file]]
+directory = "World"
+path = "World/(no path string)"
+start = 0x0040c5e0
+end = 0x0040c7f0
+functions = 5
+note = "the WAD object (`0x0040c5e0`, called from `Game_InitializeSubsystems`, and its methods) and `WorldLevel_Load` (`0x0040c688`, called only by `WorldManager::LoadLevel`); none calls the Lua API, unlike the tolua code before them, so `World/` (inferred); possibly the start of `WorldLevel.cpp` (speculative)"
+
+[[file]]
+directory = "World"
+path = "World/WorldLevel.cpp"
+start = 0x0040c7f0
+end = 0x0040c868
+functions = 1
+anchors = [
+  {address = 0x0040c7f0, tags = []},
+]
+
+[[file]]
+directory = "World"
+path = "World/WorldManagerLua.cpp"
+start = 0x0040ca18
+end = 0x0040cc40
+functions = 1
+anchors = [
+  {address = 0x0040ca18, tags = ["WaterEffect", "water_tex"]},
+]
+
+[[file]]
+directory = "World"
+path = "World/ps2/WorldLevelPS2.cpp"
+start = 0x0040cf40
+end = 0x0040d088
+functions = 2
+anchors = [
+  {address = 0x0040cf80, tags = []},
+]
+
+[[file]]
+directory = "World"
+path = "World/ps2/WorldManagerPS2.cpp"
+start = 0x0040d688
+end = 0x004101f0
+functions = 13
+anchors = [
+  {address = 0x0040d688, tags = ["MemoryPoolHeap", "Sector Pool"]},
+  {address = 0x0040d900, tags = ["MemoryPoolClump", "warriors.glr"]},
+  {address = 0x0040dbb8, tags = ["MemoryPoolClump", "%s.lev"]},
+]
+more_anchors = 1
+
+[[file]]
+directory = "World"
+path = "World/ps2/WorldPS2.cpp"
+start = 0x004101f0
+end = 0x004124f8
+functions = 23
+anchors = [
+  {address = 0x00410648, tags = ["MemoryPoolClump", "%s_sec.wld"]},
+  {address = 0x00410b70, tags = []},
+  {address = 0x004110c0, tags = ["MemoryPoolClump", "Sectors%d"]},
+]
+more_anchors = 1
+
+[[file]]
+directory = "WorldObjects"
+path = "WorldObjects/PlayerBox.cpp"
+start = 0x00413218
+end = 0x004133d0
+functions = 2
+stub = 0x00414280
+anchors = [
+  {address = 0x00413218, tags = ["FreeList<PlayerBox>"]},
+  {address = 0x00413398, tags = []},
+]
+
+[[file]]
+directory = "WorldObjects"
+path = "WorldObjects/TurfBox.cpp"
+start = 0x00414d48
+end = 0x00414f08
+functions = 2
+anchors = [
+  {address = 0x00414d48, tags = ["FreeListContainer<TurfBox>"]},
+  {address = 0x00414ed0, tags = []},
+]
+
+[[file]]
+directory = "WorldObjects"
+path = "WorldObjects/VolumeBox.cpp"
+start = 0x00414f68
+end = 0x00415118
+functions = 2
+anchors = [
+  {address = 0x00414f68, tags = ["FreeList<VolumeBox>"]},
+  {address = 0x004150e0, tags = []},
+]
+
+[[file]]
+directory = "WorldObjects"
+path = "WorldObjects/WorldPath.cpp"
+start = 0x00415690
+end = 0x00415878
+functions = 5
+anchors = [
+  {address = 0x00415740, tags = ["WorldPath"]},
+]
+
+[[file]]
+directory = "WorldObjects"
+path = "WorldObjects/flags.cpp"
+start = 0x004158f8
+end = 0x00417ad0
+functions = 51
+stub = 0x00417ad0
+anchors = [
+  {address = 0x004158f8, tags = ["WorldFlag"]},
+  {address = 0x00415a38, tags = []},
+]
+
+[[file]]
+directory = "Warriors"
+path = "Warriors/W_ActionableManager.cpp"
+start = 0x00417b10
+end = 0x00417b88
+functions = 1
+anchors = [
+  {address = 0x00417b10, tags = ["W_ActionableManager"]},
+]
+
+[[file]]
+directory = "Warriors"
+path = "Warriors/W_PS2SaveSystem.cpp"
+start = 0x0041f8b0
+end = 0x00420928
+functions = 18
+stub = 0x004209a0
+anchors = [
+  {address = 0x00420060, tags = ["BASLUS-21215/BASLUS-21215", "BASLUS-21215/WARR.ICO"]},
+  {address = 0x004206a0, tags = ["BASLUS-21215/icon.sys", "WARR.ICO"]},
+]
+
+[[file]]
+directory = "Warriors"
+path = "Warriors/W_SaveSystem.cpp"
+start = 0x00421348
+end = 0x00421578
+functions = 2
+stub = 0x00423338
+anchors = [
+  {address = 0x00421348, tags = ["FS_MemoryFile"]},
+  {address = 0x004214c0, tags = []},
+]
+
+[[file]]
+directory = "Warriors"
+path = "Warriors/W_UnlockManager.cpp"
+start = 0x00423ab8
+end = 0x00423c30
+functions = 2
+stub = 0x00424ec8
+anchors = [
+  {address = 0x00423ab8, tags = ["W_Unlockable"]},
+  {address = 0x00423b88, tags = []},
+]
+
+[[file]]
+directory = "Movie"
+path = "Movie/BinkMovie.cpp"
+start = 0x00429b18
+end = 0x0042a6c0
+functions = 5
+anchors = [
+  {address = 0x00429f50, tags = []},
+  {address = 0x00429fa8, tags = []},
+  {address = 0x00429fe8, tags = ["cdrom0:\\%s;1", "Bink"]},
+]
+
+[[file]]
+directory = "Movie"
+path = "Movie/PlayMovie.cpp"
+start = 0x0042a938
+end = 0x0042af70
+functions = 1
+anchors = [
+  {address = 0x0042a938, tags = ["%s_sub.scn", "WarMoveInstance"]},
+]

@@ -10,7 +10,7 @@ rest of the repository, so a pointer cannot rot:
 * the source file that `coney` names exists, and the page a gap's question names has that section;
 * no committed page sits where the docs build writes a system's generated list;
 * the entry's page owns the address (its front matter's `owns`, the most specific owner winning), once the page
-  says what it owns: `docs check` runs the same check on the page (`check_function_entries`, one of
+  says what it owns: `docs check` runs the same check on the page (`research_owners.check_function_entries`, one of
   research_check's `EXTRA_RULES`).
 
 `coney-tools research render --check` runs them; they are errors (exit 1) except a name Ghidra has not got yet.
@@ -24,15 +24,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import progress_research
+from coney_tools import progress_research, source_files
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
-from coney_tools.docs_page import Finding, read_page
+from coney_tools.docs_page import read_page
 from coney_tools.progress import ProgressError
-from coney_tools.progress_grid import SOURCE_MAP, FileRange, file_of, parse_source_files
 from coney_tools.research_functions import CONEY, QUESTION, Entry, ResearchFunctionsError, SystemFunctions, load_all
-from coney_tools.research_pages import Corpus, PageFacts, key_line
-from coney_tools.research_subject import Subject
+from coney_tools.research_owners import Owners
+from coney_tools.research_pages import Corpus
 
 RESEARCH_DIR = Path("docs/research")
 
@@ -50,7 +49,7 @@ def generated_page(system: str) -> str:
     return f"{system}/functions.md"
 
 
-class _Pages:
+class Pages:
     """The anchors of the research pages, each page read once."""
 
     def __init__(self, root: Path) -> None:
@@ -78,60 +77,6 @@ class _Pages:
         return ""
 
 
-@dataclass(frozen=True)
-class Owners:
-    """Who owns an address: the research pages' `owns` (corpus) and the source map's file ranges for `owns.files`."""
-
-    corpus: Corpus = field(default_factory=Corpus)
-    files: tuple[FileRange, ...] = ()
-
-    def owner(self, address: int) -> str:
-        """The page (`docs/research/...`) that owns `address`, or '' for none. The most specific entry wins
-        (writing-docs.md, One owner per address): a single function before any range, then the narrowest range or
-        source file."""
-        ranges = sorted(self.files, key=lambda r: r.start)
-        source = file_of(ranges, [r.start for r in ranges], address).casefold() if ranges else ""
-        width = {r.path.casefold(): r.end - r.start for r in ranges}
-        best: tuple[int, int, str] | None = None
-        for path, facts in sorted(self.corpus.pages.items()):
-            owns = facts.front.owns
-            if owns is None:
-                continue
-            claims = [(0, 0)] if address in owns.functions else []
-            claims += [(1, end - start) for start, end in owns.ranges if start <= address < end]
-            if source and source in {name.casefold() for name in owns.files}:
-                claims.append((1, width[source]))
-            for rank, size in claims:
-                if best is None or (rank, size) < best[:2]:
-                    best = (rank, size, path)
-        return best[2] if best else ""
-
-    def problem(self, entry: Entry) -> str:
-        """Why `entry`'s page is not the owner of its address, or '' when it is (or the page says nothing yet)."""
-        page = f"{RESEARCH_DIR.as_posix()}/{entry.page.partition('#')[0]}"
-        owner = self.owner(entry.address)
-        if owner and owner != page:
-            return f"{owner} owns it, not {page}: point the entry at the page that owns it (one owner per address)"
-        facts = self.corpus.pages.get(page)
-        if not owner and facts is not None and facts.front.present:
-            return f"{page} does not own it: add it to the page's owns, or point the entry at the page that does"
-        return ""
-
-
-def check_function_entries(subject: Subject) -> Iterable[Finding]:
-    """Rule `function-entries` of `docs check`: each entry of the function database that points at this page is for
-    an address the page owns, so a page's author sees what render --check would say about it."""
-    entries = subject.env.functions.get(subject.path, ())
-    if not entries:
-        return
-    pages = {**subject.env.corpus.pages, subject.path: PageFacts(subject.path, subject.front)}
-    owners = Owners(Corpus(pages), subject.env.source_files)
-    line = key_line(subject.page, "owns") if subject.front.owns is not None else 1
-    for entry in entries:
-        if problem := owners.problem(entry):
-            yield Finding("function-entries", line, f"function {entry.address:#010x} {entry.name}: {problem}")
-
-
 def entries_by_page(systems: Iterable[SystemFunctions]) -> dict[str, tuple[Entry, ...]]:
     """The entries of `systems` by the page each points at (`docs/research/...`), for `ResearchEnv.functions`."""
     found: dict[str, list[Entry]] = {}
@@ -139,12 +84,6 @@ def entries_by_page(systems: Iterable[SystemFunctions]) -> dict[str, tuple[Entry
         for entry in system.entries:
             found.setdefault(f"{RESEARCH_DIR.as_posix()}/{entry.page.partition('#')[0]}", []).append(entry)
     return {page: tuple(entries) for page, entries in found.items()}
-
-
-def load_source_files(root: Path) -> tuple[FileRange, ...]:
-    """The source map's file ranges in the checkout at `root` (none when the page is missing)."""
-    path = root / SOURCE_MAP
-    return tuple(parse_source_files(path.read_text(encoding="utf-8"))) if path.is_file() else ()
 
 
 def check(
@@ -158,7 +97,7 @@ def check(
     """Check `systems` against the checkout at `root`, the Ghidra `listing` (None when there is none, read from
     `listing_file`) and the pages' `owners` (none given: no ownership check)."""
     findings = Findings()
-    pages = _Pages(root)
+    pages = Pages(root)
     listed = {f.address: f for f in listing} if listing is not None else None
     for system in systems:
         where = system.path.as_posix()
@@ -218,7 +157,8 @@ def check_systems(root: Path, systems: list[SystemFunctions]) -> Findings:
     try:
         research = load_conventions(root).research
         listing = progress_research.load_listing(root / research.files.ghidra_functions)
+        ranges = source_files.load_ranges(root, Path(research.files.source_files))
     except (ProgressError, ConfigError) as error:
         return Findings(errors=str(error).splitlines())
-    owners = Owners(Corpus.from_root(root, research), load_source_files(root))
+    owners = Owners(Corpus.from_root(root, research), ranges)
     return check(root, systems, listing, listing_file=research.files.ghidra_functions, owners=owners)
