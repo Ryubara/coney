@@ -116,7 +116,7 @@ When a play-tester sees a bug that a test does not, first ask which path each on
 
 All movement is driven as a gamepad with analog sticks, in Coney (`--input-script` `stick` lines) and in the
 emulator: a PCSX2 [input recording](research-tools.md#input-recordings) for a fixed run, or the
-[`pad`](pcsx2-recipes.md#pad) recipe for a driver that reacts to the game. The other things a runtime check sets up
+[`pad`](pcsx2-recipes/input.md#pad) recipe for a driver that reacts to the game. The other things a runtime check sets up
 in the original (the player found, a human teleported or spawned, a checkpoint loaded) are
 [PCSX2 recipes](pcsx2-recipes.md) too. Use realistic partial deflections
 and state the magnitude, not only full deflection: the game's walk, run and dead-zone thresholds only show between

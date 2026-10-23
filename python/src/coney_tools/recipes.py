@@ -5,12 +5,13 @@ a field, call one of the game's functions), so no engineer has to work an addres
 A recipe lives in `research/pcsx2-recipes.toml` as a table `[recipe.NAME]`: what it does, its parameters, the steps a
 runner makes over PINE (and the PCSX2-MCP fork's debug server), its preconditions, the evidence for it and the Ghidra
 address that justifies it, and when it was last confirmed at runtime. `coney-tools pcsx2 recipe run` makes the steps;
-`recipe render` writes docs/guides/pcsx2-recipes.md from the same file.
+`recipe render` writes the recipe pages (docs/guides/pcsx2-recipes.md, the index, and one page per group in
+docs/guides/pcsx2-recipes/) from the same file.
 
 ```toml
 [recipe.teleport]
 summary = "Move a human to x, y, z and turn it to a heading."
-how = "Prose for the page: the technique and why it works."
+how = "Prose for the recipe's section: the technique and why it works."
 research = ["docs/research/characters.md#the-human-object"]
 ghidra = ["0x00390180 Handle_Resolve"]
 evidence = "confirmed-runtime"
@@ -147,7 +148,7 @@ class Recipe:
 
 @dataclass
 class RecipeBook:
-    """Every recipe, in file order, and the groups the page shows them under."""
+    """Every recipe, in file order, and the groups the pages show them under."""
 
     recipes: dict[str, Recipe] = field(default_factory=dict)
     groups: tuple[str, ...] = ()

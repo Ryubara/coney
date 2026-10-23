@@ -104,6 +104,7 @@ paths:
     - {path: "docs/references/", by: "coney-tools refs render", except: ["docs/references/entities.md"]}
     - {path: "docs/missions/", by: "coney-tools missions render"}
     - {path: "docs/guides/pcsx2-recipes.md", by: "coney-tools pcsx2 recipe render"}
+    - {path: "docs/guides/pcsx2-recipes/", by: "coney-tools pcsx2 recipe render"}
   # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
   pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
   # Only these files may hold the repository's or the docs site's address.

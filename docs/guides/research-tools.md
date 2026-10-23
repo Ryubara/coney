@@ -172,7 +172,7 @@ of the `load-checkpoint` recipe's slow reload.
   Leave the frame limiter on: with it off, real-time waits (the legal screen's 5 s) pass in a blink.
 - **A chosen analog stick value.** Keyboard keys bound to a stick only give full deflection, but the gait thresholds
   need partial values: the stick table at `0x0050b8d0` sets what full deflection reads as. How, with its addresses:
-  the [`stick-magnitude`](pcsx2-recipes.md#stick-magnitude) recipe. State the magnitude used with every runtime claim
+  the [`stick-magnitude`](pcsx2-recipes/input.md#stick-magnitude) recipe. State the magnitude used with every runtime claim
   that depends on input ("stick magnitude 0.5, straight up").
 - **Catching a moment.** Load a state, press Space to pause, make the memory writes, then send Space followed by a
   run of F8 presses (one a second, or faster) and look at the screenshots afterwards. Data drawn in one frame
@@ -191,19 +191,19 @@ of the `load-checkpoint` recipe's slow reload.
   from what the game shows, the `scripted-pad` patch (`research/traces/patches/state-patches.toml`) makes the pad code
   read player 1's buttons and left stick from spare bytes that a PINE write sets; the patch must be in the state copy
   before the code is compiled (`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`). The addresses, the byte order
-  and how to hold a pad state: the [`pad`](pcsx2-recipes.md#pad) recipe. `coney-tools pcsx2 prepare-state` and
+  and how to hold a pad state: the [`pad`](pcsx2-recipes/input.md#pad) recipe. `coney-tools pcsx2 prepare-state` and
   `pcsx2 record` make the copy and restart PCSX2 for you. For input that does not depend on the game's state, use an
   [input recording](#input-recordings) instead: it is the default for runtime evidence (a maintainer decision,
   2026-10-21), because PCSX2 replays it frame by frame, the same every time.
 - **The right stick, too** (2026-10-05, the feel pass). The `right-stick` patch puts the right stick's x and y in the
-  same spare bytes (the [`pad`](pcsx2-recipes.md#pad) recipe). The stick table at `0x0050b8d0` is the same map as
+  same spare bytes (the [`pad`](pcsx2-recipes/input.md#pad) recipe). The stick table at `0x0050b8d0` is the same map as
   Coney's `pad::stickValue` (dead band 95-160, `(raw − 160) / 95`), so writing the raw bytes Coney makes from an input
   script's percentages (`160 + round(0.95 × v)`, `95 − round(0.95 × |v|)`, 128 at rest) gives both games the same
   stick, diagonals included, without touching the table.
 - **A puppet human** (2026-10-05, the combat runtime pass). To make an AI human attack, grab or block the player,
   write command ids ([Combat](../research/combat.md#commands)) into its per-player record with the `puppet` patch,
-  which stops the game clearing them: the [`puppet-command`](pcsx2-recipes.md#puppet-command) recipe, with what a grab
-  and a held button need. Pick the puppet by name: the nearest human changes as pedestrians walk, and an ally's hits
+  which stops the game clearing them: the [`puppet-command`](pcsx2-recipes/input.md#puppet-command) recipe, with what a
+  grab and a held button need. Pick the puppet by name: the nearest human changes as pedestrians walk, and an ally's hits
   play reactions without damage.
 - **Following a script at runtime** (2026-10-07, the level99 hints pass). To log which Lua functions run and which
   bindings a script calls, with their arguments, hook the Lua 4 VM. Its interpreter entry is `0x00334478`

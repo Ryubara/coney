@@ -5,6 +5,8 @@ fake PINE server that plays a tiny game (humans, a tick count and the call hook'
 from __future__ import annotations
 
 import math
+import re
+import shutil
 import socket
 import struct
 import threading
@@ -14,9 +16,9 @@ from typing import Any
 
 import pytest
 
+from coney_tools import docs_check, recipes, recipes_cli, recipes_render, recipes_run
 from coney_tools import hooks as hook_tools
 from coney_tools import pcsx2_claims as claims
-from coney_tools import recipes, recipes_cli, recipes_render, recipes_run
 from coney_tools.config import find_repo_root
 from coney_tools.game_memory import (
     BRAIN_TABLE,
@@ -227,24 +229,207 @@ def test_the_schema_refuses(change: dict[str, Any], message: str) -> None:
         recipes.parse_recipe("bad", raw, ["Other"], {"call-brains"})
 
 
-def test_the_page_is_up_to_date() -> None:
-    page = (ROOT / recipes_render.PAGE).read_text(encoding="utf-8").replace("\r\n", "\n")
-    assert page == recipes_render.render(recipes.load(ROOT)), "run `coney-tools pcsx2 recipe render`"
+def read_pages() -> dict[str, str]:
+    """The committed recipe pages by path (the index and one page per group), with line endings normalised."""
+    return read_pages_in(ROOT)
 
 
-def test_the_page_keeps_to_the_line_length_outside_tables_and_code() -> None:
-    text = recipes_render.render(recipes.load(ROOT))
-    fenced = False
-    for line in text.splitlines():
-        if line.startswith("```"):
-            fenced = not fenced
-        elif not fenced and not line.startswith("|"):
-            assert len(line) <= recipes_render.WIDTH, line
+def read_pages_in(root: Path) -> dict[str, str]:
+    """The recipe pages written under `root`, by path, with line endings normalised."""
+    folder = root / recipes_render.PAGES_DIR
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes().decode("utf-8").replace("\r\n", "\n")
+        for path in [root / recipes_render.PAGE, *sorted(folder.glob("*.md"))]
+    }
+
+
+def test_the_pages_are_up_to_date() -> None:
+    assert read_pages() == recipes_render.render(recipes.load(ROOT)), "run `coney-tools pcsx2 recipe render`"
+
+
+def test_every_page_keeps_to_the_line_length_outside_tables_and_code() -> None:
+    for name, text in recipes_render.render(recipes.load(ROOT)).items():
+        fenced = False
+        for line in text.splitlines():
+            if line.startswith("```"):
+                fenced = not fenced
+            elif not fenced and not line.startswith("|"):
+                assert len(line) <= recipes_render.WIDTH, f"{name}: {line}"
+
+
+def test_every_page_is_under_the_guide_length_warning() -> None:
+    limit = docs_check.LENGTH_WARNING["guide"]
+    for name, text in recipes_render.render(recipes.load(ROOT)).items():
+        lines = len(text.splitlines())
+        assert lines < limit, f"{name} is {lines} lines, past the {limit}-line warning"
+
+
+def made_recipe(group: str, **extra: Any) -> dict[str, Any]:
+    """A made-up recipe table in `group`."""
+    return {
+        "group": group,
+        "summary": "s",
+        "how": "h",
+        "research": ["docs/research/characters.md"],
+        "ghidra": ["0x00228730 Humans_StaticInit"],
+        "evidence": "confirmed-code",
+        "confirmed_runtime": {"date": "2026-10-21", "copy": "pcsx2-d", "pcsx2": "2.9.129", "state": "test"},
+        "steps": [{"show": "1"}],
+        **extra,
+    }
+
+
+def book_of(*members: tuple[str, str], **extra: Any) -> recipes.RecipeBook:
+    """A made-up book of (recipe name, group) pairs; the groups are theirs in order, then one with no recipe."""
+    groups = (*dict.fromkeys(group for _, group in members), "Empty")
+    made = {
+        name: recipes.parse_recipe(name, made_recipe(group, **extra), list(groups), set()) for name, group in members
+    }
+    return recipes.RecipeBook(recipes=made, groups=groups, intro="The intro.")
+
+
+def test_the_book_is_one_index_and_one_page_per_group_that_has_recipes() -> None:
+    pages = recipes_render.render(book_of(("a", "Finding humans"), ("b", "The crew"), ("c", "Finding humans")))
+    assert list(pages) == [
+        "docs/guides/pcsx2-recipes.md",
+        "docs/guides/pcsx2-recipes/finding-humans.md",
+        "docs/guides/pcsx2-recipes/the-crew.md",
+    ]
+    assert recipes_render.group_slug("Moving and editing humans") == "moving-and-editing-humans"
+    assert recipes_render.group_slug("Levels & missions!") == "levels-missions"
+
+
+def test_the_index_has_the_intro_and_links_each_recipe_to_its_group_page() -> None:
+    index = recipes_render.render(book_of(("a", "Finding humans"), ("b", "The crew")))["docs/guides/pcsx2-recipes.md"]
+    assert index.startswith("# PCSX2 recipes\n") and "The intro." in index and "## Empty" not in index
+    assert "## Finding humans" in index
+    assert "- [a](pcsx2-recipes/finding-humans.md#a){#a}: " in index
+    assert "- [b](pcsx2-recipes/the-crew.md#b){#b}: " in index
+    assert "\n## a" not in index  # the sections are on the group pages; the index keeps only the old anchors
+
+
+def test_a_group_page_holds_its_recipes_with_their_anchors_and_a_way_back() -> None:
+    pages = recipes_render.render(book_of(("a", "Finding humans"), ("b", "The crew")))
+    page = pages["docs/guides/pcsx2-recipes/finding-humans.md"]
+    assert page.startswith("# Finding humans\n")
+    assert "\n## a {#a}\n" in page and "{#b}" not in page
+    assert "(../pcsx2-recipes.md)" in page and recipes_render.GENERATED in page
+    assert "- [a](#a): " in page
+
+
+def test_links_in_a_group_page_are_relative_to_its_folder() -> None:
+    book = book_of(
+        ("a", "Finding humans"),
+        how="See [the page](../research/ai.md#brain), [a guide](testing.md#gamepad), [here](#x), [web](https://e.org/a).",
+        research=["docs/research/ai.md#brain", "docs/guides/testing.md#gamepad"],
+    )
+    page = recipes_render.render(book)["docs/guides/pcsx2-recipes/finding-humans.md"]
+    assert "[the page](../../research/ai.md#brain)" in page
+    assert "[a guide](../testing.md#gamepad)" in page
+    assert "[here](#x)" in page and "[web](https://e.org/a)" in page
+    assert "[research/ai.md#brain](../../research/ai.md#brain)" in page
+    assert "[guides/testing.md#gamepad](../testing.md#gamepad)" in page
+
+
+@pytest.mark.parametrize("group", ["Index", "index!", "!!!", "  "])
+def test_a_group_whose_page_name_is_empty_or_the_index_is_refused(group: str) -> None:
+    with pytest.raises(recipes.RecipeError, match="page name"):
+        recipes_render.render(book_of(("a", group)))
+
+
+def test_two_groups_with_the_same_page_name_are_refused() -> None:
+    with pytest.raises(recipes.RecipeError, match="same page"):
+        recipes_render.render(book_of(("a", "The crew"), ("b", "The  crew!")))
+
+
+def test_every_recipe_is_an_anchor_of_the_index_and_of_its_group_page() -> None:
+    book = recipes.load(ROOT)
+    pages = recipes_render.render(book)
+    for recipe in book.recipes.values():
+        group_page = f"docs/guides/pcsx2-recipes/{recipes_render.group_slug(recipe.group)}.md"
+        assert f"{{#{recipe.name}}}" in pages["docs/guides/pcsx2-recipes.md"], recipe.name
+        assert f"## {recipe.name} {{#{recipe.name}}}" in pages[group_page], recipe.name
+
+
+def test_every_citation_of_a_recipe_anchor_resolves() -> None:
+    """A link to the index with a recipe's name as the anchor, or to a group page's anchor, names one that page has."""
+    pages = recipes_render.render(recipes.load(ROOT))
+    anchors = {name: set(re.findall(r"\{#([\w-]+)\}", text)) for name, text in pages.items()}
+    cite = re.compile(r"pcsx2-recipes(?:/([a-z0-9-]+))?\.md#([\w-]+)")
+    suffixes = {".md", ".py", ".toml", ".yml", ".yaml", ".json", ".cpp", ".h", ".hpp", ".sh", ".txt"}
+    skipped = {"python/tests/test_recipes.py"}  # made-up names in the tests above
+    cited = 0
+    for folder in ("docs", "python", "src", "research", ".claude", ".github"):
+        for path in sorted((ROOT / folder).rglob("*")):
+            name = path.relative_to(ROOT).as_posix()
+            skip = path.suffix not in suffixes or name in pages or name in skipped or "__pycache__" in path.parts
+            if skip or ".venv" in path.parts or not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for number, line in enumerate(text.splitlines(), 1):
+                for match in cite.finditer(line):
+                    cited += 1
+                    target = f"docs/guides/pcsx2-recipes/{match[1]}.md" if match[1] else "docs/guides/pcsx2-recipes.md"
+                    assert match[2] in anchors.get(target, set()), f"{name}:{number} cites {match[0]}: no such anchor"
+    assert cited >= 8  # the guides and research pages that cite a recipe
+
+
+def test_every_recipe_page_is_in_the_navigation() -> None:
+    nav = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    for name in recipes_render.render(recipes.load(ROOT)):
+        assert name.removeprefix("docs/") in nav, f"{name} is not in mkdocs.yml"
 
 
 def test_links_from_guides() -> None:
     assert recipes_render.link("docs/research/ai.md#brain") == "../research/ai.md#brain"
     assert recipes_render.link("docs/guides/testing.md#gamepad") == "testing.md#gamepad"
+    assert recipes_render.link("docs/research/ai.md#brain", "../") == "../../research/ai.md#brain"
+    assert recipes_render.link("docs/guides/testing.md#gamepad", "../") == "../testing.md#gamepad"
+
+
+def recipe_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A made-up checkout holding the real recipe file and patches, with the current directory in it."""
+    (tmp_path / "research").mkdir()
+    shutil.copy(ROOT / "research" / "pcsx2-recipes.toml", tmp_path / "research" / "pcsx2-recipes.toml")
+    shutil.copytree(ROOT / recipes.PATCHES_DIR, tmp_path / recipes.PATCHES_DIR)
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def test_render_writes_the_pages_and_removes_one_that_no_group_makes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = recipe_checkout(tmp_path, monkeypatch)
+    stale = root / recipes_render.PAGES_DIR / "gone.md"
+    stale.parent.mkdir(parents=True)
+    stale.write_text(f"# Gone\n\n{recipes_render.GENERATED}\n", encoding="utf-8")
+    assert recipes_render.run_render(check_only=True) == 1
+    err = capsys.readouterr().err
+    assert "docs/guides/pcsx2-recipes.md" in err and "pcsx2-recipes/gone.md" in err and stale.exists()
+    assert recipes_render.run_render(check_only=False) == 0
+    assert capsys.readouterr().out == "10 page(s) written, 1 removed; 10 in all\n"
+    assert not stale.exists()
+    assert read_pages_in(root) == recipes_render.render(recipes.load(root))
+    assert recipes_render.run_render(check_only=True) == 0
+    assert capsys.readouterr().out == "0 page(s) stale; 10 in all\n"
+
+
+def test_render_never_deletes_a_page_it_did_not_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = recipe_checkout(tmp_path, monkeypatch)
+    mine = root / recipes_render.PAGES_DIR / "hand-written.md"
+    mine.parent.mkdir(parents=True)
+    mine.write_text("# Written by a person\n", encoding="utf-8")
+    assert recipes_render.run_render(check_only=False) == 1  # it writes the pages, then reports the foreign one
+    captured = capsys.readouterr()
+    assert "hand-written.md" in captured.err and mine.read_text(encoding="utf-8").startswith("# Written")
+    assert captured.out == "10 page(s) written, 1 not generated; 10 in all\n"
+    assert recipes_render.run_render(check_only=True) == 1  # everything else is current: only the foreign page counts
+    captured = capsys.readouterr()
+    assert "hand-written.md" in captured.err and mine.read_text(encoding="utf-8").startswith("# Written")
+    assert captured.out == "0 page(s) stale, 1 not generated; 10 in all\n"
 
 
 # --- arguments --------------------------------------------------------------------------------------------------------

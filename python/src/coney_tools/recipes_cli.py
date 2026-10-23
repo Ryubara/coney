@@ -47,8 +47,10 @@ def add_commands(commands: Any) -> None:
     run.add_argument(
         "--name", dest="run_name", help="with --record: the run's name in its id (default: the recipe's name)"
     )
-    render = sub.add_parser("render", help="write docs/guides/pcsx2-recipes.md from the recipe file")
-    render.add_argument("--check", action="store_true", help="write nothing; exit 1 when the page is out of date")
+    render = sub.add_parser(
+        "render", help="write the recipe pages (pcsx2-recipes.md and pcsx2-recipes/) from the recipe file"
+    )
+    render.add_argument("--check", action="store_true", help="write nothing; exit 1 when a page is out of date")
 
 
 def run_command(args: Any) -> int:

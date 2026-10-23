@@ -185,10 +185,15 @@ preconditions, evidence and steps. `run` makes its steps on a copy `--agent` hol
 over that copy's PINE port (and its debug server for `pause`, `resume` and `step`): it refuses another agent's copy, a
 copy that runs nothing, an emulation state the recipe does not take and a running state that lacks a patch or hook the
 recipe names (read back from memory). `--arg` gives a parameter, `--json` adds one line with every value shown.
-`render` writes [the page](pcsx2-recipes.md) from the file; with `--check` it writes nothing and exits with 1 when
-the page is out of date, as CI runs it. Every recipe must have an evidence level, a Ghidra address and a
-`confirmed_runtime` date, copy and state, or the file is refused. A recipe may name a library state it starts from
-(`state = "ID"`, shown among its preconditions; `recipe show` prints it).
+`render` writes [the index](pcsx2-recipes.md) (the intro and every recipe with its summary) and one page per recipe
+group in `docs/guides/pcsx2-recipes/` (each recipe's full section, at the anchor of its name) from the file, and removes
+a group page no group makes any more (only one that carries the generated marker: a page in that folder without it is
+kept, reported, and makes `render` exit 1 with and without `--check`); with `--check` it writes nothing and exits with 1
+when any page is out of date, as CI runs it. Cite a recipe by its group page, `pcsx2-recipes/<group>.md#<name>`; the
+index lists every recipe with an anchor of its name too, so `pcsx2-recipes.md#<name>` also lands on it, one link from
+the section. Every recipe must have an evidence level, a Ghidra address and a `confirmed_runtime` date, copy and state,
+or the file is refused. A recipe may name a library state it starts from (`state = "ID"`, shown among its preconditions;
+`recipe show` prints it).
 
 `--record` makes a good run write its [run record](research-evidence.md#run-records), `research/runs/r-<date>-<name>.toml`
 in the checkout: the numbers the `show` steps showed (texts stay out: a record holds numbers only), the arguments as
