@@ -16,6 +16,7 @@ from coney_tools.conventions import load_conventions
 FIXTURE = REPO / "tools" / "claude-mod" / "tests" / "fixtures" / "snapshot.ts"
 #: The mod loads only code files, so the snapshot is a TypeScript module that holds the JSON.
 HEADER = (
+    "// SPDX-License-Identifier: GPL-3.0-or-later\n"
     "// Written by python/tests/test_conclave_fixture.py from the Python tests' synthetic units: do not edit.\n"
     "// Run that test with CONEY_UPDATE_FIXTURES=1 to write it again after a change to the snapshot.\n"
     "export default "

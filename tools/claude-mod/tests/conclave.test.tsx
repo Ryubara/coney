@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // `claude plugin test tools/claude-mod`: the band, the status line, the pane and the agent list, drawn through the
 // plugin from a fixture snapshot that the Python tests write (python/tests/test_conclave_fixture.py), so the mod's
 // tests and the command share one shape.
@@ -59,6 +60,10 @@ type Answer = { exitCode: number; stdout: string; stderr: string }
 type World = {
   statuses: (string | undefined)[]
   runs: string[][]
+  /** The `env` each run was given. */
+  envs: (Record<string, string> | undefined)[]
+  /** How long each run was given, in milliseconds. */
+  timeouts: (number | undefined)[]
   clock: ReturnType<typeof mock.clock>
   /** What the command prints next; change it to move the world on. */
   answer: Answer
@@ -78,9 +83,18 @@ const fails: Answer = { exitCode: 1, stdout: '', stderr: 'gh: not signed in\nmor
 function engine(
   on: On,
   answer: Answer,
-  options: { store?: Record<string, unknown>; isPaneShown?: boolean } = {},
+  options: { store?: Record<string, unknown>; isPaneShown?: boolean; isHung?: boolean; beneath?: Record<string, unknown> } = {},
 ): World {
-  const world: World = { statuses: [], runs: [], clock: mock.clock(on, { now: T0 - 1000 }), answer, opened: [], stored: {} }
+  const world: World = {
+    statuses: [],
+    runs: [],
+    envs: [],
+    timeouts: [],
+    clock: mock.clock(on, { now: T0 - 1000 }),
+    answer,
+    opened: [],
+    stored: {},
+  }
   // The store in memory, kept here so a test can read what the mod stored (mock.store would hide it).
   world.stored = { ...(options.store ?? {}) }
   on('store.get', (_, e) => ({ value: world.stored[e.key] }))
@@ -88,8 +102,13 @@ function engine(
     world.stored[e.key] = e.value
     return { value: undefined }
   })
+  on('store.delete', (_, e) => {
+    delete world.stored[e.key]
+    return { value: undefined }
+  })
   on('agent.offer', () => ({ isOffered: true }))
-  on('classic.SessionStart', () => ({}))
+  // What the plugins beneath answer to the session start (Tether's context for the first turn, in a real session).
+  on('classic.SessionStart', () => options.beneath ?? {})
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: { command: 'conclave' } }))
   on('ui.open', (_, e) => {
@@ -107,6 +126,10 @@ function engine(
   })
   on('process.run', (_, e) => {
     world.runs.push([...e.argv])
+    world.envs.push(e.init?.env)
+    world.timeouts.push(e.init?.timeoutMs)
+    // A snapshot command that never answers (a hung `uv`): the session must start all the same.
+    if (options.isHung) return new Promise<never>(() => undefined)
     return { value: { ...world.answer, isStdoutTruncated: false, isStderrTruncated: false } }
   })
   return world
@@ -155,7 +178,7 @@ for (const [free, color] of [
   [12, 'error'],
 ] as const) {
   test(`the disk figure with ${free} GB free is coloured ${color ?? 'plain'}`, async ($, on) => {
-    engine(
+    const world = engine(
       on,
       prints(
         snapshot(copy => {
@@ -163,7 +186,7 @@ for (const [free, color] of [
         }),
       ),
     )
-    await $.session.start({ ...SESSION })
+    await start($, world)
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
     expect((await ui.find({ type: 'Text', text: /disk/ }))?.props.color).toBe(color)
     await ui.unmount()
@@ -171,8 +194,8 @@ for (const [free, color] of [
 }
 
 test('a narrow band takes two lines', async ($, on) => {
-  engine(on, prints(snapshot()))
-  await $.session.start({ ...SESSION })
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal', props: { ...BAND.props, bodyColumns: 80 } })
   const lines = await ui.findAll({ type: 'Box', key: 'line-0' })
@@ -180,6 +203,40 @@ test('a narrow band takes two lines', async ($, on) => {
   expect(lines).toHaveLength(1)
   expect(second).toHaveLength(1)
   expect(second[0]?.text).toContain('disk 61 GB')
+  await ui.unmount()
+})
+
+test("the band takes two lines under the width the snapshot names, not a width of the mod's own", async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        copy.config.band_narrow_columns = 200
+      }),
+    ),
+  )
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.findAll({ type: 'Box', key: 'line-1' })).toHaveLength(1)
+  await ui.unmount()
+})
+
+test('the band goes stale after the number of reads the snapshot names', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        copy.config.stale_after_reads = 20
+      }),
+    ),
+  )
+  await $.session.start({ ...SESSION })
+
+  world.answer = fails
+  await world.clock.advance(150_000)
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /stale/ })).toBeUndefined()
   await ui.unmount()
 })
 
@@ -201,8 +258,8 @@ test('the band yields to a survey and says nothing before the first read', async
 })
 
 test('a read that fails before any snapshot says why in the band', async ($, on) => {
-  engine(on, fails)
-  await $.session.start({ ...SESSION })
+  const world = engine(on, fails)
+  await start($, world)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /no snapshot yet/ }))?.text).toBe('Conclave: no snapshot yet (gh: not signed in)')
@@ -222,7 +279,7 @@ test('a snapshot that goes stale dims the band and says for how long', async ($,
 })
 
 test('a snapshot of a newer schema is refused, not drawn', async ($, on) => {
-  engine(
+  const world = engine(
     on,
     prints(
       snapshot(copy => {
@@ -230,7 +287,7 @@ test('a snapshot of a newer schema is refused, not drawn', async ($, on) => {
       }),
     ),
   )
-  await $.session.start({ ...SESSION })
+  await start($, world)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 2')
@@ -240,7 +297,7 @@ test('a snapshot of a newer schema is refused, not drawn', async ($, on) => {
 
 test('the status line says what the session is', async ($, on) => {
   const world = engine(on, prints(snapshot()))
-  await $.session.start({ ...SESSION })
+  await start($, world)
   expect(world.statuses.at(-1)).toBe('no role: start with coney-agent')
 
   await $.classic.SessionStart({ source: 'startup', agent_type: 'engineer' })
@@ -248,6 +305,14 @@ test('the status line says what the session is', async ($, on) => {
 
   await $.classic.SessionStart({ source: 'startup', agent_type: 'coordinator' })
   expect(world.statuses.at(-1)).toBe('coordinator · 2 units · ✖1')
+})
+
+test("the session start's answer from beneath passes through untouched", async ($, on) => {
+  const beneath = { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: 'context from beneath' } }
+  engine(on, prints(snapshot()), { beneath })
+  const answer = await $.classic.SessionStart({ source: 'startup', agent_type: 'engineer' })
+
+  expect(answer).toEqual(beneath)
 })
 
 test('the pane lists failed units first and opens a row on a press', async ($, on) => {
@@ -275,8 +340,8 @@ test('the pane lists failed units first and opens a row on a press', async ($, o
 })
 
 test('one row is open at a time', async ($, on) => {
-  engine(on, prints(snapshot()))
-  await $.session.start({ ...SESSION })
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await ui.press({ key: 'task:fix-frame-812' })
@@ -330,44 +395,42 @@ test('a claim in its last hours is red, and one that waits has no countdown', as
 })
 
 test('a pane under the minimum width points to the band', async ($, on) => {
-  engine(on, prints(snapshot()))
-  await $.session.start({ ...SESSION })
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 90 } })
   expect((await ui.find({ type: 'Text' }))?.text).toContain('needs about 110 columns')
   await ui.unmount()
 })
 
-test('the agent list hides the generic types and keeps roles and helpers', async ($, on) => {
-  engine(on, prints(snapshot()))
+/** The agent types the fixture's hook settings allow. */
+const ALLOWED = ['coordinator', 'reviewer', 'research-reviewer', 'pr-reviewer', 'Explore', 'Plan', 'fork']
+
+/** Whether the model is offered `agent` now. */
+async function isOffered($: Engine, agent: string): Promise<boolean> {
+  return (await $.agent.offer({ agent, ...OFFERED })).isOffered
+}
+
+test("a session that starts with the last session's list hides the generic types and keeps roles and helpers", async ($, on) => {
+  engine(on, prints(snapshot()), { store: { offer: { allowed: ALLOWED } } })
   await $.session.start({ ...SESSION })
 
-  for (const agent of ['coordinator', 'reviewer', 'pr-reviewer', 'Explore', 'Plan', 'fork']) {
-    expect((await $.agent.offer({ agent, ...OFFERED })).isOffered).toBe(true)
-  }
-  for (const agent of ['general-purpose', 'statusline-setup', 'claude']) {
-    expect((await $.agent.offer({ agent, ...OFFERED })).isOffered).toBe(false)
-  }
+  for (const agent of ALLOWED) expect(await isOffered($, agent)).toBe(true)
+  for (const agent of ['general-purpose', 'statusline-setup', 'claude']) expect(await isOffered($, agent)).toBe(false)
 })
 
-test('nothing is hidden while the hook settings cannot be read', async ($, on) => {
-  engine(
-    on,
-    prints(
-      snapshot(copy => {
-        copy.config.error = '.claude/hooks/hooks.toml: cannot be read'
-        copy.config.roles = []
-        copy.config.helpers = []
-      }),
-    ),
-  )
+test('the first session, with no list stored, hides nothing and keeps the list for the next', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
   await $.session.start({ ...SESSION })
+  await world.clock.advance(1000)
 
-  expect((await $.agent.offer({ agent: 'general-purpose', ...OFFERED })).isOffered).toBe(true)
+  // The listing never changes under the prompt cache: a list that lands mid-session waits for the next session.
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+  expect((world.stored.offer as { allowed: string[] }).allowed).toEqual(ALLOWED)
 })
 
 test('the list is frozen for the session, so a later read never changes the agent listing', async ($, on) => {
-  const world = engine(on, prints(snapshot()))
+  const world = engine(on, prints(snapshot()), { store: { offer: { allowed: ALLOWED } } })
   await $.session.start({ ...SESSION })
 
   world.answer = prints(
@@ -377,23 +440,75 @@ test('the list is frozen for the session, so a later read never changes the agen
   )
   await world.clock.advance(60_000)
 
-  expect((await $.agent.offer({ agent: 'general-purpose', ...OFFERED })).isOffered).toBe(false)
+  expect(await isOffered($, 'general-purpose')).toBe(false)
+  expect((world.stored.offer as { allowed: string[] }).allowed).toContain('general-purpose')
 })
 
-test('the list the last session stored hides types at once, before any read', async ($, on) => {
-  engine(on, fails, { store: { offer: { allowed: ['coordinator', 'Explore'] } } })
+test('a saved list hides nothing once the hook settings cannot be read, and is dropped', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        copy.config.error = '.claude/hooks/hooks.toml: cannot be read'
+        copy.config.roles = []
+        copy.config.helpers = []
+      }),
+    ),
+    { store: { offer: { allowed: ['coordinator', 'Explore'] } } },
+  )
+  await $.session.start({ ...SESSION })
+  // Until the read lands the saved list stands (nothing is known yet); then nothing is hidden and nothing is kept.
+  expect(await isOffered($, 'general-purpose')).toBe(false)
+  await world.clock.advance(1000)
+
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+  expect(world.stored.offer).toBeUndefined()
+})
+
+test('a failing read keeps the saved list: only a read that says the settings are unreadable drops it', async ($, on) => {
+  const world = engine(on, fails, { store: { offer: { allowed: ['coordinator', 'Explore'] } } })
+  await $.session.start({ ...SESSION })
+  await world.clock.advance(1000)
+
+  expect(await isOffered($, 'coordinator')).toBe(true)
+  expect(await isOffered($, 'engineer')).toBe(false)
+  expect(world.stored.offer).toEqual({ allowed: ['coordinator', 'Explore'] })
+})
+
+test('a stored value of the wrong shape is ignored', async ($, on) => {
+  engine(on, fails, { store: { offer: { allowed: 'general-purpose' } } })
   await $.session.start({ ...SESSION })
 
-  expect((await $.agent.offer({ agent: 'coordinator', ...OFFERED })).isOffered).toBe(true)
-  expect((await $.agent.offer({ agent: 'engineer', ...OFFERED })).isOffered).toBe(false)
+  expect(await isOffered($, 'general-purpose')).toBe(true)
 })
 
-test('the mod keeps the list for the next session', async ($, on) => {
+test('the session starts at once even when the snapshot command never answers', async ($, on) => {
+  const world = engine(on, prints(snapshot()), { isHung: true })
+  // Were the start to wait for the read, this would never return and the test would time out.
+  await $.session.start({ ...SESSION })
+
+  expect(world.runs).toHaveLength(1)
+  // ... and with no list known the listing is the engine's own, whole and unchanging.
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+})
+
+test('a session that is not interactive reads the snapshot without waiting and opens no pane', async ($, on) => {
+  const world = engine(on, prints(snapshot()), { isHung: true })
+  await $.session.start({ ...SESSION, isInteractive: false })
+
+  expect(world.runs).toHaveLength(1)
+  expect(world.opened).toEqual([])
+})
+
+test('the snapshot command keeps Python out of the checkout and is bounded in time', async ($, on) => {
   const world = engine(on, prints(snapshot()))
   await $.session.start({ ...SESSION })
 
-  const stored = world.stored.offer as { allowed: string[] }
-  expect(stored.allowed).toEqual(['coordinator', 'reviewer', 'research-reviewer', 'pr-reviewer', 'Explore', 'Plan', 'fork'])
+  const variable = world.envs[0]?.UV_PROJECT_ENVIRONMENT
+  expect(variable).toMatch(/\/scratch\/conclave\/[^/]+\/venv$/)
+  expect(variable).not.toContain('/tools/claude-mod')
+  expect(world.timeouts[0]).toBeGreaterThan(0)
+  expect(world.timeouts[0]).toBeLessThanOrEqual(60_000)
 })
 
 test('/conclave opens the pane', async ($, on) => {

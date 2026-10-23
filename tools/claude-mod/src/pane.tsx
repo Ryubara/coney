@@ -1,23 +1,14 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The pane: units and issues with rows that open, and every held claim with a live countdown. Draws; never decides,
 // and writes nothing but which row is open.
 import type { EngineInterface, RenderInputOf } from 'claude-code'
 
 import type { ClaimRow, Held, Snapshot, StepState, Unit } from '../types'
-import { claimExpiry, claimTone, elapsed, mark, markTone, showUtc, unitTitle, visibleUnits } from './format'
+import { claimExpiry, claimTone, COLORS, elapsed, mark, markTone, showUtc, unitTitle, visibleUnits } from './format'
 import type { MarkKind, Surface, Tone } from './format'
 import { getHeld, getNow, getOpen, toggleOpen } from './state'
 
-export const PANE = 'conclave'
-
 type PaneInput = RenderInputOf<'Pane', Surface>
-
-const COLORS: Record<Tone, string | undefined> = {
-  normal: undefined,
-  ok: 'success',
-  warn: 'warning',
-  bad: 'error',
-  dim: undefined,
-}
 
 const STEP_MARKS: Record<StepState, string> = { pass: '✔', fail: '✖', none: '–', missing: '·' }
 
@@ -47,6 +38,7 @@ function unitSummary(unit: Unit, nowMs: number): string {
   return [who, stage, build, pr, age].filter(Boolean).join('  ')
 }
 
+/** A unit's issue numbers as `#741 #803`. */
 function ids(unit: Unit): string {
   return unit.issues.map(number => `#${number}`).join(' ')
 }
@@ -61,6 +53,7 @@ function reason(unit: Unit): string | null {
   return null
 }
 
+/** The pane's tree: units and issues with rows that open, then every held claim with its countdown. */
 export async function drawPane($: EngineInterface, e: PaneInput) {
   const state: Held = await getHeld($)
   const nowMs = Math.max(await getNow($), state.localAt)

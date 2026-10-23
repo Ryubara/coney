@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The mod's plain functions: the clock arithmetic, the merge of a local read over a GitHub one, the checkout of a folder.
 import { expect, test } from 'claude-code/testing'
 
 import type { Held, Snapshot } from '../types'
 import { claimTone, countdown, elapsed, mark, showUtc } from '../src/format'
-import { checkoutOf, firstLine, merged } from '../src/snapshot'
+import { checkoutOf, firstLine, merged, venvOf } from '../src/snapshot'
 import { EMPTY } from '../src/state'
 import fixture from './fixtures/snapshot'
 
@@ -107,4 +108,12 @@ test('a snapshot of a newer schema is not taken in', () => {
   const after = merged(EMPTY, { ok: true, snapshot: next }, false, NOW)
   expect(after.snapshot).toBeNull()
   expect(after.newer).toBe(99)
+})
+
+test('the private Python environment sits in the workspace scratch folder, one per checkout', () => {
+  expect(venvOf('C:/Repositories/Coney/worktrees/coney/fix-x')).toBe('C:/Repositories/Coney/scratch/conclave/fix-x/venv')
+  expect(venvOf(String.raw`C:\Repositories\Coney\repos\coney`)).toBe('C:/Repositories/Coney/scratch/conclave/coney/venv')
+  expect(venvOf('/home/a/ws/worktrees/coney/b/')).toBe('/home/a/ws/scratch/conclave/b/venv')
+  // outside the workspace layout the mod cannot say where the scratch folder is, so it leaves the variable alone
+  expect(venvOf('/home/a/code/coney')).toBeNull()
 })

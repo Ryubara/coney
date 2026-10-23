@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The values the mod keeps in `$.state` (declared in types/index.d.ts): what the drawing reads, never what decides.
 // Every read and write of them lives in this file, because the engine's scan finds a state reference only in the file
 // that reads it; the rest of the mod calls these functions.
@@ -47,6 +48,7 @@ export function getNow($: EngineInterface): Promise<number> {
   return read($, now)
 }
 
+/** Moves the mod's clock to `ms`, which redraws the countdowns that read it. */
 export function setNow($: EngineInterface, ms: number): Promise<unknown> {
   return update($, now, () => ms)
 }
@@ -56,15 +58,22 @@ export function getRole($: EngineInterface): Promise<string | null> {
   return read($, role)
 }
 
+/** Records the main session's agent type (null: it started with none). */
 export function setRole($: EngineInterface, type: string | null): Promise<unknown> {
   return update($, role, () => type)
 }
 
-/** The agent types the model is offered, frozen for the session; null before a list is known. */
+/** The agent types the model is offered, frozen for the session; null while none is known (nothing is hidden). */
 export function getOffer($: EngineInterface): Promise<Offer | null> {
   return read($, offer)
 }
 
+/** Freezes the agent types the model is offered for the rest of the session. */
 export function setOffer($: EngineInterface, allowed: string[]): Promise<unknown> {
   return update($, offer, () => ({ allowed }))
+}
+
+/** Drops the frozen list, so nothing is hidden (the hook settings can no longer be read). */
+export function clearOffer($: EngineInterface): Promise<unknown> {
+  return update($, offer, () => null)
 }

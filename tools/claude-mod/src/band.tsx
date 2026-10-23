@@ -1,24 +1,14 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The band above the prompt: units, failures, pull requests, claims, builds, critical issues and free disk, each a
 // button that opens the pane. Dimmed with `stale Nm` when the last good read is old. Draws; never decides.
 import type { EngineInterface, RenderElement, RenderInput } from 'claude-code'
 
-import { bandItems, staleMinutes } from './format'
-import type { BandItem, Tone } from './format'
+import { bandItems, COLORS, PANE, staleMinutes } from './format'
+import type { BandItem } from './format'
 import { getHeld, getNow } from './state'
 
-export const PANE = 'conclave'
-/** Below this many columns the band takes two short lines. */
-const NARROW_COLUMNS = 100
-/** The first four keys stay on the first line when the band is narrow. */
+/** The first four keys stay on the first line when the band is narrow (how narrow is `band_narrow_columns`). */
 const FIRST_LINE = new Set(['units', 'failed', 'prs', 'claims'])
-
-export const COLORS: Record<Tone, string | undefined> = {
-  normal: undefined,
-  ok: 'success',
-  warn: 'warning',
-  bad: 'error',
-  dim: undefined,
-}
 
 type BandInput = RenderInput<'AbovePrompt'>
 
@@ -51,7 +41,7 @@ export async function drawBand($: EngineInterface, e: BandInput): Promise<Render
   const stale = staleMinutes(state, nowMs)
   const items = bandItems(state, nowMs)
   const lines: BandItem[][] =
-    e.props.bodyColumns < NARROW_COLUMNS
+    e.props.bodyColumns < state.snapshot.config.band_narrow_columns
       ? [items.filter(item => FIRST_LINE.has(item.key)), items.filter(item => !FIRST_LINE.has(item.key))]
       : [items]
   const button = (item: BandItem) => (

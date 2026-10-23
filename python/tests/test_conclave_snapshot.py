@@ -2,6 +2,7 @@
 """Tests for `conclave snapshot`: made-up task folders, stamp logs, worktrees and `gh` answers; no network."""
 
 import argparse
+import hashlib
 import json
 import os
 from datetime import timedelta
@@ -28,7 +29,9 @@ from conclave_support import (
 from coney_tools import conclave_cli
 from coney_tools.conclave_snapshot import SCHEMA, collect
 from coney_tools.config import ConfigError
+from coney_tools.issue_claim_cli import held_cards
 from coney_tools.issue_claim_model import Card
+from coney_tools.issue_claim_remote import GhRemote
 
 
 @pytest.fixture
@@ -201,6 +204,7 @@ def test_the_config_has_the_roles_with_aliases_and_the_helpers(layout: Layout) -
     assert config["intervals"] == {"local": 15, "github": 60, "github_idle": 300}
     assert config["pane_min_columns"] == 110 and config["merged_visible_minutes"] == 10
     assert config["claim_red_hours"] == 6
+    assert config["band_narrow_columns"] == 100 and config["stale_after_reads"] == 3
 
 
 def test_a_missing_hooks_file_gives_no_lists_and_says_why(layout: Layout) -> None:
@@ -351,10 +355,45 @@ def test_the_command_parses_from_the_cli() -> None:
     )
 
 
-def test_the_snapshot_never_writes(layout: Layout) -> None:
-    before = sorted(p.relative_to(layout.root).as_posix() for p in layout.root.rglob("*"))
-    collect(sources(layout, FakeGh(github_answers())), github=True)
-    assert sorted(p.relative_to(layout.root).as_posix() for p in layout.root.rglob("*")) == before
+#: `gh` arguments that write: a method other than GET, a body, or a verb that changes something.
+WRITING = {"-X", "--method", "-f", "-F", "--field", "--raw-field", "--input", "create", "edit", "comment", "close"}
+WRITING |= {"merge", "delete", "reopen", "ready", "review", "lock", "unlock", "transfer", "develop", "label"}
+
+
+def tree_state(root: Path) -> dict[str, tuple[int, int, str]]:
+    """Every path under `root` with its size, modification time and content hash (folders have no hash)."""
+    state: dict[str, tuple[int, int, str]] = {}
+    for path in sorted(root.rglob("*")):
+        info = path.stat()
+        digest = "" if path.is_dir() else hashlib.sha256(path.read_bytes()).hexdigest()
+        state[path.relative_to(root).as_posix()] = (info.st_size, info.st_mtime_ns, digest)
+    return state
+
+
+class NoCards:
+    """`gh` for the claim reader when the repository holds no claim card: prints nothing and records each call."""
+
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+
+    def __call__(self, args: list[str]) -> str:
+        self.calls.append(args)
+        return ""
+
+
+def test_the_snapshot_never_writes_and_only_reads_from_github(layout: Layout) -> None:
+    coord_gh = FakeGh(github_answers())
+    cards_gh = NoCards()
+    rules = CONVENTIONS.claims
+    # the real claim reader over a fake `gh`, so the claim path is exercised and not stubbed out
+    remote = GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, cards_gh)
+    before = tree_state(layout.root)
+    collect(sources(layout, coord_gh, claims=lambda: held_cards(remote, CONVENTIONS)), github=True)
+    assert tree_state(layout.root) == before
+    calls = [*coord_gh.calls, *cards_gh.calls]
+    assert cards_gh.calls and coord_gh.calls, "both readers must have run"
+    assert all(not WRITING & set(call) for call in calls), f"gh was asked to write: {calls}"
+    assert {call[0] for call in calls} <= {"api", "issue", "pr"}
 
 
 def test_a_checkout_outside_a_workspace_is_a_config_error() -> None:

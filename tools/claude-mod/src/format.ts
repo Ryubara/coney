@@ -1,9 +1,22 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // What the mod says, as plain functions of the held snapshot and the clock: no `$`, so the tests can read them directly.
 // The mod draws and never decides: every number it compares against (the warning hours, the disk limits, the
-// intervals) arrives in the snapshot, from .github/conventions.yml.
+// intervals, the widths, the stale factor) arrives in the snapshot, from .github/conventions.yml.
 import type { ClaimRow, Config, Held, Snapshot, Unit } from '../types'
 
+/** The id of the Conclave pane: the band opens it, the poll looks for it and the hooks draw it. */
+export const PANE = 'conclave'
+
 export type Tone = 'normal' | 'ok' | 'warn' | 'bad' | 'dim'
+
+/** The engine's colour name for each tone (`undefined`: the default colour). */
+export const COLORS: Record<Tone, string | undefined> = {
+  normal: undefined,
+  ok: 'success',
+  warn: 'warning',
+  bad: 'error',
+  dim: undefined,
+}
 
 export type MarkKind = 'pending' | 'active' | 'merged' | 'failed'
 
@@ -20,6 +33,7 @@ export function mark(kind: MarkKind, surface: Surface): string {
 
 const MARK_TONE: Record<MarkKind, Tone> = { pending: 'warn', active: 'ok', merged: 'dim', failed: 'bad' }
 
+/** The tone a row's mark is drawn in. */
 export function markTone(kind: MarkKind): Tone {
   return MARK_TONE[kind]
 }
@@ -117,12 +131,12 @@ export type BandItem = {
   tone: Tone
 }
 
-/** Whole minutes since the last good local read, when it is old enough to call the snapshot stale; else null. */
+/** Whole minutes since the last good local read, once it is older than `stale_after_reads` local intervals; else null. */
 export function staleMinutes(held: Held, nowMs: number): number | null {
   const config = held.snapshot?.config
   if (held.localAt === 0 || config === undefined) return null
   const age = (nowMs - held.localAt) / 1000
-  return age > config.intervals.local * 3 ? Math.floor(age / 60) : null
+  return age > config.intervals.local * config.stale_after_reads ? Math.floor(age / 60) : null
 }
 
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`

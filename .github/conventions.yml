@@ -912,7 +912,8 @@ runs:
 
 conclave:
   # Conclave, the Claude Code mod in tools/claude-mod (docs/guides/conclave.md). The mod only draws what
-  # `coney-tools conclave snapshot` prints; these are the numbers that command sends along, so the mod holds none.
+  # `coney-tools conclave snapshot` prints; these are the numbers that command sends along. The mod holds only the
+  # few it needs before the first snapshot exists (the first retry, the read time limits), named in src/snapshot.ts.
   # Tether keeps the session's health (context window, prompt cache, /clear, HANDOFF); nothing here touches that.
   claude_code: "2.1.309"                         # the Claude Code version the mod is tested on
   hooks_file: .claude/hooks/hooks.toml           # the roles and helpers the mod's agent list is made from
@@ -920,6 +921,8 @@ conclave:
   github_seconds: 60                             # between reads with --github while the pane is open
   github_idle_seconds: 300                       # ... and while it is closed
   pane_min_columns: 110                          # under it only the band and the status line show
+  band_narrow_columns: 100                       # under it the band takes two short lines
+  stale_after_reads: 3                           # the band is dimmed once the last read is older than this many local intervals
   merged_visible_minutes: 10                     # a merged unit stays on the pane this long
   unit_days: 3                                   # a unit with no worktree stays on the pane this long after its last change
   claim_red_hours: 6                             # a claim's countdown is red in its last hours (amber from claims.warn_hours)

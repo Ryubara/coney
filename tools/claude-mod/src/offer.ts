@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Part A: the agent types the model is offered. Anything that is neither a role nor a helper in the hook settings
 // (general-purpose and the rest) is hidden; the dispatcher's agent guard still refuses a spawn of one, so this is a
 // convenience and the hook is the rule. The list is frozen for the session: a changing agent listing would rewrite

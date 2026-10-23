@@ -16,85 +16,26 @@ Tether, and the snapshot carries none of it.
 
 from __future__ import annotations
 
-import json
-import shutil
 import tomllib
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import coord_cli, stamps
-from coney_tools.audit_github import run_gh
-from coney_tools.config import ConfigError, find_repo_root, workspace_root
-from coney_tools.conventions import Conventions, load_conventions
-from coney_tools.issue_claim_cli import held_cards
-from coney_tools.issue_claim_model import Card, iso_time, scopes_overlap
-from coney_tools.issue_claim_remote import GhRemote
+from coney_tools import stamps
+from coney_tools.conclave_github import add_github
+from coney_tools.conclave_sources import Sources, default_sources, iso_utc, section, strings
+from coney_tools.issue_claim_model import iso_time, scopes_overlap
 from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
+
+__all__ = ["SCHEMA", "Sources", "collect", "default_sources", "format_text"]
 
 #: The version of the snapshot's shape; the mod refuses a snapshot of a newer one.
 SCHEMA = 1
 #: The longest goal line sent for a unit (the pane shows one line).
 GOAL_CHARACTERS = 200
-#: How many recently merged pull requests are read.
-MERGED_LIMIT = 30
-#: How many open issues are read for their titles (the same limit `coord status` uses).
-ISSUE_LIMIT = 500
 #: A step result that counts as the step being done (`none`: the step was not needed, with a reason in the stamp).
 DONE_RESULTS = ("pass", "none")
-
-
-@dataclass
-class Sources:
-    """Where `collect` reads from; tests swap each one for a fake."""
-
-    conventions: Conventions
-    #: The checkout that holds the hook settings (the one the mod was loaded from).
-    checkout: Path
-    #: What `coord status` reads: the scratch folder, the worktrees, the build slots, `gh` and the clock.
-    coord: coord_cli.Sources
-    #: Free bytes on the workspace's drive.
-    free_bytes: Callable[[], int]
-    #: The held claim cards (OSError or ConfigError when GitHub cannot be read).
-    claims: Callable[[], list[Card]]
-
-
-def default_sources(cwd: Path) -> Sources:
-    """The real sources for the checkout that holds `cwd`."""
-    root = find_repo_root(cwd)
-    conventions = load_conventions(root)
-    rules = conventions.claims
-
-    def claims() -> list[Card]:
-        return held_cards(GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, run_gh), conventions)
-
-    return Sources(
-        conventions=conventions,
-        checkout=root,
-        coord=coord_cli.default_sources(cwd),
-        free_bytes=lambda: shutil.disk_usage(workspace_root(root)).free,
-        claims=claims,
-    )
-
-
-def _iso(moment: datetime) -> str:
-    """A moment as ISO 8601 UTC with seconds, `2026-10-23T14:00:00Z`."""
-    return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _section(read: Callable[[], dict[str, Any]]) -> dict[str, Any]:
-    """One section: what `read` returns with `error` None, or only `error` when it could not be read."""
-    try:
-        return {"error": None, **read()}
-    except (ConfigError, OSError, ValueError, KeyError, TypeError) as error:
-        return {"error": str(error) or type(error).__name__}
-
-
-def _strings(value: object) -> list[str]:
-    """A settings value that should be a list of strings, as one; anything else gives an empty list."""
-    return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
 
 
 # --- config ---------------------------------------------------------------------------------------------------------
@@ -114,10 +55,10 @@ def _hook_settings(src: Sources) -> dict[str, Any]:
     if isinstance(table, dict):
         for name, role in table.items():
             roles.append(str(name))
-            roles.extend(_strings(role.get("aliases")) if isinstance(role, dict) else [])
+            roles.extend(strings(role.get("aliases")) if isinstance(role, dict) else [])
     return {
         "roles": list(dict.fromkeys(roles)),
-        "helpers": _strings(data.get("helpers")),
+        "helpers": strings(data.get("helpers")),
         "require_role": data.get("require_role") is True,
     }
 
@@ -137,6 +78,8 @@ def _config(src: Sources) -> dict[str, Any]:
             "github_idle": conclave.github_idle_seconds,
         },
         "pane_min_columns": conclave.pane_min_columns,
+        "band_narrow_columns": conclave.band_narrow_columns,
+        "stale_after_reads": conclave.stale_after_reads,
         "merged_visible_minutes": conclave.merged_visible_minutes,
         "claim_red_hours": conclave.claim_red_hours,
     }
@@ -164,7 +107,7 @@ def _step_rows(report: stamps.Report, steps: tuple[str, ...]) -> tuple[list[dict
         {
             "step": step,
             "state": latest[step].result if step in latest else "missing",
-            "time": _iso(latest[step].moment) if step in latest else None,
+            "time": iso_utc(latest[step].moment) if step in latest else None,
         }
         for step in steps
     ]
@@ -220,7 +163,7 @@ def _last_build(src: Sources, tree: Path) -> dict[str, Any] | None:
     return {
         "state": record.get("state"),
         "exit_code": record.get("exit_code"),
-        "ended": _iso(datetime.fromtimestamp(float(ended), UTC)) if isinstance(ended, int | float) else None,
+        "ended": iso_utc(datetime.fromtimestamp(float(ended), UTC)) if isinstance(ended, int | float) else None,
     }
 
 
@@ -289,7 +232,7 @@ def _unit(
         stage=stage,
         failed=failed,
         steps=steps,
-        stage_since=_iso(report.stamps[-1].moment) if report.stamps else claimed_at,
+        stage_since=iso_utc(report.stamps[-1].moment) if report.stamps else claimed_at,
         agent=_agent_of(report),
     )
     return row
@@ -317,17 +260,6 @@ def _units(src: Sources, lanes: dict[str, Any], now: datetime) -> dict[str, Any]
     return {"units": rows}
 
 
-def _overlaps_with_claims(units: list[dict[str, Any]], cards: list[Card]) -> None:
-    """Add the claims whose scope overlaps a unit's (the unit's own claim is no overlap)."""
-    for row in units:
-        for card in cards:
-            if card.issue in row["issues"] or (card.task and card.task == row["task"]):
-                continue
-            found = scopes_overlap(row["scope"], card.scope)
-            if found:
-                row["overlaps"].append({"with": f"#{card.issue}", "kind": "claim", "scope": found})
-
-
 # --- machine --------------------------------------------------------------------------------------------------------
 
 
@@ -342,165 +274,6 @@ def _machine(src: Sources) -> dict[str, Any]:
     }
 
 
-# --- GitHub ---------------------------------------------------------------------------------------------------------
-
-
-def _labels(item: dict[str, Any]) -> list[str]:
-    """An issue's label names."""
-    return [str(label.get("name", "")) for label in item.get("labels") or [] if isinstance(label, dict)]
-
-
-def _issue_titles(src: Sources) -> list[dict[str, Any]]:
-    """The open issues as `gh` lists them (number, title, labels, assignees)."""
-    raw = json.loads(
-        src.coord.gh(
-            ["issue", "list", "--state", "open", "--limit", str(ISSUE_LIMIT), "--json", "number,title,labels,assignees"]
-        )
-    )
-    if not isinstance(raw, list):
-        raise ValueError("gh issue list did not return a list")
-    return raw
-
-
-def _issues_section(open_issues: list[dict[str, Any]], wanted: set[int], critical: str) -> dict[str, Any]:
-    """The open issues the pane names: those a claim or a unit holds, and the critical ones."""
-    rows: list[dict[str, Any]] = []
-    for item in open_issues:
-        number = int(item["number"])
-        labels = _labels(item)
-        if number not in wanted and critical not in labels:
-            continue
-        rows.append(
-            {
-                "number": number,
-                "title": str(item.get("title") or ""),
-                "status": next((name for name in labels if name.startswith("S-")), None),
-                "priority": next((name for name in labels if name.startswith("P-")), None),
-                "assignees": [str(a.get("login", "")) for a in item.get("assignees") or [] if isinstance(a, dict)],
-            }
-        )
-    rows.sort(key=lambda row: row["number"])
-    return {"issues": rows}
-
-
-def _claims_section(src: Sources, titles: dict[int, str], cards: list[Card], account: str | None) -> dict[str, Any]:
-    """The held claims with their deadlines (None while a claim waits), titles and the signed-in account."""
-    rules = src.conventions.claims
-    rows = [
-        {
-            "issue": card.issue,
-            "title": titles.get(card.issue),
-            "claimant": card.claimant,
-            "status": card.status,
-            "task": card.task,
-            "scope": list(card.scope),
-            "stage": card.stage,
-            "pr": card.pr,
-            "claimed_at": iso_time(card.claimed_at),
-            "last_activity": iso_time(card.activity),
-            "deadline": None if card.waiting else iso_time(card.deadline(rules)),
-            "waiting": card.waiting,
-            "warned": card.warned_at is not None,
-            "adopted": card.adopted,
-        }
-        for card in cards
-    ]
-    return {
-        "account": account,
-        "rules": {"warn_hours": rules.warn_hours, "deadline_hours": rules.deadline_hours, "enforced": rules.release},
-        "claims": rows,
-    }
-
-
-def _account(src: Sources) -> str | None:
-    """The signed-in `gh` account, or None when it cannot be told (the pane then marks no claim as the viewer's)."""
-    try:
-        login = json.loads(src.coord.gh(["api", "user"])).get("login")
-    except (OSError, ValueError, AttributeError):
-        return None
-    return str(login) if login else None
-
-
-def _merged(src: Sources) -> list[dict[str, Any]]:
-    """The recently merged pull requests: number, branch and when."""
-    raw = json.loads(
-        src.coord.gh(
-            ["pr", "list", "--state", "merged", "--limit", str(MERGED_LIMIT), "--json", "number,headRefName,mergedAt"]
-        )
-    )
-    return [
-        {"number": int(pull["number"]), "branch": str(pull.get("headRefName", "")), "merged_at": pull.get("mergedAt")}
-        for pull in raw
-        if isinstance(pull, dict) and pull.get("mergedAt")
-    ]
-
-
-def _attach_pull_requests(units: list[dict[str, Any]], prs: dict[str, Any]) -> None:
-    """Give each unit the pull request of its branch: an open one, else a recently merged one."""
-    opened = {pull["branch"]: pull for pull in prs.get("prs", [])}
-    merged = {pull["branch"]: pull for pull in prs.get("merged", [])}
-    for row in units:
-        for key in (row["branch"], row["task"]):
-            if key in opened:
-                pull = opened[key]
-                row["pr"] = {
-                    "number": pull["number"],
-                    "state": "open",
-                    "ci": pull["ci"],
-                    "causes": pull["causes"],
-                    "merged_at": None,
-                }
-                break
-            if key in merged:
-                row["pr"] = {
-                    "number": merged[key]["number"],
-                    "state": "merged",
-                    "ci": None,
-                    "causes": [],
-                    "merged_at": merged[key]["merged_at"],
-                }
-                break
-
-
-def _github(src: Sources, report: dict[str, Any]) -> None:
-    """Add the `claims`, `prs` and `issues` sections, and attach pull requests and claim overlaps to the units."""
-    units: list[dict[str, Any]] = (report["units"] or {}).get("units", [])
-    prs = coord_cli.collect(src.coord, True, ["pr"])["prs"]
-    if isinstance(prs, dict) and not prs.get("error"):
-        try:
-            prs["merged"] = _merged(src)
-        except (OSError, ValueError, KeyError, TypeError) as error:
-            prs["merged"] = []
-            prs["merged_error"] = str(error)
-    report["prs"] = prs
-    if isinstance(prs, dict) and not prs.get("error"):
-        _attach_pull_requests(units, prs)
-
-    open_issues: list[dict[str, Any]] = []
-    issues_error: str | None = None
-    try:
-        open_issues = _issue_titles(src)
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        issues_error = str(error) or type(error).__name__
-    titles = {int(item["number"]): str(item.get("title") or "") for item in open_issues}
-
-    def claims() -> dict[str, Any]:
-        cards = src.claims()
-        _overlaps_with_claims(units, cards)
-        return _claims_section(src, titles, cards, _account(src))
-
-    report["claims"] = _section(claims)
-    if issues_error is not None:
-        report["issues"] = {"error": issues_error}
-        return
-    held = {row["issue"] for row in report["claims"].get("claims", [])}
-    mine = {number for row in units for number in row["issues"]}
-    report["issues"] = {
-        "error": None,
-        **_issues_section(open_issues, held | mine, src.conventions.claims.critical_label),
-    }
-
-
 # --- the whole snapshot ---------------------------------------------------------------------------------------------
 
 
@@ -509,18 +282,18 @@ def collect(src: Sources, github: bool, unit: str | None = None) -> dict[str, An
     now = src.coord.now()
     report: dict[str, Any] = {
         "schema": SCHEMA,
-        "time": _iso(now),
+        "time": iso_utc(now),
         "checkout": str(src.checkout),
         "github": github,
         "config": _config(src),
     }
-    report["builds"] = _section(lambda: {"lanes": src.coord.builds()})
+    report["builds"] = section(lambda: {"lanes": src.coord.builds()})
     lanes = report["builds"].get("lanes") or {}
-    report["units"] = _section(lambda: _units(src, lanes, now))
-    report["machine"] = _section(lambda: _machine(src))
+    report["units"] = section(lambda: _units(src, lanes, now))
+    report["machine"] = section(lambda: _machine(src))
     report["claims"] = report["prs"] = report["issues"] = None
     if github:
-        _github(src, report)
+        add_github(src, report)
     if unit is not None and report["units"].get("units") is not None:
         report["units"]["units"] = [row for row in report["units"]["units"] if row["task"] == unit]
     return report

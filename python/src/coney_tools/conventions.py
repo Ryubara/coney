@@ -902,6 +902,10 @@ class Conclave:
     github_idle_seconds: int
     #: The terminal width below which only the band and the status line show.
     pane_min_columns: int
+    #: The width below which the band takes two short lines.
+    band_narrow_columns: int
+    #: The band is dimmed as stale once the last good read is older than this many local intervals.
+    stale_after_reads: int
     #: How long a merged unit stays on the pane, in minutes.
     merged_visible_minutes: int
     #: A unit without a worktree stays on the pane this many days after its last change.
@@ -1580,6 +1584,8 @@ def _read_conclave(data: object, where: str) -> Conclave:
         "github_seconds",
         "github_idle_seconds",
         "pane_min_columns",
+        "band_narrow_columns",
+        "stale_after_reads",
         "merged_visible_minutes",
         "unit_days",
         "claim_red_hours",

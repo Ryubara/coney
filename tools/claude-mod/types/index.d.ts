@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The contract of the Conclave mod (docs/guides/conclave.md): the shape of `coney-tools conclave snapshot --json`
 // (python/src/coney_tools/conclave_snapshot.py writes it) and the values the mod keeps in `$.state`.
 // A snapshot of a higher `schema` than the mod's SCHEMA (src/snapshot.ts) is refused, never drawn.
@@ -15,6 +16,8 @@ export type Config = {
   claude_code: string
   intervals: { local: number; github: number; github_idle: number }
   pane_min_columns: number
+  band_narrow_columns: number
+  stale_after_reads: number
   merged_visible_minutes: number
   claim_red_hours: number
 }

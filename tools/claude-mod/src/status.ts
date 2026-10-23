@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The status line: `role · unit · stage`, set after each read and when the session's role is known.
 import type { EngineInterface } from 'claude-code'
 

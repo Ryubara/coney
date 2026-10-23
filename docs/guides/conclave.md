@@ -13,8 +13,8 @@ under [Planned](#planned).
 
 ## What it shows {#shows}
 
-**The band** sits above the prompt, one line on a wide terminal and two on a narrow one (under 100 columns). Each item
-is a button that opens the pane, and an item whose count is zero is left out:
+**The band** sits above the prompt, one line on a wide terminal and two on a narrow one (under `band_narrow_columns`,
+100). Each item is a button that opens the pane, and an item whose count is zero is left out:
 
 | Item | Says | Colour |
 | --- | --- | --- |
@@ -25,8 +25,9 @@ is a button that opens the pane, and an item whose count is zero is left out:
 | `⚠ P-critical #790` | The first open issue labelled `P-critical`, and how many more | amber |
 | `disk 61 GB` | Free space on the workspace drive | amber under `workspace.disk_min_free_gb` + `workspace.disk_margin_gb`, red under `workspace.disk_min_free_gb` |
 
-A snapshot older than three local intervals dims the band and adds `stale 4m`. A failed first read shows the first line
-of the error; a snapshot of a newer shape than the mod knows shows "update the checkout" and nothing else.
+A snapshot older than `stale_after_reads` (3) local intervals dims the band and adds `stale 4m`. A failed first read
+shows the first line of the error; a snapshot of a newer shape than the mod knows shows "update the checkout" and
+nothing else.
 
 **The status line** reads `role · unit · stage` for a session in a unit's worktree (`engineer · fix-frame-812 ·
 compared`), `coordinator · 2 units · ✖1` for the coordinator, and `no role: start with coney-agent` for a session that
@@ -60,10 +61,19 @@ overlaps them.** The idle wake stays in Tether too, now and in later versions. `
 the line, so a change that crosses it fails the Python tests:
 
 - the mod hooks exactly five events: `session.start`, `command.run`, `agent.offer`, `ui.render` and `classic.SessionStart`
-  (which only reads the session's agent type and passes the event on unchanged);
-- no source names the session's usage figures, the prompt, a stop, a compaction, a tool call, a file, the agent
-  spawner or the transcript;
-- the only command the mod runs is the read-only snapshot, in one place (`src/snapshot.ts`).
+  (which only reads the session's agent type and passes the event on unchanged and first). The check reads every
+  `on(...)` call whatever quote it is written in, refuses an event that is not a plain string, a renamed or passed-on
+  `on`, and any quoted name of an event Tether hooks (`classic.UserPromptSubmit`, `classic.Stop`, `session.end`,
+  `turn.complete` and the rest);
+- the mod calls only the twelve `$.noun.method` it needs (the clock, the command registration, the plugin's folder, the
+  one process, the store and the UI), so no `$.session.` or `$.model.` call, tool, file, prompt or agent API appears,
+  and `$` is never copied, destructured or read by a computed name;
+- no source names the session's usage figures, the prompt, a stop, a compaction, the transcript, `/clear` or the
+  HANDOFF message;
+- every code file in every subfolder of the mod is scanned (only `tests/`, `types/` and the engine's own typings are
+  not), and the check is itself tested with a case for each way across the line, so a rule that stops catching fails;
+- the only command the mod runs is the read-only snapshot, in one place (`src/snapshot.ts`);
+- a session start never waits for Conclave ([Starting a session](#start)).
 
 What Conclave may take over later, because the maintainers allowed it, is Coney's own pollers (pull requests, the
 release queue, builds, triage), the stop guard on unowned pull request problems and the pull request ownership store;
@@ -80,13 +90,26 @@ it when a file is saved. The session launcher `coney-agent` is planned to pass t
 folder, so an agent never types it. A session started without the mod keeps every rule and gets no display.
 
 The mod runs `uv run -q --project <checkout>/python coney-tools conclave snapshot --json` from the checkout its own
-folder belongs to, so a worktree's session shows that worktree's units, and it needs `uv` on `PATH`.
+folder belongs to, so a worktree's session shows that worktree's units, and it needs `uv` on `PATH`. It sets
+`UV_PROJECT_ENVIRONMENT` to `<workspace>/scratch/conclave/<checkout folder>/venv` for that call, so `uv` never creates
+`python/.venv` inside a worktree ([Keep Python out of the tree](how-we-work.md#shared-machine)); the first read in
+a checkout builds that environment, and a checkout outside the workspace layout (`repos/coney` or
+`worktrees/coney/<branch>`) is left to the caller's own variable.
+
+## Starting a session {#start}
+
+Conclave never makes a session start wait, Tether's included. `session.start` registers `/conclave`, applies the agent
+list the last session stored, starts the first read in the background and returns; the band draws when the read lands.
+A read that hangs is killed after 30 seconds (60 with `--github`), and a failed one is tried again. The two classic
+hooks (`classic.SessionStart` and `agent.offer`) pass their event on first and keep a `.catch` that does the same, so a
+failure in Conclave leaves the answer of the plugins beneath whole.
 
 ## The snapshot {#snapshot}
 
 [`coney-tools conclave snapshot`](coney-tools.md#conclave) prints one JSON object, read-only. The mod reads it on two
 rhythms, and every number is a `conclave` key of [.github/conventions.yml](repo:.github/conventions.yml) that the
-snapshot carries in `config`:
+snapshot carries in `config`, except the three the mod needs before any snapshot exists and holds itself in
+`src/snapshot.ts`: the first retry (15 s) and the two read time limits (30 s, 60 s with `--github`):
 
 | Read | Command | Every | Cost measured |
 | --- | --- | --- | --- |
@@ -116,10 +139,15 @@ model can still name a hidden type, and the rule that refuses it is a hook, neve
 `.claude/agents/`, so `claude --agent coordinator` works with or without the mod. A checkout without `hooks.toml` (the
 hook dispatcher brings it) reports the reason in `config.error` and hides nothing.
 
-The list is frozen for the session: a listing that changed mid-session would rewrite the prompt cache. The first read of
-a session sets it and stores it for the next session, which hides types from its first turn without waiting for a
-read; a change to `hooks.toml` takes effect in the next session. While the settings cannot be read (no file, a bad one)
-nothing is hidden.
+The list is frozen for the session: a listing that changed mid-session would rewrite the prompt cache, and a session
+(`claude -p` included) never waits for a read to learn it. So a session hides by the list the previous session stored,
+from its first turn. The first session in a checkout, with no list stored, hides nothing; its first read stores the list
+for the next one. A change to `hooks.toml` takes effect in the next session as well.
+
+One read ends the freeze early: a good read that says the settings cannot be read (no file, a bad one, no role) drops
+the stored list and the frozen one, so a list from an earlier session never hides anything the settings no longer ask
+for. The listing changes once in that case, which is the price of not hiding by a stale list. A failed read, one that
+printed nothing usable, changes nothing.
 
 ## Versions and checks {#checks}
 

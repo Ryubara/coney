@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Written by python/tests/test_conclave_fixture.py from the Python tests' synthetic units: do not edit.
 // Run that test with CONEY_UPDATE_FIXTURES=1 to write it again after a change to the snapshot.
 export default {
@@ -27,6 +28,8 @@ export default {
    "github_idle": 300
   },
   "pane_min_columns": 110,
+  "band_narrow_columns": 100,
+  "stale_after_reads": 3,
   "merged_visible_minutes": 10,
   "claim_red_hours": 6
  },

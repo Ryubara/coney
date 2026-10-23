@@ -1,18 +1,24 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Reading the snapshot: run `coney-tools conclave snapshot`, keep the sections of the last good reads, poll on the
 // intervals the snapshot itself carries. Read-only: the mod runs one command that only prints, and writes nothing
 // but its own `$.state` and `$.store`.
 import type { EngineInterface } from 'claude-code'
 
 import type { Held, Snapshot, Unit } from '../types'
-import { changeHeld, getHeld, getOffer, setNow, setOffer } from './state'
+import { PANE } from './format'
+import { changeHeld, clearOffer, getHeld, setNow } from './state'
 
 /** The snapshot shape this mod draws; `coney-tools conclave snapshot` prints it as `schema`. */
 export const SCHEMA = 1
-/** Where a read is retried before any snapshot has said how often to read: only the first snapshot can set it. */
+// The three numbers the mod holds itself, because it needs them before any snapshot has said otherwise (every other
+// number arrives in the snapshot, from .github/conventions.yml). A read that overruns is killed, so a hung `uv` never
+// outlives its bound: a session that ends meanwhile (`claude -p`) is not held by it either.
+/** Where a read is retried before any snapshot has said how often to read. */
 const BOOTSTRAP_RETRY_MS = 15_000
-/** The longest a snapshot may take (the GitHub read is the slow one). */
-const READ_TIMEOUT_MS = 120_000
-const PANE = 'conclave'
+/** The longest a local snapshot may take (a cold `uv` start included). */
+const LOCAL_TIMEOUT_MS = 30_000
+/** The longest a snapshot with `--github` may take (the GitHub read is the slow one: 8 to 15 s here). */
+const GITHUB_TIMEOUT_MS = 60_000
 
 export type Run = { ok: true; snapshot: Snapshot } | { ok: false; error: string }
 
@@ -20,6 +26,20 @@ export type Run = { ok: true; snapshot: Snapshot } | { ok: false; error: string 
 export function checkoutOf(pluginRoot: string): string {
   const parts = pluginRoot.replace(/\\/g, '/').replace(/\/+$/, '').split('/')
   return parts.slice(0, -2).join('/')
+}
+
+/**
+ * The private Python environment for a checkout, in its workspace's scratch folder, or null when the checkout is not
+ * in the workspace layout (`<workspace>/repos/coney` or `<workspace>/worktrees/coney/<branch>`). Without it `uv run`
+ * would create `python/.venv` inside a worktree, where every tool and linter would then scan it
+ * (docs/guides/how-we-work.md, "Keep Python out of the tree"). One per checkout: two checkouts share no editable install.
+ */
+export function venvOf(checkout: string): string | null {
+  const parts = checkout.replace(/\\/g, '/').replace(/\/+$/, '').split('/')
+  const name = parts.at(-1) ?? ''
+  const home = parts.at(-2) === 'repos' ? 2 : parts.at(-3) === 'worktrees' ? 3 : 0
+  if (home === 0 || name === '') return null
+  return `${parts.slice(0, -home).join('/')}/scratch/conclave/${name}/venv`
 }
 
 /** The first line of an error's text, cut to fit a band. */
@@ -33,8 +53,13 @@ export async function runSnapshot($: EngineInterface, github: boolean): Promise<
   const root = checkoutOf($.plugin.root)
   const argv = ['uv', 'run', '-q', '--project', `${root}/python`, 'coney-tools', 'conclave', 'snapshot', '--json']
   if (github) argv.push('--github')
+  const venv = venvOf(root)
   try {
-    const done = await $.process.run(argv, { cwd: root, timeoutMs: READ_TIMEOUT_MS })
+    const done = await $.process.run(argv, {
+      cwd: root,
+      timeoutMs: github ? GITHUB_TIMEOUT_MS : LOCAL_TIMEOUT_MS,
+      ...(venv === null ? {} : { env: { UV_PROJECT_ENVIRONMENT: venv } }),
+    })
     if (done.exitCode !== 0) return { ok: false, error: firstLine(done.stderr || done.stdout) }
     const snapshot = JSON.parse(done.stdout) as Snapshot
     if (typeof snapshot.schema !== 'number') return { ok: false, error: 'not a snapshot' }
@@ -98,13 +123,27 @@ export function allowedTypes(snapshot: Snapshot): string[] | null {
 }
 
 /**
- * Starts the poll: one timer a second that moves the mod's clock while a pane is shown (once a minute otherwise) and
- * starts a read when one is due. Resolves with the first read, so `session.start` can wait for it when it must.
+ * What a good local read does to the agent list. The list a session hides by is read from the store when the session
+ * starts and never changes under the prompt cache, so a read only keeps the list for the NEXT session: it stores the
+ * allowed types. A read that says the hook settings cannot be read (or name no role) drops the stored list and the
+ * frozen one, because a stale list must not hide anything the settings no longer ask to hide.
  */
-export function startPolling(
-  $: EngineInterface,
-  onChange: (state: Held, nowMs: number) => void,
-): Promise<void> {
+async function keepOffer($: EngineInterface, snapshot: Snapshot): Promise<void> {
+  const allowed = allowedTypes(snapshot)
+  if (allowed !== null) {
+    await $.store.set('offer', { allowed })
+    return
+  }
+  await $.store.delete('offer')
+  await clearOffer($)
+}
+
+/**
+ * Starts the poll: one timer a second that moves the mod's clock while a pane is shown (once a minute otherwise) and
+ * starts a read when one is due, the first at once. It returns without waiting for that read: the session must not
+ * wait for a command that runs `uv`, and the band draws from the first good read whenever it lands.
+ */
+export function startPolling($: EngineInterface, onChange: (state: Held, nowMs: number) => void): void {
   let isBusy = false
   let lastTry = 0
   let lastGithubTry = 0
@@ -118,12 +157,7 @@ export function startPolling(
       if (github) lastGithubTry = at
       lastTry = at
       await changeHeld($, state => merged(state, result, github, at))
-      if (result.ok && !github) {
-        const allowed = allowedTypes(result.snapshot)
-        // Kept for the next session, which hides agent types from its first turn without waiting for a read.
-        if (allowed !== null) await $.store.set('offer', { allowed })
-        if (allowed !== null && (await getOffer($)) === null) await setOffer($, allowed)
-      }
+      if (result.ok && !github) await keepOffer($, result.snapshot)
       const state = await getHeld($)
       onChange(state, at)
     } finally {
@@ -154,6 +188,6 @@ export function startPolling(
   $.clock.every(1000, () => {
     tick().catch(() => undefined)
   })
-  // The first read is local, so the band and the agent list never wait for GitHub.
-  return take(false).catch(() => undefined)
+  // The first read is local, so the band never waits for GitHub; its failure is the next tick's to retry.
+  take(false).catch(() => undefined)
 }
