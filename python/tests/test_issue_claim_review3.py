@@ -235,3 +235,69 @@ def test_the_rules_block_states_the_queue_and_the_catch_up_window() -> None:
 
     text = " ".join(conventions_render._claim_rules(CONVENTIONS))
     assert "one at a time" in text and f"last {RULES.catch_up_minutes} minutes" in text
+
+
+# --- review 4: a second release of the same claim, catch-up failures, dispatch refs, one read of the pull requests ----
+
+
+@pytest.mark.parametrize("adopt", [False, True])
+def test_two_releases_of_one_claim_do_not_bring_it_back(github: FakeGitHub, clock: Clock, adopt: bool) -> None:
+    from dataclasses import replace
+
+    def engine_with_adopt() -> Engine:
+        made = make_engine(github, clock)
+        made.rules = replace(made.rules, adopt=adopt)
+        return made
+
+    github.say(10, "alice", "/claim")
+    engine_with_adopt().reconcile(10)
+    clock.advance(hours=73)
+    stale = engine_with_adopt()
+
+    # A run outside the queue (`claim run` by hand) releases the idle claim just before this one unassigns.
+    once_before(github, "unassign", lambda: engine_with_adopt().reconcile(10))
+    stale.reconcile(10)
+    view = github.view(10)
+    assert view.assignees == () and "S-in-progress" not in view.labels and "S-ready-to-start" in view.labels
+    assert all(not card.active for card in (model.parse_card(c.body, RULES) for c in github.cards(10)) if card)
+
+
+def test_a_catch_up_that_cannot_read_github_is_an_error_not_a_crash(
+    engine: Engine, github: FakeGitHub, clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    github.say(11, "alice", "/claim")
+
+    def broken(since: object) -> list[object]:
+        raise ConfigError("cannot read from GitHub with gh (rate limited)")
+
+    monkeypatch.setattr(github, "recent_commands", broken)
+    lines, errors = cli.run_event(engine, "issue_comment", comment_event(11), CONVENTIONS, clock.now)
+    assert card_of(github, 11).claimant == "alice" and any("claimed it" in line for line in lines)
+    assert len(errors) == 1 and "catch-up" in errors[0] and "rate limited" in errors[0]
+
+
+def test_a_dispatch_runs_only_from_the_default_branch() -> None:
+    jobs = workflow()["jobs"]
+    assert isinstance(jobs, dict)
+    condition = jobs["claim"]["if"]
+    assert "github.event_name != 'workflow_dispatch'" in condition
+    assert "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)" in condition
+    group = jobs["claim"]["concurrency"]["group"]
+    assert "github.ref != format('refs/heads/{0}', github.event.repository.default_branch)" in group
+
+
+def test_a_pass_reads_the_linked_pull_requests_once(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
+    github.say(10, "alice", "/claim")
+    engine.reconcile(10)
+    github.add_pr(60)
+    github.link_pr(10, 60, "open", head_date=clock.now(), author="alice")
+    calls: list[int] = []
+    original = github.linked_prs
+
+    def counted(number: int):  # type: ignore[no-untyped-def]
+        calls.append(number)
+        return original(number)
+
+    github.linked_prs = counted  # type: ignore[method-assign]
+    engine.reconcile(10)
+    assert calls == [10]

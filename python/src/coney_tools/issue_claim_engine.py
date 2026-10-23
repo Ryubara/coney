@@ -491,17 +491,25 @@ class Engine:
                 ),
             )
         except _Stale:
-            self._undo_release(work, before, keep_assignees)
+            self._undo_release(work, stored, before, keep_assignees)
             raise
         work.log.append(f"#{number}: claim of {card.claimant} ended ({why})")
         return True
 
-    def _undo_release(self, work: _Pass, before: IssueView, keep_assignees: bool) -> None:
-        """Put back the assignees and the status label a release removed: the card changed under it, so the claim
-        may be alive (a `/progress` landed); the pass starts over and decides again from fresh data."""
+    def _undo_release(self, work: _Pass, stored: Stored, before: IssueView, keep_assignees: bool) -> None:
+        """Put back the assignees and the status label a release removed when the card changed under it and the claim
+        is still held (a `/progress` landed); the pass starts over and decides again from fresh data.
+
+        When the change was the claim ending elsewhere (another writer released it too), nothing is put back.
+        """
         if keep_assignees:
             return
         number = work.issue.number
+        fresh = stored_cards(self.remote.comments(number), self.rules)
+        now = next((item.card for item in fresh if item.comment_id == stored.comment_id), None)
+        if now is None or not now.active:
+            work.log.append(f"#{number}: the claim was ended elsewhere meanwhile; the release stands")
+            return
         for login in before.assignees:
             self.remote.assign(number, login)
         status = [label for label in before.labels if label.startswith(self._status_prefix)]
@@ -664,9 +672,8 @@ class Engine:
         def counts(login: str) -> bool:
             return bool(login) and (login == card.claimant or self.is_maintainer(login))
 
-        open_pr = next(
-            (pr for pr in self.remote.linked_prs(work.issue.number) if pr.state == "open" and counts(pr.author)), None
-        )
+        linked = self.remote.linked_prs(work.issue.number)
+        open_pr = next((pr for pr in linked if pr.state == "open" and counts(pr.author)), None)
         changes: dict[str, object] = {
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
@@ -675,11 +682,7 @@ class Engine:
         pushed = [moment for moment in moments if moment is not None]
         if pushed and max(pushed) > card.activity:
             changes.update(last_activity=max(pushed), last_activity_why="pull request")
-        mine = [
-            pr
-            for pr in self.remote.linked_prs(work.issue.number)
-            if pr.state == "open" and pr.author == card.claimant and not pr.draft
-        ]
+        mine = [pr for pr in linked if pr.state == "open" and pr.author == card.claimant and not pr.draft]
         work.in_review = mine[0].number if mine else None
         want = self.rules.review_label if open_pr else self.rules.working_label
         if want not in work.issue.labels:
@@ -773,7 +776,12 @@ class Engine:
         """
         result = SweepResult()
         since = self._now() - timedelta(minutes=self.rules.catch_up_minutes)
-        waiting = sorted({comment.issue for comment in self.remote.recent_commands(since)} - set(done))
+        try:
+            recent = self.remote.recent_commands(since)
+        except ConfigError as error:
+            result.errors.append(f"catch-up: {error}")
+            return result
+        waiting = sorted({comment.issue for comment in recent} - set(done))
         for number in waiting:
             try:
                 result.lines.extend(self.reconcile(number))

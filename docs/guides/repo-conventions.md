@@ -228,12 +228,13 @@ comments (the claim card, the replies, the 48 hour warning) and delete the comma
 event to the script as a file and never expands a comment into a script. Its jobs share one concurrency group for the
 whole repository, so one runs at a time; a comment that does not start with a slash, or a label event for a label that
 is not paused, is skipped in a group of its own so that it cannot replace the pending job of a real command. Each run
-handles every unhandled command of its issue and the recent commands of other issues, so a job GitHub cancels is covered
-by the next one or the sweep. Two switches in `claims`, `adopt` and `release`, keep the parts that change existing
-issues (giving a card to a hand assignment, the 48 and 72 hour deadlines) off until the cutover. Whether the Actions
-token may delete another person's comment, and whether it may read a collaborator's permission, are checked on the real
-repository; the design works without both (the card remembers which commands it acted on, and the comment's own
-association decides for the repository's owner).
+handles every unhandled command of its issue and the commands other issues received in the last 30 minutes, so the
+command of a job GitHub cancels is usually answered by the next job, and otherwise by the next sweep that runs. A
+`workflow_dispatch` runs only from the default branch. Two switches in `claims`, `adopt` and `release`, keep the parts
+that change existing issues (giving a card to a hand assignment, the 48 and 72 hour deadlines) off until the cutover.
+Whether the Actions token may delete another person's comment, and whether it may read a collaborator's permission, are
+checked on the real repository; the design works without both (the card remembers which commands it acted on, and the
+comment's own association decides for the repository's owner).
 
 ## The /repo-hygiene skill {#hygiene-skill}
 

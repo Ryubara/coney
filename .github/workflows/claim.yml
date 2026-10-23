@@ -8,14 +8,15 @@
 # One claim job runs at a time for the whole repository (the job's concurrency group), so two runs never act on one
 # issue together. GitHub keeps one pending job per group and cancels the older pending one when a newer one queues;
 # every run reads the whole issue, handles every command not yet handled oldest first, and then also handles the
-# commands other issues received in the last `claims.catch_up_minutes`, so a cancelled job's command is answered by the
-# next job, and anything older by the hourly sweep. The choice and its numbers: docs/guides/issues.md#claiming.
+# commands other issues received in the last `claims.catch_up_minutes`. So a command is usually answered by its own job
+# or the next one; one that waits longer is answered by the next sweep that runs (a pending sweep can be cancelled too,
+# which delays it by an hour). The choice and its numbers: docs/guides/issues.md#claiming.
 #
 # The token writes issues (assignees, labels, comments) and reads pull requests (the `Fixes #N` links). The events
 # reach the script as a file ($GITHUB_EVENT_PATH), never as text on a command line: nothing a comment or an issue says
 # is expanded into a script. It runs with `pull_request_target` and `issue_comment` so a fork's pull request and a
 # stranger's comment are served; for that reason it checks out the default branch only (no `ref`, no `repository`:
-# never a pull request's own code). Events caused by this token start no workflow, so it cannot trigger itself.
+# never a pull request's own code), and a dispatch started on any other branch is skipped. Events caused by this token start no workflow, so it cannot trigger itself.
 # Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: claim
 
@@ -38,21 +39,26 @@ permissions:
 
 jobs:
   claim:
-    # Skipped: a comment on a pull request (no claim), a comment that does not start with a slash (no command), and a
+    # Skipped: a comment on a pull request (no claim), a comment that does not start with a slash (no command), a
     # label event for any label but a paused one (`claims.paused_labels`, which stop and start the idle clock; a test
-    # checks the two lists below against it).
+    # checks the two lists below against it), and a dispatch from a branch other than the default one (it would run
+    # that branch's code with this token).
     if: >-
-      ${{ !((github.event_name == 'issue_comment'
-             && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
-            || (github.event_name == 'issues'
-                && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
-                && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name))) }}
+      ${{ (github.event_name != 'workflow_dispatch'
+           || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          && !((github.event_name == 'issue_comment'
+                && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
+               || (github.event_name == 'issues'
+                   && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+                   && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name))) }}
     # One group for every claim job: one at a time, in order. An event that is skipped gets a group of its own, so it
     # can never take the pending place of a real one.
     concurrency:
       group: >-
-        ${{ ((github.event_name == 'issue_comment'
-              && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
+        ${{ ((github.event_name == 'workflow_dispatch'
+              && github.ref != format('refs/heads/{0}', github.event.repository.default_branch))
+             || (github.event_name == 'issue_comment'
+                 && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
              || (github.event_name == 'issues'
                  && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
                  && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name)))
@@ -61,8 +67,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      # No `with:`: the default is the default branch for an issue, a comment, a schedule or a dispatch, and the base
-      # branch for pull_request_target, which is the point.
+      # No `with:`: an issue, a comment and a schedule check out the default branch, pull_request_target the base
+      # branch (never the pull request's head), and a dispatch the branch it was started on, which the job's `if:`
+      # allows only for the default branch.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - name: Handle the event

@@ -327,8 +327,8 @@ def _claim_rules(conventions: Conventions) -> list[str]:
     )
     lines += _bullet(
         "Claim jobs run one at a time for the whole repository; each also handles the commands other issues received "
-        f"in the last {claims.catch_up_minutes} minutes, so a job GitHub cancelled while it waited is answered by the "
-        "next one."
+        f"in the last {claims.catch_up_minutes} minutes, so the command of a job GitHub cancelled while it waited "
+        "is usually answered by the next one, and otherwise by the next sweep that runs."
     )
     return lines
 

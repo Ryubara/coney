@@ -1354,9 +1354,10 @@ All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are 
   the card from the assignee, labels and linked pull requests, then (when `claims.release` is on) applies the warning
   (48 h) and release (72 h). A pull request opened, reopened, made ready or pushed to by the claimant counts as
   activity, and while it is open and ready for review the clock waits. Then it handles the commands other issues
-  received in the last `claims.catch_up_minutes` (a job the one-at-a-time queue cancelled). Before its first change of
-  each step and each card write it reads the issue's cards again and starts over when one changed; when the attempts run
-  out it prints what each did and exits 1.
+  received in the last `claims.catch_up_minutes` (a job the one-at-a-time queue cancelled); a failed read of those is an
+  error (exit 1), after the event's own issues are done. Before its first change of each step and each card write it
+  reads the issue's cards again and starts over when one changed; when the attempts run out it prints what each did and
+  exits 1.
 * `sweep` does the same for every issue that may need it: those with a held card, a working or review label, an assignee
   or a command comment from the last day, and it deletes refusal replies a day after their command is gone. It carries
   on past an issue it cannot read and exits 1 at the end, naming it. It also releases the claims that are over the limit
