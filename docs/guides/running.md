@@ -136,11 +136,18 @@ display of its own is one an agent or a tool started, and the person typing else
 librw makes and shows the window itself inside its start-up, so Coney cannot create it in the right place; it moves
 the window the moment SDL reports it shown, before its OpenGL context exists or a frame is drawn
 (`RenderEngine::start`, `repo:src/platform/render_engine.cpp`; the choosing and fitting are
-`repo:src/core/window_display.h`). A hidden window (`--render-references`) is moved too. Moving a window to a display
-with another scale makes Windows resize it on the way (640 × 448 made on a 150 % display came out 646 × 465 on a
-100 % one, letterboxing every frame and capture), so Coney sets the size again once the window has arrived; the
-`coney.frame_copies_upright` check opens its window on every display in turn and fails when a frame is not the size
-it asked for. The same variable places the
+`repo:src/core/window_display.h`). A hidden window (`--render-references`, the tests') is hidden as SDL shows it, then
+moved: librw makes it shown and has no way to make it hidden. Moving a window to a display with another scale makes
+Windows resize it on the way (640 × 448 made on a 150 % display came out 646 × 465 on a 100 % one, letterboxing every
+frame and capture), so Coney sets the size again once the window has arrived; the `coney.frame_copies_upright` check
+opens its window on every display in turn and fails when a frame is not the size it asked for. It starts and stops the
+renderer once per display, which is why it also checks, after each stop, that librw's "shader in use"
+(`rw::gl3::currentShader`) is null, and, once at the start, that starting the renderer on SDL's dummy video driver (a
+display, no OpenGL) comes back as an error. It checks nothing else of the renderer's restart; the `coney_tests` case
+`a renderer started again after one stopped meets none of its state` checks the rest over four starts (the texture
+units, the framebuffer cache, fog and its colour, the 2D shader override and the rule that every raster is destroyed
+before the stop). What librw leaves behind, and what Coney does about each piece, is on [Restarting the
+renderer](../research/graphics-restart.md). The same variable places the
 windows of PCSX2 copies that `coney-tools pcsx2 launch` and `pcsx2 record` start
 ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
 

@@ -153,6 +153,7 @@ add_executable(coney_tests
     platform/clip_recorder_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/profile_folder_test.cpp
+    platform/render_engine_restart_test.cpp
     platform/room_smoke_overlay_test.cpp
     platform/scene_stage_test.cpp
     platform/sdl_devices_test.cpp

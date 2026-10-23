@@ -107,6 +107,29 @@ std::optional<std::string> openGlTooOld() {
     return tooOld;
 }
 
+// The texture units librw keeps a cache of (its MAXNUMSTAGES).
+constexpr int kTextureStages = 8;
+
+// Makes the real OpenGL state of a fresh context agree with what librw believes after its start: its white texture
+// bound on every texture unit. librw's start binds white on each unit through a cache that skips the call when the
+// cached name equals the one asked for, and the cache outlives the last renderer, so in a restarted renderer the white
+// texture (which gets the first name again) matched and units 1 to 7 stayed on texture 0. Unit 0 is where librw leaves
+// its active unit, so what it has cached there is its white texture; the other units are bound directly, and unit 0
+// is made active again for librw's own cache of the active unit.
+void bindWhiteTextureOnEveryUnit() {
+    GLint activeUnit = -1;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &activeUnit);
+    CONEY_ASSERT(activeUnit == static_cast<GLint>(GL_TEXTURE0)); // where librw's start leaves it
+    const GLuint white = rw::gl3::bindTexture(0);
+    CONEY_ASSERT(white != 0); // librw's start bound its white texture here
+    rw::gl3::bindTexture(white);
+    for (int unit = 1; unit < kTextureStages; ++unit) {
+        glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    glActiveTexture(GL_TEXTURE0);
+}
+
 // The rectangle of an SDL one.
 DisplayRect toDisplayRect(const SDL_Rect& rect) { return {rect.x, rect.y, rect.w, rect.h}; }
 
@@ -225,22 +248,31 @@ void placeOnDisplay(SDL_Window* window, SDL_DisplayID display) {
     }
 }
 
-// What the event watch below needs: the display, and whether the window is already on it.
+// What the event watch below needs: whether to hide the window, which display to move it to (none: where it is), and
+// whether it has been dealt with.
 struct DisplayWatch {
     SDL_DisplayID display = 0;
+    bool hide = false;
     bool placed = false;
 };
 
-// Moves librw's window to its display the moment SDL shows it. librw's GL3 device makes and shows the window inside
-// Engine::start with SDL's default position (the primary display), so this watch, which SDL calls as it sends the
-// window's SHOWN event, is the earliest point Coney can reach it: before its OpenGL context exists and before any
-// frame is drawn. The OpenGL check's own hidden window is never shown, so it is never moved.
+// Hides librw's window, and moves it to its display, the moment SDL shows it. librw's GL3 device makes and shows the
+// window inside Engine::start with SDL's default position (the primary display) and offers no way to make it hidden,
+// so this watch, which SDL calls as it sends the window's SHOWN event, is the earliest point Coney can reach it:
+// before its OpenGL context exists and before any frame is drawn. A window that is to stay hidden is hidden here, so
+// the screen sees it for no longer than SDL's own show call takes; it is hidden before it is moved. The OpenGL
+// check's own hidden window is never shown, so it is never touched.
 bool SDLCALL placeWhenShown(void* userdata, SDL_Event* event) {
     auto* watch = static_cast<DisplayWatch*>(userdata);
     if (!watch->placed && event->type == SDL_EVENT_WINDOW_SHOWN) {
         if (SDL_Window* window = SDL_GetWindowFromID(event->window.windowID); window != nullptr) {
             watch->placed = true;
-            placeOnDisplay(window, watch->display);
+            if (watch->hide) {
+                SDL_HideWindow(window);
+            }
+            if (watch->display != 0) {
+                placeOnDisplay(window, watch->display);
+            }
         }
     }
     return true;
@@ -329,9 +361,10 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // For the NULL backend, put librw's NULL device in that slot for the duration of the copy, then put GL3 back: the
     // engine then runs on the NULL device until it closes, and SDL's video is never started.
     bool opened = false;
-    // `--window-display` / CONEY_WINDOW_DISPLAY: librw's GL3 device makes and shows the window in Engine::start, so
-    // the watch covers open and start, and the window goes to its display as it is shown (placeWhenShown), or right
-    // after start on a window system that never sent the event. The guard removes the watch on every way out.
+    // `--window-display` / CONEY_WINDOW_DISPLAY, and a window that is to stay hidden: librw's GL3 device makes and
+    // shows the window in Engine::start, so the watch covers open and start, and the window is hidden and goes to its
+    // display as it is shown (placeWhenShown), or right after start on a window system that never sent the event. The
+    // guard removes the watch on every way out.
     DisplayWatch displayWatch;
     std::optional<SDL_DisplayID> display;
     struct WatchGuard {
@@ -349,11 +382,10 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     } watchGuard;
     if (openGl) {
         display = chosenDisplay(desc.display);
-        if (display) {
-            displayWatch.display = *display;
-            if (SDL_AddEventWatch(placeWhenShown, &displayWatch)) {
-                watchGuard.watch = &displayWatch;
-            }
+        displayWatch.display = display.value_or(0);
+        displayWatch.hide = desc.hidden;
+        if ((display || desc.hidden) && SDL_AddEventWatch(placeWhenShown, &displayWatch)) {
+            watchGuard.watch = &displayWatch;
         }
         opened = rw::Engine::open(&params) != 0;
     } else {
@@ -393,7 +425,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
         return failure; // the destructor stops librw and releases our own reference to SDL
     }
     // librw's GL3 device always shows the window it makes; a tool that draws only into offscreen buffers hides it
-    // again (the OpenGL context stays usable).
+    // again (the OpenGL context stays usable). The watch above already did, as the window was shown; this is for a
+    // window system that never sent the event.
     if (desc.hidden) {
         SDL_HideWindow(static_cast<SDL_Window*>(engine->m_sdlWindow));
     }
@@ -401,6 +434,11 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     int height = 0;
     SDL_GetWindowSize(static_cast<SDL_Window*>(engine->m_sdlWindow), &width, &height);
     engine->m_frameSize = graphics::Extent{width, height};
+    bindWhiteTextureOnEveryUnit();
+    // librw's start sets the fog colour to white in its state but not in the registry its shaders read, and marks
+    // nothing changed: shaders made now would upload the colour the last renderer left there. Setting it again marks it
+    // changed, so the first draw puts white in the registry (also in a first renderer, where the registry holds zeros).
+    rw::SetRenderState(rw::FOGCOLOR, 0xFFFFFFFFU);
     engine->createCamera();
     // Mip levels by distance, as the GS picks them; without it OpenGL picks them by screen size.
     engine->m_textureLod = startTextureLod();
@@ -931,7 +969,33 @@ void RenderEngine::shutDown() noexcept {
     // step destroys the window and the context and the close step releases the GL3 device's reference to SDL's video.
     if (m_librwStarted) {
         m_librwStarted = false;
+        // The rule: every librw raster and texture, and every texture dictionary but the one librw makes for itself,
+        // was destroyed before this point (the camera's above, the owners' in their own destructors). librw's stop
+        // destroys the textures and dictionaries still listed, so an owner that destroys its own after the stop frees
+        // it twice, and a raster destructor that calls OpenGL after it runs on a context that is gone; a raster that
+        // never had a texture is left to leak and to sit in librw's stage caches. Cheap to check, ruinous to break.
+        CONEY_ASSERT(rw::Raster::numAllocated == 0 && rw::Texture::numAllocated == 0 &&
+                     rw::TexDictionary::numAllocated <= 1);
+        // While the OpenGL context is still there to bind in, put librw's caches of it back to where a fresh process
+        // has them (the NULL backend has no context). librw skips a call whose argument equals what it cached, and
+        // names start again in the next context, so a cached name can match a different object there.
+        // docs/research/graphics-restart.md lists what is cleared and what needs nothing.
+        if (m_sdlWindow != nullptr && !m_glStubbed) {
+            // The framebuffer bound: the window's own (0).
+            rw::gl3::bindFramebuffer(0);
+            // Fog off, as at start-up.
+            rw::SetRenderState(rw::FOGENABLE, 0);
+        }
         rw::Engine::stop();
+        // The stop destroyed every shader, Coney's (stopTextureLod above) and librw's own. Two librw globals still
+        // name one. The "shader in use" is never cleared, because Shader::destroy does not, and the next renderer's
+        // first Shader::create reads through it to put that program back: a read of freed memory, which crashed with
+        // a segmentation fault now and then when the freed block's page had gone (issue #757). The 2D shader a
+        // program may override (Coney sets none) would draw with a freed shader. The rest of librw's globals are
+        // cleared by its own term step, started afresh by its init step, or harmless; the start puts the texture
+        // units right (bindWhiteTextureOnEveryUnit). The whole list: docs/research/graphics-restart.md.
+        rw::gl3::currentShader = nullptr;
+        rw::gl3::im2dOverrideShader = nullptr;
         rw::Engine::close();
         rw::Engine::term();
     }

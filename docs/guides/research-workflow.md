@@ -272,8 +272,9 @@ leave the focus alone:
   reads the same variable (below). An agent never overrides it with `--window-display` for its own runs.
 - **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
   `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a
-  window opens; the one test with a window (`coney.frame_copies_upright`) hides it and so never takes the focus. A new
-  smoke test keeps to `--headless`. `coney-tools trace coney` runs Coney `--headless` too.
+  window opens; the two tests with a window (`coney.frame_copies_upright` and `a renderer started again after one
+  stopped meets none of its state`) hide it and so never take the focus. A new smoke test keeps to
+  `--headless`. `coney-tools trace coney` runs Coney `--headless` too.
 - **How.** librw's GL3 device makes and shows the window with SDL's defaults, which activate it. Before it does,
   `RenderEngine::start` (`repo:src/platform/render_engine.cpp`) turns off SDL's `SDL_WINDOW_ACTIVATE_WHEN_SHOWN` and
   `SDL_WINDOW_ACTIVATE_WHEN_RAISED` hints, so on Windows the window is shown with `SWP_NOACTIVATE`. Unlike PCSX2's Qt

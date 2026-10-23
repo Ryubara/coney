@@ -1836,6 +1836,9 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   tests: no window, no GPU. It implements `graphics::RenderDevice` (begin a frame cleared to a colour, present),
   which game modes call as the original's modes call the device (from their `render()`, see below); the idle mode
   clears and presents every frame. There are no device cameras yet: one camera covers the window.
+- **Restarting the renderer.** After any `RenderEngine` stops, nothing of it may remain that a later one could meet,
+  so a change of display, of video settings or of mode can stop the renderer and start another in one process. What
+  librw leaves behind, and what Coney does for each piece, is on [Restarting the renderer](graphics-restart.md).
 - **The frame rate: a decoupled loop, Coney's choice.** The original runs one fixed 1/30 s step and one present per
   frame, held to 30 frames a second by its flip every second vertical blank ([the frame rate](#frame-rate)). Coney
   keeps the step and frees the display rate: the simulation always advances in steps of exactly `0x960000` ticks,

@@ -130,6 +130,7 @@ nav:
           - Chunk system: research/chunk-system.md
           - File I/O: research/file-io.md
           - Graphics device and textures: research/graphics.md
+          - Restarting the renderer: research/graphics-restart.md
           - The PS2 render driver: research/ps2-render.md
           - Lighting: research/lighting.md
           - "Rendering: a frame's passes": research/rendering.md
