@@ -30,7 +30,7 @@ constexpr std::array<std::string_view, 21> kPlayerOptions{
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
     "Usage: coney --install DISC --data DIR [--verify]\n"
-    "       coney [--disc PATH] [--language CODE] [--profiles DIR]\n"
+    "       coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"

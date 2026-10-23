@@ -279,30 +279,30 @@ play mode is given (`SandboxPlayScenery`, `createPlayInSandbox()`), and the Spaw
 extras (`PlayScenery::setExtras()`), both made in `coney_devtools`. So no game library links `coney_debug`.
 
 **The two entry points.** `main.cpp` is the debug tools' `coney`: every option, the viewers, the sandbox, the menus.
-`main_release.cpp` is the release build's: a player's options alone (`OptionSet::Player`: the install
-([`--install`](running.md#install)), the disc, the language, the profiles, the frame rate and vsync, the PS2 look, the
-sound, the FPS counter, skipping movies, the window, network play) and test mode's `--headless`, `--frames` and
-`--input-script` for its smoke tests; any other option is refused with a message that names the debug tools. It plays
-the story from boot, or the idle screen without a disc. Network play is there too, from the command line (`--host`,
-`--join`, `--net-name`, set up by `platform/game_run.h` as in the debug tools' `coney`); the Network page is a debug
-page. What both set up the same way (the disc, the window, the session's settings, the sound, the end-of-run counts) is
-`platform/game_run.h`, so a player's game is set up as the tested one. A build with the tools also builds
+`main_release.cpp` is the release build's: a player's options alone (`OptionSet::Player`: the install and playing from
+it ([`--install`, `--data`](running.md#install)), the disc, the language, the profiles, the frame rate and vsync, the
+PS2 look, the sound, the FPS counter, skipping movies, the window, network play) and test mode's `--headless`,
+`--frames` and `--input-script` for its smoke tests; any other option is refused with a message that names the debug
+tools. It plays the story from boot, or the idle screen without a disc. Network play is there too, from the command line
+(`--host`, `--join`, `--net-name`, set up by `platform/game_run.h` as in the debug tools' `coney`); the Network page is
+a debug page. What both set up the same way (the disc, the window, the session's settings, the sound, the end-of-run
+counts) is `platform/game_run.h`, so a player's game is set up as the tested one. A build with the tools also builds
 `main_release.cpp` as `coney_release`, so every build checks that the game links without them; without the tools it is
 `coney` itself.
 
 **What proves it.** Besides the Python test below, ctest runs the release entry point's smoke tests (`coney.release.*`:
-it starts headless, prints a player's options, refuses `--play-level`, plays an input script, hosts and joins, and
-`--install` refuses a missing disc) in every build, and `coney.release.has_no_debug_tools` looks for strings only the
-debug tools put in an executable (the debug pages' titles, the developer overlay's settings file, Dear ImGui's default
-one; `cmake/debug_tools_markers.cmake`) and fails when it finds one. On the debug tools' `coney` the same script must
-find them (`coney.debug_tools_markers_found`), so the check cannot pass by finding nothing. The release build also
-builds and runs every unit test of the game; the tests of the debug tools (the menus, the overlay, the sandbox, the
-viewers and the disc tests that drive the game through them) are listed apart in `tests/CMakeLists.txt` and built only
-with the tools, and a Python test refuses a test of the release build's list that includes a debug tools' header. CI
-builds the release build and runs its tests on Windows and Linux ([What CI runs](#what-ci-runs)).
-`python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources and fails when a game library
-lists a debug source, includes a `debug/` or `sandbox/` header or links a debug library, or anything but
-`coney_devtools` links `imgui`.
+it starts headless, prints a player's options, refuses `--play-level`, plays an input script, hosts and joins,
+`--install` refuses a missing disc and `--data` an unfinished install) in every build, and
+`coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug pages' titles,
+the developer overlay's settings file, Dear ImGui's default one; `cmake/debug_tools_markers.cmake`) and fails when it
+finds one. On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`), so the check
+cannot pass by finding nothing. The release build also builds and runs every unit test of the game; the tests of the
+debug tools (the menus, the overlay, the sandbox, the viewers and the disc tests that drive the game through them) are
+listed apart in `tests/CMakeLists.txt` and built only with the tools, and a Python test refuses a test of the release
+build's list that includes a debug tools' header. CI builds the release build and runs its tests on Windows and Linux
+([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources
+and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links a debug library,
+or anything but `coney_devtools` links `imgui`.
 
 **What it saves.** Measured with MSVC on Windows (2026-10-21): the `release` preset's `coney.exe` is 8.4 MB
 (Release, no tools); the `dev` preset's `coney.exe` is 33.0 MB and its `coney_release.exe`, the same Debug build

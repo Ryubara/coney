@@ -43,7 +43,7 @@ refuses any other with a message that names the debug tools; `coney --help` list
 
 ```text
 coney --install DISC --data DIR [--verify]
-coney [--disc PATH] [--language CODE] [--profiles DIR]
+coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
       [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
