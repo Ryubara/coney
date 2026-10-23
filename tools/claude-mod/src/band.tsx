@@ -3,7 +3,7 @@
 // button that opens the pane. Dimmed with `stale Nm` when the last good read is old. Draws; never decides.
 import type { EngineInterface, RenderElement, RenderInput } from 'claude-code'
 
-import { bandItems, COLORS, PANE, staleMinutes } from './format'
+import { bandItems, color, PANE, staleMinutes } from './format'
 import type { BandItem } from './format'
 import { getHeld, getNow } from './state'
 
@@ -46,7 +46,7 @@ export async function drawBand($: EngineInterface, e: BandInput): Promise<Render
       : [items]
   const button = (item: BandItem) => (
     <Button key={item.key} onPress={() => openPane($)}>
-      <Text color={COLORS[item.tone]} dimColor={stale !== null || item.tone === 'dim'}>
+      <Text color={color(item.tone)} dimColor={stale !== null || item.tone === 'dim'}>
         {item.text}
       </Text>
     </Button>

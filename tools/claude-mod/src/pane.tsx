@@ -13,7 +13,7 @@ import {
   claimLineText,
   claimTone,
   clip,
-  COLORS,
+  color,
   elapsed,
   issueIds,
   mark,
@@ -31,7 +31,19 @@ import { getHeld, getNow, getOpen, toggleOpen } from './state'
 
 type PaneInput = RenderInputOf<'Pane', Surface>
 
-const STEP_MARKS: Record<StepState, string> = { pass: '✔', fail: '✖', none: '–', missing: '·' }
+/** The mark of a step of the stamp log in the pane. */
+function stepMark(state: StepState): string {
+  switch (state) {
+    case 'pass':
+      return '✔'
+    case 'fail':
+      return '✖'
+    case 'none':
+      return '–'
+    case 'missing':
+      return '·'
+  }
+}
 
 /** The row key a unit opens under. */
 export const unitKey = (unit: Unit): string => `task:${unit.task}`
@@ -95,7 +107,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
   const surface = e.surface
   const toggle = (key: string) => toggleOpen($, key)
   const line = (text: string, tone: Tone = 'normal', key?: string) => (
-    <Text key={key} color={COLORS[tone]} dimColor={tone === 'dim'}>
+    <Text key={key} color={color(tone)} dimColor={tone === 'dim'}>
       {text}
     </Text>
   )
@@ -133,7 +145,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
         ])}
         {claim !== undefined && detail('expiry', [expiry], ' ', claimTone(claim, rules, redHours, nowMs))}
         {detail('scope', [`${unit.scope.join(', ') || 'not stated'}${overlaps}`], ' ', overlaps ? 'warn' : 'normal')}
-        {detail('stamps', unit.steps.map(step => `${STEP_MARKS[step.state]} ${step.step}`), '  ')}
+        {detail('stamps', unit.steps.map(step => `${stepMark(step.state)} ${step.step}`), '  ')}
         {unit.stamp_problems > 0 &&
           detail('', [`${unit.stamp_problems} problem(s) in the stamp log (coney-tools stamp verify)`], ' ', 'warn')}
         {why !== null && detail('reason', [why], ' ', 'bad')}
@@ -159,7 +171,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
       return (
         <Box key={key} flexDirection="column">
           <Button key={key} onPress={() => toggle(key)}>
-            <Text color={COLORS[markTone(kind)]}>{caret}</Text>
+            <Text color={color(markTone(kind))}>{caret}</Text>
             <Text bold>{clip(head, room - 4)}</Text>
           </Button>
           {line(clip(`   ${rest.filter(Boolean).join(' · ')}`, room), 'dim')}
@@ -170,7 +182,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     return (
       <Box key={key} flexDirection="column">
         <Button key={key} onPress={() => toggle(key)}>
-          <Text color={COLORS[markTone(kind)]}>{caret}</Text>
+          <Text color={color(markTone(kind))}>{caret}</Text>
           <Text bold>{`${issueIds(unit)} `}</Text>
           <Text>{`${unitTitle(snapshot, unit)}  `}</Text>
           <Text dimColor>{unitSummary(unit, nowMs)}</Text>
@@ -200,8 +212,8 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
       return (
         <Box key={key} flexDirection="column">
           <Button key={key} onPress={() => toggle(key)}>
-            <Text color={COLORS.warn}>{caret}</Text>
-            <Text bold color={COLORS[tone]}>
+            <Text color={color('warn')}>{caret}</Text>
+            <Text bold color={color(tone)}>
               {clip(`#${claim.issue} ${claimExpiry(claim, rules, nowMs, true)}`, room - 4)}
             </Text>
           </Button>
@@ -213,11 +225,11 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     return (
       <Box key={key} flexDirection="column">
         <Button key={key} onPress={() => toggle(key)}>
-          <Text color={COLORS.warn}>{caret}</Text>
+          <Text color={color('warn')}>{caret}</Text>
           <Text bold>{`#${claim.issue} `}</Text>
           <Text>{`${claim.title ?? ''}  `}</Text>
           <Text dimColor>{`${claim.claimant}  ${claim.stage ?? claim.status}  `}</Text>
-          <Text color={COLORS[tone]}>{claimExpiry(claim, rules, nowMs)}</Text>
+          <Text color={color(tone)}>{claimExpiry(claim, rules, nowMs)}</Text>
         </Button>
         {open}
       </Box>
@@ -243,7 +255,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     <Box key={`summary-${index}`}>
       {row.flatMap((item, at) => [
         ...(at > 0 ? [<Text key={`sep-${item.key}`} dimColor>{' · '}</Text>] : []),
-        <Text key={item.key} color={COLORS[item.tone]} dimColor={item.tone === 'dim'}>
+        <Text key={item.key} color={color(item.tone)} dimColor={item.tone === 'dim'}>
           {clip(item.text, room)}
         </Text>,
       ])}

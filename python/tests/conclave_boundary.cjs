@@ -159,7 +159,7 @@ function isEngineFunction(callee) {
 
 const {
   unwrap, isName, plainProperties, constText, snapshotProblem, isRunOptions, inlineFunction, passingHookProblems,
-  sessionStartProblems, isLookup, NOT_THE_COMMAND,
+  sessionStartProblems, NOT_THE_COMMAND,
 } = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, isEngine, isOwn, isEngineFunction })
 
 /** Whether `call` is `<engine>.process.run(...)`. */
@@ -320,13 +320,15 @@ function checkFile(sf, label, errors, events) {
     const args = call.arguments
     if (args.length < 2 || args.length > 3) return err(call, `on('${event}') takes a pattern, a filter (optional) and a hook`)
     checkFilter(call, event, args.length === 3 ? args[1] : undefined)
-    // An arrow function: it has no `arguments`, `this` or name of its own to reach `e` and `next` by another way.
+    // An arrow function of at most ($, e, next), each a plain name: it has no `arguments`, `this`, name, default, rest
+    // or destructured parameter to reach `e` and `next` by another way.
     const arrow = node => {
       const fn = inlineFunction(node)
-      return fn !== null && ts.isArrowFunction(fn) ? fn : null
+      const isPlain = param => ts.isIdentifier(param.name) && param.initializer === undefined && param.dotDotDotToken === undefined
+      return fn !== null && ts.isArrowFunction(fn) && fn.parameters.length <= 3 && fn.parameters.every(isPlain) ? fn : null
     }
     const hook = arrow(args[args.length - 1])
-    if (hook === null) err(args[args.length - 1], `the hook of ${event} must be an arrow function written in place, which this check reads`)
+    if (hook === null) err(args[args.length - 1], `the hook of ${event} must be an arrow function written in place with at most ($, e, next), each a plain name, which this check reads`)
     else if (event === 'classic.SessionStart') checkSessionStartHook(hook)
     else if (event === 'session.start' || event === 'agent.offer') checkPassingHook(hook, event, event === 'agent.offer')
     const outer = top(call)
@@ -408,10 +410,9 @@ function checkFile(sf, label, errors, events) {
     if (ts.isAsExpression(n) && ts.isAsExpression(unwrap(n.expression)) && unwrap(n.expression).type.kind === ts.SyntaxKind.UnknownKeyword) {
       err(n, 'casts through `as unknown as`, which hides what a value is from this check')
     }
-    // A name computed at run time reaches what no written name may (a constructor), whatever the value's type says; the
-    // one exception is reading a value out of the mod's own table of literals (isLookup).
-    if (ts.isElementAccessExpression(n) && constText(n.argumentExpression) === null && !isLookup(n)) {
-      err(n, 'reads a property by a computed name, which reaches code built at run time (only a table of literals may be read so)')
+    // A name computed at run time reaches what no written name may (a constructor), whatever the value's type says.
+    if (ts.isElementAccessExpression(n) && constText(n.argumentExpression) === null) {
+      err(n, 'reads a property by a computed name, which reaches code built at run time (use a switch or a Map)')
     }
     // Loops and declarations that wait without an `await` the hook checks can see.
     if (ts.isForOfStatement(n) && n.awaitModifier !== undefined) err(n, 'uses `for await`, a wait this check does not follow')

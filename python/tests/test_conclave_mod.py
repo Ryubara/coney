@@ -443,6 +443,81 @@ CROSSINGS = [
         "const F = ({ f: () => undefined } as Record<string, object>)['f'] as Record<string, unknown>\nvoid (F[k])",
         "reads a property by a computed name",
     ),  # fn_with_keys_index
+    # Round 6 review: the probes of probe8.py.
+    ("on('agent.offer', async ($, { agent }, next) => ({ isOffered: false }))", "each a plain name"),
+    ("on('agent.offer', ($, e, next) => next(e)).catch(($, e, next, again = next) => next(e))", "arrow function"),
+    (
+        "const T = { a: 1 }\nconst kp = ['__pro', 'to__'].join('')\n"
+        "Object.assign(T, Object.fromEntries([[kp, () => 1]]))\nconst k = ['con', 'structor'].join('') as 'a'\n"
+        "const F: unknown = T[k]\nvoid (F as (s: string) => () => unknown)('return 1')()",
+        "reads a property by a computed name",
+    ),  # lookup_proto_swap_function
+    (
+        "const T = { a: 1 }\nconst k = ['__lookup', 'Getter__'].join('') as 'a'\nconst v: unknown = T[k]\n"
+        "void (v as (n: string) => unknown)('x')",
+        "reads a property by a computed name",
+    ),  # lookup_store_then_call
+    (
+        "const T = { a: 1 }\nconst k = ['con', 'structor'].join('') as 'a'\nconst v: unknown = T[k]\n"
+        "void (v as { name: string }).name",
+        "reads a property by a computed name",
+    ),  # lookup_store_then_read
+    (
+        "const T = { a: 1 }\nconst k = ['con', 'structor'].join('') as 'a'\n"
+        "const use = (f: unknown) => (f as () => unknown)()\nuse(T[k])",
+        "reads a property by a computed name",
+    ),  # lookup_arg_to_fn
+    (
+        "const T = { a: 1 }\nconst U = { a: 2 }\ndeclare const c: boolean\n"
+        "const k = ['con','structor'].join('') as 'a'\nconst v: unknown = (c ? T : U)[k]",
+        "reads a property by a computed name",
+    ),  # lookup_ternary_tables
+    (
+        "const T = { a: 1 }\nconst k = ['con','structor'].join('') as 'a'\nconst [v] = [T[k]]\n"
+        "void (v as unknown as () => void)",
+        "reads a property by a computed name",
+    ),  # lookup_in_array_spread
+    (
+        "const T = { a: 1 }\nObject.defineProperty(T, 'b', { get: () => 1 })\nconst k = 'b' as string as 'a'\n"
+        "void T[k]",
+        'names "defineProperty"',
+    ),  # defineProperty_table
+    (
+        "on('session.start', async ($, e, next, n2 = next, e2 = e) => {\n  void n2({ ...e2, cwd: 'x' })\n"
+        "  return next(e)\n})",
+        "the hook of session.start must be an arr",
+    ),  # hook_extra_default_params
+    (
+        "on('session.start', async ($, e, next, ...more: unknown[]) => {\n  void more\n  return next(e)\n})",
+        "the hook of session.start must be an arr",
+    ),  # hook_rest_params
+    (
+        "on('classic.SessionStart', async ($, e, next, again = next) => {\n  const r = await next(e)\n"
+        "  await again(e)\n  return r\n})",
+        "the hook of classic.SessionStart must be",
+    ),  # ss_extra_param
+    (
+        "on('session.start', async function ($, e, next) { return next(e) })",
+        "the hook of session.start must be an arr",
+    ),  # hook_function_expr
+    (
+        "on('agent.offer', async ($, e, next) => next(e)).catch(function ($, e, next) { return next(e) })",
+        "uses the registration that on(...) retur",
+    ),  # catch_function_expr
+    ("function f() { return arguments.length }\nvoid f", "uses the global arguments"),  # arguments_in_own_fn
+    ("async function f() { for await (const x of [1]) void x }\nvoid f", "uses `for await`"),  # for_await_own
+    (
+        "function f() { using _d = { [Symbol.dispose]() {} } }\nvoid f",
+        "declares with `using` or `await using`",
+    ),  # using_own
+    (
+        "const o: Record<string, number> = {}\ndeclare const k: string\nvoid o[k]",
+        "reads a property by a computed name",
+    ),  # computed_on_plain_obj
+    (
+        "const T = { a: 1 }\ndeclare const k: 'a'\nT[k] = 2",
+        "reads a property by a computed name",
+    ),  # computed_write_table
     ("$.command.register({ name: 'conclave', description: 'x', immediate: true })", "takes only name and description"),
     ("$.ui.open({ id: 'conclave', title: 'x', focus: true })", "takes only id and title"),
     ("const d = Object.getOwnPropertyDescriptor(Object, 'x')", "getOwnPropertyDescriptor"),

@@ -98,6 +98,8 @@ EXACT_WORDS = [
     "__lookupSetter__",
     "__defineGetter__",
     "__defineSetter__",
+    "defineProperty",
+    "defineProperties",
 ]
 #: The one name Conclave gives its command and its pane; it is also the filter of its `command.run` and `ui.render`.
 NAME = "conclave"

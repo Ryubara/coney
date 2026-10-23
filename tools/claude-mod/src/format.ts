@@ -9,13 +9,19 @@ export const PANE = 'conclave'
 
 export type Tone = 'normal' | 'ok' | 'warn' | 'bad' | 'dim'
 
-/** The engine's colour name for each tone (`undefined`: the default colour). */
-export const COLORS: Record<Tone, string | undefined> = {
-  normal: undefined,
-  ok: 'success',
-  warn: 'warning',
-  bad: 'error',
-  dim: undefined,
+/** The engine's colour name for a tone (`undefined`: the default colour). */
+export function color(tone: Tone): string | undefined {
+  switch (tone) {
+    case 'ok':
+      return 'success'
+    case 'warn':
+      return 'warning'
+    case 'bad':
+      return 'error'
+    case 'normal':
+    case 'dim':
+      return undefined
+  }
 }
 
 export type MarkKind = 'pending' | 'active' | 'merged' | 'failed'
@@ -23,19 +29,33 @@ export type MarkKind = 'pending' | 'active' | 'merged' | 'failed'
 /** The surface names the engine draws on; the terminal gets single-width symbols, the others emoji. */
 export type Surface = 'terminal' | 'desktop' | 'vscode' | 'mobile'
 
-const SYMBOLS: Record<MarkKind, string> = { pending: '⚠', active: '●', merged: '✔', failed: '✖' }
-const EMOJI: Record<MarkKind, string> = { pending: '⚠️', active: '🟢', merged: '✅', failed: '❌' }
-
 /** The mark of a row: coloured single-width symbols on the terminal, emoji elsewhere (fonts decide the former). */
 export function mark(kind: MarkKind, surface: Surface): string {
-  return (surface === 'terminal' ? SYMBOLS : EMOJI)[kind]
+  const isTerminal = surface === 'terminal'
+  switch (kind) {
+    case 'pending':
+      return isTerminal ? '⚠' : '⚠️'
+    case 'active':
+      return isTerminal ? '●' : '🟢'
+    case 'merged':
+      return isTerminal ? '✔' : '✅'
+    case 'failed':
+      return isTerminal ? '✖' : '❌'
+  }
 }
-
-const MARK_TONE: Record<MarkKind, Tone> = { pending: 'warn', active: 'ok', merged: 'dim', failed: 'bad' }
 
 /** The tone a row's mark is drawn in. */
 export function markTone(kind: MarkKind): Tone {
-  return MARK_TONE[kind]
+  switch (kind) {
+    case 'pending':
+      return 'warn'
+    case 'active':
+      return 'ok'
+    case 'merged':
+      return 'dim'
+    case 'failed':
+      return 'bad'
+  }
 }
 
 const two = (n: number): string => String(n).padStart(2, '0')
@@ -120,7 +140,21 @@ export function unitKind(unit: Unit, nowMs: number, config: Config): UnitKind {
   return unit.agent === null ? 'pending' : 'active'
 }
 
-const ORDER: Record<UnitKind, number> = { failed: 0, active: 1, pending: 2, merged: 3, gone: 4 }
+/** Where a kind of unit sorts in the pane: failed first, then active, not started, merged. */
+function order(kind: UnitKind): number {
+  switch (kind) {
+    case 'failed':
+      return 0
+    case 'active':
+      return 1
+    case 'pending':
+      return 2
+    case 'merged':
+      return 3
+    case 'gone':
+      return 4
+  }
+}
 
 /** The units the pane lists, failed ones first, then active, not started and merged; long-merged ones left out. */
 export function visibleUnits(snapshot: Snapshot, nowMs: number): { unit: Unit; kind: MarkKind }[] {
@@ -131,7 +165,7 @@ export function visibleUnits(snapshot: Snapshot, nowMs: number): { unit: Unit; k
     if (kind !== 'gone') rows.push({ unit, kind })
   }
   return rows.sort(
-    (a, b) => ORDER[a.kind] - ORDER[b.kind] || a.unit.task.localeCompare(b.unit.task),
+    (a, b) => order(a.kind) - order(b.kind) || a.unit.task.localeCompare(b.unit.task),
   )
 }
 

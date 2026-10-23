@@ -79,19 +79,20 @@ alias, a spread or a cast cannot hide a call. It refuses:
   carry the filter `{ command: 'conclave' }` and `ui.render` the filter `{ component: 'AbovePrompt' }` or `{ component:
   'Pane', requestId: 'conclave' }`, so neither answers one of Tether's commands or draws over one of its panes (a
   literal, or a const that holds `'conclave'`). `session.start` and `agent.offer` must end every path in `next(e)`
-  (`agent.offer` may also return `{ isOffered: false }`, the answer that hides a type), and so must the `.catch` of
-  any hook; a hook that answers for itself would drop what Tether adds beneath it. `classic.SessionStart` begins `const
-  r = await next(e)` and only ever returns `r` from its own body (no function inside it returns or touches `r`), so
-  Tether's HANDOFF context comes through whole. In these hooks `next` is only that one call, so the hooks beneath run
-  once (no second `next(e)`, no `next.to`, no copy), and `e` is passed on as it came: it is only read (`e.cwd`), never
-  replaced, changed, deleted from or handed to anything but `next` and the mod's own functions. Before it passes the
-  event on, `session.start` waits only for the engine's quick calls (any but `$.process.run`, directly or in a function
-  of the mod's own), never for the snapshot command or a promise of its own, so a session start never waits for
-  Conclave. `$.command.register` takes only the name `'conclave'` and a description, and `$.ui.open` only the id
-  `'conclave'` and a title. Each hook (and each `.catch`) is an arrow function written in place, which the check can
-  read and which has no `arguments` or `this` to reach `e` and `next` another way, and the registration `on(...)`
-  returns is used only as a statement or with that `.catch`. No code of the mod waits in a `for await` loop or declares
-  with `using`.
+  (`agent.offer` may also return `{ isOffered: false }`, the answer that hides a type), and so must the `.catch` of any
+  hook; a hook that answers for itself would drop what Tether adds beneath it. `classic.SessionStart` begins `const r =
+  await next(e)` and only ever returns `r` from its own body (no function inside it returns or touches `r`), so Tether's
+  HANDOFF context comes through whole. In these hooks `next` is only that one call, so the hooks beneath run once (no
+  second `next(e)`, no `next.to`, no copy), and `e` is passed on as it came: it is never replaced, changed or deleted
+  from, `e` itself goes to no function but `next`, and only a part of it (`e.cwd`) may go to a function of the mod's
+  own. Before it passes the event on, `session.start` waits only for the engine's quick calls (any but `$.process.run`,
+  directly or in a function of the mod's own), never for the snapshot command or a promise of its own, so a session
+  start never waits for Conclave. `$.command.register` takes only the name `'conclave'` and a description, and
+  `$.ui.open` only the id `'conclave'` and a title. Each hook (and each `.catch`) is an arrow function written in place
+  with at most the three parameters `$`, `e` and `next`, each a plain name (no default, rest or destructuring), which
+  the check can read and which has no `arguments`, `this` or extra parameter to reach `e` and `next` another way, and
+  the registration `on(...)` returns is used only as a statement or with that `.catch`. No code of the mod waits in a
+  `for await` loop or declares with `using`.
 - **Engine calls beyond the eleven the mod needs.** Every value of type `EngineInterface` (the `$` of a hook, or the
   parameter of any helper, under any name) may only be the object of `$.noun.method`, called, for the clock, the command
   registration, the one process, the store and the UI, or `$.plugin.root`. So no `$.session.` or `$.model.` call, tool,
@@ -107,9 +108,8 @@ alias, a spread or a cast cannot hide a call. It refuses:
   `globalThis`, `process`, `require`, `eval`, `Function`, `Reflect`, `arguments`, the timers and the like). The ways to
   the `Function` constructor are closed too: no `constructor` name or string (`.constructor`, `['constructor']`,
   `'con' + 'structor'`), no prototype reflection (`getPrototypeOf`, `getOwnPropertyDescriptor`, `__proto__`), no
-  property read by a name computed at run time (`x[k]`, whatever the type of `x` says) except a value read out of one
-  of the mod's own tables of literals (`COLORS[tone]`, never read further, called or written) and no `as unknown as`
-  cast, which hides a value's type from the check.
+  property read by a name computed at run time (`x[k]`, whatever the type of `x` says: the mod maps a tone to a colour
+  with a `switch`, not a table) and no `as unknown as` cast, which hides a value's type from the check.
 - **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
   and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
   exactly `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag or another folder),
@@ -122,6 +122,11 @@ alias, a spread or a cast cannot hide a call. It refuses:
   mod never calls `usage(...)`. Comments may name them. Splitting a word by a call (`String.fromCharCode`) is not
   caught, and does not need to be: reading the prompt, a file or the session takes an engine call the list above
   refuses.
+
+Three things are not checked, by design. A word split by a call (above). What a function of the mod's own does with a
+part of `e` it is given (today's parts are strings, which cannot be changed). And whether the band's `ui.render` hook
+passes the event on: the band answers in place of the hooks beneath it when it has something to draw, which is what a
+band is, and Tether does not hook `AbovePrompt`.
 
 Every code file in every subfolder of the mod is checked (only `tests/`, `types/` and the engine's own typings are
 not). The check is itself tested: each way across the line that a reviewer found, or that an earlier version of the
