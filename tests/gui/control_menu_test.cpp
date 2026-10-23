@@ -103,7 +103,10 @@ TEST_CASE("controls: Controller opens with cue 8 on the pad picture and its 14 l
     CHECK(picture.y == Approx(0.58F));
     CHECK(picture.height == Approx(0.45F));
     REQUIRE(picture.width.has_value());
-    CHECK(*picture.width == Approx(0.51F));
+    // The guard an `if`: clang-tidy does not follow REQUIRE.
+    if (picture.width.has_value()) {
+        CHECK(*picture.width == Approx(0.51F));
+    }
     // Directions refuse; accept does nothing; back closes the page, not the screen.
     CHECK_FALSE(screen.command(MenuCommand::Down));
     CHECK(screen.lastCue() == 0xe);

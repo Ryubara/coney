@@ -190,8 +190,7 @@ void gloatOver(Brain& downed) {
     const Brain* fighting = downed.target();
     const float middle = (downed.meleeNear() + downed.meleeFar()) / 2.0F;
     const anim::Vec3 where = downed.human().position();
-    // A copy: a taunter's cleared actions may change the slot list.
-    const std::vector<Brain*> holders = downed.attackSlots();
+    const std::vector<Brain*>& holders = downed.attackSlots();
     for (Brain* taunter : holders) {
         if (taunter == nullptr ||
             std::ranges::find(kNoGloatClasses, taunter->characterClass()) != kNoGloatClasses.end() ||

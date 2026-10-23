@@ -123,12 +123,19 @@ TEST_CASE("the release build takes network play's options", "[options][net]") {
     const std::array<std::string_view, 4> host{"--host", "127.0.0.1:27615", "--net-name", "Tester"};
     auto hosting = parsePlayer(host);
     REQUIRE(hosting.has_value());
-    REQUIRE(hosting->netHost.has_value());
-    CHECK(hosting->netHost->port == 27615);
-    CHECK(hosting->netName == "Tester");
+    // A reference to the options, and the guard an `if`: clang-tidy follows neither REQUIRE nor a repeated `->`.
+    const auto& hostOptions = *hosting;
+    REQUIRE(hostOptions.netHost.has_value());
+    if (hostOptions.netHost.has_value()) {
+        CHECK(hostOptions.netHost->port == 27615);
+    }
+    CHECK(hostOptions.netName == "Tester");
     const std::array<std::string_view, 2> join{"--join", "127.0.0.1"};
     auto joining = parsePlayer(join);
     REQUIRE(joining.has_value());
-    REQUIRE(joining->netJoin.has_value());
-    CHECK(joining->netJoin->address == "127.0.0.1");
+    const auto& joinOptions = *joining;
+    REQUIRE(joinOptions.netJoin.has_value());
+    if (joinOptions.netJoin.has_value()) {
+        CHECK(joinOptions.netJoin->address == "127.0.0.1");
+    }
 }

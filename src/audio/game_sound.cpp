@@ -266,8 +266,9 @@ bool GameSound::Voices::mayGesture(const script::HumanSoundCall& who) {
     std::array<std::optional<double>, 2>& slots = m_gesturing.at(static_cast<std::size_t>(who.gestureKind));
     const std::size_t usable = std::min<std::size_t>(static_cast<std::size_t>(std::max(who.gestureSlots, 0)), 2);
     for (std::size_t k = 0; k < usable; ++k) {
-        if (!slots.at(k).has_value() || !speaking(*slots.at(k))) {
-            slots.at(k) = who.human;
+        std::optional<double>& holder = slots.at(k);
+        if (!holder.has_value() || !speaking(*holder)) {
+            holder = who.human;
             return true;
         }
     }

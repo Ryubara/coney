@@ -363,9 +363,11 @@ TEST_CASE("input commands that come late, out of order or twice each play once o
     LoopbackTransport raw(match.network, "raw");
     const PeerId peer = rawJoin(match, raw);
     const auto sendCommands = [&](std::uint32_t newest, std::vector<coney::PadSample> pads) {
-        REQUIRE(
-            raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = newest, .pads = std::move(pads)}))
-                .has_value());
+        // Sent before the assertion: REQUIRE's macro repeats its expression, which clang-tidy reads as a use of `pads`
+        // after the move.
+        const auto sent =
+            raw.send(peer, Delivery::Unreliable, encode(InputCommands{.newestStep = newest, .pads = std::move(pads)}));
+        REQUIRE(sent.has_value());
     };
     const auto played = [&] { return match.server.remotePad(1).value_or(coney::PadSample{}).buttons; };
     sendCommands(0, {padWith(coney::pad::kSquare)});
