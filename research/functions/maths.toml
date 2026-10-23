@@ -1,0 +1,47 @@
+# The researched functions of the maths system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00336bb8
+name = "Vec_Lerp"
+page = "maths.md#rotations"
+role = "Linear mix of two vectors: out.xyz = a × (1 - t) + b × t; w kept from a."
+level = "confirmed-code"
+coney = "src/animation/anim_math.h:lerp"
+status = "legacy"
+
+[[function]]
+address = 0x00336bf8
+name = "Quat_Nlerp"
+page = "maths.md#rotations"
+role = "Normalised linear interpolation of two quaternions: a when their dot is exactly 1, else normalise(a(1 - t) + b t) with b negated when the dot is negative."
+level = "confirmed-code"
+coney = "src/animation/anim_math.h:nlerp"
+status = "legacy"
+
+[[function]]
+address = 0x00337308
+name = "Segment_Intersect2D"
+page = "maths.md#helpers"
+role = "Whether two segments p1-p2 and p3-p4 cross in the ground plane: p1 and p2 on different sides of p3-p4 and p3 and p4 on different sides of p1-p2 (Math_Orient2D)."
+level = "confirmed-code"
+coney = "src/ai/steering.h:segmentsCross"
+status = "legacy"
+
+[[function]]
+address = 0x003375d0
+name = "Math_CircleRadius2D"
+page = "maths.md#helpers"
+role = "Radius of the circle through a and b (ground plane) whose centre lies from a along the direction c: length(b - a) / (2 abs(dot(unit(b - a), c))); 0 when a and b coincide or the dot is 0."
+level = "confirmed-code"
+coney = "src/ai/steering.h:cornerRadius"
+status = "legacy"
+
+[[function]]
+address = 0x003378b0
+name = "Math_QuadraticLargerRoot"
+page = "maths.md#rays"
+role = "Larger real root of a x² + b × + c = 0; nothing written when the discriminant is negative."
+level = "confirmed-code"
+coney = "src/ai/move_action.h:largerRoot"
+status = "legacy"

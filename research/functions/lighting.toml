@@ -1,0 +1,164 @@
+# The researched functions of the lighting system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0017bec8
+name = "Im2D_DrawArc"
+page = "lighting.md#code-index"
+role = "the part (`+0xb4` per cent) of a ring as a fan of segments with its colours; the chase and lock-pick gauges"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::rimOffset"
+status = "legacy"
+
+[[function]]
+address = 0x0017c308
+name = "Shape2D_DrawQueued"
+page = "lighting.md#code-index"
+role = "draws each queued shape (a full disc at 100 %, else an arc) and empties the queue, from the viewport pass (`0x00156658`, `0x00156978`)"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::rimOffset"
+status = "legacy"
+
+[[function]]
+address = 0x0017c508
+name = "Light_InitFromDescriptor"
+page = "lighting.md#original-structure"
+role = "record from descriptor; RenderWare light; light bugs"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::addLight"
+status = "legacy"
+
+[[function]]
+address = 0x0017c840
+name = "Light_ApplyDescriptor"
+page = "lighting.md#original-structure"
+role = "read / write a light through a descriptor; the colour offsets"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::setLight"
+status = "legacy"
+
+[[function]]
+address = 0x0017caa8
+name = "Light_UpdateFlickerAndCorona"
+page = "lighting.md#original-structure"
+role = "the flicker step and the corona sprite of a visible light"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::advance"
+status = "legacy"
+
+[[function]]
+address = 0x0017d0b0
+name = "Light_SetFlickerTiming"
+page = "lighting.md#original-structure"
+role = "`SetLightFlicker`'s worker"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::setFlicker"
+status = "legacy"
+
+[[function]]
+address = 0x0017d338
+name = "LightManager_Init"
+page = "lighting.md#original-structure"
+role = "a pool of 512 light records (0x50 bytes), the corona sprite batches"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::LightManager"
+status = "legacy"
+
+[[function]]
+address = 0x0017d510
+name = "LightManager_AddLight"
+page = "lighting.md#code-index"
+role = "take the next free record of the pool and build it from a descriptor (the second only calls the first)"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::addLight"
+status = "legacy"
+
+[[function]]
+address = 0x0017d598
+name = "LightManager_RemoveLight"
+page = "lighting.md#original-structure"
+role = "returns a record"
+level = "inferred"
+coney = "src/graphics/light_manager.h:LightManager::removeLight"
+status = "legacy"
+
+[[function]]
+address = 0x0017d880
+name = "LightManager_CullForViewport"
+page = "lighting.md#original-structure"
+role = "sorts the lights into the lists below"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::beginViewport"
+status = "legacy"
+
+[[function]]
+address = 0x0017ea60
+name = "LightManager_BeginViewport"
+page = "lighting.md#original-structure"
+role = "the two ambients' colours, then the cull"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::beginViewport"
+status = "legacy"
+
+[[function]]
+address = 0x0017ec38
+name = "LightManager_SetBrightness"
+page = "lighting.md#code-index"
+role = "[The brightness option](lighting.md#brightness)"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::setBrightness"
+status = "legacy"
+
+[[function]]
+address = 0x0017ec80
+name = "LightManager_SetGammaOffset"
+page = "lighting.md#code-index"
+role = "[The brightness option](lighting.md#brightness)"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::setColourOffset"
+status = "legacy"
+
+[[function]]
+address = 0x0017ef20
+name = "Light_SetFromScript"
+page = "lighting.md#original-structure"
+role = "`SetLight`'s long form"
+level = "confirmed-code"
+coney = "src/scripting/lighting_bindings.cpp:setLightLong"
+status = "legacy"
+
+[[function]]
+address = 0x0017f160
+name = "Light_SetState"
+page = "lighting.md#code-index"
+role = "2 removes the light, else on / off (`SetLight`'s short form)"
+level = "confirmed-code"
+coney = "src/scripting/lighting_bindings.cpp:setLightState"
+status = "legacy"
+
+[[function]]
+address = 0x0017f1b8
+name = "Light_SetFlicker"
+page = "lighting.md#code-index"
+role = "`SetLightFlicker`"
+level = "confirmed-code"
+coney = "src/scripting/lighting_bindings.cpp:addLightingBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0017f218
+name = "LightManager_SetWorldAmbient"
+page = "lighting.md#original-structure"
+role = "`SetWorldAmbient`"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::setWorldAmbient"
+status = "legacy"
+
+[[function]]
+address = 0x0017f270
+name = "Shadow_Enable_Stub"
+page = "lighting.md#code-index"
+role = "empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeNothing"
+status = "legacy"

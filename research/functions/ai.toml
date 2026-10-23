@@ -1,0 +1,5671 @@
+# The researched functions of the ai system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00147ef0
+name = "PlayerRecord_SetCommand"
+page = "ai.md#original-structure"
+role = "writes per-player `+0x20`"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::press"
+status = "legacy"
+
+[[function]]
+address = 0x00163f10
+name = "GangClips_GetGroup"
+page = "ai-code.md#gang-functions"
+role = "First slot and count per anim id: `0x25b` 0/8, `0x25c` 8/4, `0x253` 12/5, `0x257` 17/3, `0x256` 20/3, `0x29c` 23/4 (27 slots)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:clipGroupSlots"
+status = "legacy"
+
+[[function]]
+address = 0x00163fc0
+name = "GangClips_Get"
+page = "ai-code.md#gang-functions"
+role = "The clip of a group's entry *i*; for a negative *i*, a random loaded entry (group `0x29c`: only entries made for that anim id)"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:dealerGangClip"
+status = "legacy"
+
+[[function]]
+address = 0x00164178
+name = "GangClips_Set"
+page = "ai-code.md#gang-functions"
+role = "Loads names into a group's slots; a longer list fills them with a random subset in order"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::setClipGroup"
+status = "legacy"
+
+[[function]]
+address = 0x001647e0
+name = "Gang_ClearMsgHandlers"
+page = "ai-code.md#gang-functions"
+role = "Clears the 26 event handlers at `+0xe4`"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::clearGangHandlers"
+status = "legacy"
+
+[[function]]
+address = 0x00164a28
+name = "Gang_SetAlertState"
+page = "ai-code.md#gang-functions"
+role = "On a change: fighting (1) installs the combat fidget (not kind `0x18`) and taunt (not kind `0x17`) substitutions and updates the music mood; calm (0) removes them; kind 5 keeps neither; AI members' brain `+0x14d` = 1 when calm, 0 when fighting"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::setAlertState"
+status = "legacy"
+
+[[function]]
+address = 0x00164bb8
+name = "Gang_SetMsgHandlerName"
+page = "ai-code.md#gang-functions"
+role = "Interns the name for event *n* at `+0xe4 + n × 4`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setMessageHandler"
+status = "legacy"
+
+[[function]]
+address = 0x00164c20
+name = "Gang_OnEvent"
+page = "ai.md#original-structure"
+role = "[gangs](ai-gangs.md#gangs)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::onEvent"
+status = "legacy"
+
+[[function]]
+address = 0x001652e8
+name = "Gang_IsPointInTurf"
+page = "ai-code.md#gang-functions"
+role = "True when the gang has no turf boxes or the point is in one of them"
+level = "confirmed-code"
+coney = "src/ai/scripted_story.h:pointInTurf"
+status = "legacy"
+
+[[function]]
+address = 0x00165640
+name = "Gang_SetTactic"
+page = "ai-gangs.md#tactic-kinds"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00165b70
+name = "Gang_SetSharedTarget"
+page = "ai-code.md#gang-functions"
+role = "Target `+0x10`: checked through the leader's brain; unless friendly, every AI member adds it as an enemy. The null handle just clears it"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::setSharedTarget"
+status = "legacy"
+
+[[function]]
+address = 0x00166220
+name = "Gang_CountStanding"
+page = "ai-code.md#gang-functions"
+role = "Members not knocked out, wounded or in flagged state `0x100000000`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::standing"
+status = "legacy"
+
+[[function]]
+address = 0x00166308
+name = "Gang_AddMember"
+page = "ai-code.md#gang-functions"
+role = "Moves a human in: out of its old gang (its actions, target and enemies cleared), brain `+0x20c` set, its attack weights loaded, god mode when the gang is invincible, a player of flag `+0x3ac` made leader, type `0xed` gets its own anim substitution; event `0x16`. The cap (16 for kinds 1 and `0x17`, else 10) only calls a no-op (`0x0016d0e0`)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::addMember"
+status = "legacy"
+
+[[function]]
+address = 0x00166708
+name = "Gang_CachePlayerInfo"
+page = "ai-gangs.md#original-structure"
+role = "The players' state for the gang, and whether its spawners may run (the cap)"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::update"
+status = "legacy"
+
+[[function]]
+address = 0x00166ff8
+name = "Gang_AddSpawner"
+page = "ai-gangs.md#spawners"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::add"
+status = "legacy"
+
+[[function]]
+address = 0x001672a8
+name = "GangSpawner_OnHumanGone"
+page = "ai-code.md#gang-functions"
+role = "A spawned human's brain is torn down: the spawner's alive count `+0x5c` and the global count go down, and so does `+0x5a` for a police dispatch spawner (4 or 6, with the game's dispatch count `+0x324`) or a responder spawner (9 or 10)"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::forgetGone"
+status = "legacy"
+
+[[function]]
+address = 0x001673b8
+name = "Spawner_PlaceOutOfView"
+page = "ai-gangs.md#spawner-placement"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:outOfSightNode"
+status = "legacy"
+
+[[function]]
+address = 0x001681a0
+name = "GangSpawner_Update"
+page = "ai-gangs.md#original-structure"
+role = "One spawner's update and spawn"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::update"
+status = "legacy"
+
+[[function]]
+address = 0x00168cd0
+name = "Gang_SetSpawnerState"
+page = "ai-code.md#gang-functions"
+role = "`GangStartSpawner`: the named spawner's state (0-5, 7, 8, 9, 11; others keep it), its value unless −1, next spawn now"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::start"
+status = "legacy"
+
+[[function]]
+address = 0x00168e68
+name = "GangSpawner_SetMustBeOffScreen"
+page = "ai-code.md#gang-functions"
+role = "The named spawner's flag `+0x8c`"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::setMustBeOffScreen"
+status = "legacy"
+
+[[function]]
+address = 0x00168eb8
+name = "GangSpawner_SetMaxConcurrent"
+page = "ai-code.md#gang-functions"
+role = "The named spawner's limit `+0x5a`"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::setMaxConcurrent"
+status = "legacy"
+
+[[function]]
+address = 0x00168f58
+name = "Gang_AreFriends"
+page = "ai-code.md#gang-functions"
+role = "True for the same gang or kind, both kinds in {1, `0x17`}, during a truce, or with the friend bit"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::friends"
+status = "legacy"
+
+[[function]]
+address = 0x00168fe0
+name = "Gang_IsEnemyOf"
+page = "ai-code.md#gang-functions"
+role = "False for kinds 1 and `0x17` together and during a global truce (`0x0050cb7c` in the future); else the enemy bit of the other gang's id"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::enemies"
+status = "legacy"
+
+[[function]]
+address = 0x001694b8
+name = "Gang_AddCombatFidgetClips"
+page = "ai-code.md#gang-functions"
+role = "Group `0x25b` (8 slots): four `combat_fidget_*` clips (`0x0050cab8`)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::addCombatFidgetClips"
+status = "legacy"
+
+[[function]]
+address = 0x001694e8
+name = "Gang_RemoveCombatFidgetClips"
+page = "ai-code.md#gang-functions"
+role = "Group `0x25b` (8 slots): four `combat_fidget_*` clips (`0x0050cab8`)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::removeCombatFidgetClips"
+status = "legacy"
+
+[[function]]
+address = 0x00169508
+name = "Gang_AddFightTauntClips"
+page = "ai-code.md#gang-functions"
+role = "Installed while fighting: groups `0x253` (five `taunt*_adv`), `0x257` (a random three of five `gen_tnt_*`) and `0x256` (three `gen_tnt_cheer*`)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::addFightTauntClips"
+status = "legacy"
+
+[[function]]
+address = 0x00169570
+name = "Gang_RemoveFightTauntClips"
+page = "ai-code.md#gang-functions"
+role = "Installed while fighting: groups `0x253` (five `taunt*_adv`), `0x257` (a random three of five `gen_tnt_*`) and `0x256` (three `gen_tnt_cheer*`)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::removeFightTauntClips"
+status = "legacy"
+
+[[function]]
+address = 0x001696e0
+name = "Gang_IsBeingHunted"
+page = "ai-code.md#gang-functions"
+role = "Whether a gang (not of kind `0x17`/`0x18`) that has this one as enemy has a member chasing one of its humans (goal `0xc` active) or holding goal `0x75` or `0x76`"
+level = "confirmed-code"
+coney = "src/ai/scripted_story.h:ScriptedStory::musicMood"
+status = "legacy"
+
+[[function]]
+address = 0x00169dd8
+name = "Gang_NoneAbleToHelp"
+page = "ai-code.md#gang-functions"
+role = "True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded)"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::stepGameOver"
+status = "legacy"
+
+[[function]]
+address = 0x00169ea0
+name = "Gang_CanReachToHelp"
+page = "ai-code.md#gang-functions"
+role = "Whether a member other than the human, not cuffed or down, has a navigation route to the human's nav area"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::stepGameOver"
+status = "legacy"
+
+[[function]]
+address = 0x0016a1e8
+name = "Gang_DeleteById"
+page = "ai-gangs.md#gang-delete"
+level = "confirmed-code"
+coney = "src/ai/scripted_brains.h:ScriptedBrains::gangDelete"
+status = "legacy"
+
+[[function]]
+address = 0x0016a220
+name = "Gang_SetSuspendedById"
+page = "ai-code.md#gang-functions"
+role = "`GangSuspend`: byte `+0xd4`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::suspend"
+status = "legacy"
+
+[[function]]
+address = 0x0016a260
+name = "Gang_SetInvincibleById"
+page = "ai-code.md#gang-functions"
+role = "`GangInvincible`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setInvincible"
+status = "legacy"
+
+[[function]]
+address = 0x0016a2a8
+name = "Gang_EnableAttackStrategiesById"
+page = "ai-code.md#gang-functions"
+role = "`GangEnableAttackStrategies`: byte `+0xd9`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016a2e8
+name = "Gang_SetRespondPercentage"
+page = "ai-code.md#gang-functions"
+role = "`GangSetRespondPercentage`: byte `+0xd7` (30 after a reset)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016a328
+name = "Gang_AddTurfBoxById"
+page = "ai-code.md#gang-functions"
+role = "`GangAddTurfBox`: only a volume box of kind 3 is added"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGangAddTurfBox"
+status = "legacy"
+
+[[function]]
+address = 0x0016a3a8
+name = "Gang_RemoveTurfBox"
+page = "ai-code.md#gang-functions"
+role = "`GangRemoveTurfBox`: `Gang_RemoveTurfBoxPtr`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016a458
+name = "Gang_GetHeadCountById"
+page = "ai-code.md#gang-functions"
+role = "`GangGetHeadCount`: `Gang_CountLiving(Gang_Get(id), living)` with the second argument passed through unchanged, 0 for id −1"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::countLiving"
+status = "legacy"
+
+[[function]]
+address = 0x0016a4e8
+name = "Gang_IsGoodToGoById"
+page = "ai-code.md#gang-functions"
+role = "`GangGoodToGo`: `Gang_AreMembersReady`, 0 for id −1"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goodToGo"
+status = "legacy"
+
+[[function]]
+address = 0x0016a538
+name = "Gang_SetLeaderById"
+page = "ai-code.md#gang-functions"
+role = "`GangSetLeader`: writes the leader handle `+0x44`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016a578
+name = "Gang_GetLeaderById"
+page = "ai-code.md#gang-functions"
+role = "`GangGetLeader`: the leader's handle, or the null handle"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016a670
+name = "Gang_ExitWorld"
+page = "ai-code.md#gang-functions"
+role = "`GangExitWorld(gang, flag, fn, delete)`: every member walks to the flag, or with none to the farthest exit flag (activity 8) in front of player 1 (`Goal_MoveToExitFlag`); with `delete`, flag `+0xd3` and the empty handler are set so the gang is freed when they are gone ([The gang update](ai-gangs.md#gang-update)). A gang with no living members is deleted at once, after calling `fn` with its id"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGangExitWorld"
+status = "legacy"
+
+[[function]]
+address = 0x0016a870
+name = "Gang_EngageEnemy"
+page = "ai-code.md#gang-functions"
+role = "`GangEngageEnemy(gang, target)`: an engage goal on the target for every member"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016aa98
+name = "Gang_SetMembersDeadFlag"
+page = "ai-code.md#gang-functions"
+role = "`GangBrDead`: `Brain_SetDead` on every member's brain"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setDead"
+status = "legacy"
+
+[[function]]
+address = 0x0016ab90
+name = "Gang_ClearHandlers"
+page = "ai-code.md#gang-functions"
+role = "`GangClearHandlers`: clears the gang's event handlers and every member's own script handlers"
+level = "confirmed-code"
+coney = "src/scripting/hub_bindings.cpp:makeGangClearHandlers"
+status = "legacy"
+
+[[function]]
+address = 0x0016acf0
+name = "Gang_MakeEnemies"
+page = "ai-code.md#gang-functions"
+role = "`GangMakeEnemies(a, b)`: `Gang_SetEnemyBit` both ways; id −1 ignored"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::makeEnemies"
+status = "legacy"
+
+[[function]]
+address = 0x0016ad80
+name = "Gang_MakeFriends"
+page = "ai-code.md#gang-functions"
+role = "`GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::makeFriends"
+status = "legacy"
+
+[[function]]
+address = 0x0016ae60
+name = "Gang_MakeEnemiesOfType"
+page = "ai-code.md#gang-functions"
+role = "`GangMakeEnemiesOfType`: `Gang_SetHostileToKind(gang, kind, 1)`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::makeEnemiesOfType"
+status = "legacy"
+
+[[function]]
+address = 0x0016ae90
+name = "Gang_MakeNeutralOfTypeById"
+page = "ai-code.md#gang-functions"
+role = "`GangMakeNeutralOfType`: `Gang_MakeNeutralWithType(gang, kind, 0)`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::makeNeutralOfType"
+status = "legacy"
+
+[[function]]
+address = 0x0016afc8
+name = "Gang_StartSpawner"
+page = "ai-code.md#gang-functions"
+role = "`GangStartSpawner`: `Gang_SetSpawnerState` by gang id"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::start"
+status = "legacy"
+
+[[function]]
+address = 0x0016b070
+name = "Gang_SetSpawnerMustBeOffScreen"
+page = "ai-code.md#gang-functions"
+role = "`GangSetSpawnerMustBeOffScreen`, by gang id"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::setMustBeOffScreen"
+status = "legacy"
+
+[[function]]
+address = 0x0016b0b0
+name = "Gang_SetSpawnerMaxConcurrent"
+page = "ai-code.md#gang-functions"
+role = "`GangSetMaxConcurrent`, by gang id"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:Spawners::setMaxConcurrent"
+status = "legacy"
+
+[[function]]
+address = 0x0016b2c8
+name = "Gang_ShowMembersIcon"
+page = "ai-code.md#gang-functions"
+role = "`GangAttachSpinningIcon`: the overhead icon on every member"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016b358
+name = "Gang_RemoveMembersIcon"
+page = "ai-code.md#gang-functions"
+role = "`GangRemoveSpinningIcon`"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016b3d0
+name = "Gang_SetThreatResponse"
+page = "ai-code.md#gang-functions"
+role = "`GangSetThreatResponse`: brain `+0x21c` of the current members only"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setThreatResponse"
+status = "legacy"
+
+[[function]]
+address = 0x0016b460
+name = "Gang_SetDamageResponseById"
+page = "ai-code.md#gang-functions"
+role = "`GangSetDamageResponse`: brain `+0x220` of every current member"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016b4f0
+name = "Gang_SetInvestigateResponseById"
+page = "ai-code.md#gang-functions"
+role = "`GangSetInvestigateResponse`: brain `+0x224`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016b580
+name = "Gang_IsWantedById"
+page = "ai-code.md#gang-functions"
+role = "`GangIsWanted`: the wanted timer `+0x5e8` (kind 1) or `+0x5f0` (otherwise) is running"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGangIsWanted"
+status = "legacy"
+
+[[function]]
+address = 0x0016b618
+name = "Gang_HasSpawnerById"
+page = "ai-code.md#gang-functions"
+role = "`GangIsASpawner`: `Gang_HasSpawnerNamed`, 0 for id −1"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::isASpawner"
+status = "legacy"
+
+[[function]]
+address = 0x0016bac0
+name = "Gang_SetTargetableById"
+page = "ai-code.md#gang-functions"
+role = "`GangSetTargetable`: brain `+0x120`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setTargetable"
+status = "legacy"
+
+[[function]]
+address = 0x0016bb58
+name = "Gang_SetAttackable"
+page = "ai.md#sight"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setAttackable"
+status = "legacy"
+
+[[function]]
+address = 0x0016bbf0
+name = "Gang_SetHearRange"
+page = "ai-code.md#gang-functions"
+role = "`GangSetHearRange(gang, range, which)`: brain `+0x138` (which 1, default 20 m) or `+0x134` (default 50 m); −1 restores the default"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016bcf0
+name = "Gang_SetCanFlee"
+page = "ai-code.md#gang-functions"
+role = "`GangCanFlee`: byte `+0xdf` (1 after a reset)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::setCanFlee"
+status = "legacy"
+
+[[function]]
+address = 0x0016bde8
+name = "Gang_SetAlwaysSeen"
+page = "ai-code.md#gang-functions"
+role = "`GangSetAlwaysSeen`: byte `+0xdc`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setAlwaysSeen"
+status = "legacy"
+
+[[function]]
+address = 0x0016be30
+name = "Gang_SetCanUseWorldFlagsById"
+page = "ai-code.md#gang-functions"
+role = "`GangCanUseWorldFlags(gang, on, x)`: brain `+0x2d1` = on, `+0x2d2` = x (0 when off)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGangCanUseWorldFlags"
+status = "legacy"
+
+[[function]]
+address = 0x0016c358
+name = "Gangs_SetTruce"
+page = "ai-code.md#gang-functions"
+role = "Truce until now + the given ms (`0x0050cb7c`), 0 to end it"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setTruce"
+status = "legacy"
+
+[[function]]
+address = 0x0016c3a8
+name = "Gang_SetHostileToKind"
+page = "ai-gangs.md#crimes"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/gangs.h:Gangs::makeEnemiesOfType"
+status = "legacy"
+
+[[function]]
+address = 0x0016c470
+name = "Gang_MakeNeutralWithType"
+page = "ai-code.md#gang-functions"
+role = "`GangMakeNeutralOfType(gang, kind, calm)`: clears both relation bits with every gang of that kind that is not a friend either way; with `calm`, both sides are calmed, a 3 s truce starts and the crime report is cancelled; kind 0 clears brain byte `+0x290`"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::makeNeutralOfType"
+status = "legacy"
+
+[[function]]
+address = 0x0016cdf0
+name = "Gang_Create"
+page = "ai-code.md#gang-functions"
+role = "`GangCreate(kind, name)`: −1 when the name is taken; else the first free record is reset, put in use, calm, given the kind, name, id, spot-line flag `+0xd2`, the kind's three music track names (`CfgGangMusic`) and no active spawner; kinds 1, `0x17` and `0x18` get their own anim substitutions; a new kind-1 gang makes every wanted gang hostile to the police (unless game `+0x28c` is set)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::create"
+status = "legacy"
+
+[[function]]
+address = 0x0016d170
+name = "Gangs_Update"
+page = "ai.md#original-structure"
+role = "[gangs](ai-gangs.md#gangs)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::update"
+status = "legacy"
+
+[[function]]
+address = 0x0016d5c0
+name = "KillHumans_Stub"
+page = "ai-code.md#gang-functions"
+role = "`KillHumans`: does nothing"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:addWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0016d810
+name = "Spawner_NextType"
+page = "ai-gangs.md#spawners"
+level = "inferred"
+coney = "src/ai/spawners.h:Spawners::pickType"
+status = "legacy"
+
+[[function]]
+address = 0x0021c0a8
+name = "Human_IsWayClearTo"
+page = "ai-code.md#brain-types"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
+status = "legacy"
+
+[[function]]
+address = 0x0021d428
+name = "Human_GetFormation"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formations::of"
+status = "legacy"
+
+[[function]]
+address = 0x0021d4e8
+name = "Human_OnEvent"
+page = "ai-gangs.md#gang-events"
+level = "confirmed-code"
+coney = "src/ai/brain.h:deliverEvent"
+status = "legacy"
+
+[[function]]
+address = 0x0021d5c0
+name = "Human_WarnOfAttack"
+page = "ai.md#block"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::warnTarget"
+status = "legacy"
+
+[[function]]
+address = 0x00221cd8
+name = "Human_TurnToFaceObject"
+page = "ai.md#engage-enemy"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/engage_goals.cpp:EngageEnemyGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002221e0
+name = "Human_CanWalkStraightTo"
+page = "ai.md#engage-enemy"
+level = "inferred"
+coney = "src/ai/sectors.h:Sectors::probe"
+status = "legacy"
+
+[[function]]
+address = 0x00222288
+name = "Human_HasLineOfSight"
+page = "ai.md#block"
+level = "confirmed-code"
+coney = "src/ai/perception.h:lineOfSight"
+status = "legacy"
+
+[[function]]
+address = 0x002223e8
+name = "Human_CanSeeHuman"
+page = "ai.md#block"
+level = "confirmed-code"
+coney = "src/ai/perception.h:canSeeHuman"
+status = "legacy"
+
+[[function]]
+address = 0x002235f8
+name = "Human_CounterChance"
+page = "ai.md#original-structure"
+role = "power-class reads"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::counterChance"
+status = "legacy"
+
+[[function]]
+address = 0x00223628
+name = "Human_BlockChance"
+page = "ai.md#original-structure"
+role = "power-class reads"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::blockChance"
+status = "legacy"
+
+[[function]]
+address = 0x00223800
+name = "Human_AttackDelay"
+page = "ai.md#original-structure"
+role = "power-class reads"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::attackDelayMs"
+status = "legacy"
+
+[[function]]
+address = 0x00231090
+name = "AttackKind_ToCommand"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_kinds.h:commandOf"
+status = "legacy"
+
+[[function]]
+address = 0x00231198
+name = "AttackKind_ChainDelay"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_kinds.h:chainDelayMs"
+status = "legacy"
+
+[[function]]
+address = 0x0024c6d8
+name = "Human_PlaceObjectInHandByPickupClip"
+page = "ai.md#crew-gaps"
+level = "confirmed-code"
+coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
+status = "legacy"
+
+[[function]]
+address = 0x0024e218
+name = "Nav_FindPolygonNear"
+page = "ai-moving.md#path-planning"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0024fbf8
+name = "Nav_IsWalkableLine"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::walkable"
+status = "legacy"
+
+[[function]]
+address = 0x002505b0
+name = "Nav_NearestPolygonPoint"
+page = "ai-pathing.md#path-holes"
+level = "inferred"
+coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
+status = "legacy"
+
+[[function]]
+address = 0x00250708
+name = "Nav_FindArea"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::areaAt"
+status = "legacy"
+
+[[function]]
+address = 0x00250760
+name = "Nav_FindAreaCandidate"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::areaAt"
+status = "legacy"
+
+[[function]]
+address = 0x00251070
+name = "NavNode_GetLinkFlags"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/ai/route_follower.h:RouteFollower::legKind"
+status = "legacy"
+
+[[function]]
+address = 0x002510f8
+name = "NavNode_GetQueueNode"
+page = "ai-pathing.md#route-claims"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/world/path_map.h:PathMap::partnerOf"
+status = "legacy"
+
+[[function]]
+address = 0x00251150
+name = "Nav_NearestReachableNodeAt"
+page = "ai-moving.md#path-planning"
+level = "inferred"
+coney = "src/ai/route_planner.h:RoutePlanner::endNode"
+status = "legacy"
+
+[[function]]
+address = 0x002511c8
+name = "Route_Find"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/ai/route_planner.h:RoutePlanner::searchWithRetries"
+status = "legacy"
+
+[[function]]
+address = 0x002513a8
+name = "Route_Build"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/ai/route_planner.h:RoutePlanner::build"
+status = "legacy"
+
+[[function]]
+address = 0x00251680
+name = "Route_Free"
+page = "ai-moving.md#path-planning"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/route_planner.h:Route::~Route"
+status = "legacy"
+
+[[function]]
+address = 0x002517b0
+name = "Nav_Heuristic"
+page = "ai-moving.md#path-planning"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/route_planner.h:RoutePlanner::heuristic"
+status = "legacy"
+
+[[function]]
+address = 0x00251890
+name = "Nav_EdgeCost"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
+coney = "src/ai/route_planner.h:RoutePlanner::edgeCost"
+status = "legacy"
+
+[[function]]
+address = 0x00251a70
+name = "Route_AStar"
+page = "ai.md#original-structure"
+role = "[path planning](ai-moving.md#path-planning)"
+level = "confirmed-code"
+coney = "src/ai/route_planner.h:RoutePlanner::search"
+status = "legacy"
+
+[[function]]
+address = 0x00251d28
+name = "Route_SearchOutOfSight"
+page = "ai-gangs.md#spawner-search"
+level = "confirmed-code"
+coney = "src/ai/spawners.h:searchOutward"
+status = "legacy"
+
+[[function]]
+address = 0x0027d6e0
+name = "Player_TryCounterGrab"
+page = "ai.md#block"
+level = "confirmed-code"
+coney = "src/combat/ai_counter.h:aiCounterAllowed"
+status = "legacy"
+
+[[function]]
+address = 0x00288ad0
+name = "Steering_Clear"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "avoidance off, side −1, score `+0x3c` = −1e9"
+level = "confirmed-code"
+coney = "src/ai/steering.h:clearSteering"
+status = "legacy"
+
+[[function]]
+address = 0x00288b70
+name = "Steering_SetAvoiding"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "sets the avoiding flag (`+0x24`); turning it on raises the brain's turn boost by one, off lowers it"
+level = "confirmed-code"
+coney = "src/ai/steering.h:setAvoiding"
+status = "legacy"
+
+[[function]]
+address = 0x00288be0
+name = "Steering_SideSign"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "+1 or −1 by the sign of a cross product: which side of a line a point lies"
+level = "confirmed-code"
+coney = "src/ai/steering.h:sideSign"
+status = "legacy"
+
+[[function]]
+address = 0x00288cb0
+name = "Steering_SetSpeed"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "stores the gait (`+0x32`) and speed (`+0x34`)"
+level = "confirmed-code"
+coney = "src/ai/steering.h:setSteeringSpeed"
+status = "legacy"
+
+[[function]]
+address = 0x00288cc8
+name = "Steering_FindBlocker"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "of a list of nearby humans, not the target and not behind, the first whose 0.63 m disc the relative step hits ([the blocker test](ai-moving.md#neighbour-sectors))"
+level = "confirmed-code"
+coney = "src/ai/steering.h:findBlocker"
+status = "legacy"
+
+[[function]]
+address = 0x00288f40
+name = "Steering_ClampStep"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "the step from a position toward the brain's aim point (`+0x90`), of length min(the distance, factor × the brain's speed `+0x114`) ([Steering](ai-moving.md#steering))"
+level = "confirmed-code"
+coney = "src/ai/steering.h:clampStep"
+status = "legacy"
+
+[[function]]
+address = 0x00289010
+name = "Steering_TryDetour"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "when the human can walk straight to the detour point and it is not blocked (`0x00249050`): avoiding on, the point and its score stored"
+level = "confirmed-code"
+coney = "src/ai/steering.h:tryDetour"
+status = "legacy"
+
+[[function]]
+address = 0x002890a8
+name = "Steering_ResetAvoidance"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "from a move's Start: the held point to the origin, avoidance off, score −1e9, `+0x2b` = 0, and the human's index (human `+0x92`, low byte) into the decision counter `+0x28` and the slow counter `+0x29`, which staggers the humans' decisions ([Steering](ai-moving.md#steering))"
+level = "confirmed-code"
+coney = "src/ai/steering.h:resetAvoidance"
+status = "legacy"
+
+[[function]]
+address = 0x00289138
+name = "Human_SteerAroundHumans"
+page = "ai.md#original-structure"
+role = "[steering](ai-moving.md#steering)"
+level = "confirmed-code"
+coney = "src/ai/steering.h:steerAroundHumans"
+status = "legacy"
+
+[[function]]
+address = 0x00289d68
+name = "Steering_RayHitsHuman"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "whether a ray of a given length passes within 0.63 m of a human, and at what distance"
+level = "confirmed-code"
+coney = "src/ai/steering.h:rayHitsHuman"
+status = "legacy"
+
+[[function]]
+address = 0x00289ed0
+name = "Brain_GiveWayTo"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "a standing AI in the way of a mover picks the first free sector of s, s+1, s+2, s−1, s+3, s+4, s−2 (s: straight off the mover's path) and queues a `GiveWay` step there, else asks that sector's human to give way ([Giving way](ai-moving.md#neighbour-sectors))"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:giveWayTo"
+status = "legacy"
+
+[[function]]
+address = 0x0028a248
+name = "Brain_PushAside"
+page = "ai-code.md#brain-steering"
+kind = "helper"
+role = "guards `Brain_GiveWayTo` against re-entry with brain flag `+0xcc` bit 4; a brain with bit 1 (already giving way) answers yes"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:pushAside"
+status = "legacy"
+
+[[function]]
+address = 0x0028abc0
+name = "Brain_CanBeChased"
+page = "ai-code.md#enemy-list"
+kind = "helper"
+role = "whether a target can be chased: reachable (`+0x11e`), no train near, not on fire"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:canBeChased"
+status = "legacy"
+
+[[function]]
+address = 0x0028ac18
+name = "Brain_StopMove"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "gait 0, heading = the current one (think bookkeeping)"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::stopMove"
+status = "legacy"
+
+[[function]]
+address = 0x0028b358
+name = "Brain_ScanEnemies"
+page = "ai-code.md#perception"
+kind = "helper"
+role = "the periodic enemy scan: lists nearby humans and keeps the enemy list and sight flags up to date"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.h:scanEnemies"
+status = "legacy"
+
+[[function]]
+address = 0x0028bf00
+name = "Brain_GetSightRange"
+page = "ai-code.md#perception"
+kind = "helper"
+role = "the sight range `+0x130`; at least 30 m for a gang of kind 1"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:sightRangeOf"
+status = "legacy"
+
+[[function]]
+address = 0x0028c1a8
+name = "Brain_InstallHandlers"
+page = "ai.md#original-structure"
+role = "gives a brain its type's handlers"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::setDead"
+status = "legacy"
+
+[[function]]
+address = 0x0028c3b0
+name = "Brain_OnKnockedOut"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "on a knock-out: ends the reaction goal, clears goals and actions, drops the target"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::knockOut"
+status = "legacy"
+
+[[function]]
+address = 0x0028c5d8
+name = "Brain_OnArrested"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "on an arrest: clears actions, drops the target, pops goals down to goal `0x41`"
+level = "confirmed-code"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::setArrested"
+status = "legacy"
+
+[[function]]
+address = 0x0028cdf8
+name = "Brain_SetTurnBoost"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "sets the turn boost byte `+0x0b`"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::setTurnBoost"
+status = "legacy"
+
+[[function]]
+address = 0x0028cfe0
+name = "Brain_SetTarget"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::setTarget"
+status = "legacy"
+
+[[function]]
+address = 0x0028d190
+name = "Brain_PushFightGoal"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::pushFightGoals"
+status = "legacy"
+
+[[function]]
+address = 0x0028d2e8
+name = "Brain_Fight"
+page = "ai.md#original-structure"
+role = "enemy, target and fight goal"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::fight"
+status = "legacy"
+
+[[function]]
+address = 0x0028d358
+name = "Brain_ValidateEnemy"
+page = "ai-code.md#enemy-list"
+kind = "helper"
+role = "returns a human when he may be chosen as an enemy"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:validEnemy"
+status = "legacy"
+
+[[function]]
+address = 0x0028d538
+name = "Brain_AddEnemy"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::addEnemy"
+status = "legacy"
+
+[[function]]
+address = 0x0028d758
+name = "Brain_PushGoal"
+page = "ai.md#original-structure"
+role = "the goal stack"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::pushGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0028d7d8
+name = "Brain_PopGoal"
+page = "ai.md#original-structure"
+role = "the goal stack"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::popGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0028d8a0
+name = "Brain_MarkGoalBase"
+page = "ai-code.md#goal-stack"
+kind = "helper"
+role = "stores the current top index in `+0x2d` as the goal base, only when the stack is not empty; nothing is popped ([Tactics](ai-gangs.md#tactics))"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::markGoalBase"
+status = "legacy"
+
+[[function]]
+address = 0x0028d8c0
+name = "Brain_PopToGoalBase"
+page = "ai-code.md#goal-stack"
+kind = "helper"
+role = "pops goals down to `+0x2d`, then clears it"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::popToGoalBase"
+status = "legacy"
+
+[[function]]
+address = 0x0028d910
+name = "Brain_ClearGoals"
+page = "ai.md#original-structure"
+role = "the goal stack"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::clearGoals"
+status = "legacy"
+
+[[function]]
+address = 0x0028d960
+name = "Brain_FindGoal"
+page = "ai.md#original-structure"
+role = "the goal stack"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::findGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0028d9f0
+name = "Brain_AllocAction"
+page = "ai.md#original-structure"
+role = "the action queue"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::queueAction"
+status = "legacy"
+
+[[function]]
+address = 0x0028da60
+name = "Brain_PopAction"
+page = "ai.md#original-structure"
+role = "the action queue"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::popAction"
+status = "legacy"
+
+[[function]]
+address = 0x0028db20
+name = "Brain_ClearActions"
+page = "ai.md#original-structure"
+role = "the action queue"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::clearActions"
+status = "legacy"
+
+[[function]]
+address = 0x0028dc80
+name = "Brain_CanTakeSlotOn"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "whether the brain may take an attack slot on an enemy"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:canTakeSlotOn"
+status = "legacy"
+
+[[function]]
+address = 0x0028de48
+name = "Brain_HasAttackSlot"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::hasAttackSlot"
+status = "legacy"
+
+[[function]]
+address = 0x0028df30
+name = "Brain_ClaimAttackSlot"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::claimSlot"
+status = "legacy"
+
+[[function]]
+address = 0x0028e248
+name = "Brain_QueueAttack"
+page = "ai.md#original-structure"
+role = "queues one attack kind as one or more attack actions"
+level = "confirmed-code"
+coney = "src/ai/attack_kinds.h:chainOf"
+status = "legacy"
+
+[[function]]
+address = 0x0028e708
+name = "Brain_PickAttack"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_choice.h:pickAttackKind"
+status = "legacy"
+
+[[function]]
+address = 0x0028f000
+name = "Brain_ShakeOffPursuers"
+page = "ai-code.md#enemy-list"
+kind = "helper"
+role = "for a player or a Warrior: hunters of a hostile gang within 2 × far who hold him as an enemy but have no line of sight to him lower his count"
+level = "confirmed-code"
+coney = "src/ai/hiding.h:updateHiding"
+status = "legacy"
+
+[[function]]
+address = 0x0028f240
+name = "Brain_EndReactionGoal"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::updateReactionGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0028f2b0
+name = "Brain_UpdateReactionGoal"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::updateReactionGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0028f6c0
+name = "Brain_Think"
+page = "ai.md#original-structure"
+role = "call handler B / handler A"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::think"
+status = "legacy"
+
+[[function]]
+address = 0x0028f8b8
+name = "Brain_Update"
+page = "ai.md#original-structure"
+role = "call handler B / handler A"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::update"
+status = "legacy"
+
+[[function]]
+address = 0x0028f928
+name = "Brain_OnEvent"
+page = "ai.md#original-structure"
+role = "perception, reaction goal, then handler C"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::onEvent"
+status = "legacy"
+
+[[function]]
+address = 0x0028fa18
+name = "Brain_MaybeScanEnemies"
+page = "ai-code.md#perception"
+kind = "helper"
+role = "re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai.md#enemy-scan))"
+level = "confirmed-code"
+coney = "src/ai/scan_schedule.h:ScanSchedule::maybeScan"
+status = "legacy"
+
+[[function]]
+address = 0x0028fbb0
+name = "Brain_UpdateGoals"
+page = "ai.md#original-structure"
+role = "handler A of every AI type"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::update"
+status = "legacy"
+
+[[function]]
+address = 0x0028fe28
+name = "Brain_RunActions"
+page = "ai.md#original-structure"
+role = "the action queue"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::runActions"
+status = "legacy"
+
+[[function]]
+address = 0x0028fe90
+name = "Brain_GetSectors"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "the human's sector record, refreshed (`Sectors_Update`) when older than the age given (ms)"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::sectors"
+status = "legacy"
+
+[[function]]
+address = 0x00290138
+name = "Brain_IsThreat"
+page = "ai-code.md#enemy-list"
+kind = "helper"
+role = "whether another brain is a threat: never himself; a Warrior hitting back (`+0x2e5`) and any pad player are threats to each other; else enemy gangs, or both players ([step by step](ai-reimpl.md#brain-is-threat))"
+level = "confirmed-code"
+coney = "src/ai/threats.h:isThreat"
+status = "legacy"
+
+[[function]]
+address = 0x00290328
+name = "Brain_MakeGangsEnemies"
+page = "ai-code.md#enemy-list"
+kind = "helper"
+role = "sets the enemy bit between the two brains' gangs"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:makeGangsEnemies"
+status = "legacy"
+
+[[function]]
+address = 0x00290348
+name = "Brain_HasFightGoal"
+page = "ai-code.md#goal-stack"
+kind = "helper"
+role = "whether goal 8 or `0x3f` is on the stack"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::hasFightGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002904a0
+name = "Brain_IsEngaged"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "whether the brain holds an attack slot or has a target"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002906b8
+name = "Brain_CheckAttack"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "whether to attack now: 2 cooling down, 3 not attackable, 1 out of the fight stance, 4 hold back near the leader, 8 another attacker is ready, 5 the police have him, 6 shuffle instead (he is held or armed), 7 a player shields him, else 0 or a free sector"
+level = "confirmed-code"
+coney = "src/ai/fight_checks.h:checkAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00290ea8
+name = "Brain_IsAttackableBy"
+page = "ai.md#sight"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:attackableBy"
+status = "legacy"
+
+[[function]]
+address = 0x00291008
+name = "Brain_ClaimActiveAttacker"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "takes one of the target's four active-attacker places (`+0x1f0`), within `+0x14a` (`+0x14b` while he is held); may displace an idle one"
+level = "confirmed-code"
+coney = "src/ai/attack_places.h:ActivePlaces::claim"
+status = "legacy"
+
+[[function]]
+address = 0x00291178
+name = "Brain_ReleaseActiveAttacker"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "clears a human from the four places"
+level = "confirmed-code"
+coney = "src/ai/attack_places.h:ActivePlaces::release"
+status = "legacy"
+
+[[function]]
+address = 0x002911f8
+name = "Brain_GetAttackWeight"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_choice.h:pickAttackKind"
+status = "legacy"
+
+[[function]]
+address = 0x002912b0
+name = "Brain_PickSideInFight"
+page = "ai-code.md#brain-events"
+kind = "helper"
+role = "in a fight between two humans, the one to side against: the one who hits a friend, making gangs enemies when needed"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:pickSideInFight"
+status = "legacy"
+
+[[function]]
+address = 0x00291960
+name = "Brain_OnViolenceSeen"
+page = "ai-code.md#brain-events"
+kind = "helper"
+role = "no goal `0x9a`: a free AI with threat response sides in a fight it sees (`Brain_PickSideInFight`); a busy Warrior near it looks on and may taunt (10 %); else fights and calls help; with goal `0x9a` pushes a watch goal (`0x002d84e0`)"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:onViolenceSeen"
+status = "legacy"
+
+[[function]]
+address = 0x00291d48
+name = "Brain_GetReactionKind"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "0 for the player in co-op, 3 alone; type 2 of class kind 13 → 0; else the type"
+level = "confirmed-code"
+coney = "src/ai/brain.h:reactionKind"
+status = "legacy"
+
+[[function]]
+address = 0x00291db8
+name = "Brain_GetHelpLevel"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "1 for a cop or a Warrior; for a gang brain or a civilian 1 with class kind 6 or tactic `0x23`, else 2; 2 for the rest ([Gestures](sound-events.md#command-ids))"
+level = "confirmed-code"
+coney = "src/ai/brain.h:helpLevel"
+status = "legacy"
+
+[[function]]
+address = 0x00291ed0
+name = "Ambient_MayGesture"
+page = "ai-code.md#actions"
+level = "confirmed-code"
+coney = "src/ai/script_services.h:ScriptServices::mayGesture"
+status = "legacy"
+
+[[function]]
+address = 0x00292330
+name = "Brain_SetDead"
+page = "ai.md#handlers"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::setDead"
+status = "legacy"
+
+[[function]]
+address = 0x00292410
+name = "Brain_SetType"
+page = "ai-code.md#script-bindings"
+kind = "helper"
+role = "script: set a human's brain type"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00292460
+name = "Brain_SetPedType"
+page = "ai-code.md#script-bindings"
+kind = "helper"
+role = "script: set the ped type `+0x26c`"
+level = "confirmed-code"
+coney = "src/ai/scripted_story.cpp:ScriptedStory::setPedType"
+status = "legacy"
+
+[[function]]
+address = 0x00292530
+name = "Brain_FlushAll"
+page = "ai-scripting.md#script-binding-effects"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/brain.h:Brain::flush"
+status = "legacy"
+
+[[function]]
+address = 0x00292758
+name = "Brain_SetDamageResponse"
+page = "ai-code.md#script-bindings"
+kind = "helper"
+role = "script: damage response `+0x220`"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002927a8
+name = "Brain_SetInvestigateResponse"
+page = "ai-code.md#script-bindings"
+kind = "helper"
+role = "script: investigate response `+0x224`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00292848
+name = "Brain_SetWantsWeapon"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "brain `+0x265`"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeSetThugWantsWeapon"
+status = "legacy"
+
+[[function]]
+address = 0x002928d8
+name = "Brain_SetFieldOfView"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "degrees to radians into `+0x12c`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00292ac0
+name = "Follow_SelectSlotSet"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "the formation's slot set (`0x00295db0`)"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::setSlotSet"
+status = "legacy"
+
+[[function]]
+address = 0x00292bc8
+name = "Brain_SetReactsToViolence"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "brain `+0x267`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00292c10
+name = "Brain_SetWorldFlagUse"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "`+0x2d1` allowed, `+0x2d2` chance (0 when not allowed)"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::canUseWorldFlags"
+status = "legacy"
+
+[[function]]
+address = 0x00292c68
+name = "Brain_HasEnemies"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "brain `+0x152` not 0"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::hasEnemies"
+status = "legacy"
+
+[[function]]
+address = 0x00292cf0
+name = "Brain_ClearBackoff"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "pops a top goal of type `0x9b`"
+level = "confirmed-code"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::clearBackoff"
+status = "legacy"
+
+[[function]]
+address = 0x00292d80
+name = "Brain_DefaultOnEvent"
+page = "ai-code.md#brain-types"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:answerEvent"
+status = "legacy"
+
+[[function]]
+address = 0x002935d8
+name = "Brain_IsInHearRange"
+page = "ai-code.md#brain-events"
+kind = "helper"
+role = "whether an event's distance is within the hearing radius (`+0x134`; `+0x138` for event 20)"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:broadcastHelpCall"
+status = "legacy"
+
+[[function]]
+address = 0x00293640
+name = "Gang_BroadcastHelpCall"
+page = "ai-code.md#brain-events"
+kind = "helper"
+role = "event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls))"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:broadcastHelpCall"
+status = "legacy"
+
+[[function]]
+address = 0x00293b28
+name = "Brains_Update"
+page = "ai.md#original-structure"
+role = "step 5 of `Humans_Update`"
+level = "confirmed-code"
+coney = "src/ai/brains.h:Brains::update"
+status = "legacy"
+
+[[function]]
+address = 0x00293c68
+name = "Formations_Update"
+page = "ai.md#original-structure"
+role = "[formations](ai-gangs.md#formations)"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formations::update"
+status = "legacy"
+
+[[function]]
+address = 0x00294788
+name = "Cfg_SetDefaultFollowSlotSet"
+page = "ai-code.md#ai-config"
+kind = "binding worker"
+role = "writes the slot set into every pool formation (`0x00294bf8`), in use or not"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formations::setDefaults"
+status = "legacy"
+
+[[function]]
+address = 0x00294808
+name = "Cfg_SetVerticalSightModifier"
+page = "ai-code.md#ai-config"
+kind = "binding worker"
+role = "`0x00510ad4`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00294828
+name = "Cfg_SetCivilianAggression"
+page = "ai-code.md#ai-config"
+kind = "binding worker"
+role = "`0x00510ad8`, `0x00510ad9`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00294888
+name = "Cfg_SetChanceToGetHelp"
+page = "ai-code.md#ai-config"
+kind = "binding worker"
+role = "`0x00510adf`, at most 100"
+level = "confirmed-code"
+coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x00294ad8
+name = "Formation_Init"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "leader, 6 slots, 6 allowed, set 0"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::Formation"
+status = "legacy"
+
+[[function]]
+address = 0x00294f38
+name = "Formation_UpdateSlotPoints"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "the slots' world points from the leader's pose, dropped to the ground; a slot is usable when the leader sees it, up to `+0x272`"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::plan"
+status = "legacy"
+
+[[function]]
+address = 0x00295250
+name = "Formation_RetargetFollowerMoves"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "after each plan, a follower whose top goal is `0x33`, `0x69` or `0x73` and whose front action is a move gets his new follow point in that move (`MoveAction_SetTarget`) and radius 0.1 m with a slot, 1.0 m without ([Where a running move's point comes from](ai-gangs.md#follow-retarget)); the old name `Formation_SetFollowerSpeeds` was wrong"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::retargetMoves"
+status = "legacy"
+
+[[function]]
+address = 0x002953c8
+name = "Formation_AssignSlots"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "each usable slot takes its nearest unassigned follower, up to `+0x272`"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::plan"
+status = "legacy"
+
+[[function]]
+address = 0x002956d0
+name = "Formation_Plan"
+page = "ai.md#original-structure"
+role = "[formations](ai-gangs.md#formations)"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::update"
+status = "legacy"
+
+[[function]]
+address = 0x00295dd8
+name = "Formation_SetSlotCount"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "`+0x271` slots, `+0x272` allowed (the same when −1), replan flag"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::setSlotCount"
+status = "legacy"
+
+[[function]]
+address = 0x00295e38
+name = "Formation_GetFollowPoint"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "a follower's slot point, or the position of the one he queues behind"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::followPoint"
+status = "legacy"
+
+[[function]]
+address = 0x00295ec8
+name = "Formation_SetSlotOffset"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "one slot's offset in the current set, replan flag"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::setSlot"
+status = "legacy"
+
+[[function]]
+address = 0x00295f28
+name = "Formation_Join"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::join"
+status = "legacy"
+
+[[function]]
+address = 0x00296028
+name = "Formation_Leave"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "a follower leaves; his brain `+0x212` = −1"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::leave"
+status = "legacy"
+
+[[function]]
+address = 0x00296358
+name = "Formation_GetSlotPoint"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::slotPoint"
+status = "legacy"
+
+[[function]]
+address = 0x002963b0
+name = "Formation_GetAhead"
+page = "ai-code.md#formation-code"
+kind = "helper"
+role = "the human a follower queues behind, else the leader"
+level = "confirmed-code"
+coney = "src/ai/formations.h:Formation::followPoint"
+status = "legacy"
+
+[[function]]
+address = 0x00299238
+name = "Human_SetLookAtTarget"
+page = "ai-code.md#ai-pools"
+kind = "helper"
+role = "an empty stub"
+level = "confirmed-code"
+coney = "src/scripting/hub_bindings.cpp:addHubBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002994b8
+name = "Human_DropWeapon"
+page = "ai-code.md#ai-pools"
+kind = "helper"
+role = "drops what a human holds"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeDropWeapon"
+status = "legacy"
+
+[[function]]
+address = 0x00299510
+name = "GameState_SetSpawnMax"
+page = "ai-code.md#ai-pools"
+kind = "helper"
+role = "sets the spawn maximum (game state `+0x434`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00299520
+name = "GameState_SetCopSpawnMax"
+page = "ai-code.md#ai-pools"
+kind = "helper"
+role = "sets the police spawn maximum (game state `+0x326`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0029a8c0
+name = "Route_Request"
+page = "ai.md#original-structure"
+role = "[path planning](ai-moving.md#path-planning)"
+level = "confirmed-code"
+coney = "src/ai/route_planner.h:RoutePlanner::request"
+status = "legacy"
+
+[[function]]
+address = 0x0029aa88
+name = "Route_Follow"
+page = "ai.md#original-structure"
+role = "[path planning](ai-moving.md#path-planning)"
+level = "confirmed-code"
+coney = "src/ai/route_follower.h:RouteFollower::waypoint"
+status = "legacy"
+
+[[function]]
+address = 0x0029b248
+name = "RouteState_CurrentNode"
+page = "ai-code.md#route-code"
+kind = "helper"
+role = "the node at the current index"
+level = "confirmed-code"
+coney = "src/ai/route_follower.h:RouteFollower::currentNode"
+status = "legacy"
+
+[[function]]
+address = 0x0029b2b8
+name = "Route_GetWaypointPoint"
+page = "ai-code.md#route-code"
+kind = "helper"
+role = "a waypoint's point, using the queue spot when the link into it is a queue link (flag 4)"
+level = "confirmed-code"
+coney = "src/ai/route_follower.h:RouteFollower::placeJumpPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0029b4b8
+name = "Route_SkipReachable"
+page = "ai-moving.md#route-follow"
+level = "confirmed-code"
+coney = "src/ai/route_follower.h:RouteFollower::canSkip"
+status = "legacy"
+
+[[function]]
+address = 0x0029b6d8
+name = "Route_Advance"
+page = "ai-moving.md#route-follow"
+level = "confirmed-code"
+coney = "src/ai/route_follower.h:RouteFollower::moveOn"
+status = "legacy"
+
+[[function]]
+address = 0x0029b848
+name = "Route_ClimbLeg"
+page = "ai-code.md#route-code"
+kind = "helper"
+role = "steers at the climb point for up to 31 tries and starts a climb"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::followLeg"
+status = "legacy"
+
+[[function]]
+address = 0x0029b9b0
+name = "Route_TryClimbNear"
+page = "ai-code.md#route-code"
+kind = "helper"
+role = "within 4.5 m of the point, tries to climb and advances the route"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:earlyClimbDue"
+status = "legacy"
+
+[[function]]
+address = 0x0029baa8
+name = "Route_StartJumpLeg"
+page = "ai-code.md#route-code"
+kind = "helper"
+role = "starts a jump leg when the gap needs it, else walks on"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::jumpLeg"
+status = "legacy"
+
+[[function]]
+address = 0x0029ce98
+name = "Brain_ScoreEnemy"
+page = "ai-code.md#enemy-list"
+kind = "helper"
+role = "scores an enemy (−999 when ruled out, else weighted terms)"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:scoreEnemy"
+status = "legacy"
+
+[[function]]
+address = 0x0029e250
+name = "Sectors_Construct"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "constructs a human's eight-sector record (0x48 bytes at `0x006e8318`)"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::reset"
+status = "legacy"
+
+[[function]]
+address = 0x0029e2b0
+name = "Sectors_Reset"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "marks all sectors stale, timer 0"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::reset"
+status = "legacy"
+
+[[function]]
+address = 0x0029e350
+name = "Sectors_GetPoint"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "the owner's position plus a distance along his current heading + k × 45°"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:sectorPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0029e4b0
+name = "Sectors_ProbeWall"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "lazily once per rebuild: no walkable straight line (`Human_CanWalkStraightTo`) to the point 1.5 m out at the sector's centre sets bit 4 ([Neighbour sectors](ai-moving.md#neighbour-sectors))"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::probe"
+status = "legacy"
+
+[[function]]
+address = 0x0029e5d8
+name = "Sectors_Update"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "the rebuild: humans within 1.5 m of the owner, counted and the nearest kept per sector; flags 3 when the nearest's squared distance is below 1.5 (1.22 m), else 1; bit 8 for a free player within 5.5 m ([Neighbour sectors](ai-moving.md#neighbour-sectors))"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::rebuild"
+status = "legacy"
+
+[[function]]
+address = 0x0029e980
+name = "Sectors_GetCost"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "a sector's flags plus twice its human count"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::cost"
+status = "legacy"
+
+[[function]]
+address = 0x0029e9c8
+name = "Sectors_IsBlocked"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "a near human, or a probed wall"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::blocked"
+status = "legacy"
+
+[[function]]
+address = 0x0029ea10
+name = "Sectors_IsWall"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "the wall bit"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::wall"
+status = "legacy"
+
+[[function]]
+address = 0x0029ea48
+name = "Sectors_IsFree"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "no human and no wall"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::free"
+status = "legacy"
+
+[[function]]
+address = 0x0029eaa0
+name = "Sectors_AllClear"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "no sector has bit 1 or 2 (no human within 1.5 m; used by the Warriors' pick-up check)"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::allClear"
+status = "legacy"
+
+[[function]]
+address = 0x0029ead8
+name = "Sectors_IsHeldBy"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "whether a given human is the near one in a sector"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:Sectors::heldBy"
+status = "legacy"
+
+[[function]]
+address = 0x0029eb10
+name = "Sectors_SectorOf"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "the sector (0-7, 45° each, centred on k × 45°, rising clockwise, toward his right) of a point relative to a human's heading"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:sectorOf"
+status = "legacy"
+
+[[function]]
+address = 0x0029eb38
+name = "Human_GetSectorOf"
+page = "ai.md#engage-enemy"
+level = "inferred"
+coney = "src/ai/sectors.h:sectorOf"
+status = "legacy"
+
+[[function]]
+address = 0x0029ec90
+name = "Sectors_TurnWay"
+page = "ai-code.md#sectors"
+kind = "helper"
+role = "the shorter way round (+1 or −1) between two of eight sectors"
+level = "confirmed-code"
+coney = "src/ai/sectors.h:sectorTurnWay"
+status = "legacy"
+
+[[function]]
+address = 0x0029ed58
+name = "Goal_Start"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::processGoals"
+status = "legacy"
+
+[[function]]
+address = 0x0029edd8
+name = "Goal_End"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::popGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0029ee30
+name = "Goal_Resume"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::processGoals"
+status = "legacy"
+
+[[function]]
+address = 0x0029eea0
+name = "Goal_Suspend"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::pushGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0029eed8
+name = "Goal_Process"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::processGoals"
+status = "legacy"
+
+[[function]]
+address = 0x0029f098
+name = "Goal_TryBlock"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/block_goal.h:tryBlock"
+status = "legacy"
+
+[[function]]
+address = 0x0029f230
+name = "Brain_PickBestEnemy"
+page = "ai-goals.md#goal-helpers"
+kind = "helper"
+role = "the best-scoring valid enemy in the brain's enemy list ([the score](ai.md#enemy-score))"
+level = "confirmed-code"
+coney = "src/ai/targeting.h:pickBestEnemy"
+status = "legacy"
+
+[[function]]
+address = 0x0029f3a8
+name = "Goal_AdjustEnemyScoreDefault"
+page = "ai.md#enemy-score"
+level = "confirmed-code"
+coney = "src/ai/goal.h:Goal::adjustEnemyScore"
+status = "legacy"
+
+[[function]]
+address = 0x0029f710
+name = "Ai_SetRunningMoveSpeed"
+page = "ai-goals.md#goal-helpers"
+kind = "helper"
+role = "when the brain has actions and the current one is a move action, changes its speed; 1 when done"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::setSpeed"
+status = "legacy"
+
+[[function]]
+address = 0x002a4cb8
+name = "Goal_AreaWalker"
+page = "ai-goals.md#goal-area-walker"
+kind = "binding"
+role = "`GoalAreaWalker`"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goalAreaWalker"
+status = "legacy"
+
+[[function]]
+address = 0x002a4dc8
+name = "AreaWalkerGoal_Init"
+page = "ai-goals.md#goal-area-walker"
+kind = "init"
+role = "vtable `0x0053fa90`; the area and the pace"
+level = "inferred"
+coney = "src/ai/hub_goals.h:AreaWalkerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002a4eb0
+name = "AreaWalkerGoal_Process"
+page = "ai-goals.md#goal-area-walker"
+kind = "Process"
+role = "picks a new point in the area (`Ai_RandomNavPoint`), walks there, idles a while"
+level = "inferred"
+coney = "src/ai/hub_goals.h:AreaWalkerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002a7328
+name = "FlagNet_Clear"
+page = "ai-goals.md#goal-travel-flag-net"
+kind = "helper"
+role = "`FlagNet_Clear`"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002a7458
+name = "FlagNet_AddNode"
+page = "ai-goals.md#goal-travel-flag-net"
+kind = "helper"
+role = "`FlagNet_AddNode`"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeFlagNetAddLink"
+status = "legacy"
+
+[[function]]
+address = 0x002a78c8
+name = "FlagNet_StartTraverse"
+page = "ai-goals.md#goal-travel-flag-net"
+kind = "helper"
+role = "`FlagNet_StartTraverse`"
+level = "confirmed-code"
+coney = "src/ai/scripted_brains.h:ScriptedBrains::flagNetTraverse"
+status = "legacy"
+
+[[function]]
+address = 0x002aae30
+name = "PedestrianGoal_Init"
+page = "ai-goals.md#goal-pedestrian"
+kind = "init"
+role = "vtable `0x0053f670`"
+level = "confirmed-code"
+coney = "src/ai/pedestrian_goal.h:PedestrianGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002abd38
+name = "Goal_Bum"
+page = "ai-goals.md#goal-bum"
+kind = "binding"
+role = "`GoalBum`"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGoalBumLogic"
+status = "legacy"
+
+[[function]]
+address = 0x002abe08
+name = "Goal_BumTrigger"
+page = "ai-goals.md#goal-bum"
+kind = "binding"
+role = "`GoalBumTrigger`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002abe98
+name = "LoadBumAnims"
+page = "ai-goals.md#goal-bum"
+kind = "helper"
+role = "`LoadBumAnims`"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeLoadBumAnims"
+status = "legacy"
+
+[[function]]
+address = 0x002abef8
+name = "BumLogicGoal_Create"
+page = "ai-scripting.md#bum-logic"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:BumLogicGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002ad2c0
+name = "Goal_Peddler"
+page = "ai-goals.md#goal-peddler"
+kind = "binding"
+role = "`GoalPeddler`"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goalPeddler"
+status = "legacy"
+
+[[function]]
+address = 0x002ad378
+name = "PeddlerGoal_Init"
+page = "ai-goals.md#goal-peddler"
+kind = "init"
+role = "vtable `0x0053f5b0`"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:PeddlerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002ad530
+name = "PeddlerGoal_Destroy"
+page = "ai-goals.md#goal-peddler"
+kind = "Destroy"
+role = "releases two dyn anim slots and restores the type"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:PeddlerGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002ad6c0
+name = "PeddlerGoal_Process"
+page = "ai-goals.md#goal-peddler"
+kind = "Process"
+role = "waits for a customer and sells"
+level = "inferred"
+coney = "src/ai/hub_goals.h:PeddlerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002add08
+name = "Goal_Melee"
+page = "ai.md#targets"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002ade10
+name = "MeleeGoal_Create"
+page = "ai.md#fight-durations"
+level = "confirmed-code"
+coney = "src/ai/melee_goal.h:MeleeGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002ade60
+name = "MeleeGoal_End"
+page = "ai-goals.md#goal-melee"
+kind = "End"
+role = "sets brain `+0x2d3` and calls `0x00226f70`"
+level = "confirmed-code"
+coney = "src/ai/melee_goal.h:MeleeGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002ae2e8
+name = "MeleeGoal_ProcessTarget"
+page = "ai.md#fight-durations"
+level = "confirmed-code"
+coney = "src/ai/melee_goal.h:MeleeGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002aebf8
+name = "MeleeGoal_Process"
+page = "ai-goals.md#goal-melee"
+kind = "Process"
+role = "[Melee](ai.md#melee-goal)"
+level = "confirmed-code"
+coney = "src/ai/melee_goal.h:MeleeGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002af528
+name = "Goal_EngageEnemy"
+page = "ai-goals.md#goal-engage-enemy"
+kind = "binding"
+role = "`GoalEngageEnemy`"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002af5b0
+name = "EngageEnemyGoal_Init"
+page = "ai-goals.md#goal-engage-enemy"
+kind = "init"
+role = "vtable `0x00540330`"
+level = "confirmed-code"
+coney = "src/ai/engage_goals.h:EngageEnemyGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002af670
+name = "EngageEnemyGoal_Start"
+page = "ai-goals.md#goal-engage-enemy"
+kind = "Start"
+role = "arms the charge, a taunt, the timers, brain `+0x0b` + 1"
+level = "confirmed-code"
+coney = "src/ai/engage_goals.h:EngageEnemyGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002af8d0
+name = "EngageEnemyGoal_End"
+page = "ai-goals.md#goal-engage-enemy"
+kind = "End"
+role = "restores `+0x0b`, clears the actions"
+level = "confirmed-code"
+coney = "src/ai/engage_goals.h:EngageEnemyGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002afa48
+name = "EngageEnemyGoal_Process"
+page = "ai-goals.md#goal-engage-enemy"
+kind = "Process"
+role = "[the run-in](ai.md#engage-enemy)"
+level = "confirmed-code"
+coney = "src/ai/engage_goals.h:EngageEnemyGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b2c20
+name = "FightGoal_Init"
+page = "ai.md#original-structure"
+role = "goal type `0xf`"
+level = "confirmed-code"
+coney = "src/ai/fight_goal.h:FightGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b2cd8
+name = "FightGoal_Start"
+page = "ai-goals.md#goal-fight"
+kind = "Start"
+role = "Resume"
+level = "confirmed-code"
+coney = "src/ai/fight_goal.h:FightGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b2d00
+name = "FightGoal_Resume"
+page = "ai-goals.md#goal-fight"
+kind = "Resume"
+role = "picks an attack kind against the target"
+level = "inferred"
+coney = "src/ai/fight_goal.h:FightGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002b2e28
+name = "FightGoal_TryTackle"
+page = "ai-goals.md#goal-fight"
+kind = "helper"
+role = "the tackle try, first in the fight goal; driven by the gang's `CfgGang` value 7 and the brain's tackle meter `+0x148`; a cop picks `X1` over the tackle 75 % of the time ([The tackle try](ai.md#try-tackle))"
+level = "confirmed-code"
+coney = "src/ai/fight_goal.h:FightGoal::tryTackle"
+status = "legacy"
+
+[[function]]
+address = 0x002b2fc8
+name = "FightGoal_Reposition"
+page = "ai-goals.md#goal-fight"
+kind = "helper"
+role = "while `Brain_CheckAttack` says wait: holds the attacker in a ring 4-4.75 m from the target with a move-to-human action, a taunt fidget every 1-2 s ([The reposition](ai.md#fight-reposition))"
+level = "confirmed-code"
+coney = "src/ai/fight_checks.h:repositionRing"
+status = "legacy"
+
+[[function]]
+address = 0x002b3360
+name = "FightGoal_TryGrab"
+page = "ai-goals.md#goal-fight"
+kind = "helper"
+role = "the grab and snap try before an attack in reach: snap stick angles from the sectors, side grab to `X1`, a rear grab at `CfgGang` value 8 × 25 % ([The grab and snap try](ai.md#try-grab))"
+level = "confirmed-code"
+coney = "src/ai/fight_goal.h:FightGoal::tryGrab"
+status = "legacy"
+
+[[function]]
+address = 0x002b3ab0
+name = "FightGoal_Process"
+page = "ai.md#original-structure"
+role = "goal type `0xf`"
+level = "confirmed-code"
+coney = "src/ai/fight_goal.cpp:maybeTaunt"
+status = "legacy"
+
+[[function]]
+address = 0x002b4098
+name = "SpectateGoal_Init"
+page = "ai.md#spectate"
+level = "confirmed-code"
+coney = "src/ai/idle_goals.h:SpectateGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b4158
+name = "SpectateGoal_PickTarget"
+page = "ai-goals.md#goal-spectate"
+kind = "helper"
+role = "`SpectateGoal_PickTarget`"
+level = "confirmed-code"
+coney = "src/ai/idle_goals.h:SpectateGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b4200
+name = "SpectateGoal_Start"
+page = "ai-goals.md#goal-spectate"
+kind = "Start"
+role = "`SpectateGoal_Start`"
+level = "confirmed-code"
+coney = "src/ai/idle_goals.h:SpectateGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b42f0
+name = "SpectateGoal_End"
+page = "ai-goals.md#goal-spectate"
+kind = "End"
+role = "`SpectateGoal_End`"
+level = "confirmed-code"
+coney = "src/ai/idle_goals.h:SpectateGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002b4330
+name = "SpectateGoal_Process"
+page = "ai-goals.md#goal-spectate"
+kind = "Process"
+role = "`SpectateGoal_Process`"
+level = "confirmed-code"
+coney = "src/ai/idle_goals.h:SpectateGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b49f8
+name = "GroundedGoal_Init"
+page = "ai-goals.md#goal-reactions"
+kind = "init"
+role = "Grounded (`0x17`), vtable `0x00540210`"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:GroundedGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b4a38
+name = "GroundedGoal_Start"
+page = "ai-goals.md#goal-reactions"
+kind = "Start"
+role = "notes the attacker (brain `+0x124`) and the start time"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:GroundedGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b4aa8
+name = "GroundedGoal_Process"
+page = "ai-goals.md#goal-reactions"
+kind = "Process"
+role = "Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai.md#fight-reactions))"
+level = "inferred"
+coney = "src/ai/fight_reactions.h:GroundedGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b54d8
+name = "BlockGoal_Init"
+page = "ai.md#original-structure"
+role = "goal type `0x1b`"
+level = "confirmed-code"
+coney = "src/ai/block_goal.h:BlockGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b5520
+name = "BlockGoal_Start"
+page = "ai.md#original-structure"
+role = "goal type `0x1b`"
+level = "confirmed-code"
+coney = "src/ai/block_goal.h:BlockGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b5808
+name = "BlockGoal_Process"
+page = "ai.md#original-structure"
+role = "goal type `0x1b`"
+level = "confirmed-code"
+coney = "src/ai/block_goal.h:BlockGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b5a98
+name = "GrabbingGoal_Init"
+page = "ai-goals.md#goal-reactions"
+kind = "init"
+role = "Grabbing (`0x12`), vtable `0x00540150`"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:GrabbingGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b5ad0
+name = "GrabbingGoal_Start"
+page = "ai-goals.md#goal-reactions"
+kind = "Start"
+role = "a let-go chance of the class value × 10 %, none with a FollowAndDefend (`0x35`) goal; goal `0x7d`'s flag"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:GrabbingGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b5b58
+name = "GrabbingGoal_End"
+page = "ai-goals.md#goal-reactions"
+kind = "End"
+role = "when still grabbing, clears the hold timer (`+0x148` of the held record)"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:GrabbingGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002b5b98
+name = "Grabbing_PickMove"
+page = "ai-goals.md#goal-reactions"
+kind = "helper"
+role = "the direction of a throw or push from a grab (left, ahead, right, behind): away from a held flag, into a wall or an enemy, else random ([reactions](ai.md#fight-reactions))"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:grabMoveDirection"
+status = "legacy"
+
+[[function]]
+address = 0x002b60c0
+name = "GrabbingGoal_Process"
+page = "ai-goals.md#goal-reactions"
+kind = "Process"
+role = "Grabbing: near a train command 5; a rear grab holds the victim up for a friend; else kind 24 (twice at 40 %), the throws 25/29 by `Grabbing_PickMove`, or 26-28 ([reactions](ai.md#fight-reactions))"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:GrabbingGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b65f8
+name = "MountingGoal_Init"
+page = "ai-goals.md#goal-reactions"
+kind = "init"
+role = "Mounting (`0x13`, the tackler on top), vtable `0x005400f0`"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:MountingGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b6638
+name = "MountingGoal_Process"
+page = "ai-goals.md#goal-reactions"
+kind = "Process"
+role = "Mounting: near a train command 5; else a picked kind (45 and 36 do nothing), kind 35 twice chained 40 % of the time ([reactions](ai.md#fight-reactions))"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:MountingGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b6818
+name = "GrabbedGoal_Init"
+page = "ai-goals.md#goal-reactions"
+kind = "init"
+role = "Grabbed (`0x14`), vtable `0x00540090`"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:HeldGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b6848
+name = "GrabbedGoal_Process"
+page = "ai-goals.md#goal-reactions"
+kind = "Process"
+role = "Grabbed: a civilian calls for help every 30 updates (10 m); with a threat response the grabber becomes the target and he struggles ([reactions](ai.md#fight-reactions))"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:HeldGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b6b88
+name = "MountedGoal_Init"
+page = "ai-goals.md#goal-reactions"
+kind = "init"
+role = "Mounted (`0x15`, tackled), vtable `0x00540030`"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:HeldGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b6bb8
+name = "MountedGoal_Process"
+page = "ai-goals.md#goal-reactions"
+kind = "Process"
+role = "Mounted: calls for help and struggles ([reactions](ai.md#fight-reactions))"
+level = "confirmed-code"
+coney = "src/ai/fight_reactions.h:HeldGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b75b8
+name = "Gang_SendHelper"
+page = "ai-reimpl.md#attack-process"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:sendHelper"
+status = "legacy"
+
+[[function]]
+address = 0x002b7670
+name = "HelpRespondGoal_Init"
+page = "ai-goals.md#goal-help-respond"
+kind = "init"
+role = "vtable `0x0053fd90`; `+0x10` the target handle, `+0x14` a flag, `+0x08` the time limit"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:HelpRespondGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b76a0
+name = "HelpRespondGoal_Start"
+page = "ai-goals.md#goal-help-respond"
+kind = "Start"
+role = "the caller's target: within 1.1 x far and walkable straight: a turn action to him (`TurnToPointAction_Init`) and a 3 s **head look** at him (`Brain_LookAtTarget` `0x0029a000`, weight 1.0, on the human's look-at `+0x284`: no action, it does not hold the goal), nothing more (else 60 % a look-around); otherwise a move action to him (gait 2, 4 beyond 10 m; with an empty enemy list 4, or 5 on level `0x53`)"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:HelpRespondGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002b78e0
+name = "HelpRespondGoal_End"
+page = "ai-goals.md#goal-help-respond"
+kind = "End"
+role = "clears the actions"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:HelpRespondGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002b7900
+name = "HelpRespondGoal_Process"
+page = "ai-goals.md#goal-help-respond"
+kind = "Process"
+role = "refreshes the gang's wanted timer on the target (Brain_RefreshWanted); with `+0x14` clear, every 30 updates ends once the brain lists enemies (a fight takes over); ends when its actions are done"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:HelpRespondGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b79b8
+name = "Goal_GuardFlag"
+page = "ai-goals.md#goal-guard-flag"
+kind = "pusher"
+role = "GoalGuardFlag: the human and the flag from handles, pushes the goal"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalGuardFlag"
+status = "legacy"
+
+[[function]]
+address = 0x002b7a90
+name = "GuardFlagGoal_Init"
+page = "ai-goals.md#goal-guard-flag"
+kind = "init"
+role = "vtable `0x0053fe50`; `+0x10` the flag, `+0x14` the radius and `+0x18` its square, `+0x1c` the heading to face (-1 none), `+0x20` a sound or zone id from the manager at `0x00512b04` (slot `0xcc`)"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:GuardFlagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b7c18
+name = "GuardFlagGoal_Process"
+page = "ai-goals.md#goal-guard-flag"
+kind = "Process"
+role = "no flag: done; farther than the radius: a move action to the flag (gait 2); there, every 30 updates turns to the set heading"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:GuardFlagGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b9538
+name = "Goal_HoldFlag"
+page = "ai-goals.md#goal-hold-flag"
+kind = "pusher"
+role = "GoalHoldFlag: pushes a Domination goal (`0x7d`) holding a flag with a radius, no time limit"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.h:HoldFlagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002b9730
+name = "HoldFlagGoal_FilterTarget"
+page = "ai-goals.md#goal-hold-flag"
+kind = "score"
+role = "an enemy not busy and inside the flag's radius keeps his score; others -999"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.cpp:nearestEnemyNear"
+status = "legacy"
+
+[[function]]
+address = 0x002b97c0
+name = "HoldFlagGoal_MoveToFlag"
+page = "ai-goals.md#goal-hold-flag"
+kind = "helper"
+role = "farther than 1 m from the flag: a move action to it (gait 2 inside the radius in the fight stance, 5 outside), returns 1"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.cpp:HoldFlagGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002b98f0
+name = "HoldFlagGoal_Process"
+page = "ai-goals.md#goal-hold-flag"
+kind = "Process"
+role = "the best enemy in the radius (Brain_PickBestEnemy): walkable straight to him, push a fight goal (1000 ms), else back to the flag; with none, back to the flag, and taunts (anim `0x57`) every 3-6 s; never ends"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.h:HoldFlagGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002bb3d0
+name = "Goal_GrabTarget"
+page = "ai-goals.md#goal-grab-target"
+kind = "pusher"
+role = "GoalGrabTarget: pushes a GrabTarget goal on a human"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goalGrabTarget"
+status = "legacy"
+
+[[function]]
+address = 0x002bb458
+name = "GrabTargetGoal_Init"
+page = "ai-goals.md#goal-grab-target"
+kind = "init"
+role = "vtable `0x00540390`; `+0x10` the target; saves brain `+0x21c` and `+0x265` and clears them"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:GrabTargetGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002bb4c0
+name = "GrabTargetGoal_Start"
+page = "ai-goals.md#goal-grab-target"
+kind = "Start"
+role = "attack-weight override `0x00511098`, brain `+0x120` cleared, human flag `0x4000000`, a turn boost of one more; the target's `+0x11f` cleared"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:GrabTargetGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002bb598
+name = "GrabTargetGoal_End"
+page = "ai-goals.md#goal-grab-target"
+kind = "End"
+role = "undoes Start; the target's `+0x11f` set again"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:GrabTargetGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002bb858
+name = "GrabTargetGoal_Process"
+page = "ai-goals.md#goal-grab-target"
+kind = "Process"
+role = "done when the target is invalid; not yet holding: within 1.1 x far and in line of sight push a fight goal (1000 ms), else an EngageEnemy run-in or, past an object in the way, a move (gait 4); holding: fills power, sets the struggle anims, from a tackle issues the attack kind `0x28` command and from a front grab command `0x19`; every 30 updates adds pending damage; a line every fourth standing reaction; turns to face the nearest player beyond 45 deg"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:GrabTargetGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002bbdc0
+name = "FollowAndAttackGoal_Init"
+page = "ai-goals.md#goal-follow-and-attack"
+kind = "init"
+role = "vtable `0x005405d0`; `+0x10` the leader (the chief), `+0x14` the last target (-1), `+0x18` / `+0x1c` timers, `+0x20` a counter"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowAndAttackGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002bbe00
+name = "FollowAndAttackGoal_Start"
+page = "ai-goals.md#goal-follow-and-attack"
+kind = "Start"
+role = "joins the leader's formation, fight stance off, then Resume"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowAndAttackGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002bbe98
+name = "FollowAndAttackGoal_End"
+page = "ai-goals.md#goal-follow-and-attack"
+kind = "End"
+role = "leaves the leader's formation, then Suspend"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowAndAttackGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002bc198
+name = "FollowAndAttackGoal_Process"
+page = "ai-goals.md#goal-follow-and-attack"
+kind = "Process"
+role = "the best enemy within 60 m of the leader: changing target resets `+0x2d3`; unarmed and chasable within 1.1 x far, or in sight, push a fight goal (4000 ms), beyond it an EngageEnemy run-in, unless a pick-up comes first; not chasable: move-to-human or shuffle in the stance; no enemy: within 8 m of the leader, in the stance (his or the leader's) turns to the leader once the enemy list is empty, else every 4 s to the leader's heading, a 30 % fidget every 3 s; farther, push FollowFormation (0.75 m, 2000 ms)"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowAndAttackGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002be590
+name = "Goal_HoldPosition"
+page = "ai-goals.md#goal-hold-position"
+kind = "pusher"
+role = "GoalHoldPosition: pushes a HoldPosition goal at a point with a radius"
+level = "confirmed-code"
+coney = "src/ai/crew.h:HoldPositionGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002be640
+name = "HoldPositionGoal_Init"
+page = "ai-goals.md#goal-hold-position"
+kind = "init"
+role = "vtable `0x00540510`; `+0x10` the point, `+0x20` the radius, `+0x24` the next fidget time"
+level = "confirmed-code"
+coney = "src/ai/crew.h:HoldPositionGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002be688
+name = "HoldPositionGoal_End"
+page = "ai-goals.md#goal-hold-position"
+kind = "End"
+role = "calls Suspend"
+level = "confirmed-code"
+coney = "src/ai/crew.h:HoldPositionGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002be818
+name = "HoldPositionGoal_Process"
+page = "ai-goals.md#goal-hold-position"
+kind = "Process"
+role = "no enemy: inside the radius, out of the fight stance a 30 % fidget every 3 s; outside, a move back (gait 2); an enemy not targeting him: turn to him; targeting him and inside the radius (or blocked): fight goal (4000 ms) in line of sight and reach, else turn and shuffle, or a move past an object in the way; outside the radius: walk back (0.5 m)"
+level = "confirmed-code"
+coney = "src/ai/crew.h:HoldPositionGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002bec58
+name = "WarriorVandalStealGoal_Init"
+page = "ai-goals.md#goal-warrior-vandal-steal"
+kind = "init"
+role = "vtable `0x005404b0`; `+0x10` the object handle (none), `+0x29` = `0xff`, timers cleared"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002becb8
+name = "WarriorVandalStealGoal_Start"
+page = "ai-goals.md#goal-warrior-vandal-steal"
+kind = "Start"
+role = "joins the gang leader's formation, fight stance off, then Resume"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002bed30
+name = "WarriorVandalStealGoal_Resume"
+page = "ai-goals.md#goal-warrior-vandal-steal"
+kind = "Resume"
+role = "releases the claimed object (its `+0xec` cleared for an object or glass) and forgets it"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002bee08
+name = "WarriorVandalStealGoal_End"
+page = "ai-goals.md#goal-warrior-vandal-steal"
+kind = "End"
+role = "leaves the leader's formation, then Suspend"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002bee78
+name = "WarriorVandalStealGoal_TryFetch"
+page = "ai-goals.md#goal-warrior-vandal-steal"
+kind = "helper"
+role = "empty-handed under the gang's steal tactic (type `0x26`): unless `0x00321540` already gives him something, waits 500 ms x his place in the gang, then finds a smash target within 15 m of the leader (filter `0x0053f2b0`), skips one a gang mate stands on, and pushes GetItem (kind 4); returns 1 then"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002bf748
+name = "WarriorVandalStealGoal_Process"
+page = "ai-goals.md#goal-warrior-vandal-steal"
+kind = "Process"
+role = "fetches and vandalises (above); otherwise, beyond 3 m of the leader (15 m while his gang is attacked) or when the leader runs, after 2 s pushes FollowFormation (0.75 m, mode 1); while the gang is attacked: sight 2 pi, the fight stance, turns to the nearest enemy or closes on him (move-to-human 3000 ms); otherwise turns to the leader's heading every 4 s and a 30 % fidget every 3 s"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002c0430
+name = "FindEnemyGoal_Init"
+page = "ai-goals.md#goal-find-enemy"
+kind = "init"
+role = "vtable `0x00540a50`; `+0x10` / `+0x14` two ranges (90 and 30 from Brain_Fight), `+0x18` a byte, `+0x1c` the duration, `+0x20` its end time; a police brain (type 1) is added to the game's guarding cops; clears the spotter note"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:FindEnemyGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002c0748
+name = "FindEnemyGoal_Process"
+page = "ai.md#fight-durations"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:FindEnemyGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002c6c88
+name = "Goal_Dealer"
+page = "ai-goals.md#goal-dealer"
+kind = "pusher"
+role = "GoalDealer: the dealer type from his class (426-430 flash, 431-435 spray paint, 436-440 weapons), pushes the goal (ai-scripting.md#dealer)"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:dealerTypeFor"
+status = "legacy"
+
+[[function]]
+address = 0x002c6d90
+name = "DealerGoal_Init"
+page = "ai-goals.md#goal-dealer"
+kind = "init"
+role = "ai-scripting.md#dealer has the fields"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002c6e78
+name = "DealerGoal_Start"
+page = "ai-goals.md#goal-dealer"
+kind = "Start"
+role = "threat response (brain `+0x21c`) 0, brain `+0xcc` ORed with 2; the spinning icon by dealer type (`+0x28`: 0 dyn_flashdeal, 1 dyn_weapdeal, 2 the icon at `0x00565668`); puts the type's item (table `0x005110fc`, 8-byte rows) in his pocket; home = his current position (`+0x10`..`+0x1c`); then Resume (vtable `+0x34`) ([Dealer](ai-scripting.md#dealer))"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002c70a0
+name = "DealerGoal_End"
+page = "ai-goals.md#goal-dealer"
+kind = "End"
+role = "removes the spinning icon; if he is the game state's dealer customer (`+0x284`) that is reset to the default (`0x006ebd30`); threat response 2, clears brain `+0xcc` bit 2; then the base End (vtable `+0x3c`) ([Dealer](ai-scripting.md#dealer))"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002c7158
+name = "DealerGoal_QueueGesture"
+page = "ai-goals.md#goal-dealer"
+kind = "helper"
+role = "queues a dealer gesture (ai-scripting.md#dealer-gestures)"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::gesture"
+status = "legacy"
+
+[[function]]
+address = 0x002c7c20
+name = "DealerGoal_FinishPair"
+page = "ai-goals.md#goal-dealer"
+kind = "helper"
+role = "when the money pair was started by this deal (`+0x45`): the 'cash' line at most every 5 s, then the deal's completion (the weapons dealer's blade to the chosen member, else the item to the buyer's inventory), the price taken and added to the dealer's money (at most 999), `+0x3f` set and a deal counted"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::finishPair"
+status = "legacy"
+
+[[function]]
+address = 0x002c7de8
+name = "DealerGoal_Reset"
+page = "ai-goals.md#goal-dealer"
+kind = "helper"
+role = "resets the visit when the player leaves (ai-scripting.md#dealer-process)"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002c7fd8
+name = "DealerGoal_Process"
+page = "ai-scripting.md#dealer-process"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002caf78
+name = "IdleGoal_Init"
+page = "ai-goals.md#goal-idle"
+kind = "init"
+role = "vtable `0x005418f0` (class Idle, type 0); `+0x10` the spot and `+0x20` the heading where it was given, `+0x28` / `+0x29` options (restore the anim set; hold the spot), `+0x24` an anim set"
+level = "confirmed-code"
+coney = "src/ai/idle_goals.h:IdleGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002cc348
+name = "Goal_AddressPerson"
+page = "ai-goals.md#goal-address-person"
+kind = "pusher"
+role = "GoalAddressPerson: resolves the two humans and pushes the goal"
+level = "confirmed-code"
+coney = "src/ai/address_person_goal.h:goalAddressPerson"
+status = "legacy"
+
+[[function]]
+address = 0x002cc408
+name = "AddressPersonGoal_Init"
+page = "ai-goals.md#goal-address-person"
+kind = "init"
+role = "vtable `0x00541830`; `+0x10` the person, `+0x14` / `+0x18` two values, `+0x1c` / `+0x24` options, `+0x28` a speech id from the manager at `0x00512b04`"
+level = "confirmed-code"
+coney = "src/ai/address_person_goal.h:AddressPersonGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002cc488
+name = "ApproachGoal_Start"
+page = "ai-scripting.md#address-person"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/address_person_goal.h:AddressPersonGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002cc588
+name = "ApproachGoal_Process"
+page = "ai-scripting.md#address-person"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/address_person_goal.h:AddressPersonGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002cce88
+name = "Goal_Tag"
+page = "ai-goals.md#goal-tag"
+kind = "pusher"
+role = "GoalTag: pushes a Tag goal (flag, two values, no end)"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGoalTag"
+status = "legacy"
+
+[[function]]
+address = 0x002ccfe0
+name = "TagGoal_Init"
+page = "ai-goals.md#goal-tag"
+kind = "init"
+role = "vtable `0x00541770`; `+0x10` the tag flag (claimed: Flag_SetUser), `+0x14`, `+0x18` / `+0x1c`, `+0x20` = 1"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:TagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002cd198
+name = "TagGoal_Suspend"
+page = "ai-goals.md#goal-tag"
+kind = "Suspend"
+role = "releases the tag flag, restores `+0x265`, state 2, and sends the human's vtable `0x44` the handle at `+0x14`"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:TagGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002cd258
+name = "TagGoal_Process"
+page = "ai-goals.md#goal-tag"
+kind = "Process"
+role = "done when the flag is gone, the human cuffed, or another human holds the flag; state 0: runs to the flag (gait 4); state 1: within 1.5 m tells the two particle systems at `+0x18` (message `0x19`, 4) once and queues the Tag action, state 2; state 2: done once the tag state (class state `0x17` or state flag `0x2000000`) ends"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:TagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002cf480
+name = "Goal_ThrowObject"
+page = "ai-goals.md#goal-throw-object"
+kind = "binding"
+role = "`Goal_ThrowObject`: pushes the goal on a human"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalThrowObject"
+status = "legacy"
+
+[[function]]
+address = 0x002cf690
+name = "ThrowObjectGoal_Process"
+page = "ai-goals.md#goal-throw-object"
+kind = "Process"
+role = "done unless he holds something throwable; walks to within range of the flag, turns to it (15°), makes the flag his object target and queues kind 0 (cross) every 30th update (above)"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:ThrowObjectGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d0e98
+name = "Goal_Riot"
+page = "ai-scripting.md#riot"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:RiotGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d0f68
+name = "RiotGoal_Init"
+page = "ai-scripting.md#riot"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:RiotGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d1288
+name = "RiotGoal_TryPickFight"
+page = "ai-goals.md#goal-riot-helpers"
+kind = "helper"
+role = "`RiotGoal_TryPickFight` ([the fight](ai-scripting.md#riot))"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:RiotGoal::tryPickFight"
+status = "legacy"
+
+[[function]]
+address = 0x002d2df8
+name = "Goal_PlayDynamicAnimation"
+page = "ai-goals.md#goal-play-dyn-animation"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it (needs a clip name)"
+level = "confirmed-code"
+coney = "src/ai/play_dyn_animation_goal.h:goalPlayDynAnimation"
+status = "legacy"
+
+[[function]]
+address = 0x002d2eb0
+name = "PlayDynAnimGoal_Init"
+page = "ai-goals.md#goal-play-dyn-animation"
+kind = "init"
+role = "vtable `0x00541410`; the clip into the human's dyn slot (`+0x468`, anim 668), the Lua callback"
+level = "confirmed-code"
+coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d2f60
+name = "PlayDynAnimationGoal_Start"
+page = "ai-scripting.md#dyn-animation"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002d2f88
+name = "PlayDynAnimationGoal_Suspend"
+page = "ai-scripting.md#dyn-animation"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::suspend"
+status = "legacy"
+
+[[function]]
+address = 0x002d2f98
+name = "Goal_ScheduleCallback"
+page = "ai-scripting.md#dyn-animation"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002d3060
+name = "PlayDynAnimGoal_Process"
+page = "ai-goals.md#goal-play-dyn-animation"
+kind = "Process"
+role = "waits for the clip, plays anim 668 once, done ([GoalPlayDynAnimation](ai-scripting.md#dyn-animation))"
+level = "confirmed-code"
+coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002d3940
+name = "Goal_PlayDynamicIdle"
+page = "ai-goals.md#goal-play-dyn-idle"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it (needs a clip name)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalPlayDynIdle"
+status = "legacy"
+
+[[function]]
+address = 0x002d3a18
+name = "PlayDynIdleGoal_Init"
+page = "ai-goals.md#goal-play-dyn-idle"
+kind = "init"
+role = "vtable `0x005413b0`; the flag, up to three clips into the dyn slots (anims 668 or 671 on), the Lua callback"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:PlayDynIdleGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d3d58
+name = "PlayDynIdleGoal_Process"
+page = "ai-goals.md#goal-play-dyn-idle"
+kind = "Process"
+role = "walks to the flag (1 m), turns to its heading (15°), then plays the clips in turn"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:PlayDynIdleGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002d4628
+name = "Goal_PlayGenericAnimation"
+page = "ai-goals.md#goal-play-gen-anim"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goalPlayGenAnim"
+status = "legacy"
+
+[[function]]
+address = 0x002d46b8
+name = "PlayGenAnimGoal_Init"
+page = "ai-goals.md#goal-play-gen-anim"
+kind = "init"
+role = "vtable `0x005412f0`; the kind, the Lua callback"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:PlayGenAnimGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d4748
+name = "PlayGenAnimGoal_End"
+page = "ai-goals.md#goal-play-gen-anim"
+kind = "End"
+role = "calls the Lua callback"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:PlayGenAnimGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002d47d0
+name = "PlayGenAnimGoal_Process"
+page = "ai-goals.md#goal-play-gen-anim"
+kind = "Process"
+role = "kind 0 or 1 picks anim `0x2d2` or `0x299`; plays it once, done"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:PlayGenAnimGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002d5cf0
+name = "CallGangGoal_Init"
+page = "ai-goals.md#goal-call-gang"
+kind = "init"
+role = "vtable `0x00541110`; the target's position, the options; loads the call clips"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:CallGangGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d5db8
+name = "CallGangGoal_Start"
+page = "ai-goals.md#goal-call-gang"
+kind = "Start"
+role = "picks the phone flag; human `+0x19e` = 4 and state bit 2; a radar blip in mode 4; a type-4 caller turns to the target; may queue tutorial hint `0x17`; view 2π"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:CallGangGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002d5f98
+name = "CallGangGoal_End"
+page = "ai-goals.md#goal-call-gang"
+kind = "End"
+role = "removes the icon and the blip"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:CallGangGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002d6638
+name = "CallGangGoal_Process"
+page = "ai-goals.md#goal-call-gang"
+kind = "Process"
+role = "state 0: when idle, says line `0xa9`, a spinning icon, looks at the target, plays the call clip (`0x29c`); state 1: moves (gait 5) to the phone flag or a call spot; state 2: when idle, the second line (`0x16`) and the call; then done"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:CallGangGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002d6ca0
+name = "ScoutGoal_Init"
+page = "ai-goals.md#goal-scout"
+kind = "init"
+role = "vtable `0x005410b0`; the post and heading, saves the type and chase byte"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d6db0
+name = "ScoutGoal_Start"
+page = "ai-goals.md#goal-scout"
+kind = "Start"
+role = "the scout clips; may not chase; sets `+0x28d`"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002d6e10
+name = "ScoutGoal_Resume"
+page = "ai-goals.md#goal-scout"
+kind = "Resume"
+role = "a radar blip; drops a kind-4 or 6 object; type 0, `+0x144` = 500, not pushable"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002d6ef0
+name = "ScoutGoal_Suspend"
+page = "ai-goals.md#goal-scout"
+kind = "Suspend"
+role = "the type back, idle tasks, pushable"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutGoal::suspend"
+status = "legacy"
+
+[[function]]
+address = 0x002d6f98
+name = "ScoutGoal_End"
+page = "ai-goals.md#goal-scout"
+kind = "End"
+role = "releases the clips, restores the bytes"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002d73b8
+name = "ScoutGoal_Process"
+page = "ai-goals.md#goal-scout"
+kind = "Process"
+role = "back to the post, turns to the heading, every 4 s a look clip (20 %) or a fidget, roams within the radius and arc ([Stealth: scouts](stealth.md#scouts))"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002d9238
+name = "Goal_Backoff"
+page = "ai-goals.md#goal-backoff"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGoalBackoff"
+status = "legacy"
+
+[[function]]
+address = 0x002d92e8
+name = "BackoffGoal_Init"
+page = "ai-goals.md#goal-backoff"
+kind = "init"
+role = "vtable `0x00540f30`; the human, the distance"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:BackoffGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d97c0
+name = "Goal_Boxer"
+page = "ai-goals.md#goal-boxer"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goalBoxer"
+status = "legacy"
+
+[[function]]
+address = 0x002d9848
+name = "BoxerGoal_Init"
+page = "ai-goals.md#goal-boxer"
+kind = "init"
+role = "vtable `0x00540ed0`; the target"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:BoxerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002d98f8
+name = "BoxerGoal_Process"
+page = "ai-goals.md#goal-boxer"
+kind = "Process"
+role = "picks an attack (`Brain_PickAttack` with the filter `Human_CanUseAttackKind`), checks it, moves into its reach and queues it"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:BoxerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002da2c0
+name = "Goal_MoveToFlag"
+page = "ai-scripting.md#move-to-flag"
+level = "confirmed-runtime"
+coney = "src/ai/move_to_flag_goal.h:goalMoveToFlag"
+status = "legacy"
+
+[[function]]
+address = 0x002da3b0
+name = "MoveToFlagGoal_Init"
+page = "ai.md#original-structure"
+role = "goal type 1"
+level = "confirmed-code"
+coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002da408
+name = "MoveToFlagGoal_Start"
+page = "ai-scripting.md#move-to-flag"
+level = "confirmed-runtime"
+coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002da4a0
+name = "MoveToFlagGoal_End"
+page = "ai-goals.md#goal-move-to"
+kind = "End"
+role = "MoveToFlag: when arrived, message 8 to the flag and the gang's event ([GoalMoveToFlag](ai-scripting.md#move-to-flag))"
+level = "confirmed-code"
+coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002da550
+name = "MoveToFlagGoal_Resume"
+page = "ai-moving.md#move-action"
+level = "confirmed-code"
+coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002da588
+name = "MoveToFlagGoal_Process"
+page = "ai.md#original-structure"
+role = "goal type 1"
+level = "confirmed-code"
+coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002da810
+name = "Goal_MoveToExitFlag"
+page = "ai-goals.md#goal-move-to"
+kind = "binding"
+role = "`Goal_MoveToExitFlag` (type 2): a non-cop brain is held"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalMoveToExitFlag"
+status = "legacy"
+
+[[function]]
+address = 0x002da8f8
+name = "GoalMoveToExitFlag_Init"
+page = "ai-scripting.md#dealer-process"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/story_goals.h:MoveToExitFlagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002da960
+name = "GoalMoveToExitFlag_Start"
+page = "ai-goals.md#goal-move-to"
+kind = "Start"
+role = "MoveToExitFlag: the flag point (or a point on its circle); a camera check 8 s on"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:MoveToExitFlagGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002dacf8
+name = "GoalMoveToExitFlag_Process"
+page = "ai-goals.md#goal-move-to"
+kind = "Process"
+role = "MoveToExitFlag: one health; every 8 s a line when seen; done when out of every camera's sight"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:MoveToExitFlagGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002db6b0
+name = "Goal_MoveToUseFlag"
+page = "ai-goals.md#goal-move-to"
+kind = "binding"
+role = "`Goal_MoveToUseFlag` (type 4)"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGoalMoveToUseFlag"
+status = "legacy"
+
+[[function]]
+address = 0x002db768
+name = "MoveToUseFlagGoal_Init"
+page = "ai-goals.md#goal-move-to"
+kind = "init"
+role = "vtable `0x00542010`; the flag (taken, `Flag_SetUser`), the gait, the option; drops the target"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:MoveToUseFlagGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dc458
+name = "Goal_MoveToHuman"
+page = "ai-goals.md#goal-move-to"
+kind = "binding"
+role = "`Goal_MoveToHuman` (type 6)"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x002dc4f8
+name = "MoveToHumanGoal_Init"
+page = "ai-goals.md#goal-move-to"
+kind = "init"
+role = "vtable `0x00541f50`"
+level = "confirmed-code"
+coney = "src/ai/engage_goals.h:MoveToHumanGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dc578
+name = "MoveToHumanGoal_Process"
+page = "ai-goals.md#goal-move-to"
+kind = "Process"
+role = "done when cuffed or the human is gone; re-plans every second; moves to him"
+level = "confirmed-code"
+coney = "src/ai/engage_goals.h:MoveToHumanGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dc7a0
+name = "GetItemGoal_Init"
+page = "ai-goals.md#goal-get-item"
+kind = "init"
+role = "vtable `0x00541ef0`; the object, the kind"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:GetItemGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dc7f8
+name = "GetItemGoal_Start"
+page = "ai-goals.md#goal-get-item"
+kind = "Start"
+role = "the object's type record; drops other things; turn boost + 1; drops the target"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:GetItemGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002dc8b0
+name = "GetItemGoal_Resume"
+page = "ai-goals.md#goal-get-item"
+kind = "Resume"
+role = "a point beside the object on the ground; none when gone"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:GetItemGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002dc9d8
+name = "GetItemGoal_End"
+page = "ai-goals.md#goal-get-item"
+kind = "End"
+role = "restores the turn boost"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:GetItemGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002dc9f8
+name = "GetItemGoal_Process"
+page = "ai-goals.md#goal-get-item"
+kind = "Process"
+role = "looks at it; done when someone else holds it or he has it; walks to it and picks it up"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:GetItemGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002de380
+name = "FollowPlayerGoal_Init"
+page = "ai-goals.md#goal-follow-player"
+kind = "init"
+role = "vtable `0x00541d70`; the leader, distance², mode"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowPlayerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002de540
+name = "FollowPlayerGoal_Resume"
+page = "ai-goals.md#goal-follow-player"
+kind = "Resume"
+role = "joins the leader's formation, leaves the fight stance; next turn 1-2 s, next fidget 2-3 s"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowPlayerGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002de7c0
+name = "FollowPlayerGoal_Process"
+page = "ai-goals.md#goal-follow-player"
+kind = "Process"
+role = "[`GoalFollowPlayer`'s Process](ai-gangs.md#warrior-follow)"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowPlayerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002df1a8
+name = "Goal_TrackHuman"
+page = "ai-goals.md#goal-track-human"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it (tracker and tracked handles)"
+level = "confirmed-code"
+coney = "src/ai/track_human_goal.h:goalTrackHuman"
+status = "legacy"
+
+[[function]]
+address = 0x002df250
+name = "TrackHumanGoal_Construct"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
+coney = "src/ai/track_human_goal.h:TrackHumanGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002df288
+name = "TrackHumanGoal_Start"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
+coney = "src/ai/track_human_goal.h:TrackHumanGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002df3c0
+name = "TrackHumanGoal_Process"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
+coney = "src/ai/track_human_goal.h:TrackHumanGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002dfba8
+name = "FollowFormationGoal_Init"
+page = "ai-goals.md#goal-follow-formation"
+kind = "init"
+role = "vtable `0x00541c50`; a random 2-7 counter"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowFormationGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dfef8
+name = "FollowFormation_PickSpeed"
+page = "ai-goals.md#goal-follow-formation"
+kind = "helper"
+role = "the speed by distance to the slot: walk, run (4-8 m) or the leader's"
+level = "confirmed-code"
+coney = "src/ai/crew.h:followSpeed"
+status = "legacy"
+
+[[function]]
+address = 0x002e0088
+name = "FollowFormationGoal_Process"
+page = "ai-goals.md#goal-follow-formation"
+kind = "Process"
+role = "done when the leader is gone or a move failed; follows the slot point; a running move's point is retargeted by the plan, not here ([follow](ai-gangs.md#follow-retarget))"
+level = "confirmed-code"
+coney = "src/ai/crew.h:FollowFormationGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e05a8
+name = "Goal_TravelPath"
+page = "ai-goals.md#goal-travel-path"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalTravelPath"
+status = "legacy"
+
+[[function]]
+address = 0x002e0748
+name = "GoalTravelPath_Init"
+page = "ai-gangs.md#tactic-kinds"
+level = "inferred"
+coney = "src/ai/story_goals.h:TravelPathGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e07d0
+name = "GoalTravelPath_NextPoint"
+page = "ai-goals.md#goal-travel-path"
+kind = "helper"
+role = "`GoalTravelPath_NextPoint`: forward, back or looping"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:travelPathNext"
+status = "legacy"
+
+[[function]]
+address = 0x002e0968
+name = "GoalTravelPath_Process"
+page = "ai-goals.md#goal-travel-path"
+kind = "Process"
+role = "pushes MoveToFlag to each point in turn"
+level = "confirmed-code"
+coney = "src/ai/story_goals.h:TravelPathGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e0a78
+name = "Goal_LeadChase"
+page = "ai-goals.md#goal-travel-path"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalLeadChase"
+status = "legacy"
+
+[[function]]
+address = 0x002e0b48
+name = "LeadChaseGoal_Init"
+page = "ai-goals.md#goal-travel-path"
+kind = "init"
+role = "LeadChase: a TravelPath with four distances², vtable `0x00541b90`"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:LeadChaseGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e0dc8
+name = "LeadChaseGoal_Process"
+page = "ai-goals.md#goal-travel-path"
+kind = "Process"
+role = "waits for the chaser when he falls behind, runs on when close; slows on low power"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:LeadChaseGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e1140
+name = "Goal_RunCarrot"
+page = "ai-goals.md#goal-travel-path"
+kind = "binding"
+role = "script binding: resolves the human, makes the goal with the script's arguments and pushes it"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalRunCarrotRun"
+status = "legacy"
+
+[[function]]
+address = 0x002e1230
+name = "RunCarrotGoal_Init"
+page = "ai-goals.md#goal-travel-path"
+kind = "init"
+role = "vtable `0x00541b30`; makes a TravelPath sub-goal (`+0x10`) for the path; the gang that chases (`+0x1c`); the hostile flag `+0x25`"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:RunCarrotGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e1320
+name = "RunCarrotGoal_Start"
+page = "ai-gangs.md#brain-boosts"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:RunCarrotGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002e1330
+name = "RunCarrotGoal_End"
+page = "ai-goals.md#goal-travel-path"
+kind = "End"
+role = "restores the turn boost, ends the move sub-goal ([brain boosts](ai-gangs.md#brain-boosts))"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:RunCarrotGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002e13c0
+name = "RunCarrotGoal_UpdateSpeed"
+page = "ai-goals.md#goal-travel-path"
+kind = "helper"
+role = "the nearest chaser's distance sets the speed between the gait's and the maximum, and the turn boost + 0, 2 or 3 ([brain boosts](ai-gangs.md#brain-boosts)); passes the speed to the running move"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:carrotBoost"
+status = "legacy"
+
+[[function]]
+address = 0x002e15e8
+name = "RunCarrotGoal_Process"
+page = "ai-goals.md#goal-travel-path"
+kind = "Process"
+role = "every fourth update the speed; runs the MoveToFlag sub-goal to each path point in turn; done at the end of the path"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:RunCarrotGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e1760
+name = "Goal_DevilRun"
+page = "ai-scripting.md#devil-run"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalDevilRun"
+status = "legacy"
+
+[[function]]
+address = 0x002e1850
+name = "DevilRunGoal_Init"
+page = "ai-scripting.md#devil-run"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:DevilRunGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e18d8
+name = "DevilRunGoal_Start"
+page = "ai-goals.md#goal-devil-run"
+kind = "Start"
+role = "saves the turn boost, threat response and view; speed = the gait's; view 2π ([GoalDevilRun](ai-scripting.md#devil-run))"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:DevilRunGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002e1950
+name = "DevilRunGoal_End"
+page = "ai-goals.md#goal-devil-run"
+kind = "End"
+role = "restores the turn boost, threat response and view"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:DevilRunGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002e1998
+name = "DevilRunGoal_Resume"
+page = "ai-goals.md#goal-devil-run"
+kind = "Resume"
+role = "threat response 0; update counter 16"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:DevilRunGoal::resume"
+status = "legacy"
+
+[[function]]
+address = 0x002e2230
+name = "DevilRunGoal_Process"
+page = "ai-goals.md#goal-devil-run"
+kind = "Process"
+role = "hindmost segment every 17 updates, chaser every 29, pace every 7; a move to the path's last point at the current speed"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:DevilRunGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e4980
+name = "PlayAnimationGoal_Init"
+page = "ai-goals.md#goal-play-animation"
+kind = "init"
+role = "vtable `0x00542370`; the scene, the role, an option, and a Lua callback name looked up through the script system (`*(0x00512b04)` `+0xcc`)"
+level = "confirmed-code"
+coney = "src/ai/address_person_goal.h:PlayAnimationGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e49f8
+name = "PlayAnimationGoal_Start"
+page = "ai-scripting.md#address-person"
+level = "inferred"
+coney = "src/ai/address_person_goal.h:PlayAnimationGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002e4a50
+name = "PlayAnimationGoal_End"
+page = "ai-goals.md#goal-play-animation"
+kind = "End"
+role = "stops the scene (`Scene_StopWrap`)"
+level = "confirmed-code"
+coney = "src/ai/address_person_goal.h:PlayAnimationGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002e4a70
+name = "PlayAnimationGoal_Process"
+page = "ai-scripting.md#address-person"
+level = "inferred"
+coney = "src/ai/address_person_goal.h:PlayAnimationGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e5a00
+name = "Goal_Shopkeeper"
+page = "ai-goals.md#goal-shopkeeper"
+kind = "binding"
+role = "`Goal_Shopkeeper`: pushes the goal"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::goalShopkeeper"
+status = "legacy"
+
+[[function]]
+address = 0x002e5ae0
+name = "ShopkeeperGoal_Init"
+page = "ai-goals.md#goal-shopkeeper"
+kind = "init"
+role = "vtable `0x005423d0`; the store box, the options (`+0x57` broom, `+0x5a`), two Lua callback names (disturbed, robbed: inferred)"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:ShopkeeperGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e7970
+name = "TiredGoal_Init"
+page = "ai-goals.md#goal-tired"
+kind = "init"
+role = "`TiredGoal_Init`: vtable `0x00542a00`; deadline (fatigue ms), damage limit (percent of max health)"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e7a68
+name = "TiredGoal_Start"
+page = "ai-goals.md#goal-tired"
+kind = "Start"
+role = "`TiredGoal_Start`: saves the god / no-react / unstunnable flags, clears them, stuns him, sets the deadline"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002e7b30
+name = "TiredGoal_End"
+page = "ai-goals.md#goal-tired"
+kind = "End"
+role = "`TiredGoal_End`: restores the flags, ends the stun, clears `0x8000000`"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002e7c18
+name = "TiredGoal_StartBreak"
+page = "ai-goals.md#goal-tired"
+kind = "helper"
+role = "`TiredGoal_StartBreak`: damage limit reached: god mode, anims 671 then 672, line `0x22`"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal::startBreak"
+status = "legacy"
+
+[[function]]
+address = 0x002e7da8
+name = "TiredGoal_EndBreak"
+page = "ai-goals.md#goal-tired"
+kind = "helper"
+role = "`TiredGoal_EndBreak`: anim 673 after a break"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal::endBreak"
+status = "legacy"
+
+[[function]]
+address = 0x002e7e68
+name = "TiredGoal_IsBreakDone"
+page = "ai-goals.md#goal-tired"
+kind = "helper"
+role = "`TiredGoal_IsBreakDone`: 1 two seconds after the break clips end (state code 18)"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal::breakDone"
+status = "legacy"
+
+[[function]]
+address = 0x002e7f50
+name = "TiredGoal_Process"
+page = "ai-goals.md#goal-tired"
+kind = "Process"
+role = "`TiredGoal_Process`: stays stunned until the deadline or the damage limit, then recovers (line `0x96`, anim 643)"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:TiredGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e8288
+name = "BigBrawlerGoal_Init"
+page = "ai-goals.md#goal-big-brawler"
+kind = "init"
+role = "`BigBrawlerGoal_Init`: vtable `0x005429a0`; flag, cycles, fatigue, damage and prone tables, 8 objects, an item in hand"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e8418
+name = "BigBrawlerGoal_Start"
+page = "ai-goals.md#goal-big-brawler"
+kind = "Start"
+role = "`BigBrawlerGoal_Start`: no threat response or pick-ups, all-round sight, flags `0x223c0`; saves the brain boosts"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002e8530
+name = "BigBrawlerGoal_End"
+page = "ai-goals.md#goal-big-brawler"
+kind = "End"
+role = "`BigBrawlerGoal_End`: undoes Start"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002e8620
+name = "BigBrawlerGoal_AdjustEnemyScore"
+page = "ai-goals.md#goal-big-brawler"
+kind = "score"
+role = "`BigBrawlerGoal_AdjustEnemyScore`: range, player and knocked-down bonuses by state"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::adjustEnemyScore"
+status = "legacy"
+
+[[function]]
+address = 0x002e8818
+name = "BigBrawlerGoal_GetFatigueMs"
+page = "ai-goals.md#goal-big-brawler"
+kind = "helper"
+role = "`BigBrawlerGoal_GetFatigueMs`: fatigue of the stage x 1000"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::fatigueMs"
+status = "legacy"
+
+[[function]]
+address = 0x002e8830
+name = "BigBrawlerGoal_GetDamagePercent"
+page = "ai-goals.md#goal-big-brawler"
+kind = "helper"
+role = "`BigBrawlerGoal_GetDamagePercent`: damage of the stage"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::fatigueMs"
+status = "legacy"
+
+[[function]]
+address = 0x002e8840
+name = "BigBrawlerGoal_SetStage"
+page = "ai-goals.md#goal-big-brawler"
+kind = "helper"
+role = "`BigBrawlerGoal_SetStage`: the stage byte `+0x3f` (below 4)"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::setStage"
+status = "legacy"
+
+[[function]]
+address = 0x002e8858
+name = "BigBrawlerGoal_OnAttackWarning"
+page = "ai-goals.md#goal-big-brawler"
+kind = "event"
+role = "`BigBrawlerGoal_OnAttackWarning` (event `0x10`): counters an escapable grab or tackle, retargets, shoves off a near attacker"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::onAttackWarning"
+status = "legacy"
+
+[[function]]
+address = 0x002e8bc8
+name = "BigBrawlerGoal_OnHit"
+page = "ai-goals.md#goal-big-brawler"
+kind = "event"
+role = "`BigBrawlerGoal_OnHit` (tactic event 1): help call at 20 m, counts hits; the sixth pushes the tired goal"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::onHit"
+status = "legacy"
+
+[[function]]
+address = 0x002e8f78
+name = "BigBrawlerGoal_Process"
+page = "ai-goals.md#goal-big-brawler"
+kind = "Process"
+role = "`BigBrawlerGoal_Process`: states 0 taunt, 1 engage, 2 fight, 3 flag and object cycle"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigBrawlerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002ed0a8
+name = "BigThrowerGoal_Init"
+page = "ai-goals.md#goal-big-thrower"
+kind = "init"
+role = "`BigThrowerGoal_Init`: vtable `0x00542880`; flag, cycles (throws before tiring), fatigue, damage, 8 objects"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigThrowerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002ed168
+name = "BigThrowerGoal_Start"
+page = "ai-goals.md#goal-big-thrower"
+kind = "Start"
+role = "`BigThrowerGoal_Start`: as BigBrawler's, plus the pick-up clip override"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigThrowerGoal::start"
+status = "legacy"
+
+[[function]]
+address = 0x002ed260
+name = "BigThrowerGoal_End"
+page = "ai-goals.md#goal-big-thrower"
+kind = "End"
+role = "`BigThrowerGoal_End`: undoes Start"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigThrowerGoal::end"
+status = "legacy"
+
+[[function]]
+address = 0x002ed718
+name = "BigThrowerGoal_Process"
+page = "ai-goals.md#goal-big-thrower"
+kind = "Process"
+role = "`BigThrowerGoal_Process`: taunt, walk to the flag, pick up, aim, throw; tires after the cycles"
+level = "confirmed-code"
+coney = "src/ai/boss_goals.h:BigThrowerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002edf20
+name = "Goal_BigLedgeThrower"
+page = "ai-goals.md#goal-big-ledge-thrower"
+kind = "binding"
+role = "`Goal_BigLedgeThrower` (Lua): pushes the goal"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalBigLedgeThrower"
+status = "legacy"
+
+[[function]]
+address = 0x002edff8
+name = "BigLedgeThrowerGoal_Init"
+page = "ai-goals.md#goal-big-ledge-thrower"
+kind = "init"
+role = "`BigLedgeThrowerGoal_Init`: vtable `0x00542820`; his post and heading, up to 8 object types, the wait, an option, a throw clip loaded into the dynamic slot (anim 598)"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:BigLedgeThrowerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002ee7b0
+name = "BigLedgeThrowerGoal_Process"
+page = "ai-goals.md#goal-big-ledge-thrower"
+kind = "Process"
+role = "`BigLedgeThrowerGoal_Process`: fight stance; with no enemy turns to his heading and taunts (line `0x57`, anim 643); back to the post when more than 0.5 m off; picks the best enemy, spawns an object, aims and throws (command `0x10`), waits; sometimes runs (gait 4) to a point 3-5 m away"
+level = "confirmed-code"
+coney = "src/ai/chase_goals.h:BigLedgeThrowerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002eee50
+name = "Goal_StationaryThrower"
+page = "ai-goals.md#goal-stationary-thrower"
+kind = "binding"
+role = "`Goal_StationaryThrower` (Lua): pushes the goal"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:StationaryThrowerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002eeee0
+name = "StationaryThrowerGoal_Init"
+page = "ai-goals.md#goal-stationary-thrower"
+kind = "init"
+role = "`StationaryThrowerGoal_Init`: vtable `0x005427c0`; his spot (current position), up to 8 object types"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:StationaryThrowerGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002ef2c0
+name = "StationaryThrowerGoal_Process"
+page = "ai-goals.md#goal-stationary-thrower"
+kind = "Process"
+role = "`StationaryThrowerGoal_Process`: with no enemy, every 5 updates picks a visible one within 0.75 x sight; walks back when more than 0.5 m off; state 1 pick up, state 2 turn to the enemy (500-1000 ms) and throw (command `0x10`), then waits; 20 % taunt"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:StationaryThrowerGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002f9de0
+name = "Action_AbortAndDestroy"
+page = "ai-goals.md#goal-action-base"
+kind = "helper"
+role = "a started action is aborted first (vtable `+0x1c`, 0 when it refuses); then destroyed (`+0x24`); 1 when gone (from `Brain_PopAction`)"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::finishAction"
+status = "legacy"
+
+[[function]]
+address = 0x002f9f48
+name = "FidgetAction_Init"
+page = "ai-code.md#actions"
+kind = "`PlayFidget` init"
+role = "fidget kind, line, delay"
+level = "confirmed-code"
+coney = "src/ai/fidget_action.h:FidgetAction"
+status = "legacy"
+
+[[function]]
+address = 0x002f9f78
+name = "FidgetAction_Start"
+page = "ai-code.md#actions"
+kind = "`PlayFidget` Start"
+role = "done for a cop brain, a dog (class 221), a class whose `+0x11b` is 6, or when not free to fidget (`0x00225f58`) unless holding a type-11 object; says the line (1.5 × louder when the target is a player), plays the fidget (`0x00231ac8`); step by step: [AI plan](ai-reimpl.md#fidget-action)"
+level = "confirmed-code"
+coney = "src/ai/fidget_action.cpp:neverFidgets"
+status = "legacy"
+
+[[function]]
+address = 0x002fa0e0
+name = "FidgetAction_Abort"
+page = "ai-code.md#actions"
+kind = "`PlayFidget` Abort"
+role = "when cleared, refused for an idle Warrior whose crew is following a free chief who has no enemies around (command neither 0, 4 nor 5); else stops the fidget (`0x00231b60`); [AI plan](ai-reimpl.md#fidget-action)"
+level = "confirmed-code"
+coney = "src/ai/fidget_action.h:FidgetAction::abort"
+status = "legacy"
+
+[[function]]
+address = 0x002fa1e0
+name = "FidgetAction_Update"
+page = "ai-code.md#actions"
+kind = "`PlayFidget` Update"
+role = "done once the fidget's flags clear (`0x00228520`)"
+level = "confirmed-code"
+coney = "src/ai/fidget_action.h:FidgetAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fa5a0
+name = "PlayAnimIdAction_Init"
+page = "ai-code.md#actions"
+kind = "`PlayGenAnim` init"
+role = "owner, anim id (`+0xc`), two blend times (`+0x10`, `+0x14`), a variant/once byte (`+0x1c`), a flag (`+0x1d`), a short (`+4`); clears `+6`, `+0x18`, `+0x1e`; about 50 callers (the big goals' clips, taunts, the dealer's push, `Brain_Think`)"
+level = "confirmed-code"
+coney = "src/ai/play_anim_action.h:PlayAnimAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fa918
+name = "AttackAction_Init"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_action.h:AttackAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fa9a8
+name = "AttackAction_Start"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_action.h:AttackAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002fad30
+name = "AttackAction_Abort"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_action.h:AttackAction::abort"
+status = "legacy"
+
+[[function]]
+address = 0x002fad70
+name = "AttackAction_Update"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/attack_action.h:AttackAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002faeb0
+name = "SetCommandAction_Init"
+page = "ai-code.md#actions"
+kind = "`SetCommand` init"
+role = "a command id"
+level = "confirmed-code"
+coney = "src/ai/set_command_action.h:SetCommandAction"
+status = "legacy"
+
+[[function]]
+address = 0x002faee0
+name = "SetCommandAction_Start"
+page = "ai-code.md#actions"
+kind = "`SetCommand` Start"
+role = "writes the command to his player record (`PlayerRecord_SetCommand`)"
+level = "confirmed-code"
+coney = "src/ai/set_command_action.h:SetCommandAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002faf20
+name = "SetCommandAction_Update"
+page = "ai-code.md#actions"
+kind = "`SetCommand` Update"
+role = "one update, then waits while any flag is held"
+level = "confirmed-code"
+coney = "src/ai/set_command_action.h:SetCommandAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fb0f0
+name = "TauntAction_Init"
+page = "ai-code.md#actions"
+kind = "`Taunt` init"
+role = "kind, speech line, delay"
+level = "confirmed-code"
+coney = "src/ai/taunt_action.h:TauntAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fb128
+name = "TauntAction_Start"
+page = "ai-code.md#actions"
+kind = "`Taunt` Start"
+role = "done for a cop brain or a class whose `+0x11b` is 6; except kind 8 (line only), done when not free to fidget unless the class's `+0x11b` is 13; plays anim `0x253` + kind (`0x0025f028`) and says the line; kinds 0-2 and 8 do not wait for the clip; step by step: [AI plan](ai-reimpl.md#taunt-action)"
+level = "confirmed-code"
+coney = "src/ai/taunt_action.h:TauntAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002fb278
+name = "TauntAction_Abort"
+page = "ai-code.md#actions"
+kind = "`Taunt` Abort"
+role = "when cleared, stops the taunt (`0x00231c58`) and is refused while a waiting taunt's flags remain (`0x00223c30`); an accepted abort decrements `0x005112ac`, which nothing raises; [AI plan](ai-reimpl.md#taunt-action)"
+level = "confirmed-code"
+coney = "src/ai/taunt_action.h:TauntAction::abort"
+status = "legacy"
+
+[[function]]
+address = 0x002fb2f0
+name = "TauntAction_Update"
+page = "ai-code.md#actions"
+kind = "`Taunt` Update"
+role = "waits while the taunt plays"
+level = "confirmed-code"
+coney = "src/ai/taunt_action.h:TauntAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fb9e8
+name = "MoveAction_Init"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fbbe8
+name = "MoveAction_SetTarget"
+page = "ai-code.md#actions"
+kind = "`MoveTo` helper"
+role = "a new destination farther than 0.07 m: stored, the route is kept or the action restarted"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::retarget"
+status = "legacy"
+
+[[function]]
+address = 0x002fbd18
+name = "MoveAction_CollectPoints"
+page = "ai-code.md#actions"
+kind = "`MoveTo` helper"
+role = "the next points of the route, with the leg kinds"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::cornerTrial"
+status = "legacy"
+
+[[function]]
+address = 0x002fc158
+name = "MoveAction_CornerSpeed"
+page = "ai-code.md#actions"
+kind = "`MoveTo` helper"
+role = "the corner speed of the next waypoints"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::cornerSpeed"
+status = "legacy"
+
+[[function]]
+address = 0x002fc330
+name = "MoveAction_CheckStuck"
+page = "ai-code.md#actions"
+kind = "`MoveTo` helper"
+role = "on the 61st update while moving: less than 0.2 m covered in 3D → brain `+0x284` = 3"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::stuck"
+status = "legacy"
+
+[[function]]
+address = 0x002fc420
+name = "MoveAction_Start"
+page = "ai-code.md#actions"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/move_action.h:MoveAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002fc5c0
+name = "MoveAction_Update"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fcd90
+name = "Move_CornerSpeedLimit"
+page = "ai-code.md#actions"
+kind = "`MoveTo` helper"
+role = "the highest speed that still turns through a corner circle, stepping the gait down"
+level = "confirmed-code"
+coney = "src/ai/move_action.h:MoveAction::turnLimit"
+status = "legacy"
+
+[[function]]
+address = 0x002fcf50
+name = "MoveToHumanAction_Init"
+page = "ai.md#original-structure"
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.h:MoveToHumanAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fdb90
+name = "Action_TurnToHeading"
+page = "ai-code.md#actions"
+kind = "binding worker"
+role = "a `TurnToDir` action"
+level = "confirmed-code"
+coney = "src/ai/scripted_brains.h:ScriptedBrains::actTurnToDir"
+status = "legacy"
+
+[[function]]
+address = 0x002fdc28
+name = "TurnAction_Init"
+page = "ai-code.md#actions"
+kind = "`TurnToDir` init"
+role = "heading, turn rate"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fdc68
+name = "TurnAction_Start"
+page = "ai-code.md#actions"
+kind = "turn Start"
+role = "done while `0x1c16a40` is held; else a 3 s limit"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002fdcc8
+name = "TurnAction_Abort"
+page = "ai-code.md#actions"
+kind = "turn Abort"
+role = "marks it aborted; refused while turning in place (`0x00228500`)"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction::abort"
+status = "legacy"
+
+[[function]]
+address = 0x002fdd08
+name = "TurnAction_Update"
+page = "ai-code.md#actions"
+kind = "turn Update"
+role = "sets brain `+0x110` to the heading; done within 15° (0.2618 rad) when not turning, at the limit, or aborted"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fdf70
+name = "Action_TurnToTarget"
+page = "ai-code.md#actions"
+kind = "binding worker"
+role = "a `TurnTo` action"
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x002fe000
+name = "TurnToPointAction_Init"
+page = "ai-code.md#actions"
+kind = "`TurnTo` init"
+role = "a point, turn rate"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction::toPoint"
+status = "legacy"
+
+[[function]]
+address = 0x002fe0c8
+name = "Action_LookAt"
+page = "ai-code.md#actions"
+kind = "binding worker"
+role = "a `LookAt` action"
+level = "confirmed-code"
+coney = "src/ai/scripted_brains.h:ScriptedBrains::actLookAt"
+status = "legacy"
+
+[[function]]
+address = 0x002fe160
+name = "LookAtAction_Init"
+page = "ai-code.md#actions"
+kind = "`LookAt` init"
+role = "the human's handle"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction::lookAt"
+status = "legacy"
+
+[[function]]
+address = 0x002fe1b0
+name = "LookAtAction_Update"
+page = "ai-code.md#actions"
+kind = "`LookAt` Update"
+role = "the heading to the human, taken each update ([Look at](ai.md#actions))"
+level = "confirmed-code"
+coney = "src/ai/turn_action.h:TurnAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fe380
+name = "TakeStepAction_Init"
+page = "ai-code.md#actions"
+kind = "`TakeStep` init"
+role = "a heading"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:TakeStepAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fe3a8
+name = "TakeStepAction_Start"
+page = "ai-code.md#actions"
+kind = "`TakeStep` Start"
+role = "brain heading, starts the step (`0x002432b0`)"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:TakeStepAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002fe3d8
+name = "TakeStepAction_Abort"
+page = "ai-code.md#actions"
+kind = "`TakeStep` Abort"
+role = "ends the step; refused while stepping (`0x00228448`)"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:TakeStepAction::abort"
+status = "legacy"
+
+[[function]]
+address = 0x002fe428
+name = "TakeStepAction_Update"
+page = "ai-code.md#actions"
+kind = "`TakeStep` Update"
+role = "waits while the step's locomotion handler (`0x00243420`) runs"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:TakeStepAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fe4b0
+name = "Action_GiveWay"
+page = "ai-code.md#actions"
+kind = "binding worker"
+role = "a `GiveWay` action for a human with fewer than 8 actions"
+level = "confirmed-code"
+coney = "src/ai/scripted_brains.h:ScriptedBrains::actGiveWay"
+status = "legacy"
+
+[[function]]
+address = 0x002fe568
+name = "GiveWayAction_Init"
+page = "ai-code.md#actions"
+kind = "`GiveWay` init"
+role = "a step, the human, a boost flag; marks the brain (`+0xcc` bit 1)"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:GiveWayAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fe5d8
+name = "GiveWayAction_Start"
+page = "ai-code.md#actions"
+kind = "`GiveWay` Start"
+role = "looks at him for 2 s, optional turn boost, then the step"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:GiveWayAction::start"
+status = "legacy"
+
+[[function]]
+address = 0x002fe658
+name = "GiveWayAction_Abort"
+page = "ai-code.md#actions"
+kind = "`GiveWay` Abort"
+role = "the step's Abort, the boost restored"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:GiveWayAction::abort"
+status = "legacy"
+
+[[function]]
+address = 0x002fe6a8
+name = "GiveWayAction_Destroy"
+page = "ai-code.md#actions"
+kind = "`GiveWay` destroy"
+role = "clears brain `+0xcc` bit 1; Abort (with the boost) runs before it on a normal end too ([AI: Actions](ai.md#actions))"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:GiveWayAction::~GiveWayAction"
+status = "legacy"
+
+[[function]]
+address = 0x002fe6c8
+name = "GiveWayAction_Update"
+page = "ai-code.md#actions"
+kind = "`GiveWay` Update"
+role = "the step's Update"
+level = "confirmed-code"
+coney = "src/ai/give_way.h:GiveWayAction::update"
+status = "legacy"
+
+[[function]]
+address = 0x002fee38
+name = "Objects_GetDistance"
+page = "ai-code.md#actions"
+kind = "binding worker"
+role = "the distance between two objects"
+level = "inferred"
+coney = "src/scripting/story_bindings.cpp:makeGetDistanceTweenHumans"
+status = "legacy"
+
+[[function]]
+address = 0x003035d8
+name = "PlayerBrain_Update"
+page = "ai-code.md#brain-types"
+kind = "type 0 update"
+role = "target upkeep, hostiles counted, the [automatic commands](ai-gangs.md#warrior-auto-commands)"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::update"
+status = "legacy"
+
+[[function]]
+address = 0x00303988
+name = "WarChief_AutoCommand"
+page = "ai-code.md#brain-types"
+kind = "type 0 helper"
+role = "[Automatic commands](ai-gangs.md#warrior-auto-commands)"
+level = "confirmed-code"
+coney = "src/ai/crew.h:CrewOrders"
+status = "legacy"
+
+[[function]]
+address = 0x00303db8
+name = "WarChief_IsTargetInRange"
+page = "ai-code.md#brain-types"
+kind = "type 0 helper"
+role = "the chief's target within his far melee range and not a Warrior hitting back"
+level = "confirmed-code"
+coney = "src/ai/crew.h:CrewOrders::chiefTargetInRange"
+status = "legacy"
+
+[[function]]
+address = 0x00304fa8
+name = "GangBrain_OnEvent"
+page = "ai-code.md#brain-types"
+kind = "type 2 event"
+role = "gang members' events"
+level = "confirmed-code"
+note = "confirmed (code) at the table `0x007155a0`"
+coney = "src/ai/brain_events.h:answerEvent"
+status = "legacy"
+
+[[function]]
+address = 0x003052f0
+name = "WarriorBrain_Think"
+page = "ai-code.md#brain-types"
+kind = "type 3 think"
+role = "[The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push"
+level = "confirmed-code"
+coney = "src/ai/swap_prompt.h:thinkSwapPrompt"
+status = "legacy"
+
+[[function]]
+address = 0x00306040
+name = "WarriorBrain_OnPrompt"
+page = "ai-code.md#brain-types"
+kind = "type 3 helper"
+role = "triangle on a Warrior: when both are free and in reach (`0x0021c0a8`), faces him; line `0x92` as the player's"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::trySwap"
+status = "legacy"
+
+[[function]]
+address = 0x003063b0
+name = "WarriorBrain_OnEvent"
+page = "ai-code.md#brain-types"
+kind = "type 3 event"
+role = "Warriors' events"
+level = "confirmed-code"
+note = "confirmed (code) at the table `0x007155a0`"
+coney = "src/ai/brain_events.h:answerEvent"
+status = "legacy"
+
+[[function]]
+address = 0x00306690
+name = "Tactic_Start"
+page = "ai.md#original-structure"
+role = "[tactics](ai-gangs.md#tactics)"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::process"
+status = "legacy"
+
+[[function]]
+address = 0x003067d8
+name = "Tactic_Process"
+page = "ai.md#original-structure"
+role = "[tactics](ai-gangs.md#tactics)"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::process"
+status = "legacy"
+
+[[function]]
+address = 0x00306850
+name = "Tactic_End"
+page = "ai-code.md#t1-tactic-core"
+kind = "base"
+role = "ends the strategy (`0x00306bd0`), pops every non-player member (`+0x1b0` = −1) down to his goal base, then calls the class's End (slot `+0x14`); from `Gang_StopTactic`, `Gang_Destroy` and the old boss tactic"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::finish"
+status = "legacy"
+
+[[function]]
+address = 0x003068f8
+name = "Tactic_SetCallback"
+page = "ai-gangs.md#tactic-kinds"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::Tactic"
+status = "legacy"
+
+[[function]]
+address = 0x00306938
+name = "Tactic_FireCallback"
+page = "ai-code.md#t1-tactic-core"
+kind = "base"
+role = "slot `+0x54`: when the tactic has a Lua callback (`+0x0c`), looks it up in the script system (`*(0x00512b04)`) and calls it with the gang id (gang `+0x30`) and the code; the codes are `TacticGetString`'s"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::fireCallback"
+status = "legacy"
+
+[[function]]
+address = 0x00307548
+name = "Tactic_Attack"
+page = "ai-code.md#t1-attack"
+kind = "binding"
+role = "`Tactic_Attack`: finds the gang, takes a tactic, constructs it with no time limit and sets it"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:tacticAttack"
+status = "legacy"
+
+[[function]]
+address = 0x003075c8
+name = "AttackTactic_Construct"
+page = "ai-code.md#t1-attack"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::TacticAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00307668
+name = "AttackTactic_ComputeSpacing"
+page = "ai-code.md#t1-attack"
+kind = "helper"
+role = "from Start: takes the first member's enemy; none → `+0x2c` = 300; else `+0x30` = 1000 (50 when that enemy's `+0x1a8` > 2) and `+0x2c` = `+0x30` / living members (reading `+0x30` back, `lhu` at `0x00307710`); nothing else reads either halfword (`lh`, `lhu` and the delay-slot `_lh`, `_lhu` searched; [Gang fights](gang-fights.md#rumble) rule 1)"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::computeSpacing"
+status = "legacy"
+
+[[function]]
+address = 0x00307788
+name = "AttackTactic_GiveMelee"
+page = "ai-code.md#t1-attack"
+kind = "helper"
+role = "each standing member without goal `0x6b`: threat response 2 (brain `+0x21c`), goals popped to the base and marked, `Goal_Melee`"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::giveMelee"
+status = "legacy"
+
+[[function]]
+address = 0x00307878
+name = "AttackTactic_OnViolence"
+page = "ai-code.md#t1-attack"
+kind = "helper"
+role = "event 20: the leader picks a side in the fight (`Brain_PickSideInFight`); each standing member with no goal melees that human, adds him as enemy and target, and sends a helper (`Gang_SendHelper`) when HelpRespond (`0x1d`) is not on his stack"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::onViolence"
+status = "legacy"
+
+[[function]]
+address = 0x00307d40
+name = "GangTactic_CheckFlee"
+page = "ai-code.md#t1-attack"
+kind = "helper"
+role = "`GangTactic_CheckFlee`, event 18 (a member down): with `+0xdf` (`GangCanFlee`) set and `+0xe0` (the living count `AttackTactic_Start` noted) above 0 (not for kind 6 with `+0xd9`), when the standing, uncuffed members number at most round(the kind's `CfgGang` v9 (`GangConfig_GetField72`) × that count / 100), each of them whose class byte `+0x11b` is 11 gets threat response 0, melee and a PedReaction (type 9) away from his enemy; sets `+0x32` (the gang fled)"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::checkFlee"
+status = "legacy"
+
+[[function]]
+address = 0x00307fe0
+name = "AttackTactic_Start"
+page = "ai-code.md#t1-attack"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::start"
+status = "legacy"
+
+[[function]]
+address = 0x003080c8
+name = "AttackTactic_End"
+page = "ai-code.md#t1-attack"
+kind = "End"
+role = "releases the gang's substitute group `0x29c` when the flee option is set (or kind 6 with `+0xd9`)"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::end"
+status = "legacy"
+
+[[function]]
+address = 0x003081a8
+name = "AttackTactic_Process"
+page = "ai-code.md#t1-attack"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::update"
+status = "legacy"
+
+[[function]]
+address = 0x00308478
+name = "AttackTactic_OnEvent"
+page = "ai-code.md#t1-attack"
+kind = "Event"
+role = "1/11 for an own member with no fight goal and no strategy: melee; 2 → 13 `TacMemberDied` unless the gang fled; 18 → `GangTactic_CheckFlee`; 19/22 → melee again; 20 → `AttackTactic_OnViolence`"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::event"
+status = "legacy"
+
+[[function]]
+address = 0x00309a40
+name = "Tactic_BossDiegoVargas"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "binding"
+role = "`Tactic_BossDiegoVargas`: needs a valid gang with members; constructs and sets the tactic"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00309b60
+name = "BossDiegoVargasTactic_Init"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "init"
+role = "`BossDiegoVargasTactic_Init`: flags, stage `+0x68`, break count `+0x69` = 0, the two object-handle pairs, the per-boss tables (fatigue, damage, prone, cycles)"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00309ea0
+name = "BossDiegoVargasTactic_AssignGoal"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "helper"
+role = "`BossDiegoVargasTactic_AssignGoal`: Vargas (class `0x78`) BigBrawler, Diego (`0x77`) BigThrower in stage 2 or BigBrawler in stage 3, the others StationaryThrower; writes the stage into a BigBrawler goal"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic::assignGoal"
+status = "legacy"
+
+[[function]]
+address = 0x0030a150
+name = "BossDiegoVargasTactic_CheckHealth"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "helper"
+role = "`BossDiegoVargasTactic_CheckHealth`: the health caps and the Tired break ([the fight](ai-gangs.md#boss-diego-vargas)); 1 when a break starts with a held object, 2 when the break is done"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic::checkHealth"
+status = "legacy"
+
+[[function]]
+address = 0x0030a458
+name = "BossDiegoVargasTactic_IsAnyBossStanding"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "helper"
+role = "`BossDiegoVargasTactic_IsAnyBossStanding`: stage 3 only, 1 while Diego or Vargas is not out (state flag `0x100000000`); 1 in other stages"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic::anyBossStanding"
+status = "legacy"
+
+[[function]]
+address = 0x0030a6c0
+name = "BossDiegoVargasTactic_Start"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "Start"
+role = "`BossDiegoVargasTactic_Start`: goals, removes the gang's combat fidget and taunt clips, substitutes group `0x29c`"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic::start"
+status = "legacy"
+
+[[function]]
+address = 0x0030a738
+name = "BossDiegoVargasTactic_Process"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "Process"
+role = "`BossDiegoVargasTactic_Process`: prunes the objects; health check 1 → code 18 `TacAnimStart`, 2 → 1 `TacFinished`; else 1 once no boss stands"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic::update"
+status = "legacy"
+
+[[function]]
+address = 0x0030a798
+name = "BossDiegoVargasTactic_OnEvent"
+page = "ai-code.md#t1-boss-diego-vargas"
+kind = "Event"
+role = "`BossDiegoVargasTactic_OnEvent`: 1 → forward hit (consumed); 16 → forward warning (consumed); 20 consumed; 22 with `+8` ≠ 1 and `+4` = 0 → code 1; 19 and 22 with `+8` = 1 give that member his goal again"
+level = "confirmed-code"
+coney = "src/ai/tactic_boss.h:BossDiegoVargasTactic::event"
+status = "legacy"
+
+[[function]]
+address = 0x0030e670
+name = "ConfrontTactic_Construct"
+page = "ai-code.md#t1-confront"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeTacticConfront"
+status = "legacy"
+
+[[function]]
+address = 0x0030ec20
+name = "ConfrontTactic_Start"
+page = "ai-code.md#t1-confront"
+level = "confirmed-code"
+coney = "src/ai/tactic_confront.h:TacticConfront::start"
+status = "legacy"
+
+[[function]]
+address = 0x0030eec0
+name = "ConfrontTactic_Process"
+page = "ai-code.md#t1-confront"
+level = "confirmed-code"
+coney = "src/ai/tactic_confront.h:TacticConfront::update"
+status = "legacy"
+
+[[function]]
+address = 0x0030f4d0
+name = "CrowdTactic_Init"
+page = "ai-code.md#t1-crowd"
+kind = "init"
+role = "no time limit; the cheer option `+0x28`; cheer index `+0x29`, periodic switch `+0x2a` 0, turn `+0x2b` 1; timer `+0x20` 2 s on"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd"
+status = "legacy"
+
+[[function]]
+address = 0x0030f570
+name = "CrowdTactic_GiveGoals"
+page = "ai-code.md#t1-crowd"
+kind = "helper"
+role = "each standing member: goals popped and marked; cheering: Idle goal; watching: Spectate goal (4-6 s)"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd::seat"
+status = "legacy"
+
+[[function]]
+address = 0x0030f6b0
+name = "CrowdTactic_Start"
+page = "ai-code.md#t1-crowd"
+kind = "Start"
+role = "goals; cheering: groups `0x256`, 599 and `0x29c` get the three cheer clips (old-style set when the leader's brain type is 4) and every member enters cheer mode; watching: group `0x25c` and the gang's cheer clips"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd::start"
+status = "legacy"
+
+[[function]]
+address = 0x0030fc48
+name = "TacticCrowd_React"
+page = "ai-code.md#t1-crowd"
+kind = "helper"
+role = "`TacticCrowd_React(what, on)`: ([Tactics](ai-gangs.md#tactics))"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd::react"
+status = "legacy"
+
+[[function]]
+address = 0x0030fe78
+name = "CrowdTactic_Process"
+page = "ai-code.md#t1-crowd"
+kind = "Process"
+role = "every 1-2 s: watchers play `0x25c` at 51 %, cheering crowds react; every 2 s a cheering crowd sends the next member into a cheer idle; always 0"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd::update"
+status = "legacy"
+
+[[function]]
+address = 0x00310100
+name = "CrowdTactic_OnEvent"
+page = "ai-code.md#t1-crowd"
+kind = "Event"
+role = "16 → 6; 20 → `CrowdTactic_OnViolence` (consumed); 19 and 22 → goals again"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd::event"
+status = "legacy"
+
+[[function]]
+address = 0x00310be0
+name = "DominationTactic_Init"
+page = "ai-code.md#t1-domination"
+kind = "init"
+role = "`DominationTactic_Init`: no time limit; the flag `+0x20`, the range `+0x24`"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.h:TacticDomination"
+status = "legacy"
+
+[[function]]
+address = 0x00310c68
+name = "DominationTactic_AssignGoals"
+page = "ai-code.md#t1-domination"
+kind = "helper"
+role = "`DominationTactic_AssignGoals`: each standing non-player member: goals popped and marked, `Goal_HoldFlag(range, flag)`"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.h:TacticDomination::start"
+status = "legacy"
+
+[[function]]
+address = 0x00310d78
+name = "DominationTactic_OnEvent"
+page = "ai-code.md#t1-domination"
+kind = "Event"
+role = "`DominationTactic_OnEvent`: 20 consumed; 19 and 22 → goals again"
+level = "confirmed-code"
+coney = "src/ai/tactic_domination.h:TacticDomination::event"
+status = "legacy"
+
+[[function]]
+address = 0x00310e00
+name = "WarriorFollowTactic_Create"
+page = "ai.md#open-questions"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/crew.h:WarriorFollowTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00310f38
+name = "WarriorFollowTactic_GiveGoals"
+page = "ai-code.md#t1-warrior-follow"
+kind = "helper"
+role = "`WarriorFollowTactic_GiveGoals`: the chief's formation gets 9 slots; each non-player member: `FollowPlayer(distance, chief, 3)`, or in two-player FollowAndDefend on the other player when far from player 1"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorFollowTactic"
+status = "legacy"
+
+[[function]]
+address = 0x003111a8
+name = "WarriorFollowTactic_Start"
+page = "ai-code.md#t1-warrior-follow"
+kind = "Start"
+role = "`WarriorFollowTactic_Start`: goals, idle fidget clips; notes whether the chief is talking"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorFollowTactic::start"
+status = "legacy"
+
+[[function]]
+address = 0x00311638
+name = "WarriorFollowTactic_Process"
+page = "ai-code.md#t1-warrior-follow"
+kind = "Process"
+role = "`WarriorFollowTactic_Process`: 1 with no leader; says `0x83` once; every 8 s re-picks the chief's slot set; every 1 s (250 ms holding an object, 5 ms right after clearing a path, `Gang_ClearWayForLeader` 40 m): with nobody under attack and no scene, after 25 s of calm one free member says an idle dialog line and looks at the chief"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorFollowTactic::update"
+status = "legacy"
+
+[[function]]
+address = 0x00311928
+name = "WarriorFollowTactic_OnEvent"
+page = "ai-code.md#t1-warrior-follow"
+kind = "Event"
+role = "`WarriorFollowTactic_OnEvent`: 19 for a member: `FollowPlayer` mode 1; 11 seen by a type-3 brain: the warning line; 20 → OnViolence (consumed); 22 with `+8` = 1 → goals again"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorFollowTactic::event"
+status = "legacy"
+
+[[function]]
+address = 0x00313400
+name = "WarriorHoldTactic_Create"
+page = "ai-code.md#t1-hold"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorHoldTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00313508
+name = "HoldTactic_GiveGoals"
+page = "ai-code.md#t1-hold"
+kind = "helper"
+role = "each standing non-player member but the chief gets his goal (`HoldTactic_GiveMemberGoal`) and a turn to a heading spread 360°/(members − 1) from the chief's, after 0-1 s with enemies about, else 2-4 s"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorHoldTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00313718
+name = "HoldTactic_GiveMemberGoal"
+page = "ai-code.md#t1-hold"
+kind = "helper"
+role = "`HoldTactic_GiveMemberGoal`: pops to the goal base; a re-issued Warrior of player 1's gang more than 10 m from him and nearer another player gets FollowAndDefend on that player; a dog (class 221) AvoidEnemies (7, 12); any other HoldPosition (`0x36`) at his own position, radius `+0x20` (1.5 m)"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorHoldTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00313e30
+name = "Tactic_HoldTheLine"
+page = "ai-code.md#t1-hold-the-line"
+kind = "binding"
+role = "`Tactic_HoldTheLine`: needs the gang and the three flags; constructs and sets the tactic"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00315d98
+name = "Tactic_Defend"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticDefend`: constructor `0x003101d8` round a human, no time limit"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00315e48
+name = "Tactic_WalkinTall"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticWalkinTall`: constructor `0x0031ec90`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00315ee8
+name = "Tactic_Pursue"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticPursue`: `PursueTactic_Construct`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00315fc8
+name = "Tactic_HanginOut"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticHanginOut`: `HanginOutTactic_Construct`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003160a8
+name = "Tactic_Wander"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticWander`: constructor `0x0031f300`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003161a0
+name = "Tactic_TravelPath"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticTravelPath`: `TravelPathTactic_Construct`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316298
+name = "Tactic_MoveToFlag"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticMoveToFlag`: constructor `0x00317410`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003164e0
+name = "Tactic_Vandalize"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticVandalize`: constructor `0x0031e3b8` with a zone and no cars"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316638
+name = "Tactic_Steal"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticSteal`: constructor `0x0031c030`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316988
+name = "Tactic_AvoidEnemies"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticAvoidEnemies`: constructor `0x003085d8`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316a68
+name = "Tactic_ManWeaponPile"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticManWeaponPile`: constructor `0x00317050`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316b30
+name = "Tactic_Domination"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticDomination`: `DominationTactic_Init`"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316ca0
+name = "Tactic_UseFlag"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticUseFlag`: `UseFlagTactic_Construct`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316ee8
+name = "Tactic_Idle"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticIdle`: `IdleTactic_Construct` (gang ≥ 0 only)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00316fa0
+name = "Tactic_TriggerCrowd"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticTrigger(gang, what, on)` for a crowd tactic (type `0x1b`): what 0 sets the periodic switch `+0x2a`, what 1 runs the reaction (`0x0030fe58`)"
+level = "confirmed-code"
+coney = "src/ai/tactic_crowd.h:TacticCrowd::trigger"
+status = "legacy"
+
+[[function]]
+address = 0x0031a268
+name = "Tactic_Scout"
+page = "ai-code.md#t2-bindings"
+kind = "binding"
+role = "`TacticScout`: `ScoutTactic_Construct` (gang must exist)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addTacticBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00320530
+name = "WarriorAttackTactic_Create"
+page = "ai.md#open-questions"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/ai/crew.h:WarriorAttackTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00320b60
+name = "WarriorStealTactic_Create"
+page = "ai-code.md#t2-warrior-steal"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00320be0
+name = "WarriorStealTactic_Init"
+page = "ai-code.md#t2-warrior-steal"
+kind = "constructor"
+role = "base fields, vtable `0x005441c0`, no flag, zone −1"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00320c68
+name = "WarriorStealTactic_ClusterZone"
+page = "ai-code.md#t2-warrior-steal"
+kind = "helper"
+role = "lists the zone's objects (`ObjZone_ListObjects`, 64), keeps those with `+0x109` set and clusters their positions (1.0, `Points_Cluster`); marks clustering active (`0x0051164c`)"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:StealClusters::build"
+status = "legacy"
+
+[[function]]
+address = 0x00320d30
+name = "WarriorStealTactic_GiveGoals"
+page = "ai-code.md#t2-warrior-steal"
+kind = "helper"
+role = "picks the store, then gives each living member but the chief his goal"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00320df8
+name = "WarriorStealTactic_GiveMemberGoal"
+page = "ai-code.md#t2-warrior-steal"
+kind = "helper"
+role = "class 221 → AvoidEnemies (7, 12, 12); the player-1 re-issue rule of WarriorAttack (FollowAndDefend); else WarriorVandalSteal (`WarriorVandalStealGoal_Init`)"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic"
+status = "legacy"
+
+[[function]]
+address = 0x00321028
+name = "WarriorStealTactic_PickStore"
+page = "ai-code.md#t2-warrior-steal"
+kind = "helper"
+role = "keeps the current store flag while the chief is within 12 m; else the nearest flag of activity `0xe` within 12 m and reachable: its zone byte (`+0xd8`) becomes the zone and its objects are clustered; none → zone −1"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic::pickStore"
+status = "legacy"
+
+[[function]]
+address = 0x003211a8
+name = "WarriorStealTactic_Start"
+page = "ai-code.md#t2-warrior-steal"
+kind = "Start"
+role = "gives the goals, adds idle fidget clips, notes the chief's line; next check now + 2 s"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic::start"
+status = "legacy"
+
+[[function]]
+address = 0x00321240
+name = "WarriorStealTactic_End"
+page = "ai-code.md#t2-warrior-steal"
+kind = "End"
+role = "removes the idle fidget clips; clustering off"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic::end"
+status = "legacy"
+
+[[function]]
+address = 0x00321268
+name = "WarriorStealTactic_Process"
+page = "ai-code.md#t2-warrior-steal"
+kind = "Process"
+role = "once, after the chief's line: a member answers `vandal_resp` (140) or, with a zone, `steal_resp` (141); every 2 s re-picks the store; always 0"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic::update"
+status = "legacy"
+
+[[function]]
+address = 0x00321328
+name = "WarriorStealTactic_OnEvent"
+page = "ai-code.md#t2-warrior-steal"
+kind = "Event"
+role = "19 re-gives the member's goal; 22 (`+8` = 1) re-gives it with the player rule; 20 consumed"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorStealTactic::event"
+status = "legacy"
+
+[[function]]
+address = 0x00321540
+name = "WarriorSteal_ClaimObject"
+page = "ai-code.md#t2-warrior-steal"
+kind = "helper"
+role = "for a human, walks the clusters in order (`0x00433fd8` sort) and takes each cluster's nearest object to him not claimed by his gang (`+0xec` gang, `+0xf0` until); when no **other member of his gang** (gang `+0x48`, `HandleArray16_Nearest` skipping him) stands within 1.5 m of that object's navigation point the object is claimed for 5 s, the record's last user (`+0x00`) becomes him, its users (`+0x04`) go up and the object is returned; otherwise the **next cluster** is tried (not the next object); none → 0"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:StealClusters::claim"
+status = "legacy"
+
+[[function]]
+address = 0x003217a0
+name = "StealClusters_Reset"
+page = "ai-code.md#t2-warrior-steal"
+kind = "reset"
+role = "on a full reset (1, `0xffff`): sets the ten handles of each of the 20 entries at `0x006eb318` (`0x30` bytes) to −1 (inferred: the cluster records)"
+level = "inferred"
+coney = "src/ai/steal_goals.h:StealClusters::clear"
+status = "legacy"
+
+[[function]]
+address = 0x00353f40
+name = "Scene_PlayAnimation"
+page = "ai-scripting.md#address-person"
+level = "inferred"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayAnimation"
+status = "legacy"
+
+[[function]]
+address = 0x00373200
+name = "lua_GangDelete"
+page = "ai-gangs.md#gang-delete"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangDelete"
+status = "legacy"
+
+[[function]]
+address = 0x0041c2b0
+name = "GameState_TurnWarriorCommands"
+page = "ai.md#warriors-functions"
+role = "the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1)"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041c2d0
+name = "GameState_IssueWarriorCommand"
+page = "ai.md#warriors-functions"
+role = "the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeIssueWarriorCommand"
+status = "legacy"
+
+[[function]]
+address = 0x0041d738
+name = "Cfg_SetEnemySpotting"
+page = "ai.md#warriors-functions"
+role = "`CfgSetEnemySpotting`: `+0x56f8`; `CfgSetWarriorSpotting` clears `+0x56fc` whatever its argument"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeCfgSetEnemySpotting"
+status = "legacy"
+
+[[function]]
+address = 0x0041d748
+name = "Cfg_SetWarriorSpotting"
+page = "ai.md#warriors-functions"
+role = "`CfgSetEnemySpotting`: `+0x56f8`; `CfgSetWarriorSpotting` clears `+0x56fc` whatever its argument"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeCfgSetWarriorSpotting"
+status = "legacy"
+
+[[function]]
+address = 0x0041d770
+name = "GameState_SetWarriorWeapons"
+page = "ai.md#warriors-functions"
+role = "`CfgSetWarriorVandalize` (`+0x5700`) and `CfgWarriorWeapons` (`+0x5704`)"
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041da50
+name = "Cfg_SetTurfInvasion"
+page = "ai.md#warriors-functions"
+role = "`CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`)"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041da60
+name = "Cfg_SetGrappleCounters"
+page = "ai.md#warriors-functions"
+role = "`CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041da70
+name = "GameState_SetPowerupPickup"
+page = "ai.md#warriors-functions"
+role = "`CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`)"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041db08
+name = "GameState_EnableAllWarriorCommands"
+page = "ai.md#warriors-functions"
+role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeWcEnableAllCommands"
+status = "legacy"
+
+[[function]]
+address = 0x0041dbe8
+name = "GameState_EnableWarriorCommand"
+page = "ai.md#warriors-functions"
+role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeWcEnableCommand"
+status = "legacy"
+
+[[function]]
+address = 0x0041dc80
+name = "GameState_IssueWarriorCommandFor"
+page = "ai.md#warriors-functions"
+role = "`WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041dcf0
+name = "GameState_LockWarriorCommands"
+page = "ai.md#warriors-functions"
+role = "`WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeWcLockCommands"
+status = "legacy"
+
+[[function]]
+address = 0x0041dd40
+name = "GameState_SetWarriorCommandCallback"
+page = "ai.md#warriors-functions"
+role = "`WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeWcSetCallback"
+status = "legacy"
+
+[[function]]
+address = 0x0041dd68
+name = "GameState_SetAutoSwitch"
+page = "ai.md#warriors-functions"
+role = "`WCEnableAutomaticSwitching`: byte `+0x431` (1 at set-up), which turns the war chief's [automatic commands](ai-gangs.md#warrior-auto-commands) on or off"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addStateBindings"
+status = "legacy"

@@ -99,6 +99,13 @@ def test_a_note_that_starts_with_the_level_is_not_doubled() -> None:
     assert "confirmed (code); confirmed (code)" not in page
 
 
+def test_links_in_a_note_are_read_from_the_systems_folder() -> None:
+    """A note, like a role, is written relative to docs/research; the system's list page lives one folder below."""
+    entry = rf.Entry(0x100200, "Car_Hit", "cars.md", "inferred", role="r", note="see [events](ai.md#events) too")
+    page = research_render.render_system(system_of(entry, name="cars"), None)
+    assert "inferred; see [events](../ai.md#events) too" in page
+
+
 def test_an_empty_role_and_a_not_needed_entry() -> None:
     """A function with no role shows an empty cell; a not-needed one shows its reason as the role."""
     page = research_render.render_system(

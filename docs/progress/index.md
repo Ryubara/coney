@@ -48,17 +48,20 @@ source map improves, code moves from Unattributed into the directories, and the 
 while the overall share stays the same. *Link-once* is the game's template and inline code, which the linker
 placed after the libraries.
 
-**Reimplemented bytes** are the sizes of the original functions listed in
-[`docs/progress/functions.toml`](repo:docs/progress/functions.toml). Only the
-functions Coney reimplements are listed, never the executable's whole function list. The denominators are in
-[`docs/progress/totals.toml`](repo:docs/progress/totals.toml), copied from the
-source map by hand. A function counts in full once it is listed; there is no partial credit.
+**Reimplemented bytes** are the sizes of the original functions that the [function
+database](../guides/research-function-database.md#ported) (`research/functions/<system>.toml`) records a port for, the
+entries with a `coney` field. The database lists the researched functions too; only the ported ones count here. The
+denominators are in [`docs/progress/totals.toml`](repo:docs/progress/totals.toml), copied from the source map by hand.
+A function counts in full once it is recorded; there is no partial credit.
 
-The executable has no symbols, so a function's size has to come from somewhere. `coney-tools progress sizes`
-estimates it from your own disc as the distance to the next address that a call or a function pointer reaches, and
-checks a size given by hand against that bound. It is an upper bound: a function that nothing calls directly (only
-a tail jump reaches it) is folded into the one before it. A contributor who has the function in Ghidra can give the
-exact size instead. How to use the commands: [The progress commands](../guides/coney-tools-references.md#progress).
+The executable has no symbols, so a function's size comes from the shared Ghidra project: the committed listing
+`docs/progress/ghidra-functions.tsv` gives the size of the function at each address, the unit the Understood bar
+measures too. A port tagged at an address the listing has no function at yet counts as a function but adds no bytes
+until Ghidra defines it. Before the database held the list (October 2026) the sizes were kept by hand in
+`docs/progress/functions.toml`, estimated from the disc; the move changed the Reimplemented bar from 33.3% to 33.9%,
+mostly because the hand-kept sizes of a few large functions were too small and 19 had none. `coney-tools progress
+sizes` still checks the sizes against your own disc. How to use the commands: [The progress
+commands](../guides/coney-tools-references.md#progress).
 
 ## How the picture is drawn {#the-picture}
 
@@ -69,7 +72,7 @@ define anything new: each colour is a measure this page already has.
 | State | What puts a function in it | Measure it comes from |
 | --- | --- | --- |
 | Audited | The fidelity audit found Coney's version equal to the original | Not drawn yet: no audit result is stored on `main` in a machine-readable place |
-| Reimplemented | Listed in `functions.toml`, so Coney has code for it with an `@orig` tag | The Reimplemented bar |
+| Reimplemented | Recorded with `coney` in the function database, so Coney has code for it with an `@orig` tag | The Reimplemented bar |
 | Understood | Named in Ghidra and cited on a research page with an evidence level | The Understood bar |
 | Researched | Inside a source directory or file range of the source map, but not understood | The Researched bar |
 | Untouched | None of the above | |
@@ -107,15 +110,15 @@ is in [the progress commands](../guides/coney-tools-references.md#progress).
 
 [The history page](history.md) has one point per day of `main`: the Reimplemented, Understood and Researched shares
 as the bars measure them. Git has the days, so nothing is appended or committed: for each day's last commit the docs
-build extracts the tracker's inputs (`docs/progress/`, the research pages, the roadmap, the bindings and the `@orig`
-tags) into a temporary folder and measures them with the current code, so every day is on today's definition. A day
-before the tracker existed, or in a format it can no longer read, is left out. How a deploy reuses the published days
-and what a pull request's build shows: [the progress commands](../guides/coney-tools-references.md#progress).
+build extracts the tracker's inputs (`docs/progress/`, the research pages, the function database, the roadmap, the
+bindings and the `@orig` tags) into a temporary folder and measures them with the current code, so every day is on
+today's definition. A day before the tracker existed, or in a format it can no longer read, is left out. How a deploy
+reuses the published days and what a pull request's build shows: [the progress commands](../guides/coney-tools-references.md#progress).
 
 ## Keeping it current
 
-- Whoever writes the code adds a `[[function]]` block to `functions.toml` in the same commit as the code carrying its `@orig`
-  tag ([Conventions](../guides/conventions.md#comments-and-orig)).
+- Whoever writes the code records the port in the function database, `coney` on the function's entry, in the same
+  commit as the code carrying its `@orig` tag ([Conventions](../guides/conventions.md#comments-and-orig)).
 - A source-map change that moves a range or a coverage figure updates `totals.toml` in the same commit; a change to a
   file's range is made in `research/source-files.toml`, and `research render --check` holds each file inside its
   directory's range here and no range over another directory's file ([the source files](../guides/research-source-files.md#checks)).
@@ -123,6 +126,6 @@ and what a pull request's build shows: [the progress commands](../guides/coney-t
 
 Nothing generated is committed, so these changes never conflict with another pull request's. The tables and the
 badge data are produced from the inputs by the documentation build (`mkdocs build --strict` shows them locally too),
-and `uv run --project python coney-tools progress check`, which CI runs, fails when `functions.toml` and the `@orig`
-tags in `src/` disagree or an input is malformed. `coney-tools progress render <folder>` writes the filled pages,
+and `uv run --project python coney-tools progress check`, which CI runs, fails when the database's `coney` entries and
+the `@orig` tags in `src/` disagree or an input is malformed. `coney-tools progress render <folder>` writes the filled pages,
 the badge files, the pictures and the numbers to a folder, to look at them without a docs build.

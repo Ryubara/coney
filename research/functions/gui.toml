@@ -1,0 +1,457 @@
+# The researched functions of the gui system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00181b20
+name = "ChunkLoaded_ParticlePage"
+page = "gui.md#original-structure"
+level = "confirmed-code"
+coney = "src/platform/sprite_sheets.h:onParticlePageLoaded"
+status = "legacy"
+
+[[function]]
+address = 0x00197168
+name = "Instance_Render"
+page = "gui.md#original-structure"
+role = "draws the batch's PTank"
+level = "confirmed-code"
+coney = "src/graphics/sprite_batch.h:SpriteBatch::render"
+status = "legacy"
+
+[[function]]
+address = 0x0019ee70
+name = "GlobalString_Get"
+page = "gui.md#original-structure"
+role = "the UI string table"
+level = "confirmed-code"
+coney = "src/gui/global_strings.h:GlobalStrings::get"
+status = "legacy"
+
+[[function]]
+address = 0x0019eea0
+name = "GlobalString_Set"
+page = "gui.md#original-structure"
+role = "the UI string table"
+level = "confirmed-code"
+coney = "src/gui/global_strings.h:GlobalStrings::set"
+status = "legacy"
+
+[[function]]
+address = 0x001a0fd0
+name = "Bar_Construct"
+page = "gui.md#original-structure"
+role = "a two-sprite meter (PM_Light, the Rumble gang screen)"
+level = "confirmed-code"
+coney = "src/gui/bar.h:Bar"
+status = "legacy"
+
+[[function]]
+address = 0x001a1bf8
+name = "BaseWidget_Construct"
+page = "gui.md#original-structure"
+role = "a sprite widget (`0x100` bytes)"
+level = "confirmed-code"
+coney = "src/gui/base_widget.h:BaseWidget"
+status = "legacy"
+
+[[function]]
+address = 0x001a1db8
+name = "BaseWidget_Setup"
+page = "gui.md#fn-basewidget"
+role = "slot `+0x68`, [The widget classes](gui.md#widget-classes)"
+level = "confirmed-code"
+coney = "src/gui/base_widget.h:BaseWidget::setup"
+status = "legacy"
+
+[[function]]
+address = 0x001a8e30
+name = "Widget_Construct"
+page = "gui.md#original-structure"
+role = "base constructor of every widget"
+level = "confirmed-code"
+coney = "src/gui/widget.h:Widget"
+status = "legacy"
+
+[[function]]
+address = 0x001b4168
+name = "HUD_RadarAddHuman"
+page = "gui.md#original-structure"
+role = "the blip a human gets from its class"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b8f98
+name = "MessageHUD_Construct"
+page = "gui.md#original-structure"
+role = "marked-up text in a box; setup `0x001b9090`"
+level = "confirmed-code"
+coney = "src/gui/text_widget.h:TextWidget"
+status = "legacy"
+
+[[function]]
+address = 0x001b9600
+name = "MessageHUD_Layout"
+page = "gui.md#original-structure"
+role = "measures and draws marked-up text"
+level = "confirmed-code"
+coney = "src/gui/text_layout.h:layoutText"
+status = "legacy"
+
+[[function]]
+address = 0x001bac20
+name = "MessageHUD_WordWrap"
+page = "gui.md#fn-messagehud"
+role = "splits the text at spaces, measures each line with its tags stripped, and inserts `<CRM>` before the word that takes the line past the wrap width (`+0x1d4`); the line count goes to `+0x1ac`"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:wrapText"
+status = "legacy"
+
+[[function]]
+address = 0x001c3de0
+name = "Radar_Setup"
+page = "gui.md#fn-radarhud"
+role = "from `HUD_InitLevel`: the radar's sprite batches and map texture ([The radar](gui.md#radar-icons)); the first function after the stub `0x001c3dc0`, so the start of `RadarHUD.cpp` (inferred)"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setRadarMap"
+status = "legacy"
+
+[[function]]
+address = 0x001c5210
+name = "Radar_Update"
+page = "gui.md#fn-radarhud"
+role = "per frame from `HUD_Update`; below the table"
+level = "confirmed-code"
+coney = "src/hud/radar.h:radarBlipOffset"
+status = "legacy"
+
+[[function]]
+address = 0x001c60b0
+name = "Radar_Render"
+page = "gui.md#fn-radarhud"
+role = "the map disc ([HUD](hud-radar.md#the-radar-on-screen))"
+level = "confirmed-code"
+coney = "src/hud/radar.h:addRadarDisc"
+status = "legacy"
+
+[[function]]
+address = 0x001c7e80
+name = "ScreenFlowController_Construct"
+page = "gui.md#original-structure"
+role = "stack of screens (`SFC_States`, `SFC_SharedData`)"
+level = "confirmed-code"
+coney = "src/gui/screen_flow_controller.h:ScreenFlowController"
+status = "legacy"
+
+[[function]]
+address = 0x001c8010
+name = "ScreenFlowController_AddTransition"
+page = "gui.md#fn-screenflowcontroller"
+role = "`(flow, state, code, next)`: state's map (state `+8`) entry `code` → `next` ([Screen flow](gui.md#screen-flow))"
+level = "confirmed-code"
+coney = "src/gui/screen_flow_controller.h:ScreenFlowController::addTransition"
+status = "legacy"
+
+[[function]]
+address = 0x001c80e8
+name = "ScreenFlowController_Push"
+page = "gui.md#fn-screenflowcontroller"
+role = "`Exit` the old top, push, `Enter(flow)` the new one"
+level = "confirmed-code"
+coney = "src/gui/screen_flow_controller.h:ScreenFlowController::push"
+status = "legacy"
+
+[[function]]
+address = 0x001c81e8
+name = "ScreenFlowController_UnwindTo"
+page = "gui.md#fn-screenflowcontroller"
+role = "`Exit` every state, erase those above the target, `Enter` the target"
+level = "confirmed-code"
+coney = "src/gui/screen_flow_controller.h:ScreenFlowController::unwind"
+status = "legacy"
+
+[[function]]
+address = 0x001c82e8
+name = "ScreenFlowController_Pop"
+page = "gui.md#fn-screenflowcontroller"
+role = "`Exit` and free the top, `Enter` the new top"
+level = "confirmed-code"
+coney = "src/gui/screen_flow_controller.h:ScreenFlowController::pop"
+status = "legacy"
+
+[[function]]
+address = 0x001c83c8
+name = "ScreenFlowController_Update"
+page = "gui.md#fn-screenflowcontroller"
+role = "the top's `Update`: `-0x100` stay, `-0xff` pop, else follow the map (unwind or push); true when empty"
+level = "confirmed-code"
+coney = "src/gui/screen_flow_controller.h:ScreenFlowController::update"
+status = "legacy"
+
+[[function]]
+address = 0x001ca950
+name = "Captions_Draw"
+page = "gui.md#fn-subtitle"
+role = "[Movies](movies.md#caption-text)"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::visible"
+status = "legacy"
+
+[[function]]
+address = 0x001cab90
+name = "Captions_OnSubtitlesChunk"
+page = "gui.md#fn-subtitle"
+role = "chunk `0x51` handler: the chunk into `0x0050ea74`"
+level = "confirmed-code"
+coney = "src/movies/captions.h:parseSubtitles"
+status = "legacy"
+
+[[function]]
+address = 0x001cabc0
+name = "Captions_Init"
+page = "gui.md#fn-subtitle"
+role = "[Movies](movies.md#caption-text)"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::Captions"
+status = "legacy"
+
+[[function]]
+address = 0x001cad38
+name = "Captions_SelectScene"
+page = "gui.md#fn-subtitle"
+role = "[Movies](movies.md#caption-text)"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::selectScene"
+status = "legacy"
+
+[[function]]
+address = 0x001cb010
+name = "Captions_SetKind"
+page = "gui.md#fn-subtitle"
+role = "[Movies](movies.md#caption-text)"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::command"
+status = "legacy"
+
+[[function]]
+address = 0x001cb190
+name = "Captions_Next"
+page = "gui.md#fn-subtitle"
+role = "[Movies](movies.md#caption-text)"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::next"
+status = "legacy"
+
+[[function]]
+address = 0x001cc1a0
+name = "TextEntryPad_Construct"
+page = "gui.md#fn-textentrypad"
+role = "widget base and vtables"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:NameKeyboard"
+status = "legacy"
+
+[[function]]
+address = 0x001cca80
+name = "TextEntryPad_OnCommand"
+page = "gui.md#fn-textentrypad"
+role = "the owner's handler (`+0x78`) first; then on accept: OK with a name that is not all spaces plays `0xb` and calls `onDone(name)`, otherwise `0xe`; DEL removes the last character (`0xc`); a character is appended (an `_` item types a space, `0xa`) or refused at the limit (`0xe`), and at the limit the cursor jumps to OK; commands 0 and 1 on items 8 and 32 also jump to OK (inferred: the grid's edges)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmCreate::handle"
+status = "legacy"
+
+[[function]]
+address = 0x001ccf88
+name = "TextWidget_Construct"
+page = "gui.md#original-structure"
+role = "a text widget (`0xd0` bytes); `0x001cd1e0` sets its text"
+level = "confirmed-code"
+coney = "src/gui/text_widget.h:TextWidget"
+status = "legacy"
+
+[[function]]
+address = 0x001cd060
+name = "TextWidget_Setup"
+page = "gui.md#fn-after-textentrypad"
+role = "[The widget classes](gui.md#widget-classes); set-up `+0x58` = 1"
+level = "confirmed-code"
+coney = "src/gui/text_widget.h:TextWidget::setup"
+status = "legacy"
+
+[[function]]
+address = 0x001cd1e0
+name = "TextWidget_SetText"
+page = "gui.md#fn-after-textentrypad"
+role = "copies the text to `+0x04`, line height `+0xb4` = metrics `+0x7c` + `+0x84`, width `+0xb0` by `Font_Measure`"
+level = "confirmed-code"
+coney = "src/gui/text_widget.h:TextWidget::setText"
+status = "legacy"
+
+[[function]]
+address = 0x001cea70
+name = "UsageInfo_Construct"
+page = "gui.md#original-structure"
+role = "the button legend line (`0x2d0` bytes); `0x001cec28` sets its text"
+level = "confirmed-code"
+coney = "src/gui/usage_info.h:UsageInfo"
+status = "legacy"
+
+[[function]]
+address = 0x001ceb40
+name = "UsageInfo_Setup"
+page = "gui.md#fn-usageinfo"
+role = "once: text at `pos`, size 1.0, colour `0x005fd310`, font slot 3, alignment 0 (left) when `leftAlign`, else 2 (centred); first text string `0x1a`; base size 1.0; stores the measured rectangle"
+level = "confirmed-code"
+coney = "src/gui/usage_info.h:UsageInfo::place"
+status = "legacy"
+
+[[function]]
+address = 0x001cec28
+name = "UsageInfo_SetText"
+page = "gui.md#fn-usageinfo"
+role = "copies at most `0x95` bytes and sets them; nil is ignored"
+level = "confirmed-code"
+coney = "src/gui/usage_info.h:UsageInfo::setLegend"
+status = "legacy"
+
+[[function]]
+address = 0x001d3ef0
+name = "OptionGrid_Construct"
+page = "gui.md#original-structure"
+role = "a grid of selectable items (vtable `0x0053b768`)"
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid"
+status = "legacy"
+
+[[function]]
+address = 0x001d4110
+name = "OptionGrid_Setup"
+page = "gui.md#fn-optiongrid"
+role = "Position (0,0,y,1), up to 5 per-row counts at +0xb0, owner +0x80, HUD pad 0 at +0x50, centre x 0.5, move cue 4, wrap on, row gap 0, selection 0."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::setup"
+status = "legacy"
+
+[[function]]
+address = 0x001d4230
+name = "OptionGrid_AddItem"
+page = "gui.md#fn-optiongrid"
+role = "At most 50 items: allocates and sets up an OptionGridTextWidget, wraps it in an OptionGridItem with the item code, appends it."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::addItem"
+status = "legacy"
+
+[[function]]
+address = 0x001d43f0
+name = "OptionGrid_GetItemCode"
+page = "gui.md#fn-optiongrid"
+role = "Selected index +0xa4; item i's code (OptionGridItem +0x54)."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::code"
+status = "legacy"
+
+[[function]]
+address = 0x001d4b88
+name = "OptionGrid_Select"
+page = "gui.md#fn-optiongrid"
+role = "Unfocus the old item, focus item i, play cue +0x94 when asked."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::select"
+status = "legacy"
+
+[[function]]
+address = 0x001d4c40
+name = "OptionGrid_OnCommand"
+page = "gui.md#fn-optiongrid"
+role = "Input interface slot +0x08: owner's handler (+0x80) first; if it returns 0, commands 0-3 move; stamps +0x84 with the game time."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::handle"
+status = "legacy"
+
+[[function]]
+address = 0x001d4d28
+name = "OptionGrid_Focus"
+page = "gui.md#fn-optiongrid"
+role = "Slots +0x90 / +0x98: clear the input record, focused +0x40 = 1 / 0, (un)focus the selected item, stamp +0x84."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::takeFocus"
+status = "legacy"
+
+[[function]]
+address = 0x001d4db8
+name = "OptionGrid_Unfocus"
+page = "gui.md#fn-optiongrid"
+role = "Slots +0x90 / +0x98: clear the input record, focused +0x40 = 1 / 0, (un)focus the selected item, stamp +0x84."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::loseFocus"
+status = "legacy"
+
+[[function]]
+address = 0x001d52c8
+name = "OptionGrid_Render"
+page = "gui.md#fn-optiongrid"
+role = "Slot +0x38: when visible and ready, renders every item."
+level = "confirmed-code"
+coney = "src/gui/option_grid.h:OptionGrid::render"
+status = "legacy"
+
+[[function]]
+address = 0x001e1338
+name = "ScrollingMenu_Construct"
+page = "gui.md#original-structure"
+role = "the Rumble screens' scrolling lists"
+level = "confirmed-code"
+coney = "src/gui/scrolling_menu.h:ScrollingMenu"
+status = "legacy"
+
+[[function]]
+address = 0x001e1e48
+name = "ScrollingMenu_Select"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x1b8`: `+0x104` = 0, unfocuses the old item (releases its description when `+0xe4`), `+0xa8` = i, focuses it, cue 4"
+level = "confirmed-code"
+coney = "src/gui/scrolling_menu.h:ScrollingMenu::handle"
+status = "legacy"
+
+[[function]]
+address = 0x001e95c0
+name = "MenuInput_Dispatch"
+page = "gui.md#original-structure"
+role = "pad and stick to menu commands ([Front end](frontend.md#input))"
+level = "confirmed-code"
+coney = "src/gui/menu_input.h:MenuInput::dispatch"
+status = "legacy"
+
+[[function]]
+address = 0x002c7ee0
+name = "DealerGoal_AddRadarIcon"
+page = "gui.md#radar-icons"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.cpp:DealerBlip"
+status = "legacy"
+
+[[function]]
+address = 0x00357998
+name = "Script_GetPlatform"
+page = "gui.md#coneys-implementation"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetPlatform"
+status = "legacy"
+
+[[function]]
+address = 0x003579a0
+name = "ScriptSystem_DoFileLua"
+page = "gui.md#coneys-implementation"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/scripting/script_bindings.cpp:makeDoFile"
+status = "legacy"
+
+[[function]]
+address = 0x0035e5d0
+name = "lua_CfgHUDMessage"
+page = "gui.md#strings"
+level = "confirmed-code"
+coney = "src/scripting/config_strings.h:addStringBindings"
+status = "legacy"

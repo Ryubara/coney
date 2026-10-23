@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
-from test_progress import make_checkout
+from test_progress import entry, make_checkout
 
 from coney_tools import missions, progress, progress_grid, progress_picture, progress_render, progress_site
 
@@ -31,7 +31,7 @@ LISTING = (
     "0x00001500\t32\t\t0\n"
     "0x00001c00\t512\tlib_thing\t0\n"
 )
-FUNCTIONS = '[[function]]\naddress = 0x00001000\nname = "Alpha_Init"\nsubsystem = "Alpha"\nsize = 256\n'
+FUNCTIONS = entry(0x1000, "Alpha_Init", "src/core/thing.h:alphaInit")
 TAG = "/// Starts it.\n/// @orig 0x00001000 Alpha_Init (Alpha.cpp)\nvoid alphaInit();\n"
 PAGE = """# Alpha
 
@@ -67,11 +67,10 @@ functions = 2
 
 def make_grid_checkout(root: Path) -> Path:
     """The test_progress checkout with the listing, research page, source map and a tag for Alpha_Init."""
-    make_checkout(root, FUNCTIONS, TAG)
-    (root / "docs" / "progress" / "ghidra-functions.tsv").write_text(LISTING, encoding="utf-8")
+    make_checkout(root, FUNCTIONS, TAG, LISTING)
     (root / "docs" / "research").mkdir(parents=True)
     (root / "docs" / "research" / "alpha.md").write_text(PAGE, encoding="utf-8")
-    (root / "research").mkdir()
+    (root / "research").mkdir(exist_ok=True)
     (root / "research" / "source-files.toml").write_text(SOURCE_FILES, encoding="utf-8")
     return root
 
@@ -138,7 +137,7 @@ def test_blocks_are_subsystems_in_address_order_unattributed_last(tmp_path: Path
 
 
 def test_reimplemented_functions_missing_from_the_listing_are_counted_not_drawn(tmp_path: Path) -> None:
-    extra = FUNCTIONS + '\n[[function]]\naddress = 0x00001040\nname = "Inner"\nsubsystem = "Alpha"\nsize = 8\n'
+    extra = FUNCTIONS + entry(0x1040, "Inner", "src/core/thing.h:inner")
     root = make_checkout(tmp_path, extra, TAG + "/// @orig 0x00001040 Inner (Alpha.cpp)\nvoid inner();\n")
     (root / "docs" / "progress" / "ghidra-functions.tsv").write_text(LISTING, encoding="utf-8")
     grid = grid_of(root)
@@ -147,7 +146,7 @@ def test_reimplemented_functions_missing_from_the_listing_are_counted_not_drawn(
 
 
 def test_no_listing_means_no_picture(tmp_path: Path) -> None:
-    root = make_checkout(tmp_path, FUNCTIONS, TAG)
+    root = make_checkout(tmp_path, FUNCTIONS, TAG)  # no listing file
     assert progress_grid.build_grid(progress.load(root), root) is None
 
 

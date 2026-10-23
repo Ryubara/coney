@@ -1,0 +1,280 @@
+# The researched functions of the world system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0017d640
+name = "LightManager_Construct"
+page = "world.md#original-structure"
+role = "the light manager (`0x0050cce4`, 0xc0 bytes) ([Lighting](lighting.md#manager))"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::LightManager"
+status = "legacy"
+
+[[function]]
+address = 0x0017de10
+name = "LightManager_SelectLights"
+page = "world.md#original-structure"
+role = "the lights for one atomic or sphere"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::select"
+status = "legacy"
+
+[[function]]
+address = 0x0040c868
+name = "Level_SetFogColour"
+page = "world.md#fog"
+level = "confirmed-code"
+coney = "src/graphics/level_lighting.h:fogColourOf"
+status = "legacy"
+
+[[function]]
+address = 0x0040c908
+name = "Level_SetFogDistance"
+page = "world.md#fog"
+level = "confirmed-code"
+coney = "src/scripting/lighting_bindings.cpp:addLightingBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0040c948
+name = "World_Precache"
+page = "world.md#small-functions"
+role = "pauses the frame pacer (`0x0050b734`) if it runs, then `WorldManager_Preload` around the named position when a level object exists, and resumes"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addStateBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0040ca18
+name = "Water_Set"
+page = "world.md#small-functions"
+role = "first call: allocates the level's `WaterEffect` (0x100 bytes, [the water surface](graphics.md#code-water)) into world manager `+0x5c`; later calls set its frame, wave height and speed, width, length and colour"
+level = "confirmed-code"
+coney = "src/scripting/effects_bindings.cpp:makeSetPositionOfWater"
+status = "legacy"
+
+[[function]]
+address = 0x0040cc40
+name = "World_QueuePackToPrecache"
+page = "world.md#small-functions"
+role = "`WorldManager_QueuePack` (`0x0040e1a0`) on the world manager: appends a pack name to the queue at `+0x0c`-`+0x24` that the preload loads at its end ([The world manager](level-loading.md#world-manager))"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addStateBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0040cc70
+name = "ScreenFx_SetMotionAlpha"
+page = "world.md#small-functions"
+role = "unless the screen effect `0x0051489c` is running, sets the motion-blur colour (white, alpha `a`) of both screen managers (`0x005fdeb8`, `0x005fdebc`, `+0x1a4` and `+0x1a8`)"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0040cce8
+name = "ScreenFx_QueueMotionBlurAlpha"
+page = "world.md#small-functions"
+role = "queue a blur colour change on the screen manager `0x005fdeb8` (`0x0018c8c8`)"
+level = "confirmed-code"
+coney = "src/effects/motion_blur.h:MotionBlur::queueAlpha"
+status = "legacy"
+
+[[function]]
+address = 0x0040cd28
+name = "ScreenFx_QueueMotionBlurColour"
+page = "world.md#small-functions"
+role = "queue a blur colour change on the screen manager `0x005fdeb8` (`0x0018c8c8`)"
+level = "confirmed-code"
+coney = "src/effects/motion_blur.h:MotionBlur::queueColour"
+status = "legacy"
+
+[[function]]
+address = 0x0040cd78
+name = "ResourceManager_SetDynamicAnimation"
+page = "world.md#small-functions"
+role = "forward to the resource manager `0x0050cd4c` (`0x0018abd0`, `0x0018ad40`)"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:setDynamicAnimation"
+status = "legacy"
+
+[[function]]
+address = 0x0040cda8
+name = "ResourceManager_SetCharacterModel"
+page = "world.md#small-functions"
+role = "forward to the resource manager `0x0050cd4c` (`0x0018abd0`, `0x0018ad40`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0040ce30
+name = "LevelHeader_OnLoaded"
+page = "world.md#small-functions"
+level = "confirmed-code"
+coney = "src/world/level_object.h:makeLevelHeaderHandler"
+status = "legacy"
+
+[[function]]
+address = 0x0040e100
+name = "WorldManager_NearestPendingDistance"
+page = "world.md#original-structure"
+role = "the smaller of the two worlds' `World_PendingDistance`; no new search"
+level = "confirmed-code"
+coney = "src/world/world_streamer.h:nearestPendingDistance"
+status = "legacy"
+
+[[function]]
+address = 0x0040e8d8
+name = "WorldManager_Render"
+page = "world.md#original-structure"
+role = "the world part of a viewport's frame"
+level = "confirmed-code"
+coney = "src/platform/world_renderer.h:WorldRenderer::render"
+status = "legacy"
+
+[[function]]
+address = 0x0040f8a0
+name = "WorldManager_Update"
+page = "world.md#original-structure"
+role = "the streaming decision, once a frame"
+level = "confirmed-code"
+note = "confirmed (code); file inferred"
+coney = "src/world/world_streamer.h:updateStreaming"
+status = "legacy"
+
+[[function]]
+address = 0x004101f0
+name = "World_CameraDistanceSq"
+page = "world.md#original-structure"
+role = "squared distance from the nearest camera to a sector box"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:cameraDistanceSq"
+status = "legacy"
+
+[[function]]
+address = 0x00410a50
+name = "World_ReadStream"
+page = "world.md#original-structure"
+role = "part count, texture dictionary, RenderWare world, callbacks"
+level = "confirmed-code"
+coney = "src/platform/world_set.h:WorldSet::loadWorld"
+status = "legacy"
+
+[[function]]
+address = 0x00410b70
+name = "World_Unload"
+page = "world.md#original-structure"
+role = "every part, the world, its dictionary and clump"
+level = "confirmed-code"
+coney = "src/platform/world_set.h:WorldSet::~WorldSet"
+status = "legacy"
+
+[[function]]
+address = 0x00410e08
+name = "World_ReadManifest"
+page = "world.md#original-structure"
+role = "reads `<name>_sec.mem`"
+level = "confirmed-code"
+coney = "src/world/world_manifest.h:readWorldManifest"
+status = "legacy"
+
+[[function]]
+address = 0x00411010
+name = "World_RegisterSector"
+page = "world.md#original-structure"
+role = "per-sector callback at load: index the sector by its plugin data"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:StreamedWorld::create"
+status = "legacy"
+
+[[function]]
+address = 0x004110c0
+name = "World_ReadPart"
+page = "world.md#original-structure"
+role = "reads one `<name>_ms<i>.sec`"
+level = "confirmed-code"
+coney = "src/platform/world_set.h:WorldSet::loadPart"
+status = "legacy"
+
+[[function]]
+address = 0x004115d0
+name = "World_UnloadPart"
+page = "world.md#original-structure"
+role = "destroys a part's atomics, dictionary and clump"
+level = "confirmed-code"
+coney = "src/platform/world_set.h:WorldSet::unloadPart"
+status = "legacy"
+
+[[function]]
+address = 0x00411880
+name = "World_PendingDistance"
+page = "world.md#original-structure"
+role = "distance to the sector found by `0x00411eb0`; `FLT_MAX` when there is none"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:StreamedWorld::pendingDistance"
+status = "legacy"
+
+[[function]]
+address = 0x00411990
+name = "World_RenderSectorAtomic"
+page = "world.md#original-structure"
+role = "fade-in, lights, default atomic render"
+level = "confirmed-code"
+coney = "src/platform/scene_lighting.h:SceneLighting::drawWorldAtomic"
+status = "legacy"
+
+[[function]]
+address = 0x00411b20
+name = "World_CollectSector"
+page = "world.md#original-structure"
+role = "queues a sector whose atomic is loaded"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:StreamedWorld::collectSectors"
+status = "legacy"
+
+[[function]]
+address = 0x00411d10
+name = "World_FindVisibleSectors"
+page = "world.md#original-structure"
+role = "visibility pass for one camera"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:StreamedWorld::findVisibleSectors"
+status = "legacy"
+
+[[function]]
+address = 0x00411eb0
+name = "World_FindPartToLoad"
+page = "world.md#original-structure"
+role = "nearest sector without its atomic"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:StreamedWorld::findSectorToLoad"
+status = "legacy"
+
+[[function]]
+address = 0x004120a8
+name = "World_FindPartToUnload"
+page = "world.md#original-structure"
+role = "farthest part that nobody sees"
+level = "confirmed-code"
+coney = "src/world/streamed_world.h:StreamedWorld::findPartToUnload"
+status = "legacy"
+
+[[function]]
+address = 0x00412310
+name = "World_RequestPart"
+page = "world.md#original-structure"
+role = "starts the asynchronous read of the sector's part"
+level = "confirmed-code"
+coney = "src/world/world_streamer.h:requestPart"
+status = "legacy"
+
+[[function]]
+address = 0x004123e8
+name = "World_ResetVisibility"
+page = "world.md#original-structure"
+role = "clears the visible bits, sets the PVS view point"
+level = "confirmed-code"
+note = "confirmed (code); file inferred"
+coney = "src/world/streamed_world.h:StreamedWorld::resetVisibility"
+status = "legacy"

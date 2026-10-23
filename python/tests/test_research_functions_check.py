@@ -112,10 +112,19 @@ def test_a_page_without_a_section_is_accepted(tmp_path: Path) -> None:
 
 def test_an_address_ghidra_does_not_list_is_an_error(tmp_path: Path) -> None:
     """The address must be a function entry in the committed Ghidra listing."""
-    root = make_root(tmp_path, listing={0x100300: "Other"})
+    unported = ENTRY.replace('coney = "src/core/combat/grab.cpp:Grab::start"\n', "")
+    root = make_root(tmp_path, functions=unported, listing={0x100300: "Other"})
     [error] = run(root).errors
     assert "0x00100200" in error
     assert "ghidra-functions.tsv" in error
+
+
+def test_a_port_at_an_address_ghidra_does_not_list_yet_is_a_warning(tmp_path: Path) -> None:
+    """A ported entry (`coney`) is tagged at the address the port was read from, which Ghidra may not define yet."""
+    findings = run(make_root(tmp_path, listing={0x100300: "Other"}))
+    assert findings.errors == []
+    [warning] = findings.warnings
+    assert "0x00100200" in warning and "counts, with no size, until Ghidra defines it" in warning
 
 
 def test_a_name_that_differs_from_ghidra_is_an_error(tmp_path: Path) -> None:

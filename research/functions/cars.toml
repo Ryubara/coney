@@ -1,0 +1,101 @@
+# The researched functions of the cars system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00387bc8
+name = "Car_Init"
+page = "cars.md#original-structure"
+role = "type index from the name, physics, the police lights, a handle"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x0038a4d8
+name = "Car_AddPartDamage"
+page = "cars.md#drawn"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::damagePart"
+status = "legacy"
+
+[[function]]
+address = 0x0038ab18
+name = "Car_TryExplode"
+page = "cars.md#explode"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::explode"
+status = "legacy"
+
+[[function]]
+address = 0x0038ab50
+name = "Car_DoExplode"
+page = "cars.md#explode"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::explode"
+status = "legacy"
+
+[[function]]
+address = 0x0038b8d0
+name = "Car_GetHitZone"
+page = "cars.md#windows"
+level = "inferred"
+coney = "src/world_objects/car_hits.h:carZoneParts"
+status = "legacy"
+
+[[function]]
+address = 0x0038bb48
+name = "Car_UpdateTransform"
+page = "cars.md#windows"
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carBootPosition"
+status = "legacy"
+
+[[function]]
+address = 0x0038c7d8
+name = "Car_RemovePartBits"
+page = "cars.md#original-structure"
+role = "marks a part (and its linked part) removed"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::removePart"
+status = "legacy"
+
+[[function]]
+address = 0x0038c868
+name = "Car_SpawnStereo"
+page = "cars.md#windows"
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carStereoPosition"
+status = "legacy"
+
+[[function]]
+address = 0x0038d188
+name = "Car_ReleaseTrunkItem"
+page = "cars.md#parts"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::releaseTrunk"
+status = "legacy"
+
+[[function]]
+address = 0x0038df38
+name = "Car_SetColour"
+page = "cars.md#original-structure"
+role = "`CarSetColor`"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::setColour"
+status = "legacy"
+
+[[function]]
+address = 0x0038e0f0
+name = "Car_PlaceInTrunkOnDetach"
+page = "cars.md#original-structure"
+level = "inferred"
+coney = "src/world_objects/cars.h:Cars::placeInTrunk"
+status = "legacy"
+
+[[function]]
+address = 0x0038e860
+name = "CarManager_FindTarget"
+page = "cars.md#windows"
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carTargetable"
+status = "legacy"

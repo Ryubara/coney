@@ -1,0 +1,520 @@
+# The researched functions of the tasks system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00158580
+name = "Gm_Level_Resume"
+page = "tasks.md#clocks"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::resume"
+status = "legacy"
+
+[[function]]
+address = 0x00223cb0
+name = "Human_IsBusy"
+page = "tasks.md#original-structure"
+role = "the locomotion's \"no stick\" test ([below](tasks.md#locomotion-gate))"
+level = "confirmed-code"
+coney = "src/human/locomotion_gate.h:stickBusy"
+status = "legacy"
+
+[[function]]
+address = 0x00227d28
+name = "Human_IsInSceneState"
+page = "tasks.md#locomotion-gate"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::playerInScene"
+status = "legacy"
+
+[[function]]
+address = 0x00245920
+name = "Human_HandleMessage"
+page = "tasks.md#original-structure"
+role = "the human's message handler (vtable `+0xcc`)"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::takeNotice"
+status = "legacy"
+
+[[function]]
+address = 0x00254e78
+name = "Human_UpdateActions"
+page = "tasks.md#original-structure"
+role = "per human: the command dispatcher and the anim state choice"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::riseCounter"
+status = "legacy"
+
+[[function]]
+address = 0x00387ad8
+name = "Car_Release"
+page = "tasks.md#code-cars-car-object"
+role = "Releases a car task."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::destroy"
+status = "legacy"
+
+[[function]]
+address = 0x0038b520
+name = "Car_GetHitZoneFromPoint"
+page = "tasks.md#code-cars-parts"
+role = "Maps a hit point on the car to a hit zone."
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carFacingParts"
+status = "legacy"
+
+[[function]]
+address = 0x0038c990
+name = "Car_HitZoneHasParts"
+page = "tasks.md#code-cars-parts"
+role = "Says whether a hit zone still has parts (height tests +1.5/+1.0)."
+level = "inferred"
+coney = "src/world_objects/car_hits.h:carAimPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0038d528
+name = "Car_SetTrunkItemKind"
+page = "tasks.md#code-cars-car-object"
+role = "Sets the kind of trunk item."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::placeInTrunk"
+status = "legacy"
+
+[[function]]
+address = 0x0038d538
+name = "Car_SetTrunkObject"
+page = "tasks.md#code-cars-car-object"
+role = "Sets the object in the trunk."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::placeInTrunk"
+status = "legacy"
+
+[[function]]
+address = 0x0038d690
+name = "Car_SpawnRadio"
+page = "tasks.md#code-cars-car-object"
+role = "Spawns the car stereo."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::spawnRadio"
+status = "legacy"
+
+[[function]]
+address = 0x0038dde8
+name = "Car_Spawn"
+page = "tasks.md#code-cars-car-object"
+role = "Spawns a car."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x0038dea8
+name = "Car_Destroy"
+page = "tasks.md#code-cars-car-object"
+role = "Destroys a car."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::destroy"
+status = "legacy"
+
+[[function]]
+address = 0x0038dfa0
+name = "Car_Explode"
+page = "tasks.md#code-cars-explode"
+role = "Explodes a car."
+level = "confirmed-code"
+coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x0038dfe0
+name = "Car_RemovePart"
+page = "tasks.md#code-cars-parts"
+role = "Removes a part."
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x0038e068
+name = "Car_Repair"
+page = "tasks.md#code-cars-parts"
+role = "Repairs a car."
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::repair"
+status = "legacy"
+
+[[function]]
+address = 0x0038e538
+name = "CarManager_SetMsgHandler"
+page = "tasks.md#code-cars-car-object"
+role = "Sets the car manager's message handler."
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::setGeneralCar"
+status = "legacy"
+
+[[function]]
+address = 0x0038ed08
+name = "GlassPane_Release"
+page = "tasks.md#code-objects-pane"
+role = "Releases a glass pane task."
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::release"
+status = "legacy"
+
+[[function]]
+address = 0x003906b8
+name = "LightTask_Update"
+page = "tasks.md#code-lighting-flicker"
+role = "Fades a light over its time and switches it by flag 4."
+level = "confirmed-code"
+coney = "src/effects/light_tasks.h:lightColour"
+status = "legacy"
+
+[[function]]
+address = 0x00390970
+name = "LightTask_Process"
+page = "tasks.md#code-lighting-manager"
+role = "Per-tick light processing."
+level = "confirmed-code"
+coney = "src/effects/light_tasks.h:tickLight"
+status = "legacy"
+
+[[function]]
+address = 0x00392510
+name = "WorldObject_SetOwnedFromFlags"
+page = "tasks.md#code-objects-spawn-records"
+role = "Sets the object's owned state from its spawn record flags."
+level = "confirmed-code"
+coney = "src/world_objects/spawn_records.h:SpawnRecords::add"
+status = "legacy"
+
+[[function]]
+address = 0x003932c8
+name = "OverheadWeapon_ContactDamage"
+page = "tasks.md#code-objects-held"
+role = "Contact damage of an overhead weapon."
+level = "confirmed-code"
+coney = "src/world_objects/loose_objects.cpp:LooseObjects::contact"
+status = "legacy"
+
+[[function]]
+address = 0x003939a8
+name = "WorldObject_OnImpact"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "On contact: impact sound by material, damage, a hearing event; kind 8 reports a crime."
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+status = "legacy"
+
+[[function]]
+address = 0x00393e20
+name = "WorldObject_Break"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Breaks an object: dropped, body freed, break message; kind 8 explodes."
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+status = "legacy"
+
+[[function]]
+address = 0x00395020
+name = "ObjType_IsDoorKind"
+page = "tasks.md#code-objects-doors"
+role = "Says whether a kind is a door (15, 25, 30 or 33)."
+level = "confirmed-code"
+coney = "src/world_objects/level_objects.h:isDoorKind"
+status = "legacy"
+
+[[function]]
+address = 0x00396778
+name = "ObjZone_Enable"
+page = "tasks.md#code-objects-spawn-records"
+role = "Enables a spawn zone."
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeObjEnableZone"
+status = "legacy"
+
+[[function]]
+address = 0x003967e0
+name = "ObjZone_Mark"
+page = "tasks.md#code-objects-spawn-records"
+role = "Marks a zone."
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:markZone"
+status = "legacy"
+
+[[function]]
+address = 0x00396a08
+name = "Obj_Show"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Shows an object."
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeObjShowHide"
+status = "legacy"
+
+[[function]]
+address = 0x00396a90
+name = "Obj_EnablePhysics"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Enables an object's physics."
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x00396b68
+name = "Obj_Hide"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Hides an object."
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeObjShowHide"
+status = "legacy"
+
+[[function]]
+address = 0x00396c58
+name = "Obj_Destroy"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Destroys an object."
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeObjDestroy"
+status = "legacy"
+
+[[function]]
+address = 0x00397330
+name = "Door_EmptyStub"
+page = "tasks.md#code-objects-doors"
+role = "Empty stub."
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeNothing"
+status = "legacy"
+
+[[function]]
+address = 0x003973a0
+name = "Door_SetCameraGhost"
+page = "tasks.md#code-objects-doors"
+role = "Lets the camera pass through a door."
+level = "confirmed-code"
+coney = "src/world_objects/level_objects.h:LevelObjects::ghostForCamera"
+status = "legacy"
+
+[[function]]
+address = 0x00397598
+name = "Obj_Exists"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Says whether an object exists."
+level = "confirmed-code"
+coney = "src/scripting/hub_bindings.cpp:makeObjIsAlive"
+status = "legacy"
+
+[[function]]
+address = 0x003975c0
+name = "Particle_Start"
+page = "tasks.md#code-particles-spawning"
+role = "Starts a particle system."
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::setEmitting"
+status = "legacy"
+
+[[function]]
+address = 0x00397610
+name = "Particle_End"
+page = "tasks.md#code-particles-spawning"
+role = "Ends a particle system."
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::setEmitting"
+status = "legacy"
+
+[[function]]
+address = 0x00397730
+name = "Particle_Kill"
+page = "tasks.md#code-particles-spawning"
+role = "Kills a particle system."
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00397780
+name = "ObjType_FindIndex"
+page = "tasks.md#code-objects-object-types"
+role = "Finds a type's index."
+level = "confirmed-code"
+coney = "src/scripting/mission4_bindings.cpp:objGetIndex"
+status = "legacy"
+
+[[function]]
+address = 0x003977a8
+name = "Garbage_Start"
+page = "tasks.md#code-particles-garbage"
+role = "Starts blowing garbage."
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeGarbage"
+status = "legacy"
+
+[[function]]
+address = 0x003977d0
+name = "Garbage_End"
+page = "tasks.md#code-particles-garbage"
+role = "Ends blowing garbage."
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeGarbage"
+status = "legacy"
+
+[[function]]
+address = 0x00398348
+name = "ObjZone_SetEnabled"
+page = "tasks.md#code-objects-spawn-records"
+role = "Sets or clears a zone's enable bit."
+level = "confirmed-code"
+coney = "src/world_objects/spawn_records.h:SpawnRecords::setZoneEnabled"
+status = "legacy"
+
+[[function]]
+address = 0x003983b0
+name = "ObjZone_MarkRecords"
+page = "tasks.md#code-objects-spawn-records"
+role = "Marks the spawn records of a zone."
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:markZone"
+status = "legacy"
+
+[[function]]
+address = 0x0039aa40
+name = "ObjZone_ListObjects"
+page = "tasks.md#code-objects-spawn-records"
+role = "Lists the objects of a zone."
+level = "confirmed-code"
+coney = "src/ai/item_services.h:ItemServices::ownedItems"
+status = "legacy"
+
+[[function]]
+address = 0x0039b020
+name = "ParticleTask_Draw"
+page = "tasks.md#code-particles-task-fields"
+role = "Draws a particle task's sprites."
+level = "inferred"
+coney = "src/hud/radar.h:radarDotSize"
+status = "legacy"
+
+[[function]]
+address = 0x0039bc28
+name = "Tag_Configure"
+page = "tasks.md#code-particles-spawning"
+role = "Configures a tag."
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeCfgTagSettings"
+status = "legacy"
+
+[[function]]
+address = 0x0039bd50
+name = "Tag_SetState"
+page = "tasks.md#code-particles-spawning"
+role = "Sets a tag's state with messages 0x19 (4 or 6) or 0x39/0x3a."
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeProcessTag"
+status = "legacy"
+
+[[function]]
+address = 0x0039be28
+name = "Steam_Configure"
+page = "tasks.md#code-particles-steam"
+role = "Configures steam."
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::configureSteam"
+status = "legacy"
+
+[[function]]
+address = 0x0039c388
+name = "PTank_Create"
+page = "tasks.md#code-particles-spawning"
+role = "Creates a particle tank."
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0039c3d0
+name = "PTank_Release"
+page = "tasks.md#code-particles-spawning"
+role = "Releases a particle tank."
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003a0e48
+name = "SceneTask_HoldObject"
+page = "tasks.md#code-scenes-camera"
+role = "Scene event 73: holds a scene object (an intro card) before the scene camera for a time ([Scenes](scenes.md#intro-cards))."
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::holdObject"
+status = "legacy"
+
+[[function]]
+address = 0x003a0ed8
+name = "SceneTask_UpdateHeldObject"
+page = "tasks.md#code-scenes-camera"
+role = "Each scene update: places the held object before the camera until its time is up ([Scenes](scenes.md#intro-cards))."
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::placeHeldObject"
+status = "legacy"
+
+[[function]]
+address = 0x003a2e00
+name = "Task_SendMessage"
+page = "tasks.md#original-structure"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003a4cb0
+name = "WorldObject_SetField124"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Sets the object's field +0x124."
+level = "confirmed-code"
+coney = "src/world_objects/object_services.h:ObjectServices::setValue"
+status = "legacy"
+
+[[function]]
+address = 0x003a50e0
+name = "Camera_IsPointInPlayerView"
+page = "tasks.md#code-tasks-task-object"
+role = "Says whether a point is in a player's view."
+level = "confirmed-code"
+coney = "src/effects/effect_culling.h:pointInView"
+status = "legacy"
+
+[[function]]
+address = 0x003a51f8
+name = "Cameras_IsPointVisibleAny"
+page = "tasks.md#code-tasks-task-object"
+role = "Says whether any camera sees a point."
+level = "confirmed-code"
+coney = "src/effects/effect_culling.h:effectNearView"
+status = "legacy"
+
+[[function]]
+address = 0x003a5280
+name = "Cameras_IsWithinRange"
+page = "tasks.md#code-tasks-task-object"
+role = "Says whether any camera is within a range of a point."
+level = "confirmed-code"
+coney = "src/effects/effect_culling.h:effectNearView"
+status = "legacy"
+
+[[function]]
+address = 0x004125b8
+name = "VolumeBox_Add"
+page = "tasks.md#classes"
+level = "confirmed-code"
+coney = "src/scripting/trigger_bindings.cpp:makeAddVolumeBox"
+status = "legacy"
+
+[[function]]
+address = 0x0041d628
+name = "Cfg_SetDatabaseSizes"
+page = "tasks.md#classes"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
+status = "legacy"

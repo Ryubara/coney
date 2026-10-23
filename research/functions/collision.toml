@@ -1,0 +1,126 @@
+# The researched functions of the collision system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00337920
+name = "RayTriangle_OneSided"
+page = "collision.md#original-structure"
+role = "ray-triangle intersection (`Utils` maths, outside the file)"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.cpp:rayTriangle"
+status = "legacy"
+
+[[function]]
+address = 0x00337a60
+name = "RayTriangle_TwoSided"
+page = "collision.md#original-structure"
+role = "ray-triangle intersection (`Utils` maths, outside the file)"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.cpp:rayTriangle"
+status = "legacy"
+
+[[function]]
+address = 0x0034f740
+name = "Collision_MarchRay"
+page = "collision.md#original-structure"
+role = "a long ray cast in steps"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:marchRay"
+status = "legacy"
+
+[[function]]
+address = 0x0034f950
+name = "Collision_DropToGround"
+page = "collision.md#original-structure"
+role = "ground height under a point"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:dropToGround"
+status = "legacy"
+
+[[function]]
+address = 0x0034fa28
+name = "Collision_DropToMarkedGround"
+page = "collision.md#original-structure"
+role = "the same, skipping triangles whose area byte is 0"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:dropToMarkedGround"
+status = "legacy"
+
+[[function]]
+address = 0x0034fba0
+name = "CollisionMesh_SetEnabledInVolume"
+page = "collision.md#original-structure"
+role = "switches the triangles inside a game object's box on or off"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeChangeCollision"
+status = "legacy"
+
+[[function]]
+address = 0x00350538
+name = "CollisionTri_PassesMaterialFilter"
+page = "collision.md#original-structure"
+role = "material exclusion list"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.cpp:excluded"
+status = "legacy"
+
+[[function]]
+address = 0x00350580
+name = "CollisionMesh_OnLoaded"
+page = "collision.md#original-structure"
+role = "chunk `0x03` handler: builds the mesh"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:onCollisionMeshLoaded"
+status = "legacy"
+
+[[function]]
+address = 0x00350778
+name = "CollisionMesh_RayTestCell"
+page = "collision.md#original-structure"
+role = "ray against one cell's triangles"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:CollisionMesh::rayTestCell"
+status = "legacy"
+
+[[function]]
+address = 0x00350aa0
+name = "CollisionMesh_SetEnabledInBoxCell"
+page = "collision.md#enable"
+level = "inferred"
+coney = "src/raycast/collision_mesh.cpp:CollisionMesh::setEnabledInBox"
+status = "legacy"
+
+[[function]]
+address = 0x00350cd8
+name = "CollisionMesh_RayCast"
+page = "collision.md#original-structure"
+role = "ray against the mesh: the grid walk"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:CollisionMesh::rayCast"
+status = "legacy"
+
+[[function]]
+address = 0x00351160
+name = "CollisionMesh_SetEnabledInBox"
+page = "collision.md#enable"
+level = "inferred"
+coney = "src/raycast/collision_mesh.h:CollisionMesh::setEnabledInBox"
+status = "legacy"
+
+[[function]]
+address = 0x00351468
+name = "CollisionMesh_SphereTestCell"
+page = "collision.md#original-structure"
+role = "push a sphere out of walls"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.cpp:CollisionMesh::spherePush"
+status = "legacy"
+
+[[function]]
+address = 0x003519f8
+name = "CollisionMesh_SpherePush"
+page = "collision.md#original-structure"
+role = "push a sphere out of walls"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:CollisionMesh::spherePush"
+status = "legacy"

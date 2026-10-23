@@ -9,10 +9,10 @@ reference lists; and [`missions`](#missions), the mission status pages. Run them
 ## progress {#progress}
 
 The [Progress](../progress/index.md) page and the badges in the Progress section of `README.md` are generated from
-three inputs:
-`docs/progress/functions.toml` (the original functions Coney reimplements), `docs/progress/totals.toml` (the
-denominators, taken from the [source map](../research/source-map.md); its file ranges are
-`research/source-files.toml`) and the status table of the
+four inputs: the [function database](research-function-database.md) (`research/functions/<system>.toml`; the entries
+with a `coney` field are the original functions Coney reimplements, their sizes the Ghidra listing's),
+`docs/progress/totals.toml` (the denominators, taken from the [source map](../research/source-map.md); its file ranges
+are `research/source-files.toml`), the Ghidra listing `docs/progress/ghidra-functions.tsv` and the status table of the
 [roadmap](../roadmap.md). The page says what the numbers mean; this section says how to run the commands.
 
 ```sh
@@ -20,8 +20,8 @@ uv run --project python coney-tools progress show [--json]
 ```
 
 Prints the reimplemented and researched shares, the milestones and the subsystems that have reimplemented code.
-`--json` prints everything, per subsystem and per coverage category, for other tools. It exits with 1 when
-`functions.toml` and the `@orig` tags in `src/` disagree, and lists each problem.
+`--json` prints everything, per subsystem and per coverage category, for other tools. It exits with 1 when the
+database's `coney` entries and the `@orig` tags in `src/` disagree, and lists each problem.
 
 ```sh
 uv run --project python coney-tools progress check
@@ -31,15 +31,16 @@ Checks the inputs and exits with 1 when they disagree; CI runs it. Nothing gener
 progress page and the README's badge data are produced by the documentation build (`mkdocs_hooks.py`), which
 publishes them from `main`, so pull requests never conflict on them. `check` fails on:
 
-* an `@orig` tag in `src/` with no `[[function]]` in `functions.toml`, or the other way round, or the two naming the
-  function differently;
-* a `subsystem` that is not the one whose range in `totals.toml` holds the address (the message names the right
-  one; outside every range it is `unattributed`);
-* an address inside middleware or outside `.text`, an address listed twice, or sizes that overlap;
+* an `@orig` tag in `src/` whose function has no entry in the database, or has one without `coney` (the message names
+  the file), or an entry with `coney` that no tag in `src/` reimplements, or whose `coney` file is not one that holds
+  the tag; the entry's subsystem is worked out from its address, so there is none to get wrong;
+* an address inside middleware or outside `.text`;
 * a progress page without its single `<!-- progress:generated -->` marker, where the build puts the tables and
   pictures, or a history page without its `<!-- progress:history -->` marker.
 
-`mkdocs build --strict` shows the tables on the page locally too, and fails on the same problems.
+A tag that spells the function's name differently from the database (which has Ghidra's) is a warning, not a failure:
+`check` prints the first few and the count. `mkdocs build --strict` shows the tables on the page locally too, and fails
+on the same problems.
 
 The pictures come from `progress_grid.py` (one square per function, from the Ghidra listing, the tracker's measures
 and the file ranges of `research/source-files.toml`), `progress_picture.py` (layout and SVG), `progress_history.py`
@@ -68,29 +69,49 @@ the missing days only when `CONEY_PROGRESS_HISTORY=full`. The `docs` workflow se
 downloads the published file (a missing one just means every day is measured), builds with `full` and deploys the
 result, so each deploy extracts one commit. A cached day counts only for the commit it was measured at, and a day
 that could not be measured is recorded with its commit and not tried again. The file also records a digest of the
-tracker's measuring code (`progress.py`, `progress_research.py`): when that code changes, the cache is ignored and
-every day is measured again, so the chart never mixes two definitions. A pull request's build has no cache (only the
+tracker's measuring code (`progress.py`, `progress_import.py`, `progress_research.py`, `research_functions.py`): when
+that code changes, the cache is ignored and
+every day is measured again, so the chart never mixes two definitions. A day before the move to the database has the
+retired list `docs/progress/functions.toml` instead; it is read for that day, with the Ghidra listing's sizes where the
+day has a listing. A pull request's build has no cache (only the
 deploy learns the site's address), so its History page shows today alone; locally, point
 `CONEY_PROGRESS_HISTORY_CACHE` at a downloaded `history.json` to see the days.
 
 ```sh
-uv run --project python coney-tools progress sizes [DISC] [--fill]
+uv run --project python coney-tools progress sizes [DISC]
 ```
 
-Checks the size of every function in `functions.toml` against the executable `SLUS_212.15` on your own disc (`DISC`
-works as for the `wad` commands). The executable has no symbols, so the command takes every `jal` target, every
-function pointer in `.data` and every address into `.text` that code builds with a `lui` / `addiu` pair (the function
-pointers handed over in code, such as the script binding wrappers) as the start of a function, and a function's
-**span** runs to the next of those starts, alignment padding included. Before the pairs were counted, a binding
-wrapper's span ran over its unseen neighbours (38,440 bytes for `HuCreate`'s 480). A given size larger than the
-span is an error (exit code 1); one smaller than the code before the padding, or an address no call reaches, is a
-warning. `--fill` writes the span into each entry that has no
-`size` yet. It prints only the addresses and sizes of the functions already listed.
+Checks the size of every reimplemented function against the executable `SLUS_212.15` on your own disc (`DISC` works
+as for the `wad` commands). The size is the Ghidra listing's; a function the listing has no function at has none, and
+the line shows `-`. The executable has no symbols, so the command takes every `jal` target, every function pointer in
+`.data` and every address into `.text` that code builds with a `lui` / `addiu` pair (the function pointers handed over
+in code, such as the script binding wrappers) as the start of a function, and a function's **span** runs to the next
+of those starts, alignment padding included. A size larger than the span is an error (exit code 1); one smaller than
+the code before the padding, or an address no call reaches, is a warning. It prints only addresses and sizes.
 
-The span is an upper bound: a function that nothing calls directly and no pointer names (one reached
-only by a tail jump) is not seen as a start, and the span of the function before it includes it, unless that function
-is itself listed in `functions.toml`: a listed function always ends the span of the one before it. When `--fill`
-gives a size that looks too large for what the research page describes, check the size Ghidra shows.
+The span is an upper bound: a function that nothing calls directly and no pointer names (one reached only by a tail
+jump) is not seen as a start, and the span of the function before it includes it, unless that function is itself
+reimplemented: a reimplemented function always ends the span of the one before it.
+
+```sh
+uv run --project python coney-tools progress import-functions [FILE] [--dry-run] [--all]
+```
+
+A one-off, for the move of the reimplemented list into the function database (issue #778): it reads the retired
+`docs/progress/functions.toml` (or `FILE`) and gives each of its functions an entry with `coney` and `status =
+"legacy"`. It also serves a branch that still adds rows to the old file: when its rebase meets the file's deletion,
+save the branch's copy of the file outside the checkout, take main's side and run the command on the copy, which adds
+only the rows the database lacks. An entry the database has gets `coney` and keeps everything else; any other function
+gets a new entry from the research that cites it, in this order of preference: a row of a page's function table (the
+page's role, level and section, as [`research import-table`](research-function-database.md#importing) reads it), a
+paragraph or table row that states a level, the evidence of the function's script binding (its page is
+`scripting.md#bindings`), and last a page that only mentions the address (the weakest level, `speculative`, and a note
+saying that none was stated). Among equals it takes the page with the most such functions, and the entry goes in the
+file of that page's system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The name is Ghidra's,
+`coney` comes from the `@orig` tag in `src/`. The report counts the new entries by source and by system and lists the
+rows whose name is not Ghidra's, the rows with no function in the listing, the entries with the weakest level and any
+row left out (the exit code is 1 for those); `--dry-run` writes nothing and `--all` lists every row. Delete the old
+file afterwards. The command is to be removed once no branch carries the old list.
 
 ## natives {#natives}
 

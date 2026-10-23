@@ -1,0 +1,303 @@
+# The researched functions of the scenes system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0016b8d0
+name = "Gang_ClearBums"
+page = "scenes.md#original-structure"
+role = "a cinematic's start destroys the bums in player 1's gang ([The player's gang](scenes.md#gang))"
+level = "confirmed-code"
+coney = "src/ai/scripted_hub.h:ScriptedHub::clearBums"
+status = "legacy"
+
+[[function]]
+address = 0x002325e0
+name = "Human_ResetForMode"
+page = "scenes.md#original-structure"
+role = "the reset every join runs: pairs, grabs, holds, rage, stun, props ([The reset at the join](scenes.md#join-reset))"
+level = "confirmed-code"
+coney = "src/combat/player_combat.h:PlayerCombat::abortTheft"
+status = "legacy"
+
+[[function]]
+address = 0x002e5300
+name = "Goal_JoinCinematic"
+page = "scenes.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.h:SceneSystem::joinHuman"
+status = "legacy"
+
+[[function]]
+address = 0x00351da0
+name = "SceneSlot_Unload"
+page = "scenes.md#ending"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::unload"
+status = "legacy"
+
+[[function]]
+address = 0x00352098
+name = "SceneRecord_Fixup"
+page = "scenes.md#original-structure"
+role = "turns the header's offsets into pointers, sets state 2"
+level = "confirmed-code"
+coney = "src/scenes/scene_record.h:parseSceneHeader"
+status = "legacy"
+
+[[function]]
+address = 0x00352430
+name = "SceneRecord_OnLoaded"
+page = "scenes.md#loading"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::service"
+status = "legacy"
+
+[[function]]
+address = 0x00352c08
+name = "SceneSegment_Request"
+page = "scenes.md#loading"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::requestNext"
+status = "legacy"
+
+[[function]]
+address = 0x00353020
+name = "Scene_WaitLoaded"
+page = "scenes.md#loading"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::loadNow"
+status = "legacy"
+
+[[function]]
+address = 0x003531c8
+name = "Scene_CallLoaded"
+page = "scenes.md#original-structure"
+role = "calls the `ScenePreload` callback with the scene id"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::service"
+status = "legacy"
+
+[[function]]
+address = 0x00353298
+name = "SceneSlot_Get"
+page = "scenes.md#original-structure"
+role = "the slot holding an id, else a free one, else one to evict"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::request"
+status = "legacy"
+
+[[function]]
+address = 0x00353460
+name = "SceneList_Load"
+page = "scenes.md#original-structure"
+role = "copies the Scene List chunk"
+level = "confirmed-code"
+coney = "src/scenes/scene_list.h:SceneList::parse"
+status = "legacy"
+
+[[function]]
+address = 0x00353818
+name = "Scene_Play"
+page = "scenes.md#original-structure"
+role = "common worker of the play bindings"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.h:SceneSystem::play"
+status = "legacy"
+
+[[function]]
+address = 0x00353a10
+name = "Scene_Stop"
+page = "scenes.md#original-structure"
+role = "`SceneStop`'s worker"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::stop"
+status = "legacy"
+
+[[function]]
+address = 0x00353bf0
+name = "Scene_FreeFinished"
+page = "scenes.md#ending"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneSystem::update"
+status = "legacy"
+
+[[function]]
+address = 0x00353c68
+name = "Scene_PlayCinematic"
+page = "scenes.md#original-structure"
+role = "`ScenePlayCinematic` / `ScenePlayFixedScene`: `Scene_Play` at the origin with no rotation"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayCinematic"
+status = "legacy"
+
+[[function]]
+address = 0x00353d60
+name = "Scene_PlayFixed"
+page = "scenes.md#original-structure"
+role = "`ScenePlayCinematic` / `ScenePlayFixedScene`: `Scene_Play` at the origin with no rotation"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayFixedScene"
+status = "legacy"
+
+[[function]]
+address = 0x003540b8
+name = "Scene_GetLength"
+page = "scenes.md#timing"
+level = "confirmed-code"
+coney = "src/scenes/scene_record.h:SceneTracks::duration"
+status = "legacy"
+
+[[function]]
+address = 0x003541a0
+name = "Scene_BindHuman"
+page = "scenes.md#original-structure"
+role = "resets the human (`Human_ResetForMode(h, 1)` at `0x003541d8`), then writes it into the role ([The reset at the join](scenes.md#join-reset))"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.h:SceneSystem::joinHuman"
+status = "legacy"
+
+[[function]]
+address = 0x00354280
+name = "Scene_BindObject"
+page = "scenes.md#original-structure"
+role = "`SceneAddObject`'s worker: writes the object into the slot by index (definition `+0x50`) and pins its record; refuses an object already in a scene"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.h:SceneSystem::addObject"
+status = "legacy"
+
+[[function]]
+address = 0x00354d98
+name = "SceneTrack_Events"
+page = "scenes.md#original-structure"
+role = "the object, camera and light tracks' events"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::fireTrackEvents"
+status = "legacy"
+
+[[function]]
+address = 0x00355798
+name = "SceneTrack_Flush"
+page = "scenes.md#original-structure"
+role = "a skipped scene's remaining track events, a reduced set ([Skipping](scenes.md#skipping))"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::flushTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00355ab8
+name = "SceneTrack_StepKeys"
+page = "scenes.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_record.h:KeyTrack::positionAt"
+status = "legacy"
+
+[[function]]
+address = 0x003560a8
+name = "SceneTrack_Advance"
+page = "scenes.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::stepTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00356188
+name = "SceneTrack_Apply"
+page = "scenes.md#camera"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::applyTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00367e20
+name = "lua_SceneStop"
+page = "scenes.md#ending"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneStop"
+status = "legacy"
+
+[[function]]
+address = 0x0039cbf0
+name = "SceneTask_Update"
+page = "scenes.md#original-structure"
+role = "vtable `+0x13c`, every 2 ticks"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::skip"
+status = "legacy"
+
+[[function]]
+address = 0x0039d870
+name = "SceneTask_Start"
+page = "scenes.md#original-structure"
+role = "waits for everything, then starts; re-entered until it does"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::hasLoopPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0039ec60
+name = "SceneTask_Abort"
+page = "scenes.md#original-structure"
+role = "gives up a scene that did not start in 10 s"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::abort"
+status = "legacy"
+
+[[function]]
+address = 0x0039f450
+name = "SceneTask_End"
+page = "scenes.md#original-structure"
+role = "gives everything back"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::stepCrew"
+status = "legacy"
+
+[[function]]
+address = 0x003a00b8
+name = "SceneTask_ClipDone"
+page = "scenes.md#original-structure"
+role = "a role's clip ended: chain the next segment's clip or leave the scene"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::part"
+status = "legacy"
+
+[[function]]
+address = 0x003a0400
+name = "SceneRunner_NextCameraTrack"
+page = "scenes.md#camera"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::stepTrack"
+status = "legacy"
+
+[[function]]
+address = 0x003a0a68
+name = "SceneTask_EndClips"
+page = "scenes.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::endClips"
+status = "legacy"
+
+[[function]]
+address = 0x003a0be8
+name = "SceneTask_StopLooping"
+page = "scenes.md#ending"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::stop"
+status = "legacy"
+
+[[function]]
+address = 0x003a0da8
+name = "SceneTask_CallEnd"
+page = "scenes.md#original-structure"
+role = "calls the play binding's end function with the scene id"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::callEnd"
+status = "legacy"
+
+[[function]]
+address = 0x003a13d0
+name = "SceneTask_Create"
+page = "scenes.md#original-structure"
+role = "a scene task with its flags"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.h:SceneSystem::play"
+status = "legacy"

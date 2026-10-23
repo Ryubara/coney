@@ -1,0 +1,387 @@
+# The researched functions of the player-state system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0021c570
+name = "Human_CanSeeObject"
+page = "player-state.md#walk-over"
+level = "confirmed-code"
+coney = "src/world_objects/pickups.h:inSight"
+status = "legacy"
+
+[[function]]
+address = 0x00238190
+name = "Human_SetPocketItem"
+page = "player-state.md#inventory"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041d618
+name = "GameState_SetObjectValueMod"
+page = "player-state.md#warriors-functions"
+role = "`CfgObjectValueMod`: the money multiplier `+0x380` for picked-up items"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041e250
+name = "Inventory_SetItem"
+page = "player-state.md#original-structure"
+role = "`CfgInventoryItem`'s writer, for both players"
+level = "confirmed-code"
+coney = "src/warriors/inventory.h:Inventory::configure"
+status = "legacy"
+
+[[function]]
+address = 0x0041e320
+name = "InventoryBlock_GetSound"
+page = "player-state.md#warriors-functions"
+role = "an item's pickup sound hash, its duration, its count (0 above item 22), the entry's address; used by `Human_PickUpObject`, `Human_DropCarried`, the mugging and the mission-item icons"
+level = "confirmed-code"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::pickupSound"
+status = "legacy"
+
+[[function]]
+address = 0x0041e420
+name = "Inventory_GetCount"
+page = "player-state.md#original-structure"
+role = "an item's count; 0 outside players 0-1 and items 0-22"
+level = "confirmed-code"
+coney = "src/warriors/inventory.h:Inventory::count"
+status = "legacy"
+
+[[function]]
+address = 0x0041e5b0
+name = "Inventory_AddItem"
+page = "player-state.md#original-structure"
+role = "every count change, and the callbacks ([below](player-state.md#pickup-callback))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/scripting/player_bindings.h:addInventoryItem"
+status = "legacy"
+
+[[function]]
+address = 0x0041ece8
+name = "Cfg_SetInventoryCallback"
+page = "player-state.md#warriors-functions"
+role = "the `CfgInventoryItem`, `CfgInventoryCallback`, `CfgHuInventoryCallback`, `CfgHuInventoryCallback2` and `CfgMoneyCallback` workers, on the game state's inventory (`+0x480`)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ed10
+name = "Cfg_SetHuInventoryCallback"
+page = "player-state.md#warriors-functions"
+role = "the `CfgInventoryItem`, `CfgInventoryCallback`, `CfgHuInventoryCallback`, `CfgHuInventoryCallback2` and `CfgMoneyCallback` workers, on the game state's inventory (`+0x480`)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ed60
+name = "Cfg_SetMoneyCallback"
+page = "player-state.md#warriors-functions"
+role = "the `CfgInventoryItem`, `CfgInventoryCallback`, `CfgHuInventoryCallback`, `CfgHuInventoryCallback2` and `CfgMoneyCallback` workers, on the game state's inventory (`+0x480`)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ed88
+name = "Inv_PlayerHasItem"
+page = "player-state.md#warriors-functions"
+role = "`InvPlayerHasItem(item, player)`, the player 1-based"
+level = "confirmed-code"
+coney = "src/warriors/inventory.h:Inventory::has"
+status = "legacy"
+
+[[function]]
+address = 0x0041edb8
+name = "Inv_GiveRevive"
+page = "player-state.md#warriors-functions"
+role = "`InvGiveRevive(n, player)` adds flashes (item 1) with notify (also from `BossDiegoGoal_Start`) / `InvNumberRevives(player)`"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041edf0
+name = "Inv_NumberRevives"
+page = "player-state.md#warriors-functions"
+role = "`InvGiveRevive(n, player)` adds flashes (item 1) with notify (also from `BossDiegoGoal_Start`) / `InvNumberRevives(player)`"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ee20
+name = "Inv_GiveSkeletonKey"
+page = "player-state.md#warriors-functions"
+role = "the same for handcuff keys (item 6)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ee58
+name = "Inv_NumberSkeletonKeys"
+page = "player-state.md#warriors-functions"
+role = "the same for handcuff keys (item 6)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ee88
+name = "Inv_GetMoney"
+page = "player-state.md#warriors-functions"
+role = "`InvGetMoney(player)` / `InvSetMoney(n, player)`: clears the player's HUD money roll (`+0xe20`) and sets item 2 through `Inventory_SetCount`"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041eeb8
+name = "Inv_SetMoney"
+page = "player-state.md#warriors-functions"
+role = "`InvGetMoney(player)` / `InvSetMoney(n, player)`: clears the player's HUD money roll (`+0xe20`) and sets item 2 through `Inventory_SetCount`"
+level = "confirmed-code"
+coney = "src/warriors/inventory.h:Inventory::setMoney"
+status = "legacy"
+
+[[function]]
+address = 0x0041ef00
+name = "GameState_GiveMoney"
+page = "player-state.md#warriors-functions"
+role = "`GiveMoney(n, player)` / `TakeMoney(n, player)`: item 2 ± n with notify"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:giveMoney"
+status = "legacy"
+
+[[function]]
+address = 0x0041ef60
+name = "GameState_TakeMoney"
+page = "player-state.md#warriors-functions"
+role = "`GiveMoney(n, player)` / `TakeMoney(n, player)`: item 2 ± n with notify"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ef98
+name = "Inv_GiveItem"
+page = "player-state.md#warriors-functions"
+role = "`InvGiveItem(item, n, player)` with notify / `InvNumberOf(item, player)`"
+level = "confirmed-code"
+coney = "src/warriors/inventory.h:Inventory::give"
+status = "legacy"
+
+[[function]]
+address = 0x0041efd0
+name = "Inv_NumberOf"
+page = "player-state.md#warriors-functions"
+role = "`InvGiveItem(item, n, player)` with notify / `InvNumberOf(item, player)`"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041f000
+name = "Inv_GetSpraycanCharges"
+page = "player-state.md#warriors-functions"
+role = "`InvGetSpraycanCharges(player)` / `InvSetSpraycanCharges(n, player)` (item 3, negative read as 0, through `Inventory_SetCount`)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addInventoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041f030
+name = "Inv_SetSpraycanCharges"
+page = "player-state.md#warriors-functions"
+role = "`InvGetSpraycanCharges(player)` / `InvSetSpraycanCharges(n, player)` (item 3, negative read as 0, through `Inventory_SetCount`)"
+level = "confirmed-code"
+coney = "src/warriors/inventory.h:Inventory::setSprayPaint"
+status = "legacy"
+
+[[function]]
+address = 0x004211d8
+name = "Stats_CategoryPoints"
+page = "player-state.md#original-structure"
+role = "the sum of counts × points of a category"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::categoryPoints"
+status = "legacy"
+
+[[function]]
+address = 0x00422430
+name = "Cfg_SetStatValue"
+page = "player-state.md#warriors-functions"
+role = "`CfgSetStatValue(category, event, points)`: writes one 16-bit entry of the category's points table; an unknown category is ignored"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::setPoints"
+status = "legacy"
+
+[[function]]
+address = 0x004224d8
+name = "Script_StatAdd"
+page = "player-state.md#warriors-functions"
+role = "`StatAdd(human, category, event, n)`: resolves the human and calls that category's adder (0 mission … 5 harmony); not a human, or a category over 5, does nothing"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::add"
+status = "legacy"
+
+[[function]]
+address = 0x00422630
+name = "Script_StatGetScore"
+page = "player-state.md#warriors-functions"
+role = "the `StatGetRank`, `StatGetScore` (the running score, `0x00422998`) and `StatGetPreviousHiScore` (the current-index level's best record, `0x00423050`) bindings"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::score"
+status = "legacy"
+
+[[function]]
+address = 0x004226f8
+name = "Stats_ResetAll"
+page = "player-state.md#warriors-functions"
+role = "`PlayerStats_Reset` on both live player records of the stats object"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::reset"
+status = "legacy"
+
+[[function]]
+address = 0x00422718
+name = "Script_StatResetPlayer"
+page = "player-state.md#warriors-functions"
+role = "`StatResetPlayer(human)`: resets that player's record (`0x00422970`)"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::resetPlayer"
+status = "legacy"
+
+[[function]]
+address = 0x00422a90
+name = "Stats_CategoryScore"
+page = "player-state.md#original-structure"
+role = "the same, harmony inverted"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::categoryScore"
+status = "legacy"
+
+[[function]]
+address = 0x00422b00
+name = "Stats_CategoryPercent"
+page = "player-state.md#original-structure"
+role = "a score as a percentage of its maximum, at most 100"
+level = "confirmed-code"
+coney = "src/warriors/player_stats.h:PlayerStats::categoryPercent"
+status = "legacy"
+
+[[function]]
+address = 0x004236d0
+name = "Script_UMReset"
+page = "player-state.md#warriors-functions"
+role = "`UM_Reset`: frees the unlockable records (`Unlockables_Reset`)"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::reset"
+status = "legacy"
+
+[[function]]
+address = 0x004236f0
+name = "Script_UMSetNumUnlockables"
+page = "player-state.md#warriors-functions"
+role = "`UM_SetNumUnlockables(n)`: stores the record count (`0x006fe99c`) while no records are allocated yet"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::setCount"
+status = "legacy"
+
+[[function]]
+address = 0x00423718
+name = "Unlocks_SetRecord"
+page = "player-state.md#original-structure"
+role = "`UM_SetUnlockable`'s writer"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::set"
+status = "legacy"
+
+[[function]]
+address = 0x004237a8
+name = "UM_GetUnlockablesByType"
+page = "player-state.md#warriors-functions"
+role = "the type form: `Unlockables_ListByType` when records exist"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
+status = "legacy"
+
+[[function]]
+address = 0x004237e8
+name = "Script_UMUnlock"
+page = "player-state.md#warriors-functions"
+role = "`UM_Unlock(level, group, item)`: `Unlockables_Unlock` when records exist"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::unlock"
+status = "legacy"
+
+[[function]]
+address = 0x00423868
+name = "Script_UMIsDataUnlocked"
+page = "player-state.md#warriors-functions"
+role = "`UM_IsUnlocked(index)`, `UM_IsDataUnlocked(type, data)`, `UM_IsLevelComplete(level)`: 0 when no records exist"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
+status = "legacy"
+
+[[function]]
+address = 0x004238a8
+name = "Script_UMIsLevelComplete"
+page = "player-state.md#warriors-functions"
+role = "`UM_IsUnlocked(index)`, `UM_IsDataUnlocked(type, data)`, `UM_IsLevelComplete(level)`: 0 when no records exist"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::isLevelComplete"
+status = "legacy"
+
+[[function]]
+address = 0x004238e8
+name = "UM_GetRecordField"
+page = "player-state.md#warriors-functions"
+role = "`UM_GetRecordData(index, field)`: field 0-3 the level, group, item and type bytes, 4 the 16-bit extra, 5 the data id; 0 otherwise"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00423988
+name = "Script_UMIsTypeDirty"
+page = "player-state.md#warriors-functions"
+role = "`UM_IsTypeDirty(type, clear)`: `Unlockables_IsTypeDirty`"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::isTypeDirty"
+status = "legacy"
+
+[[function]]
+address = 0x004239b0
+name = "UM_IsDataDirty"
+page = "player-state.md#warriors-functions"
+role = "`UM_IsDataDirty(type, data, clear)`: `Unlockables_TestDirtyByData`"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::isDataDirty"
+status = "legacy"
+
+[[function]]
+address = 0x00423eb0
+name = "Unlockables_ListByType"
+page = "player-state.md#unlockables"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00424130
+name = "Unlocks_IsDataUnlocked"
+page = "player-state.md#original-structure"
+role = "the code's test, as `UM_IsDataUnlocked`"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::isDataUnlocked"
+status = "legacy"

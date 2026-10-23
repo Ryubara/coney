@@ -42,13 +42,15 @@ def _summary(entries: tuple[Entry, ...]) -> str:
     return f"{len(entries)} {noun}: {parts}." if parts else f"{len(entries)} {noun}."
 
 
-def _level_cell(entry: Entry) -> str:
+def _level_cell(entry: Entry, system: str) -> str:
     """The level's label, with the entry's note after it when it has one; a note that already starts with the label
-    (an imported mixed cell, `confirmed (code); the rock inferred`) stands alone, so the label is not doubled."""
+    (an imported mixed cell, `confirmed (code); the rock inferred`) stands alone, so the label is not doubled. Links in
+    the note are written relative to docs/research, like the role's, and read from the system's folder."""
     label = LEVELS[entry.level]
     if not entry.note:
         return label
-    return _cell(entry.note if entry.note.lower().startswith(label) else f"{label}; {entry.note}")
+    note = _rebased(entry.note, system)
+    return _cell(note if note.lower().startswith(label) else f"{label}; {note}")
 
 
 def _coney_cell(entry: Entry) -> str:
@@ -100,7 +102,7 @@ def render_system(system: SystemFunctions, system_page: str | None) -> str:
         cells = [f'<span id="0x{entry.address:08x}"></span>`0x{entry.address:08x}`', f"`{entry.name}`"]
         if has_kind:
             cells.append(_cell(entry.kind))
-        cells += [_cell(_rebased(entry.role, name)), _level_cell(entry), _link(entry.page, name)]
+        cells += [_cell(_rebased(entry.role, name)), _level_cell(entry, name), _link(entry.page, name)]
         if has_coney:
             cells.append(_coney_cell(entry))
         out.append("| " + " | ".join(cells) + " |")

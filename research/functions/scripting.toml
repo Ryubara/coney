@@ -1,0 +1,2151 @@
+# The researched functions of the scripting system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00155648
+name = "RumbleResult_Toggle"
+page = "scripting.md#run-next-mission"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015cf70
+name = "Gm_InGame_Enter"
+page = "scripting.md#run-next-mission"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015d420
+name = "MissionComplete_Launch"
+page = "scripting.md#run-next-mission"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::launch"
+status = "legacy"
+
+[[function]]
+address = 0x00161218
+name = "RunPreloadScripts"
+page = "scripting.md#original-structure"
+role = "the legal screen's preload lists"
+level = "confirmed-code"
+coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0022aeb0
+name = "Human_GaitForSpeed"
+page = "scripting.md#level99-p2-vermin-fence"
+level = "confirmed-code"
+coney = "src/human/locomotion.h:gaitOfSpeed"
+status = "legacy"
+
+[[function]]
+address = 0x0024df40
+name = "Ray_IsClear"
+page = "scripting.md#triggers"
+level = "inferred"
+coney = "src/ai/perception.h:lineOfSight"
+status = "legacy"
+
+[[function]]
+address = 0x00293768
+name = "AI_AlertNearby"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:broadcastHelpCall"
+status = "legacy"
+
+[[function]]
+address = 0x002b2b90
+name = "Brain_StartFight"
+page = "scripting.md#level80-after-order"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::startFight"
+status = "legacy"
+
+[[function]]
+address = 0x003535e8
+name = "SceneCache_Init"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_disc.h:loadSceneList"
+status = "legacy"
+
+[[function]]
+address = 0x00353698
+name = "SceneList_FindBySubstring"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_list.h:SceneList::findContaining"
+status = "legacy"
+
+[[function]]
+address = 0x00353730
+name = "SceneList_FindById"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_list.h:SceneList::entry"
+status = "legacy"
+
+[[function]]
+address = 0x00353778
+name = "SceneList_FindByName"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_list.h:SceneList::findExact"
+status = "legacy"
+
+[[function]]
+address = 0x00353af0
+name = "Scene_Request"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::request"
+status = "legacy"
+
+[[function]]
+address = 0x00353f88
+name = "Scene_Preload"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.h:SceneSystem::preload"
+status = "legacy"
+
+[[function]]
+address = 0x00356390
+name = "ScriptSystem_Create"
+page = "scripting.md#original-structure"
+role = "allocates 0x28 bytes, builds the object; called by `Game_InitializeSubsystems` (`0x00160fd0`) and `UnloadLevel` (`0x00160bac`)"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::create"
+status = "legacy"
+
+[[function]]
+address = 0x00356450
+name = "ScriptSystem_Destroy"
+page = "scripting.md#original-structure"
+role = "deletes the object and clears the pointer; called by `UnloadLevel` just before the create"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::destroy"
+status = "legacy"
+
+[[function]]
+address = 0x003564d8
+name = "ScriptSystem_Construct"
+page = "scripting.md#original-structure"
+role = "opens the Lua state and the libraries, registers the bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::create"
+status = "legacy"
+
+[[function]]
+address = 0x00356610
+name = "ScriptSystem_Destruct"
+page = "scripting.md#original-structure"
+role = "closes the state, frees the schedule"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::destroy"
+status = "legacy"
+
+[[function]]
+address = 0x003566d8
+name = "ScriptSystem_Update"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::update"
+status = "legacy"
+
+[[function]]
+address = 0x003569d8
+name = "ScriptSystem_RunLevelEntry"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::enterLevel"
+status = "legacy"
+
+[[function]]
+address = 0x00356af8
+name = "ScriptSystem_RunFile"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::runFile"
+status = "legacy"
+
+[[function]]
+address = 0x00356c58
+name = "ScriptSystem_RunFileList"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::runFiles"
+status = "legacy"
+
+[[function]]
+address = 0x00356d00
+name = "ScriptSystem_OnPreloadFileDone"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::servicePreloads"
+status = "legacy"
+
+[[function]]
+address = 0x00356e08
+name = "ScriptSystem_FindFunction"
+page = "scripting.md#binding-call"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::call"
+status = "legacy"
+
+[[function]]
+address = 0x00357188
+name = "ScriptSystem_Call"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::call"
+status = "legacy"
+
+[[function]]
+address = 0x003571b8
+name = "ScriptSystem_ScheduleCall"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::schedule"
+status = "legacy"
+
+[[function]]
+address = 0x003572e8
+name = "ScriptSystem_ScheduleCallArg1"
+page = "scripting.md#bindings-the-front-end-and-the-script-system-depend-on"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::schedule"
+status = "legacy"
+
+[[function]]
+address = 0x00357430
+name = "ScriptSystem_ScheduleCallArg2"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::schedule"
+status = "legacy"
+
+[[function]]
+address = 0x00357588
+name = "ScriptSystem_FlushScheduled"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::flushScheduled"
+status = "legacy"
+
+[[function]]
+address = 0x003578d8
+name = "ScriptSystem_SetUpdateFunction"
+page = "scripting.md#vtable-slots"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::setUpdateFunction"
+status = "legacy"
+
+[[function]]
+address = 0x00357a68
+name = "Script_PreloadFile"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makePreLoadFile"
+status = "legacy"
+
+[[function]]
+address = 0x00358608
+name = "lua_HuDelete"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeHuDelete"
+status = "legacy"
+
+[[function]]
+address = 0x00358b38
+name = "lua_HuRubberNeck"
+page = "scripting.md#bindings"
+level = "inferred"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003590e0
+name = "lua_HuBlockGrab"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00359140
+name = "lua_HuBlockRearGrab"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00359a80
+name = "lua_HuSetDoubleDamage"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035ab00
+name = "lua_HuSetWoundable"
+page = "scripting.md#bindings"
+level = "inferred"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035b398
+name = "lua_HuGetGang"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeHuGetGang"
+status = "legacy"
+
+[[function]]
+address = 0x0035b668
+name = "lua_HuIsInScene"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035b758
+name = "lua_HuIsHidden"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035b980
+name = "lua_HuSetKillerMode"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035bbc8
+name = "lua_HuSetMaxHealth"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeHuSetMaxHealth"
+status = "legacy"
+
+[[function]]
+address = 0x0035bfe0
+name = "lua_HuInCombat"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035c278
+name = "lua_HuSetHearRange"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035c2f0
+name = "lua_HuSetHelpHearRange"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0035eb78
+name = "lua_BrDead"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrDead"
+status = "legacy"
+
+[[function]]
+address = 0x0035ebd8
+name = "lua_BrSuspend"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrSuspend"
+status = "legacy"
+
+[[function]]
+address = 0x0035ede0
+name = "lua_BrFlush"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrFlush"
+status = "legacy"
+
+[[function]]
+address = 0x0035ee18
+name = "lua_BrFlushActions"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeBrFlushActions"
+status = "legacy"
+
+[[function]]
+address = 0x0035eea0
+name = "lua_BrFlushGoals"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeBrFlushGoals"
+status = "legacy"
+
+[[function]]
+address = 0x0035ef48
+name = "lua_BrSetThreatResponse"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrSetThreatResponse"
+status = "legacy"
+
+[[function]]
+address = 0x0035f1f8
+name = "lua_GangSetThreatResponse"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangSetThreatResponse"
+status = "legacy"
+
+[[function]]
+address = 0x0035f630
+name = "lua_GangClearWanted"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGangClearWanted"
+status = "legacy"
+
+[[function]]
+address = 0x0035f668
+name = "lua_GangClearResponders"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGangClearResponders"
+status = "legacy"
+
+[[function]]
+address = 0x0035f6f0
+name = "lua_GangBrFlush"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangBrFlush"
+status = "legacy"
+
+[[function]]
+address = 0x0035f728
+name = "lua_GangSetTargetable"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGangSetTargetable"
+status = "legacy"
+
+[[function]]
+address = 0x0035f790
+name = "lua_GangSetAttackable"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangSetAttackable"
+status = "legacy"
+
+[[function]]
+address = 0x0035fc80
+name = "lua_BrSetNumFollowSlots"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrSetNumFollowSlots"
+status = "legacy"
+
+[[function]]
+address = 0x0035fd18
+name = "lua_BrSetFollowSlotSet"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrSetFollowSlotSet"
+status = "legacy"
+
+[[function]]
+address = 0x0035fd90
+name = "lua_BrSetFollowSlot"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeBrSetFollowSlot"
+status = "legacy"
+
+[[function]]
+address = 0x0035ff18
+name = "lua_GoalMoveToFlag"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeGoalMoveToFlag"
+status = "legacy"
+
+[[function]]
+address = 0x003603a8
+name = "lua_GoalAddressPerson"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeGoalAddressPerson"
+status = "legacy"
+
+[[function]]
+address = 0x00360690
+name = "lua_GoalTrackHuman"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeGoalTrackHuman"
+status = "legacy"
+
+[[function]]
+address = 0x00360ac8
+name = "lua_GoalLeadChase"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalLeadChase"
+status = "legacy"
+
+[[function]]
+address = 0x00360c10
+name = "lua_GoalRunCarrotRun"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalRunCarrotRun"
+status = "legacy"
+
+[[function]]
+address = 0x00360d98
+name = "lua_GoalDevilRun"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalDevilRun"
+status = "legacy"
+
+[[function]]
+address = 0x00360f28
+name = "lua_GoalGuardFlag"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalGuardFlag"
+status = "legacy"
+
+[[function]]
+address = 0x003610a8
+name = "lua_GoalFight"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeGoalFight"
+status = "legacy"
+
+[[function]]
+address = 0x00361418
+name = "lua_GoalJoinFixedScene"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeGoalJoin"
+status = "legacy"
+
+[[function]]
+address = 0x003614f8
+name = "lua_GoalJoinCinematic"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeGoalJoin"
+status = "legacy"
+
+[[function]]
+address = 0x003615d8
+name = "lua_GoalJoinAnimation"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeGoalJoin"
+status = "legacy"
+
+[[function]]
+address = 0x00363018
+name = "lua_GoalDealer"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeGoalDealer"
+status = "legacy"
+
+[[function]]
+address = 0x00363530
+name = "lua_GoalPlayDynAnimation"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeGoalPlayDynAnimation"
+status = "legacy"
+
+[[function]]
+address = 0x00363b38
+name = "lua_GoalBigLedgeThrower"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeGoalBigLedgeThrower"
+status = "legacy"
+
+[[function]]
+address = 0x003647d8
+name = "lua_ActLookAt"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeActLookAt"
+status = "legacy"
+
+[[function]]
+address = 0x003648a0
+name = "lua_ActGiveWay"
+page = "scripting.md#bindings"
+level = "inferred"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00364ba8
+name = "lua_HuShutUp"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeHuShutUp"
+status = "legacy"
+
+[[function]]
+address = 0x00364e48
+name = "lua_HuSpeak"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
+status = "legacy"
+
+[[function]]
+address = 0x00364f50
+name = "lua_HuSpeakNI"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
+status = "legacy"
+
+[[function]]
+address = 0x003656a0
+name = "lua_CameraMakeActive"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCameraMakeActive"
+status = "legacy"
+
+[[function]]
+address = 0x00365818
+name = "lua_CamDelete"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeCamDelete"
+status = "legacy"
+
+[[function]]
+address = 0x00365a48
+name = "lua_CamSetupFollow"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamSetupFollow"
+status = "legacy"
+
+[[function]]
+address = 0x00365ad8
+name = "lua_CamTarget"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamTarget"
+status = "legacy"
+
+[[function]]
+address = 0x00365b80
+name = "lua_CamSetFollowHeading"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeCamSetFollowHeading"
+status = "legacy"
+
+[[function]]
+address = 0x00365bb8
+name = "lua_CamSetFollowAngle"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamSetFollowAngle"
+status = "legacy"
+
+[[function]]
+address = 0x00365bf0
+name = "lua_CamSetFollowZoom"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamSetFollowZoom"
+status = "legacy"
+
+[[function]]
+address = 0x00365f28
+name = "lua_CameraCreateThird"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCameraCreateThird"
+status = "legacy"
+
+[[function]]
+address = 0x00366140
+name = "lua_CameraCreateFixed"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCameraCreateFixed"
+status = "legacy"
+
+[[function]]
+address = 0x00366518
+name = "lua_CamSetupRail"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamSetupRail"
+status = "legacy"
+
+[[function]]
+address = 0x003666e8
+name = "lua_CamLeadRail"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamLeadRail"
+status = "legacy"
+
+[[function]]
+address = 0x003667a0
+name = "lua_CamAddRailPoint"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamAddRailPoint"
+status = "legacy"
+
+[[function]]
+address = 0x003668e8
+name = "lua_CamModifyRail"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamModifyRail"
+status = "legacy"
+
+[[function]]
+address = 0x00366dd0
+name = "lua_CamReversePoizo"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeCamReversePoizo"
+status = "legacy"
+
+[[function]]
+address = 0x00367030
+name = "lua_CamLockLocked"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamLockLocked"
+status = "legacy"
+
+[[function]]
+address = 0x003670c0
+name = "lua_CamSetSecondary"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamSetSecondary"
+status = "legacy"
+
+[[function]]
+address = 0x00367160
+name = "lua_CamCanSee"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeCamCanSee"
+status = "legacy"
+
+[[function]]
+address = 0x003671e0
+name = "lua_CamEnable"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamEnable"
+status = "legacy"
+
+[[function]]
+address = 0x00367270
+name = "lua_CamSetSplitMode"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamSetSplitMode"
+status = "legacy"
+
+[[function]]
+address = 0x003672a8
+name = "lua_CamAssignRevCamButton"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamAssignRevCamButton"
+status = "legacy"
+
+[[function]]
+address = 0x00367448
+name = "lua_ScenePreload"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePreload"
+status = "legacy"
+
+[[function]]
+address = 0x003674d0
+name = "lua_SceneIsPreloaded"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneIsPreloaded"
+status = "legacy"
+
+[[function]]
+address = 0x00367518
+name = "lua_SceneUnload"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneUnload"
+status = "legacy"
+
+[[function]]
+address = 0x00367550
+name = "lua_SceneSetCallback"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneSetCallback"
+status = "legacy"
+
+[[function]]
+address = 0x00367708
+name = "lua_ScenePlayFixedScene"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayFixedScene"
+status = "legacy"
+
+[[function]]
+address = 0x00367810
+name = "lua_ScenePlay_1"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlay"
+status = "legacy"
+
+[[function]]
+address = 0x00367a20
+name = "lua_ScenePlay"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlay"
+status = "legacy"
+
+[[function]]
+address = 0x00367cd8
+name = "lua_ScenePlayAnimation"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayAnimation"
+status = "legacy"
+
+[[function]]
+address = 0x00367e80
+name = "lua_SceneDone"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneDone"
+status = "legacy"
+
+[[function]]
+address = 0x00367ed0
+name = "lua_SceneLength"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneLength"
+status = "legacy"
+
+[[function]]
+address = 0x00367f48
+name = "lua_SceneAddObject"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneAddObject"
+status = "legacy"
+
+[[function]]
+address = 0x00368240
+name = "lua_SceneTerminate"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneTerminate"
+status = "legacy"
+
+[[function]]
+address = 0x0036a1a0
+name = "lua_CfgObj"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/spawn_bindings.cpp:makeCfgObj"
+status = "legacy"
+
+[[function]]
+address = 0x0036ab88
+name = "lua_CfgFollowCamera"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCfgFollowCamera"
+status = "legacy"
+
+[[function]]
+address = 0x0036b4f0
+name = "lua_CfgRumbleGame"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_bindings.cpp:makeCfgRumbleGame"
+status = "legacy"
+
+[[function]]
+address = 0x0036b670
+name = "lua_CfgRumbleArena"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_bindings.cpp:makeCfgRumbleArena"
+status = "legacy"
+
+[[function]]
+address = 0x0036b790
+name = "lua_CfgRumbleGang"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_bindings.cpp:makeCfgRumbleGang"
+status = "legacy"
+
+[[function]]
+address = 0x0036b8a8
+name = "lua_CfgRumbleChar"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_bindings.cpp:makeCfgRumbleChar"
+status = "legacy"
+
+[[function]]
+address = 0x0036b9f0
+name = "lua_GetRumbleModeData"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetRumbleModeData"
+status = "legacy"
+
+[[function]]
+address = 0x0036bac0
+name = "lua_GetRumbleModeGangName"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetRumbleModeGangName"
+status = "legacy"
+
+[[function]]
+address = 0x0036bb10
+name = "lua_CfgSetDatabaseSizes"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
+status = "legacy"
+
+[[function]]
+address = 0x0036ca18
+name = "lua_GetPosition"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetPosition"
+status = "legacy"
+
+[[function]]
+address = 0x0036cb70
+name = "lua_IsAHuman"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036cdc0
+name = "lua_TeleportToFlag"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeTeleportToFlag"
+status = "legacy"
+
+[[function]]
+address = 0x0036d008
+name = "lua_TriggerSphereEnable"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeTriggerSphereEnable"
+status = "legacy"
+
+[[function]]
+address = 0x0036d068
+name = "lua_TriggerSphereSetRadius"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeTriggerSphereSetRadius"
+status = "legacy"
+
+[[function]]
+address = 0x0036d0e0
+name = "lua_TriggerSphereCfg"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
+status = "legacy"
+
+[[function]]
+address = 0x0036d938
+name = "lua_ToInt"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeToInt"
+status = "legacy"
+
+[[function]]
+address = 0x0036de50
+name = "lua_CarSpawnRadio"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/car_bindings.cpp:makeCarSpawnRadio"
+status = "legacy"
+
+[[function]]
+address = 0x0036df98
+name = "lua_SetStartGameCallback"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeSetStartGameCallback"
+status = "legacy"
+
+[[function]]
+address = 0x0036e050
+name = "lua_GetGameTime"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetGameTime"
+status = "legacy"
+
+[[function]]
+address = 0x0036e858
+name = "lua_HUDSetAnnounceMsg"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036e998
+name = "lua_HUDGetNewPH"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036ea40
+name = "lua_HUDReleasePH"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036ea78
+name = "lua_HUDSetPHValue"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036ebe0
+name = "lua_ForceShowPlayerHud"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036ee48
+name = "lua_CfgCredits"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addCreditBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036eec8
+name = "lua_HUDEnableGameTutorialText"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f0d0
+name = "lua_HUDShowMissionSummaryText"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f130
+name = "lua_HUDLaunchMissionFailed"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeHudLaunchMissionFailed"
+status = "legacy"
+
+[[function]]
+address = 0x0036f218
+name = "lua_HUDLaunchMissionComplete"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeHudLaunchMissionComplete"
+status = "legacy"
+
+[[function]]
+address = 0x0036f250
+name = "lua_HUDEnableFixedCamIcon"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f280
+name = "lua_HUDSetObjective"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f360
+name = "lua_HUDRemoveAllGoalText"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f380
+name = "lua_HUDSetTutorialText"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f3e8
+name = "lua_HUDCheckTutorialText"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036f430
+name = "lua_HUDFlushTutorialText"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036fa28
+name = "lua_HUDEnableTextProgress"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addScoreBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036fb38
+name = "lua_HUDSetTextProgress"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addScoreBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036fdd0
+name = "lua_HUDEnableInstArrow"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0036fe90
+name = "lua_HUDSetInstArrowAnimSpeed"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370098
+name = "lua_HUDSetTutorialCallback"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003700c8
+name = "lua_HUDTurnOnRadar"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370100
+name = "lua_HUDTurnOffRadar"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370138
+name = "lua_HUDSetNumIndicator"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370690
+name = "lua_HUDSetRadarObjectFlash"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370728
+name = "lua_HUDSetRadarZoomScale"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370760
+name = "lua_HUDAddRadarMissionObjective"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370798
+name = "lua_HUDAddSecondaryRadarMissionObjective"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003708c8
+name = "lua_HUDSetRadarItemTexture"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370980
+name = "lua_HUDDeleteRadarMissionObjective"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003709b8
+name = "lua_HUDRadarSetRange"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370a30
+name = "lua_HUDDeleteRadarObject"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370a68
+name = "lua_HUDAddRadarHuman"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370c68
+name = "lua_ShowHud"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370ca0
+name = "lua_HideHud"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370cc0
+name = "lua_RestoreHud"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370ce0
+name = "lua_HidePlayerHud"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370d00
+name = "lua_ShowPlayerHud"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00370d20
+name = "lua_FlashRageBar"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00371230
+name = "lua_SoundPlayMusicTrack"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makePlayMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00371348
+name = "lua_SoundLoopMusicTrack"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makePlayMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x003713f8
+name = "lua_SoundStopMusicTrack"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeStopMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00371b18
+name = "lua_AddAmbientSoundEmitter"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeAddAmbientSoundEmitter"
+status = "legacy"
+
+[[function]]
+address = 0x00371db0
+name = "lua_AddAmbientSoundEmitter2"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeAddAmbientSoundEmitter2"
+status = "legacy"
+
+[[function]]
+address = 0x00372058
+name = "lua_SetAmbientEmitterPositions"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeSetAmbientEmitterPositions"
+status = "legacy"
+
+[[function]]
+address = 0x003725f0
+name = "lua_SetAmbientEmitterVolumeMod"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeSetAmbientEmitterVolumeMod"
+status = "legacy"
+
+[[function]]
+address = 0x00372fe0
+name = "lua_SoundPlayCommand"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeSoundPlayCommand"
+status = "legacy"
+
+[[function]]
+address = 0x00373148
+name = "lua_GangCreate"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGangCreate"
+status = "legacy"
+
+[[function]]
+address = 0x00373238
+name = "lua_GangSuspend"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangSuspend"
+status = "legacy"
+
+[[function]]
+address = 0x003732a0
+name = "lua_GangInvincible"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGangInvincible"
+status = "legacy"
+
+[[function]]
+address = 0x00373370
+name = "lua_GangSetMsgHandler"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangSetMsgHandler"
+status = "legacy"
+
+[[function]]
+address = 0x00373528
+name = "lua_GangAddMember"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangAddMember"
+status = "legacy"
+
+[[function]]
+address = 0x003735d0
+name = "lua_GangGetHeadCount"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangGetHeadCount"
+status = "legacy"
+
+[[function]]
+address = 0x00373648
+name = "lua_GangGetStandingCount"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangGetStandingCount"
+status = "legacy"
+
+[[function]]
+address = 0x00373a20
+name = "lua_GangBrDead"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangBrDead"
+status = "legacy"
+
+[[function]]
+address = 0x00373b78
+name = "lua_GangMakeEnemies"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangMakeEnemies"
+status = "legacy"
+
+[[function]]
+address = 0x00373bf0
+name = "lua_GangMakeFriends"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/gang_bindings.cpp:makeGangMakeFriends"
+status = "legacy"
+
+[[function]]
+address = 0x00373dd0
+name = "lua_GangAddSpawner"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeGangAddSpawner"
+status = "legacy"
+
+[[function]]
+address = 0x00374a80
+name = "lua_TacticClear"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeTacticClear"
+status = "legacy"
+
+[[function]]
+address = 0x00375370
+name = "lua_TacticAttack"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/rumble_match_bindings.cpp:makeTacticAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00375648
+name = "lua_TacticCrowd"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeTacticCrowd"
+status = "legacy"
+
+[[function]]
+address = 0x00377a10
+name = "lua_TacticTrigger"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/ai_bindings.cpp:makeTacticTrigger"
+status = "legacy"
+
+[[function]]
+address = 0x00377cc8
+name = "lua_ObjSpawn"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/spawn_bindings.cpp:makeObjSpawn"
+status = "legacy"
+
+[[function]]
+address = 0x00378088
+name = "lua_ObjColor"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00378320
+name = "lua_CarSpawn"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/car_bindings.cpp:makeCarSpawn"
+status = "legacy"
+
+[[function]]
+address = 0x003785c8
+name = "lua_CarSetColor"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/car_bindings.cpp:makeCarSetColor"
+status = "legacy"
+
+[[function]]
+address = 0x00378808
+name = "lua_CarMakeGoodAsNew"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/car_bindings.cpp:makeCarMakeGoodAsNew"
+status = "legacy"
+
+[[function]]
+address = 0x003788b8
+name = "lua_CarPlaceInTrunkOnDetach"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/car_bindings.cpp:makeCarPlaceInTrunkOnDetach"
+status = "legacy"
+
+[[function]]
+address = 0x00378958
+name = "lua_SpawnParticle"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/effects_bindings.cpp:makeSpawnParticle"
+status = "legacy"
+
+[[function]]
+address = 0x00379be8
+name = "lua_CamGhostDoor"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeCamGhostDoor"
+status = "legacy"
+
+[[function]]
+address = 0x00379ea0
+name = "lua_SetupRadio"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSetupRadio"
+status = "legacy"
+
+[[function]]
+address = 0x0037a770
+name = "lua_FindFlag"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeFindFlag"
+status = "legacy"
+
+[[function]]
+address = 0x0037a8d0
+name = "lua_FlagNetTraverse_1"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeFlagNetTraverse"
+status = "legacy"
+
+[[function]]
+address = 0x0037a968
+name = "lua_FlagNetTraverse"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeFlagNetTraverse"
+status = "legacy"
+
+[[function]]
+address = 0x0037b6c8
+name = "lua_SSMC_StartLoadSequence"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeStartLoadSequence"
+status = "legacy"
+
+[[function]]
+address = 0x0037b6e8
+name = "lua_SSMC_StartDeleteSequence"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeStartDeleteSequence"
+status = "legacy"
+
+[[function]]
+address = 0x0037b7d8
+name = "lua_SetLUASaveDataFloat"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeSetLuaSaveDataFloat"
+status = "legacy"
+
+[[function]]
+address = 0x0037b850
+name = "lua_GetLUASaveDataFloat"
+page = "scripting.md#errors-in-a-fresh-state"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetLuaSaveDataFloat"
+status = "legacy"
+
+[[function]]
+address = 0x0037ba48
+name = "lua_SetPositionOfWater"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/effects_bindings.cpp:makeSetPositionOfWater"
+status = "legacy"
+
+[[function]]
+address = 0x0037be18
+name = "lua_QueueMotionBlurEffect_1"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/effects_bindings.cpp:makeQueueMotionBlurEffect"
+status = "legacy"
+
+[[function]]
+address = 0x0037be90
+name = "lua_QueueMotionBlurEffect"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/effects_bindings.cpp:makeQueueMotionBlurEffect"
+status = "legacy"
+
+[[function]]
+address = 0x0037d420
+name = "RegisterScriptBindings"
+page = "scripting.md#original-structure"
+role = "the tolua registration of every game binding"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.h:installBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00384c38
+name = "ScriptHandler_Deliver"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::deliver"
+status = "legacy"
+
+[[function]]
+address = 0x00384ce0
+name = "ScriptHandler_MarshalMessage"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::deliver"
+status = "legacy"
+
+[[function]]
+address = 0x003858b8
+name = "ScriptHandlers_ClearAll"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hub_bindings.cpp:makeGangClearHandlers"
+status = "legacy"
+
+[[function]]
+address = 0x00385950
+name = "Object_GetTypeBits"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/mission4_bindings.cpp:getRtti"
+status = "legacy"
+
+[[function]]
+address = 0x003859f0
+name = "Obj_GetTypeName"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/hub_bindings.cpp:makeGetObjectName"
+status = "legacy"
+
+[[function]]
+address = 0x00385a50
+name = "Obj_GetPosition"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetPosition"
+status = "legacy"
+
+[[function]]
+address = 0x00385b90
+name = "IsHumanHandle"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00385bb8
+name = "Object_Teleport"
+page = "scripting.md#level80-hints"
+level = "confirmed-runtime"
+coney = "src/scripting/arena_bindings.cpp:makeTeleport"
+status = "legacy"
+
+[[function]]
+address = 0x00385ea8
+name = "Obj_TestDistance"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeTestDistance"
+status = "legacy"
+
+[[function]]
+address = 0x00385f60
+name = "WalkingDistance"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeWalkingDistance"
+status = "legacy"
+
+[[function]]
+address = 0x00386010
+name = "Obj_PathExists"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makePathValid"
+status = "legacy"
+
+[[function]]
+address = 0x003860b8
+name = "Object_SetLuaMsgHandler"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::set"
+status = "legacy"
+
+[[function]]
+address = 0x00386168
+name = "Script_SetMsgHandlerEx"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/trigger_bindings.cpp:makeSetMsgHandlerEx"
+status = "legacy"
+
+[[function]]
+address = 0x00386298
+name = "Script_SetMsgHandler"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/trigger_bindings.cpp:makeSetMsgHandler"
+status = "legacy"
+
+[[function]]
+address = 0x00386340
+name = "Script_SetGeneralCarMsgHandler"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x00386370
+name = "Script_CollectGarbage"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGc"
+status = "legacy"
+
+[[function]]
+address = 0x003863d8
+name = "Script_ScheduleFunc"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeScheduleFunc"
+status = "legacy"
+
+[[function]]
+address = 0x00386410
+name = "Script_ScheduleFuncArg1"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeScheduleFuncArg1"
+status = "legacy"
+
+[[function]]
+address = 0x00386450
+name = "Script_FlushScheduledFuncs"
+page = "scripting.md#bindings"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeFlushScheduledFuncs"
+status = "legacy"
+
+[[function]]
+address = 0x00386488
+name = "Script_RandomRange"
+page = "scripting.md#libraries"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeRandom"
+status = "legacy"
+
+[[function]]
+address = 0x0038bea0
+name = "Car_OnHit"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carHumanHitParts"
+status = "legacy"
+
+[[function]]
+address = 0x00391c98
+name = "WorldObject_RegisterContext"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::setPrompt"
+status = "legacy"
+
+[[function]]
+address = 0x00393538
+name = "ThrownObject_OnContact"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::thrownHit"
+status = "legacy"
+
+[[function]]
+address = 0x003b3220
+name = "DoorFence_Update"
+page = "scripting.md#level99-checkpoints"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::tick"
+status = "legacy"
+
+[[function]]
+address = 0x00412a18
+name = "VolumeBox_ContainsPoint"
+page = "scripting.md#triggers"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::inside"
+status = "legacy"
+
+[[function]]
+address = 0x00412bf8
+name = "VolumeBox_Enable"
+page = "scripting.md#triggers"
+role = "`EnableVolumeBox` (the box's slot `+0x5c`) / `RotateVolumeBox` (the matrix `+0x48`-`+0x54`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeEnableVolumeBox"
+status = "legacy"
+
+[[function]]
+address = 0x00412c40
+name = "VolumeBox_SetRotation"
+page = "scripting.md#triggers"
+role = "`EnableVolumeBox` (the box's slot `+0x5c`) / `RotateVolumeBox` (the matrix `+0x48`-`+0x54`)"
+level = "confirmed-code"
+coney = "src/scripting/trigger_bindings.cpp:makeRotateVolumeBox"
+status = "legacy"
+
+[[function]]
+address = 0x00413018
+name = "VolumeBoxes_SendDamageMessage"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/object_services.h:ObjectServices::damageDone"
+status = "legacy"
+
+[[function]]
+address = 0x00413198
+name = "VolumeBox_ContainsObject"
+page = "scripting.md#triggers"
+role = "`IsInVolumeBox`: both handles resolve and the object is inside"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeIsInsideBox"
+status = "legacy"
+
+[[function]]
+address = 0x004134f8
+name = "PlayerBox_Update"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+status = "legacy"
+
+[[function]]
+address = 0x004142d0
+name = "TriggerSphere_Alloc"
+page = "scripting.md#triggers"
+role = "clear the 100 slots; take the first free; free one (the sphere being updated, `0x00514824`, is only marked at `0x00514828`)"
+level = "confirmed-code"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::setRadius"
+status = "legacy"
+
+[[function]]
+address = 0x00414398
+name = "TriggerSpheres_UpdateAll"
+page = "scripting.md#triggers"
+level = "inferred"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
+status = "legacy"
+
+[[function]]
+address = 0x00414480
+name = "TriggerSphere_Init"
+page = "scripting.md#triggers"
+level = "inferred"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
+status = "legacy"
+
+[[function]]
+address = 0x004144d0
+name = "TriggerSphere_Disarm"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
+status = "legacy"
+
+[[function]]
+address = 0x004146e0
+name = "TriggerSphere_Update"
+page = "scripting.md#triggers"
+level = "inferred"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
+status = "legacy"
+
+[[function]]
+address = 0x00414a28
+name = "TriggerSphere_SetRadius"
+page = "scripting.md#triggers"
+role = "`TriggerSphereSetRadius`: makes the sphere when the object has none, then `+0x174`"
+level = "confirmed-code"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::setRadius"
+status = "legacy"
+
+[[function]]
+address = 0x00414ae0
+name = "TriggerSphere_Enable"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
+status = "legacy"
+
+[[function]]
+address = 0x00414bc0
+name = "TriggerSphere_Configure"
+page = "scripting.md#triggers"
+level = "inferred"
+coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
+status = "legacy"
+
+[[function]]
+address = 0x004152e0
+name = "VolumeBox_SetEnabled"
+page = "scripting.md#triggers"
+level = "speculative"
+note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+coney = "src/scripting/story_bindings.cpp:makeEnableVolumeBox"
+status = "legacy"
+
+[[function]]
+address = 0x0041abe8
+name = "Script_GetCheckPoint"
+page = "scripting.md#warriors-functions"
+role = "the workers of `SetCheckPoint` (`GameState_SetCheckPoint`) and `GetCheckPoint` (`+0x33a`)"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetCheckPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0041acd8
+name = "GameState_SetLuaSaveFloat"
+page = "scripting.md#errors-in-a-fresh-state"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeSetLuaSaveDataFloat"
+status = "legacy"
+
+[[function]]
+address = 0x0041ad00
+name = "GameState_GetLuaSaveFloat"
+page = "scripting.md#errors-in-a-fresh-state"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetLuaSaveDataFloat"
+status = "legacy"
+
+[[function]]
+address = 0x0041ad28
+name = "Script_SetLUASaveDataBool"
+page = "scripting.md#warriors-functions"
+role = "the workers of `SetLUASaveDataBool` and `GetLUASaveDataBool`: bit n − 1 of the same set"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ad60
+name = "Script_GetLUASaveDataBool"
+page = "scripting.md#warriors-functions"
+role = "the workers of `SetLUASaveDataBool` and `GetLUASaveDataBool`: bit n − 1 of the same set"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041c4e0
+name = "WarriorCommand_Dispatch"
+page = "scripting.md#level80-fight-start"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:dispatchWarriorCommand"
+status = "legacy"
+
+[[function]]
+address = 0x0041ce98
+name = "GameState_SetCheckPoint"
+page = "scripting.md#level99"
+level = "inferred"
+coney = "src/scripting/script_bindings.cpp:makeSetCheckPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0041d830
+name = "GameState_SetDetailFlag"
+page = "scripting.md#warriors-functions"
+role = "`setDetailFlag(n, bits)` / `clearDetailFlag(n, bits)` on the flag bytes `+0x3e8 + n`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041d860
+name = "GameState_ClearDetailFlag"
+page = "scripting.md#warriors-functions"
+role = "`setDetailFlag(n, bits)` / `clearDetailFlag(n, bits)` on the flag bytes `+0x3e8 + n`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x004233a8
+name = "StopWatch_Start"
+page = "scripting.md#stopwatch"
+level = "confirmed-code"
+coney = "src/warriors/stop_watch.h:StopWatch::start"
+status = "legacy"
+
+[[function]]
+address = 0x004233f8
+name = "StopWatch_Update"
+page = "scripting.md#stopwatch"
+level = "confirmed-code"
+coney = "src/warriors/stop_watch.h:StopWatch::step"
+status = "legacy"
+
+[[function]]
+address = 0x004235e0
+name = "StopWatch_SetDisplay"
+page = "scripting.md#warriors-functions"
+role = "sets shown (`+0x18`) and the label (`+0x1c`)"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::showStopWatch"
+status = "legacy"
+
+[[function]]
+address = 0x004235f0
+name = "StopWatch_Set"
+page = "scripting.md#stopwatch"
+level = "confirmed-code"
+coney = "src/warriors/stop_watch.h:StopWatch::set"
+status = "legacy"
+
+[[function]]
+address = 0x00423638
+name = "StopWatch_GetTime"
+page = "scripting.md#warriors-functions"
+role = "the stopwatch's current time (`+0x08`, ms)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00423670
+name = "StopWatch_Show"
+page = "scripting.md#warriors-functions"
+role = "`W_ShowStopWatch(show, label, warn)`: shown sets the warning window `+0x40` to warn and the next beep `+0x48` to warn + 1000; hidden resets them to 0 and 1000; then `StopWatch_SetDisplay`"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addScoreBindings"
+status = "legacy"

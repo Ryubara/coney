@@ -334,9 +334,13 @@ def measure(totals: Totals, functions: list[ListedFunction], citations: dict[int
     return Understanding(statuses)
 
 
-def load(root: Path, totals: Totals) -> Understanding | None:
-    """The measure for the checkout at `root`, or None when it has no listing yet."""
-    functions = load_listing(root / LISTING_FILE)
+def load(root: Path, totals: Totals, listing: list[ListedFunction] | None = None) -> Understanding | None:
+    """The measure for the checkout at `root`, or None when it has no listing yet.
+
+    `listing` is the checkout's listing when the caller has read it already (the listing is read from its file when
+    none is given).
+    """
+    functions = listing if listing is not None else load_listing(root / LISTING_FILE)
     if functions is None:
         return None
     return measure(totals, functions, scan_citations(root))

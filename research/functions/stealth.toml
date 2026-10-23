@@ -1,0 +1,64 @@
+# The researched functions of the stealth system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0022ff88
+name = "Human_EnterShadow"
+page = "stealth.md#original-structure"
+role = "state `0x200000`, out of the fight stance, move style `0x14`"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::enterHiding"
+status = "legacy"
+
+[[function]]
+address = 0x00230140
+name = "Human_ClearHiddenState"
+page = "stealth.md#original-structure"
+role = "clears state `0x200000` and the move style"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::clearHiding"
+status = "legacy"
+
+[[function]]
+address = 0x002936a8
+name = "AI_ReportNoise"
+page = "stealth.md#original-structure"
+role = "a noise: event `0x17` to the humans who hear it"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::reportNoise"
+status = "legacy"
+
+[[function]]
+address = 0x0031a430
+name = "ScoutTactic_Construct"
+page = "stealth.md#original-structure"
+role = "`TacticScout`'s fields"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutTactic"
+status = "legacy"
+
+[[function]]
+address = 0x0031a818
+name = "ScoutTactic_OnEvent"
+page = "stealth.md#original-structure"
+role = "a member hit or seeing an enemy: fight, call the gang"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutTactic::event"
+status = "legacy"
+
+[[function]]
+address = 0x0031af98
+name = "ScoutTactic_Start"
+page = "stealth.md#scouts"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutTactic::start"
+status = "legacy"
+
+[[function]]
+address = 0x0031b030
+name = "ScoutTactic_Process"
+page = "stealth.md#original-structure"
+role = "every 200 ms: fighters, the gang's alert state"
+level = "confirmed-code"
+coney = "src/ai/tactic_scout.h:ScoutTactic::update"
+status = "legacy"

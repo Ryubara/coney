@@ -1,0 +1,101 @@
+# The researched functions of the chunk-system system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00143fd8
+name = "Crc32_Lowercase"
+page = "chunk-system.md#original-structure"
+role = "lowercases a string in place"
+level = "confirmed-code"
+coney = "src/core/name_hash.h:lowercaseAscii"
+status = "legacy"
+
+[[function]]
+address = 0x001440a0
+name = "ChunkSystem_PopObject"
+page = "chunk-system.md#original-structure"
+role = "pop from the object stack"
+level = "confirmed-code"
+coney = "src/core/chunk_stacks.h:ChunkStacks::popAnyObject"
+status = "legacy"
+
+[[function]]
+address = 0x001440c8
+name = "ChunkSystem_PushObject"
+page = "chunk-system.md#original-structure"
+role = "push onto the object stack"
+level = "confirmed-code"
+coney = "src/core/chunk_stacks.h:ChunkStacks::pushObject"
+status = "legacy"
+
+[[function]]
+address = 0x001440f0
+name = "ChunkSystem_PeekChunkType"
+page = "chunk-system.md#original-structure"
+role = "type of the top chunk, `0x54` when empty"
+level = "confirmed-code"
+coney = "src/core/chunk_stacks.h:ChunkStacks::peekChunkType"
+status = "legacy"
+
+[[function]]
+address = 0x00144120
+name = "ChunkSystem_PopChunk"
+page = "chunk-system.md#original-structure"
+role = "pop a chunk's data (the type argument is not checked)"
+level = "confirmed-code"
+coney = "src/core/chunk_stacks.h:ChunkStacks::popChunk"
+status = "legacy"
+
+[[function]]
+address = 0x00144148
+name = "ChunkSystem_PushChunk"
+page = "chunk-system.md#original-structure"
+role = "push a chunk"
+level = "confirmed-code"
+coney = "src/core/chunk_stacks.h:ChunkStacks::pushChunk"
+status = "legacy"
+
+[[function]]
+address = 0x00144180
+name = "ChunkSystem_LoadContainer"
+page = "chunk-system.md#original-structure"
+role = "read a flat container"
+level = "confirmed-code"
+coney = "src/core/chunk_system.h:loadContainer"
+status = "legacy"
+
+[[function]]
+address = 0x00144348
+name = "ChunkSystem_SetHandlers"
+page = "chunk-system.md#original-structure"
+role = "replace a table record's handlers"
+level = "confirmed-code"
+coney = "src/core/chunk_system.h:ChunkHandlerTable::setHandlers"
+status = "legacy"
+
+[[function]]
+address = 0x00144370
+name = "ChunkSystem_RetagAsNullPointer"
+page = "chunk-system.md#original-structure"
+role = "handler: pop the top chunk and push it back as type `0x14`"
+level = "confirmed-code"
+coney = "src/core/chunk_system.h:retagAsNullPointer"
+status = "legacy"
+
+[[function]]
+address = 0x00144398
+name = "ChunkSystem_LoadGroupedContainer"
+page = "chunk-system.md#original-structure"
+role = "read a container of resource groups"
+level = "confirmed-code"
+coney = "src/core/chunk_system.h:loadGroupedContainer"
+status = "legacy"
+
+[[function]]
+address = 0x00154440
+name = "Stream_SkipBytes"
+page = "chunk-system.md#original-structure"
+role = "read and discard `n` bytes, 256 at a time"
+level = "confirmed-code"
+coney = "src/fileio/stream.h:Stream::skip"
+status = "legacy"

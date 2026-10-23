@@ -38,7 +38,7 @@ issue = 123                     # the issue that does
 | `level` | yes | How we know what the function does: the [evidence levels](research-evidence.md#evidence-levels), spelled as the YAML values, and `not-needed` for a function nobody needs (dead code, a debug stub) |
 | `role` | no; with `not-needed`, the reason | What the function does, in one line of our own words; Markdown, with links relative to `docs/research` |
 | `kind` | no | A short tag for the sort of function |
-| `note` | no | The part of the claim the level does not cover (`confirmed (code); the rock inferred` becomes level `confirmed-code` with that text as the note) |
+| `note` | no | The part of the claim the level does not cover (`confirmed (code); the rock inferred` becomes level `confirmed-code` with that text as the note); Markdown, links relative to `docs/research` like the role's |
 | `coney` | no | The source file of the port and, after a colon, its function or class |
 | `status` | no | How far the port has been checked against the original: `legacy` (ported before the side-by-side comparison) or `compared`. Only a function with `coney` has one |
 | `gaps` | no | Each piece the port leaves out or does differently: `what`, a `relation` (`stand-in`: on purpose, the reason on the open question; `not-ported`: waits for the issue) and an `issue` number, a `question` (`page.md#q-...`), or both |
@@ -60,7 +60,8 @@ whether to open that section. Pseudocode, decompiler output and game data never 
   a byte offset), as on a research page: cite an unnamed function by its address;
 - an address in two systems;
 - an address that is not a function entry in the committed Ghidra listing (`docs/progress/ghidra-functions.tsv`), or a
-  name that is not the one Ghidra has;
+  name that is not the one Ghidra has; for a ported entry (`coney`) an address the listing lacks is a warning
+  ([below](#ported));
 - a `page` that is not a file, or a section that is not an anchor of it, and a gap's question that does not resolve;
 - a `coney` file that is not in the checkout;
 - an entry whose page does not own its address, once that page has front matter (with or without `owns`), or whose
@@ -116,10 +117,37 @@ the port only when some entry has one, and a table of the gaps. The pages are ne
 error), like the progress tables. `coney-tools research render <folder>` writes them to a folder to look at without a
 docs build. Each row has an anchor, `functions.md#0x0026c548`, for a page that wants to link one function.
 
+## Recording a port {#ported}
+
+The entry is also where Coney says it ports the function. Whoever tags a function `@orig 0x... Name` adds, in the same
+commit, to the entry of that function (or a new entry, when the function has none: a page and a level are needed
+first, which is the [research](research-workflow.md#understood) the port was made from):
+
+- `coney`, the file that carries the tag and, after a colon, the function or class: `src/core/combat/grab.cpp:Grab::start`.
+  A function tagged in several files names one of them;
+- `status`, `compared` once the port has been checked side by side with the original (`orig review`), else `legacy`;
+- a `[[function.gaps]]` for each piece the port leaves out or does differently.
+
+`coney-tools progress check` holds the two together (CI runs it): every `@orig` tag must have an entry with `coney`,
+and every entry with `coney` a tag, in the file `coney` names. The tracker counts the entries with `coney` as the
+functions Coney reimplements ([the progress commands](coney-tools-references.md#progress)); an entry without it is a
+researched function. Nothing else is written for the tracker: the entry's subsystem is the one whose range in
+`docs/progress/totals.toml` holds the address, and its size is the function's size in the Ghidra listing, so the
+reimplemented bytes are measured in the same unit as the Understood measure. A function the listing has no function at
+yet (the port is tagged at an address the shared Ghidra project does not define) counts with no size and is a warning
+of `research render --check`, not an error: define the function in Ghidra and refresh the listing.
+
+The name is Ghidra's. An `@orig` tag written with another spelling is reported as a warning by `progress check`, which
+prints the first few and the count; write new tags with the name the entry has.
+
+The reimplemented list used to be `docs/progress/functions.toml` (address, name, subsystem, size). The move into this
+database is `coney-tools progress import-functions`, kept for a branch that still adds rows to the old file
+([the progress commands](coney-tools-references.md#progress)). It gave the entries that had no page-table row the
+page that cites the function, which is a starting point: when you study such a function, check its page and level and
+write its role.
+
 ## Other readers of the file {#other-readers}
 
 The Understood measure counts an entry with a `role` as a citation with evidence ([the Understood
-measure](research-workflow.md#understood)); without one the entry says nothing of what the function does. The fields
-`coney`, `status` and `gaps` are in the schema now; the list of reimplemented functions that the progress tracker reads,
-`docs/progress/functions.toml`, is to be merged into this database (issue #778); until then `progress check` still
-reads that file for the `@orig` tags.
+measure](research-workflow.md#understood)); without one the entry says nothing of what the function does. The progress
+tracker reads the `coney` field ([above](#ported)). `research where` prints an entry's page, level and port.

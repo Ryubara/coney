@@ -142,7 +142,7 @@ as a courtesy.
 | The source files data is well formed and agrees with `totals.toml`, and the source map has its marker | [The source files](research-source-files.md) | `research render --check` (CI `python`; the docs build runs the same checks) | enforced |
 | A page's `owns` names source files that have an address range, and a glossary word names an existing page section and functions Ghidra lists | [Finding where a behaviour lives](research-where.md) | `docs check` (rule `owns`), `research render --check` (CI `python`; the docs build runs the same checks) | enforced |
 | A function entry names a function Ghidra lists, by Ghidra's name, and a page section that exists, on the page that owns its address | [The function database](research-function-database.md) | `research render --check` (CI `python`; the docs build runs the same checks) | enforced |
-| Every `@orig` tag has its `[[function]]` in `functions.toml` | [Conventions](conventions.md#the-orig-tag) | `progress check` (CI `python`) | enforced |
+| Every `@orig` tag has its function database entry with `coney`, and every such entry its tag | [Conventions](conventions.md#the-orig-tag) | `progress check` (CI `python`) | enforced |
 | Mission work updates `research/missions.yaml` in the same commit | [AGENTS.md](repo:AGENTS.md) | `missions render --check` checks the file, not that it moved | judgement |
 | CLAUDE.md and GEMINI.md hold only the import line | [AGENTS.md](repo:AGENTS.md) | `repo audit` `files.pointer` | enforced |
 | Workflows declare the narrowest `permissions`; no title or body text expanded into a script | [Repository conventions](repo-conventions.md#workflows) | `actionlint` (untrusted expressions in `run:`) | partly; best point a `repo audit --files` check for `permissions:` |

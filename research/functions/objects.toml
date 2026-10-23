@@ -1,0 +1,577 @@
+# The researched functions of the objects system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0017fa80
+name = "ObjectRender_ApplyFadeDistance"
+page = "objects.md#original-structure"
+role = "the alpha of an object near its `ObjShow` distance"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:showDistanceFade"
+status = "legacy"
+
+[[function]]
+address = 0x0017fd78
+name = "ObjectRender_Draw"
+page = "objects.md#original-structure"
+role = "draws one object instance: lights, size cull, fade"
+level = "confirmed-code"
+coney = "src/platform/placed_objects.h:PlacedObjects::draw"
+status = "legacy"
+
+[[function]]
+address = 0x001811b0
+name = "ObjectList_FindByHash"
+page = "objects.md#original-structure"
+role = "an Object List record by name hash"
+level = "confirmed-code"
+coney = "src/world_objects/object_list.h:ObjectList::findByHash"
+status = "legacy"
+
+[[function]]
+address = 0x002274a8
+name = "Humans_FindAhead"
+page = "objects.md#trains"
+level = "confirmed-code"
+coney = "src/ai/steering.h:humansAround"
+status = "legacy"
+
+[[function]]
+address = 0x00238540
+name = "Human_PlaceItemInHand"
+page = "objects.md#held"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makePlaceItemInHand"
+status = "legacy"
+
+[[function]]
+address = 0x00244770
+name = "Human_MoveThrowAim"
+page = "objects.md#throws"
+level = "confirmed-code"
+coney = "src/combat/throw_aim.h:ThrowAimState::step"
+status = "legacy"
+
+[[function]]
+address = 0x0024eef0
+name = "NavPolygon_ContainsPoint"
+page = "objects.md#nav-links"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::inside"
+status = "legacy"
+
+[[function]]
+address = 0x00250100
+name = "PathPolygon_FindAtPoint"
+page = "objects.md#original-structure"
+role = "the flag-4 hole whose box holds a point"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::holeAt"
+status = "legacy"
+
+[[function]]
+address = 0x002508b8
+name = "NavLink_DoorPolygon"
+page = "objects.md#original-structure"
+role = "the hole at the middle of a door link"
+level = "confirmed-code"
+coney = "src/world_objects/nav_links.h:NavLinks::holeOf"
+status = "legacy"
+
+[[function]]
+address = 0x00250960
+name = "NavLink_FindNearest"
+page = "objects.md#original-structure"
+role = "the nearest link of a kind within 5 m, and its reverse"
+level = "confirmed-code"
+coney = "src/world_objects/nav_links.h:NavLinks::findNearest"
+status = "legacy"
+
+[[function]]
+address = 0x00250c00
+name = "NavLinks_SetKindByNumber"
+page = "objects.md#original-structure"
+role = "retags every navigation link carrying a number"
+level = "confirmed-code"
+coney = "src/world_objects/nav_links.h:NavLinks::setKindByNumber"
+status = "legacy"
+
+[[function]]
+address = 0x00250c50
+name = "NavLinks_OpenByNumber"
+page = "objects.md#original-structure"
+role = "bit 31 of every link with a number, path flag 8 of its door hole"
+level = "confirmed-code"
+coney = "src/world_objects/nav_links.h:NavLinks::openByNumber"
+status = "legacy"
+
+[[function]]
+address = 0x00250d00
+name = "NavLinks_CloseByNumber"
+page = "objects.md#original-structure"
+role = "bit 31 of every link with a number, path flag 8 of its door hole"
+level = "confirmed-code"
+coney = "src/world_objects/nav_links.h:NavLinks::closeByNumber"
+status = "legacy"
+
+[[function]]
+address = 0x00253688
+name = "Human_ApplyMoveStyle"
+page = "objects.md#original-structure"
+role = "a move style's anim slot overrides; style 4 is the two-handed carry"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/attacks.h:animSetClips"
+status = "legacy"
+
+[[function]]
+address = 0x00257f38
+name = "Human_DropHeld"
+page = "objects.md#original-structure"
+role = "a held object let go: dropped / thrown"
+level = "confirmed-code"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::drop"
+status = "legacy"
+
+[[function]]
+address = 0x002586d8
+name = "Human_ReleaseThrow"
+page = "objects.md#original-structure"
+role = "a held object let go: dropped / thrown"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::dropHeld"
+status = "legacy"
+
+[[function]]
+address = 0x0025e5a8
+name = "Human_PlayPickupClip"
+page = "objects.md#two-handed"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::startPickUp"
+status = "legacy"
+
+[[function]]
+address = 0x00336a00
+name = "Quat_Slerp"
+page = "objects.md#original-structure"
+role = "a leaf's rotation step and its in-between pose ([Leaves](objects.md#leaves))"
+level = "confirmed-code"
+coney = "src/animation/anim_math.h:slerp"
+status = "legacy"
+
+[[function]]
+address = 0x0033f110
+name = "Human_TestStrikes"
+page = "objects.md#original-structure"
+role = "per update, after the move: the human's switched-on strike shapes against nearby bodies"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/human.h:Human::testStrikes"
+status = "legacy"
+
+[[function]]
+address = 0x0038ed68
+name = "GlassPane_CreateBody"
+page = "objects.md#original-structure"
+role = "the pane's collision body (`+0xe8`)"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::bodiesTouching"
+status = "legacy"
+
+[[function]]
+address = 0x0038ef60
+name = "GlassPane_QueueDraw"
+page = "objects.md#original-structure"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:glassDraws"
+status = "legacy"
+
+[[function]]
+address = 0x0038f1c8
+name = "GlassPane_UpdateBodyByDistance"
+page = "objects.md#original-structure"
+role = "per frame (vtable `+0x13c`): the pane's body within 50 m"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:glassDraws"
+status = "legacy"
+
+[[function]]
+address = 0x0038f378
+name = "Glass_Break"
+page = "objects.md#original-structure"
+role = "the alarm, the window link, the window flags"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::breakBy"
+status = "legacy"
+
+[[function]]
+address = 0x0038f8a8
+name = "GlassManager_Create"
+page = "objects.md#original-structure"
+role = "allocates the pane, runs its initialiser, the window link"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x0038fab8
+name = "GlassTypes_Set"
+page = "objects.md#original-structure"
+role = "`CfgSetGlassProperties`: one entry of the glass type table"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeCfgSetGlassProperties"
+status = "legacy"
+
+[[function]]
+address = 0x00390f18
+name = "Cfg_AddObjectType"
+page = "objects.md#original-structure"
+role = "`CfgObj`: one 0x90-byte object type ([Object types](objects.md#object-types))"
+level = "confirmed-code"
+coney = "src/world_objects/object_types.h:ObjectTypes::add"
+status = "legacy"
+
+[[function]]
+address = 0x003913d8
+name = "ObjectDb_FindByName"
+page = "objects.md#original-structure"
+role = "a type's index by name (a hash table over the names)"
+level = "confirmed-code"
+coney = "src/world_objects/object_types.h:ObjectTypes::find"
+status = "legacy"
+
+[[function]]
+address = 0x00391c10
+name = "WorldObject_Remove"
+page = "objects.md#original-structure"
+role = "vtable `+0x4c`: message 2 to the object's handlers, out of its record, deleted ([Barriers](objects.md#barriers))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/world_objects/doors.h:Doors::takeRemoved"
+status = "legacy"
+
+[[function]]
+address = 0x00391d48
+name = "Obj_CreatePhysicsBody"
+page = "objects.md#spawning"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::stepObjectBodies"
+status = "legacy"
+
+[[function]]
+address = 0x00395b70
+name = "WorldObject_Update"
+page = "objects.md#original-structure"
+role = "integrates, copies `+0xcc` to `+0xc8`, runs the class's update"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:ObjectiveMarker::update"
+status = "legacy"
+
+[[function]]
+address = 0x003961d0
+name = "World_BreakObjectsAround"
+page = "objects.md#break-objects-in-radius"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::destroyInRadius"
+status = "legacy"
+
+[[function]]
+address = 0x00396390
+name = "World_BreakObjectsInRadius"
+page = "objects.md#break-objects-in-radius"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeBreakObjectsInRadius"
+status = "legacy"
+
+[[function]]
+address = 0x003963b8
+name = "World_BreakGlassInRadius"
+page = "objects.md#original-structure"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::breakInRadius"
+status = "legacy"
+
+[[function]]
+address = 0x003966c8
+name = "World_BreakGlassInRadius"
+page = "objects.md#original-structure"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeBreakGlassInRadius"
+status = "legacy"
+
+[[function]]
+address = 0x00396858
+name = "Obj_Spawn"
+page = "objects.md#original-structure"
+role = "`ObjSpawn`: the unlockable checks, then a spawn record"
+level = "confirmed-code"
+coney = "src/world_objects/spawn_records.h:spawnAllowed"
+status = "legacy"
+
+[[function]]
+address = 0x00396bd0
+name = "Obj_SetColour"
+page = "objects.md#original-structure"
+role = "`ObjColor`: packs `{r, g, b, a}` into the tint word"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00397078
+name = "Door_SetPickable"
+page = "objects.md#lock-pick"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeSetDoorPickable"
+status = "legacy"
+
+[[function]]
+address = 0x00397230
+name = "Door_Spawn"
+page = "objects.md#original-structure"
+role = "pushes the door's arguments, creates it by type name"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeSpawnDoor"
+status = "legacy"
+
+[[function]]
+address = 0x00398598
+name = "ObjectList_LoadObjsFile"
+page = "objects.md#objs-file"
+level = "confirmed-code"
+coney = "src/world_objects/placed_objects_file.h:parsePlacedObjects"
+status = "legacy"
+
+[[function]]
+address = 0x00398940
+name = "ObjRecord_Add"
+page = "objects.md#original-structure"
+role = "`ObjSpawn`'s spawn record ([Spawn records](objects.md#spawn-records)); returns its handle"
+level = "confirmed-code"
+coney = "src/world_objects/spawn_records.h:SpawnRecords::add"
+status = "legacy"
+
+[[function]]
+address = 0x00398df8
+name = "ObjRecord_SetPinned"
+page = "objects.md#original-structure"
+role = "record bit `0x10000` and object `+0x10f`: never stored"
+level = "confirmed-code"
+coney = "src/world_objects/spawn_records.h:SpawnRecords::setPinned"
+status = "legacy"
+
+[[function]]
+address = 0x00398fe0
+name = "ObjRecord_GetHandle"
+page = "objects.md#original-structure"
+role = "a record's object, spawning it first when not live"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeSceneAddObject"
+status = "legacy"
+
+[[function]]
+address = 0x00399d88
+name = "ObjectTaskManager_UpdateSpawns"
+page = "objects.md#original-structure"
+role = "streams records in and out around the cameras ([Streaming](objects.md#streaming))"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:ObjectTasks::step"
+status = "legacy"
+
+[[function]]
+address = 0x0039c0e0
+name = "Glass_Spawn"
+page = "objects.md#original-structure"
+role = "pushes the pane's arguments, creates it by type name"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeSpawnBreakableGlass"
+status = "legacy"
+
+[[function]]
+address = 0x003a19b0
+name = "Obj_GetWorldPose"
+page = "objects.md#original-structure"
+role = "vtable function words `+0x9c` / `+0xa4` (slots `+0x98` / `+0xa0` of `0x005453a0` and the car's `0x00544c08`): an attached object's pose through its parent's bone"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
+status = "legacy"
+
+[[function]]
+address = 0x003a4768
+name = "Collision_SetTriangleTwoSided"
+page = "objects.md#door-blocking"
+level = "confirmed-code"
+coney = "src/world_objects/object_services.h:markTriangles"
+status = "legacy"
+
+[[function]]
+address = 0x003a5530
+name = "ScriptObj_SpawnThrownDebris"
+page = "objects.md#original-structure"
+role = "a broken prop's piece: created by name at the prop's pose, knocked with message `0x30` ([Trash props](objects.md#trash-props))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/world_objects/props.h:Props::launchPiece"
+status = "legacy"
+
+[[function]]
+address = 0x003b2180
+name = "DoorFence_OnHit"
+page = "objects.md#barriers"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::hit"
+status = "legacy"
+
+[[function]]
+address = 0x003b2f40
+name = "DoorFence_Init"
+page = "objects.md#barriers"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x003e29e8
+name = "GlassScript_Init"
+page = "objects.md#door-blocking"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x003e2d90
+name = "GlassScript_OnMessage"
+page = "objects.md#original-structure"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::hit"
+status = "legacy"
+
+[[function]]
+address = 0x003e4cb8
+name = "SubGlass_Update"
+page = "objects.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/level_object_services.h:LevelObjectServices::shardsWanted"
+status = "legacy"
+
+[[function]]
+address = 0x003e9828
+name = "ObjectiveMarker_SetShown"
+page = "objects.md#original-structure"
+role = "a marker's shown state, passed on to its column"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:ObjectiveMarker::setShown"
+status = "legacy"
+
+[[function]]
+address = 0x003e98e8
+name = "ObjectiveMarker_Init"
+page = "objects.md#objective-markers"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:columnColourFor"
+status = "legacy"
+
+[[function]]
+address = 0x003e9b08
+name = "ObjectiveMarker_UpdateFade"
+page = "objects.md#objective-markers"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:ObjectiveMarker"
+status = "legacy"
+
+[[function]]
+address = 0x003f80f0
+name = "DoorSwing_SetUpType"
+page = "objects.md#original-structure"
+role = "per type name: leaf models, sounds, flags"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:swingingDoorSetup"
+status = "legacy"
+
+[[function]]
+address = 0x003f9770
+name = "DoorSwing_StateCommand"
+page = "objects.md#original-structure"
+role = "message `0x22`: open, close, collision, pickable"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::command"
+status = "legacy"
+
+[[function]]
+address = 0x003f9910
+name = "DoorSwing_OpenBy"
+page = "objects.md#original-structure"
+role = "message `0x0b`: a human opens it, away from them"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeDoorOpen"
+status = "legacy"
+
+[[function]]
+address = 0x003f9ad0
+name = "DoorSwing_Hit"
+page = "objects.md#original-structure"
+role = "message 1"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::hit"
+status = "legacy"
+
+[[function]]
+address = 0x003fa438
+name = "DoorSwing_HitBreakable"
+page = "objects.md#original-structure"
+role = "message 1"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::hit"
+status = "legacy"
+
+[[function]]
+address = 0x003fb5a0
+name = "SubSwingingDoor_Update"
+page = "objects.md#leaves"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:stepLeaf"
+status = "legacy"
+
+[[function]]
+address = 0x003fb5f8
+name = "DoorSwinging_Init"
+page = "objects.md#door-blocking"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x003fbba0
+name = "DynDoorSwinging_Update"
+page = "objects.md#door-blocking"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::tick"
+status = "legacy"
+
+[[function]]
+address = 0x003fe490
+name = "MeleeWeapon_Take"
+page = "objects.md#original-structure"
+role = "messages `0x1b` / `0x1c` of `melee_weapon`"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:heldAttachment"
+status = "legacy"
+
+[[function]]
+address = 0x003fe6b8
+name = "MeleeWeapon_Detach"
+page = "objects.md#original-structure"
+role = "messages `0x1b` / `0x1c` of `melee_weapon`"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::dropHeld"
+status = "legacy"
+
+[[function]]
+address = 0x0041d4f8
+name = "Cfg_SetGlobalTimeToLive"
+page = "objects.md#warriors-functions"
+role = "`CfgSetGlobalTimeToLive`: `+0x26c`"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeCfgSetGlobalTimeToLive"
+status = "legacy"

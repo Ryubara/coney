@@ -1,0 +1,241 @@
+# The researched functions of the animation system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00100200
+name = "Pose_InitReference"
+page = "animation.md#clip-queries"
+role = "writes the [reference pose](formats/animation.md#reference-pose)"
+level = "confirmed-code"
+coney = "src/animation/anim_pose.h:referenceRotations"
+status = "legacy"
+
+[[function]]
+address = 0x00101120
+name = "Skeleton_InitParents"
+page = "animation.md#clip-queries"
+role = "fills the parent table"
+level = "confirmed-code"
+coney = "src/animation/skeleton.h:poseBoneParent"
+status = "legacy"
+
+[[function]]
+address = 0x00101658
+name = "Anim_TimeToFirstEvent"
+page = "animation.md#clip-queries"
+role = "the time of the first event of types `0xf`, `0x13`, 9, `0x36`, `0x34`, `0x41` or `0x2c`, else the duration, divided by the rate ([Combat](combat.md))"
+level = "confirmed-code"
+coney = "src/human/turn_and_slide.h:firstContactTime"
+status = "legacy"
+
+[[function]]
+address = 0x00101a00
+name = "Anim_GetPlayTime"
+page = "animation.md#clip-queries"
+role = "duration / [playback rate](formats/animation.md#playback-rate)"
+level = "confirmed-code"
+coney = "src/ai/script_services.h:ScriptServices::playTime"
+status = "legacy"
+
+[[function]]
+address = 0x00101c58
+name = "Clip_GetSoundtrackHash"
+page = "animation.md#clip-queries"
+role = "the `+0x08` word of a clip's first type-`0xd` event, else 0: the [scene soundtrack](sound.md#scene-sound)"
+level = "confirmed-code"
+coney = "src/scenes/scene_record.h:soundtrackOf"
+status = "legacy"
+
+[[function]]
+address = 0x00101dd8
+name = "Anim_FireFrameEvents"
+page = "animation.md#clip-queries"
+role = "the events a cursor passes ([Paired tasks](formats/animation.md#paired-tasks))"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:AnimTaskStack::keepEvents"
+status = "legacy"
+
+[[function]]
+address = 0x001041f8
+name = "AnimCursor_Init"
+page = "animation.md#cursor"
+role = "[Playing a clip](formats/animation.md#playing-a-clip)"
+level = "confirmed-code"
+coney = "src/animation/anim_clip.h:parseAnimClip"
+status = "legacy"
+
+[[function]]
+address = 0x001044a0
+name = "AnimCursor_Advance"
+page = "animation.md#cursor"
+role = "[Playing a clip](formats/animation.md#playing-a-clip)"
+level = "confirmed-code"
+coney = "src/animation/anim_pose.h:AnimCursor::advance"
+status = "legacy"
+
+[[function]]
+address = 0x001045e0
+name = "AnimData_OnLoaded"
+page = "animation.md#systems"
+role = "pops chunks `0x02` and `0x00`, clears the descriptor's reference count, sets its vtable `0x00534240` and keyframe pointer (`+0x1c`), pushes it ([Chunk system](chunk-system.md))"
+level = "confirmed-code"
+coney = "src/animation/anim_clip.h:onAnimDataLoaded"
+status = "legacy"
+
+[[function]]
+address = 0x00104630
+name = "Instance_BuildBoneMatrices"
+page = "animation.md#cursor"
+role = "[Bone transforms](formats/animation.md#bone-transforms)"
+level = "confirmed-code"
+coney = "src/animation/skeleton.h:boneTransforms"
+status = "legacy"
+
+[[function]]
+address = 0x00104a38
+name = "Anim_RateMultiplier"
+page = "animation.md#cursor"
+role = "[Playback rate](formats/animation.md#playback-rate)"
+level = "confirmed-code"
+coney = "src/characters/anim_set.h:AnimSet::rate"
+status = "legacy"
+
+[[function]]
+address = 0x00104ce0
+name = "AnimCursor_SamplePose"
+page = "animation.md#cursor"
+role = "the [sampler](formats/animation.md#the-pose)"
+level = "confirmed-code"
+coney = "src/animation/anim_pose.h:samplePose"
+status = "legacy"
+
+[[function]]
+address = 0x00105158
+name = "Pose_BlendPartial"
+page = "animation.md#cursor"
+role = "the [blend](formats/animation.md#blending)"
+level = "confirmed-code"
+coney = "src/animation/anim_pose.h:blendPoses"
+status = "legacy"
+
+[[function]]
+address = 0x00106c80
+name = "AnimTaskBlendOut_Construct"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:AnimTaskStack::change"
+status = "legacy"
+
+[[function]]
+address = 0x0010a500
+name = "GaitBlend_SetTarget"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:GaitBlendTask::setTarget"
+status = "legacy"
+
+[[function]]
+address = 0x0010a558
+name = "GaitBlend_SetValue"
+page = "animation.md#mixers"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:GaitBlendTask::setValue"
+status = "legacy"
+
+[[function]]
+address = 0x0010adf8
+name = "GaitBlend_Sample"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:GaitBlendTask::sample"
+status = "legacy"
+
+[[function]]
+address = 0x0010be40
+name = "AmbientManager_MarkEvent"
+page = "animation.md#ambient"
+role = "stamps the game clock (`*(0x0050b734) + 0x38`) into `+0x1b78c`, or 2 s before it when already set; its only caller is `AI_ReportNoise` (`0x002936a8`) for a noise of 10 m or more ([Sound](sound.md))"
+level = "confirmed-code"
+coney = "src/audio/game_sound.h:GameSound::markAmbientEvent"
+status = "legacy"
+
+[[function]]
+address = 0x0010be78
+name = "AmbientManager_UpdateTimers"
+page = "animation.md#ambient"
+role = "`+0x1b788` = 1 from 2 s to 15 s after that stamp; `+0x1b790` = 1 while the game state's `+0x40c` is 1 and for 5 s after"
+level = "confirmed-code"
+coney = "src/audio/game_sound.cpp:GameSound::damageWindowOpen"
+status = "legacy"
+
+[[function]]
+address = 0x0010c100
+name = "AmbientManager_UpdateEmitters"
+page = "animation.md#ambient"
+role = "runs the emitters ([Sound](sound.md#ambience))"
+level = "confirmed-code"
+coney = "src/audio/ambient_emitters.h:AmbientEmitters::update"
+status = "legacy"
+
+[[function]]
+address = 0x0010ced0
+name = "AmbientManager_AddParticleEmitter"
+page = "animation.md#ambient"
+role = "`AmbientManager_AddEmitter` with the type name `\"particle task\"`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeAddAmbientSoundEmitter"
+status = "legacy"
+
+[[function]]
+address = 0x0010cf58
+name = "AmbientManager_AddEmitter"
+page = "animation.md#ambient"
+role = "the general emitter ([Sound bindings](../references/bindings/sound.md#addambientsoundemitter2))"
+level = "confirmed-code"
+coney = "src/audio/ambient_emitters.h:AmbientEmitters::add"
+status = "legacy"
+
+[[function]]
+address = 0x0010d2a0
+name = "AmbientEmitter_SetVolume"
+page = "animation.md#ambient"
+role = "stores the volume and passes it to the playing sound"
+level = "confirmed-code"
+coney = "src/audio/ambient_emitters.h:AmbientEmitters::setVolume"
+status = "legacy"
+
+[[function]]
+address = 0x0010d3c8
+name = "AmbientTable_Set"
+page = "animation.md#ambient"
+role = "CRC-32 of the name into the ambient table"
+level = "confirmed-code"
+coney = "src/audio/ambient_emitters.h:AmbientEmitters::setSound"
+status = "legacy"
+
+[[function]]
+address = 0x0010d570
+name = "AmbientManager_EnableEmitter"
+page = "animation.md#ambient"
+role = "sets an emitter's `+0x8c`"
+level = "confirmed-code"
+coney = "src/audio/ambient_emitters.h:AmbientEmitters::setEnabled"
+status = "legacy"
+
+[[function]]
+address = 0x0010d590
+name = "AmbientEmitter_SetPoints"
+page = "animation.md#ambient"
+role = "copies up to `n` points into the first emitter whose name matches"
+level = "confirmed-code"
+coney = "src/audio/ambient_emitters.h:AmbientEmitters::setPositions"
+status = "legacy"
+
+[[function]]
+address = 0x0023f238
+name = "Human_ApplyRootMotion"
+page = "formats/animation.md#original-structure"
+role = "the pose's root velocity and turn into the human's velocity and heading"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::applyRootMotion"
+status = "legacy"

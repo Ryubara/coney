@@ -164,8 +164,12 @@ def make_repo(root: Path) -> None:
         "| `0x00322b78` | `ThrowSubTactic_Init` |\n\n## Other\n\nNothing.\n",
         encoding="utf-8",
     )
-    (root / "docs/progress/functions.toml").write_text(
-        '[[function]]\naddress = 0x00322b78\nname = "ThrowSubTactic_Init"\nsubsystem = "AI"\nsize = 4\n',
+    (root / "research/functions").mkdir()
+    (root / "research/functions/ai.toml").write_text(
+        '[[function]]\naddress = 0x00322b78\nname = "ThrowSubTactic_Init"\npage = "ai-goals.md#throw"\n'
+        'level = "confirmed-code"\nconey = "src/ai/throw.cpp:ThrowOrder"\n\n'
+        '[[function]]\naddress = 0x00322b80\nname = "Researched_Only"\npage = "ai-goals.md#throw"\n'
+        'level = "inferred"\n',
         encoding="utf-8",
     )
     (root / "docs/progress/ghidra-functions.tsv").write_text(
@@ -187,7 +191,7 @@ def test_each_source_is_read(tmp_path: Path) -> None:
     assert [e.title for e in by_source["research"]] == ["AI goals", "Throw order", "Other"]
     assert by_source["research"][1].where == "docs/research/ai-goals.md#throw"
     assert {"0x00322b78", "ThrowSubTactic_Init"} <= set(by_source["research"][1].exact)
-    assert [e.where for e in by_source["functions"]] == ["0x00322b78"]
+    assert [e.where for e in by_source["functions"]] == ["0x00322b78"]  # only the ported function, not the researched
     assert [e.title for e in by_source["ghidra"]] == ["entry"]  # unnamed and FUN_ entries are not names
     assert by_source["glossary"][0].title == "molotov" and "0x00322b78" in by_source["glossary"][0].exact
     assert by_source["pr"][0].exact == ("#301", "src/ai/throw.cpp")

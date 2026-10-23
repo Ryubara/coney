@@ -6,14 +6,16 @@ rest of the repository, so a pointer cannot rot:
 
 * the entry's page is a file below docs/research and its section is an anchor of that page;
 * the address is a function the shared Ghidra project lists (docs/progress/ghidra-functions.tsv) and the name is the
-  one Ghidra has: the fix for a difference is the page or a refreshed listing, never a second name;
+  one Ghidra has: the fix for a difference is the page or a refreshed listing, never a second name; a ported entry
+  (`coney`) at an address Ghidra has no function at yet is a warning, since the port is already tagged there;
 * the source file that `coney` names exists, and the page a gap's question names has that section;
 * no committed page sits where the docs build writes a system's generated list;
 * the entry's page owns the address (its front matter's `owns`, the most specific owner winning), once the page
   says what it owns: `docs check` runs the same check on the page (`research_owners.check_function_entries`, one of
   research_check's `EXTRA_RULES`).
 
-`coney-tools research render --check` runs them; they are errors (exit 1) except a name Ghidra has not got yet.
+`coney-tools research render --check` runs them; they are errors (exit 1) except a name Ghidra has not got yet, and an
+address it has no function at for an entry that is ported (`coney`).
 
 Research: docs/guides/research-function-database.md
 """
@@ -120,10 +122,16 @@ def check(
                 continue
             ghidra = listed.get(entry.address)
             if ghidra is None:
-                findings.errors.append(
+                # A port is tagged with the address it was read at, so the original has a function there that the
+                # shared Ghidra project may not define yet; any other entry with an address Ghidra lacks is a typo.
+                message = (
                     f"{label}: not a function entry in {listing_file} "
                     "(a wrong address, or the listing needs `coney-tools progress ghidra`)"
                 )
+                if entry.coney:
+                    findings.warnings.append(message + "; the port counts, with no size, until Ghidra defines it")
+                else:
+                    findings.errors.append(message)
             elif not ghidra.named:
                 findings.warnings.append(
                     f"{label}: Ghidra's listing still calls it {ghidra.name or f'FUN_{entry.address:08x}'}; "

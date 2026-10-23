@@ -1,0 +1,1151 @@
+# The researched functions of the frontend system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00144a08
+name = "Pad_GetHistory"
+page = "frontend.md#coneys-implementation"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::buttons"
+status = "legacy"
+
+[[function]]
+address = 0x00144a30
+name = "Pad_Released"
+page = "frontend.md#coneys-implementation"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::released"
+status = "legacy"
+
+[[function]]
+address = 0x00144a80
+name = "Pad_Pressed"
+page = "frontend.md#coneys-implementation"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressed"
+status = "legacy"
+
+[[function]]
+address = 0x00144ad0
+name = "Pad_PressedWithRepeat"
+page = "frontend.md#input"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressedWithRepeat"
+status = "legacy"
+
+[[function]]
+address = 0x00144bf0
+name = "Pad_IsNewlyPressed"
+page = "frontend.md#coneys-implementation"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressed"
+status = "legacy"
+
+[[function]]
+address = 0x001552b0
+name = "ProfileManager_Show"
+page = "frontend.md#mode-flow"
+level = "inferred"
+coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::show"
+status = "legacy"
+
+[[function]]
+address = 0x001582e0
+name = "Gm_Level_Enter"
+page = "frontend.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x00159a58
+name = "Gm_Legal_Enter"
+page = "frontend.md#mode-5-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x00159ab8
+name = "Gm_Legal_Exit"
+page = "frontend.md#mode-flow"
+level = "confirmed-code"
+coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::exit"
+status = "legacy"
+
+[[function]]
+address = 0x00159ae0
+name = "Gm_Legal_Update"
+page = "frontend.md#mode-flow"
+level = "confirmed-code"
+coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015a270
+name = "MemoryCard_SetBootFlag"
+page = "frontend.md#mode-flow"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::setBootCheck"
+status = "legacy"
+
+[[function]]
+address = 0x0015c4b0
+name = "LevelFlow_StartFrontEnd"
+page = "frontend.md#audio-cues-references-only"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::startFrontEnd"
+status = "legacy"
+
+[[function]]
+address = 0x0015c5f8
+name = "LevelFlow_FinishFrontEnd"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::finishFrontEnd"
+status = "legacy"
+
+[[function]]
+address = 0x0015c688
+name = "Gm_LevelFlow_Enter"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015c6f8
+name = "Gm_LevelFlow_Resume"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::resume"
+status = "legacy"
+
+[[function]]
+address = 0x0015c7b0
+name = "LevelFlow_SelectLevelByName"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::chooseLevel"
+status = "legacy"
+
+[[function]]
+address = 0x0015c858
+name = "Gm_LevelFlow_Update"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015d160
+name = "Gm_InGame_Update"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015e048
+name = "Gm_Mode12_Enter"
+page = "frontend.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015e130
+name = "Gm_Mode12_Exit"
+page = "frontend.md#mode-flow"
+level = "inferred"
+coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::exit"
+status = "legacy"
+
+[[function]]
+address = 0x0015e238
+name = "Gm_Mode12_Update"
+page = "frontend.md#fades"
+level = "confirmed-code"
+coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015e8b0
+name = "Gm_Mode11_Enter"
+page = "frontend.md#rumble-screens"
+level = "inferred"
+coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015eca0
+name = "Gm_Mode11_Update"
+page = "frontend.md#rumble-screens"
+level = "inferred"
+coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015fe90
+name = "InitLevel"
+page = "frontend.md#initlevel"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x00160d78
+name = "LevelFlow_LoadLevelByName"
+page = "frontend.md#mode-flow"
+level = "inferred"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::chooseLevel"
+status = "legacy"
+
+[[function]]
+address = 0x001a8fb8
+name = "Credits_AddLine"
+page = "frontend.md#fn-credits"
+role = "`CfgCredits(style, role, name)`: a new `CreditData` (style 4 becomes 2, texts interned by `0x00386d08` in the cache `0x0050d33c`, index = list size) appended to the list"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::addLine"
+status = "legacy"
+
+[[function]]
+address = 0x001a90f8
+name = "Credits_Construct"
+page = "frontend.md#fn-credits"
+role = "widget base (`0x001a8e30`), vtable `0x00539a10`, loaded flag `+0x44` = 0; from `HUD_Construct`"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits"
+status = "legacy"
+
+[[function]]
+address = 0x001a9130
+name = "Credits_Load"
+page = "frontend.md#fn-credits"
+role = "`PreloadCredits`: list and `StringTableCache`, runs `credits.lua`, 70 `TextWidget`s at (0.5, 0, 1.1, 1), scale 1.8, colour `0x005fd310`, flags 4, hidden; top limit `+0x170` −0.1, start y `+0x174` 1.1, centre x `+0x178` 0.5, gutter `+0x17c` 0.02, step `+0x180` 0.0025 (`0x0050d344`), last role `+0x188` none, repeat count `+0x18c` 1; loaded `+0x44`, `+0x16c` = 8000 (not read by the scroll)"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::load"
+status = "legacy"
+
+[[function]]
+address = 0x001a9480
+name = "Credits_Start"
+page = "frontend.md#fn-credits"
+role = "`ShowCredits`: when loaded and not running, running `+0x0c` = 1, `+0x10` = 0, start time `+0x168`"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::start"
+status = "legacy"
+
+[[function]]
+address = 0x001a94e8
+name = "Credits_Shutdown"
+page = "frontend.md#fn-credits"
+role = "slot `+0x68`: when running, frees the 70 widgets, the records, the list and the cache; clears running and loaded"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::shutdown"
+status = "legacy"
+
+[[function]]
+address = 0x001a9608
+name = "Credits_CountFreeWidgets"
+page = "frontend.md#fn-credits"
+role = "how many pool widgets are hidden (slot `+0x48` false)"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::freeWidgets"
+status = "legacy"
+
+[[function]]
+address = 0x001a9678
+name = "Credits_FindFreeWidget"
+page = "frontend.md#fn-credits"
+role = "the first hidden pool widget, or 0"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::findFreeWidget"
+status = "legacy"
+
+[[function]]
+address = 0x001a96f0
+name = "Credits_LayoutCentred"
+page = "frontend.md#fn-credits"
+role = "Font_Draw flags 6 (centred), `Font_Size(1.8)` for style 0 (`0x0050d348`) else 0.9 (`0x0050d34c`), at (x `+0x178`, y `+0x174`)"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::assignWidgets"
+status = "legacy"
+
+[[function]]
+address = 0x001a97c0
+name = "Credits_LayoutRole"
+page = "frontend.md#fn-credits"
+role = "flags 5 (right-aligned), scale 0.9, at x = `+0x178` − gutter / 2"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::assignWidgets"
+status = "legacy"
+
+[[function]]
+address = 0x001a9890
+name = "Credits_LayoutName"
+page = "frontend.md#fn-credits"
+role = "flags 4 (left), scale 0.9, at x = `+0x178` + gutter / 2"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::assignWidgets"
+status = "legacy"
+
+[[function]]
+address = 0x001a9960
+name = "Credits_AssignWidgets"
+page = "frontend.md#fn-credits"
+role = "takes a pool widget (shown) for the line; style 1 takes a second one for the role only when the role differs from `+0x188` (else `+0x18c` += 1); lays them out"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::assignWidgets"
+status = "legacy"
+
+[[function]]
+address = 0x001a9a78
+name = "Credits_PlaceNewLine"
+page = "frontend.md#fn-credits"
+role = "puts a new line's widgets at y + height / 2"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::placeLine"
+status = "legacy"
+
+[[function]]
+address = 0x001a9b70
+name = "Credits_ScrollLine"
+page = "frontend.md#fn-credits"
+role = "moves a live line's widgets by −`+0x180` in y"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::scrollLine"
+status = "legacy"
+
+[[function]]
+address = 0x001a9c48
+name = "Credits_LineHeight"
+page = "frontend.md#fn-credits"
+role = "the larger of the line's widgets' heights (`+0xb4`)"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::heightOf"
+status = "legacy"
+
+[[function]]
+address = 0x001a9c88
+name = "Credits_UpdateLine"
+page = "frontend.md#fn-credits"
+role = "updates the line's widgets; when y + height < `+0x170` hides them and advances the first live line `+0x160`"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::updateLine"
+status = "legacy"
+
+[[function]]
+address = 0x001a9d78
+name = "Credits_GapAfter"
+page = "frontend.md#fn-credits"
+role = "gap after a line: 0.05 after style 0 (`0x0050d354`); 0.08 (`0x0050d350`) after a style 2 or 1 line followed by style 0 or 3; 0.04 (`0x0050d358`) after a style-1 line when the next has a new role and 2+ names shared the old one; else 0"
+level = "confirmed-code"
+coney = "src/hud/credits.cpp:Credits::gapAfter"
+status = "legacy"
+
+[[function]]
+address = 0x001a9e90
+name = "Credits_Update"
+page = "frontend.md#fn-credits"
+role = "slot `+0x30`, from the overlay pass `0x00156658`: sets `0x0063083c` while running; from line `+0x160` on, starts a line only while 2 or more widgets are free (assign, check, place, gap), else updates and scrolls it; the pen y advances by each height (half for the first) plus its gap; when no pool widget is visible: `Shutdown` and the script system's call of `CreditEnd`"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::update"
+status = "legacy"
+
+[[function]]
+address = 0x001aa108
+name = "Credits_Render"
+page = "frontend.md#fn-credits"
+role = "slot `+0x38`: each visible widget whose top is above `+0x174` drawn in `0x005fd310`"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::render"
+status = "legacy"
+
+[[function]]
+address = 0x001c6a20
+name = "MessageBox_Construct"
+page = "frontend.md#fn-after-radarhud"
+role = "build and destroy the three parts; `+0x500` = -1 (no sound)"
+level = "confirmed-code"
+coney = "src/gui/message_box.h:MessageBox"
+status = "legacy"
+
+[[function]]
+address = 0x001c6fc8
+name = "MessageBox_ShowMessage"
+page = "frontend.md#fn-after-radarhud"
+role = "[The message box](frontend.md#message-box); text size 0.6 (`0x001c18c0`); style 1 colour (134, 26, 26)"
+level = "confirmed-code"
+coney = "src/gui/message_box.h:MessageBox::showTimed"
+status = "legacy"
+
+[[function]]
+address = 0x001c7128
+name = "MessageBox_ShowChoice"
+page = "frontend.md#fn-after-radarhud"
+role = "[The message box](frontend.md#message-box); items size 1.15, colour `0x005fd320`, font 3, the cursor on `default` without a sound"
+level = "confirmed-code"
+coney = "src/gui/message_box.h:MessageBox::showChoice"
+status = "legacy"
+
+[[function]]
+address = 0x001c7630
+name = "MessageBox_Update"
+page = "frontend.md#fn-after-radarhud"
+role = "update: claim a pad, text, usage line, grid, then `+0x4f8` if a choice was made this frame; render: text, and the usage line and grid while choosing"
+level = "confirmed-code"
+coney = "src/gui/message_box.h:MessageBox::update"
+status = "legacy"
+
+[[function]]
+address = 0x001c76a8
+name = "MessageBox_Render"
+page = "frontend.md#fn-after-radarhud"
+role = "update: claim a pad, text, usage line, grid, then `+0x4f8` if a choice was made this frame; render: text, and the usage line and grid while choosing"
+level = "confirmed-code"
+coney = "src/gui/message_box.h:MessageBox::render"
+status = "legacy"
+
+[[function]]
+address = 0x001eaa30
+name = "RM_ChooseArea_AddArena"
+page = "frontend.md#fn-rm_choosearea"
+role = "(CfgRumbleArena) Adds a `0xc`-byte entry {+4 level-table index, +8 picture} to the arena list `0x0063ee40` only when level is 101-199, unlocked (Unlocks kind 2) and its mode list (up to 16, 0-ended) holds the current gameType (`0x0063eec2`); an empty list never matches"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_data.h:addRumbleArena"
+status = "legacy"
+
+[[function]]
+address = 0x001eb0c8
+name = "RM_ChooseArea_Init"
+page = "frontend.md#fn-rm_choosearea"
+role = "Per-video-mode layout globals `0x0050f374`-`0x0050f388`; runs `rumble_arena.lua` to fill the list; title (string `0x2a`, size 2.23, big_font), usage line (`0x21` / `0x17` / `0x1a`), the list, up and down arrows (sprite `0x1c001e`, the down one turned pi) ([Screens](frontend.md#rumble-screens))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::showAreas"
+status = "legacy"
+
+[[function]]
+address = 0x001eb9f8
+name = "RM_ChooseArea_OnInput"
+page = "frontend.md#fn-rm_choosearea"
+role = "(input vtable `0x0053ccb8` slot `+0x08`) Keeps the cursor row/column (`+0xa4`, `+0xa8`); event 4 marks launch (`+0xc4` = 1, cue 8 if its slot is free); event 5 result `0xffffff01` (pop), cue `0xf` ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onAreaInput"
+status = "legacy"
+
+[[function]]
+address = 0x001ebb90
+name = "RM_ChooseArea_Launch"
+page = "frontend.md#fn-rm_choosearea"
+role = "the selected arena's level record (`+0x60` index x `0x84` + `0x14d8`) gives the level number (`0x001fe1d8`) and \"started\" (`0x001fe218`(1)) ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::launchArena"
+status = "legacy"
+
+[[function]]
+address = 0x001ec028
+name = "RM_GangData_RotateForward"
+page = "frontend.md#fn-rm_choosegangs"
+role = "shifts side's nine-member roster (+8 + side x `0x24`) one slot to the right in display order, the last wrapping to slot 0 (Choose Gangs left/right) ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:RumbleGangChooser::rotate"
+status = "legacy"
+
+[[function]]
+address = 0x001ec130
+name = "RM_GangData_RotateBack"
+page = "frontend.md#fn-rm_choosegangs"
+role = "the opposite rotation, one slot to the left ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:RumbleGangChooser::rotate"
+status = "legacy"
+
+[[function]]
+address = 0x001ec490
+name = "RM_ResolveCharType"
+page = "frontend.md#fn-rm_choosegangs"
+role = "a locked character type (Unlocks kind 4) is replaced by its stand-in (28 pairs) ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_data.h:rumbleStandIn"
+status = "legacy"
+
+[[function]]
+address = 0x001ec980
+name = "RM_ChooseGangs_AddGang"
+page = "frontend.md#fn-rm_choosegangs"
+role = "(CfgRumbleGang, and the created gangs) when id < 0 or unlocked (kind 3), a `0x54`-byte record (id, interned name, two resolved rosters, index) to `0x0063ee4c` ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_data.h:addRumbleGang"
+status = "legacy"
+
+[[function]]
+address = 0x001ecae0
+name = "RM_ChooseGangs_Init"
+page = "frontend.md#fn-rm_choosegangs"
+role = "Gang size min(gangSize, 5), the players mode; the created gangs (`0x0063ef80`, up to 10) first, then `rumble_gang.lua`; second input object (vtable `0x0053cec8`); title `0x2b`, usage, two name boxes and a vs box, badges, OptionGrid, two Bars, arrows, two gangs RM_Gangs0/1, fighter positions in camera space, both sides' fighters ([Screens](frontend.md#rumble-screens))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::showGangs"
+status = "legacy"
+
+[[function]]
+address = 0x001ef7c0
+name = "RM_ChooseGangs_OnInput"
+page = "frontend.md#fn-rm_choosegangs"
+role = "(input vtable `0x0053cdc0` slot `+0x08`) up/down gang, left/right rotate the roster (mirrored for side 1; not in co-op or when locked), accept lock, back unlock or result 1; stamps the side's input time (`+0x160`) ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onGangsInput"
+status = "legacy"
+
+[[function]]
+address = 0x001f0e60
+name = "RM_AddCharData"
+page = "frontend.md#fn-rm_controller"
+role = "(CfgRumbleChar) a `0x18`-byte record (+0 type, +4 / +8 / `+0x14` interned strings, +0xc, +0xd rank, +0xe, `+0x10` a 0-100 stat) in the character map (`0x001fe038`) under type"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_data.h:addRumbleChar"
+status = "legacy"
+
+[[function]]
+address = 0x001f1e00
+name = "RM_Controller_InitWidgets"
+page = "frontend.md#fn-rm_controller"
+role = "the two batches and the background sprite (record 12 rect 5, centred, 1.15 x 1.1) ([Layout](frontend.md#rm-layout))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.h:RumbleMenu::start"
+status = "legacy"
+
+[[function]]
+address = 0x001f2468
+name = "RM_Controller_UpdateBackground"
+page = "frontend.md#fn-rm_controller"
+role = "(slot `+0x30`) background Update: every 5,000 ms the next colour leg (red, green, blue), a linear blend in between ([Layout](frontend.md#rm-layout))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.h:rumbleBackgroundColour"
+status = "legacy"
+
+[[function]]
+address = 0x001f26a8
+name = "RM_GetGangName"
+page = "frontend.md#fn-rm_controller"
+role = "(GetRumbleModeGangName): side 1's name (`0x001fe048`), else side 2's (`0x001fe0c8`) ([Set-up](frontend.md#rumble-setup))"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetRumbleModeGangName"
+status = "legacy"
+
+[[function]]
+address = 0x001f26e0
+name = "RM_GetModeData"
+page = "frontend.md#fn-rm_controller"
+role = "(GetRumbleModeData): copies the 23 u16 set-up values from `0x0063eec0` ([Set-up](frontend.md#rumble-setup))"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetRumbleModeData"
+status = "legacy"
+
+[[function]]
+address = 0x001f8110
+name = "RM_GameMode_AddMode"
+page = "frontend.md#fn-rm_gamemode"
+role = "(CfgRumbleGame) a `0x1b4`-byte mode record when the mode is unlocked (Unlocks kind 1) ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_data.h:addRumbleMode"
+status = "legacy"
+
+[[function]]
+address = 0x001f85c0
+name = "RM_GameMode_Init"
+page = "frontend.md#fn-rm_gamemode"
+role = "`rumble_data.lua`, title `0x2c`, usage `0x18`, the menu, arrows ([Screens](frontend.md#rumble-screens))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::showModes"
+status = "legacy"
+
+[[function]]
+address = 0x001f8d80
+name = "RM_GameMode_OnInput"
+page = "frontend.md#fn-rm_gamemode"
+role = "(input slot `+0x08`) accept copies the mode into the set-up, back cancels or pops ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onModeInput"
+status = "legacy"
+
+[[function]]
+address = 0x001f9418
+name = "RM_Intro_Open"
+page = "frontend.md#fn-rm_intro"
+role = "copies onDone (`+0x64`) and keeps the non-empty names (`+0x68`) ([Intro](rumble.md#intro))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro"
+status = "legacy"
+
+[[function]]
+address = 0x001f9558
+name = "RM_Intro_Init"
+page = "frontend.md#fn-rm_intro"
+role = "layout per video mode, the HUD's pad, a text per name and a separator (`0x1d0000`) between, the prompt `0x25`, the countdown text"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro"
+status = "legacy"
+
+[[function]]
+address = 0x001fad40
+name = "RM_Intro_Update"
+page = "frontend.md#fn-rm_intro"
+role = "(slot `+0x30`; from HUD_Update) the phase machine (`+0xe4`; phase 3 waits for the voice and queues screen effect 4.0), then updates the widgets"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro::update"
+status = "legacy"
+
+[[function]]
+address = 0x001fc5b0
+name = "RM_NumPlayers_Init"
+page = "frontend.md#fn-rm-numplayers"
+role = "the screen's widgets: title `0x2e`; the badges `+0xb0` (P1), `+0xb4` (P2), `+0xb8` (CPU), size 0.1, depth 8,100, rectangle by language (`0x0051489c + 0x120`); sprite 28/29 (`+0xa8`) at **(0.5, 0.5)** turned −π/2; usage line `+0xc8`; message `0x77` (`+0xc0`) at (0.5, 0.78), hidden; `OptionGrid` (`+0xbc`) with `0x34` / `0x35` / `0x36` as the mode offers them; message blink period 1,500 ms (`+0x94`); player 2's pad unbound"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::showPlayers"
+status = "legacy"
+
+[[function]]
+address = 0x001fd1c8
+name = "RM_NumPlayers_OnInput"
+page = "frontend.md#fn-rm-numplayers"
+role = "input slot `+0x08`: [the Game Type input](frontend.md#rumble-data)"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onPlayersInput"
+status = "legacy"
+
+[[function]]
+address = 0x001fe048
+name = "RumbleMode_GetGang1Name"
+page = "frontend.md#fn-rumble-globals"
+role = "the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](frontend.md#rumble-setup))"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetRumbleModeGangName"
+status = "legacy"
+
+[[function]]
+address = 0x001fe070
+name = "RumbleMode_SetGang1Name"
+page = "frontend.md#fn-rumble-globals"
+role = "the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](frontend.md#rumble-setup))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.cpp:setGangName"
+status = "legacy"
+
+[[function]]
+address = 0x001fe0c8
+name = "RumbleMode_GetGang2Name"
+page = "frontend.md#fn-rumble-globals"
+role = "the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](frontend.md#rumble-setup))"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetRumbleModeGangName"
+status = "legacy"
+
+[[function]]
+address = 0x001fe0d8
+name = "RumbleMode_SetGang2Name"
+page = "frontend.md#fn-rumble-globals"
+role = "the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](frontend.md#rumble-setup))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.cpp:setGangName"
+status = "legacy"
+
+[[function]]
+address = 0x00203110
+name = "PM_Continue_Construct"
+page = "frontend.md#fn-pm-continue-start"
+role = "from `PM_Controller` (`0x002040f0`): the screen base, transition map, vtables `0x0053da18` (widget), `0x0053d9c0` (input), `0x0053d9e8` (state), `+0xa0` = −1; the destructor (slot `+0x60`) calls `Shutdown` (`0x002036d8`) and frees the map"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmContinue"
+status = "legacy"
+
+[[function]]
+address = 0x00203300
+name = "PM_Continue_Init"
+page = "frontend.md#fn-pm-continue"
+role = "builds the widgets once (`+0x0c` created): the profile name (size 2.0, grey) at y 0.73 and the CONTINUE / DELETE grid at `0x0050f5c8`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmContinue::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x00203800
+name = "PM_Continue_OnCommand"
+page = "frontend.md#fn-pm-continue"
+role = "CONTINUE: a damaged profile (save-system `+0x7c`) gives result 1 (`PM_Delete`), else load (`+0xcc`), `+0x124` = 1, done = 1; DELETE: result 1; back `-0xff`, cue `0xf`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmContinue::accept"
+status = "legacy"
+
+[[function]]
+address = 0x00203b98
+name = "PM_PickLayout"
+page = "frontend.md#fn-pm-controller"
+role = "from controller start, writes the layout floats `0x0050f5c4``-0x0050f5e8` for the device flags (*`0x0050cdb4`; `0x20` tested before `0x04`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_shared.h:PmLayout::forFlags"
+status = "legacy"
+
+[[function]]
+address = 0x002040f0
+name = "PM_Controller_Construct"
+page = "frontend.md#fn-pm-controller"
+role = "`ScreenFlowController_Construct`, `+0x60` = a value of the top game mode (`0x0015e790`), the 14 screens (allocator tags = class names) (`+0x64``-+0x98`) and their transitions"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_controller.h:PmController::PmController"
+status = "legacy"
+
+[[function]]
+address = 0x00204a78
+name = "PM_Controller_Start"
+page = "frontend.md#fn-pm-controller"
+role = "resets the PM globals `0x0050f584``-0x0050f5c0` and the name, start callback = cb, save-system `+0x124` = 0, `PM_PickLayout`, sets up and shows the embedded widget, pushes `PM_Greet`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_controller.h:PmController::start"
+status = "legacy"
+
+[[function]]
+address = 0x00204ba0
+name = "PM_Controller_Update"
+page = "frontend.md#fn-pm-controller"
+role = "when the widget is active, its Update and Render, then `ScreenFlowController_Update`; returns done (`0x0050f5b0`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_controller.h:PmController::update"
+status = "legacy"
+
+[[function]]
+address = 0x00204c20
+name = "PM_Controller_Stop"
+page = "frontend.md#fn-pm-controller"
+role = "the embedded widget's Shutdown"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_controller.h:PmController::stop"
+status = "legacy"
+
+[[function]]
+address = 0x00204f08
+name = "PM_Create_Construct"
+page = "frontend.md#fn-pm-create"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmCreate"
+status = "legacy"
+
+[[function]]
+address = 0x002050f0
+name = "PM_Create_Init"
+page = "frontend.md#fn-pm-create"
+role = "builds the widgets once (`+0x0c` created): title `0x89`, the name (size 2.0), the on-screen keyboard (`0x001cc1a0`) and the hidden error text; stores the free slot (save-system `+0xa4`) in `0x0050f594`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmCreate::open"
+status = "legacy"
+
+[[function]]
+address = 0x002056d8
+name = "PM_Create_OnCommand"
+page = "frontend.md#fn-pm-create"
+role = "back empties the name (`PM_SetProfileName`) and pops; accept is the keyboard's"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmCreate::handle"
+status = "legacy"
+
+[[function]]
+address = 0x00205950
+name = "PM_Delete_Construct"
+page = "frontend.md#fn-pm-delete"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmDelete"
+status = "legacy"
+
+[[function]]
+address = 0x00205b38
+name = "PM_Delete_Init"
+page = "frontend.md#fn-pm-delete"
+role = "builds the widgets once (`+0x0c` created): the profile name, the sure / damaged text (`0x82` / `0x83`) and the YES / NO grid, NO selected"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmDelete::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x00206238
+name = "PM_Delete_OnCommand"
+page = "frontend.md#fn-pm-delete"
+role = "YES deletes (save-system `+0x54`, `+0x18c`, Lua Menu.deleteProfile), result 2 (`PM_Greet`) when damaged else 0 (`PM_Profile`); NO pops; ignored while a fade runs"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmDelete::accept"
+status = "legacy"
+
+[[function]]
+address = 0x002065f0
+name = "PM_Difficulty_Construct"
+page = "frontend.md#fn-pm-difficulty"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmDifficulty"
+status = "legacy"
+
+[[function]]
+address = 0x002067d8
+name = "PM_Difficulty_Init"
+page = "frontend.md#fn-pm-difficulty"
+role = "builds the widgets once (`+0x0c` created): title `0x8f` and three or four difficulty items (the fourth when unlocked); default index 1 or 3"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmDifficulty::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x00206d88
+name = "PM_Difficulty_OnCommand"
+page = "frontend.md#fn-pm-difficulty"
+role = "accept stores the index in `W_GameState` `+0x43c`, result 0 (`PM_Light`), cue 9; back `-0xff`, cue `0xf`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmDifficulty::accept"
+status = "legacy"
+
+[[function]]
+address = 0x002071d8
+name = "PM_Extras_Init"
+page = "frontend.md#fn-pm-extras"
+role = "builds the widgets once (`+0x0c` created): a one-item grid, TRAILER (`0x8c`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_extras.h:PmExtras::enter"
+status = "legacy"
+
+[[function]]
+address = 0x002074f8
+name = "PM_Extras_OnCommand"
+page = "frontend.md#fn-pm-extras"
+role = "accept on TRAILER calls Lua `Menu.playMovie(1)`, cue 9; back `-0xff`; ignored while the fade level is not 0"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_extras.h:PmExtras::update"
+status = "legacy"
+
+[[function]]
+address = 0x002079a0
+name = "PM_Greet_Init"
+page = "frontend.md#fn-pm-greet"
+role = "builds the widgets once (`+0x0c` created): the logo (menu_system rectangle 0) and the blinking press-START text `0x76`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_greet.h:PmGreet::enter"
+status = "legacy"
+
+[[function]]
+address = 0x00207d48
+name = "PM_Greet_Enter"
+page = "frontend.md#fn-pm-greet"
+role = "also sets `0x006fecc0` = 1 and calls `0x00145670` (`Pads_ResetStateMachines`: every `libpad` record back to its first state, [Input](input.md#libpad)), then Init"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_greet.h:PmGreet::enter"
+status = "legacy"
+
+[[function]]
+address = 0x00207da0
+name = "PM_Greet_Exit"
+page = "frontend.md#fn-pm-greet"
+role = "clears `0x006fecc0`, then Shutdown"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_greet.h:PmGreet::exit"
+status = "legacy"
+
+[[function]]
+address = 0x00207dd0
+name = "PM_Greet_StateUpdate"
+page = "frontend.md#fn-pm-greet"
+role = "result `+0x74` = `-0x100` (stay), runs Update and Render, returns the result"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_greet.h:PmGreet::update"
+status = "legacy"
+
+[[function]]
+address = 0x00207e28
+name = "PM_Greet_Update"
+page = "frontend.md#fn-pm-greet"
+role = "START gives result 0 (`PM_Mode`), cue 9, and clears the load-screen flag `0x0050f5b8`; the 1,500 ms blink; after 70 s idle calls Lua `Menu.playMovie(2)` (attract) and sets `+0xac`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_greet.h:PmGreet::update"
+status = "legacy"
+
+[[function]]
+address = 0x00208288
+name = "PM_Greet_Render"
+page = "frontend.md#fn-pm-greet"
+role = "the logo and the text (children `+0x8c`, `+0xa4`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_greet.h:PmGreet::update"
+status = "legacy"
+
+[[function]]
+address = 0x00208320
+name = "PM_Light_Construct"
+page = "frontend.md#fn-pm-light"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmLight"
+status = "legacy"
+
+[[function]]
+address = 0x00208510
+name = "PM_Light_Init"
+page = "frontend.md#fn-pm-light"
+role = "builds the widgets once (`+0x0c` created): the brightness square (menu_system rectangle 5), the Bar (`0x001a0fd0`) and the hint `0x118`; the value starts at 40"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmLight::open"
+status = "legacy"
+
+[[function]]
+address = 0x00208c18
+name = "PM_Light_SetValue"
+page = "frontend.md#fn-pm-light"
+role = "clamps to 0-100, bar fill v / 100, `Gamma_Set`(v), keeps `W_GameState` `+0x57a4`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmLight::handle"
+status = "legacy"
+
+[[function]]
+address = 0x00208cc0
+name = "PM_Light_OnCommand"
+page = "frontend.md#fn-pm-light"
+role = "left / right step the value by 5 (cue 6); accept sets save-system `+0x124` = 1, result 0 (`PM_Subtitles`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmLight::handle"
+status = "legacy"
+
+[[function]]
+address = 0x00209068
+name = "PM_Load_Construct"
+page = "frontend.md#fn-pm-load"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmLoad"
+status = "legacy"
+
+[[function]]
+address = 0x00209250
+name = "PM_Load_Init"
+page = "frontend.md#fn-pm-load"
+role = "builds the widgets once (`+0x0c` created): title `0x88` (`0x7e` in delete mode) and one item per used slot, two a row"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmLoad::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x002098b0
+name = "PM_Load_OnCommand"
+page = "frontend.md#fn-pm-load"
+role = "accept stores the slot (`0x0050f594`); delete mode or a damaged slot gives result 1 (`PM_Delete`); else load (`+0xcc`), `+0x124` = 1, done = 1"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmLoad::accept"
+status = "legacy"
+
+[[function]]
+address = 0x00209da8
+name = "PM_Mode_Init"
+page = "frontend.md#fn-pm-mode"
+role = "builds the widgets once (`+0x0c` created): the STORY : EXTRAS / QUICK RUMBLE grid (one row with device flag `0x02`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_mode.h:PmMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0020a268
+name = "PM_Mode_OnCommand"
+page = "frontend.md#fn-pm-mode"
+role = "accept by item code (STORY: `PM_Profile`, or `PM_NumPlayers` with two or more pads; EXTRAS 5; QUICK RUMBLE calls the start callback `0x0050f584`); back result 8 (`PM_Greet`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_mode.h:PmMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0020a4b8
+name = "PM_Mode_Update"
+page = "frontend.md#fn-pm-mode"
+role = "when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_mode.h:PmMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0020b020
+name = "PM_NumPlayers_Construct"
+page = "frontend.md#fn-pm-numplayers"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmNumPlayers"
+status = "legacy"
+
+[[function]]
+address = 0x0020b208
+name = "PM_NumPlayers_Init"
+page = "frontend.md#fn-pm-numplayers"
+role = "builds the widgets once (`+0x0c` created): the 1 player / 2 players grid and the hidden player-2 prompt `0x77`"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmNumPlayers::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x0020b710
+name = "PM_NumPlayers_OnCommand"
+page = "frontend.md#fn-pm-numplayers"
+role = "accept on 2 players first shows the prompt and waits; then the two-player flag (`0x00419ac0`) and result 0 (`PM_Profile`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmNumPlayers::accept"
+status = "legacy"
+
+[[function]]
+address = 0x0020bc80
+name = "PM_Profile_Construct"
+page = "frontend.md#fn-pm-profile"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmProfile"
+status = "legacy"
+
+[[function]]
+address = 0x0020be68
+name = "PM_Profile_Init"
+page = "frontend.md#fn-pm-profile"
+role = "builds the widgets once (`+0x0c` created): title `0x7b` and the use / create / delete / reload items present for the profile count"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmProfile::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x0020c588
+name = "PM_Profile_OnCommand"
+page = "frontend.md#fn-pm-profile"
+role = "clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while a fade runs"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmProfile::accept"
+status = "legacy"
+
+[[function]]
+address = 0x0020c8d0
+name = "PM_Subtitles_Construct"
+page = "frontend.md#fn-pm-subtitles"
+role = "constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`)"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmSubtitles"
+status = "legacy"
+
+[[function]]
+address = 0x0020cab8
+name = "PM_Subtitles_Init"
+page = "frontend.md#fn-pm-subtitles"
+role = "builds the widgets once (`+0x0c` created): title `0x94` and the ON : OFF grid, OFF by default for English"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmSubtitles::setUp"
+status = "legacy"
+
+[[function]]
+address = 0x0020cf30
+name = "PM_Subtitles_OnCommand"
+page = "frontend.md#fn-pm-subtitles"
+role = "accept sets `W_GameState` `+0x438` = ON, then `0x0050f5b4`, `0x0050f598` and done (`0x0050f5b0`) = 1: the story starts"
+level = "confirmed-code"
+coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmSubtitles::accept"
+status = "legacy"
+
+[[function]]
+address = 0x0036b220
+name = "lua_CfgLevelName"
+page = "frontend.md#the-level-table"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeCfgLevelName"
+status = "legacy"
+
+[[function]]
+address = 0x0036df48
+name = "lua_MenuLoadLevel"
+page = "frontend.md#mode-flow"
+level = "inferred"
+coney = "src/scripting/script_bindings.cpp:makeMenuLoadLevel"
+status = "legacy"
+
+[[function]]
+address = 0x0036eef8
+name = "lua_ShowProfileManager"
+page = "frontend.md#mode-flow"
+level = "inferred"
+coney = "src/scripting/script_bindings.cpp:makeShowProfileManager"
+status = "legacy"
+
+[[function]]
+address = 0x0040e2d8
+name = "WorldManager_Preload"
+page = "frontend.md#per-screen"
+level = "inferred"
+coney = "src/world/world_streamer.h:preloadWorlds"
+status = "legacy"
+
+[[function]]
+address = 0x0041b0f0
+name = "Script_SetMultiplayerCallback"
+page = "frontend.md#warriors-functions"
+role = "`SetMultiplayerCallback`: the name at `+0x3a4` (null when empty)"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041d788
+name = "GameState_SetGameMode"
+page = "frontend.md#warriors-functions"
+role = "`SetGameMode(mode, a, b, c)`: the mode at `+0x158` (non-zero in Rumble), its three values at `+0x15c`-`+0x164`, and `0x004e8700` told 1 for modes 1 and 2, else 0 / `GetGameMode`"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:makeSetGameMode"
+status = "legacy"
+
+[[function]]
+address = 0x0041d7e0
+name = "GameState_GetGameMode"
+page = "frontend.md#warriors-functions"
+role = "`SetGameMode(mode, a, b, c)`: the mode at `+0x158` (non-zero in Rumble), its three values at `+0x15c`-`+0x164`, and `0x004e8700` told 1 for modes 1 and 2, else 0 / `GetGameMode`"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:makeGetGameMode"
+status = "legacy"
+
+[[function]]
+address = 0x0041d800
+name = "GameState_GetDifficulty"
+page = "frontend.md#warriors-functions"
+role = "`GetDifficulty` / `SetDifficulty` (byte `+0x154`) and `GetProfileDifficulty` (byte `+0x43c`)"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetDifficulty"
+status = "legacy"
+
+[[function]]
+address = 0x0041d820
+name = "GameState_GetProfileDifficulty"
+page = "frontend.md#warriors-functions"
+role = "`GetDifficulty` / `SetDifficulty` (byte `+0x154`) and `GetProfileDifficulty` (byte `+0x43c`)"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetProfileDifficulty"
+status = "legacy"
+
+[[function]]
+address = 0x0041da08
+name = "Cfg_SetMultiplayerJoin"
+page = "frontend.md#warriors-functions"
+role = "`CfgMultiplayerJoin`: `GameState_SetJoinAllowed`"
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041dd90
+name = "Game_CheckMultiplayer"
+page = "frontend.md#warriors-functions"
+role = "`GameState_SyncPlayers(-1)` when the game state exists"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041f118
+name = "LevelRecord_Set"
+page = "frontend.md#the-level-table"
+level = "confirmed-code"
+coney = "src/warriors/level_table.h:LevelTable::set"
+status = "legacy"

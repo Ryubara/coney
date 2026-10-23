@@ -72,8 +72,9 @@ bytes = 717520
 # the stretches placed by position and calls (source-map.md#position). A directory with no attributed function has
 # no ranges yet. `link-once` is the game's template and inline code linked
 # after the libraries. Game code inside no range (the unknown stretches between directories) counts as
-# "unattributed", which the tracker computes as the rest of the game's code. A reimplemented function's `subsystem`
-# in functions.toml is the entry here whose range holds its address, or "unattributed".
+# "unattributed", which the tracker computes as the rest of the game's code. A reimplemented function (an entry of the
+# function database, research/functions/, with `coney`) belongs to the entry here whose range holds its address, or to
+# "unattributed".
 [[subsystem]]
 name = "Animation"
 ranges = [[0x00100200, 0x0010d758]]
