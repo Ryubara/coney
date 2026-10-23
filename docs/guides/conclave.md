@@ -81,9 +81,15 @@ alias, a spread or a cast cannot hide a call. It refuses:
   literal, or a const that holds `'conclave'`). `session.start` and `agent.offer` must end every path in `next(e)`
   (`agent.offer` may also return `{ isOffered: false }`, the answer that hides a type), and so must the `.catch` of
   any hook; a hook that answers for itself would drop what Tether adds beneath it. `classic.SessionStart` begins `const
-  r = await next(e)` and only ever returns `r`, so Tether's HANDOFF context comes through whole. `$.command.register`
-  takes only the name `'conclave'` and `$.ui.open` only the id `'conclave'`. Each hook is an inline function, which the
-  check can read, and the registration `on(...)` returns is used only as a statement or with that `.catch`.
+  r = await next(e)` and only ever returns `r` from its own body (no function inside it returns or touches `r`), so
+  Tether's HANDOFF context comes through whole. In these hooks `next` is only that one call, so the hooks beneath run
+  once (no second `next(e)`, no `next.to`, no copy), and `e` is passed on as it came: it is only read (`e.cwd`), never
+  replaced, changed, deleted from or handed to anything but `next` and the mod's own functions. Before it passes the
+  event on, `session.start` waits only for the engine's quick calls (any but `$.process.run`, directly or in a function
+  of the mod's own), never for the snapshot command or a promise of its own, so a session start never waits for
+  Conclave. `$.command.register` takes only the name `'conclave'` and a description, and `$.ui.open` only the id
+  `'conclave'` and a title. Each hook is an inline function, which the check can read, and the registration `on(...)`
+  returns is used only as a statement or with that `.catch`.
 - **Engine calls beyond the eleven the mod needs.** Every value of type `EngineInterface` (the `$` of a hook, or the
   parameter of any helper, under any name) may only be the object of `$.noun.method`, called, for the clock, the command
   registration, the one process, the store and the UI, or `$.plugin.root`. So no `$.session.` or `$.model.` call, tool,
@@ -96,13 +102,16 @@ alias, a spread or a cast cannot hide a call. It refuses:
   Sources are TypeScript only, so there is no plain script the check cannot see into.
 - **Code loaded or built at run time**, an `import` of anything but `claude-code` and the mod's own checked sources
   (an import into `tests/` would hide code from the check), and the globals a hooks module has no business with
-  (`fetch`, `globalThis`, `process`, `require`, `eval`, `Function`, the timers and the like). The way to the `Function`
-  constructor is closed too: no `constructor` name or string (`.constructor`, `['constructor']`, `'con' +
-  'structor'`) and no `as unknown as` cast, which hides a value's type from the check.
+  (`fetch`, `globalThis`, `process`, `require`, `eval`, `Function`, `Reflect`, the timers and the like). The ways to the
+  `Function` constructor are closed too: no `constructor` name or string (`.constructor`, `['constructor']`, `'con' +
+  'structor'`), no prototype reflection (`getPrototypeOf`, `getOwnPropertyDescriptor`, `__proto__`), no function or
+  value of unknown type read by a computed name (`fn[k]`, however `k` is built) and no `as unknown as` cast, which
+  hides a value's type from the check.
 - **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
   and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
-  `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag), and the options are an
-  object with only `cwd`, `timeoutMs` and an `env` that holds only `UV_PROJECT_ENVIRONMENT`: no other variable, no
+  exactly `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag or another folder),
+  and the options are an object with only `cwd`, which is that checkout, `timeoutMs`, and an `env` that holds only
+  `UV_PROJECT_ENVIRONMENT`, which is the checkout's own `venvOf(...)`: no other folder, variable or Python, no
   `stdin`, no options passed in a variable.
 - **Tether's words.** No string or name in the mod holds the session's usage figures (`context_tokens`,
   `seconds_since_last_response`, `rateLimits`), the transcript's path (`transcript_path`), `/clear`, `HANDOFF` or

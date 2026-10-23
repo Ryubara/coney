@@ -150,10 +150,17 @@ const runtimeFiles = new Set([...req.runtime.map(norm), ...[...virtual.keys()].m
 const isOwn = node => runtimeFiles.has(norm(node.getSourceFile().fileName))
 const isEngineFile = node => isEngineTypes(node.getSourceFile().fileName)
 
+/** Whether `callee` names one of claude-code's own functions that take `$` (`read`, `update`). */
+function isEngineFunction(callee) {
+  let symbol = ts.isIdentifier(callee) ? checker.getSymbolAtLocation(callee) : undefined
+  if (symbol !== undefined && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol)
+  return symbol !== undefined && ENGINE_FUNCTIONS.has(symbol.name) && symbol.declarations?.some(isEngineFile) === true
+}
+
 const {
-  unwrap, isName, plainProperties, constText, snapshotProblem, isRunOptions, returnsOf, inlineFunction, paramSymbol, isPassOn,
-  NOT_THE_COMMAND,
-} = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, isEngine })
+  unwrap, isName, plainProperties, constText, snapshotProblem, isRunOptions, inlineFunction, passingHookProblems,
+  sessionStartProblems, NOT_THE_COMMAND,
+} = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, isEngine, isOwn, isEngineFunction })
 
 /** Whether `call` is `<engine>.process.run(...)`. */
 function isProcessRun(call) {
@@ -177,7 +184,7 @@ function checkFile(sf, label, errors, events) {
   // environment, and nothing else.
   function checkRun(call) {
     if (call.arguments.length > 2 || (call.arguments[1] !== undefined && !isRunOptions(call.arguments[1]))) {
-      err(call, `passes options to $.process.run other than ${req.run.options.join(', ')} (and in env only ${req.run.env.join(', ')})`)
+      err(call, `passes options to $.process.run other than ${req.run.options.join(', ')}, with cwd the checkout and env only ${req.run.env.join(', ')} of venvOf(<checkout>)`)
     }
     const first = call.arguments[0]
     if (first !== undefined && ts.isArrayLiteralExpression(first)) {
@@ -229,8 +236,8 @@ function checkFile(sf, label, errors, events) {
         if (!(ts.isCallExpression(callee.parent) && callee.parent.expression === callee)) {
           err(next, `uses $.${key} other than by calling it`)
         } else if (key === 'process.run') checkRun(callee.parent)
-        else if (key === 'command.register') checkNamed(callee.parent, key, 'name')
-        else if (key === 'ui.open') checkNamed(callee.parent, key, 'id')
+        else if (key === 'command.register') checkNamed(callee.parent, key, 'name', 'description')
+        else if (key === 'ui.open') checkNamed(callee.parent, key, 'id', 'title')
       } else if (!PROPERTIES.has(key)) {
         err(next, `uses $.${key}, which is not in the mod's list (no $.session. or $.model. at all)`)
       }
@@ -276,10 +283,12 @@ function checkFile(sf, label, errors, events) {
   }
 
   // `$.command.register` and `$.ui.open` take only Conclave's own name, so Tether's command and pane stay Tether's.
-  function checkNamed(call, key, property) {
+  // Each takes its name and a text to show, and no option that changes what the engine does with them.
+  function checkNamed(call, key, property, text) {
     const props = call.arguments.length === 1 ? plainProperties(call.arguments[0]) : null
     const value = props?.get(property)
     if (value === undefined || !isName(value)) err(call, `$.${key} takes only the ${property} '${NAME}' (Tether's names stay Tether's)`)
+    else if ([...props.keys()].some(one => one !== property && one !== text)) err(call, `$.${key} takes only ${property} and ${text}`)
   }
 
   // The filter of a hook: `command.run` is Conclave's own command only, `ui.render` its band and its pane only.
@@ -302,54 +311,9 @@ function checkFile(sf, label, errors, events) {
     }
   }
 
-  // A hook that passes the event on: every path ends in `next(e)` (or, for `agent.offer`, refuses an agent type).
-  function checkPassingHook(fn, label, refusal) {
-    const ev = paramSymbol(fn, 1)
-    const next = paramSymbol(fn, 2)
-    const ending = `${label} must end every path in next(e)${refusal ? ' or in { isOffered: false }' : ''}, as a function of ($, e, next)`
-    if (ev === undefined || next === undefined) return err(fn, ending)
-    const body = fn.body
-    const results = ts.isBlock(body) ? returnsOf(body).map(one => one.expression ?? one) : [body]
-    const last = ts.isBlock(body) ? body.statements.at(-1) : undefined
-    if (ts.isBlock(body) && !(last !== undefined && (ts.isReturnStatement(last) || ts.isThrowStatement(last)))) err(body, ending)
-    for (const result of results) if (!isPassOn(result, next, ev, refusal)) err(result, ending)
-  }
-
-  // `classic.SessionStart` reads the session's agent type and passes the answer of the hooks beneath (Tether's, with the
-  // HANDOFF context) on whole: it begins `const r = await next(e)` and only ever returns `r`.
-  function checkSessionStartHook(fn) {
-    const ev = paramSymbol(fn, 1)
-    const next = paramSymbol(fn, 2)
-    const bad = () => err(fn, 'classic.SessionStart must begin with `const r = await next(e)` and return only r, so the answer beneath it stays whole')
-    const body = fn.body
-    if (ev === undefined || next === undefined || !ts.isBlock(body)) return bad()
-    const first = body.statements[0]
-    const decl = first !== undefined && ts.isVariableStatement(first) ? first.declarationList.declarations[0] : undefined
-    const isConst = first !== undefined && ts.isVariableStatement(first) && (first.declarationList.flags & ts.NodeFlags.Const) !== 0
-    const awaited = decl?.initializer === undefined ? undefined : unwrap(decl.initializer)
-    const isFirst =
-      isConst &&
-      first.declarationList.declarations.length === 1 &&
-      ts.isIdentifier(decl.name) &&
-      awaited !== undefined &&
-      ts.isAwaitExpression(awaited) &&
-      ts.isCallExpression(unwrap(awaited.expression)) &&
-      isPassOn(awaited.expression, next, ev, false)
-    if (!isFirst) return bad()
-    const answer = checker.getSymbolAtLocation(decl.name)
-    const last = body.statements.at(-1)
-    if (!(ts.isReturnStatement(last) && body.statements.length > 1)) return bad()
-    for (const one of returnsOf(body)) {
-      const value = one.expression === undefined ? undefined : unwrap(one.expression)
-      if (value === undefined || !ts.isIdentifier(value) || checker.getSymbolAtLocation(value) !== answer) return bad()
-    }
-    // The answer is only ever returned: not copied, changed or handed on.
-    const visit = node => {
-      if (ts.isIdentifier(node) && node !== decl.name && checker.getSymbolAtLocation(node) === answer && !ts.isReturnStatement(node.parent)) bad()
-      ts.forEachChild(node, visit)
-    }
-    visit(body)
-  }
+  // The two hooks read in conclave_boundary_syntax.cjs: what each passes on, and how.
+  const checkPassingHook = (fn, label, refusal) => passingHookProblems(fn, label, refusal).forEach(([node, why]) => err(node, why))
+  const checkSessionStartHook = fn => sessionStartProblems(fn).forEach(([node, why]) => err(node, why))
 
   // What an on(...) call does: its filter, its handler, and the `.catch` it may carry (which also passes the event on).
   function checkHook(call, event) {
@@ -436,6 +400,14 @@ function checkFile(sf, label, errors, events) {
     }
     if (ts.isAsExpression(n) && ts.isAsExpression(unwrap(n.expression)) && unwrap(n.expression).type.kind === ts.SyntaxKind.UnknownKeyword) {
       err(n, 'casts through `as unknown as`, which hides what a value is from this check')
+    }
+    // A function (or a value of unknown type) read by a computed name reaches its constructor however the name is built.
+    if (ts.isElementAccessExpression(n) && constText(n.argumentExpression) === null) {
+      const t = checker.getTypeAtLocation(n.expression)
+      const isOpen = (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0
+      if (isOpen || t.getCallSignatures().length > 0 || t.getConstructSignatures().length > 0) {
+        err(n, 'reads a function, or a value of unknown type, by a computed name, which reaches code built at run time')
+      }
     }
     if (n.kind === ts.SyntaxKind.AnyKeyword) err(n, 'uses `any`, which hides what a value is from this check')
     if (ts.isIdentifier(n) && BANNED.has(n.text) && ts.isExpressionNode(n) && !isNameOnly(n)) {

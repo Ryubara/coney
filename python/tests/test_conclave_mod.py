@@ -236,6 +236,93 @@ CROSSINGS = [
     ("setTimeout('evil()', 0)", "setTimeout"),
     ("setInterval(() => {}, 1)", "setInterval"),
     ("queueMicrotask(() => {})", "queueMicrotask"),
+    # A hook passes the event on once, as it came (round 4 review): no second next, no next.to, no new or changed event.
+    ("on('session.start', async ($, e, next) => {\n  await next(e)\n  return next(e)\n})", "uses `next`"),
+    (
+        "on('classic.SessionStart', async ($, e, next) => {\n"
+        "  const r = await next(e)\n  await next(e)\n  return r\n})",
+        "uses `next`",
+    ),
+    ("on('session.start', async ($, e, next) => {\n  await next.to(e, 'core')\n  return next(e)\n})", "uses `next`"),
+    ("on('agent.offer', async ($, e, next) => next.to(e, 'core'))", "must end every path"),
+    (
+        "on('session.start', async ($, e, next) => {\n"
+        "  const again = () => next(e)\n  void again()\n  return next(e)\n})",
+        "uses `next`",
+    ),
+    (
+        "on('agent.offer', async ($, e, next) => next(e))"
+        ".catch(async ($, e, next) => { await next(e); return next(e) })",
+        "uses `next`",
+    ),
+    (
+        "on('agent.offer', async ($, e, next) => next(e))"
+        ".catch(($, e, next) => { if (next.called) return next(e); return next(e) })",
+        "uses `next`",
+    ),
+    ("on('session.start', async ($, e, next) => {\n  e = { ...e, cwd: 'elsewhere' }\n  return next(e)\n})", "`e`"),
+    (
+        "on('agent.offer', async ($, e, next) => {\n  e = { ...e, agent: { ...e.agent, description: 'x' } }\n"
+        "  return next(e)\n})",
+        "`e`",
+    ),
+    ("on('agent.offer', async ($, e, next) => {\n  Object.assign(e, { agent: e.agent })\n  return next(e)\n})", "`e`"),
+    ("on('agent.offer', async ($, e, next) => {\n  e.agent = 'x'\n  return next(e)\n})", "`e`"),
+    ("on('session.start', async ($, e, next) => {\n  delete e.cwd\n  return next(e)\n})", "`e`"),
+    ("on('session.start', async ($, e, next) => {\n  const { cwd } = e\n  return next(e)\n})", "`e`"),
+    (
+        "on('classic.SessionStart', async ($, e, next) => {\n"
+        "  const r = await next(e)\n  function leak() { return r }\n"
+        "  Object.assign(leak(), { hookSpecificOutput: undefined })\n  return r\n})",
+        "return only r",
+    ),
+    (
+        "on('classic.SessionStart', async ($, e, next) => {\n"
+        "  const r = await next(e)\n  const leak = () => { return r }\n"
+        "  Object.assign(leak(), {})\n  return r\n})",
+        "return only r",
+    ),
+    # A session start never waits for Conclave: before the pass-on, only the engine's quick calls are awaited.
+    (
+        "on('session.start', async ($, e, next) => {\n"
+        f"  await $.process.run({SNAPSHOT_ARGV}, {{ timeoutMs: 600000 }})\n"
+        "  return next(e)\n})",
+        "waits for something",
+    ),
+    (
+        "on('session.start', async ($, e, next) => {\n  await new Promise<void>(() => undefined)\n  return next(e)\n})",
+        "waits for something",
+    ),
+    (
+        "async function slow(): Promise<void> { await new Promise<void>(() => undefined) }\n"
+        "on('session.start', async ($, e, next) => {\n  await slow()\n  return next(e)\n})",
+        "waits for something",
+    ),
+    (
+        "on('session.start', async ($, e, next) => {\n  const p = new Promise<void>(() => undefined)\n  await p\n"
+        "  return next(e)\n})",
+        "waits for something",
+    ),
+    (
+        "on('session.start', async ($, e, next) => next(e)).catch(async ($, e, next) => {\n"
+        "  await new Promise<void>(() => undefined)\n  return next(e)\n})",
+        "waits for something",
+    ),
+    # The project folder is exactly the checkout's `python`; cwd is the checkout and the environment its own.
+    (f"$.process.run({argv_with('`${checkoutOf($.plugin.root)}/../../tools/tether/python`')})", "project folder"),
+    (f"$.process.run({argv_with('`${checkoutOf($.plugin.root)}${name}`')})", "project folder"),
+    (f"$.process.run({SNAPSHOT_ARGV}, {{ cwd: name }})", "options"),
+    (f"$.process.run({SNAPSHOT_ARGV}, {{ cwd: $.plugin.root }})", "options"),
+    (f"$.process.run({SNAPSHOT_ARGV}, {{ env: {{ UV_PROJECT_ENVIRONMENT: name }} }})", "options"),
+    (f"$.process.run({SNAPSHOT_ARGV}, {{ env: {{ UV_PROJECT_ENVIRONMENT: venvOf(name) }} }})", "options"),
+    # The Function constructor by a name built at run time, or through prototype reflection.
+    ("const k = ['con', 'structor'].join('')\nconst F = Reflect.get(() => {}, k)", "Reflect"),
+    ("const k = ['con', 'structor'].join('')\nconst F = (() => {})[k]", "computed name"),
+    ("const k = ['con', 'structor'].join('')\nconst F = (JSON.parse('{}') as any)[k]", "computed name"),
+    ("const F = Object.getPrototypeOf(async () => {})", "getPrototypeOf"),
+    ("$.command.register({ name: 'conclave', description: 'x', immediate: true })", "takes only name and description"),
+    ("$.ui.open({ id: 'conclave', title: 'x', focus: true })", "takes only id and title"),
+    ("const d = Object.getOwnPropertyDescriptor(Object, 'x')", "getOwnPropertyDescriptor"),
 ]
 
 #: Code the mod may contain: each must pass the check.
@@ -283,15 +370,16 @@ export async function again(engine: EngineInterface) { return draw(engine, 'a') 
     "the snapshot command, with the flag it takes": f"""
 const argv = {SNAPSHOT_ARGV}
 if (name === 'x') argv.push('--github')
-await $.process.run(argv, {{ cwd: $.plugin.root, timeoutMs: 1000 }})
+await $.process.run(argv, {{ cwd: checkoutOf($.plugin.root), timeoutMs: 1000 }})
 """,
     "the snapshot command, as the mod runs it": """
 const root = checkoutOf($.plugin.root)
 const argv = ['uv', 'run', '-q', '--project', `${root}/python`, 'coney-tools', 'conclave', 'snapshot', '--json']
+const venv = venvOf(root)
 await $.process.run(argv, {
   cwd: root,
   timeoutMs: 1000,
-  ...(name === 'x' ? {} : { env: { UV_PROJECT_ENVIRONMENT: name } }),
+  ...(venv === null ? {} : { env: { UV_PROJECT_ENVIRONMENT: venv } }),
 })
 """,
     "a comment that names what Tether keeps": (

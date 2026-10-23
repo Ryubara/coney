@@ -86,8 +86,15 @@ WORDS = [
     "Continue from",
     "transcript_path",
 ]
-#: Words refused only when they are a whole name or string, not a part of one: the way to the `Function` constructor.
-EXACT_WORDS = ["constructor"]
+#: Words refused only when they are a whole name or string, not a part of one: the ways to the `Function` constructor.
+EXACT_WORDS = [
+    "constructor",
+    "getPrototypeOf",
+    "setPrototypeOf",
+    "getOwnPropertyDescriptor",
+    "getOwnPropertyDescriptors",
+    "__proto__",
+]
 #: The one name Conclave gives its command and its pane; it is also the filter of its `command.run` and `ui.render`.
 NAME = "conclave"
 #: Globals a hooks module has no business with (the engine has none of these, and a type error says so too).
@@ -110,6 +117,7 @@ BANNED_GLOBALS = [
     "setInterval",
     "setImmediate",
     "queueMicrotask",
+    "Reflect",
 ]
 #: The one command the mod runs, through `$.process.run`:
 #: `uv run -q --project <dir> coney-tools conclave snapshot --json`,
@@ -121,6 +129,8 @@ RUN = {
     #: The project folder is `${checkoutOf($.plugin.root)}/python`, the function being the mod's own in this file.
     "dir_function": "checkoutOf",
     "dir_file": "src/snapshot.ts",
+    #: The private environment is `venvOf(<checkout>)` and the folder the command runs in is the checkout itself.
+    "venv_function": "venvOf",
     #: The options `$.process.run` is given: the folder, the time limit and the private Python environment.
     "options": ["cwd", "timeoutMs", "env"],
     "env": ["UV_PROJECT_ENVIRONMENT"],
@@ -129,7 +139,7 @@ RUN = {
 #: anything but being named.
 PRELUDE = [
     "import type { EngineInterface, On, Register } from 'claude-code'",
-    "import { checkoutOf } from '../src/snapshot'",
+    "import { checkoutOf, venvOf } from '../src/snapshot'",
     "declare const $: EngineInterface",
     "declare const on: On",
     "declare const fn: never",
