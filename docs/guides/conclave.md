@@ -108,8 +108,9 @@ alias, a spread or a cast cannot hide a call. It refuses:
   `globalThis`, `process`, `require`, `eval`, `Function`, `Reflect`, `arguments`, the timers and the like). The ways to
   the `Function` constructor are closed too: no `constructor` name or string (`.constructor`, `['constructor']`,
   `'con' + 'structor'`), no prototype reflection (`getPrototypeOf`, `getOwnPropertyDescriptor`, `__proto__`), no
-  property read by a name computed at run time (`x[k]`, whatever the type of `x` says: the mod maps a tone to a colour
-  with a `switch`, not a table) and no `as unknown as` cast, which hides a value's type from the check.
+  property read or named by a name computed at run time (`x[k]`, `const { [k]: v } = x`, `{ [k]: v }`, whatever the
+  type of `x` says: the mod maps a tone to a colour with a `switch`, not a table) and no `as unknown as` cast, which
+  hides a value's type from the check.
 - **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
   and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
   exactly `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag or another folder),

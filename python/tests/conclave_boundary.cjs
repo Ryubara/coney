@@ -414,6 +414,10 @@ function checkFile(sf, label, errors, events) {
     if (ts.isElementAccessExpression(n) && constText(n.argumentExpression) === null) {
       err(n, 'reads a property by a computed name, which reaches code built at run time (use a switch or a Map)')
     }
+    // The same in a destructuring (`const { [k]: G } = f`, a parameter, an assignment) or an object's key.
+    if (ts.isComputedPropertyName(n) && constText(n.expression) === null) {
+      err(n, 'names a property by a computed name, which reaches code built at run time (use a switch or a Map)')
+    }
     // Loops and declarations that wait without an `await` the hook checks can see.
     if (ts.isForOfStatement(n) && n.awaitModifier !== undefined) err(n, 'uses `for await`, a wait this check does not follow')
     if (ts.isVariableDeclarationList(n) && (n.flags & ts.NodeFlags.Using) !== 0) {

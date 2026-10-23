@@ -443,6 +443,17 @@ CROSSINGS = [
         "const F = ({ f: () => undefined } as Record<string, object>)['f'] as Record<string, unknown>\nvoid (F[k])",
         "reads a property by a computed name",
     ),  # fn_with_keys_index
+    # Round 7 review (probe9.py): a computed name in a destructuring.
+    (
+        "const f = () => undefined\nconst k = ['con', 'structor'].join('') as 'name'\nconst { [k]: G } = f\nvoid G",
+        "computed name",
+    ),
+    (
+        "const f = () => undefined\nconst k = ['con', 'structor'].join('') as 'name'\n"
+        "const pick = ({ [k]: G }: typeof f) => G\nvoid pick(f)",
+        "computed name",
+    ),
+    ("let G: unknown\nconst k = name\n;({ [k]: G } = { a: 1 })", "computed name"),
     # Round 6 review: the probes of probe8.py.
     ("on('agent.offer', async ($, { agent }, next) => ({ isOffered: false }))", "each a plain name"),
     ("on('agent.offer', ($, e, next) => next(e)).catch(($, e, next, again = next) => next(e))", "arrow function"),
