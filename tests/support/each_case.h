@@ -9,7 +9,8 @@
 //
 // This uses two of Catch2's internals, `Catch::AutoReg` and `Catch::ITestInvoker` (the pair TEST_CASE itself expands
 // to), because the public macros register a function with no argument. They are as pinned in cmake/deps.cmake
-// (Catch2 v3.16.0): an update of the pin that changes them fails this header's build.
+// (Catch2 v3.16.0): a signature change in an update of the pin fails this header's build, but a change in what they
+// do compiles, so rerun each_case_test after every Catch2 update.
 
 #include <cstddef>
 #include <functional>

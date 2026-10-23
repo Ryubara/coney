@@ -238,6 +238,7 @@ before the split (2,847 passed, 1 skipped of 2,848) and 12.5 minutes at `-j 8`, 
 (2,893 passed, 1 skipped of 2,894). What is left is mostly one scenario: the level34 checkpoint 3 riot (stereos, then
 loot, then the meter) is one test of about 8 minutes (477 s), so more jobs than 8 gain little until it is shortened;
 the level3 chase seeds take 126 to 147 s each (966 s as one test).
+{: #test-timings }
 
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
