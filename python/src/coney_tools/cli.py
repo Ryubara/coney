@@ -43,7 +43,7 @@ from coney_tools import (
     recipes_cli,
     recordings_make,
     refs_cli,
-    research_claims_cli,
+    research_cli,
     run_records_cli,
     stale_processes,
     stamp_cli,
@@ -390,6 +390,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_natives_commands(groups)
     _add_refs_commands(groups)
     _add_missions_commands(groups)
+    research_cli.add_parser(groups)
     _add_pcsx2_commands(groups)
     _add_clips_commands(groups)
     build_cli.add_parser(groups)
@@ -401,14 +402,7 @@ def _build_parser() -> argparse.ArgumentParser:
     coord_cli.add_parser(groups)
     perf_cli.add_parser(groups)
     _add_trace_commands(groups)
-    _add_research_commands(groups)
     return parser
-
-
-def _add_research_commands(groups: Any) -> None:
-    """Register `coney-tools research ...`."""
-    group = groups.add_parser("research", help="the research pages: the claims a branch changed (docs/research/)")
-    research_claims_cli.add_commands(group.add_subparsers(dest="command", required=True))
 
 
 def _add_docs_commands(groups: Any) -> None:
@@ -1063,8 +1057,6 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
-    if args.group == "research":
-        return research_claims_cli.run(args)
     if args.group == "docs":
         if args.command == "legacy":
             return docs_cli.run_legacy(
@@ -1122,6 +1114,8 @@ def _run(args: argparse.Namespace) -> int:
         return refs_cli.run_extract(args.disc, args.only, args.names)
     if args.group == "missions":
         return missions_render.run_render(args.check)
+    if args.group == "research":
+        return research_cli.run(args)
     if args.group == "pcsx2":
         return _run_pcsx2(args)
     if args.group == "clips":

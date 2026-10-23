@@ -9,8 +9,10 @@ hooks:
 validation:
   nav:
     omitted_files: warn
-# The per-level pages of a split reference list are reached from its overview page, not the navigation.
+# The per-level pages of a split reference list are reached from its overview page, not the navigation; so are the
+# function lists the build makes from research/functions/ (they are linked from their system's page).
 not_in_nav: |
+  /research/*/functions.md
   /references/flags/
   /references/lights/
   /references/wad-names/

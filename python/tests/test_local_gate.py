@@ -441,11 +441,13 @@ def test_tidy_step_skips_when_no_cpp_changed(repo: Path) -> None:
         (["src/other.cpp"], False),
         (["python/src/coney_tools/cli.py"], False),
         (["src/README.md"], False),
-        # The docs build imports the progress tracker (and its config errors) from python/src.
+        # The docs build imports the progress tracker, the function database (and the config errors) from python/src.
         (["python/src/coney_tools/progress.py"], True),
         (["python/src/coney_tools/progress_render.py"], True),
         (["python/src/coney_tools/progress_research.py"], True),
         (["python/src/coney_tools/progress_cli.py"], True),
+        (["python/src/coney_tools/research_render.py"], True),
+        (["python/src/coney_tools/research_functions.py"], True),
         (["python/src/coney_tools/config.py"], True),
         (["python/tests/test_progress.py"], False),
     ],

@@ -4,7 +4,7 @@ No file names the repository's or the site's address: they come from the build. 
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
 built from. It also adds the Changelog page, written from the git history at build time, fills the progress page's
 tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress numbers into the
-site, so none of those is committed.
+site, and writes each research system's function list page from research/functions/, so none of those is committed.
 """
 
 import os
@@ -20,12 +20,18 @@ _REPO_LINK = re.compile(r"\]\(repo:([^)\s]+)\)")
 
 def _repo_url():
     """The repository's web address: from GitHub Actions in CI, otherwise from the `origin` remote."""
-    server, repo = os.environ.get("GITHUB_SERVER_URL"), os.environ.get("GITHUB_REPOSITORY")
+    server, repo = (
+        os.environ.get("GITHUB_SERVER_URL"),
+        os.environ.get("GITHUB_REPOSITORY"),
+    )
     if server and repo:
         return f"{server}/{repo}"
     try:
         remote = subprocess.run(
-            ["git", "remote", "get-url", "origin"], capture_output=True, text=True, check=True
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None
@@ -58,15 +64,20 @@ _PROGRESS_PAGE = "progress/index.md"
 _HISTORY_PAGE = "progress/history.md"
 
 
+def _use_checkout_tools(root):
+    """Makes `coney_tools` importable from the checkout at `root`: the docs build installs only MkDocs."""
+    src = str(Path(root) / "python" / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+
+
 def load_progress(root):
     """The progress tracker's state for the checkout at `root`, from `coney_tools` in `python/src`.
 
     The docs build installs only MkDocs, so the tracker is imported from the checkout instead of from an installed
     package. Raises RuntimeError, naming the problems, when the tracker's inputs disagree with each other.
     """
-    src = str(Path(root) / "python" / "src")
-    if src not in sys.path:
-        sys.path.insert(0, src)
+    _use_checkout_tools(root)
     from coney_tools import progress
     from coney_tools.config import ConfigError
 
@@ -75,7 +86,9 @@ def load_progress(root):
     except ConfigError as error:
         raise RuntimeError(str(error)) from error
     if state.problems:
-        raise RuntimeError("the progress inputs disagree:\n  " + "\n  ".join(state.problems))
+        raise RuntimeError(
+            "the progress inputs disagree:\n  " + "\n  ".join(state.problems)
+        )
     return state
 
 
@@ -86,7 +99,9 @@ def fill_progress_page(markdown, state, site=None):
     grid_html = site.grid_html if site else ""
     missions_html = site.missions_html if site else ""
     return progress_render.fill_page(
-        markdown, progress_render.render_page(state, grid_html, missions_html), _PROGRESS_PAGE
+        markdown,
+        progress_render.render_page(state, grid_html, missions_html),
+        _PROGRESS_PAGE,
     )
 
 
@@ -117,7 +132,10 @@ def build_progress_site(root, state, repo_url=None):
     head = None
     try:
         out = subprocess.run(
-            ["git", "-C", str(root), "log", "-1", "--format=%h%x09%ct"], capture_output=True, text=True, check=True
+            ["git", "-C", str(root), "log", "-1", "--format=%h%x09%ct"],
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         short, stamp = out.split("\t")
         head = (progress_history.utc_day(int(stamp)), short)
@@ -133,11 +151,36 @@ def build_progress_site(root, state, repo_url=None):
     )
 
 
+def research_function_pages(root):
+    """The function list page of each research system, as {path in the site: Markdown}.
+
+    They are made from research/functions/*.toml (coney_tools.research_render) and never committed. Raises
+    RuntimeError, naming every problem, when the function database does not pass `coney-tools research render --check`.
+    """
+    _use_checkout_tools(root)
+    from coney_tools import (
+        research_functions,
+        research_functions_check,
+        research_render,
+    )
+
+    findings = research_functions_check.check_root(Path(root))
+    if findings.errors:
+        raise RuntimeError(
+            "the function database has problems:\n  " + "\n  ".join(findings.errors)
+        )
+    systems = research_functions.load_all(Path(root))
+    return research_render.render_pages(Path(root), systems)
+
+
 def progress_badge_files(state):
     """The README's badges as {path in the site: JSON text}, one shields.io endpoint file each."""
     from coney_tools import progress_render
 
-    return {f"{progress_render.BADGES_DIR}/{name}": text for name, text in progress_render.badge_files(state).items()}
+    return {
+        f"{progress_render.BADGES_DIR}/{name}": text
+        for name, text in progress_render.badge_files(state).items()
+    }
 
 
 def on_page_markdown(markdown, config, page=None, **_):
@@ -146,15 +189,25 @@ def on_page_markdown(markdown, config, page=None, **_):
     On the progress page it first replaces the marker with the generated tables and pictures, on the history page with
     the chart and the table of days.
     """
-    if page is not None and page.file.src_uri == _PROGRESS_PAGE and _progress_state is not None:
+    if (
+        page is not None
+        and page.file.src_uri == _PROGRESS_PAGE
+        and _progress_state is not None
+    ):
         markdown = fill_progress_page(markdown, _progress_state, _progress_site)
-    if page is not None and page.file.src_uri == _HISTORY_PAGE and _progress_site is not None:
+    if (
+        page is not None
+        and page.file.src_uri == _HISTORY_PAGE
+        and _progress_site is not None
+    ):
         markdown = fill_history_page(markdown, _progress_site)
     base = config.get("repo_url")
     if not base:
         # No repository to point at (a copy without git): an empty anchor keeps the strict build passing.
         return _REPO_LINK.sub("](#)", markdown)
-    return _REPO_LINK.sub(lambda m: f"]({base.rstrip('/')}/blob/main/{m.group(1)})", markdown)
+    return _REPO_LINK.sub(
+        lambda m: f"]({base.rstrip('/')}/blob/main/{m.group(1)})", markdown
+    )
 
 
 # Markdown punctuation that could change how a commit title renders; each is backslash-escaped.
@@ -196,7 +249,11 @@ def render_changelog(commits, repo_url=None, note=None):
         lines += [f'{"???+" if index == 0 else "???"} note "{day}"', ""]
         for short, subject in entries:
             # Escaped brackets show the hash as `[abc1234]`, linked to its commit when the repository is known.
-            link = f"[{short}]({repo_url.rstrip('/')}/commit/{short})" if repo_url else f"`{short}`"
+            link = (
+                f"[{short}]({repo_url.rstrip('/')}/commit/{short})"
+                if repo_url
+                else f"`{short}`"
+            )
             label = rf"\[{link}\]"
             lines.append(f"    - {label} {_escape(subject)}")
         lines.append("")
@@ -207,10 +264,17 @@ def _git_commits(root):
     """The first-parent history of HEAD as `Commit` tuples, or (None, reason) when it cannot be read in full."""
     try:
         shallow = subprocess.run(
-            ["git", "rev-parse", "--is-shallow-repository"], cwd=root, capture_output=True, text=True, check=True
+            ["git", "rev-parse", "--is-shallow-repository"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         if shallow != "false":
-            return None, "The changelog is not shown because this build has only part of the git history."
+            return (
+                None,
+                "The changelog is not shown because this build has only part of the git history.",
+            )
         out = subprocess.run(
             ["git", "log", "--first-parent", "--format=%h%x09%ct%x09%s"],
             cwd=root,
@@ -220,7 +284,10 @@ def _git_commits(root):
             check=True,
         ).stdout
     except (OSError, subprocess.CalledProcessError):
-        return None, "The changelog is not shown because this build could not read the git history."
+        return (
+            None,
+            "The changelog is not shown because this build could not read the git history.",
+        )
     commits = []
     for line in out.splitlines():
         short, stamp, subject = line.split("\t", 2)
@@ -246,17 +313,29 @@ def on_files(files, config):
     root = Path(config.config_file_path).parent
     try:
         _progress_state = load_progress(root)
-        _progress_site = build_progress_site(root, _progress_state, config.get("repo_url"))
+        _progress_site = build_progress_site(
+            root, _progress_state, config.get("repo_url")
+        )
     except (RuntimeError, ImportError, OSError) as error:
         raise PluginError(f"progress: {error}") from error
     for uri, text in progress_badge_files(_progress_state).items():
         files.append(File.generated(config, uri, content=text))
     for uri, text in _progress_site.files.items():
         files.append(File.generated(config, uri, content=text))
+    try:
+        function_pages = research_function_pages(root)
+    except (RuntimeError, ImportError, OSError) as error:
+        raise PluginError(f"research functions: {error}") from error
+    for uri, text in function_pages.items():
+        files.append(File.generated(config, uri, content=text))
     for uri in _SERVED_ASSETS:
         if not (root / uri).is_file():
-            raise PluginError(f"the home page's artwork is missing: {uri} (docs/guides/writing-docs.md, The home page)")
-        files.append(File(uri, str(root), config["site_dir"], config["use_directory_urls"]))
+            raise PluginError(
+                f"the home page's artwork is missing: {uri} (docs/guides/writing-docs.md, The home page)"
+            )
+        files.append(
+            File(uri, str(root), config["site_dir"], config["use_directory_urls"])
+        )
     commits, note = _git_commits(root)
     content = render_changelog(commits or [], config.get("repo_url"), note)
     files.append(File.generated(config, "changelog.md", content=content))

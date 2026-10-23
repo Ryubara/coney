@@ -2,23 +2,23 @@
 
 `coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-six
 groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
-checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task),
-which claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
+checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task), which
+claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
 machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions, labels),
 [`pr`](#pr), which checks commit messages, `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`,
-from **your own disc**, [`extract`](#extract), which turns every asset of the disc into open formats,
-[`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox),
-which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the
-docs current, [`orig`](#orig), which indexes the `@orig` tags for the fidelity audit, [`original`](#original), which
-studies an original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log,
-[`lua`](#lua), which decompiles the game's compiled scripts for research, [`natives`](#natives), which renders the
-script-binding masterlist, [`refs`](#refs), which builds the game reference
-lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which
-record the original's per-update traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks,
-publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging servers for agent tools,
-[`doctor`](#doctor), which checks a contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra
-project with our function names, and [`workspace`](#workspace), which sets up the local workspace;
-[`coney-agent`](#coney-agent) is a command of its own, the session launcher. Everything is read in place and
+from **your own disc**, [`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
+which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which reads the Xbox
+disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs current,
+[`orig`](#orig), which indexes the `@orig` tags for the fidelity audit, [`original`](#original), which studies an
+original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log, [`lua`](#lua),
+which decompiles the game's compiled scripts for research, [`natives`](#natives), which renders the script-binding
+masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
+status pages, [`research`](#research), which keeps the function database and its generated lists, [`pcsx2`](#pcsx2) and
+[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
+[`clips`](#clips), which checks, publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging
+servers for agent tools, [`doctor`](#doctor), which checks a contributor's machine and disc, [`ghidra`](#ghidra), which
+sets up your own Ghidra project with our function names, and [`workspace`](#workspace), which sets up the local
+workspace; [`coney-agent`](#coney-agent) is a command of its own, the session launcher. Everything is read in place and
 streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
 .WAD](../research/formats/wad-dir.md).
 
@@ -694,6 +694,43 @@ levels list, each status consistent with its checkpoints) and writes `docs/missi
 with the script-binding numbers of [Story coverage](../references/bindings/story.md) read from
 `research/bindings/`. With `--check` it writes nothing and exits with 1 when a page is out of date; CI runs it that
 way. Run `natives render` first when bindings changed.
+
+## research {#research}
+
+The [function database](research-workflow.md#function-database): one TOML file per system in `research/functions/`,
+which tools read directly, and the research pages made from it. The schema, the rules and how to write an entry are in
+the [Research workflow](research-workflow.md#function-database); this section is the commands.
+
+```sh
+uv run --project python coney-tools research render --check
+uv run --project python coney-tools research render <folder>
+```
+
+`render --check` checks every file of the database against the checkout and writes nothing; CI runs it (`python`), and
+the docs build runs the same checks before it writes the pages. What it checks is in
+[the Research workflow](research-workflow.md#function-database). It exits with 1 and prints one `error:` line per
+problem when one fails; a name Ghidra still has as `FUN_<address>` is a `warning:` line and does not fail. It exits with
+2 when it is not run inside a checkout or the arguments are wrong.
+
+With `<folder>` instead of `--check`, it runs the same checks and then writes one page per system,
+`<folder>/research/<system>/functions.md`, the page the docs build makes (`mkdocs_hooks.py`; none is committed), so you
+can look at one without a build. It writes nothing while the data has a problem. Give a folder or `--check`, not both.
+
+```sh
+uv run --project python coney-tools research import-table PAGE --system NAME [--section ANCHOR] [--replace] [--dry-run]
+```
+
+Imports the code-index tables of the research page `PAGE` (a file below `docs/research`) into
+`research/functions/NAME.toml`, creating it when it is not there. Which tables and columns it reads, how it merges with
+the file and what its report lists are in [the Research workflow](research-workflow.md#function-database).
+`--section ANCHOR` limits the import to the tables under that heading, `--replace` takes the page's row for an address
+already in the file, and `--dry-run` prints the report and writes nothing. It exits with 0 when at least one function
+was read, 1 when the page gave none, and 2 for a page outside `docs/research`, a bad system name or an unknown
+`--section`.
+
+The code is `research_functions.py` (the schema and the file format), `research_functions_check.py` (the checks that read the
+checkout), `research_render.py` (the pages), `research_import.py` (the import), `research_links.py` (headings, anchors
+and links of a page as MkDocs reads them) and `research_cli.py`.
 
 ## pcsx2 {#pcsx2}
 
@@ -1584,7 +1621,7 @@ line, and any failure makes the command exit 1:
 | `orig` | a file under `src/` changed | [`orig check`](#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `research*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
 | `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a

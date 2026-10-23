@@ -344,9 +344,13 @@ def _step_tidy(
     )
 
 
-#: Python files the docs build imports (mkdocs_hooks.py loads the progress tracker, and its config errors, from
-#: python/src): a name starting with one of these changes what the build produces.
-_DOCS_BUILD_PYTHON = ("python/src/coney_tools/progress", "python/src/coney_tools/config.py")
+#: Python files the docs build imports (mkdocs_hooks.py loads the progress tracker, the function database and its
+#: pages, and the config errors, from python/src): a name starting with one of these changes what the build produces.
+_DOCS_BUILD_PYTHON = (
+    "python/src/coney_tools/progress",
+    "python/src/coney_tools/research",
+    "python/src/coney_tools/config.py",
+)
 
 
 def _docs_changed(changed: list[str], paths: Paths) -> bool:

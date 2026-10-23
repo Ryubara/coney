@@ -6,7 +6,8 @@ A game function counts as understood when both hold:
 * it has a meaningful name in the shared Ghidra project (not Ghidra's default `FUN_<address>`), and
 * its address is cited in docs/research/** (the source map excepted: placing a function is not understanding it)
   in a table row or paragraph that states an evidence level (confirmed, inferred, speculative) or says
-  `not needed: <reason>`, or it is the wrapper of a script binding in research/bindings/*.yaml with an `evidence`.
+  `not needed: <reason>`, or it is an entry of the function database (research/functions/<system>.toml, whose every
+  entry has a level), or it is the wrapper of a script binding in research/bindings/*.yaml with an `evidence`.
 
 The names and sizes come from a committed listing, docs/progress/ghidra-functions.tsv, exported from Ghidra by
 `coney-tools progress ghidra`: addresses, sizes and our own names only, which LEGAL.md allows as reference data.
@@ -25,6 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from coney_tools import research_functions
 from coney_tools.progress import UNATTRIBUTED, ProgressError, Totals
 
 LISTING_FILE = Path("docs/progress/ghidra-functions.tsv")
@@ -285,7 +287,8 @@ def _cite(citations: dict[int, Citation], address: int, page: str, evidence: boo
 
 
 def scan_citations(root: Path) -> dict[int, Citation]:
-    """Every address the research pages and binding files cite, with whether a citation states its evidence."""
+    """Every address the research pages, the function database and the binding files cite, with whether a citation
+    states its evidence. Raises ProgressError when a function database file is malformed."""
     citations: dict[int, Citation] = {}
     research = root / RESEARCH_DIR
     pages = sorted(p for p in research.rglob("*.md") if p.name not in NOT_UNDERSTANDING) if research.is_dir() else []
@@ -307,6 +310,16 @@ def scan_citations(root: Path) -> dict[int, Citation]:
                 name = _BINDING_NAME.search(entry.lstrip().removeprefix("- "))
                 evidence = bool(_BINDING_EVIDENCE.search(entry))
                 _cite(citations, int(wrapper.group(1), 16), page, evidence, f"lua_{name.group(1)}" if name else "")
+    # The function database: an entry always has a level and its name is Ghidra's, so it names the function; it states
+    # evidence only with a `role`, the line that says what the function does (an entry without one says nothing).
+    try:
+        systems = research_functions.load_all(root)
+    except research_functions.ResearchFunctionsError as error:
+        raise ProgressError(str(error)) from error
+    for system in systems:
+        for entry in system.entries:
+            _cite(citations, entry.address, system.path.as_posix(), bool(entry.role.strip()), entry.name)
+            citations[entry.address].page_name = entry.name
     return citations
 
 
