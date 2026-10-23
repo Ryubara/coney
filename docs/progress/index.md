@@ -118,7 +118,7 @@ and what a pull request's build shows: [the progress commands](../guides/coney-t
   tag ([Conventions](../guides/conventions.md#comments-and-orig)).
 - A source-map change that moves a range or a coverage figure updates `totals.toml` in the same commit; a change to a
   file's range is made in `research/source-files.toml`, and `research render --check` holds each file inside its
-  directory's range here ([the source files](../guides/research-source-files.md#checks)).
+  directory's range here and no range over another directory's file ([the source files](../guides/research-source-files.md#checks)).
 - A roadmap status change needs nothing extra: the milestones are read from the roadmap's table.
 
 Nothing generated is committed, so these changes never conflict with another pull request's. The tables and the

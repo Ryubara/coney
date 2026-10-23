@@ -49,7 +49,9 @@ Exit codes: 0 when something matched, 1 when nothing did (with a line saying wha
 arguments are wrong, the query is empty, a query like `0xzz` is no address, or a data file is malformed (the message
 names the file). `--json` prints the same facts as the text under the keys `query`, `addresses`, `files`, `words` and
 `similar`. An address lists `function`, `name`, `size`, `offset`, `listed` (whether the Ghidra listing was there),
-`section`, `code`, `source_file`, `owner` (`page`, `via`, `what`, or null), `database` (with `coney` and `status`),
+`section` (the executable's section that holds the address, whether or not a function does; empty outside the image),
+`code` (true when that section is the code, `.text`, so an address inside a function there is `true`; false in a data
+section and outside the image), `source_file`, `owner` (`page`, `via`, `what`, or null), `database` (with `coney` and `status`),
 `orig`, `cited` and `questions`.
 
 ## The find pages {#find-pages}

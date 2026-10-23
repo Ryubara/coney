@@ -12,7 +12,7 @@ docs build fills the file tables of the source map page from it (research_find.p
 The ranges are inferred, like the directory ranges of `docs/progress/totals.toml`, which stays hand-kept because its
 subsystem ranges are widened by stretches placed by position and its coverage bytes come from the whole map, neither of
 which a file range gives. `check_totals` holds the two together: a file lies in its directory's range, or in a
-middleware range.
+middleware range, and no subsystem range takes in a file that is not its own.
 
 This module is the data model, the schema and the one canonical text; it depends on nothing of the tracker but the
 totals file it checks against.
@@ -318,29 +318,62 @@ def file_of(ranges: list[FileRange] | tuple[FileRange, ...], starts: list[int], 
 
 
 def check_totals(files: SourceFiles, totals: Totals) -> list[str]:
-    """The files whose range lies in neither their directory's subsystem range of `totals` nor a middleware range.
+    """Where the file data and `totals.toml` disagree, in both directions that the data can hold.
 
-    A directory is a subsystem of its own name (`Device/ps2`) or of its first component (`GUI/RumbleModeGUI` is `GUI`).
+    Files into ranges: a file's range lies inside a range of its directory's subsystem or inside a middleware range. A
+    directory is a subsystem of its own name (`Device/ps2`) or of its first component (`GUI/RumbleModeGUI` is `GUI`).
+
+    Ranges onto files: a subsystem range takes in no byte of a file that is not its own (another directory's, or one
+    no subsystem owns such as Lua), and a range of a subsystem that has files holds at least one of them. That is
+    as tight as it can be: the ranges also cover the stretches the source map places by position and calls, and
+    a subsystem such as Maths has no file with an address, so a range cannot be held to its files' first and last
+    byte, and one that grew into a gap or a position stretch is not caught.
+
+    `progress.load_totals` already refuses two overlapping ranges, so a range that takes in a file of another subsystem
+    can only reach this check together with that file lying outside its own range (the first direction fails too); the
+    "too wide" message then names the range that grew. The new failure the second direction alone can raise is a range
+    that holds none of its subsystem's files.
+
     The totals file is hand-kept; this is what stops it and the file data drifting apart.
     """
     subsystems = {s.name: s for s in totals.subsystems}
-    found: list[str] = []
+    # Each file with an address, as (file, range, the subsystem its directory belongs to).
+    placed = []
     for file in files.files:
-        if file.start is None or file.end is None:
-            continue
-        subsystem = subsystems.get(file.directory) or subsystems.get(file.directory.partition("/")[0])
-        inside = subsystem is not None and any(r.start <= file.start and file.end <= r.end for r in subsystem.ranges)
-        library = any(r.start <= file.start and file.end <= r.end for m in totals.middleware for r in m.ranges)
+        if file.start is not None and file.end is not None:
+            owner = subsystems.get(file.directory) or subsystems.get(file.directory.partition("/")[0])
+            placed.append((file, (file.start, file.end), owner))
+
+    found: list[str] = []
+    # Files into ranges.
+    for file, (start, end), owner in placed:
+        inside = owner is not None and any(r.start <= start and end <= r.end for r in owner.ranges)
+        library = any(r.start <= start and end <= r.end for m in totals.middleware for r in m.ranges)
         if inside or library:
             continue
-        where = f"{file.start:#010x}-{file.end:#010x}"
-        if subsystem is None:
+        where = f"{start:#010x}-{end:#010x}"
+        if owner is None:
             found.append(
                 f"{file.path} ({where}): directory {file.directory} is no subsystem of totals.toml, "
                 "and the range is in no middleware range"
             )
         else:
-            found.append(f"{file.path} ({where}) lies outside the range of {subsystem.name} in totals.toml")
+            found.append(f"{file.path} ({where}) lies outside the range of {owner.name} in totals.toml")
+    # Ranges onto files.
+    for subsystem in totals.subsystems:
+        own = [(start, end) for _, (start, end), owner in placed if owner is subsystem]
+        for span in subsystem.ranges:
+            where = f"{span.start:#010x}-{span.end:#010x}"
+            for file, (start, end), owner in placed:
+                if owner is subsystem or start >= span.end or end <= span.start:
+                    continue
+                whose = f"belongs to {owner.name}" if owner else "belongs to no subsystem"
+                found.append(
+                    f"{subsystem.name} in totals.toml is too wide: its range {where} takes in "
+                    f"{file.path} ({start:#010x}-{end:#010x}), which {whose}"
+                )
+            if own and not any(span.start <= start and end <= span.end for start, end in own):
+                found.append(f"{subsystem.name} in totals.toml: its range {where} holds none of its files")
     return found
 
 

@@ -56,11 +56,18 @@ and fails on:
   before it starts, an anchor outside the range, two files with the same path or overlapping ranges;
 - a file whose range lies outside its directory's range in [`docs/progress/totals.toml`](repo:docs/progress/totals.toml)
   and in every middleware range: the file data and the progress tracker's denominators cannot drift apart;
+- the other way round, a range of a subsystem that has files in `totals.toml` but holds none of them. A range that takes
+  in a file that is not its own (another directory's, or one no subsystem owns such as Lua) is named as too wide, but
+  the loader already refuses overlapping ranges, so that message only says which range grew when its neighbour's file
+  also falls outside the neighbour's range;
 - a source map page that does not have its `<!-- source-files:generated -->` line exactly once.
 
 `totals.toml` stays a hand-kept file. Its subsystem ranges reach from a directory's first attributed function to its
 last and are widened by the stretches the map places by position and calls, and its coverage bytes come from the whole
-map; no list of file ranges gives either. The check above is what holds the two together.
+map; no list of file ranges gives either. The checks above are what holds the two together. They cannot hold a range
+to its files' first and last byte: a subsystem range is wider than its files on purpose (Animation's starts 0x4430
+bytes before its first file), and Maths, Debug, Utils and link-once have no file with an address at all, so a range
+that grew into a gap or a position stretch is not caught, only one that grew over another file.
 
 ## The generated tables {#generated-tables}
 

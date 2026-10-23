@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-from test_progress_docs import load_hooks
+from test_progress_docs import load_hooks, page_of
 from test_research_cli import with_source_files
 from test_research_functions_check import ENTRY, make_root, with_conventions
+
+from coney_tools import research_find
 
 
 def test_the_build_gets_one_page_per_system_and_the_address_page(tmp_path: Path) -> None:
@@ -81,3 +84,17 @@ def test_a_source_map_without_its_marker_stops_the_build(tmp_path: Path) -> None
     with_source_files(root)
     with pytest.raises(RuntimeError, match="exactly one"):
         load_hooks().fill_source_map_page("# Map\n", root)
+
+
+def test_the_hook_fills_the_page_the_tools_name_as_the_source_map(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The page is `research_find.SOURCE_MAP_PAGE`, not a second copy of its path in the hook."""
+    root = make_root(tmp_path)
+    with_source_files(root)
+    monkeypatch.setattr(research_find, "SOURCE_MAP_PAGE", "research/elsewhere.md")
+    config = SimpleNamespace(config_file_path=str(root / "mkdocs.yml"), get=lambda *_: None)
+    marker = "# Map\n\n<!-- source-files:generated -->\n"
+    hooks = load_hooks()
+    assert "#### Combat" in hooks.on_page_markdown(marker, config, page=page_of("research/elsewhere.md"))
+    assert hooks.on_page_markdown(marker, config, page=page_of("research/source-map.md")) == marker
