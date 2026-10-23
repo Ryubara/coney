@@ -15,11 +15,11 @@ import shutil
 import sys
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from coney_tools import hooks as hook_tools
-from coney_tools import pcsx2_claims, pcsx2_proc, pcsx2_state
+from coney_tools import pcsx2_claims, pcsx2_proc, pcsx2_state, run_records_cli
 from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.debug_server import DebugClient, DebugServerError, P2m2Header, read_p2m2, savestate_of
 from coney_tools.game_memory import GAME_TIME_OFFSET, GAME_TIMER_POINTER, GameMemory
@@ -27,6 +27,7 @@ from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
 from coney_tools.pine import PineClient, PineError, Read
 from coney_tools.recorder import Recorder, RecordError, Recording
+from coney_tools.run_records import RunRecord
 from coney_tools.scenario import PATCHES_DIR, Scenario, ScenarioError, load_scenario, with_let
 from coney_tools.wad import refuse_inside_repo
 
@@ -453,6 +454,52 @@ def run_launch(
     return 0
 
 
+def _version_for_record(client: PineClient) -> str:
+    """PCSX2's version for a run record, read while the recording's connection is still open. A trace is long to make,
+    so a PCSX2 that no longer answers gives `unknown` and a warning rather than losing the trace."""
+    try:
+        return run_records_cli.pcsx2_version(client)
+    except PineError as error:
+        print(f"warning: PCSX2's version could not be read for the run record ({error})")
+        return "unknown"
+
+
+def _trace_draft(scenario_path: Path, lets: list[str], request: run_records_cli.RecordRequest) -> RunRecord:
+    """The run record a trace is to write, checked before PCSX2 starts (`run_records_cli.precheck`): the scenario, its
+    patches and `--let`s as given, with stand-ins for the counts, the CSV's hash and PCSX2's version, which only the run
+    can tell, and for the copy, which is claimed only after this check."""
+    root = find_repo_root(Path.cwd())
+    try:
+        scenario = with_let(load_scenario(scenario_path, root), lets)
+    except ScenarioError as error:
+        raise ConfigError(str(error)) from error
+    values, hashes = run_records_cli.TRACE_STAND_IN
+    pending = run_records_cli.draft(
+        root,
+        kind="trace",
+        tool="pcsx2 record",
+        run_name=request.name or scenario_path.stem,
+        copy=run_records_cli.COPY_STAND_IN,
+        state=request.state,
+        name=scenario_path.stem,
+        args=dict(text.partition("=")[::2] for text in lets),
+        values=values,
+        hashes=hashes,
+        patches=scenario.patches,
+    )
+    run_records_cli.precheck(root, pending)
+    return pending
+
+
+def _write_run_record(pending: RunRecord, out: Path, recording: Recording, copy: str, version: str) -> None:
+    """Write the run record of a recorded trace: the counts and the hash of the CSV in place of the stand-ins."""
+    values, hashes = run_records_cli.trace_facts(recording, out.read_bytes())
+    run_records_cli.save(
+        find_repo_root(Path.cwd()),
+        replace(pending, copy=copy, pcsx2_version=version, values=values, hashes=hashes),
+    )
+
+
 def run_record(
     scenario_path: Path,
     out: Path,
@@ -463,18 +510,25 @@ def run_record(
     agent: str | None = None,
     lets: list[str] | None = None,
     recording: Path | None = None,
+    record: run_records_cli.RecordRequest | None = None,
 ) -> int:
     """`pcsx2 record`: play a scenario on the original and write its trace, under `agent`'s claim: the one it holds
     (kept for it afterwards), else one made here and released at the end, also on an error or Ctrl-C (unless
     `keep_open`). `lets` (`NAME=EXPRESSION`) give or replace names of the scenario's `let`. With `recording` (a
-    `.p2m2` input recording), the pad comes from replaying it through the debug server, from its own start."""
+    `.p2m2` input recording), the pad comes from replaying it through the debug server, from its own start. With
+    `record`, the run also writes its run record (research/runs/) beside the trace's CSV."""
     refuse_inside_repo(out)
+    pending = None
+    if record is not None:
+        pending = _trace_draft(scenario_path, lets or [], record)
     if recording is not None and (attach or state is not None):
         raise ConfigError("--recording starts from the recording's own savestate: drop --attach and --state")
     registry = pcsx2_claims.default_registry()
     claim, created = registry.claim_for_run(agent, flags[0], os.getpid())
     try:
-        return _record(scenario_path, out, state, attach, keep_open, flags, registry, claim, lets or [], recording)
+        return _record(
+            scenario_path, out, state, attach, keep_open, flags, registry, claim, (lets or [], recording, pending)
+        )
     finally:
         if created and not keep_open:
             registry.release(claim.agent, claim.copy)
@@ -489,10 +543,12 @@ def _record(
     flags: tuple[Path | None, Path | None, Path | None],
     registry: pcsx2_claims.Registry,
     claim: pcsx2_claims.Claim,
-    lets: list[str],
-    replay: Path | None = None,
+    options: tuple[list[str], Path | None, RunRecord | None],
 ) -> int:
-    """The recording of `run_record`, on the copy of `claim`."""
+    """The recording of `run_record`, on the copy of `claim`; `options` are its `lets`, the input recording to replay
+    and the run record to write (checked before the run, its measured fields still stand-ins)."""
+    lets, replay, pending = options
+    version = ""
     try:
         scenario = with_let(load_scenario(scenario_path, find_repo_root(Path.cwd())), lets)
     except ScenarioError as error:
@@ -532,6 +588,8 @@ def _record(
             client = emulator.client
         if replay is None:
             recording = Recorder(GameMemory(client), scenario, hooks=hooks).record()
+        if pending is not None:
+            version = _version_for_record(client)
     except (PineError, RecordError, StateError, DebugServerError) as error:
         raise ConfigError(str(error)) from error
     finally:
@@ -562,6 +620,9 @@ def _record(
     if recording.missed or recording.torn:
         # Every step to distrust, beside the trace; the line below lists only the first.
         out.with_name(f"{out.stem}.quality.txt").write_text(recording.quality(), encoding="utf-8")
+    if pending is not None:
+        # After the trace's files: a record that still failed must not cost the measurement.
+        _write_run_record(pending, out, recording, claim.copy, version)
     per_poll = 1000 * recording.seconds / max(recording.polls, 1)
     print(
         f"{out}: {recording.updates} updates"

@@ -18,9 +18,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
-#: PINE opcodes: reads, writes, then the status query. Save and load (9, 10) are deliberately absent.
+#: PINE opcodes: reads, writes, then the version and status queries. Save and load (9, 10) are deliberately absent.
 READ_OPCODES = {1: 0, 2: 1, 4: 2, 8: 3}
 WRITE_OPCODES = {1: 4, 2: 5, 4: 6, 8: 7}
+OPCODE_VERSION = 0x08
 OPCODE_STATUS = 0x0F
 
 #: What MsgStatus answers.
@@ -139,6 +140,14 @@ class PineClient:
     def batch(self, reads: Sequence[Read], writes: Sequence[Write] = ()) -> list[int]:
         """Apply `writes`, then do `reads`, in one message; returns each read's value, unsigned."""
         return decode(self._exchange(encode(reads, writes)), reads)
+
+    def version(self) -> str:
+        """PCSX2's version text, as it answers it (`PCSX2 v2.9.94-5-gabc1234`)."""
+        reply = self._exchange(struct.pack("<IB", 5, OPCODE_VERSION))
+        if not reply or reply[0] != 0 or len(reply) < 5:
+            raise PineError("PCSX2 refused the version query")
+        size = struct.unpack_from("<I", reply, 1)[0]
+        return reply[5 : 5 + size].decode("ascii", "replace").partition(chr(0))[0].strip()
 
     def status(self) -> str:
         """The emulator's state: `running`, `paused` or `shutdown`."""

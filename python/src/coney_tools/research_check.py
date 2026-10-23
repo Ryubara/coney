@@ -86,16 +86,22 @@ _NAME_BEFORE = re.compile(
 EXTRA_RULES: tuple[Rule, ...] = ()
 
 
+def subject_of(path: str, page: Page, env: ResearchEnv, *, legacy_page: bool = False) -> tuple[Subject, list[Finding]]:
+    """The research page at `path`, read as `page`, as the rules see it (its kind, front matter and section names), and
+    the findings its front matter gave."""
+    research = env.research
+    front, found = read_front_matter(page, research, env.catalog)
+    kind = front.kind or research.kind_of_path(path)
+    return Subject(path, page, kind, front, env, legacy_page, section_names(page, research, kind)), found
+
+
 def check_research(path: str, page: Page, env: ResearchEnv, *, legacy_page: bool = False) -> list[Finding]:
     """Every finding for the research page at `path`, read as `page`, in line order.
 
     `legacy_page` says the page is in the legacy file, which lets a runtime claim of the old form (PCSX2 named, no run
     record) stand. The findings are the full set: the legacy file's waivers are applied afterwards (`research_legacy`).
     """
-    research = env.research
-    front, found = read_front_matter(page, research, env.catalog)
-    kind = front.kind or research.kind_of_path(path)
-    subject = Subject(path, page, kind, front, env, legacy_page, section_names(page, research, kind))
+    subject, found = subject_of(path, page, env, legacy_page=legacy_page)
     found.extend(_check_system(subject))
     found.extend(_check_owners(subject))
     found.extend(_check_sections(subject))

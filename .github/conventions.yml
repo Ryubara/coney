@@ -893,3 +893,14 @@ research:
       max_lines: 1000
       system: none
       owns: optional
+
+runs:
+  # Run records (docs/guides/research-workflow.md#run-records): what a research page's `confirmed (runtime)` claim cites.
+  # A record is written only by the tools that drive PCSX2 (`pcsx2 recipe run --record`, `pcsx2 record --run-record`,
+  # `pcsx2 record-run`) into research.files.runs and holds names, numbers and addresses, never memory or game text (LEGAL.md). The limits cap
+  # how much a record holds; they cannot tell game text from ours, so the reviewer reads the method, args and names.
+  id_pattern: '^r-[0-9]{8}-[a-z0-9][a-z0-9-]{0,47}$'   # r-<date>-<name>; the file is <id>.toml
+  max_bytes: 8192                                # the writer checks it too; the repository's file check is 512 KB
+  max_values: 64                                 # values, addresses and run args together
+  max_text: 600                                  # characters of the method, and of any other text field
+  kinds: [recipe, trace, method]                 # recipe: pcsx2 recipe run; trace: pcsx2 record; method: pcsx2 record-run

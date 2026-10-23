@@ -42,6 +42,8 @@ from coney_tools import (
     recipes_cli,
     recordings_make,
     refs_cli,
+    research_claims_cli,
+    run_records_cli,
     stale_processes,
     stamp_cli,
     task_cli,
@@ -397,7 +399,14 @@ def _build_parser() -> argparse.ArgumentParser:
     coord_cli.add_parser(groups)
     perf_cli.add_parser(groups)
     _add_trace_commands(groups)
+    _add_research_commands(groups)
     return parser
+
+
+def _add_research_commands(groups: Any) -> None:
+    """Register `coney-tools research ...`."""
+    group = groups.add_parser("research", help="the research pages: the claims a branch changed (docs/research/)")
+    research_claims_cli.add_commands(group.add_subparsers(dest="command", required=True))
 
 
 def _add_docs_commands(groups: Any) -> None:
@@ -775,6 +784,15 @@ def _add_pcsx2_commands(groups: Any) -> None:
         metavar="NAME=EXPR",
         help="give or replace a name of the scenario's let (a random stream's offset per match); repeatable",
     )
+    record.add_argument(
+        "--run-record",
+        action="store_true",
+        help="also write research/runs/<id>.toml (scenario, patches, counts, the CSV's hash) for a claim to cite",
+    )
+    record.add_argument(
+        "--library-state", help="with --run-record: the state library id the run started from, or unknown"
+    )
+    record.add_argument("--run-name", help="with --run-record: the run's name in its id (default: the scenario's)")
     clip = commands.add_parser(
         "clip",
         help="record a short clip of the original with PCSX2's own capture of its game output (never the screen)",
@@ -786,6 +804,7 @@ def _add_pcsx2_commands(groups: Any) -> None:
     _add_pcsx2_flags(clip)
     _add_claim_commands(commands)
     recipes_cli.add_commands(commands)
+    run_records_cli.add_commands(commands)
     pcsx2_states_cli.add_commands(commands)
     _add_pcsx2_flags(record)
 
@@ -1022,14 +1041,28 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         return pcsx2_clip.run_clip(
             args.state, args.seconds, args.out, (args.pcsx2_dir, args.iso, args.scratch), args.agent
         )
+    if args.command == "record-run":
+        return run_records_cli.run_command(args)
     flags = (args.pcsx2_dir, args.iso, args.scratch)
+    request = run_records_cli.trace_request(args.run_record, args.library_state, args.run_name)
     return pcsx2_cli.run_record(
-        args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let, args.recording
+        args.scenario,
+        args.out,
+        args.state,
+        args.attach,
+        args.keep_open,
+        flags,
+        args.agent,
+        args.let,
+        args.recording,
+        request,
     )
 
 
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
+    if args.group == "research":
+        return research_claims_cli.run(args)
     if args.group == "docs":
         if args.command == "legacy":
             return docs_cli.run_legacy(
