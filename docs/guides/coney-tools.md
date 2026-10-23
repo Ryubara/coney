@@ -697,9 +697,9 @@ way. Run `natives render` first when bindings changed.
 
 ## research {#research}
 
-The [function database](research-workflow.md#function-database): one TOML file per system in `research/functions/`,
-which tools read directly, and the research pages made from it. The schema, the rules and how to write an entry are in
-the [Research workflow](research-workflow.md#function-database); this section is the commands.
+The [function database](research-function-database.md): one TOML file per system in `research/functions/`, which
+tools read directly, and the research pages made from it. The schema, the rules and how to write an entry are on its
+own page; this section is the commands.
 
 ```sh
 uv run --project python coney-tools research render --check
@@ -708,7 +708,7 @@ uv run --project python coney-tools research render <folder>
 
 `render --check` checks every file of the database against the checkout and writes nothing; CI runs it (`python`), and
 the docs build runs the same checks before it writes the pages. What it checks is in
-[the Research workflow](research-workflow.md#function-database). It exits with 1 and prints one `error:` line per
+[the function database page](research-function-database.md). It exits with 1 and prints one `error:` line per
 problem when one fails; a name Ghidra still has as `FUN_<address>` is a `warning:` line and does not fail. It exits with
 2 when it is not run inside a checkout or the arguments are wrong.
 
@@ -722,15 +722,16 @@ uv run --project python coney-tools research import-table PAGE --system NAME [--
 
 Imports the code-index tables of the research page `PAGE` (a file below `docs/research`) into
 `research/functions/NAME.toml`, creating it when it is not there. Which tables and columns it reads, how it merges with
-the file and what its report lists are in [the Research workflow](research-workflow.md#function-database).
+the file and what its report lists are in [the function database page](research-function-database.md).
 `--section ANCHOR` limits the import to the tables under that heading, `--replace` takes the page's row for an address
 already in the file, and `--dry-run` prints the report and writes nothing. It exits with 0 when at least one function
 was read, 1 when the page gave none, and 2 for a page outside `docs/research`, a bad system name or an unknown
 `--section`.
 
-The code is `research_functions.py` (the schema and the file format), `research_functions_check.py` (the checks that read the
-checkout), `research_render.py` (the pages), `research_import.py` (the import), `research_links.py` (headings, anchors
-and links of a page as MkDocs reads them) and `research_cli.py`.
+The code is `research_functions.py` (the schema and the file format), `research_functions_check.py` (the checks that
+read the checkout, and the `function-entries` rule it adds to `docs check`), `research_render.py` (the pages),
+`research_import.py` (the import), `research_links.py` (moving a role's links between folders; pages are read with
+`docs_page`, as `docs check` reads them) and `research_cli.py`.
 
 ## pcsx2 {#pcsx2}
 

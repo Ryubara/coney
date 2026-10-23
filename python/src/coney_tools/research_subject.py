@@ -9,12 +9,14 @@ add (`research_check.EXTRA_RULES`) import the subject without importing each oth
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 
 from coney_tools.conventions import Research
 from coney_tools.docs_page import Finding, Page, heading_name
+from coney_tools.progress_grid import FileRange
 from coney_tools.research_catalog import Catalog
+from coney_tools.research_functions import Entry
 from coney_tools.research_legacy import Legacy
 from coney_tools.research_pages import Corpus, FrontMatter
 
@@ -36,6 +38,10 @@ class ResearchEnv:
     catalog: Catalog = field(default_factory=Catalog)
     corpus: Corpus = field(default_factory=Corpus)
     legacy: Legacy = field(default_factory=Legacy)
+    #: The function database's entries by the page they point at (`docs/research/...`), and the source map's file
+    #: ranges, which resolve an `owns.files` entry to addresses (research_functions_check).
+    functions: Mapping[str, tuple[Entry, ...]] = field(default_factory=dict)
+    source_files: tuple[FileRange, ...] = ()
 
 
 @dataclass(frozen=True)

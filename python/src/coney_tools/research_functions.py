@@ -12,7 +12,7 @@ This module is the data model and its schema, with no dependence on the rest of 
 a file, and writes the one canonical text for it. The checks that need the checkout (the page and anchor exist, the
 name is Ghidra's) are research_functions_check.py.
 
-Research: docs/guides/research-workflow.md#function-database
+Research: docs/guides/research-function-database.md
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ _ENTRY_KEYS = frozenset(
 _GAP_KEYS = frozenset({"what", "relation", "issue", "question"})
 _DEFAULT_HEADER = (
     "# The researched functions of the {system} system: one [[function]] per entry, in address order.\n"
-    "# The fields: docs/guides/research-workflow.md#function-database; `research render --check`."
+    "# The fields: docs/guides/research-function-database.md; `research render --check`."
 )
 
 
@@ -147,8 +147,8 @@ def _decompiled(text: str, key: str, label: str, problems: list[str]) -> None:
     """Note a problem when the free text `text` carries decompiler output (LEGAL.md#research-limits).
 
     The marks are `orig copy-check`'s (Ghidra's made-up names and types, a raw read at a byte offset), so the database
-    and the C++ refuse the same things. Two are left out for prose: `goto` is an English word here, and `FUN_...` is
-    how an unnamed function is cited (it is a valid `name` too).
+    and the C++ refuse the same things, as the research pages do (`docs check`'s `decompile`: an unnamed function is
+    cited by its address, not as `FUN_...`). `goto` is left out: in prose it is a word.
     """
     # Imported here: orig_copy reaches this module through orig_index and progress_research.
     from coney_tools import orig_copy
@@ -156,13 +156,14 @@ def _decompiled(text: str, key: str, label: str, problems: list[str]) -> None:
     for kind, pattern in orig_copy.FINGERPRINTS:
         if kind == "goto":
             continue
-        for match in pattern.finditer(text):
-            if not match.group(0).startswith("FUN_"):
-                problems.append(
-                    f"{label}: {key} carries decompiler output (`{match.group(0)}`): "
-                    "describe what the code does in your own words (LEGAL.md#research-limits)"
-                )
-                return
+        match = pattern.search(text)
+        if match:
+            problems.append(
+                f"{label}: {key} carries decompiler output (`{match.group(0)}`): "
+                "describe what the code does in your own words, and cite a function by its address "
+                "(LEGAL.md#research-limits)"
+            )
+            return
 
 
 def _gap(item: object, label: str, problems: list[str]) -> Gap | None:
@@ -298,17 +299,20 @@ def load_system(path: Path) -> SystemFunctions:
     return parse_system(path.stem, _read(path), path)
 
 
-def load_all(root: Path) -> list[SystemFunctions]:
-    """Every system file under `root / research/functions`, by system name; none when the folder is missing.
+def load_all(root: Path, functions_dir: Path = FUNCTIONS_DIR) -> list[SystemFunctions]:
+    """Every system file under `root / functions_dir`, by system name; none when the folder is missing.
+
+    The folder is `files.functions` of the research conventions; the default is the same path, for the progress
+    tracker, which reads no conventions (a test keeps the two equal).
 
     Raises ResearchFunctionsError naming every problem of every file, and any address that two files both list.
     """
-    folder = root / FUNCTIONS_DIR
+    folder = root / functions_dir
     systems: list[SystemFunctions] = []
     problems: list[str] = []
     for path in sorted(folder.glob("*.toml")) if folder.is_dir() else []:
         # The system keeps its path from the root, which is how messages and the other tools name it.
-        relative = FUNCTIONS_DIR / path.name
+        relative = functions_dir / path.name
         try:
             systems.append(parse_system(path.stem, _read(path), relative))
         except ResearchFunctionsError as error:

@@ -3,11 +3,18 @@
 
 from __future__ import annotations
 
+import shutil
+from dataclasses import replace
 from pathlib import Path
 
+import research_support
 from test_research_functions import write_systems
 
 from coney_tools import progress_research, research_functions_check
+from coney_tools import research_functions as rf
+from coney_tools.conventions import CONVENTIONS_FILE
+
+REPO = Path(__file__).resolve().parents[2]
 
 GRABS = """\
 # Combat: grabs
@@ -53,7 +60,14 @@ def make_root(
     listing_path.parent.mkdir(parents=True, exist_ok=True)
     listing_path.write_text(progress_research.format_listing(listed), encoding="utf-8")
     write_systems(tmp_path, {"combat": functions})
-    return tmp_path
+    return with_conventions(tmp_path)
+
+
+def with_conventions(root: Path) -> Path:
+    """`root` with the repository's own conventions, where the checks take their paths from."""
+    (root / CONVENTIONS_FILE).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(REPO / CONVENTIONS_FILE, root / CONVENTIONS_FILE)
+    return root
 
 
 def run(root: Path) -> research_functions_check.Findings:
@@ -70,7 +84,7 @@ def test_a_consistent_checkout_has_no_findings(tmp_path: Path) -> None:
 
 def test_no_system_files_is_fine(tmp_path: Path) -> None:
     """A checkout that has no function database yet has nothing to find fault with."""
-    assert run(tmp_path).errors == []
+    assert run(with_conventions(tmp_path)).errors == []
 
 
 def test_a_missing_page_is_an_error(tmp_path: Path) -> None:
@@ -156,3 +170,89 @@ def test_a_broken_file_is_reported_as_an_error(tmp_path: Path) -> None:
     root = make_root(tmp_path, ENTRY.replace("confirmed-code", "sure"))
     findings = run(root)
     assert any("level" in e for e in findings.errors)
+
+
+# --- the page owns the address ----------------------------------------------------------------------------------------
+
+
+def owning(owns: str) -> str:
+    """The grabs page with front matter whose `owns` is `owns` (YAML lines below `owns:`)."""
+    return f"---\nkind: topic\nsystem: combat\nowns:\n{owns}\n---\n" + GRABS
+
+
+SOURCE_MAP = """\
+# Source map
+
+## Files by subsystem
+
+### Combat
+
+| File | Range |
+| --- | --- |
+| `Grab.cpp` | `0x00100000`-`0x00100400` |
+"""
+
+
+def test_an_entry_on_the_page_that_owns_its_function_passes(tmp_path: Path) -> None:
+    """The entry's page lists the function in its `owns`: one owner, and it is the page the entry points at."""
+    root = make_root(tmp_path, extra_pages={"combat/grabs.md": owning('  functions: ["0x00100200"]')})
+    assert run(root).errors == []
+
+
+def test_an_entry_on_a_page_another_page_owns_is_an_error(tmp_path: Path) -> None:
+    """Another page owns the address: the entry points at the wrong page (one owner per address)."""
+    other = '---\nkind: topic\nsystem: combat\nowns:\n  functions: ["0x00100200"]\n---\n# Holds\n'
+    root = make_root(
+        tmp_path,
+        extra_pages={"combat/grabs.md": owning('  ranges: ["0x00100000-0x00100100"]'), "combat/holds.md": other},
+    )
+    [error] = run(root).errors
+    assert "0x00100200" in error and "docs/research/combat/holds.md" in error
+
+
+def test_an_entry_on_a_page_that_owns_other_addresses_is_an_error(tmp_path: Path) -> None:
+    """The page says what it owns and this address is not part of it, nor any other page's."""
+    root = make_root(tmp_path, extra_pages={"combat/grabs.md": owning('  ranges: ["0x00100000-0x00100100"]')})
+    [error] = run(root).errors
+    assert "does not own" in error
+
+
+def test_a_page_owns_an_address_through_its_source_file(tmp_path: Path) -> None:
+    """`owns.files` names a source file; the source map's range for that file holds the address."""
+    root = make_root(
+        tmp_path,
+        extra_pages={"combat/grabs.md": owning('  files: ["Combat/Grab.cpp"]'), "source-map.md": SOURCE_MAP},
+    )
+    assert run(root).errors == []
+
+
+def test_a_narrower_owner_wins(tmp_path: Path) -> None:
+    """A single function taken out of another page's range belongs to the page that names it (most specific)."""
+    holds = '---\nkind: topic\nsystem: combat\nowns:\n  ranges: ["0x00100000-0x00100400"]\n---\n# Holds\n'
+    root = make_root(
+        tmp_path,
+        extra_pages={"combat/grabs.md": owning('  functions: ["0x00100200"]'), "combat/holds.md": holds},
+    )
+    assert run(root).errors == []
+
+
+def test_a_page_without_front_matter_is_not_held_to_ownership(tmp_path: Path) -> None:
+    """Before the mechanical pass no page says what it owns: nothing to compare the entry with."""
+    assert run(make_root(tmp_path)).errors == []
+
+
+def test_docs_check_reports_an_entry_its_page_does_not_own() -> None:
+    """The same check runs in `docs check` on the page (rule `function-entries`), so the page's author sees it."""
+    entry = rf.Entry(0x00123000, "Widget_Other", "widget.md#behaviour", "inferred", role="r")
+    environment = replace(research_support.env(), functions={"docs/research/widget.md": (entry,)})
+    found = research_support.findings(research_support.RESEARCH_PATH, research_support.page(), environment)
+    [finding] = [f for f in found if f.rule == "function-entries"]
+    assert "0x00123000" in finding.message and "does not own" in finding.message
+
+
+def test_docs_check_passes_an_entry_its_page_owns() -> None:
+    """The widget page owns 0x00123400, so an entry for it raises nothing."""
+    entry = rf.Entry(0x00123400, "Widget_Spin", "widget.md#behaviour", "inferred", role="r")
+    environment = replace(research_support.env(), functions={"docs/research/widget.md": (entry,)})
+    found = research_support.findings(research_support.RESEARCH_PATH, research_support.page(), environment)
+    assert [f for f in found if f.rule == "function-entries"] == []

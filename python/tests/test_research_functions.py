@@ -6,8 +6,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from conventions_support import real_data
 
 from coney_tools import research_functions as rf
+from coney_tools.conventions import parse_conventions
 
 FULL = """\
 # The researched functions of the combat system.
@@ -140,12 +142,16 @@ def test_a_broken_file_is_refused_with_its_problem_named(text: str, message: str
     assert "research/functions/combat.toml" in str(error.value)
 
 
-def test_prose_may_name_a_function_by_its_ghidra_label() -> None:
-    """`FUN_...` is how an unnamed function is cited (and a valid `name`); it is not pasted code."""
-    [entry] = rf.parse_system(
-        "combat", _one(role='"calls FUN_00123456 to go to the next state"'), Path("c.toml")
-    ).entries
-    assert "FUN_00123456" in entry.role
+def test_prose_cites_an_unnamed_function_by_its_address() -> None:
+    """`FUN_...` is refused in the text as on a research page (docs check's `decompile`): cite the address instead."""
+    with pytest.raises(rf.ResearchFunctionsError, match="decompiler output"):
+        rf.parse_system("combat", _one(role='"calls FUN_00123456 next"'), Path("c.toml"))
+
+
+def test_prose_may_say_goto() -> None:
+    """`goto` is a word in English text; only C++ refuses it."""
+    [entry] = rf.parse_system("combat", _one(role='"the goto of the state machine"'), Path("c.toml")).entries
+    assert "goto" in entry.role
 
 
 def test_every_problem_is_reported_not_just_the_first() -> None:
@@ -213,3 +219,9 @@ def test_levels_have_one_label_each() -> None:
     assert list(rf.LEVELS) == ["confirmed-code", "confirmed-runtime", "inferred", "speculative", "not-needed"]
     assert rf.LEVELS["confirmed-code"] == "confirmed (code)"
     assert rf.LEVELS["not-needed"] == "not needed"
+
+
+def test_the_default_folder_is_the_conventions_one() -> None:
+    """The progress tracker reads the database without the conventions; its default folder is `files.functions`."""
+    research = parse_conventions(real_data()).research
+    assert Path(research.files.functions) == rf.FUNCTIONS_DIR

@@ -6,7 +6,7 @@ build writes the pages (mkdocs_hooks.py) and `coney-tools research render OUT_DI
 like the progress tables. The page lists every researched function of the system in address order, each linked to the
 section of the research page that describes it; a column appears only when some entry uses it.
 
-Research: docs/guides/research-workflow.md#function-database
+Research: docs/guides/research-function-database.md
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ def render_system(system: SystemFunctions, system_page: str | None) -> str:
         out += [f"How these work together is on [the {name} page]({system_page}).", ""]
     out += [
         f"This page is made from [{source}](repo:{source}); fix a row there",
-        "([the function database](../../guides/research-workflow.md#function-database)).",
+        "([the function database](../../guides/research-function-database.md)).",
         "",
     ]
     has_kind = any(e.kind for e in entries)

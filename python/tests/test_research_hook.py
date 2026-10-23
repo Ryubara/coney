@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from test_progress_docs import load_hooks
-from test_research_functions_check import ENTRY, make_root
+from test_research_functions_check import ENTRY, make_root, with_conventions
 
 
 def test_the_build_gets_one_page_per_system(tmp_path: Path) -> None:
@@ -20,7 +20,7 @@ def test_the_build_gets_one_page_per_system(tmp_path: Path) -> None:
 
 def test_a_checkout_without_a_database_adds_no_pages(tmp_path: Path) -> None:
     """Nothing is generated until a system file exists."""
-    assert load_hooks().research_function_pages(tmp_path) == {}
+    assert load_hooks().research_function_pages(with_conventions(tmp_path)) == {}
 
 
 def test_a_database_with_problems_stops_the_build(tmp_path: Path) -> None:

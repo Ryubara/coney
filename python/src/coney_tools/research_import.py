@@ -17,7 +17,7 @@ A row that cannot be imported is skipped with its line and the reason, never gue
 (no address and name columns) are ignored; one that has them but no Evidence column is reported, since the level is
 required. `merge` adds the rows to a system's existing file without overwriting what a person edited.
 
-Research: docs/guides/research-workflow.md#function-database
+Research: docs/guides/research-function-database.md
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ from pathlib import Path
 from coney_tools import research_functions as rf
 from coney_tools import research_links
 from coney_tools.config import ConfigError
+from coney_tools.docs_page import heading_ids, read_page, split_cells
 
 #: Column headings (lower case) that mean each part of a row.
 _ADDRESS_HEADS = frozenset({"address", "addr"})
@@ -41,7 +42,6 @@ _KIND_HEAD = "role"
 _HEX = re.compile(r"0x([0-9a-fA-F]+)")
 _CODE_SPAN = re.compile(r"`([^`]+)`")
 _SEPARATOR_CELL = re.compile(r"^:?-+:?$")
-_UNESCAPED_PIPE = re.compile(r"(?<!\\)\|")
 _SIGNATURE = re.compile(r"^(?P<name>[A-Za-z_~][A-Za-z0-9_:~]*)\s*(?P<rest>\(.*)$")
 _LEVEL_PATTERNS = (
     ("confirmed-code", re.compile(r"confirmed\s*\(\s*code\s*\)|confirmed\s+from\s+code", re.IGNORECASE)),
@@ -90,18 +90,15 @@ class _Columns:
 
 
 def _split_row(line: str) -> list[str]:
-    """The cells of a table row: split on pipes that are not escaped, with `\\|` read back as `|`."""
-    text = line.strip()
-    text = text.removeprefix("|")
-    if text.endswith("|") and not text.endswith("\\|"):
-        text = text[:-1]
-    return [cell.strip().replace("\\|", "|") for cell in _UNESCAPED_PIPE.split(text)]
+    """The cells of a table row (`docs_page.split_cells`), with `\\|` read back as `|`."""
+    return [cell.replace("\\|", "|") for cell in split_cells(line)]
 
 
 def _tables(markdown: str) -> list[_Table]:
-    """Every table of the page outside code fences, each with the headings above it."""
-    headings = {h.line: h for h in research_links.headings(markdown)}
-    stack: list[research_links.Heading] = []
+    """Every table of the page outside code fences, each with the anchors of the headings above it."""
+    page = read_page(markdown)
+    headings = {h.line: (h.level, anchor) for h, anchor in zip(page.headings, heading_ids(page), strict=True)}
+    stack: list[tuple[int, str]] = []  # (level, anchor) of the headings above the current line, outermost first
     tables: list[_Table] = []
     block: list[tuple[int, str]] = []
 
@@ -112,20 +109,23 @@ def _tables(markdown: str) -> list[_Table]:
             separator = _split_row(block[1][1])
             if separator and all(_SEPARATOR_CELL.match(c) for c in separator):
                 rows = [(number, _split_row(text)) for number, text in block[2:]]
-                chain = tuple(h.anchor for h in stack)
-                tables.append(_Table(block[0][0], header, rows, chain, stack[-1].anchor if stack else ""))
+                chain = tuple(anchor for _level, anchor in stack)
+                tables.append(_Table(block[0][0], header, rows, chain, stack[-1][1] if stack else ""))
         block.clear()
 
-    for number, line in research_links.body_lines(markdown):
-        if line.lstrip().startswith("|"):
-            if block and block[-1][0] != number - 1:
+    for line in page.lines:
+        if line.fenced:
+            close()
+            continue
+        if line.text.lstrip().startswith("|"):
+            if block and block[-1][0] != line.number - 1:
                 close()
-            block.append((number, line))
+            block.append((line.number, line.text))
             continue
         close()
-        heading = headings.get(number)
+        heading = headings.get(line.number)
         if heading is not None:
-            while stack and stack[-1].level >= heading.level:
+            while stack and stack[-1][0] >= heading[0]:
                 stack.pop()
             stack.append(heading)
     close()
@@ -277,7 +277,7 @@ def import_tables(markdown: str, page: str, *, source: str, section: str = "") -
     messages (`docs/research/combat/grabs.md`); `section` limits the import to the tables under that heading's anchor
     (its subheadings included). Raises ResearchImportError for a section the page does not have.
     """
-    if section and section not in research_links.anchors(markdown):
+    if section and section not in read_page(markdown).anchors:
         raise ResearchImportError(f"{source}: the page has no section {section!r}")
     result = ImportResult()
     seen: dict[int, rf.Entry] = {}

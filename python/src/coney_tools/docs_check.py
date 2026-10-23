@@ -30,6 +30,8 @@ from coney_tools.docs_page import Finding, Page, kind_of, read_page
 from coney_tools.docs_style import check_style
 from coney_tools.research_catalog import load_catalog
 from coney_tools.research_check import check_research
+from coney_tools.research_functions import ResearchFunctionsError, load_all
+from coney_tools.research_functions_check import entries_by_page, load_source_files
 from coney_tools.research_legacy import Touch, apply_legacy, load_legacy
 from coney_tools.research_pages import Corpus
 from coney_tools.research_subject import ResearchEnv
@@ -161,11 +163,17 @@ def context_for(root: Path) -> Context:
     standard with the data it checks against."""
     conventions = load_conventions(root)
     research = conventions.research
+    try:
+        systems = load_all(root, Path(research.files.functions))
+    except ResearchFunctionsError:
+        systems = []  # `research render --check` reports a broken database; the pages are checked without it
     env = ResearchEnv(
         research,
         load_catalog(root, research),
         Corpus.from_root(root, research),
         load_legacy(root, research, docs_legacy.LEGACY_RULES),
+        functions=entries_by_page(systems),
+        source_files=load_source_files(root),
     )
     return Context(conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env)
 

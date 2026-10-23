@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from coney_tools.docs_page import kind_of, level_column, read_page, slug, split_cells
+from coney_tools.docs_page import heading_ids, kind_of, level_column, read_page, slug, split_cells
 
 
 @pytest.mark.parametrize(
@@ -48,7 +48,8 @@ def test_headings_keep_their_anchor_and_leave_it_out_of_the_text() -> None:
 
 def test_anchors_come_from_headings_slugs_and_inline_marks() -> None:
     page = read_page("# T\n\n## Open questions {#oq}\n\n- **Spin** {#q-spin}: unknown.\n\n```\n{#hidden}\n```\n")
-    assert {"oq", "q-spin", "open-questions"} <= page.anchors and "hidden" not in page.anchors
+    assert {"oq", "q-spin"} <= page.anchors and "hidden" not in page.anchors
+    assert "open-questions" not in page.anchors  # an explicit id replaces the slug, as in MkDocs
 
 
 def test_a_slug_is_the_id_mkdocs_gives() -> None:
@@ -109,3 +110,61 @@ def test_cells_split_on_pipes_outside_code_and_escapes() -> None:
 )
 def test_the_level_column_is_headed_evidence_or_confidence(header: str, column: int | None) -> None:
     assert level_column(header) == column
+
+
+NUMBERED = """\
+# Tasks (the TaskEngine)
+
+## Purpose
+
+Text.
+
+## Code index {#code-index}
+
+### Cars: Parts {#code-cars-parts}
+
+```markdown
+## Not a heading {#inside-a-fence}
+```
+
+### `Foo_Bar` and the [link](x.md) *style*
+
+## Purpose
+
+- **A question** {#q-counter}: what is unknown.
+"""
+
+
+def test_headings_carry_explicit_ids_and_slugs() -> None:
+    """A heading's anchor is its `{#id}` when it has one, else MkDocs's slug, numbered when it repeats."""
+    page = read_page(NUMBERED)
+    found = [(h.level, h.text, anchor) for h, anchor in zip(page.headings, heading_ids(page), strict=True)]
+    assert found == [
+        (1, "Tasks (the TaskEngine)", "tasks-the-taskengine"),
+        (2, "Purpose", "purpose"),
+        (2, "Code index", "code-index"),
+        (3, "Cars: Parts", "code-cars-parts"),
+        (3, "`Foo_Bar` and the [link](x.md) *style*", "foo_bar-and-the-link-style"),
+        (2, "Purpose", "purpose_1"),
+    ]
+
+
+def test_anchors_include_ids_given_outside_headings() -> None:
+    """A `{#id}` on a list item counts as an anchor, and a fenced block's headings do not."""
+    anchors = read_page(NUMBERED).anchors
+    assert {"purpose", "purpose_1", "code-index", "code-cars-parts", "q-counter"} <= anchors
+    assert "inside-a-fence" not in anchors
+    assert "not-a-heading" not in anchors
+
+
+def test_line_numbers_of_headings() -> None:
+    """Each heading knows its line, so a table can be tied to the heading above it."""
+    page = read_page(NUMBERED)
+    lines = {anchor: h.line for h, anchor in zip(page.headings, heading_ids(page), strict=True)}
+    assert lines["code-index"] == 7
+
+
+def test_a_slug_drops_link_targets_and_accents_as_mkdocs_does() -> None:
+    """The toc extension slugs the rendered text: a link keeps its text only, an accent is folded to ASCII."""
+    assert slug("The [grab](combat.md) state") == "the-grab-state"
+    assert slug("Café table") == "cafe-table"

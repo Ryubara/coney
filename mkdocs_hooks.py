@@ -169,7 +169,9 @@ def research_function_pages(root):
         raise RuntimeError(
             "the function database has problems:\n  " + "\n  ".join(findings.errors)
         )
-    systems = research_functions.load_all(Path(root))
+    systems = research_functions.load_all(
+        Path(root), research_functions_check.functions_dir(Path(root))
+    )
     return research_render.render_pages(Path(root), systems)
 
 

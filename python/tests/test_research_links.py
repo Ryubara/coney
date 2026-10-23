@@ -1,60 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for reading a research page's headings, anchors and links (coney_tools.research_links)."""
+"""Tests for moving a research page's links between folders (coney_tools.research_links)."""
 
 from __future__ import annotations
 
 import pytest
 
 from coney_tools import research_links
-
-PAGE = """\
-# Tasks (the TaskEngine)
-
-## Purpose
-
-Text.
-
-## Code index {#code-index}
-
-### Cars: Parts {#code-cars-parts}
-
-```markdown
-## Not a heading {#inside-a-fence}
-```
-
-### `Foo_Bar` and the [link](x.md) *style*
-
-## Purpose
-
-- **A question** {#q-counter}: what is unknown.
-"""
-
-
-def test_headings_carry_explicit_ids_and_slugs() -> None:
-    """A heading's anchor is its `{#id}` when it has one, else MkDocs's slug, numbered when it repeats."""
-    found = [(h.level, h.text, h.anchor) for h in research_links.headings(PAGE)]
-    assert found == [
-        (1, "Tasks (the TaskEngine)", "tasks-the-taskengine"),
-        (2, "Purpose", "purpose"),
-        (2, "Code index", "code-index"),
-        (3, "Cars: Parts", "code-cars-parts"),
-        (3, "`Foo_Bar` and the [link](x.md) *style*", "foo_bar-and-the-link-style"),
-        (2, "Purpose", "purpose_1"),
-    ]
-
-
-def test_anchors_include_ids_given_outside_headings() -> None:
-    """A `{#id}` on a list item counts as an anchor, and a fenced block's headings do not."""
-    anchors = research_links.anchors(PAGE)
-    assert {"purpose", "purpose_1", "code-index", "code-cars-parts", "q-counter"} <= anchors
-    assert "inside-a-fence" not in anchors
-    assert "not-a-heading" not in anchors
-
-
-def test_line_numbers_of_headings() -> None:
-    """Each heading knows its line, so a table can be tied to the heading above it."""
-    lines = {h.anchor: h.line for h in research_links.headings(PAGE)}
-    assert lines["code-index"] == 7
 
 
 @pytest.mark.parametrize(

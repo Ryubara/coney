@@ -5,7 +5,7 @@
   database (schema, pages and sections, Ghidra names, source files) and writes nothing; CI runs it.
 * `research import-table PAGE --system NAME` fills a system file from the code-index tables of a research page.
 
-Research: docs/guides/research-workflow.md#function-database
+Research: docs/guides/research-function-database.md
 """
 
 from __future__ import annotations
@@ -15,14 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from coney_tools import (
-    progress_research,
-    research_claims_cli,
-    research_functions_check,
-    research_import,
-    research_render,
-)
 from coney_tools import research_functions as rf
+from coney_tools import research_claims_cli, research_functions_check, research_import, research_render
 from coney_tools.config import ConfigError, find_repo_root
 
 RESEARCH_DIR = research_functions_check.RESEARCH_DIR
@@ -82,7 +76,7 @@ def run_render(out_dir: Path | None, check_only: bool) -> int:
     if findings.errors:
         print(f"coney-tools: the function database has {_plural(len(findings.errors), 'problem')}", file=sys.stderr)
         return 1
-    systems = rf.load_all(root)
+    systems = rf.load_all(root, research_functions_check.functions_dir(root))
     count = sum(len(s.entries) for s in systems)
     if out_dir is None:
         print(f"{_plural(count, 'function')} in {_plural(len(systems), 'system')}: ok")
@@ -124,7 +118,8 @@ def run_import_table(page: Path, system: str, section: str, replace_existing: bo
         raise ConfigError(f"{system!r}: a system name is lower case with hyphens, such as combat or ai-goals")
     path, below = _research_page(root, page)
     source = f"{RESEARCH_DIR.as_posix()}/{below}"
-    target = rf.FUNCTIONS_DIR / f"{system}.toml"
+    functions_dir = research_functions_check.functions_dir(root)
+    target = functions_dir / f"{system}.toml"
     imported = research_import.import_tables(path.read_text(encoding="utf-8"), below, source=source, section=section)
     if not imported.entries:
         _print_lines("skipped", imported.skipped)
@@ -132,7 +127,7 @@ def run_import_table(page: Path, system: str, section: str, replace_existing: bo
         return 1
 
     # The file as it stands, and which addresses the other systems own.
-    systems = rf.load_all(root)
+    systems = rf.load_all(root, functions_dir)
     existing = next((s for s in systems if s.system == system), rf.SystemFunctions(system, target, "", ()))
     owners = {e.address: s.path.as_posix() for s in systems if s.system != system for e in s.entries}
     merged = research_import.merge(existing, imported.entries, owners, replace_existing=replace_existing)
@@ -152,9 +147,8 @@ def run_import_table(page: Path, system: str, section: str, replace_existing: bo
     _print_lines("check these", imported.notes)
 
     # What `research render --check` would say about the file once written.
-    listing = progress_research.load_listing(root / progress_research.LISTING_FILE)
     others = [s for s in systems if s.system != system]
-    findings = research_functions_check.check(root, [merged.system, *others], listing)
+    findings = research_functions_check.check_systems(root, [merged.system, *others])
     mine = [f for f in [*findings.errors, *findings.warnings] if f.startswith(target.as_posix() + ":")]
     _print_lines("after the import `research render --check` reports", mine)
 

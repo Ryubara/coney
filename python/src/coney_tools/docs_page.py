@@ -20,6 +20,7 @@ _HEADING_ATTRIBUTES = re.compile(r"[ \t]*\{(?P<attributes>[^}]*#[^}]*)\}[ \t]*$"
 ANCHOR = re.compile(r"\{#(?P<id>[A-Za-z0-9_.:-]+)[^}]*\}")
 _ITEM = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]+")
 _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+_COUNTED = re.compile(r"^(.*)_([0-9]+)$")
 #: A table header cell that labels the level of each row.
 LEVEL_COLUMN = re.compile(r"(?:evidence(?: level)?|confidence)", re.IGNORECASE)
 
@@ -121,9 +122,8 @@ class Page:
 
     @property
     def anchors(self) -> set[str]:
-        """Every `{#id}` written outside code, and the generated ids of the headings (as MkDocs slugs them)."""
-        found = {heading.anchor for heading in self.headings if heading.anchor}
-        found.update(slug(heading.text) for heading in self.headings)
+        """Every `{#id}` written outside code, and the ids of the headings (as MkDocs gives them, `heading_ids`)."""
+        found = set(heading_ids(self))
         for line in self.lines:
             if not line.fenced:
                 found.update(match.group("id") for match in ANCHOR.finditer(line.text))
@@ -131,11 +131,28 @@ class Page:
 
 
 def slug(text: str) -> str:
-    """The id MkDocs gives a heading without an explicit one: accents folded to ASCII, lower case, words joined by
-    hyphens (the toc extension's `slugify`)."""
-    folded = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
-    words = re.sub(r"[^\w\s-]", "", re.sub(r"`", "", folded).casefold())
+    """The id MkDocs gives a heading without an explicit one: the toc extension slugs the rendered text, so a link
+    keeps its text only, markup goes, accents fold to ASCII, then lower case with words joined by hyphens."""
+    plain = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    plain = re.sub(r"[`*]", "", plain)
+    plain = unicodedata.normalize("NFKD", plain).encode("ascii", "ignore").decode("ascii")
+    words = re.sub(r"[^\w\s-]", "", plain).strip().lower()
     return re.sub(r"[-\s]+", "-", words).strip("-")
+
+
+def heading_ids(page: Page) -> list[str]:
+    """The id of each heading of `page`, in order: its `{#id}`, else its slug; an id the page already used gets the
+    next free `_1`, `_2`, ... (python-markdown's rule), so two `## Purpose` headings are `purpose` and `purpose_1`."""
+    used: set[str] = set()
+    ids: list[str] = []
+    for heading in page.headings:
+        anchor = heading.anchor or slug(heading.text)
+        while anchor in used or not anchor:
+            counted = _COUNTED.match(anchor)
+            anchor = f"{counted.group(1)}_{int(counted.group(2)) + 1}" if counted else f"{anchor}_1"
+        used.add(anchor)
+        ids.append(anchor)
+    return ids
 
 
 def blank_comments(text: str) -> str:
