@@ -58,18 +58,20 @@ The task is `--task`, else `CONEY_TASK`, else the branch name. `.gitattributes` 
 endings: a log is hashed byte for byte.
 
 Only the stage commands append, under a lock, and `append` refuses when the log is not intact. There is deliberately
-no command that appends a stamp by hand. A hook is to refuse every agent write under a `stamps/` folder (it belongs to
-the guardrails work, not to these commands).
+no command that appends a stamp by hand. The hook dispatcher refuses every Edit or Write under a `stamps/` folder and a
+shell write into one, for every session and role, and any naming of the signing key's files or `ssh-keygen -Y sign`
+([Which role to start](agents.md#roles)); reading and `stamp verify` are open.
 
 ### Who {#who}
 
 `who.agent` is the agent id, type and model that ran the command. A command cannot take these from the agent itself,
-which could write anything, so the hook dispatcher is to set `CONEY_AGENT_ID`, `CONEY_AGENT_TYPE` and
-`CONEY_AGENT_MODEL` on every `coney-tools` command from the hook input (the model read from the agent's transcript, as
-`trailer_guard` does), overwriting whatever the command set, and set `CONEY_AGENT_INJECTED=1` beside them. The stamp
-records `who.source` as `hook` when that marker is present and `unverified` otherwise (a person at a terminal, or an
-agent that set the variables itself); a missing value is `unknown`. Recording never refuses a command: the check that
-`source` is `hook` will belong to `pr open` and CI.
+which could write anything, so the hook dispatcher writes them, from the hook input and the model in the agent's
+transcript, to a file named by a random token and puts only that token (`CONEY_AGENT_TOKEN`) in front of every
+`coney-tools` command ([Who runs a command](agents.md#identity)). `who_from_env` reads the file as the command's first
+action. The stamp records `who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise,
+with every field `unknown`, however the environment was set (a person at a terminal, a PowerShell command outside
+`bypassPermissions`, an agent that typed variables or a token of its own). Recording never refuses a command: the check
+that `source` is `hook` will belong to `pr open` and CI.
 
 ### Verifying a log {#verify}
 

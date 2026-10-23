@@ -21,6 +21,7 @@ from coney_tools import (
     docs_cli,
     doctor,
     ghidra_cli,
+    identity,
     issue_claim_cli,
     issue_cli,
     mcp_serve,
@@ -1135,6 +1136,8 @@ def use_utf8_output(streams: Sequence[object] | None = None) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line; returns 0 on success, 1 when a check fails, 2 on a usage or configuration error."""
+    # First, before anything slow: the hook's identity file lives only minutes (coney_tools.identity).
+    identity.current()
     use_utf8_output()
     args = _build_parser().parse_args(argv)
     try:

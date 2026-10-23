@@ -13,6 +13,7 @@ from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run, settings
 
 SCRIPT = REPO / ".claude" / "hooks" / "build_guard.py"
 
@@ -151,12 +152,8 @@ def test_input_the_hook_cannot_read_never_blocks(
     assert run(monkeypatch, capsys, stdin) == (0, "")
 
 
-def test_the_settings_register_the_hook_for_both_shell_tools_and_allow_the_new_command() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    entries = settings["hooks"]["PreToolUse"]
-    guard = [entry for entry in entries if "build_guard.py" in json.dumps(entry)]
-    assert len(guard) == 1 and guard[0]["matcher"] == "Bash|PowerShell"
-    assert "build_guard.py" in guard[0]["hooks"][0]["command"] and guard[0]["hooks"][0]["type"] == "command"
-    allowed = settings["permissions"]["allow"]
+def test_the_dispatcher_runs_the_hook_for_both_shell_tools_and_the_settings_allow_the_new_command() -> None:
+    assert "build_guard" in guards_run("Bash", "ninja") and "build_guard" in guards_run("PowerShell", "ninja")
+    allowed = settings()["permissions"]["allow"]
     assert "Bash(uv run --project python coney-tools build*)" in allowed
     assert not [rule for rule in allowed if rule.startswith(("Bash(cmake", "Bash(ctest", "Bash(ninja"))]

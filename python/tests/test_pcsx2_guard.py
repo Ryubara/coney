@@ -25,6 +25,7 @@ from typing import Any
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 from test_pcsx2_claims import FakeProcesses, make_copy
 
 from coney_tools import pcsx2_claims, pcsx2_claims_cli, pcsx2_guard, pcsx2_proc
@@ -635,17 +636,11 @@ def test_a_failure_of_the_hook_leaves_one_line_in_the_log(
     assert [line.split(" ", 1)[1] for line in lines] == ["RuntimeError: boom", "ValueError: again"]
 
 
-def test_the_hook_is_registered_for_the_mcp_tools_and_the_shell() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    registered = [
-        (group["matcher"], hook["command"])
-        for group in settings["hooks"]["PreToolUse"]
-        for hook in group["hooks"]
-        if "pcsx2_guard.py" in hook["command"]
-    ]
-    matchers = {matcher for matcher, _ in registered}
-    assert "mcp__pcsx2__.*" in matchers, "the pcsx2 MCP tools are not guarded"
-    assert {"Bash", "PowerShell"} <= matchers, "the shell commands that claim a copy are not read"
+def test_the_dispatcher_runs_the_hook_for_the_mcp_tools_and_the_shell() -> None:
+    assert guards_run("mcp__pcsx2__pcsx2_connect") == ["pcsx2_guard"], "the pcsx2 MCP tools are not guarded"
+    for tool in ("Bash", "PowerShell"):
+        assert "pcsx2_guard" in guards_run(tool, "coney-tools pcsx2 claim --agent x"), tool
+        assert "pcsx2_guard" not in guards_run(tool, "git status"), tool
 
 
 def test_the_script_logs_what_it_cannot_read(
@@ -705,21 +700,6 @@ def test_the_guard_needs_nothing_but_the_standard_library() -> None:
     assert done.stdout.strip() == "[]"
 
 
-def filter_pattern(settings: dict[str, Any], matcher: str) -> re.Pattern[str]:
-    """The `if` filter of the guard's registration for `matcher`, as a regular expression (`*` is any text, newlines
-    included). This models Claude Code's rule matching, which the test cannot run; if the real matcher stops at a
-    newline, the continued-line spellings are skipped and the caller is told to claim again (it fails closed)."""
-    (condition,) = {
-        hook["if"]
-        for group in settings["hooks"]["PreToolUse"]
-        if group["matcher"] == matcher
-        for hook in group["hooks"]
-        if "pcsx2_guard.py" in hook["command"]
-    }
-    inner = condition.removeprefix(f"{matcher}(").removesuffix(")")
-    return re.compile(".*".join(re.escape(part) for part in inner.split("*")), re.DOTALL)
-
-
 @pytest.mark.parametrize(
     "command",
     [
@@ -733,11 +713,10 @@ def filter_pattern(settings: dict[str, Any], matcher: str) -> re.Pattern[str]:
         "coney-tools pcsx2 \\\n  claim --agent alice",
     ],
 )
-def test_the_if_filter_lets_through_every_spelling_the_parser_reads(command: str) -> None:
+def test_the_dispatcher_lets_through_every_spelling_the_parser_reads(command: str) -> None:
     assert pcsx2_guard.agents_in(command) == ["alice"], "not a spelling the parser reads: fix this test"
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    for matcher in ("Bash", "PowerShell"):
-        assert filter_pattern(settings, matcher).search(command), f"the {matcher} `if` filter skips {command!r}"
+    for tool in ("Bash", "PowerShell"):
+        assert "pcsx2_guard" in guards_run(tool, command), f"the dispatcher skips {command!r} for {tool}"
 
 
 def test_the_guides_tell_an_engineer_to_pass_agent_on_every_call() -> None:

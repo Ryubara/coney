@@ -17,6 +17,7 @@ from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 
 SCRIPT = REPO / ".claude" / "hooks" / "trailer_guard.py"
 SESSION = "11111111-2222-3333-4444-555555555555"
@@ -303,28 +304,12 @@ def test_a_command_that_never_mentions_commit_is_not_inspected(
     assert run(monkeypatch, capsys, json.dumps(payload)) == (0, "")
 
 
-def test_the_settings_register_the_hook_after_commit_commands_only() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    handlers = [
-        (entry["matcher"], hook)
-        for entry in settings["hooks"]["PostToolUse"]
-        for hook in entry["hooks"]
-        if "trailer_guard.py" in hook["command"]
-    ]
-    assert handlers, "trailer_guard.py is not registered for PostToolUse"
-    assert {matcher for matcher, _ in handlers} == {"Bash", "PowerShell"}
-    for matcher, hook in handlers:
-        assert hook["type"] == "command" and hook["if"].startswith(f"{matcher}(git ")
-    # Rule matching ignores case on PowerShell, so `-C` and `-c` there are one rule; no two rules match one command.
-    assert {hook["if"] for matcher, hook in handlers if matcher == "Bash"} == {
-        "Bash(git commit*)",
-        "Bash(git -C * commit*)",
-        "Bash(git -c * commit*)",
-    }
-    assert {hook["if"] for matcher, hook in handlers if matcher == "PowerShell"} == {
-        "PowerShell(git commit*)",
-        "PowerShell(git -C * commit*)",
-    }
+def test_the_dispatcher_runs_the_hook_after_commit_commands_only() -> None:
+    for command in ("git commit -m x", "git -C repo commit -m x", "git --no-pager commit -m x"):
+        assert guards_run("Bash", command, "PostToolUse") == ["trailer_guard"]
+        assert guards_run("PowerShell", command, "PostToolUse") == ["trailer_guard"]
+    assert guards_run("Bash", "git status", "PostToolUse") == []
+    assert guards_run("Read", None, "PostToolUse") == []
 
 
 def test_a_non_ascii_path_in_the_input_survives_a_legacy_console_code_page(

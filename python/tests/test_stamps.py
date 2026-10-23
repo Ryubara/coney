@@ -12,6 +12,7 @@ import pytest
 from stamp_support import allowed_signers, make_key, needs_ssh_keygen, rules
 
 from coney_tools import stamp_sign, stamps
+from coney_tools.identity import file_name as identity_file_name
 from coney_tools.stamps import ZERO, StampError
 
 SHA = "ab" * 32
@@ -334,20 +335,40 @@ def test_a_real_signed_chain_verifies_against_the_signers_file(tmp_path: Path) -
     assert not stamps.verify(folder, rule, signers=signers, require_signatures=True).ok
 
 
-def test_who_is_hook_sourced_only_when_the_marker_is_set() -> None:
-    env = {"CONEY_AGENT_ID": "a1", "CONEY_AGENT_TYPE": "engineer", "CONEY_AGENT_MODEL": "Opus 5.5"}
-    unverified = stamps.who_from_env("coney-tools original study", env)
-    assert unverified["source"] == "unverified" and unverified["agent"]["id"] == "a1"
-    hooked = stamps.who_from_env("coney-tools original study", {**env, "CONEY_AGENT_INJECTED": "1"})
-    assert hooked["source"] == "hook" and hooked["agent"] == {"id": "a1", "type": "engineer", "model": "Opus 5.5"}
-    empty = stamps.who_from_env("t", {})
-    assert empty["source"] == "unverified" and empty["agent"] == {
+def test_who_is_hook_sourced_only_for_a_token_the_hook_issued(tmp_path: Path) -> None:
+    token = "0123456789abcdef0123456789abcdef"
+    (tmp_path / identity_file_name(token)).write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "id": "a1",
+                "type": "engineer",
+                "model": "claude-opus-5-5",
+                "issued": 0,
+                "expires": 1e18,
+            }
+        ),
+        encoding="utf-8",
+    )
+    hooked = stamps.who_from_env("coney-tools original study", {"CONEY_AGENT_TOKEN": token}, folder=tmp_path)
+    assert hooked["source"] == "hook"
+    assert hooked["agent"] == {"id": "a1", "type": "engineer", "model": "claude-opus-5-5"}
+    # The three variables and the old marker are typed text: they prove nothing.
+    typed = {
+        "CONEY_AGENT_ID": "a1",
+        "CONEY_AGENT_TYPE": "reviewer",
+        "CONEY_AGENT_MODEL": "Opus",
+        "CONEY_AGENT_INJECTED": "1",
+    }
+    forged = stamps.who_from_env("t", typed, folder=tmp_path)
+    assert forged["source"] == "unverified" and forged["agent"] == {
         "id": "unknown",
         "type": "unknown",
         "model": "unknown",
     }
-    assert stamps.who_from_env("t", {"CONEY_AGENT_INJECTED": "yes"})["source"] == "unverified"
-    assert empty["kind"] == "tool" and empty["tool"] == "t"
+    other = stamps.who_from_env("t", {"CONEY_AGENT_TOKEN": "f" * 32}, folder=tmp_path)
+    assert other["source"] == "unverified" and other["agent"]["type"] == "unknown"
+    assert forged["kind"] == "tool" and forged["tool"] == "t"
 
 
 def test_a_release_check_refuses_a_missing_or_empty_log(tmp_path: Path) -> None:

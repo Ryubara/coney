@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for .claude/hooks/release_guard.py, the Claude Code hook that opens or edits a pull request only with a title
+"""Tests for .claude/hooks/pr_guard.py, the Claude Code hook that opens or edits a pull request only with a title
 and description that pass CI's `title` and `body` checks.
 
 The hook is a standalone, standard-library-only file, so it is loaded by path, like the other guards. The checks it
@@ -15,13 +15,14 @@ from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 
-SCRIPT = REPO / ".claude" / "hooks" / "release_guard.py"
+SCRIPT = REPO / ".claude" / "hooks" / "pr_guard.py"
 
 
 def load() -> ModuleType:
     """The hook script as a module."""
-    spec = importlib.util.spec_from_file_location("release_guard", SCRIPT)
+    spec = importlib.util.spec_from_file_location("pr_guard", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -310,8 +311,5 @@ def test_main_lets_anything_else_through(
     assert run_main(monkeypatch, capsys, stdin) == (0, "")
 
 
-def test_settings_register_the_hook_for_both_shells() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    entries = [entry for entry in settings["hooks"]["PreToolUse"] if entry["matcher"] == "Bash|PowerShell"]
-    commands = [hook["command"] for entry in entries for hook in entry["hooks"]]
-    assert any("release_guard.py" in command for command in commands)
+def test_the_dispatcher_runs_the_hook_for_both_shells() -> None:
+    assert "pr_guard" in guards_run("Bash", "gh pr create") and "pr_guard" in guards_run("PowerShell", "gh pr edit 1")

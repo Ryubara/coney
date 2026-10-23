@@ -15,6 +15,7 @@ from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 
 SCRIPT = REPO / ".claude" / "hooks" / "issue_guard.py"
 #: The repository the tests pretend the working directory belongs to.
@@ -239,10 +240,5 @@ def test_input_the_hook_cannot_read_never_blocks(
     assert run(monkeypatch, capsys, stdin) == (0, "")
 
 
-def test_the_settings_register_the_hook_for_both_shell_tools() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    entries = settings["hooks"]["PreToolUse"]
-    guard = [entry for entry in entries if "issue_guard.py" in json.dumps(entry)]
-    assert len(guard) == 1 and guard[0]["matcher"] == "Bash|PowerShell"
-    commands = [hook["command"] for hook in guard[0]["hooks"]]
-    assert any("issue_guard.py" in command for command in commands)
+def test_the_dispatcher_runs_the_hook_for_both_shell_tools() -> None:
+    assert "issue_guard" in guards_run("Bash", "gh issue create") and "issue_guard" in guards_run("PowerShell", "ls")

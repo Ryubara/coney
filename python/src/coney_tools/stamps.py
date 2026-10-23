@@ -31,7 +31,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import stamp_sign
+from coney_tools import identity, stamp_sign
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Stamps
 
@@ -46,10 +46,6 @@ MAX_DETAIL = 2048
 _SEGMENT = re.compile(r"^(\d{4})\.jsonl$")
 HEX = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 _TIME = "%Y-%m-%dT%H:%M:%SZ"
-#: The environment a hook fills in on every `coney-tools` command (docs/guides/stamps.md#who).
-AGENT_VARIABLES = (("id", "CONEY_AGENT_ID"), ("type", "CONEY_AGENT_TYPE"), ("model", "CONEY_AGENT_MODEL"))
-INJECTED = "CONEY_AGENT_INJECTED"
-
 #: Signs a stamp's body: returns the `sig` object, or raises stamp_sign.SignError.
 Sign = Callable[[bytes], dict[str, Any]]
 #: Checks a signature: the principal of the signers file, or raises stamp_sign.SignError.
@@ -158,21 +154,18 @@ def _check_fields(
         raise StampError(f"detail must be a small mapping (at most {MAX_DETAIL} bytes)")
 
 
-def who_from_env(tool: str, env: Mapping[str, str] | None = None) -> dict[str, Any]:
-    """The `who` of a stamp written by `tool`: the agent named in the environment and where that came from.
+def who_from_env(tool: str, env: Mapping[str, str] | None = None, folder: Path | None = None) -> dict[str, Any]:
+    """The `who` of a stamp written by `tool`: the agent the hook vouched for, and where that came from.
 
-    The hook dispatcher sets CONEY_AGENT_ID, CONEY_AGENT_TYPE and CONEY_AGENT_MODEL on every `coney-tools` command from
-    the hook input and CONEY_AGENT_INJECTED=1 beside them, overwriting what the command set; the source is "hook" only
-    with that marker and "unverified" otherwise (an agent could set the three itself). This never refuses.
+    The hook dispatcher puts a random `CONEY_AGENT_TOKEN` in front of every `coney-tools` command and writes the
+    caller's identity, from the hook input and the agent's transcript, to the file that token names
+    (`coney_tools.identity`, docs/guides/agents.md#identity). The source is "hook" only when that file is found and
+    valid; otherwise it is "unverified" with every field "unknown", whatever the environment says about the agent:
+    a typed or changed token finds no file, so it can never pass for another role. With no `env` the identity read at
+    the start of the process is used. This never refuses.
     """
-    env = os.environ if env is None else env
-    agent = {key: env.get(variable) or "unknown" for key, variable in AGENT_VARIABLES}
-    return {
-        "kind": "tool",
-        "tool": tool,
-        "agent": agent,
-        "source": "hook" if env.get(INJECTED) == "1" else "unverified",
-    }
+    found = identity.current() if env is None else identity.load(env, folder)
+    return {"kind": "tool", "tool": tool, "agent": found.agent(), "source": "hook" if found.verified else "unverified"}
 
 
 # --- reading ----------------------------------------------------------------------------------------------------

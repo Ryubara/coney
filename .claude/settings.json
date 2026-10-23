@@ -3,116 +3,60 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|PowerShell",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/build_guard.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/issue_guard.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/bounded_waits.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/release_guard.py\"",
+            "command": "uv run --no-project --python \">=3.12\" python \"$CLAUDE_PROJECT_DIR/.claude/hooks/dispatch.py\" || exit 0",
             "timeout": 200
-          },
-          {
-            "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/push_guard.py\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Bash(*coney-tools*pcsx2*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "PowerShell",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "PowerShell(*coney-tools*pcsx2*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/agent_guard.py\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__pcsx2__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pcsx2_guard.py\"",
-            "timeout": 10
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git commit*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/trailer_guard.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "if": "Bash(git -C * commit*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/trailer_guard.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "if": "Bash(git -c * commit*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/trailer_guard.py\"",
-            "timeout": 10
+            "command": "uv run --no-project --python \">=3.12\" python \"$CLAUDE_PROJECT_DIR/.claude/hooks/dispatch.py\" || exit 0",
+            "timeout": 20
           }
         ]
-      },
+      }
+    ],
+    "SessionStart": [
       {
-        "matcher": "PowerShell",
+        "matcher": "startup|resume|clear",
         "hooks": [
           {
             "type": "command",
-            "if": "PowerShell(git commit*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/trailer_guard.py\"",
-            "timeout": 10
-          },
+            "command": "uv run --no-project --python \">=3.12\" python \"$CLAUDE_PROJECT_DIR/.claude/hooks/dispatch.py\" || exit 0",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
           {
             "type": "command",
-            "if": "PowerShell(git -C * commit*)",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/trailer_guard.py\"",
-            "timeout": 10
+            "command": "uv run --no-project --python \">=3.12\" python \"$CLAUDE_PROJECT_DIR/.claude/hooks/dispatch.py\" || exit 0",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python \">=3.12\" python \"$CLAUDE_PROJECT_DIR/.claude/hooks/dispatch.py\" || exit 0",
+            "timeout": 20
           }
         ]
       }
@@ -131,6 +75,7 @@
       "Bash(uv run --project python mypy *)",
       "Bash(uvx pre-commit run *)",
       "Bash(uv run --project python coney-tools build*)",
+      "Bash(export CONEY_AGENT_TOKEN=*)",
       "PowerShell(uv run --project python coney-tools config show*)",
       "PowerShell(uv run --project python coney-tools repo check*)",
       "PowerShell(uv run --project python pytest *)",

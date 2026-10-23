@@ -21,9 +21,10 @@ After a shell command the hook reads the commits `git commit` printed (`[branch 
 output), finds their `Co-Authored-By` trailers whose address is the vendor's (`@anthropic.com`) and, when one names
 another model, exits 2: the reason on stderr is shown to the agent, which amends the commit. It runs after the
 commit because that is the only point where the final message exists whatever the way it was given (`-m`, `-F`, an
-editor, `--amend`, a here-document). `.claude/settings.json` registers it only for commands that start `git commit`
-or `git -C ... commit` (`git -c ... commit` on Bash), so ordinary commands never start it. Commands of another shape
-are not checked: `git --no-pager commit`, `git --git-dir=... commit`, `git.exe commit` and a full path to git.
+editor, `--amend`, a here-document). The hook dispatcher (`dispatch.py`) runs it after a shell command that runs
+`git commit` (also `git -C ... commit`, `git -c ... commit`, `git --no-pager commit`, `git.exe commit` and a full path
+to git), so ordinary commands, and commands that only mention the word (`git config commit.gpgsign`), never start it.
+A commit made by a program the command only starts (a script) prints nothing it can read.
 
 A commit that printed nothing (`git commit -q`, a pipe to Out-Null) has no hash to read, so when the whole output is
 empty the hook looks at the HEAD of the working directory and of every directory the command names, and judges it
