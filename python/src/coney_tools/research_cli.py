@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools research ...`: the function database of research/functions/ and the pages made from it.
+"""`coney-tools research ...`: the function database of research/functions/ and the pages made from it, and the
+claims a branch changed on the research pages.
 
 * `research render OUT_DIR` writes the generated list page of each system; `research render --check` checks the whole
   database (schema, pages and sections, Ghidra names, source files) and writes nothing; CI runs it.
 * `research import-table PAGE --system NAME` fills a system file from the code-index tables of a research page.
+* `research claims` lists the graded blocks the branch changed, with what backs each (research_claims_cli.py).
 
 Research: docs/guides/research-function-database.md
 """

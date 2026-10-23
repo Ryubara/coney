@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-six
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-eight
 groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
 checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task), which
 claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
@@ -13,14 +13,14 @@ disc's archive, [`progress`](#progress), which keeps the progress tables of the 
 original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log, [`lua`](#lua),
 which decompiles the game's compiled scripts for research, [`natives`](#natives), which renders the script-binding
 masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
-status pages, [`research`](#research), which keeps the function database and its generated lists, [`pcsx2`](#pcsx2) and
-[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
-[`clips`](#clips), which checks, publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging
-servers for agent tools, [`doctor`](#doctor), which checks a contributor's machine and disc, [`ghidra`](#ghidra), which
-sets up your own Ghidra project with our function names, and [`workspace`](#workspace), which sets up the local
-workspace; [`coney-agent`](#coney-agent) is a command of its own, the session launcher. Everything is read in place and
-streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
-.WAD](../research/formats/wad-dir.md).
+status pages, [`research`](#research), which keeps the function database and its generated lists and reports the claims
+a branch changed on the research pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update
+traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks, publishes and cleans up in-game video
+clips, [`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
+contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and
+[`workspace`](#workspace), which sets up the local workspace; [`coney-agent`](#coney-agent) is a command of its own, the
+session launcher. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is
+described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
