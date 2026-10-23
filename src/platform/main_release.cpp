@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // The release build's entry point (docs/guides/building.md#debug-tools): the game as a player gets it, from the disc
-// they own, with none of the debug tools compiled in. It takes a player's options alone (core::OptionSet::Player) and
-// runs the story from boot as the original's main does (docs/research/boot.md#main), or the idle screen without a
-// disc. Test mode (`--headless`, `--frames`, `--input-script`) stays for the release build's own smoke tests. The
-// set-up both entry points share is platform/game_run.h; the debug tools' entry point is main.cpp.
+// they own, with none of the debug tools compiled in. It takes a player's options alone (core::OptionSet::Player): it
+// installs the disc (`--install`), or runs the story from boot as the original's main does
+// (docs/research/boot.md#main), or the idle screen without a disc. Test mode (`--headless`, `--frames`,
+// `--input-script`) stays for the release build's own smoke tests. The set-up both entry points share is
+// platform/game_run.h; the debug tools' entry point is main.cpp.
 
 #include <cstdint>
 #include <cstdio>
@@ -31,12 +32,14 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/idle_mode.h"
 #include "gui/global_strings.h"
+#include "install/known_discs.h"
 #include "platform/audio_output.h"
 #include "platform/enet_transport.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
+#include "platform/install_command.h"
 #include "platform/net_play.h"
 #include "platform/render_engine.h"
 #include "platform/sdl_input.h"
@@ -70,6 +73,13 @@ int main(int argc, char** argv) {
     if (options->showHelp) {
         printText(coney::usageText(coney::OptionSet::Player));
         return 0;
+    }
+    // `--install` (docs/guides/running.md#install): copy the disc into the install folder and exit, before anything
+    // opens a window or a device. The executable it copies into the install is this one, the player's.
+    if (options->installFrom.has_value()) {
+        return coney::platform::runInstallCommand(
+            *options, coney::install::knownDiscs(),
+            coney::platform::installProgramFiles(options->dataPath.value_or(""), argc > 0 ? argv[0] : nullptr), stderr);
     }
 
     // The run log (docs/guides/run-log.md), as the debug tools' entry point starts it: the console and `coney.log` in

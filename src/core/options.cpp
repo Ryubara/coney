@@ -22,14 +22,15 @@ namespace coney {
 namespace {
 
 // The options of OptionSet::Player (playerOptions()).
-constexpr std::array<std::string_view, 18> kPlayerOptions{
-    "--disc",     "--language", "--profiles",    "--fps-cap",     "--vsync",          "--line-blend",
-    "--show-fps", "--no-audio", "--skip-movies", "--no-activate", "--window-display", "--host",
-    "--join",     "--net-name", "--help",        "--headless",    "--frames",         "--input-script"};
+constexpr std::array<std::string_view, 21> kPlayerOptions{
+    "--install", "--data",       "--verify",   "--disc",     "--language",    "--profiles",    "--fps-cap",
+    "--vsync",   "--line-blend", "--show-fps", "--no-audio", "--skip-movies", "--no-activate", "--window-display",
+    "--host",    "--join",       "--net-name", "--help",     "--headless",    "--frames",      "--input-script"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
-    "Usage: coney [--disc PATH] [--language CODE] [--profiles DIR]\n"
+    "Usage: coney --install DISC --data DIR [--verify]\n"
+    "       coney [--disc PATH] [--language CODE] [--profiles DIR]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"

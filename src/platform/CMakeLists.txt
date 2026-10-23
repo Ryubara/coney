@@ -129,6 +129,11 @@ set_tests_properties(coney.release.joins_headless PROPERTIES TIMEOUT 30)
 add_test(NAME coney.release.host_and_join_refused COMMAND ${_coney_release_exe} --headless --frames 3 --host 0 --join
                                                             127.0.0.1)
 set_tests_properties(coney.release.host_and_join_refused PROPERTIES WILL_FAIL TRUE)
+# The player's `--install` (docs/guides/running.md#install): a disc that is not there is refused with a message.
+add_test(NAME coney.release.install_refuses_missing_disc
+         COMMAND ${_coney_release_exe} --install no-such-disc --data "${CMAKE_CURRENT_BINARY_DIR}/install-smoke-release")
+set_tests_properties(coney.release.install_refuses_missing_disc PROPERTIES PASS_REGULAR_EXPRESSION
+                                                                           "not a folder or an ISO image")
 add_test(NAME coney.release.has_no_debug_tools
          COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -DEXPECT=absent -P
                  "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")

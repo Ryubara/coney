@@ -42,6 +42,7 @@ That is the command line of a build with the debug tools (`dev`, `playtest`, `ci
 refuses any other with a message that names the debug tools; `coney --help` lists what a build takes:
 
 ```text
+coney --install DISC --data DIR [--verify]
 coney [--disc PATH] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
       [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
