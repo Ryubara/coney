@@ -697,9 +697,10 @@ way. Run `natives render` first when bindings changed.
 
 ## research {#research}
 
-The [function database](research-function-database.md): one TOML file per system in `research/functions/`, which
-tools read directly, and the research pages made from it. The schema, the rules and how to write an entry are on its
-own page; this section is the commands.
+The [function database](research-function-database.md), one TOML file per system in `research/functions/` that
+tools read directly, and the research pages made from it (`render`, `import-table`); and the claims a branch changed on
+the research pages (`claims`). The database's schema, rules and how to write an entry are on its own page; this section
+is the commands.
 
 ```sh
 uv run --project python coney-tools research render --check
@@ -728,10 +729,48 @@ already in the file, and `--dry-run` prints the report and writes nothing. It ex
 was read, 1 when the page gave none, and 2 for a page outside `docs/research`, a bad system name or an unknown
 `--section`.
 
-The code is `research_functions.py` (the schema and the file format), `research_functions_check.py` (the checks that
-read the checkout, and the `function-entries` rule it adds to `docs check`), `research_render.py` (the pages),
-`research_import.py` (the import), `research_links.py` (moving a role's links between folders; pages are read with
-`docs_page`, as `docs check` reads them) and `research_cli.py`.
+The code of `render` and `import-table` is `research_functions.py` (the schema and the file format),
+`research_functions_check.py` (the checks that read the checkout, and the `function-entries` rule it adds to `docs
+check`), `research_render.py` (the pages), `research_import.py` (the import), `research_links.py` (moving a role's links
+between folders; pages are read with `docs_page`, as `docs check` reads them) and `research_cli.py`.
+
+```sh
+uv run --project python coney-tools research claims [--base origin/main] [--task TASK] [--stamps DIR] [--require-study] [--json]
+```
+
+Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
+from ([evidence levels](research-workflow.md#evidence-levels)). The changed lines are those of the working tree since
+the branch left `--base`, a new page counting whole. It reads the pages exactly as [`docs check`](#docs) does, with the
+same reader and the same grammar: a block is graded in itself, a table row in its Evidence column, or by the lead line
+of its H3-or-deeper heading. For each graded block it prints the page and line, the level, the addresses and script
+locators the block cites, what backs it and the tests that cite its section:
+
+```text
+docs/research/combat/grabs.md
+  L13  confirmed (code)  0x0026c548  studied
+  L15  confirmed (runtime)  -  run r-20261023-grab-reach  tests: tests/combat/grab_test.cpp:12
+```
+
+What backs a claim: for `confirmed (code)`, a passing `studied` stamp for each cited address in the task's stamp log
+(`--task`, default the branch; `--stamps` names another log folder; none found means `none`); for `confirmed (runtime)`,
+the run record it cites (`confirmed (runtime), run <id>`, in the block or its lead line), which must exist and meet the
+rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
+links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a
+line `// Expected: research/<page>.md#<anchor>` in `tests/` or `python/tests/`. The sections of
+`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are
+counted, not listed: `docs check` reports them.
+
+It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
+missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
+is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
+with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
+version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
+`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
+`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
+error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
+for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
+
+`research claims` is `research_claims.py` and `research_claims_cli.py`.
 
 ## pcsx2 {#pcsx2}
 
@@ -1711,44 +1750,6 @@ runs the same check on the file whenever the change touches a research page, res
 checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
 fails every mechanical rule page-wide and the grading of the sections the change touches; an entry may list any research
 rule or `stale-wording`.
-
-## research {#research}
-
-```sh
-uv run --project python coney-tools research claims [--base origin/main] [--task TASK] [--stamps DIR] [--require-study] [--json]
-```
-
-Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
-from ([evidence levels](research-workflow.md#evidence-levels)). The changed lines are those of the working tree since
-the branch left `--base`, a new page counting whole. It reads the pages exactly as [`docs check`](#docs) does, with the
-same reader and the same grammar: a block is graded in itself, a table row in its Evidence column, or by the lead line
-of its H3-or-deeper heading. For each graded block it prints the page and line, the level, the addresses and script
-locators the block cites, what backs it and the tests that cite its section:
-
-```text
-docs/research/combat/grabs.md
-  L13  confirmed (code)  0x0026c548  studied
-  L15  confirmed (runtime)  -  run r-20261023-grab-reach  tests: tests/combat/grab_test.cpp:12
-```
-
-What backs a claim: for `confirmed (code)`, a passing `studied` stamp for each cited address in the task's stamp log
-(`--task`, default the branch; `--stamps` names another log folder; none found means `none`); for `confirmed (runtime)`,
-the run record it cites (`confirmed (runtime), run <id>`, in the block or its lead line), which must exist and meet the
-rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
-links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a
-line `// Expected: research/<page>.md#<anchor>` in `tests/` or `python/tests/`. The sections of
-`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are
-counted, not listed: `docs check` reports them.
-
-It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
-missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
-is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
-with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
-version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
-`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
-`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
-error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
-for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 
 ## build {#build}
 

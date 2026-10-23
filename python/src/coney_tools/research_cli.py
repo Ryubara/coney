@@ -15,8 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from coney_tools import research_functions as rf
 from coney_tools import research_claims_cli, research_functions_check, research_import, research_render
+from coney_tools import research_functions as rf
 from coney_tools.config import ConfigError, find_repo_root
 
 RESEARCH_DIR = research_functions_check.RESEARCH_DIR
