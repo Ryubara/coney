@@ -110,7 +110,7 @@ jobs:
       # and ports exist) and the source files (research/source-files.toml: well formed, agreeing with totals.toml).
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools research render --check
-      # The PCSX2 recipes page (docs/guides/pcsx2-recipes.md) must match research/pcsx2-recipes.toml, which must be valid.
+      # The PCSX2 recipes pages (docs/guides/pcsx2-recipes.md and its folder) must match research/pcsx2-recipes.toml, which must be valid.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools pcsx2 recipe render --check
 

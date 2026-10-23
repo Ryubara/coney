@@ -1,6 +1,7 @@
 # The PCSX2 recipes: the shared, verified ways to do basic things in the running original (NTSC-U SLUS_212.15), so
 # no engineer works an address out again. `coney-tools pcsx2 recipe list | show | run` reads this file and
-# `coney-tools pcsx2 recipe render` writes docs/guides/pcsx2-recipes.md from it (CI runs `--check`).
+# `coney-tools pcsx2 recipe render` writes docs/guides/pcsx2-recipes.md and one page per group in
+# docs/guides/pcsx2-recipes/ from it (CI runs `--check`).
 # Schema: python/src/coney_tools/recipes.py. Names, addresses and our own descriptions only: no game data
 # (LEGAL.md). A recipe lands only once it has been run in PCSX2 (confirmed_runtime). Found a new technique? Add it
 # here, run it, and render the page.
@@ -18,11 +19,12 @@ groups = [
 ]
 
 intro = """
-Each recipe below is one thing an engineer often needs to do in the original running in PCSX2: find a human, move
+Each recipe is one thing an engineer often needs to do in the original running in PCSX2: find a human, move
 one, change a field, call one of the game's functions or a script binding, load a checkpoint. Every recipe has been
 run in PCSX2 and says when, on which copy and from which state; each names the Ghidra address that justifies it and
 the research page that explains it. The list is generated from `research/pcsx2-recipes.toml` by
-`coney-tools pcsx2 recipe render`; edit that file, never this page.
+`coney-tools pcsx2 recipe render`; edit that file, never these pages. The recipes are in groups, one page each;
+this page lists every recipe under its group and links to its section.
 
 Run a recipe on a copy you hold a claim on ([Driving PCSX2](research-tools.md#driving-pcsx2)):
 `coney-tools pcsx2 claim --agent ID`, `coney-tools pcsx2 launch --agent ID STATE`, then

@@ -320,7 +320,17 @@ nav:
           - Function database: guides/research-function-database.md
           - Source files: guides/research-source-files.md
           - Finding where a behaviour lives: guides/research-where.md
-      - PCSX2 recipes: guides/pcsx2-recipes.md
+      - PCSX2 recipes:
+          - guides/pcsx2-recipes.md
+          - Finding humans: guides/pcsx2-recipes/finding-humans.md
+          - Moving and editing humans: guides/pcsx2-recipes/moving-and-editing-humans.md
+          - Spawning: guides/pcsx2-recipes/spawning.md
+          - The crew: guides/pcsx2-recipes/the-crew.md
+          - Player state: guides/pcsx2-recipes/player-state.md
+          - Input: guides/pcsx2-recipes/input.md
+          - Calling the game: guides/pcsx2-recipes/calling-the-game.md
+          - Levels and missions: guides/pcsx2-recipes/levels-and-missions.md
+          - Emulation: guides/pcsx2-recipes/emulation.md
       - PCSX2 states: guides/pcsx2-states.md
       - Ghidra + ghidra-mcp: guides/ghidra.md
       - Writing these docs: guides/writing-docs.md

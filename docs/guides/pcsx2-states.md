@@ -52,8 +52,9 @@ Got a place others would want? Save it, then add it, whoever you are:
    `FILE` is a `.p2s` file, or `slot:N` for quick-save slot N (only read). The **id** is a short slug that is also the
    file's name, and is never reused. The **description** says what the scene shows and what it is set up for, in our
    own words. The level, checkpoint, the player's position and heading come from the state itself: `add` runs the
-   [`where`](pcsx2-recipes.md#where) and [`position`](pcsx2-recipes.md#position) recipes over the state's own
-   memory, which gives what the game held when it was saved. With `--copy COPY --agent ME` it reads a running
+   [`where`](pcsx2-recipes/levels-and-missions.md#where) and
+   [`position`](pcsx2-recipes/moving-and-editing-humans.md#position) recipes over the state's own memory, which gives
+   what the game held when it was saved. With `--copy COPY --agent ME` it reads a running
    copy over PINE instead, when you hold the claim (the copy must be running the state you add, as the level and
    position are the live game's, while the version, date and patches are the file's); flags (`--level`,
    `--checkpoint`, `--position`, `--heading`) win over both, and `unknown` is allowed for a level or a checkpoint
