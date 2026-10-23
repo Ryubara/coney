@@ -1,0 +1,16 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The session launcher on Linux, macOS and Git Bash: starts Claude Code as one of Coney's roles. Put this folder on PATH,
+# or link this file from a folder that is (the link is followed to find the python project).
+# Parameters: docs/guides/coney-tools.md#coney-agent
+source=$0
+while [ -h "$source" ]; do
+    folder=$(cd "$(dirname "$source")" && pwd)
+    source=$(readlink "$source")
+    case $source in
+        /*) ;;
+        *) source=$folder/$source ;;
+    esac
+done
+here=$(cd "$(dirname "$source")" && pwd)
+exec uv run --project "$here/../python" coney-agent "$@"

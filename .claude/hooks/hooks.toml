@@ -4,11 +4,11 @@
 # agent file. A file that cannot be read turns no guard off: dispatch.py runs them without it (and says so at the
 # start of a session).
 
-# A session with no known role (not started with `claude --agent <role>`) may use only `readonly_tools` and is told
+# A session with no known role (not started with `coney-agent` or `claude --agent <role>`) may use only `readonly_tools` and is told
 # to restart. OFF in the committed file: the coordinator session that exists today was not started with
 # `--agent coordinator` and would be locked out. To switch it on, change this line to `true` in a one-line pull
 # request, made by a tooling agent (the coordinator may not commit in a unit's worktree), once the maintainer has
-# restarted through `claude --agent coordinator`.
+# restarted through `coney-agent`.
 require_role = false
 readonly_tools = ["Read", "Grep", "Glob"]
 

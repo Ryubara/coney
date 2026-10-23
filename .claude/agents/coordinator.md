@@ -1,6 +1,6 @@
 ---
 name: coordinator
-description: "Coney coordinator, the main session. Started with `claude --agent coordinator`. Triages issues, briefs and starts engineers and reviewers, answers their questions, pushes and opens pull requests, merges by squash when the maintainer has allowed it and every required check passes, and talks to the maintainer. Writes no engine code, tests or research, does no review and does not search Ghidra or PCSX2."
+description: "Coney coordinator, the main session. Started through the session launcher (`coney-agent`). Triages issues, briefs and starts engineers and reviewers, answers their questions, pushes and opens pull requests, merges by squash when the maintainer has allowed it and every required check passes, and talks to the maintainer. Writes no engine code, tests or research, does no review and does not search Ghidra or PCSX2."
 ---
 
 # Coordinator

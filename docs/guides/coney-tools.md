@@ -16,8 +16,9 @@ lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`]
 record the original's per-update traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks,
 publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging servers for agent tools,
 [`doctor`](#doctor), which checks a contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra
-project with our function names, and [`workspace`](#workspace), which sets up the local workspace. Everything is read
-in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
+project with our function names, and [`workspace`](#workspace), which sets up the local workspace;
+[`coney-agent`](#coney-agent) is a command of its own, the session launcher. Everything is read in place and
+streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
 .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
@@ -2031,3 +2032,39 @@ unchanged for `--log-idle-hours` (default 1), and orphaned `ctest` or `coney_tes
 `disk` prints the workspace drive's free space and exits 1 below `--min-gb` (default: `workspace.disk_min_free_gb` of
 [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).
+
+## coney-agent {#coney-agent}
+
+```sh
+uv run --project python coney-agent [ROLE] [--mod-dir FOLDER] [--dry-run] [-- CLAUDE-OPTION ...]
+tools/coney-agent [ROLE] ...        # Linux, macOS, Git Bash: put tools/ on PATH (a link to it works)
+tools/coney-agent.ps1 [ROLE] ...    # Windows, PowerShell
+tools/coney-agent.cmd [ROLE] ...    # Windows, cmd.exe
+```
+
+The session launcher: starts Claude Code as one of Coney's roles, so the hooks know who is acting
+([Which role to start](agents.md#roles)). It is a separate console script of the same package, not a `coney-tools`
+group, and not the player-facing launcher of the game. It finds the Coney checkout that holds the current folder
+(the nearest folder above it with `AGENTS.md` and `.claude/agents/`; outside any checkout, the one it is installed
+from), checks the role against the files in `.claude/agents/`, and runs `claude --agent ROLE` in that checkout, adding
+`--plugin-dir <mod folder>` when the folder exists (the mod then loads in every mode, trusted folder or not). When it
+does not, it says so on stderr and starts without the mod, unless `--mod-dir` named the folder (then it is an error).
+
+* `ROLE`: the role to start, a file name in `.claude/agents/` without `.md`. Default `coordinator`. An unknown role is
+  refused with the list of roles.
+* `--mod-dir FOLDER`: the Coney mod folder to load with `--plugin-dir`. Default `tools/claude-mod` in the checkout, which
+  may be missing. A relative folder is taken from where you run the command, not from the checkout, and a folder you
+  name that is not there is refused (exit 2).
+* `--dry-run`: print the command, quoted so that a shell can run it, and the folder it would run in; start nothing.
+* `-- CLAUDE-OPTION ...`: everything after a lone `--` goes to `claude` unchanged (`coney-agent engineer -- --model
+  opus`).
+
+On Linux and macOS the session launcher is replaced by Claude Code, so Ctrl+C reaches Claude Code alone; on Windows it
+waits for Claude Code with Ctrl+C ignored in itself. That assumes the native Claude Code (`claude.exe`): when `claude`
+on `PATH` is a batch file (the npm shim, `claude.cmd`), Windows starts it through `cmd.exe`, which asks "Terminate
+batch job (Y/N)?" on Ctrl+C whatever the wrapper, and the session launcher says so on stderr (answer N). In `cmd.exe`
+the `.cmd` wrapper asks the same; the `.ps1` wrapper does not, but Windows PowerShell 5.1 refuses scripts by default
+(its execution policy is Restricted), so there run `uv run --project python coney-agent` or allow scripts once with
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`; PowerShell 7 runs it as it is. Exit codes: Claude Code's own
+exit code when it runs; 2 for an unknown role or when `claude` is not on `PATH` or `--mod-dir` names a folder that is
+not there.

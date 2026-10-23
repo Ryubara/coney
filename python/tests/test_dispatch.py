@@ -444,7 +444,7 @@ def test_a_background_command_keeps_its_file_for_the_sweep(identity_folder: Path
 def test_session_start_warns_about_a_missing_role_and_is_quiet_with_one() -> None:
     code, out, _ = DISPATCH.dispatch(json.dumps({"hook_event_name": "SessionStart", "source": "startup"}), CONFIG)
     result = json.loads(out)
-    assert code == 0 and "claude --agent coordinator" in result["systemMessage"]
+    assert code == 0 and "coney-agent" in result["systemMessage"]
     assert result["hookSpecificOutput"]["hookEventName"] == "SessionStart"
     quiet = json.dumps({"hook_event_name": "SessionStart", "agent_type": "coordinator"})
     assert DISPATCH.dispatch(quiet, CONFIG) == (0, "", "")

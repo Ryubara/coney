@@ -154,7 +154,7 @@ reaches its context limit and compacts sooner. When in doubt, start a fresh agen
 Every session and every Agent call runs as one of Coney's roles (the files in `.claude/agents/`), never as the generic
 "general-purpose" or "claude" agent, which carries none of the repository's rules for the kind of work. The hooks know
 the role from the hook input's `agent_type` (a subagent's type; for the main session, the agent it was started as with
-`claude --agent coordinator`), and hold each role to what it may do:
+`claude --agent coordinator`, which [the session launcher](#session-launcher) does), and hold each role to what it may do:
 
 | Role | Is | May not (a hook refuses it) |
 | --- | --- | --- |
@@ -198,7 +198,7 @@ agent again with the right one.
 
 **A session with no role.** `require_role` in `hooks.toml` says what a session started without a role (a plain
 `claude`) may do. On, it may only read (Read, Grep, Glob) and every other call is refused with a message to start with
-`claude --agent coordinator`. It is **off in the committed file** until the maintainer's sessions are started that way.
+`coney-agent`. It is **off in the committed file** until the maintainer's sessions are started that way.
 To switch it on, a tooling agent changes `require_role = false` to `true` in a one-line pull request (the coordinator
 may not commit in a unit's worktree, and every worktree counts as one). Whatever its value, a session start with no
 role shows a notice (a SessionStart hook).
@@ -369,6 +369,16 @@ cannot set the environment of a Bash call. Measured on 2026-10-22 with `claude -
   every permission mode except `bypassPermissions`. So a PowerShell command gets a token only in the modes listed in
   `[identity] powershell_modes` (`bypassPermissions`); in the others a tool sees the identity as unverified. Use Bash
   for `coney-tools` where the identity matters.
+
+## The session launcher {#session-launcher}
+
+`coney-agent` starts Claude Code as a role, from the Coney checkout that holds the current folder: `claude --agent
+coordinator`, plus `--plugin-dir` for the Coney mod when the checkout has it (the mod loads in every mode, trusted
+folder or not). Run it as `uv run --project python coney-agent`, or put `tools/` on `PATH` for `coney-agent` (the
+`.ps1` wrapper on PowerShell 7, or on Windows PowerShell 5.1 once its execution policy allows scripts (it is
+Restricted by default; until then `uv run --project python coney-agent`), the `.cmd` one for `cmd.exe`, an `sh` one
+elsewhere). It is not the player-facing launcher of the game. Every parameter:
+[`coney-agent`](coney-tools.md#coney-agent).
 
 ## Commit trailers {#trailer-guard}
 
