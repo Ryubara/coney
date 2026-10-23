@@ -131,8 +131,9 @@ def _nil_comparisons(info: FunctionInfo) -> frozenset[int]:
     The generator compiles `x ~= nil` by pushing the nil and then replacing the push and the comparison by one
     JMPT (`x == nil` becomes NOT): the code is that of `x`, but the stack briefly held one more value, and the
     function's maximum stack size remembers it. When the recorded size is one more than anything else in the code
-    reaches (a field read `t.k` and an `x + 1` also push a value that is then folded away, and are counted), every
-    test at the depth that explains it is written as a comparison with nil, which reads the same.
+    reaches (a field read `t.k` and an `x + 1` also push a value that is then folded away, and are counted), the
+    first test at the depth that explains it is written as a comparison with nil, which reads the same. Which test
+    the source wrote that way cannot be told; one is enough for the size.
     """
     code, depth = info.code, info.depth
     reached = max(depth)
@@ -142,7 +143,8 @@ def _nil_comparisons(info: FunctionInfo) -> frozenset[int]:
     if info.proto.max_stack != reached + 1:
         return frozenset()
     tests = (Op.JMPT, Op.JMPF, Op.NOT)
-    return frozenset(pc for pc, instr in enumerate(code) if instr.op in tests and depth[pc] + 1 == reached + 1)
+    found = [pc for pc, instr in enumerate(code) if instr.op in tests and depth[pc] == reached]
+    return frozenset(found[:1])
 
 
 def _value_regions(info: FunctionInfo) -> dict[int, ValueRegion]:

@@ -321,6 +321,8 @@ class _Reader:
         """`local` statements for the values at stack positions base .. upto-1, which the code shows are locals:
         one statement per value (a call kept to several values, or one PUSHNIL of several nils, makes one)."""
         info = self.info
+        if info.proto.locals:
+            return self._declare_from_debug(start, frame, base, scope)
         # A value made by one instruction with several results (a call kept to two values, PUSHNIL 2) is declared
         # whole: the next statement starts after all of it.
         while upto < frame.depth() and frame.start_at(upto, -2) == frame.start_at(upto - 1, -3):
@@ -349,6 +351,22 @@ class _Reader:
             names += new
             group = []
         return stmts, after, scope + tuple(names)
+
+    def _declare_from_debug(self, start: int, frame: Frame, base: int, scope: Scope) -> Reading:
+        """With debug information the `local` statement is known exactly: it ends where its locals' records start."""
+        info = self.info
+        for pc in range(start + 1, len(info.code)):
+            new = info.starting(pc)
+            if not new:
+                continue
+            upto = base + len(new)
+            if info.depth[pc] != upto or len(info.active(pc)) != upto or frame.depth() < upto:
+                raise DecompileError(f"pc {pc}: {len(new)} locals start where the stack does not hold them")
+            items = frame.items[frame.index_of(base) : frame.index_of(upto - 1) + 1]
+            values = _trim_nils(_values(items), len(new), allow_empty=True)
+            names = [var.name for var in new]
+            return [LocalStat(names, values, line=info.lines[start])], pc, scope + tuple(names)
+        raise DecompileError(f"pc {start}: no local records start after this statement")
 
     def dispatch(
         self,

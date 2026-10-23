@@ -1,0 +1,35 @@
+-- Expressions: every operator, every kind of constant, tables, calls and methods. Our own source (Coney).
+local a, b, c = 1, 2.5, -3
+x = a + b - c * a / b ^ 2
+y = a - b
+z = a + 7 - 5
+w = -a + -2.5 + -(b * c)
+v = (a + b) * (c - a) / (a - (b - c))
+u = 2 ^ 3 ^ 2
+t = (2 ^ 3) ^ 2
+s = -2 ^ 2
+r = (-2) ^ 2
+q = 2 ^ -1
+p = "a" .. "b" .. c
+o = ("a" .. "b") .. c
+n = a .. (b .. c) .. "d"
+m = not a
+l = not not a
+k = 1e300
+j = 33554431 + 33554432 + 123456789012 + 0.1 + 1 / 3
+i = "tab\t nl\n quote\" back\\ bell\a high\200 nul\000 end"
+h = {}
+g = {1, 2, 3}
+f = {one = 1, ["two words"] = 2, [3] = "three", ["end"] = 4}
+e = {1, 2; three = 3}
+d = {four = 4; 5, 6}
+e2 = {{1, {2}}, {a = {b = {c = 3}}}}
+d2 = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70}
+c2 = {k1=1,k2=2,k3=3,k4=4,k5=5,k6=6,k7=7,k8=8,k9=9,k10=10,k11=11,k12=12,k13=13,k14=14,k15=15,k16=16,k17=17,k18=18,k19=19,k20=20,k21=21,k22=22,k23=23,k24=24,k25=25,k26=26,k27=27,k28=28,k29=29,k30=30,k31=31,k32=32,k33=33}
+b2 = h.field.deeper[a][1]["key"]
+a2 = h[a + 1]
+print(a, b, c)
+print(h:method(1, "two"), h.field:other())
+h:method():chain()
+h.f(g(1), g(2))
+call(nil)

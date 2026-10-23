@@ -193,7 +193,7 @@ class Writer:
         else:
             # `repeat`, `while 1` and `do` compile to nothing: put the keyword just above the body when there is
             # room, else on the body's first line.
-            body = first_line(stmt)
+            body = first_line(stmt) + 1 if first_line(stmt) else 0
             self.start(body - 1 if body - 1 > self.line_no else body)
         if isinstance(stmt, LocalStat):
             self.write("local " + ", ".join(stmt.names))
@@ -379,24 +379,30 @@ class Writer:
             self.write(")")
 
     def table(self, table: Table) -> None:
-        """A table constructor, list part and record part in their source order."""
+        """A table constructor, list part and record part in their source order. One that holds a function, or whose
+        entries came from several source lines, is written one entry per line (on its source line when known)."""
+        items: list[_Entry] = [
+            (line, None, item)
+            for line, item in zip(_lines(table.item_lines, len(table.items)), table.items, strict=True)
+        ]
+        fields: list[_Entry] = [
+            (line, key, value)
+            for line, (key, value) in zip(_lines(table.field_lines, len(table.fields)), table.fields, strict=True)
+        ]
+        sections = [section for section in ([fields, items] if table.fields_first else [items, fields]) if section]
+        entries = [entry for section in sections for entry in section]
+        lines = {line for line, _, _ in entries if line}
+        multiline = any(_multiline(value) for _, _, value in entries) or (
+            len(lines) > 1 or bool(lines and min(lines) > table.line > 0)
+        )
         self.write("{")
-        list_part = [("item", item) for item in table.items]
-        record_part = [("field", pair) for pair in table.fields]
-        sections = [record_part, list_part] if table.fields_first else [list_part, record_part]
-        sections = [section for section in sections if section]
+        if multiline:
+            self.level += 1
         for number_, section in enumerate(sections):
-            if number_:
-                self.write("; ")
-            for index, (kind, entry) in enumerate(section):
-                if index:
-                    self.write(", ")
-                if kind == "item":
-                    assert not isinstance(entry, tuple)
-                    self.expr(entry)
-                else:
-                    assert isinstance(entry, tuple)
-                    key, value = entry
+            for index, (line, key, value) in enumerate(section):
+                if multiline:
+                    self.start(line)
+                if key is not None:
                     if isinstance(key, String) and is_name(key.value):
                         self.write(key.value)
                     else:
@@ -404,8 +410,36 @@ class Writer:
                         self.expr(key)
                         self.write("]")
                     self.write(" = ")
-                    self.expr(value)
+                self.expr(value)
+                if index + 1 < len(section):
+                    self.write(",")
+                elif number_ + 1 < len(sections):
+                    self.write(";")
+                if not multiline and (index + 1 < len(section) or number_ + 1 < len(sections)):
+                    self.write(" ")
+        if multiline:
+            self.level -= 1
+            self.start()
         self.write("}")
+
+
+#: One table entry: its source line (0 when unknown), its key (None in the list part) and its value.
+_Entry = tuple[int, Expr | None, Expr]
+
+
+def _lines(lines: list[int], count: int) -> list[int]:
+    """The source line of each of `count` entries, 0 where unknown."""
+    return lines if len(lines) == count else [0] * count
+
+
+def _multiline(expr: Expr) -> bool:
+    """Whether an expression is written over several lines (a function always is)."""
+    if isinstance(expr, Function):
+        return True
+    if isinstance(expr, Table):
+        values = list(expr.items) + [value for _, value in expr.fields]
+        return any(_multiline(value) for value in values)
+    return False
 
 
 def _body(stmt: Stmt) -> list[Stmt]:
@@ -421,7 +455,8 @@ def first_line(stmt: Stmt) -> int:
     if function is not None:
         return function[1].line or stmt.line
     if not stmt.line and isinstance(stmt, Repeat | While | Do) and stmt.body:
-        return first_line(stmt.body[0])
+        # The keyword compiles to nothing: assume it stood on the line above its body's first statement.
+        return max(first_line(stmt.body[0]) - 1, 0)
     return stmt.line
 
 

@@ -106,18 +106,22 @@ class _Reader:
     def _unsigned(self, size: int) -> int:
         return int.from_bytes(self.raw(size), "little" if self.order == "<" else "big")
 
-    def int(self) -> int:
+    def word(self) -> int:
+        """One 32-bit instruction."""
+        return self._unsigned(4)
+
+    def integer(self) -> int:
         value = self._unsigned(self.int_size)
         if value >= 1 << (8 * self.int_size - 1):
             value -= 1 << (8 * self.int_size)
         return value
 
-    def size(self) -> int:
+    def size_t(self) -> int:
         return self._unsigned(self.size_t_size)
 
     def count(self, what: str) -> int:
         # A length prefix; a negative or absurd one means the bytes are not what we think they are.
-        value = self.int()
+        value = self.integer()
         if value < 0 or value > len(self.data):
             raise ChunkError(f"bad {what} count {value} at offset {self.pos:#x}")
         return value
@@ -128,7 +132,7 @@ class _Reader:
 
     def string(self) -> str | None:
         # A size_t length that counts the final NUL (0: no string), then the bytes. Latin-1 keeps every byte.
-        length = self.size()
+        length = self.size_t()
         if length == 0:
             return None
         if length > len(self.data):
@@ -161,20 +165,20 @@ def _proto(reader: _Reader, depth: int) -> Proto:
     if depth > 200:
         raise ChunkError("functions nested too deeply")
     source = reader.string() or ""
-    line_defined = reader.int()
-    num_params = reader.int()
+    line_defined = reader.integer()
+    num_params = reader.integer()
     is_vararg = reader.byte() != 0
-    max_stack = reader.int()
+    max_stack = reader.integer()
     proto = Proto(source, line_defined, num_params, is_vararg, max_stack)
     for _ in range(reader.count("local")):
         name = reader.string() or ""
-        proto.locals.append(LocVar(name, reader.int(), reader.int()))
-    proto.line_info = [reader.int() for _ in range(reader.count("line"))]
+        proto.locals.append(LocVar(name, reader.integer(), reader.integer()))
+    proto.line_info = [reader.integer() for _ in range(reader.count("line"))]
     proto.strings = [reader.string() or "" for _ in range(reader.count("string constant"))]
     proto.numbers = [reader.number() for _ in range(reader.count("number constant"))]
     proto.protos = [_proto(reader, depth + 1) for _ in range(reader.count("function"))]
     size = reader.count("instruction")
-    proto.code = [reader._unsigned(4) for _ in range(size)]
+    proto.code = [reader.word() for _ in range(size)]
     if not proto.code or proto.code[-1] & 0x3F != 0:
         raise ChunkError("a function's code does not end with END")
     return proto
