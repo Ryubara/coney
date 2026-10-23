@@ -128,7 +128,7 @@ def test_stamp_task_and_dir_are_independent_options(checkout: Path, capsys: pyte
     assert "other" in capsys.readouterr().out
 
 
-def test_an_unchanged_study_under_an_old_stamp_says_the_stamp_was_updated(
+def test_an_unchanged_study_under_an_old_stamp_says_a_stamp_was_written(
     checkout: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["original", "study", ADDRESS]) == 0
@@ -152,7 +152,21 @@ def test_an_unchanged_study_under_an_old_stamp_says_the_stamp_was_updated(
         who={"kind": "tool", "tool": "test"},
     )
     assert main(["original", "study", ADDRESS]) == 0
-    assert "unchanged; stamp updated to cover the identity" in capsys.readouterr().out
+    assert "unchanged; stamp written" in capsys.readouterr().out
+
+
+def test_an_unchanged_study_with_no_studied_stamp_says_the_same(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The saved study is as fetched but the log has no `studied` stamp at all: the wording must not claim an update.
+    assert main(["original", "study", ADDRESS]) == 0
+    capsys.readouterr()
+    for segment in log(checkout).iterdir():
+        segment.unlink()
+    assert main(["original", "study", ADDRESS]) == 0
+    out = capsys.readouterr().out
+    assert "unchanged; stamp written" in out
+    assert "updated" not in out
 
 
 def test_fails_first_needs_arguments_or_none(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:

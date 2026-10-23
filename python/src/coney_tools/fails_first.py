@@ -219,22 +219,88 @@ def _marker(unit: Unit) -> Path:
     return unit.dir / "fails-first" / "restore.json"
 
 
+#: The inside of a string or character literal: runs of plain characters and escapes, matched possessively so a
+#: failed match never backtracks into them.
+_STRING_BODY = r'(?:[^"\\\n]++|\\.)*+'
+#: One string literal: its contents, escapes still raw.
+_LITERAL = '"(' + _STRING_BODY + ')"'
+#: A block comment or a line comment. A line comment runs to the end of its line whatever it contains.
+_COMMENT = r"/\*[\s\S]*?\*/|//[^\n]*+"
+#: What a scan for comments finds, left to right: a raw string (replaced by a non-literal, since a name written as
+#: one is not handled), a string or character literal (kept whole: a `//`, `/*` or quote inside one is text), or
+#: a comment (replaced by a space).
+_RAW = r'R"(?P<delim>[^()\\\s]{0,16})\((?s:.*?)\)(?P=delim)"'
+_KEEP = '"' + _STRING_BODY + '"|' + r"'(?:[^'\\\n]++|\\.)*+'"
+_COMMENTS = re.compile("(?P<raw>" + _RAW + ")|(?P<keep>" + _KEEP + ")|" + _COMMENT)
 #: `TEST_CASE(` and its first argument: one string literal or several adjacent ones (C++ joins them), then `)` or `,`.
-_LITERAL = r'"((?:[^"\\\n]|\\.)*)"'
-_TEST_CASE = re.compile(r"TEST_CASE\s*\(\s*((?:" + _LITERAL + r"\s*)+)[,)]")
+#: It runs on text without comments, so the only gaps are white space, matched possessively.
+_TEST_CASE = re.compile(r"TEST_CASE\s*+\(\s*+((?:" + _LITERAL + r"\s*+)+)[,)]")
+
+
+def _without_comments(text: str) -> str:
+    """`text` as the compiler sees it: each comment replaced by one space, each raw string by `0`, literals whole.
+    One scan, left to right, so a quote inside a comment and a comment marker inside a literal are both text."""
+
+    def one(match: re.Match[str]) -> str:
+        if match.group("keep") is not None:
+            return match.group(0)
+        return "0" if match.group("raw") is not None else " "
+
+    return _COMMENTS.sub(one, text)
+
+
+#: The escapes that stand for one character each.
+_SIMPLE_ESCAPES = {
+    "'": "'",
+    '"': '"',
+    "?": "?",
+    "\\": "\\",
+    "a": "\a",
+    "b": "\b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+}
+#: One escape: `\u` or `\U` and its hex digits, `\x` and its hex digits, up to three octal digits, or one character.
+_ESCAPE = re.compile(r"\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8})|x([0-9A-Fa-f]+)|([0-7]{1,3})|(.))", re.DOTALL)
+
+
+def _unescape(text: str) -> str:
+    r"""The characters a string literal's contents stand for: its C++ escapes (`\"`, `\\`, `\n`, `\x41`, `\101`,
+    `\u00e9`, ...) replaced by what they mean, as in the name Catch2 registers and ctest lists. An escape the language
+    does not define, or a code point beyond Unicode, is left as written."""
+
+    def one(match: re.Match[str]) -> str:
+        for group in (1, 2, 3):  # a code point in hex
+            if match.group(group):
+                value = int(match.group(group), 16)
+                return chr(value) if value <= 0x10FFFF else match.group(0)
+        if match.group(4):
+            return chr(int(match.group(4), 8))
+        return _SIMPLE_ESCAPES.get(match.group(5), match.group(0))
+
+    return _ESCAPE.sub(one, text)
 
 
 def _joined(literals: str) -> str:
-    """The name a run of adjacent string literals makes: their contents, joined."""
-    return "".join(re.findall(_LITERAL, literals))
+    """The name a run of adjacent string literals makes: each literal unescaped, then joined."""
+    return "".join(_unescape(contents) for contents in re.findall(_LITERAL, literals))
+
+
+def _declared_names(text: str) -> set[str]:
+    """The names of the `TEST_CASE`s declared in `text` outside comments, as ctest lists them."""
+    return {_joined(match.group(1)) for match in _TEST_CASE.finditer(_without_comments(text))}
 
 
 def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
     """Every name must be a whole test name (`TEST_CASE("<name>"`, then `)` or `,` for tags) in a test file the test
     commit adds or changes: a typo, only part of a longer name, or a SECTION's name or any other quoted string would
-    run nothing under ctest. Adjacent string literals are joined, as C++ does; a name a macro builds does not match."""
+    run nothing under ctest. Adjacent string literals are joined with the comments between them dropped and their
+    escapes unescaped, as C++ does; a name a macro builds does not match."""
     text = "".join(_git(root, "show", f"{commit}:{path}") for path in test_files)
-    declared = {_joined(match.group(1)) for match in _TEST_CASE.finditer(text)}
+    declared = _declared_names(text)
     missing = [name for name in names if name not in declared]
     if missing:
         where = ", ".join(test_files)

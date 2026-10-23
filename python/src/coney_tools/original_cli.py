@@ -167,8 +167,8 @@ def _study(
     if args.show:
         print(listing.read_text(encoding="utf-8"), end="")
     if result.change == "unchanged" and result.stamped:
-        # The function is as studied, but the log's newest stamp did not cover all of it (an older tool's).
-        print("  unchanged; stamp updated to cover the identity")
+        # The function is as studied, but the log had no stamp covering all of it (none at all, or an older tool's).
+        print("  unchanged; stamp written")
     elif result.change == "unchanged":
         print("  unchanged since the last study")
     else:

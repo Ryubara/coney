@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for `original fails-first`: a test red on the test commit and green on the fix commit, with a fake build."""
 
+import ast
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -424,3 +427,98 @@ def test_none_needs_a_short_one_line_reason(repo: Repo) -> None:
     for bad in ("two\nlines", "x" * 300):
         with pytest.raises(FailsFirstError, match="reason"):
             fails_first.record_none(repo.unit, repo.root, bad, rules=rules(), who=WHO, clock=Clock())
+
+
+def _declare(repo: Repo, source: str) -> tuple[str, list[str]]:
+    """Commit `source` as the test file; (the commit, the test files) to check names against."""
+    (repo.root / "tests" / "widget_test.cpp").write_text(source, encoding="utf-8")
+    git(repo.root, "commit", "-q", "-am", "names")
+    return git(repo.root, "rev-parse", "HEAD").strip(), ["tests/widget_test.cpp"]
+
+
+def test_a_comment_between_adjacent_literals_is_not_part_of_the_name(repo: Repo) -> None:
+    # The compiler joins "A " and "B" whatever comment sits between them; so does the check.
+    commit, files = _declare(
+        repo,
+        'TEST_CASE("Block " /* why */ "comment") {}\n'
+        'TEST_CASE("Line "  // why\n          "comment") {}\n'
+        'TEST_CASE( /* first */ "Around" /* last */ , "[tag]") {}\n'
+        'TEST_CASE("Both " /* a */ // b\n /* c */ "kinds") {}\n'
+        'TEST_CASE("Quoted " /* say "no" */ "comment") {}\n',
+    )
+    names = ("Block comment", "Line comment", "Around", "Both kinds", "Quoted comment")
+    fails_first._check_names(repo.root, commit, files, names)
+    with pytest.raises(FailsFirstError, match="Block why comment:"):  # the comment's words are no part of a name
+        fails_first._check_names(repo.root, commit, files, ("Block why comment",))
+
+
+def test_comment_markers_inside_a_literal_are_text(repo: Repo) -> None:
+    commit, files = _declare(repo, 'TEST_CASE("a /* b */ c // d") {}\n')
+    fails_first._check_names(repo.root, commit, files, ("a /* b */ c // d",))
+
+
+def test_escapes_in_a_literal_are_the_characters_ctest_registers(repo: Repo) -> None:
+    commit, files = _declare(
+        repo,
+        r'TEST_CASE("say \"hi\"") {}' + "\n"
+        r'TEST_CASE("path C:\\dir") {}' + "\n"
+        r'TEST_CASE("tab\there \x41\101\u00e9") {}' + "\n"
+        r'TEST_CASE("q\"" "\\") {}' + "\n",
+    )
+    names = ('say "hi"', "path C:\\dir", "tab\there AA\u00e9", 'q"\\')
+    fails_first._check_names(repo.root, commit, files, names)
+    with pytest.raises(FailsFirstError, match="say"):  # the raw spelling is not the registered name
+        fails_first._check_names(repo.root, commit, files, (r"say \"hi\"",))
+
+
+def test_unescaping_follows_the_c_plus_plus_rules() -> None:
+    assert fails_first._unescape(r"\' \? \a\b\f\n\r\t\v") == "' ? \a\b\f\n\r\t\v"
+    assert fails_first._unescape(r"\x41\x4a\0\101\1012") == "AJ\x00AA2"
+    assert fails_first._unescape(r"\u00e9\U0001F600") == "\u00e9\U0001f600"
+    assert fails_first._unescape(r"\\n") == "\\n"  # an escaped backslash, then a plain n
+    assert fails_first._unescape(r"\q\d") == r"\q\d"  # an escape the language does not define stays as written
+
+
+def _declared_within(text: str, seconds: float = 20.0) -> set[str]:
+    """`_declared_names(text)`, run in a child process so that a pattern that never finishes fails the test."""
+    code = (
+        "import sys; from coney_tools import fails_first; print(sorted(fails_first._declared_names(sys.stdin.read())))"
+    )
+    try:
+        done = subprocess.run(
+            [sys.executable, "-c", code],
+            input=text,
+            capture_output=True,
+            encoding="utf-8",
+            timeout=seconds,
+            check=True,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail(f"the name scan did not finish in {seconds} s")
+    return set(ast.literal_eval(done.stdout))
+
+
+def test_a_declaration_that_does_not_match_finishes_quickly() -> None:
+    # A macro-built name after long runs of comment text must be refused, not hang the regular expression.
+    assert _declared_within('TEST_CASE("a" ' + "/" * 80 + "\nMACRO)") == set()
+    assert _declared_within('TEST_CASE("a" ' + "/* x */ " * 40 + "MACRO)") == set()
+    assert _declared_within('TEST_CASE("a" ' + "// x\n" * 40 + "MACRO)") == set()
+    assert _declared_within("TEST_CASE(" + "/* x */ " * 40 + "MACRO)") == set()
+
+
+def test_a_comment_does_not_end_a_name_early() -> None:
+    # What follows the comment is a macro, so the name is not a literal: neither `,` nor `)` inside the comment ends it.
+    assert _declared_within('TEST_CASE("Foo" // note, see\n NAME_MACRO)') == set()
+    assert _declared_within('TEST_CASE("Foo" // done)\n NAME_MACRO)') == set()
+    assert _declared_within('TEST_CASE("Foo" /* a, b) */ NAME_MACRO)') == set()
+    assert _declared_within('TEST_CASE("Foo" // note, see\n, "[tag]")') == {"Foo"}
+
+
+def test_a_test_case_inside_a_comment_is_not_declared() -> None:
+    source = '// TEST_CASE("Ghost") {}\n/* TEST_CASE("Block ghost") {} */\nTEST_CASE("Real") {}\n'
+    assert _declared_within(source) == {"Real"}
+    # A quote that is a character, and comment markers inside a string, do not hide or invent anything.
+    assert _declared_within('auto q = \'"\'; TEST_CASE("After char") {}\n') == {"After char"}
+    assert _declared_within('auto s = "// TEST_CASE(\\"x\\")"; TEST_CASE("Next") {}\n') == {"Next"}
+    raw = 'auto r = R"x(// "TEST_CASE("Inside raw")" )x"; TEST_CASE("After raw") {}\n'
+    assert _declared_within(raw) == {"After raw"}
