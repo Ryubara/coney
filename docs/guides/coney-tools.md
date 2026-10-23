@@ -19,7 +19,7 @@ uv run --project python coney-tools wad --help
 
 These read **your own disc**; [naming the disc](coney-tools-disc.md#naming-the-disc) says how they find it.
 
-* [`wad`](coney-tools-disc.md#info): the game's archive.
+* [`wad`](coney-tools-disc.md#wad): the game's archive.
 * [`wad scenes`](coney-tools-disc.md#scenes): the scene records.
   {#scenes}
 * [`extract`](coney-tools-disc.md#extract): every asset, in open formats.

@@ -19,6 +19,12 @@ Every `wad` command takes the disc as an optional first argument, `DISC`:
 Without `DISC`, the tools use `game_dir` from your `coney.local.toml` (see
 [Local workspace](workspace.md)). Problems print one line, `coney-tools: <what is wrong>`, and exit with code 2.
 
+## wad {#wad}
+
+The `wad` group reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`: `wad info`, `wad list`, `wad names`,
+[`wad extract`](#wad-extract) and [`wad scenes`](#scenes) follow, each taking the disc as
+[named above](#naming-the-disc).
+
 ## info
 
 ```sh
