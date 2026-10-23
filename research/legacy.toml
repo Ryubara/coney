@@ -1,0 +1,635 @@
+# Research pages that do not meet the standard yet (docs/guides/writing-docs.md#legacy-pages), each under the
+# rules it fails, with the number of findings at the last scan (for `length`, the lines over the limit).
+# A page here is excused from those rules only. It leaves the file as it passes: remove a rule or a page once
+# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new or
+# restructured page meets the standard in full. Written first by `coney-tools docs legacy --init`.
+
+["docs/research/ai-code.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 34
+address-resolve = 10
+history = 2
+length = 255
+
+["docs/research/ai-gangs.md"]
+front-matter = 1
+skeleton = 19
+verified = 1
+evidence = 169
+address-resolve = 1
+history = 8
+
+["docs/research/ai-goals.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 30
+address-resolve = 2
+history = 1
+length = 743
+
+["docs/research/ai-moving.md"]
+front-matter = 1
+skeleton = 18
+verified = 1
+evidence = 103
+address-resolve = 2
+history = 1
+
+["docs/research/ai-pathing.md"]
+front-matter = 1
+skeleton = 9
+verified = 1
+evidence = 24
+history = 4
+
+["docs/research/ai-reimpl.md"]
+front-matter = 1
+skeleton = 9
+verified = 1
+evidence = 47
+address-resolve = 5
+history = 16
+
+["docs/research/ai-scripting.md"]
+front-matter = 1
+skeleton = 8
+verified = 1
+evidence = 96
+address-resolve = 3
+history = 2
+
+["docs/research/ai-world.md"]
+front-matter = 1
+skeleton = 3
+verified = 1
+evidence = 22
+history = 1
+
+["docs/research/ai.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+evidence = 205
+address-resolve = 2
+history = 10
+length = 1522
+
+["docs/research/animation.md"]
+front-matter = 1
+skeleton = 9
+verified = 1
+evidence = 2
+
+["docs/research/armies.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 2
+history = 2
+
+["docs/research/boot.md"]
+front-matter = 1
+verified = 1
+evidence = 64
+address-resolve = 8
+
+["docs/research/camera.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 115
+address-resolve = 4
+history = 18
+length = 1910
+
+["docs/research/cars.md"]
+front-matter = 1
+verified = 1
+evidence = 20
+address-resolve = 1
+history = 2
+
+["docs/research/characters.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+evidence = 98
+address-resolve = 6
+copied = 1
+history = 10
+length = 1799
+
+["docs/research/chunk-system.md"]
+front-matter = 1
+verified = 1
+evidence = 40
+address-resolve = 6
+history = 1
+
+["docs/research/collision.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 10
+history = 1
+
+["docs/research/combat-diffs.md"]
+front-matter = 1
+verified = 1
+history = 3
+
+["docs/research/combat-grabs.md"]
+front-matter = 1
+skeleton = 9
+verified = 1
+evidence = 58
+copied = 1
+history = 2
+
+["docs/research/combat-moves.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 60
+history = 6
+
+["docs/research/combat-rage.md"]
+front-matter = 1
+skeleton = 3
+verified = 1
+evidence = 29
+copied = 1
+history = 7
+
+["docs/research/combat-reactions.md"]
+front-matter = 1
+skeleton = 8
+verified = 1
+evidence = 55
+copied = 1
+history = 12
+
+["docs/research/combat-targets.md"]
+front-matter = 1
+skeleton = 4
+verified = 1
+evidence = 34
+copied = 1
+history = 3
+
+["docs/research/combat-throws.md"]
+front-matter = 1
+verified = 1
+evidence = 31
+decompile = 1
+history = 3
+
+["docs/research/combat.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 65
+copied = 1
+history = 6
+length = 437
+
+["docs/research/compiler.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+decompile = 1
+
+["docs/research/crimes.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 83
+address-resolve = 2
+history = 11
+
+["docs/research/cut-content.md"]
+front-matter = 1
+skeleton = 8
+verified = 1
+evidence = 2
+
+["docs/research/debug.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+evidence = 9
+
+["docs/research/feel.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 10
+history = 1
+
+["docs/research/file-io.md"]
+front-matter = 1
+evidence = 9
+address-resolve = 2
+
+["docs/research/flags.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 13
+history = 2
+
+["docs/research/formats/animation.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 47
+history = 2
+
+["docs/research/formats/audio.md"]
+front-matter = 1
+verified = 1
+evidence = 4
+history = 1
+
+["docs/research/formats/global-lists.md"]
+front-matter = 1
+verified = 1
+evidence = 1
+history = 1
+
+["docs/research/formats/inventory.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+history = 1
+
+["docs/research/formats/lua-chunks.md"]
+front-matter = 1
+verified = 1
+
+["docs/research/formats/memory-card-icon.md"]
+front-matter = 1
+verified = 1
+history = 1
+
+["docs/research/formats/renderware.md"]
+front-matter = 1
+verified = 1
+evidence = 2
+address-resolve = 1
+decompile = 1
+history = 1
+
+["docs/research/formats/wad-contents.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 4
+history = 3
+
+["docs/research/formats/wad-dir.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 1
+address-form = 6
+history = 1
+
+["docs/research/frontend.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+evidence = 139
+address-resolve = 1
+history = 2
+length = 1017
+
+["docs/research/gang-fights.md"]
+front-matter = 1
+skeleton = 12
+verified = 1
+evidence = 25
+history = 11
+
+["docs/research/graphics-restart.md"]
+front-matter = 1
+verified = 1
+history = 4
+
+["docs/research/graphics.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 48
+address-resolve = 21
+copied = 1
+history = 6
+length = 480
+
+["docs/research/gui.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 54
+address-resolve = 1
+history = 2
+
+["docs/research/hud-functions-lua.md"]
+front-matter = 1
+skeleton = 3
+verified = 1
+evidence = 15
+address-resolve = 3
+copied = 1
+history = 7
+
+["docs/research/hud-functions-panels.md"]
+front-matter = 1
+skeleton = 20
+verified = 1
+evidence = 22
+copied = 1
+
+["docs/research/hud-functions-parts.md"]
+front-matter = 1
+skeleton = 15
+verified = 1
+evidence = 33
+copied = 1
+
+["docs/research/hud-messages.md"]
+front-matter = 1
+skeleton = 13
+verified = 1
+evidence = 46
+copied = 1
+history = 2
+
+["docs/research/hud-radar.md"]
+front-matter = 1
+skeleton = 9
+verified = 1
+evidence = 27
+copied = 1
+history = 1
+
+["docs/research/hud.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 51
+address-resolve = 1
+history = 4
+
+["docs/research/input.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+evidence = 1
+history = 1
+
+["docs/research/level-loading.md"]
+front-matter = 1
+verified = 1
+evidence = 63
+address-resolve = 6
+history = 3
+
+["docs/research/lighting.md"]
+front-matter = 1
+skeleton = 10
+verified = 1
+evidence = 24
+history = 1
+
+["docs/research/link-once.md"]
+front-matter = 1
+skeleton = 6
+evidence = 12
+address-resolve = 3
+
+["docs/research/maths.md"]
+front-matter = 1
+skeleton = 4
+
+["docs/research/memory.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 5
+address-resolve = 17
+
+["docs/research/movies.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 22
+address-resolve = 1
+history = 1
+
+["docs/research/name-hash.md"]
+front-matter = 1
+skeleton = 5
+verified = 1
+evidence = 1
+address-form = 3
+
+["docs/research/objects.md"]
+front-matter = 1
+verified = 1
+evidence = 66
+address-resolve = 6
+decompile = 1
+copied = 1
+history = 12
+length = 773
+
+["docs/research/overview.md"]
+front-matter = 1
+skeleton = 11
+verified = 1
+address-form = 1
+history = 1
+
+["docs/research/particles.md"]
+front-matter = 1
+verified = 1
+evidence = 16
+decompile = 1
+history = 2
+
+["docs/research/pause.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 55
+address-resolve = 2
+history = 3
+
+["docs/research/physics-bodies.md"]
+front-matter = 1
+skeleton = 14
+verified = 1
+evidence = 360
+address-resolve = 22
+copied = 1
+history = 12
+length = 1089
+
+["docs/research/physics-kernels.md"]
+front-matter = 1
+skeleton = 11
+verified = 1
+evidence = 97
+address-resolve = 5
+copied = 1
+history = 20
+length = 526
+
+["docs/research/physics-world.md"]
+front-matter = 1
+skeleton = 12
+verified = 1
+evidence = 192
+address-resolve = 1
+copied = 1
+history = 7
+
+["docs/research/physics.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 32
+address-resolve = 2
+history = 12
+
+["docs/research/player-state.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 18
+history = 1
+
+["docs/research/ps2-render.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 13
+address-resolve = 8
+history = 1
+
+["docs/research/rendering.md"]
+front-matter = 1
+skeleton = 9
+verified = 1
+evidence = 3
+history = 1
+
+["docs/research/rumble.md"]
+front-matter = 1
+skeleton = 12
+verified = 1
+evidence = 22
+history = 5
+
+["docs/research/save.md"]
+front-matter = 1
+skeleton = 2
+verified = 1
+evidence = 15
+history = 1
+
+["docs/research/scenes.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 37
+history = 9
+
+["docs/research/script-types.md"]
+front-matter = 1
+skeleton = 7
+verified = 1
+evidence = 310
+address-resolve = 145
+history = 1
+length = 836
+
+["docs/research/scripting.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 51
+address-resolve = 4
+history = 52
+length = 1454
+
+["docs/research/sound-events.md"]
+front-matter = 1
+skeleton = 11
+verified = 1
+evidence = 30
+history = 4
+
+["docs/research/sound.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 55
+address-resolve = 1
+history = 4
+length = 146
+
+["docs/research/source-map.md"]
+front-matter = 1
+skeleton = 7
+evidence = 197
+address-resolve = 2
+
+["docs/research/stealth.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 5
+
+["docs/research/tasks.md"]
+front-matter = 1
+skeleton = 3
+verified = 1
+evidence = 61
+address-resolve = 10
+decompile = 1
+history = 1
+
+["docs/research/workouts.md"]
+front-matter = 1
+skeleton = 13
+verified = 1
+evidence = 16
+history = 9
+
+["docs/research/world.md"]
+front-matter = 1
+skeleton = 1
+verified = 1
+evidence = 32
+address-resolve = 2
+history = 1
+
+["docs/research/xbox-assets.md"]
+front-matter = 1
+verified = 1
+evidence = 2
+address-resolve = 1
+history = 4
+
+["docs/research/xbox-executable.md"]
+front-matter = 1
+skeleton = 10
+verified = 1
+evidence = 2
+decompile = 1
+history = 1

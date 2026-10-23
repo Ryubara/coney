@@ -1,0 +1,56 @@
+# The sections of SLUS_212.15 (NTSC-U) that are loaded into memory, from the ELF section headers: name and the
+# addresses each covers, `start` up to but not including `end`. Reference data only (names and numbers, no bytes):
+# `docs check` holds an address a research page cites to it and to docs/progress/ghidra-functions.tsv. An address in
+# the section marked `code` must lie inside a function of that listing; an address in any other section resolves.
+# The sections that load no memory (.reginfo, .DVP.*, .shstrtab) are left out.
+
+[[section]]
+name = ".text"
+start = 0x00100000
+end = 0x004f6578
+code = true
+
+[[section]]
+name = ".vutext"
+start = 0x004f6580
+end = 0x0050a810
+
+[[section]]
+name = ".data"
+start = 0x0050a880
+end = 0x00546390
+
+[[section]]
+name = ".vudata"
+start = 0x00546390
+end = 0x00546450
+
+[[section]]
+name = ".rodata"
+start = 0x00546480
+end = 0x00596498
+
+[[section]]
+name = ".gcc_except_table"
+start = 0x00596500
+end = 0x005966d0
+
+[[section]]
+name = ".lit4"
+start = 0x00596700
+end = 0x00596ad4
+
+[[section]]
+name = ".sdata"
+start = 0x00596b00
+end = 0x00596f6c
+
+[[section]]
+name = ".sbss"
+start = 0x00596f80
+end = 0x005971f0
+
+[[section]]
+name = ".bss"
+start = 0x00597200
+end = 0x00715b5c

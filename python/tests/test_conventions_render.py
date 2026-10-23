@@ -470,3 +470,22 @@ def test_no_guide_still_says_what_the_squash_merge_made_untrue(stale: str) -> No
         if re.search(stale, path.read_text(encoding="utf-8"))
     ]
     assert said == []
+
+
+def test_the_research_pages_block_shows_each_kind_with_its_sections_and_limit() -> None:
+    lines = render_block("research-pages", CONVENTIONS)
+    rows = {line.split("|")[1].strip(): line for line in lines if line.startswith("| `")}
+    assert set(rows) == {"`system`", "`topic`", "`format`", "`mission`", "`feature`", "`survey`"}
+    assert (
+        "Summary, Map, Data, Behaviour, In Coney, Open questions, *How this was checked* (optional)" in rows["`topic`"]
+    )
+    assert "| 1,500 | required | required |" in rows["`topic`"] and "| 1,000 | none | none |" in rows["`mission`"]
+    text = " ".join(" ".join(lines).split())
+    assert "`Purpose` for Summary" in text and "`Data` for Layout on a `format` page" in text
+    assert "at most 200 characters" in text and "200 characters or more written on two research pages" in text
+
+
+def test_a_changed_research_limit_reaches_the_block() -> None:
+    conventions = conventions_with(("research.kinds.topic.max_lines", 1234), ("research.verified_max_chars", 150))
+    text = " ".join(" ".join(render_block("research-pages", conventions)).split())
+    assert "1,234" in text and "at most 150 characters" in text

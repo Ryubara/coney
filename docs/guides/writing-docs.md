@@ -104,7 +104,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 
 | Kind | Where | Rules |
 | --- | --- | --- |
-| Research | `docs/research/` | Living; one page per subsystem or format; evidence levels; a map from each described behaviour to the original function that implements it ([the Subsystem page](#subsystem-page)) |
+| Research | `docs/research/` | Living; one page per subject, of one of six kinds with front matter and the sections of its kind; evidence levels; a map from each described behaviour to the original function that implements it ([Research pages](#research-pages)) |
 | Progress | `docs/progress/` | The tables at the `progress:generated` marker are produced by the docs build, never committed; edit the data files beside the page instead |
 | Game references: lists | `docs/references/` | Generated from `research/references/` by `coney-tools refs render`; edit the YAML instead. `entities.md` is written by hand |
 | Game references: script bindings | `docs/references/bindings/` | Generated from `research/bindings/` by `coney-tools natives render`; edit the YAML instead |
@@ -115,15 +115,17 @@ subject, updated in place, so a reader never has to work out which of two pages 
 ## Touch a page, fix the page {#touch-it}
 
 Whoever changes a page brings the **whole page** up to this standard in the same pull request: its kind's rules
-([Page kinds](#page-kinds)), the [Style](#style) rules and, for a research page, the [Subsystem page](#subsystem-page)
-skeleton and the [evidence levels](research-workflow.md#evidence-levels). There is no cleanup pass and no agent for
+([Page kinds](#page-kinds)), the [Style](#style) rules and, for a research page, the [research page](#research-pages)
+rules and the [evidence levels](research-workflow.md#evidence-levels). There is no cleanup pass and no agent for
 one. A page nobody touches is left as it is until someone does, so the pages that matter, the ones people work in,
 reach the standard first. A program holds the line ([Checking a page](#checking)): it checks every page a change
 touches and fails on any rule the page breaks, however old the line that breaks it.
 
-Fixing a page means the page, not the lines you wrote: add the missing skeleton sections (a section with nothing known
-says so in one line), grade the claims, reword what the Style rules refuse. A page that has grown past the length
-warning is split along a sub-subject that has its own page, in the same pull request or in one that follows at once.
+Fixing a page means the page, not the lines you wrote: add the missing sections (a section with nothing known says so
+in one line), grade the claims, reword what the Style rules refuse. A research page that cannot be brought up in one
+change is [legacy](#legacy-pages) and keeps its excuses until it can; every other page meets the standard in full.
+A page that has grown past its length limit is split along a sub-subject that has its own page, in the same pull
+request or in one that follows at once.
 
 ## Adding a page
 
@@ -135,9 +137,11 @@ warning is split along a sub-subject that has its own page, in the same pull req
    the strict build rejects relative links that leave `docs/`, and `mkdocs_hooks.py` turns these into links to the
    file on GitHub. Never write the repository's or the site's address into a file, code comment or commit message;
    the README is the one exception. Name roles, not people or accounts: "a maintainer decision", not who made it.
-4. On a research page, give every non-obvious claim an address or file offset and an evidence level: confirmed
-   (code), confirmed (runtime), inferred or speculative. The levels are defined in
-   [Research workflow](research-workflow.md#evidence-levels). Run [the check](#checking) before you commit.
+4. On a research page, start with the front matter of its kind and keep the sections of that kind
+   ([Research pages](#research-pages)), and give every behaviour an address and an evidence level: confirmed (code),
+   confirmed (runtime), inferred or speculative. The levels and their spellings are in
+   [Research workflow](research-workflow.md#evidence-levels). A new page is never legacy. Run [the check](#checking)
+   before you commit.
 
 ## Style
 
@@ -158,58 +162,201 @@ warning is split along a sub-subject that has its own page, in the same pull req
   thing that is planned says "planned" in the one place that owns it.
 - **Review checklist:** [Docs review](review/docs.md) lists what a reviewer looks for.
 
-## Subsystem page
+## Research pages {#research-pages}
 
 A research page is a **map** from what the game does to the original code that does it. Engineers port from the
 original function: they read it in Ghidra, so the page does not replace the code and does not try to be implementable
 without it. What the page holds is what the code does not say: which function does what and where its logic lives, the
-layouts, constants and units, what was observed running, how sure we are, and what is still open. A research page for
-an engine subsystem covers six things, in this order, so that the next engineer finds the original function, checks the
-claim and writes the tests without working it all out again. Copy the skeleton below and fill it in; a section with
-nothing known says so in one line rather than disappearing, so the gap stays visible. File-format pages follow the same
-order, with the data section doing most of the work.
+layouts, constants and units, what was observed running, how sure we are, and what is still open.
 
 Each behaviour the page describes **names the original function that implements it**: its address and its name (the
 name from Ghidra, or the name the page gives it when the original has none) and, where the logic is spread over several
 functions, the one where it lives. A behaviour with no function named is a finding for the reviewer.
 
+### Kinds and front matter {#front-matter}
+
+A page is split by subject, never by length or by where the code sits in the binary, and it is one of six kinds. It
+starts with YAML front matter, which MkDocs reads as page metadata and the reader never sees:
+
+```yaml
+---
+kind: topic                                  # system | topic | format | mission | feature | survey
+system: combat                               # system and topic pages: the system they belong to
+owns:                                        # the addresses the page describes
+  files: ["Human/cnsplayertag.cpp"]          # source files, as the source map names them
+  ranges: ["0x00284920-0x00288000"]          # [start, end), for code no file name covers
+  functions: ["0x00225830"]                  # single functions taken from another owner
+---
+```
+
+The kinds, their sections and the limits `docs check` holds a page to (read from `research` in
+[.github/conventions.yml](repo:.github/conventions.yml), the one source):
+
+<!-- conventions:begin research-pages -->
+| Kind | Sections, in order | Lines | `system` | `owns` |
+| --- | --- | --- | --- | --- |
+| `system` | Summary, Map, Data, Behaviour, In Coney, Open questions, *How this was checked* (optional) | 1,500 | required | required |
+| `topic` | Summary, Map, Data, Behaviour, In Coney, Open questions, *How this was checked* (optional) | 1,500 | required | required |
+| `format` | Summary, Map, Layout, *Behaviour* (optional), In Coney, Open questions, *How this was checked* (optional) | 1,000 | none | optional |
+| `mission` | Summary, Flow, Cast and objects, Scripted events, Open questions, *How this was checked* (optional) | 1,000 | none | none |
+| `feature` | Summary, Rules, Map, Behaviour, In Coney, Open questions, *How this was checked* (optional) | 1,000 | none | optional |
+| `survey` | Summary, Method, Findings, Open questions, *How this was checked* (optional) | 1,000 | none | optional |
+
+- Old section names are accepted as the new ones: `Purpose` for Summary, `Original structure` for Map,
+  `Coney's implementation` for In Coney, `Runtime checks` for How this was checked and `Disc counts` for How this was
+  checked.
+- And `Data` for Layout on a `format` page.
+- The `Verified against:` line is one line of at most 200 characters. A paragraph of 200 characters or more written on
+  two research pages is a copy.
+- An address needs no level in Summary, In Coney, Open questions and How this was checked.
+- A date or an issue number may stand only in In Coney and How this was checked.
+- A page with no front matter is read as `system`, or `format` under `docs/research/formats/`.
+<!-- conventions:end -->
+
+- **system**: one subsystem of the original, a source directory or a group of its files. It owns its files, less what
+  its topic pages own.
+- **topic**: one group of behaviours inside a system that has its own entry functions and that a reader would come for
+  alone. It owns those functions, the system's Map has one row per behaviour moved to it, and nothing is written twice.
+- **format**: a file or data format on the disc. It owns its reader functions only when no system does.
+- **mission**: one level's flow: checkpoints, triggers, cast and scripted events. It owns nothing and cites system
+  pages; a claim about a script cites a locator, `` `level99.lua:f31` `` for function prototype 31 of that chunk.
+- **feature**: a mode or player-facing feature that spans systems.
+- **survey**: a study of the whole executable or disc (the source map, the compiler, the name hash).
+
+**One owner per address.** A file, a range or a function is in the `owns` of one page. A page may take a single
+function, or a smaller range, out of what another owns (the most specific entry wins); two pages that own the same
+thing, or two ranges that cross, are refused. Another page may cite an address to make its own point, but the
+function's role, its branches and its constants are written once, on the page that owns it, and others link to that
+section: a paragraph of 200 characters or more on two research pages is refused. A system has one page and a topic
+names a system that has one.
+
+### Sections {#sections}
+
+After the front matter come a `# Title`, one `Verified against:` line and then the kind's sections, **in order and no
+others** (what does not fit goes into a `###` subsection of one of them). A section with nothing known says so in one
+line. The headings of a system or topic page:
+
+| Section | What it holds |
+| --- | --- |
+| Summary | What the player sees, then how it works in a paragraph; what it is not and where its neighbours are |
+| Map | The source files and ranges, each with its level; a table from behaviour to function; the entry points, with their levels |
+| Data | Structs with offsets, types, meanings and who writes them; constants with units; byte order; how each is found |
+| Behaviour | One `###` per behaviour, each opening with the function where its logic lives; order, conditions, edge cases, constants |
+| In Coney | Where the port lives (file and function), its stand-ins and deliberate differences, each linked to an open question; the only place for an issue number or a date besides How this was checked |
+| Open questions | Each anchored `{#q-...}`: what is unknown, what depends on it, how to find out |
+| How this was checked | Optional: the method of an old runtime claim, a disc check's procedure |
+
+A format page has Layout where a system has Data and Behaviour (optional) before In Coney; a mission page has Flow, Cast
+and objects and Scripted events; a feature page has Rules; a survey has Method and Findings. The old names are accepted
+for the new ones until a page is renamed (the generated list above): Purpose for Summary, Original structure for Map,
+Coney's implementation for In Coney.
+
+The `Verified against:` line says what was read, not how, in one line: the executable (`SLUS_212.15`, NTSC-U) or the
+document or pinned library after the colon. Dates, emulator versions, save-state slots and methods do
+not belong on it; a runtime claim cites its run record and an old one keeps its method in How this was checked.
+
+Here is a topic page, shortened:
+
 ````markdown
-# <Subsystem name>
+---
+kind: topic
+system: combat
+owns: {functions: ["0x00284920", "0x0026c548"]}
+---
+# Combat: grabs, the hold and the mount
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 <version>.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
-## Purpose
+## Summary
 
-What this part of the game does, in a few sentences a player would recognise, and what other subsystems
-depend on it.
+Circle catches the man in front; held, it runs him down. Throws are on [Combat: throws](throws.md).
 
-## Original structure
+## Map
 
-The original classes and source files (`c:/Warriors/Source/<Subsystem>/<File>.cpp`), and how they relate.
-A table of the important functions: address, name, one-line role, evidence level. This is the map: a reader who wants
-the code for a behaviour starts here.
+| Behaviour | Function | Section |
+| --- | --- | --- |
+| Circle: grab or tackle | `0x00284920` `Player_GrabOrTackle` | [Grab and tackle](#grab) |
 
 ## Data
 
-Every struct the subsystem owns, with field offsets, types and meanings, and the constants it uses.
-Little- or big-endian, alignment, and how the data is found (a WAD file name, a global's address).
+| Field | Meaning | Evidence |
+| --- | --- | --- |
+| record `+0xb4` | the grab's base id, set by `Grab_Start` `0x0026c548` | confirmed (code) |
 
 ## Behaviour
 
-What the code does, in prose, step by step where order matters, each behaviour naming the original function
-(address and name) where its logic lives. Short pseudocode where it explains better than prose; never a whole function
-listing from Ghidra or a disassembly. Every non-obvious claim carries an evidence level.
+### Grab and tackle {#grab}
 
-## Coney's implementation
+`Player_GrabOrTackle` (`0x00284920`) picks a grab or a tackle from the distance (confirmed (code)).
 
-Where the reimplementation lives (`src/<subsystem>/`), what it does differently from the original
-and why (a PC platform, a librw call in place of a PS2 one, a simpler structure).
+## In Coney
+
+`src/core/combat/grab.cpp` (`Grab::start`). Stand-in: the counter roll is fixed ([q-counter](#q-counter)).
 
 ## Open questions
 
-What is not known yet, what depends on it, and how it could be found out.
+- **The counter chance** {#q-counter}: read as `rand() % N` with `N` from a table not yet named.
 ````
+
+### Evidence levels on a page {#evidence-levels}
+
+The four levels and how each is spelled are in [Research workflow](research-workflow.md#evidence-levels). The check
+looks at every block (a paragraph, a list item or a table row) that cites an address, or a script locator, outside
+Summary, In Coney, Open questions and How this was checked, and passes it when a level stands:
+
+- in the block itself; or, for a row of a table with an Evidence column, in that cell (the column is the place for it,
+  so an empty cell fails whatever is said elsewhere); or
+- under a `###` heading or deeper whose **first block is a lead line**: a statement that cites no address and states
+  a level ("Confirmed (code) at the cited addresses unless a line says otherwise."). It covers the blocks under that
+  heading until the next heading of any level, and the reviewer checks that it is true of every one of them.
+
+A sentence at the top of the page, a level in a neighbouring paragraph, a level in a heading and a lead line under a
+`##` heading grade nothing: they cover pages, not claims. A Map table with no Evidence column is an index of functions
+and needs no level (the levels of the functions are in their entries). The forms are checked too:
+
+- `confirmed (runtime)` says `, run <id>`, and the record `research/runs/<id>.toml` must exist once any run record
+  does. A page in the [legacy file](#legacy-pages) may keep an old runtime claim that names PCSX2 in its Verified line
+  or in How this was checked.
+- `speculative` links an open question of the page (`[q-name](#q-name)`) that exists.
+- `inferred` should say what it follows from (`inferred from the call order`): a warning when it does not.
+- Refused: `confirmed (disc)` (write `Disc check:` beside the claim: it corroborates and grades nothing),
+  `confirmed (name hash)`, `confirmed (runtime, coney)`, `Confidence:`, and "probably" or "likely" in an Evidence cell.
+
+### Addresses {#addresses}
+
+An address is `0x` and eight hex digits in `SLUS_212.15`: `0x0026c548`. Cite a function as its address and its name,
+`` `0x0026c548` `Grab_Start` `` or `` `Grab_Start` (`0x0026c548`) ``; the name must be the one the shared Ghidra project
+gives it (a warning: refresh `docs/progress/ghidra-functions.tsv`, or the page, never undo a name in Ghidra). The
+check refuses:
+
+- the short form of a named function's entry (`0x149160`): write `0x00149160`. A field offset (`+0xb4`), a mask or a
+  value is written short and is not an address;
+- an address that is no function entry, no place inside a function of that listing and in no data section of the
+  executable (`research/elf-sections.toml`). The end of a range (`0x00284920-0x00288000`) need only lie in the image.
+  A function Ghidra has not made yet is created and named first; an address in memory the program allocates (a heap
+  object) is not in the executable: cite the global that holds it.
+
+### Dates, plans and length
+
+No date and no issue number stands outside In Coney and How this was checked: git and the pull requests keep history,
+and plans are issues. A page is no longer than its kind's limit (front matter and generated pages do not count); the
+cure is a topic page split off along a group of behaviours with its own entry functions, never a cut by line count.
+
+### Legacy pages {#legacy-pages}
+
+A research page that cannot meet this standard in the change that touches it is listed in `research/legacy.toml`, under
+the rules it fails and with the number of findings at the last scan. `docs check` then:
+
+- reports the findings of those rules as one warning each and fails on every other rule, as for any page;
+- fails an `evidence` finding in a section (a `##` heading and what is under it) that the change touches, so whoever
+  edits a section grades it; and, on a legacy page that is not touched there, leaves the rest of the grading to the
+  page's restructure;
+- fails a rule the page now passes until it is removed from the file, so the file only shrinks; and
+- refuses a new page in the file. A new or restructured page meets the standard in full.
+
+`coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
+exits 1 when the file lists something that passes or grew since `--base`. The file is first written by `--init`, which
+refuses to run again.
 
 ## Checking a page {#checking}
 
@@ -224,36 +371,31 @@ not. It prints `path:line: rule: message` for each finding and exits 1 when any 
 fails. [`coney-tools check changed`](coney-tools.md#check) runs it in its `docs` step, and the `mkdocs` job of the
 `docs` workflow runs it on the pages a pull request changes, so a pull request cannot merge a touched page that breaks
 a rule. It never looks at a page the change did not touch ([Touch a page, fix the page](#touch-it)). Generated pages
-(`docs/references/` except `entities.md`, `docs/missions/`, `docs/progress/`) and files outside `docs/` are not
-checked; their source is. What each rule looks at, by the kind of page ([Page kinds](#page-kinds)):
+(`docs/references/` except `entities.md`, `docs/missions/`, `docs/progress/`, `docs/research/find/` and each system's
+`functions.md`) and files outside `docs/` are not checked; their source is. The landing page `docs/research/index.md`
+is read as any other page. What each rule looks at, by the kind of page ([Page kinds](#page-kinds)):
 
 | Rule | Pages | What it refuses |
 | --- | --- | --- |
-| `skeleton` | research | A missing `# Title`; a missing, empty or out-of-order section of the [Subsystem page](#subsystem-page) skeleton. A level-2 heading counts when it is the section's name or starts with it and a space, colon or dash ("Data layout"); other sections may sit between the six |
-| `verified` | research | No `Verified against: ...` line (with something after it) above the first section: the executable and, for runtime claims, the PCSX2 version |
-| `evidence` | research | An address cited with no evidence level nearby, see below |
+| `front-matter` | research | No front matter, YAML that is not a mapping, a key that is not `kind`, `system` or `owns`, an unknown kind, a `system` where the kind has none (or none where it needs one), a second page for a system, a topic whose system has no page |
+| `owns` | research | An `owns` that is not files, ranges and functions; a range that is not `0x<start>-0x<end>` inside the image; a function that is no entry of the Ghidra listing; `owns` on a mission page or missing on a system or topic; a file, function or range another page owns, or a range that crosses another's |
+| `skeleton` | research | A missing or second `# Title`; a missing, empty, repeated or out-of-order section of the kind; a `##` heading that is no section of the kind (the old names count) |
+| `verified` | research | No `Verified against: ...` line above the first section, or one that wraps or is over the limit |
+| `evidence` | research | An address or locator with no level in its block, Evidence cell or lead line; a level in a form the [standard](#evidence-levels) refuses; a runtime claim with no existing run; a speculative claim with no open question |
+| `address-form`, `address-resolve` | research | The short form of a function entry; an address in no function and no data section. `address-name` is a warning when the name beside an address is not Ghidra's |
+| `decompile` | research | One of Ghidra's made-up names (`param_1`, `uVar2`, `DAT_005127e4`, `FUN_00123456`), in the text or in a code block: the mark of a pasted decompile, which the page never holds ([LEGAL.md](repo:LEGAL.md#research-limits)). Cite the address, or name the thing for what it is |
+| `copied` | research | A paragraph of 200 characters or more that is also on another research page |
+| `history` | research | A date or an issue number outside In Coney and How this was checked |
+| `length` | research, guides | Research: more lines than the kind's limit, an error unless the page is legacy. Guides: a **warning** above 800 lines, because a guide past that is several guides and where to cut is the author's call |
+| `legacy` | research | A new page in the legacy file; a rule listed for a page that now passes it; a change to the file that adds a page or a rule |
 | `machine-path` | all | A user folder (under `Users` or `/home`, with a real name) or a drive-letter path two folders deep. Not refused: a placeholder (`<name>`), a bare drive (`H:\`), `C:\Program Files`, `C:\Windows`, and the original's own build paths (`c:/Warriors/...`, `/home/ack/...`) |
-| `stale-wording` | all | "still small", "not yet", "once it exists", "does not exist yet", "yet to be written": wording that says when something is true instead of what is true. "Not yet" is refused only where it dates the project: on a research page where it speaks of Coney (the implementation and open-question sections, or a line that names Coney), since "a store that is not yet broken" describes the original; on any other page where a word of work follows it ("not yet implemented", "written", "listed", "supported", ...), since "not yet looked at" is an issue's state. A phrase in code spans or in double quotes is mentioned, not used |
+| `stale-wording` | all | "still small", "not yet", "once it exists", "does not exist yet", "yet to be written": wording that says when something is true instead of what is true. "Not yet" is refused only where it dates the project: on a research page where it speaks of Coney (In Coney, Open questions, or a line that names Coney), since "a store that is not yet broken" describes the original; on any other page where a word of work follows it ("not yet implemented", "written", "listed", "supported", ...), since "not yet looked at" is an issue's state. A phrase in code spans or in double quotes is mentioned, not used |
 | `repo-link` | all | A relative link, image or link reference definition that leaves `docs/`: write `repo:<path>` |
 | `person-wording` | guides and other pages | "the owner", "the project owner", "repo owner" and the other words of `repo.wording.avoid` in `.github/conventions.yml`: write "the user" or "a maintainer". "An object's owner" and "the owner of the task" are not refused |
 | `address` | all | The repository's or the docs site's address (only the README may carry it) |
-| `length` | research, guides | A **warning** above 1,500 lines (research) or 800 lines (guides). A page is read whole before it is changed, and the reader's window is 2,000 lines; a research page past 1,500 lines (the longest sixth of today's pages; the median is about 530) leaves no room for the code beside it, and a guide past 800 (the longest tenth; the median is about 260) is several guides. A warning, because where to cut is the author's call |
 
-**The evidence rule.** It looks at every paragraph, list item and table row that cites an address (`0x` and eight hex
-digits, the form of [Writing up a finding](research-workflow.md#writing-up-a-finding), in main memory: `0x00100000` to
-`0x01ffffff`) in a research page's sections other than Purpose, Coney's implementation and Open questions (or a heading
-that starts with one of them, as the skeleton counts it), and passes it when a level word (`confirmed`,
-`inferred`, `speculative` or `Evidence:`) appears in:
-
-- the item itself, the item before it or the item after it (for a table row: the paragraph before or after the table);
-- the heading it sits under, or a heading above that up to its section; or
-- the first line under such a heading, when that line is a statement that cites no address ("Everything in this
-  section is confirmed (code) unless a line says otherwise").
-
-A table with a column headed Evidence, Evidence level or Confidence needs the level in every row instead. A page whose opening,
-above its first section, says in one sentence that every claim is graded ("Every claim is confirmed (code) at the cited
-address unless it says otherwise") is passed as a whole. Those two forms, a lead line per section or one sentence per
-page, are the economical ways to meet the rule on a long page; the research reviewer checks that they are true. Field
-offsets, masks and flag values (`+0xd0`, `0x200000`) are not addresses, and neither is anything in a code block. The
-report names the line of the address. A false positive is fixed by writing the level, not by rewording around the
-check.
+The heuristics are deliberately forgiving: they flag what is surely a gap, not what might be one. A false positive is
+fixed by writing the level or the form, not by rewording around the check. The reviewer judges what no program can:
+whether the page is the right kind and the right owner, whether a lead line is true of the blocks under it, whether the
+function at an address does what the page says and whether the numbers a port needs are there
+([Research review](review/research.md)).

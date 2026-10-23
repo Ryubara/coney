@@ -1545,18 +1545,33 @@ macOS, the sanitizers and the full clang-tidy pass (see [the local gate](testing
 
 ```sh
 uv run --project python coney-tools docs check [PATHS ...] [--base origin/main] [--summary] [--quiet]
+uv run --project python coney-tools docs legacy [--init | --prune | --check] [--base origin/main]
 ```
 
-Checks Markdown pages against the standard of [Writing these docs](writing-docs.md#checking): the skeleton, the
-"Verified against" line and the evidence levels of a research page, and the Style rules every page keeps. Writing-docs
-owns the rules and the heuristics; this entry is the command. Without `PATHS` it checks the pages changed since
+Checks Markdown pages against the standard of [Writing these docs](writing-docs.md#checking): the front matter, the
+sections of its kind, the "Verified against" line, the evidence levels, the addresses, the copied paragraphs, the dates
+and the length of a research page, and the Style rules every page keeps. Writing-docs owns the rules and the
+heuristics, and `research` in [.github/conventions.yml](repo:.github/conventions.yml) the kinds, sections and limits;
+this entry is the command. Without `PATHS` it checks the pages changed since
 `--base` (committed or not, untracked included), as [`check changed`](#check) does in its `docs` step and the `docs`
 workflow does on a pull request. With `PATHS` it checks those files, or every page under a folder, whether or not they
 changed. It prints `path:line: rule: message` for each finding (`--quiet` prints only the counts), a warning (a long
 page) never fails, and `--summary` adds how many pages of each kind pass and how many pages break each rule: run it
-on `docs` for the standing of the whole tree. Exit 0 when no page has an error, 1 when one has, 2 when the command is
-not run inside a checkout, the conventions cannot be read, `--base` is unknown, or a named path is missing, outside
-the checkout or not a page the check covers (`README.md`, a generated page).
+on `docs` for the standing of the whole tree, with the number of legacy pages. Exit 0 when no page has an error, 1 when
+one has, 2 when the command is not run inside a checkout, the conventions cannot be read, `--base` is unknown, or a
+named path is missing, outside the checkout or not a page the check covers (`README.md`, a generated page).
+
+A research page is read against the executable's data: `docs/progress/ghidra-functions.tsv` (every function, its size
+and name), `research/elf-sections.toml` (the sections of `SLUS_212.15`) and, once the folder exists, the run records of
+`research/runs/`. The other research pages are read too, for the owner of an address and for copied paragraphs.
+
+`docs legacy` keeps `research/legacy.toml`, the research pages that do not meet the standard yet
+([Legacy pages](writing-docs.md#legacy-pages)). Without an option it scans every research page and prints how many fail
+each rule. `--init` writes the file from a scan and refuses when it exists; `--prune` takes out the pages and rules that
+now pass and lowers the counts, and adds nothing; `--check` exits 1 when the file lists a page that is gone or a rule
+that now passes, or (when `--base` has the file) adds a page or a rule. `docs check` runs the same check on the file when
+a change touches it, and fails a legacy rule that passes, a new page that is listed, and an `evidence` finding in a
+section the change touches.
 
 ## build {#build}
 

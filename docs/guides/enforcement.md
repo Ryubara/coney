@@ -170,7 +170,8 @@ as a courtesy.
 | Disc tests that play a level start through the player's path | [Testing](testing.md#test-through-the-players-path) | `disc_game_session_test.cpp` for the session itself | partly |
 | No test opens a dialog | [Testing](testing.md#no-dialogs) | `coney.error_dialogs_off` test | enforced |
 | Stand-ins are marked in code and listed on the research page | [Testing](testing.md#stand-ins) | Review | judgement |
-| Every research claim has an address and an evidence level | [Research workflow](research-workflow.md#evidence-levels) | `research-reviewer` | judgement |
+| Every research claim has an address and an evidence level | [Research workflow](research-workflow.md#evidence-levels) | `docs check` fails an address with no level in its block, row or lead line, and a level in a refused form; `research-reviewer` reads the claims that cite no address and whether a lead line is true | partly |
+| A research page has the front matter and the sections of its kind, one owner per address, addresses that resolve in the executable, no copied paragraph, no date outside In Coney, and is within its length limit; a page that cannot yet is listed in `research/legacy.toml`, which only shrinks | [Writing these docs](writing-docs.md#research-pages) | `docs check` on the changed pages (pre-commit gate `check changed`; CI `mkdocs`, required), `docs legacy --check` | enforced on touched pages |
 | Docs build with `mkdocs build --strict`, lines within 120 columns | [Writing these docs](writing-docs.md#preview-and-build) | `check changed`; CI `mkdocs`, `markdownlint` (required); pre-commit markdownlint | enforced |
 | One living page per subject; no machine paths; say what is true now | [Writing these docs](writing-docs.md#style) | Review | written |
 | A function counts as understood with a Ghidra name, plate comment and a cited page row | [Research workflow](research-workflow.md#understood) | `progress check`, `progress ghidra --check` | enforced |

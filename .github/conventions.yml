@@ -827,3 +827,69 @@ stamps:
     kinds: [branch, loop, call, field, constant, return]
     relations: [same, stand-in, not-ported]
     stand_in_markers: [stand-in, "Coney's choice"]   # a comment at the code carries one (testing.md#stand-ins)
+
+research:
+  # The research pages of docs/research/ (docs/guides/writing-docs.md#research-pages): the kinds a page can be, the
+  # sections each keeps and the limits `coney-tools docs check` holds a page to. Pages that do not meet the standard
+  # yet are listed in the legacy file (writing-docs.md#legacy-pages).
+  files:
+    ghidra_functions: docs/progress/ghidra-functions.tsv   # every function of the executable: an address must resolve here ...
+    elf_sections: research/elf-sections.toml               # ... or in a data section listed here
+    runs: research/runs                                    # one <id>.toml per run record a runtime claim cites
+    legacy: research/legacy.toml                           # pages that do not meet the standard yet
+  front_matter: [kind, system, owns]                       # the keys a page's YAML front matter may hold
+  owns_keys: [files, ranges, functions]                    # the keys of its `owns`
+  verified_max_chars: 200                                  # the "Verified against" line: one line, at most this long
+  copy_min_chars: 200                                      # a paragraph this long on two pages is a copy
+  # Old section names every kind accepts as the new ones, until a page is renamed.
+  aliases:
+    Purpose: Summary
+    Original structure: Map
+    "Coney's implementation": In Coney
+    Runtime checks: How this was checked
+    Disc counts: How this was checked
+  ungraded_sections: [Summary, In Coney, Open questions, How this was checked]  # an address there needs no level
+  dated_sections: [In Coney, How this was checked]         # the only sections that may hold a date or an issue number
+  map_section: Map                                         # a table there with no level column grades nothing (functions.toml does)
+  # A page with no front matter (all of them before the mechanical pass) is read as this kind.
+  inferred_kind:
+    default: system
+    folders: {"docs/research/formats/": format}
+  kinds:
+    system:
+      sections: [Summary, Map, Data, Behaviour, In Coney, Open questions, How this was checked]
+      optional: [How this was checked]
+      max_lines: 1500
+      system: required
+      owns: required
+    topic:
+      sections: [Summary, Map, Data, Behaviour, In Coney, Open questions, How this was checked]
+      optional: [How this was checked]
+      max_lines: 1500
+      system: required
+      owns: required
+    format:
+      sections: [Summary, Map, Layout, Behaviour, In Coney, Open questions, How this was checked]
+      optional: [Behaviour, How this was checked]
+      aliases: {Data: Layout}
+      max_lines: 1000
+      system: none
+      owns: optional
+    mission:
+      sections: [Summary, Flow, Cast and objects, Scripted events, Open questions, How this was checked]
+      optional: [How this was checked]
+      max_lines: 1000
+      system: none
+      owns: none
+    feature:
+      sections: [Summary, Rules, Map, Behaviour, In Coney, Open questions, How this was checked]
+      optional: [How this was checked]
+      max_lines: 1000
+      system: none
+      owns: optional
+    survey:
+      sections: [Summary, Method, Findings, Open questions, How this was checked]
+      optional: [How this was checked]
+      max_lines: 1000
+      system: none
+      owns: optional

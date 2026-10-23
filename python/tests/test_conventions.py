@@ -316,6 +316,36 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         (("paths.coney_only", ["src/ai/", "src/debug/"]),),
         r"paths\.coney_only: 'src/ai/' is also in paths\.gameplay",
     ),
+    (
+        "a research kind with an optional section it does not have",
+        (("research.kinds.topic.optional", ["Appendix"]),),
+        r"research\.kinds\.topic\.optional: 'Appendix' is not one of the kind's sections",
+    ),
+    (
+        "a research alias for a section no kind has",
+        (("research.aliases.Purpose", "Overview"),),
+        r"research\.aliases: 'Overview' is not a section of some kind",
+    ),
+    (
+        "a research kind whose system rule is a guess",
+        (("research.kinds.topic.system", "maybe"),),
+        r"research\.kinds\.topic\.system: expected one of: required, none",
+    ),
+    (
+        "a research page read as a kind there is none of",
+        (("research.inferred_kind.default", "essay"),),
+        r"research\.inferred_kind\.default: expected one of",
+    ),
+    (
+        "a research key that is not one",
+        (("research.kinds.topic.lines", 10),),
+        r"research\.kinds\.topic: unknown key 'lines'",
+    ),
+    (
+        "a research limit that is too small to be one",
+        (("research.kinds.topic.max_lines", 5),),
+        r"research\.kinds\.topic\.max_lines: expected a whole number of 100 or more",
+    ),
 ]
 
 
@@ -488,3 +518,37 @@ def test_every_title_area_of_a_label_is_a_title_area() -> None:
     conventions = load_conventions(REPO)
     assert set(conventions.issues.title_area_by_label.values()) <= set(conventions.commits.title.areas)
     assert set(conventions.issues.title_area_by_label) <= set(conventions.labels.names())
+
+
+def test_the_real_research_page_kinds() -> None:
+    research = load_conventions(REPO).research
+    assert set(research.kinds) == {"system", "topic", "format", "mission", "feature", "survey"}
+    topic = research.kinds["topic"]
+    assert topic.sections == (
+        "Summary",
+        "Map",
+        "Data",
+        "Behaviour",
+        "In Coney",
+        "Open questions",
+        "How this was checked",
+    )
+    assert topic.required == topic.sections[:-1] and topic.max_lines == 1500
+    assert all(research.kinds[name].max_lines == 1000 for name in ("format", "mission", "feature", "survey"))
+    assert (research.verified_max_chars, research.copy_min_chars) == (200, 200)
+    assert research.files.legacy == "research/legacy.toml"
+
+
+def test_a_research_section_is_found_by_its_name_or_an_old_name() -> None:
+    research = load_conventions(REPO).research
+    assert research.canonical("topic", "Summary") == research.canonical("topic", "Purpose") == "Summary"
+    assert research.canonical("topic", "original structure") == "Map"
+    assert research.canonical("topic", "Coney" + chr(0x2019) + "s implementation") == "In Coney"
+    assert research.canonical("format", "Data") == "Layout" and research.canonical("topic", "Layout") == ""
+    assert research.canonical("topic", "Data layout") == ""
+
+
+def test_a_research_page_without_front_matter_is_read_as_the_kind_of_its_folder() -> None:
+    research = load_conventions(REPO).research
+    assert research.kind_of_path("docs/research/formats/wad-dir.md") == "format"
+    assert research.kind_of_path("docs/research/combat.md") == "system"
