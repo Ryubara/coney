@@ -302,9 +302,14 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 * Each name must be a whole test name, written `TEST_CASE("NAME"` (then `)`, or `,` and tags), in a test file the test
   commit adds or changes; part of a longer name, a `SECTION` name or any other quoted string is refused. A name split
   into adjacent literals (`TEST_CASE("A " "B")`) is joined and matches as `A B`, whatever comment (`/* ... */` or
-  `// ...`) sits between them; escapes in a literal (`\"`, `\\`, `\n`, `\x41`, `\101`, `é`) are read as C++ reads
-  them, so `TEST_CASE("say \"hi\"")` matches `--test 'say "hi"'`, the name ctest registers; a name built by a macro
-  does not match. The branch to come back to is written to
+  `// ...`) sits between them; escapes in a literal (`\"`, `\\`, `\n`, `\x41`, `\101`, `\u00e9`) are read as C++ reads
+  them, so `TEST_CASE("say \"hi\"")` matches `--test 'say "hi"'`, the name ctest registers. A comment is dropped
+  before the match, wherever it is (a `TEST_CASE` inside a comment is not declared, and a `,` or `)` inside a comment
+  does not end a name), so `TEST_CASE("Foo" // see, below` followed by a macro on the next line is a macro-built name
+  and does not match `Foo`. A name built by a macro does not match. Not handled, so refused as not found: C++23's
+  delimited escapes (`\x{41}`, `\o{101}`, `\N{...}`), the GNU `\e` and a name written as a raw string (`R"(...)"`).
+  A `\x` or octal escape above 0x7F is read as the code point, not as the byte ctest would list, so such a name
+  may be refused. The branch to come back to is written to
   `fails-first/restore.json` in the unit's scratch folder before the first checkout and removed after the last: if a
   run is killed, the next one refuses while the worktree is detached and says `git checkout <branch>`; a restore that
   fails is reported as `COULD NOT RESTORE` with that command.

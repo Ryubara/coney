@@ -219,17 +219,35 @@ def _marker(unit: Unit) -> Path:
     return unit.dir / "fails-first" / "restore.json"
 
 
+#: The inside of a string or character literal: runs of plain characters and escapes, matched possessively so a
+#: failed match never backtracks into them.
+_STRING_BODY = r'(?:[^"\\\n]++|\\.)*+'
 #: One string literal: its contents, escapes still raw.
-_LITERAL = r'"((?:[^"\\\n]|\\.)*)"'
-#: A block comment or a line comment.
-_COMMENT = r"/\*[\s\S]*?\*/|//[^\n]*"
-#: What C++ allows between two adjacent literals (and around the argument): white space and comments, which the
-#: compiler drops before it joins the literals.
-_GAP = r"(?:\s|" + _COMMENT + r")*"
+_LITERAL = '"(' + _STRING_BODY + ')"'
+#: A block comment or a line comment. A line comment runs to the end of its line whatever it contains.
+_COMMENT = r"/\*[\s\S]*?\*/|//[^\n]*+"
+#: What a scan for comments finds, left to right: a raw string (replaced by a non-literal, since a name written as
+#: one is not handled), a string or character literal (kept whole: a `//`, `/*` or quote inside one is text), or
+#: a comment (replaced by a space).
+_RAW = r'R"(?P<delim>[^()\\\s]{0,16})\((?s:.*?)\)(?P=delim)"'
+_KEEP = '"' + _STRING_BODY + '"|' + r"'(?:[^'\\\n]++|\\.)*+'"
+_COMMENTS = re.compile("(?P<raw>" + _RAW + ")|(?P<keep>" + _KEEP + ")|" + _COMMENT)
 #: `TEST_CASE(` and its first argument: one string literal or several adjacent ones (C++ joins them), then `)` or `,`.
-_TEST_CASE = re.compile(r"TEST_CASE" + _GAP + r"\(" + _GAP + r"((?:" + _LITERAL + _GAP + r")+)[,)]")
-#: A literal or a comment, scanned left to right so that a quote inside a comment, or `/*` inside a literal, is text.
-_TOKEN = re.compile(_LITERAL + "|" + _COMMENT)
+#: It runs on text without comments, so the only gaps are white space, matched possessively.
+_TEST_CASE = re.compile(r"TEST_CASE\s*+\(\s*+((?:" + _LITERAL + r"\s*+)+)[,)]")
+
+
+def _without_comments(text: str) -> str:
+    """`text` as the compiler sees it: each comment replaced by one space, each raw string by `0`, literals whole.
+    One scan, left to right, so a quote inside a comment and a comment marker inside a literal are both text."""
+
+    def one(match: re.Match[str]) -> str:
+        if match.group("keep") is not None:
+            return match.group(0)
+        return "0" if match.group("raw") is not None else " "
+
+    return _COMMENTS.sub(one, text)
+
 
 #: The escapes that stand for one character each.
 _SIMPLE_ESCAPES = {
@@ -251,7 +269,7 @@ _ESCAPE = re.compile(r"\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8})|x([0-9A-Fa-f]+)|
 
 def _unescape(text: str) -> str:
     r"""The characters a string literal's contents stand for: its C++ escapes (`\"`, `\\`, `\n`, `\x41`, `\101`,
-    `é`, ...) replaced by what they mean, as in the name Catch2 registers and ctest lists. An escape the language
+    `\u00e9`, ...) replaced by what they mean, as in the name Catch2 registers and ctest lists. An escape the language
     does not define, or a code point beyond Unicode, is left as written."""
 
     def one(match: re.Match[str]) -> str:
@@ -267,14 +285,13 @@ def _unescape(text: str) -> str:
 
 
 def _joined(literals: str) -> str:
-    """The name a run of adjacent string literals makes: each literal unescaped, comments between them dropped, then
-    joined."""
-    return "".join(_unescape(m.group(1)) for m in _TOKEN.finditer(literals) if m.group(1) is not None)
+    """The name a run of adjacent string literals makes: each literal unescaped, then joined."""
+    return "".join(_unescape(contents) for contents in re.findall(_LITERAL, literals))
 
 
 def _declared_names(text: str) -> set[str]:
-    """The names of the `TEST_CASE`s declared in `text`, as ctest lists them."""
-    return {_joined(match.group(1)) for match in _TEST_CASE.finditer(text)}
+    """The names of the `TEST_CASE`s declared in `text` outside comments, as ctest lists them."""
+    return {_joined(match.group(1)) for match in _TEST_CASE.finditer(_without_comments(text))}
 
 
 def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
