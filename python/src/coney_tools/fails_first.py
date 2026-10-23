@@ -219,20 +219,64 @@ def _marker(unit: Unit) -> Path:
     return unit.dir / "fails-first" / "restore.json"
 
 
-#: `TEST_CASE(` and its first argument: one string literal or several adjacent ones (C++ joins them), then `)` or `,`.
+#: One string literal: its contents, escapes still raw.
 _LITERAL = r'"((?:[^"\\\n]|\\.)*)"'
-_TEST_CASE = re.compile(r"TEST_CASE\s*\(\s*((?:" + _LITERAL + r"\s*)+)[,)]")
+#: A block comment or a line comment.
+_COMMENT = r"/\*[\s\S]*?\*/|//[^\n]*"
+#: What C++ allows between two adjacent literals (and around the argument): white space and comments, which the
+#: compiler drops before it joins the literals.
+_GAP = r"(?:\s|" + _COMMENT + r")*"
+#: `TEST_CASE(` and its first argument: one string literal or several adjacent ones (C++ joins them), then `)` or `,`.
+_TEST_CASE = re.compile(r"TEST_CASE" + _GAP + r"\(" + _GAP + r"((?:" + _LITERAL + _GAP + r")+)[,)]")
+#: A literal or a comment, scanned left to right so that a quote inside a comment, or `/*` inside a literal, is text.
+_TOKEN = re.compile(_LITERAL + "|" + _COMMENT)
+
+#: The escapes that stand for one character each.
+_SIMPLE_ESCAPES = {
+    "'": "'",
+    '"': '"',
+    "?": "?",
+    "\\": "\\",
+    "a": "\a",
+    "b": "\b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+}
+#: One escape: `\u` or `\U` and its hex digits, `\x` and its hex digits, up to three octal digits, or one character.
+_ESCAPE = re.compile(r"\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8})|x([0-9A-Fa-f]+)|([0-7]{1,3})|(.))", re.DOTALL)
+
+
+def _unescape(text: str) -> str:
+    r"""The characters a string literal's contents stand for: its C++ escapes (`\"`, `\\`, `\n`, `\x41`, `\101`,
+    `é`, ...) replaced by what they mean, as in the name Catch2 registers and ctest lists. An escape the language
+    does not define, or a code point beyond Unicode, is left as written."""
+
+    def one(match: re.Match[str]) -> str:
+        for group in (1, 2, 3):  # a code point in hex
+            if match.group(group):
+                value = int(match.group(group), 16)
+                return chr(value) if value <= 0x10FFFF else match.group(0)
+        if match.group(4):
+            return chr(int(match.group(4), 8))
+        return _SIMPLE_ESCAPES.get(match.group(5), match.group(0))
+
+    return _ESCAPE.sub(one, text)
 
 
 def _joined(literals: str) -> str:
-    """The name a run of adjacent string literals makes: their contents, joined."""
-    return "".join(re.findall(_LITERAL, literals))
+    """The name a run of adjacent string literals makes: each literal unescaped, comments between them dropped, then
+    joined."""
+    return "".join(_unescape(m.group(1)) for m in _TOKEN.finditer(literals) if m.group(1) is not None)
 
 
 def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
     """Every name must be a whole test name (`TEST_CASE("<name>"`, then `)` or `,` for tags) in a test file the test
     commit adds or changes: a typo, only part of a longer name, or a SECTION's name or any other quoted string would
-    run nothing under ctest. Adjacent string literals are joined, as C++ does; a name a macro builds does not match."""
+    run nothing under ctest. Adjacent string literals are joined with the comments between them dropped and their
+    escapes unescaped, as C++ does; a name a macro builds does not match."""
     text = "".join(_git(root, "show", f"{commit}:{path}") for path in test_files)
     declared = {_joined(match.group(1)) for match in _TEST_CASE.finditer(text)}
     missing = [name for name in names if name not in declared]

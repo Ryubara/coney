@@ -143,8 +143,8 @@ real one.
 * **The stamp** `studied` (subject: the address) covers the decompile, Ghidra's function hash, the cut and its shape,
   the addresses of the callers, callees and globals, and a hash of the function's name, program and signature
   (`identity_sha256`). A study that changes nothing writes no new stamp, unless the newest one does not cover all of
-  it (one made before `identity_sha256`): then it writes a new stamp and says `unchanged; stamp updated to cover the
-  identity`.
+  it (none at all, or one made before `identity_sha256`): then it writes a stamp and says `unchanged; stamp
+  written`.
 * **Freshness.** The shared Ghidra project is renamed all the time, so the decompile's text changes while the function
   does not. A saved study is *fresh* when Ghidra's function hash, the cut's shape and the addresses of its callees and
   globals are unchanged and the text's *skeleton* is the same: comments and strings blanked and each name replaced by
@@ -301,8 +301,10 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   result. The stamp lists every non-test file the commit touches (`detail.stubs`) for the reviewer.
 * Each name must be a whole test name, written `TEST_CASE("NAME"` (then `)`, or `,` and tags), in a test file the test
   commit adds or changes; part of a longer name, a `SECTION` name or any other quoted string is refused. A name split
-  into adjacent literals (`TEST_CASE("A " "B")`) is joined and matches as `A B`; a name built by a macro does not
-  match. The branch to come back to is written to
+  into adjacent literals (`TEST_CASE("A " "B")`) is joined and matches as `A B`, whatever comment (`/* ... */` or
+  `// ...`) sits between them; escapes in a literal (`\"`, `\\`, `\n`, `\x41`, `\101`, `é`) are read as C++ reads
+  them, so `TEST_CASE("say \"hi\"")` matches `--test 'say "hi"'`, the name ctest registers; a name built by a macro
+  does not match. The branch to come back to is written to
   `fails-first/restore.json` in the unit's scratch folder before the first checkout and removed after the last: if a
   run is killed, the next one refuses while the worktree is detached and says `git checkout <branch>`; a restore that
   fails is reported as `COULD NOT RESTORE` with that command.
