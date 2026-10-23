@@ -383,6 +383,43 @@ def test_a_renamed_function_is_restamped_with_its_new_identity(tmp_path: Path) -
     assert first.covers["identity_sha256"] != second.covers["identity_sha256"]
 
 
+def predate_the_identity(unit_dir: Path) -> None:
+    """Replace the log by the stamp an older coney-tools wrote: the same study, without `identity_sha256`."""
+    [first] = stamps.verify(unit_dir / "stamps", rules()).stamps
+    for segment in (unit_dir / "stamps").iterdir():
+        segment.unlink()
+    covers = {k: v for k, v in first.covers.items() if k != "identity_sha256"}
+    stamps.append(
+        unit_dir / "stamps",
+        rules=rules(),
+        task="t",
+        step="studied",
+        subject=ADDRESS,
+        result="pass",
+        commit=COMMIT,
+        covers=covers,
+        detail=dict(first.detail),
+        who={"kind": "tool", "tool": "test"},
+        clock=Clock(),
+    )
+
+
+def test_recut_says_when_the_stamp_predates_the_identity_check(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    predate_the_identity(tmp_path / "t")
+    with pytest.raises(StudyError, match="predates the identity check; run `original study"):
+        run(tmp_path, None)
+
+
+def test_studying_again_under_a_stamp_that_predates_the_identity_updates_the_stamp(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    predate_the_identity(tmp_path / "t")
+    again = run(tmp_path, FakeGhidra())
+    assert again.change == "unchanged" and again.stamped
+    assert "identity_sha256" in stamp_list(tmp_path)[-1].covers
+    assert not run(tmp_path, FakeGhidra()).stamped
+
+
 def test_recut_needs_a_studied_stamp(tmp_path: Path) -> None:
     run(tmp_path, FakeGhidra())
     for segment in (tmp_path / "t" / "stamps").iterdir():

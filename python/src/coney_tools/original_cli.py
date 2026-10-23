@@ -166,7 +166,10 @@ def _study(
     print(f"  numbered decompile (scratch only, never commit): {listing}")
     if args.show:
         print(listing.read_text(encoding="utf-8"), end="")
-    if result.change == "unchanged":
+    if result.change == "unchanged" and result.stamped:
+        # The function is as studied, but the log's newest stamp did not cover all of it (an older tool's).
+        print("  unchanged; stamp updated to cover the identity")
+    elif result.change == "unchanged":
         print("  unchanged since the last study")
     else:
         print(f"  {result.change}; {'stamped studied' if result.stamped else 'a studied stamp already covers it'}")

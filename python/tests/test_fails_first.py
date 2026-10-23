@@ -388,6 +388,21 @@ def test_a_test_case_with_tags_or_spacing_still_matches(repo: Repo) -> None:
     fails_first._check_names(repo.root, tagged, ["tests/widget_test.cpp"], ("Widget tagged", "Widget plain"))
 
 
+def test_a_name_written_as_adjacent_string_literals_matches_when_joined(repo: Repo) -> None:
+    (repo.root / "tests" / "widget_test.cpp").write_text(
+        'TEST_CASE("Widget "\n          "split name") {}\nTEST_CASE("Widget " "other", "[tag]") {}\n',
+        encoding="utf-8",
+    )
+    git(repo.root, "commit", "-q", "-am", "adjacent")
+    adjacent = git(repo.root, "rev-parse", "HEAD").strip()
+    files = ["tests/widget_test.cpp"]
+    fails_first._check_names(repo.root, adjacent, files, ("Widget split name", "Widget other"))
+    with pytest.raises(FailsFirstError, match="Widget:"):
+        fails_first._check_names(repo.root, adjacent, files, ("Widget",))
+    with pytest.raises(FailsFirstError, match="split name:"):  # only the whole joined name is a test name
+        fails_first._check_names(repo.root, adjacent, files, ("split name",))
+
+
 def test_the_stamps_of_a_multi_name_run_are_written_all_or_none(repo: Repo) -> None:
     first, second = two_tests(repo)
 

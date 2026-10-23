@@ -357,7 +357,17 @@ def study(
             "callees_sha256": _addresses_hash(_read_json(folder / "callees.json")),
             "globals_sha256": _addresses_hash(_read_json(folder / "globals.json")),
         }
-        differ = sorted(name for name, value in bound.items() if last.covers.get(name) != value)
+        # A stamp from before the identity was covered has no such key: that is its age, not an edited file.
+        predates = "identity_sha256" not in last.covers
+        differ = sorted(
+            name
+            for name, value in bound.items()
+            if last.covers.get(name) != value and not (predates and name == "identity_sha256")
+        )
+        if not differ and predates:
+            raise StudyError(
+                f"{address}: this study's stamp predates the identity check; run `original study {address}` again"
+            )
         if differ:
             raise StudyError(
                 f"{folder}: {', '.join(differ)} is not what the latest studied stamp ({last.hash[:12]}) covers "

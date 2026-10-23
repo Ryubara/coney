@@ -219,12 +219,23 @@ def _marker(unit: Unit) -> Path:
     return unit.dir / "fails-first" / "restore.json"
 
 
+#: `TEST_CASE(` and its first argument: one string literal or several adjacent ones (C++ joins them), then `)` or `,`.
+_LITERAL = r'"((?:[^"\\\n]|\\.)*)"'
+_TEST_CASE = re.compile(r"TEST_CASE\s*\(\s*((?:" + _LITERAL + r"\s*)+)[,)]")
+
+
+def _joined(literals: str) -> str:
+    """The name a run of adjacent string literals makes: their contents, joined."""
+    return "".join(re.findall(_LITERAL, literals))
+
+
 def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
     """Every name must be a whole test name (`TEST_CASE("<name>"`, then `)` or `,` for tags) in a test file the test
     commit adds or changes: a typo, only part of a longer name, or a SECTION's name or any other quoted string would
-    run nothing under ctest."""
+    run nothing under ctest. Adjacent string literals are joined, as C++ does; a name a macro builds does not match."""
     text = "".join(_git(root, "show", f"{commit}:{path}") for path in test_files)
-    missing = [name for name in names if not re.search(rf'TEST_CASE\s*\(\s*"{re.escape(name)}"\s*[,)]', text)]
+    declared = {_joined(match.group(1)) for match in _TEST_CASE.finditer(text)}
+    missing = [name for name in names if name not in declared]
     if missing:
         where = ", ".join(test_files)
         raise FailsFirstError(f"{', '.join(missing)}: not found in the test files of {commit[:12]} ({where})")
