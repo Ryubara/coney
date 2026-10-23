@@ -37,7 +37,7 @@ export const register: Register = on => {
 
   // Reads the agent type of the session's main thread; the event and its answer pass through untouched. A new
   // conversation (a startup or a `/clear`) also takes up the list saved since the session started: its prompt cache
-  // starts empty, so nothing is rewritten. A compaction and a resume keep the cache of the listing, so they keep the list.
+  // starts empty, so nothing is rewritten. A compaction and a resume keep the listing's cache, so they keep the list.
   on('classic.SessionStart', async ($, e, next) => {
     const result = await next(e)
     try {
@@ -61,5 +61,6 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => (await drawBand($, e)) ?? next(e))
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, ($, e) => drawPane($, e))
+  // The filter is a literal: the engine's own validation reads it (a const shows as `?`), and so does the check.
+  on('ui.render', { component: 'Pane', requestId: 'conclave' }, ($, e) => drawPane($, e))
 }
