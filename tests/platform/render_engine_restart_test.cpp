@@ -142,8 +142,9 @@ TEST_CASE("a renderer started again after one stopped meets none of its state", 
         CHECK(fogRgba[1] == 0.0F);
 
         // Leave state in librw as a program might as the renderer stops: a framebuffer bound through it, the 2D shader
-        // overridden with a shader the stop will destroy, fog on, and a texture held in a stage (destroyed before the
-        // stop, as the rule is, which empties the stage and puts white back on its unit).
+        // overridden with a shader the stop will destroy, fog on, and a texture held in stage 0 (destroyed before the
+        // stop, as the rule is, which empties the stage and puts white back on its unit). Stage 0 is the one the
+        // checks can read: librw's per-stage cache is private, and GetRenderStatePtr(TEXTURERASTER) reads stage 0.
         GLuint last = 0;
         glGenFramebuffers(1, &last);
         rw::gl3::bindFramebuffer(last);
@@ -154,8 +155,10 @@ TEST_CASE("a renderer started again after one stopped meets none of its state", 
             rw::Raster::create(16, 16, 32, static_cast<rw::int32>(rw::Raster::TEXTURE) | rw::Raster::C8888);
         REQUIRE(raster != nullptr);
         rw::Texture* texture = rw::Texture::create(raster);
-        rw::gl3::setTexture(1, texture);
-        texture->destroy(); // destroys its raster too
+        rw::gl3::setTexture(0, texture);
+        CHECK(rw::GetRenderStatePtr(rw::TEXTURERASTER) == raster);  // the stage holds it, so the check below can fail
+        texture->destroy();                                         // destroys its raster too
+        CHECK(rw::GetRenderStatePtr(rw::TEXTURERASTER) == nullptr); // and destroying it empties the stage
 
         started->reset();
 
