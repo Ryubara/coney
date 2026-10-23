@@ -58,7 +58,7 @@ The executable has no symbols, so a function's size has to come from somewhere. 
 estimates it from your own disc as the distance to the next address that a call or a function pointer reaches, and
 checks a size given by hand against that bound. It is an upper bound: a function that nothing calls directly (only
 a tail jump reaches it) is folded into the one before it. A contributor who has the function in Ghidra can give the
-exact size instead. How to use the commands: [The coney-tools command line](../guides/coney-tools.md#progress).
+exact size instead. How to use the commands: [The progress commands](../guides/coney-tools-references.md#progress).
 
 ## How the picture is drawn {#the-picture}
 
@@ -101,7 +101,7 @@ show the same numbers. The mission picture below the milestones draws one square
 with the checklist's colours; a mission's label links to its page.
 
 The same pictures and numbers are published as files beside the page, for other places to embed or read; the list
-is in [the coney-tools guide](../guides/coney-tools.md#progress).
+is in [the progress commands](../guides/coney-tools-references.md#progress).
 
 ### The history {#history}
 
@@ -110,7 +110,7 @@ as the bars measure them. Git has the days, so nothing is appended or committed:
 build extracts the tracker's inputs (`docs/progress/`, the research pages, the roadmap, the bindings and the `@orig`
 tags) into a temporary folder and measures them with the current code, so every day is on today's definition. A day
 before the tracker existed, or in a format it can no longer read, is left out. How a deploy reuses the published days
-and what a pull request's build shows: [the coney-tools guide](../guides/coney-tools.md#progress).
+and what a pull request's build shows: [the progress commands](../guides/coney-tools-references.md#progress).
 
 ## Keeping it current
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""How long each kind of build step took the last few times (docs/guides/coney-tools.md#build).
+"""How long each kind of build step took the last few times (docs/guides/coney-tools-build.md#build).
 
 A run that waits for a build slot must not wait past its caller's time budget, and whether it would still fit depends on
 how long the step it queues for takes. This keeps the durations of finished steps, per preset, step and size, in one

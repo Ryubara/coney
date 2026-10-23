@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tie the processes `coney-tools build` starts to its own life, so a build or a test run never outlives the agent that
-asked for it (docs/guides/coney-tools.md#build, "Process lifetimes").
+asked for it (docs/guides/coney-tools-build.md#build, "Process lifetimes").
 
 An orphaned `ctest` keeps starting the next test after its caller is gone, and killing the tests one by one only lets
 it start more. Three guards, each for a way the caller can disappear:

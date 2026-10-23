@@ -64,9 +64,9 @@ either ([Studying the original](research-workflow.md#studying-the-original)).
 - **Smoke tests** run the `coney` executable itself under `ctest`: start-up, argument errors, scripted input.
 - **Disc tests** need the player's own disc, which they read from `CONEY_DISC`. `coney-tools build --test` sets it from
   `game_dir` in `coney.local.toml` when the environment does not, and its summary says whether the disc tests ran or
-  were skipped ([the disc for the tests](coney-tools.md#build)); without a disc they skip, and ctest counts a skip as
-  a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2
-  tag `[disc]`), so `coney-tools build --test -L disc` runs them and nothing else ([`build`](coney-tools.md#build)).
+  were skipped ([the disc for the tests](coney-tools-build.md#build)); without a disc they skip, and ctest counts a skip
+  as a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2
+  tag `[disc]`), so `coney-tools build --test -L disc` runs them and nothing else ([`build`](coney-tools-build.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
@@ -368,7 +368,7 @@ An agent that cannot publish (agents do not post to GitHub: the coordinator does
 leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and `clips clean`
 removes any left behind. Never attach a clip with `gh` directly, never commit one, and never reference one in
 `PR.md` (`check-body` refuses the local path): the clip goes in as a comment of its own. The commands:
-[coney-tools clips](coney-tools.md#clips), [Recording a clip](running.md#record).
+[coney-tools clips](coney-tools-pcsx2.md#clips), [Recording a clip](running.md#record).
 
 ## Where the checks run {#where}
 
@@ -388,7 +388,7 @@ when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new ga
 `@coney-only`), and `repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only
 --agent <id>`: configure, no build). It catches what MSVC lets through: a designated initializer that skips a field
 (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access (`bugprone-unchecked-optional-access`).
-[The command's page](coney-tools.md#check) has the options. It does not replace the list below, which is the whole
+[The command's page](coney-tools-build.md#check) has the options. It does not replace the list below, which is the whole
 gate, and it leaves to CI the warnings only GCC emits, macOS, the sanitizers and the nightly full clang-tidy pass; a
 change to the build setup is checked on its changed files only.
 
@@ -407,7 +407,7 @@ The whole gate:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
   `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
-  [build slot](coney-tools.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
+  [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
   agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
   ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on

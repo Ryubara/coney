@@ -52,7 +52,7 @@ These are shared by most options. Each one is worth building for the faithful lo
 3. No librw draw call outside the platform renderers, and no window-pixel coordinates in game code: 2D stays in GUI
    or logical units. Then the backend and the screen shape can change under it.
 4. Record each HUD and menu element's anchor (left, centre or right) and its 16:9 variant while researching the HUD
-   and the front end ([HUD](../research/hud.md#coordinates) lists the 16:9 overwrites as not yet listed).
+   and the front end ([HUD](../research/hud.md#coordinates) lists the 16:9 overwrites as unlisted).
 5. Load every texture through one function, so F4 can be added later in one place.
 
 ## Where the settings live {#where-the-settings-live}
@@ -144,7 +144,7 @@ chooses outside the repository, and never committed or hosted by the project
 a model's weights itself ([Decided](#decided)), but the project does not host them. Sharing follows the pack kinds
 in [Texture packs](#packs).
 
-**Pipeline** (a new `coney-tools textures` group beside [`wad extract`](coney-tools.md#extract), refusing output
+**Pipeline** (a new `coney-tools textures` group beside [`wad extract`](coney-tools-disc.md#extract), refusing output
 paths inside the repository as `wad extract` does):
 
 1. **Export**: decode every distinct texture (20,582, deduplicated by texel hash) to RGBA, with alpha scaled from

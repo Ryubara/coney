@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools trace mission` and `trace events-diff` commands: a mission playthrough on either game, and the
-comparison of two event logs (docs/guides/coney-tools.md#trace)."""
+comparison of two event logs (docs/guides/coney-tools-pcsx2.md#trace)."""
 
 from __future__ import annotations
 

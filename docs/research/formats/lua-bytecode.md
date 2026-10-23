@@ -18,7 +18,7 @@ source and trust (or fix) what it prints.
 It covers the instruction set as the game's chunks use it, with each opcode's effect on the stack and how often it
 occurs; the fixed pattern each statement and expression compiles to; how the decompiler recognises each pattern; what
 can never come back and why; and the round trip's results. How to run the command is in
-[coney-tools](../../guides/coney-tools.md#lua), and how research uses its output in
+[coney-tools](../../guides/coney-tools-references.md#lua), and how research uses its output in
 [Research workflow](../../guides/research-workflow.md#scripts). The decompiled scripts themselves are game data and
 never enter the repository ([LEGAL.md](repo:LEGAL.md#no-game-data)); this page shows Lua's patterns, never a line of
 a game script.
@@ -271,7 +271,7 @@ comparison with nil. One chunk on the disc needs this (disc check).
 
 Coney runs the game's bytecode in its own virtual machine (`src/scripting/lua_vm.cpp`, `lua_chunk.cpp`); the decompiler
 plays no part in the game. It is a research tool: `coney-tools lua decompile` writes into a folder outside the
-repository, and a guard refuses its output in the repository ([coney-tools](../../guides/coney-tools.md#lua)).
+repository, and a guard refuses its output in the repository ([coney-tools](../../guides/coney-tools-references.md#lua)).
 
 ## Open questions
 
@@ -280,7 +280,7 @@ repository, and a guard refuses its output in the repository ([coney-tools](../.
 111 of the 467 chunks have no recovered file name, so their decompiles are named by the entry's hash
 ([Compiled Lua chunks](lua-chunks.md#open-questions)). What depends on it: research finds a level's script by name
 in the index, so an unnamed script is found only through the natives and handlers the index lists for it. How to
-find out: `wad names` keeps only names it finds as strings ([coney-tools](../../guides/coney-tools.md#names)); the
+find out: `wad names` keeps only names it finds as strings ([coney-tools](../../guides/coney-tools-disc.md#names)); the
 rest could come from names a script builds at run time (a `doFile` of a concatenated name, read in the decompiles
 that call it) hashed the same way ([Name hashing](../name-hash.md)).
 
@@ -306,7 +306,7 @@ than a chunk from the WAD.
 
 The disc checks are the output of `coney-tools lua decompile --all --roundtrip` on the NTSC-U disc (counts only:
 chunks, functions, unread functions and the round trip's result), with a stock Lua 4.0.1 `luac` built from the
-authors' pinned source by `coney-tools workspace init --fetch lua` ([coney-tools](../../guides/coney-tools.md#lua)).
+authors' pinned source by `coney-tools workspace init --fetch lua` ([coney-tools](../../guides/coney-tools-references.md#lua)).
 No command prints the opcode and construct counts; they come from a short script, not in the repository, over the
 same chunks (the `scripts/` folder of `coney-tools extract`). To repeat them: load each chunk with `lua4.load`, walk
 its functions with `Proto.walk()`, decode every instruction with `lua4.opcodes.decode` and count by opcode; for the

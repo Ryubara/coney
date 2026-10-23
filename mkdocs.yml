@@ -20,14 +20,14 @@ not_in_nav: |
 extra_css:
   - stylesheets/extra.css
   - stylesheets/home.css
-  # The progress pictures: docs/guides/coney-tools.md, "progress".
+  # The progress pictures: docs/guides/coney-tools-references.md, "progress".
   - stylesheets/progress-grid.css
 extra_javascript:
   # The home page's scroll effect: docs/guides/writing-docs.md, "The home page".
   - javascripts/home.js
   # Mermaid diagrams drawn with the ELK layout: docs/guides/writing-docs.md, "Diagrams".
   - javascripts/mermaid-elk.js
-  # The progress picture's tooltips: docs/guides/coney-tools.md, "progress".
+  # The progress picture's tooltips: docs/guides/coney-tools-references.md, "progress".
   - javascripts/progress-grid.js
 
 theme:
@@ -291,7 +291,15 @@ nav:
       - Stamps, studies and pairs: guides/stamps.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
-      - The coney-tools command line: guides/coney-tools.md
+      - The coney-tools command line:
+          - guides/coney-tools.md
+          - Disc commands: guides/coney-tools-disc.md
+          - Reference commands: guides/coney-tools-references.md
+          - Fidelity and research commands: guides/coney-tools-fidelity.md
+          - PCSX2 commands: guides/coney-tools-pcsx2.md
+          - Repository commands: guides/coney-tools-repo.md
+          - Check and build commands: guides/coney-tools-build.md
+          - Coordination and setup commands: guides/coney-tools-setup.md
       - The debug menus: guides/debug-menu.md
       - Performance: guides/performance.md
       - The run log: guides/run-log.md

@@ -6,7 +6,7 @@ chunks a stock Lua 4.0.1 `luac` made of it, with and without debug information (
 and with the decompiler's output for each (`<name>.expected.lua`, `<name>.s.expected.lua`), so the tests run
 without `luac`. When `luac` is found the tests also compile each source and each expected output and compare the
 code (the round trip). To rewrite the chunks and expected outputs after a change, run with `LUA4_REGENERATE=1`
-(it needs `luac`): docs/guides/coney-tools.md#lua.
+(it needs `luac`): docs/guides/coney-tools-references.md#lua.
 """
 
 from __future__ import annotations

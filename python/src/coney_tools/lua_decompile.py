@@ -15,7 +15,7 @@ the guard's marks on it, the per-script index (`lua_index.py`) and the round tri
   builds from Lua 4.0.1's source) and compares the chunk with the original, function by function. It prints counts
   and the kind of each first difference, never a constant or a line of the script.
 
-Guide: docs/guides/coney-tools.md#lua. Research: docs/research/formats/lua-bytecode.md.
+Guide: docs/guides/coney-tools-references.md#lua. Research: docs/research/formats/lua-bytecode.md.
 """
 
 from __future__ import annotations
@@ -95,7 +95,7 @@ def luac_program(root: Path, required: bool = True) -> Path | None:
     if required:
         raise ConfigError(
             f"no Lua 4.0 luac at {built}: build it with `coney-tools workspace init --fetch lua`, or set luac_program "
-            "in coney.local.toml (docs/guides/coney-tools.md#lua)"
+            "in coney.local.toml (docs/guides/coney-tools-references.md#lua)"
         )
     return None
 

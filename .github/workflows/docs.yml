@@ -59,7 +59,7 @@ jobs:
       - run: mkdocs build --strict
         env:
           CONEY_SITE_URL: ${{ steps.pages.outputs.base_url }}
-          # Only the published build measures the days a pull request's build leaves out (docs/guides/coney-tools.md).
+          # Only the published build measures the days a pull request's build leaves out (docs/guides/coney-tools-references.md).
           CONEY_PROGRESS_HISTORY: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'full' || '' }}
           CONEY_PROGRESS_HISTORY_CACHE: history-cache.json
       # The built site, kept for the deploy job.

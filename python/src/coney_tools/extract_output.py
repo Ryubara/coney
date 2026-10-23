@@ -7,7 +7,7 @@ manifest (`manifest.json` in the output folder) lists every file with its hash, 
 byte count and a digest over the type's sorted `path  sha256` lines, so two extractions can be compared with the
 manifest alone. Nothing written here carries a time stamp: the same disc gives the same bytes.
 
-Research: docs/guides/coney-tools.md#extract (the folder layout)
+Research: docs/guides/coney-tools-disc.md#extract (the folder layout)
 """
 
 from __future__ import annotations

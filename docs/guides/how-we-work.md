@@ -179,7 +179,7 @@ subsystem at a time, in the order of the `@orig` index, and avoids files that ot
   class but `clean` and `diff-deliberate-ok` becomes a fix unit.
 - **Progress is kept by the tool.** `coney-tools orig index` lists every tagged function with its research page. The
   review ledger records each function reviewed, at which body and with what class, and `orig queue` orders what is
-  unreviewed or changed since its review ([orig](coney-tools.md#orig)). So every `@orig` function is reviewed once,
+  unreviewed or changed since its review ([orig](coney-tools-fidelity.md#orig)). So every `@orig` function is reviewed once,
   and again after each change to it.
 
 The audit's output is ordinary units: a branch of fixes, tests and page references per pull request, handed to the
@@ -217,9 +217,9 @@ to the merged result, is in [From research to code](research-to-code.md).
   and engineers save states to files.
 - **Traces and frames.** `coney-tools pcsx2 record` and `coney-tools trace` record the same scripted scenario on the
   original and on Coney and diff them; Coney's `--camera`, `--freeze-world` and `--screenshot` flags reproduce a
-  reference frame ([coney-tools](coney-tools.md)).
+  reference frame ([coney-tools](coney-tools-pcsx2.md#trace)).
 - **Extraction.** `coney-tools extract` turns the player's disc into open formats (PNG, glTF, WAV) in a folder
-  outside the repository ([extract](coney-tools.md#extract)).
+  outside the repository ([extract](coney-tools-disc.md#extract)).
 
 ## The local layout
 
@@ -302,7 +302,7 @@ coordinator, who pushes them when CI has room.
   out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or
   test failure. For a `title` or `body` check that failed on text fixed since, it reports that the pull request needs a
   new event (edit the title or description) because a rerun would reuse the old text
-  ([pr-health](coney-tools.md#repo-pr-health)).
+  ([pr-health](coney-tools-repo.md#repo-pr-health)).
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
   trivial, otherwise to a small fresh agent ([When a pull request fails checks](agents.md#ci-failures)); never back
   to the agent that wrote the unit.
@@ -328,7 +328,7 @@ reason is only convenience ("not checked", "no time", "the copy was busy") when 
 available: the original could have been run, so the comparison is made or the pull request waits.
 The gate also holds the `Model:` line to the branch's commits: `repo check-review` (or `repo check-body --worktree`)
 refuses a line that does not name every model a `Co-Authored-By` trailer on them credits; CI cannot, having no commits
-([the Model line](coney-tools.md#repo-model-line)).
+([the Model line](coney-tools-repo.md#repo-model-line)).
 
 ```sh
 uv run --project python coney-tools repo review <PR.md> --worktree <worktree>
@@ -336,7 +336,7 @@ uv run --project python coney-tools repo check-review <PR.md> --worktree <worktr
 ```
 
 `repo review` runs the agent headlessly (`claude -p`, a throwaway run in the scratch folder) and then
-`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)). Both
+`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools-repo.md#repo-review)). Both
 run the title and body checks CI runs, and so does `repo review-stamp`, the first thing the agent runs, whether
 `repo review` started it or a coordinator launched it as a subagent: it refuses a description CI would refuse, with the
 same messages and no stamp, so the review never starts on text that the release step would send back (an edit then
@@ -396,13 +396,13 @@ something:
   worktrees and old build folders, and never touches busy or unmerged work) and `coney-tools workspace disk` before
   starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
-  rest queue: every build and test run goes through `coney-tools build`, which claims a slot like a PCSX2 copy (a
-  fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools.md#build)), and
-  a hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of slots is `build_slots` in
-  `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tracks that only read, write docs or drive
-  the emulator need no slot. Beyond the slots, at most `build_worktree_cap` worktrees (7) hold a build folder at
-  once: `coney-tools build` refuses a new one past that, and `coney-tools workspace clean --apply` makes room
-  ([The cap](agents.md#build-cap)); research, tools and docs tracks are not counted.
+  rest queue: every build and test run goes through `coney-tools build`, which claims a slot like a PCSX2 copy (a fast
+  lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools-build.md#build)), and a
+  hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of slots is `build_slots` in
+  `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tracks that only read, write docs or drive the
+  emulator need no slot. Beyond the slots, at most `build_worktree_cap` worktrees (7) hold a build folder at once:
+  `coney-tools build` refuses a new one past that, and `coney-tools workspace clean --apply` makes room ([The
+  cap](agents.md#build-cap)); research, tools and docs tracks are not counted.
 - **Share the long-lived tools, one user per copy.** One Ghidra server serves every engineer: use it as it is, never
   restart or stop it, and start it only if it is down ([Ghidra + ghidra-mcp](ghidra.md)). An emulator copy has one
   user at a time, through a claim that is released when done ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
@@ -478,7 +478,7 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;
   the coordinator restarts each stopped track as a fresh agent from its `STATUS.md` and branch before taking new work.
-- **Let Tether wake it.** Between turns the session sees nothing. The [Tether](coney-tools.md#coord-wakes) plugin's
+- **Let Tether wake it.** Between turns the session sees nothing. The [Tether](coney-tools-setup.md#coord-wakes) plugin's
   watch starts a turn for new work: issues to triage, units in the release queue, detached builds that ended and stuck
   pull requests. The settings that do this are documented there, not kept only on one machine.
 - **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it saves the state,
@@ -526,7 +526,7 @@ The guards, with the rule each one holds (the diagram only orders them):
 | `repo check-title`, `check-body`, `check-docs` | A title that is not `area: Verb the rest`; a description that breaks the template; a change under `src/` or `python/src/` with no docs change and no `Docs: none` line | [Repository conventions](repo-conventions.md#workflows) |
 | `pr-reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
 | Release queue | An agent pushing: only the coordinator pushes, when CI has room | [Local first](#release-queue) |
-| Tether pull request guard | A pull request left with a failed required check, a conflict, a stuck check or auto-merge off: the `prs` poller (`repo pr-health`) wakes the coordinator | [Waking the coordinator](coney-tools.md#coord-wakes) |
+| Tether pull request guard | A pull request left with a failed required check, a conflict, a stuck check or auto-merge off: the `prs` poller (`repo pr-health`) wakes the coordinator | [Waking the coordinator](coney-tools-setup.md#coord-wakes) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint` | [What CI runs](building.md#what-ci-runs) |
 | Branch protection (GitHub ruleset on `main`) | A direct push; a merge before every required check passes; a merge that is not a squash | [Merging safely](#merging) |
 

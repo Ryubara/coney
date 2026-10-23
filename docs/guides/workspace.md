@@ -101,7 +101,7 @@ that would land outside the tool's folder is refused.
 | `ccache` | ccache 4.14.1, the [compiler cache](building.md#compiler-cache) `coney-tools build` uses; Windows only (the release CI's Windows job installs), on Linux and macOS install the `ccache` package with apt or Homebrew | `tools/ccache-4.14.1` | GPL-3.0 |
 | `pcsx2-mcp-release` | the PCSX2-MCP fork's release v1.1.0 (Windows only): PCSX2 2.9.129 built with the debug server, the MCP server with its dependencies in `pcsx2-mcp-server/`, and the patch's source | `tools/PCSX2-MCP-v1.1.0-win64` | GPL-3.0 |
 | `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source, to change the fork | `tools/pcsx2-mcp` | GPL-3.0 |
-| `lua` | Lua 4.0.1's source (`lua-4.0.1.tar.gz` from lua.org; only `src/`, `include/` and the licence are unpacked), from which `luac` is built with the machine's C compiler (Visual Studio's on Windows, loaded as `coney-tools build` loads it; `cc` and `ar` elsewhere) into `bin/`, for [`lua decompile --roundtrip`](coney-tools.md#lua) | `tools/lua-4.0.1` | MIT |
+| `lua` | Lua 4.0.1's source (`lua-4.0.1.tar.gz` from lua.org; only `src/`, `include/` and the licence are unpacked), from which `luac` is built with the machine's C compiler (Visual Studio's on Windows, loaded as `coney-tools build` loads it; `cc` and `ar` elsewhere) into `bin/`, for [`lua decompile --roundtrip`](coney-tools-references.md#lua) | `tools/lua-4.0.1` | MIT |
 
 A stock PCSX2 is never downloaded: every copy runs the fork's build, the release or one made from the clone
 ([PCSX2 copies](#pcsx2-copies)).
@@ -141,7 +141,7 @@ PCSX2-MCP fork's build named by `pcsx2_mcp_dir` and listens on its own two ports
 | `[InputSources]` `SDL` | `false`: the user's gamepad never drives an agent's game | |
 
 `coney-tools pcsx2 setup-copies [--count N] [--dry-run]` makes the copies that are missing and updates the rest
-([`pcsx2`](coney-tools.md#pcsx2)). It copies only the build's program files over a copy (and removes old program
+([`pcsx2`](coney-tools-pcsx2.md#pcsx2)). It copies only the build's program files over a copy (and removes old program
 files the build no longer has, such as a stock PCSX2's `updater.exe`), writes `portable.txt`, and sets the keys above
 in the copy's ini, leaving every other setting as it was. A copy's own `inis/`, `bios/`, `memcards/`, `sstates/`,
 `recordings/` and the other folders PCSX2 writes are never replaced. A new copy starts from the first copy's ini and
@@ -197,11 +197,11 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_states_dir` | `state-library` in the main checkout's `../../emulators` (`<clone>-workspace/emulators` in a plain clone) | the shared [PCSX2 state library](pcsx2-states.md) (`coney-tools pcsx2 states`): save states are game memory, so it sits beside the repository; one place every worktree sees |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
-| `build_worktree_cap` | `7` | a number: how many worktrees may hold a `build/` folder at once; `coney-tools build` refuses to configure a new build folder beyond it and lists the holders ([`build`](coney-tools.md#build), [The cap](agents.md#build-cap)); `0` turns the cap off |
-| `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |
+| `build_worktree_cap` | `7` | a number: how many worktrees may hold a `build/` folder at once; `coney-tools build` refuses to configure a new build folder beyond it and lists the holders ([`build`](coney-tools-build.md#build), [The cap](agents.md#build-cap)); `0` turns the cap off |
+| `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools-build.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
-| `build_fast_lane_test_seconds` | `300` | a number: such a run takes a main slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools.md#build)); `0` turns that off |
-| `test_jobs` | `0` | a number: the tests `coney-tools build --test` runs in parallel (`ctest -j`); `0` is half the cores, or the compile's share of them when that is more; `build -j N` beats it ([`build`](coney-tools.md#build)) |
+| `build_fast_lane_test_seconds` | `300` | a number: such a run takes a main slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools-build.md#build)); `0` turns that off |
+| `test_jobs` | `0` | a number: the tests `coney-tools build --test` runs in parallel (`ctest -j`); `0` is half the cores, or the compile's share of them when that is more; `build -j N` beats it ([`build`](coney-tools-build.md#build)) |
 | `ccache_dir` | `cache/ccache` in the main checkout's `../..` (`<clone>-workspace/cache/ccache` in a plain clone) | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
 | `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
 | `deps_dir` | `cache/deps` in the main checkout's `../..` (`<clone>-workspace/cache/deps` in a plain clone) | where `coney-tools build` keeps the [dependency sources](building.md#shared-deps), a folder per version of the pins |
@@ -210,9 +210,9 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
 | `pcsx2_mcp_dir` | none (`init` sets it to the clone's newest build under `tools/pcsx2-mcp/release/`, else to the fetched release `tools/PCSX2-MCP-v1.1.0-win64`) | a PCSX2-MCP fork build, the release or one made from the clone: the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
-| `luac_program` | the `luac` that `workspace init --fetch lua` built in `../../tools/lua-4.0.1/bin` | a stock Lua 4.0 `luac`, for [`lua decompile --roundtrip`](coney-tools.md#lua) |
-| `lua_dir` | `scratch/lua` in the main checkout's `../..` (`<clone>-workspace/scratch/lua` in a plain clone) | the shared folder of decompiled game scripts, their index and fingerprints ([`lua decompile --all`](coney-tools.md#lua)); game data, so never in a checkout |
-| `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools.md#clips)); Coney itself reads `CONEY_FFMPEG` |
+| `luac_program` | the `luac` that `workspace init --fetch lua` built in `../../tools/lua-4.0.1/bin` | a stock Lua 4.0 `luac`, for [`lua decompile --roundtrip`](coney-tools-references.md#lua) |
+| `lua_dir` | `scratch/lua` in the main checkout's `../..` (`<clone>-workspace/scratch/lua` in a plain clone) | the shared folder of decompiled game scripts, their index and fingerprints ([`lua decompile --all`](coney-tools-references.md#lua)); game data, so never in a checkout |
+| `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-pcsx2.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 | `stamp_key` | none (stamps are then written unsigned) | the *public* half of your stamp signing key, a file; the private half stays in the SSH agent. Only maintainers have one ([Signing](stamps.md#signing)) |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
@@ -306,7 +306,7 @@ free space before and after.
 
 **Build slots.** A worktree that holds a build slot, a build folder's lock, or a place in the build queue (the main,
 fast or tidy lane) is never removed and never loses its `build/`, in any mode. `clean` reads that from the build
-queue's own claim and ticket files (`build_claims_dir`, else `scratch/build-claims`; [`build`](coney-tools.md#build))
+queue's own claim and ticket files (`build_claims_dir`, else `scratch/build-claims`; [`build`](coney-tools-build.md#build))
 with the queue's rules for a dead claim (its process is gone, or it is over four hours old), never from a listing
 made earlier, and reads it again just before each deletion: a stale listing once deleted the build folders of two
 running builds. The same reading tells `coney-tools build` which worktrees hold a build folder, to enforce [the cap

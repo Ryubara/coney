@@ -56,7 +56,7 @@ names the file). `--json` prints the same facts as the text under the keys `quer
 
 The docs build makes two pages from the same data, so a reader without a terminal can use them. Neither is committed;
 `coney-tools research render <folder>` writes them to a folder to look at
-([coney-tools](coney-tools.md#research)).
+([coney-tools](coney-tools-fidelity.md#research)).
 
 - [Where each address is described](../research/find/addresses.md): the pages that own code with what each lists and how
   many functions it holds, then the executable in address order as runs of consecutive functions with one owning page.
@@ -83,7 +83,7 @@ Only `term` and `page` are needed. `research render --check` fails on a key it d
 both claim, a page that does not exist, a section the page does not have, and a function that is no entry of the Ghidra
 listing. A word is added with the study that proves the link, not as a guess: the entry cites the page where the
 evidence is. `coney-tools research where WORD` and the words page read it; so does the
-[task leads index](coney-tools.md#task).
+[task leads index](coney-tools-repo.md#task).
 
 ## In a study {#study}
 

@@ -65,12 +65,12 @@ Signs of a transcription:
 - dead code or compiler artifacts carried over (redundant reloads, sign-extension casts that mean nothing in C++, a
   flag tested twice because two inlined callees each tested it).
 
-`coney-tools orig copy-check` finds the mechanical signs ([orig](../coney-tools.md#orig)); the reviewer judges the
-shape, which no tool can. For a function with a pairs file, the reviewer's input is that file: each pair names a piece
-of the original (by line numbers of the saved study, [Pairs](../stamps.md#pairs)), the Coney code that does it and
+`coney-tools orig copy-check` finds the mechanical signs ([orig](../coney-tools-fidelity.md#orig)); the reviewer judges
+the shape, which no tool can. For a function with a pairs file, the reviewer's input is that file: each pair names a
+piece of the original (by line numbers of the saved study, [Pairs](../stamps.md#pairs)), the Coney code that does it and
 whether they are the same, a stand-in or not ported; the tool has already checked that every line is in a pair. The
-reviewer also opens the `stubs` of each `fails-first` stamp ([Fails first](../stamps.md#fails-first)): a stub in a
-test commit that implements the behaviour, rather than returning a default or an empty result, is a finding.
+reviewer also opens the `stubs` of each `fails-first` stamp ([Fails first](../stamps.md#fails-first)): a stub in a test
+commit that implements the behaviour, rather than returning a default or an empty result, is a finding.
 
 A short function whose logic is its shape (a formula, a three-way test) is not a transcription just for having the
 same shape. The question is whether the code was written from understanding or copied from the listing. Signs of
@@ -113,7 +113,7 @@ A pull request passes the orig review only when every function it changes is `cl
 `unclear`. An `unclear` function goes to the [runtime comparison](../testing.md#runtime-comparison) that the
 `Runtime:` line of the description already requires. In a sweep, every class except `clean` and
 `diff-deliberate-ok` becomes a fix unit for the coordinator, and those two take the function off the
-[audit queue](../coney-tools.md#orig) until it changes.
+[audit queue](../coney-tools-fidelity.md#orig) until it changes.
 
 Every finding names the Coney function, its `file:line` and the `@orig` address, and gives an evidence level as
 research claims do ([Evidence levels](../research-workflow.md)):

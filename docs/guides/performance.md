@@ -30,7 +30,7 @@ the simulation's alone.
 `coney-tools perf bench` runs the bench once per fighter count (0, 10, 25, 50 and 100 by default) in the hub,
 `level95` (free play from the first frame: in `level99` the opening scene holds the crowd back), from the `release`
 build and prints a Markdown table of them, keeping each report and log in `--out`
-([coney-tools perf](coney-tools.md#perf)):
+([coney-tools perf](coney-tools-pcsx2.md#perf)):
 
 ```sh
 uv run --project python coney-tools perf bench --out ../../scratch/perf --fighters 0,10,25,50,100

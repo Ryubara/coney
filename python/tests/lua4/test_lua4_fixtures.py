@@ -33,7 +33,7 @@ def test_regenerate(name: str) -> None:
     for variant in VARIANTS:
         chunk = lua4.compile_source(source, LUAC, strip=variant == ".s")
         # Header byte 7 is sizeof(size_t). The fixtures keep the game's 4-byte layout, which the index's reader
-        # needs; a 64-bit luac writes 8 (docs/guides/coney-tools.md#lua says how to build a 32-bit one).
+        # needs; a 64-bit luac writes 8 (docs/guides/coney-tools-references.md#lua says how to build a 32-bit one).
         assert chunk[7] == 4, f"{LUAC} writes {chunk[7]}-byte sizes; regenerate with a 32-bit luac (LUA4_LUAC)"
         (FIXTURES / f"{name}{variant}.luac").write_bytes(chunk)
         (FIXTURES / f"{name}{variant}.expected.lua").write_text(lua4.decompile(chunk), encoding="utf-8", newline="\n")

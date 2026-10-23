@@ -10,7 +10,7 @@ dependencies = ["pyyaml>=6", "pillow>=13", "numpy>=2"]
 
 [project.scripts]
 coney-tools = "coney_tools.cli:main"
-# The session launcher: starts Claude Code as one of Coney's roles (docs/guides/coney-tools.md#coney-agent).
+# The session launcher: starts Claude Code as one of Coney's roles (docs/guides/coney-tools-setup.md#coney-agent).
 coney-agent = "coney_tools.session_launcher:main"
 
 [dependency-groups]

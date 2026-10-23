@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Build slots: at most `slots` builds (configure, compile, test) run on the machine at once, and the rest wait in a
-fair queue (docs/guides/coney-tools.md#build).
+fair queue (docs/guides/coney-tools-build.md#build).
 
 The model is the PCSX2 claims (pcsx2_claims.py), with the same folder mechanics (claim_files.py). The claims dir is
 one shared place every worktree sees:

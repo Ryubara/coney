@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools build` command: configure, build and test a checkout under the build slots, `build status` and
-`build release` (the slots are in build_claims.py, the run in build_run.py; docs/guides/coney-tools.md#build)."""
+`build release` (the slots are in build_claims.py, the run in build_run.py; docs/guides/coney-tools-build.md#build)."""
 
 from __future__ import annotations
 
@@ -332,7 +332,7 @@ def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     if not args.agent:
         args.agent = default_agent_id()
         if args.agent is None:
-            raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools.md, 'build')")
+            raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools-build.md, 'build')")
     if args.targets and args.test:
         raise ConfigError(
             "--target with --test: the tests need coney_tests and coney rebuilt, which --target would leave stale; "

@@ -40,7 +40,7 @@ The build on Windows, Linux and macOS, CI, the `coney` executable (a window and 
 Everything Coney loads comes out of `WARRIORS.WAD`, so the first job is to read it and know what is in it.
 
 - Done: `coney-tools wad` lists, extracts and names the archive's entries from the player's own disc or disc image
-  ([guide](guides/coney-tools.md), [WARRIORS.DIR / .WAD](research/formats/wad-dir.md)).
+  ([guide](guides/coney-tools-disc.md), [WARRIORS.DIR / .WAD](research/formats/wad-dir.md)).
 - Recover as many entry names as possible (3,990 of 10,701 so far, see
   [WAD contents](research/formats/wad-contents.md#names)).
 - Done: a survey of every entry type: what each is, how many there are, which ones RenderWare or Lua already
@@ -233,7 +233,7 @@ existing moveset.
 
 A player who also owns the Xbox version gives the installer that disc too: `coney-tools extract --xbox` takes its
 larger textures and 720p movies in place of the PS2 ones wherever the two correspond, and the PS2 disc's assets
-everywhere else ([guide](guides/coney-tools.md#extract)); done for the extraction. The PS2 version stays the only
+everywhere else ([guide](guides/coney-tools-disc.md#extract)); done for the extraction. The PS2 version stays the only
 reference for behaviour. Formats, the per-kind map and the rules: [Xbox assets](research/xbox-assets.md).
 
 **Done when** a level renders with the Xbox disc's textures and a movie plays from its HD version, and the game

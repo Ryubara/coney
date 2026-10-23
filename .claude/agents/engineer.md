@@ -26,7 +26,7 @@ repository, not here, and they override any brief:
 5. Tests come first, and the work is done when `docs/guides/testing.md#done` says so; run the
    [local gate](../../docs/guides/testing.md#local-gate) before reporting. Build and test only through
    `uv run --project python coney-tools build --agent <id> --preset dev --test`, never `cmake --build`, `ctest` or
-   `ninja` directly ([`build`](../../docs/guides/coney-tools.md#build)).
+   `ninja` directly ([`build`](../../docs/guides/coney-tools-build.md#build)).
 6. No game data in the repository, ever (`LEGAL.md`).
 
 Report what your brief asks for and what `docs/guides/how-we-work.md#agent-conduct` lists.

@@ -510,7 +510,7 @@ Calls go to the game's script state when a game runs (with `--disc`, the front e
 on the sandbox, never on a game.
 
 The signatures come from the masterlist: `coney-tools natives cpp` generates `src/debug/native_signatures.cpp` from
-`research/bindings/*.yaml` ([coney-tools](coney-tools.md#natives)), and CI checks it is current.
+`research/bindings/*.yaml` ([coney-tools](coney-tools-references.md#natives)), and CI checks it is current.
 
 ## The Lua console {#lua-console}
 

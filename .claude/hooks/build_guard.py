@@ -3,7 +3,7 @@
 `coney-tools build`.
 
 Several agents share one machine, and a full engine build uses every core. `coney-tools build` takes a build slot (at
-most two at once, a fast lane for small jobs, a fair queue; docs/guides/coney-tools.md#build) and does configure,
+most two at once, a fast lane for small jobs, a fair queue; docs/guides/coney-tools-build.md#build) and does configure,
 build and ctest in one command, so a raw build is refused here. This hook, registered in `.claude/settings.json` for
 the Bash and PowerShell tools, refuses a command that *starts* one of:
 
@@ -52,7 +52,7 @@ MESSAGE = (
     "Blocked: do not run cmake, ctest or ninja directly. Several agents share this machine, and "
     "`coney-tools build` takes a build slot (at most two builds at once, a fast lane for small jobs, a fair queue), "
     "and does configure, build and ctest in one command with a short summary and the full log in your scratch "
-    "folder (docs/guides/coney-tools.md, 'build'). Use, from your worktree:\n"
+    "folder (docs/guides/coney-tools-build.md, 'build'). Use, from your worktree:\n"
     "  uv run --project python coney-tools build --agent <your id> --preset dev --test [-R <regex>] [-L <label>]\n"
     "(`--configure` forces a configure, `--priority` goes ahead in the queue, `--dir <checkout>` builds another "
     "worktree, `--build-dir <folder> --env CC=... --env CXX=...` a second configuration). It runs in the background "

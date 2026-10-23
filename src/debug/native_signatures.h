@@ -32,7 +32,8 @@ enum class NativeResultType : std::uint8_t { Number, Boolean, String, Usertype }
 
 /// One binding's signature: what the debug menus need to build an argument editor and call it. The table is
 /// generated from the masterlist (research/bindings/*.yaml) by `coney-tools natives cpp`
-/// (docs/guides/coney-tools.md#natives); a binding registered twice keeps the registration Lua uses (`main`).
+/// (docs/guides/coney-tools-references.md#natives); a binding registered twice keeps the registration Lua uses
+/// (`main`).
 struct NativeSignature {
     std::string_view name;                     ///< The Lua global's name.
     std::string_view category;                 ///< The masterlist category (`ai`, `hud`, ...).

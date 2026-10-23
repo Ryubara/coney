@@ -185,7 +185,9 @@ def test_the_wrappers_run_the_console_script() -> None:
     ps1 = (REPO / "tools" / "coney-agent.ps1").read_text(encoding="utf-8")
     for wrapper in (cmd, sh, ps1):
         assert (
-            "coney-agent" in wrapper and "--project" in wrapper and "docs/guides/coney-tools.md#coney-agent" in wrapper
+            "coney-agent" in wrapper
+            and "--project" in wrapper
+            and "docs/guides/coney-tools-setup.md#coney-agent" in wrapper
         )
     # cmd.exe asks "Terminate batch job (Y/N)?" on Ctrl+C: said where it is read, and the PowerShell one is offered.
     assert "Terminate batch job" in cmd and "coney-agent.ps1" in cmd

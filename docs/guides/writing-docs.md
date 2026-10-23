@@ -386,7 +386,7 @@ uv run --project python coney-tools docs check --summary docs       # the whole 
 
 With no paths it checks the Markdown pages your branch changed against `--base` (default `origin/main`), committed or
 not. It prints `path:line: rule: message` for each finding and exits 1 when any page has an error; a warning never
-fails. [`coney-tools check changed`](coney-tools.md#check) runs it in its `docs` step, and the `mkdocs` job of the
+fails. [`coney-tools check changed`](coney-tools-build.md#check) runs it in its `docs` step, and the `mkdocs` job of the
 `docs` workflow runs it on the pages a pull request changes, so a pull request cannot merge a touched page that breaks
 a rule. It never looks at a page the change did not touch ([Touch a page, fix the page](#touch-it)). Generated pages
 (`docs/references/` except `entities.md`, `docs/missions/`, `docs/progress/`, `docs/research/find/` and each system's

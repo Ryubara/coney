@@ -13,7 +13,7 @@ inside, and how Coney's decompiler reads them back, are on [Lua 4.0 bytecode](lu
 The game's 467 scripts ship as Lua 4.0 bytecode, the output of `luac`, in WAD entries named `<name>.lua`. What they
 do and how the game runs them is on [Scripting](../scripting.md); this page is the file layout an extractor or a
 loader needs. `coney-tools extract` writes the chunks as stored (`scripts/`); `coney-tools lua decompile` turns them
-into readable Lua outside the repository, for research ([coney-tools](../../guides/coney-tools.md#lua)).
+into readable Lua outside the repository, for research ([coney-tools](../../guides/coney-tools-references.md#lua)).
 
 ## Original structure
 
