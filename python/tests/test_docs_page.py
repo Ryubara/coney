@@ -168,3 +168,25 @@ def test_a_slug_drops_link_targets_and_accents_as_mkdocs_does() -> None:
     """The toc extension slugs the rendered text: a link keeps its text only, an accent is folded to ASCII."""
     assert slug("The [grab](combat.md) state") == "the-grab-state"
     assert slug("Café table") == "cafe-table"
+
+
+# Each case's ids as Python-Markdown's toc (with attr_list, as mkdocs.yml has them) gives them.
+@pytest.mark.parametrize(
+    ("text", "ids"),
+    [
+        ("## A {#x}\n\n## B {#x}\n", ["x", "x"]),  # an explicit id is never numbered
+        ("## Purpose\n\n## Other {#purpose}\n", ["purpose_1", "purpose"]),  # explicit ids are reserved first
+        ("## Other {#purpose}\n\n## Purpose\n", ["purpose", "purpose_1"]),
+        ("## X {#x}\n\n## X\n", ["x", "x_1"]),
+        ("## Purpose\n\n## Purpose\n\n## Purpose\n", ["purpose", "purpose_1", "purpose_2"]),
+        ("## Purpose\n\n## Purpose_1\n\n## Purpose\n", ["purpose", "purpose_1", "purpose_2"]),
+        ("## Foo -\n", ["foo-"]),  # toc keeps a trailing hyphen
+        ("## - foo\n", ["-foo"]),
+        ("## Fish &amp; chips\n", ["fish-chips"]),  # entities are unescaped, then dropped as punctuation
+        ("## Line<br>break\n", ["linebreak"]),  # inline HTML adds no text
+        ("## A <span>b</span> c\n", ["a-b-c"]),
+        ("## a_b\n", ["a_b"]),
+    ],
+)
+def test_heading_ids_match_python_markdown(text: str, ids: list[str]) -> None:
+    assert heading_ids(read_page(text)) == ids

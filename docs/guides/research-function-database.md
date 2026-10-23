@@ -63,8 +63,8 @@ whether to open that section. Pseudocode, decompiler output and game data never 
   name that is not the one Ghidra has;
 - a `page` that is not a file, or a section that is not an anchor of it, and a gap's question that does not resolve;
 - a `coney` file that is not in the checkout;
-- an entry whose page does not own its address, once that page's front matter says what it owns, or whose address
-  another page owns ([one owner per address](writing-docs.md#research-pages), the most specific `owns` entry
+- an entry whose page does not own its address, once that page has front matter (with or without `owns`), or whose
+  address another page owns ([one owner per address](writing-docs.md#research-pages), the most specific `owns` entry
   winning); `docs check` reports the same on the page, as rule `function-entries`;
 - a hand-committed page where the build writes a system's list.
 
@@ -121,5 +121,5 @@ docs build. Each row has an anchor, `functions.md#0x0026c548`, for a page that w
 The Understood measure counts an entry with a `role` as a citation with evidence ([the Understood
 measure](research-workflow.md#understood)); without one the entry says nothing of what the function does. The fields
 `coney`, `status` and `gaps` are in the schema now; the list of reimplemented functions that the progress tracker reads,
-`docs/progress/functions.toml`, is merged into this database in a later change, and until then `progress check` still
+`docs/progress/functions.toml`, is to be merged into this database (issue #778); until then `progress check` still
 reads that file for the `@orig` tags.

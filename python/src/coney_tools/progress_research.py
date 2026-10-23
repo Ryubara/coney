@@ -6,8 +6,9 @@ A game function counts as understood when both hold:
 * it has a meaningful name in the shared Ghidra project (not Ghidra's default `FUN_<address>`), and
 * its address is cited in docs/research/** (the source map excepted: placing a function is not understanding it)
   in a table row or paragraph that states an evidence level (confirmed, inferred, speculative) or says
-  `not needed: <reason>`, or it is an entry of the function database (research/functions/<system>.toml, whose every
-  entry has a level), or it is the wrapper of a script binding in research/bindings/*.yaml with an `evidence`.
+  `not needed: <reason>`, or it is an entry with a `role` in the function database (research/functions/<system>.toml,
+  whose every entry has a level), or it is the wrapper of a script binding in research/bindings/*.yaml with an
+  `evidence`.
 
 The names and sizes come from a committed listing, docs/progress/ghidra-functions.tsv, exported from Ghidra by
 `coney-tools progress ghidra`: addresses, sizes and our own names only, which LEGAL.md allows as reference data.

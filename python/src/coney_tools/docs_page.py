@@ -8,6 +8,7 @@ the YAML front matter at the top is kept apart as text.
 
 from __future__ import annotations
 
+import html
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -131,22 +132,29 @@ class Page:
 
 
 def slug(text: str) -> str:
-    """The id MkDocs gives a heading without an explicit one: the toc extension slugs the rendered text, so a link
-    keeps its text only, markup goes, accents fold to ASCII, then lower case with words joined by hyphens."""
+    """The id MkDocs gives a heading without an explicit one, as Python-Markdown's toc makes it from the rendered
+    text: a link keeps its text only, inline HTML and markup add none, entities are unescaped, accents fold to ASCII,
+    punctuation goes, then lower case with each run of spaces and hyphens one hyphen (one at either end stays)."""
     plain = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
-    plain = re.sub(r"[`*]", "", plain)
+    plain = re.sub(r"<[^>]*>", "", plain)
+    plain = html.unescape(re.sub(r"[`*]", "", plain))
     plain = unicodedata.normalize("NFKD", plain).encode("ascii", "ignore").decode("ascii")
     words = re.sub(r"[^\w\s-]", "", plain).strip().lower()
-    return re.sub(r"[-\s]+", "-", words).strip("-")
+    return re.sub(r"[-\s]+", "-", words)
 
 
 def heading_ids(page: Page) -> list[str]:
-    """The id of each heading of `page`, in order: its `{#id}`, else its slug; an id the page already used gets the
-    next free `_1`, `_2`, ... (python-markdown's rule), so two `## Purpose` headings are `purpose` and `purpose_1`."""
-    used: set[str] = set()
+    """The id of each heading of `page`, in order, as Python-Markdown's toc gives them: a heading's `{#id}` stands as
+    written (two headings may share one), and every explicit id is reserved before the others are made; a slug the page
+    already used gets the next free `_1`, `_2`, ..., so two `## Purpose` headings are `purpose` and `purpose_1`, and
+    `## Purpose` before `## Other {#purpose}` is `purpose_1`."""
+    used = {heading.anchor for heading in page.headings if heading.anchor}
     ids: list[str] = []
     for heading in page.headings:
-        anchor = heading.anchor or slug(heading.text)
+        if heading.anchor:
+            ids.append(heading.anchor)
+            continue
+        anchor = slug(heading.text)
         while anchor in used or not anchor:
             counted = _COUNTED.match(anchor)
             anchor = f"{counted.group(1)}_{int(counted.group(2)) + 1}" if counted else f"{anchor}_1"
