@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import socket
 import struct
+import sys
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -65,13 +66,21 @@ def fake_pcsx2(version: str = "PCSX2 v2.9.94-5-gabc1234", status: int = 0) -> It
         stop.set()
         thread.join(timeout=5)
         server.close()
+        # Still alive means a client kept its connection open past the block: fail here rather than leave a server
+        # thread answering behind the next test.
+        assert not thread.is_alive(), "the fake PCSX2 still serves a connection after its block ended"
 
 
 @contextmanager
-def refused_port() -> Iterator[int]:
-    """A local port on which a connection is refused for as long as the block runs: a socket is bound to it but never
-    listens, and, bound without SO_REUSEADDR, it keeps any other server (another test, another program) off the port.
-    A port taken from a server that was then closed is free for anyone to take again."""
+def dead_port() -> Iterator[int]:
+    """A local port that no server answers on for as long as the block runs: a socket is bound to it but never listens.
+    A connect fails, but how differs by system: Linux refuses at once, Windows refuses after about 2 s of retries, and
+    macOS may drop the attempt so that it times out. So a caller sets a short connect timeout and expects any OSError.
+    The holder is bound without SO_REUSEADDR (Linux, macOS) and with SO_EXCLUSIVEADDRUSE (Windows, where a program
+    that sets SO_REUSEADDR could otherwise bind over it), so no other server can take the port meanwhile; a port taken
+    from a server that was then closed is free for anyone to take again."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as holder:
+        if sys.platform == "win32":
+            holder.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         holder.bind(("127.0.0.1", 0))
         yield holder.getsockname()[1]

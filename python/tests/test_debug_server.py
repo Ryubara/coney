@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from pine_support import refused_port
+from pine_support import dead_port
 from test_pcsx2 import FakeGame, _repo, _serve
 
 from coney_tools import pcsx2_cli
@@ -205,8 +205,8 @@ def test_the_client_names_a_refusal(debug_server: Callable[..., FakeDebugServer]
 
 
 def test_no_debug_server_is_a_clear_error() -> None:
-    with refused_port() as port, pytest.raises(DebugServerError, match=f"no debug server on port {port}"):
-        DebugClient(port, connect_timeout=1)
+    with dead_port() as port, pytest.raises(DebugServerError, match=f"no debug server on port {port}"):
+        DebugClient(port, connect_timeout=0.3)
 
 
 def test_play_sends_the_path_relative_to_the_data_folder(debug_server: Callable[..., FakeDebugServer]) -> None:

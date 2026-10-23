@@ -10,12 +10,13 @@ import shutil
 import socket
 import time
 from datetime import date
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 import pytest
 from conventions_support import REPO
-from pine_support import fake_pcsx2, refused_port
+from pine_support import dead_port, fake_pcsx2
 
 from coney_tools import identity, pcsx2_cli, recipes, recipes_cli, recipes_run, run_records, run_records_cli
 from coney_tools import pcsx2_claims as claims
@@ -117,14 +118,16 @@ def test_the_fake_pcsx2_stops_answering_when_its_block_ends() -> None:
         with PineClient(port) as pine:
             pine.version()
         time.sleep(0.2)  # the server thread is back in `accept`, where closing the socket does not wake it on Linux
-    with pytest.raises(ConnectionRefusedError):
-        socket.create_connection(("127.0.0.1", port), timeout=5).close()
+    # A server that still listened would hold the port, so the bind would fail; binding is quick on every system, where
+    # a connect to a dead port waits 2 s on Windows. Only another program taking the port in this instant could fail it.
+    socket.create_server(("127.0.0.1", port)).close()
 
 
-def test_a_refused_port_refuses_and_keeps_other_servers_off() -> None:
-    with refused_port() as port:
-        with pytest.raises(ConnectionRefusedError):
-            socket.create_connection(("127.0.0.1", port), timeout=5).close()
+def test_a_dead_port_takes_no_connection_and_keeps_other_servers_off() -> None:
+    with dead_port() as port:
+        # Any OSError: Linux and Windows refuse the connect, macOS may let it time out (see `dead_port`).
+        with pytest.raises(OSError):
+            socket.create_connection(("127.0.0.1", port), timeout=0.3).close()
         with pytest.raises(OSError):
             socket.create_server(("127.0.0.1", port)).close()
 
@@ -221,7 +224,9 @@ def test_record_run_refuses_a_copy_that_runs_nothing(
 def test_record_run_writes_nothing_when_pcsx2_does_not_answer(
     checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    with refused_port() as port:
+    # A short connect timeout: the dead port refuses only after about 2 s on Windows and may time out on macOS.
+    monkeypatch.setattr(run_records_cli, "PineClient", partial(PineClient, timeout=0.3))
+    with dead_port() as port:
         hold_copy(tmp_path, monkeypatch, port)
         assert main(record_run()) == 2
     assert "no PINE server" in capsys.readouterr().err
