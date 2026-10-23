@@ -2,9 +2,9 @@
 """The evidence rule of the research page standard: every block that cites an address states how it is known.
 
 The levels and their spellings are those of docs/guides/research-workflow.md#evidence-levels. `check_evidence` yields
-the `evidence` findings of a page: an address with no level in its block, row or lead line (`Finding.by_section`, which
-a legacy page owes only in the sections a change touches) and a level in a form that is refused (which it owes
-page-wide).
+the `evidence` findings of a page: an address with no level in its block, row or lead line and an old-form runtime claim
+on a page that does not explain it (both `Finding.by_section`, which a legacy page owes only in the sections a change
+touches), and a level in a form that is refused (which it owes page-wide).
 """
 
 from __future__ import annotations
@@ -211,13 +211,15 @@ def _level_forms(
     """The forms of the levels `levels` (read from `cell`, the part of the block that grades it)."""
     catalog = subject.env.catalog
     if (levels.bare_runtime or levels.runs) and not catalog.has_records and not subject.legacy_page:
-        # Until the run-record tool exists a run id names nothing and a bare claim has nowhere to point: refuse both,
-        # so no page learns to write ids that lead nowhere.
+        # With no run record yet a run id names nothing and a bare claim has nowhere to point: refuse both, so no
+        # page learns to write ids that lead nowhere. Not `inferred`: a PCSX2 observation is not what the code implies.
         yield Finding(
             "evidence",
             line,
-            "run records arrive with T4: until research/runs/ exists, state this as inferred from <basis>, or as "
-            "speculative with an open question",
+            "no run record exists yet (research/runs/ is missing): a runtime claim waits for one. Write it with "
+            "`coney-tools pcsx2 record-run` (or `pcsx2 recipe run --record`, `pcsx2 record --run-record`), commit it "
+            "with the page and cite it as `confirmed (runtime), run <id>`. What no run observed is speculative, with "
+            "an open question",
         )
     elif levels.bare_runtime and not old_runtime_ok:
         yield Finding(
@@ -225,6 +227,7 @@ def _level_forms(
             line,
             "confirmed (runtime) cites the run that observed it: `confirmed (runtime), run <id>` "
             "(a record in research/runs/)",
+            by_section=True,
         )
     for run in levels.runs if catalog.has_records else ():
         if not catalog.has_run(run):

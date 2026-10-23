@@ -25,7 +25,7 @@ from research_support import (
     rules_of,
 )
 
-from coney_tools import research_check
+from coney_tools import cli, research_check
 from coney_tools.docs_check import Context, check_page
 from coney_tools.docs_page import Finding
 from coney_tools.research_check import EXTRA_RULES
@@ -744,9 +744,24 @@ def test_the_method_name_alone_stands_for_ghidras_class_and_method() -> None:
 
 @pytest.mark.parametrize("claim", ["confirmed (runtime), run r-1", "confirmed (runtime)"])
 def test_a_runtime_claim_cannot_pass_while_there_are_no_run_records(claim: str) -> None:
-    # No research/runs/ folder: a run id would name nothing, so it must not pass on its form (T4 creates the folder).
+    # No research/runs/ folder: a run id would name nothing, so it must not pass on its form.
     found = findings(RESEARCH_PATH, page(f"It spins at {IN_FUNCTION} ({claim}).\n"))
-    assert rules_of(found) == ["evidence"] and "run records arrive with T4" in found[0].message
+    assert rules_of(found) == ["evidence"] and "no run record exists yet" in found[0].message
+
+
+@pytest.mark.parametrize("claim", ["confirmed (runtime), run r-1", "confirmed (runtime)"])
+def test_the_message_names_the_command_that_writes_a_run_record_and_no_plan(claim: str) -> None:
+    message = findings(RESEARCH_PATH, page(f"It spins at {IN_FUNCTION} ({claim}).\n"))[0].message
+    # "T4" is a plan name with no meaning in the repository, and `inferred` is the level of what the code implies:
+    # a PCSX2 observation written as inferred has the wrong evidence level.
+    assert "T4" not in message and "inferred" not in message
+    assert "`coney-tools pcsx2 record-run`" in message and "confirmed (runtime), run <id>" in message
+
+
+def test_the_command_the_message_names_exists() -> None:
+    with pytest.raises(SystemExit) as stopped:
+        cli.main(["pcsx2", "record-run", "--help"])
+    assert stopped.value.code == 0
 
 
 def test_a_legacy_page_keeps_its_run_ids_while_there_are_no_run_records() -> None:
@@ -770,6 +785,12 @@ def test_a_short_form_inside_a_data_section_is_refused(short: str) -> None:
     # `.data` and `.bss` of the made-up executable: a global written without its leading zeros.
     found = findings(RESEARCH_PATH, page(sections={"Summary": f"The flag is the word at {short}.\n"}))
     assert rules_of(found) == ["address-form"] and "0x00" + short[2:] in found[0].message
+
+
+def test_a_colour_or_a_size_that_happens_to_fall_in_bss_is_refused_as_a_short_form() -> None:
+    # The two false hits the guide lists (writing-docs.md#addresses): the check cannot tell them from a global.
+    for text in ("The colour is 0x410000.\n", "The image is 0x410000 bytes in memory.\n"):
+        assert errors(page(sections={"Summary": text})) == ["address-form"]
 
 
 def test_a_flag_or_a_mask_that_lies_outside_the_data_sections_is_not_an_address() -> None:

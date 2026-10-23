@@ -320,10 +320,11 @@ paragraph will say so. The forms are checked too ([the spellings](research-workf
 there):
 
 - `confirmed (runtime)` says `, run <id>`, and the record `research/runs/<id>.toml` must exist. There is no such folder
-  yet, so a new or restructured page cannot make a runtime claim: it says `inferred from <basis>`, or `speculative`
-  with an open question, until the run-record tool arrives (the check says "run records arrive with T4"). A page in the
-  [legacy file](#legacy-pages) may keep an old runtime claim that names PCSX2 in its Verified line or in How this was
-  checked, and its run ids are not checked while the folder is missing.
+  yet, so a new or restructured page cannot make a runtime claim until the first run record is committed
+  ([Run records](research-workflow.md#run-records) says how to write one, and the check names the command). What no
+  run observed is `speculative`, with an open question. A page in the [legacy file](#legacy-pages) may keep an old
+  runtime claim that names PCSX2 in its Verified line or in How this was checked, and its run ids are not checked
+  while the folder is missing.
 - `speculative` links an open question of the page (`[q-name](#q-name)`) that exists.
 - `inferred` should say what it follows from (`inferred from the call order`): a warning when it does not.
 - A spelling that is no level is refused, and so is "probably" or "likely" in an Evidence cell.
@@ -337,7 +338,8 @@ check refuses:
 
 - the short form of a named function's entry (`0x149160`) and of a global in `.data` or `.bss` (`0x6fe998`): write
   `0x00149160` and `0x006fe998`. A field offset (`+0xb4`), a mask or a value is written short and is not an address
-  (a colour that happens to fall inside `.bss` is the one false hit: write it in decimal or as its parts);
+  (the check has two false hits: a colour value that happens to fall inside `.bss`, and a size such as the memory
+  size of the executable in `docs/research/overview.md`; write either in decimal or as its parts);
 - an address that is no function entry, no place inside a function of that listing and in no data section of the
   executable (`research/elf-sections.toml`). The end of a range (`0x00284920-0x00288000`) need only lie in the image.
   A function Ghidra has not made yet is created and named first; an address in memory the program allocates (a heap
@@ -360,8 +362,10 @@ the rules it fails and with the number of findings at the last scan. `docs check
 - ends the excuse when a change touches the page: **every touch fixes the mechanical rules page-wide and grades the
   touched section**. The front matter, the sections, the Verified line, the address forms, the addresses that resolve,
   Ghidra's names, copied paragraphs, dates, stale wording, and the spellings and run ids of the levels are errors on the
-  whole page. Only the grading of a block (an address with no level) is held to the sections (a `##` heading and what
-  is under it) that the change touches, and the page's length stays waived, both until the page's restructure;
+  whole page. Only the grading of a block is held to the sections (a `##` heading and what is under it) that the change
+  touches: an address with no level, and an old-form runtime claim (`confirmed (runtime)` with no run id, on a page
+  that does not name PCSX2). Elsewhere they stay warnings. The page's length stays waived too, both until the page's
+  restructure;
 - fails a rule the page now passes until it is removed from the file, so the file only shrinks; and
 - refuses a new page in the file. A new or restructured page meets the standard in full.
 

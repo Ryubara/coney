@@ -102,7 +102,7 @@ class Catalog:
 
     @property
     def has_records(self) -> bool:
-        """Whether the repository has a folder of run records at all (none until the run-record tool is built)."""
+        """Whether the repository has a folder of run records at all (none until the first record is committed)."""
         return self.runs is not None
 
     def has_run(self, run: str) -> bool:

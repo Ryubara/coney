@@ -53,7 +53,7 @@ def test_the_image_spans_the_sections() -> None:
 
 
 def test_a_run_exists_only_when_the_folder_has_it() -> None:
-    # No folder, no record: nothing can back a run id until the run-record tool creates research/runs/.
+    # No folder, no record: nothing can back a run id until the first run record creates research/runs/.
     assert not catalog().has_records and not catalog().has_run("anything")
     assert catalog(runs=frozenset()).has_records
     assert catalog(runs=frozenset({"r-1"})).has_run("r-1")
