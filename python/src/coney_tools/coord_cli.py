@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools coord status`: what waits for the coordinator, in one read (docs/guides/coney-tools.md#coord).
+"""`coney-tools coord status`: what waits for the coordinator, in one read (docs/guides/coney-tools-setup.md#coord).
 
 Anyone at a prompt reads the whole report; the coordinator's Tether watch runs `--ids --kind ...` as command pollers to
-wake the session when new ids appear (docs/guides/coney-tools.md#coord-wakes). The local parts are fast and never touch
-the network: the PCSX2 copies (the rows of `pcsx2 status --json`), the build slots and queues (`build status --json`),
-each worktree's last detached build (`build result`), the release queue (the `PR*.md` files in the scratch folders) and
-the tracks (each scratch folder's `STATUS.md`). `--github` adds the open issues (ids and labels, no titles), the open
-pull requests with the `repo pr-health` report, the CI queue's counts and, for the release queue, which units already
-have a pull request.
+wake the session when new ids appear (docs/guides/coney-tools-setup.md#coord-wakes). The local parts are fast and never
+touch the network: the PCSX2 copies (the rows of `pcsx2 status --json`), the build slots and queues
+(`build status --json`), each worktree's last detached build (`build result`), the release queue (the `PR*.md` files in
+the scratch folders) and the tracks (each scratch folder's `STATUS.md`). `--github` adds the open issues (ids and
+labels, no titles), the open pull requests with the `repo pr-health` report, the CI queue's counts and, for the
+release queue, which units already have a pull request.
 
 `action` lists what waits for the coordinator as stable ids: a new id is new work, and an id that leaves the list was
 dealt with. The GitHub kinds (`GITHUB_KINDS`) appear only in a `--github` read. Each section is an object with `error`

@@ -164,7 +164,7 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
 - **The installer** is a front end over one library call per step: copy the disc's files and check them against
   the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The first
   version can be a `coney-tools install` command next to `extract`. The installer study track owns the launcher
-  ([coney-tools: extract](coney-tools.md#extract) owns the names).
+  ([coney-tools: extract](coney-tools-disc.md#extract) owns the names).
 - **Name and lookup per kind**:
 
 | Kind | Order | Note |

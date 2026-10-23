@@ -343,9 +343,11 @@ def test_the_cli_takes_ids_and_kinds() -> None:
 
 
 def test_the_documented_tether_pollers_run_commands_that_parse() -> None:
-    # docs/guides/coney-tools.md#coord-wakes is the one source of the coordinator's wake settings: its commands must
-    # still be valid `coney-tools` command lines, and its issues poller must watch the triage label
-    page = (Path(__file__).resolve().parents[2] / "docs" / "guides" / "coney-tools.md").read_text(encoding="utf-8")
+    # docs/guides/coney-tools-setup.md#coord-wakes is the one source of the coordinator's wake settings: its commands
+    # must still be valid `coney-tools` command lines, and its issues poller must watch the triage label
+    page = (Path(__file__).resolve().parents[2] / "docs" / "guides" / "coney-tools-setup.md").read_text(
+        encoding="utf-8"
+    )
     section = page[page.index("{#coord-wakes}") :]
     block = section[section.index("```json") + len("```json") : section.index("```", section.index("```json") + 7)]
     pollers = json.loads(block)["watch"]["pollers"]

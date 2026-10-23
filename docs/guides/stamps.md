@@ -4,7 +4,7 @@ A unit of work carries its proof as a log of **stamps**: records, written only b
 with a result on a commit, covering exact hashes. For a function ported from the original the proof is a **study** (the
 original function saved, its lines numbered and cut into pieces) and a **pairs file** (each piece joined to the Coney
 code that does it). This page defines the formats and what each command checks. The commands are in
-[the coney-tools reference](coney-tools.md#original); the verdict a reviewer gives on the pairs is
+[the coney-tools reference](coney-tools-fidelity.md#original); the verdict a reviewer gives on the pairs is
 [Orig review](review/orig.md). The names of the commands are placeholders for a renaming pass: a name changes in one
 parser entry and in this page.
 
@@ -263,8 +263,8 @@ merge_reason = ""          # needed when lines cover more than one piece
       line); several pieces in one pair are adjacent and have a `merge_reason`;
     * **each pair complete** by its relation, as in the table above, with real Coney locations;
     * **the Coney file is committed** (the stamp is bound to the commit), and
-    * **`orig copy-check` is clean** on that file ([orig](coney-tools.md#orig)): automatic names, `undefined` types, raw
-      byte-offset reads and `goto` are refused.
+    * **`orig copy-check` is clean** on that file ([orig](coney-tools-fidelity.md#orig)): automatic names, `undefined`
+      types, raw byte-offset reads and `goto` are refused.
 3. When all of it holds it appends the `compared` stamp, covering the decompile, Ghidra's function hash, the cut, the
    pairs file's hash (line endings normalised) and the Coney function's body hash, and a count of the relations. A
    second run that changes nothing writes no stamp.

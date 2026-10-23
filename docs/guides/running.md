@@ -227,7 +227,7 @@ build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
 
 `--disc PATH` names your own copy of the game: a mounted disc (`H:\` on Windows, `/mnt/disc` on Linux), a folder
 holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO 9660 image of the disc (the same forms `coney-tools wad`
-takes, see [The coney-tools command line](coney-tools.md#naming-the-disc)). Coney reads `WARRIORS.DIR`, checks it
+takes, see [Naming the disc](coney-tools-disc.md#naming-the-disc)). Coney reads `WARRIORS.DIR`, checks it
 against `WARRIORS.WAD`, and prints how many entries it lists.
 
 With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes. First the start-up movies
@@ -613,7 +613,7 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 
 `--trace-humans FILE` (with `--play-level` or `--rumble`) writes **every** human's state after every step to `FILE`, one
 CSV row per human per step (`step`, then `human`, the human's number), in a Rumble match as well as in a level. It is
-Coney's side of the gang-battle comparison: [`coney-tools trace fight-report`](coney-tools.md#trace) turns the rows
+Coney's side of the gang-battle comparison: [`coney-tools trace fight-report`](coney-tools-pcsx2.md#trace) turns the rows
 into behaviour statistics per human and per gang and compares them with the original's recording, because the two
 games draw different random numbers and a fight cannot be compared update by update. `--trace` stays the player's
 trace for `--play-level`, and in a Rumble match (where there is no one level to trace the player of) it means
@@ -848,7 +848,7 @@ To refresh the docs' thumbnails, render with a names file holding the `name` of 
 `research/references/character-models.yaml` and `objects.yaml`, copy the named images (and the characters' hash-named
 ones, which the character models list uses) and the `cars`, `radar` and `particles` folders into
 `docs/references/images/`, run `coney-tools refs compress-images` and then `coney-tools refs extract`
-([coney-tools](coney-tools.md#refs)), which links every image that exists, in the hats and inventory lists too.
+([coney-tools](coney-tools-references.md#refs)), which links every image that exists, in the hats and inventory lists too.
 
 The images are deterministic: no clock or randomness, a fixed camera and 4x4 supersampling averaged with integer
 arithmetic, and sprites scaled with integer arithmetic, so a re-render on the same machine and driver gives

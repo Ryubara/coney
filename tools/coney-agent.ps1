@@ -4,7 +4,7 @@
 # Y can leave Claude Code running; here Ctrl+C reaches Claude Code and the session launcher ends with it.
 # Windows PowerShell 5.1 refuses scripts by default (Restricted): run `uv run --project python coney-agent` instead, or
 # allow scripts once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. PowerShell 7 runs this file as it is.
-# Parameters: docs/guides/coney-tools.md#coney-agent
+# Parameters: docs/guides/coney-tools-setup.md#coney-agent
 $project = Join-Path (Split-Path -Parent $PSScriptRoot) 'python'
 & uv run --project $project coney-agent @args
 exit $LASTEXITCODE

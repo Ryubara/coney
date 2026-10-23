@@ -5,7 +5,7 @@
 * `lua decompile [DISC] --all` writes every chunk, the guard's fingerprints and the index into the shared folder.
 
 Both take `--chunks DIR` (a folder of extracted chunks instead of the disc), `--luac PATH` and `--roundtrip`; `--all`
-also takes `--out DIR`. Guide: docs/guides/coney-tools.md#lua.
+also takes `--out DIR`. Guide: docs/guides/coney-tools-fidelity.md#lua.
 """
 
 from __future__ import annotations

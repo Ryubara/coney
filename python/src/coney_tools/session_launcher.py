@@ -7,7 +7,7 @@ command is the one way to start such a session without remembering the options: 
 holds the current folder, checks the role is one of the files in `.claude/agents/`, and runs `claude --agent <role>`
 there, adding `--plugin-dir <mod folder>` when the checkout has the Coney mod (it loads in every mode, trusted
 folder or not). Options after `--` go to `claude` unchanged. Usage and every parameter:
-docs/guides/coney-tools.md#coney-agent.
+docs/guides/coney-tools-setup.md#coney-agent.
 """
 
 from __future__ import annotations

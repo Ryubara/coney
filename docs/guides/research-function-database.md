@@ -50,7 +50,7 @@ whether to open that section. Pseudocode, decompiler output and game data never 
 
 ## What the tools check {#checks}
 
-`coney-tools research render --check` ([coney-tools](coney-tools.md#research)) runs in CI
+`coney-tools research render --check` ([coney-tools](coney-tools-fidelity.md#research)) runs in CI
 (`python`) and in the docs build, and fails on:
 
 - a file that breaks the schema above: an unknown key, a wrong type, a level, relation or status not in its list,

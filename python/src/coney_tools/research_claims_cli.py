@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """`coney-tools research claims`: the graded blocks a branch changed on the research pages, for the reviewer
-(docs/guides/coney-tools.md#research). The listing is coney_tools.research_claims."""
+(docs/guides/coney-tools-fidelity.md#research). The listing is coney_tools.research_claims."""
 
 from __future__ import annotations
 

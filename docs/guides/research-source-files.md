@@ -49,8 +49,8 @@ address. How the map is made, and what each level covers, is the source map's
 
 ## What the tools check {#checks}
 
-`coney-tools research render --check` ([coney-tools](coney-tools.md#research)) runs in CI and in the docs build and
-fails on:
+`coney-tools research render --check` ([coney-tools](coney-tools-fidelity.md#research)) runs in CI and in the docs build
+and fails on:
 
 - a file that breaks the schema above: an unknown key, a wrong type, a path outside its directory, a range that ends
   before it starts, an anchor outside the range, two files with the same path or overlapping ranges;

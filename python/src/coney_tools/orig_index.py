@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `@orig` index: every tag in `src/`, the Coney function that carries it, and what the source does not tag.
 
-`coney-tools orig index` (docs/guides/coney-tools.md#orig) builds it for the fidelity audit, which compares each
-reimplemented function with the original function at its `@orig` address in Ghidra. From the source alone it lists:
+`coney-tools orig index` (docs/guides/coney-tools-fidelity.md#orig) builds it for the fidelity audit, which compares
+each reimplemented function with the original function at its `@orig` address in Ghidra. From the source alone it lists:
 
 * every tag: the Coney file, line and function, the original's address, name and source file, and the research
   pages the function's comment links;

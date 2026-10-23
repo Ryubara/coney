@@ -10,7 +10,7 @@ standard yet is listed in the legacy file (`research_legacy`), which excuses it 
 
 Everything here is a function of the page text, so the tests use made-up pages. The heuristics are deliberately
 forgiving (they flag what is surely a gap, not what might be one); each is described where it is implemented and in
-docs/guides/coney-tools.md#docs.
+docs/guides/coney-tools-build.md#docs.
 """
 
 from __future__ import annotations

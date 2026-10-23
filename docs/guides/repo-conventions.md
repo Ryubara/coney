@@ -83,7 +83,7 @@ request template are not generated: GitHub reads them directly, and `repo audit 
 
 ## Audit checks {#audit-checks}
 
-`coney-tools repo audit` ([the command](coney-tools.md#repo-audit)) compares the repository with the file and changes
+`coney-tools repo audit` ([the command](coney-tools-repo.md#repo-audit)) compares the repository with the file and changes
 nothing. It reports in three scopes: `files` reads the checkout (CI runs it on every pull request, so a form, the
 template or a generated block cannot drift from the file), `github` reads issues, pull requests, labels, the settings
 and the ruleset through `gh`, and `local` reads the workspace. `hygiene.checks` in the file is the registry: each entry
@@ -195,7 +195,7 @@ does not.
 
 A second exception, approved on the same day: `hygiene.yml` also edits labels, and only two. On every push to `main`
 (and in the weekly sweep) it runs `coney-tools repo pr-health --labels --apply`
-([`pr-health`](coney-tools.md#repo-pr-health)), which puts `S-conflict` on each open pull request that conflicts with
+([`pr-health`](coney-tools-repo.md#repo-pr-health)), which puts `S-conflict` on each open pull request that conflicts with
 `main` and `S-failing` on each that fails a required check, and removes the label when the cause is gone, so the pull
 request list shows what is stuck without anyone running a command. A push to `main` is when GitHub's answer about
 conflicts changes. The labels and the rereads while GitHub is still working out a conflict are `hygiene.pr_health` in
@@ -208,7 +208,7 @@ push or sweep, or by running the command by hand.
 
 `hygiene.yml` is the one that comments, and it needed no approval for that: it writes the audit's findings back as
 one comment per issue or pull request, edited in place and never deleted, and a weekly report comment ([`repo
-hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read`, `issues: write`, `pull-requests: write` (a
+hygiene`](coney-tools-repo.md#repo-hygiene)). Its token has `contents: read`, `issues: write`, `pull-requests: write` (a
 comment on a pull request needs it) and read access to checks and statuses, nothing more. It runs on
 `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
 default branch and never the pull request's code, and because what a title or body says reaches a script through

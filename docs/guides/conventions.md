@@ -205,7 +205,7 @@ function to `docs/progress/functions.toml` (address, original name, subsystem an
 `uv run --project python coney-tools progress check`. Nothing generated is committed: the progress page's tables
 come from the docs build. CI fails when a tag and the file disagree. `coney-tools progress sizes --fill` finds a
 size from your own disc. Details:
-[the progress commands](coney-tools.md#progress) and [Progress](../progress/index.md).
+[the progress commands](coney-tools-references.md#progress) and [Progress](../progress/index.md).
 
 ### A complete example
 
@@ -324,7 +324,7 @@ void Lantern::tick() {
 Two checks hold the rule:
 
 - `coney-tools orig copy-check` refuses the mechanical signs in changed lines (`check changed` and CI run it,
-  [orig](coney-tools.md#orig)). A deliberate case carries `// copy-check: allow <reason>`.
+  [orig](coney-tools-fidelity.md#orig)). A deliberate case carries `// copy-check: allow <reason>`.
 - The orig-reviewer agent compares each changed `@orig` function with the original on both counts, fidelity and own
   expression, before release ([Orig review](review/orig.md)).
 
@@ -349,7 +349,7 @@ members: each carries its own. Exempt are only a member defined in its class who
 branch or lambda (an accessor, a setter, a forwarder) and a constructor or destructor with an empty body. The
 folders of `paths.coney_only` (`src/platform/`, `src/core/`, `src/fileio/`, `src/debug/`, `src/net/`, `src/sandbox/`)
 are Coney's own by nature and need no marker; every folder of `src/` is in one of the two lists.
-`coney-tools orig check` ([orig](coney-tools.md#orig)), run by `check changed` and CI, refuses a new function that
+`coney-tools orig check` ([orig](coney-tools-fidelity.md#orig)), run by `check changed` and CI, refuses a new function that
 says neither, and a new folder in neither list. The functions written before the rule are the fidelity audit's
 backlog (`orig index`); the older wording ("Coney's own", "(no @orig)") is still read as a marker on them until
 they are converted, never on a new function.

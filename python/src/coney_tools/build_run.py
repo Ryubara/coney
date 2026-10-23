@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Run configure, build and test of a checkout under the build slots, and boil their output down to a short summary
-(docs/guides/coney-tools.md#build).
+(docs/guides/coney-tools-build.md#build).
 
 A run first takes the **lock of its build folder** (build_claims.folder_lock): one run per folder at a time, from
 configure to the last test, so two runs never link the same executable or write the same files. Then it has up to two
@@ -250,7 +250,7 @@ def count_dirty_steps(output: str) -> int | None:
     "command line changed for x"), and a step dirty only because something before it ran just says "x is dirty". The
     causes are what a real build must do whatever the restat steps find: one per touched source, and a header's
     includers one each
-    (docs/guides/coney-tools.md#build)."""
+    (docs/guides/coney-tools-build.md#build)."""
     if "Re-running CMake" in output or "ninja: error" in output:
         return None
     if "no work to do" in output:
@@ -1003,7 +1003,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         if options.regex is not None:
             result.summary.append(
                 "  -R is a CMake regular expression: escape . + ( ) [ ] with a backslash, and quote the argument "
-                "(docs/guides/coney-tools.md#build)"
+                "(docs/guides/coney-tools-build.md#build)"
             )
         return _failed(result, "test", False)
     tests = TestScan()

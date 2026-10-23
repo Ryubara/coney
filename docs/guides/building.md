@@ -107,7 +107,7 @@ The compiler and those tools are on `PATH` only inside a shell with the MSVC env
 
 For a Visual Studio install, replace `BuildTools` with your edition (`Community`, `Professional` or `Enterprise`)
 and `Program Files (x86)` with `Program Files`. A person running `cmake` and `ctest` by hand runs them from that
-shell; [`coney-tools build`](coney-tools.md#build) loads the environment itself, so an agent needs no such shell.
+shell; [`coney-tools build`](coney-tools-build.md#build) loads the environment itself, so an agent needs no such shell.
 
 In Git Bash, MSYS converts arguments that look like paths: a `C:\...` argument to `sed` or `git show
 origin/main:<file>` can arrive mangled. Set `MSYS_NO_PATHCONV=1` for such a command, or write the script to a file
@@ -147,11 +147,11 @@ brew install cmake ninja
 ## Build and test
 
 Everything goes through the presets in `CMakePresets.json`. **Agents build and test only through `coney-tools build`**,
-which holds a [build slot](coney-tools.md#build) (at most two builds run on the machine at once, so six agents do not
-starve one another), configures when the build folder has no cache, builds, and with `--test` runs the tests; it
+which holds a [build slot](coney-tools-build.md#build) (at most two builds run on the machine at once, so six agents do
+not starve one another), configures when the build folder has no cache, builds, and with `--test` runs the tests; it
 prints a short summary and keeps the full output in a log. Nothing it starts outlives it: the compilers, `ctest` and
 the test executables end when the command ends or the shell that ran it goes away, and a crashed run's leftovers are
-stopped by the next build that takes its slot ([Process lifetimes](coney-tools.md#build)):
+stopped by the next build that takes its slot ([Process lifetimes](coney-tools-build.md#build)):
 
 ```sh
 uv run --project python coney-tools build --agent <your id> --preset dev --test
@@ -214,7 +214,7 @@ librw on its NULL device).
 
 Tests that check your own disc run only when the environment variable `CONEY_DISC` names the disc, are reported as
 skipped otherwise, and print counts only. `coney-tools build --test` sets it from `game_dir` in `coney.local.toml`
-when it is not already set ([`build`](coney-tools.md#build)); a raw `coney_tests` run needs it set by hand. They
+when it is not already set ([`build`](coney-tools-build.md#build)); a raw `coney_tests` run needs it set by hand. They
 carry the Catch2 tag `[disc]` and a tag for their subject (`[world]`, `[story]`, `[rumble]`, ...; `coney_tests
 --list-tags` lists them), so you can run the ones for the area you changed.
 With `CONEY_DISC` set when CMake configures, more smoke tests run `coney --disc` as well (the start-up movies, the main
@@ -226,13 +226,13 @@ CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
 
 Under `ctest` each test case is a test, and its Catch2 tags are its labels, so `-L disc` selects the disc tests (the
 hand-registered `coney.*` checks that exist only when `CONEY_DISC` is set at configure time carry the label too) and
-`-LE disc` leaves them out: `coney-tools build --agent <id> --test -L disc` ([`build`](coney-tools.md#build)). A
+`-LE disc` leaves them out: `coney-tools build --agent <id> --test -L disc` ([`build`](coney-tools-build.md#build)). A
 test case that skips without the disc but lacks the tag fails a Python test.
 
 `coney-tools build --test` runs `ctest` with `-j N` set from the cores, not from the compile's share of them, because a
 test run does not overlap its own compile: half the cores by default, `test_jobs` in `coney.local.toml` to change it
 and `-j` to override it for one run. The rule, its defaults and the cost of raising it on a shared machine are in
-[Parallelism](coney-tools.md#build).
+[Parallelism](coney-tools-build.md#build).
 
 **How long the tests take.** The suite's wall time is its total test time divided by those jobs, unless one test is
 longer than that. A loop over many items inside one test case is one ctest test, so the long disc tests register a test
@@ -478,7 +478,7 @@ that breaks a file it did not touch, is still caught within a day; whoever sees 
 `coney-tools check changed` runs that pass for you, and it is the pull request's only clang-tidy gate: the same file
 selection, clang-tidy from
 the Visual Studio LLVM folder (macOS: Homebrew's `llvm@19`) over the `build/dev` compile database, and the GCC and
-Clang warnings that MSVC does not report ([the local gate](testing.md#local-gate), [its options](coney-tools.md#check)).
+Clang warnings that MSVC does not report ([the local gate](testing.md#local-gate), [its options](coney-tools-build.md#check)).
 On Linux, where `dev` builds with GCC, configure a Clang database for it once, with the build tool (a hook refuses a
 raw `cmake`): `coney-tools build --agent <id> --configure-only --preset dev --build-dir build/tidy --env CC=clang-19
 --env CXX=clang++-19`, then pass `--build-dir build/tidy` to `check changed`.
@@ -489,7 +489,7 @@ clang-tidy costs about a minute and a gigabyte of memory per file, and a header 
 `.cpp` files, so on a machine shared by many agents the gate is held to the same rules as a build:
 
 - **Tidy slots.** `check changed` runs its clang-tidy processes only while it holds a slot of the machine's tidy lane,
-  a lane of the [build slots](coney-tools.md#build) with its own queue (`build status` lists it). `tidy_slots` of
+  a lane of the [build slots](coney-tools-build.md#build) with its own queue (`build status` lists it). `tidy_slots` of
   `coney.local.toml` sets how many gates tidy at once (default 1) and `tidy_jobs` how many clang-tidy processes each
   runs (default 0: a build slot's share of the cores, `-j` of a build); together they bound clang-tidy's share of the
   machine. Before the lane, every gate started its own processes: on 2026-10-21 eight gates ran 22 of them (about

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""How long each test took before, for the build's lane choice (docs/guides/coney-tools.md#build).
+"""How long each test took before, for the build's lane choice (docs/guides/coney-tools-build.md#build).
 
 A filtered test run that selects one or two tests is not always quick: one disc playthrough can hold a slot for half an
 hour. So the lane is chosen by the selected tests' recorded times as well as by their count (build_run.py). ctest

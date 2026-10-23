@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The fidelity audit's queue: which reimplemented functions to compare with the original first.
 
-`coney-tools orig queue` (docs/guides/coney-tools.md#orig) ranks every original function Coney tags, and every
+`coney-tools orig queue` (docs/guides/coney-tools-fidelity.md#orig) ranks every original function Coney tags, and every
 gameplay function it neither tags nor marks Coney-only, by what makes a difference from the original likely or
 costly:
 

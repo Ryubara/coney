@@ -45,7 +45,7 @@ several clients, but PCSX2's PINE serves one, and an MCP server holding it block
 client of that copy. Use `mode: "auto"` or `"pine"` only when you need PINE's own calls and nothing else uses the
 copy, and never leave the ports out: the defaults (21512, 28011) are copy `pcsx2`'s, someone else's game. An agent
 tool that starts one server per agent can run `coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's
-ports to the server as `pcsx2_connect`'s defaults ([`mcp`](coney-tools.md#mcp)); the hook still wants both ports in
+ports to the server as `pcsx2_connect`'s defaults ([`mcp`](coney-tools-setup.md#mcp)); the hook still wants both ports in
 the call, so those defaults serve a server run outside it. **A hook enforces this** ([below](#pcsx2-guard)). What the
 tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
@@ -57,7 +57,7 @@ it is the release gate on a pull request description ([The description review](h
 the description, the diff, the logs and every picture, and writes only its verdict (`REVIEW.json`) and report
 (`REVIEW.md`) next to `PR.md`. Its tools are Read, Glob, Grep, Bash and Write; its instructions keep Bash to
 read-only commands and Write to those two files. The coordinator runs it headlessly with `coney-tools repo review`
-([repo review](coney-tools.md#repo-review)), or starts it as an agent on a `PR.md`, a worktree and a base branch.
+([repo review](coney-tools-repo.md#repo-review)), or starts it as an agent on a `PR.md`, a worktree and a base branch.
 The engineer uses the Ghidra and PCSX2 MCP tools and writes `src/`. The `tooling` engineer is set to Sonnet: it builds
 the project's own tools and process (`python/`, `.github/`, `.claude/`, the Claude Code mod, build configuration and
 their guides) and does no reverse engineering. The code and research reviewers report and never
@@ -286,7 +286,7 @@ hook, and each cost a Python start-up on every shell command; now there is one, 
 
 | Event | What runs |
 | --- | --- |
-| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` for the Agent tool, `lua_guard.py` (no decompiled game Lua, [`lua`](coney-tools.md#lua)) for Write, Edit, MultiEdit and NotebookEdit; then the identity token |
+| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` for the Agent tool, `lua_guard.py` (no decompiled game Lua, [`lua`](coney-tools-fidelity.md#lua)) for Write, Edit, MultiEdit and NotebookEdit; then the identity token |
 | `PostToolUse` | `trailer_guard.py` after a `git commit`; the command's identity file is removed |
 | `PostToolUseFailure`, `PermissionDenied` | The command's identity file is removed (a failing build or a denied command would leave it for its ten minutes) |
 | `SessionStart` | The notice about a session with no role, or about settings that could not be read |
@@ -378,7 +378,7 @@ coordinator`, plus `--plugin-dir` for the Coney mod when the checkout has it (th
 folder or not). Run it as `uv run --project python coney-agent`, or put `tools/` on `PATH` for `coney-agent` (the
 `.ps1` wrapper in PowerShell, the `.cmd` one for `cmd.exe`, an `sh` one elsewhere). It is not the player-facing
 launcher of the game. Every parameter, and what Windows PowerShell 5.1 needs first:
-[`coney-agent`](coney-tools.md#coney-agent).
+[`coney-agent`](coney-tools-setup.md#coney-agent).
 
 ## Commit trailers {#trailer-guard}
 
@@ -388,7 +388,7 @@ that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent tw
 Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
 each other. **Two checks stand against it.** A git `commit-msg` hook, installed by `uvx pre-commit install` (the
 `commit-message` hook of `.pre-commit-config.yaml`, which runs [`coney-tools pr
-check-commit`](coney-tools.md#pr-check-commit)), refuses the message before the commit exists, for everyone, with or
+check-commit`](coney-tools-repo.md#pr-check-commit)), refuses the message before the commit exists, for everyone, with or
 without Claude Code: only `Co-Authored-By` trailers, no other e-mail address, and, when the commit runs in a Claude
 Code session (its [identity](#identity) file names the model), a trailer naming that model. The hook below stays
 beside it until the git hook has run for real: it reads the model from the transcript, so it still catches the
@@ -434,8 +434,8 @@ vendor, a commit it cannot find), and a person committing outside Claude Code ne
 ## Builds and tests {#builds}
 
 Six agents compiling at once leave every one of them waiting, so builds share the machine through claims, the way
-PCSX2 copies do ([`build`](coney-tools.md#build)). An agent never runs `cmake --build`, `cmake --preset`, `ctest` or
-`ninja` itself (a hook refuses them); it runs, from its worktree:
+PCSX2 copies do ([`build`](coney-tools-build.md#build)). An agent never runs `cmake --build`, `cmake --preset`,
+`ctest` or `ninja` itself (a hook refuses them); it runs, from its worktree:
 
 ```sh
 uv run --project python coney-tools build --agent <id> --preset dev --test [-R <regex>] [-L <label>]
@@ -448,7 +448,7 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   tests, takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the
   whole suite; the first build in a fresh worktree and a full test run are the big jobs. `-L disc` runs only the tests
   that need the game's disc. `-R` is a CMake regular expression: escape `.` `+` `(` `)` with a backslash and quote it
-  with single quotes ([Choosing tests](coney-tools.md#build)).
+  with single quotes ([Choosing tests](coney-tools-build.md#build)).
 - **A play build is `--target coney`.** It builds the executable and what it links, not the tests; it cannot be
   combined with `--test`. Every build goes through the shared [compiler cache](building.md#compiler-cache), so the
   first build of a fresh worktree takes most of its objects from builds other worktrees already ran, and its summary
@@ -469,7 +469,7 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   also stops the `ctest` or `cmake` it left running; `build release --agent <id>` cleans up by hand.
 - **A build never outlives its agent.** Its children end with the command, and the command stops when the shell that
   started it is gone (a restart of the agent tool, a killed background shell), so a run never needs killing by hand
-  ([Process lifetimes](coney-tools.md#build)). Never stop `ctest` or a test executable yourself: stop the
+  ([Process lifetimes](coney-tools-build.md#build)). Never stop `ctest` or a test executable yourself: stop the
   `coney-tools build` command, and everything under it goes with it.
 - The coordinator sets the number of slots for the machine with `build_slots` in `coney.local.toml`
   ([Local workspace](workspace.md#local-config)) and does not stagger builds by hand any more.
@@ -515,10 +515,10 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   in the background, apart from your shell, and returns at once. It may wait as long as it needs (default 240 minutes,
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
-  ([`build result`](coney-tools.md#build)).
+  ([`build result`](coney-tools-build.md#build)).
 - The local gate's clang-tidy waits in the same way, for a slot of the tidy lane: at most 40 minutes in a call you
   wait on, then exit 75. `coney-tools check changed --detach` runs the whole gate in the background; whoever continues
-  runs `coney-tools check result` in the worktree ([`check`](coney-tools.md#check)).
+  runs `coney-tools check result` in the worktree ([`check`](coney-tools-build.md#check)).
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools orig ...`: the `@orig` index and the fidelity audit's queue (docs/guides/coney-tools.md#orig)."""
+"""`coney-tools orig`: the `@orig` index and the fidelity audit's queue (docs/guides/coney-tools-fidelity.md#orig)."""
 
 from __future__ import annotations
 

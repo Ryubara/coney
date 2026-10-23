@@ -128,7 +128,7 @@ paraphrased away on the page and a reviewer can read the numbers the claim rests
 | `run` | The recipe or scenario and its arguments, or the method in words |
 | `values`, `addresses`, `hashes` | What was read: numbers by name, the addresses of the original the run names, and the SHA-256 of a file the run made (a trace's CSV, which stays in scratch) |
 
-Three commands write one ([`pcsx2` in coney-tools](coney-tools.md#pcsx2)):
+Three commands write one ([`pcsx2` in coney-tools](coney-tools-pcsx2.md#pcsx2)):
 
 - `coney-tools pcsx2 recipe run NAME --record --state ID ...` after a good [recipe](pcsx2-recipes.md) run: the numbers
   the recipe showed and its arguments.
@@ -150,7 +150,7 @@ a value or the who shows when it is read; that catches an edit, not someone who 
 which is why the reviewer reads the values against the claim. A run is not a stamp: the record in the pull request is
 the proof, with no `observed` step in [the stamp log](stamps.md) (maintainer decision, 2026-10-23).
 
-Commit the record with the page that cites it. `coney-tools research claims` ([research](coney-tools.md#research))
+Commit the record with the page that cites it. `coney-tools research claims` ([research](coney-tools-fidelity.md#research))
 lists every graded block a branch changed and fails on a runtime claim whose record is missing or breaks a rule; the
 reviewer checks that the record's values support the claim's number and scenario. A runtime claim written before run
 records keeps its level when a change only touches it, with a warning; a new runtime claim needs a record.
@@ -203,7 +203,7 @@ per name: the masterlist of the game's script bindings (what FiveM calls natives
 script mods. There is one file per category, named by the category's id (the ids are in `coney_tools/natives.py`), so
 an entry has no `category` key; moving a binding to another category means moving its entry to that file.
 `coney-tools natives render` checks the files and generates the reference pages in `docs/references/bindings/` from
-them; the pages are never edited by hand, and CI runs `natives render --check` ([coney-tools](coney-tools.md#natives)).
+them; the pages are never edited by hand, and CI runs `natives render --check` ([coney-tools](coney-tools-references.md#natives)).
 An entry of `level.yaml`:
 
 ```yaml
@@ -240,7 +240,7 @@ An entry of `level.yaml`:
   (`coney-tools natives missions` sets it from the disc).
 - `coney` is never edited by hand: `coney-tools natives coney` sets it from Coney's binding table
   (`src/scripting/script_bindings.cpp`), writing the key only when it is not the default
-  ([coney-tools](coney-tools.md#natives)).
+  ([coney-tools](coney-tools-references.md#natives)).
 - `depth: mechanical` (signature only, no description) is accepted so a new entry can land before it is described;
   the masterlist has none.
 
@@ -284,7 +284,7 @@ entries:
   `coney-tools refs extract` rewrites the first kind and keeps the second, and keeps entries it did not produce,
   so a hand-added entry or a name found another way survives a refresh.
 
-Commands ([coney-tools](coney-tools.md#refs)):
+Commands ([coney-tools](coney-tools-references.md#refs)):
 
 ```sh
 uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]   # refresh from your disc
@@ -340,8 +340,8 @@ research starts from the decompiled scripts**, then goes to Ghidra for the nativ
 happen:
 
 1. Decompile every script once into the shared folder, `uv run --project python coney-tools lua decompile --all`
-   (`<workspace>/scratch/lua`, the same copy for every worktree; [`lua`](coney-tools.md#lua)). Rerun it only when the
-   decompiler changes.
+   (`<workspace>/scratch/lua`, the same copy for every worktree; [`lua`](coney-tools-fidelity.md#lua)). Rerun it only
+   when the decompiler changes.
 2. Open `index.md` there: per script, its functions with the natives each calls and the handlers it registers
    (messages, callbacks, updates, scheduled calls, trigger spheres). Find the level's script and the function that does
    what you are after, then read that function in `<name>.lua`. Local names are made up (`l1`, `p1`): the chunks keep
@@ -354,9 +354,9 @@ shared folder. A research page says in our own words what a script does and cite
 (`level99.lua`, `Setup`, the native and its arguments where they matter), as for code read in Ghidra
 ([Writing up a finding](#writing-up-a-finding)). A guard refuses a decompiled file, or three of any five lines of one
 (quoted, in a list or table, or commented out alike), in the repository, in pre-commit and before every file write an
-agent makes ([The guard](coney-tools.md#lua)). A single quoted line passes, and a whole listing is still wrong when the
-guard cannot see it: a decompile you did not fingerprint, a paraphrase line by line. The same holds for an issue or a
-pull request description, which no guard checks.
+agent makes ([The guard](coney-tools-fidelity.md#lua)). A single quoted line passes, and a whole listing is still
+wrong when the guard cannot see it: a decompile you did not fingerprint, a paraphrase line by line. The same holds for
+an issue or a pull request description, which no guard checks.
 
 ## Tools
 
@@ -511,7 +511,7 @@ of the `load-checkpoint` recipe's slow reload.
   `recordings push | pull` moves them (with the savestate,
   SHA-256 checked) to and from the shared scratch folder's `recordings/`, where they are kept like any capture. `pcsx2
   record --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same input
-  ([`pcsx2`](coney-tools.md#pcsx2)). A recording is game data: never committed.
+  ([`pcsx2`](coney-tools-pcsx2.md#pcsx2)). A recording is game data: never committed.
 - **States across versions.** The copies keep the states their stock PCSX2 2.9.94 saved in `sstates/`, but PCSX2
   2.9.129 may refuse them (a state is tied to the version that saved it). The maintainer's slots 1 to 10 are in the
   [state library](pcsx2-states.md), saved by 2.9.94, and the 2.9.129 fork loaded the two tried (2026-10-21); a state
@@ -812,7 +812,7 @@ fight-report --original ... --coney ...` computes rates, shares and distribution
 [Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics) (attacks, blocks, reactions and
 target changes per standing minute, goal shares and fight goals, fighters on one enemy and active places, waiting
 distances, help, each side's tactic, the match's length and winner) and flags each metric where Coney is outside the
-original's spread ([coney-tools](coney-tools.md#trace)). Give one `--original` and one `--coney` per orientation (which
+original's spread ([coney-tools](coney-tools-pcsx2.md#trace)). Give one `--original` and one `--coney` per orientation (which
 gang is side 1), as the gangs and the sides each change the numbers. Keep the recordings in the scratch folder, never
 in the repository. Match the original's set-up on Coney's side: where the recording hands player 1 to the AI after
 the countdown, run Coney with `--ai-player`, and give each Coney match its own `--ai-seed`
