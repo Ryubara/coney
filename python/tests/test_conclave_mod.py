@@ -11,7 +11,17 @@ import re
 from pathlib import Path
 
 import pytest
-from conclave_boundary import CODE, EVENTS, MOD, TETHER_EVENTS, engine_types, mod_sources, run_check, unavailable
+from conclave_boundary import (
+    CODE,
+    EVENTS,
+    MOD,
+    TETHER_EVENTS,
+    cannot_run,
+    engine_types,
+    mod_sources,
+    run_check,
+    unavailable,
+)
 
 Verdict = dict[str, dict[str, dict[str, list[str]]]]
 
@@ -611,10 +621,10 @@ def verdicts() -> Verdict:
 
 @pytest.fixture
 def verdict() -> Verdict:
-    """The check's answer, or a skip naming what is missing (Node, TypeScript or the engine's types)."""
+    """The check's answer; where it cannot run, a skip naming what is missing, and under CI a failure naming it."""
     reason = unavailable()
     if reason is not None:
-        pytest.skip(reason)
+        cannot_run(reason)
     return verdicts()
 
 
@@ -643,6 +653,20 @@ def test_the_stub_stands_in_where_the_engines_types_are_not_written(
     assert engine_types() == "stub"
     monkeypatch.setattr("conclave_boundary.ENGINE_TYPES", stub)
     assert engine_types() == "engine"
+
+
+def test_under_ci_a_check_that_cannot_run_fails_instead_of_skipping(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A skip cannot be told apart from a pass in a pull request's required checks, so under CI (GitHub sets `CI`) a
+    # missing Node, TypeScript or description of the engine is a red check; on a machine without them it skips.
+    monkeypatch.setenv("CI", "true")
+    with pytest.raises(pytest.fail.Exception, match=r"needs Node[.]js"):
+        cannot_run("needs Node.js")
+    monkeypatch.setenv("CI", "")
+    with pytest.raises(pytest.skip.Exception, match=r"needs Node[.]js"):
+        cannot_run("needs Node.js")
+    monkeypatch.delenv("CI")
+    with pytest.raises(pytest.skip.Exception, match=r"needs Node[.]js"):
+        cannot_run("needs Node.js")
 
 
 def test_the_mod_has_sources() -> None:

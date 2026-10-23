@@ -16,6 +16,7 @@ from conclave_boundary import (
     API_PROPERTIES,
     ENGINE_STUB,
     ENGINE_TYPES,
+    cannot_run,
     describe_types,
     mod_sources,
     run_check,
@@ -38,14 +39,17 @@ def imported_names() -> list[str]:
 
 
 def need(*, engine: bool) -> None:
-    """Skips unless the stub (and, with `engine`, the generated types) and Node and TypeScript are present."""
-    if not ENGINE_STUB.is_file():
-        pytest.skip("the stub is not in the repository yet (python/tests/conclave_engine_stub.d.ts)")
+    """Ends the test unless the stub (and, with `engine`, the generated types) and Node and TypeScript are present.
+
+    The comparison with the generated types skips when they are absent, as they always are in CI; a missing stub,
+    Node or TypeScript is a failure under CI, like the check itself."""
     if engine and not ENGINE_TYPES.is_file():
         pytest.skip("needs the engine's generated types, which only a session that loads the mod writes")
+    if not ENGINE_STUB.is_file():
+        cannot_run("the stub is not in the repository yet (python/tests/conclave_engine_stub.d.ts)")
     reason = unavailable()
     if reason is not None:
-        pytest.skip(reason)
+        cannot_run(reason)
 
 
 def test_the_stub_names_what_the_mod_imports() -> None:

@@ -14,8 +14,9 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
+import pytest
 from conventions_support import REPO
 
 MOD = REPO / "tools" / "claude-mod"
@@ -189,6 +190,16 @@ def typescript_module() -> Path | None:
     )
     found = done.stdout.strip()
     return Path(found) if done.returncode == 0 and found else None
+
+
+def cannot_run(reason: str) -> NoReturn:
+    """Ends a test whose check cannot run here: a failure under CI (the `CI` variable GitHub sets), a skip elsewhere.
+
+    A skip cannot be told apart from a pass among a pull request's required checks, and this check is the only
+    enforcement of the boundary to Tether, so CI must never pass without it."""
+    if os.environ.get("CI"):
+        pytest.fail(reason, pytrace=False)
+    pytest.skip(reason)
 
 
 def engine_types() -> str | None:
