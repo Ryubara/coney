@@ -20,6 +20,11 @@ dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "types-pyyaml>=6"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Two packages: coney_tools, and lua4, the self-contained Lua 4.0 decompiler (docs/research/formats/lua-bytecode.md),
+# which imports nothing from coney_tools so it can move to a repository of its own.
+[tool.hatch.build.targets.wheel]
+packages = ["src/coney_tools", "src/lua4"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
