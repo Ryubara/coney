@@ -331,6 +331,12 @@ def test_links_in_a_group_page_are_relative_to_its_folder() -> None:
     assert "[guides/testing.md#gamepad](../testing.md#gamepad)" in page
 
 
+@pytest.mark.parametrize("group", ["Index", "index!", "!!!", "  "])
+def test_a_group_whose_page_name_is_empty_or_the_index_is_refused(group: str) -> None:
+    with pytest.raises(recipes.RecipeError, match="page name"):
+        recipes_render.render(book_of(("a", group)))
+
+
 def test_two_groups_with_the_same_page_name_are_refused() -> None:
     with pytest.raises(recipes.RecipeError, match="same page"):
         recipes_render.render(book_of(("a", "The crew"), ("b", "The  crew!")))
@@ -346,18 +352,26 @@ def test_every_recipe_is_an_anchor_of_the_index_and_of_its_group_page() -> None:
 
 
 def test_every_citation_of_a_recipe_anchor_resolves() -> None:
-    """A link to `pcsx2-recipes.md#name` or a group page's `#name` names an anchor that page has."""
+    """A link to the index with a recipe's name as the anchor, or to a group page's anchor, names one that page has."""
     pages = recipes_render.render(recipes.load(ROOT))
     anchors = {name: set(re.findall(r"\{#([\w-]+)\}", text)) for name, text in pages.items()}
     cite = re.compile(r"pcsx2-recipes(?:/([a-z0-9-]+))?\.md#([\w-]+)")
-    for path in sorted((ROOT / "docs").rglob("*.md")):
-        if path.relative_to(ROOT).as_posix() in pages:
-            continue
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            for match in cite.finditer(line):
-                target = f"docs/guides/pcsx2-recipes/{match[1]}.md" if match[1] else "docs/guides/pcsx2-recipes.md"
-                where = f"{path.relative_to(ROOT).as_posix()}:{number}"
-                assert match[2] in anchors.get(target, set()), f"{where} cites {match[0]}, which does not exist"
+    suffixes = {".md", ".py", ".toml", ".yml", ".yaml", ".json", ".cpp", ".h", ".hpp", ".sh", ".txt"}
+    skipped = {"python/tests/test_recipes.py"}  # made-up names in the tests above
+    cited = 0
+    for folder in ("docs", "python", "src", "research", ".claude", ".github"):
+        for path in sorted((ROOT / folder).rglob("*")):
+            name = path.relative_to(ROOT).as_posix()
+            skip = path.suffix not in suffixes or name in pages or name in skipped or "__pycache__" in path.parts
+            if skip or ".venv" in path.parts or not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for number, line in enumerate(text.splitlines(), 1):
+                for match in cite.finditer(line):
+                    cited += 1
+                    target = f"docs/guides/pcsx2-recipes/{match[1]}.md" if match[1] else "docs/guides/pcsx2-recipes.md"
+                    assert match[2] in anchors.get(target, set()), f"{name}:{number} cites {match[0]}: no such anchor"
+    assert cited >= 8  # the guides and research pages that cite a recipe
 
 
 def test_every_recipe_page_is_in_the_navigation() -> None:
@@ -373,23 +387,44 @@ def test_links_from_guides() -> None:
     assert recipes_render.link("docs/guides/testing.md#gamepad", "../") == "../testing.md#gamepad"
 
 
-def test_render_writes_the_pages_and_removes_one_that_no_group_makes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
+def recipe_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A made-up checkout holding the real recipe file and patches, with the current directory in it."""
     (tmp_path / "research").mkdir()
     shutil.copy(ROOT / "research" / "pcsx2-recipes.toml", tmp_path / "research" / "pcsx2-recipes.toml")
     shutil.copytree(ROOT / recipes.PATCHES_DIR, tmp_path / recipes.PATCHES_DIR)
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
-    stale = tmp_path / recipes_render.PAGES_DIR / "gone.md"
-    stale.parent.mkdir(parents=True)
-    stale.write_text("old\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def test_render_writes_the_pages_and_removes_one_that_no_group_makes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = recipe_checkout(tmp_path, monkeypatch)
+    stale = root / recipes_render.PAGES_DIR / "gone.md"
+    stale.parent.mkdir(parents=True)
+    stale.write_text(f"# Gone\n\n{recipes_render.GENERATED}\n", encoding="utf-8")
     assert recipes_render.run_render(check_only=True) == 1
-    assert "docs/guides/pcsx2-recipes.md" in capsys.readouterr().err and stale.exists()
+    err = capsys.readouterr().err
+    assert "docs/guides/pcsx2-recipes.md" in err and "pcsx2-recipes/gone.md" in err and stale.exists()
     assert recipes_render.run_render(check_only=False) == 0
+    assert capsys.readouterr().out == "10 page(s) written, 1 removed; 10 in all\n"
     assert not stale.exists()
-    assert read_pages_in(tmp_path) == recipes_render.render(recipes.load(tmp_path))
+    assert read_pages_in(root) == recipes_render.render(recipes.load(root))
     assert recipes_render.run_render(check_only=True) == 0
+    assert capsys.readouterr().out == "0 page(s) stale; 10 in all\n"
+
+
+def test_render_never_deletes_a_page_it_did_not_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = recipe_checkout(tmp_path, monkeypatch)
+    mine = root / recipes_render.PAGES_DIR / "hand-written.md"
+    mine.parent.mkdir(parents=True)
+    mine.write_text("# Written by a person\n", encoding="utf-8")
+    for check_only in (True, False):
+        assert recipes_render.run_render(check_only) == 1
+        assert "hand-written.md" in capsys.readouterr().err and mine.read_text(encoding="utf-8").startswith("# Written")
 
 
 # --- arguments --------------------------------------------------------------------------------------------------------

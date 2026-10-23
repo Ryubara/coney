@@ -4,7 +4,7 @@
 # docs/guides/pcsx2-recipes/ from it (CI runs `--check`).
 # Schema: python/src/coney_tools/recipes.py. Names, addresses and our own descriptions only: no game data
 # (LEGAL.md). A recipe lands only once it has been run in PCSX2 (confirmed_runtime). Found a new technique? Add it
-# here, run it, and render the page.
+# here, run it, and render the pages.
 
 groups = [
   "Finding humans",
@@ -53,7 +53,7 @@ arguments.
 
 **Input: prefer recordings.** For runtime evidence that depends on input, drive the original with a PCSX2 input
 recording (`pcsx2 record --recording`, [Input recordings](research-tools.md#input-recordings)): it replays the
-same pad frame by frame. The `scripted-pad` recipes below are for closed-loop drivers that decide each input from
+same pad frame by frame. The `scripted-pad` recipes are for closed-loop drivers that decide each input from
 what the game shows, which a recording cannot do.
 """
 

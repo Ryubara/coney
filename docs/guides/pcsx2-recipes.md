@@ -34,8 +34,8 @@ script uses it; [the script bindings](../references/bindings/index.md) list them
 
 **Input: prefer recordings.** For runtime evidence that depends on input, drive the original with a PCSX2 input
 recording (`pcsx2 record --recording`, [Input recordings](research-tools.md#input-recordings)): it replays the same pad
-frame by frame. The `scripted-pad` recipes below are for closed-loop drivers that decide each input from what the game
-shows, which a recording cannot do.
+frame by frame. The `scripted-pad` recipes are for closed-loop drivers that decide each input from what the game shows,
+which a recording cannot do.
 
 ## Finding humans
 

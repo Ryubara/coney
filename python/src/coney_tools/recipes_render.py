@@ -195,7 +195,8 @@ def _index(book: recipes.RecipeBook, members: dict[str, list[recipes.Recipe]]) -
     """The index page: the intro, then each group's recipes with their summaries, linked to the group's page.
 
     Each recipe's link carries the recipe's anchor too (an attribute list on the link), so a link to
-    `pcsx2-recipes.md#name`, written before the pages were split, still lands on the recipe, a click from its page."""
+    the index with a recipe's name as its anchor, written before the pages were split, still lands on the recipe, a
+    click from its page."""
     out = ["# PCSX2 recipes", "", GENERATED, ""]
     out += _wrap(book.intro)
     out.append("")
@@ -215,7 +216,11 @@ def render(book: recipes.RecipeBook) -> dict[str, str]:
     members = _members(book)
     pages = {PAGE.as_posix(): _index(book, members)}
     for group, recipes_of_group in members.items():
-        path = (PAGES_DIR / f"{group_slug(group)}.md").as_posix()
+        slug = group_slug(group)
+        if slug in ("", "index"):
+            # An empty name has no page, and `index` would be the URL of the index page's folder.
+            raise recipes.RecipeError(f"group {group!r} has no usable page name (got {slug!r}): rename the group")
+        path = (PAGES_DIR / f"{slug}.md").as_posix()
         if path in pages:
             raise recipes.RecipeError(f"groups {group!r} and another make the same page, {path}")
         pages[path] = _group_page(group, recipes_of_group)
@@ -242,31 +247,54 @@ def recipe_text(recipe: recipes.Recipe) -> list[str]:
     return out
 
 
+def _is_generated(path: Path) -> bool:
+    """Whether the page at `path` carries the marker this renderer writes (a person's page does not)."""
+    return GENERATED in path.read_text(encoding="utf-8", errors="replace")
+
+
 def run_render(check_only: bool) -> int:
-    """Write the pages (removing a group page no group makes), or with `check_only` report the stale ones, return 1."""
+    """Write the pages (removing a group page no group makes), or with `check_only` report the stale ones, return 1.
+
+    A page in the folder that this renderer did not write is never deleted: it is reported and the exit code is 1."""
     root = find_repo_root(Path.cwd())
+    # Step 1: the pages the recipe file asks for.
     wanted = render(recipes.load(root))
-    stale = [path.relative_to(root).as_posix() for path in sorted((root / PAGES_DIR).glob("*.md"))]
-    stale = [name for name in stale if name not in wanted]
-    removed = list(stale)
-    if not check_only:
-        for name in removed:
-            (root / name).unlink()
+    # Step 2: what the folder holds that no group makes: ours (stale, to remove) or someone's own (an error).
+    removed: list[str] = []
+    foreign: list[str] = []
+    for path in sorted((root / PAGES_DIR).glob("*.md")):
+        name = path.relative_to(root).as_posix()
+        if name in wanted:
+            continue
+        (removed if _is_generated(path) else foreign).append(name)
+    # Step 3: the pages that are missing or differ.
+    changed = []
     for name, text in wanted.items():
         path = root / name
         current = path.read_bytes().decode("utf-8").replace("\r\n", "\n") if path.is_file() else None
         if current != text:
-            stale.append(name)
-            if not check_only:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(text.encode("utf-8"))
-    if check_only and stale:
+            changed.append(name)
+    # Step 4: write, or only report.
+    if not check_only:
+        for name in removed:
+            (root / name).unlink()
+        for name in changed:
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(wanted[name].encode("utf-8"))
+    for name in foreign:
+        print(f"coney-tools: {name} is in the generated folder but was not generated: move it", file=sys.stderr)
+    if check_only and (changed or removed):
         print(
             "coney-tools: out of date with research/pcsx2-recipes.toml (`coney-tools pcsx2 recipe render`):",
             file=sys.stderr,
         )
-        for name in stale:
+        for name in [*changed, *removed]:
             print(f"  {name}", file=sys.stderr)
         return 1
-    print(f"{len(stale)} page(s) {'stale' if check_only else 'written'}; {len(wanted)} in all")
-    return 0
+    if check_only:
+        print(f"0 page(s) stale; {len(wanted)} in all")
+    else:
+        gone = f", {len(removed)} removed" if removed else ""
+        print(f"{len(changed)} page(s) written{gone}; {len(wanted)} in all")
+    return 1 if foreign else 0

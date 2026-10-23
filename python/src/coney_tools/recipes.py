@@ -11,7 +11,7 @@ docs/guides/pcsx2-recipes/) from the same file.
 ```toml
 [recipe.teleport]
 summary = "Move a human to x, y, z and turn it to a heading."
-how = "Prose for the page: the technique and why it works."
+how = "Prose for the recipe's section: the technique and why it works."
 research = ["docs/research/characters.md#the-human-object"]
 ghidra = ["0x00390180 Handle_Resolve"]
 evidence = "confirmed-runtime"
@@ -148,7 +148,7 @@ class Recipe:
 
 @dataclass
 class RecipeBook:
-    """Every recipe, in file order, and the groups the page shows them under."""
+    """Every recipe, in file order, and the groups the pages show them under."""
 
     recipes: dict[str, Recipe] = field(default_factory=dict)
     groups: tuple[str, ...] = ()
