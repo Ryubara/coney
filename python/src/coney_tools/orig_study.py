@@ -66,6 +66,7 @@ class Study:
     def covers(self) -> dict[str, str]:
         """The hashes a `studied` stamp covers."""
         return {
+            "identity_sha256": _identity_hash(self.name, self.program, self.signature),
             "decompile_sha256": self.decompile_sha256,
             "ghidra_function_hash": self.ghidra_function_hash,
             "shape_sha256": self.shape_sha256,
@@ -94,6 +95,14 @@ class StudyResult:
 def _addresses_hash(items: list[dict[str, Any]]) -> str:
     """The hash of the sorted addresses of a list of Ghidra entries (names are left out: renames must not change it)."""
     return stamps.sha256_hex("\n".join(sorted(str(item.get("address", "")) for item in items)).encode("utf-8"))
+
+
+def _identity_hash(name: str, program: str, signature: str) -> str:
+    """The hash of what `study.json` records about the function besides the text: its name, program and signature.
+
+    The stamp covers it so a re-cut can check those three fields, which sit in an editable file, like every other hash.
+    """
+    return stamps.sha256_hex(json.dumps([name, program, signature]).encode("utf-8"))
 
 
 def _json_bytes(value: object) -> bytes:
@@ -330,7 +339,8 @@ def study(
         except OSError as error:
             raise StudyError(f"{address}: nothing saved to re-cut ({error})") from error
         # study.json sits beside decompile.c and can be edited with it, so the hashes are checked against the newest
-        # `studied` stamp in the verified log instead: a re-cut may change the cut, never what Ghidra gave.
+        # `studied` stamp in the verified log instead: a re-cut may change the cut, never what Ghidra gave (the text,
+        # the function's hash, the lists, and its name, program and signature).
         last = report.latest("studied", address)
         if last is None or last.result != "pass":
             raise StudyError(
@@ -338,6 +348,9 @@ def study(
                 f"fetch it from Ghidra with `original study {address}`"
             )
         bound = {
+            "identity_sha256": _identity_hash(
+                str(meta.get("name")), str(meta.get("program")), str(meta.get("signature"))
+            ),
             "decompile_sha256": stamps.sha256_hex(saved),
             "ghidra_function_hash": meta.get("ghidra_function_hash"),
             "callers_sha256": _addresses_hash(_read_json(folder / "callers.json")),

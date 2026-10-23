@@ -220,10 +220,11 @@ def _marker(unit: Unit) -> Path:
 
 
 def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
-    """Every name must be a whole quoted test name (`TEST_CASE("<name>")`) in a test file the test commit adds or
-    changes: a typo, or only part of a longer name, would run nothing."""
+    """Every name must be a whole test name (`TEST_CASE("<name>"`, then `)` or `,` for tags) in a test file the test
+    commit adds or changes: a typo, only part of a longer name, or a SECTION's name or any other quoted string would
+    run nothing under ctest."""
     text = "".join(_git(root, "show", f"{commit}:{path}") for path in test_files)
-    missing = [name for name in names if f'"{name}"' not in text]
+    missing = [name for name in names if not re.search(rf'TEST_CASE\s*\(\s*"{re.escape(name)}"\s*[,)]', text)]
     if missing:
         where = ", ".join(test_files)
         raise FailsFirstError(f"{', '.join(missing)}: not found in the test files of {commit[:12]} ({where})")

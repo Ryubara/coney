@@ -365,6 +365,29 @@ def test_a_name_must_match_a_whole_test_name_not_part_of_one(repo: Repo) -> None
     assert repo.seen == []
 
 
+def test_a_section_name_is_not_a_test_name(repo: Repo) -> None:
+    # Only TEST_CASE("NAME" counts: a SECTION, a string in a CHECK or a comment is no test ctest could run.
+    (repo.root / "tests" / "widget_test.cpp").write_text(
+        'TEST_CASE("Widget ready frame") {\n  SECTION("Only a section") {}\n  CHECK(name == "A quoted string");\n}\n',
+        encoding="utf-8",
+    )
+    git(repo.root, "commit", "-q", "-am", "sections")
+    sections = git(repo.root, "rev-parse", "HEAD").strip()
+    for name in ("Only a section", "A quoted string"):
+        with pytest.raises(FailsFirstError, match=f"{name}:"):
+            fails_first._check_names(repo.root, sections, ["tests/widget_test.cpp"], (name,))
+    fails_first._check_names(repo.root, sections, ["tests/widget_test.cpp"], ("Widget ready frame",))
+
+
+def test_a_test_case_with_tags_or_spacing_still_matches(repo: Repo) -> None:
+    (repo.root / "tests" / "widget_test.cpp").write_text(
+        'TEST_CASE( "Widget tagged" , "[widget]") {}\nTEST_CASE("Widget plain") {}\n', encoding="utf-8"
+    )
+    git(repo.root, "commit", "-q", "-am", "tags")
+    tagged = git(repo.root, "rev-parse", "HEAD").strip()
+    fails_first._check_names(repo.root, tagged, ["tests/widget_test.cpp"], ("Widget tagged", "Widget plain"))
+
+
 def test_the_stamps_of_a_multi_name_run_are_written_all_or_none(repo: Repo) -> None:
     first, second = two_tests(repo)
 

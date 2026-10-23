@@ -116,6 +116,18 @@ def test_a_release_check_wants_signed_steps_signed(checkout: Path, capsys: pytes
     assert main(["stamp", "verify", "--dir", str(checkout / "nowhere")]) == 0
 
 
+def test_stamp_task_and_dir_are_independent_options(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["original", "study", ADDRESS]) == 0
+    capsys.readouterr()
+    folder = str(log(checkout))
+    assert main(["stamp", "verify", "--dir", folder]) == 0  # --dir alone: the log's task is not checked
+    assert main(["stamp", "verify", "--task", "main", "--dir", folder]) == 0  # both: the log must be that task's
+    assert main(["stamp", "show", "--task", "main", "--dir", folder]) == 0
+    capsys.readouterr()
+    assert main(["stamp", "verify", "--task", "other", "--dir", folder]) == 1  # another task's log fails
+    assert "other" in capsys.readouterr().out
+
+
 def test_fails_first_needs_arguments_or_none(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["original", "fails-first"]) == 2
     assert main(["original", "fails-first", "--none", "docs only"]) == 0

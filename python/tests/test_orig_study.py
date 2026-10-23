@@ -344,6 +344,45 @@ def test_recut_refuses_a_decompile_and_study_json_edited_together(tmp_path: Path
     assert len(stamp_list(tmp_path)) == before
 
 
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [("name", "Widget_Renamed"), ("signature", "int f(long a)"), ("program", "SLES_999.99")],
+)
+def test_recut_refuses_an_edited_name_signature_or_program(tmp_path: Path, key: str, value: str) -> None:
+    run(tmp_path, FakeGhidra())
+    meta_path = tmp_path / "t" / "study" / ADDRESS / "study.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta[key] = value  # study.json is not what the stamp covers: the decompile beside it is untouched
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+    before = len(stamp_list(tmp_path))
+    with pytest.raises(StudyError, match="identity_sha256"):
+        run(tmp_path, None)
+    assert len(stamp_list(tmp_path)) == before
+    assert json.loads(meta_path.read_text(encoding="utf-8"))[key] == value  # nothing was saved back
+
+
+def test_recut_of_an_unedited_study_keeps_the_identity(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    again = run(tmp_path, None)
+    assert not again.stamped
+    assert (again.study.name, again.study.program, again.study.signature) == ("Widget_Update", "SLUS_212.15", "int f()")
+
+
+def test_a_renamed_function_is_restamped_with_its_new_identity(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+
+    class Renamed(FakeGhidra):
+        def __call__(self, path: str) -> Any:
+            if urlparse(path).path == "/get_function_by_address":
+                return {"name": "Widget_Tick", "entry_point": self.start, "signature": "int f()"}
+            return super().__call__(path)
+
+    result = run(tmp_path, Renamed())
+    assert result.stamped
+    first, second = stamp_list(tmp_path)
+    assert first.covers["identity_sha256"] != second.covers["identity_sha256"]
+
+
 def test_recut_needs_a_studied_stamp(tmp_path: Path) -> None:
     run(tmp_path, FakeGhidra())
     for segment in (tmp_path / "t" / "stamps").iterdir():

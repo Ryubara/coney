@@ -469,13 +469,13 @@ Every option:
 | all four | `--task T` | The task whose scratch folder and stamp log are used (default: `CONEY_TASK`, else the branch) |
 | `study`, `verify`, `compare` | `ADDR` | The original function's entry point, such as `0x00230d00` (another address is refused, naming the start) |
 | `study`, `verify` | `--url URL` | The ghidra-mcp server (default `http://127.0.0.1:8090`) |
-| `study` | `--recut` | Cut the saved decompile again without Ghidra; refused unless the saved files match the newest `studied` stamp |
+| `study` | `--recut` | Cut the saved decompile again without Ghidra; refused unless the saved files and the function's name, program and signature match the newest `studied` stamp |
 | `study` | `--print` | Also print the numbered decompile |
 | `compare` | `--base REF` | What the copy check measures the Coney change from (default `origin/main`) |
 | `compare` | `--coney-function KEY` | Which Coney function to compare, when several carry `@orig ADDR` |
 | `compare` | `--carry` | Bring the pairs forward onto a changed or renamed study |
 | `compare` | `--show` | Print the side-by-side view |
-| `fails-first` | `--test NAME` | An exact test name, a whole `TEST_CASE` name in the test commit's files (repeatable) |
+| `fails-first` | `--test NAME` | A whole test name, found as `TEST_CASE("NAME"` in the test commit's files (a `SECTION` name or any other quoted string is refused; repeatable) |
 | `fails-first` | `--test-commit SHA` | The commit that adds the test, and only the stubs it needs to compile |
 | `fails-first` | `--fix-commit SHA` | The commit that makes it pass (default `HEAD`) |
 | `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
@@ -485,8 +485,8 @@ Every option:
 ## stamp {#stamp}
 
 ```sh
-uv run --project python coney-tools stamp verify [--task T | --dir LOG] [--release] [--signers FILE | --signers-ref REF]
-uv run --project python coney-tools stamp show [--task T | --dir LOG]
+uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE | --signers-ref REF]
+uv run --project python coney-tools stamp show [--task T] [--dir LOG]
 ```
 
 `verify` checks a stamp log's chain, every field and every signature that is present, against
@@ -497,7 +497,7 @@ writers ([Stamps](stamps.md#log)).
 | Command | Option | What it does |
 | --- | --- | --- |
 | both | `--task T` | The task whose log is read (default: `CONEY_TASK`, else the branch); a log of another task fails |
-| both | `--dir LOG` | Read this log folder instead; without `--task` the task is not checked |
+| both | `--dir LOG` | Read this log folder instead of the task's. Independent of `--task`: alone, the log's task is not checked; with `--task T`, the log must be task T's |
 | `verify` | `--release` | A release check, which `pr open` and CI will run: a signed step without a signature, or a missing or empty log, fails |
 | `verify` | `--signers FILE` | The allowed-signers file (default: the working tree's `.github/stamp-signers`) |
 | `verify` | `--signers-ref REF` | Read the signers file and the stamp rules from commit REF, not the working tree ([the trust anchor](stamps.md#signing)); CI will pass the pull request's base. Not with `--signers` |
