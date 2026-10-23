@@ -224,6 +224,11 @@ hand-registered `coney.*` checks that exist only when `CONEY_DISC` is set at con
 `-LE disc` leaves them out: `coney-tools build --agent <id> --test -L disc` ([`build`](coney-tools.md#build)). A
 test case that skips without the disc but lacks the tag fails a Python test.
 
+`coney-tools build --test` runs `ctest` with `-j N` set from the cores, not from the compile's share of them, because a
+test run does not overlap its own compile: half the cores by default, `test_jobs` in `coney.local.toml` to change it
+and `-j` to override it for one run. The rule, its defaults and the cost of raising it on a shared machine are in
+[Parallelism](coney-tools.md#build).
+
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
 

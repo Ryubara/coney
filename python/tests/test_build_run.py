@@ -24,6 +24,7 @@ from coney_tools.build_run import (
     count_dirty_steps,
     execute,
     jobs_for,
+    parallel_tests_for,
     parse_environment,
 )
 from coney_tools.test_costs import COST_DATA, TestCosts
@@ -282,6 +283,25 @@ def test_jobs_share_the_cores_between_the_slots(
     assert jobs_for(slots, cpus, override) == expected
 
 
+@pytest.mark.parametrize(
+    ("cpus", "slots", "override", "configured", "expected"),
+    [
+        (16, 2, None, 0, 8),  # half the cores, which is also the share of two slots
+        (16, 5, None, 0, 8),  # five slots would give 3, but the tests may take half the cores
+        (4, 2, None, 0, 2),
+        (1, 2, None, 0, 1),
+        (None, 5, None, 0, 1),
+        (16, 5, None, 12, 12),  # coney.local.toml's test_jobs
+        (16, 5, None, 4, 4),  # ... also below the default
+        (16, 5, 3, 12, 3),  # -j beats test_jobs
+    ],
+)
+def test_the_tests_take_half_the_cores_unless_test_jobs_or_j_say_otherwise(
+    cpus: int | None, slots: int, override: int | None, configured: int, expected: int
+) -> None:
+    assert parallel_tests_for(slots, cpus, override, configured) == expected
+
+
 def test_vcvars_environment_text_is_parsed() -> None:
     text = (
         "Path=C:\\\\VS\\\\bin;C:\\\\Windows\n=C:=C:\\\\work\nINCLUDE=C:\\\\VS\\\\include\nnot a variable line\nEMPTY=\n"
@@ -484,6 +504,8 @@ class Run:
         #: it was.
         self.configured_now: bool | None = None
         self.on_sleep: list[Callable[[], None]] = []
+        #: The context's `test_jobs` (coney.local.toml): the parallel tests when no -j is given; 0: the build's share.
+        self.test_jobs = 0
 
     def clock(self) -> float:
         return self.now
@@ -517,6 +539,7 @@ class Run:
             history=self.history,
             test_costs=self.test_costs,
             fast_test_seconds=self.fast_test_seconds,
+            test_jobs=self.test_jobs,
         )
         return execute(self.options, context)
 
@@ -721,6 +744,22 @@ def test_the_commands_carry_the_preset_the_job_count_and_the_filter(tmp_path: Pa
     ]
 
 
+def test_the_tests_run_on_test_jobs_while_the_build_keeps_the_cores_share(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, regex="core", preset="ci", configure=True)
+    run.test_jobs = 12
+    run.go()
+    assert ["cmake", "--build", "--preset", "ci", "-j", "8"] in run.toolchain.commands
+    assert ["ctest", "--preset", "ci", "-j", "12", "-R", "core"] in run.toolchain.commands
+
+
+def test_an_explicit_job_count_beats_test_jobs_for_the_tests_too(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, regex="core", preset="ci", configure=True, jobs=3)
+    run.test_jobs = 12
+    run.go()
+    assert ["cmake", "--build", "--preset", "ci", "-j", "3"] in run.toolchain.commands
+    assert ["ctest", "--preset", "ci", "-j", "3", "-R", "core"] in run.toolchain.commands
+
+
 def test_an_explicit_job_count_replaces_the_default(tmp_path: Path) -> None:
     run = Run(tmp_path, jobs=3)
     run.toolchain.output["ninja"] = (0, "[1/90] x\n")
@@ -785,7 +824,7 @@ The following tests did not run:
 
 def test_the_scan_counts_the_tests_that_skipped_apart_from_those_that_passed() -> None:
     scan = scan_tests(SKIPPING_CTEST)
-    assert (scan.total, scan.skipped, scan.failed_count) == (4, 2, 0)
+    assert (scan.total, scan.passed, scan.skipped, scan.failed_count) == (4, 2, 2, 0)
     assert scan_tests("1/1 Test #1: a ... Passed 0.1 sec\n100% tests passed, 0 tests failed out of 1\n").skipped == 0
 
 
@@ -794,7 +833,7 @@ def test_the_test_line_counts_the_skipped_tests_so_a_skipping_run_does_not_look_
     run.toolchain.output["test"] = (0, SKIPPING_CTEST)
     result = run.go()
     assert result.ok
-    assert any("4 passed, 0 failed of 4, 2 skipped" in line for line in result.summary)
+    assert any("2 passed, 0 failed of 4, 2 skipped" in line for line in result.summary)
 
 
 def test_a_run_without_skips_does_not_mention_them(tmp_path: Path) -> None:
