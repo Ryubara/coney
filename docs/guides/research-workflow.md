@@ -252,6 +252,30 @@ Approved after play-testing it against the original, listing what was off under 
 fix moves it back to Pending. A research finding that changes what a mission needs goes on the research page, which
 the entry links.
 
+## The game's scripts {#scripts}
+
+A level's missions, objectives, spawns, hints and checkpoints are decided by its Lua scripts, so **level and mission
+research starts from the decompiled scripts**, then goes to Ghidra for the natives they call and to PCSX2 to watch it
+happen:
+
+1. Decompile every script once into the shared folder, `uv run --project python coney-tools lua decompile --all`
+   (`<workspace>/scratch/lua`, the same copy for every worktree; [`lua`](coney-tools.md#lua)). Rerun it only when the
+   decompiler changes.
+2. Open `index.md` there: per script, its functions with the natives each calls and the handlers it registers
+   (messages, callbacks, updates, scheduled calls, trigger spheres). Find the level's script and the function that does
+   what you are after, then read that function in `<name>.lua`. Local names are made up (`l1`, `p1`): the chunks keep
+   none ([Lua 4.0 bytecode](../research/formats/lua-bytecode.md#what-cannot-come-back)).
+3. Look up each native the function calls in the [script bindings](../references/bindings/index.md) and, where they say
+   too little, at its address in Ghidra.
+
+**Describe, never paste.** A decompile is game script text ([LEGAL.md](repo:LEGAL.md#no-game-data)): it stays in the
+shared folder. A research page says in our own words what a script does and cites it by script and function
+(`level99.lua`, `Setup`, the native and its arguments where they matter), as for code read in Ghidra
+([Writing up a finding](#writing-up-a-finding)). A guard refuses a decompiled file, or three consecutive lines of one,
+in the repository, in pre-commit and before every file write an agent makes ([The guard](coney-tools.md#lua)); a
+single quoted line passes, and a whole listing is still wrong when the guard cannot see it (a decompile you did not
+fingerprint, a paraphrase line by line). The same holds for an issue or a pull request description.
+
 ## Tools
 
 - **Ghidra with ghidra-mcp.** Static analysis of `SLUS_212.15`, with the Emotion Engine processor extension; the

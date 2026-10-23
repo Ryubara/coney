@@ -24,7 +24,8 @@ from dataclasses import dataclass, field
 #: Every compiled chunk on the disc starts with these 13 bytes (Lua 4.0, little-endian, 4/4/4-byte sizes, 32-bit
 #: instructions with a 6-bit opcode and a 9-bit B field, 8-byte numbers).
 HEADER = bytes.fromhex("1b4c7561400104040420060908")
-#: This build's `LFIELDS_PER_FLUSH` (stock Lua 4.0 uses 64): a `SETLIST` with A = n stores from item n * 62 + 1.
+#: Lua 4.0.1's `LFIELDS_PER_FLUSH`, 64 capped at MAXSTACK / 4 = 62 in its `llimits.h` (stock, not a change in the
+#: game's build): a `SETLIST` with A = n stores from item n * 62 + 1.
 FIELDS_PER_FLUSH = 62
 _MAXARG_S = ((1 << 26) - 1) >> 1
 _MULTRET = 255

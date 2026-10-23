@@ -2,7 +2,9 @@
 """The optional downloads of `coney-tools workspace init --fetch`: the research tools at pinned versions.
 
 Every tool comes from its own project's GitHub releases (or, for ghidra-mcp and PCSX2-MCP, its repository at a fixed
-commit) and every archive is checked against the SHA-256 written here before it is unpacked. PCSX2 itself is not
+commit; for Lua, its authors' own site) and every archive is checked against the SHA-256 written here before it is
+unpacked. Lua 4.0.1's `luac` is built here from its C source with the machine's compiler (`lua decompile --roundtrip`
+compiles the decompiler's output with it). PCSX2 itself is not
 fetched: Coney's copies run the PCSX2-MCP fork's own build, which is made from that repository by hand and spread
 over the copies by `coney-tools pcsx2 setup-copies`. Nothing here fetches firmware or game files: the player supplies
 their own disc, and PCSX2's BIOS is dumped from their own console (LEGAL.md). See docs/guides/workspace.md#bootstrap.
@@ -11,6 +13,7 @@ their own disc, and PCSX2's BIOS is dumped from their own console (LEGAL.md). Se
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import shutil
 import subprocess
@@ -30,13 +33,15 @@ from coney_tools.config import ConfigError
 PLATFORMS: tuple[str, ...] = ("windows", "linux", "macos")
 
 #: The tools `--fetch` accepts, in the order they are fetched.
-TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "pcsx2-mcp-release", "ccache")
+TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "pcsx2-mcp-release", "ccache", "lua")
 
 #: The tools installed as a git clone at a pinned commit rather than from a release archive.
 CLONED: frozenset[str] = frozenset({"ghidra-mcp", "pcsx2-mcp"})
 
 #: Downloads `url` to the file given.
 Downloader = Callable[[str, Path], None]
+#: Builds Lua's `luac` from the source folder into the bin folder on a platform (`build_luac`).
+LuaBuilder = Callable[[Path, Path, str], None]
 
 
 @dataclass(frozen=True)
@@ -119,6 +124,16 @@ PCSX2_MCP_RELEASE = Pin(
     "98cee4215f928d4e6148ad955a78454ef70b9a6850ab64cee657f5e2edc69a11",
 )
 
+#: Lua 4.0.1, the version the game's scripts were compiled with (docs/research/formats/lua-bytecode.md): its C source,
+#: from which `luac` is built on every platform (no package manager has a Lua this old). Only the source is unpacked.
+LUA_VERSION = "4.0.1"
+LUA = Pin(
+    "Lua (source, luac built from it)",
+    LUA_VERSION,
+    f"https://www.lua.org/ftp/lua-{LUA_VERSION}.tar.gz",
+    "df746e149cf6939e90009d2e540eee918d585b4d1bc6d68b19316a050d484d2a",
+)
+
 #: The pins of each tool for a platform (none: the platform's package manager installs it).
 PINS: dict[str, Callable[[str], list[Pin]]] = {
     "ghidra": lambda platform: [GHIDRA, GHIDRA_EE],
@@ -126,6 +141,7 @@ PINS: dict[str, Callable[[str], list[Pin]]] = {
     "pcsx2-mcp": lambda platform: [PCSX2_MCP],
     "pcsx2-mcp-release": lambda platform: [PCSX2_MCP_RELEASE] if platform == "windows" else [],
     "ccache": lambda platform: [CCACHE_WINDOWS] if platform == "windows" else [],
+    "lua": lambda platform: [LUA],
 }
 
 #: Where each tool goes, relative to the workspace (docs/guides/workspace.md#the-layout), and so what
@@ -136,6 +152,7 @@ _DESTINATIONS = {
     "pcsx2-mcp": "tools/pcsx2-mcp",
     "pcsx2-mcp-release": f"tools/PCSX2-MCP-v{PCSX2_MCP_RELEASE_VERSION}-win64",
     "ccache": f"tools/ccache-{CCACHE_VERSION}",
+    "lua": f"tools/lua-{LUA_VERSION}",
 }
 
 
@@ -246,20 +263,32 @@ def _clone(pin: Pin, dest: Path) -> None:
 
 
 def fetch_tool(
-    tool: str, dest: Path, platform: str, cache: Path, download: Downloader, pins: Sequence[Pin] | None = None
+    tool: str,
+    dest: Path,
+    platform: str,
+    cache: Path,
+    download: Downloader,
+    pins: Sequence[Pin] | None = None,
+    build_lua: LuaBuilder | None = None,
 ) -> None:
-    """Install `tool` into `dest` (which must not exist yet) from its pins (`PINS` unless given).
+    """Install `tool` into `dest` (which must not exist yet) from its pins (`PINS` unless given); Lua's `luac` is
+    built with `build_lua` (`build_luac` unless given).
 
     `dest` appears whole or not at all: `init` skips a tool whose folder exists, so a half-installed one (Ghidra
-    without its extension) would never be repaired. Every file is downloaded and checked before anything is
-    unpacked, the tool is built in a hidden folder beside `dest`, and that folder is renamed to `dest` at the end.
+    without its extension, Lua's source without its `luac`) would never be repaired. Every file is downloaded and
+    checked before anything is unpacked, the tool is built in a hidden folder beside `dest`, and that folder is
+    renamed to `dest` at the end.
     """
     pins = list(pins) if pins is not None else PINS[tool](platform)
     files = [] if tool in CLONED else [fetch_file(pin, cache, download) for pin in pins]
     dest.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=dest.parent, prefix=f".{dest.name}-", ignore_cleanup_errors=True) as temp:
         staging = Path(temp) / dest.name
-        _install(tool, pins, files, staging, platform)
+        if tool == "lua":
+            unpack_lua_source(files[0], staging / "source")
+            (build_lua or build_luac)(staging / "source", staging / "bin", platform)
+        else:
+            _install(tool, pins, files, staging, platform)
         move_into_place(staging, dest)
 
 
@@ -306,6 +335,90 @@ def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, 
         unpack(files[0], dest)  # the release's one folder is stripped: dest/ccache.exe
         return
     raise ConfigError(f"unknown tool {tool!r} on {platform}")
+
+
+#: The parts of Lua's source archive `luac` is built from (below its top folder): the core, luac and the licence.
+LUA_KEPT = ("src/", "include/", "COPYRIGHT")
+
+
+def unpack_lua_source(archive: Path, dest: Path) -> None:
+    """Unpack the regular files of LUA_KEPT from Lua's source archive into the new folder `dest`. The archive also
+    holds symbolic links that point outside it (`bin/lua -> ../test/lua`), which Windows cannot make without special
+    rights and which `luac` does not need, so links and every other kind of entry are skipped."""
+    dest.mkdir(parents=True)
+    with tarfile.open(archive) as tarred:
+        for member in tarred.getmembers():
+            inner = member.name.partition("/")[2]
+            if not member.isfile() or not inner.startswith(LUA_KEPT) or ".." in Path(inner).parts:
+                continue
+            target = dest / inner
+            target.parent.mkdir(parents=True, exist_ok=True)
+            source = tarred.extractfile(member)
+            if source is not None:
+                target.write_bytes(source.read())
+
+
+#: One step of the `luac` build: the command and the folder it runs in.
+BuildStep = tuple[list[str], Path]
+
+
+def lua_build_commands(source: Path, bin_dir: Path, obj: Path, platform: str) -> list[BuildStep]:
+    """The commands that build `luac` from Lua 4.0.1's `source` into `bin_dir`, with the objects in `obj`: the core
+    (`src/*.c`) into a static library, then luac's own files (`src/luac/*.c`) linked against it. Linking every object
+    directly fails, as `stubs.c` defines functions the core's `lundump.c` defines too, and a library gives only what
+    is still missing. The standard libraries (`src/lib/`) and the interpreter are not needed.
+
+    MSVC on Windows (`cl`, `lib`), `cc` and `ar` elsewhere; the code is read as C89 (`-std=gnu89`), since newer
+    compilers refuse its implicit declarations in their default mode."""
+    core = [str(path) for path in sorted((source / "src").glob("*.c"))]
+    luac = [str(path) for path in sorted((source / "src" / "luac").glob("*.c"))]
+    includes = [str(source / "include"), str(source / "src")]
+    luac_obj = obj / "luac"
+    if platform == "windows":
+        flags = ["/nologo", "/O2", "/W1", "/DNDEBUG", *(f"/I{folder}" for folder in includes)]
+        library = obj / "lua.lib"
+        objects = [str(obj / (Path(name).stem + ".obj")) for name in core]
+        return [
+            (["cl", *flags, "/c", f"/Fo{obj}{os.sep}", *core], obj),
+            (["lib", "/nologo", f"/out:{library}", *objects], obj),
+            (["cl", *flags, f"/Fo{luac_obj}{os.sep}", *luac, str(library), f"/Fe:{bin_dir / 'luac.exe'}"], luac_obj),
+        ]
+    flags = ["-std=gnu89", "-O2", "-w", "-DNDEBUG", *(f"-I{folder}" for folder in includes)]
+    library = obj / "liblua.a"
+    objects = [str(obj / (Path(name).stem + ".o")) for name in core]
+    return [
+        (["cc", *flags, "-c", *core], obj),
+        (["ar", "rcs", str(library), *objects], obj),
+        (["cc", *flags, *luac, str(library), "-lm", "-o", str(bin_dir / "luac")], luac_obj),
+    ]
+
+
+def build_luac(source: Path, bin_dir: Path, platform: str) -> None:
+    """Build `luac` from Lua's `source` into `bin_dir` (`lua_build_commands`), with the objects in a folder beside
+    the source that is removed afterwards. On Windows the Visual Studio C++ environment is loaded as `coney-tools
+    build` loads it. Raises ConfigError, with the compiler's last lines, when a step fails."""
+    from coney_tools import build_run  # the MSVC environment; build_run is large and only this step needs it
+
+    obj = source.parent / "obj"
+    env = build_run.load_msvc_environment(os.environ, build_run.run_text) if platform == "windows" else dict(os.environ)
+    hint = "Visual Studio's C++ tools" if platform == "windows" else "a C compiler (cc) and ar"
+    try:
+        for command, folder in lua_build_commands(source, bin_dir, obj, platform):
+            folder.mkdir(parents=True, exist_ok=True)
+            bin_dir.mkdir(parents=True, exist_ok=True)
+            # Windows looks a program up on this process's PATH, not the one given, so find it on the loaded one.
+            program = shutil.which(command[0], path=build_run.env_get(env, "PATH")) or command[0]
+            try:
+                done = subprocess.run(
+                    [program, *command[1:]], cwd=folder, env=env, capture_output=True, text=True, check=False
+                )
+            except OSError as error:
+                raise ConfigError(f"{command[0]}: cannot run ({error}); building luac needs {hint}") from error
+            if done.returncode != 0:
+                tail = "\n".join((done.stdout + done.stderr).strip().splitlines()[-15:])
+                raise ConfigError(f"building luac failed at `{command[0]}` (exit {done.returncode}):\n{tail}")
+    finally:
+        shutil.rmtree(obj, ignore_errors=True)
 
 
 def describe(tool: str, platform: str) -> str:

@@ -281,7 +281,7 @@ class Writer:
         if func.error is not None:
             self.level += 1
             self.start()
-            self.write(f"-- coney-tools could not decompile this function: {func.error}")
+            self.write(f"-- lua4 could not decompile this function: {func.error}")
             self.level -= 1
         else:
             self.block(func.body, func.end_line, 0)
@@ -486,7 +486,7 @@ def render(main: Function) -> str:
     """The source of a whole chunk (its main function's body)."""
     writer = Writer()
     if main.error is not None:
-        writer.write(f"-- coney-tools could not decompile the main chunk: {main.error}")
+        writer.write(f"-- lua4 could not decompile the main chunk: {main.error}")
     for index, stmt in enumerate(main.body):
         writer.statement(stmt, first_line(main.body[index + 1]) if index + 1 < len(main.body) else 0)
     return writer.text()

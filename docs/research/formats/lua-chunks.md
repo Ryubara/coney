@@ -2,12 +2,14 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the NTSC-U disc's
 `WARRIORS.WAD`. This page documents the container only, never the scripts' contents ([LEGAL.md](repo:LEGAL.md)).
+The instructions inside, and how Coney's decompiler reads them back, are on [Lua 4.0 bytecode](lua-bytecode.md).
 
 ## Purpose
 
 The game's 467 scripts ship as Lua 4.0 bytecode, the output of `luac`, in WAD entries named `<name>.lua`. What they
 do and how the game runs them is on [Scripting](../scripting.md); this page is the file layout an extractor or a
-loader needs. `coney-tools extract` writes the chunks as stored (`scripts/`), never decompiled.
+loader needs. `coney-tools extract` writes the chunks as stored (`scripts/`); `coney-tools lua decompile` turns them
+into readable Lua outside the repository, for research ([coney-tools](../../guides/coney-tools.md#lua)).
 
 ## Original structure
 
@@ -45,13 +47,13 @@ Confirmed (code) at `0x00333380` for every check. **Disc check:** all 467 Lua en
 Repeated for the main function and, recursively, every nested one (stock Lua 4.0):
 
 ```text
-string  source            "=(none)" on the disc (the chunk names were stripped)
-int     lineDefined
+string  source            "=(none)" on the disc (what `luac -s` writes)
+int     lineDefined       kept on the disc
 int     numParams
 u8      isVararg
 int     maxStackSize
-int     n; n x {string name, int startPc, int endPc}    local variables (debug)
-int     n; n x int                                      line info (debug)
+int     n; n x {string name, int startPc, int endPc}    local variables (debug): n is 0 on the disc
+int     n; n x int                                      line info (debug): n is 0 on the disc
 int     n; n x string                                   string constants
 int     n; n x f64                                      number constants
 int     n; n x prototype                                nested functions
@@ -61,8 +63,13 @@ int     n; n x u32                                      instructions (the last i
 A string is a `size_t` length that counts its final NUL (0 for none), then the bytes. **Disc check:** all 467 chunks
 parse to exactly their entry's size with this layout ([python/src/coney_tools/lua4.py](repo:python/src/coney_tools/lua4.py)).
 
-One difference from stock Lua 4.0 matters to a VM, not to the container: table constructors flush every 62 items, not
-64 ([Scripting](../scripting.md)).
+**Every chunk is stripped** (`luac -s`): in all 11,448 functions the local-variable and line-info counts are 0 and the
+source is `=(none)`; only `lineDefined` is kept. So no chunk names its locals or gives a statement's line. Disc check
+with `coney-tools lua decompile --all`; what that means for a decompile is on
+[Lua 4.0 bytecode](lua-bytecode.md#what-a-chunk-keeps-and-what-stripping-removes).
+
+Table constructors flush every 62 items. That is stock Lua 4.0.1 (`LFIELDS_PER_FLUSH`, 64 capped at a quarter of
+`MAXSTACK`), not a change in the game's build ([Lua 4.0 bytecode](lua-bytecode.md#limits)).
 
 ## Behaviour
 
@@ -71,7 +78,8 @@ One difference from stock Lua 4.0 matters to a VM, not to the container: table c
 ## Coney's implementation
 
 Coney's VM loads the same bytecode (`src/scripting/`); `coney-tools` reads it for the reference lists
-(`lua4.py`) and copies it for the extracted folder.
+(`lua4.py`), copies it for the extracted folder and decompiles it for research (`lua decompile`, the `lua4` package:
+[Lua 4.0 bytecode](lua-bytecode.md)).
 
 ## Open questions
 

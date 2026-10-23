@@ -205,6 +205,7 @@ nav:
           - Audio data: research/formats/audio.md
           - RenderWare streams: research/formats/renderware.md
           - Compiled Lua chunks: research/formats/lua-chunks.md
+          - Lua 4.0 bytecode: research/formats/lua-bytecode.md
           - Global lists: research/formats/global-lists.md
           - Memory card icon: research/formats/memory-card-icon.md
       - Xbox assets (optional): research/xbox-assets.md

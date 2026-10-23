@@ -7,7 +7,7 @@ line of its first instruction (from the chunk's line table), so the renderer can
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, is_dataclass
 
 # --- expressions --------------------------------------------------------------------------------------------------
 
@@ -250,3 +250,27 @@ class Return(Stmt):
 @dataclass(eq=False)
 class Break(Stmt):
     """`break`."""
+
+
+# --- walking ------------------------------------------------------------------------------------------------------
+
+
+def _children(node: object) -> list[object]:
+    """The nodes, lists and tuples held in a node's fields (a list or tuple: its items)."""
+    if isinstance(node, list | tuple):
+        return list(node)
+    if is_dataclass(node) and not isinstance(node, type):
+        return [getattr(node, item.name) for item in fields(node)]
+    return []
+
+
+def failures(function: Function) -> list[str]:
+    """The reason each function in the tree under `function` (itself included) could not be read, depth first."""
+    found: list[str] = []
+    pending: list[object] = [function]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, Function) and node.error is not None:
+            found.append(node.error)
+        pending.extend(reversed([child for child in _children(node) if isinstance(child, Expr | Stmt | list | tuple)]))
+    return found

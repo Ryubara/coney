@@ -801,8 +801,9 @@ workspace:
   # virtual environments and git data hold hundreds of thousands of files and none came from the original.
   scratch_skip_folders: [CMakeFiles, _deps, .gradle, build, venv, .venv, site-packages, .git, node_modules]
   # Scratch folders that are the workspace's own, not a branch's (the emulator's files, the saved states, the PCSX2
-  # claims, the downloads, the preview builds): the scratch check never reports them.
-  shared_scratch: [pcsx2, pcsx2-states, pcsx2-claims, downloads, preview, public-preview, presentation, orig-review, orig-sweep]
+  # claims, the downloads, the preview builds, the decompiled scripts `lua decompile --all` shares): the scratch check
+  # never reports them.
+  shared_scratch: [pcsx2, pcsx2-states, pcsx2-claims, downloads, preview, public-preview, presentation, orig-review, orig-sweep, lua]
   # In-game video clips for issues and pull requests (`coney-tools clips`; docs/guides/testing.md#clips): they live
   # only in scratch/<task>/<folder>/, are at most max_seconds long, warn past warn_mb and are deleted once uploaded
   # or after keep_hours. Coney's own cap, kMaxClipSeconds in src/core/clip_recording.h, must equal max_seconds (a

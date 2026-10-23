@@ -258,6 +258,16 @@ def test_unreadable_function_is_reported_not_raised() -> None:
     function = decompile_function(proto)
     assert function.error is not None
     assert "could not decompile" in lua4.render(function)
+    assert "coney" not in lua4.render(function).lower()  # the package knows nothing of the program using it
+
+
+def test_failures_lists_every_unreadable_function_at_any_depth() -> None:
+    """`failures` walks the tree: a nested function the reader gave up on is found, with its path and reason."""
+    proto = lua4.load((FIXTURES / "closures.s.luac").read_bytes())
+    assert lua4.failures(decompile_function(proto)) == []
+    proto.protos[0].code[:] = [_s(Op.JMPF, 0), _u(Op.END)]
+    found = lua4.failures(decompile_function(proto))
+    assert len(found) == 1 and found[0].startswith("pc ")
 
 
 # --- comparison -------------------------------------------------------------------------------------------------

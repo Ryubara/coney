@@ -28,6 +28,8 @@ PATH_KEYS: tuple[str, ...] = (
     "pcsx2_mcp_dir",
     "ffmpeg_dir",
     "stamp_key",
+    "luac_program",
+    "lua_dir",
 )
 
 #: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at

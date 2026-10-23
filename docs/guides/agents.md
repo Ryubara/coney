@@ -286,12 +286,13 @@ hook, and each cost a Python start-up on every shell command; now there is one, 
 
 | Event | What runs |
 | --- | --- |
-| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` for the Agent tool; then the identity token |
+| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` for the Agent tool, `lua_guard.py` (no decompiled game Lua, [`lua`](coney-tools.md#lua)) for Write, Edit, MultiEdit and NotebookEdit; then the identity token |
 | `PostToolUse` | `trailer_guard.py` after a `git commit`; the command's identity file is removed |
 | `PostToolUseFailure`, `PermissionDenied` | The command's identity file is removed (a failing build or a denied command would leave it for its ten minutes) |
 | `SessionStart` | The notice about a session with no role, or about settings that could not be read |
 
-Of the eight guard scripts, five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
+Of the nine guard scripts, `lua_guard.py` was written for the dispatcher (its file mode is the pre-commit hook
+`no-decompiled-lua`), and five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
 `bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is unchanged but the dispatcher starts it
 only for a real `git commit`; `pr_guard.py` (once `release_guard.py`) and `agent_guard.py` run as before and have a
 rule more each (the `refuse_pr_create` switch, the role check). The dispatcher gives a guard's `main()` the hook input
