@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -38,6 +39,7 @@
 #include "platform/render_engine.h"
 #include "scripting/config_strings.h"
 #include "scripting/script_system.h"
+#include "support/each_case.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -163,28 +165,38 @@ HubRun playHub(const coney::io::Wad& wad, int checkpoint, std::optional<int> cha
     return run;
 }
 
-} // namespace
+// The checkpoints level95's scripts define, each played as a test case of its own so that ctest runs them in parallel
+// (docs/guides/testing.md#one-test-per-item).
+constexpr std::array<int, 12> kCheckpoints{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
-TEST_CASE("the disc's level95 plays each checkpoint without a script error, player 1 walking", "[disc][story][hub]") {
+// One checkpoint of level95 played with player 1 walking: it loads, runs without a script error and he walks.
+void playHubCheckpoint(int checkpoint) {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    // The checkpoints level95's scripts define.
-    constexpr int kCheckpoints = 12;
-    for (int checkpoint = 1; checkpoint <= kCheckpoints; ++checkpoint) {
-        INFO("checkpoint " << checkpoint);
-        const HubRun run = playHub(*wad, checkpoint);
-        REQUIRE(run.loaded);
-        CHECK(run.scriptErrors == 0);
-        CHECK(run.standing);
-        CHECK(run.travelled > 1.0F);
-        std::printf("  level95 checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
-                    "walked\n",
-                    checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
-                    run.travelled);
-    }
+    INFO("checkpoint " << checkpoint);
+    const HubRun run = playHub(*wad, checkpoint);
+    REQUIRE(run.loaded);
+    CHECK(run.scriptErrors == 0);
+    CHECK(run.standing);
+    CHECK(run.travelled > 1.0F);
+    std::printf("  level95 checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
+                "walked\n",
+                checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
+                run.travelled);
 }
+
+// A test case per checkpoint.
+[[maybe_unused]] const bool kHubRegistered = coney::test::registerEach(
+    kCheckpoints, "[disc][story][hub]",
+    [](int checkpoint) {
+        return std::format("the disc's level95 plays checkpoint {} without a script error, player 1 walking",
+                           checkpoint);
+    },
+    [](int checkpoint) { playHubCheckpoint(checkpoint); });
+
+} // namespace
 
 TEST_CASE("Change character works in level95, whose scripts hold the player", "[disc][story][hub][debug]") {
     std::optional<coney::io::Wad> wad = openDisc();

@@ -59,6 +59,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "support/each_case.h"
 #include "support/live_pad.h"
 #include "warriors/created_humans.h"
 #include "world/sector_budget.h"
@@ -275,40 +276,64 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     return run;
 }
 
-} // namespace
+// A story mission's level and one of its checkpoints.
+struct MissionCheckpoint {
+    std::string_view level;
+    int checkpoint;
+};
 
-TEST_CASE("the disc's story missions 2, 3, 5 and 6 play each checkpoint without a script error", "[disc][story]") {
+// One checkpoint of a story mission played with the pad at rest and then walking: no script error, and he stands and
+// walks.
+void playMissionCheckpoint(const MissionCheckpoint& mission) {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    // Each level and its checkpoints (docs/references/level-starts.md).
+    const auto& [level, checkpoint] = mission;
+    INFO(level << " checkpoint " << checkpoint);
+    const MissionRun run = playMission(*wad, level, checkpoint);
+    REQUIRE(run.loaded);
+    for (const std::string& error : run.errors) {
+        UNSCOPED_INFO(error);
+    }
+    CHECK(run.scriptErrors == 0);
+    // level3's checkpoint 4 is the rooftop chase: once the pad is his, the Hi-Hat pursuers run him down and
+    // the crew, its Warrior commands off, does not turn back (docs/research/scripting.md#level3), so a player
+    // who stands still for 18 s is beaten down, as the research reads the chapter. The chase's own
+    // playthrough test (disc_story_playthrough_test.cpp) plays that checkpoint through the pad instead.
+    if (level != "level3" || checkpoint != 4) {
+        CHECK(run.standing);
+        CHECK(run.travelled > 1.0F);
+    }
+    std::printf("  %.*s checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
+                "walked\n",
+                static_cast<int>(level.size()), level.data(), checkpoint, run.humans,
+                static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.travelled);
+}
+
+// Missions 2, 3, 5 and 6, a test case per checkpoint so that ctest runs them in parallel
+// (docs/guides/testing.md#one-test-per-item). Each level and its checkpoints (docs/references/level-starts.md).
+const std::vector<MissionCheckpoint> kMissionCheckpoints = [] {
     constexpr std::array<std::pair<std::string_view, int>, 4> kLevels{
         {{"level80", 4}, {"level87", 5}, {"level2", 4}, {"level3", 5}}};
+    std::vector<MissionCheckpoint> all;
     for (const auto& [level, checkpoints] : kLevels) {
         for (int checkpoint = 1; checkpoint <= checkpoints; ++checkpoint) {
-            INFO(level << " checkpoint " << checkpoint);
-            const MissionRun run = playMission(*wad, level, checkpoint);
-            REQUIRE(run.loaded);
-            for (const std::string& error : run.errors) {
-                UNSCOPED_INFO(error);
-            }
-            CHECK(run.scriptErrors == 0);
-            // level3's checkpoint 4 is the rooftop chase: once the pad is his, the Hi-Hat pursuers run him down and
-            // the crew, its Warrior commands off, does not turn back (docs/research/scripting.md#level3), so a player
-            // who stands still for 18 s is beaten down, as the research reads the chapter. The chase's own
-            // playthrough test (disc_story_playthrough_test.cpp) plays that checkpoint through the pad instead.
-            if (level != "level3" || checkpoint != 4) {
-                CHECK(run.standing);
-                CHECK(run.travelled > 1.0F);
-            }
-            std::printf("  %.*s checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
-                        "walked\n",
-                        static_cast<int>(level.size()), level.data(), checkpoint, run.humans,
-                        static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.travelled);
+            all.push_back({level, checkpoint});
         }
     }
-}
+    return all;
+}();
+
+[[maybe_unused]] const bool kMissionsRegistered = coney::test::registerEach(
+    kMissionCheckpoints, "[disc][story]",
+    [](const MissionCheckpoint& mission) {
+        return std::format("the disc's story mission {} plays checkpoint {} without a script error", mission.level,
+                           mission.checkpoint);
+    },
+    [](const MissionCheckpoint& mission) { playMissionCheckpoint(mission); });
+
+} // namespace
 
 TEST_CASE("the disc's level34 plays each checkpoint without a script error or a missing binding", "[disc][story]") {
     std::optional<coney::io::Wad> wad = openDisc();

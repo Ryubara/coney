@@ -178,6 +178,33 @@ every update on both sides of it and find the first update that differs: if the 
 the last digit, the fault is in the course the fight took after it. The level5 boss fight bisected to the physics
 sweep (#434), which moved a boss 0.0001 m; the real fault was a capped boss whose hits were never counted.
 
+### One test per item {#one-test-per-item}
+
+A suite is only as fast as its slowest ctest test, and ctest runs a test as one process: a loop over the level's
+checkpoints, a `GENERATE` over the AI's seeds or a `for` over the missions is one test however many items it holds, and
+nothing else of it runs in parallel. The disc tests that play each checkpoint, mission or seed in turn were the long
+ones (the level3 chase over eight seeds alone was one test of 16 minutes, a suite of 21).
+So a test that plays a list of items registers **one test case per item** with `coney::test::registerEach`
+(`repo:tests/support/each_case.h`, tested in `repo:tests/support/each_case_test.cpp`):
+
+```cpp
+constexpr std::array<std::uint32_t, 8> kSeeds{0, 1, 2, 3, 4, 5, 6, 7};
+void playChase(std::uint32_t seed);  // opens the disc (SKIP without it), plays, checks
+
+[[maybe_unused]] const bool kChaseRegistered = coney::test::registerEach(
+    kSeeds, "[disc][story][playthrough]",
+    [](std::uint32_t seed) { return std::format("the level3 chase for AI seed {}", seed); },
+    [](std::uint32_t seed) { playChase(seed); });
+```
+
+Every item keeps every assertion, a name of its own (the seed, the level and checkpoint) and the tags, so ctest lists,
+selects (`-R`) and times it, and a failure names the item. The tags must say `[disc]` when the body skips without the
+disc (a Python test checks the registrations as it checks `TEST_CASE`s). Split a test when its items are independent and
+take long enough to matter (a case under a few seconds stays a loop); a scenario whose stages build on one another, as
+the level34 checkpoint 3 riot (stereos, then loot, then the meter), stays one test. `build --test` then runs
+the cases `-j` at a time, longest first once a run has recorded their costs ([How long the tests
+take](building.md)).
+
 ### Diff against the original {#diff-against-the-original}
 
 A recorded run of the original, with the same pad input from the same start, is replayed into Coney, and the two
@@ -396,7 +423,7 @@ Commands and presets: [Building and testing](building.md).
 The whole gate runs once per unit, as its final check before the unit is reported ready for release. While working,
 check with the `dev` preset and only the tests the change touches (`ctest --preset dev -R <pattern>`, disc tests
 included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
-suite holds one for 20 to 40 minutes, so running it for every step makes everyone else wait.
+suite holds one for 15 to 30 minutes, so running it for every step makes everyone else wait.
 
 ### Continuous integration {#ci}
 

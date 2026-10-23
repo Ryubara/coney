@@ -229,6 +229,16 @@ test run does not overlap its own compile: half the cores by default, `test_jobs
 and `-j` to override it for one run. The rule, its defaults and the cost of raising it on a shared machine are in
 [Parallelism](coney-tools.md#build).
 
+**How long the tests take.** The suite's wall time is its total test time divided by those jobs, unless one test is
+longer than that. A loop over many items inside one test case is one ctest test, so the long disc tests register a test
+case per item (one per AI seed, checkpoint or mission, [One test per item](testing.md#one-test-per-item)) and `ctest`
+spreads them over the jobs; after a run it knows each test's cost and starts the longest first. Measured on 2026-10-22
+(Windows, `ci` preset, 16 cores, `build_slots` 5, the disc configured): the suite took 21.0 minutes of tests at `-j 3`
+before the split (2,847 passed, 1 skipped of 2,848) and 12.5 minutes at `-j 8`, the default for 16 cores, after it
+(2,893 passed, 1 skipped of 2,894). What is left is mostly one scenario: the level34 checkpoint 3 riot (stereos, then
+loot, then the meter) is one test of about 8 minutes (477 s), so more jobs than 8 gain little until it is shortened;
+the level3 chase seeds take 126 to 147 s each (966 s as one test).
+
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
 
