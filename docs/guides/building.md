@@ -554,7 +554,9 @@ uvx pre-commit run --all-files
 
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
 for you. The hooks fix what they can; stage their changes and commit again. Install them once in each clone; the
-worktrees of a clone share them. The markdownlint hook runs the same rules as CI's markdownlint job
+worktrees of a clone share them. `pre-commit install` also sets up the `commit-msg` hook that checks the commit
+message's trailers ([Commit trailers](agents.md#trailer-guard)); a clone that installed the hooks before that hook
+existed runs `uvx pre-commit install` again. The markdownlint hook runs the same rules as CI's markdownlint job
 (`.markdownlint.yaml`, with the files it skips in `.markdownlint-cli2.yaml`) through Node.js, so Node.js 18 or newer
 must be on your `PATH` (pre-commit would otherwise download its own copy on the first run). `coney-tools check
 changed` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is removed from

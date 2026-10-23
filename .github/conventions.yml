@@ -499,8 +499,10 @@ hygiene:
         - '(?i)\b[a-z]:[\\/]+(?:users|documents and settings)[\\/]+(?!(?:public|default|default user|all users)(?:[\\/]|$))[^\\/\s:*?"<>|]+'
         - '(?<![\w.~])/home/[^/\s:*?"<>|]+'
         - '(?<![\w.~])/Users/(?!Shared(?:/|$))[^/\s:*?"<>|]+'
+      # Also the commit-msg check's (`coney-tools pr check-commit`). A package pin (`markdownlint-cli2@0.18.1`) has no
+      # letters-only last part, and an asset's `@2x` / `@3x` suffix (`icon@2x.png`) is skipped by the lookahead.
       email:
-        - '(?i)\b[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
+        - '(?i)\b[a-z0-9._%+-]+@(?!\d+x\.)[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
       # Possible game data: lines of Lua script source (docs/research/scripting.md) ...
       script_source:
         - '^\s*(?:local\s+)?function\s+[\w.:]+\s*\('

@@ -5,6 +5,10 @@
 # Never rewritten by a hook: the licence texts, which stay verbatim (LEGAL.md), Coney's and the vendored assets'.
 exclude: ^(LICENSE|docs/LICENSE|assets/sandbox/License\.txt)$
 
+# `pre-commit install` sets up both: the checks above on commit, and the commit message check below at the commit-msg
+# stage (a hook with `stages: [commit-msg]` needs its own git hook).
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -69,3 +73,13 @@ repos:
         entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
         files: ^(src|tests)/.*\.(h|cpp)$
         exclude: ^src/platform/(frame_pacer|clip_recorder|perf_probes)\.cpp$
+      # The commit message's trailers (`commits.trailers` in .github/conventions.yml): the only trailer is the AI
+      # co-author line, no other e-mail address, and when an agent commits through Claude Code (whose
+      # hooks write an identity file, coney_tools.identity) the line names that agent's model. Checked before the commit exists, for everyone; the
+      # Claude Code hook `trailer_guard.py` stays beside it until this one has run for real. pre-commit passes the
+      # message file to a commit-msg hook.
+      - id: commit-message
+        name: commit message trailers
+        language: system
+        entry: uv run --project python coney-tools pr check-commit
+        stages: [commit-msg]

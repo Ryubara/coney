@@ -241,3 +241,9 @@ def test_a_pattern_that_does_not_compile_is_refused() -> None:
 def test_the_attachment_settings_are_read() -> None:
     assert RULES.link == "https://github.com/user-attachments/files/"
     assert RULES.extensions == (".txt", ".log") and RULES.large_kb <= RULES.download_kb
+
+
+def test_a_package_pin_and_an_asset_name_are_not_an_email_address() -> None:
+    # The pattern is shared with the commit-msg check (`pr check-commit`), where these appear in messages.
+    result = scan("[info] using markdownlint-cli2@0.18.1 and icon@2x.png\n" + CLEAN_LOG)
+    assert result.personal == ()

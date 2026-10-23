@@ -376,10 +376,19 @@ An agent's commits end with `Co-Authored-By: <the model it runs on> <noreply@ant
 ([AGENTS.md](repo:AGENTS.md)). The coordinator's session gets a system reminder naming the coordinator's own model for
 that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent twice credited Opus, the pull request's
 Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
-each other. A hook (`.claude/hooks/trailer_guard.py`, run by the [dispatcher](#hooks) after a shell command that runs
-`git commit`) checks every commit right after it is made. Claude Code gives a hook no model, but it does give the main
-session's `transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`;
-the hook does not use it, because the role does not name the model). The agent's own transcript
+each other. **Two checks stand against it.** A git `commit-msg` hook, installed by `uvx pre-commit install` (the
+`commit-message` hook of `.pre-commit-config.yaml`, which runs [`coney-tools pr
+check-commit`](coney-tools.md#pr-check-commit)), refuses the message before the commit exists, for everyone, with or
+without Claude Code: only `Co-Authored-By` trailers, no other e-mail address, and, when the commit runs in a Claude
+Code session (its [identity](#identity) file names the model), a trailer naming that model. The hook below stays
+beside it until the git hook has run for real: it reads the model from the transcript, so it still catches the
+commits the identity does not reach (a PowerShell command outside the modes that get a token, and a commit made after
+the identity file's ten minutes). Neither check sees a commit that a program the command only starts makes, such as a
+script that runs `git commit`: the git hook only without a token, the Claude Code hook never. A Claude Code hook
+(`.claude/hooks/trailer_guard.py`, run by the [dispatcher](#hooks) after a shell command that runs `git commit`)
+checks every commit right after it is made. Claude Code gives a hook no model, but it does give the main session's
+`transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`; the hook
+does not use it, because the role does not name the model). The agent's own transcript
 (`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every assistant entry
 (`claude-sonnet-5-5`), and the hook derives the trailer's name from it (`Claude Sonnet 5.5`) instead of keeping a
 table. A trailer with the vendor's address that names a different model exits 2, and the agent sees the reason and

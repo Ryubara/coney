@@ -1,23 +1,24 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-four
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-five
 groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
-checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task), which
-claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
-machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions, labels), `wad`,
-which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which
-turns every asset of the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies),
-which reads the movies' headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which
-keeps the progress tables of the README and the docs current, [`orig`](#orig), which indexes the `@orig` tags for the
-fidelity audit, [`original`](#original), which studies an original function and compares it with Coney's,
-[`stamp`](#stamp), which verifies a unit's stamp log, [`natives`](#natives), which renders the script-binding
-masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
-status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in PCSX2 and
-compare them with Coney's, [`clips`](#clips), which checks, publishes and cleans up in-game video clips, [`mcp`](#mcp),
-which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a contributor's machine and disc,
-[`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and [`workspace`](#workspace), which
-sets up the local workspace. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory.
-The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task),
+which claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
+machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions, labels),
+[`pr`](#pr), which checks commit messages, `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`,
+from **your own disc**, [`extract`](#extract), which turns every asset of the disc into open formats,
+[`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox),
+which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the
+docs current, [`orig`](#orig), which indexes the `@orig` tags for the fidelity audit, [`original`](#original), which
+studies an original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log,
+[`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the game reference
+lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which
+record the original's per-update traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks,
+publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging servers for agent tools,
+[`doctor`](#doctor), which checks a contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra
+project with our function names, and [`workspace`](#workspace), which sets up the local workspace. Everything is read
+in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
+.WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -1283,6 +1284,48 @@ Only a comment by `hygiene.comments.author` (the Actions bot) whose first line i
 comment. Text from GitHub quoted in a comment (a title in a finding) cannot mention anyone, link, embed an image or
 close the marker, and the report writes `#12` so that it makes no cross-reference in the item's timeline. Exit code 0
 when it ran, 2 when `gh` or the conventions cannot be read.
+
+## pr {#pr}
+
+The checks on a pull request and its commits. Today it holds one command. The pull-request checks of [repo](#repo)
+(`check-title`, `check-body`, `check-docs`) are planned to move here when the command groups are renamed
+([Stamps](stamps.md) says the command names are placeholders for that pass).
+
+### pr check-commit {#pr-check-commit}
+
+```sh
+uv run --project python coney-tools pr check-commit FILE [--model ID]
+```
+
+Checks the trailers and the e-mail addresses of one commit message against `commits.trailers` of
+`.github/conventions.yml` ([AGENTS.md](repo:AGENTS.md), Commits and GitHub): the only trailer is the AI co-author line
+(`Co-Authored-By: <model name> <noreply address>`), and no e-mail address but a model's noreply address appears
+anywhere in the message. An address is what `hygiene.attachments.patterns.email` of the same file matches (the pattern
+the attachment scan uses): a package pin such as `markdownlint-cli2@0.18.1` or an asset name such as `icon@2x.png` is
+not one. It is the `commit-message` hook of `.pre-commit-config.yaml` at the `commit-msg` stage, so `uvx pre-commit
+install` makes git run it before each commit ([Formatting and pre-commit](building.md#formatting-and-pre-commit) says
+how, and that an older clone installs again); pre-commit passes it the message file. Prints `commit message: ok` or
+`commit message refused: <reasons>`.
+
+What it reads of the message: nothing from git's scissors line on (the staged diff that `git commit -v` or
+`commit.verbose` shows below it), in the comment character `core.commentChar` sets (`#`; the scissors line names it
+under `auto` the scissors line, or failing that the editor template, names it). Comment lines are dropped only when
+git will strip them, which is when the editor template is in the file; after `git commit -m` or `-F` they stay in
+history, so an address there is refused. A file that is not UTF-8 is read as far as it goes. A trailer block is the
+last paragraph when every line of it has the shape `Token: value` and it is not the title's paragraph. What it does
+not judge: a merge message (`Merge ...`) and a squash merge's (`Squashed commit of the following:`), which list other
+people's commits; and the messages git writes about an earlier commit (`Revert "..."`, `fixup!`, `squash!` and
+`amend!` commits) are checked for other trailers and addresses but not required to carry the agent's trailer.
+
+* `FILE` (required): the commit message file, as git passes it to the hook (`.git/COMMIT_EDITMSG`).
+* `--model ID`: the id of the model the committing agent runs on (`claude-sonnet-5-5`). Then the message must carry
+  `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and no trailer naming another model; an id that is not a
+  Claude id is not judged. Default: the model in the identity file that the Claude Code hooks wrote for this command
+  and `CONEY_AGENT_TOKEN` names ([Who runs a command](agents.md#identity)), when there is a valid one. A person
+  committing outside Claude Code has none, and typed variables are not trusted, so only the shape of the trailers is
+  checked.
+
+Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or the conventions are unusable.
 
 ## issue {#issue}
 
