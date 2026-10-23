@@ -520,6 +520,7 @@ def test_levels_in_reads_each_spelling() -> None:
     runtime = levels_in("confirmed (runtime), run r-1 and confirmed (runtime)")
     assert runtime.runs == ("r-1",) and runtime.bare_runtime
     assert levels_in("confirmed (disc)").refused == ("confirmed (disc)",)
+    assert levels_in("Confirmed (runtime), run r-20261023-grab-reach.").runs == ("r-20261023-grab-reach",)
     assert levels_in("a confirmed bug").kinds == frozenset()
 
 

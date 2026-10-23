@@ -56,6 +56,11 @@ def test_a_slug_is_the_id_mkdocs_gives() -> None:
     assert slug("`Grab_Start` and the (hold)") == "grab_start-and-the-hold"
 
 
+def test_a_slug_folds_accents_and_runs_of_spaces_and_hyphens_as_mkdocs_does() -> None:
+    assert slug("Café règles") == "cafe-regles"
+    assert slug("Mount  the man - fast") == "mount-the-man-fast"
+
+
 def test_blocks_are_paragraphs_items_and_rows() -> None:
     text = (
         "# T\n\nOne line\ncontinues.\n\n- item a\n- item b\n  wraps\n\n"

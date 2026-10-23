@@ -52,7 +52,7 @@ to know whether it was read in the code, seen happening, or worked out from clue
 | Level | Meaning | YAML value |
 | --- | --- | --- |
 | **confirmed (code)** | Read in the original's code, at a cited address | `confirmed-code` |
-| **confirmed (runtime)** | Observed in the original game running under PCSX2; the claim cites the run record that observed it (an older claim states the PCSX2 version and the method: a breakpoint at an address, a memory watch, a frame) | `confirmed-runtime` |
+| **confirmed (runtime)** | Observed in the original game running under PCSX2; the claim cites the [run record](#run-records) of the run (`run <id>`), which holds the PCSX2 version and the method. A legacy claim states them in its own text | `confirmed-runtime` |
 | **inferred** | Follows from evidence that points one way, without being read or observed directly | `inferred` |
 | **speculative** | A plausible guess, written down so it can be tested | `speculative` |
 
@@ -105,8 +105,50 @@ A claim that moves up a level (a guess confirmed in the code, say) is updated in
 Some older pages say "Confidence: confirmed from code"; that means confirmed (code), and those pages are brought to the
 new wording when they are next edited.
 
-A page also says what it was checked against, in one line: the executable (`SLUS_212.15`, see
-[Writing up a finding](#writing-up-a-finding)) and nothing about how.
+A page also says what it was checked against: the executable (`SLUS_212.15`, see
+[Writing up a finding](#writing-up-a-finding)) and, for runtime claims, the run record that holds the PCSX2 version.
+
+### Run records {#run-records}
+
+A `confirmed (runtime)` claim cites the run that observed it: `confirmed (runtime), run r-20261023-grab-reach`. The run
+is a file, `research/runs/<id>.toml`, written by the tool that drove PCSX2 and by nothing else, so the method cannot be
+paraphrased away on the page and a reviewer can read the numbers the claim rests on. A record holds:
+
+| Field | What it says |
+| --- | --- |
+| `id`, `date`, `kind`, `tool` | `r-<date>-<name>`; the day (UTC); `recipe`, `trace` or `method`; the command that wrote it |
+| `who` | The agent id, type and model, and whether the hook named them or they are `unverified` ([Who](stamps.md#who)) |
+| `pcsx2` | The version PCSX2 reported over PINE, and the copy |
+| `start` | The state library id the run started from (`unknown` when the engineer did not say), and the patches it needed, with the state's from the library |
+| `run` | The recipe or scenario and its arguments, or the method in words |
+| `values`, `addresses`, `hashes` | What was read: numbers by name, the addresses of the original the run names, and the SHA-256 of a file the run made (a trace's CSV, which stays in scratch) |
+
+Three commands write one ([`pcsx2` in coney-tools](coney-tools.md#pcsx2)):
+
+- `coney-tools pcsx2 recipe run NAME --record --state ID ...` after a good [recipe](pcsx2-recipes.md) run: the numbers
+  the recipe showed and its arguments.
+- `coney-tools pcsx2 record SCENARIO --run-record --library-state ID ...` with a [trace](#recording-a-trace): the
+  scenario, patches, the counts of updates and missed updates, and the CSV's hash.
+- `coney-tools pcsx2 record-run --method "..." --value NAME=NUMBER ...` for an observation made by hand through the
+  `pcsx2` MCP server (a watch, a read, a frame count): the method in words, and the numbers and addresses read.
+
+`recipe run --record` and `record-run` refuse a copy you do not hold a claim on or whose PCSX2 is not running;
+`pcsx2 record` takes its claim and starts PCSX2 itself. Each fills in the date, who, version and copy itself, checks
+every rule of the record it will write before the run (only what the run measures is filled in afterwards), and writes
+a record only for a run that went well. A record holds names, numbers and addresses as printable ASCII, within the
+limits of `runs` in [.github/conventions.yml](repo:.github/conventions.yml), and a key the schema does not know is
+refused. Those limits cap how much a record holds; they do not keep game data out, since the game's text is English
+and numbers can carry bytes. So the reviewer reads the method, the arguments and the value names, and refuses anything
+that is not our own words or a measurement ([LEGAL.md](repo:LEGAL.md#no-game-data)). A record is never overwritten: a
+second run of the same name on the same day takes another name. It carries a digest of its fields, so a hand edit of
+a value or the who shows when it is read; that catches an edit, not someone who writes a whole record with its digest,
+which is why the reviewer reads the values against the claim. A run is not a stamp: the record in the pull request is
+the proof, with no `observed` step in [the stamp log](stamps.md) (maintainer decision, 2026-10-23).
+
+Commit the record with the page that cites it. `coney-tools research claims` ([research](coney-tools.md#research))
+lists every graded block a branch changed and fails on a runtime claim whose record is missing or breaks a rule; the
+reviewer checks that the record's values support the claim's number and scenario. A runtime claim written before run
+records keeps its level when a change only touches it, with a warning; a new runtime claim needs a record.
 
 ## The research database {#the-research-database}
 
@@ -840,7 +882,8 @@ A finding is done when someone else can use it without asking you. For each one:
 1. **Update the living page.** Find the page for the subsystem or format and change it in place; create a page only
    when none covers the subject. Don't start a dated notes page: one page per subject means the reader never has to
    reconcile two versions.
-2. **Grade every claim** with an [evidence level](#evidence-levels).
+2. **Grade every claim** with an [evidence level](#evidence-levels); a runtime claim cites the
+   [run record](#run-records) of the run, and `coney-tools research claims` lists what the branch graded.
 3. **Add or update the YAML entries** for the functions, globals and types the finding touches (once the database exists),
    with the same evidence level as the page.
 4. **Cite addresses** as `0x001490b8`: eight hex digits, in the NTSC-U executable `SLUS_212.15` (SHA1

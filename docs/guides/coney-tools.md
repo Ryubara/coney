@@ -726,7 +726,7 @@ PCSX2's pid in it;
 
 ```sh
 uv run --project python coney-tools pcsx2 record SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
-                                     [--recording P2M2]
+                                     [--recording P2M2] [--run-record --library-state ID|unknown [--run-name NAME]]
 ```
 
 Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
@@ -745,6 +745,12 @@ debug server `record` pauses emulation, plays the recording (which loads its sav
 resumes. The trace's steps then count from the recording's first frame. A recording that ends before the scenario's
 `updates` stops with PCSX2 paused at its last frame and an error saying so; a power-on recording (no savestate) takes
 no patches. It cannot be combined with `--attach` or `--state`, and needs the copy's debug server.
+
+`--run-record` also writes the trace's [run record](research-workflow.md#run-records) beside the work, in
+`research/runs/`: the scenario's name, its patches, the `--let` names, the counts (updates, missed updates, columns)
+and the SHA-256 of the CSV, which stays in scratch. `--library-state` says which state of the library the run started
+from (`unknown` is allowed); `--run-name` names the record (default: the scenario's). The record is written after the
+CSV; a PCSX2 that no longer answers when its version is read gives `unknown` and a warning rather than losing the trace.
 
 ```sh
 uv run --project python coney-tools pcsx2 recordings make NAME --script SCRIPT [--state STATE.p2s] [--updates N]
@@ -793,6 +799,7 @@ handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end wh
 uv run --project python coney-tools pcsx2 recipe list
 uv run --project python coney-tools pcsx2 recipe show NAME
 uv run --project python coney-tools pcsx2 recipe run NAME --copy COPY --agent ID [--arg NAME=VALUE ...] [--json]
+    [--record --state ID|unknown [--name NAME]]
 uv run --project python coney-tools pcsx2 recipe render [--check]
 ```
 
@@ -806,6 +813,31 @@ recipe names (read back from memory). `--arg` gives a parameter, `--json` adds o
 the page is out of date, as CI runs it. Every recipe must have an evidence level, a Ghidra address and a
 `confirmed_runtime` date, copy and state, or the file is refused. A recipe may name a library state it starts from
 (`state = "ID"`, shown among its preconditions; `recipe show` prints it).
+
+`--record` makes a good run write its [run record](research-workflow.md#run-records), `research/runs/r-<date>-<name>.toml`
+in the checkout: the numbers the `show` steps showed (texts stay out: a record holds numbers only), the arguments as
+given, the recipe's patches and the PCSX2 version and copy, which the tool reads itself. `--state` says which library
+state the copy was started from (`unknown` is allowed, and is written as such) because the runner cannot tell; the
+state's patches are added from the library. `--name` is the run's name in its id (default: the recipe's). Every rule
+of the record is checked before the recipe runs (the state, the id, a record that already exists, the who and the
+arguments), and a run that fails writes nothing. A shown number the record cannot hold (a name that is not printable
+ASCII, or one past the `runs` limits) is left out and counted, so a good run is always recorded. The command prints the
+id to cite, `confirmed (runtime), run <id>`.
+
+```sh
+uv run --project python coney-tools pcsx2 record-run --agent ID --copy COPY --state ID|unknown --name NAME --method TEXT
+    [--value NAME=NUMBER ...] [--address NAME=0xADDRESS ...] [--patch NAME ...]
+```
+
+Writes a [run record](research-workflow.md#run-records) for an observation made by hand, through the `pcsx2` MCP server:
+a watch, a memory read, a count of frames. It refuses a copy `--agent` does not hold or whose PCSX2 is not running, and
+reads the copy's PCSX2 version over PINE; the date, the agent and its model (from the identity the hook's
+`CONEY_AGENT_TOKEN` names, marked `unverified` without one: [Who](stamps.md#who)), the copy and the state's patches
+from the library are filled in by the tool. `--method` is how the value was observed, in words; `--value` is a number
+read and `--address` an address of the original the run names, both repeatable, within the
+[record's limits](research-workflow.md#run-records).
+Nothing else goes in: no memory, no game text. The record is `research/runs/r-<date>-<name>.toml`; it is never
+overwritten, so a second run of the same name on the same day needs another `--name`. It prints the id to cite.
 
 ```sh
 uv run --project python coney-tools pcsx2 states list [--level LEVEL] [--tag TAG] [--json]
@@ -1575,6 +1607,44 @@ runs the same check on the file whenever the change touches a research page, res
 checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
 fails every mechanical rule page-wide and the grading of the sections the change touches; an entry may list any research
 rule or `stale-wording`.
+
+## research {#research}
+
+```sh
+uv run --project python coney-tools research claims [--base origin/main] [--task TASK] [--stamps DIR] [--require-study] [--json]
+```
+
+Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
+from ([evidence levels](research-workflow.md#evidence-levels)). The changed lines are those of the working tree since
+the branch left `--base`, a new page counting whole. It reads the pages exactly as [`docs check`](#docs) does, with the
+same reader and the same grammar: a block is graded in itself, a table row in its Evidence column, or by the lead line
+of its H3-or-deeper heading. For each graded block it prints the page and line, the level, the addresses and script
+locators the block cites, what backs it and the tests that cite its section:
+
+```text
+docs/research/combat/grabs.md
+  L13  confirmed (code)  0x0026c548  studied
+  L15  confirmed (runtime)  -  run r-20261023-grab-reach  tests: tests/combat/grab_test.cpp:12
+```
+
+What backs a claim: for `confirmed (code)`, a passing `studied` stamp for each cited address in the task's stamp log
+(`--task`, default the branch; `--stamps` names another log folder; none found means `none`); for `confirmed (runtime)`,
+the run record it cites (`confirmed (runtime), run <id>`, in the block or its lead line), which must exist and meet the
+rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
+links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a
+line `// Expected: research/<page>.md#<anchor>` in `tests/` or `python/tests/`. The sections of
+`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are
+counted, not listed: `docs check` reports them.
+
+It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
+missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
+is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
+with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
+version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
+`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
+`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
+error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
+for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 
 ## build {#build}
 

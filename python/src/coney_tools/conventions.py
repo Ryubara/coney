@@ -702,6 +702,24 @@ class Stamps:
 
 
 @dataclass(frozen=True)
+class Runs:
+    """The rules of a run record (`research/runs/<id>.toml`, docs/guides/research-workflow.md#run-records)."""
+
+    #: The folder of the records, relative to the repository root (`research.files.runs`).
+    folder: str
+    #: A record's id (a regular expression); its file is `<id>.toml`.
+    id_pattern: str
+    #: The largest record, in bytes; the writer and the reader both hold a record to it.
+    max_bytes: int
+    #: The most values, addresses and run arguments one record may hold together.
+    max_values: int
+    #: The most characters of the method and of any other text field.
+    max_text: int
+    #: How a run was made: a recipe, a recorded trace, or a method in words.
+    kinds: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ClaimCommands:
     """The shapes of the claim commands: a comment is a command only when its whole body matches one (a regex)."""
 
@@ -882,6 +900,7 @@ class Conventions:
     workspace: Workspace
     stamps: Stamps
     research: Research
+    runs: Runs
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
@@ -1900,6 +1919,25 @@ def _read_research(data: object, where: str) -> Research:
     )
 
 
+def _read_runs(data: object, where: str, folder: str) -> Runs:
+    """The `runs` section: how big and how many-valued a run record may be. `folder` is where the records live, which
+    the `research` section names (`research.files.runs`, also read by `docs check`)."""
+    table = _table(data, where, ("id_pattern", "max_bytes", "max_values", "max_text", "kinds"))
+    pattern = _text(table["id_pattern"], _at(where, "id_pattern"))
+    try:
+        re.compile(pattern)
+    except re.error as error:
+        raise _fail(_at(where, "id_pattern"), f"not a regular expression ({error})") from error
+    return Runs(
+        folder=folder,
+        id_pattern=pattern,
+        max_bytes=_count(table["max_bytes"], _at(where, "max_bytes"), minimum=512),
+        max_values=_count(table["max_values"], _at(where, "max_values")),
+        max_text=_count(table["max_text"], _at(where, "max_text"), minimum=40),
+        kinds=_texts(table["kinds"], _at(where, "kinds")),
+    )
+
+
 def parse_conventions(data: object) -> Conventions:
     """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key."""
     keys = (
@@ -1916,6 +1954,7 @@ def parse_conventions(data: object) -> Conventions:
         "workspace",
         "stamps",
         "research",
+        "runs",
     )
     table = _table(data, "", ("version", *keys))
     version = table["version"]
@@ -1943,6 +1982,7 @@ def parse_conventions(data: object) -> Conventions:
         _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")
     _names_in(hygiene.report_issue.labels, names, "hygiene.report_issue.labels", "in labels.list")
     _names_in(hygiene.pr_health.labels.values(), names, "hygiene.pr_health.labels", "in labels.list")
+    research = _read_research(table["research"], "research")
     return Conventions(
         version=SUPPORTED_VERSION,
         repo=_read_repo(table["repo"], "repo"),
@@ -1957,7 +1997,8 @@ def parse_conventions(data: object) -> Conventions:
         hygiene=hygiene,
         workspace=_read_workspace(table["workspace"], "workspace"),
         stamps=_read_stamps(table["stamps"], "stamps"),
-        research=_read_research(table["research"], "research"),
+        research=research,
+        runs=_read_runs(table["runs"], "runs", research.files.runs),
     )
 
 

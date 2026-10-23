@@ -19,7 +19,9 @@ from coney_tools.research_subject import ADDRESS, LOCATOR, VERIFIED_LINE, Subjec
 # --- the levels -------------------------------------------------------------------------------------------------------
 
 _CODE = re.compile(r"confirmed\s*\(\s*code\s*\)", re.IGNORECASE)
-_RUNTIME = re.compile(r"confirmed\s*\(\s*runtime\s*\)(?:\s*,\s*run\s+(?P<id>[A-Za-z0-9][\w.-]*))?", re.IGNORECASE)
+_RUNTIME = re.compile(
+    r"confirmed\s*\(\s*runtime\s*\)(?:\s*,\s*run\s+(?P<id>[A-Za-z0-9](?:[\w.-]*[\w-])?))?", re.IGNORECASE
+)
 _INFERRED = re.compile(r"\binferred\b", re.IGNORECASE)
 _SPECULATIVE = re.compile(r"\bspeculative\b", re.IGNORECASE)
 _NOT_NEEDED = re.compile(r"\bnot needed\s*:", re.IGNORECASE)
@@ -32,7 +34,7 @@ _BASIS = re.compile(
     r"\binferred\s+(?:from|by|because|since)\b|\b(?:because|since|follows|based on|basis)\b", re.IGNORECASE
 )
 #: A link to an open question: `[q-name](#q-name)` or `[text](other.md#q-name)`.
-_QUESTION_LINK = re.compile(r"\]\((?P<page>[^)#\s]*)#(?P<anchor>q-[^)\s]+)\)")
+QUESTION_LINK = re.compile(r"\]\((?P<page>[^)#\s]*)#(?P<anchor>q-[^)\s]+)\)")
 
 
 @dataclass(frozen=True)
@@ -78,7 +80,7 @@ def cites(text: str) -> re.Match[str] | None:
 # --- the evidence -----------------------------------------------------------------------------------------------------
 
 
-def _graded_section(subject: Subject, heading: int) -> bool:
+def graded_section(subject: Subject, heading: int) -> bool:
     """Whether the blocks under heading index `heading` state behaviour: they sit in a level-2 section, and not in one
     of the ungraded ones (Summary, In Coney, Open questions, How this was checked)."""
     name = subject.sections[heading] if heading >= 0 else ""
@@ -86,7 +88,7 @@ def _graded_section(subject: Subject, heading: int) -> bool:
     return bool(name) and name.casefold() not in ungraded
 
 
-def _lead_lines(subject: Subject) -> dict[int, int]:
+def lead_lines(subject: Subject) -> dict[int, int]:
     """The heading indexes (level 3 and deeper) whose first block is a lead line, to that block's index: a statement
     that cites no address and states a valid level for the blocks under the heading."""
     page = subject.page
@@ -121,20 +123,16 @@ def check_evidence(subject: Subject) -> Iterable[Finding]:
     """Every block that cites an address outside the ungraded sections is graded in the forms of the standard; every
     level that is stated is stated in its form. A level word is never an excuse: `confirmed (disc)` is none."""
     page, env = subject.page, subject.env
-    leads = _lead_lines(subject)
+    leads = lead_lines(subject)
     old_runtime_ok = subject.legacy_page and _pcsx2_documented(subject)
     anchors = page.anchors
     for index, block in enumerate(page.blocks):
-        if block.kind == "heading" or _is_header_row(subject, index):
+        if block.kind == "heading" or is_header_row(subject, index):
             continue
-        table = page.tables[block.table] if block.table is not None else None
-        column = table.level_column if table else None
-        cell = block.text
-        if block.kind == "row" and column is not None:
-            cells = split_cells(block.text)
-            cell = cells[column] if column < len(cells) else ""
+        column = level_column_of(subject, block)
+        cell = level_cell(subject, block)
         levels = levels_in(cell)
-        whole = levels_in(block.text) if cell is not block.text else levels
+        whole = levels_in(block.text) if block.kind == "row" and column is not None else levels
         line = block.line
         for spelling in whole.refused:
             yield Finding(
@@ -149,7 +147,7 @@ def check_evidence(subject: Subject) -> Iterable[Finding]:
                 line,
                 "an Evidence cell states a level, not 'probably' or 'likely': write inferred, with its basis",
             )
-        if not _graded_section(subject, block.section):
+        if not graded_section(subject, block.section):
             continue
         if block.kind == "row" and column is None and subject.sections[block.section] == env.research.map_section:
             continue  # a Map table with no level column indexes functions, whose levels are in their entries
@@ -173,7 +171,22 @@ def check_evidence(subject: Subject) -> Iterable[Finding]:
         yield from _level_forms(subject, block, levels, cell, line, anchors, old_runtime_ok)
 
 
-def _is_header_row(subject: Subject, index: int) -> bool:
+def level_column_of(subject: Subject, block: Block) -> int | None:
+    """The Evidence column of the table a row sits in, or None (a paragraph, or a table with no such column)."""
+    table = subject.page.tables[block.table] if block.table is not None else None
+    return table.level_column if table is not None else None
+
+
+def level_cell(subject: Subject, block: Block) -> str:
+    """The text that grades `block`: a row's Evidence cell when its table has one, else the whole block."""
+    column = level_column_of(subject, block)
+    if block.kind != "row" or column is None:
+        return block.text
+    cells = split_cells(block.text)
+    return cells[column] if column < len(cells) else ""
+
+
+def is_header_row(subject: Subject, index: int) -> bool:
     """Whether block `index` is the first row of its table (the header, which labels columns and claims nothing)."""
     block = subject.page.blocks[index]
     return block.kind == "row" and block.table is not None and subject.page.tables[block.table].first == index
@@ -217,7 +230,7 @@ def _level_forms(
         if not catalog.has_run(run):
             yield Finding("evidence", line, f"no run record research/runs/{run}.toml")
     if "speculative" in levels.kinds:
-        links = list(_QUESTION_LINK.finditer(block.text))
+        links = list(QUESTION_LINK.finditer(block.text))
         if not links:
             yield Finding(
                 "evidence", line, "speculative links the open question that says how to test it: ([q-name](#q-name))"

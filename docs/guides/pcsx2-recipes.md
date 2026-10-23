@@ -16,6 +16,10 @@ PINE port (and its debug server for the emulation steps), so the `pcsx2` MCP ser
 running or paused as the recipe needs, and that the running state holds every patch the recipe names: a patch goes into
 a copy of a state with `coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
 
+A run that backs a research claim is recorded: add `--record --state ID` (the library state the copy started from, or
+`unknown`) and a good run writes `research/runs/<id>.toml` with the numbers it showed, for the page to cite as
+`confirmed (runtime), run <id>` ([Run records](research-workflow.md#run-records)).
+
 Start from the shared state library rather than driving to the same place again: `coney-tools pcsx2 states list` shows
 the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states use ID --copy COPY --agent ID --launch`
 starts your copy on one. A recipe that needs a particular scene names its state among its preconditions (`recipe run`

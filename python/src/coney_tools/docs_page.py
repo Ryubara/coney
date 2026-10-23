@@ -9,6 +9,7 @@ the YAML front matter at the top is kept apart as text.
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass, field
 
 _FENCE = re.compile(r"^[ \t]*(?P<marker>`{3,}|~{3,})")
@@ -130,8 +131,10 @@ class Page:
 
 
 def slug(text: str) -> str:
-    """The id MkDocs gives a heading without an explicit one: lower case, words joined by hyphens."""
-    words = re.sub(r"[^\w\s-]", "", re.sub(r"`", "", text).casefold())
+    """The id MkDocs gives a heading without an explicit one: accents folded to ASCII, lower case, words joined by
+    hyphens (the toc extension's `slugify`)."""
+    folded = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    words = re.sub(r"[^\w\s-]", "", re.sub(r"`", "", folded).casefold())
     return re.sub(r"[-\s]+", "-", words).strip("-")
 
 

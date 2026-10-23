@@ -2,6 +2,7 @@
 """Tests for coney_tools.conventions: the loader reads .github/conventions.yml strictly and the real file is sound."""
 
 import dataclasses
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -310,6 +311,14 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         r"a heading is used twice",
     ),
     ("a form without sections", (("issues.forms.bug.sections", {}),), r"forms\.bug\.sections: expected a non-empty"),
+    ("a run id pattern that is not a regex", (("runs.id_pattern", "r-("),), r"runs\.id_pattern: not a regular"),
+    (
+        "a run record too small to hold a header",
+        (("runs.max_bytes", 100),),
+        r"runs\.max_bytes: expected a whole number",
+    ),
+    ("a run kind listed twice", (("runs.kinds", ["recipe", "recipe"]),), r"runs\.kinds: a value is listed twice"),
+    ("a misspelled runs key", (("runs.max_value", 3),), r"runs: unknown key 'max_value'"),
     ("a gameplay entry that is not a src/ folder", (("paths.gameplay", ["ai/"]),), r"paths\.gameplay: 'ai/'"),
     (
         "a folder both gameplay and Coney-only",
@@ -512,6 +521,14 @@ def test_the_real_claim_rules() -> None:
     assert claims.critical_label == "P-critical" and claims.bot_login == "github-actions[bot]"
     assert "assigned" in claims.stages and "fix" in claims.stages
     assert load_conventions(REPO).tasks.kinds == ("feature", "fix", "docs", "tooling", "ci-fix")
+
+
+def test_the_real_run_record_rules() -> None:
+    runs = load_conventions(REPO).runs
+    assert runs.folder == "research/runs" and runs.kinds == ("recipe", "trace", "method")
+    assert re.fullmatch(runs.id_pattern, "r-20261023-grab-reach")
+    assert not re.fullmatch(runs.id_pattern, "grab-reach") and not re.fullmatch(runs.id_pattern, "r-20261023-Grab")
+    assert runs.max_bytes <= 16 * 1024 and runs.max_values >= 16 and runs.max_text >= 200
 
 
 def test_every_title_area_of_a_label_is_a_title_area() -> None:
