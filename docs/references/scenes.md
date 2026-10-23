@@ -1322,5 +1322,5 @@ Evidence levels used: confirmed-code.
 | `played_by` | list | | What plays the movie: the boot, a level record's intro or outro, the front end. |
 | `on_disc` | bool | | Whether the disc's `PSS` folder holds `<name>.BIK` (unknown for a disc image). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

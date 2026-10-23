@@ -20,7 +20,7 @@ The fields an entry may have are defined per topic in `refs_topics.py`; every en
 `coney-tools refs extract`; the others are what the extractor reads from the player's disc.
 
 Legal: only names, ids, numbers and our own short descriptions go into these files (LEGAL.md, "Reference lists").
-Research: docs/guides/research-workflow.md#reference-lists
+Research: docs/guides/research-data.md#reference-lists
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ import yaml
 
 from coney_tools.config import ConfigError
 
-#: The evidence levels of docs/guides/research-workflow.md#evidence-levels, as the YAML spells them.
+#: The evidence levels of docs/guides/research-evidence.md#evidence-levels, as the YAML spells them.
 EVIDENCE = ("confirmed-code", "confirmed-runtime", "inferred", "speculative")
 #: Fields every entry has, whatever its topic.
 COMMON_FIELDS = ("source", "evidence", "notes")
@@ -98,7 +98,7 @@ class Topic:
                 "evidence",
                 "str",
                 "How we know: confirmed-code, confirmed-runtime, inferred or speculative "
-                "([evidence levels](../guides/research-workflow.md#evidence-levels)).",
+                "([evidence levels](../guides/research-evidence.md#evidence-levels)).",
                 curated=True,
             ),
             Field("notes", "str", "Our own short notes.", column="Notes", curated=True),
@@ -347,7 +347,7 @@ def dump(reflist: RefList) -> str:
     lines = [
         f"# {reflist.title}: a Coney game reference list. The page docs/references/{topic.key}.md is generated",
         "# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the",
-        "# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.",
+        "# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.",
         f"title: {_scalar(reflist.title)}",
         f"about: {_block(reflist.about)}",
         f"complete: {_block(reflist.complete)}",

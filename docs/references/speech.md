@@ -518,5 +518,5 @@ Evidence levels used: confirmed-code.
 | `percent` | list | | The chance `SndSetCommandSoundPercent` gives the command to be said. |
 | `used_in` | list | | Scripts that play the command (`SoundPlayCommand`) or give the voice set to a human for its state responses (`HuSetStateRespVoiceIndex`). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

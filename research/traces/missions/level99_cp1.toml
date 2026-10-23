@@ -6,7 +6,7 @@ until = "checkpoint SetCheckPoint:2"
 after = 90
 
 [original]
-# A state of the original in checkpoint 1, lesson 1 (the first marker), made by hand (docs/guides/research-workflow.md#differential-
+# A state of the original in checkpoint 1, lesson 1 (the first marker), made by hand (docs/guides/research-traces.md#differential-
 # playthroughs); never committed.
 state = "states/l99-cp1-lesson1.p2s"
 patches = ["scripted-pad", "right-stick", "event-call", "event-callback", "event-hint", "event-sound"]

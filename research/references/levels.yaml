@@ -1,6 +1,6 @@
 # Levels: a Coney game reference list. The page docs/references/levels.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: Levels
 about: |
   The 111 level records of `levelNames` (`CfgLevelName`), in the order the game keeps them. A level loads

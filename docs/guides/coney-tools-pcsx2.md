@@ -9,7 +9,7 @@ video clips, whether made in PCSX2 or by `coney --record`. The other groups are 
 
 The `pcsx2` commands drive the original in PCSX2 over PINE and the PCSX2-MCP fork's debug server, for runtime research
 and parity checks. What they do and why, the scenario format and the address expressions are in
-[Recording a trace](research-workflow.md#recording-a-trace). The folders come from `coney.local.toml` (`pcsx2_dir`,
+[Recording a trace](research-traces.md#recording-a-trace). The folders come from `coney.local.toml` (`pcsx2_dir`,
 `game_dir`, `scratch_dir`) unless `--pcsx2-dir`, `--iso` and `--scratch` give them; PINE must be enabled in PCSX2's
 `inis/PCSX2.ini`. Problems print one line and exit with code 2.
 
@@ -23,7 +23,7 @@ copy's ini PINE on `pcsx2_pine_base` + *i*, the debug server on `pcsx2_debug_bas
 settings, BIOS, memory cards, states and recordings stay; a copy whose PCSX2 runs is refused (exit code 1).
 `--dry-run` prints what would change. Details: [PCSX2 copies](workspace.md#pcsx2-copies).
 
-Several agents share the copies through claims ([Several at once](research-workflow.md#several-at-once)); any
+Several agents share the copies through claims ([Several at once](research-tools.md#several-at-once)); any
 command that starts PCSX2 needs one.
 
 ```sh
@@ -82,7 +82,7 @@ Copies a save state (a `.p2s` file or `slot:N`, only read) to `OUT` with every c
 deflate, the same contents byte for byte. Ghidra's zip reader, which the EE extension's `PCSX2SaveStateImporter.java`
 script uses, cannot read PCSX2's zstd, and Python cannot write PCSX2's other choice, Deflate64; plain deflate is read
 by all three, so PCSX2's own compression setting stays as it is. The same refusals as `prepare-state` apply. Why we
-do not usually load states into Ghidra: [Tools](research-workflow.md#tools).
+do not usually load states into Ghidra: [Tools](research-tools.md#tools).
 
 ```sh
 uv run --project python coney-tools pcsx2 launch [STATE] --agent ID
@@ -92,7 +92,7 @@ Starts PCSX2 on a state file (`-fastboot -statefile`, the disc through a hard li
 holds commas or parentheses), waits until the game runs, and leaves it running; with no state it boots the disc and
 returns once PINE answers; when the copy runs the debug server, it also waits for that port, and prints both. It is the
 only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
-process outside the agent's process tree; why: [Driving PCSX2](research-workflow.md#driving-pcsx2)). With
+process outside the agent's process tree; why: [Driving PCSX2](research-tools.md#driving-pcsx2)). With
 `CONEY_WINDOW_DISPLAY` set ([Which display](running.md#window-display)), it moves each PCSX2 window onto that
 display as it appears, without activating it; `pcsx2 record` does the same. It refuses to
 start when something already serves PINE or the copy's debug server port. It runs under `--agent`'s claim (made, and
@@ -112,7 +112,7 @@ updates missed. The scenario names a quick-save slot (`slot`) or a state file un
 PCSX2 running; the claim is released at the end when `record` made it. The CSV is a measurement of the game: it is
 refused inside the repository. With
 hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
-makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
+makes the scenario's `calls` ([Hooks](research-traces.md#hooks)).
 
 `--recording P2M2` takes the pad from a PCSX2 input recording instead of the scenario's input script, so a runtime
 trace can be repeated exactly: the recording (and its start savestate `<P2M2>_SaveState.p2s`, patched as the
@@ -122,7 +122,7 @@ resumes. The trace's steps then count from the recording's first frame. A record
 `updates` stops with PCSX2 paused at its last frame and an error saying so; a power-on recording (no savestate) takes
 no patches. It cannot be combined with `--attach` or `--state`, and needs the copy's debug server.
 
-`--run-record` also writes the trace's [run record](research-workflow.md#run-records) beside the work, in
+`--run-record` also writes the trace's [run record](research-evidence.md#run-records) beside the work, in
 `research/runs/`: the scenario's name, its patches, the `--let` names, the counts (updates, missed updates, columns)
 and the SHA-256 of the CSV, which stays in scratch. `--library-state` says which state of the library the run started
 from (`unknown` is allowed); `--run-name` names the record (default: the scenario's). The record is written after the
@@ -140,7 +140,7 @@ does. A script's frame is one character update of 1/30 s and PCSX2 takes the pad
 pressure, sticks from the percentages), port 2 stays at rest. `--state` is the savestate it starts from, copied beside
 it as `NAME.p2m2_SaveState.p2s`; without it the recording starts from power-on. The length is the script's last frame
 plus one second unless `--updates` says. A recording already there needs `--force`. Then `recordings push` it to a copy
-and play it ([Input recordings](research-workflow.md#input-recordings)). The layout it writes is PCSX2's own, from
+and play it ([Input recordings](research-tools.md#input-recordings)). The layout it writes is PCSX2's own, from
 `pcsx2/Recording/InputRecordingFile.h`.
 
 ```sh
@@ -150,7 +150,7 @@ uv run --project python coney-tools pcsx2 recordings push|pull NAME --agent ID -
 Copies an input recording (`NAME.p2m2` below `recordings/`, such as `fights/rumble-1.p2m2`) and its start savestate
 between the shared scratch folder's `recordings/` and the claimed copy's `recordings/` (`push` to the copy, `pull`
 back), checking each copy's SHA-256. A different file already there needs `--force`. Recordings are made and played
-in the copy with the MCP server's `pcsx2_input_recording` ([Input recordings](research-workflow.md#input-recordings)).
+in the copy with the MCP server's `pcsx2_input_recording` ([Input recordings](research-tools.md#input-recordings)).
 
 ```sh
 uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
@@ -190,7 +190,7 @@ the page is out of date, as CI runs it. Every recipe must have an evidence level
 `confirmed_runtime` date, copy and state, or the file is refused. A recipe may name a library state it starts from
 (`state = "ID"`, shown among its preconditions; `recipe show` prints it).
 
-`--record` makes a good run write its [run record](research-workflow.md#run-records), `research/runs/r-<date>-<name>.toml`
+`--record` makes a good run write its [run record](research-evidence.md#run-records), `research/runs/r-<date>-<name>.toml`
 in the checkout: the numbers the `show` steps showed (texts stay out: a record holds numbers only), the arguments as
 given, the recipe's patches and the PCSX2 version and copy, which the tool reads itself. `--state` says which library
 state the copy was started from (`unknown` is allowed, and is written as such) because the runner cannot tell; the
@@ -205,13 +205,13 @@ uv run --project python coney-tools pcsx2 record-run --agent ID --copy COPY --st
     [--value NAME=NUMBER ...] [--address NAME=0xADDRESS ...] [--patch NAME ...]
 ```
 
-Writes a [run record](research-workflow.md#run-records) for an observation made by hand, through the `pcsx2` MCP server:
+Writes a [run record](research-evidence.md#run-records) for an observation made by hand, through the `pcsx2` MCP server:
 a watch, a memory read, a count of frames. It refuses a copy `--agent` does not hold or whose PCSX2 is not running, and
 reads the copy's PCSX2 version over PINE; the date, the agent and its model (from the identity the hook's
 `CONEY_AGENT_TOKEN` names, marked `unverified` without one: [Who](stamps.md#who)), the copy and the state's patches
 from the library are filled in by the tool. `--method` is how the value was observed, in words; `--value` is a number
 read and `--address` an address of the original the run names, both repeatable, within the
-[record's limits](research-workflow.md#run-records).
+[record's limits](research-evidence.md#run-records).
 Nothing else goes in: no memory, no game text. The record is `research/runs/r-<date>-<name>.toml`; it is never
 overwritten, so a second run of the same name on the same day needs another `--name`. It prints the id to cite.
 
@@ -289,7 +289,7 @@ Compares two traces step by step and prints, per column, the first step outside 
 and its step, then the rows of both around each divergence. It exits with 0 when every column is within tolerance, 1
 when one is not and 2 when a trace cannot be read. With `--scenario`, the columns, tolerances, start frame and first
 step (the first update of input) come from the scenario's `[diff]` table; flags override them.
-[Comparing with Coney](research-workflow.md#comparing-with-coney) explains the alignment and the start frame.
+[Comparing with Coney](research-traces.md#comparing-with-coney) explains the alignment and the start frame.
 
 ```sh
 uv run --project python coney-tools trace fight-report TRACE... [--humans] [--hz N] [--exclude HUMAN ...]
@@ -359,7 +359,7 @@ one orientation (which gang is side 1), and the two are paired in order, so each
 with the original's runs of the same orientation; give as many of one as of the other. Sides are labelled `g0`, `g1`,
 ... by rank, the lowest id first, or in the order of `--original-gangs` and `--coney-gangs` when their ids differ. The
 exit code is 1 when a metric is outside the spread, 0 when none is, 2 when a trace cannot be read. With one run of the
-original the spread is a point, so record several ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
+original the spread is a point, so record several ([Comparing with Coney](research-traces.md#comparing-with-coney)).
 
 ```sh
 uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
@@ -397,4 +397,4 @@ extra ones, those out of order, milestones whose spacing differs by more than `-
 events by count. `--from "kind name"` starts both logs at their first such event, for two runs that began at
 different points of a mission; `--labels` names hashed texts by a JSON object of label to text (a string table read
 from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
-[Differential playthroughs](research-workflow.md#differential-playthroughs) explains the method.
+[Differential playthroughs](research-traces.md#differential-playthroughs) explains the method.

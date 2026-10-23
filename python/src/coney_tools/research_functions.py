@@ -26,7 +26,7 @@ from typing import Any
 from coney_tools.config import ConfigError
 
 FUNCTIONS_DIR = Path("research/functions")
-#: The evidence levels (docs/guides/research-workflow.md#evidence-levels) as the files spell them, with their labels
+#: The evidence levels (docs/guides/research-evidence.md#evidence-levels) as the files spell them, with their labels
 #: on the pages. `not-needed` is the Understood measure's "not needed: <reason>"; the reason is the entry's role.
 LEVELS = {
     "confirmed-code": "confirmed (code)",

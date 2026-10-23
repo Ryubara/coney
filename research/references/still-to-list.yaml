@@ -2,7 +2,7 @@
 # reference list yet. `coney-tools refs render` turns this file into the "Still to list" section of
 # docs/references/index.md, in this order (most useful to a script author first). Counts come from a survey of the
 # NTSC-U disc's 467 compiled scripts (names and counts only). When a family gets its own list, remove its entry.
-# Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# Schema and rules: docs/guides/research-data.md#reference-lists.
 families: []
 excluded: >-
   Not to be listed: the credits (`CfgCredits`) and the text of any string table, which are game text; boss

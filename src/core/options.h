@@ -23,7 +23,7 @@ struct TextView {
 
 /// What `--start` asks for: where player 1 starts in place of the level's (or the layout's) start, and optionally
 /// where the follow camera starts. Coney's own test aid, so a trace scenario can start where the original's save
-/// state stands (docs/guides/research-workflow.md#comparing-with-coney).
+/// state stands (docs/guides/research-traces.md#comparing-with-coney).
 struct StartPlace {
     float x = 0.0F; ///< The feet, game axes (metres, z up); dropped onto the ground below as a start is.
     float y = 0.0F;
@@ -70,7 +70,7 @@ struct RumbleLaunch {
     std::uint16_t gangSize = 0; ///< Fighters per side (RumbleSetup::kGangSize).
     /// `--ai-player`: player 1 is handed to the AI when the countdown ends (ai::AiHumans::releasePlayer()), as the
     /// original's `Human_ReleasePlayer` (`0x0022a2a8`) does to the human it takes the pad from, so every fighter is
-    /// AI-driven: the matched gang-fight scenario of docs/guides/research-workflow.md#comparing-with-coney.
+    /// AI-driven: the matched gang-fight scenario of docs/guides/research-traces.md#comparing-with-coney.
     bool aiPlayer = false;
 };
 
@@ -181,7 +181,7 @@ struct Options {
     /// `--event-log`: write what a player would notice happening (script binding calls, calls into the scripts,
     /// hints shown, sounds started, humans appearing and running out of health) to this file, one CSV line per
     /// event stamped with its step (coney::events), for a differential playthrough against the original
-    /// (docs/guides/research-workflow.md#differential-playthroughs). Works on any path through the game.
+    /// (docs/guides/research-traces.md#differential-playthroughs). Works on any path through the game.
     std::optional<std::string> eventLogFile;
     /// `--log-file`: write the run log (core/log.h) to this file, in place of `coney.log` in the user's data folder
     /// (none in test mode without it) (docs/guides/run-log.md).
@@ -320,7 +320,7 @@ inline constexpr int kDefaultBenchWarmup = 60;
 /// Whether the window may take the keyboard focus when it opens: only in a run a person plays, so not with
 /// `--no-activate`, in test mode or for `--render-references` (an offscreen job). Runs started by agents and tools
 /// are test-mode runs, so they never take the focus from someone typing
-/// (docs/guides/research-workflow.md#running-coney).
+/// (docs/guides/research-tools.md#running-coney).
 [[nodiscard]] bool activatesWindow(const Options& options);
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).

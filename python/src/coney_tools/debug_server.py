@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """A client for the debug server of the PCSX2-MCP fork, and the header of PCSX2's input recordings (`.p2m2`).
 
-The fork (docs/guides/research-workflow.md#driving-pcsx2) builds a JSON server into PCSX2 on the port its ini names
+The fork (docs/guides/research-tools.md#driving-pcsx2) builds a JSON server into PCSX2 on the port its ini names
 (`[EmuCore]` `EnableDebugServer`, `DebugServerPort`). The protocol is newline-delimited JSON over TCP: a request is one
 object `{"cmd": NAME, ...}` and a line, the answer one object and a line with `"ok"` true, or false and an `"error"`.
 Unlike PINE it serves several clients at once (a thread each), so `pcsx2 record` can use it beside an agent's MCP

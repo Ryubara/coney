@@ -257,5 +257,5 @@ Evidence levels used: inferred.
 | `values` | list | | The 45 values by attack kind: a weight, a damage or a far range. |
 | `types` | str | | How many character types `CfgChar` gives the table. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

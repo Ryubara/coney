@@ -1,6 +1,6 @@
 # Speech commands and voices: a Coney game reference list. The page docs/references/speech.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Speech commands and voices"
 about: |
   What a human can say and in which voice. A **speech command** is a kind of line (`attack`,

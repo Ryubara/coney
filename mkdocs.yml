@@ -311,7 +311,12 @@ nav:
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md
-      - Research workflow: guides/research-workflow.md
+      - Research workflow:
+          - guides/research-workflow.md
+          - Evidence levels and run records: guides/research-evidence.md
+          - The research data: guides/research-data.md
+          - Research tools: guides/research-tools.md
+          - Traces and playthroughs: guides/research-traces.md
       - Function database: guides/research-function-database.md
       - Source files: guides/research-source-files.md
       - Finding where a behaviour lives: guides/research-where.md

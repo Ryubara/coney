@@ -2,9 +2,9 @@
 """`coney-tools pcsx2 recordings make`: write a Coney input script as a PCSX2 input recording (`.p2m2`).
 
 A recording is PCSX2's own record of every frame's pad, so the original replays it exactly, frame by frame, the same on
-every run; that is the way to drive the original for runtime evidence (docs/guides/research-workflow.md, "Input
-recordings"). Making one by hand in PCSX2 needs a person at the pad, and an input script already says what Coney's pad
-does, so the same script can drive both games from one file.
+every run; that is the way to drive the original for runtime evidence
+(docs/guides/research-tools.md#input-recordings). Making one by hand in PCSX2 needs a person at the pad, and an input
+script already says what Coney's pad does, so the same script can drive both games from one file.
 
 The file layout is PCSX2's (`pcsx2/Recording/InputRecordingFile.h`, version 1): a header of the version byte, the
 emulator version (50 bytes), the author (255) and the game (255) as NUL-padded text, the total frame count and the undo

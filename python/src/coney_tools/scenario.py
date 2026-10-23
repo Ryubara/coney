@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Trace scenarios: one scripted run, played on the original in PCSX2 and on Coney, and how to compare the two.
 
-A scenario is a TOML file in `research/traces/scenarios/` (format: docs/guides/research-workflow.md#recording-a-trace):
+A scenario is a TOML file in `research/traces/scenarios/` (format: docs/guides/research-traces.md#recording-a-trace):
 
 ```toml
 description = "level99 street: the walk start, stick 60 % up"

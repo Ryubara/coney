@@ -899,7 +899,7 @@ research:
       owns: optional
 
 runs:
-  # Run records (docs/guides/research-workflow.md#run-records): what a research page's `confirmed (runtime)` claim cites.
+  # Run records (docs/guides/research-evidence.md#run-records): what a research page's `confirmed (runtime)` claim cites.
   # A record is written only by the tools that drive PCSX2 (`pcsx2 recipe run --record`, `pcsx2 record --run-record`,
   # `pcsx2 record-run`) into research.files.runs and holds names, numbers and addresses, never memory or game text (LEGAL.md). The limits cap
   # how much a record holds; they cannot tell game text from ours, so the reviewer reads the method, args and names.

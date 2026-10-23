@@ -1,6 +1,6 @@
 # Unlockables: a Coney game reference list. The page docs/references/unlockables.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: Unlockables
 about: |
   The records of the unlockables manager (`0x006fe998`): `global.lua` builds its `Unlockables` table of 610 records

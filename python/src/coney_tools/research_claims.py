@@ -19,7 +19,7 @@ Not claims: the title, the Verified line, the sections of `research.ungraded_sec
 state nothing the port rests on), and a lead line itself. A block that cites an address and has no level anywhere is
 counted, not listed: `docs check` reports it.
 
-Research: docs/guides/research-workflow.md#run-records
+Research: docs/guides/research-evidence.md#run-records
 """
 
 from __future__ import annotations

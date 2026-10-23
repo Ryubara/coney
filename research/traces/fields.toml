@@ -1,7 +1,7 @@
 # Field sets for traces of the original (`coney-tools pcsx2 record`): what is read every character update, and where.
 # A column that Coney's --trace also writes has Coney's name and unit (src/human/player_trace.h): metres, degrees,
 # m/s. Addresses are expressions (python/src/coney_tools/game_memory.py); a formula works a value out from the fields
-# before it. Format: docs/guides/research-workflow.md#recording-a-trace.
+# before it. Format: docs/guides/research-traces.md#recording-a-trace.
 
 # The player human: docs/research/characters.md (the human object, the record, the per-player record, the transform
 # table) and docs/research/combat.md#record-fields.

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Mission playthroughs on either game, driven by one course, each writing an event log
-(docs/guides/research-workflow.md#differential-playthroughs).
+(docs/guides/research-traces.md#differential-playthroughs).
 
 A **mission scenario** (`research/traces/missions/*.toml`) names the course that plays it (coney_tools.course), the
 event that ends it, how the original starts (a save state and its patches, the event hooks among them) and how Coney

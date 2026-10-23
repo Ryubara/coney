@@ -9,7 +9,7 @@ working.
 ## What goes on the page
 
 The engineer writes a research page in `docs/research/`. Every claim on it carries an
-[evidence level](research-workflow.md#evidence-levels) and a cited address. The page is a **map**, not a substitute for
+[evidence level](research-evidence.md#evidence-levels) and a cited address. The page is a **map**, not a substitute for
 the original: the engineer who ports a behaviour reads the original function in Ghidra, and the page says which
 function that is and what the code alone does not show. A page that serves that contains:
 
@@ -23,7 +23,7 @@ function that is and what the code alone does not show. A page that serves that 
 - **Short snippets only.** A line or two next to an address, never a whole function listing from Ghidra or a
   disassembly ([Writing up a finding](research-workflow.md#writing-up-a-finding)).
 - **Runtime numbers from the real game.** The engineer hooks addresses in PCSX2 and logs values per update
-  ([Recording a trace](research-workflow.md#recording-a-trace)). The fence work's "the cut comes 15-44 updates
+  ([Recording a trace](research-traces.md#recording-a-trace)). The fence work's "the cut comes 15-44 updates
   after the hit" is one example. These become the test values.
 - **A fix list.** Numbered, ordered units, each with "done" spelled out, so an engineer can take one at a time.
 
@@ -35,7 +35,7 @@ page; a disagreement goes on the page first, with the address and evidence level
 `@orig 0x<addr>` with a link to the page
 ([Conventions](conventions.md#comments-and-orig)). Tests are written first, from the page's numbers; that is how
 "correctly" gets checked ([Testing](testing.md#done)). For whole behaviours we also run both games through the same
-scenario and diff their traces ([Comparing with Coney](research-workflow.md#comparing-with-coney), and
+scenario and diff their traces ([Comparing with Coney](research-traces.md#comparing-with-coney), and
 [Diff against the original](testing.md#diff-against-the-original)); the trace tooling records the same columns from
 each game and `coney-tools trace diff` reports the first update where they part. For work a player sees this
 comparison with the original running is part of "done" ([Testing](testing.md#runtime-comparison)), and the pull request

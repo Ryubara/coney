@@ -3,7 +3,7 @@
 
 A differential playthrough plays the same mission on the original and on Coney and compares what happened, not where
 everyone stood: the hints shown, the objectives and checkpoints set, the scenes, the script callbacks fired, the sounds
-started, the humans who ran out of health (docs/guides/research-workflow.md#differential-playthroughs). Each game
+started, the humans who ran out of health (docs/guides/research-traces.md#differential-playthroughs). Each game
 writes an **event log**, a CSV of `step,kind,name,detail`:
 
 - Coney writes it itself (`coney --event-log`, src/core/event_log.h).

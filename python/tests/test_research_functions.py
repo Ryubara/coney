@@ -215,7 +215,7 @@ def test_a_file_that_is_not_utf8_is_a_clear_error(tmp_path: Path) -> None:
 
 
 def test_levels_have_one_label_each() -> None:
-    """The levels are those of research-workflow.md#evidence-levels, plus `not needed`."""
+    """The levels are those of research-evidence.md#evidence-levels, plus `not needed`."""
     assert list(rf.LEVELS) == ["confirmed-code", "confirmed-runtime", "inferred", "speculative", "not-needed"]
     assert rf.LEVELS["confirmed-code"] == "confirmed (code)"
     assert rf.LEVELS["not-needed"] == "not needed"

@@ -1,6 +1,6 @@
 # Glass types: a Coney game reference list. The page docs/references/glass-types.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Glass types"
 about: |
   The breakable-glass types: `CfgSetGlassProperties(type, windowLink, alarm, sprite, brokenSprite)`

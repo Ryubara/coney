@@ -703,7 +703,7 @@ class Stamps:
 
 @dataclass(frozen=True)
 class Runs:
-    """The rules of a run record (`research/runs/<id>.toml`, docs/guides/research-workflow.md#run-records)."""
+    """The rules of a run record (`research/runs/<id>.toml`, docs/guides/research-evidence.md#run-records)."""
 
     #: The folder of the records, relative to the repository root (`research.files.runs`).
     folder: str

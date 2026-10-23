@@ -22,7 +22,7 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 | Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path); a [runtime comparison](#runtime-comparison) with the original; before and after captures of Coney and the original from the same spot for anything visible ([What a pull request shows](#pr-evidence)) |
 | A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists; a [runtime comparison](#runtime-comparison) of the checkpoint's moments with the original; before and after captures of Coney and the original from the same spot for anything visible |
 | A bug fix | A test that fails before the fix and passes after it; in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
-| A research finding | An address and an [evidence level](research-workflow.md#evidence-levels) on every claim; runtime claims checked in the emulator and citing their [run record](research-workflow.md#run-records); `research claims` clean on the pages changed; a [trace diff](research-workflow.md#comparing-with-coney) where a scenario exists |
+| A research finding | An address and an [evidence level](research-evidence.md#evidence-levels) on every claim; runtime claims checked in the emulator and citing their [run record](research-evidence.md#run-records); `research claims` clean on the pages changed; a [trace diff](research-traces.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
 | Docs | `mkdocs build --strict`, markdownlint and [`docs check`](writing-docs.md#checking) on the pages touched |
 
@@ -30,13 +30,13 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 
 Before work that a player sees is done, its behaviour is compared with the original **running**, in one of two ways:
 
-- **A trace diff** ([Comparing with Coney](research-workflow.md#comparing-with-coney)): the same scripted scenario
+- **A trace diff** ([Comparing with Coney](research-traces.md#comparing-with-coney)): the same scripted scenario
   recorded on the original and on Coney, compared per update with `coney-tools trace diff`. Use it for numbers that
   change every update: positions, headings, health, timers, the camera. The result is the columns checked, the
   updates compared and the first step outside tolerance (or none).
 - **The same moment from a PCSX2 save state and from Coney**, captured and compared: load the saved slot in a PCSX2
   copy you hold a claim on, read the values or take the picture
-  ([Driving PCSX2](research-workflow.md#driving-pcsx2); the ready-made recipes for it are `coney-tools pcsx2 recipe`,
+  ([Driving PCSX2](research-tools.md#driving-pcsx2); the ready-made recipes for it are `coney-tools pcsx2 recipe`,
   which is being added and gets its own guide page), put Coney in the same place, and compare the named values or the
   two pictures. Use it for one-off facts: a constant, a flag, a state after an event, how a scene looks.
 
@@ -70,7 +70,7 @@ either ([Studying the original](research-workflow.md#studying-the-original)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
-  values ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
+  values ([Comparing with Coney](research-traces.md#comparing-with-coney)).
 
 ## Rules every test follows
 
@@ -115,7 +115,7 @@ When a play-tester sees a bug that a test does not, first ask which path each on
 ### Drive it like a gamepad {#gamepad}
 
 All movement is driven as a gamepad with analog sticks, in Coney (`--input-script` `stick` lines) and in the
-emulator: a PCSX2 [input recording](research-workflow.md#input-recordings) for a fixed run, or the
+emulator: a PCSX2 [input recording](research-tools.md#input-recordings) for a fixed run, or the
 [`pad`](pcsx2-recipes.md#pad) recipe for a driver that reacts to the game. The other things a runtime check sets up
 in the original (the player found, a human teleported or spawned, a checkpoint loaded) are
 [PCSX2 recipes](pcsx2-recipes.md) too. Use realistic partial deflections
@@ -303,7 +303,7 @@ other title area leaves the line out.
   the "before" shot from a build of `main` (or the branch point) and the "after" shot from the branch, with the same
   options.
 - **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
-  [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
+  [Driving PCSX2](research-tools.md#driving-pcsx2)), from a copy you hold a claim on.
 - **Look at each picture before using it.** Open every capture and check that it shows what its caption says:
   gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
   options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
@@ -438,4 +438,4 @@ People play a play-test build (the `playtest` preset: optimised, with the debug 
 of what changed and how to reach it (commands that start
 through the player's path). Nobody waits for them: work merges on the automated gate. A finding comes back as a fix
 on the owning track, starting with a test that reproduces it. A mission stays **Pending approval** until a maintainer
-has played it ([Missions](research-workflow.md#missions)).
+has played it ([Missions](research-data.md#missions)).

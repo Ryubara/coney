@@ -1,6 +1,6 @@
 # Power classes: a Coney game reference list. The page docs/references/power-classes.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Power classes"
 about: |
   The combat-strength profiles: power meter, stamina, how long stuns and knock-downs last, and the AI's block,

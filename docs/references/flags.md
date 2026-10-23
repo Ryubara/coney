@@ -105,5 +105,5 @@ Evidence levels used: inferred.
 | `group` | int | | Fifth argument (flag `+0xd8`): a store's group number or a path network's bits ([groups](../research/flags.md#groups)). 0 is left out. |
 | `script` | str | | The script that adds it (without `.lua`). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

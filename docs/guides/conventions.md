@@ -192,7 +192,7 @@ Everything that reimplements a function of the original game carries an `@orig` 
 - **Address:** the original function's entry point in the NTSC-U executable `SLUS_212.15`, written with eight hex
   digits (`0x001490b8`).
 - **OriginalName:** the name the function's research page gives it (the research database, which will hold the
-  names in one place, is planned: [the research database](research-workflow.md#the-research-database)).
+  names in one place, is planned: [the research database](research-data.md#the-research-database)).
 - **File:** the original translation unit's file name, when it is known. When it isn't, write `(unknown)` and fix
   the tag when research finds it.
 

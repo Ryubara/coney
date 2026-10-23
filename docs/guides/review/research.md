@@ -11,7 +11,7 @@ is in [Writing these docs](../writing-docs.md#research-pages). This page says wh
 ## Checklist
 
 - [ ] **Every non-obvious claim has an evidence level**, written next to it, using the four levels of
-  [Evidence levels](../research-workflow.md#evidence-levels). Read the page claim by claim; an ungraded claim is
+  [Evidence levels](../research-evidence.md#evidence-levels). Read the page claim by claim; an ungraded claim is
   Important. `docs check` finds an address with no level in its block, row or lead line; it cannot find a claim that
   cites no address.
 - [ ] **The levels are used correctly.**

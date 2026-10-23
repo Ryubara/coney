@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Run records: what a research page's `confirmed (runtime)` claim cites (docs/guides/research-workflow.md#run-records).
+"""Run records: what a research page's `confirmed (runtime)` claim cites (docs/guides/research-evidence.md#run-records).
 
 A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipe run --record`,
 `pcsx2 record --run-record`, `pcsx2 record-run`) and by nothing else, so the method cannot be paraphrased away. It holds
@@ -8,7 +8,7 @@ words, and the values read: names, numbers and addresses only, never memory or g
 the sizes, the kinds) are `runs` in `.github/conventions.yml`, and the folder is `research.files.runs` there. Those
 limits cap how much a record can hold; they do not tell game data from our own (English game text is printable ASCII
 too, and numbers can carry bytes), so the reviewer reads the method, the args and the value names
-(docs/guides/research-workflow.md#run-records).
+(docs/guides/research-evidence.md#run-records).
 
 ```toml
 version = 1
@@ -51,7 +51,7 @@ trace_csv = "<sha256>"
 
 The digest is the SHA-256 of the record's fields, so a hand edit of a value, a name or the who shows up when the record
 is read. It detects an edit; it does not stop someone who writes a whole record and its digest, which is why the
-reviewer reads the values against the claim (docs/guides/research-workflow.md#run-records).
+reviewer reads the values against the claim (docs/guides/research-evidence.md#run-records).
 """
 
 from __future__ import annotations

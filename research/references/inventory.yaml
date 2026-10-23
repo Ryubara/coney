@@ -1,6 +1,6 @@
 # Inventory items: a Coney game reference list. The page docs/references/inventory.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Inventory items"
 about: |
   The 23 item slots of each player's inventory, ids 0-22 (`0x0041e420`). `CfgInventoryItem(object,

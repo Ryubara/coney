@@ -116,7 +116,7 @@ A pull request passes the orig review only when every function it changes is `cl
 [audit queue](../coney-tools-fidelity.md#orig) until it changes.
 
 Every finding names the Coney function, its `file:line` and the `@orig` address, and gives an evidence level as
-research claims do ([Evidence levels](../research-workflow.md)):
+research claims do ([Evidence levels](../research-evidence.md#evidence-levels)):
 
 - `confirmed (code)`: you read both sides of what the finding is about;
 - `inferred`: part of it rests on a callee you did not open, or on the research page.

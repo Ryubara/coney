@@ -9,7 +9,7 @@ take nothing. A frame is one fixed step of 1/30 s, so on the original it is one 
 ScriptedPad plays a script frame by frame as Coney's ScriptedInput does (taps last one frame) and gives the raw pad
 bytes the original's patched pad read takes: active-low buttons and the four stick bytes, made from a percentage
 exactly as Coney makes them (`160 + round(0.95 * v)` above 0, `95 - round(0.95 * |v|)` below, 128 at rest), so both
-games see the same stick (docs/guides/research-workflow.md#driving-pcsx2).
+games see the same stick (docs/guides/research-tools.md#driving-pcsx2).
 """
 
 from __future__ import annotations

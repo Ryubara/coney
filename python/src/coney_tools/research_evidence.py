@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The evidence rule of the research page standard: every block that cites an address states how it is known.
 
-The levels and their spellings are those of docs/guides/research-workflow.md#evidence-levels. `check_evidence` yields
+The levels and their spellings are those of docs/guides/research-evidence.md#evidence-levels. `check_evidence` yields
 the `evidence` findings of a page: an address with no level in its block, row or lead line and an old-form runtime claim
 on a page that does not explain it (both `Finding.by_section`, which a legacy page owes only in the sections a change
 touches), and a level in a form that is refused (which it owes page-wide).

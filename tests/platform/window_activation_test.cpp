@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Windows opened by runs nobody is playing must not take the keyboard focus (docs/guides/research-workflow.md): the SDL
-// hints RenderEngine::start sets before librw shows its window. SDL reads hints without a display, so this runs on CI.
+// Windows opened by runs nobody is playing must not take the keyboard focus
+// (docs/guides/research-tools.md#running-coney): the SDL hints RenderEngine::start sets before librw shows its window.
+// SDL reads hints without a display, so this runs on CI.
 #include <SDL3/SDL.h>
 #include <catch2/catch_test_macros.hpp>
 

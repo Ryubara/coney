@@ -7,7 +7,7 @@ after = 90
 
 [original]
 # A state of the original in checkpoint 2 before a loot cabinet, copied from a save state
-# (docs/guides/research-workflow.md#differential-playthroughs); never committed.
+# (docs/guides/research-traces.md#differential-playthroughs); never committed.
 state = "states/l99-cp2-loot.p2s"
 patches = ["scripted-pad", "right-stick", "event-call", "event-callback", "event-hint", "event-sound"]
 friends = ["Ash", "Rembrandt"]

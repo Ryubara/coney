@@ -517,5 +517,5 @@ Evidence levels used: inferred.
 | `levels` | list | | Level numbers whose scripts create this type with a constant type argument. |
 | `image` | str | | A thumbnail, a path below `docs/references/images/` (`characters/warr_re_cv.png`); set by extract from the files present. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

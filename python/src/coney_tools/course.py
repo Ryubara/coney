@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Adaptive pads for mission playthroughs: a course plays a stretch of a mission by what is on screen, the same way on
-the original and on Coney (docs/guides/research-workflow.md#differential-playthroughs).
+the original and on Coney (docs/guides/research-traces.md#differential-playthroughs).
 
 A fixed input script cannot finish a mission on two games: load times, the AI and the camera put the enemies and the
 lessons at other updates. A course instead looks, once an update, at an Observation (where the player and the camera

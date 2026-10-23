@@ -33,12 +33,12 @@ from coney_tools.recipes import Recipe, RecipeError
 #: The game's 60 Hz tick count; the characters step on each tick that makes it even (docs/research/tasks.md#tick).
 TICK_COUNT = 0x005104F4
 #: Lua 4's globals: ScriptSystem *0x00512b04, its lua_State at +4, the globals table at +0x44
-#: (docs/guides/research-workflow.md#driving-pcsx2, "Following a script at runtime").
+#: (docs/guides/research-tools.md#driving-pcsx2, "Following a script at runtime").
 SCRIPT_SYSTEM = 0x00512B04
 #: ScriptSystem vtable slot +0x2c: run a string (lua_dobuffer over its lua_State at +4), docs/research/scripting.md.
 SCRIPT_DO_STRING = 0x00356A78
 #: Where a `lua` step puts its text: spare EE memory below the ELF that held only zeros in every state checked
-#: (docs/guides/research-workflow.md#driving-pcsx2), above the hook caves, the call block and the ring.
+#: (docs/guides/research-tools.md#driving-pcsx2), above the hook caves, the call block and the ring.
 LUA_BUFFER = 0x000C0000
 LUA_BUFFER_SIZE = 0x4000
 
@@ -363,7 +363,7 @@ class Runner:
                     return
 
 
-#: Lua 4's type tags as the original's TObjects carry them (docs/guides/research-workflow.md#driving-pcsx2):
+#: Lua 4's type tags as the original's TObjects carry them (docs/guides/research-tools.md#driving-pcsx2):
 #: the order of lua.h's LUA_T* (user data, nil, number, string, table, function).
 LUA_TYPES = {0: "userdata", 1: "nil", 2: "number", 3: "string", 4: "table", 5: "function"}
 #: A Lua 4 hash node: key TObject (16 bytes), value TObject (16), next pointer, padded to 40. The table (Hash) holds

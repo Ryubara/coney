@@ -9,7 +9,7 @@ other tool keeps working. See docs/guides/agents.md#setup.
 
 `mcp serve pcsx2 --copy NAME` also hands the server that PCSX2 copy's ports (PCSX2_DEBUG_PORT, PCSX2_PINE_PORT),
 which the PCSX2-MCP fork's server takes as `pcsx2_connect`'s defaults, so an agent's connect reaches the copy it
-claimed and never the first copy's ports (docs/guides/research-workflow.md#several-at-once).
+claimed and never the first copy's ports (docs/guides/research-tools.md#several-at-once).
 """
 
 from __future__ import annotations

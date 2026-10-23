@@ -10,7 +10,7 @@ kind and cause, the goals' shares and the fight goals' lengths, how many fighter
 places are held, where the waiting ones stand, taunts, help calls and the idle share, and each side's tactic.
 Every metric is worked out per human, per side and for the whole match. coney_tools.fight_compare puts the metrics of
 several recordings of the original (min, median, max over the runs) beside Coney's and flags the ones outside the
-original's spread (docs/guides/research-workflow.md#comparing-with-coney, docs/guides/coney-tools-pcsx2.md#trace).
+original's spread (docs/guides/research-traces.md#comparing-with-coney, docs/guides/coney-tools-pcsx2.md#trace).
 
 The module is longer than the guides' rough 500 lines on purpose: reading (coney_tools.fight_trace) and comparing
 (coney_tools.fight_compare) are already their own modules, and what is left is one pipeline whose steps share the

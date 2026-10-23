@@ -48,5 +48,5 @@ Evidence levels used: confirmed-code, inferred.
 | `started` | int | | `GangStartSpawner` calls that switch a spawner to it. |
 | `scripts` | list | | The scripts that make those calls (at most six). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

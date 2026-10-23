@@ -1,4 +1,4 @@
-# The event hooks of a differential playthrough (docs/guides/research-workflow.md#differential-playthroughs): what
+# The event hooks of a differential playthrough (docs/guides/research-traces.md#differential-playthroughs): what
 # research/traces/events.toml turns into the original's event log.
 
 [hook.event-call]

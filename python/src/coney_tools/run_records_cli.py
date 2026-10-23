@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The commands that write run records (docs/guides/research-workflow.md#run-records): `pcsx2 record-run` for an
+"""The commands that write run records (docs/guides/research-evidence.md#run-records): `pcsx2 record-run` for an
 observation made by hand (through the pcsx2 MCP server), and the `--record` of `pcsx2 recipe run` and `--run-record` of
 `pcsx2 record`, which write the record of the run they made. The record itself is coney_tools.run_records.
 

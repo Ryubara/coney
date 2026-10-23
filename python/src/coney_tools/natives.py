@@ -2,7 +2,7 @@
 """The script-binding masterlist: loading and checking `research/bindings/<category>.yaml`.
 
 The file lists every function the game registers with its Lua state (the role FiveM calls "natives"), one entry per
-name. The schema is documented in docs/guides/research-workflow.md#bindings; the rendered pages are in
+name. The schema is documented in docs/guides/research-data.md#bindings; the rendered pages are in
 docs/references/bindings/ (see `natives_render`).
 """
 

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Rendering the mission list into docs/missions/: an overview checklist and one page per level.
 
-Research: docs/guides/research-workflow.md#missions
+Research: docs/guides/research-data.md#missions
 """
 
 from __future__ import annotations
