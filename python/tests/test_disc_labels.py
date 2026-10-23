@@ -36,14 +36,32 @@ def test_every_test_case_that_needs_the_disc_is_tagged_disc() -> None:
     assert missing == [], "test cases that skip without CONEY_DISC need the tag [disc]:\n" + "\n".join(missing)
 
 
-#: A registration of one test case per item (tests/support/each_case.h): `registerEach(items, "tags", ...)`, the tags
-#: being the second argument and the items one identifier (a constant list).
-_EACH = re.compile(r'registerEach\(\s*[\w:]+\s*,\s*"([^"]*)"')
+#: A registration of a test case from code (tests/support/each_case.h): `registerEach(items, "tags", ...)`, the items
+#: one identifier (a constant list), or `registerCase(name, "tags", ...)`, the name a string literal or one identifier.
+#: Both are matched with optional template arguments and a space before the parenthesis, as `registerEach<T>(` and
+#: `registerEach (` compile; the tags are the second argument either way.
+_TEMPLATE_ARGS = r"(?:<[^;()]*>)?"
+_EACH = re.compile(rf'\bregisterEach\b\s*{_TEMPLATE_ARGS}\s*\(\s*[\w:]+\s*,\s*"([^"]*)"')
+_CASE_CALL = re.compile(rf'\bregisterCase\b\s*{_TEMPLATE_ARGS}\s*\(\s*(?:"(?:[^"\\]|\\.)*"|[\w:.]+)\s*,\s*"([^"]*)"')
+#: Any call of the two, readable or not: the file check compares this count with the tags it could read.
+_REGISTRATION_CALL = re.compile(rf"\bregister(?:Each|Case)\b\s*{_TEMPLATE_ARGS}\s*\(")
 
 
 def _each_tags(text: str) -> list[str]:
-    """The tags of each `registerEach` call in a source file."""
-    return _EACH.findall(text)
+    """The tags of each `registerEach` and `registerCase` call in a source file, for the calls whose shape is read."""
+    return _EACH.findall(text) + _CASE_CALL.findall(text)
+
+
+def _disc_problems(name: str, text: str) -> list[str]:
+    """What is wrong with the registrations of one source file: nothing for a file that does not name `CONEY_DISC`."""
+    if "CONEY_DISC" not in text:
+        return []
+    problems = []
+    # Fail closed: a call whose tags the patterns cannot read (an inline list as the items) is not skipped.
+    if len(_REGISTRATION_CALL.findall(text)) != len(_each_tags(text)):
+        problems.append(f"{name}: a registration call of a shape the check cannot read")
+    problems += [f"{name}: {tags}" for tags in _each_tags(text) if "[disc]" not in tags]
+    return problems
 
 
 def test_the_tags_of_a_registration_are_found() -> None:
@@ -54,21 +72,48 @@ def test_the_tags_of_a_registration_are_found() -> None:
     assert _each_tags('registerEach(std::array{1, 2}, "[x]", n, b);') == []
 
 
+def test_every_form_of_a_registration_call_is_found() -> None:
+    # Template arguments, a space before the parenthesis and a direct registerCase all compile, and all register a
+    # case that a missing [disc] would let skip under -LE disc.
+    assert _each_tags('registerEach<std::uint32_t>(kSeeds, "[a]", n, b);') == ["[a]"]
+    assert _each_tags('registerEach<std::array<int, 2>> (kSeeds, "[a]", n, b);') == ["[a]"]
+    assert _each_tags('registerEach (kSeeds, "[a]", n, b);') == ["[a]"]
+    assert _each_tags('coney::test::registerEach\n(kSeeds, "[a]", n, b);') == ["[a]"]
+    assert _each_tags('coney::test::registerCase("one case", "[b]", body);') == ["[b]"]
+    assert _each_tags('coney::test::registerCase (kName, "[b]", body);') == ["[b]"]
+    assert _each_tags('coney::test::registerCase<void>("a, b", "[b]", body);') == ["[b]"]
+
+
+def test_a_registration_without_disc_is_reported_in_every_form() -> None:
+    for call in (
+        'coney::test::registerEach(kSeeds, "[story]", n, b);',
+        'coney::test::registerEach<std::uint32_t>(kSeeds, "[story]", n, b);',
+        'coney::test::registerEach (kSeeds, "[story]", n, b);',
+        'coney::test::registerCase("one", "[story]", body);',
+    ):
+        text = f"// skips without CONEY_DISC\n{call}\n"
+        assert _disc_problems("x.cpp", text) == ["x.cpp: [story]"], call
+        assert _disc_problems("x.cpp", text.replace("[story]", "[disc][story]")) == [], call
+
+
+def test_a_file_with_an_unreadable_call_fails_the_count_comparison() -> None:
+    unreadable = 'coney::test::registerEach(std::array{1, 2}, "[disc]", n, b);'
+    readable = 'coney::test::registerEach(kSeeds, "[disc]", n, b);'
+    text = f"// skips without CONEY_DISC\n{readable}\n{unreadable}\n"
+    assert _disc_problems("x.cpp", text) == ["x.cpp: a registration call of a shape the check cannot read"]
+    # The same holds for a direct call whose name is an expression the pattern does not read.
+    direct = 'CONEY_DISC\nregisterCase(std::format("n{}", 1), "[disc]", body);\n'
+    assert _disc_problems("x.cpp", direct) == ["x.cpp: a registration call of a shape the check cannot read"]
+    # A file that does not name CONEY_DISC is not this check's.
+    assert _disc_problems("x.cpp", f"{unreadable}\n") == []
+
+
 def test_every_registered_case_that_needs_the_disc_is_tagged_disc() -> None:
-    # A case registered by registerEach is no TEST_CASE, so the check above does not see it: a file that names
-    # CONEY_DISC (its skip message) tags every case it registers [disc].
+    # A case registered from code is no TEST_CASE, so the check above does not see it: a file that names CONEY_DISC
+    # (its skip message) tags every case it registers [disc].
     missing = []
     for path in sorted((REPO / "tests").rglob("*.cpp")):
-        text = path.read_text(encoding="utf-8")
-        if "CONEY_DISC" in text:
-            # Fail closed: a call whose tags the pattern cannot read (an inline list as the items) is not skipped.
-            if text.count("registerEach(") != len(_each_tags(text)):
-                missing.append(
-                    f"{path.relative_to(REPO).as_posix()}: a registerEach call of a shape the check cannot read"
-                )
-            missing += [
-                f"{path.relative_to(REPO).as_posix()}: {tags}" for tags in _each_tags(text) if "[disc]" not in tags
-            ]
+        missing += _disc_problems(path.relative_to(REPO).as_posix(), path.read_text(encoding="utf-8"))
     assert missing == [], "registered cases that skip without CONEY_DISC need the tag [disc]:\n" + "\n".join(missing)
 
 

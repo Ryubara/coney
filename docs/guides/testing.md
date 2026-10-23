@@ -199,11 +199,11 @@ void playChase(std::uint32_t seed);  // opens the disc (SKIP without it), plays,
 
 Every item keeps every assertion, a name of its own (the seed, the level and checkpoint) and the tags, so ctest lists,
 selects (`-R`) and times it, and a failure names the item. The tags must say `[disc]` when the body skips without the
-disc (a Python test checks the registrations as it checks `TEST_CASE`s). Split a test when its items are independent and
-take long enough to matter (a case under a few seconds stays a loop); a scenario whose stages build on one another, as
-the level34 checkpoint 3 riot (stereos, then loot, then the meter), stays one test. `build --test` then runs
-the cases `-j` at a time, longest first once a run has recorded their costs ([How long the tests
-take](building.md)).
+disc (a Python test checks every `registerEach` and `registerCase` call as it checks `TEST_CASE`s, and fails on a call
+whose tags it cannot read). Split a test when its items are independent and take long enough to matter (a case under a
+few seconds stays a loop); a scenario whose stages build on one another, as the level34 checkpoint 3 riot (stereos, then
+loot, then the meter), stays one test. `build --test` then runs the cases `-j` at a time, longest first once a run has
+recorded their costs ([How long the tests take](building.md#test-timings)).
 
 ### Diff against the original {#diff-against-the-original}
 
