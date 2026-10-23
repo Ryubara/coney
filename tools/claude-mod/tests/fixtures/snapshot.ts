@@ -80,7 +80,7 @@ export default {
      799
     ],
     "kind": "fix",
-    "claimant": "Ryubara-who-maintains-the-coney-project",
+    "claimant": "example-maintainer-who-owns-the-project",
     "claimed_at": "2026-10-21T14:00:00Z",
     "scope": [
      "python/src/coney_tools/task_cli.py"
@@ -162,7 +162,7 @@ export default {
      741
     ],
     "kind": "fix",
-    "claimant": "Ryubara-who-maintains-the-coney-project",
+    "claimant": "example-maintainer-who-owns-the-project",
     "claimed_at": "2026-10-21T14:00:00Z",
     "scope": [
      "src/platform/frame.cpp",
@@ -262,7 +262,7 @@ export default {
      803
     ],
     "kind": "fix",
-    "claimant": "Ryubara-who-maintains-the-coney-project",
+    "claimant": "example-maintainer-who-owns-the-project",
     "claimed_at": "2026-10-21T14:00:00Z",
     "scope": [
      "src/ai/ai_goal.cpp"
@@ -358,7 +358,7 @@ export default {
  },
  "claims": {
   "error": null,
-  "account": "Ryubara-who-maintains-the-coney-project",
+  "account": "example-maintainer-who-owns-the-project",
   "rules": {
    "warn_hours": 48,
    "deadline_hours": 72,
@@ -368,7 +368,7 @@ export default {
    {
     "issue": 741,
     "title": "gameplay: Fix the uncuff steer",
-    "claimant": "Ryubara-who-maintains-the-coney-project",
+    "claimant": "example-maintainer-who-owns-the-project",
     "status": "claimed",
     "task": null,
     "scope": [
@@ -447,7 +447,7 @@ export default {
     "status": "S-in-progress",
     "priority": "P-high",
     "assignees": [
-     "Ryubara-who-maintains-the-coney-project"
+     "example-maintainer-who-owns-the-project"
     ]
    },
    {

@@ -25,13 +25,13 @@ HEADER = (
 
 #: The account of the synthetic units, as long as a GitHub login can be (39 characters), so the mod's tests draw the
 #: widest header and claim lines it will ever meet; the snapshot tests keep the short name `github_answers` gives.
-LONG_ACCOUNT = "Ryubara-who-maintains-the-coney-project"
+LONG_ACCOUNT = "example-maintainer-who-owns-the-project"
 
 
 def portable(value: Any, root: Path) -> Any:
     """The value with the test's temporary folder written as `/work`, backslashes as slashes and the long account."""
     if isinstance(value, str):
-        return value.replace(str(root), "/work").replace("\\", "/").replace("Ryubara", LONG_ACCOUNT)
+        return value.replace(str(root), "/work").replace("\\", "/").replace("example-maintainer", LONG_ACCOUNT)
     if isinstance(value, list):
         return [portable(item, root) for item in value]
     if isinstance(value, dict):

@@ -53,7 +53,7 @@ def test_the_local_snapshot_has_the_schema_and_no_github(layout: Layout) -> None
 
 def test_a_unit_is_read_from_its_task_file_and_stamp_log(layout: Layout) -> None:
     row = unit(collect(sources(layout), github=False), "fix-frame-812")
-    assert row["issues"] == [741] and row["kind"] == "fix" and row["claimant"] == "Ryubara"
+    assert row["issues"] == [741] and row["kind"] == "fix" and row["claimant"] == "example-maintainer"
     assert row["goal"] == "Fix the uncuff steer."
     assert row["scope"] == ["src/platform/frame.cpp", "src/ai/"]
     assert row["branch"] == "fix-frame-812" and row["worktree"].endswith("fix-frame-812")
@@ -233,11 +233,11 @@ def test_a_wrong_shaped_hooks_file_drops_the_wrong_parts(layout: Layout) -> None
 def test_the_claims_carry_deadlines_titles_and_the_account(layout: Layout) -> None:
     report = collect(sources(layout, FakeGh(github_answers())), github=True)
     claims = report["claims"]
-    assert claims["error"] is None and claims["account"] == "Ryubara"
+    assert claims["error"] is None and claims["account"] == "example-maintainer"
     assert claims["rules"] == {"warn_hours": 48, "deadline_hours": 72, "enforced": CONVENTIONS.claims.release}
     first, second = claims["claims"]
     assert first["issue"] == 741 and first["title"] == "gameplay: Fix the uncuff steer"
-    assert first["deadline"] == iso(ago(hours=10) + timedelta(hours=72)) and first["claimant"] == "Ryubara"
+    assert first["deadline"] == iso(ago(hours=10) + timedelta(hours=72)) and first["claimant"] == "example-maintainer"
     assert second["issue"] == 770 and second["title"] is None  # not an open issue any more
     assert second["warned"] is False and second["waiting"] is None
 
@@ -272,7 +272,7 @@ def test_the_issues_section_holds_claimed_unit_and_critical_issues_only(layout: 
         "title": "gameplay: Fix the uncuff steer",
         "status": "S-in-progress",
         "priority": "P-high",
-        "assignees": ["Ryubara"],
+        "assignees": ["example-maintainer"],
     }
     assert issues["issues"][1]["priority"] == "P-critical"
 

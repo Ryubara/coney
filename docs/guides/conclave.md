@@ -139,16 +139,15 @@ pass, and the real sources must pass. A session start never waits for Conclave (
 --plugin-dir tools/claude-mod`); neither `claude plugin validate` nor `claude plugin test` writes them, and CI has no
 logged-in Claude Code to load it. So where they are absent the check reads a stub of the module in Coney's own words,
 `python/tests/conclave_engine_stub.d.ts`: only what the check looks at (`EngineInterface` and the eleven calls, `On`,
-`Register` and the names the mod imports), with no type errors reported. The stub is in the repository (the
-maintainers allowed it on 2026-10-23: it holds no key, token, path, name or address, only the shapes the check reasons
-with, in Coney's own words), so CI runs the whole check. Where the check cannot run (no Node.js, no TypeScript, or the
-stub is gone) its tests skip on a machine and **fail under CI** (the `CI` variable GitHub sets), naming what is missing,
-because a skip cannot be told apart from a pass among a pull request's required checks and this check is the only
-enforcement of the boundary. Keep the stub free of anything but those shapes.
-`python/tests/test_conclave_engine_stub.py` holds the stub against
-the engine's types whenever both are present (the names and kinds the mod imports, the nouns and methods it calls, and
-the verdict on every case of the boundary tests), so the stub cannot drift unseen; the rest of its tests run on the
-stub alone.
+`Register` and the names the mod imports), with no type errors reported. The stub is in the repository (the maintainers
+allowed it on 2026-10-23: it holds no key, token, path, name or address, only the shapes the check reasons with, in
+Coney's own words), so CI runs the whole check. Where the check cannot run (no Node.js, no TypeScript, or the stub is
+gone) its tests skip on a machine and **fail under CI** (the `CI` variable GitHub sets), naming what is missing, because
+a skip cannot be told apart from a pass among a pull request's required checks and this check is the only enforcement of
+the boundary. Keep the stub free of anything but those shapes. `python/tests/test_conclave_engine_stub.py` holds the
+stub against the engine's types whenever both are present (the names and kinds the mod imports, the nouns and methods it
+calls, and the verdict on every case of the boundary tests), so the stub cannot drift unseen; the rest of its tests run
+on the stub alone.
 
 What Conclave may take over later, because the maintainers allowed it, is Coney's own pollers (pull requests, the
 release queue, builds, triage), the stop guard on unowned pull request problems and the pull request ownership store;

@@ -533,7 +533,7 @@ for (const columns of [60, 80] as const) {
     const first = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
     expect(await first.find({ type: 'Text', text: /^units not read: / })).toBeDefined()
     // ... and the 39-character account of the fixture, in the header
-    expect(await first.find({ type: 'Text', text: /^UNITS AND ISSUES \(mine: Ryubara-who-/ })).toBeDefined()
+    expect(await first.find({ type: 'Text', text: /^UNITS AND ISSUES \(mine: example-maintainer-who-/ })).toBeDefined()
     expect(overflows(await drawn(first), columns)).toEqual([])
     await first.unmount()
   })

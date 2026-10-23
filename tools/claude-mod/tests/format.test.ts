@@ -54,7 +54,7 @@ test('a claim is amber from the warning and red in its last hours, but only once
 })
 
 test('the mod folder belongs to the checkout two levels up, with either slash', () => {
-  expect(checkoutOf(String.raw`C:\Repositories\Coney\repos\coney\tools\claude-mod`)).toBe('C:/Repositories/Coney/repos/coney')
+  expect(checkoutOf(String.raw`C:\ws\repos\coney\tools\claude-mod`)).toBe('C:/ws/repos/coney')
   expect(checkoutOf('/home/a/coney/tools/claude-mod/')).toBe('/home/a/coney')
 })
 
@@ -111,10 +111,10 @@ test('a snapshot of a newer schema is not taken in', () => {
 })
 
 test("the private Python environment sits in the checkout's own scratch folder", () => {
-  expect(venvOf('C:/Repositories/Coney/worktrees/coney/fix-x')).toBe('C:/Repositories/Coney/scratch/fix-x/conclave-venv')
+  expect(venvOf('C:/ws/worktrees/coney/fix-x')).toBe('C:/ws/scratch/fix-x/conclave-venv')
   expect(venvOf('/home/a/ws/worktrees/coney/b/')).toBe('/home/a/ws/scratch/b/conclave-venv')
   // the main checkout has no branch folder of its own: it gets `main`, which no worktree can be named
-  expect(venvOf(String.raw`C:\Repositories\Coney\repos\coney`)).toBe('C:/Repositories/Coney/scratch/main/conclave-venv')
+  expect(venvOf(String.raw`C:\ws\repos\coney`)).toBe('C:/ws/scratch/main/conclave-venv')
   // a worktree named like the main checkout's folder shares nothing with it
   expect(venvOf('/home/a/ws/worktrees/coney/coney')).toBe('/home/a/ws/scratch/coney/conclave-venv')
   // outside the workspace layout the mod cannot say where the scratch folder is, so it leaves the variable alone

@@ -52,7 +52,7 @@ class FakeGh:
 def make_task(
     scratch: Path, task: str, issues: tuple[int, ...] = (741,), scope: tuple[str, ...] = ("src/ai/",)
 ) -> Path:
-    """`scratch/<task>/TASK.md` for a fix task claimed 2 days ago by Ryubara."""
+    """`scratch/<task>/TASK.md` for a fix task claimed 2 days ago by example-maintainer."""
     folder = scratch / task
     folder.mkdir(parents=True)
     claimed_at = ago(days=2)
@@ -61,7 +61,7 @@ def make_task(
             task=task,
             issues=issues,
             kind="fix",
-            claimant="Ryubara",
+            claimant="example-maintainer",
             claimed_at=claimed_at,
             scope=scope,
             sections={"Goal": "Fix the uncuff steer.\nSecond line."},
@@ -100,7 +100,7 @@ def stamp_steps(
         )
 
 
-def card(issue: int, claimant: str = "Ryubara", hours_idle: float = 10, **changes: Any) -> Card:
+def card(issue: int, claimant: str = "example-maintainer", hours_idle: float = 10, **changes: Any) -> Card:
     """A held claim card idle for `hours_idle` hours."""
     base: dict[str, Any] = {
         "issue": issue,
@@ -128,13 +128,13 @@ aliases = ["research-reviewer", "pr-reviewer"]
 def github_answers() -> dict[tuple[str, ...], Any]:
     """`gh` answers: the account, the issues, one open and one merged pull request, the ruleset."""
     return {
-        ("api", "user"): {"login": "Ryubara"},
+        ("api", "user"): {"login": "example-maintainer"},
         ("issue", "list"): [
             {
                 "number": 741,
                 "title": "gameplay: Fix the uncuff steer",
                 "labels": [{"name": "S-in-progress"}, {"name": "P-high"}],
-                "assignees": [{"login": "Ryubara"}],
+                "assignees": [{"login": "example-maintainer"}],
             },
             {"number": 790, "title": "core: Fix the crash", "labels": [{"name": "P-critical"}], "assignees": []},
             {"number": 5, "title": "docs: Add a page", "labels": [], "assignees": []},
