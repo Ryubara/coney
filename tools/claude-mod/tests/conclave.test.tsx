@@ -696,7 +696,7 @@ test("two checkouts keep different lists: a read that drops one leaves the other
   expect(world.stored['offer:/work/repos/coney']).toEqual(other)
 })
 
-test('a clear applies the list saved since the session started, and a compaction does not', async ($, on) => {
+test('a clear applies the list saved since the session started; a compaction and a resume do not', async ($, on) => {
   const world = engine(on, prints(snapshot()))
   await $.session.start({ ...SESSION })
   await world.clock.advance(1000)
@@ -707,10 +707,32 @@ test('a clear applies the list saved since the session started, and a compaction
   await $.classic.SessionStart({ source: 'compact', agent_type: 'coordinator' })
   expect(await isOffered($, 'general-purpose')).toBe(true)
 
+  // A resumed conversation within the cache lifetime has the old listing in its cached prefix: swapping would rewrite it.
+  await $.classic.SessionStart({ source: 'resume', agent_type: 'coordinator' })
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+
   // A clear starts a new prompt cache anyway, so the saved list applies from the new conversation's first turn.
   await $.classic.SessionStart({ source: 'clear', agent_type: 'coordinator' })
   expect(await isOffered($, 'general-purpose')).toBe(false)
   for (const agent of ALLOWED) expect(await isOffered($, agent)).toBe(true)
+})
+
+test('a startup takes up the saved list and a resume leaves the listing as the conversation has it', async ($, on) => {
+  const world = engine(on, prints(snapshot()), { saved: { allowed: ALLOWED } })
+  await $.session.start({ ...SESSION })
+  world.answer = prints(
+    snapshot(copy => {
+      copy.config.roles = ['coordinator', 'general-purpose']
+    }),
+  )
+  await world.clock.advance(60_000)
+  expect(await isOffered($, 'general-purpose')).toBe(false)
+
+  await $.classic.SessionStart({ source: 'resume' })
+  expect(await isOffered($, 'general-purpose')).toBe(false)
+
+  await $.classic.SessionStart({ source: 'startup' })
+  expect(await isOffered($, 'general-purpose')).toBe(true)
 })
 
 test('a clear takes up a changed list, and one with no saved list leaves the listing as it is', async ($, on) => {

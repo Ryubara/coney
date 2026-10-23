@@ -36,13 +36,13 @@ export const register: Register = on => {
   })
 
   // Reads the agent type of the session's main thread; the event and its answer pass through untouched. A new
-  // conversation after `/clear` also takes up the list saved since the session started: its prompt cache starts empty,
-  // so nothing is rewritten. A compaction keeps the cache of the listing, so it keeps the list too.
+  // conversation (a startup or a `/clear`) also takes up the list saved since the session started: its prompt cache
+  // starts empty, so nothing is rewritten. A compaction and a resume keep the cache of the listing, so they keep the list.
   on('classic.SessionStart', async ($, e, next) => {
     const result = await next(e)
     try {
       await setRole($, e.agent_type ?? null)
-      if (e.source !== 'compact') await applySavedOffer($, true)
+      if (e.source === 'startup' || e.source === 'clear') await applySavedOffer($, true)
       await showStatus($, cwd)
     } catch {
       // The status line is a convenience; the answer beneath (Tether's HANDOFF context) is returned whole.

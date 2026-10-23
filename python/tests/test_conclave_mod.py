@@ -11,11 +11,21 @@ import re
 from pathlib import Path
 
 import pytest
-from conclave_boundary import CODE, EVENTS, MOD, TETHER_EVENTS, mod_sources, run_check, unavailable
+from conclave_boundary import CODE, EVENTS, MOD, TETHER_EVENTS, engine_types, mod_sources, run_check, unavailable
 
 Verdict = dict[str, dict[str, dict[str, list[str]]]]
 
-SNAPSHOT_ARGV = "['uv', 'run', '-q', '--project', 'dir', 'coney-tools', 'conclave', 'snapshot', '--json']"
+#: The command as the mod writes it: the project folder is built from the checkout the mod's own folder sits in.
+SNAPSHOT_ARGV = (
+    "['uv', 'run', '-q', '--project', `${checkoutOf($.plugin.root)}/python`, "
+    "'coney-tools', 'conclave', 'snapshot', '--json']"
+)
+
+
+def argv_with(project: str) -> str:
+    """The snapshot command with another `--project` value, for a crossing."""
+    return SNAPSHOT_ARGV.replace("`${checkoutOf($.plugin.root)}/python`", project)
+
 
 #: Each snippet is a way across the line that the check has to see, with a word its message must carry. They run as
 #: modules of the mod, with the engine's `$`, its `on` and a few stubs in scope (conclave_boundary.PRELUDE).
@@ -115,23 +125,144 @@ CROSSINGS = [
     ("const HANDOFF = 1", "HANDOFF"),
     ("const n = usage()", "usage("),
     ("const m = { context_tokens: 1 }", "context_tokens"),
+    # What the five hooks do: the filters that keep command.run and ui.render off Tether's commands and panes, and an
+    # answer that passes the event on (docs/guides/conclave.md#boundary).
+    ("on('command.run', { command: 'tether-fleet' }, async () => ({ text: 'x' }))", "command: 'conclave'"),
+    ("on('command.run', async ($, e, next) => ({ text: 'swallowed' }))", "command: 'conclave'"),
+    ("on('command.run', { command: name }, async () => ({ text: 'x' }))", "command: 'conclave'"),
+    ("on('command.run', { command: 'conclave', ...x }, async () => ({ text: 'x' }))", "command: 'conclave'"),
+    ("on('command.run', { command: 'conclave', args: 'x' }, async () => ({ text: 'x' }))", "command: 'conclave'"),
+    (
+        "const filter = { command: 'conclave' } as const\non('command.run', filter, async () => ({ text: 'x' }))",
+        "command: 'conclave'",
+    ),
+    ("on('ui.render', { component: 'Pane', requestId: 'tether' }, () => null)", "requestId: 'conclave'"),
+    ("on('ui.render', { component: 'Pane' }, () => null)", "requestId: 'conclave'"),
+    ("on('ui.render', { component: 'Pane', requestId: name }, () => null)", "requestId: 'conclave'"),
+    ("on('ui.render', { component: 'AbovePrompt', requestId: 'tether' }, () => null)", "component: 'AbovePrompt'"),
+    ("on('ui.render', async ($, e, next) => null)", "component: 'AbovePrompt'"),
+    ("on('ui.render', { component: 'Message' }, () => null)", "component: 'AbovePrompt'"),
+    ("on('ui.render', { component: name }, () => null)", "component: 'AbovePrompt'"),
+    ("on('session.start', async () => ({ cwd: '' }))", "session.start must end"),
+    ("on('session.start', async ($, e, next) => { if (name) return { cwd: '' }; return next(e) })", "session.start"),
+    ("on('session.start', async ($, e, next) => { await next(e) })", "session.start must end"),
+    ("on('session.start', async ($, e, next) => next({ ...e, cwd: '' }))", "session.start must end"),
+    ("on('session.start', async ($, e, next) => { const again = e; return next(again) })", "session.start must end"),
+    ("on('session.start', fn)", "inline function"),
+    ("on('session.start', async ($, e, next) => next(e)).catch(() => ({ cwd: '' }))", "must end every path in next(e)"),
+    ("const reg = on('session.start', async ($, e, next) => next(e))", "registration"),
+    ("on('agent.offer', async () => ({ isOffered: false }))", "agent.offer must end"),
+    ("on('agent.offer', async () => ({ isOffered: true }))", "agent.offer must end"),
+    ("on('agent.offer', async ($, e, next) => ({ isOffered: false, agent: 'x' }))", "agent.offer must end"),
+    ("on('agent.offer', async ($, e, next) => next(e)).catch(() => ({ isOffered: false }))", "next(e)"),
+    (
+        "on('classic.SessionStart', async ($, e, next) => ({ hookSpecificOutput: { hookEventName: 'SessionStart' } }))",
+        "const r = await next(e)",
+    ),
+    ("on('classic.SessionStart', async ($, e, next) => next(e))", "const r = await next(e)"),
+    (
+        "on('classic.SessionStart', async ($, e, next) => {"
+        " await $.ui.status('x'); const r = await next(e); return r })",
+        "const r = await next(e)",
+    ),
+    (
+        "on('classic.SessionStart', async ($, e, next) => { const r = await next(e); return { ...r } })",
+        "const r = await next(e)",
+    ),
+    (
+        "on('classic.SessionStart', async ($, e, next) => { const r = await next(e); if (name) return; return r })",
+        "const r = await next(e)",
+    ),
+    (
+        "on('classic.SessionStart', async ($, e, next) => { const r = await next(e); const q = r; return q })",
+        "const r = await next(e)",
+    ),
+    (
+        "on('classic.SessionStart', async ($, e, next) => { const r = await next(e); helper(r); return r })",
+        "const r = await next(e)",
+    ),
+    ("on('classic.SessionStart', async ($, e, next) => { const r = await next(e) })", "const r = await next(e)"),
+    (
+        "on('classic.SessionStart', async ($, e, next) => { const r = await next(e); return r }).catch(() => ({}))",
+        "must end every path in next(e)",
+    ),
+    ("$.command.register({ name: 'tether-fleet', description: 'x' })", "'conclave'"),
+    ("$.command.register({ name, description: 'x' })", "'conclave'"),
+    ("$.command.register({ description: 'x' })", "'conclave'"),
+    ("$.command.register({ name: 'conclave', ...x })", "'conclave'"),
+    ("const opts = { name: 'conclave' }\n$.command.register(opts)", "'conclave'"),
+    ("$.ui.open({ id: 'tether', title: 't' })", "'conclave'"),
+    ("$.ui.open({ title: 't' })", "'conclave'"),
+    ("$.ui.open({ id: name })", "'conclave'"),
+    ("const opts = { id: 'conclave' }\n$.ui.open(opts)", "'conclave'"),
+    # What `$.process.run` is given besides the command: the project folder, the options.
+    (f"await $.process.run({argv_with(chr(39) + '--with=evil' + chr(39))}, {{}})", "project folder"),
+    (f"await $.process.run({argv_with(chr(39) + 'dir' + chr(39))}, {{}})", "project folder"),
+    (f"await $.process.run({argv_with('`${name}/python`')}, {{}})", "project folder"),
+    (f"await $.process.run({argv_with('`${checkoutOf(name)}/python`')}, {{}})", "project folder"),
+    (
+        "async function again() {\n  function checkoutOf(root: string) { return '--with=evil' }\n"
+        f"  await $.process.run({argv_with('`${checkoutOf($.plugin.root)}/python`')}, {{}})\n}}",
+        "project folder",
+    ),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ env: {{ PYTHONSTARTUP: 'evil.py' }} }})", "options"),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ env: {{ PATH: '/tmp' }} }})", "options"),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ env: {{ UV_PROJECT_ENVIRONMENT: name, PATH: '/tmp' }} }})", "options"),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ stdin: 'x' }})", "options"),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ cwd: name, shell: true }})", "options"),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ ...x }})", "options"),
+    (f"const options = {{ cwd: name }}\nawait $.process.run({SNAPSHOT_ARGV}, options)", "options"),
+    (f"await $.process.run({SNAPSHOT_ARGV}, {{ cwd: name }}, 3)", "options"),
+    # Tether's words split over a `+` or a template, and the ways to reach code from a string.
+    ("const w = `HAND${'OFF'}`", "HANDOFF"),
+    ("const w = 'HAND' + 'OFF.md'", "HANDOFF"),
+    ("const a = 'HAND'\nconst w = a + 'OFF'", "HANDOFF"),
+    ("const part = 'ear'\nconst w = `/cl${part}`", "/clear"),
+    ("function f(e: { transcript_path: string }) { return e.transcript_path }", "transcript_path"),
+    ("const F = (() => {}).constructor as unknown as (s: string) => () => void\nF('return 1')()", "constructor"),
+    ("const F = (() => {}).constructor", "constructor"),
+    ("const F = (() => {})['constructor']", "constructor"),
+    ("const F = (() => {})['con' + 'structor']", "constructor"),
+    ("const F = Reflect.get(fn, 'constructor')", "constructor"),
+    ("const v = 1 as unknown as string", "as unknown as"),
+    ("setTimeout('evil()', 0)", "setTimeout"),
+    ("setInterval(() => {}, 1)", "setInterval"),
+    ("queueMicrotask(() => {})", "queueMicrotask"),
 ]
 
 #: Code the mod may contain: each must pass the check.
 ALLOWED = {
     "the hooks the mod writes": """
 import { atom, read, update } from 'claude-code'
-import { helper2 } from '../src/helper'
+async function draw(api: EngineInterface, e: unknown): Promise<unknown> { return api.ui.resolve(e) }
 const count = atom({ plugin: 'conclave', key: 'count' } as const, 0)
+const PANE = 'conclave'
 export const register: Register = on => {
-  on('session.start', async ($, e, next) => { await $.command.register({ name: 'x' }); return next(e) })
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e) => {
+  on('session.start', async ($, e, next) => {
+    try {
+      await $.command.register({ name: 'conclave', description: 'x' })
+      if (e.isInteractive) $.ui.open({ id: PANE, title: 'Conclave' }).catch(() => undefined)
+    } catch {}
+    return next(e)
+  }).catch(($, e, next) => next(e))
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => (await draw($, e)) ?? next(e))
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     await update($, count, n => n + 1)
     return $.ui.resolve(e)
   })
-  on('agent.offer', async ($, e, next) => next(e)).catch(($, e, next) => next(e))
+  on('ui.render', { component: 'Pane', requestId: 'conclave' }, ($, e) => $.ui.resolve(e))
+  on('agent.offer', async ($, e, next) => ((await read($, count)) > 1 ? next(e) : { isOffered: false })).catch(
+    ($, e, next) => next(e),
+  )
+  on('agent.offer', async ($, e, next) => (name ? { isOffered: false } : await next(e)))
   on?.('command.run', { command: 'conclave' }, async $ => ({ text: String(await read($, count)) }))
-  on('classic.SessionStart', async (api, e, next) => { await api.ui.status('x'); return next(e) })
+  on('classic.SessionStart', async ($, e, next) => {
+    const result = await next(e)
+    try {
+      await $.ui.status('x')
+    } catch {}
+    return result
+  }).catch(($, e, next) => next(e))
   $.clock.every(1000, () => {})
 }
 """,
@@ -146,6 +277,15 @@ const argv = {SNAPSHOT_ARGV}
 if (name === 'x') argv.push('--github')
 await $.process.run(argv, {{ cwd: $.plugin.root, timeoutMs: 1000 }})
 """,
+    "the snapshot command, as the mod runs it": """
+const root = checkoutOf($.plugin.root)
+const argv = ['uv', 'run', '-q', '--project', `${root}/python`, 'coney-tools', 'conclave', 'snapshot', '--json']
+await $.process.run(argv, {
+  cwd: root,
+  timeoutMs: 1000,
+  ...(name === 'x' ? {} : { env: { UV_PROJECT_ENVIRONMENT: name } }),
+})
+""",
     "a comment that names what Tether keeps": (
         "// on('classic.Stop', fn) and $.session.usage() and HANDOFF\n/* /clear */\nconst quiet = 1\n"
     ),
@@ -153,13 +293,15 @@ await $.process.run(argv, {{ cwd: $.plugin.root, timeoutMs: 1000 }})
 }
 
 
+def all_snippets() -> dict[str, str]:
+    """Every snippet above, by the name the check answers to."""
+    return {snippet: snippet for snippet, _ in CROSSINGS} | {f"allowed: {name}": text for name, text in ALLOWED.items()}
+
+
 @functools.cache
 def verdicts() -> Verdict:
     """One run of the check over every snippet above and every source of the mod (a program build costs seconds)."""
-    snippets = {snippet: snippet for snippet, _ in CROSSINGS} | {
-        f"allowed: {name}": text for name, text in ALLOWED.items()
-    }
-    return run_check(snippets, mod_sources())
+    return run_check(all_snippets(), mod_sources())
 
 
 @pytest.fixture
@@ -171,15 +313,31 @@ def verdict() -> Verdict:
     return verdicts()
 
 
-def test_a_missing_tool_is_named_where_the_check_skips(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    # CI has no Claude Code, so there the check skips: it says why, and never skips for a reason of the mod's.
+def test_a_missing_tool_is_named_where_the_check_cannot_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # Where there is no Node, or no description of the engine at all, the check says which; it never fails for a
+    # reason of the mod's.
     unchecked = unavailable.__wrapped__
     monkeypatch.setattr("conclave_boundary.shutil.which", lambda _name: None)
     assert unchecked() == "needs Node.js"
     monkeypatch.setattr("conclave_boundary.shutil.which", lambda name: "node" if name == "node" else None)
     monkeypatch.setattr("conclave_boundary.ENGINE_TYPES", tmp_path / "missing" / "index.d.ts")
+    monkeypatch.setattr("conclave_boundary.ENGINE_STUB", tmp_path / "missing" / "stub.d.ts")
     reason = unchecked()
     assert reason is not None and reason.startswith("needs the engine's types")
+    # Neither `claude plugin validate` nor `claude plugin test` writes the types, so neither is the way to them.
+    assert "plugin validate" not in reason and "--plugin-dir" in reason
+
+
+def test_the_stub_stands_in_where_the_engines_types_are_not_written(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    stub = tmp_path / "stub.d.ts"
+    stub.write_text("declare module 'claude-code' {}\n", encoding="utf-8")
+    monkeypatch.setattr("conclave_boundary.ENGINE_TYPES", tmp_path / "missing" / "index.d.ts")
+    monkeypatch.setattr("conclave_boundary.ENGINE_STUB", stub)
+    assert engine_types() == "stub"
+    monkeypatch.setattr("conclave_boundary.ENGINE_TYPES", stub)
+    assert engine_types() == "engine"
 
 
 def test_the_mod_has_sources() -> None:

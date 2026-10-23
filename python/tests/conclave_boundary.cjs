@@ -10,8 +10,14 @@
 //    called; or an argument to a function of the mod's own that takes an EngineInterface (or to `read` / `update`);
 //  - a value of type On (the `on` of `register`) may only be called, with a plain string literal that names one of the
 //    events the mod lists;
-//  - `$.process.run` takes only the snapshot command; `any`, type-error suppression, run-time code loading, globals the
-//    mod has no business with, and anything Tether keeps (its events and its words) are refused.
+//  - what the five hooks do is held too: `command.run` and `ui.render` carry the filters that keep them off Tether's
+//    commands and panes, `session.start`, `agent.offer` and the `.catch` of a hook end every path in `next(e)`,
+//    `classic.SessionStart` passes the event on first and returns that answer whole, and `$.command.register` and
+//    `$.ui.open` take only Conclave's own name;
+//  - `$.process.run` takes only the snapshot command (its project folder built from the checkout the mod sits in, its
+//    options only `cwd`, `timeoutMs` and an `env` of the private Python environment); `any`, type-error suppression,
+//    run-time code loading, globals the mod has no business with, and anything Tether keeps (its events and its words,
+//    also split over a `+` or a template) are refused.
 'use strict'
 
 const fs = require('node:fs')
@@ -27,7 +33,9 @@ const CALLS = new Set(req.api.calls)
 const PROPERTIES = new Set(req.api.properties)
 const ENGINE_FUNCTIONS = new Set(req.engine_functions)
 const WORDS = req.words
+const EXACT_WORDS = new Set(req.exact_words)
 const BANNED = new Set(req.banned_globals)
+const NAME = req.name
 
 // The program: the mod's tsconfig, its snippets as virtual files beside the hooks, and nothing of the tests.
 const parsed = ts.getParsedCommandLineOfConfigFile(path.join(mod, 'tsconfig.json'), {}, {
@@ -36,6 +44,10 @@ const parsed = ts.getParsedCommandLineOfConfigFile(path.join(mod, 'tsconfig.json
     throw new Error(ts.flattenDiagnosticMessageText(d.messageText, '\n'))
   },
 })
+// With `stub` the types are Coney's own small description of the engine instead of the generated ones (which only a
+// logged-in Claude Code writes); the stub then stands alone, and type errors are not this check's to report.
+const stub = req.stub === null ? null : path.resolve(req.stub).replace(/\\/g, '/')
+const isGenerated = file => /\/\.claude-plugin\/types\//.test(file.replace(/\\/g, '/'))
 const virtual = new Map()
 const snippetNames = new Map()
 const prelude = req.prelude.join('\n') + '\n'
@@ -52,14 +64,22 @@ host.fileExists = file => virtual.has(file) || realExists(file)
 host.readFile = file => (virtual.has(file) ? virtual.get(file) : realRead(file))
 host.getSourceFile = (file, ...rest) =>
   virtual.has(file) ? ts.createSourceFile(file, virtual.get(file), parsed.options.target, true, ts.ScriptKind.TSX) : realSource(file, ...rest)
-const roots = [...parsed.fileNames.filter(file => !/\/tests\//.test(file)), ...virtual.keys()]
+const roots = [
+  ...parsed.fileNames.filter(file => !/\/tests\//.test(file) && (stub === null || !isGenerated(file))),
+  ...(stub === null ? [] : [stub]),
+  ...virtual.keys(),
+]
 const program = ts.createProgram({ rootNames: roots, options: parsed.options, host })
 const checker = program.getTypeChecker()
 
-// The engine's own types: `EngineInterface` and `On`, from the module the engine writes beside the mod.
+/** Whether `file` is where the types of `claude-code` come from: the engine's generated ones, or the stub. */
+const isEngineTypes = file =>
+  stub === null ? /\/claude-code\/index\.d\.ts$/.test(file.replace(/\\/g, '/')) : norm(file) === norm(stub)
+
+// The engine's own types: `EngineInterface` and `On`, from the module the engine writes beside the mod (or the stub).
 function claudeCodeModule() {
   for (const file of program.getSourceFiles()) {
-    if (!/\/claude-code\/index\.d\.ts$/.test(file.fileName.replace(/\\/g, '/'))) continue
+    if (!isEngineTypes(file.fileName)) continue
     for (const statement of file.statements) {
       if (ts.isModuleDeclaration(statement) && statement.name.text === 'claude-code') {
         return { file, symbol: checker.getSymbolAtLocation(statement.name) }
@@ -70,13 +90,31 @@ function claudeCodeModule() {
 }
 const engineModule = claudeCodeModule()
 if (engineModule === null || engineModule.symbol === undefined) {
-  process.stderr.write("the engine's types for 'claude-code' are not beside the mod (run claude plugin validate on it)\n")
+  process.stderr.write("the engine's types for 'claude-code' are neither beside the mod nor given as a stub\n")
   process.exit(2)
 }
 const exported = name => checker.getExportsOfModule(engineModule.symbol).find(symbol => symbol.name === name)
 const ENGINE = checker.getDeclaredTypeOfSymbol(exported('EngineInterface'))
 const ON = checker.getDeclaredTypeOfSymbol(exported('On'))
 const ON_ALIAS = exported('On')
+
+// `describe`: what the types say of the names and nouns this check relies on, so the stub can be held against the
+// engine's own (python/tests/test_conclave_engine_stub.py).
+if (req.describe) {
+  const kinds = {}
+  for (const name of req.describe) {
+    const symbol = exported(name)
+    kinds[name] = symbol === undefined ? null : symbol.flags & ts.SymbolFlags.Value ? 'value' : 'type'
+  }
+  const nouns = {}
+  for (const prop of checker.getPropertiesOfType(ENGINE)) {
+    if (prop.name.startsWith('__@')) continue
+    const type = checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration ?? prop.declarations[0])
+    nouns[prop.name] = checker.getPropertiesOfType(type).map(member => member.name).sort()
+  }
+  process.stdout.write(JSON.stringify({ kinds, nouns }))
+  process.exit(0)
+}
 
 const SKIP = ts.TypeFlags.Any | ts.TypeFlags.Never | ts.TypeFlags.Unknown | ts.TypeFlags.Void | ts.TypeFlags.Undefined | ts.TypeFlags.Null
 const cache = new Map()
@@ -108,20 +146,14 @@ function top(n) {
   return n
 }
 
-const runtimeFiles = new Set([...req.files.map(norm), ...[...virtual.keys()].map(norm)])
+const runtimeFiles = new Set([...req.runtime.map(norm), ...[...virtual.keys()].map(norm)])
 const isOwn = node => runtimeFiles.has(norm(node.getSourceFile().fileName))
-const isEngineFile = node => /\/claude-code\/index\.d\.ts$/.test(node.getSourceFile().fileName.replace(/\\/g, '/'))
+const isEngineFile = node => isEngineTypes(node.getSourceFile().fileName)
 
-/** The command arrays the check accepts: `uv run -q --project <dir> coney-tools conclave snapshot --json`. */
-function isSnapshotCommand(array) {
-  const items = array.elements
-  if (items.length !== req.run.head.length + 1 + req.run.tail.length || items.some(ts.isSpreadElement)) return false
-  const same = (item, text) => ts.isStringLiteralLike(item) && item.text === text
-  return (
-    req.run.head.every((text, i) => same(items[i], text)) &&
-    req.run.tail.every((text, i) => same(items[req.run.head.length + 1 + i], text))
-  )
-}
+const {
+  unwrap, isName, plainProperties, constText, snapshotProblem, isRunOptions, returnsOf, inlineFunction, paramSymbol, isPassOn,
+  NOT_THE_COMMAND,
+} = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, isEngine })
 
 /** Whether `call` is `<engine>.process.run(...)`. */
 function isProcessRun(call) {
@@ -141,11 +173,16 @@ function checkFile(sf, label, errors, events) {
     errors.push(line + message)
   }
 
-  // `$.process.run` takes the snapshot command and nothing else.
+  // `$.process.run` takes the snapshot command, in the checkout the mod sits in, with the options of the private
+  // environment, and nothing else.
   function checkRun(call) {
+    if (call.arguments.length > 2 || (call.arguments[1] !== undefined && !isRunOptions(call.arguments[1]))) {
+      err(call, `passes options to $.process.run other than ${req.run.options.join(', ')} (and in env only ${req.run.env.join(', ')})`)
+    }
     const first = call.arguments[0]
     if (first !== undefined && ts.isArrayLiteralExpression(first)) {
-      if (!isSnapshotCommand(first)) err(call, 'runs a command other than `coney-tools conclave snapshot --json` through $.process.run')
+      const problem = snapshotProblem(first)
+      if (problem !== null) err(call, problem)
       return
     }
     const symbol = first !== undefined && ts.isIdentifier(first) ? checker.getSymbolAtLocation(first) : undefined
@@ -156,10 +193,10 @@ function checkFile(sf, label, errors, events) {
       decl.initializer !== undefined &&
       ts.isArrayLiteralExpression(decl.initializer) &&
       (ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) !== 0 &&
-      (ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Export) === 0 &&
-      isSnapshotCommand(decl.initializer)
-    if (!isFixed) {
-      err(call, 'runs a command other than `coney-tools conclave snapshot --json` through $.process.run')
+      (ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Export) === 0
+    const problem = isFixed ? snapshotProblem(decl.initializer) : NOT_THE_COMMAND
+    if (problem !== null) {
+      err(call, problem)
       return
     }
     // The array may only be run, or grow by the flags the snapshot command takes.
@@ -192,6 +229,8 @@ function checkFile(sf, label, errors, events) {
         if (!(ts.isCallExpression(callee.parent) && callee.parent.expression === callee)) {
           err(next, `uses $.${key} other than by calling it`)
         } else if (key === 'process.run') checkRun(callee.parent)
+        else if (key === 'command.register') checkNamed(callee.parent, key, 'name')
+        else if (key === 'ui.open') checkNamed(callee.parent, key, 'id')
       } else if (!PROPERTIES.has(key)) {
         err(next, `uses $.${key}, which is not in the mod's list (no $.session. or $.model. at all)`)
       }
@@ -236,6 +275,107 @@ function checkFile(sf, label, errors, events) {
     return err(n, 'uses `$` other than as $.noun.method: it is copied, stored, returned or compared')
   }
 
+  // `$.command.register` and `$.ui.open` take only Conclave's own name, so Tether's command and pane stay Tether's.
+  function checkNamed(call, key, property) {
+    const props = call.arguments.length === 1 ? plainProperties(call.arguments[0]) : null
+    const value = props?.get(property)
+    if (value === undefined || !isName(value)) err(call, `$.${key} takes only the ${property} '${NAME}' (Tether's names stay Tether's)`)
+  }
+
+  // The filter of a hook: `command.run` is Conclave's own command only, `ui.render` its band and its pane only.
+  function checkFilter(call, event, matcher) {
+    const props = matcher === undefined ? null : plainProperties(matcher)
+    if (event === 'command.run') {
+      const ok = props !== null && props.size === 1 && props.has('command') && isName(props.get('command'))
+      if (!ok) err(matcher ?? call, `command.run must be filtered by { command: '${NAME}' }, or it answers Tether's commands too`)
+    }
+    if (event === 'ui.render') {
+      const component = props?.get('component')
+      const which = component !== undefined && ts.isStringLiteral(component) ? component.text : null
+      const ok =
+        props !== null &&
+        ((which === 'AbovePrompt' && props.size === 1) ||
+          (which === 'Pane' && props.size === 2 && props.has('requestId') && isName(props.get('requestId'))))
+      if (!ok) {
+        err(matcher ?? call, `ui.render must be filtered by { component: 'AbovePrompt' } or { component: 'Pane', requestId: '${NAME}' }, or it draws over Tether's panes`)
+      }
+    }
+  }
+
+  // A hook that passes the event on: every path ends in `next(e)` (or, for `agent.offer`, refuses an agent type).
+  function checkPassingHook(fn, label, refusal) {
+    const ev = paramSymbol(fn, 1)
+    const next = paramSymbol(fn, 2)
+    const ending = `${label} must end every path in next(e)${refusal ? ' or in { isOffered: false }' : ''}, as a function of ($, e, next)`
+    if (ev === undefined || next === undefined) return err(fn, ending)
+    const body = fn.body
+    const results = ts.isBlock(body) ? returnsOf(body).map(one => one.expression ?? one) : [body]
+    const last = ts.isBlock(body) ? body.statements.at(-1) : undefined
+    if (ts.isBlock(body) && !(last !== undefined && (ts.isReturnStatement(last) || ts.isThrowStatement(last)))) err(body, ending)
+    for (const result of results) if (!isPassOn(result, next, ev, refusal)) err(result, ending)
+  }
+
+  // `classic.SessionStart` reads the session's agent type and passes the answer of the hooks beneath (Tether's, with the
+  // HANDOFF context) on whole: it begins `const r = await next(e)` and only ever returns `r`.
+  function checkSessionStartHook(fn) {
+    const ev = paramSymbol(fn, 1)
+    const next = paramSymbol(fn, 2)
+    const bad = () => err(fn, 'classic.SessionStart must begin with `const r = await next(e)` and return only r, so the answer beneath it stays whole')
+    const body = fn.body
+    if (ev === undefined || next === undefined || !ts.isBlock(body)) return bad()
+    const first = body.statements[0]
+    const decl = first !== undefined && ts.isVariableStatement(first) ? first.declarationList.declarations[0] : undefined
+    const isConst = first !== undefined && ts.isVariableStatement(first) && (first.declarationList.flags & ts.NodeFlags.Const) !== 0
+    const awaited = decl?.initializer === undefined ? undefined : unwrap(decl.initializer)
+    const isFirst =
+      isConst &&
+      first.declarationList.declarations.length === 1 &&
+      ts.isIdentifier(decl.name) &&
+      awaited !== undefined &&
+      ts.isAwaitExpression(awaited) &&
+      ts.isCallExpression(unwrap(awaited.expression)) &&
+      isPassOn(awaited.expression, next, ev, false)
+    if (!isFirst) return bad()
+    const answer = checker.getSymbolAtLocation(decl.name)
+    const last = body.statements.at(-1)
+    if (!(ts.isReturnStatement(last) && body.statements.length > 1)) return bad()
+    for (const one of returnsOf(body)) {
+      const value = one.expression === undefined ? undefined : unwrap(one.expression)
+      if (value === undefined || !ts.isIdentifier(value) || checker.getSymbolAtLocation(value) !== answer) return bad()
+    }
+    // The answer is only ever returned: not copied, changed or handed on.
+    const visit = node => {
+      if (ts.isIdentifier(node) && node !== decl.name && checker.getSymbolAtLocation(node) === answer && !ts.isReturnStatement(node.parent)) bad()
+      ts.forEachChild(node, visit)
+    }
+    visit(body)
+  }
+
+  // What an on(...) call does: its filter, its handler, and the `.catch` it may carry (which also passes the event on).
+  function checkHook(call, event) {
+    const args = call.arguments
+    if (args.length < 2 || args.length > 3) return err(call, `on('${event}') takes a pattern, a filter (optional) and a hook`)
+    checkFilter(call, event, args.length === 3 ? args[1] : undefined)
+    const hook = inlineFunction(args[args.length - 1])
+    if (hook === null) err(args[args.length - 1], `the hook of ${event} must be an inline function, which this check reads`)
+    else if (event === 'classic.SessionStart') checkSessionStartHook(hook)
+    else if (event === 'session.start' || event === 'agent.offer') checkPassingHook(hook, event, event === 'agent.offer')
+    const outer = top(call)
+    const chained = outer.parent
+    if (ts.isExpressionStatement(chained)) return
+    const isCatch =
+      ts.isPropertyAccessExpression(chained) &&
+      chained.expression === outer &&
+      chained.name.text === 'catch' &&
+      ts.isCallExpression(chained.parent) &&
+      chained.parent.expression === chained &&
+      chained.parent.arguments.length === 1 &&
+      ts.isExpressionStatement(chained.parent.parent)
+    const handler = isCatch ? inlineFunction(chained.parent.arguments[0]) : null
+    if (handler === null) err(call, 'uses the registration that on(...) returns other than as a statement, or with a .catch(hook) that passes the event on')
+    else checkPassingHook(handler, `the .catch of ${event}`, false)
+  }
+
   // The `on` of `register`: called with a plain event literal the mod lists, never anything else.
   function checkOn(n) {
     const parent = n.parent
@@ -246,7 +386,7 @@ function checkFile(sf, label, errors, events) {
         return err(parent, 'an on(...) call whose event is not a plain string literal')
       }
       events.push(event.text)
-      if (EVENTS.has(event.text)) return
+      if (EVENTS.has(event.text)) return checkHook(parent, event.text)
       return err(event, TETHER.has(event.text) ? `hooks the event ${event.text}, which is Tether's` : `hooks the event ${event.text}, which is not one of the five the mod lists`)
     }
     return err(n, '`on` is used other than as on(...): it is renamed, passed on, cast or called indirectly')
@@ -255,12 +395,24 @@ function checkFile(sf, label, errors, events) {
   const isNameOnly = n =>
     (ts.isPropertyAccessExpression(n.parent) || ts.isQualifiedName(n.parent)) && (n.parent.name === n || n.parent.right === n)
 
+  // Tether's words and event names, and the one name that reaches the `Function` constructor.
+  function checkWords(n, text, isString) {
+    if (isString && TETHER.has(text)) err(n, `names the event ${text}, which is Tether's`)
+    for (const word of WORDS) if (text.includes(word)) err(n, `names ${JSON.stringify(word)}: Tether's, not Conclave's`)
+    if (EXACT_WORDS.has(text)) err(n, `names ${JSON.stringify(text)}, which reaches code built at run time`)
+  }
+
   function walk(n) {
     // Words and names that are Tether's.
     if (ts.isStringLiteralLike(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isIdentifier(n)) {
-      const text = n.text
-      if (!ts.isIdentifier(n) && TETHER.has(text)) err(n, `names the event ${text}, which is Tether's`)
-      for (const word of WORDS) if (text.includes(word)) err(n, `names ${JSON.stringify(word)}: Tether's, not Conclave's`)
+      checkWords(n, n.text, !ts.isIdentifier(n))
+    }
+    // The same words split over a `+` or a template of constants.
+    const isPlus = one => ts.isBinaryExpression(one) && one.operatorToken.kind === ts.SyntaxKind.PlusToken
+    if (isPlus(n) || ts.isTemplateExpression(n)) {
+      const outer = top(n).parent
+      const folded = isPlus(outer) || ts.isTemplateSpan(outer) ? null : constText(n)
+      if (folded !== null) checkWords(n, folded, true)
     }
     if (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) {
       const spec = n.moduleSpecifier
@@ -281,6 +433,9 @@ function checkFile(sf, label, errors, events) {
       if (n.expression.kind === ts.SyntaxKind.ImportKeyword) err(n, 'loads code at run time: import(...)')
       const name = ts.isIdentifier(n.expression) ? n.expression.text : ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : ''
       if (name === 'usage') err(n, "calls usage(...): the session's usage is Tether's, not Conclave's")
+    }
+    if (ts.isAsExpression(n) && ts.isAsExpression(unwrap(n.expression)) && unwrap(n.expression).type.kind === ts.SyntaxKind.UnknownKeyword) {
+      err(n, 'casts through `as unknown as`, which hides what a value is from this check')
     }
     if (n.kind === ts.SyntaxKind.AnyKeyword) err(n, 'uses `any`, which hides what a value is from this check')
     if (ts.isIdentifier(n) && BANNED.has(n.text) && ts.isExpressionNode(n) && !isNameOnly(n)) {
@@ -317,7 +472,7 @@ for (const file of req.files) {
   const errors = []
   const events = []
   checkFile(sf, path.relative(mod, sf.fileName).replace(/\\/g, '/'), errors, events)
-  const diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]
+  const diagnostics = [...program.getSyntacticDiagnostics(sf), ...(stub === null ? program.getSemanticDiagnostics(sf) : [])]
   for (const d of diagnostics) {
     const at = d.start === undefined ? 1 : sf.getLineAndCharacterOfPosition(d.start).line + 1
     errors.push(`${path.relative(mod, sf.fileName).replace(/\\/g, '/')}:${at}: type error TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`)

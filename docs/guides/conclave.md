@@ -75,6 +75,15 @@ alias, a spread or a cast cannot hide a call. It refuses:
   event, `on` renamed, passed on, put in an object, cast or reached through `on.call` are refused, and so is any string
   that names an event Tether hooks (`classic.UserPromptSubmit`, `classic.Stop`, `session.end`, `turn.complete` and
   the rest).
+- **A hook that does more than its job.** What the five hooks do is held too, not only their names. `command.run` must
+  carry the filter `{ command: 'conclave' }` and `ui.render` the filter `{ component: 'AbovePrompt' }` or `{ component:
+  'Pane', requestId: 'conclave' }`, so neither answers one of Tether's commands or draws over one of its panes (a
+  literal, or a const that holds `'conclave'`). `session.start` and `agent.offer` must end every path in `next(e)`
+  (`agent.offer` may also return `{ isOffered: false }`, the answer that hides a type), and so must the `.catch` of
+  any hook; a hook that answers for itself would drop what Tether adds beneath it. `classic.SessionStart` begins `const
+  r = await next(e)` and only ever returns `r`, so Tether's HANDOFF context comes through whole. `$.command.register`
+  takes only the name `'conclave'` and `$.ui.open` only the id `'conclave'`. Each hook is an inline function, which the
+  check can read, and the registration `on(...)` returns is used only as a statement or with that `.catch`.
 - **Engine calls beyond the eleven the mod needs.** Every value of type `EngineInterface` (the `$` of a hook, or the
   parameter of any helper, under any name) may only be the object of `$.noun.method`, called, for the clock, the command
   registration, the one process, the store and the UI, or `$.plugin.root`. So no `$.session.` or `$.model.` call, tool,
@@ -87,22 +96,37 @@ alias, a spread or a cast cannot hide a call. It refuses:
   Sources are TypeScript only, so there is no plain script the check cannot see into.
 - **Code loaded or built at run time**, an `import` of anything but `claude-code` and the mod's own checked sources
   (an import into `tests/` would hide code from the check), and the globals a hooks module has no business with
-  (`fetch`, `globalThis`, `process`, `require`, `eval`, `Function` and the like).
+  (`fetch`, `globalThis`, `process`, `require`, `eval`, `Function`, the timers and the like). The way to the `Function`
+  constructor is closed too: no `constructor` name or string (`.constructor`, `['constructor']`, `'con' +
+  'structor'`) and no `as unknown as` cast, which hides a value's type from the check.
 - **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
-  and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else.
+  and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
+  `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag), and the options are an
+  object with only `cwd`, `timeoutMs` and an `env` that holds only `UV_PROJECT_ENVIRONMENT`: no other variable, no
+  `stdin`, no options passed in a variable.
 - **Tether's words.** No string or name in the mod holds the session's usage figures (`context_tokens`,
-  `seconds_since_last_response`, `rateLimits`), `/clear`, `HANDOFF` or `Continue from`, and the mod never calls
-  `usage(...)`. Comments may name them.
+  `seconds_since_last_response`, `rateLimits`), the transcript's path (`transcript_path`), `/clear`, `HANDOFF` or
+  `Continue from`, whether written whole or split over a `+` or a template of constants (`'HAND' + 'OFF'`), and the
+  mod never calls `usage(...)`. Comments may name them. Splitting a word by a call (`String.fromCharCode`) is not
+  caught, and does not need to be: reading the prompt, a file or the session takes an engine call the list above
+  refuses.
 
 Every code file in every subfolder of the mod is checked (only `tests/`, `types/` and the engine's own typings are
 not). The check is itself tested: each way across the line that a reviewer found, or that an earlier version of the
 check missed, is a case that must fail (`CROSSINGS` in the test), the code the mod really writes is a case that must
 pass, and the real sources must pass. A session start never waits for Conclave ([Starting a session](#start)).
 
-**Where it runs.** The check needs Node.js, TypeScript 5.6.3 (fetched once with `npx`) and the engine's types for
-`claude-code`, which Claude Code writes beside the mod when it loads or validates it (`claude plugin validate
-tools/claude-mod` does). Where one is missing the tests skip and say which, so the check belongs to the local checks of
-a change to the mod, with `claude plugin test`; CI has no Claude Code and does not run it.
+**Where it runs.** The check needs Node.js, TypeScript 5.6.3 (fetched once with `npx`) and a description of the engine's
+`claude-code` module. The engine's own types are written beside the mod only by a session that loads it (`claude
+--plugin-dir tools/claude-mod`); neither `claude plugin validate` nor `claude plugin test` writes them, and CI has no
+logged-in Claude Code to load it. So where they are absent the check reads a stub of the module in Coney's own words,
+`python/tests/conclave_engine_stub.d.ts`: only what the check looks at (`EngineInterface` and the eleven calls, `On`,
+`Register` and the names the mod imports), with no type errors reported. The stub is not in the repository yet, because
+whether it may be is the maintainers' licence question, so until then the check runs where the engine's types are
+present and its tests skip, naming what is missing. `python/tests/test_conclave_engine_stub.py` holds the stub against
+the engine's types whenever both are present (the names and kinds the mod imports, the nouns and methods it calls, and
+the verdict on every case of the boundary tests), so the stub cannot drift unseen; the rest of its tests run on the
+stub alone.
 
 What Conclave may take over later, because the maintainers allowed it, is Coney's own pollers (pull requests, the
 release queue, builds, triage), the stop guard on unowned pull request problems and the pull request ownership store;
@@ -178,7 +202,7 @@ turn. Each checkout saves its own, under a key that names it (`offer:<checkout>`
 `hooks.toml`: a worktree with other roles never changes what the main checkout hides. The first session in a checkout,
 with no list saved, hides nothing; its first read saves the list. A change to `hooks.toml` takes effect where a new
 prompt cache starts: the next session, or a `/clear` (Tether's automatic one included), which takes up the list saved
-since. A compaction keeps the cache, so it keeps the list.
+since. A compaction and a resumed conversation keep the cache of the listing they have, so they keep the list.
 
 One read ends the freeze early: a good read that says the settings cannot be read (no file, a bad one, no role) drops
 the checkout's saved list and the frozen one, so a list from an earlier session never hides anything the settings no
