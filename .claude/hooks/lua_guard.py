@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Refuse decompiled game Lua in the repository: a pre-commit check and a Claude Code PreToolUse hook.
 
-`coney-tools lua decompile` (docs/guides/coney-tools-references.md#lua) turns the game's compiled scripts back into Lua,
+`coney-tools lua decompile` (docs/guides/coney-tools-fidelity.md#lua) turns the game's compiled scripts back into Lua,
 in a folder outside the repository: like Ghidra's output it is a research aid, and the game's script text never enters
 the repository, an issue or CI (LEGAL.md#no-game-data). Research pages describe what a script does in our own words. Two
 marks catch a slip:

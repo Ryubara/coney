@@ -1,9 +1,11 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). Its commands are in groups,
-and this page is the overview: how to run it and which page documents which group. Each group's page holds its
-commands, options, exit codes and the rules it enforces, and every group has an anchor of its own, such as
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). Its commands are in groups, and
+this page is the overview: how to run it and which page documents which group. Each group's page holds its commands,
+options, exit codes and the rules it enforces, and every group has an anchor of its own, such as
 `coney-tools-build.md#build`. `coney-agent` is a command of its own, not a group: the session launcher.
+
+## Running it {#running}
 
 Run the commands from inside the checkout:
 
@@ -17,66 +19,63 @@ uv run --project python coney-tools wad --help
 
 These read **your own disc**; [naming the disc](coney-tools-disc.md#naming-the-disc) says how they find it.
 
-* [`wad`](coney-tools-disc.md#info) reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`: `info`, `list`,
-  `names` and `extract`.
-* [`wad scenes`](coney-tools-disc.md#scenes) parses the scene records.
+* [`wad`](coney-tools-disc.md#info): the game's archive.
+* [`wad scenes`](coney-tools-disc.md#scenes): the scene records.
   {#scenes}
-* [`extract`](coney-tools-disc.md#extract) turns every asset of the disc into open formats.
+* [`extract`](coney-tools-disc.md#extract): every asset, in open formats.
   {#extract}
-* [`audio`](coney-tools-disc.md#audio) reads the sound data.
+* [`audio`](coney-tools-disc.md#audio): the sound data.
   {#audio}
-* [`movies`](coney-tools-disc.md#movies) reads the movies' headers.
+* [`movies`](coney-tools-disc.md#movies): the movies' headers.
   {#movies}
-* [`xbox`](coney-tools-disc.md#xbox) reads the Xbox disc's archive.
+* [`xbox`](coney-tools-disc.md#xbox): the Xbox disc.
   {#xbox}
 
-<!-- The ids on the entries above keep the links that name coney-tools.md#<group> working in pages that cite them. -->
+<!-- The five ids above keep the links that name coney-tools.md#<group> working in the legacy research pages that cite
+them (audio, inventory, movies, scenes, xbox-assets). Touching a research page holds it to the whole research standard,
+so they go, with these ids, once those pages are touched and cite the disc page. -->
 
 ### [The reference commands](coney-tools-references.md)
 
-* [`progress`](coney-tools-references.md#progress) keeps the progress tables of the README and the docs current.
-* [`natives`](coney-tools-references.md#natives) renders the script-binding masterlist.
-* [`refs`](coney-tools-references.md#refs) builds the game reference lists.
-* [`lua`](coney-tools-references.md#lua) decompiles the game's compiled scripts for research.
-* [`missions`](coney-tools-references.md#missions) builds the mission status pages.
+* [`progress`](coney-tools-references.md#progress): the progress tables.
+* [`natives`](coney-tools-references.md#natives): the script-binding masterlist.
+* [`refs`](coney-tools-references.md#refs): the game reference lists.
+* [`missions`](coney-tools-references.md#missions): the mission status pages.
 
 ### [The fidelity and research commands](coney-tools-fidelity.md)
 
-* [`orig`](coney-tools-fidelity.md#orig) indexes the `@orig` tags for the fidelity audit.
-* [`original`](coney-tools-fidelity.md#original) studies an original function and compares it with Coney's.
-* [`stamp`](coney-tools-fidelity.md#stamp) verifies a unit's stamp log.
-* [`research`](coney-tools-fidelity.md#research) keeps the function database and its generated lists, and reports
-  the claims a branch changed on the research pages.
+* [`orig`](coney-tools-fidelity.md#orig): the `@orig` index and audit.
+* [`original`](coney-tools-fidelity.md#original): study and compare an original function.
+* [`stamp`](coney-tools-fidelity.md#stamp): a unit's stamp log.
+* [`research`](coney-tools-fidelity.md#research): the function database and the claims report.
+* [`lua`](coney-tools-fidelity.md#lua): the game's scripts, decompiled.
 
-### [The PCSX2 commands](coney-tools-pcsx2.md)
+### [The PCSX2 and clip commands](coney-tools-pcsx2.md)
 
-* [`pcsx2`](coney-tools-pcsx2.md#pcsx2) and [`trace`](coney-tools-pcsx2.md#trace) record the original's per-update
-  traces in PCSX2 and compare them with Coney's.
-* [`clips`](coney-tools-pcsx2.md#clips) checks, publishes and cleans up in-game video clips.
-* [`perf`](coney-tools-pcsx2.md#perf) benchmarks the engine.
+* [`pcsx2`](coney-tools-pcsx2.md#pcsx2) and [`trace`](coney-tools-pcsx2.md#trace): the original's traces, compared.
+* [`clips`](coney-tools-pcsx2.md#clips): in-game video clips.
 
 ### [The repository commands](coney-tools-repo.md)
 
-* [`repo`](coney-tools-repo.md#repo) checks the repository's own rules (titles, descriptions, labels).
-* [`pr`](coney-tools-repo.md#pr) checks commit messages.
-* [`issue`](coney-tools-repo.md#issue) drafts, checks and creates issues.
-* [`claim`](coney-tools-repo.md#claim) runs the issue claims.
-* [`task`](coney-tools-repo.md#task) claims issues and writes a task file.
+* [`repo`](coney-tools-repo.md#repo): titles, descriptions, labels.
+* [`pr`](coney-tools-repo.md#pr): commit messages.
+* [`issue`](coney-tools-repo.md#issue): drafting, checking and creating issues.
+* [`claim`](coney-tools-repo.md#claim) and [`task`](coney-tools-repo.md#task): the issue claims and task files.
 
-### [The check and build commands](coney-tools-build.md)
+### [The check, build and benchmark commands](coney-tools-build.md)
 
-* [`check`](coney-tools-build.md#check) runs what CI would fail on for the files a change touched.
-* [`docs`](coney-tools-build.md#docs) checks pages against the documentation standards.
-* [`build`](coney-tools-build.md#build) configures, builds and tests the engine under the machine's build slots.
+* [`check`](coney-tools-build.md#check): what CI would fail on.
+* [`docs`](coney-tools-build.md#docs): the documentation standards.
+* [`build`](coney-tools-build.md#build): configure, build and test under the build slots.
+* [`perf`](coney-tools-build.md#perf): the engine benchmark.
 
 ### [The coordination and setup commands](coney-tools-setup.md)
 
-* [`coord`](coney-tools-setup.md#coord) shows what waits for the coordinator.
-* [`mcp`](coney-tools-setup.md#mcp) starts the debugging servers for agent tools.
-* [`doctor`](coney-tools-setup.md#doctor) checks a contributor's machine and disc.
-* [`ghidra`](coney-tools-setup.md#ghidra) sets up your own Ghidra project with our function names.
-* [`workspace`](coney-tools-setup.md#workspace) sets up the local workspace.
-* [`coney-agent`](coney-tools-setup.md#coney-agent) is the session launcher.
+* [`coord`](coney-tools-setup.md#coord): what waits for the coordinator.
+* [`mcp`](coney-tools-setup.md#mcp), [`ghidra`](coney-tools-setup.md#ghidra), [`doctor`](coney-tools-setup.md#doctor)
+  and [`workspace`](coney-tools-setup.md#workspace): the debugging servers, your Ghidra project, the machine check and
+  the local workspace.
+* [`coney-agent`](coney-tools-setup.md#coney-agent): the session launcher.
 
 ## Adding a command {#adding}
 

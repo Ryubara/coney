@@ -340,7 +340,7 @@ research starts from the decompiled scripts**, then goes to Ghidra for the nativ
 happen:
 
 1. Decompile every script once into the shared folder, `uv run --project python coney-tools lua decompile --all`
-   (`<workspace>/scratch/lua`, the same copy for every worktree; [`lua`](coney-tools-references.md#lua)). Rerun it only
+   (`<workspace>/scratch/lua`, the same copy for every worktree; [`lua`](coney-tools-fidelity.md#lua)). Rerun it only
    when the decompiler changes.
 2. Open `index.md` there: per script, its functions with the natives each calls and the handlers it registers
    (messages, callbacks, updates, scheduled calls, trigger spheres). Find the level's script and the function that does
@@ -354,7 +354,7 @@ shared folder. A research page says in our own words what a script does and cite
 (`level99.lua`, `Setup`, the native and its arguments where they matter), as for code read in Ghidra
 ([Writing up a finding](#writing-up-a-finding)). A guard refuses a decompiled file, or three of any five lines of one
 (quoted, in a list or table, or commented out alike), in the repository, in pre-commit and before every file write an
-agent makes ([The guard](coney-tools-references.md#lua)). A single quoted line passes, and a whole listing is still
+agent makes ([The guard](coney-tools-fidelity.md#lua)). A single quoted line passes, and a whole listing is still
 wrong when the guard cannot see it: a decompile you did not fingerprint, a paraphrase line by line. The same holds for
 an issue or a pull request description, which no guard checks.
 

@@ -1,9 +1,9 @@
-# The coney-tools check and build commands
+# The coney-tools check, build and benchmark commands
 
-The commands that check a change and build it: [`check`](#check) runs what CI would fail on for the files a
-change touched, [`docs`](#docs) checks pages against the documentation standards, and [`build`](#build) configures,
-builds and tests the engine under the machine's build slots. The other groups are listed in
-[the command line overview](coney-tools.md#groups).
+The commands that check a change, build it and measure it: [`check`](#check) runs what CI would fail on for the files
+a change touched, [`docs`](#docs) checks pages against the documentation standards, [`build`](#build) configures,
+builds and tests the engine under the machine's build slots, and [`perf`](#perf) benchmarks it with `coney --bench`.
+The other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## check {#check}
 
@@ -361,3 +361,21 @@ priority, minutes waiting) and the stale entries; `--json` prints the same as on
 crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`,
 which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and
 tests](agents.md#builds).
+
+## perf {#perf}
+
+```sh
+uv run --project python coney-tools perf bench --out FOLDER [--fighters 0,10,25,50,100] [--level level95]
+    [--frames 600] [--warmup 60] [--headless] [--preset release] [--coney EXE] [--disc DISC]
+uv run --project python coney-tools perf table REPORT.json ...
+```
+
+`perf bench` plays the level (the hub, `level95`, by default) once per fighter count with `coney --bench`
+([Performance](performance.md#bench)): each run spawns that many AI fighters on the first frame of play, leaves
+`--warmup` frames unmeasured and measures `--frames` more, windowed with `--vsync off` (or `--headless`: the
+simulation alone), with `--skip-movies`. Each report and its log go to
+`--out` (a scratch folder), named for the level, the count and headless; the command prints one Markdown table of
+the frame times (mean, 95th and 99th percentile, frames a second), the main zones and the counters, and a line per
+build and renderer the rows came from. Coney is `build/PRESET/src/platform/coney` (`release` by default: measure an
+optimised build), the disc `game_dir`. Exit 1 when a run fails. `perf table` prints the same table from reports
+already written.

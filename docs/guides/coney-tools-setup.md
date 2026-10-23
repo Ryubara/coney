@@ -204,7 +204,7 @@ Creates the missing folders of the [local workspace](workspace.md), clones the r
 Windows, the [compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (`pcsx2-mcp-release`
 is the PCSX2-MCP fork's Windows release, the PCSX2 the copies run, `pcsx2 setup-copies`; the two MCP projects are
 cloned at a pinned commit; on Linux and macOS ccache comes from the package manager; `lua` builds Lua 4.0.1's `luac`
-from its source for [`lua decompile --roundtrip`](coney-tools-references.md#lua)).
+from its source for [`lua decompile --roundtrip`](coney-tools-fidelity.md#lua)).
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
 `bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it, adding

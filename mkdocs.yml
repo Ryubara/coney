@@ -296,9 +296,9 @@ nav:
           - Disc commands: guides/coney-tools-disc.md
           - Reference commands: guides/coney-tools-references.md
           - Fidelity and research commands: guides/coney-tools-fidelity.md
-          - PCSX2 commands: guides/coney-tools-pcsx2.md
+          - PCSX2 and clip commands: guides/coney-tools-pcsx2.md
           - Repository commands: guides/coney-tools-repo.md
-          - Check and build commands: guides/coney-tools-build.md
+          - Check, build and benchmark commands: guides/coney-tools-build.md
           - Coordination and setup commands: guides/coney-tools-setup.md
       - The debug menus: guides/debug-menu.md
       - Performance: guides/performance.md
