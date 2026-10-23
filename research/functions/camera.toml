@@ -734,7 +734,7 @@ status = "legacy"
 address = 0x0023bde8
 name = "Human_GetBoneTransform"
 page = "camera.md#body-point"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/human/human.h:Human::bodyPoint"
 status = "legacy"
 
@@ -744,14 +744,6 @@ name = "lua_CameraReset"
 page = "camera.md#setting-up"
 level = "confirmed-code"
 coney = "src/scripting/camera_bindings.cpp:makeCameraReset"
-status = "legacy"
-
-[[function]]
-address = 0x00365d38
-name = "lua_CameraCreateLocked"
-page = "camera.md#scripted-angles"
-level = "confirmed-code"
-coney = "src/scripting/camera_bindings.cpp:makeCameraCreateLocked"
 status = "legacy"
 
 [[function]]

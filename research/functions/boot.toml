@@ -18,6 +18,22 @@ coney = "src/gamemodes/mission_failed_mode.h:MissionFailedMode::enter"
 status = "legacy"
 
 [[function]]
+address = 0x0015cf70
+name = "Gm_InGame_Enter"
+page = "boot.md#game-mode"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015d420
+name = "MissionComplete_Launch"
+page = "boot.md#one-frame"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::launch"
+status = "legacy"
+
+[[function]]
 address = 0x0015e5e8
 name = "GameModeStack_Push"
 page = "boot.md#original-structure"
@@ -55,6 +71,14 @@ name = "GameModeStack_TopId"
 page = "boot.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/game_mode_stack.h:GameModeStack::topId"
+status = "legacy"
+
+[[function]]
+address = 0x0015e8b0
+name = "Gm_Mode11_Enter"
+page = "boot.md#game-mode"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::enter"
 status = "legacy"
 
 [[function]]

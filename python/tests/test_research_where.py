@@ -234,6 +234,15 @@ def test_the_text_names_each_fact_on_its_own_line(index: research_where.Index) -
     assert "open questions naming it: docs/research/combat/grabs.md:" in text
 
 
+def test_an_entry_with_no_level_says_so(tmp_path: Path) -> None:
+    """No level prints as such in the text and is null in the JSON."""
+    root = checkout(tmp_path)
+    write(root, "research/functions/combat.toml", FUNCTIONS.replace('level = "confirmed-code"', 'note = "none stated"'))
+    found = research_where.Index.load(root).search("Grab_Start")
+    assert "function database: combat.toml: no level, described at" in "\n".join(research_where.render(found))
+    assert research_where.to_json(found)["addresses"][0]["database"]["level"] is None
+
+
 def test_a_place_list_is_cut_after_a_few(tmp_path: Path) -> None:
     """A function every page cites does not fill the screen."""
     root = checkout(tmp_path)

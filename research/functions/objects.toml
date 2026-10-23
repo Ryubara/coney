@@ -40,7 +40,7 @@ status = "legacy"
 address = 0x00238540
 name = "Human_PlaceItemInHand"
 page = "objects.md#held"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/human_bindings.cpp:makePlaceItemInHand"
 status = "legacy"
 
@@ -53,18 +53,10 @@ coney = "src/combat/throw_aim.h:ThrowAimState::step"
 status = "legacy"
 
 [[function]]
-address = 0x0024c6d8
-name = "Human_PlaceObjectInHandByPickupClip"
-page = "objects.md#held"
-level = "confirmed-code"
-coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
-status = "legacy"
-
-[[function]]
 address = 0x0024eef0
 name = "NavPolygon_ContainsPoint"
 page = "objects.md#nav-links"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/world/path_map.h:PathMap::inside"
 status = "legacy"
 
@@ -159,12 +151,19 @@ coney = "src/human/human.h:Human::startPickUp"
 status = "legacy"
 
 [[function]]
-address = 0x00336a00
-name = "Quat_Slerp"
-page = "objects.md#original-structure"
-role = "a leaf's rotation step and its in-between pose ([Leaves](objects.md#leaves))"
+address = 0x0027da10
+name = "Player_OnL1Pressed"
+page = "objects.md#throws"
 level = "confirmed-code"
-coney = "src/animation/anim_math.h:slerp"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::stepThrowAim"
+status = "legacy"
+
+[[function]]
+address = 0x0033d498
+name = "PhysicsBody_SweepHumanMask"
+page = "objects.md#pane-break"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::meetHumans"
 status = "legacy"
 
 [[function]]
@@ -249,22 +248,19 @@ coney = "src/world_objects/object_types.h:ObjectTypes::find"
 status = "legacy"
 
 [[function]]
-address = 0x00391c10
-name = "WorldObject_Remove"
-page = "objects.md#original-structure"
-role = "vtable `+0x4c`: message 2 to the object's handlers, out of its record, deleted ([Barriers](objects.md#barriers))"
+address = 0x00393538
+name = "ThrownObject_OnContact"
+page = "objects.md#throws"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
-coney = "src/world_objects/doors.h:Doors::takeRemoved"
+coney = "src/world_objects/glass.h:GlassPanes::thrownHit"
 status = "legacy"
 
 [[function]]
-address = 0x00395b70
-name = "WorldObject_Update"
+address = 0x003961d0
+name = "World_BreakObjectsAround"
 page = "objects.md#original-structure"
-role = "integrates, copies `+0xcc` to `+0xc8`, runs the class's update"
 level = "confirmed-code"
-coney = "src/world_objects/object_tasks.h:ObjectiveMarker::update"
+coney = "src/world_objects/doors.h:Doors::destroyInRadius"
 status = "legacy"
 
 [[function]]
@@ -313,7 +309,7 @@ status = "legacy"
 address = 0x00397078
 name = "Door_SetPickable"
 page = "objects.md#lock-pick"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/object_bindings.cpp:makeSetDoorPickable"
 status = "legacy"
 
@@ -330,8 +326,7 @@ status = "legacy"
 address = 0x00398598
 name = "ObjectList_LoadObjsFile"
 page = "objects.md#objs-file"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/placed_objects_file.h:parsePlacedObjects"
 status = "legacy"
 
@@ -394,7 +389,7 @@ status = "legacy"
 address = 0x003a4768
 name = "Collision_SetTriangleTwoSided"
 page = "objects.md#door-blocking"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/object_services.h:markTriangles"
 status = "legacy"
 
@@ -419,9 +414,17 @@ status = "legacy"
 [[function]]
 address = 0x003b2f40
 name = "DoorFence_Init"
-page = "objects.md#barriers"
+page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::spawn"
+status = "legacy"
+
+[[function]]
+address = 0x003b3220
+name = "DoorFence_Update"
+page = "objects.md#original-structure"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::tick"
 status = "legacy"
 
 [[function]]
@@ -460,7 +463,7 @@ status = "legacy"
 [[function]]
 address = 0x003e98e8
 name = "ObjectiveMarker_Init"
-page = "objects.md#objective-markers"
+page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/object_tasks.h:columnColourFor"
 status = "legacy"
@@ -468,7 +471,7 @@ status = "legacy"
 [[function]]
 address = 0x003e9b08
 name = "ObjectiveMarker_UpdateFade"
-page = "objects.md#objective-markers"
+page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/object_tasks.h:ObjectiveMarker"
 status = "legacy"
@@ -529,7 +532,7 @@ status = "legacy"
 [[function]]
 address = 0x003fb5f8
 name = "DoorSwinging_Init"
-page = "objects.md#door-blocking"
+page = "objects.md#doors"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::spawn"
 status = "legacy"
@@ -537,7 +540,7 @@ status = "legacy"
 [[function]]
 address = 0x003fbba0
 name = "DynDoorSwinging_Update"
-page = "objects.md#door-states"
+page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::tick"
 status = "legacy"
@@ -558,14 +561,6 @@ page = "objects.md#original-structure"
 role = "messages `0x1b` / `0x1c` of `melee_weapon`"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::dropHeld"
-status = "legacy"
-
-[[function]]
-address = 0x0041d160
-name = "GameState_IsRumbleLevel"
-page = "objects.md#spawning"
-level = "confirmed-code"
-coney = "src/gui/pause_menu/pause_items.h:isRumbleLevel"
 status = "legacy"
 
 [[function]]

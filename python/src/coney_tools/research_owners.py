@@ -100,7 +100,10 @@ class Owners:
 
     def problem(self, entry: Entry) -> str:
         """Why `entry`'s page is not the owner of its address, or '' when it is (or the page says nothing yet)."""
-        page = f"{RESEARCH_DIR.as_posix()}/{entry.page.partition('#')[0]}"
+        if entry.is_binding:
+            # A binding's wrapper is described by the generated reference of its binding, which owns nothing.
+            return ""
+        page = entry.doc_file
         owner = self.owner(entry.address)
         if owner and owner != page:
             return f"{owner} owns it, not {page}: point the entry at the page that owns it (one owner per address)"

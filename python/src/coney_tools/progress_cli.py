@@ -274,7 +274,7 @@ def run_import_functions(file: Path | None, dry_run: bool, show_all: bool) -> in
     print("  new entries by system: " + ", ".join(f"{k} {n}" for k, n in sorted(report.systems.items())))
     _print_rows("rows whose name is not Ghidra's (the entry has Ghidra's)", report.renamed, show_all)
     _print_rows("rows with no function entry in the Ghidra listing (no size)", report.unlisted, show_all)
-    _print_rows("entries with the weakest level, the page stating none", report.ungraded, show_all)
+    _print_rows("entries with no level, the page stating none for the function alone", report.ungraded, show_all)
     _print_rows("rows with no entry", report.skipped, show_all)
     if dry_run:
         print("import-functions: dry run, nothing written")

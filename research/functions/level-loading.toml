@@ -10,6 +10,14 @@ coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
 status = "legacy"
 
 [[function]]
+address = 0x00158580
+name = "Gm_Level_Resume"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::resume"
+status = "legacy"
+
+[[function]]
 address = 0x00158660
 name = "Gm_Level_Suspend"
 page = "level-loading.md#original-structure"
@@ -137,24 +145,16 @@ status = "legacy"
 address = 0x0024e720
 name = "PathData_Load"
 page = "level-loading.md#path-data"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/world/level_object.h:onPathDataLoaded"
 status = "legacy"
 
 [[function]]
 address = 0x0040cdd8
 name = "LevelModel_LinkFirstTexture"
-page = "level-loading.md#the-level-object"
-level = "confirmed-code"
-coney = "src/platform/level_file.h:linkLevelModel"
-status = "legacy"
-
-[[function]]
-address = 0x0040ce30
-name = "LevelHeader_OnLoaded"
 page = "level-loading.md#original-structure"
 level = "confirmed-code"
-coney = "src/world/level_object.h:makeLevelHeaderHandler"
+coney = "src/platform/level_file.h:linkLevelModel"
 status = "legacy"
 
 [[function]]

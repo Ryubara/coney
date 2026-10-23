@@ -534,8 +534,8 @@ status = "legacy"
 [[function]]
 address = 0x00193d80
 name = "RwDevice_BlurPass"
-page = "graphics.md#blur-pulse"
-level = "inferred"
+page = "graphics.md#device-vtable"
+level = "confirmed-code"
 coney = "src/platform/render_engine.h:RenderEngine::blurScreen"
 status = "legacy"
 
@@ -565,10 +565,18 @@ coney = "src/platform/level_file.h:readSectorBspChunk"
 status = "legacy"
 
 [[function]]
+address = 0x00198e20
+name = "SectorPlugin_Read"
+page = "graphics.md#plugins"
+level = "confirmed-code"
+coney = "src/world/world_streams.h:readSectorPluginData"
+status = "legacy"
+
+[[function]]
 address = 0x0019add0
 name = "OE_RoomSmoke_Construct"
 page = "graphics.md#room-smoke"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/room_smoke.h:RoomSmoke::start"
 status = "legacy"
 
@@ -576,8 +584,7 @@ status = "legacy"
 address = 0x0019b070
 name = "OE_RoomSmoke_FollowCamera"
 page = "graphics.md#room-smoke"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/room_smoke.h:RoomSmoke::followCamera"
 status = "legacy"
 
@@ -601,9 +608,16 @@ status = "legacy"
 address = 0x0019b4c0
 name = "OE_RoomSmoke_Update"
 page = "graphics.md#room-smoke"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/room_smoke.h:RoomSmoke::step"
+status = "legacy"
+
+[[function]]
+address = 0x002195e0
+name = "Human_SetCoverFlag5"
+page = "graphics.md#code-camera-effects"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::onCoveredGround"
 status = "legacy"
 
 [[function]]

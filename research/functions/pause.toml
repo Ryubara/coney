@@ -271,7 +271,7 @@ status = "legacy"
 [[function]]
 address = 0x0041d1b0
 name = "GameState_SetHangoutOffered"
-page = "pause.md#the-menus-fields"
-level = "confirmed-code"
+page = "pause.md#the-items-screens"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gui/pause_menu/pause_items.h:offersHangout"
 status = "legacy"

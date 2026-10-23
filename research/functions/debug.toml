@@ -2,18 +2,9 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x003569d8
-name = "ScriptSystem_RunLevelEntry"
-page = "debug.md#pcsx2-recipes"
-level = "speculative"
-coney = "src/scripting/script_system.h:ScriptSystem::enterLevel"
-status = "legacy"
-
-[[function]]
 address = 0x00357990
 name = "Script_IsRelease"
 page = "debug.md#debug-only-script-paths"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/script_bindings.cpp:makeIsRelease"
 status = "legacy"

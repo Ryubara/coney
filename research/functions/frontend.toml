@@ -4,8 +4,8 @@
 [[function]]
 address = 0x00144a30
 name = "Pad_Released"
-page = "frontend.md#pad-queries"
-level = "confirmed-code"
+page = "frontend.md#coneys-implementation"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/core/pad.h:Pad::released"
 status = "legacy"
 
@@ -21,8 +21,7 @@ status = "legacy"
 address = 0x00155228
 name = "RumbleMenu_Show"
 page = "frontend.md#quick-rumble"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::show"
 status = "legacy"
 
@@ -38,8 +37,7 @@ status = "legacy"
 address = 0x00155378
 name = "SSMC_StartLoadSequence"
 page = "frontend.md#coneys-implementation"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::startLoadSequence"
 status = "legacy"
 
@@ -47,8 +45,7 @@ status = "legacy"
 address = 0x001553c0
 name = "SSMC_StartDeleteSequence"
 page = "frontend.md#coneys-implementation"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::startDeleteSequence"
 status = "legacy"
 
@@ -64,8 +61,7 @@ status = "legacy"
 address = 0x00159ab8
 name = "Gm_Legal_Exit"
 page = "frontend.md#coneys-implementation"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::exit"
 status = "legacy"
 
@@ -81,8 +77,7 @@ status = "legacy"
 address = 0x0015a270
 name = "MemoryCard_SetBootFlag"
 page = "frontend.md#coneys-implementation"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::setBootCheck"
 status = "legacy"
 
@@ -121,33 +116,17 @@ status = "legacy"
 [[function]]
 address = 0x0015c7b0
 name = "LevelFlow_SelectLevelByName"
-page = "frontend.md#mode-flow"
-level = "inferred"
+page = "frontend.md#mode-8-fields"
+level = "confirmed-code"
 coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::chooseLevel"
 status = "legacy"
 
 [[function]]
 address = 0x0015c858
 name = "Gm_LevelFlow_Update"
-page = "frontend.md#story-start"
+page = "frontend.md#mode-8-fields"
 level = "confirmed-code"
 coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::update"
-status = "legacy"
-
-[[function]]
-address = 0x0015cf70
-name = "Gm_InGame_Enter"
-page = "frontend.md#story-start"
-level = "inferred"
-coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::enter"
-status = "legacy"
-
-[[function]]
-address = 0x0015d420
-name = "MissionComplete_Launch"
-page = "frontend.md#story-start"
-level = "confirmed-code"
-coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::launch"
 status = "legacy"
 
 [[function]]
@@ -161,25 +140,24 @@ status = "legacy"
 [[function]]
 address = 0x0015e130
 name = "Gm_Mode12_Exit"
-page = "frontend.md#mode-flow"
-level = "inferred"
+page = "frontend.md#original-structure"
+level = "confirmed-code"
 coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::exit"
 status = "legacy"
 
 [[function]]
-address = 0x0015e8b0
-name = "Gm_Mode11_Enter"
-page = "frontend.md#rumble-screens"
-level = "inferred"
-coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::enter"
+address = 0x0015e238
+name = "Gm_Mode12_Update"
+page = "frontend.md#fades"
+level = "confirmed-code"
+coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::update"
 status = "legacy"
 
 [[function]]
 address = 0x0015ea40
 name = "Gm_Mode11_Exit"
 page = "frontend.md#quick-rumble"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::exit"
 status = "legacy"
 
@@ -187,16 +165,23 @@ status = "legacy"
 address = 0x0015eca0
 name = "Gm_Mode11_Update"
 page = "frontend.md#rumble-screens"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015fe90
+name = "InitLevel"
+page = "frontend.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
 status = "legacy"
 
 [[function]]
 address = 0x00160d78
 name = "LevelFlow_LoadLevelByName"
 page = "frontend.md#mode-flow"
-level = "inferred"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::chooseLevel"
 status = "legacy"
 
@@ -1047,22 +1032,6 @@ coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmSubtitles::accep
 status = "legacy"
 
 [[function]]
-address = 0x0036b220
-name = "lua_CfgLevelName"
-page = "frontend.md#the-level-table"
-level = "confirmed-code"
-coney = "src/scripting/script_bindings.cpp:makeCfgLevelName"
-status = "legacy"
-
-[[function]]
-address = 0x0036df48
-name = "lua_MenuLoadLevel"
-page = "frontend.md#mode-flow"
-level = "inferred"
-coney = "src/scripting/script_bindings.cpp:makeMenuLoadLevel"
-status = "legacy"
-
-[[function]]
 address = 0x0041b0f0
 name = "Script_SetMultiplayerCallback"
 page = "frontend.md#warriors-functions"
@@ -1129,6 +1098,6 @@ status = "legacy"
 address = 0x0041f118
 name = "LevelRecord_Set"
 page = "frontend.md#the-level-table"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/warriors/level_table.h:LevelTable::set"
 status = "legacy"

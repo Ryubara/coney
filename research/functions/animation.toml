@@ -127,11 +127,27 @@ coney = "src/animation/anim_task.h:LoopTask"
 status = "legacy"
 
 [[function]]
+address = 0x00105990
+name = "AnimTaskChained_Construct"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:ClipThenNextTask"
+status = "legacy"
+
+[[function]]
 address = 0x00106c80
 name = "AnimTaskBlendOut_Construct"
 page = "animation.md#task-types"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:AnimTaskStack::change"
+status = "legacy"
+
+[[function]]
+address = 0x00108a78
+name = "PairedTask_Init"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/human/human_animator.h:HumanAnimator::playPaired"
 status = "legacy"
 
 [[function]]
@@ -169,7 +185,7 @@ status = "legacy"
 [[function]]
 address = 0x0010adf8
 name = "GaitBlend_Sample"
-page = "formats/animation.md#root-motion"
+page = "animation.md#task-types"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:GaitBlendTask::sample"
 status = "legacy"
@@ -265,9 +281,9 @@ coney = "src/human/human.h:Human::applyRootMotion"
 status = "legacy"
 
 [[function]]
-address = 0x0025b200
-name = "Human_BuildMoveTasks"
-page = "formats/animation.md#animation-tasks"
-level = "inferred"
-coney = "src/human/human_animator.h:HumanAnimator::buildMove"
+address = 0x003a0a68
+name = "SceneTask_EndClips"
+page = "animation.md#clip-queries"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::endClips"
 status = "legacy"

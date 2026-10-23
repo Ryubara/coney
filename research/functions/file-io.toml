@@ -32,8 +32,7 @@ status = "legacy"
 address = 0x00155180
 name = "MissionSelect_Show"
 page = "file-io.md#original-structure"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
 status = "legacy"
 
@@ -41,7 +40,14 @@ status = "legacy"
 address = 0x001551e0
 name = "GameStats_Show"
 page = "file-io.md#original-structure"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x003535e8
+name = "SceneCache_Init"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_disc.h:loadSceneList"
 status = "legacy"

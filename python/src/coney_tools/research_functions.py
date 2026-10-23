@@ -17,6 +17,7 @@ Research: docs/guides/research-function-database.md
 
 from __future__ import annotations
 
+import posixpath
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -35,6 +36,8 @@ LEVELS = {
     "speculative": "speculative",
     "not-needed": "not needed",
 }
+#: What a list shows for an entry that has no level: the page does not state one for the function alone.
+NO_LEVEL = "no level"
 #: What a gap is: a piece of the original that Coney does differently on purpose with the reason recorded (`stand-in`),
 #: or does not do yet with the issue that will (`not-ported`).
 RELATIONS = ("stand-in", "not-ported")
@@ -48,6 +51,10 @@ FUNCTION_NAME = re.compile(r"^~?[A-Za-z_][A-Za-z0-9_]*(?:::~?[A-Za-z_][A-Za-z0-9
 _PAGE_FILE = r"[a-z0-9][a-z0-9_-]*(?:/[a-z0-9][a-z0-9_-]*)*\.md"
 #: A page below docs/research with an optional section: `combat/grabs.md#grab`.
 PAGE = re.compile(rf"^({_PAGE_FILE})(?:#([A-Za-z0-9_.:-]+))?$")
+#: The generated reference page of a script binding, written relative to docs/research like a link in a role:
+#: `../references/bindings/ai.md#actexecuteattack`. A binding's wrapper function is described there, not on a research
+#: page, and the section is required.
+BINDING_PAGE = re.compile(r"^\.\./references/bindings/([a-z0-9][a-z0-9-]*\.md)#([A-Za-z0-9_.:-]+)$")
 QUESTION = re.compile(rf"^({_PAGE_FILE})#([A-Za-z0-9_.:-]+)$")
 #: Where Coney's port lives: a source file and, after a colon, the function or class.
 CONEY = re.compile(r"^(?P<file>[A-Za-z0-9_./+-]+)(?::(?P<symbol>[^\s:]\S*))?$")
@@ -83,8 +90,10 @@ class Entry:
 
     address: int
     name: str
-    page: str  # `<path below docs/research>.md` with an optional `#section`
-    level: str  # a key of LEVELS
+    page: str  # `<path below docs/research>.md` with an optional `#section`, or a binding page (BINDING_PAGE)
+    level: str = (
+        ""  # a key of LEVELS; empty when the page does not state one for this function alone (then `note` says so)
+    )
     role: str = ""  # one line; Markdown links are relative to docs/research
     kind: str = ""  # a short tag for the sort of function (a table's Role column): helper, init, binding, ...
     note: str = ""  # what the level alone does not say: a part of the claim graded lower, an address it rests on
@@ -96,6 +105,17 @@ class Entry:
     def page_path(self) -> str:
         """The page's file below docs/research, without the section."""
         return self.page.partition("#")[0]
+
+    @property
+    def is_binding(self) -> bool:
+        """True when the entry points at a generated script binding reference page, not a research page."""
+        return bool(BINDING_PAGE.match(self.page))
+
+    @property
+    def doc_file(self) -> str:
+        """The page's file in the checkout, below the repository root: `docs/research/combat/grabs.md`, or for a
+        binding page `docs/references/bindings/ai.md`."""
+        return posixpath.normpath(posixpath.join("docs/research", self.page_path))
 
     @property
     def anchor(self) -> str:
@@ -213,16 +233,24 @@ def _entry(item: object, number: int, where: str, problems: list[str]) -> Entry 
     if not isinstance(name, str) or not FUNCTION_NAME.match(name):
         problems.append(f"{label}: name must be the Ghidra name (letters, digits, `_` and `::`), got {name!r}")
     page = item.get("page")
-    if not isinstance(page, str) or not PAGE.match(page):
-        problems.append(f"{label}: page must be `<file>.md` or `<file>.md#section` below docs/research, got {page!r}")
-    level = item.get("level")
-    if level not in LEVELS:
+    if not isinstance(page, str) or not (PAGE.match(page) or BINDING_PAGE.match(page)):
+        problems.append(
+            f"{label}: page must be `<file>.md` or `<file>.md#section` below docs/research, or a binding page "
+            f"`../references/bindings/<group>.md#<name>`, got {page!r}"
+        )
+    # The level is optional: a function whose page states none for it alone has none, and says so in its note.
+    level = item.get("level", "")
+    if "level" in item and level not in LEVELS:
         problems.append(f"{label}: level must be one of {', '.join(LEVELS)}, got {level!r}")
     role = _string(item, "role", label, problems)
     kind = _string(item, "kind", label, problems)
     note = _string(item, "note", label, problems)
     for key, text in (("role", role), ("kind", kind), ("note", note)):
         _decompiled(text, key, label, problems)
+    if "level" not in item and not note.strip():
+        problems.append(
+            f"{label}: an entry with no level needs a note that says why (what the page states, or where to read it)"
+        )
     if level == "not-needed" and not role.strip():
         problems.append(f"{label}: level not-needed needs a role that gives the reason")
     coney = _string(item, "coney", label, problems)
@@ -362,7 +390,8 @@ def _entry_text(entry: Entry) -> str:
     for key in ("kind", "role"):
         if getattr(entry, key):
             lines.append(f"{key} = {quote(getattr(entry, key))}")
-    lines.append(f"level = {quote(entry.level)}")
+    if entry.level:
+        lines.append(f"level = {quote(entry.level)}")
     for key in ("note", "coney", "status"):
         if getattr(entry, key):
             lines.append(f"{key} = {quote(getattr(entry, key))}")

@@ -90,19 +90,22 @@ def test_a_paragraph_that_states_a_level_is_the_next_source() -> None:
     assert (entry.page, entry.level, entry.role) == ("ai.md#behaviour", "confirmed-code", "")
 
 
-def test_a_page_that_only_mentions_the_function_gives_the_weakest_level() -> None:
-    """With no level stated anywhere, the entry is `speculative` with a note saying why, and the report lists it."""
+def test_a_page_that_only_mentions_the_function_gives_no_level() -> None:
+    """With no level stated for the function, the entry has none (not a guess) and a note; the report lists it."""
     result = plan()
     entry = entries(result)[0x1180]
-    assert (entry.page, entry.level, entry.note) == ("ai.md#behaviour", "speculative", progress_import.UNGRADED_NOTE)
+    assert (entry.page, entry.level, entry.note) == ("ai.md#behaviour", "", progress_import.UNGRADED_NOTE)
     assert len(result.report.ungraded) == 1 and "0x00001180" in result.report.ungraded[0]
     assert entry.name == "Legacy_1180"  # Ghidra's name is still the default, so the row's is kept
 
 
-def test_a_binding_wrapper_points_at_the_bindings_page_with_the_bindings_evidence() -> None:
+def test_a_binding_wrapper_points_at_its_reference_page_with_the_bindings_evidence() -> None:
+    """The generated page of the binding names the wrapper; the entry belongs to the scripting system."""
     result = plan()
     entry = entries(result)[0x1210]
-    assert (entry.page, entry.level) == (progress_import.BINDINGS_PAGE, "inferred")
+    assert (entry.page, entry.level) == ("../references/bindings/x.md#wrap", "inferred")
+    assert entry.is_binding
+    assert [s.system for s in result.systems if entry in s.entries] == ["scripting"]
     assert result.report.sources == {"table": 2, "claim": 1, "cited": 1, "binding": 1}
     assert 0x1220 not in entries(result)  # a binding with no evidence gives no level, and no page cites it
 
@@ -187,6 +190,54 @@ def test_a_level_only_sentence_right_after_belongs_to_the_sentence_before() -> N
     assert progress_import.tied_level(text, A) == ("confirmed-code", "claim")
 
 
+NAMES = {A: frozenset({"Start_It"}), B: frozenset({"End_It"}), 0x00123600: frozenset({"Mid_It"})}
+
+
+def test_a_sentence_must_be_about_the_function_not_about_its_neighbours() -> None:
+    """Another address in the sentence that the sentence does not name makes the level about something wider."""
+    event = "Confirmed (code): the victim's clip, started by `Start_It` (`0x00123400`, caller `0x00123999`), ran."
+    assert progress_import.tied_level(event, A, NAMES) is None
+    alone = "`Start_It` starts it from `0x00123400` and runs on the pad (confirmed (code))."
+    assert progress_import.tied_level(alone, A, NAMES) == ("confirmed-code", "claim")
+    # Without names the only address in the sentence is the function's own, which is enough.
+    assert progress_import.tied_level("It starts at `0x00123400` (confirmed (code)).", A) == ("confirmed-code", "claim")
+    # Two functions, each named beside its address: the level is about both.
+    both = "`Start_It` (`0x00123400`) calls `End_It` (`0x00123500`) (confirmed (code))."
+    assert progress_import.tied_level(both, A, NAMES) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(both, B, NAMES) == ("confirmed-code", "claim")
+    # A name that only contains the function's name does not count.
+    assert progress_import.tied_level(both.replace("`End_It`", "`Pre_End_It`"), A, NAMES) is None
+
+
+def test_an_aside_level_in_a_sentence_ties_nothing_but_a_code_reading_does() -> None:
+    """`(the player; inferred)` and a runtime setup qualify a detail; only a code reading is the function's claim."""
+    aside = "`Start_It` (`0x00123400`) skips the search when the brain is 0 (the player; inferred)."
+    assert progress_import.tied_level(aside, A, NAMES) is None
+    setup = "At runtime (confirmed (runtime)), `Start_It` (`0x00123400`) was called from the test."
+    assert progress_import.tied_level(setup, A, NAMES) is None
+    code = "`Start_It` (`0x00123400`) skips the search when the brain is 0 (confirmed (code))."
+    assert progress_import.tied_level(code, A, NAMES) == ("confirmed-code", "claim")
+    # A block that opens with its level still carries any of them.
+    block = "Inferred: `Start_It` (`0x00123400`) starts it. `End_It` (`0x00123500`) ends it."
+    assert progress_import.tied_level(block, B, NAMES) == ("inferred", "block")
+
+
+def test_a_level_between_two_addresses_belongs_to_the_one_before_it() -> None:
+    """`Wide_It (0x1, confirmed (code)): ... (End_It, 0x2)` grades the first function, not the second."""
+    text = "The test is `Start_It` (`0x00123400`, confirmed (code)): it squares the range (`End_It`, `0x00123500`)."
+    assert progress_import.tied_level(text, A, NAMES) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(text, B, NAMES) is None
+    # A level that leads or trails every address is about all of them.
+    leading = "Confirmed (code) at `Start_It` (`0x00123400`) and `End_It` (`0x00123500`)."
+    assert progress_import.tied_level(leading, B, NAMES) == ("confirmed-code", "claim")
+
+
+def test_a_level_only_sentence_after_is_one_without_code() -> None:
+    """`Confirmed (code): `Other` is called first.` states a level about another function, not about this one."""
+    text = "It offers the event to the handlers (`0x00123400`). Confirmed (code): `Other` is called first."
+    assert progress_import.tied_level(text, A) is None
+
+
 def test_two_levels_in_one_sentence_tie_nothing() -> None:
     """`confirmed (code); the rock inferred` grades two claims; a page-less default would be a guess."""
     assert progress_import.tied_level("It hits (`0x00123400`, confirmed (code)) and the rock inferred.", A) is None
@@ -207,7 +258,7 @@ def test_a_paragraph_grades_only_the_functions_whose_claim_states_the_level() ->
     )
     found = entries(result)
     assert (found[A].level, found[A].note) == ("confirmed-code", "")
-    assert found[B].level == "speculative" and found[B].note == progress_import.UNGRADED_NOTE
+    assert found[B].level == "" and found[B].note == progress_import.UNGRADED_NOTE
     assert result.report.sources["claim"] == 1 and result.report.sources["cited"] == 1
 
 
@@ -217,7 +268,28 @@ def test_a_lead_line_grades_the_blocks_under_its_heading() -> None:
     assert (entry.page, entry.level, entry.note) == ("sys.md#group", "confirmed-code", "")
     # A block that states its own level is not graded by the lead line, even when it ties nothing.
     own = body + "- `F123500` (`0x00123500`) and `F123600` (`0x00123600`) end it (inferred), the id confirmed (code).\n"
-    assert entries(paragraph_plan(own, (B,)))[B].level == "speculative"
+    assert entries(paragraph_plan(own, (B,)))[B].level == ""
+
+
+def test_a_table_row_without_an_evidence_column_grades_nothing() -> None:
+    """A field table's cell may say `(confirmed (runtime))` about one field, and a lead line is not the row's claim."""
+    fields = "| Offset | Meaning |\n| --- | --- |\n| `+0x1e` | skipped via `0x00123400` (confirmed (runtime)) |\n"
+    assert entries(paragraph_plan(fields))[A].level == ""
+    led = "### Group {#group}\n\nConfirmed (code) for each row below.\n\n" + fields
+    assert entries(paragraph_plan(led))[A].level == ""
+    graded = "| Offset | Meaning | Evidence |\n| --- | --- | --- |\n| `+0x1e` | skipped via `0x00123400` | inferred |\n"
+    assert entries(paragraph_plan(graded))[A].level == "inferred"  # the row's own cell is its claim
+
+
+def test_a_first_paragraph_that_states_a_level_about_its_own_subject_is_no_lead_line() -> None:
+    """A lead line says how far its level reaches; a behaviour paragraph with a runtime remark in it does not."""
+    behaviour = (
+        "R1 held blocks. Confirmed (runtime). No dodge exists (confirmed (runtime)); the shuffle is the only one."
+    )
+    body = f"### Block {{#block}}\n\n{behaviour}\n\n- `F123400` (`0x00123400`) reads the reach.\n"
+    assert entries(paragraph_plan(body))[A].level == ""
+    scoped = body.replace(behaviour, "R1 held blocks. Confirmed (runtime) at the addresses cited.")
+    assert entries(paragraph_plan(scoped))[A].level == "confirmed-runtime"
 
 
 def test_a_section_that_states_no_claims_grades_nothing() -> None:
@@ -228,7 +300,7 @@ def test_a_section_that_states_no_claims_grades_nothing() -> None:
         ports={A: "src/core/x.h:f"},
         listing={A: ListedFunction(A, 8, "F", False)},
     )
-    assert entries(result)[A].level == "speculative"
+    assert entries(result)[A].level == ""
 
 
 def test_the_section_that_names_the_function_wins_over_one_that_only_cites_it() -> None:
@@ -244,10 +316,10 @@ def test_a_candidate_the_schema_refuses_gives_way_to_the_next() -> None:
     pages = {
         **PAGES,
         "combat-grabs.md": PAGES["combat-grabs.md"].replace("confirmed (code) |", "confirmed (code) FUN_00123456 |"),
-        "ai.md": PAGES["ai.md"] + "\nThe start at `0x00001000` is inferred.\n",
+        "ai.md": PAGES["ai.md"] + "\nThe start at `0x00001000` is confirmed (code).\n",
     }
     entry = entries(plan(pages=pages))[0x1000]
-    assert (entry.page, entry.level) == ("ai.md#behaviour", "inferred")
+    assert (entry.page, entry.level) == ("ai.md#behaviour", "confirmed-code")
 
 
 def test_systems_follow_the_page_names() -> None:

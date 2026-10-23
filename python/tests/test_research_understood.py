@@ -57,6 +57,18 @@ def test_an_entry_without_a_role_is_a_citation_without_evidence(tmp_path: Path) 
     assert not citations[0x1200].evidence
 
 
+def test_an_entry_with_a_role_but_no_level_is_not_evidence(tmp_path: Path) -> None:
+    """A level is what makes a role a claim we can count: with none, the page states nothing for this function alone."""
+    root = make_research_checkout(tmp_path)
+    ungraded = ALPHA.replace(
+        'role = "steps"\nlevel = "confirmed-code"', 'role = "steps"\nnote = "no level on the page"'
+    )
+    write_systems(root, {"alpha": ungraded})
+    citations = progress_research.scan_citations(root)
+    assert "research/functions/alpha.toml" in citations[0x1100].pages
+    assert not citations[0x1100].evidence
+
+
 def test_the_database_name_is_the_page_name(tmp_path: Path) -> None:
     """The backlog's "name on the page" is the entry's name when there is one, not a guess from prose."""
     root = make_research_checkout(tmp_path)

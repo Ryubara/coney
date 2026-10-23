@@ -2,6 +2,14 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x0021c0a8
+name = "Human_IsWayClearTo"
+page = "physics-kernels.md#u12-callers"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
+status = "legacy"
+
+[[function]]
 address = 0x0021ce08
 name = "Human_CreatePhysicsBody"
 page = "physics-bodies.md#u9-callers"
@@ -19,11 +27,36 @@ coney = "src/world_objects/loose_objects.cpp:integrateAngular"
 status = "legacy"
 
 [[function]]
+address = 0x00336a00
+name = "Quat_Slerp"
+page = "physics.md#original-structure"
+role = "spherical interpolation, shortest arc"
+level = "confirmed-code"
+coney = "src/animation/anim_math.h:slerp"
+status = "legacy"
+
+[[function]]
 address = 0x0033d2d8
 name = "IPhysics_SweepShapeVsMesh"
 page = "physics.md#original-structure"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
+status = "legacy"
+
+[[function]]
+address = 0x0033d340
+name = "IPhysics_SweepBodyVsMesh"
+page = "physics.md#original-structure"
+level = "confirmed-code"
+coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
+status = "legacy"
+
+[[function]]
+address = 0x0033d718
+name = "Contact_InsertSorted"
+page = "physics.md#original-structure"
+level = "confirmed-code"
+coney = "src/physics/contact.h:insertSorted"
 status = "legacy"
 
 [[function]]
@@ -35,11 +68,27 @@ coney = "src/physics/body_sweep.h:backOffPlane"
 status = "legacy"
 
 [[function]]
+address = 0x0033d870
+name = "Vec_RemoveNormalPart"
+page = "physics.md#original-structure"
+level = "confirmed-code"
+coney = "src/physics/body_sweep.h:removeNormalPart"
+status = "legacy"
+
+[[function]]
 address = 0x0033d8f0
 name = "PhysicsVec_Bounce"
 page = "physics.md#original-structure"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:bounce"
+status = "legacy"
+
+[[function]]
+address = 0x0033d9d8
+name = "PhysicsBody_ResolveContacts"
+page = "physics.md#contacts"
+level = "confirmed-code"
+coney = "src/human/human_contacts.h:contactPush"
 status = "legacy"
 
 [[function]]
@@ -309,7 +358,7 @@ status = "legacy"
 [[function]]
 address = 0x00348a50
 name = "PhysicsMesh_SweepSphere"
-page = "physics-kernels.md#issue-150"
+page = "physics.md#dispatch"
 level = "confirmed-code"
 coney = "src/physics/mesh_sweep.h:sweepSphereMesh"
 status = "legacy"
@@ -317,7 +366,7 @@ status = "legacy"
 [[function]]
 address = 0x00349a60
 name = "Sweep_SphereCapsule"
-page = "physics-world.md#u14-ray-capsule"
+page = "physics.md#kernels"
 level = "confirmed-code"
 coney = "src/human/human.cpp:meetsCapsule"
 status = "legacy"
@@ -491,6 +540,16 @@ coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
 status = "legacy"
 
 [[function]]
+address = 0x00391c10
+name = "WorldObject_Remove"
+page = "physics.md#original-structure"
+role = "cancels a settle, leaves the `ObjectTaskManager`"
+level = "confirmed-code"
+note = "confirmed (code); role inferred"
+coney = "src/world_objects/doors.h:Doors::takeRemoved"
+status = "legacy"
+
+[[function]]
 address = 0x00391d48
 name = "Obj_CreatePhysicsBody"
 page = "physics.md#bodies"
@@ -515,4 +574,13 @@ page = "physics.md#original-structure"
 role = "the world object's integrator (vtable `+0x144`)"
 level = "confirmed-code"
 coney = "src/world_objects/loose_objects.h:LooseObjects::update"
+status = "legacy"
+
+[[function]]
+address = 0x00395b70
+name = "WorldObject_Update"
+page = "physics.md#original-structure"
+role = "the world object's update (vtable `+0x13c`)"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:ObjectiveMarker::update"
 status = "legacy"

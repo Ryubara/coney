@@ -2,22 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x00105990
-name = "AnimTaskChained_Construct"
-page = "characters.md#anim-callbacks"
-level = "confirmed-runtime"
-coney = "src/animation/anim_task.h:ClipThenNextTask"
-status = "legacy"
-
-[[function]]
-address = 0x00108a78
-name = "PairedTask_Init"
-page = "characters.md#anim-callbacks"
-level = "confirmed-runtime"
-coney = "src/human/human_animator.h:HumanAnimator::playPaired"
-status = "legacy"
-
-[[function]]
 address = 0x00146078
 name = "PlayerRecord_Update"
 page = "characters.md#original-structure"
@@ -30,8 +14,16 @@ status = "legacy"
 address = 0x001480e0
 name = "PadHandlerEx_DispatchCommand"
 page = "characters.md#the-human-object"
-level = "confirmed-runtime"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callPadHandler"
+status = "legacy"
+
+[[function]]
+address = 0x00155648
+name = "RumbleResult_Toggle"
+page = "characters.md#level-starts"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::update"
 status = "legacy"
 
 [[function]]
@@ -58,14 +50,6 @@ page = "characters.md#original-structure"
 role = "type remap, model, ground snap, defaults"
 level = "confirmed-code"
 coney = "src/ai/brain.h:startingFlags"
-status = "legacy"
-
-[[function]]
-address = 0x002195e0
-name = "Human_SetCoverFlag5"
-page = "characters.md#ground"
-level = "inferred"
-coney = "src/human/human.h:Human::onCoveredGround"
 status = "legacy"
 
 [[function]]
@@ -172,8 +156,7 @@ status = "legacy"
 address = 0x002212d0
 name = "Human_GetTurnRateForGait"
 page = "characters.md#ai-locomotion"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/human/locomotion.h:aiMaxTurn"
 status = "legacy"
 
@@ -262,7 +245,7 @@ status = "legacy"
 address = 0x00222ba8
 name = "WarriorType_GetPlayerClass"
 page = "characters.md#power-class-bytes"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/characters/character_class.h:warriorPowerClassOf"
 status = "legacy"
 
@@ -270,8 +253,7 @@ status = "legacy"
 address = 0x00222c20
 name = "WarriorType_GetWarriorClass"
 page = "characters.md#power-class-bytes"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/characters/character_class.h:warriorClassOf"
 status = "legacy"
 
@@ -320,14 +302,6 @@ coney = "src/ai/fidget_action.h:freeToFidget"
 status = "legacy"
 
 [[function]]
-address = 0x00227e60
-name = "Human_IsDownOrDead"
-page = "characters.md#falling"
-level = "confirmed-code"
-coney = "src/ai/gangs.h:humanIsDownOrDead"
-status = "legacy"
-
-[[function]]
 address = 0x00228448
 name = "Human_HasHeld20080000"
 page = "characters.md#code-core"
@@ -340,8 +314,7 @@ status = "legacy"
 address = 0x00228d70
 name = "Cfg_AddHatFit"
 page = "characters.md#hats"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/hats.h:HatFits::add"
 status = "legacy"
 
@@ -385,9 +358,16 @@ status = "legacy"
 address = 0x0022ae40
 name = "Human_SpeedForGait"
 page = "characters.md#ai-locomotion"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_action.h:gaitSpeed"
+status = "legacy"
+
+[[function]]
+address = 0x0022aeb0
+name = "Human_GaitForSpeed"
+page = "characters.md#speed-classes"
+level = "confirmed-code"
+coney = "src/human/locomotion.h:gaitOfSpeed"
 status = "legacy"
 
 [[function]]
@@ -1666,8 +1646,7 @@ status = "legacy"
 address = 0x002427e8
 name = "Human_MoveWheelchair"
 page = "characters.md#wheelchair"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/human/human.cpp:Human::wheelchairControl"
 status = "legacy"
 
@@ -1746,7 +1725,7 @@ status = "legacy"
 address = 0x00248170
 name = "Human_StrikeAllOn"
 page = "characters.md#wheelchair"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
 
@@ -1754,7 +1733,7 @@ status = "legacy"
 address = 0x00248270
 name = "Human_StrikeAllOff"
 page = "characters.md#wheelchair"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
 
@@ -1848,11 +1827,11 @@ coney = "src/world_objects/nav_links.h:NavLinks::changeBlocker"
 status = "legacy"
 
 [[function]]
-address = 0x00254078
-name = "Human_ComputeGaitSpeeds"
-page = "characters.md#speed-classes"
-level = "confirmed-code"
-coney = "src/human/human_animator.h:speedsOf"
+address = 0x002544a0
+name = "AttackTable_GetReach"
+page = "characters.md#climb"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/ai/attack_reach.h:nearReach"
 status = "legacy"
 
 [[function]]
@@ -1907,6 +1886,14 @@ page = "characters.md#original-structure"
 role = "picks the anim state, calls its builder from `0x005106e0`"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::choose"
+status = "legacy"
+
+[[function]]
+address = 0x0025b200
+name = "Human_BuildMoveTasks"
+page = "characters.md#original-structure"
+level = "confirmed-code"
+coney = "src/human/human_animator.h:HumanAnimator::buildMove"
 status = "legacy"
 
 [[function]]
@@ -1976,7 +1963,7 @@ status = "legacy"
 [[function]]
 address = 0x00281450
 name = "Climb_OnFirstClipEndRun"
-page = "characters.md#climb"
+page = "characters.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
 status = "legacy"
@@ -1984,7 +1971,7 @@ status = "legacy"
 [[function]]
 address = 0x00281838
 name = "Climb_OnFirstClipEndStand"
-page = "characters.md#climb"
+page = "characters.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
 status = "legacy"
@@ -2029,33 +2016,8 @@ status = "legacy"
 address = 0x0029ade0
 name = "Route_SetJumpArcVelocity"
 page = "characters.md#jump"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_action.h:routeJumpVelocity"
-status = "legacy"
-
-[[function]]
-address = 0x0033d340
-name = "IPhysics_SweepBodyVsMesh"
-page = "characters.md#falling"
-level = "confirmed-code"
-coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
-status = "legacy"
-
-[[function]]
-address = 0x0033d718
-name = "Contact_InsertSorted"
-page = "characters.md#falling"
-level = "confirmed-code"
-coney = "src/physics/contact.h:insertSorted"
-status = "legacy"
-
-[[function]]
-address = 0x0033d9d8
-name = "PhysicsBody_ResolveContacts"
-page = "characters.md#falling"
-level = "confirmed-code"
-coney = "src/human/human_contacts.h:contactPush"
 status = "legacy"
 
 [[function]]
@@ -2095,6 +2057,14 @@ coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
 status = "legacy"
 
 [[function]]
+address = 0x00356d00
+name = "ScriptSystem_OnPreloadFileDone"
+page = "characters.md#level-starts"
+level = "confirmed-code"
+coney = "src/scripting/script_system.h:ScriptSystem::servicePreloads"
+status = "legacy"
+
+[[function]]
 address = 0x00358428
 name = "lua_HuCreate"
 page = "characters.md#original-structure"
@@ -2104,19 +2074,18 @@ coney = "src/scripting/script_bindings.cpp:makeHuCreate"
 status = "legacy"
 
 [[function]]
-address = 0x00385db0
-name = "Object_TeleportToFlag"
+address = 0x00385bb8
+name = "Object_Teleport"
 page = "characters.md#level-starts"
-level = "confirmed-code"
-coney = "src/scripting/level_bindings.cpp:makeTeleportToFlag"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/scripting/arena_bindings.cpp:makeTeleport"
 status = "legacy"
 
 [[function]]
 address = 0x003a3ba0
 name = "Human_PlaceHat"
 page = "characters.md#hats"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::putOnHat"
 status = "legacy"
 
@@ -2127,6 +2096,14 @@ page = "characters.md#warriors-functions"
 role = "each update, when enabled (`+0x155`), outside Rumble (`+0x158`) and not already over (`+0x14c`): over when a player has state flag `0x100000000`; when every player is knocked out or cuffed, not over while player 1 is cuffed, awake and can uncuff himself (upgrade (6, 15) and item 6); over when no gang member can help (`Gang_NoneAbleToHelp`); over at once when player 1 is out with no flash (item 1) or byte `+0x414 + player` is set; otherwise every 37th update asks `Gang_CanReachToHelp` and is over after 4 failures in a row (`+0x56e6`). The mission-failed reason is GSTRING 21 when cuffed (`+0x118` = 1), else 20"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::stepGameOver"
+status = "legacy"
+
+[[function]]
+address = 0x0041ce98
+name = "GameState_SetCheckPoint"
+page = "characters.md#level-starts"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/scripting/script_bindings.cpp:makeSetCheckPoint"
 status = "legacy"
 
 [[function]]

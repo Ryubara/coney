@@ -267,3 +267,46 @@ def test_docs_check_passes_an_entry_its_page_owns() -> None:
     environment = replace(research_support.env(), functions={"docs/research/widget.md": (entry,)})
     found = research_support.findings(research_support.RESEARCH_PATH, research_support.page(), environment)
     assert [f for f in found if f.rule == "function-entries"] == []
+
+
+BINDING_ENTRY = """\
+[[function]]
+address = 0x00100200
+name = "Grab_Start"
+page = "../references/bindings/combat.md#startgrab"
+level = "inferred"
+"""
+
+
+def add_binding_page(root: Path, text: str = "# Script bindings\n\n## StartGrab {#startgrab}\n") -> None:
+    """The generated reference page of the `combat` binding group under docs/references/bindings."""
+    page = root / "docs" / "references" / "bindings" / "combat.md"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(text, encoding="utf-8")
+
+
+def test_a_binding_page_and_its_section_are_checked_like_a_research_page(tmp_path: Path) -> None:
+    """The entry may point at docs/references/bindings; the file and the anchor must exist."""
+    root = make_root(tmp_path, BINDING_ENTRY)
+    [error] = run(root).errors
+    assert "docs/references/bindings/combat.md does not exist" in error
+    add_binding_page(root, "# Script bindings\n\n## Other {#other}\n")
+    [error] = run(root).errors
+    assert "has no section 'startgrab'" in error
+    add_binding_page(root)
+    findings = run(root)
+    assert findings.errors == [] and findings.warnings == []
+
+
+def test_a_binding_page_is_not_held_to_page_ownership(tmp_path: Path) -> None:
+    """A page that owns the address is a research page; the binding reference owns nothing, so no owner is named."""
+    owner = '---\nkind: topic\nsystem: combat\nowns:\n  functions: ["0x00100200"]\n---\n# Holds\n'
+    root = make_root(tmp_path, BINDING_ENTRY, extra_pages={"combat/holds.md": owner})
+    add_binding_page(root)
+    assert run(root).errors == []
+
+
+def test_an_entry_with_no_level_passes_the_checks(tmp_path: Path) -> None:
+    """No level is a state of the data, not an error: the note says why."""
+    entry = ENTRY.replace('level = "confirmed-code"\n', 'note = "the page states none for it alone"\n')
+    assert run(make_root(tmp_path, entry)).errors == []

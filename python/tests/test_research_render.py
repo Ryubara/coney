@@ -137,3 +137,18 @@ def test_rendering_is_deterministic() -> None:
     """The same data gives the same text, whatever the order the entries were built in."""
     shuffled = system_of(*reversed(MINIMAL.entries))
     assert research_render.render_system(shuffled, None) == research_render.render_system(MINIMAL, None)
+
+
+def test_an_entry_with_no_level_is_counted_and_shown_as_having_none() -> None:
+    """The summary counts the entries with no level and the Level cell shows the label with the note after it."""
+    entry = rf.Entry(0x100200, "A", "combat.md#x", note="the page states none for it alone")
+    page = research_render.render_system(system_of(entry, rf.Entry(0x100300, "B", "combat.md", "inferred")), None)
+    assert "2 functions: 1 inferred, 1 with no level." in page
+    assert "| `A` |  | no level; the page states none for it alone |" in page
+
+
+def test_a_binding_entry_links_to_the_reference_page() -> None:
+    """The section link of a binding page is rebased like a role link: relative to the system's list page."""
+    entry = rf.Entry(0x100200, "A", "../references/bindings/ai.md#actlookat", "inferred")
+    page = research_render.render_system(system_of(entry, name="scripting"), None)
+    assert "[../references/bindings/ai.md#actlookat](../../references/bindings/ai.md#actlookat)" in page

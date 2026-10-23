@@ -4,7 +4,7 @@
 [[function]]
 address = 0x00181b20
 name = "ChunkLoaded_ParticlePage"
-page = "gui.md#particle-page"
+page = "gui.md#original-structure"
 level = "confirmed-code"
 coney = "src/platform/sprite_sheets.h:onParticlePageLoaded"
 status = "legacy"
@@ -61,6 +61,14 @@ page = "gui.md#fn-basewidget"
 role = "slot `+0x68`, [The widget classes](gui.md#widget-classes)"
 level = "confirmed-code"
 coney = "src/gui/base_widget.h:BaseWidget::setup"
+status = "legacy"
+
+[[function]]
+address = 0x001a2690
+name = "BaseWidget_RenderAlpha"
+page = "gui.md#fn-basewidget"
+level = "confirmed-code"
+coney = "src/gui/base_widget.h:BaseWidget::render"
 status = "legacy"
 
 [[function]]
@@ -427,7 +435,7 @@ status = "legacy"
 address = 0x002c7ee0
 name = "DealerGoal_AddRadarIcon"
 page = "gui.md#radar-icons"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/ai/dealer_goal.cpp:DealerBlip"
 status = "legacy"
 
@@ -435,8 +443,7 @@ status = "legacy"
 address = 0x00357998
 name = "Script_GetPlatform"
 page = "gui.md#coneys-implementation"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/script_bindings.cpp:makeGetPlatform"
 status = "legacy"
 
@@ -444,7 +451,6 @@ status = "legacy"
 address = 0x003579a0
 name = "ScriptSystem_DoFileLua"
 page = "gui.md#coneys-implementation"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/script_bindings.cpp:makeDoFile"
 status = "legacy"

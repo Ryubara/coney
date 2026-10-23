@@ -18,27 +18,3 @@ role = "binary search (`bsearch`, `0x00433a88`, 270 × 20), then a linear `strcm
 level = "confirmed-code"
 coney = "src/effects/particle_types.h:findParticleType"
 status = "legacy"
-
-[[function]]
-address = 0x003ca658
-name = "SubFog_Init"
-page = "particles.md#fog"
-level = "inferred"
-coney = "src/effects/ground_fog.h:GroundFog::makeWisp"
-status = "legacy"
-
-[[function]]
-address = 0x003f69b8
-name = "Steam_Init"
-page = "particles.md#steam"
-level = "confirmed-code"
-coney = "src/effects/particles.h:defaultSteam"
-status = "legacy"
-
-[[function]]
-address = 0x003f6b40
-name = "Steam_OnMessage"
-page = "particles.md#steam"
-level = "confirmed-code"
-coney = "src/effects/particles.h:ParticleSystems::configureSteam"
-status = "legacy"

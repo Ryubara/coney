@@ -132,6 +132,14 @@ coney = "src/world_objects/props.h:Props::launchPiece"
 status = "legacy"
 
 [[function]]
+address = 0x003ca658
+name = "SubFog_Init"
+page = "script-types.md#fog-wisp"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/effects/ground_fog.h:GroundFog::makeWisp"
+status = "legacy"
+
+[[function]]
 address = 0x003ca9d8
 name = "SubFog_Update"
 page = "script-types.md#fog-wisp"
@@ -146,8 +154,7 @@ status = "legacy"
 address = 0x003cadd8
 name = "PartFog_Init"
 page = "script-types.md#part-fog"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/ground_fog.h:GroundFog::step"
 status = "legacy"
 
@@ -185,7 +192,7 @@ status = "legacy"
 address = 0x003e02a8
 name = "SubNeonLight_Init"
 page = "script-types.md#neon-signs"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/light_tasks.h:makeNeonLight"
 status = "legacy"
 
@@ -360,11 +367,26 @@ coney = "src/world_objects/pickups.h:pickable"
 status = "legacy"
 
 [[function]]
+address = 0x003f69b8
+name = "Steam_Init"
+page = "script-types.md#type-table"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/effects/particles.h:defaultSteam"
+status = "legacy"
+
+[[function]]
+address = 0x003f6b40
+name = "Steam_OnMessage"
+page = "script-types.md#type-table"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+coney = "src/effects/particles.h:ParticleSystems::configureSteam"
+status = "legacy"
+
+[[function]]
 address = 0x003f6d70
 name = "SteamHuge_Init"
 page = "script-types.md#type-table"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/particles.h:defaultSteam"
 status = "legacy"
 
@@ -372,8 +394,7 @@ status = "legacy"
 address = 0x003f7138
 name = "SteamLarge_Init"
 page = "script-types.md#type-table"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/effects/particles.h:defaultSteam"
 status = "legacy"
 

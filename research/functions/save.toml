@@ -38,14 +38,6 @@ coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::exit"
 status = "legacy"
 
 [[function]]
-address = 0x0015e238
-name = "Gm_Mode12_Update"
-page = "save.md#story-screens"
-level = "inferred"
-coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::update"
-status = "legacy"
-
-[[function]]
 address = 0x00421638
 name = "ProfileHeader_Write"
 page = "save.md#original-structure"

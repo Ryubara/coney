@@ -13,7 +13,7 @@ status = "legacy"
 address = 0x00166158
 name = "Gang_CountLiving"
 page = "hud-functions-lua.md#gang-count-what"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/ai/gangs.h:Gang::countLiving"
 status = "legacy"
 
@@ -97,14 +97,6 @@ page = "hud-functions-parts.md#fn-pre-basewidget"
 role = "the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](hud.md#the-rage-meter))"
 level = "confirmed-code"
 coney = "src/gui/bar.h:Bar::render"
-status = "legacy"
-
-[[function]]
-address = 0x001a2690
-name = "BaseWidget_RenderAlpha"
-page = "hud.md#coordinates"
-level = "confirmed-code"
-coney = "src/gui/base_widget.h:BaseWidget::render"
 status = "legacy"
 
 [[function]]
@@ -1116,19 +1108,19 @@ coney = "src/hud/player_panel.h:PlayerPanel::update"
 status = "legacy"
 
 [[function]]
-address = 0x002274a8
-name = "Humans_FindAhead"
-page = "hud-messages.md#action-prompts"
-level = "inferred"
-coney = "src/ai/steering.h:humansAround"
-status = "legacy"
-
-[[function]]
 address = 0x00227d28
 name = "Human_IsInSceneState"
 page = "hud.md#who-shows-the-hud-again"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::playerInScene"
+status = "legacy"
+
+[[function]]
+address = 0x00227e60
+name = "Human_IsDownOrDead"
+page = "hud-functions-lua.md#gang-count-what"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:humanIsDownOrDead"
 status = "legacy"
 
 [[function]]
@@ -1152,9 +1144,9 @@ coney = "src/hud/health_rings.h:HealthRings"
 status = "legacy"
 
 [[function]]
-address = 0x00279078
-name = "Human_FindRevivableNear"
-page = "hud-messages.md#action-prompts"
+address = 0x0041d160
+name = "GameState_IsRumbleLevel"
+page = "hud.md#colours"
 level = "confirmed-code"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::revivableInReach"
+coney = "src/gui/pause_menu/pause_items.h:isRumbleLevel"
 status = "legacy"

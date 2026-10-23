@@ -31,7 +31,7 @@ status = "legacy"
 address = 0x00351da0
 name = "SceneSlot_Unload"
 page = "scenes.md#ending"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scenes/scene_cache.h:SceneCache::unload"
 status = "legacy"
 
@@ -104,6 +104,14 @@ coney = "src/scenes/scene_list.h:SceneList::parse"
 status = "legacy"
 
 [[function]]
+address = 0x00353698
+name = "SceneList_FindBySubstring"
+page = "scenes.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_list.h:SceneList::findContaining"
+status = "legacy"
+
+[[function]]
 address = 0x00353730
 name = "SceneList_FindById"
 page = "scenes.md#original-structure"
@@ -138,10 +146,18 @@ coney = "src/scenes/scene_player.cpp:SceneTask::stop"
 status = "legacy"
 
 [[function]]
+address = 0x00353af0
+name = "Scene_Request"
+page = "scenes.md#loading"
+level = "confirmed-code"
+coney = "src/scenes/scene_cache.h:SceneCache::request"
+status = "legacy"
+
+[[function]]
 address = 0x00353bf0
 name = "Scene_FreeFinished"
 page = "scenes.md#ending"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scenes/scene_player.cpp:SceneSystem::update"
 status = "legacy"
 
@@ -210,7 +226,7 @@ status = "legacy"
 [[function]]
 address = 0x00355ab8
 name = "SceneTrack_StepKeys"
-page = "scenes.md#tracks"
+page = "scenes.md#original-structure"
 level = "confirmed-code"
 coney = "src/scenes/scene_record.h:KeyTrack::positionAt"
 status = "legacy"
@@ -280,17 +296,8 @@ status = "legacy"
 address = 0x003a0400
 name = "SceneRunner_NextCameraTrack"
 page = "scenes.md#camera"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scenes/scene_player.cpp:SceneTask::stepTrack"
-status = "legacy"
-
-[[function]]
-address = 0x003a0a68
-name = "SceneTask_EndClips"
-page = "scenes.md#original-structure"
-level = "confirmed-code"
-coney = "src/scenes/scene_player.cpp:SceneTask::endClips"
 status = "legacy"
 
 [[function]]

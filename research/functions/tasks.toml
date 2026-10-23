@@ -2,14 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x00158580
-name = "Gm_Level_Resume"
-page = "tasks.md#clocks"
-level = "confirmed-code"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::resume"
-status = "legacy"
-
-[[function]]
 address = 0x0021d480
 name = "Human_OnEvent"
 page = "tasks.md#original-structure"
@@ -507,8 +499,7 @@ status = "legacy"
 address = 0x004125b8
 name = "VolumeBox_Add"
 page = "tasks.md#classes"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/trigger_bindings.cpp:makeAddVolumeBox"
 status = "legacy"
 
@@ -516,6 +507,6 @@ status = "legacy"
 address = 0x0041d628
 name = "Cfg_SetDatabaseSizes"
 page = "tasks.md#classes"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
 status = "legacy"

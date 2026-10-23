@@ -5,8 +5,7 @@
 address = 0x0021c570
 name = "Human_CanSeeObject"
 page = "player-state.md#walk-over"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/pickups.h:inSight"
 status = "legacy"
 
@@ -14,8 +13,7 @@ status = "legacy"
 address = 0x00238190
 name = "Human_SetPocketItem"
 page = "player-state.md#inventory"
-level = "speculative"
-note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
 status = "legacy"
 

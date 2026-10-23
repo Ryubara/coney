@@ -2,25 +2,9 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x0035d218
-name = "lua_HuSwitchPlayer"
-page = "rumble.md#switch-player"
-level = "confirmed-code"
-coney = "src/scripting/rumble_match_bindings.cpp:makeHuSwitchPlayer"
-status = "legacy"
-
-[[function]]
-address = 0x0036f160
-name = "lua_HUDLaunchRumbleWin"
-page = "rumble.md#result-screen"
-level = "confirmed-code"
-coney = "src/scripting/rumble_match_bindings.cpp:makeHudLaunchRumbleWin"
-status = "legacy"
-
-[[function]]
 address = 0x0041a8c0
 name = "Player_SwitchHuman"
 page = "rumble.md#switch-player"
-level = "confirmed-code"
+note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::switchPlayer"
 status = "legacy"
