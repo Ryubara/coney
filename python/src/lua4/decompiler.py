@@ -195,6 +195,13 @@ class _Reader:
             for _ in range(len(after) - len(scope)):
                 declared.append(len(stmts))
             stmts.extend(new)
+            popped = len(scope) - len(after)
+            if popped > 0 and self.merged_break(pc, loop, popped):
+                # A `break` whose POP of the loop's locals merged into the store before it: the locals stay active
+                # for the code after it (which the dead PUSHNIL accounts for).
+                stmts.append(Break(line=self.info.lines[pc]))
+                pc += 2
+                continue
             if len(after) < len(scope):
                 if len(after) < base:
                     raise DecompileError(f"pc {pc}: a block pops locals it did not declare")
@@ -314,6 +321,11 @@ class _Reader:
         """`local` statements for the values at stack positions base .. upto-1, which the code shows are locals:
         one statement per value (a call kept to several values, or one PUSHNIL of several nils, makes one)."""
         info = self.info
+        # A value made by one instruction with several results (a call kept to two values, PUSHNIL 2) is declared
+        # whole: the next statement starts after all of it.
+        while upto < frame.depth() and frame.start_at(upto, -2) == frame.start_at(upto - 1, -3):
+            upto += 1
+            after = frame.start_at(upto, after)
         if upto <= base or after <= start:
             raise DecompileError(f"pc {start}: no local statement here")
         if after > len(info.depth) - 1 or info.depth[after] != upto:
@@ -389,6 +401,18 @@ class _Reader:
             at += 1
         return at
 
+    def merged_break(self, pc: int, loop: _Loop | None, pops: int) -> bool:
+        """Whether `JMP exit; PUSHNIL pops` at `pc` is a `break` whose POP merged into the store before it."""
+        code = self.info.code
+        return (
+            loop is not None
+            and pc + 1 < len(code)
+            and code[pc].op == Op.JMP
+            and self.info.jump_target(pc) in loop.exit
+            and code[pc + 1].op == Op.PUSHNIL
+            and code[pc + 1].arg == pops
+        )
+
     def _returned(self, pc: int, frame: Frame) -> list[Expr]:
         instr = self.info.code[pc]
         if instr.op == Op.TAILCALL:
@@ -397,8 +421,7 @@ class _Reader:
             first = instr.b
         else:
             first = instr.arg
-        index = frame.index_of(first) if frame.depth() > first else len(frame)
-        return _values(frame.items[index:])
+        return _values(frame.items_from(first))
 
     def _stores(self, pc: int, frame: Frame, scope: Scope) -> tuple[list[Expr], list[Expr], int, int, int]:
         """Read the run of stores of an assignment from `pc` on a copy of `frame`: (targets, values, the lowest

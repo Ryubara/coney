@@ -125,6 +125,15 @@ class Frame:
             at += size
         raise DecompileError(f"no value at stack position {position}")
 
+    def items_from(self, position: int) -> list[Expr]:
+        """The items at generator position `position` and above (an open call at the top included)."""
+        at, found = 0, []
+        for item in self.items:
+            if at >= position:
+                found.append(item)
+            at += width(item)
+        return found
+
     def start_at(self, position: int, fallback: int) -> int:
         """Where the code of the item at generator position `position` starts, or `fallback` when the stack is
         not that deep."""
@@ -208,8 +217,9 @@ class ExpressionReader:
             table, start = frame.pop(pc)
             frame.push(Index(table, String(proto.strings[instr.arg])), start)
         elif op == Op.GETINDEXED:
+            key = Local(_local(names, instr.arg, pc))  # before the pop: PendingLocal leaves the frame as it was
             table, start = frame.pop(pc)
-            frame.push(Index(table, Local(_local(names, instr.arg, pc))), start)
+            frame.push(Index(table, key), start)
         elif op == Op.PUSHSELF:
             obj, start = frame.pop(pc)
             frame.push(Method(obj, proto.strings[instr.arg]), start)
@@ -233,6 +243,9 @@ class ExpressionReader:
                 raise DecompileError(f"pc {pc}: CONCAT {instr.arg}")
             parts, start = frame.pop_many(instr.arg, pc)
             frame.push(Concat(tuple(parts)), start)
+        elif op == Op.NOT and pc in self.info.nil_tests:
+            operand, start = frame.pop(pc)
+            frame.push(BinOp("==", operand, Nil()), start)
         elif op in (Op.MINUS, Op.NOT):
             operand, start = frame.pop(pc)
             frame.push(UnOp("-" if op == Op.MINUS else "not", operand), start)
@@ -301,6 +314,9 @@ class ExpressionReader:
             left, _ = frame.pop(pc)
             return Leaf(BinOp(COMPARE_OPS[instr.op], left, right), True, target, pc + 1)
         operand, _ = frame.pop(pc)
+        if pc in self.info.nil_tests:
+            # JMPT x is `x ~= nil`, JMPF x is `x == nil` (see analysis._nil_comparisons).
+            return Leaf(BinOp("~=" if instr.op == Op.JMPT else "==", operand, Nil()), True, target, pc + 1)
         return Leaf(operand, instr.op in (Op.JMPT, Op.JMPONT), target, pc + 1, keeps=keeps)
 
     def value(self, pc: int, frame: Frame, names: Sequence[str], region: ValueRegion) -> int:

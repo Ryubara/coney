@@ -58,6 +58,8 @@ class FunctionInfo:
     #: Every pc a statement-level jump lands on: each is a statement boundary (in stripped code, where a `local`
     #: statement must have ended).
     boundaries: frozenset[int] = frozenset()
+    #: The tests (JMPT, JMPF, NOT) to write as a comparison with nil (see `_nil_comparisons`).
+    nil_tests: frozenset[int] = frozenset()
 
     @classmethod
     def build(cls, proto: Proto) -> FunctionInfo:
@@ -77,6 +79,7 @@ class FunctionInfo:
             for pc, instr in enumerate(code)
             if instr.op in JUMPS and pc not in info.regions and pc not in tails
         )
+        info.nil_tests = _nil_comparisons(info)
         return info
 
     # --- locals -------------------------------------------------------------------------------------------------
@@ -119,6 +122,27 @@ class FunctionInfo:
             for at in range(pc, min(limit, len(self.code)))
             if self.code[at].op in CONDITIONAL | {Op.JMP} and self.jump_target(at) == pc
         ]
+
+
+def _nil_comparisons(info: FunctionInfo) -> frozenset[int]:
+    """The tests that must be written `x ~= nil` / `x == nil` rather than `x` / `not x` for the function to need
+    the stack size it records.
+
+    The generator compiles `x ~= nil` by pushing the nil and then replacing the push and the comparison by one
+    JMPT (`x == nil` becomes NOT): the code is that of `x`, but the stack briefly held one more value, and the
+    function's maximum stack size remembers it. When the recorded size is one more than anything else in the code
+    reaches (a field read `t.k` and an `x + 1` also push a value that is then folded away, and are counted), every
+    test at the depth that explains it is written as a comparison with nil, which reads the same.
+    """
+    code, depth = info.code, info.depth
+    reached = max(depth)
+    for pc, instr in enumerate(code):
+        if instr.op in (Op.GETDOTTED, Op.GETINDEXED, Op.ADDI):
+            reached = max(reached, depth[pc] + 1)
+    if info.proto.max_stack != reached + 1:
+        return frozenset()
+    tests = (Op.JMPT, Op.JMPF, Op.NOT)
+    return frozenset(pc for pc, instr in enumerate(code) if instr.op in tests and depth[pc] + 1 == reached + 1)
 
 
 def _value_regions(info: FunctionInfo) -> dict[int, ValueRegion]:

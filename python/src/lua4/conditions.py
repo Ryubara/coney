@@ -44,11 +44,11 @@ class Leaf:
 
 
 def negate(expr: Expr) -> Expr:
-    """`not expr`, written the way that compiles to the same jump: a comparison inverted, a `not` dropped."""
+    """`not expr`, written the way that compiles to the same jump: a comparison inverted (`not (a < b)` compiles to
+    the same jump as `a >= b`). A `not` is kept even on a `not`: the operand's NOT instruction is in the code, and
+    `not not x` compiles to it followed by the jump, where `x` alone would lose it."""
     if isinstance(expr, BinOp) and expr.op in _NEGATED:
         return BinOp(_NEGATED[expr.op], expr.left, expr.right)
-    if isinstance(expr, UnOp) and expr.op == "not":
-        return expr.operand
     return UnOp("not", expr)
 
 
