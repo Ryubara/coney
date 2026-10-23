@@ -74,10 +74,10 @@ repos:
         files: ^(src|tests)/.*\.(h|cpp)$
         exclude: ^src/platform/(frame_pacer|clip_recorder|perf_probes)\.cpp$
       # The commit message's trailers (`commits.trailers` in .github/conventions.yml): the only trailer is the AI
-      # co-author line, no other e-mail address, and when an agent commits through Claude Code (whose
-      # hooks write an identity file, coney_tools.identity) the line names that agent's model. Checked before the commit exists, for everyone; the
-      # Claude Code hook `trailer_guard.py` stays beside it until this one has run for real. pre-commit passes the
-      # message file to a commit-msg hook.
+      # co-author line, no other e-mail address, and when an agent commits through Claude Code (whose hooks write an
+      # identity file, coney_tools.identity) the line names that agent's model. Checked before the commit exists, for
+      # everyone; the Claude Code hook `trailer_guard.py` stays beside it until this one has run for real. pre-commit
+      # passes the message file to a commit-msg hook.
       - id: commit-message
         name: commit message trailers
         language: system
