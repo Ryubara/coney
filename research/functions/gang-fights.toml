@@ -1,0 +1,10 @@
+# The researched functions of the gang-fights system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00307fe0
+name = "AttackTactic_Start"
+page = "gang-fights.md#rumble"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/tactic_attack.h:TacticAttack::start"
+status = "legacy"

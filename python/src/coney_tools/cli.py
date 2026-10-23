@@ -611,6 +611,11 @@ def _add_progress_commands(groups: Any) -> None:
         "check", help="check the tracker's inputs (the function database, @orig tags, ranges, roadmap)"
     )
     check.add_argument("--base", default="origin/main", help="what tag names are measured from (default: %(default)s)")
+    check.add_argument(
+        "--require-base",
+        action="store_true",
+        help="fail when --base cannot be read, instead of skipping the name rule (CI)",
+    )
     render = commands.add_parser(
         "render", help="write the pages, pictures, badge JSON and numbers the docs build publishes, to a folder"
     )
@@ -954,7 +959,7 @@ def _run_progress(args: argparse.Namespace) -> int:
     if args.command == "show":
         return progress_cli.run_show(args.json)
     if args.command == "check":
-        return progress_cli.run_check(args.base)
+        return progress_cli.run_check(args.base, args.require_base)
     if args.command == "render":
         return progress_cli.run_render(args.out_dir, history=not args.no_history)
     if args.command == "ghidra":

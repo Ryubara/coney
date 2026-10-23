@@ -7,6 +7,7 @@ name = "Pose_InitReference"
 page = "animation.md#clip-queries"
 role = "writes the [reference pose](formats/animation.md#reference-pose)"
 level = "confirmed-code"
+note = "also graded inferred at [animation.md#original-structure](animation.md#original-structure)"
 coney = "src/animation/anim_pose.h:referenceRotations"
 status = "legacy"
 
@@ -88,6 +89,7 @@ name = "Instance_BuildBoneMatrices"
 page = "animation.md#cursor"
 role = "[Bone transforms](formats/animation.md#bone-transforms)"
 level = "confirmed-code"
+note = "also graded inferred at [animation.md#original-structure](animation.md#original-structure)"
 coney = "src/animation/skeleton.h:boneTransforms"
 status = "legacy"
 
@@ -121,7 +123,7 @@ status = "legacy"
 [[function]]
 address = 0x00105678
 name = "AnimTaskLoop_Construct"
-page = "animation.md#task-types"
+page = "formats/animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:LoopTask"
 status = "legacy"
@@ -129,7 +131,7 @@ status = "legacy"
 [[function]]
 address = 0x00105990
 name = "AnimTaskChained_Construct"
-page = "animation.md#task-types"
+page = "formats/animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:ClipThenNextTask"
 status = "legacy"
@@ -137,7 +139,7 @@ status = "legacy"
 [[function]]
 address = 0x00106c80
 name = "AnimTaskBlendOut_Construct"
-page = "animation.md#task-types"
+page = "formats/animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:AnimTaskStack::change"
 status = "legacy"
@@ -145,7 +147,7 @@ status = "legacy"
 [[function]]
 address = 0x00108a78
 name = "PairedTask_Init"
-page = "animation.md#task-types"
+page = "formats/animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::playPaired"
 status = "legacy"
@@ -153,7 +155,7 @@ status = "legacy"
 [[function]]
 address = 0x0010a310
 name = "GaitBlend_Construct"
-page = "animation.md#task-types"
+page = "formats/animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:GaitBlendTask"
 status = "legacy"
@@ -281,9 +283,9 @@ coney = "src/human/human.h:Human::applyRootMotion"
 status = "legacy"
 
 [[function]]
-address = 0x003a0a68
-name = "SceneTask_EndClips"
-page = "animation.md#clip-queries"
-level = "confirmed-code"
-coney = "src/scenes/scene_player.cpp:SceneTask::endClips"
+address = 0x00254418
+name = "AttackTable_GetOffset"
+page = "formats/animation.md#anim-range-list"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/human/fighter.h:Fighter::attackDirection"
 status = "legacy"

@@ -2,18 +2,10 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x0021c570
-name = "Human_CanSeeObject"
-page = "player-state.md#walk-over"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/world_objects/pickups.h:inSight"
-status = "legacy"
-
-[[function]]
 address = 0x00238190
 name = "Human_SetPocketItem"
 page = "player-state.md#inventory"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
 status = "legacy"
 

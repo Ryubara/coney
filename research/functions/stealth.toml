@@ -20,6 +20,14 @@ coney = "src/human/human.h:Human::clearHiding"
 status = "legacy"
 
 [[function]]
+address = 0x0027da10
+name = "Player_OnL1Pressed"
+page = "stealth.md#stealth-kill"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::stepThrowAim"
+status = "legacy"
+
+[[function]]
 address = 0x002936a8
 name = "AI_ReportNoise"
 page = "stealth.md#original-structure"
@@ -44,14 +52,6 @@ page = "stealth.md#original-structure"
 role = "a member hit or seeing an enemy: fight, call the gang"
 level = "confirmed-code"
 coney = "src/ai/tactic_scout.h:ScoutTactic::event"
-status = "legacy"
-
-[[function]]
-address = 0x0031af98
-name = "ScoutTactic_Start"
-page = "stealth.md#scouts"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/ai/tactic_scout.h:ScoutTactic::start"
 status = "legacy"
 
 [[function]]

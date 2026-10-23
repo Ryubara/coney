@@ -121,7 +121,7 @@ status = "legacy"
 address = 0x00238100
 name = "Human_SetMoney"
 page = "crimes.md#starting-money"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetMoney"
 status = "legacy"
 
@@ -138,7 +138,7 @@ status = "legacy"
 address = 0x00238f50
 name = "Tag_CallStartCallback"
 page = "crimes.md#tag-callbacks"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callTagStart"
 status = "legacy"
 
@@ -146,16 +146,8 @@ status = "legacy"
 address = 0x00239f20
 name = "Human_SetInterrogation"
 page = "crimes.md#interrogation"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/story_bindings.cpp:makeHuSetInterrogation"
-status = "legacy"
-
-[[function]]
-address = 0x0023bf00
-name = "Human_PickUpObject"
-page = "crimes.md#owned-items"
-level = "confirmed-code"
-coney = "src/gamemodes/level_pickups.h:LevelPickups::take"
 status = "legacy"
 
 [[function]]
@@ -324,7 +316,7 @@ status = "legacy"
 address = 0x003fc8d8
 name = "SprayTag_OnMessage"
 page = "crimes.md#tag-spots"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/tag_spots.h:TagSpots::setState"
 status = "legacy"
 
@@ -332,7 +324,7 @@ status = "legacy"
 address = 0x003fca68
 name = "SprayTag_Update"
 page = "crimes.md#tag-spots"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/tag_spots.h:TagSpots::update"
 status = "legacy"
 
@@ -376,14 +368,14 @@ status = "legacy"
 address = 0x0041b6e0
 name = "Crime_IsHappening"
 page = "crimes.md#wanted"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeCrimeIsHappening"
 status = "legacy"
 
 [[function]]
 address = 0x0041b8b0
 name = "GameState_ReportCrime"
-page = "crimes.md#stores"
+page = "crimes.md#break-in-police"
 level = "confirmed-code"
 coney = "src/warriors/crime_reports.h:CrimeReports::report"
 status = "legacy"

@@ -11,22 +11,6 @@ coney = "src/human/locomotion.h:stickIntent"
 status = "legacy"
 
 [[function]]
-address = 0x001480e0
-name = "PadHandlerEx_DispatchCommand"
-page = "characters.md#the-human-object"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callPadHandler"
-status = "legacy"
-
-[[function]]
-address = 0x00155648
-name = "RumbleResult_Toggle"
-page = "characters.md#level-starts"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::update"
-status = "legacy"
-
-[[function]]
 address = 0x0016e258
 name = "LevelChunk_CharacterData"
 page = "characters.md#original-structure"
@@ -50,6 +34,14 @@ page = "characters.md#original-structure"
 role = "type remap, model, ground snap, defaults"
 level = "confirmed-code"
 coney = "src/ai/brain.h:startingFlags"
+status = "legacy"
+
+[[function]]
+address = 0x002195e0
+name = "Human_SetCoverFlag5"
+page = "characters.md#ground"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/human/human.h:Human::onCoveredGround"
 status = "legacy"
 
 [[function]]
@@ -156,7 +148,7 @@ status = "legacy"
 address = 0x002212d0
 name = "Human_GetTurnRateForGait"
 page = "characters.md#ai-locomotion"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/locomotion.h:aiMaxTurn"
 status = "legacy"
 
@@ -245,7 +237,7 @@ status = "legacy"
 address = 0x00222ba8
 name = "WarriorType_GetPlayerClass"
 page = "characters.md#power-class-bytes"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/characters/character_class.h:warriorPowerClassOf"
 status = "legacy"
 
@@ -253,7 +245,7 @@ status = "legacy"
 address = 0x00222c20
 name = "WarriorType_GetWarriorClass"
 page = "characters.md#power-class-bytes"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/characters/character_class.h:warriorClassOf"
 status = "legacy"
 
@@ -314,7 +306,7 @@ status = "legacy"
 address = 0x00228d70
 name = "Cfg_AddHatFit"
 page = "characters.md#hats"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/hats.h:HatFits::add"
 status = "legacy"
 
@@ -352,14 +344,6 @@ page = "characters.md#original-structure"
 role = "the gang member a player hand-over chooses"
 level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::switchTarget"
-status = "legacy"
-
-[[function]]
-address = 0x0022ae40
-name = "Human_SpeedForGait"
-page = "characters.md#ai-locomotion"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/ai/move_action.h:gaitSpeed"
 status = "legacy"
 
 [[function]]
@@ -1646,7 +1630,7 @@ status = "legacy"
 address = 0x002427e8
 name = "Human_MoveWheelchair"
 page = "characters.md#wheelchair"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/human.cpp:Human::wheelchairControl"
 status = "legacy"
 
@@ -1725,7 +1709,7 @@ status = "legacy"
 address = 0x00248170
 name = "Human_StrikeAllOn"
 page = "characters.md#wheelchair"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
 
@@ -1733,7 +1717,7 @@ status = "legacy"
 address = 0x00248270
 name = "Human_StrikeAllOff"
 page = "characters.md#wheelchair"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
 
@@ -1827,10 +1811,18 @@ coney = "src/world_objects/nav_links.h:NavLinks::changeBlocker"
 status = "legacy"
 
 [[function]]
+address = 0x00254078
+name = "Human_ComputeGaitSpeeds"
+page = "characters.md#speed-classes"
+level = "confirmed-code"
+coney = "src/human/human_animator.h:speedsOf"
+status = "legacy"
+
+[[function]]
 address = 0x002544a0
 name = "AttackTable_GetReach"
 page = "characters.md#climb"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/attack_reach.h:nearReach"
 status = "legacy"
 
@@ -2016,7 +2008,7 @@ status = "legacy"
 address = 0x0029ade0
 name = "Route_SetJumpArcVelocity"
 page = "characters.md#jump"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_action.h:routeJumpVelocity"
 status = "legacy"
 
@@ -2049,14 +2041,6 @@ coney = "src/physics/mesh_sweep.h:capsuleLowOrThin"
 status = "legacy"
 
 [[function]]
-address = 0x0034ee60
-name = "Sweep_SphereTriangle"
-page = "characters.md#walls"
-level = "confirmed-code"
-coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
-status = "legacy"
-
-[[function]]
 address = 0x00356d00
 name = "ScriptSystem_OnPreloadFileDone"
 page = "characters.md#level-starts"
@@ -2077,7 +2061,7 @@ status = "legacy"
 address = 0x00385bb8
 name = "Object_Teleport"
 page = "characters.md#level-starts"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:makeTeleport"
 status = "legacy"
 
@@ -2085,7 +2069,7 @@ status = "legacy"
 address = 0x003a3ba0
 name = "Human_PlaceHat"
 page = "characters.md#hats"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::putOnHat"
 status = "legacy"
 
@@ -2099,10 +2083,19 @@ coney = "src/platform/play_level_mode.h:PlayLevelMode::stepGameOver"
 status = "legacy"
 
 [[function]]
+address = 0x0041c4e0
+name = "WarriorCommand_Dispatch"
+page = "characters.md#players"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:dispatchWarriorCommand"
+status = "legacy"
+
+[[function]]
 address = 0x0041ce98
 name = "GameState_SetCheckPoint"
 page = "characters.md#level-starts"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
+note = "the level is from [scripting.md#level99](scripting.md#level99)"
 coney = "src/scripting/script_bindings.cpp:makeSetCheckPoint"
 status = "legacy"
 

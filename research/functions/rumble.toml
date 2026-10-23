@@ -2,9 +2,17 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00415378
+name = "VolumeBox_Update"
+page = "rumble.md#game-types"
+level = "confirmed-code"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+status = "legacy"
+
+[[function]]
 address = 0x0041a8c0
 name = "Player_SwitchHuman"
 page = "rumble.md#switch-player"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::switchPlayer"
 status = "legacy"

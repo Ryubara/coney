@@ -2,19 +2,11 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x00379fd0
-name = "lua_AddFlag"
-page = "flags.md#addflag"
-level = "confirmed-code"
-coney = "src/scripting/level_bindings.cpp:makeAddFlag"
-status = "legacy"
-
-[[function]]
-address = 0x0037a288
-name = "lua_GetFlagPos"
+address = 0x00385db0
+name = "Object_TeleportToFlag"
 page = "flags.md#position"
 level = "confirmed-code"
-coney = "src/scripting/level_bindings.cpp:makeGetFlagPos"
+coney = "src/scripting/level_bindings.cpp:makeTeleportToFlag"
 status = "legacy"
 
 [[function]]
@@ -149,4 +141,13 @@ page = "flags.md#original-structure"
 role = "clears the user to `NilHandle` only if it is `h` / `FlagGetOwner`: the user, `NilHandle` for a non-flag"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeFlagGetOwner"
+status = "legacy"
+
+[[function]]
+address = 0x0041d628
+name = "Cfg_SetDatabaseSizes"
+page = "flags.md#pool"
+level = "confirmed-code"
+note = "the level is from [tasks.md#classes](tasks.md#classes)"
+coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
 status = "legacy"

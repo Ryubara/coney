@@ -26,11 +26,11 @@ coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::enter"
 status = "legacy"
 
 [[function]]
-address = 0x0015d420
-name = "MissionComplete_Launch"
-page = "boot.md#one-frame"
+address = 0x0015d160
+name = "Gm_InGame_Update"
+page = "boot.md#original-structure"
 level = "confirmed-code"
-coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::launch"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::update"
 status = "legacy"
 
 [[function]]
@@ -71,14 +71,6 @@ name = "GameModeStack_TopId"
 page = "boot.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/game_mode_stack.h:GameModeStack::topId"
-status = "legacy"
-
-[[function]]
-address = 0x0015e8b0
-name = "Gm_Mode11_Enter"
-page = "boot.md#game-mode"
-level = "confirmed-code"
-coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::enter"
 status = "legacy"
 
 [[function]]

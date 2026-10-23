@@ -20,6 +20,14 @@ coney = "src/combat/commands.h:CommandMatcher::update"
 status = "legacy"
 
 [[function]]
+address = 0x001480e0
+name = "PadHandlerEx_DispatchCommand"
+page = "combat.md#commands"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callPadHandler"
+status = "legacy"
+
+[[function]]
 address = 0x00158728
 name = "Gm_Level_Update"
 page = "combat-reactions.md#original-structure"
@@ -38,11 +46,19 @@ coney = "src/combat/meters.h:strikeDamage"
 status = "legacy"
 
 [[function]]
-address = 0x00220ac8
-name = "Human_PlayImpactSound"
-page = "combat.md#moving-strikes"
+address = 0x0021c570
+name = "Human_CanSeeObject"
+page = "combat-targets.md#breakables"
 level = "confirmed-code"
-coney = "src/audio/human_sound_events.h:HumanSoundEvents::impact"
+coney = "src/world_objects/pickups.h:inSight"
+status = "legacy"
+
+[[function]]
+address = 0x0021d5c0
+name = "Human_WarnOfAttack"
+page = "combat.md#attack-warnings"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::warnTarget"
 status = "legacy"
 
 [[function]]
@@ -87,7 +103,7 @@ status = "legacy"
 address = 0x00227a90
 name = "Human_ExitThrowAim"
 page = "combat.md#dispatch"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/combat/throw_aim.h:ThrowAimState::leave"
 status = "legacy"
 
@@ -104,7 +120,7 @@ status = "legacy"
 address = 0x00229b90
 name = "Human_ScaleAttackDamages"
 page = "combat.md#damage-table"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/human.h:Human::applyDamageModifier"
 status = "legacy"
 
@@ -196,7 +212,7 @@ status = "legacy"
 address = 0x00236038
 name = "Human_ApplyDamageModifier"
 page = "combat.md#damage-table"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
@@ -204,8 +220,17 @@ status = "legacy"
 address = 0x0023a1b0
 name = "Human_SetCombatMode"
 page = "combat-targets.md#fight-stance"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/scripted_hub.h:ScriptedHub::setCombatMode"
+status = "legacy"
+
+[[function]]
+address = 0x0023bde8
+name = "Human_GetBoneTransform"
+page = "combat-grabs.md#grab-pose-runtime"
+level = "confirmed-code"
+note = "the level is from [camera.md#body-point](camera.md#body-point)"
+coney = "src/human/human.h:Human::bodyPoint"
 status = "legacy"
 
 [[function]]
@@ -264,22 +289,6 @@ coney = "src/human/fighter.h:Fighter::moveGrab"
 status = "legacy"
 
 [[function]]
-address = 0x00250708
-name = "Nav_FindArea"
-page = "combat-reactions.md#defeat-helpers"
-level = "confirmed-code"
-coney = "src/world/path_map.h:PathMap::areaAt"
-status = "legacy"
-
-[[function]]
-address = 0x00254078
-name = "Human_ComputeGaitSpeeds"
-page = "combat-grabs.md#grab-turn"
-level = "confirmed-code"
-coney = "src/human/human_animator.h:speedsOf"
-status = "legacy"
-
-[[function]]
 address = 0x002542e8
 name = "AnimRange_Damage"
 page = "combat.md#original-structure"
@@ -290,18 +299,10 @@ coney = "src/combat/anim_ranges.h:AnimRangeList::damage"
 status = "legacy"
 
 [[function]]
-address = 0x00254418
-name = "AttackTable_GetOffset"
-page = "combat-moves.md#targeting"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/human/fighter.h:Fighter::attackDirection"
-status = "legacy"
-
-[[function]]
 address = 0x00254508
 name = "AttackTable_GetFarRange"
 page = "combat.md#block"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/attack_reach.h:farReach"
 status = "legacy"
 
@@ -327,7 +328,7 @@ status = "legacy"
 [[function]]
 address = 0x00258e10
 name = "Tandem_CanStart"
-page = "combat-moves.md#tandem"
+page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/tandem.h:tandemCanStart"
 status = "legacy"
@@ -346,6 +347,14 @@ name = "Human_CanCounterTackle"
 page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterFor"
+status = "legacy"
+
+[[function]]
+address = 0x0025e5a8
+name = "Human_PlayPickupClip"
+page = "combat-throws.md#bat"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::startPickUp"
 status = "legacy"
 
 [[function]]
@@ -481,7 +490,7 @@ status = "legacy"
 [[function]]
 address = 0x00266d00
 name = "Hit_PickReaction"
-page = "combat.md#original-structure"
+page = "combat.md#hit-codes"
 level = "confirmed-code"
 coney = "src/combat/reactions.h:hitReaction"
 status = "legacy"
@@ -590,7 +599,7 @@ status = "legacy"
 [[function]]
 address = 0x0026f860
 name = "Tandem_Start"
-page = "combat-moves.md#tandem"
+page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::startTandem"
 status = "legacy"
@@ -687,14 +696,6 @@ coney = "src/human/pair_placement.h:pairInPlace"
 status = "legacy"
 
 [[function]]
-address = 0x00279078
-name = "Human_FindRevivableNear"
-page = "combat-rage.md#revive"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::revivableInReach"
-status = "legacy"
-
-[[function]]
 address = 0x00279f50
 name = "Target_CarFilter"
 page = "combat.md#original-structure"
@@ -732,7 +733,7 @@ status = "legacy"
 [[function]]
 address = 0x0027d6e0
 name = "Player_TryCounterGrab"
-page = "combat-moves.md#counters"
+page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterAllowed"
 status = "legacy"
@@ -864,7 +865,7 @@ status = "legacy"
 address = 0x002854b0
 name = "Brain_SetInterrogateOverride"
 page = "combat-throws.md#mugging"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/human_bindings.cpp:makeSetInterrogateParam"
 status = "legacy"
 
@@ -872,7 +873,7 @@ status = "legacy"
 address = 0x002855f8
 name = "Mug_MoveTargetAngle"
 page = "combat-throws.md#mugging"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/combat/stick_games.h:MuggingGame::moveTarget"
 status = "legacy"
 
@@ -910,7 +911,7 @@ name = "Player_Special"
 page = "combat.md#original-structure"
 role = "cross + square, circle + cross, circle + triangle outside a grab"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
+note = "confirmed (code), runtime; also graded inferred at [combat.md#dispatch](combat.md#dispatch)"
 coney = "src/combat/player_combat.h:PlayerCombat::special"
 status = "legacy"
 
@@ -934,11 +935,19 @@ coney = "src/combat/attack_target.h:attackTarget"
 status = "legacy"
 
 [[function]]
-address = 0x00343518
-name = "PhysicsCapsule_Pose"
-page = "combat.md#capsule-strike"
+address = 0x002880d8
+name = "Player_CrossWithWeapon"
+page = "combat-moves.md#original-structure"
 level = "confirmed-code"
-coney = "src/human/human.h:Human::struckCapsule"
+coney = "src/combat/attacks.h:throwAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00290e78
+name = "Brain_SetAttackableTime"
+page = "combat-targets.md#ai-attacks"
+level = "confirmed-code"
+coney = "src/ai/attack_places.h:attackableGapMs"
 status = "legacy"
 
 [[function]]

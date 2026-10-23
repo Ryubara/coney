@@ -34,6 +34,7 @@ name = "SystemMusic_Update"
 page = "sound.md#original-structure"
 role = "mood-driven track choice"
 level = "confirmed-code"
+note = "also graded inferred at [sound.md#original-structure](sound.md#original-structure)"
 coney = "src/audio/music_player.cpp:MusicPlayer::updateSystemMusic"
 status = "legacy"
 
@@ -104,7 +105,7 @@ status = "legacy"
 address = 0x0010fb20
 name = "AudioManager_Pause"
 page = "sound.md#reverb"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/audio/mixer.h:Mixer::pauseAll"
 status = "legacy"
 
@@ -838,14 +839,6 @@ coney = "src/audio/sound_bank.h:loadSoundBank"
 status = "legacy"
 
 [[function]]
-address = 0x0014caf8
-name = "AudioDevice_Start"
-page = "sound.md#function-index"
-level = "confirmed-code"
-coney = "src/audio/sound_engine.cpp:SoundEngine::startVoice"
-status = "legacy"
-
-[[function]]
 address = 0x0014d2d8
 name = "AudioDevice_Duration"
 page = "sound.md#device"
@@ -861,6 +854,14 @@ page = "sound.md#device"
 role = "`rate × 4096 / 48000`"
 level = "confirmed-code"
 coney = "src/audio/mixer.h:rateToPitch"
+status = "legacy"
+
+[[function]]
+address = 0x00165678
+name = "Gang_GetLeader"
+page = "sound-events.md#tag-lines"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::leader"
 status = "legacy"
 
 [[function]]
@@ -891,11 +892,11 @@ coney = "src/audio/game_sound.h:GameSound::sayCommandAt"
 status = "legacy"
 
 [[function]]
-address = 0x00222288
-name = "Human_HasLineOfSight"
-page = "sound-events.md#command-ids"
+address = 0x00220ac8
+name = "Human_PlayImpactSound"
+page = "sound-events.md#players"
 level = "confirmed-code"
-coney = "src/ai/perception.h:lineOfSight"
+coney = "src/audio/human_sound_events.h:HumanSoundEvents::impact"
 status = "legacy"
 
 [[function]]
@@ -915,19 +916,28 @@ coney = "src/human/human.h:Human::linkedWith"
 status = "legacy"
 
 [[function]]
+address = 0x0023bf00
+name = "Human_PickUpObject"
+page = "sound-events.md#pickup-sound"
+level = "confirmed-code"
+note = "the level is from [crimes.md#owned-items](crimes.md#owned-items)"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::take"
+status = "legacy"
+
+[[function]]
+address = 0x00291ed0
+name = "Ambient_MayGesture"
+page = "sound-events.md#command-ids"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/script_services.h:ScriptServices::mayGesture"
+status = "legacy"
+
+[[function]]
 address = 0x002ae2e8
 name = "MeleeGoal_ProcessTarget"
 page = "sound-events.md#speech"
 level = "confirmed-code"
 coney = "src/ai/melee_goal.h:MeleeGoal::process"
-status = "legacy"
-
-[[function]]
-address = 0x002c74d8
-name = "DealerGoal_OnBuy"
-page = "sound-events.md#items"
-level = "confirmed-code"
-coney = "src/ai/dealer_goal.h:DealerGoal::deal"
 status = "legacy"
 
 [[function]]
@@ -958,7 +968,7 @@ status = "legacy"
 address = 0x00354d28
 name = "SceneTrack_FindSoundtrackEvent"
 page = "sound.md#scene-sound"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scenes/scene_record.h:soundtrackOf"
 status = "legacy"
 
@@ -966,7 +976,7 @@ status = "legacy"
 address = 0x0038a830
 name = "Car_BreakWindow"
 page = "sound-events.md#cars"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/cars.h:carBreakWindowEffect"
 status = "legacy"
 
@@ -974,7 +984,7 @@ status = "legacy"
 address = 0x003ac4d0
 name = "Radio_Setup"
 page = "sound.md#radios"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/radios.h:Radios::setup"
 status = "legacy"
 
@@ -982,7 +992,7 @@ status = "legacy"
 address = 0x003ac600
 name = "Radio_SetMode"
 page = "sound.md#radios"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/radios.h:Radios::setMode"
 status = "legacy"
 
@@ -990,7 +1000,7 @@ status = "legacy"
 address = 0x003ad440
 name = "Radio_Update"
 page = "sound.md#radios"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/radios.h:Radios::update"
 status = "legacy"
 

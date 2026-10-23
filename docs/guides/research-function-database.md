@@ -34,7 +34,7 @@ issue = 123                     # the issue that does
 | --- | --- | --- |
 | `address` | yes | The function's entry point in `SLUS_212.15`, written `0x` and eight hex digits |
 | `name` | yes | The Ghidra name: letters, digits, `_`, and `::` for a member (`DVDWadIndex::Find`) |
-| `page` | yes | `<page>.md` or `<page>.md#section`, below `docs/research`: the section describes the function and is the one to open first. The wrapper of a script binding names the generated binding reference instead, `../references/bindings/<group>.md#<name>` (relative to `docs/research`, the name in lower case) |
+| `page` | yes | `<page>.md` or `<page>.md#section`, below `docs/research`: the section describes the function and is the one to open first. The wrapper of a script binding names the generated binding reference instead, `../references/bindings/<group>.md#<name>` (relative to `docs/research`, the name in lower case); only the `scripting` system's entries do |
 | `level` | no | How we know what the function does: the [evidence levels](research-evidence.md#evidence-levels), spelled as the YAML values, and `not-needed` for a function nobody needs (dead code, a debug stub). Leave it out when the page states no level for this function's own claim: an entry never claims a level the page does not give it |
 | `role` | no; with `not-needed`, the reason | What the function does, in one line of our own words; Markdown, with links relative to `docs/research` |
 | `kind` | no | A short tag for the sort of function |
@@ -145,16 +145,22 @@ it, which `progress show` says.
 
 The name is Ghidra's. A tag that spells it differently fails `progress check` when the branch adds the tag, and is a
 warning with a count when it was already there when the branch left `origin/main` (the way `orig check` holds only
-what the branch changed). Write new tags with the name the entry has.
+what the branch changed; CI names the base and insists on it, `progress check --base HEAD^1 --require-base`). Write
+new tags with the name the entry has.
 
 The reimplemented list used to be `docs/progress/functions.toml` (address, name, subsystem, size). The move into this
 database is `coney-tools progress import-functions`, kept for a branch that still adds rows to the old file
-([the progress commands](coney-tools-references.md#progress)). An entry it made from prose is a starting point, and
-it gives a level only when it can tie one to that function's own claim: a page-table row's Evidence cell, or a
-sentence that cites the function (and no other function the sentence does not name) and reads its code. A function
-that only a paragraph mentions, or whose level sits beside other functions' claims, has no level and a note saying
-so, and a script binding's wrapper points at the binding reference. When you study such a function, grade it: check
-its page, write its level and role and drop the note.
+([the progress commands](coney-tools-references.md#progress)). An entry it made from prose is a starting point.
+It names the section that describes the function as its page (a table row of its own, then its script binding's
+reference, then a section that opens with the function, then any section that cites it; never a Coney or open-questions
+section while another exists, nor another function's row), and gives a level only when it can tie one to that
+function's own claim: a page-table row's Evidence cell, a sentence that reads its code and is about it alone, a level
+that stands right after its address (`(F, 0x1, confirmed (code))`), one that lists it (`Confirmed (code) at 0x1, 0x2`)
+or closes the statements before it, a lead line that grades the blocks under its heading. A section that describes the
+function but states no level takes the level another page states for it, and its note says where from; a function the
+research grades two ways keeps one row and its note says where the other is. Anything else has no level and a note
+saying that the import tied none, not that the page has none: the page may state a level in a form the tool does not
+read. When you study such a function, grade it: check its page, write its level and role and drop the note.
 
 ## Other readers of the file {#other-readers}
 

@@ -236,11 +236,11 @@ def _page_fields(entry: rf.Entry) -> rf.Entry:
     return replace(entry, coney="", status="", gaps=())
 
 
-def entry_problem(entry: rf.Entry) -> str:
-    """Why the schema would refuse `entry`, or an empty string when it is valid."""
-    system = rf.SystemFunctions("import", Path("import.toml"), "", (entry,))
+def entry_problem(entry: rf.Entry, system: str = "import") -> str:
+    """Why the schema would refuse `entry` in the file of `system`, or an empty string when it is valid."""
+    holder = rf.SystemFunctions(system, Path(f"{system}.toml"), "", (entry,))
     try:
-        rf.parse_system("import", rf.dumps(system), Path("import.toml"))
+        rf.parse_system(system, rf.dumps(holder), Path(f"{system}.toml"))
     except rf.ResearchFunctionsError as error:
         return str(error).splitlines()[0].split(": ", 2)[-1]
     return ""

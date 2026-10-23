@@ -11,14 +11,6 @@ coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::enter"
 status = "legacy"
 
 [[function]]
-address = 0x0015d160
-name = "Gm_InGame_Update"
-page = "graphics.md#a-frame"
-level = "confirmed-code"
-coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::update"
-status = "legacy"
-
-[[function]]
 address = 0x0016e8f0
 name = "ResourceMgr_GetCharData"
 page = "graphics.md#code-resources"
@@ -190,12 +182,39 @@ coney = "src/platform/level_file.h:readPreinstanceObjectChunk"
 status = "legacy"
 
 [[function]]
+address = 0x0017fa80
+name = "ObjectRender_ApplyFadeDistance"
+page = "graphics.md#code-models"
+role = "[World objects](objects.md)"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:showDistanceFade"
+status = "legacy"
+
+[[function]]
+address = 0x0017fd78
+name = "ObjectRender_Draw"
+page = "graphics.md#code-models"
+role = "[World objects](objects.md), [Lighting](lighting.md)"
+level = "confirmed-code"
+coney = "src/platform/placed_objects.h:PlacedObjects::draw"
+status = "legacy"
+
+[[function]]
 address = 0x00181170
 name = "ObjectList_OnLoaded"
 page = "graphics.md#code-models"
 role = "chunk `0x46` ([WAD contents](formats/wad-contents.md#object-list))"
 level = "confirmed-code"
 coney = "src/world_objects/object_list.h:ObjectList::parse"
+status = "legacy"
+
+[[function]]
+address = 0x001811b0
+name = "ObjectList_FindByHash"
+page = "graphics.md#code-models"
+role = "[World objects](objects.md)"
+level = "confirmed-code"
+coney = "src/world_objects/object_list.h:ObjectList::findByHash"
 status = "legacy"
 
 [[function]]
@@ -534,7 +553,7 @@ status = "legacy"
 [[function]]
 address = 0x00193d80
 name = "RwDevice_BlurPass"
-page = "graphics.md#device-vtable"
+page = "graphics.md#motion-blur"
 level = "confirmed-code"
 coney = "src/platform/render_engine.h:RenderEngine::blurScreen"
 status = "legacy"
@@ -565,18 +584,10 @@ coney = "src/platform/level_file.h:readSectorBspChunk"
 status = "legacy"
 
 [[function]]
-address = 0x00198e20
-name = "SectorPlugin_Read"
-page = "graphics.md#plugins"
-level = "confirmed-code"
-coney = "src/world/world_streams.h:readSectorPluginData"
-status = "legacy"
-
-[[function]]
 address = 0x0019add0
 name = "OE_RoomSmoke_Construct"
 page = "graphics.md#room-smoke"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/effects/room_smoke.h:RoomSmoke::start"
 status = "legacy"
 
@@ -584,7 +595,7 @@ status = "legacy"
 address = 0x0019b070
 name = "OE_RoomSmoke_FollowCamera"
 page = "graphics.md#room-smoke"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/effects/room_smoke.h:RoomSmoke::followCamera"
 status = "legacy"
 
@@ -608,16 +619,8 @@ status = "legacy"
 address = 0x0019b4c0
 name = "OE_RoomSmoke_Update"
 page = "graphics.md#room-smoke"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/effects/room_smoke.h:RoomSmoke::step"
-status = "legacy"
-
-[[function]]
-address = 0x002195e0
-name = "Human_SetCoverFlag5"
-page = "graphics.md#code-camera-effects"
-level = "confirmed-code"
-coney = "src/human/human.h:Human::onCoveredGround"
 status = "legacy"
 
 [[function]]

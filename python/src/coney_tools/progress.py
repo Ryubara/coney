@@ -438,14 +438,13 @@ def base_tag_keys(root: Path, base: str) -> set[tuple[int, str]]:
     """
     # Imported here: these modules build on this one.
     from coney_tools import local_gate
-    from coney_tools.orig_check import _base_text
 
     changed = {p for p in local_gate.changed_files(root, base) if p.startswith(f"{SOURCE_DIR.as_posix()}/")}
     since = local_gate.merge_base(root, base)
     renamed = local_gate.renamed_files(root, base)
     keys = {(t.address, t.name) for t in scan_orig_tags(root) if t.where.rsplit(":", 1)[0] not in changed}
     for path in changed:
-        text = _base_text(root, since, renamed.get(path, path))
+        text = local_gate.file_at(root, since, renamed.get(path, path))
         if text is not None:
             keys |= {(t.address, t.name) for t in tags_in(path, text)}
     return keys

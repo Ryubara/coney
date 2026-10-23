@@ -30,8 +30,8 @@ status = "legacy"
 [[function]]
 address = 0x00351da0
 name = "SceneSlot_Unload"
-page = "scenes.md#ending"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "scenes.md#loading"
+level = "confirmed-code"
 coney = "src/scenes/scene_cache.h:SceneCache::unload"
 status = "legacy"
 
@@ -63,7 +63,7 @@ status = "legacy"
 [[function]]
 address = 0x00352c08
 name = "SceneSegment_Request"
-page = "scenes.md#segment"
+page = "scenes.md#original-structure"
 level = "confirmed-code"
 coney = "src/scenes/scene_cache.h:SceneCache::requestNext"
 status = "legacy"
@@ -148,7 +148,7 @@ status = "legacy"
 [[function]]
 address = 0x00353af0
 name = "Scene_Request"
-page = "scenes.md#loading"
+page = "scenes.md#original-structure"
 level = "confirmed-code"
 coney = "src/scenes/scene_cache.h:SceneCache::request"
 status = "legacy"
@@ -157,7 +157,7 @@ status = "legacy"
 address = 0x00353bf0
 name = "Scene_FreeFinished"
 page = "scenes.md#ending"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scenes/scene_player.cpp:SceneSystem::update"
 status = "legacy"
 
@@ -177,6 +177,14 @@ page = "scenes.md#original-structure"
 role = "`ScenePlayCinematic` / `ScenePlayFixedScene`: `Scene_Play` at the origin with no rotation"
 level = "confirmed-code"
 coney = "src/scripting/scene_bindings.cpp:makeScenePlayFixedScene"
+status = "legacy"
+
+[[function]]
+address = 0x00353f40
+name = "Scene_PlayAnimation"
+page = "scenes.md#playing"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayAnimation"
 status = "legacy"
 
 [[function]]
@@ -242,7 +250,7 @@ status = "legacy"
 [[function]]
 address = 0x00356188
 name = "SceneTrack_Apply"
-page = "scenes.md#camera"
+page = "scenes.md#original-structure"
 level = "confirmed-code"
 coney = "src/scenes/scene_player.cpp:SceneTask::applyTrack"
 status = "legacy"
@@ -296,8 +304,16 @@ status = "legacy"
 address = 0x003a0400
 name = "SceneRunner_NextCameraTrack"
 page = "scenes.md#camera"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scenes/scene_player.cpp:SceneTask::stepTrack"
+status = "legacy"
+
+[[function]]
+address = 0x003a0a68
+name = "SceneTask_EndClips"
+page = "scenes.md#original-structure"
+level = "confirmed-code"
+coney = "src/scenes/scene_player.cpp:SceneTask::endClips"
 status = "legacy"
 
 [[function]]

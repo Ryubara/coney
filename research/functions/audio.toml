@@ -1,0 +1,10 @@
+# The researched functions of the audio system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0014caf8
+name = "AudioDevice_Start"
+page = "formats/audio.md#original-structure"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::startVoice"
+status = "legacy"

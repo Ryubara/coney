@@ -2,14 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x001582e0
-name = "Gm_Level_Enter"
-page = "level-loading.md#mode-1"
-level = "confirmed-code"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
-status = "legacy"
-
-[[function]]
 address = 0x00158580
 name = "Gm_Level_Resume"
 page = "level-loading.md#original-structure"
@@ -96,24 +88,27 @@ status = "legacy"
 [[function]]
 address = 0x00162598
 name = "LevelLoadScreen_Finish"
-page = "level-loading.md#loading-screen"
+page = "level-loading.md#level-screen"
 level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
 coney = "src/gamemodes/loading_screen.h:LoadingScreen::finish"
 status = "legacy"
 
 [[function]]
 address = 0x00162688
 name = "LevelLoadScreen_DrawProgressBar"
-page = "level-loading.md#loading-screen"
+page = "level-loading.md#level-screen"
 level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
 coney = "src/gamemodes/loading_screen.h:loadScreenBarColour"
 status = "legacy"
 
 [[function]]
 address = 0x00162b88
 name = "LevelLoadScreen_Tick"
-page = "level-loading.md#loading-screen"
+page = "level-loading.md#level-screen"
 level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
 coney = "src/gamemodes/loading_screen.h:LoadingScreen::render"
 status = "legacy"
 
@@ -136,8 +131,9 @@ status = "legacy"
 [[function]]
 address = 0x00163888
 name = "LevelLoadScreen_Start"
-page = "level-loading.md#loading-screen"
+page = "level-loading.md#level-screen"
 level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
 coney = "src/gamemodes/loading_screen.h:LoadingScreen::begin"
 status = "legacy"
 
@@ -145,16 +141,40 @@ status = "legacy"
 address = 0x0024e720
 name = "PathData_Load"
 page = "level-loading.md#path-data"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world/level_object.h:onPathDataLoaded"
+status = "legacy"
+
+[[function]]
+address = 0x0024eef0
+name = "NavPolygon_ContainsPoint"
+page = "level-loading.md#path-data"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world/path_map.h:PathMap::inside"
+status = "legacy"
+
+[[function]]
+address = 0x00250760
+name = "Nav_FindAreaCandidate"
+page = "level-loading.md#path-data"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world/path_map.h:PathMap::areaAt"
 status = "legacy"
 
 [[function]]
 address = 0x0040cdd8
 name = "LevelModel_LinkFirstTexture"
-page = "level-loading.md#original-structure"
+page = "level-loading.md#the-level-object"
 level = "confirmed-code"
 coney = "src/platform/level_file.h:linkLevelModel"
+status = "legacy"
+
+[[function]]
+address = 0x0040ce30
+name = "LevelHeader_OnLoaded"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/world/level_object.h:makeLevelHeaderHandler"
 status = "legacy"
 
 [[function]]

@@ -13,7 +13,6 @@ also be in `paths.gameplay` or `paths.coney_only`, so a new subsystem cannot sli
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path, PurePosixPath
 
 from coney_tools import local_gate
@@ -36,14 +35,6 @@ def _known(untagged: Untagged) -> tuple[str, str, str, str]:
     path, scope, name, params = untagged.key
     place = path if untagged.kind == "helper" else PurePosixPath(path).parent.as_posix()
     return (place, scope, name, params)
-
-
-def _base_text(root: Path, commit: str, path: str) -> str | None:
-    """The text of `path` at `commit`, or None when the file did not exist there."""
-    done = subprocess.run(
-        ["git", "-C", str(root), "show", f"{commit}:{path}"], capture_output=True, encoding="utf-8", errors="replace"
-    )
-    return done.stdout if done.returncode == 0 else None
 
 
 def unlisted_folders(root: Path, gameplay: tuple[str, ...], coney_only: tuple[str, ...]) -> list[str]:
@@ -82,7 +73,7 @@ def check(root: Path, base: str) -> list[str]:
     renamed = local_gate.renamed_files(root, base)
     then: list[SourceFile] = [s for s in now if s.path not in changed]
     for path in changed:
-        text = _base_text(root, since, renamed.get(path, path))
+        text = local_gate.file_at(root, since, renamed.get(path, path))
         if text is not None:
             then.append(read_source(path, text))
     current, _ = find_untagged(now, paths.gameplay, with_legacy=True)

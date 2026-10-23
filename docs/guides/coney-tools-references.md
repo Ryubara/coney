@@ -24,7 +24,7 @@ Prints the reimplemented and researched shares, the milestones and the subsystem
 database's `coney` entries and the `@orig` tags in `src/` disagree, and lists each problem.
 
 ```sh
-uv run --project python coney-tools progress check [--base REF]
+uv run --project python coney-tools progress check [--base REF] [--require-base]
 ```
 
 Checks the inputs and exits with 1 when they disagree; CI runs it. Nothing generated is committed: the tables of the
@@ -34,7 +34,9 @@ the `@orig` tags in `src/` together ([the rules](research-function-database.md#p
 middleware or outside `.text`, a progress page without its single `<!-- progress:generated -->` marker and a history
 page without its `<!-- progress:history -->` marker. `--base REF` (default `origin/main`) is what tag names are
 measured from: a tag the branch adds that spells a name differently from the database fails, the ones already there
-are a warning with their count. `mkdocs build --strict` shows the tables on the page locally too, and fails on the
+are a warning with their count. When git cannot read the base (a copy of the files, a shallow clone) the rule is
+skipped with a warning, unless `--require-base` makes that a failure; CI passes `--base HEAD^1 --require-base`, the
+commit its checkout (depth 2) holds. `mkdocs build --strict` shows the tables on the page locally too, and fails on the
 same problems.
 
 The pictures come from `progress_grid.py` (one square per function, from the Ghidra listing, the tracker's measures
@@ -99,11 +101,13 @@ save the branch's copy of the file outside the checkout, take main's side and ru
 only the rows the database lacks. An entry the database has gets `coney` and keeps everything else; any other function
 gets a new entry from the research that cites it, in this order of preference: a row of a page's function table (the
 page's role, level and section, as [`research import-table`](research-function-database.md#importing) reads it), a
-sentence or block of a page that states a code reading tied to that function's own claim, the function's script
+section that describes the function (it opens with the function, or its heading names it), the function's script
 binding (an entry in the `scripting` system, its page the binding reference, `../references/bindings/<group>.md#<name>`),
-and last a page that only mentions the address. It never guesses a level: an entry whose level cannot be tied to
-the function's own claim has none, and a note saying so. Among equals it takes the page with the most such functions,
-and the entry goes in the file of that page's system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The
+and last a page that only mentions the address; a Coney, open-questions or summary section is the last resort. A level
+is taken only where it is tied to that function's own claim ([the rules](research-function-database.md#ported)), from
+this or another page, and never guessed: an entry whose level cannot be tied has none, and a note saying that the import
+tied none. Among equals it takes the page with the most such functions, and the entry goes in the file of that page's
+system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The
 name is Ghidra's, `coney` comes from the `@orig` tag in `src/`. The report counts the new entries by source and by
 system and lists the rows whose name is not Ghidra's, the rows with no function in the listing, the entries with no
 level and any row left out (the exit code is 1 for those); `--dry-run` writes nothing and `--all` lists every row.

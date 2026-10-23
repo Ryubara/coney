@@ -731,30 +731,6 @@ coney = "src/camera/win_camera.h:WinCamera::update"
 status = "legacy"
 
 [[function]]
-address = 0x0023bde8
-name = "Human_GetBoneTransform"
-page = "camera.md#body-point"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/human/human.h:Human::bodyPoint"
-status = "legacy"
-
-[[function]]
-address = 0x00365a10
-name = "lua_CameraReset"
-page = "camera.md#setting-up"
-level = "confirmed-code"
-coney = "src/scripting/camera_bindings.cpp:makeCameraReset"
-status = "legacy"
-
-[[function]]
-address = 0x00367580
-name = "lua_ScenePlayCinematic"
-page = "camera.md#original-structure"
-level = "confirmed-code"
-coney = "src/scripting/scene_bindings.cpp:makeScenePlayCinematic"
-status = "legacy"
-
-[[function]]
 address = 0x0041ab30
 name = "SlowMotion_On"
 page = "camera.md#original-structure"

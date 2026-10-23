@@ -96,6 +96,7 @@ def test_a_page_that_only_mentions_the_function_gives_no_level() -> None:
     entry = entries(result)[0x1180]
     assert (entry.page, entry.level, entry.note) == ("ai.md#behaviour", "", progress_import.UNGRADED_NOTE)
     assert len(result.report.ungraded) == 1 and "0x00001180" in result.report.ungraded[0]
+    assert "page states" not in entry.note  # the page may state a level the import could not tie
     assert entry.name == "Legacy_1180"  # Ghidra's name is still the default, so the row's is kept
 
 
@@ -190,7 +191,12 @@ def test_a_level_only_sentence_right_after_belongs_to_the_sentence_before() -> N
     assert progress_import.tied_level(text, A) == ("confirmed-code", "claim")
 
 
-NAMES = {A: frozenset({"Start_It"}), B: frozenset({"End_It"}), 0x00123600: frozenset({"Mid_It"})}
+NAMES = {
+    A: frozenset({"Start_It"}),
+    B: frozenset({"End_It"}),
+    0x00123600: frozenset({"Mid_It"}),
+    0x00123999: frozenset({"Caller_It"}),
+}
 
 
 def test_a_sentence_must_be_about_the_function_not_about_its_neighbours() -> None:
@@ -312,14 +318,14 @@ def test_the_section_that_names_the_function_wins_over_one_that_only_cites_it() 
 
 
 def test_a_candidate_the_schema_refuses_gives_way_to_the_next() -> None:
-    """A table cell that carries decompiler output cannot be an entry's note; the next source is used."""
+    """A table cell that carries decompiler output cannot be an entry's role: the row still names the function's
+    section and level, without the role."""
     pages = {
         **PAGES,
-        "combat-grabs.md": PAGES["combat-grabs.md"].replace("confirmed (code) |", "confirmed (code) FUN_00123456 |"),
-        "ai.md": PAGES["ai.md"] + "\nThe start at `0x00001000` is confirmed (code).\n",
+        "combat-grabs.md": PAGES["combat-grabs.md"].replace("| starts it |", "| starts FUN_00123456 |"),
     }
     entry = entries(plan(pages=pages))[0x1000]
-    assert (entry.page, entry.level) == ("ai.md#behaviour", "confirmed-code")
+    assert (entry.page, entry.level, entry.role) == ("combat-grabs.md#map", "confirmed-code", "")
 
 
 def test_systems_follow_the_page_names() -> None:
@@ -441,3 +447,159 @@ def test_the_command_needs_the_listing(
     monkeypatch.chdir(root)
     assert main(["progress", "import-functions"]) == 2
     assert "ghidra-functions.tsv" in capsys.readouterr().err
+
+
+# --- levels the pages give in other forms ----------------------------------------------------------------------
+
+
+def test_a_level_before_an_at_list_grades_every_address_in_it() -> None:
+    """`Confirmed (code) at A, B and C` is a statement about each address, whatever the sentences before it say."""
+    text = (
+        "`Start_It` (`0x00123400`) walks the slots and `End_It` (`0x00123500`) stops. "
+        "Confirmed (code) at `0x00123400`, `0x00123500` and `0x00123700`."
+    )
+    for address in (A, B, 0x00123700):
+        assert progress_import.tied_level(text, address, NAMES) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(text, 0x00123600, NAMES) is None
+    inline = "The door side, confirmed (code) at `0x00123400`, `0x00123500`:"
+    assert progress_import.tied_level(inline, B) == ("confirmed-code", "claim")
+    other = "It stops (`0x00123400`), confirmed (runtime) at `0x00123500`."
+    assert progress_import.tied_level(other, B) is None  # only a code reading is a claim of prose, as always
+    two = "Confirmed (code) at `0x00123400`. Inferred at `0x00123400`."
+    assert progress_import.tied_level(two, A) is None  # two levels for one address tie nothing
+
+
+def test_a_level_right_after_the_address_is_its_claim_whatever_it_is() -> None:
+    """`(F, 0x1, confirmed (code))` and `(0x1); inferred from both readers` belong to the function just named."""
+    adjacent = (
+        "Each is copied (`Start_It`, `0x00123400`; inferred from both readers), then `End_It` (`0x00123500`) runs."
+    )
+    assert progress_import.tied_level(adjacent, A, NAMES) == ("inferred", "claim")
+    assert progress_import.tied_level(adjacent, B, NAMES) is None
+    paren = "A step follows (`0x00123400`); inferred from both readers."
+    assert progress_import.tied_level(paren, A) == ("inferred", "claim")
+
+
+def test_a_clause_and_a_call_chain_keep_the_level_to_what_it_follows() -> None:
+    """A semicolon outside parentheses ends a clause; a level after a chain `A -> B -> C` is about the whole chain."""
+    clauses = "It is set by `Start_It` (`0x00123400`; confirmed (code)); that it holds the same ids is inferred."
+    assert progress_import.tied_level(clauses, A, NAMES) == ("confirmed-code", "claim")
+    own = "Confirmed (code) at `0x00123400` and `0x00123500`; confirmed (runtime) for the pad."
+    assert progress_import.tied_level(own, B, NAMES) == ("confirmed-code", "claim")
+    chain = "`Go(id)` (`0x00123300` → `0x00123400`; none above 32) → `0x00123500` → `0x00123700`, confirmed (code):"
+    names = {**NAMES, 0x00123300: frozenset({"Go_It"}), 0x00123700: frozenset({"Third_It"})}
+    for address in (A, B, 0x00123700):
+        assert progress_import.tied_level(chain, address, names) == ("confirmed-code", "claim")
+
+
+def test_a_level_after_the_subject_is_its_claim_when_a_code_reading() -> None:
+    """The first function of a sentence is its subject: the level that follows it, before another function, is its."""
+    subject = (
+        "`Start_It` (`0x00123400`) stores the number and copies the rest, confirmed (code): the stats (`0x00123700`)."
+    )
+    assert progress_import.tied_level(subject, A, NAMES) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(subject, 0x00123700, NAMES) is None
+    aside = subject.replace("confirmed (code)", "the player, inferred")
+    assert progress_import.tied_level(aside, A, NAMES) is None  # a word-separated inferred is an aside
+
+
+def test_a_wrapper_arrow_and_a_data_address_do_not_make_the_level_about_something_wider() -> None:
+    """`(W -> F)` names a binding's wrapper beside the function it calls; `0x110c0880` is a flag, not a function."""
+    names = {**NAMES, 0x00123300: frozenset({"Wrap_It"})}
+    wrapper = "`SetIt(x)` (`0x00123300` → `Start_It`, `0x00123400`): floats in 0 to 1 (confirmed (code))."
+    assert progress_import.tied_level(wrapper, A, names) == ("confirmed-code", "claim")
+    data = "`Start_It` (`0x00123400`) tests the flags `0x110c0880` and `0x00120000` (confirmed (code))."
+    assert progress_import.tied_level(data, A, NAMES) == ("confirmed-code", "claim")
+    function = data.replace("0x00120000", "0x00123500")
+    assert progress_import.tied_level(function, A, NAMES) is None  # `End_It` is a function this sentence does not name
+
+
+def test_a_level_only_sentence_grades_the_subject_of_the_sentence_before_it() -> None:
+    """The first function of a sentence is its subject, whatever other addresses the sentence cites."""
+    text = "**Pause** (`Start_It`, `0x00123400` / `0x00123900`): sets it and calls (`0x00123700`). Confirmed (code)."
+    names = {**NAMES, 0x00123900: frozenset({"Alt_It"}), 0x00123700: frozenset({"Third_It"})}
+    assert progress_import.tied_level(text, A, names) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(text, 0x00123700, names) is None
+
+
+def test_a_closing_level_only_sentence_grades_the_functions_of_the_two_sentences_before_it() -> None:
+    closing = (
+        "`Start_It` (`0x00123400`) sets the transform. `End_It` (`0x00123500`) takes the flag. Confirmed (code). "
+        "A human in a scene is lowered."
+    )
+    assert progress_import.tied_level(closing, A, NAMES) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(closing, B, NAMES) == ("confirmed-code", "claim")
+    far = "`Start_It` (`0x00123400`) sets it. It runs on. The pad is read. Confirmed (code)."
+    assert progress_import.tied_level(far, A, NAMES) is None
+
+
+# --- where an entry is described -------------------------------------------------------------------------------
+
+
+def test_a_section_that_describes_the_function_is_its_home_and_a_coney_section_never_is() -> None:
+    body = (
+        "### Spawners {#spawners}\n\n**The type** (`0x00123400`): the spawner keeps an index.\n\n"
+        "## Coney's implementation {#coney}\n\n- **The spawners**: the port calls `F123400` (`0x00123400`)"
+        " after each step. Confirmed (code).\n"
+    )
+    entry = entries(paragraph_plan(body))[A]
+    assert (entry.page, entry.level, entry.note) == ("sys.md#spawners", "", progress_import.UNGRADED_NOTE)
+    # With nothing else to cite, a Coney section is still a page to read.
+    only = "## Coney's implementation {#coney}\n\n- **The spawners**: the port calls `F123400` (`0x00123400`).\n"
+    assert entries(paragraph_plan(only))[A].page == "sys.md#coney"
+
+
+def test_the_row_of_another_function_neither_describes_nor_grades_the_function() -> None:
+    table = (
+        "| Address | Name | Evidence |\n| --- | --- | --- |\n"
+        "| `0x00123500` | `End_It` | confirmed (code), called from `0x00123400` |\n"
+    )
+    mention = "### Block {#block}\n\n`F123400` is read by the walk, `0x00123400`, without a claim.\n"
+    body = "### Map {#map}\n\n" + table + "\n" + mention
+    result = entries(paragraph_plan(body, (A, B)))
+    assert (result[B].page, result[B].level) == ("sys.md#map", "confirmed-code")
+    assert result[A].level == "" and result[A].page == "sys.md#block"
+
+
+def test_a_function_the_research_grades_two_ways_keeps_one_row_and_says_where_the_other_is() -> None:
+    body = (
+        "### Map {#map}\n\n| Address | Name | Evidence |\n| --- | --- | --- |\n"
+        "| `0x00123400` | `F123400` | inferred |\n\n"
+        "### Index {#index}\n\n| Address | Name | Evidence |\n| --- | --- | --- |\n"
+        "| `0x00123400` | `F123400` | confirmed (code) |\n"
+    )
+    result = paragraph_plan(body)
+    entry = entries(result)[A]
+    assert (entry.page, entry.level) == ("sys.md#map", "inferred")
+    assert "also graded confirmed-code at [sys.md#index](sys.md#index)" in entry.note
+    assert len(result.report.disagreeing) == 1
+
+
+def test_a_row_about_something_else_grades_the_functions_its_evidence_cell_lists() -> None:
+    """`confirmed (code) at A, B` in the Evidence cell is the page's grade of A and B, whatever the row is about."""
+    table = (
+        "| Offset | Meaning | Evidence |\n| --- | --- | --- |\n"
+        "| `+0x20` | the level chosen, -1 = none | confirmed (code) at `0x00123400`, `0x00123500` |\n"
+    )
+    result = entries(paragraph_plan("### Fields {#fields}\n\n" + table, (A, B)))
+    assert (result[A].level, result[B].level) == ("confirmed-code", "confirmed-code")
+    assert result[A].page == "sys.md#fields"
+
+
+def test_the_level_of_another_page_is_taken_and_said() -> None:
+    """The home is the section that describes the function; a code reading of it on another page is its level."""
+    pages = {
+        "sys.md": HOME["sys.md"] + "### Sight {#sight}\n\n- **`F123400`** (`0x00123400`): a ray from a to b.\n",
+        "other.md": "# Other\n\n## Behaviour {#behaviour}\n\nIt calls `F123400` (`0x00123400`), confirmed (code)\n",
+    }
+    rows = [progress_import.LegacyRow(A, f"F{A:x}", "Alpha", 8)]
+    result = plan(
+        rows,
+        pages=pages,
+        ports={A: "src/core/x.h:f"},
+        listing={A: ListedFunction(A, 8, f"F{A:x}", False)},
+    )
+    entry = entries(result)[A]
+    assert (entry.page, entry.level) == ("sys.md#sight", "confirmed-code")
+    assert "other.md#behaviour" in entry.note
+    assert result.report.sources["claim"] == 0 and len(result.report.borrowed) == 1

@@ -2,6 +2,14 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x003860b8
+name = "Object_SetLuaMsgHandler"
+page = "cars.md#explode"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::set"
+status = "legacy"
+
+[[function]]
 address = 0x00387bc8
 name = "Car_Init"
 page = "cars.md#original-structure"
@@ -13,7 +21,7 @@ status = "legacy"
 [[function]]
 address = 0x0038a4d8
 name = "Car_AddPartDamage"
-page = "cars.md#hit-volumes"
+page = "cars.md#parts"
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::damagePart"
 status = "legacy"
@@ -38,7 +46,7 @@ status = "legacy"
 address = 0x0038b8d0
 name = "Car_GetHitZone"
 page = "cars.md#windows"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/car_hits.h:carZoneParts"
 status = "legacy"
 
@@ -46,8 +54,16 @@ status = "legacy"
 address = 0x0038bb48
 name = "Car_UpdateTransform"
 page = "cars.md#windows"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/car_hits.h:carBootPosition"
+status = "legacy"
+
+[[function]]
+address = 0x0038bea0
+name = "Car_OnHit"
+page = "cars.md#hit-volumes"
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carHumanHitParts"
 status = "legacy"
 
 [[function]]
@@ -63,7 +79,7 @@ status = "legacy"
 address = 0x0038c868
 name = "Car_SpawnStereo"
 page = "cars.md#windows"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/car_hits.h:carStereoPosition"
 status = "legacy"
 
@@ -71,7 +87,7 @@ status = "legacy"
 address = 0x0038d188
 name = "Car_ReleaseTrunkItem"
 page = "cars.md#parts"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/cars.h:Cars::releaseTrunk"
 status = "legacy"
 
@@ -88,7 +104,7 @@ status = "legacy"
 address = 0x0038e0f0
 name = "Car_PlaceInTrunkOnDetach"
 page = "cars.md#original-structure"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/cars.h:Cars::placeInTrunk"
 status = "legacy"
 
@@ -96,6 +112,6 @@ status = "legacy"
 address = 0x0038e860
 name = "CarManager_FindTarget"
 page = "cars.md#windows"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/car_hits.h:carTargetable"
 status = "legacy"

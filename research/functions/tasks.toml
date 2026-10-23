@@ -385,6 +385,7 @@ name = "ParticleTask_Draw"
 page = "tasks.md#code-particles-task-fields"
 role = "Draws a particle task's sprites."
 level = "inferred"
+note = "also graded confirmed-code at [particles.md#fog](particles.md#fog); also graded confirmed-code at [particles.md#steam](particles.md#steam)"
 coney = "src/hud/radar.h:radarDotSize"
 status = "legacy"
 
@@ -499,14 +500,6 @@ status = "legacy"
 address = 0x004125b8
 name = "VolumeBox_Add"
 page = "tasks.md#classes"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/trigger_bindings.cpp:makeAddVolumeBox"
-status = "legacy"
-
-[[function]]
-address = 0x0041d628
-name = "Cfg_SetDatabaseSizes"
-page = "tasks.md#classes"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
 status = "legacy"

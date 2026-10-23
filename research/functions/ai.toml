@@ -86,7 +86,7 @@ status = "legacy"
 address = 0x00165640
 name = "Gang_SetTactic"
 page = "ai-gangs.md#tactics"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/gangs.h:Gangs::setTactic"
 status = "legacy"
 
@@ -130,7 +130,7 @@ status = "legacy"
 address = 0x00166ff8
 name = "Gang_AddSpawner"
 page = "ai-gangs.md#spawners"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/spawners.h:Spawners::add"
 status = "legacy"
 
@@ -157,6 +157,7 @@ name = "GangSpawner_Update"
 page = "ai-gangs.md#original-structure"
 role = "One spawner's update and spawn"
 level = "confirmed-code"
+note = "also graded confirmed-runtime at [ai-gangs.md#spawners](ai-gangs.md#spawners)"
 coney = "src/ai/spawners.h:Spawners::update"
 status = "legacy"
 
@@ -272,7 +273,7 @@ status = "legacy"
 address = 0x0016a1e8
 name = "Gang_DeleteById"
 page = "ai-gangs.md#gang-delete"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::gangDelete"
 status = "legacy"
 
@@ -541,7 +542,7 @@ status = "legacy"
 address = 0x0016bb58
 name = "Gang_SetAttackable"
 page = "ai.md#sight"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/gangs.h:Gangs::setAttackable"
 status = "legacy"
 
@@ -594,7 +595,7 @@ status = "legacy"
 address = 0x0016c3a8
 name = "Gang_SetHostileToKind"
 page = "ai-gangs.md#crimes"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/gangs.h:Gangs::makeEnemiesOfType"
 status = "legacy"
 
@@ -637,25 +638,25 @@ status = "legacy"
 [[function]]
 address = 0x0016d810
 name = "Spawner_NextType"
-page = "ai.md#coney"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-gangs.md#spawners"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/spawners.h:Spawners::pickType"
+status = "legacy"
+
+[[function]]
+address = 0x0021c0a8
+name = "Human_IsWayClearTo"
+page = "ai.md#warrior-swap"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
 status = "legacy"
 
 [[function]]
 address = 0x0021d428
 name = "Human_GetFormation"
 page = "ai-gangs.md#formations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/formations.h:Formations::of"
-status = "legacy"
-
-[[function]]
-address = 0x0021d5c0
-name = "Human_WarnOfAttack"
-page = "ai.md#block"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/human/fighter.h:Fighter::warnTarget"
 status = "legacy"
 
 [[function]]
@@ -675,10 +676,18 @@ coney = "src/ai/sectors.h:Sectors::probe"
 status = "legacy"
 
 [[function]]
+address = 0x00222288
+name = "Human_HasLineOfSight"
+page = "ai.md#sight"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/perception.h:lineOfSight"
+status = "legacy"
+
+[[function]]
 address = 0x002223e8
 name = "Human_CanSeeHuman"
 page = "ai.md#sight"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/perception.h:canSeeHuman"
 status = "legacy"
 
@@ -710,6 +719,14 @@ coney = "src/ai/brain.h:Brain::attackDelayMs"
 status = "legacy"
 
 [[function]]
+address = 0x0022ae40
+name = "Human_SpeedForGait"
+page = "ai-moving.md#ai-gaits"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/move_action.h:gaitSpeed"
+status = "legacy"
+
+[[function]]
 address = 0x00231090
 name = "AttackKind_ToCommand"
 page = "ai.md#original-structure"
@@ -726,26 +743,18 @@ coney = "src/ai/attack_kinds.h:chainDelayMs"
 status = "legacy"
 
 [[function]]
-address = 0x0024c6d8
-name = "Human_PlaceObjectInHandByPickupClip"
-page = "ai.md#crew-gaps"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
-status = "legacy"
-
-[[function]]
 address = 0x0024df40
 name = "Ray_IsClear"
-page = "ai.md#sight"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai.md#get-item"
+level = "confirmed-code"
 coney = "src/ai/perception.h:lineOfSight"
 status = "legacy"
 
 [[function]]
 address = 0x0024e218
 name = "Nav_FindPolygonNear"
-page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-pathing.md#path-holes"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
 status = "legacy"
 
@@ -753,23 +762,23 @@ status = "legacy"
 address = 0x0024fbf8
 name = "Nav_IsWalkableLine"
 page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world/path_map.h:PathMap::walkable"
 status = "legacy"
 
 [[function]]
 address = 0x002505b0
 name = "Nav_NearestPolygonPoint"
-page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-pathing.md#path-holes"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
 status = "legacy"
 
 [[function]]
-address = 0x00250760
-name = "Nav_FindAreaCandidate"
-page = "ai.md#coney"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+address = 0x00250708
+name = "Nav_FindArea"
+page = "ai-moving.md#path-planning"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world/path_map.h:PathMap::areaAt"
 status = "legacy"
 
@@ -777,7 +786,7 @@ status = "legacy"
 address = 0x00251070
 name = "NavNode_GetLinkFlags"
 page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "inferred"
 coney = "src/ai/route_follower.h:RouteFollower::legKind"
 status = "legacy"
 
@@ -785,7 +794,7 @@ status = "legacy"
 address = 0x002510f8
 name = "NavNode_GetQueueNode"
 page = "ai-pathing.md#route-claims"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world/path_map.h:PathMap::partnerOf"
 status = "legacy"
 
@@ -793,7 +802,7 @@ status = "legacy"
 address = 0x00251150
 name = "Nav_NearestReachableNodeAt"
 page = "ai-gangs.md#spawner-placement"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/route_planner.h:RoutePlanner::endNode"
 status = "legacy"
 
@@ -801,15 +810,17 @@ status = "legacy"
 address = 0x002511c8
 name = "Route_Find"
 page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
+note = "the level is from [ai-moving.md#path-planning](ai-moving.md#path-planning)"
 coney = "src/ai/route_planner.h:RoutePlanner::searchWithRetries"
 status = "legacy"
 
 [[function]]
 address = 0x002513a8
 name = "Route_Build"
-page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-moving.md#route-follow"
+level = "confirmed-code"
+note = "the level is from [ai-moving.md#path-planning](ai-moving.md#path-planning)"
 coney = "src/ai/route_planner.h:RoutePlanner::build"
 status = "legacy"
 
@@ -817,7 +828,7 @@ status = "legacy"
 address = 0x00251680
 name = "Route_Free"
 page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/route_planner.h:Route::~Route"
 status = "legacy"
 
@@ -825,15 +836,15 @@ status = "legacy"
 address = 0x002517b0
 name = "Nav_Heuristic"
 page = "ai-moving.md#path-planning"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/route_planner.h:RoutePlanner::heuristic"
 status = "legacy"
 
 [[function]]
 address = 0x00251890
 name = "Nav_EdgeCost"
-page = "ai-gangs.md#spawner-search"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-moving.md#path-planning"
+level = "confirmed-code"
 coney = "src/ai/route_planner.h:RoutePlanner::edgeCost"
 status = "legacy"
 
@@ -852,14 +863,6 @@ name = "Route_SearchOutOfSight"
 page = "ai-gangs.md#spawner-search"
 level = "confirmed-code"
 coney = "src/ai/spawners.h:searchOutward"
-status = "legacy"
-
-[[function]]
-address = 0x002880d8
-name = "Player_CrossWithWeapon"
-page = "ai-gangs.md#boss-throw"
-level = "confirmed-code"
-coney = "src/combat/attacks.h:throwAttack"
 status = "legacy"
 
 [[function]]
@@ -1371,18 +1374,10 @@ coney = "src/ai/fight_checks.h:checkAttack"
 status = "legacy"
 
 [[function]]
-address = 0x00290e78
-name = "Brain_SetAttackableTime"
-page = "ai.md#attack-places"
-level = "confirmed-code"
-coney = "src/ai/attack_places.h:attackableGapMs"
-status = "legacy"
-
-[[function]]
 address = 0x00290ea8
 name = "Brain_IsAttackableBy"
-page = "ai.md#engage-enemy"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai.md#sight"
+level = "confirmed-code"
 coney = "src/ai/targeting.h:attackableBy"
 status = "legacy"
 
@@ -1455,18 +1450,10 @@ coney = "src/ai/brain.h:helpLevel"
 status = "legacy"
 
 [[function]]
-address = 0x00291ed0
-name = "Ambient_MayGesture"
-page = "ai-code.md#actions"
-level = "confirmed-code"
-coney = "src/ai/script_services.h:ScriptServices::mayGesture"
-status = "legacy"
-
-[[function]]
 address = 0x00292330
 name = "Brain_SetDead"
 page = "ai.md#handlers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/brain.h:Brain::setDead"
 status = "legacy"
 
@@ -1493,8 +1480,8 @@ status = "legacy"
 [[function]]
 address = 0x00292530
 name = "Brain_FlushAll"
-page = "ai-scripting.md#script-binding-effects"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-scripting.md#scripted"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/brain.h:Brain::flush"
 status = "legacy"
 
@@ -1593,6 +1580,7 @@ address = 0x00292d80
 name = "Brain_DefaultOnEvent"
 page = "ai.md#shared-events"
 level = "confirmed-code"
+note = "the level is from [ai.md#shared-events](ai.md#shared-events)"
 coney = "src/ai/brain_events.h:answerEvent"
 status = "legacy"
 
@@ -1620,7 +1608,7 @@ status = "legacy"
 address = 0x00293768
 name = "AI_AlertNearby"
 page = "ai.md#help-calls"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
 status = "legacy"
 
@@ -1765,7 +1753,7 @@ status = "legacy"
 address = 0x00295f28
 name = "Formation_Join"
 page = "ai-gangs.md#formations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/formations.h:Formation::join"
 status = "legacy"
 
@@ -1783,7 +1771,7 @@ status = "legacy"
 address = 0x00296358
 name = "Formation_GetSlotPoint"
 page = "ai-gangs.md#formations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/formations.h:Formation::slotPoint"
 status = "legacy"
 
@@ -1879,7 +1867,7 @@ status = "legacy"
 address = 0x0029b4b8
 name = "Route_SkipReachable"
 page = "ai-moving.md#route-follow"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/route_follower.h:RouteFollower::canSkip"
 status = "legacy"
 
@@ -1887,7 +1875,7 @@ status = "legacy"
 address = 0x0029b6d8
 name = "Route_Advance"
 page = "ai-moving.md#route-follow"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/route_follower.h:RouteFollower::moveOn"
 status = "legacy"
 
@@ -2054,8 +2042,8 @@ status = "legacy"
 [[function]]
 address = 0x0029eb38
 name = "Human_GetSectorOf"
-page = "ai.md#engage-charge"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai.md#engage-enemy"
+level = "inferred"
 coney = "src/ai/sectors.h:sectorOf"
 status = "legacy"
 
@@ -2130,8 +2118,8 @@ status = "legacy"
 [[function]]
 address = 0x0029f3a8
 name = "Goal_AdjustEnemyScoreDefault"
-page = "ai-reimpl.md#object-pile"
-level = "confirmed-code"
+page = "ai.md#enemy-score"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/goal.h:Goal::adjustEnemyScore"
 status = "legacy"
 
@@ -2248,8 +2236,8 @@ status = "legacy"
 [[function]]
 address = 0x002abef8
 name = "BumLogicGoal_Create"
-page = "ai.md#goals"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-scripting.md#bum-logic"
+level = "confirmed-code"
 coney = "src/ai/scripted_goals.h:BumLogicGoal"
 status = "legacy"
 
@@ -2290,6 +2278,7 @@ page = "ai-goals.md#goal-peddler"
 kind = "Process"
 role = "waits for a customer and sells"
 level = "inferred"
+note = "also graded confirmed-code at [sound-events.md#speech](sound-events.md#speech)"
 coney = "src/ai/hub_goals.h:PeddlerGoal::process"
 status = "legacy"
 
@@ -2297,7 +2286,7 @@ status = "legacy"
 address = 0x002add08
 name = "Goal_Melee"
 page = "ai.md#targets"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
@@ -2305,7 +2294,7 @@ status = "legacy"
 address = 0x002ade10
 name = "MeleeGoal_Create"
 page = "ai.md#fight-durations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/melee_goal.h:MeleeGoal"
 status = "legacy"
 
@@ -2383,7 +2372,7 @@ status = "legacy"
 address = 0x002b2b90
 name = "Brain_StartFight"
 page = "ai.md#targets"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/brain.h:Brain::startFight"
 status = "legacy"
 
@@ -2413,6 +2402,7 @@ page = "ai-goals.md#goal-fight"
 kind = "Resume"
 role = "picks an attack kind against the target"
 level = "inferred"
+note = "also graded confirmed-code at [ai.md#fight](ai.md#fight); also graded confirmed-code at [gang-fights.md#switches](gang-fights.md#switches)"
 coney = "src/ai/fight_goal.h:FightGoal::resume"
 status = "legacy"
 
@@ -2459,7 +2449,7 @@ status = "legacy"
 address = 0x002b4098
 name = "SpectateGoal_Init"
 page = "ai.md#spectate"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/idle_goals.h:SpectateGoal"
 status = "legacy"
 
@@ -2530,6 +2520,7 @@ page = "ai-goals.md#goal-reactions"
 kind = "Process"
 role = "Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai.md#fight-reactions))"
 level = "inferred"
+note = "also graded confirmed-code at [combat-reactions.md#ground-escape](combat-reactions.md#ground-escape)"
 coney = "src/ai/fight_reactions.h:GroundedGoal::process"
 status = "legacy"
 
@@ -2674,7 +2665,7 @@ status = "legacy"
 address = 0x002b75b8
 name = "Gang_SendHelper"
 page = "ai.md#help-calls"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/brain_events.h:sendHelper"
 status = "legacy"
 
@@ -2992,7 +2983,7 @@ status = "legacy"
 address = 0x002c0748
 name = "FindEnemyGoal_Process"
 page = "ai.md#fight-durations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/story_goals.h:FindEnemyGoal"
 status = "legacy"
 
@@ -3044,6 +3035,14 @@ kind = "helper"
 role = "queues a dealer gesture (ai-scripting.md#dealer-gestures)"
 level = "confirmed-code"
 coney = "src/ai/dealer_goal.h:DealerGoal::gesture"
+status = "legacy"
+
+[[function]]
+address = 0x002c74d8
+name = "DealerGoal_OnBuy"
+page = "ai-scripting.md#dealer-buy"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::deal"
 status = "legacy"
 
 [[function]]
@@ -3108,7 +3107,7 @@ status = "legacy"
 address = 0x002cc488
 name = "ApproachGoal_Start"
 page = "ai-scripting.md#address-person"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/address_person_goal.h:AddressPersonGoal::start"
 status = "legacy"
 
@@ -3116,7 +3115,7 @@ status = "legacy"
 address = 0x002cc588
 name = "ApproachGoal_Process"
 page = "ai-scripting.md#address-person"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/address_person_goal.h:AddressPersonGoal::process"
 status = "legacy"
 
@@ -3184,7 +3183,7 @@ status = "legacy"
 address = 0x002d0e98
 name = "Goal_Riot"
 page = "ai-scripting.md#riot"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/riot_goals.h:RiotGoal"
 status = "legacy"
 
@@ -3192,7 +3191,7 @@ status = "legacy"
 address = 0x002d0f68
 name = "RiotGoal_Init"
 page = "ai-scripting.md#riot"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/riot_goals.h:RiotGoal"
 status = "legacy"
 
@@ -3230,7 +3229,7 @@ status = "legacy"
 address = 0x002d2f60
 name = "PlayDynAnimationGoal_Start"
 page = "ai-scripting.md#dyn-animation"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::start"
 status = "legacy"
 
@@ -3238,7 +3237,7 @@ status = "legacy"
 address = 0x002d2f88
 name = "PlayDynAnimationGoal_Suspend"
 page = "ai-scripting.md#dyn-animation"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::suspend"
 status = "legacy"
 
@@ -3246,7 +3245,7 @@ status = "legacy"
 address = 0x002d2f98
 name = "Goal_ScheduleCallback"
 page = "ai-scripting.md#dyn-animation"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::end"
 status = "legacy"
 
@@ -3484,7 +3483,7 @@ status = "legacy"
 address = 0x002da2c0
 name = "Goal_MoveToFlag"
 page = "ai-scripting.md#move-to-flag"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_to_flag_goal.h:goalMoveToFlag"
 status = "legacy"
 
@@ -3501,7 +3500,7 @@ status = "legacy"
 address = 0x002da408
 name = "MoveToFlagGoal_Start"
 page = "ai-scripting.md#move-to-flag"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::start"
 status = "legacy"
 
@@ -3518,8 +3517,8 @@ status = "legacy"
 [[function]]
 address = 0x002da550
 name = "MoveToFlagGoal_Resume"
-page = "ai-moving.md#move-action"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-scripting.md#move-to-flag"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::resume"
 status = "legacy"
 
@@ -3546,7 +3545,7 @@ status = "legacy"
 address = 0x002da8f8
 name = "GoalMoveToExitFlag_Init"
 page = "ai-scripting.md#dealer-process"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/story_goals.h:MoveToExitFlagGoal"
 status = "legacy"
 
@@ -3713,8 +3712,8 @@ status = "legacy"
 [[function]]
 address = 0x002df250
 name = "TrackHumanGoal_Construct"
-page = "ai.md#goals"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-gangs.md#formations"
+level = "confirmed-code"
 coney = "src/ai/track_human_goal.h:TrackHumanGoal"
 status = "legacy"
 
@@ -3722,7 +3721,7 @@ status = "legacy"
 address = 0x002df288
 name = "TrackHumanGoal_Start"
 page = "ai-gangs.md#formations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/track_human_goal.h:TrackHumanGoal::start"
 status = "legacy"
 
@@ -3730,7 +3729,7 @@ status = "legacy"
 address = 0x002df3c0
 name = "TrackHumanGoal_Process"
 page = "ai-gangs.md#formations"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/track_human_goal.h:TrackHumanGoal::process"
 status = "legacy"
 
@@ -3778,7 +3777,7 @@ status = "legacy"
 address = 0x002e0748
 name = "GoalTravelPath_Init"
 page = "ai-gangs.md#tactic-kinds"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/story_goals.h:TravelPathGoal"
 status = "legacy"
 
@@ -3894,7 +3893,7 @@ status = "legacy"
 address = 0x002e1760
 name = "Goal_DevilRun"
 page = "ai-scripting.md#devil-run"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeGoalDevilRun"
 status = "legacy"
 
@@ -3902,7 +3901,7 @@ status = "legacy"
 address = 0x002e1850
 name = "DevilRunGoal_Init"
 page = "ai-scripting.md#devil-run"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/chase_goals.h:DevilRunGoal"
 status = "legacy"
 
@@ -3960,7 +3959,7 @@ status = "legacy"
 address = 0x002e49f8
 name = "PlayAnimationGoal_Start"
 page = "ai-scripting.md#address-person"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/address_person_goal.h:PlayAnimationGoal::start"
 status = "legacy"
 
@@ -3978,7 +3977,7 @@ status = "legacy"
 address = 0x002e4a70
 name = "PlayAnimationGoal_Process"
 page = "ai-scripting.md#address-person"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/address_person_goal.h:PlayAnimationGoal::process"
 status = "legacy"
 
@@ -4485,8 +4484,8 @@ status = "legacy"
 [[function]]
 address = 0x002fc420
 name = "MoveAction_Start"
-page = "ai-code.md#actions"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-moving.md#move-action"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_action.h:MoveAction::start"
 status = "legacy"
 
@@ -4830,7 +4829,7 @@ status = "legacy"
 address = 0x003068f8
 name = "Tactic_SetCallback"
 page = "ai-gangs.md#tactic-kinds"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/tactic.h:Tactic::Tactic"
 status = "legacy"
 
@@ -4858,7 +4857,7 @@ status = "legacy"
 address = 0x003075c8
 name = "AttackTactic_Construct"
 page = "ai-code.md#t1-attack"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/tactic_attack.h:TacticAttack::TacticAttack"
 status = "legacy"
 
@@ -4903,14 +4902,6 @@ coney = "src/ai/tactic_attack.h:TacticAttack::checkFlee"
 status = "legacy"
 
 [[function]]
-address = 0x00307fe0
-name = "AttackTactic_Start"
-page = "ai-code.md#t1-attack"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/ai/tactic_attack.h:TacticAttack::start"
-status = "legacy"
-
-[[function]]
 address = 0x003080c8
 name = "AttackTactic_End"
 page = "ai-code.md#t1-attack"
@@ -4923,8 +4914,8 @@ status = "legacy"
 [[function]]
 address = 0x003081a8
 name = "AttackTactic_Process"
-page = "ai-reimpl.md#attack-process"
-level = "confirmed-code"
+page = "ai-code.md#t1-attack"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/tactic_attack.h:TacticAttack::update"
 status = "legacy"
 
@@ -5021,8 +5012,8 @@ status = "legacy"
 [[function]]
 address = 0x0030e670
 name = "ConfrontTactic_Construct"
-page = "ai-code.md#t1-confront"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-gangs.md#tactic-kinds"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/rumble_match_bindings.cpp:makeTacticConfront"
 status = "legacy"
 
@@ -5030,7 +5021,7 @@ status = "legacy"
 address = 0x0030ec20
 name = "ConfrontTactic_Start"
 page = "ai-code.md#t1-confront"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/tactic_confront.h:TacticConfront::start"
 status = "legacy"
 
@@ -5127,8 +5118,8 @@ status = "legacy"
 [[function]]
 address = 0x00310e00
 name = "WarriorFollowTactic_Create"
-page = "ai.md#open-questions"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-gangs.md#warrior-range-flag"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/crew.h:WarriorFollowTactic"
 status = "legacy"
 
@@ -5176,7 +5167,7 @@ status = "legacy"
 address = 0x00313400
 name = "WarriorHoldTactic_Create"
 page = "ai-code.md#t1-hold"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/crew.h:WarriorHoldTactic"
 status = "legacy"
 
@@ -5371,10 +5362,18 @@ coney = "src/scripting/story_bindings.cpp:addTacticBindings"
 status = "legacy"
 
 [[function]]
+address = 0x0031af98
+name = "ScoutTactic_Start"
+page = "ai-gangs.md#tactic-kinds"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/tactic_scout.h:ScoutTactic::start"
+status = "legacy"
+
+[[function]]
 address = 0x00320530
 name = "WarriorAttackTactic_Create"
-page = "ai.md#open-questions"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "ai-gangs.md#warrior-range-flag"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/crew.h:WarriorAttackTactic"
 status = "legacy"
 
@@ -5382,7 +5381,7 @@ status = "legacy"
 address = 0x00320b60
 name = "WarriorStealTactic_Create"
 page = "ai-code.md#t2-warrior-steal"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/steal_goals.h:WarriorStealTactic"
 status = "legacy"
 
@@ -5494,14 +5493,6 @@ kind = "reset"
 role = "on a full reset (1, `0xffff`): sets the ten handles of each of the 20 entries at `0x006eb318` (`0x30` bytes) to −1 (inferred: the cluster records)"
 level = "inferred"
 coney = "src/ai/steal_goals.h:StealClusters::clear"
-status = "legacy"
-
-[[function]]
-address = 0x00353f40
-name = "Scene_PlayAnimation"
-page = "ai.md#open-questions"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/scripting/scene_bindings.cpp:makeScenePlayAnimation"
 status = "legacy"
 
 [[function]]

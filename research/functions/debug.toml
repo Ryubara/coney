@@ -5,6 +5,6 @@
 address = 0x00357990
 name = "Script_IsRelease"
 page = "debug.md#debug-only-script-paths"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/script_bindings.cpp:makeIsRelease"
 status = "legacy"

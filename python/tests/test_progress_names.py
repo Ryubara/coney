@@ -83,3 +83,31 @@ def test_without_the_base_the_names_are_only_warned_about(
     assert main(["progress", "check", "--base", "main"]) == 0
     out = capsys.readouterr().out
     assert "cannot compare with main" in out and "not enforced" in out
+
+
+def test_an_unreadable_base_fails_when_the_base_is_required(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """CI passes --require-base: a checkout that cannot name the base would otherwise skip the rule and pass."""
+    root = make_checkout(tmp_path / "plain", ONE_FUNCTION, OLD_SPELLING, ONE_LISTING)
+    monkeypatch.chdir(root)
+    assert main(["progress", "check", "--base", "main", "--require-base"]) == 1
+    out = capsys.readouterr().out
+    assert "problem: cannot compare with main" in out and "not enforced" not in out
+
+
+def test_a_readable_base_passes_when_the_base_is_required(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = branch_repo(tmp_path)
+    monkeypatch.chdir(repo)
+    assert main(["progress", "check", "--base", "main", "--require-base"]) == 0
+    assert "none is new since main" in capsys.readouterr().out
+
+
+def test_the_ci_workflow_requires_the_base() -> None:
+    """The python workflow checks out two commits, so `progress check` must name HEAD^1 and insist on it."""
+    workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "python.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "progress check --base HEAD^1 --require-base" in workflow

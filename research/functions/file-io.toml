@@ -32,7 +32,7 @@ status = "legacy"
 address = 0x00155180
 name = "MissionSelect_Show"
 page = "file-io.md#original-structure"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
 status = "legacy"
 
@@ -40,14 +40,38 @@ status = "legacy"
 address = 0x001551e0
 name = "GameStats_Show"
 page = "file-io.md#original-structure"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
 status = "legacy"
 
 [[function]]
-address = 0x003535e8
-name = "SceneCache_Init"
+address = 0x00155228
+name = "RumbleMenu_Show"
 page = "file-io.md#original-structure"
 level = "confirmed-code"
-coney = "src/scenes/scene_disc.h:loadSceneList"
+coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::show"
+status = "legacy"
+
+[[function]]
+address = 0x00155378
+name = "SSMC_StartLoadSequence"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::startLoadSequence"
+status = "legacy"
+
+[[function]]
+address = 0x001553c0
+name = "SSMC_StartDeleteSequence"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::startDeleteSequence"
+status = "legacy"
+
+[[function]]
+address = 0x00155648
+name = "RumbleResult_Toggle"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::update"
 status = "legacy"

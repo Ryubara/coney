@@ -41,11 +41,11 @@ def _report_warnings(warnings: list[str], limit: int = SHOWN_WARNINGS) -> None:
         print(f"warning: ... and {len(warnings) - limit} more like these")
 
 
-def _check_names(root: Path, state: progress.Progress, base: str) -> bool:
+def _check_names(root: Path, state: progress.Progress, base: str, require_base: bool = False) -> bool:
     """Apply the name rule: a tag the branch adds that spells a name differently fails; the rest is a warning.
 
     Returns False when a new mismatch fails the check. Without a `base` git can name (a copy of the files) nothing is
-    known to be new, so the rule is not enforced and that is said.
+    known to be new, so the rule is not enforced and that is said, unless `require_base` (CI) makes it a failure.
     """
     if not state.mismatches:
         return True
@@ -53,6 +53,9 @@ def _check_names(root: Path, state: progress.Progress, base: str) -> bool:
         fresh = progress.new_mismatches(state.mismatches, progress.base_tag_keys(root, base))
     except ConfigError as error:
         _report_warnings(state.warnings)
+        if require_base:
+            print(f"problem: cannot compare with {base} ({error}); the name rule needs the base")
+            return False
         print(f"warning: cannot compare with {base} ({error}); the name rule is not enforced")
         return True
     for mismatch in fresh:
@@ -119,7 +122,7 @@ def _template(root: Path, page: Path) -> str:
         raise ConfigError(f"{path}: cannot be read ({error})") from error
 
 
-def run_check(base: str = "origin/main") -> int:
+def run_check(base: str = "origin/main", require_base: bool = False) -> int:
     """Validate the inputs and that the docs build can render them; 1 when they disagree.
 
     Nothing generated is committed (the docs build writes the tables and the badge data), so this is what CI runs:
@@ -131,7 +134,7 @@ def run_check(base: str = "origin/main") -> int:
     if state is None:
         print("progress: fix the problems above")
         return 1
-    if not _check_names(root, state, base):
+    if not _check_names(root, state, base, require_base):
         print("progress: fix the problems above")
         return 1
     site = progress_site.build_site(root, state, reconstruct_history=False)
@@ -274,7 +277,9 @@ def run_import_functions(file: Path | None, dry_run: bool, show_all: bool) -> in
     print("  new entries by system: " + ", ".join(f"{k} {n}" for k, n in sorted(report.systems.items())))
     _print_rows("rows whose name is not Ghidra's (the entry has Ghidra's)", report.renamed, show_all)
     _print_rows("rows with no function entry in the Ghidra listing (no size)", report.unlisted, show_all)
-    _print_rows("entries with no level, the page stating none for the function alone", report.ungraded, show_all)
+    _print_rows("entries with no level (the import tied none to the function)", report.ungraded, show_all)
+    _print_rows("entries that take their level from another page", report.borrowed, show_all)
+    _print_rows("entries the research grades two ways (the note says where)", report.disagreeing, show_all)
     _print_rows("rows with no entry", report.skipped, show_all)
     if dry_run:
         print("import-functions: dry run, nothing written")

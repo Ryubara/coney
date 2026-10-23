@@ -2,14 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x0021c0a8
-name = "Human_IsWayClearTo"
-page = "physics-kernels.md#u12-callers"
-level = "confirmed-code"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
-status = "legacy"
-
-[[function]]
 address = 0x0021ce08
 name = "Human_CreatePhysicsBody"
 page = "physics-bodies.md#u9-callers"
@@ -27,67 +19,72 @@ coney = "src/world_objects/loose_objects.cpp:integrateAngular"
 status = "legacy"
 
 [[function]]
-address = 0x00336a00
-name = "Quat_Slerp"
-page = "physics.md#original-structure"
-role = "spherical interpolation, shortest arc"
-level = "confirmed-code"
-coney = "src/animation/anim_math.h:slerp"
-status = "legacy"
-
-[[function]]
 address = 0x0033d2d8
 name = "IPhysics_SweepShapeVsMesh"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [characters.md#walls](characters.md#walls)"
 coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
 status = "legacy"
 
 [[function]]
 address = 0x0033d340
 name = "IPhysics_SweepBodyVsMesh"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-mesh"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
 status = "legacy"
 
 [[function]]
+address = 0x0033d498
+name = "PhysicsBody_SweepHumanMask"
+page = "physics-kernels.md#u12-callers"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::meetHumans"
+status = "legacy"
+
+[[function]]
 address = 0x0033d718
 name = "Contact_InsertSorted"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-insert"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/contact.h:insertSorted"
 status = "legacy"
 
 [[function]]
 address = 0x0033d7b8
 name = "PhysicsVec_BackOffPlane"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-backoff"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/body_sweep.h:backOffPlane"
 status = "legacy"
 
 [[function]]
 address = 0x0033d870
 name = "Vec_RemoveNormalPart"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-remove"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/body_sweep.h:removeNormalPart"
 status = "legacy"
 
 [[function]]
 address = 0x0033d8f0
 name = "PhysicsVec_Bounce"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-bounce"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/body_sweep.h:bounce"
 status = "legacy"
 
 [[function]]
 address = 0x0033d9d8
 name = "PhysicsBody_ResolveContacts"
-page = "physics.md#contacts"
+page = "physics-bodies.md#u3-resolve"
 level = "confirmed-code"
+note = "the level is from [physics.md#contacts](physics.md#contacts)"
 coney = "src/human/human_contacts.h:contactPush"
 status = "legacy"
 
@@ -102,31 +99,34 @@ status = "legacy"
 [[function]]
 address = 0x00340b38
 name = "Settle_NearestAxis"
-page = "physics.md#original-structure"
+page = "physics-world.md#u15-nearest"
 level = "confirmed-code"
+note = "the level is from [physics.md#settle](physics.md#settle)"
 coney = "src/world_objects/loose_objects.h:settleAxis"
 status = "legacy"
 
 [[function]]
 address = 0x00340d08
 name = "Settle_ComputeTarget"
-page = "physics.md#original-structure"
+page = "physics-world.md#u15-target"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/world_objects/loose_objects.h:settleTarget"
 status = "legacy"
 
 [[function]]
 address = 0x003414c0
 name = "AABB_ScaleAboutCentre"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-scale-box"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/body_sweep.h:scaleAboutCentre"
 status = "legacy"
 
 [[function]]
 address = 0x00341840
 name = "AABB_ExtendByMove"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-extend"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:extendByMove"
 status = "legacy"
@@ -134,7 +134,7 @@ status = "legacy"
 [[function]]
 address = 0x00341e18
 name = "PhysicsBody_GetContactScale"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-contact-scale"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:contactScale"
 status = "legacy"
@@ -142,9 +142,18 @@ status = "legacy"
 [[function]]
 address = 0x00342288
 name = "PhysicsHumanBody_GetContactScale"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#u3-human-scale"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:contactScale"
+status = "legacy"
+
+[[function]]
+address = 0x00343518
+name = "PhysicsCapsule_Pose"
+page = "physics.md#human-body"
+level = "confirmed-code"
+note = "the level is from [combat.md#capsule-strike](combat.md#capsule-strike)"
+coney = "src/human/human.h:Human::struckCapsule"
 status = "legacy"
 
 [[function]]
@@ -182,8 +191,9 @@ status = "legacy"
 [[function]]
 address = 0x00343cd8
 name = "PhysicsSweep_CapsuleCapsule"
-page = "physics.md#dispatch"
+page = "physics-bodies.md#u11-capsule-capsule"
 level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
 coney = "src/human/human_contacts.h:sweepCapsules"
 status = "legacy"
 
@@ -318,48 +328,54 @@ status = "legacy"
 [[function]]
 address = 0x00347170
 name = "CollisionMesh_BeginShapeQuery"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [physics-bodies.md#u3-sweep](physics-bodies.md#u3-sweep)"
 coney = "src/physics/mesh_sweep.h:beginShapeQuery"
 status = "legacy"
 
 [[function]]
 address = 0x00347300
 name = "MeshContacts_SortByFraction"
-page = "physics.md#original-structure"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/mesh_sweep.h:sortByFraction"
 status = "legacy"
 
 [[function]]
 address = 0x003473b8
 name = "PhysicsMeshOverlap_Box"
-page = "physics.md#dispatch"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
 coney = "src/physics/mesh_sweep.h:overlapNothing"
 status = "legacy"
 
 [[function]]
 address = 0x003473c0
 name = "PhysicsMeshOverlap_Capsule"
-page = "physics.md#dispatch"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
 coney = "src/physics/mesh_sweep.h:overlapNothing"
 status = "legacy"
 
 [[function]]
 address = 0x003473c8
 name = "PhysicsMeshOverlap_Sphere"
-page = "physics.md#dispatch"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
 coney = "src/physics/mesh_sweep.h:overlapSphereMesh"
 status = "legacy"
 
 [[function]]
 address = 0x00348a50
 name = "PhysicsMesh_SweepSphere"
-page = "physics.md#dispatch"
+page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
+note = "the level is from [physics-kernels.md#issue-150](physics-kernels.md#issue-150)"
 coney = "src/physics/mesh_sweep.h:sweepSphereMesh"
 status = "legacy"
 
@@ -540,13 +556,11 @@ coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
 status = "legacy"
 
 [[function]]
-address = 0x00391c10
-name = "WorldObject_Remove"
-page = "physics.md#original-structure"
-role = "cancels a settle, leaves the `ObjectTaskManager`"
+address = 0x0034ee60
+name = "Sweep_SphereTriangle"
+page = "physics-kernels.md#u1-sweep-sphere-triangle"
 level = "confirmed-code"
-note = "confirmed (code); role inferred"
-coney = "src/world_objects/doors.h:Doors::takeRemoved"
+coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
 status = "legacy"
 
 [[function]]
@@ -574,13 +588,4 @@ page = "physics.md#original-structure"
 role = "the world object's integrator (vtable `+0x144`)"
 level = "confirmed-code"
 coney = "src/world_objects/loose_objects.h:LooseObjects::update"
-status = "legacy"
-
-[[function]]
-address = 0x00395b70
-name = "WorldObject_Update"
-page = "physics.md#original-structure"
-role = "the world object's update (vtable `+0x13c`)"
-level = "confirmed-code"
-coney = "src/world_objects/object_tasks.h:ObjectiveMarker::update"
 status = "legacy"

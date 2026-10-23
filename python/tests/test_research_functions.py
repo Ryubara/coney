@@ -267,3 +267,11 @@ def test_a_binding_wrapper_may_point_at_its_generated_reference_page() -> None:
     other = rf.Entry(0x100200, "A", "combat/grabs.md#grab", "inferred")
     assert not other.is_binding
     assert other.doc_file == "docs/research/combat/grabs.md"
+
+
+def test_a_binding_page_belongs_to_the_scripting_system() -> None:
+    """A binding wrapper is described by the scripting system's reference, so no other system's file may point there."""
+    text = _one(page='"../references/bindings/ai.md#actlookat"')
+    rf.parse_system("scripting", text, Path("scripting.toml"))
+    with pytest.raises(rf.ResearchFunctionsError, match=r"binding page.*scripting"):
+        rf.parse_system("combat", text, Path("combat.toml"))

@@ -18,3 +18,28 @@ role = "binary search (`bsearch`, `0x00433a88`, 270 × 20), then a linear `strcm
 level = "confirmed-code"
 coney = "src/effects/particle_types.h:findParticleType"
 status = "legacy"
+
+[[function]]
+address = 0x003f69b8
+name = "Steam_Init"
+page = "particles.md#steam"
+level = "confirmed-code"
+note = "the level is from [particles.md#steam](particles.md#steam)"
+coney = "src/effects/particles.h:defaultSteam"
+status = "legacy"
+
+[[function]]
+address = 0x003f6d70
+name = "SteamHuge_Init"
+page = "particles.md#steam"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/particles.h:defaultSteam"
+status = "legacy"
+
+[[function]]
+address = 0x003f7138
+name = "SteamLarge_Init"
+page = "particles.md#steam"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/particles.h:defaultSteam"
+status = "legacy"

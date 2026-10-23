@@ -20,10 +20,18 @@ coney = "src/graphics/light_manager.h:LightManager::select"
 status = "legacy"
 
 [[function]]
+address = 0x00198e20
+name = "SectorPlugin_Read"
+page = "world.md#original-structure"
+level = "confirmed-code"
+coney = "src/world/world_streams.h:readSectorPluginData"
+status = "legacy"
+
+[[function]]
 address = 0x0040c868
 name = "Level_SetFogColour"
 page = "world.md#fog"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/graphics/level_lighting.h:fogColourOf"
 status = "legacy"
 
@@ -31,7 +39,7 @@ status = "legacy"
 address = 0x0040c908
 name = "Level_SetFogDistance"
 page = "world.md#fog"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/lighting_bindings.cpp:addLightingBindings"
 status = "legacy"
 
@@ -105,14 +113,6 @@ page = "world.md#small-functions"
 role = "forward to the resource manager `0x0050cd4c` (`0x0018abd0`, `0x0018ad40`)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
-status = "legacy"
-
-[[function]]
-address = 0x0040ce30
-name = "LevelHeader_OnLoaded"
-page = "world.md#small-functions"
-level = "confirmed-code"
-coney = "src/world/level_object.h:makeLevelHeaderHandler"
 status = "legacy"
 
 [[function]]

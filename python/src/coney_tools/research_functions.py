@@ -51,6 +51,8 @@ FUNCTION_NAME = re.compile(r"^~?[A-Za-z_][A-Za-z0-9_]*(?:::~?[A-Za-z_][A-Za-z0-9
 _PAGE_FILE = r"[a-z0-9][a-z0-9_-]*(?:/[a-z0-9][a-z0-9_-]*)*\.md"
 #: A page below docs/research with an optional section: `combat/grabs.md#grab`.
 PAGE = re.compile(rf"^({_PAGE_FILE})(?:#([A-Za-z0-9_.:-]+))?$")
+#: The system whose file holds the entries of script binding wrappers (the only one that may name a binding page).
+BINDINGS_SYSTEM = "scripting"
 #: The generated reference page of a script binding, written relative to docs/research like a link in a role:
 #: `../references/bindings/ai.md#actexecuteattack`. A binding's wrapper function is described there, not on a research
 #: page, and the section is required.
@@ -301,6 +303,11 @@ def parse_system(system: str, text: str, path: Path) -> SystemFunctions:
     seen: dict[int, Entry] = {}
     previous = -1
     for entry in entries:
+        if entry.is_binding and system != BINDINGS_SYSTEM:
+            problems.append(
+                f"{where}: {entry.address:#010x} {entry.name} points at a binding page, which only the "
+                f"{BINDINGS_SYSTEM} system's entries do"
+            )
         if entry.address in seen:
             problems.append(f"{where}: {entry.address:#010x} {entry.name} is listed twice")
         elif entry.address < previous:

@@ -103,6 +103,14 @@ def _git(root: Path, *args: str) -> str:
     return output
 
 
+def file_at(root: Path, commit: str, path: str) -> str | None:
+    """The text of `path` at `commit`, or None when the file did not exist there."""
+    done = subprocess.run(
+        ["git", "-C", str(root), "show", f"{commit}:{path}"], capture_output=True, encoding="utf-8", errors="replace"
+    )
+    return done.stdout if done.returncode == 0 else None
+
+
 def merge_base(root: Path, base: str) -> str:
     """The commit where HEAD left `base`, the same point `git diff base...HEAD` measures from."""
     return _git(root, "merge-base", base, "HEAD").strip()

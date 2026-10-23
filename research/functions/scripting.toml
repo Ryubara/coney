@@ -2,6 +2,15 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x0015d420
+name = "MissionComplete_Launch"
+page = "scripting.md#level99"
+level = "confirmed-code"
+note = "the level is from [frontend.md#story-start](frontend.md#story-start)"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::launch"
+status = "legacy"
+
+[[function]]
 address = 0x00161218
 name = "RunPreloadScripts"
 page = "scripting.md#original-structure"
@@ -19,10 +28,18 @@ coney = "src/ai/steering.h:humansAround"
 status = "legacy"
 
 [[function]]
+address = 0x003535e8
+name = "SceneCache_Init"
+page = "scripting.md#scenes-and-movies"
+level = "confirmed-code"
+coney = "src/scenes/scene_disc.h:loadSceneList"
+status = "legacy"
+
+[[function]]
 address = 0x00353f88
 name = "Scene_Preload"
 page = "scripting.md#scenes-and-movies"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scenes/scene_player.h:SceneSystem::preload"
 status = "legacy"
 
@@ -583,6 +600,14 @@ coney = "src/scripting/rumble_match_bindings.cpp:makeCamDelete"
 status = "legacy"
 
 [[function]]
+address = 0x00365a10
+name = "lua_CameraReset"
+page = "../references/bindings/camera.md#camerareset"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCameraReset"
+status = "legacy"
+
+[[function]]
 address = 0x00365a48
 name = "lua_CamSetupFollow"
 page = "../references/bindings/camera.md#camsetupfollow"
@@ -775,6 +800,14 @@ coney = "src/scripting/scene_bindings.cpp:makeSceneSetCallback"
 status = "legacy"
 
 [[function]]
+address = 0x00367580
+name = "lua_ScenePlayCinematic"
+page = "../references/bindings/scene.md#sceneplaycinematic"
+level = "confirmed-code"
+coney = "src/scripting/scene_bindings.cpp:makeScenePlayCinematic"
+status = "legacy"
+
+[[function]]
 address = 0x00367708
 name = "lua_ScenePlayFixedScene"
 page = "../references/bindings/scene.md#sceneplayfixedscene"
@@ -793,7 +826,7 @@ status = "legacy"
 [[function]]
 address = 0x00367a20
 name = "lua_ScenePlay"
-page = "scripting.md#bindings"
+page = "../references/bindings/scene.md#sceneplay"
 level = "confirmed-code"
 coney = "src/scripting/scene_bindings.cpp:makeScenePlay"
 status = "legacy"
@@ -1353,7 +1386,7 @@ status = "legacy"
 [[function]]
 address = 0x00371230
 name = "lua_SoundPlayMusicTrack"
-page = "scripting.md#bindings"
+page = "../references/bindings/sound.md#soundplaymusictrack"
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makePlayMusicTrack"
 status = "legacy"
@@ -1361,7 +1394,7 @@ status = "legacy"
 [[function]]
 address = 0x00371348
 name = "lua_SoundLoopMusicTrack"
-page = "scripting.md#bindings"
+page = "../references/bindings/sound.md#soundloopmusictrack"
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makePlayMusicTrack"
 status = "legacy"
@@ -1615,6 +1648,22 @@ coney = "src/scripting/story_effects_bindings.cpp:makeSetupRadio"
 status = "legacy"
 
 [[function]]
+address = 0x00379fd0
+name = "lua_AddFlag"
+page = "../references/bindings/world.md#addflag"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeAddFlag"
+status = "legacy"
+
+[[function]]
+address = 0x0037a288
+name = "lua_GetFlagPos"
+page = "../references/bindings/world.md#getflagpos"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetFlagPos"
+status = "legacy"
+
+[[function]]
 address = 0x0037a770
 name = "lua_FindFlag"
 page = "../references/bindings/world.md#findflag"
@@ -1633,7 +1682,7 @@ status = "legacy"
 [[function]]
 address = 0x0037a968
 name = "lua_FlagNetTraverse"
-page = "scripting.md#bindings"
+page = "../references/bindings/world.md#flagnettraverse"
 level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:makeFlagNetTraverse"
 status = "legacy"
@@ -1689,7 +1738,7 @@ status = "legacy"
 [[function]]
 address = 0x0037be90
 name = "lua_QueueMotionBlurEffect"
-page = "scripting.md#bindings"
+page = "../references/bindings/effects.md#queuemotionblureffect"
 level = "confirmed-code"
 coney = "src/scripting/effects_bindings.cpp:makeQueueMotionBlurEffect"
 status = "legacy"
@@ -1707,15 +1756,16 @@ status = "legacy"
 address = 0x00384c38
 name = "ScriptHandler_Deliver"
 page = "scripting.md#message-handlers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
+note = "the level is from [ai-gangs.md#gang-events](ai-gangs.md#gang-events)"
 coney = "src/scripting/message_handlers.h:MessageHandlers::deliver"
 status = "legacy"
 
 [[function]]
 address = 0x00384ce0
 name = "ScriptHandler_MarshalMessage"
-page = "scripting.md#message-handlers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+page = "scripting.md#triggers"
+level = "confirmed-code"
 coney = "src/scripting/message_handlers.h:MessageHandlers::deliver"
 status = "legacy"
 
@@ -1760,14 +1810,6 @@ coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
 status = "legacy"
 
 [[function]]
-address = 0x00385db0
-name = "Object_TeleportToFlag"
-page = "scripting.md#triggers"
-level = "confirmed-code"
-coney = "src/scripting/level_bindings.cpp:makeTeleportToFlag"
-status = "legacy"
-
-[[function]]
 address = 0x00385ea8
 name = "Obj_TestDistance"
 page = "scripting.md#bindings"
@@ -1792,18 +1834,10 @@ coney = "src/scripting/story_bindings.cpp:makePathValid"
 status = "legacy"
 
 [[function]]
-address = 0x003860b8
-name = "Object_SetLuaMsgHandler"
-page = "scripting.md#message-handlers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/scripting/message_handlers.h:MessageHandlers::set"
-status = "legacy"
-
-[[function]]
 address = 0x00386168
 name = "Script_SetMsgHandlerEx"
 page = "scripting.md#message-handlers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/trigger_bindings.cpp:makeSetMsgHandlerEx"
 status = "legacy"
 
@@ -1851,23 +1885,15 @@ status = "legacy"
 address = 0x00386488
 name = "Script_RandomRange"
 page = "scripting.md#libraries"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeRandom"
-status = "legacy"
-
-[[function]]
-address = 0x0038bea0
-name = "Car_OnHit"
-page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
-coney = "src/world_objects/car_hits.h:carHumanHitParts"
 status = "legacy"
 
 [[function]]
 address = 0x00391c98
 name = "WorldObject_RegisterContext"
 page = "scripting.md#message-handlers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/message_handlers.h:MessageHandlers::setPrompt"
 status = "legacy"
 
@@ -1901,7 +1927,7 @@ status = "legacy"
 address = 0x00413018
 name = "VolumeBoxes_SendDamageMessage"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/object_services.h:ObjectServices::damageDone"
 status = "legacy"
 
@@ -1918,7 +1944,7 @@ status = "legacy"
 address = 0x004134f8
 name = "PlayerBox_Update"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
 status = "legacy"
 
@@ -1935,7 +1961,7 @@ status = "legacy"
 address = 0x00414398
 name = "TriggerSpheres_UpdateAll"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
 status = "legacy"
 
@@ -1943,7 +1969,7 @@ status = "legacy"
 address = 0x00414480
 name = "TriggerSphere_Init"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
 status = "legacy"
 
@@ -1951,7 +1977,7 @@ status = "legacy"
 address = 0x004144d0
 name = "TriggerSphere_Disarm"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
 status = "legacy"
 
@@ -1959,7 +1985,7 @@ status = "legacy"
 address = 0x004146e0
 name = "TriggerSphere_Update"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
 status = "legacy"
 
@@ -1976,7 +2002,7 @@ status = "legacy"
 address = 0x00414ae0
 name = "TriggerSphere_Enable"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
 status = "legacy"
 
@@ -1984,7 +2010,7 @@ status = "legacy"
 address = 0x00414bc0
 name = "TriggerSphere_Configure"
 page = "scripting.md#triggers"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
 status = "legacy"
 
@@ -1994,14 +2020,6 @@ name = "VolumeBox_SetEnabled"
 page = "scripting.md#triggers"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeEnableVolumeBox"
-status = "legacy"
-
-[[function]]
-address = 0x00415378
-name = "VolumeBox_Update"
-page = "scripting.md#triggers"
-level = "confirmed-code"
-coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
 status = "legacy"
 
 [[function]]
@@ -2017,7 +2035,7 @@ status = "legacy"
 address = 0x0041acd8
 name = "GameState_SetLuaSaveFloat"
 page = "scripting.md#errors-in-a-fresh-state"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/level_bindings.cpp:makeSetLuaSaveDataFloat"
 status = "legacy"
 
@@ -2025,7 +2043,7 @@ status = "legacy"
 address = 0x0041ad00
 name = "GameState_GetLuaSaveFloat"
 page = "scripting.md#errors-in-a-fresh-state"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/level_bindings.cpp:makeGetLuaSaveDataFloat"
 status = "legacy"
 
@@ -2045,14 +2063,6 @@ page = "scripting.md#warriors-functions"
 role = "the workers of `SetLUASaveDataBool` and `GetLUASaveDataBool`: bit n − 1 of the same set"
 level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
-status = "legacy"
-
-[[function]]
-address = 0x0041c4e0
-name = "WarriorCommand_Dispatch"
-page = "scripting.md#level80-fight-start"
-level = "confirmed-code"
-coney = "src/scripting/story_bindings.cpp:dispatchWarriorCommand"
 status = "legacy"
 
 [[function]]
@@ -2077,7 +2087,7 @@ status = "legacy"
 address = 0x004233a8
 name = "StopWatch_Start"
 page = "scripting.md#stopwatch"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/warriors/stop_watch.h:StopWatch::start"
 status = "legacy"
 
@@ -2102,7 +2112,7 @@ status = "legacy"
 address = 0x004235f0
 name = "StopWatch_Set"
 page = "scripting.md#stopwatch"
-note = "the page states no level for this function alone (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/warriors/stop_watch.h:StopWatch::set"
 status = "legacy"
 
