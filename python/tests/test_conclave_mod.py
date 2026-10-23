@@ -193,6 +193,14 @@ CROSSINGS = [
     ("const opts = { name: 'conclave' }\n$.command.register(opts)", "'conclave'"),
     ("$.ui.open({ id: 'tether', title: 't' })", "'conclave'"),
     ("$.ui.open({ title: 't' })", "'conclave'"),
+    # A cast makes a string the literal type without making it the literal.
+    ("$.command.register({ name: name as 'conclave' })", "'conclave'"),
+    ("const c = name as 'conclave'\n$.ui.open({ id: c })", "'conclave'"),
+    ("on('command.run', { command: name as 'conclave' }, async () => ({ text: 'x' }))", "command: 'conclave'"),
+    (
+        "const c = name as 'conclave'\non('ui.render', { component: 'Pane', requestId: c }, () => null)",
+        "requestId: 'conclave'",
+    ),
     ("$.ui.open({ id: name })", "'conclave'"),
     ("const opts = { id: 'conclave' }\n$.ui.open(opts)", "'conclave'"),
     # What `$.process.run` is given besides the command: the project folder, the options.

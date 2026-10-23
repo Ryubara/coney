@@ -17,10 +17,14 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine }) {
     return n
   }
 
-  /** Whether `node` is the string 'conclave' by type: the literal itself, or a const that holds it. */
-  function isName(node) {
-    const t = checker.getTypeAtLocation(node)
-    return t.isStringLiteral() && t.value === NAME
+  /** Whether `node` is the string 'conclave': the literal itself, or a const that holds it (a cast does not make it one). */
+  function isName(node, depth = 0) {
+    node = unwrap(node)
+    if (depth > 8) return false
+    if (ts.isStringLiteralLike(node)) return node.text === NAME
+    if (!ts.isIdentifier(node)) return false
+    const init = constInitializer(node)
+    return init !== null && isName(init, depth + 1)
   }
 
   /**
@@ -40,7 +44,9 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine }) {
 
   /** The initializer of the const that identifier `id` names, or null. */
   function constInitializer(id) {
-    const decl = checker.getSymbolAtLocation(id)?.valueDeclaration
+    let symbol = checker.getSymbolAtLocation(id)
+    if (symbol !== undefined && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol)
+    const decl = symbol?.valueDeclaration
     const isConst = decl !== undefined && ts.isVariableDeclaration(decl) && (ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) !== 0
     return isConst && decl.initializer !== undefined ? unwrap(decl.initializer) : null
   }
