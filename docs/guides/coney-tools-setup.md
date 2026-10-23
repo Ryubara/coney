@@ -1,10 +1,10 @@
 # The coney-tools coordination and setup commands
 
 The commands that coordinate agents and set up a machine: [`coord`](#coord), what waits for the coordinator;
-[`conclave`](#conclave), the read model of the Claude Code mod; [`doctor`](#doctor), a check of a contributor's machine and disc; [`ghidra`](#ghidra), your own Ghidra project with our
-function names; [`mcp`](#mcp), the debugging servers for agent tools; [`workspace`](#workspace), the local workspace;
-and [`coney-agent`](#coney-agent), the session launcher. The other groups are listed in
-[the command line overview](coney-tools.md#groups).
+[`conclave`](#conclave), the read model of the Claude Code mod; [`doctor`](#doctor), a check of a contributor's machine
+and disc; [`ghidra`](#ghidra), your own Ghidra project with our function names; [`mcp`](#mcp), the debugging servers for
+agent tools; [`workspace`](#workspace), the local workspace; and [`coney-agent`](#coney-agent), the session launcher.
+The other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## coord {#coord}
 

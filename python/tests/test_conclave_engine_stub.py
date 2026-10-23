@@ -46,7 +46,7 @@ def need(*, engine: bool) -> None:
     if engine and not ENGINE_TYPES.is_file():
         pytest.skip("needs the engine's generated types, which only a session that loads the mod writes")
     if not ENGINE_STUB.is_file():
-        cannot_run("the stub is not in the repository yet (python/tests/conclave_engine_stub.d.ts)")
+        cannot_run("the stub python/tests/conclave_engine_stub.d.ts is missing")
     reason = unavailable()
     if reason is not None:
         cannot_run(reason)

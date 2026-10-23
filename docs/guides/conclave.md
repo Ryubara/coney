@@ -19,7 +19,7 @@ under [Planned](#planned).
 | Item | Says | Colour |
 | --- | --- | --- |
 | `2 units`, `✖1 failed` | Units with a task file that are not merged: their count, and how many failed a step, have a pull request whose checks failed or have a task file that cannot be read | red when any failed |
-| `PRs 4 (✖1 #812)` | Open pull requests, and the first one with a failed check or a cause from [`repo pr-health`](coney-tools.md#repo-pr-health) | red when any failed |
+| `PRs 4 (✖1 #812)` | Open pull requests, and the first one with a failed check or a cause from [`repo pr-health`](coney-tools-repo.md#repo-pr-health) | red when any failed |
 | `claims 3` | Held claims of every contributor | amber from the warning hours, red in the last `claim_red_hours` of any claim, once expiry is enforced |
 | `builds 2 (+3 queued)` | Build slots in use and builds waiting, over every lane | none |
 | `⚠ P-critical #790` | The first open issue labelled `P-critical`, and how many more | amber |
@@ -60,13 +60,13 @@ desktop, VS Code and mobile surfaces.
 
 ## The boundary: what Conclave leaves to Tether {#boundary}
 
-Session health belongs to [Tether](coney-tools.md#coord-wakes): the context window, the prompt cache and its expiry, the
-automatic `/clear` and the "Continue from HANDOFF.md" message, subagents past their context limit, the checkpoint cycle
-and the cache guard. **Conclave shows no context or cache figure, sends no wake about them and adds no hook that
-overlaps them.** The idle wake stays in Tether too, now and in later versions. `python/tests/test_conclave_mod.py` holds
-the line, so a change that crosses it fails the Python tests. The check does not read spellings: it builds the mod with
-the TypeScript compiler (`python/tests/conclave_boundary.cjs`) and judges the tree and the types, so a renamed `$`, an
-alias, a spread or a cast cannot hide a call. It refuses:
+Session health belongs to [Tether](coney-tools-setup.md#coord-wakes): the context window, the prompt cache and its
+expiry, the automatic `/clear` and the "Continue from HANDOFF.md" message, subagents past their context limit, the
+checkpoint cycle and the cache guard. **Conclave shows no context or cache figure, sends no wake about them and adds no
+hook that overlaps them.** The idle wake stays in Tether too, now and in later versions.
+`python/tests/test_conclave_mod.py` holds the line, so a change that crosses it fails the Python tests. The check does
+not read spellings: it builds the mod with the TypeScript compiler (`python/tests/conclave_boundary.cjs`) and judges the
+tree and the types, so a renamed `$`, an alias, a spread or a cast cannot hide a call. It refuses:
 
 - **Hooks other than the five.** The mod hooks exactly `session.start`, `command.run`, `agent.offer`, `ui.render` and
   `classic.SessionStart` (which only reads the session's agent type, passes the event on first and returns the answer
@@ -139,11 +139,12 @@ pass, and the real sources must pass. A session start never waits for Conclave (
 --plugin-dir tools/claude-mod`); neither `claude plugin validate` nor `claude plugin test` writes them, and CI has no
 logged-in Claude Code to load it. So where they are absent the check reads a stub of the module in Coney's own words,
 `python/tests/conclave_engine_stub.d.ts`: only what the check looks at (`EngineInterface` and the eleven calls, `On`,
-`Register` and the names the mod imports), with no type errors reported. The stub is not in the repository yet, because
-whether it may be is the maintainers' licence question. Until it is, the check runs only where the engine's types are
-present. Where it cannot run its tests skip on a machine and **fail under CI** (the `CI` variable GitHub sets), naming
-what is missing, because a skip cannot be told apart from a pass among a pull request's required checks and this check
-is the only enforcement of the boundary, so CI stays red until the stub is added.
+`Register` and the names the mod imports), with no type errors reported. The stub is in the repository (the
+maintainers allowed it on 2026-10-23: it holds no key, token, path, name or address, only the shapes the check reasons
+with, in Coney's own words), so CI runs the whole check. Where the check cannot run (no Node.js, no TypeScript, or the
+stub is gone) its tests skip on a machine and **fail under CI** (the `CI` variable GitHub sets), naming what is missing,
+because a skip cannot be told apart from a pass among a pull request's required checks and this check is the only
+enforcement of the boundary. Keep the stub free of anything but those shapes.
 `python/tests/test_conclave_engine_stub.py` holds the stub against
 the engine's types whenever both are present (the names and kinds the mod imports, the nouns and methods it calls, and
 the verdict on every case of the boundary tests), so the stub cannot drift unseen; the rest of its tests run on the
@@ -184,8 +185,8 @@ untouched.
 
 ## The snapshot {#snapshot}
 
-[`coney-tools conclave snapshot`](coney-tools.md#conclave) prints one JSON object, read-only. The mod reads it on two
-rhythms, and every number is a `conclave` key of [.github/conventions.yml](repo:.github/conventions.yml) that the
+[`coney-tools conclave snapshot`](coney-tools-setup.md#conclave) prints one JSON object, read-only. The mod reads it on
+two rhythms, and every number is a `conclave` key of [.github/conventions.yml](repo:.github/conventions.yml) that the
 snapshot carries in `config`, except the three the mod needs before any snapshot exists and holds itself in
 `src/snapshot.ts`: the first retry (15 s) and the two read time limits (30 s, 60 s with `--github`):
 

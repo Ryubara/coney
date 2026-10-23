@@ -24,7 +24,7 @@ SCRIPT = Path(__file__).with_name("conclave_boundary.cjs")
 #: The engine's types for `claude-code`; a session that loads the mod writes them beside it.
 ENGINE_TYPES = MOD / ".claude-plugin" / "types" / "claude-code" / "index.d.ts"
 #: Coney's own description of the part of `claude-code` the check needs, for where the engine's types are not written
-#: (CI); `CONEY_ENGINE_STUB` names another file, for trying a stub before it is added.
+#: (CI); `CONEY_ENGINE_STUB` names another file, for trying another stub.
 ENGINE_STUB = Path(os.environ.get("CONEY_ENGINE_STUB") or Path(__file__).with_name("conclave_engine_stub.d.ts"))
 #: The TypeScript the check (and `tsc` for the mod) uses; the version the mod was written against.
 TYPESCRIPT = "typescript@5.6.3"
