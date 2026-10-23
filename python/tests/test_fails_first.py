@@ -424,3 +424,53 @@ def test_none_needs_a_short_one_line_reason(repo: Repo) -> None:
     for bad in ("two\nlines", "x" * 300):
         with pytest.raises(FailsFirstError, match="reason"):
             fails_first.record_none(repo.unit, repo.root, bad, rules=rules(), who=WHO, clock=Clock())
+
+
+def _declare(repo: Repo, source: str) -> tuple[str, list[str]]:
+    """Commit `source` as the test file; (the commit, the test files) to check names against."""
+    (repo.root / "tests" / "widget_test.cpp").write_text(source, encoding="utf-8")
+    git(repo.root, "commit", "-q", "-am", "names")
+    return git(repo.root, "rev-parse", "HEAD").strip(), ["tests/widget_test.cpp"]
+
+
+def test_a_comment_between_adjacent_literals_is_not_part_of_the_name(repo: Repo) -> None:
+    # The compiler joins "A " and "B" whatever comment sits between them; so does the check.
+    commit, files = _declare(
+        repo,
+        'TEST_CASE("Block " /* why */ "comment") {}\n'
+        'TEST_CASE("Line "  // why\n          "comment") {}\n'
+        'TEST_CASE( /* first */ "Around" /* last */ , "[tag]") {}\n'
+        'TEST_CASE("Both " /* a */ // b\n /* c */ "kinds") {}\n'
+        'TEST_CASE("Quoted " /* say "no" */ "comment") {}\n',
+    )
+    names = ("Block comment", "Line comment", "Around", "Both kinds", "Quoted comment")
+    fails_first._check_names(repo.root, commit, files, names)
+    with pytest.raises(FailsFirstError, match="Block why comment:"):  # the comment's words are no part of a name
+        fails_first._check_names(repo.root, commit, files, ("Block why comment",))
+
+
+def test_comment_markers_inside_a_literal_are_text(repo: Repo) -> None:
+    commit, files = _declare(repo, 'TEST_CASE("a /* b */ c // d") {}\n')
+    fails_first._check_names(repo.root, commit, files, ("a /* b */ c // d",))
+
+
+def test_escapes_in_a_literal_are_the_characters_ctest_registers(repo: Repo) -> None:
+    commit, files = _declare(
+        repo,
+        r'TEST_CASE("say \"hi\"") {}' + "\n"
+        r'TEST_CASE("path C:\\dir") {}' + "\n"
+        r'TEST_CASE("tab\there \x41\101\u00e9") {}' + "\n"
+        r'TEST_CASE("q\"" "\\") {}' + "\n",
+    )
+    names = ('say "hi"', "path C:\\dir", "tab\there AA\u00e9", 'q"\\')
+    fails_first._check_names(repo.root, commit, files, names)
+    with pytest.raises(FailsFirstError, match="say"):  # the raw spelling is not the registered name
+        fails_first._check_names(repo.root, commit, files, (r"say \"hi\"",))
+
+
+def test_unescaping_follows_the_c_plus_plus_rules() -> None:
+    assert fails_first._unescape(r"\' \? \a\b\f\n\r\t\v") == "' ? \a\b\f\n\r\t\v"
+    assert fails_first._unescape(r"\x41\x4a\0\101\1012") == "AJ\x00AA2"
+    assert fails_first._unescape(r"\u00e9\U0001F600") == "\u00e9\U0001f600"
+    assert fails_first._unescape(r"\\n") == "\\n"  # an escaped backslash, then a plain n
+    assert fails_first._unescape(r"\q\d") == r"\q\d"  # an escape the language does not define stays as written
