@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for `original fails-first`: a test red on the test commit and green on the fix commit, with a fake build."""
 
+import ast
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -474,3 +477,48 @@ def test_unescaping_follows_the_c_plus_plus_rules() -> None:
     assert fails_first._unescape(r"\u00e9\U0001F600") == "\u00e9\U0001f600"
     assert fails_first._unescape(r"\\n") == "\\n"  # an escaped backslash, then a plain n
     assert fails_first._unescape(r"\q\d") == r"\q\d"  # an escape the language does not define stays as written
+
+
+def _declared_within(text: str, seconds: float = 20.0) -> set[str]:
+    """`_declared_names(text)`, run in a child process so that a pattern that never finishes fails the test."""
+    code = (
+        "import sys; from coney_tools import fails_first; print(sorted(fails_first._declared_names(sys.stdin.read())))"
+    )
+    try:
+        done = subprocess.run(
+            [sys.executable, "-c", code],
+            input=text,
+            capture_output=True,
+            encoding="utf-8",
+            timeout=seconds,
+            check=True,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail(f"the name scan did not finish in {seconds} s")
+    return set(ast.literal_eval(done.stdout))
+
+
+def test_a_declaration_that_does_not_match_finishes_quickly() -> None:
+    # A macro-built name after long runs of comment text must be refused, not hang the regular expression.
+    assert _declared_within('TEST_CASE("a" ' + "/" * 80 + "\nMACRO)") == set()
+    assert _declared_within('TEST_CASE("a" ' + "/* x */ " * 40 + "MACRO)") == set()
+    assert _declared_within('TEST_CASE("a" ' + "// x\n" * 40 + "MACRO)") == set()
+    assert _declared_within("TEST_CASE(" + "/* x */ " * 40 + "MACRO)") == set()
+
+
+def test_a_comment_does_not_end_a_name_early() -> None:
+    # What follows the comment is a macro, so the name is not a literal: neither `,` nor `)` inside the comment ends it.
+    assert _declared_within('TEST_CASE("Foo" // note, see\n NAME_MACRO)') == set()
+    assert _declared_within('TEST_CASE("Foo" // done)\n NAME_MACRO)') == set()
+    assert _declared_within('TEST_CASE("Foo" /* a, b) */ NAME_MACRO)') == set()
+    assert _declared_within('TEST_CASE("Foo" // note, see\n, "[tag]")') == {"Foo"}
+
+
+def test_a_test_case_inside_a_comment_is_not_declared() -> None:
+    source = '// TEST_CASE("Ghost") {}\n/* TEST_CASE("Block ghost") {} */\nTEST_CASE("Real") {}\n'
+    assert _declared_within(source) == {"Real"}
+    # A quote that is a character, and comment markers inside a string, do not hide or invent anything.
+    assert _declared_within('auto q = \'"\'; TEST_CASE("After char") {}\n') == {"After char"}
+    assert _declared_within('auto s = "// TEST_CASE(\\"x\\")"; TEST_CASE("Next") {}\n') == {"Next"}
+    raw = 'auto r = R"x(// "TEST_CASE("Inside raw")" )x"; TEST_CASE("After raw") {}\n'
+    assert _declared_within(raw) == {"After raw"}
