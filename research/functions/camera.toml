@@ -731,22 +731,6 @@ coney = "src/camera/win_camera.h:WinCamera::update"
 status = "legacy"
 
 [[function]]
-address = 0x00145a10
-name = "GameTimer_Update"
-page = "camera.md#slow-motion"
-level = "inferred"
-coney = "src/core/game_timer.h:GameTimer::update"
-status = "legacy"
-
-[[function]]
-address = 0x0015e748
-name = "GameModeStack_TopId"
-page = "camera.md#right-stick"
-level = "inferred"
-coney = "src/gamemodes/game_mode_stack.h:GameModeStack::topId"
-status = "legacy"
-
-[[function]]
 address = 0x0023bde8
 name = "Human_GetBoneTransform"
 page = "camera.md#body-point"

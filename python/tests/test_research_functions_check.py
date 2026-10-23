@@ -119,12 +119,20 @@ def test_an_address_ghidra_does_not_list_is_an_error(tmp_path: Path) -> None:
     assert "ghidra-functions.tsv" in error
 
 
-def test_a_port_at_an_address_ghidra_does_not_list_yet_is_a_warning(tmp_path: Path) -> None:
-    """A ported entry (`coney`) is tagged at the address the port was read from, which Ghidra may not define yet."""
+def test_a_port_at_an_address_ghidra_has_no_function_at_is_a_warning(tmp_path: Path) -> None:
+    """A ported entry (`coney`) in a gap between functions: the original has a function there that Ghidra lacks."""
     findings = run(make_root(tmp_path, listing={0x100300: "Other"}))
     assert findings.errors == []
     [warning] = findings.warnings
     assert "0x00100200" in warning and "counts, with no size, until Ghidra defines it" in warning
+
+
+def test_a_port_inside_another_function_is_an_error(tmp_path: Path) -> None:
+    """The address lies inside a function Ghidra lists: not a start, so a wrong address (the listing gives 64 bytes)."""
+    findings = run(make_root(tmp_path, listing={0x1001F0: "Other_Function"}))
+    [error] = findings.errors
+    assert "0x00100200" in error and "inside Other_Function" in error and "+0x10" in error and "wrong address" in error
+    assert findings.warnings == []
 
 
 def test_a_name_that_differs_from_ghidra_is_an_error(tmp_path: Path) -> None:

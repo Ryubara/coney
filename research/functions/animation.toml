@@ -119,11 +119,27 @@ coney = "src/animation/anim_pose.h:blendPoses"
 status = "legacy"
 
 [[function]]
+address = 0x00105678
+name = "AnimTaskLoop_Construct"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:LoopTask"
+status = "legacy"
+
+[[function]]
 address = 0x00106c80
 name = "AnimTaskBlendOut_Construct"
 page = "animation.md#task-types"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:AnimTaskStack::change"
+status = "legacy"
+
+[[function]]
+address = 0x0010a310
+name = "GaitBlend_Construct"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:GaitBlendTask"
 status = "legacy"
 
 [[function]]
@@ -137,15 +153,23 @@ status = "legacy"
 [[function]]
 address = 0x0010a558
 name = "GaitBlend_SetValue"
-page = "animation.md#mixers"
+page = "animation.md#task-types"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:GaitBlendTask::setValue"
 status = "legacy"
 
 [[function]]
+address = 0x0010a5b8
+name = "GaitBlend_Advance"
+page = "animation.md#task-types"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:GaitBlendTask::advance"
+status = "legacy"
+
+[[function]]
 address = 0x0010adf8
 name = "GaitBlend_Sample"
-page = "animation.md#task-types"
+page = "formats/animation.md#root-motion"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:GaitBlendTask::sample"
 status = "legacy"
@@ -238,4 +262,12 @@ page = "formats/animation.md#original-structure"
 role = "the pose's root velocity and turn into the human's velocity and heading"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::applyRootMotion"
+status = "legacy"
+
+[[function]]
+address = 0x0025b200
+name = "Human_BuildMoveTasks"
+page = "formats/animation.md#animation-tasks"
+level = "inferred"
+coney = "src/human/human_animator.h:HumanAnimator::buildMove"
 status = "legacy"

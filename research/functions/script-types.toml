@@ -146,7 +146,8 @@ status = "legacy"
 address = 0x003cadd8
 name = "PartFog_Init"
 page = "script-types.md#part-fog"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/effects/ground_fog.h:GroundFog::step"
 status = "legacy"
 
@@ -363,7 +364,7 @@ address = 0x003f6d70
 name = "SteamHuge_Init"
 page = "script-types.md#type-table"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/effects/particles.h:defaultSteam"
 status = "legacy"
 
@@ -372,7 +373,7 @@ address = 0x003f7138
 name = "SteamLarge_Init"
 page = "script-types.md#type-table"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/effects/particles.h:defaultSteam"
 status = "legacy"
 

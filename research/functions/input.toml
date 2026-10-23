@@ -2,6 +2,22 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00144a08
+name = "Pad_GetHistory"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::buttons"
+status = "legacy"
+
+[[function]]
+address = 0x00144a80
+name = "Pad_Pressed"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressed"
+status = "legacy"
+
+[[function]]
 address = 0x00144b88
 name = "Pad_IsHeld"
 page = "input.md#pad-queries"
@@ -15,6 +31,14 @@ name = "Pad_IsNewlyReleased"
 page = "input.md#pad-queries"
 level = "confirmed-code"
 coney = "src/core/pad.h:Pad::released"
+status = "legacy"
+
+[[function]]
+address = 0x00144bf0
+name = "Pad_IsNewlyPressed"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressed"
 status = "legacy"
 
 [[function]]

@@ -2,14 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x00364708
-name = "lua_ActTurnToDir"
-page = "flags.md#position"
-level = "confirmed-code"
-coney = "src/scripting/ai_bindings.cpp:makeActTurnToDir"
-status = "legacy"
-
-[[function]]
 address = 0x00379fd0
 name = "lua_AddFlag"
 page = "flags.md#addflag"

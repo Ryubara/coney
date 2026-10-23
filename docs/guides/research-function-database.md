@@ -60,8 +60,8 @@ whether to open that section. Pseudocode, decompiler output and game data never 
   a byte offset), as on a research page: cite an unnamed function by its address;
 - an address in two systems;
 - an address that is not a function entry in the committed Ghidra listing (`docs/progress/ghidra-functions.tsv`), or a
-  name that is not the one Ghidra has; for a ported entry (`coney`) an address the listing lacks is a warning
-  ([below](#ported));
+  name that is not the one Ghidra has; for a ported entry (`coney`) an address in a gap between listed functions is a warning
+  ([below](#ported)), and one inside a listed function an error;
 - a `page` that is not a file, or a section that is not an anchor of it, and a gap's question that does not resolve;
 - a `coney` file that is not in the checkout;
 - an entry whose page does not own its address, once that page has front matter (with or without `owns`), or whose
@@ -129,16 +129,20 @@ first, which is the [research](research-workflow.md#understood) the port was mad
 - a `[[function.gaps]]` for each piece the port leaves out or does differently.
 
 `coney-tools progress check` holds the two together (CI runs it): every `@orig` tag must have an entry with `coney`,
-and every entry with `coney` a tag, in the file `coney` names. The tracker counts the entries with `coney` as the
+and every entry with `coney` a tag, in the file `coney` names; an address outside game code (middleware, outside
+`.text`) is refused. The tracker counts the entries with `coney` as the
 functions Coney reimplements ([the progress commands](coney-tools-references.md#progress)); an entry without it is a
 researched function. Nothing else is written for the tracker: the entry's subsystem is the one whose range in
 `docs/progress/totals.toml` holds the address, and its size is the function's size in the Ghidra listing, so the
 reimplemented bytes are measured in the same unit as the Understood measure. A function the listing has no function at
-yet (the port is tagged at an address the shared Ghidra project does not define) counts with no size and is a warning
-of `research render --check`, not an error: define the function in Ghidra and refresh the listing.
+yet (the port is tagged at an address in a gap between the functions the shared Ghidra project defines) counts with no
+size and is a warning of `research render --check`: define the function in Ghidra and refresh the listing. An address
+inside a listed function is an error, a wrong tag address. Without the listing file the sizes are missing for want of
+it, which `progress show` says.
 
-The name is Ghidra's. An `@orig` tag written with another spelling is reported as a warning by `progress check`, which
-prints the first few and the count; write new tags with the name the entry has.
+The name is Ghidra's. A tag that spells it differently fails `progress check` when the branch adds the tag, and is a
+warning with a count when it was already there when the branch left `origin/main` (the way `orig check` holds only
+what the branch changed). Write new tags with the name the entry has.
 
 The reimplemented list used to be `docs/progress/functions.toml` (address, name, subsystem, size). The move into this
 database is `coney-tools progress import-functions`, kept for a branch that still adds rows to the old file

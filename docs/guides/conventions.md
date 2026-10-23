@@ -200,14 +200,8 @@ One tag per original function. A Coney function that does the work of two origin
 helper that does part of an original function's work (a step the original inlined) carries that function's tag. A
 function with no original counterpart carries `@coney-only <reason>` instead ([Coney-only code](#coney-only)).
 
-**Every tag is counted.** In the same commit as the code, give each newly tagged original function its entry in the
-[function database](research-function-database.md#ported) (`research/functions/<system>.toml`) with `coney`, the file
-that carries the tag and its function (`src/core/combat/grab.cpp:Grab::start`), and `status = "legacy"`; a function
-with no entry yet needs its page and level first, which is the research the port was made from. Then run
-`uv run --project python coney-tools progress check`. The entry has Ghidra's name; write the tag with it. Nothing
-generated is committed: the progress page's tables come from the docs build, and a function's subsystem and size come
-from the address and the Ghidra listing. CI fails when a tag and the database disagree. Details:
-[the progress commands](coney-tools-references.md#progress) and [Progress](../progress/index.md).
+**Every tag is counted.** In the same commit as the code, record the port on the function's entry in the function
+database and run `progress check`: [Recording a port](research-function-database.md#ported).
 
 ### A complete example
 

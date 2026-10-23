@@ -19,6 +19,7 @@ from coney_tools import (
     wad,
 )
 from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.conventions import load_conventions
 from coney_tools.wad_cli import open_disc
 
 
@@ -38,6 +39,28 @@ def _report_warnings(warnings: list[str], limit: int = SHOWN_WARNINGS) -> None:
         print(f"warning: {warning}")
     if len(warnings) > limit:
         print(f"warning: ... and {len(warnings) - limit} more like these")
+
+
+def _check_names(root: Path, state: progress.Progress, base: str) -> bool:
+    """Apply the name rule: a tag the branch adds that spells a name differently fails; the rest is a warning.
+
+    Returns False when a new mismatch fails the check. Without a `base` git can name (a copy of the files) nothing is
+    known to be new, so the rule is not enforced and that is said.
+    """
+    if not state.mismatches:
+        return True
+    try:
+        fresh = progress.new_mismatches(state.mismatches, progress.base_tag_keys(root, base))
+    except ConfigError as error:
+        _report_warnings(state.warnings)
+        print(f"warning: cannot compare with {base} ({error}); the name rule is not enforced")
+        return True
+    for mismatch in fresh:
+        print(f"problem: {mismatch.text}")
+    _report_warnings([m.text for m in state.mismatches if m not in fresh])
+    since = f"{len(fresh)} new since {base}" if fresh else f"none is new since {base}"
+    print(f"names: {len(state.mismatches)} @orig tag(s) spell a name differently from the database; {since}")
+    return not fresh
 
 
 def run_show(as_json: bool) -> int:
@@ -63,7 +86,7 @@ def run_show(as_json: bool) -> int:
             print(f"  {name:<14} {pct(done, total):>6}  {count} functions")
     missing = sum(1 for f in state.functions if f.size is None)
     if missing:
-        print(f"{missing} functions have no size: the Ghidra listing has no function at their address")
+        print(f"{missing} functions have no size: {state.no_size_reason}")
     _report_problems(state.problems)
     return 1 if state.problems else 0
 
@@ -96,7 +119,7 @@ def _template(root: Path, page: Path) -> str:
         raise ConfigError(f"{path}: cannot be read ({error})") from error
 
 
-def run_check() -> int:
+def run_check(base: str = "origin/main") -> int:
     """Validate the inputs and that the docs build can render them; 1 when they disagree.
 
     Nothing generated is committed (the docs build writes the tables and the badge data), so this is what CI runs:
@@ -108,7 +131,9 @@ def run_check() -> int:
     if state is None:
         print("progress: fix the problems above")
         return 1
-    _report_warnings(state.warnings)
+    if not _check_names(root, state, base):
+        print("progress: fix the problems above")
+        return 1
     site = progress_site.build_site(root, state, reconstruct_history=False)
     progress_render.fill_page(
         _page_template(root),
@@ -238,6 +263,7 @@ def run_import_functions(file: Path | None, dry_run: bool, show_all: bool) -> in
         pages=progress_import.read_pages(root, frozenset({"source-map.md"})),
         bindings=progress_import.read_bindings(root),
         existing=progress.load_database(root),
+        research=load_conventions(root).research,
     )
     report = plan.report
     print(

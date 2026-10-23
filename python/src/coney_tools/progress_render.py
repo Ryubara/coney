@@ -197,8 +197,7 @@ def render_page(progress: Progress, grid_html: str = "", missions_html: str = ""
     missing = sum(1 for f in progress.functions if f.size is None)
     if missing:
         lines += [
-            f"{missing} reimplemented function(s) have no size and add no bytes: the Ghidra listing has no function "
-            "at their address yet.",
+            f"{missing} reimplemented function(s) have no size and add no bytes: {progress.no_size_reason}.",
             "",
         ]
     if grid_html:

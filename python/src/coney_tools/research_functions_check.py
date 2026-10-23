@@ -7,7 +7,8 @@ rest of the repository, so a pointer cannot rot:
 * the entry's page is a file below docs/research and its section is an anchor of that page;
 * the address is a function the shared Ghidra project lists (docs/progress/ghidra-functions.tsv) and the name is the
   one Ghidra has: the fix for a difference is the page or a refreshed listing, never a second name; a ported entry
-  (`coney`) at an address Ghidra has no function at yet is a warning, since the port is already tagged there;
+  (`coney`) at an address in a gap between functions is a warning, since the port is already tagged there; inside a
+  listed function it is an error;
 * the source file that `coney` names exists, and the page a gap's question names has that section;
 * no committed page sits where the docs build writes a system's generated list;
 * the entry's page owns the address (its front matter's `owns`, the most specific owner winning), once the page
@@ -22,6 +23,7 @@ Research: docs/guides/research-function-database.md
 
 from __future__ import annotations
 
+import bisect
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -88,6 +90,17 @@ def entries_by_page(systems: Iterable[SystemFunctions]) -> dict[str, tuple[Entry
     return {page: tuple(entries) for page, entries in found.items()}
 
 
+def _container(
+    starts: list[int], listed: dict[int, progress_research.ListedFunction], address: int
+) -> progress_research.ListedFunction | None:
+    """The listed function whose body holds `address` (past its start), or None when it is in a gap."""
+    index = bisect.bisect_right(starts, address) - 1
+    if index < 0:
+        return None
+    function = listed[starts[index]]
+    return function if function.address < address < function.address + function.size else None
+
+
 def check(
     root: Path,
     systems: list[SystemFunctions],
@@ -101,6 +114,7 @@ def check(
     findings = Findings()
     pages = Pages(root)
     listed = {f.address: f for f in listing} if listing is not None else None
+    starts = sorted(listed) if listed is not None else []
     for system in systems:
         where = system.path.as_posix()
         if (root / RESEARCH_DIR / generated_page(system.system)).exists():
@@ -122,13 +136,21 @@ def check(
                 continue
             ghidra = listed.get(entry.address)
             if ghidra is None:
-                # A port is tagged with the address it was read at, so the original has a function there that the
-                # shared Ghidra project may not define yet; any other entry with an address Ghidra lacks is a typo.
+                container = _container(starts, listed, entry.address)
                 message = (
                     f"{label}: not a function entry in {listing_file} "
                     "(a wrong address, or the listing needs `coney-tools progress ghidra`)"
                 )
-                if entry.coney:
+                if container is not None:
+                    # Inside a function Ghidra lists, so not the start of another: the address is wrong.
+                    findings.errors.append(
+                        f"{label}: inside {container.name or 'a function'} at "
+                        f"+{entry.address - container.address:#x} ({container.address:#010x}), a wrong address; "
+                        "a function's entry is where the original's code for it starts"
+                    )
+                elif entry.coney:
+                    # A port is tagged with the address it was read at, so the original has a function there that
+                    # the shared Ghidra project may not define yet; any other entry Ghidra lacks is a typo.
                     findings.warnings.append(message + "; the port counts, with no size, until Ghidra defines it")
                 else:
                     findings.errors.append(message)

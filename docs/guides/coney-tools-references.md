@@ -24,23 +24,18 @@ Prints the reimplemented and researched shares, the milestones and the subsystem
 database's `coney` entries and the `@orig` tags in `src/` disagree, and lists each problem.
 
 ```sh
-uv run --project python coney-tools progress check
+uv run --project python coney-tools progress check [--base REF]
 ```
 
 Checks the inputs and exits with 1 when they disagree; CI runs it. Nothing generated is committed: the tables of the
-progress page and the README's badge data are produced by the documentation build (`mkdocs_hooks.py`), which
-publishes them from `main`, so pull requests never conflict on them. `check` fails on:
-
-* an `@orig` tag in `src/` whose function has no entry in the database, or has one without `coney` (the message names
-  the file), or an entry with `coney` that no tag in `src/` reimplements, or whose `coney` file is not one that holds
-  the tag; the entry's subsystem is worked out from its address, so there is none to get wrong;
-* an address inside middleware or outside `.text`;
-* a progress page without its single `<!-- progress:generated -->` marker, where the build puts the tables and
-  pictures, or a history page without its `<!-- progress:history -->` marker.
-
-A tag that spells the function's name differently from the database (which has Ghidra's) is a warning, not a failure:
-`check` prints the first few and the count. `mkdocs build --strict` shows the tables on the page locally too, and fails
-on the same problems.
+progress page and the README's badge data are produced by the documentation build (`mkdocs_hooks.py`), which publishes
+them from `main`, so pull requests never conflict on them. `check` holds the function database's `coney` entries and
+the `@orig` tags in `src/` together ([the rules](research-function-database.md#ported)), and refuses an address in
+middleware or outside `.text`, a progress page without its single `<!-- progress:generated -->` marker and a history
+page without its `<!-- progress:history -->` marker. `--base REF` (default `origin/main`) is what tag names are
+measured from: a tag the branch adds that spells a name differently from the database fails, the ones already there
+are a warning with their count. `mkdocs build --strict` shows the tables on the page locally too, and fails on the
+same problems.
 
 The pictures come from `progress_grid.py` (one square per function, from the Ghidra listing, the tracker's measures
 and the file ranges of `research/source-files.toml`), `progress_picture.py` (layout and SVG), `progress_history.py`

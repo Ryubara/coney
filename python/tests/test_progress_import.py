@@ -6,16 +6,20 @@ Everything is made up: a small Ghidra listing, pages with tables and prose, bind
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
+import research_support
 from test_progress import ONE_TAG, make_checkout
 
 from coney_tools import progress, progress_import, research_functions
 from coney_tools.cli import main
+from coney_tools.conventions import CONVENTIONS_FILE
 from coney_tools.orig_index import IndexRow
 from coney_tools.progress_research import ListedFunction
 
+REPO = Path(__file__).resolve().parents[2]
 LISTED = {
     f.address: f
     for f in (
@@ -55,15 +59,17 @@ def plan(
     pages: dict[str, str] | None = None,
     existing: list[research_functions.SystemFunctions] | None = None,
     ports: dict[int, str] | None = None,
+    listing: dict[int, ListedFunction] | None = None,
 ) -> progress_import.Plan:
     """The plan for the made-up rows, pages, bindings and listing."""
     return progress_import.plan(
         ROWS if rows is None else rows,
-        listing=LISTED,
+        listing=LISTED if listing is None else listing,
         ports=PORTS if ports is None else ports,
         pages=PAGES if pages is None else pages,
         bindings=BINDINGS,
         existing=existing or [],
+        research=research_support.research(),
     )
 
 
@@ -97,7 +103,7 @@ def test_a_binding_wrapper_points_at_the_bindings_page_with_the_bindings_evidenc
     result = plan()
     entry = entries(result)[0x1210]
     assert (entry.page, entry.level) == (progress_import.BINDINGS_PAGE, "inferred")
-    assert result.report.sources == {"table": 2, "prose": 1, "cited": 1, "binding": 1}
+    assert result.report.sources == {"table": 2, "claim": 1, "cited": 1, "binding": 1}
     assert 0x1220 not in entries(result)  # a binding with no evidence gives no level, and no page cites it
 
 
@@ -144,6 +150,93 @@ def test_an_entry_the_database_has_gains_coney_and_keeps_the_rest() -> None:
     again = plan(existing=result.systems)
     assert again.report.updated == 0 and again.report.added == 0 and again.changed == set()
     assert again.report.unchanged == len(ROWS) - len(again.report.skipped)
+
+
+# --- what a paragraph may say about one function ----------------------------------------------------------------------
+
+A, B = 0x00123400, 0x00123500
+HOME = {
+    "sys.md": "# Sys\n\n## Behaviour {#behaviour}\n\n",
+}
+
+
+def paragraph_plan(page_body: str, addresses: tuple[int, ...] = (A,)) -> progress_import.Plan:
+    """The plan for functions at `addresses` described only by the Behaviour section `page_body` of one page."""
+    rows = [progress_import.LegacyRow(a, f"F{a:x}", "Alpha", 8) for a in addresses]
+    listing = {a: ListedFunction(a, 8, f"F{a:x}", False) for a in addresses}
+    ports = {a: f"src/core/x.h:f{a:x}" for a in addresses}
+    pages = {"sys.md": HOME["sys.md"] + page_body}
+    return plan(rows, pages=pages, ports=ports, listing=listing)
+
+
+def test_sentences_ignore_a_full_stop_in_code_and_in_numbers() -> None:
+    parts = progress_import.sentences('It loads `name .. ".lua"` in 0.3 s. Then it runs. (Confirmed (code).)')
+    assert parts == ['It loads `name .. ".lua"` in 0.3 s.', "Then it runs.", "(Confirmed (code).)"]
+
+
+def test_the_level_must_be_in_the_sentence_that_cites_the_address() -> None:
+    """A level at the end of a paragraph that is about a table below it ties nothing to a function named before it."""
+    text = "A call can rescale it later (`0x00123400`, not traced). Every value below was seen (confirmed (runtime))."
+    assert progress_import.tied_level(text, A) is None
+    own = "It rescales the set (`0x00123400`, confirmed (code)). Every value below was seen (confirmed (runtime))."
+    assert progress_import.tied_level(own, A) == ("confirmed-code", "claim")
+
+
+def test_a_level_only_sentence_right_after_belongs_to_the_sentence_before() -> None:
+    text = "It offers the event to the handlers (`0x00123400`). Confirmed (code). The rest is a long story."
+    assert progress_import.tied_level(text, A) == ("confirmed-code", "claim")
+
+
+def test_two_levels_in_one_sentence_tie_nothing() -> None:
+    """`confirmed (code); the rock inferred` grades two claims; a page-less default would be a guess."""
+    assert progress_import.tied_level("It hits (`0x00123400`, confirmed (code)) and the rock inferred.", A) is None
+
+
+def test_a_block_that_opens_with_its_level_grades_every_function_it_lists() -> None:
+    text = "Confirmed (code) at the addresses given: `0x00123400` starts it. `0x00123500` ends it."
+    assert progress_import.tied_level(text, A) == ("confirmed-code", "claim")
+    assert progress_import.tied_level(text, B) == ("confirmed-code", "block")
+    # A level further on, about something else, is not the block's.
+    assert progress_import.tied_level("`0x00123400` starts it. The ids it writes are confirmed (code).", A) is None
+
+
+def test_a_paragraph_grades_only_the_functions_whose_claim_states_the_level() -> None:
+    result = paragraph_plan(
+        "`F123400` (`0x00123400`) starts it (confirmed (code)). `F123500` (`0x00123500`) ends it, not traced.\n",
+        (A, B),
+    )
+    found = entries(result)
+    assert (found[A].level, found[A].note) == ("confirmed-code", "")
+    assert found[B].level == "speculative" and found[B].note == progress_import.UNGRADED_NOTE
+    assert result.report.sources["claim"] == 1 and result.report.sources["cited"] == 1
+
+
+def test_a_lead_line_grades_the_blocks_under_its_heading() -> None:
+    body = "### Group {#group}\n\nConfirmed (code) for each function below.\n\n- `F123400` (`0x00123400`) starts it.\n"
+    entry = entries(paragraph_plan(body))[A]
+    assert (entry.page, entry.level, entry.note) == ("sys.md#group", "confirmed-code", "")
+    # A block that states its own level is not graded by the lead line, even when it ties nothing.
+    own = body + "- `F123500` (`0x00123500`) and `F123600` (`0x00123600`) end it (inferred), the id confirmed (code).\n"
+    assert entries(paragraph_plan(own, (B,)))[B].level == "speculative"
+
+
+def test_a_section_that_states_no_claims_grades_nothing() -> None:
+    page = "# Sys\n\n## Open questions\n\n`0x00123400` is confirmed (code) to do what? Unknown.\n"
+    result = plan(
+        [progress_import.LegacyRow(A, "F", "Alpha", 8)],
+        pages={"sys.md": page},
+        ports={A: "src/core/x.h:f"},
+        listing={A: ListedFunction(A, 8, "F", False)},
+    )
+    assert entries(result)[A].level == "speculative"
+
+
+def test_the_section_that_names_the_function_wins_over_one_that_only_cites_it() -> None:
+    body = (
+        "### Block {#block}\n\nThe walk passes `0x00123400` on its way (confirmed (code)).\n\n"
+        "### Sight {#sight}\n\n`F123400` (`0x00123400`) tests the line of sight (confirmed (code)).\n"
+    )
+    assert entries(paragraph_plan(body))[A].page == "sys.md#sight"
 
 
 def test_a_candidate_the_schema_refuses_gives_way_to_the_next() -> None:
@@ -228,6 +321,8 @@ OLD_LIST = '[[function]]\naddress = 0x00001010\nname = "Thing::Do"\nsubsystem = 
 def old_checkout(tmp_path: Path) -> Path:
     """A checkout from before the move: the old list, a tagged function, a page that cites it, and no database."""
     root = make_checkout(tmp_path, tags=ONE_TAG, listing=LISTING_TEXT)
+    (root / CONVENTIONS_FILE).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(REPO / CONVENTIONS_FILE, root / CONVENTIONS_FILE)
     (root / "docs" / "research").mkdir(parents=True)
     (root / "docs" / "research" / "thing.md").write_text(PAGE_TEXT, encoding="utf-8")
     (root / progress.LEGACY_FUNCTIONS_FILE).write_text(OLD_LIST, encoding="utf-8")

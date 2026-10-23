@@ -85,8 +85,9 @@ status = "legacy"
 [[function]]
 address = 0x00165640
 name = "Gang_SetTactic"
-page = "ai-gangs.md#tactic-kinds"
-level = "confirmed-code"
+page = "ai-gangs.md#tactics"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/gangs.h:Gangs::setTactic"
 status = "legacy"
 
@@ -130,7 +131,8 @@ status = "legacy"
 address = 0x00166ff8
 name = "Gang_AddSpawner"
 page = "ai-gangs.md#spawners"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/spawners.h:Spawners::add"
 status = "legacy"
 
@@ -541,7 +543,8 @@ status = "legacy"
 address = 0x0016bb58
 name = "Gang_SetAttackable"
 page = "ai.md#sight"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/gangs.h:Gangs::setAttackable"
 status = "legacy"
 
@@ -595,7 +598,7 @@ address = 0x0016c3a8
 name = "Gang_SetHostileToKind"
 page = "ai-gangs.md#crimes"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/gangs.h:Gangs::makeEnemiesOfType"
 status = "legacy"
 
@@ -638,15 +641,16 @@ status = "legacy"
 [[function]]
 address = 0x0016d810
 name = "Spawner_NextType"
-page = "ai-gangs.md#spawners"
-level = "inferred"
+page = "ai.md#coney"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/spawners.h:Spawners::pickType"
 status = "legacy"
 
 [[function]]
 address = 0x0021c0a8
 name = "Human_IsWayClearTo"
-page = "ai-code.md#brain-types"
+page = "ai.md#warrior-swap"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
 status = "legacy"
@@ -655,32 +659,16 @@ status = "legacy"
 address = 0x0021d428
 name = "Human_GetFormation"
 page = "ai-gangs.md#formations"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/formations.h:Formations::of"
-status = "legacy"
-
-[[function]]
-address = 0x0021d4e8
-name = "Human_OnEvent"
-page = "ai-gangs.md#gang-events"
-level = "confirmed-code"
-coney = "src/ai/brain.h:deliverEvent"
-status = "legacy"
-
-[[function]]
-address = 0x0021d5c0
-name = "Human_WarnOfAttack"
-page = "ai.md#block"
-level = "confirmed-code"
-coney = "src/human/fighter.h:Fighter::warnTarget"
 status = "legacy"
 
 [[function]]
 address = 0x00221cd8
 name = "Human_TurnToFaceObject"
-page = "ai.md#engage-enemy"
-level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+page = "ai.md#fight-facing"
+level = "confirmed-code"
 coney = "src/ai/engage_goals.cpp:EngageEnemyGoal::process"
 status = "legacy"
 
@@ -693,18 +681,11 @@ coney = "src/ai/sectors.h:Sectors::probe"
 status = "legacy"
 
 [[function]]
-address = 0x00222288
-name = "Human_HasLineOfSight"
-page = "ai.md#block"
-level = "confirmed-code"
-coney = "src/ai/perception.h:lineOfSight"
-status = "legacy"
-
-[[function]]
 address = 0x002223e8
 name = "Human_CanSeeHuman"
-page = "ai.md#block"
-level = "confirmed-code"
+page = "ai.md#sight"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/perception.h:canSeeHuman"
 status = "legacy"
 
@@ -752,19 +733,11 @@ coney = "src/ai/attack_kinds.h:chainDelayMs"
 status = "legacy"
 
 [[function]]
-address = 0x0024c6d8
-name = "Human_PlaceObjectInHandByPickupClip"
-page = "ai.md#crew-gaps"
-level = "confirmed-code"
-coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
-status = "legacy"
-
-[[function]]
 address = 0x0024e218
 name = "Nav_FindPolygonNear"
 page = "ai-moving.md#path-planning"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
 status = "legacy"
 
@@ -779,24 +752,18 @@ status = "legacy"
 [[function]]
 address = 0x002505b0
 name = "Nav_NearestPolygonPoint"
-page = "ai-pathing.md#path-holes"
-level = "inferred"
-coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
-status = "legacy"
-
-[[function]]
-address = 0x00250708
-name = "Nav_FindArea"
 page = "ai-moving.md#path-planning"
-level = "confirmed-code"
-coney = "src/world/path_map.h:PathMap::areaAt"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+coney = "src/ai/route_planner.h:RoutePlanner::navPoint"
 status = "legacy"
 
 [[function]]
 address = 0x00250760
 name = "Nav_FindAreaCandidate"
-page = "ai-moving.md#path-planning"
-level = "confirmed-code"
+page = "ai.md#coney"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world/path_map.h:PathMap::areaAt"
 status = "legacy"
 
@@ -804,7 +771,7 @@ status = "legacy"
 address = 0x00251070
 name = "NavNode_GetLinkFlags"
 page = "ai-moving.md#path-planning"
-level = "confirmed-code"
+level = "inferred"
 coney = "src/ai/route_follower.h:RouteFollower::legKind"
 status = "legacy"
 
@@ -813,15 +780,16 @@ address = 0x002510f8
 name = "NavNode_GetQueueNode"
 page = "ai-pathing.md#route-claims"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world/path_map.h:PathMap::partnerOf"
 status = "legacy"
 
 [[function]]
 address = 0x00251150
 name = "Nav_NearestReachableNodeAt"
-page = "ai-moving.md#path-planning"
-level = "inferred"
+page = "ai-gangs.md#spawner-placement"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/route_planner.h:RoutePlanner::endNode"
 status = "legacy"
 
@@ -846,7 +814,7 @@ address = 0x00251680
 name = "Route_Free"
 page = "ai-moving.md#path-planning"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/route_planner.h:Route::~Route"
 status = "legacy"
 
@@ -855,7 +823,7 @@ address = 0x002517b0
 name = "Nav_Heuristic"
 page = "ai-moving.md#path-planning"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/route_planner.h:RoutePlanner::heuristic"
 status = "legacy"
 
@@ -890,6 +858,14 @@ name = "Player_TryCounterGrab"
 page = "ai.md#block"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterAllowed"
+status = "legacy"
+
+[[function]]
+address = 0x002880d8
+name = "Player_CrossWithWeapon"
+page = "ai-gangs.md#boss-throw"
+level = "confirmed-code"
+coney = "src/combat/attacks.h:throwAttack"
 status = "legacy"
 
 [[function]]
@@ -1401,10 +1377,19 @@ coney = "src/ai/fight_checks.h:checkAttack"
 status = "legacy"
 
 [[function]]
+address = 0x00290e78
+name = "Brain_SetAttackableTime"
+page = "ai.md#attack-places"
+level = "confirmed-code"
+coney = "src/ai/attack_places.h:attackableGapMs"
+status = "legacy"
+
+[[function]]
 address = 0x00290ea8
 name = "Brain_IsAttackableBy"
-page = "ai.md#sight"
-level = "confirmed-code"
+page = "ai.md#engage-enemy"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/targeting.h:attackableBy"
 status = "legacy"
 
@@ -1479,8 +1464,8 @@ status = "legacy"
 [[function]]
 address = 0x00291ed0
 name = "Ambient_MayGesture"
-page = "ai-code.md#actions"
-level = "confirmed-code"
+page = "ai-scripting.md#move-to-flag"
+level = "inferred"
 coney = "src/ai/script_services.h:ScriptServices::mayGesture"
 status = "legacy"
 
@@ -1488,7 +1473,8 @@ status = "legacy"
 address = 0x00292330
 name = "Brain_SetDead"
 page = "ai.md#handlers"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/brain.h:Brain::setDead"
 status = "legacy"
 
@@ -1517,7 +1503,7 @@ address = 0x00292530
 name = "Brain_FlushAll"
 page = "ai-scripting.md#script-binding-effects"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/brain.h:Brain::flush"
 status = "legacy"
 
@@ -1614,7 +1600,7 @@ status = "legacy"
 [[function]]
 address = 0x00292d80
 name = "Brain_DefaultOnEvent"
-page = "ai-code.md#brain-types"
+page = "ai.md#shared-events"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:answerEvent"
 status = "legacy"
@@ -1635,6 +1621,14 @@ name = "Gang_BroadcastHelpCall"
 page = "ai-code.md#brain-events"
 kind = "helper"
 role = "event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls))"
+level = "confirmed-code"
+coney = "src/ai/brain_events.h:broadcastHelpCall"
+status = "legacy"
+
+[[function]]
+address = 0x00293768
+name = "AI_AlertNearby"
+page = "ai.md#help-calls"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
 status = "legacy"
@@ -1894,7 +1888,8 @@ status = "legacy"
 address = 0x0029b4b8
 name = "Route_SkipReachable"
 page = "ai-moving.md#route-follow"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/route_follower.h:RouteFollower::canSkip"
 status = "legacy"
 
@@ -1902,7 +1897,8 @@ status = "legacy"
 address = 0x0029b6d8
 name = "Route_Advance"
 page = "ai-moving.md#route-follow"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/route_follower.h:RouteFollower::moveOn"
 status = "legacy"
 
@@ -2145,7 +2141,7 @@ status = "legacy"
 [[function]]
 address = 0x0029f3a8
 name = "Goal_AdjustEnemyScoreDefault"
-page = "ai.md#enemy-score"
+page = "ai-reimpl.md#object-pile"
 level = "confirmed-code"
 coney = "src/ai/goal.h:Goal::adjustEnemyScore"
 status = "legacy"
@@ -2263,8 +2259,9 @@ status = "legacy"
 [[function]]
 address = 0x002abef8
 name = "BumLogicGoal_Create"
-page = "ai-scripting.md#bum-logic"
-level = "confirmed-code"
+page = "ai.md#goals"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/scripted_goals.h:BumLogicGoal"
 status = "legacy"
 
@@ -2312,7 +2309,8 @@ status = "legacy"
 address = 0x002add08
 name = "Goal_Melee"
 page = "ai.md#targets"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
@@ -2474,7 +2472,8 @@ status = "legacy"
 address = 0x002b4098
 name = "SpectateGoal_Init"
 page = "ai.md#spectate"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/idle_goals.h:SpectateGoal"
 status = "legacy"
 
@@ -2688,8 +2687,9 @@ status = "legacy"
 [[function]]
 address = 0x002b75b8
 name = "Gang_SendHelper"
-page = "ai-reimpl.md#attack-process"
-level = "confirmed-code"
+page = "ai.md#help-calls"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/brain_events.h:sendHelper"
 status = "legacy"
 
@@ -3062,6 +3062,14 @@ coney = "src/ai/dealer_goal.h:DealerGoal::gesture"
 status = "legacy"
 
 [[function]]
+address = 0x002c74d8
+name = "DealerGoal_OnBuy"
+page = "ai-scripting.md#dealer-buy"
+level = "confirmed-code"
+coney = "src/ai/dealer_goal.h:DealerGoal::deal"
+status = "legacy"
+
+[[function]]
 address = 0x002c7c20
 name = "DealerGoal_FinishPair"
 page = "ai-goals.md#goal-dealer"
@@ -3124,7 +3132,7 @@ address = 0x002cc488
 name = "ApproachGoal_Start"
 page = "ai-scripting.md#address-person"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/address_person_goal.h:AddressPersonGoal::start"
 status = "legacy"
 
@@ -3133,7 +3141,7 @@ address = 0x002cc588
 name = "ApproachGoal_Process"
 page = "ai-scripting.md#address-person"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/address_person_goal.h:AddressPersonGoal::process"
 status = "legacy"
 
@@ -3224,6 +3232,14 @@ coney = "src/ai/riot_goals.h:RiotGoal::tryPickFight"
 status = "legacy"
 
 [[function]]
+address = 0x002d1c38
+name = "RiotGoal_Process"
+page = "ai-scripting.md#riot"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:RiotGoal::process"
+status = "legacy"
+
+[[function]]
 address = 0x002d2df8
 name = "Goal_PlayDynamicAnimation"
 page = "ai-goals.md#goal-play-dyn-animation"
@@ -3248,7 +3264,7 @@ address = 0x002d2f60
 name = "PlayDynAnimationGoal_Start"
 page = "ai-scripting.md#dyn-animation"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::start"
 status = "legacy"
 
@@ -3257,7 +3273,7 @@ address = 0x002d2f88
 name = "PlayDynAnimationGoal_Suspend"
 page = "ai-scripting.md#dyn-animation"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::suspend"
 status = "legacy"
 
@@ -3266,7 +3282,7 @@ address = 0x002d2f98
 name = "Goal_ScheduleCallback"
 page = "ai-scripting.md#dyn-animation"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/play_dyn_animation_goal.h:PlayDynAnimationGoal::end"
 status = "legacy"
 
@@ -3504,7 +3520,8 @@ status = "legacy"
 address = 0x002da2c0
 name = "Goal_MoveToFlag"
 page = "ai-scripting.md#move-to-flag"
-level = "confirmed-runtime"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/move_to_flag_goal.h:goalMoveToFlag"
 status = "legacy"
 
@@ -3521,7 +3538,8 @@ status = "legacy"
 address = 0x002da408
 name = "MoveToFlagGoal_Start"
 page = "ai-scripting.md#move-to-flag"
-level = "confirmed-runtime"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::start"
 status = "legacy"
 
@@ -3539,7 +3557,8 @@ status = "legacy"
 address = 0x002da550
 name = "MoveToFlagGoal_Resume"
 page = "ai-moving.md#move-action"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::resume"
 status = "legacy"
 
@@ -3567,7 +3586,7 @@ address = 0x002da8f8
 name = "GoalMoveToExitFlag_Init"
 page = "ai-scripting.md#dealer-process"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/story_goals.h:MoveToExitFlagGoal"
 status = "legacy"
 
@@ -3734,8 +3753,9 @@ status = "legacy"
 [[function]]
 address = 0x002df250
 name = "TrackHumanGoal_Construct"
-page = "ai-gangs.md#formations"
-level = "confirmed-code"
+page = "ai.md#goals"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/track_human_goal.h:TrackHumanGoal"
 status = "legacy"
 
@@ -3743,7 +3763,8 @@ status = "legacy"
 address = 0x002df288
 name = "TrackHumanGoal_Start"
 page = "ai-gangs.md#formations"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/track_human_goal.h:TrackHumanGoal::start"
 status = "legacy"
 
@@ -3799,7 +3820,8 @@ status = "legacy"
 address = 0x002e0748
 name = "GoalTravelPath_Init"
 page = "ai-gangs.md#tactic-kinds"
-level = "inferred"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/story_goals.h:TravelPathGoal"
 status = "legacy"
 
@@ -3915,7 +3937,8 @@ status = "legacy"
 address = 0x002e1760
 name = "Goal_DevilRun"
 page = "ai-scripting.md#devil-run"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/story_bindings.cpp:makeGoalDevilRun"
 status = "legacy"
 
@@ -3923,7 +3946,8 @@ status = "legacy"
 address = 0x002e1850
 name = "DevilRunGoal_Init"
 page = "ai-scripting.md#devil-run"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/chase_goals.h:DevilRunGoal"
 status = "legacy"
 
@@ -3981,7 +4005,8 @@ status = "legacy"
 address = 0x002e49f8
 name = "PlayAnimationGoal_Start"
 page = "ai-scripting.md#address-person"
-level = "inferred"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/address_person_goal.h:PlayAnimationGoal::start"
 status = "legacy"
 
@@ -3999,7 +4024,8 @@ status = "legacy"
 address = 0x002e4a70
 name = "PlayAnimationGoal_Process"
 page = "ai-scripting.md#address-person"
-level = "inferred"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/address_person_goal.h:PlayAnimationGoal::process"
 status = "legacy"
 
@@ -4021,6 +4047,14 @@ kind = "init"
 role = "vtable `0x005423d0`; the store box, the options (`+0x57` broom, `+0x5a`), two Lua callback names (disturbed, robbed: inferred)"
 level = "confirmed-code"
 coney = "src/ai/hub_goals.h:ShopkeeperGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002e6668
+name = "ShopkeeperGoal_Process"
+page = "ai-gangs.md#crimes"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:ShopkeeperGoal::process"
 status = "legacy"
 
 [[function]]
@@ -4508,7 +4542,7 @@ address = 0x002fc420
 name = "MoveAction_Start"
 page = "ai-code.md#actions"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/move_action.h:MoveAction::start"
 status = "legacy"
 
@@ -4852,7 +4886,8 @@ status = "legacy"
 address = 0x003068f8
 name = "Tactic_SetCallback"
 page = "ai-gangs.md#tactic-kinds"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/tactic.h:Tactic::Tactic"
 status = "legacy"
 
@@ -5159,7 +5194,7 @@ address = 0x00310e00
 name = "WarriorFollowTactic_Create"
 page = "ai.md#open-questions"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/crew.h:WarriorFollowTactic"
 status = "legacy"
 
@@ -5402,11 +5437,20 @@ coney = "src/scripting/story_bindings.cpp:addTacticBindings"
 status = "legacy"
 
 [[function]]
+address = 0x0031af98
+name = "ScoutTactic_Start"
+page = "ai-gangs.md#tactic-kinds"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
+coney = "src/ai/tactic_scout.h:ScoutTactic::start"
+status = "legacy"
+
+[[function]]
 address = 0x00320530
 name = "WarriorAttackTactic_Create"
 page = "ai.md#open-questions"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/crew.h:WarriorAttackTactic"
 status = "legacy"
 
@@ -5542,6 +5586,14 @@ name = "lua_GangDelete"
 page = "ai-gangs.md#gang-delete"
 level = "confirmed-code"
 coney = "src/scripting/gang_bindings.cpp:makeGangDelete"
+status = "legacy"
+
+[[function]]
+address = 0x003961d0
+name = "World_BreakObjectsAround"
+page = "ai-gangs.md#crimes"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::destroyInRadius"
 status = "legacy"
 
 [[function]]

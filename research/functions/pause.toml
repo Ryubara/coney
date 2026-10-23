@@ -11,14 +11,6 @@ coney = "src/gamemodes/pause_mode.h:PauseMode::toggle"
 status = "legacy"
 
 [[function]]
-address = 0x0015cae0
-name = "Gm_Mode0C_Enter"
-page = "pause.md#the-mission-failed-screen"
-level = "inferred"
-coney = "src/gamemodes/mission_failed_mode.h:MissionFailedMode::enter"
-status = "legacy"
-
-[[function]]
 address = 0x0015dbb8
 name = "PauseMode_Enter"
 page = "pause.md#original-structure"
@@ -279,8 +271,7 @@ status = "legacy"
 [[function]]
 address = 0x0041d1b0
 name = "GameState_SetHangoutOffered"
-page = "pause.md#the-items-screens"
-level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+page = "pause.md#the-menus-fields"
+level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_items.h:offersHangout"
 status = "legacy"

@@ -10,21 +10,21 @@ coney = "src/gamemodes/gameplay_mode.h:GameplayMode::resume"
 status = "legacy"
 
 [[function]]
+address = 0x0021d480
+name = "Human_OnEvent"
+page = "tasks.md#original-structure"
+role = "the human's event entry (vtable `+0x44`)"
+level = "confirmed-code"
+coney = "src/ai/brain.h:deliverEvent"
+status = "legacy"
+
+[[function]]
 address = 0x00223cb0
 name = "Human_IsBusy"
 page = "tasks.md#original-structure"
 role = "the locomotion's \"no stick\" test ([below](tasks.md#locomotion-gate))"
 level = "confirmed-code"
 coney = "src/human/locomotion_gate.h:stickBusy"
-status = "legacy"
-
-[[function]]
-address = 0x00227d28
-name = "Human_IsInSceneState"
-page = "tasks.md#locomotion-gate"
-level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::playerInScene"
 status = "legacy"
 
 [[function]]
@@ -507,7 +507,8 @@ status = "legacy"
 address = 0x004125b8
 name = "VolumeBox_Add"
 page = "tasks.md#classes"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/trigger_bindings.cpp:makeAddVolumeBox"
 status = "legacy"
 

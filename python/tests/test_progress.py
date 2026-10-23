@@ -660,3 +660,17 @@ def test_export_listing_reads_through_fetch() -> None:
         progress_research.ListedFunction(0x1000, 256, "Alpha_Init", True),
         progress_research.ListedFunction(0x1100, 64, "FUN_00001100", False),
     ]
+
+
+def test_no_size_says_why(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Without the listing file the sizes are missing for want of it; with it, for want of a function at the address."""
+    bare = make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG)
+    monkeypatch.chdir(bare)
+    assert main(["progress", "show"]) == 0
+    assert "1 functions have no size: there is no docs/progress/ghidra-functions.tsv" in capsys.readouterr().out
+    assert "no docs/progress/ghidra-functions.tsv" in progress_render.render_page(progress.load(bare))
+    lacking = make_checkout(tmp_path / "lacking", ONE_FUNCTION, ONE_TAG, "0x00001100\t8\tOther\t0\n")
+    monkeypatch.chdir(lacking)
+    assert main(["progress", "show"]) == 0
+    assert "1 functions have no size: the Ghidra listing has no function at their address" in capsys.readouterr().out
+    assert "the Ghidra listing has no function at their address." in progress_render.render_page(progress.load(lacking))

@@ -840,7 +840,7 @@ status = "legacy"
 [[function]]
 address = 0x0014caf8
 name = "AudioDevice_Start"
-page = "sound.md#function-index"
+page = "sound.md#play"
 level = "confirmed-code"
 coney = "src/audio/sound_engine.cpp:SoundEngine::startVoice"
 status = "legacy"
@@ -861,6 +861,14 @@ page = "sound.md#device"
 role = "`rate × 4096 / 48000`"
 level = "confirmed-code"
 coney = "src/audio/mixer.h:rateToPitch"
+status = "legacy"
+
+[[function]]
+address = 0x0015fe90
+name = "InitLevel"
+page = "sound.md#banks"
+level = "inferred"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
 status = "legacy"
 
 [[function]]
@@ -891,6 +899,14 @@ coney = "src/audio/game_sound.h:GameSound::sayCommandAt"
 status = "legacy"
 
 [[function]]
+address = 0x00222288
+name = "Human_HasLineOfSight"
+page = "sound-events.md#command-ids"
+level = "confirmed-code"
+coney = "src/ai/perception.h:lineOfSight"
+status = "legacy"
+
+[[function]]
 address = 0x0022c730
 name = "Grab_Link"
 page = "sound-events.md#speech"
@@ -899,42 +915,11 @@ coney = "src/human/human.h:Human::linkedWith"
 status = "legacy"
 
 [[function]]
-address = 0x002c74d8
-name = "DealerGoal_OnBuy"
-page = "sound-events.md#items"
-level = "confirmed-code"
-coney = "src/ai/dealer_goal.h:DealerGoal::deal"
-status = "legacy"
-
-[[function]]
-address = 0x002d1c38
-name = "RiotGoal_Process"
-page = "sound-events.md#speech"
-level = "confirmed-code"
-coney = "src/ai/riot_goals.h:RiotGoal::process"
-status = "legacy"
-
-[[function]]
-address = 0x002e6668
-name = "ShopkeeperGoal_Process"
-page = "sound-events.md#speech"
-level = "confirmed-code"
-coney = "src/ai/hub_goals.h:ShopkeeperGoal::process"
-status = "legacy"
-
-[[function]]
-address = 0x00352788
-name = "SceneSegment_Fixup"
-page = "sound.md#scene-sound"
-level = "confirmed-code"
-coney = "src/scenes/scene_cache.h:SceneCache::requestNext"
-status = "legacy"
-
-[[function]]
 address = 0x00354d28
 name = "SceneTrack_FindSoundtrackEvent"
 page = "sound.md#scene-sound"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scenes/scene_record.h:soundtrackOf"
 status = "legacy"
 
@@ -943,7 +928,7 @@ address = 0x0038a830
 name = "Car_BreakWindow"
 page = "sound-events.md#cars"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/cars.h:carBreakWindowEffect"
 status = "legacy"
 
@@ -951,7 +936,8 @@ status = "legacy"
 address = 0x003ac4d0
 name = "Radio_Setup"
 page = "sound.md#radios"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/radios.h:Radios::setup"
 status = "legacy"
 
@@ -959,7 +945,8 @@ status = "legacy"
 address = 0x003ac600
 name = "Radio_SetMode"
 page = "sound.md#radios"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/radios.h:Radios::setMode"
 status = "legacy"
 
@@ -967,7 +954,8 @@ status = "legacy"
 address = 0x003ad440
 name = "Radio_Update"
 page = "sound.md#radios"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/radios.h:Radios::update"
 status = "legacy"
 
@@ -1023,14 +1011,6 @@ name = "GameState_IsArmiesLevel"
 page = "sound.md#banks"
 level = "inferred"
 coney = "src/gui/pause_menu/pause_items.h:usesArmiesPauseMenu"
-status = "legacy"
-
-[[function]]
-address = 0x0041d160
-name = "GameState_IsRumbleLevel"
-page = "sound.md#function-index"
-level = "confirmed-code"
-coney = "src/gui/pause_menu/pause_items.h:isRumbleLevel"
 status = "legacy"
 
 [[function]]

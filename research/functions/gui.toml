@@ -4,7 +4,7 @@
 [[function]]
 address = 0x00181b20
 name = "ChunkLoaded_ParticlePage"
-page = "gui.md#original-structure"
+page = "gui.md#particle-page"
 level = "confirmed-code"
 coney = "src/platform/sprite_sheets.h:onParticlePageLoaded"
 status = "legacy"
@@ -435,7 +435,8 @@ status = "legacy"
 address = 0x00357998
 name = "Script_GetPlatform"
 page = "gui.md#coneys-implementation"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/script_bindings.cpp:makeGetPlatform"
 status = "legacy"
 
@@ -444,14 +445,6 @@ address = 0x003579a0
 name = "ScriptSystem_DoFileLua"
 page = "gui.md#coneys-implementation"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/script_bindings.cpp:makeDoFile"
-status = "legacy"
-
-[[function]]
-address = 0x0035e5d0
-name = "lua_CfgHUDMessage"
-page = "gui.md#strings"
-level = "confirmed-code"
-coney = "src/scripting/config_strings.h:addStringBindings"
 status = "legacy"

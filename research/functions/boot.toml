@@ -2,6 +2,22 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00145a10
+name = "GameTimer_Update"
+page = "boot.md#timers"
+level = "confirmed-code"
+coney = "src/core/game_timer.h:GameTimer::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015cae0
+name = "Gm_Mode0C_Enter"
+page = "boot.md#game-mode"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_failed_mode.h:MissionFailedMode::enter"
+status = "legacy"
+
+[[function]]
 address = 0x0015e5e8
 name = "GameModeStack_Push"
 page = "boot.md#original-structure"
@@ -20,7 +36,7 @@ status = "legacy"
 [[function]]
 address = 0x0015e6b8
 name = "GameModeStack_RunUntilEmpty"
-page = "boot.md#game-mode"
+page = "boot.md#the-main-loop"
 level = "confirmed-code"
 coney = "src/gamemodes/game_mode_stack.h:GameModeStack::runUntilEmpty"
 status = "legacy"
@@ -31,6 +47,14 @@ name = "GameModeStack_Top"
 page = "boot.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/game_mode_stack.h:GameModeStack::top"
+status = "legacy"
+
+[[function]]
+address = 0x0015e748
+name = "GameModeStack_TopId"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/game_mode_stack.h:GameModeStack::topId"
 status = "legacy"
 
 [[function]]

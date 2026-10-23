@@ -32,20 +32,26 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from coney_tools import docs_page, progress, research_functions, research_import
+from coney_tools.conventions import Research
 from coney_tools.orig_index import IndexRow
 from coney_tools.progress import Function, ProgressError
 from coney_tools.progress_research import ListedFunction
+from coney_tools.research_evidence import Levels, cites, levels_in
+from coney_tools.research_subject import section_names
 
 #: The page that describes the script bindings, where a binding's wrapper points when no page cites it.
 BINDINGS_PAGE = "scripting.md#bindings"
 #: The note on an entry whose page cites the function but states no evidence level.
-UNGRADED_NOTE = "no evidence level was stated when the entry was made from the progress list (issue 778)"
-_ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
+UNGRADED_NOTE = (
+    "no level could be tied to this function alone when the entry was made from the progress list (issue 778); "
+    "see the page"
+)
 _BINDING_WRAPPER = re.compile(r"^\s*wrapper:\s*0x([0-9a-fA-F]{8})\b", re.MULTILINE)
 _BINDING_LEVEL = re.compile(r"^\s*evidence:\s*(\S+)", re.MULTILINE)
-#: A choice between the sources of an entry, best first: a table row of a page, a paragraph that states a level, a
-#: script binding's evidence, a page that only mentions the address.
-_RANK = {"table": 0, "prose": 1, "binding": 2, "cited": 3}
+#: A choice between the sources of an entry, best first: a table row of a page; a sentence that names the address and
+#: states a level (`claim`); a block with one level that is about the function alone, or a row's own cell (`block`); a
+#: script binding's evidence; the lead line of the heading above; a page that only mentions the address (`cited`).
+_RANK = {"table": 0, "claim": 1, "block": 2, "binding": 3, "lead": 4, "cited": 5}
 
 
 @dataclass(frozen=True)
@@ -64,6 +70,8 @@ class Candidate:
 
     via: str
     entry: research_functions.Entry
+    named: bool = False  # the section names the function (in its heading or a code span of the block)
+    mentions: int = 0  # how many blocks of the section cite the address
 
 
 @dataclass
@@ -163,36 +171,153 @@ def _table_candidates(pages: Mapping[str, str], wanted: set[int]) -> dict[int, l
     return found
 
 
-def _prose_candidates(pages: Mapping[str, str], wanted: set[int]) -> dict[int, list[Candidate]]:
-    """The entries the other mentions of the `wanted` addresses give: a paragraph, list item or row that states a level
-    is graded; one that does not is a citation only (`cited`, the weakest level and a note saying so)."""
+_LEAD_IN = re.compile(r"^[\s>*_\-0-9.)]*(?:confirmed\s*\(\s*(?:code|runtime)\s*\)|inferred|speculative)", re.IGNORECASE)
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z`*(\[])")
+_ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
+_KEYS = {
+    "code": "confirmed-code",
+    "runtime": "confirmed-runtime",
+    "inferred": "inferred",
+    "speculative": "speculative",
+    "not-needed": "not-needed",
+}
+
+
+def sentences(text: str) -> list[str]:
+    """`text` cut into sentences; a full stop inside a code span (`".lua"`) or a number (`0.3`) ends none."""
+    masked = re.sub(r"`[^`]*`", lambda m: "`" * len(m.group(0)), text)
+    parts, start = [], 0
+    for match in _SENTENCE_END.finditer(masked):
+        parts.append(text[start : match.start()])
+        start = match.end()
+    parts.append(text[start:])
+    return [p for p in parts if p.strip()]
+
+
+def _one_level(levels: Levels) -> str:
+    """The key of the level `levels` states when it states exactly one in a valid form, else an empty string."""
+    if len(levels.kinds) != 1 or levels.refused:
+        return ""
+    return _KEYS[next(iter(levels.kinds))]
+
+
+def tied_level(text: str, address: int) -> tuple[str, str] | None:
+    """The level `text` (a paragraph, list item or row with no Evidence column) states for the function at `address`,
+    as (level key, how: `claim` or `block`), or None when no level can be tied to that function alone.
+
+    Tied is only: the sentence that cites the address states exactly one level in a valid form (a level-only sentence
+    right after it counts as part of it), or the block opens with a level ("Confirmed (code) at the addresses given:")
+    and states no other. A paragraph that says "confirmed (runtime)" about a table below it, or grades two claims
+    differently, ties nothing.
+    """
+    parts = sentences(text)
+    mine = [i for i, part in enumerate(parts) if address in _addresses(part)]
+    kinds: set[str] = set()
+    for i in mine:
+        kinds |= levels_in(parts[i]).kinds
+        after = parts[i + 1] if i + 1 < len(parts) else ""
+        if after and not cites(after) and _LEAD_IN.match(after) and len(after) < 90:
+            kinds |= levels_in(after).kinds
+    refused = any(levels_in(parts[i]).refused for i in mine)
+    if len(kinds) == 1 and not refused:
+        return _KEYS[next(iter(kinds))], "claim"
+    if not kinds and _LEAD_IN.match(text) and _one_level(levels_in(text)):
+        return _one_level(levels_in(text)), "block"
+    return None
+
+
+def _addresses(text: str) -> set[int]:
+    """The addresses `text` cites: any `0x` and eight hex digits (a data address is one too)."""
+    return {int(m.group(1), 16) for m in _ADDRESS.finditer(text)}
+
+
+def _leads(page: docs_page.Page) -> dict[int, Levels]:
+    """The lead line of each heading of level 3 or deeper: a statement citing no address that states a valid level for
+    the blocks under the heading (research_evidence.lead_lines)."""
+    leads: dict[int, Levels] = {}
+    for index, block in enumerate(page.blocks[:-1]):
+        if block.kind != "heading" or page.headings[block.section].level < 3:
+            continue
+        follower = page.blocks[index + 1]
+        if follower.kind != "text" or follower.section != block.section or cites(follower.text):
+            continue
+        levels = levels_in(follower.text)
+        if levels.kinds and not levels.refused:
+            leads[block.section] = levels
+    return leads
+
+
+def _prose_candidates(
+    pages: Mapping[str, str], wanted: set[int], names: Mapping[int, frozenset[str]], research: Research
+) -> dict[int, list[Candidate]]:
+    """The entries the other mentions of the `wanted` addresses give, each graded only by what is tied to that function.
+
+    In a graded section, a paragraph, list item or row that cites the address gives `claim` or `block` (tied_level), a
+    row's own Evidence cell gives `block`, and the lead line of the heading above gives `lead` to a block that states no
+    level itself. A mention that ties none, or sits in a section that states no claims, is `cited`: the weakest level
+    and a note saying so.
+    """
+    ungraded = {name.casefold() for name in research.ungraded_sections}
     found: dict[int, list[Candidate]] = {}
     for page, text in sorted(pages.items()):
         parsed = docs_page.read_page(text)
         anchors = docs_page.heading_ids(parsed)
+        sections = section_names(parsed, research, research.kind_of_path(f"docs/research/{page}"))
+        leads = _leads(parsed)
         for block in parsed.blocks:
             if block.kind == "heading":
                 continue
-            addresses = {int(m.group(1), 16) for m in _ADDRESS.finditer(block.text)} & wanted
-            if not addresses:
+            cited = _addresses(block.text) & wanted
+            if not cited:
                 continue
             anchor = anchors[block.section] if block.section >= 0 else ""
             target = f"{page}#{anchor}" if anchor else page
-            graded = research_import.level_of(block.text)
-            for address in sorted(addresses):
-                if graded is not None and (entry := _prose_entry(address, target, graded)) is not None:
-                    found.setdefault(address, []).append(Candidate("prose", entry))
+            section = sections[block.section] if block.section >= 0 else ""
+            states_claims = bool(section) and section.casefold() not in ungraded
+            heading = parsed.headings[block.section].text if block.section >= 0 else ""
+            for address in sorted(cited):
+                spelled = names.get(address, frozenset())
+                named = any(n in block.text or n in heading for n in spelled)
+                graded = _grade(parsed, block, address, leads) if states_claims else None
+                if graded is None:
+                    entry = research_functions.Entry(address, "", target, "speculative", note=UNGRADED_NOTE)
+                    found.setdefault(address, []).append(Candidate("cited", entry, named))
                 else:
-                    cited = research_functions.Entry(address, "", target, "speculative", note=UNGRADED_NOTE)
-                    found.setdefault(address, []).append(Candidate("cited", cited))
+                    level, how = graded
+                    tied = _prose_entry(address, target, level, block.text)
+                    if tied is None:
+                        tied = research_functions.Entry(address, "", target, "speculative", note=UNGRADED_NOTE)
+                        how = "cited"
+                    found.setdefault(address, []).append(Candidate(how, tied, named))
+    for address, candidates in found.items():
+        counts = Counter(c.entry.page for c in candidates)
+        found[address] = [replace(c, mentions=counts[c.entry.page]) for c in candidates]
     return found
 
 
-def _prose_entry(address: int, target: str, graded: tuple[str, str, str]) -> research_functions.Entry | None:
-    """An entry for a mention that states the level `graded` (key, note, reason), or None for a `not needed` with no
-    reason, which the schema refuses. The note is left out: for a paragraph it would be the whole paragraph."""
-    level, _note, reason = graded
+def _grade(
+    page: docs_page.Page, block: docs_page.Block, address: int, leads: Mapping[int, Levels]
+) -> tuple[str, str] | None:
+    """The level of the block for the function at `address` and how it is tied (`claim`, `block` or `lead`), or None."""
+    if block.kind == "row" and block.table is not None and page.tables[block.table].level_column is not None:
+        # A row of a table with an Evidence column: that cell is the row's claim (the row may cite several functions).
+        column = page.tables[block.table].level_column
+        cells = docs_page.split_cells(block.text)
+        key = _one_level(levels_in(cells[column])) if column is not None and column < len(cells) else ""
+        return (key, "block") if key else None
+    if levels_in(block.text).kinds or levels_in(block.text).refused:
+        return tied_level(block.text, address)
+    lead = leads.get(block.section)
+    key = _one_level(lead) if lead is not None else ""
+    return (key, "lead") if key else None
+
+
+def _prose_entry(address: int, target: str, level: str, text: str) -> research_functions.Entry | None:
+    """An entry at `target` with `level`, or None for a `not needed` with no reason after it, which the schema refuses.
+    The note is left out: for a paragraph it would be the whole paragraph."""
     if level == "not-needed":
+        reason = re.split(r"not needed\s*:", text, maxsplit=1, flags=re.IGNORECASE)[-1]
+        reason = re.split(r"(?<=[.!?])\s", reason.strip())[0].strip(" .;")
         return research_functions.Entry(address, "", target, level, role=reason) if reason else None
     return research_functions.Entry(address, "", target, level)
 
@@ -217,9 +342,13 @@ def binding_candidates(bindings: Mapping[str, str], wanted: set[int]) -> dict[in
 
 
 def _ranked(candidates: list[Candidate], weight: Mapping[str, int]) -> list[Candidate]:
-    """The candidates, best first: the best kind of source, then the page with the most reimplemented functions on it
-    (their home page, where the others are probably described), then the page and section by name."""
-    return sorted(candidates, key=lambda c: (_RANK[c.via], -weight.get(c.entry.page_path, 0), c.entry.page))
+    """The candidates, best first: the best kind of source; then the page with the most reimplemented functions on it
+    (their home page, where the others are probably described); then, on that page, the section that names the
+    function over one that only cites its address, and the one that cites it most; then the page and section by name."""
+    return sorted(
+        candidates,
+        key=lambda c: (_RANK[c.via], -weight.get(c.entry.page_path, 0), not c.named, -c.mentions, c.entry.page),
+    )
 
 
 # --- the plan -----------------------------------------------------------------------------------------------------
@@ -233,6 +362,7 @@ def plan(
     pages: Mapping[str, str],
     bindings: Mapping[str, str],
     existing: list[research_functions.SystemFunctions],
+    research: Research,
     functions_dir: Path = research_functions.FUNCTIONS_DIR,
 ) -> Plan:
     """The database after the rows of the retired list are moved into it.
@@ -250,7 +380,13 @@ def plan(
     wanted = {row.address for row in rows if row.address not in owner or not _entry(systems, owner, row.address).coney}
 
     candidates = _table_candidates(pages, wanted)
-    for other in (_prose_candidates(pages, wanted), binding_candidates(bindings, wanted)):
+    spelled = {
+        row.address: frozenset({row.name, listing[row.address].name} - {""})
+        if row.address in listing
+        else frozenset({row.name})
+        for row in rows
+    }
+    for other in (_prose_candidates(pages, wanted, spelled, research), binding_candidates(bindings, wanted)):
         for address, more in other.items():
             candidates.setdefault(address, []).extend(more)
     # A page's weight: how many of the functions to place have a graded source on it, so the functions of one subject

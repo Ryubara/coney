@@ -11,6 +11,14 @@ coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::enter"
 status = "legacy"
 
 [[function]]
+address = 0x0015d160
+name = "Gm_InGame_Update"
+page = "graphics.md#a-frame"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::update"
+status = "legacy"
+
+[[function]]
 address = 0x0016e8f0
 name = "ResourceMgr_GetCharData"
 page = "graphics.md#code-resources"
@@ -557,14 +565,6 @@ coney = "src/platform/level_file.h:readSectorBspChunk"
 status = "legacy"
 
 [[function]]
-address = 0x00198e20
-name = "SectorPlugin_Read"
-page = "graphics.md#plugins"
-level = "confirmed-code"
-coney = "src/world/world_streams.h:readSectorPluginData"
-status = "legacy"
-
-[[function]]
 address = 0x0019add0
 name = "OE_RoomSmoke_Construct"
 page = "graphics.md#room-smoke"
@@ -577,7 +577,7 @@ address = 0x0019b070
 name = "OE_RoomSmoke_FollowCamera"
 page = "graphics.md#room-smoke"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/effects/room_smoke.h:RoomSmoke::followCamera"
 status = "legacy"
 
@@ -601,16 +601,9 @@ status = "legacy"
 address = 0x0019b4c0
 name = "OE_RoomSmoke_Update"
 page = "graphics.md#room-smoke"
-level = "inferred"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/effects/room_smoke.h:RoomSmoke::step"
-status = "legacy"
-
-[[function]]
-address = 0x001a2690
-name = "BaseWidget_RenderAlpha"
-page = "graphics.md#2d-drawing"
-level = "confirmed-code"
-coney = "src/gui/base_widget.h:BaseWidget::render"
 status = "legacy"
 
 [[function]]

@@ -19,33 +19,6 @@ coney = "src/warriors/crime_reports.h:CrimeReports::update"
 status = "legacy"
 
 [[function]]
-address = 0x001b7a18
-name = "LockPickDial_SetDifficulty"
-page = "crimes.md#original-structure"
-role = "the HUD dial (HUD `+0xf420` + player × `0x540`)"
-level = "confirmed-code"
-coney = "src/world_objects/lock_pick.h:LockPickDial::LockPickDial"
-status = "legacy"
-
-[[function]]
-address = 0x001b8530
-name = "LockPickDial_Draw"
-page = "crimes.md#original-structure"
-role = "the HUD dial (HUD `+0xf420` + player × `0x540`)"
-level = "confirmed-code"
-coney = "src/hud/lock_pick_hud.h:LockPickHud::layout"
-status = "legacy"
-
-[[function]]
-address = 0x001b8d38
-name = "LockPickDial_Judge"
-page = "crimes.md#original-structure"
-role = "the HUD dial (HUD `+0xf420` + player × `0x540`)"
-level = "confirmed-code"
-coney = "src/world_objects/lock_pick.h:LockPickDial::press"
-status = "legacy"
-
-[[function]]
 address = 0x0022ceb8
 name = "Mug_End"
 page = "crimes.md#code-crimes"
@@ -173,7 +146,8 @@ status = "legacy"
 address = 0x00239f20
 name = "Human_SetInterrogation"
 page = "crimes.md#interrogation"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/story_bindings.cpp:makeHuSetInterrogation"
 status = "legacy"
 

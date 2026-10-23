@@ -729,7 +729,7 @@ class TargetCauseScope {
 /// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through
 /// the brain's services, `0x00384c38`), then, unless they took it, its gang (`Gang_OnEvent`), then, unless the gang
 /// used it, its brain (Brain::onEvent()). Returns whether any used it.
-/// @orig 0x0021d4e8 Human_OnEvent (unknown)
+/// @orig 0x0021d480 Human_OnEvent (unknown)
 bool deliverEvent(Brain& brain, const BrainEvent& event);
 
 /// The brain side of `Human_ReleasePlayer(human, 0, 1)` (docs/research/characters.md#players): the

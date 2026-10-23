@@ -10,35 +10,11 @@ coney = "src/scripting/rumble_match_bindings.cpp:makeHuSwitchPlayer"
 status = "legacy"
 
 [[function]]
-address = 0x00366360
-name = "lua_CameraCreateWin"
-page = "rumble.md#win-camera"
-level = "confirmed-code"
-coney = "src/scripting/rumble_match_bindings.cpp:makeCameraCreateWin"
-status = "legacy"
-
-[[function]]
-address = 0x0036ed48
-name = "lua_ShowRumbleModeIntro"
-page = "rumble.md#intro"
-level = "confirmed-code"
-coney = "src/scripting/rumble_match_bindings.cpp:makeShowRumbleModeIntro"
-status = "legacy"
-
-[[function]]
 address = 0x0036f160
 name = "lua_HUDLaunchRumbleWin"
 page = "rumble.md#result-screen"
 level = "confirmed-code"
 coney = "src/scripting/rumble_match_bindings.cpp:makeHudLaunchRumbleWin"
-status = "legacy"
-
-[[function]]
-address = 0x00415378
-name = "VolumeBox_Update"
-page = "rumble.md#game-types"
-level = "confirmed-code"
-coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
 status = "legacy"
 
 [[function]]

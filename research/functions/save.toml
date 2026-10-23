@@ -38,11 +38,11 @@ coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::exit"
 status = "legacy"
 
 [[function]]
-address = 0x0015ea40
-name = "Gm_Mode11_Exit"
-page = "save.md#mode-6"
-level = "confirmed-code"
-coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::exit"
+address = 0x0015e238
+name = "Gm_Mode12_Update"
+page = "save.md#story-screens"
+level = "inferred"
+coney = "src/gamemodes/profile_manager_mode.h:ProfileManagerMode::update"
 status = "legacy"
 
 [[function]]

@@ -2,6 +2,14 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x001582e0
+name = "Gm_Level_Enter"
+page = "level-loading.md#mode-1"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
+status = "legacy"
+
+[[function]]
 address = 0x00158660
 name = "Gm_Level_Suspend"
 page = "level-loading.md#original-structure"
@@ -136,17 +144,33 @@ status = "legacy"
 [[function]]
 address = 0x0040cdd8
 name = "LevelModel_LinkFirstTexture"
-page = "level-loading.md#original-structure"
+page = "level-loading.md#the-level-object"
 level = "confirmed-code"
 coney = "src/platform/level_file.h:linkLevelModel"
 status = "legacy"
 
 [[function]]
+address = 0x0040ce30
+name = "LevelHeader_OnLoaded"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/world/level_object.h:makeLevelHeaderHandler"
+status = "legacy"
+
+[[function]]
 address = 0x0040d0a8
 name = "LevelObject_RenderBackground"
-page = "level-loading.md#open-questions"
-level = "inferred"
+page = "level-loading.md#render-order"
+level = "confirmed-code"
 coney = "src/platform/world_renderer.h:WorldRenderer::renderBackground"
+status = "legacy"
+
+[[function]]
+address = 0x0040e2d8
+name = "WorldManager_Preload"
+page = "level-loading.md#preload"
+level = "confirmed-code"
+coney = "src/world/world_streamer.h:preloadWorlds"
 status = "legacy"
 
 [[function]]

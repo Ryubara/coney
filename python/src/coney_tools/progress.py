@@ -164,6 +164,19 @@ class OrigTag:
 
 
 @dataclass(frozen=True)
+class Mismatch:
+    """An `@orig` tag that spells a function's name differently from the database, which has Ghidra's."""
+
+    tag: OrigTag
+    name: str  # the database's
+
+    @property
+    def text(self) -> str:
+        """`src/x.h:3: @orig 0x... names 'Old', the database 'New'`."""
+        return f"{self.tag.where}: @orig {self.tag.address:#010x} names {self.tag.name!r}, the database {self.name!r}"
+
+
+@dataclass(frozen=True)
 class Milestone:
     """A row of the roadmap's status table."""
 
@@ -181,7 +194,21 @@ class Progress:
     milestones: list[Milestone]
     problems: list[str] = field(default_factory=list)
     understanding: Understanding | None = None  # None until the checkout has a Ghidra listing
-    warnings: list[str] = field(default_factory=list)  # printed by `progress check`, but they do not fail it
+    mismatches: list[Mismatch] = field(default_factory=list)  # tags spelling a name differently; `new_mismatches`
+
+    @property
+    def no_size_reason(self) -> str:
+        """Why a reimplemented function can have no size: the listing is missing, or it lacks a function there."""
+        if self.understanding is None:
+            return (
+                "there is no docs/progress/ghidra-functions.tsv, which gives the sizes (`coney-tools progress ghidra`)"
+            )
+        return "the Ghidra listing has no function at their address"
+
+    @property
+    def warnings(self) -> list[str]:
+        """The mismatches as messages."""
+        return [m.text for m in self.mismatches]
 
     @property
     def reimplemented_bytes(self) -> int:
@@ -381,6 +408,16 @@ def reimplemented(
     return sorted(functions, key=lambda f: f.address)
 
 
+def tags_in(path: str, text: str) -> list[OrigTag]:
+    """The `@orig` tags in the C++ file `path` whose text is `text`."""
+    tags = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        match = _ORIG_TAG.search(line)
+        if match:
+            tags.append(OrigTag(int(match["address"], 16), match["name"], f"{path}:{number}"))
+    return tags
+
+
 def scan_orig_tags(root: Path, source_dir: Path = SOURCE_DIR) -> list[OrigTag]:
     """Find every `@orig` tag in the C++ sources under `root / source_dir`."""
     tags: list[OrigTag] = []
@@ -389,12 +426,29 @@ def scan_orig_tags(root: Path, source_dir: Path = SOURCE_DIR) -> list[OrigTag]:
         return tags
     for path in sorted(p for p in base.rglob("*") if p.suffix in _SOURCE_SUFFIXES and p.is_file()):
         text = path.read_text(encoding="utf-8", errors="replace")
-        for number, line in enumerate(text.splitlines(), start=1):
-            match = _ORIG_TAG.search(line)
-            if match:
-                where = f"{path.relative_to(root).as_posix()}:{number}"
-                tags.append(OrigTag(int(match["address"], 16), match["name"], where))
+        tags += tags_in(path.relative_to(root).as_posix(), text)
     return tags
+
+
+def base_tag_keys(root: Path, base: str) -> set[tuple[int, str]]:
+    """The (address, name) of every `@orig` tag as it was where HEAD left `base`.
+
+    The files the branch changed are read at that commit (a renamed file under its old path), the rest as they are.
+    Raises ConfigError when git cannot say (no such base, no repository).
+    """
+    # Imported here: these modules build on this one.
+    from coney_tools import local_gate
+    from coney_tools.orig_check import _base_text
+
+    changed = {p for p in local_gate.changed_files(root, base) if p.startswith(f"{SOURCE_DIR.as_posix()}/")}
+    since = local_gate.merge_base(root, base)
+    renamed = local_gate.renamed_files(root, base)
+    keys = {(t.address, t.name) for t in scan_orig_tags(root) if t.where.rsplit(":", 1)[0] not in changed}
+    for path in changed:
+        text = _base_text(root, since, renamed.get(path, path))
+        if text is not None:
+            keys |= {(t.address, t.name) for t in tags_in(path, text)}
+    return keys
 
 
 def parse_milestones(roadmap: str) -> list[Milestone]:
@@ -464,18 +518,23 @@ def check(
     return problems
 
 
-def name_warnings(functions: list[Function], tags: list[OrigTag]) -> list[str]:
-    """A tag that spells a function's name differently from the database, which has Ghidra's name.
+def name_mismatches(functions: list[Function], tags: list[OrigTag]) -> list[Mismatch]:
+    """The tags that spell a function's name differently from the database, which has Ghidra's name.
 
-    The tag's name is free text that was copied when the function was ported; Ghidra's name is the one to use.
+    The tag's name is free text copied when the function was ported; Ghidra's name is the one to use. `progress check`
+    fails on the ones a branch adds (`new_mismatches`) and warns about the rest.
     """
     listed = {f.address: f for f in functions}
-    warnings = []
-    for tag in tags:
-        f = listed.get(tag.address)
-        if f is not None and tag.name and tag.name != f.name:
-            warnings.append(f"{tag.where}: @orig {tag.address:#010x} names {tag.name!r}, the database {f.name!r}")
-    return warnings
+    return [
+        Mismatch(tag, listed[tag.address].name)
+        for tag in tags
+        if tag.address in listed and tag.name and tag.name != listed[tag.address].name
+    ]
+
+
+def new_mismatches(mismatches: list[Mismatch], base_tags: set[tuple[int, str]]) -> list[Mismatch]:
+    """The mismatches of tags that did not exist, under that address and name, where the branch left its base."""
+    return [m for m in mismatches if (m.tag.address, m.tag.name) not in base_tags]
 
 
 def load(root: Path, functions: list[Function] | None = None) -> Progress:
@@ -497,7 +556,7 @@ def load(root: Path, functions: list[Function] | None = None) -> Progress:
     if not milestones:
         raise ProgressError(f"{ROADMAP_FILE}: no status table (rows like `| [Name](#anchor) | status |`)")
     problems: list[str] = []
-    warnings: list[str] = []
+    mismatches: list[Mismatch] = []
     if functions is None:
         systems = load_database(root)
         sizes = {f.address: f.size for f in listing} if listing is not None else None
@@ -505,5 +564,5 @@ def load(root: Path, functions: list[Function] | None = None) -> Progress:
         tags = scan_orig_tags(root)
         unported = {e.address: s.system for s in systems for e in s.entries if not e.coney}
         problems = check(totals, functions, tags, unported)
-        warnings = name_warnings(functions, tags)
-    return Progress(totals, functions, milestones, problems, progress_research.load(root, totals, listing), warnings)
+        mismatches = name_mismatches(functions, tags)
+    return Progress(totals, functions, milestones, problems, progress_research.load(root, totals, listing), mismatches)

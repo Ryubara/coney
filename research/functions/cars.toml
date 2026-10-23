@@ -2,6 +2,22 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00384ce0
+name = "ScriptHandler_MarshalMessage"
+page = "cars.md#explode"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::deliver"
+status = "legacy"
+
+[[function]]
+address = 0x003860b8
+name = "Object_SetLuaMsgHandler"
+page = "cars.md#explode"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::set"
+status = "legacy"
+
+[[function]]
 address = 0x00387bc8
 name = "Car_Init"
 page = "cars.md#original-structure"
@@ -13,7 +29,7 @@ status = "legacy"
 [[function]]
 address = 0x0038a4d8
 name = "Car_AddPartDamage"
-page = "cars.md#drawn"
+page = "cars.md#hit-volumes"
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::damagePart"
 status = "legacy"
@@ -46,7 +62,8 @@ status = "legacy"
 address = 0x0038bb48
 name = "Car_UpdateTransform"
 page = "cars.md#windows"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/car_hits.h:carBootPosition"
 status = "legacy"
 
@@ -63,7 +80,8 @@ status = "legacy"
 address = 0x0038c868
 name = "Car_SpawnStereo"
 page = "cars.md#windows"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/car_hits.h:carStereoPosition"
 status = "legacy"
 
@@ -71,7 +89,8 @@ status = "legacy"
 address = 0x0038d188
 name = "Car_ReleaseTrunkItem"
 page = "cars.md#parts"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/world_objects/cars.h:Cars::releaseTrunk"
 status = "legacy"
 

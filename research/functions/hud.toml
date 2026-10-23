@@ -100,6 +100,14 @@ coney = "src/gui/bar.h:Bar::render"
 status = "legacy"
 
 [[function]]
+address = 0x001a2690
+name = "BaseWidget_RenderAlpha"
+page = "hud.md#coordinates"
+level = "confirmed-code"
+coney = "src/gui/base_widget.h:BaseWidget::render"
+status = "legacy"
+
+[[function]]
 address = 0x001a3338
 name = "MashMeter_SetFill"
 page = "hud-functions-parts.md#fn-after-basewidget"
@@ -730,6 +738,15 @@ coney = "src/hud/num_indicator.h:NumIndicator::render"
 status = "legacy"
 
 [[function]]
+address = 0x001b7a18
+name = "LockPickDial_SetDifficulty"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the band globals for difficulty 0-2 ([Lock picking](crimes.md#lockpick)): arc sizes `0x0050d6b8` (35, 27, 20) and `0x0050d6bc` (14, 12, 9.2), good bounds `0x0050d6c4`/`c8`, perfect `0x0050d6cc` (less 0.2) / `d0`"
+level = "confirmed-code"
+coney = "src/world_objects/lock_pick.h:LockPickDial::LockPickDial"
+status = "legacy"
+
+[[function]]
 address = 0x001b7c10
 name = "LockPickDial_ApplyVideoMode"
 page = "hud-functions-lua.md#fn-hudlua"
@@ -754,6 +771,24 @@ page = "hud-functions-lua.md#fn-hudlua"
 role = "on: pins back to 3.14, the loop `vags/misc/lock_spins_01` started (handle `+0x450`), `vags/misc/click_open1` prepared (`0x00622e48`), pin 0, counters 0; off: both stopped; `+0x478` = on"
 level = "confirmed-code"
 coney = "src/hud/lock_pick_hud.h:LockPickHud::show"
+status = "legacy"
+
+[[function]]
+address = 0x001b8530
+name = "LockPickDial_Draw"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x30` (the update, 30 times a second: confirmed (runtime), [Lock picking](crimes.md#lockpick)): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick))"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::layout"
+status = "legacy"
+
+[[function]]
+address = 0x001b8d38
+name = "LockPickDial_Judge"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "2 perfect (next pin, `click_01` and `click_open1`), 1 good (next pin, `click_open1`), 0 miss (`click_01`, every pin back to 3.14, pin 0)"
+level = "confirmed-code"
+coney = "src/world_objects/lock_pick.h:LockPickDial::press"
 status = "legacy"
 
 [[function]]
@@ -1078,6 +1113,22 @@ page = "hud.md#original-structure"
 role = "values, colours and positions each frame"
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:PlayerPanel::update"
+status = "legacy"
+
+[[function]]
+address = 0x002274a8
+name = "Humans_FindAhead"
+page = "hud-messages.md#action-prompts"
+level = "inferred"
+coney = "src/ai/steering.h:humansAround"
+status = "legacy"
+
+[[function]]
+address = 0x00227d28
+name = "Human_IsInSceneState"
+page = "hud.md#who-shows-the-hud-again"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::playerInScene"
 status = "legacy"
 
 [[function]]

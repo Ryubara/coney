@@ -38,6 +38,14 @@ coney = "src/combat/meters.h:strikeDamage"
 status = "legacy"
 
 [[function]]
+address = 0x0021d5c0
+name = "Human_WarnOfAttack"
+page = "combat.md#charge-aim"
+level = "inferred"
+coney = "src/human/fighter.h:Fighter::warnTarget"
+status = "legacy"
+
+[[function]]
 address = 0x00220ac8
 name = "Human_PlayImpactSound"
 page = "combat.md#moving-strikes"
@@ -87,16 +95,9 @@ status = "legacy"
 address = 0x00227a90
 name = "Human_ExitThrowAim"
 page = "combat.md#dispatch"
-level = "inferred"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/combat/throw_aim.h:ThrowAimState::leave"
-status = "legacy"
-
-[[function]]
-address = 0x00227b30
-name = "Human_EnterThrowAim"
-page = "combat-targets.md#fight-stance"
-level = "confirmed-code"
-coney = "src/combat/throw_aim.h:ThrowAimState::enter"
 status = "legacy"
 
 [[function]]
@@ -120,7 +121,8 @@ status = "legacy"
 address = 0x00229b90
 name = "Human_ScaleAttackDamages"
 page = "combat.md#damage-table"
-level = "confirmed-runtime"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/human/human.h:Human::applyDamageModifier"
 status = "legacy"
 
@@ -212,7 +214,8 @@ status = "legacy"
 address = 0x00236038
 name = "Human_ApplyDamageModifier"
 page = "combat.md#damage-table"
-level = "confirmed-runtime"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
@@ -221,7 +224,7 @@ address = 0x0023a1b0
 name = "Human_SetCombatMode"
 page = "combat-targets.md#fight-stance"
 level = "speculative"
-note = "no evidence level was stated when the entry was made from the progress list (issue 778)"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/ai/scripted_hub.h:ScriptedHub::setCombatMode"
 status = "legacy"
 
@@ -281,6 +284,14 @@ coney = "src/human/fighter.h:Fighter::moveGrab"
 status = "legacy"
 
 [[function]]
+address = 0x00250708
+name = "Nav_FindArea"
+page = "combat-reactions.md#defeat-helpers"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::areaAt"
+status = "legacy"
+
+[[function]]
 address = 0x002542e8
 name = "AnimRange_Damage"
 page = "combat.md#original-structure"
@@ -309,8 +320,8 @@ status = "legacy"
 [[function]]
 address = 0x00254508
 name = "AttackTable_GetFarRange"
-page = "combat.md#block"
-level = "inferred"
+page = "combat-targets.md#ai-attacks"
+level = "confirmed-code"
 coney = "src/ai/attack_reach.h:farReach"
 status = "legacy"
 
@@ -336,7 +347,7 @@ status = "legacy"
 [[function]]
 address = 0x00258e10
 name = "Tandem_CanStart"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#tandem"
 level = "confirmed-code"
 coney = "src/combat/tandem.h:tandemCanStart"
 status = "legacy"
@@ -344,7 +355,7 @@ status = "legacy"
 [[function]]
 address = 0x00258e88
 name = "Human_CanCounterGrab"
-page = "combat-moves.md#counters"
+page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterFor"
 status = "legacy"
@@ -352,7 +363,7 @@ status = "legacy"
 [[function]]
 address = 0x002590f8
 name = "Human_CanCounterTackle"
-page = "combat-moves.md#counters"
+page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterFor"
 status = "legacy"
@@ -599,7 +610,7 @@ status = "legacy"
 [[function]]
 address = 0x0026f860
 name = "Tandem_Start"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#tandem"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::startTandem"
 status = "legacy"
@@ -751,14 +762,6 @@ coney = "src/combat/attacks.h:runningAttackAllowed"
 status = "legacy"
 
 [[function]]
-address = 0x0027da10
-name = "Player_OnL1Pressed"
-page = "combat.md#dispatch"
-level = "inferred"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::stepThrowAim"
-status = "legacy"
-
-[[function]]
 address = 0x0027df38
 name = "Player_UpdatePowerMove"
 page = "combat.md#original-structure"
@@ -827,7 +830,7 @@ status = "legacy"
 [[function]]
 address = 0x00280708
 name = "Player_UpdateChain"
-page = "combat.md#attacks"
+page = "combat.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::update"
 status = "legacy"
@@ -865,7 +868,8 @@ status = "legacy"
 address = 0x002854b0
 name = "Brain_SetInterrogateOverride"
 page = "combat-throws.md#mugging"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/scripting/human_bindings.cpp:makeSetInterrogateParam"
 status = "legacy"
 
@@ -873,7 +877,8 @@ status = "legacy"
 address = 0x002855f8
 name = "Mug_MoveTargetAngle"
 page = "combat-throws.md#mugging"
-level = "confirmed-code"
+level = "speculative"
+note = "no level could be tied to this function alone when the entry was made from the progress list (issue 778); see the page"
 coney = "src/combat/stick_games.h:MuggingGame::moveTarget"
 status = "legacy"
 
@@ -932,22 +937,6 @@ role = "cross: the X attacks"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/attack_target.h:attackTarget"
-status = "legacy"
-
-[[function]]
-address = 0x002880d8
-name = "Player_CrossWithWeapon"
-page = "combat.md#dispatch"
-level = "inferred"
-coney = "src/combat/attacks.h:throwAttack"
-status = "legacy"
-
-[[function]]
-address = 0x00290e78
-name = "Brain_SetAttackableTime"
-page = "combat-targets.md#ai-attacks"
-level = "confirmed-code"
-coney = "src/ai/attack_places.h:attackableGapMs"
 status = "legacy"
 
 [[function]]

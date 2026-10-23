@@ -607,7 +607,10 @@ def _add_progress_commands(groups: Any) -> None:
     commands = tracker.add_subparsers(dest="command", required=True)
     show = commands.add_parser("show", help="print how much is reimplemented and researched")
     show.add_argument("--json", action="store_true", help="print everything as JSON")
-    commands.add_parser("check", help="check the tracker's inputs (the function database, @orig tags, ranges, roadmap)")
+    check = commands.add_parser(
+        "check", help="check the tracker's inputs (the function database, @orig tags, ranges, roadmap)"
+    )
+    check.add_argument("--base", default="origin/main", help="what tag names are measured from (default: %(default)s)")
     render = commands.add_parser(
         "render", help="write the pages, pictures, badge JSON and numbers the docs build publishes, to a folder"
     )
@@ -951,7 +954,7 @@ def _run_progress(args: argparse.Namespace) -> int:
     if args.command == "show":
         return progress_cli.run_show(args.json)
     if args.command == "check":
-        return progress_cli.run_check()
+        return progress_cli.run_check(args.base)
     if args.command == "render":
         return progress_cli.run_render(args.out_dir, history=not args.no_history)
     if args.command == "ghidra":
