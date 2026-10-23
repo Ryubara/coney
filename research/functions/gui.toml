@@ -122,7 +122,6 @@ name = "Radar_Setup"
 page = "gui.md#fn-radarhud"
 role = "from `HUD_InitLevel`: the radar's sprite batches and map texture ([The radar](gui.md#radar-icons)); the first function after the stub `0x001c3dc0`, so the start of `RadarHUD.cpp` (inferred)"
 level = "confirmed-code"
-note = "also graded inferred at [cut-content.md#graveyard-shift](cut-content.md#graveyard-shift)"
 coney = "src/hud/hud.h:Hud::setRadarMap"
 status = "legacy"
 
@@ -214,42 +213,6 @@ page = "gui.md#fn-subtitle"
 role = "chunk `0x51` handler: the chunk into `0x0050ea74`"
 level = "confirmed-code"
 coney = "src/movies/captions.h:parseSubtitles"
-status = "legacy"
-
-[[function]]
-address = 0x001cabc0
-name = "Captions_Init"
-page = "gui.md#fn-subtitle"
-role = "[Movies](movies.md#caption-text)"
-level = "confirmed-code"
-coney = "src/movies/captions.h:Captions::Captions"
-status = "legacy"
-
-[[function]]
-address = 0x001cad38
-name = "Captions_SelectScene"
-page = "gui.md#fn-subtitle"
-role = "[Movies](movies.md#caption-text)"
-level = "confirmed-code"
-coney = "src/movies/captions.h:Captions::selectScene"
-status = "legacy"
-
-[[function]]
-address = 0x001cb010
-name = "Captions_SetKind"
-page = "gui.md#fn-subtitle"
-role = "[Movies](movies.md#caption-text)"
-level = "confirmed-code"
-coney = "src/movies/captions.h:Captions::command"
-status = "legacy"
-
-[[function]]
-address = 0x001cb190
-name = "Captions_Next"
-page = "gui.md#fn-subtitle"
-role = "[Movies](movies.md#caption-text)"
-level = "confirmed-code"
-coney = "src/movies/captions.h:Captions::next"
 status = "legacy"
 
 [[function]]
@@ -433,18 +396,10 @@ coney = "src/gui/menu_input.h:MenuInput::dispatch"
 status = "legacy"
 
 [[function]]
-address = 0x002c7ee0
-name = "DealerGoal_AddRadarIcon"
-page = "gui.md#radar-icons"
-level = "confirmed-code"
-coney = "src/ai/dealer_goal.cpp:DealerBlip"
-status = "legacy"
-
-[[function]]
 address = 0x00357998
 name = "Script_GetPlatform"
 page = "gui.md#coneys-implementation"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeGetPlatform"
 status = "legacy"
 
@@ -452,6 +407,7 @@ status = "legacy"
 address = 0x003579a0
 name = "ScriptSystem_DoFileLua"
 page = "gui.md#coneys-implementation"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
+note = "the level is from [formats/lua-chunks.md](formats/lua-chunks.md)"
 coney = "src/scripting/script_bindings.cpp:makeDoFile"
 status = "legacy"

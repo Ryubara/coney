@@ -11,6 +11,7 @@ for a branch that still adds rows to the old file:
 * `plan` turns its rows into database entries: the entry of a function the database already lists gets `coney`; any
   other function gets a new entry, taken from the research that cites it (see `_ranked`) and put in the file of the
   system its page belongs to (`system_of`);
+  a few functions the rules read wrongly are named in `OVERRIDES` instead, each with the page's words that say so;
 * `legacy_functions` gives the history (progress_history.py) the reimplemented list of a day before the move.
 
 A field of the old file maps like this: `address` is the entry's address; `name` becomes Ghidra's name for the address
@@ -77,7 +78,165 @@ class Candidate:
     describes: bool = (
         False  # the block or its heading is about this function: it opens with the function, or is its row
     )
-    weak: bool = False  # the section is Coney's own, or open questions, or a summary: never a function's home
+    weak: bool = False  # the section is Coney's own, or open questions, or a summary: only a last-resort home
+    shared: bool = False  # a table row that lists more than one function in its first cell (`0x1 / 0x2`)
+    headed: bool = False  # the heading of the section names the function: the whole section is about it
+    row: bool = False  # the candidate is a table row (of a table the function tables do not read)
+
+
+@dataclass(frozen=True)
+class Override:
+    """A hand reading of a page for one function, where the rules of this module cannot express what the page says.
+
+    `page` is the entry's page (`file.md#section`), `level` the level key the page gives the function, `source` the
+    words that say so, as `file.md: words` (the file may be another page than `page`'s: the level is then said to be
+    from it), and `reason` why the rules get it wrong. `override_problems` checks that each still matches its page.
+    """
+
+    page: str
+    level: str
+    source: str
+    reason: str
+
+
+#: The functions whose home or level the rules get wrong and a reader sees at once, by address. Keep it short: a rule
+#: that fixes a kind of case belongs in the importer. The reasons cite the page lines (as of 2026-10-23).
+OVERRIDES: dict[int, Override] = {
+    # The block names the function in the middle of a sentence or after its own topic, so the rules read a mention.
+    0x0038D188: Override(  # Car_ReleaseTrunkItem
+        "cars.md#parts",
+        "confirmed-code",
+        "cars.md: `Car_ReleaseTrunkItem` (`0x0038d188`) moves the",
+        "cars.md:158-162: the boot-item item is about it and ends 'Confirmed (code).'; it opens with its topic",
+    ),
+    0x004134F8: Override(  # PlayerBox_Update
+        "scripting.md#triggers",
+        "confirmed-code",
+        "scripting.md: update `0x004134f8`): the same",
+        "scripting.md:362-367: the kind-2 box item gives its update in the opening parenthesis; 'Confirmed (code).'",
+    ),
+    0x002DF288: Override(  # TrackHumanGoal_Start
+        "ai-gangs.md#formations",
+        "confirmed-code",
+        "ai-gangs.md: Start (`0x002df288`) joins the target's formation",
+        "ai-gangs.md:1425-1433: the GoalTrackHuman paragraph walks Start, End and Process and ends 'Confirmed (code)'",
+    ),
+    0x00357998: Override(  # Script_GetPlatform
+        "gui.md#coneys-implementation",
+        "confirmed-code",
+        "gui.md: it returns **1** (`0x00357998`)",
+        "gui.md:1336-1338: 'confirmed (code)' for the return value; the wording is the separate runtime remark",
+    ),
+    0x003579A0: Override(  # ScriptSystem_DoFileLua
+        "gui.md#coneys-implementation",
+        "confirmed-code",
+        "formats/lua-chunks.md: confirmed (code) at `0x003579a0` `ScriptSystem_DoFileLua`",
+        "formats/lua-chunks.md:86-88 grades it; that page has front matter, which the importer does not read",
+    ),
+    0x002195E0: Override(  # Human_SetCoverFlag5
+        "sound-events.md#covered",
+        "confirmed-code",
+        "sound-events.md: `Human_SetCoverFlag5` `0x002195e0`, which also pauses the wind-blown garbage",
+        "sound-events.md:702-707: the section is about the byte it sets; 'Confirmed (code)'",
+    ),
+    0x00165678: Override(  # Gang_GetLeader
+        "ai-gangs.md#tactic-kinds",
+        "confirmed-code",
+        "ai-gangs.md: **Leader**: gang `+0x44` holds the leader's handle; `0x00165678` returns him",
+        "ai-gangs.md:214-216: the first bullet of 'Shared behaviour, confirmed (code):' describes it",
+    ),
+    0x003860B8: Override(  # Object_SetLuaMsgHandler
+        "scripting.md#message-handlers",
+        "confirmed-code",
+        "scripting.md: (`0x00386298` → `0x003860b8`) gives the object a",
+        "scripting.md:276-283: the SetMsgHandler paragraph describes it, 'Confirmed (code).'; cars.md lists addresses",
+    ),
+    0x00415378: Override(  # VolumeBox_Update
+        "scripting.md#triggers",
+        "confirmed-code",
+        "scripting.md: The update (`0x00415378`), while enabled (byte `+0x68`), collects the humans",
+        "scripting.md:346-352: the volume-box item describes the update, under 'Confirmed (code):'; rumble.md lists",
+    ),
+    0x0041C4E0: Override(  # WarriorCommand_Dispatch
+        "ai-gangs.md#warrior-commands",
+        "confirmed-code",
+        "ai-gangs.md: go through one dispatcher, `0x0041c4e0(state, chief, command, forced, pos, arg)`, confirmed",
+        "ai-gangs.md:873-878: the section's paragraph and steps describe the dispatcher; characters.md names it",
+    ),
+    0x00336A00: Override(  # Quat_Slerp
+        "maths.md#rotations",
+        "confirmed-code",
+        "maths.md: | `0x00336a00` | `Quat_Slerp` | Spherical interpolation of two quaternions",
+        "maths.md:83: its own full row; physics.md:56 is a one-line row and objects.md:90 a shared one",
+    ),
+}
+
+
+def _overridden(
+    override: Override, address: int, name: str, port: str, found: list[Candidate]
+) -> research_functions.Entry:
+    """The entry an override gives: its page and level, the role the page's own row gives, and a note naming the page
+    the level is from when that is not the entry's own."""
+    role = next((c.entry.role for c in found if c.entry.page == override.page and c.entry.role), "")
+    source = override.source.partition(": ")[0]
+    note = "" if source == override.page.partition("#")[0] else f"the level is from [{source}]({source})"
+    return research_functions.Entry(
+        address, name, override.page, override.level, role=role, note=note, coney=port, status="legacy"
+    )
+
+
+def _source_problems(
+    label: str, address: int, override: Override, source: str, words: str, page: docs_page.Page
+) -> list[str]:
+    """Why the block of `page` that holds `words` does not support `override`: it is missing, does not cite the
+    address, or states no such level (itself, or in the lead line of its list: the paragraph above that ends in a
+    colon)."""
+    wanted = " ".join(words.split())
+    found = [
+        (index, block)
+        for index, block in enumerate(page.blocks)
+        if block.kind != "heading" and wanted in " ".join(block.text.split())
+    ]
+    if not found:
+        return [f"{label}: {source} no longer says {words!r}"]
+    cited = [(i, b) for i, b in found if address in _addresses(b.text)]
+    if not cited:
+        return [f"{label}: the block of {source} with {words!r} does not cite the address"]
+    for index, block in cited:
+        texts = [block.text]
+        while index > 0 and page.blocks[index].item:
+            index -= 1
+        if (
+            page.blocks[index].kind == "text"
+            and not page.blocks[index].item
+            and page.blocks[index].text.rstrip().endswith(":")
+        ):
+            texts.append(page.blocks[index].text)
+        if any(override.level in {_KEYS[k] for k in levels_in(text).kinds} for text in texts):
+            return []
+    return [f"{label}: the block of {source} with {words!r} does not state {override.level}"]
+
+
+def override_problems(overrides: Mapping[int, Override], pages: Mapping[str, str]) -> list[str]:
+    """Why an override no longer matches its page: the page or its section is gone, or the block that holds the quoted
+    words no longer cites the address or states the level. Empty when every override still holds."""
+    problems = []
+    for address, override in sorted(overrides.items()):
+        label = f"{address:#010x} {override.page}"
+        file, section = override.page.partition("#")[0], override.page.partition("#")[2]
+        if file not in pages:
+            problems.append(f"{label}: the page is gone")
+            continue
+        if section not in docs_page.heading_ids(docs_page.read_page(pages[file])):
+            problems.append(f"{label}: the page has no section {section!r}")
+        if override.level not in research_functions.LEVELS:
+            problems.append(f"{label}: {override.level!r} is no level")
+        source, _, words = override.source.partition(": ")
+        if source not in pages:
+            problems.append(f"{label}: the source page {source} is gone")
+            continue
+        problems += _source_problems(label, address, override, source, words, docs_page.read_page(pages[source]))
+    return problems
 
 
 @dataclass
@@ -178,9 +337,27 @@ def _table_candidates(pages: Mapping[str, str], wanted: set[int]) -> dict[int, l
     """The entries the pages' function tables give for the `wanted` addresses (research_import)."""
     found: dict[int, list[Candidate]] = {}
     for page, text in sorted(pages.items()):
+        shared = _shared_rows(page, text)
         for entry in research_import.import_tables(text, page, source=page).entries:
             if entry.address in wanted:
-                found.setdefault(entry.address, []).append(Candidate("table", entry))
+                found.setdefault(entry.address, []).append(
+                    Candidate("table", entry, shared=(entry.page, entry.address) in shared)
+                )
+    return found
+
+
+def _shared_rows(page: str, text: str) -> set[tuple[str, int]]:
+    """(section, address) of each table row of the page whose first cell lists several functions: the row is about them
+    together, so a row of the function's own elsewhere describes it better."""
+    parsed = docs_page.read_page(text)
+    anchors = docs_page.heading_ids(parsed)
+    found = set()
+    for block in parsed.blocks:
+        if block.kind != "row" or block.section < 0:
+            continue
+        cells = docs_page.split_cells(block.text)
+        if cells and len(_outside_ranges(cells[0])) > 1:
+            found |= {(f"{page}#{anchors[block.section]}", a) for a in _outside_ranges(cells[0])}
     return found
 
 
@@ -454,53 +631,104 @@ def _leads(page: docs_page.Page) -> dict[int, Levels]:
     return leads
 
 
-#: A block that opens with one bold, italic or code span (`**The type**`, `` `Name(args)` ``, `**`Name`**`), the way a
-#: page introduces what it describes.
-_OPENING_SPAN = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+)?(?:\*\*.+?\*\*|\*[^*]+\*|`[^`]+`|_[^_]+_)")
-#: What may stand between that span and the address it introduces: an opening parenthesis, or a chain of the wrapper
-#: addresses that lead to it (`(0x1 → 0x2 → 0x3)`).
-_INTRO_GAP = re.compile(r"[\s(,*`_]*(?:0x[0-9a-fA-F]{8}[\s`)*_]*(?:→|->)[\s`(*_]*)*")
+#: A block that opens with one bold, italic or code span (`**The type**`, `` `Name(args)` ``, `**`Name`**`) or a link
+#: (``[`SetHandler`](../x.md#sethandler)``), the way a page introduces what it describes.
+_OPENING_SPAN = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+)?(?:\*\*.+?\*\*|\*[^*]+\*|`[^`]+`|_[^_]+_|\[[^\]]*\]\([^)]*\))")
+#: What may stand between that span and the address it introduces (once the function's own names are taken out): an
+#: opening parenthesis, or a chain of the wrapper addresses that lead to it, each perhaps after its name
+#: (`(0x1 → 0x2 → 0x3)`, ``(`Sectors_SectorOf` `0x1` → `0x2`)``).
+_INTRO_GAP = re.compile(r"[\s(,*`_]*(?:(?:[A-Za-z_]\w*[\s`,]*)?0x[0-9a-fA-F]{8}[\s`)*_]*(?:→|->)[\s`(*_]*)*")
+_LINK = re.compile(r"\[[^\]]*\]\([^)]*\)")
+#: A range of addresses (`0x1`-`0x2`): its ends are the edges of a stretch of code, not functions the text is about.
+_RANGE = re.compile(r"0x[0-9a-fA-F]{8}[`\s]*[-\u2013\u2014][`\s]*`?0x[0-9a-fA-F]{8}")
+
+
+def _outside_ranges(text: str) -> set[int]:
+    """The addresses `text` cites other than as the end of a range (`0x1`-`0x2`)."""
+    return _addresses(_RANGE.sub(" ", text))
+
+
+def _opens_with(block: docs_page.Block, address: int, spelled: frozenset[str]) -> bool:
+    """True when the block opens with one span and the function comes at once: its address before any colon or other
+    function (`**The type** (`0x...`): ...`, `- **`Name(args)`** (`0x...`): ...`, ``(`Name`, `0x...`)``), or, after a
+    head such as `(`0x1`)` or `(answered)` and a colon, its name (``**A point's area** (`0x1`): `Name` (`0x2`) casts``).
+    """
+    opening = _OPENING_SPAN.match(block.text)
+    if opening is None:
+        return False
+    names = "|".join(re.escape(n) for n in sorted(spelled))
+    rest = block.text[opening.end() :]
+    token = f"0x{address:08x}"
+    position = rest.lower().find(token)
+    if position >= 0:
+        gap = _LINK.sub(" ", rest[:position])
+        if names:
+            gap = re.sub(rf"(?<![A-Za-z0-9_])(?:{names})(?![A-Za-z0-9_])", "", gap)
+        if _INTRO_GAP.fullmatch(gap) is not None:
+            return True
+    head = re.sub(r"^(?:\s*\([^()]*\))*\s*[:,]?\s*", "", rest)
+    return bool(names) and re.match(rf"`(?:{names})`", head) is not None
 
 
 def _describes(block: docs_page.Block, address: int, heading: str, spelled: frozenset[str]) -> bool:
     """True when the block (or the heading above it) is about the function at `address` rather than mentions it.
 
-    A table row is about the function whose address is in its first cell (or in its second, when the first is the
-    function's name); a heading that names the function makes every other block under it about it; any other block is
-    when it opens with one span and the address comes at once (`**The type** (`0x...`): ...`,
-    `- **`Name(args)`** (`0x...`): ...`), before any colon or other address.
+    A table row is about the function whose address stands in its first cell with little else around it (or in its
+    second, when the first is the function's name); a heading that names the function makes every other block under it
+    about it; any other block is when it opens with one span and the address comes at once (`_opens_with`).
     """
     if block.kind == "row":
         cells = docs_page.split_cells(block.text)
-        if cells and address in _addresses(cells[0]):
+        if cells and address in _addresses(cells[0]) and _alone(cells[0]):
             return True
         # `| Name | Address | ... |`: the function's own name leads the row.
         return len(cells) > 1 and address in _addresses(cells[1]) and any(_spelled_in(n, cells[0]) for n in spelled)
-    if any(_spelled_in(name, heading) for name in spelled):
-        return True
-    token = f"0x{address:08x}"
-    position = block.text.lower().find(token)
-    opening = _OPENING_SPAN.match(block.text)
-    if position < 0 or opening is None or position < opening.end():
-        return False
-    return _INTRO_GAP.fullmatch(block.text[opening.end() : position]) is not None
+    return any(_spelled_in(name, heading) for name in spelled) or _opens_with(block, address, spelled)
 
 
 _CODE_SPAN = re.compile(r"\[[^\]]*\]\([^)]*\)|`[^`]*`|\([^()]*\)")
 
 
+def _alone(cell: str) -> bool:
+    """True when `cell` is an address (or a few) with little else around it (`0x1`, `Name 0x1 (vtable 0x2)`, `start 0x1,
+    tick 0x2`), not a sentence that happens to cite it (`sets +0x04 while active; ... (called from 0x1)`)."""
+    words = re.findall(r"[A-Za-z]+", _CODE_SPAN.sub(" ", cell))
+    return len(words) <= 2 * len(_addresses(cell)) + 1
+
+
 def _row_subject(block: docs_page.Block, address: int, skip: int | None = None) -> bool:
     """True when the function at `address` is what a table row lists rather than something its prose mentions: some
-    cell holds the address with little else around it (`0x1`, `Name 0x1 (vtable 0x2)`, `start 0x1, tick 0x2`), not a
-    sentence that happens to cite it (`sets +0x04 while active; ... (called from 0x1)`). The Evidence cell (`skip`) is
-    the row's grade, never its subject."""
-    for index, cell in enumerate(docs_page.split_cells(block.text)):
-        if index == skip or address not in _addresses(cell):
+    cell holds the address with little around it (`_alone`). The Evidence cell (`skip`) is the row's grade, never its
+    subject."""
+    return any(
+        index != skip and address in _addresses(cell) and _alone(cell)
+        for index, cell in enumerate(docs_page.split_cells(block.text))
+    )
+
+
+#: A sentence that opens with a level, whatever the case of the word before it: `Confirmed (code) for the rays;`.
+_SENTENCE_START = re.compile(r"(?<=[.!?])\s+(?=[A-Za-z`*(\[])")
+
+
+def closing_key(text: str, address: int) -> str:
+    """`confirmed-code` when every sentence of `text` that opens with a level opens with a code reading, and there is
+    one; else an empty string. Such a block, which opens with the function it describes, grades it by that closing
+    statement however many asides and other addresses it holds (`inferred` in a clause qualifies a detail), unless the
+    closing statement lists other addresses (`Confirmed (code) at A, B`) without this one."""
+    masked = re.sub(r"`[^`]*`", lambda m: "`" * len(m.group(0)), text)
+    keys, start = set(), 0
+    for match in [*_SENTENCE_START.finditer(masked), None]:
+        end = match.start() if match is not None else len(text)
+        sentence = text[start:end]
+        start = match.end() if match is not None else end
+        lead = _LEAD_IN.match(sentence)
+        if lead is None:
             continue
-        words = re.findall(r"[A-Za-z]+", _CODE_SPAN.sub(" ", cell))
-        if len(words) <= 2 * len(_addresses(cell)) + 1:
-            return True
-    return False
+        keys.add(_one_level(levels_in(lead.group(0))))
+        at = _LEVEL_AT.search(sentence)
+        if at is not None and address not in _addresses(at.group(2)):
+            return ""
+    return "confirmed-code" if keys == {"confirmed-code"} else ""
 
 
 def _weak(page: docs_page.Page, index: int, section: str, ungraded: set[str]) -> bool:
@@ -522,11 +750,13 @@ def _prose_candidates(
 ) -> dict[int, list[Candidate]]:
     """The entries the other mentions of the `wanted` addresses give, each graded only by what is tied to that function.
 
-    In a graded section, a paragraph, list item or row that cites the address gives `claim` or `block` (tied_level), a
-    row's own Evidence cell gives `block` (for the function whose address starts the row), and the lead line of the
-    heading above gives `lead` to a block about the function that states no level itself. A mention that ties none, or
-    sits in a section that states no claims, is `cited`: no level and a note saying to read the page. Each candidate
-    says whether it describes the function (`_describes`) and whether its section is a weak one (`_weak`).
+    A paragraph, list item or row that cites the address gives `claim` or `block` (tied_level; a block that opens
+    with the function and closes with a code reading, `closing_key`), a row's own Evidence cell gives `block` (for the
+    function whose address starts the row), and the lead line of the heading above gives `lead` to a block about the
+    function that states no level itself. A mention that ties none, or the end of a range of addresses, is `cited`: no
+    level and a note saying to read the page. Weak sections (Coney's, open questions, summaries, `*-reimpl.md`) grade
+    what they state too, but give no lead line's level. Each candidate says whether it describes the function
+    (`_describes`), whether its heading names it, and whether its section is a weak one (`_weak`).
     """
     ungraded = {name.casefold() for name in research.ungraded_sections}
     found: dict[int, list[Candidate]] = {}
@@ -545,23 +775,34 @@ def _prose_candidates(
             target = f"{page}#{anchor}" if anchor else page
             section = sections[block.section] if block.section >= 0 else ""
             weak = block.section < 0 or page.endswith("-reimpl.md") or _weak(parsed, block.section, section, ungraded)
-            states_claims = bool(section) and not weak
             heading = parsed.headings[block.section].text if block.section >= 0 else ""
+            outside = _outside_ranges(block.text)
             for address in sorted(cited):
                 spelled = names.get(address, frozenset())
                 named = any(n in block.text or n in heading for n in spelled)
-                describes = _describes(block, address, heading, spelled)
+                # The end of a range (`0x1`-`0x2`) is an edge of code the text speaks of, not a function it is about.
+                ranged = address not in outside
+                describes = not ranged and _describes(block, address, heading, spelled)
+                headed = not ranged and any(_spelled_in(name, heading) for name in spelled)
                 subject = describes or (
-                    block.kind == "row" and _row_subject(block, address, _level_column(parsed, block))
+                    not ranged and block.kind == "row" and _row_subject(block, address, _level_column(parsed, block))
                 )
-                graded = _grade(parsed, block, address, leads, names, describes, subject) if states_claims else None
+                # Every section grades the claims it states itself; a weak one (Coney's, open questions, a summary, a
+                # page of corrections) is only a home of last resort and gives no lead line's level.
+                graded = None
+                if section and not ranged:
+                    graded = _grade(parsed, block, address, leads, names, subject, weak, describes, spelled)
                 tied = _prose_entry(address, target, graded[0], block.text) if graded is not None else None
                 if graded is None or tied is None:
                     # No level tied to this function alone: the entry has none, and its note says to read the page.
                     entry = research_functions.Entry(address, "", target, note=UNGRADED_NOTE)
-                    found.setdefault(address, []).append(Candidate("cited", entry, named, 0, describes, weak))
+                    found.setdefault(address, []).append(
+                        Candidate("cited", entry, named, 0, describes, weak, headed=headed, row=block.kind == "row")
+                    )
                 else:
-                    found.setdefault(address, []).append(Candidate(graded[1], tied, named, 0, describes, weak))
+                    found.setdefault(address, []).append(
+                        Candidate(graded[1], tied, named, 0, describes, weak, headed=headed, row=block.kind == "row")
+                    )
     for address, candidates in found.items():
         counts = Counter(c.entry.page for c in candidates)
         found[address] = [replace(c, mentions=counts[c.entry.page]) for c in candidates]
@@ -579,8 +820,10 @@ def _grade(
     address: int,
     leads: Mapping[int, Levels],
     names: Mapping[int, frozenset[str]],
-    describes: bool,
     subject: bool,
+    weak: bool,
+    describes: bool,
+    spelled: frozenset[str],
 ) -> tuple[str, str] | None:
     """The level of the block for the function at `address` and how it is tied (`claim`, `block` or `lead`), or None."""
     if block.kind == "row" and block.table is not None:
@@ -598,9 +841,14 @@ def _grade(
             return None
         return key, "block"
     if levels_in(block.text).kinds or levels_in(block.text).refused:
-        return tied_level(block.text, address, names)
+        tied = tied_level(block.text, address, names)
+        if tied is None and describes and _opens_with(block, address, spelled):
+            # A block that opens with the function and closes with a code reading grades it, whatever asides it holds.
+            key = closing_key(block.text, address)
+            return (key, "block") if key else None
+        return tied
     lead = leads.get(block.section)
-    key = _one_level(lead) if lead is not None else ""
+    key = _one_level(lead) if lead is not None and not weak else ""
     return (key, "lead") if key else None
 
 
@@ -640,15 +888,17 @@ def binding_candidates(bindings: Mapping[str, str], wanted: set[int]) -> dict[in
 def _home_class(candidate: Candidate) -> int:
     """How good a home the candidate's section is, best first: the function's own table row;
     its script binding's reference (the maintainer's rule: a wrapper's entry points at the binding reference); a
-    section that describes it; a section that only mentions it; and last a Coney or open-questions section, which
-    describes nothing of the original."""
+    section whose heading names it, or a row of a table that is its own; a block that is about it; a block that only
+    mentions it; and last a Coney, open-questions or corrections section, which describes nothing of the original."""
     if candidate.via == "table":
         return 0
     if candidate.via == "binding":
         return 1
     if candidate.weak:
-        return 4
-    return 2 if candidate.describes else 3
+        return 5
+    if candidate.headed or (candidate.describes and candidate.row):
+        return 2
+    return 3 if candidate.describes else 4
 
 
 def _ranked(candidates: list[Candidate], weight: Mapping[str, int]) -> list[Candidate]:
@@ -661,6 +911,7 @@ def _ranked(candidates: list[Candidate], weight: Mapping[str, int]) -> list[Cand
         candidates,
         key=lambda c: (
             _home_class(c),
+            c.shared,
             _RANK[c.via],
             -weight.get(c.entry.page_path, 0),
             not c.named,
@@ -678,7 +929,67 @@ def _donor(candidates: list[Candidate], weight: Mapping[str, int]) -> Candidate 
     graded = [c for c in candidates if c.entry.level and (c.via != "lead" or c.describes)]
     if not graded:
         return None
-    return min(graded, key=lambda c: (c.weak, _RANK[c.via], -weight.get(c.entry.page_path, 0), c.entry.page))
+    return min(
+        graded,
+        key=lambda c: (
+            c.weak,
+            _RANK[c.via],
+            not c.describes,
+            not c.named,
+            -weight.get(c.entry.page_path, 0),
+            c.entry.page,
+        ),
+    )
+
+
+def _choose(
+    found: list[Candidate], weight: Mapping[str, int], name: str, port: str, page_names: set[str]
+) -> tuple[research_functions.Entry, str, Candidate | None] | str:
+    """The entry for a function from its candidates, the way it came (a key of `_RANK`) and the donor of its level, or
+    the reason no candidate is valid.
+
+    The best home the schema accepts (a table's cell may carry what an entry may not, decompiler output) is taken; a
+    home that states no level takes the level another page states for the function, and says where it is from, unless
+    that is the home's own page (then the level is the page's own).
+    """
+    problems = []
+    donor = _donor(found, weight)
+    for chosen in _ranked(found, weight):
+        entry = replace(chosen.entry, name=name, coney=port, status="legacy")
+        if not entry.level and donor is not None:
+            note = (
+                "" if donor.entry.page == entry.page else f"the level is from [{donor.entry.page}]({donor.entry.page})"
+            )
+            entry = replace(entry, level=donor.entry.level, role=entry.role or donor.entry.role, note=note)
+        if not (problem := research_import.entry_problem(entry, system_of(entry.page, page_names))):
+            return entry, chosen.via, (donor if not chosen.entry.level else None)
+        problems.append(problem)
+    return problems[0]
+
+
+def _with_rivals(
+    entry: research_functions.Entry, found: list[Candidate], report: Report, label: str
+) -> research_functions.Entry:
+    """`entry` with a note on the other grades of the research for the function (a row of a table, a block about the
+    function or a code reading of it that gives a level other than the entry's; an `inferred` or runtime remark in a
+    block about something else is a side remark, no grade): two are shown, the rest counted. The page that grades a
+    function twice, differently, is not hidden."""
+    rivals = sorted(
+        {
+            (c.entry.level, c.entry.page)
+            for c in found
+            if c.via in ("table", "claim", "block")
+            and (c.via == "table" or c.describes or c.entry.level in _CLAIM_LEVELS)
+            if c.entry.level not in ("", entry.level)
+        }
+    )
+    if not entry.level or not rivals:
+        return entry
+    said = "; ".join(f"also graded {level} at [{page}]({page})" for level, page in rivals[:2])
+    if len(rivals) > 2:
+        said += f"; and {len(rivals) - 2} more"
+    report.disagreeing.append(f"{label}: {entry.level} at {entry.page}, {said}")
+    return replace(entry, note=f"{entry.note}; {said}" if entry.note else said)
 
 
 # --- the plan -----------------------------------------------------------------------------------------------------
@@ -694,14 +1005,17 @@ def plan(
     existing: list[research_functions.SystemFunctions],
     research: Research,
     functions_dir: Path = research_functions.FUNCTIONS_DIR,
+    overrides: Mapping[int, Override] | None = None,
 ) -> Plan:
     """The database after the rows of the retired list are moved into it.
 
     `listing` is the Ghidra listing by address, `ports` the `coney` value of each tagged address, `pages` the research
     pages (their text by path below docs/research, the source map and generated pages left out) and `bindings` the
     binding files' text; `existing` is the database as it stands. An entry that exists keeps everything it says and
-    gains `coney` and `status` when it lacks them; a function with no entry gets one from `_ranked`.
+    gains `coney` and `status` when it lacks them; a function with no entry gets one from `_ranked`, unless `overrides`
+    (`OVERRIDES` by default) names its page and level.
     """
+    overrides = OVERRIDES if overrides is None else overrides
     report = Report(rows=len(rows))
     systems = {s.system: s for s in existing}
     owner = {e.address: s.system for s in existing for e in s.entries}
@@ -724,7 +1038,7 @@ def plan(
     # gather on the page that describes the subject.
     weight: Counter[str] = Counter()
     for found_here in candidates.values():
-        for page in {c.entry.page_path for c in found_here if _home_class(c) in (0, 2)}:
+        for page in {c.entry.page_path for c in found_here if _home_class(c) in (0, 2, 3)}:
             weight[page] += 1
 
     for row in rows:
@@ -750,46 +1064,31 @@ def plan(
             changed.add(system)
             report.updated += 1
             continue
-        found = candidates.get(row.address)
-        if not found:
+        found = candidates.get(row.address, [])
+        override = overrides.get(row.address)
+        if override is None and not found:
             report.skipped.append(f"{label}: no research page cites it, so there is no page and level for an entry")
             continue
-        # The best home the schema accepts (a table's cell may carry what an entry may not, decompiler output); a home
-        # that states no level takes the level another page states for the function, and says where it is from.
-        problems = []
         # A section whose table row is a candidate is that row's: a block of the same section is the row read again.
         table_pages = {c.entry.page for c in found if c.via == "table"}
         found = [c for c in found if c.via != "block" or c.entry.page not in table_pages]
-        donor = _donor(found, weight)
-        for chosen in _ranked(found, weight):
-            entry = replace(chosen.entry, name=name, coney=port, status="legacy")
-            if not entry.level and donor is not None:
-                entry = replace(
-                    entry,
-                    level=donor.entry.level,
-                    role=entry.role or donor.entry.role,
-                    note=f"the level is from [{donor.entry.page}]({donor.entry.page})",
-                )
-            if not (problem := research_import.entry_problem(entry, system_of(entry.page, page_names))):
-                break
-            problems.append(problem)
+        if override is not None:
+            entry, via, donor = _overridden(override, row.address, name, port, found), "override", None
+            problem = research_import.entry_problem(entry, system_of(entry.page, page_names))
         else:
-            report.skipped.append(f"{label}: {problems[0]}")
+            picked = _choose(found, weight, name, port, page_names)
+            if isinstance(picked, str):
+                report.skipped.append(f"{label}: {picked}")
+                continue
+            entry, via, donor = picked
+            problem = ""
+        if problem:
+            report.skipped.append(f"{label}: {problem}")
             continue
-        # A page that grades the function twice, differently, keeps the entry to the first and says so in its note.
-        rivals = sorted(
-            {
-                (c.entry.level, c.entry.page)
-                for c in found
-                if c.via in ("table", "claim", "block") and c.entry.level not in ("", entry.level)
-            }
-        )
-        if chosen.entry.level and rivals:
-            said = "; ".join(f"also graded {level} at [{page}]({page})" for level, page in rivals[:2])
-            entry = replace(entry, note=f"{entry.note}; {said}" if entry.note else said)
-            report.disagreeing.append(f"{label}: {entry.level} at {entry.page}, {said}")
-        if not chosen.entry.level and entry.level:
-            report.borrowed.append(f"{label}: {entry.page} takes the level of {donor.entry.page if donor else ''}")
+        if override is None:
+            entry = _with_rivals(entry, found, report, label)
+            if donor is not None and donor.entry.page != entry.page:
+                report.borrowed.append(f"{label}: {entry.page} takes the level of {donor.entry.page}")
         system = system_of(entry.page, page_names)
         file = systems.get(system) or research_functions.SystemFunctions(
             system, functions_dir / f"{system}.toml", "", ()
@@ -798,7 +1097,7 @@ def plan(
         owner[row.address] = system
         changed.add(system)
         report.added += 1
-        report.sources[chosen.via] += 1
+        report.sources[via] += 1
         report.systems[system] += 1
         if not entry.level:
             report.ungraded.append(f"{label}: {entry.page}")
@@ -825,17 +1124,17 @@ def _replace_entry(
 # --- the checkout -------------------------------------------------------------------------------------------------
 
 
-def read_pages(root: Path, skip: frozenset[str]) -> dict[str, str]:
+def read_pages(root: Path, skip: frozenset[str], *, include_front_matter: bool = False) -> dict[str, str]:
     """The research pages under `root` by path below docs/research, without the pages named in `skip` and the pages
-    with front matter: a page that says what it owns is checked to own each function it describes, and the move cannot
-    tell whether it does, so those entries come with the page's own work.
+    with front matter (unless `include_front_matter`): a page that says what it owns is checked to own each function it
+    describes, and the move cannot tell whether it does, so those entries come with the page's own work.
     """
     base = root / "docs" / "research"
     pages = {}
     for path in sorted(base.rglob("*.md")) if base.is_dir() else []:
         name = path.relative_to(base).as_posix()
         text = path.read_text(encoding="utf-8", errors="replace")
-        if name not in skip and not text.startswith("---"):
+        if name not in skip and (include_front_matter or not text.startswith("---")):
             pages[name] = text
     return pages
 

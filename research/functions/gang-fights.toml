@@ -5,6 +5,6 @@
 address = 0x00307fe0
 name = "AttackTactic_Start"
 page = "gang-fights.md#rumble"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/tactic_attack.h:TacticAttack::start"
 status = "legacy"

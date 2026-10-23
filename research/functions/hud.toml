@@ -967,8 +967,8 @@ status = "legacy"
 [[function]]
 address = 0x001cdc80
 name = "HintBox_Update"
-page = "hud-functions-panels.md#fn-tutorialhud"
-role = "takes the next hint, lays the box out ([Hints](hud-messages.md#hints-hudsettutorialtext))"
+page = "hud.md#original-structure"
+role = "`TutorialHUD.cpp`; the box at HUD `+0x8a10` (`0x00609250`)"
 level = "confirmed-code"
 coney = "src/hud/hint_box.h:HintBox::update"
 status = "legacy"
@@ -1021,8 +1021,8 @@ status = "legacy"
 [[function]]
 address = 0x001ce9a8
 name = "Tutorial_CallCallback"
-page = "hud-functions-panels.md#fn-tutorialhud"
-role = "[The tutorial callback](hud-messages.md#tutorial-callback)"
+page = "hud.md#original-structure"
+role = "calls the `HUDSetTutorialCallback` function on each player-1 hit ([Tutorial callback](hud-messages.md#tutorial-callback))"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callTutorialCallback"
 status = "legacy"
@@ -1039,8 +1039,8 @@ status = "legacy"
 [[function]]
 address = 0x0020dc98
 name = "PlayerHUD_SetBanner"
-page = "hud-functions-panels.md#fn-player-panel-base"
-role = "slot `+0x30`: [The name banner](hud.md#the-name-banner)"
+page = "hud.md#original-structure"
+role = "picks the name banner"
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:bannerRecord"
 status = "legacy"
@@ -1057,8 +1057,8 @@ status = "legacy"
 [[function]]
 address = 0x00211ca0
 name = "PlayerHUD_Construct"
-page = "hud-functions-panels.md#fn-player-panel"
-role = "from `HUD_Construct`: the panel's parts, then nine tally sprites at `+0x4150`"
+page = "hud.md#original-structure"
+role = "the player panel (`0x4a50` bytes; interface vtable `0x0053edf8` at `+0x4120`)"
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:PlayerPanel"
 status = "legacy"
@@ -1066,8 +1066,8 @@ status = "legacy"
 [[function]]
 address = 0x00212840
 name = "PlayerHUD_Init"
-page = "hud-functions-panels.md#fn-player-panel"
-role = "slot `+0x10`: builds the panel from the layout table"
+page = "hud.md#original-structure"
+role = "builds the panel from the layout table"
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:PlayerPanel::attach"
 status = "legacy"
@@ -1075,8 +1075,8 @@ status = "legacy"
 [[function]]
 address = 0x00213290
 name = "PlayerHUD_Render"
-page = "hud-functions-panels.md#fn-player-panel"
-role = "slot `+0x38`: fade, rage flashing, the parts ([The rage meter](hud.md#the-rage-meter))"
+page = "hud.md#original-structure"
+role = "fade, rage flashing, draws the parts"
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:PlayerPanel::render"
 status = "legacy"
@@ -1093,10 +1093,18 @@ status = "legacy"
 [[function]]
 address = 0x00214138
 name = "PlayerHUD_Update"
-page = "hud-functions-panels.md#fn-player-panel"
-role = "slot `+0x40`: values, colours and positions each frame ([The rage meter](hud.md#the-rage-meter) and the sections after it)"
+page = "hud.md#original-structure"
+role = "values, colours and positions each frame"
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:PlayerPanel::update"
+status = "legacy"
+
+[[function]]
+address = 0x002274a8
+name = "Humans_FindAhead"
+page = "hud-messages.md#action-prompts"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/steering.h:humansAround"
 status = "legacy"
 
 [[function]]

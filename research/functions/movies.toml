@@ -2,6 +2,42 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x001cabc0
+name = "Captions_Init"
+page = "movies.md#original-structure"
+role = "resets the captions and picks the language"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::Captions"
+status = "legacy"
+
+[[function]]
+address = 0x001cad38
+name = "Captions_SelectScene"
+page = "movies.md#original-structure"
+role = "finds a scene's (or movie's) captions"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::selectScene"
+status = "legacy"
+
+[[function]]
+address = 0x001cb010
+name = "Captions_SetKind"
+page = "movies.md#original-structure"
+role = "style and placement for a kind"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::command"
+status = "legacy"
+
+[[function]]
+address = 0x001cb190
+name = "Captions_Next"
+page = "movies.md#original-structure"
+role = "makes the next record the current caption"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::next"
+status = "legacy"
+
+[[function]]
 address = 0x0041d7f0
 name = "GameState_GetLanguage"
 page = "movies.md#warriors-functions"

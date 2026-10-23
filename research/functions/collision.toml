@@ -2,24 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x00337920
-name = "RayTriangle_OneSided"
-page = "collision.md#original-structure"
-role = "ray-triangle intersection (`Utils` maths, outside the file)"
-level = "confirmed-code"
-coney = "src/raycast/collision_mesh.cpp:rayTriangle"
-status = "legacy"
-
-[[function]]
-address = 0x00337a60
-name = "RayTriangle_TwoSided"
-page = "collision.md#original-structure"
-role = "ray-triangle intersection (`Utils` maths, outside the file)"
-level = "confirmed-code"
-coney = "src/raycast/collision_mesh.cpp:rayTriangle"
-status = "legacy"
-
-[[function]]
 address = 0x0034f740
 name = "Collision_MarchRay"
 page = "collision.md#original-structure"

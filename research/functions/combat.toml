@@ -299,6 +299,14 @@ coney = "src/combat/anim_ranges.h:AnimRangeList::damage"
 status = "legacy"
 
 [[function]]
+address = 0x00254418
+name = "AttackTable_GetOffset"
+page = "combat-moves.md#targeting"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/human/fighter.h:Fighter::attackDirection"
+status = "legacy"
+
+[[function]]
 address = 0x00254508
 name = "AttackTable_GetFarRange"
 page = "combat.md#block"
@@ -490,7 +498,7 @@ status = "legacy"
 [[function]]
 address = 0x00266d00
 name = "Hit_PickReaction"
-page = "combat.md#hit-codes"
+page = "combat.md#original-structure"
 level = "confirmed-code"
 coney = "src/combat/reactions.h:hitReaction"
 status = "legacy"
@@ -835,8 +843,8 @@ status = "legacy"
 [[function]]
 address = 0x00284280
 name = "Flash_Use"
-page = "combat.md#original-structure"
-role = "spends a flash, its sound, the heal (full, or half on fury and rumble)"
+page = "combat-rage.md#original-structure"
+role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
 status = "legacy"
@@ -844,10 +852,9 @@ status = "legacy"
 [[function]]
 address = 0x002843f8
 name = "Player_UseItemCommand"
-page = "combat.md#original-structure"
-role = "L1 + R1 with a full meter, the flash, the key when cuffed, the R2 map ([Rage](combat-rage.md#rage))"
+page = "combat-rage.md#original-structure"
+role = "L1 + R1, the flash, the key when cuffed, the R2 command menu"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
 coney = "src/combat/meters.h:RageMeter::start"
 status = "legacy"
 
@@ -865,7 +872,7 @@ status = "legacy"
 address = 0x002854b0
 name = "Brain_SetInterrogateOverride"
 page = "combat-throws.md#mugging"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetInterrogateParam"
 status = "legacy"
 
@@ -911,7 +918,7 @@ name = "Player_Special"
 page = "combat.md#original-structure"
 role = "cross + square, circle + cross, circle + triangle outside a grab"
 level = "confirmed-code"
-note = "confirmed (code), runtime; also graded inferred at [combat.md#dispatch](combat.md#dispatch)"
+note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::special"
 status = "legacy"
 
@@ -948,24 +955,6 @@ name = "Brain_SetAttackableTime"
 page = "combat-targets.md#ai-attacks"
 level = "confirmed-code"
 coney = "src/ai/attack_places.h:attackableGapMs"
-status = "legacy"
-
-[[function]]
-address = 0x00393450
-name = "WorldObject_TakeHit"
-page = "combat.md#original-structure"
-role = "an object's strike-target bits; its hit points per strike"
-level = "confirmed-code"
-coney = "src/world_objects/props.h:takeHit"
-status = "legacy"
-
-[[function]]
-address = 0x00396710
-name = "Object_IsStrikeTarget"
-page = "combat.md#original-structure"
-role = "an object's strike-target bits; its hit points per strike"
-level = "confirmed-code"
-coney = "src/world_objects/props.h:isStrikeTarget"
 status = "legacy"
 
 [[function]]

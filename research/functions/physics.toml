@@ -38,8 +38,9 @@ status = "legacy"
 [[function]]
 address = 0x0033d498
 name = "PhysicsBody_SweepHumanMask"
-page = "physics-kernels.md#u12-callers"
+page = "physics-bodies.md#u11-body-pass"
 level = "confirmed-code"
+note = "the level is from [physics-kernels.md#u12-callers](physics-kernels.md#u12-callers)"
 coney = "src/human/human.h:Human::meetHumans"
 status = "legacy"
 
@@ -84,15 +85,16 @@ address = 0x0033d9d8
 name = "PhysicsBody_ResolveContacts"
 page = "physics-bodies.md#u3-resolve"
 level = "confirmed-code"
-note = "the level is from [physics.md#contacts](physics.md#contacts)"
+note = "the level is from [physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)"
 coney = "src/human/human_contacts.h:contactPush"
 status = "legacy"
 
 [[function]]
 address = 0x00340918
 name = "IPhysics_Step"
-page = "physics.md#step"
+page = "physics-world.md#u15-step"
 level = "confirmed-code"
+note = "the level is from [physics.md#step](physics.md#step)"
 coney = "src/world_objects/loose_objects.h:SettleTurn::tick"
 status = "legacy"
 
@@ -150,7 +152,7 @@ status = "legacy"
 [[function]]
 address = 0x00343518
 name = "PhysicsCapsule_Pose"
-page = "physics.md#human-body"
+page = "physics-bodies.md#u6-capsule-pose"
 level = "confirmed-code"
 note = "the level is from [combat.md#capsule-strike](combat.md#capsule-strike)"
 coney = "src/human/human.h:Human::struckCapsule"

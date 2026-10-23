@@ -4,7 +4,7 @@
 [[function]]
 address = 0x00145a10
 name = "GameTimer_Update"
-page = "boot.md#timers"
+page = "boot.md#original-structure"
 level = "confirmed-code"
 coney = "src/core/game_timer.h:GameTimer::update"
 status = "legacy"
@@ -52,7 +52,7 @@ status = "legacy"
 [[function]]
 address = 0x0015e6b8
 name = "GameModeStack_RunUntilEmpty"
-page = "boot.md#the-main-loop"
+page = "boot.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/game_mode_stack.h:GameModeStack::runUntilEmpty"
 status = "legacy"

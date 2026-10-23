@@ -2,14 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x003860b8
-name = "Object_SetLuaMsgHandler"
-page = "cars.md#explode"
-level = "confirmed-code"
-coney = "src/scripting/message_handlers.h:MessageHandlers::set"
-status = "legacy"
-
-[[function]]
 address = 0x00387bc8
 name = "Car_Init"
 page = "cars.md#original-structure"
@@ -59,14 +51,6 @@ coney = "src/world_objects/car_hits.h:carBootPosition"
 status = "legacy"
 
 [[function]]
-address = 0x0038bea0
-name = "Car_OnHit"
-page = "cars.md#hit-volumes"
-level = "confirmed-code"
-coney = "src/world_objects/car_hits.h:carHumanHitParts"
-status = "legacy"
-
-[[function]]
 address = 0x0038c7d8
 name = "Car_RemovePartBits"
 page = "cars.md#original-structure"
@@ -87,7 +71,7 @@ status = "legacy"
 address = 0x0038d188
 name = "Car_ReleaseTrunkItem"
 page = "cars.md#parts"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::releaseTrunk"
 status = "legacy"
 

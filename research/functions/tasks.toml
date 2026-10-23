@@ -191,6 +191,15 @@ coney = "src/world_objects/loose_objects.cpp:LooseObjects::contact"
 status = "legacy"
 
 [[function]]
+address = 0x00393450
+name = "WorldObject_TakeHit"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "An object takes a hit."
+level = "confirmed-code"
+coney = "src/world_objects/props.h:takeHit"
+status = "legacy"
+
+[[function]]
 address = 0x003939a8
 name = "WorldObject_OnImpact"
 page = "tasks.md#code-objects-dynamic-objects"
@@ -215,6 +224,15 @@ page = "tasks.md#code-objects-doors"
 role = "Says whether a kind is a door (15, 25, 30 or 33)."
 level = "confirmed-code"
 coney = "src/world_objects/level_objects.h:isDoorKind"
+status = "legacy"
+
+[[function]]
+address = 0x00396710
+name = "Object_IsStrikeTarget"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "Says whether an object can be struck."
+level = "confirmed-code"
+coney = "src/world_objects/props.h:isStrikeTarget"
 status = "legacy"
 
 [[function]]

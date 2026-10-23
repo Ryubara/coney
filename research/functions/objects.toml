@@ -116,15 +116,6 @@ coney = "src/platform/play_level_mode.h:PlayLevelMode::dropHeld"
 status = "legacy"
 
 [[function]]
-address = 0x00336a00
-name = "Quat_Slerp"
-page = "objects.md#original-structure"
-role = "a leaf's rotation step and its in-between pose ([Leaves](objects.md#leaves))"
-level = "confirmed-code"
-coney = "src/animation/anim_math.h:slerp"
-status = "legacy"
-
-[[function]]
 address = 0x0033f110
 name = "Human_TestStrikes"
 page = "objects.md#original-structure"
@@ -216,14 +207,6 @@ coney = "src/world_objects/doors.h:Doors::takeRemoved"
 status = "legacy"
 
 [[function]]
-address = 0x00393538
-name = "ThrownObject_OnContact"
-page = "objects.md#throws"
-level = "confirmed-code"
-coney = "src/world_objects/glass.h:GlassPanes::thrownHit"
-status = "legacy"
-
-[[function]]
 address = 0x00395b70
 name = "WorldObject_Update"
 page = "objects.md#original-structure"
@@ -243,7 +226,7 @@ status = "legacy"
 [[function]]
 address = 0x00396390
 name = "World_BreakObjectsInRadius"
-page = "objects.md#original-structure"
+page = "objects.md#break-objects-in-radius"
 level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeBreakObjectsInRadius"
 status = "legacy"
@@ -423,7 +406,7 @@ status = "legacy"
 [[function]]
 address = 0x003e4cb8
 name = "SubGlass_Update"
-page = "objects.md#shatter"
+page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/level_object_services.h:LevelObjectServices::shardsWanted"
 status = "legacy"

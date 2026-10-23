@@ -24,7 +24,6 @@ address = 0x003f69b8
 name = "Steam_Init"
 page = "particles.md#steam"
 level = "confirmed-code"
-note = "the level is from [particles.md#steam](particles.md#steam)"
 coney = "src/effects/particles.h:defaultSteam"
 status = "legacy"
 

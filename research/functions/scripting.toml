@@ -20,14 +20,6 @@ coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::enter"
 status = "legacy"
 
 [[function]]
-address = 0x002274a8
-name = "Humans_FindAhead"
-page = "scripting.md#triggers"
-level = "confirmed-code"
-coney = "src/ai/steering.h:humansAround"
-status = "legacy"
-
-[[function]]
 address = 0x003535e8
 name = "SceneCache_Init"
 page = "scripting.md#scenes-and-movies"
@@ -1757,7 +1749,6 @@ address = 0x00384c38
 name = "ScriptHandler_Deliver"
 page = "scripting.md#message-handlers"
 level = "confirmed-code"
-note = "the level is from [ai-gangs.md#gang-events](ai-gangs.md#gang-events)"
 coney = "src/scripting/message_handlers.h:MessageHandlers::deliver"
 status = "legacy"
 
@@ -1834,10 +1825,18 @@ coney = "src/scripting/story_bindings.cpp:makePathValid"
 status = "legacy"
 
 [[function]]
+address = 0x003860b8
+name = "Object_SetLuaMsgHandler"
+page = "scripting.md#message-handlers"
+level = "confirmed-code"
+coney = "src/scripting/message_handlers.h:MessageHandlers::set"
+status = "legacy"
+
+[[function]]
 address = 0x00386168
 name = "Script_SetMsgHandlerEx"
 page = "scripting.md#message-handlers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/scripting/trigger_bindings.cpp:makeSetMsgHandlerEx"
 status = "legacy"
 
@@ -1927,7 +1926,7 @@ status = "legacy"
 address = 0x00413018
 name = "VolumeBoxes_SendDamageMessage"
 page = "scripting.md#triggers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/object_services.h:ObjectServices::damageDone"
 status = "legacy"
 
@@ -1944,7 +1943,7 @@ status = "legacy"
 address = 0x004134f8
 name = "PlayerBox_Update"
 page = "scripting.md#triggers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
 status = "legacy"
 
@@ -2002,7 +2001,7 @@ status = "legacy"
 address = 0x00414ae0
 name = "TriggerSphere_Enable"
 page = "scripting.md#triggers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
 status = "legacy"
 
@@ -2020,6 +2019,14 @@ name = "VolumeBox_SetEnabled"
 page = "scripting.md#triggers"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeEnableVolumeBox"
+status = "legacy"
+
+[[function]]
+address = 0x00415378
+name = "VolumeBox_Update"
+page = "scripting.md#triggers"
+level = "confirmed-code"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
 status = "legacy"
 
 [[function]]

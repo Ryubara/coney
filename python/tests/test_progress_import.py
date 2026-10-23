@@ -298,11 +298,23 @@ def test_a_first_paragraph_that_states_a_level_about_its_own_subject_is_no_lead_
     assert entries(paragraph_plan(scoped))[A].level == "confirmed-runtime"
 
 
-def test_a_section_that_states_no_claims_grades_nothing() -> None:
-    page = "# Sys\n\n## Open questions\n\n`0x00123400` is confirmed (code) to do what? Unknown.\n"
+def test_an_open_questions_section_grades_the_claims_it_states_but_gives_no_lead_line_level() -> None:
+    """Weak sections (Coney's, open questions, summaries) say what they say; they are a home only as a last resort."""
+    page = "# Sys\n\n## Open questions\n\n`F123400` (`0x00123400`) is answered: confirmed (code).\n"
     result = plan(
         [progress_import.LegacyRow(A, "F", "Alpha", 8)],
         pages={"sys.md": page},
+        ports={A: "src/core/x.h:f"},
+        listing={A: ListedFunction(A, 8, "F", False)},
+    )
+    assert entries(result)[A].level == "confirmed-code"
+    led = (
+        "# Sys\n\n## Open questions\n\n### Group {#group}\n\nConfirmed (code) for each function below.\n\n"
+        "- `F` (`0x00123400`) starts it.\n"
+    )
+    result = plan(
+        [progress_import.LegacyRow(A, "F", "Alpha", 8)],
+        pages={"sys.md": led},
         ports={A: "src/core/x.h:f"},
         listing={A: ListedFunction(A, 8, "F", False)},
     )
@@ -536,14 +548,15 @@ def test_a_closing_level_only_sentence_grades_the_functions_of_the_two_sentences
 # --- where an entry is described -------------------------------------------------------------------------------
 
 
-def test_a_section_that_describes_the_function_is_its_home_and_a_coney_section_never_is() -> None:
+def test_a_section_that_describes_the_function_is_its_home_and_a_coney_section_only_the_last() -> None:
     body = (
         "### Spawners {#spawners}\n\n**The type** (`0x00123400`): the spawner keeps an index.\n\n"
         "## Coney's implementation {#coney}\n\n- **The spawners**: the port calls `F123400` (`0x00123400`)"
         " after each step. Confirmed (code).\n"
     )
     entry = entries(paragraph_plan(body))[A]
-    assert (entry.page, entry.level, entry.note) == ("sys.md#spawners", "", progress_import.UNGRADED_NOTE)
+    # The Coney section states a code reading of its own; it gives the level, not the home.
+    assert (entry.page, entry.level) == ("sys.md#spawners", "confirmed-code") and "sys.md#coney" in entry.note
     # With nothing else to cite, a Coney section is still a page to read.
     only = "## Coney's implementation {#coney}\n\n- **The spawners**: the port calls `F123400` (`0x00123400`).\n"
     assert entries(paragraph_plan(only))[A].page == "sys.md#coney"
@@ -603,3 +616,231 @@ def test_the_level_of_another_page_is_taken_and_said() -> None:
     assert (entry.page, entry.level) == ("sys.md#sight", "confirmed-code")
     assert "other.md#behaviour" in entry.note
     assert result.report.sources["claim"] == 0 and len(result.report.borrowed) == 1
+
+
+# --- the last round: the closing level, the reimpl pages, the home, the notes and the overrides -----------------------
+
+
+def pages_plan(pages: dict[str, str], addresses: tuple[int, ...] = (A,)) -> progress_import.Plan:
+    """The plan for functions at `addresses` described by `pages`."""
+    rows = [progress_import.LegacyRow(a, f"F{a:x}", "Alpha", 8) for a in addresses]
+    listing = {a: ListedFunction(a, 8, f"F{a:x}", False) for a in addresses}
+    ports = {a: f"src/core/x.h:f{a:x}" for a in addresses}
+    return plan(rows, pages=pages, ports=ports, listing=listing)
+
+
+def test_a_block_that_opens_with_the_function_and_closes_confirmed_code_grades_it_whatever_it_holds() -> None:
+    """An inferred aside about a detail, a second address and a trailing sentence do not take the closing level away."""
+    closings = [
+        "A new one starts from 0 (inferred: the record starts zeroed) and `0x00123500` is read. Confirmed (code).",
+        "A ray is cast. Confirmed (code) for the rays; the meaning of `hit` inferred.",
+        "It clears the flag (`0x00384a50`). confirmed (code).",
+        "The slots are taken in turn. Confirmed (code). The 908 fittings: [Hat fittings](hats.md).",
+        "It stops at once. Confirmed (code); that the carried item is a boom box is inferred.",
+    ]
+    for closing in closings:
+        body = f"### Spawners {{#spawners}}\n\n**The type** (`0x00123400`): the spawner keeps an index. {closing}\n"
+        entry = entries(paragraph_plan(body))[A]
+        assert (entry.page, entry.level) == ("sys.md#spawners", "confirmed-code"), closing
+
+
+def test_the_closing_level_needs_a_block_that_opens_with_the_function_and_one_code_reading() -> None:
+    mention = "The walk passes `0x00123400` and `0x00123500` (inferred: to fan out). It goes on. Confirmed (code).\n"
+    assert entries(paragraph_plan("### Walk {#walk}\n\n" + mention))[A].level == ""
+    two = "**The type** (`0x00123400`): it does x. Inferred: it does y. Confirmed (code).\n"
+    assert entries(paragraph_plan("### Walk {#walk}\n\n" + two))[A].level == ""
+    inferred = "**The type** (`0x00123400`): it does x (confirmed (runtime)). Inferred.\n"
+    assert entries(paragraph_plan("### Walk {#walk}\n\n" + inferred))[A].level == ""
+
+
+def test_a_reimpl_page_and_a_coney_section_grade_their_claims_but_are_the_last_home() -> None:
+    """They may give the level (as another page's does), and are the home only when no other page cites the function."""
+    reimpl = (
+        "# Reimpl\n\n## Behaviour {#behaviour}\n\n### `F123400` (`0x00123400`), to correct {#fix}\n\n"
+        "1. **The pass.** It runs the list. Confirmed (code) at `0x00123400`.\n"
+    )
+    pages = {
+        "sys.md": HOME["sys.md"] + "### Walk {#walk}\n\nThe walk calls `F123400` (`0x00123400`) first.\n",
+        "sys-reimpl.md": reimpl,
+    }
+    entry = entries(pages_plan(pages))[A]
+    assert (entry.page, entry.level) == ("sys.md#walk", "confirmed-code")
+    assert "sys-reimpl.md#fix" in entry.note
+    alone = entries(pages_plan({"sys-reimpl.md": reimpl}))[A]
+    assert (alone.page, alone.level, alone.note) == ("sys-reimpl.md#fix", "confirmed-code", "")
+    coney = (
+        "## Coney's implementation {#coney}\n\n- **The spawners**: it calls `F123400` (`0x00123400`). "
+        "Confirmed (code).\n"
+    )
+    entry = entries(pages_plan({"sys.md": pages["sys.md"] + coney}))[A]
+    assert (entry.page, entry.level) == ("sys.md#walk", "confirmed-code") and "sys.md#coney" in entry.note
+
+
+SIGHT = "### Sight {#sight}\n\n"
+WALK = "### Walk {#walk}\n\nThe walk passes `F123400` (`0x00123400`) on its way (confirmed (code)).\n\n"
+
+
+def test_the_opening_span_may_name_the_function_chain_wrappers_or_be_a_link() -> None:
+    """These openings are the section that describes the function, so it is the home over a mention that grades it."""
+    openings = [
+        "**Turning it** (`F123400`, `0x00123400`, which stops the sound): mode 1 retunes.",
+        "**Sector numbering** (`Sector_Of` `0x00123300` → `F123400` `0x00123400`): take the bearing.",
+        "[`SetHandler`](../x.md#sethandler) (`0x00123300` → `0x00123400`) gives the object a handler.",
+        "`SetupRadio` (`F123400`, `0x00123400`) makes a radio.",
+    ]
+    for opening in openings:
+        entry = entries(paragraph_plan(WALK + SIGHT + opening + "\n"))[A]
+        assert entry.page == "sys.md#sight", opening
+        assert entry.level == "confirmed-code" and "sys.md#walk" in entry.note, opening
+
+
+def test_a_row_whose_first_cell_is_a_sentence_is_not_the_functions_row() -> None:
+    """`| **Radar map.** A dictionary which F finds by the name | both discs | inferred |` grades the claim, not F."""
+    table = (
+        "| Finding | Where | Evidence |\n| --- | --- | --- |\n"
+        "| **Radar map.** A dictionary named level7 has the shape of a radar sheet, which `F123400` (`0x00123400`) "
+        "finds by the world's name. | both discs | inferred |\n"
+    )
+    pages = {
+        "sys.md": HOME["sys.md"] + SIGHT + "- **`F123400`** (`0x00123400`): a ray. Confirmed (code).\n",
+        "other.md": "# Other\n\n## Behaviour {#behaviour}\n\n### Cut {#cut}\n\n" + table,
+    }
+    entry = entries(pages_plan(pages))[A]
+    assert (entry.page, entry.level, entry.note) == ("sys.md#sight", "confirmed-code", "")
+
+
+def test_an_address_that_ends_a_range_is_graded_by_nothing_the_range_says() -> None:
+    table = (
+        "| Range | Source file | Evidence |\n| --- | --- | --- |\n"
+        "| `0x00123400`-`0x00123500` | the unnamed stretch before `X.cpp` | inferred |\n"
+    )
+    prose = "The player sits just before (`0x00123380`-`0x00123400`, inferred; [Source map](source-map.md)).\n"
+    function = (
+        "| Address | Name | Role | Evidence |\n| --- | --- | --- | --- |\n"
+        "| `0x00123400` | `F123400` | it | confirmed (code) |\n"
+    )
+    body = "### Map {#map}\n\n" + table + "\n" + prose + "\n" + function
+    entry = entries(paragraph_plan(body))[A]
+    assert (entry.level, entry.note) == ("confirmed-code", "")
+    only = entries(paragraph_plan("### Map {#map}\n\n" + table + "\n" + prose))[A]
+    assert only.level == ""
+
+
+def test_a_row_shared_with_another_function_is_the_home_after_a_row_of_its_own() -> None:
+    shared = (
+        "| Address | Name | Role | Evidence |\n| --- | --- | --- | --- |\n"
+        "| `0x00123400` / `0x00123700` | `F123400` / `F123700` | both | confirmed (code) |\n"
+        "| `0x00123700` | `F123700` | a second row | confirmed (code) |\n"
+    )
+    own = (
+        "| Address | Name | Role | Evidence |\n| --- | --- | --- | --- |\n"
+        "| `0x00123400` | `F123400` | it | inferred |\n"
+    )
+    pages = {
+        "big.md": "# Big\n\n## Behaviour {#behaviour}\n\n### Two {#two}\n\n" + shared,
+        "small.md": "# Small\n\n## Behaviour {#behaviour}\n\n### One {#one}\n\n" + own,
+    }
+    entry = entries(pages_plan(pages, (A, 0x00123700)))[A]
+    assert (entry.page, entry.level) == ("small.md#one", "inferred")
+    assert "also graded confirmed-code at [big.md#two](big.md#two)" in entry.note
+
+
+def test_disagreeing_grades_are_recorded_for_a_borrowed_level_too_and_show_two_and_a_count() -> None:
+    """Grades of the function as the subject of a block (and code readings) are recorded; a side remark is not."""
+
+    def reimpl(level: str) -> str:
+        return f"# R\n\n## Behaviour {{#behaviour}}\n\n### Fix {{#fix}}\n\n- **`F123400`** (`0x00123400`) ({level}).\n"
+
+    pages = {
+        "sys.md": HOME["sys.md"] + SIGHT + "- **`F123400`** (`0x00123400`): a ray.\n",
+        "a.md": "# A\n\n## Behaviour {#behaviour}\n\nIt calls `F123400` (`0x00123400`), confirmed (code).\n",
+        "b-reimpl.md": reimpl("inferred"),
+        "f.md": "# F\n\n## Behaviour {#behaviour}\n\nIt reads it (`0x00123400`; inferred: to fan out).\n",
+    }
+    result = pages_plan(pages)
+    entry = entries(result)[A]
+    assert (entry.page, entry.level) == ("sys.md#sight", "confirmed-code")
+    assert "the level is from [a.md#behaviour]" in entry.note
+    assert entry.note.endswith("also graded inferred at [b-reimpl.md#fix](b-reimpl.md#fix)"), entry.note
+    assert any("inferred" in line for line in result.report.disagreeing)
+    # Beyond two, the rest is counted.
+    more = {"c-reimpl.md": reimpl("speculative"), "d-reimpl.md": reimpl("confirmed (runtime)")}
+    note = entries(pages_plan({**pages, **more}))[A].note
+    assert note.endswith("; and 1 more") and note.count("also graded") == 2, note
+
+
+def test_the_level_is_never_said_to_come_from_the_functions_own_home() -> None:
+    """Two blocks of one section: the describing one has no level, the mention does; the section's level is its own."""
+    body = (
+        "### Path {#path}\n\n**The point** (`0x00123400`): casts a ray.\n\n"
+        "The planner calls `F123400` (`0x00123400`), confirmed (code).\n"
+    )
+    result = paragraph_plan(body)
+    entry = entries(result)[A]
+    assert (entry.page, entry.level, entry.note) == ("sys.md#path", "confirmed-code", "")
+    assert result.report.borrowed == []
+
+
+def test_an_override_replaces_the_home_and_level_the_rules_chose() -> None:
+    body = "### Walk {#walk}\n\nThe walk calls `F123400` (`0x00123400`).\n\n### Other {#other}\n\nElsewhere.\n"
+    override = progress_import.Override("sys.md#other", "confirmed-code", "sys.md: Elsewhere.", "the page says so")
+    rows = [progress_import.LegacyRow(A, "F", "Alpha", 8)]
+    result = progress_import.plan(
+        rows,
+        listing={A: ListedFunction(A, 8, f"F{A:x}", False)},
+        ports={A: "src/core/x.h:f"},
+        pages={"sys.md": HOME["sys.md"] + body},
+        bindings={},
+        existing=[],
+        research=research_support.research(),
+        overrides={A: override},
+    )
+    entry = entries(result)[A]
+    assert (entry.page, entry.level) == ("sys.md#other", "confirmed-code")
+    assert result.report.sources["override"] == 1
+
+
+def test_every_override_still_matches_its_page() -> None:
+    """An override is a hand reading of a page: the page, the section and the quoted words must still be there, and the
+    block that holds them must cite the address and state the level."""
+    assert progress_import.OVERRIDES
+    pages = progress_import.read_pages(REPO, frozenset(), include_front_matter=True)
+    problems = progress_import.override_problems(progress_import.OVERRIDES, pages)
+    assert problems == []
+
+
+def test_an_override_that_no_longer_matches_is_reported() -> None:
+    pages = {"sys.md": "# Sys\n\n## Behaviour {#behaviour}\n\nIt calls `0x00123400`, confirmed (code).\n"}
+    good = progress_import.Override("sys.md#behaviour", "confirmed-code", "sys.md: It calls", "x")
+    assert progress_import.override_problems({A: good}, pages) == []
+    moved = progress_import.Override("sys.md#gone", "confirmed-code", "sys.md: It calls", "x")
+    assert progress_import.override_problems({A: moved}, pages)
+    words = progress_import.Override("sys.md#behaviour", "confirmed-code", "sys.md: Other words", "x")
+    assert progress_import.override_problems({A: words}, pages)
+    level = progress_import.Override("sys.md#behaviour", "inferred", "sys.md: It calls", "x")
+    assert progress_import.override_problems({A: level}, pages)
+    address = progress_import.Override("sys.md#behaviour", "confirmed-code", "sys.md: It calls", "x")
+    assert progress_import.override_problems({0x00123500: address}, pages)
+
+
+def test_an_override_may_take_its_level_from_the_lead_line_of_its_list() -> None:
+    """`Shared behaviour, confirmed (code):` over a bullet that cites the address states the bullet's level."""
+    page = (
+        "# Sys\n\n## Behaviour {#behaviour}\n\nShared behaviour, confirmed (code):\n\n"
+        "- **Leader**: it holds `0x00123400`.\n"
+    )
+    override = progress_import.Override("sys.md#behaviour", "confirmed-code", "sys.md: **Leader**: it holds", "x")
+    assert progress_import.override_problems({A: override}, {"sys.md": page}) == []
+    other = page.replace("Shared behaviour, confirmed (code):", "Shared behaviour:")
+    assert progress_import.override_problems({A: override}, {"sys.md": other})
+
+
+def test_a_section_whose_heading_names_the_function_is_its_home_over_a_block_elsewhere_that_grades_it() -> None:
+    """The section of the function itself is the home; the level of a block about it elsewhere is its level."""
+    body = (
+        "### Unit 2 {#unit-2}\n\n**Who consumes it** (`F123400`, `0x00123400`, confirmed (code)): a contact.\n\n"
+        "### `F123400` {#unit-3}\n\nThe resolver (`0x00123400`) walks the list.\n"
+    )
+    entry = entries(paragraph_plan(body))[A]
+    assert (entry.page, entry.level) == ("sys.md#unit-3", "confirmed-code")
+    assert "sys.md#unit-2" in entry.note

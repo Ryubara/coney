@@ -103,11 +103,13 @@ gets a new entry from the research that cites it, in this order of preference: a
 page's role, level and section, as [`research import-table`](research-function-database.md#importing) reads it), a
 section that describes the function (it opens with the function, or its heading names it), the function's script
 binding (an entry in the `scripting` system, its page the binding reference, `../references/bindings/<group>.md#<name>`),
-and last a page that only mentions the address; a Coney, open-questions or summary section is the last resort. A level
-is taken only where it is tied to that function's own claim ([the rules](research-function-database.md#ported)), from
-this or another page, and never guessed: an entry whose level cannot be tied has none, and a note saying that the import
-tied none. Among equals it takes the page with the most such functions, and the entry goes in the file of that page's
-system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The
+and last a page that only mentions the address; a Coney, open-questions, summary or `*-reimpl.md` section is the last
+resort (it still grades what it states, so it can give the level). A level is taken only where it is tied to that
+function's own claim ([the rules](research-function-database.md#ported)), from this or another page, and never
+guessed: an entry whose level cannot be tied has none, and a note saying that the import tied none. A short table of
+overrides in the importer (address, page, level, the page's words and a reason; a test keeps each in step with its
+page) fixes the few entries the rules read wrongly. Among equals it takes the page with the most such functions, and
+the entry goes in the file of that page's system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The
 name is Ghidra's, `coney` comes from the `@orig` tag in `src/`. The report counts the new entries by source and by
 system and lists the rows whose name is not Ghidra's, the rows with no function in the listing, the entries with no
 level and any row left out (the exit code is 1 for those); `--dry-run` writes nothing and `--all` lists every row.

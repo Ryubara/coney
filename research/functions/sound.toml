@@ -34,7 +34,6 @@ name = "SystemMusic_Update"
 page = "sound.md#original-structure"
 role = "mood-driven track choice"
 level = "confirmed-code"
-note = "also graded inferred at [sound.md#original-structure](sound.md#original-structure)"
 coney = "src/audio/music_player.cpp:MusicPlayer::updateSystemMusic"
 status = "legacy"
 
@@ -857,11 +856,11 @@ coney = "src/audio/mixer.h:rateToPitch"
 status = "legacy"
 
 [[function]]
-address = 0x00165678
-name = "Gang_GetLeader"
-page = "sound-events.md#tag-lines"
+address = 0x002195e0
+name = "Human_SetCoverFlag5"
+page = "sound-events.md#covered"
 level = "confirmed-code"
-coney = "src/ai/gangs.h:Gang::leader"
+coney = "src/human/human.h:Human::onCoveredGround"
 status = "legacy"
 
 [[function]]
@@ -928,7 +927,7 @@ status = "legacy"
 address = 0x00291ed0
 name = "Ambient_MayGesture"
 page = "sound-events.md#command-ids"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/ai/script_services.h:ScriptServices::mayGesture"
 status = "legacy"
 
@@ -981,10 +980,27 @@ coney = "src/world_objects/cars.h:carBreakWindowEffect"
 status = "legacy"
 
 [[function]]
+address = 0x0038bea0
+name = "Car_OnHit"
+page = "sound-events.md#cars"
+level = "confirmed-code"
+note = "the level is from [cars.md#hit-volumes](cars.md#hit-volumes)"
+coney = "src/world_objects/car_hits.h:carHumanHitParts"
+status = "legacy"
+
+[[function]]
+address = 0x00393538
+name = "ThrownObject_OnContact"
+page = "sound-events.md#objects"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world_objects/glass.h:GlassPanes::thrownHit"
+status = "legacy"
+
+[[function]]
 address = 0x003ac4d0
 name = "Radio_Setup"
 page = "sound.md#radios"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/radios.h:Radios::setup"
 status = "legacy"
 
@@ -992,7 +1008,7 @@ status = "legacy"
 address = 0x003ac600
 name = "Radio_SetMode"
 page = "sound.md#radios"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/radios.h:Radios::setMode"
 status = "legacy"
 

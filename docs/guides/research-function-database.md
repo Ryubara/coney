@@ -151,16 +151,25 @@ new tags with the name the entry has.
 The reimplemented list used to be `docs/progress/functions.toml` (address, name, subsystem, size). The move into this
 database is `coney-tools progress import-functions`, kept for a branch that still adds rows to the old file
 ([the progress commands](coney-tools-references.md#progress)). An entry it made from prose is a starting point.
-It names the section that describes the function as its page (a table row of its own, then its script binding's
-reference, then a section that opens with the function, then any section that cites it; never a Coney or open-questions
-section while another exists, nor another function's row), and gives a level only when it can tie one to that
-function's own claim: a page-table row's Evidence cell, a sentence that reads its code and is about it alone, a level
-that stands right after its address (`(F, 0x1, confirmed (code))`), one that lists it (`Confirmed (code) at 0x1, 0x2`)
-or closes the statements before it, a lead line that grades the blocks under its heading. A section that describes the
-function but states no level takes the level another page states for it, and its note says where from; a function the
-research grades two ways keeps one row and its note says where the other is. Anything else has no level and a note
-saying that the import tied none, not that the page has none: the page may state a level in a form the tool does not
-read. When you study such a function, grade it: check its page, write its level and role and drop the note.
+It names the section that describes the function as its page (a table row of its own, a row of a table of a few
+functions only after one of its own; then its script binding's reference, then a section whose heading names the
+function, then a block that opens with it, then any section that cites it; a Coney, open-questions or `*-reimpl.md`
+section only when no other page cites it, and never another function's row, an address list or a range's end), and gives
+a level only when it can tie one to that function's own claim: a page-table row's Evidence cell, a sentence that reads
+its code and is about it alone, a level that stands right after its address (`(F, 0x1, confirmed (code))`), one that
+lists it (`Confirmed (code) at 0x1, 0x2`) or closes the statements before it, a block that opens with the function and
+whose every sentence that opens with a level opens with `Confirmed (code)` (its asides and other addresses do not take
+it away), a lead line that grades the blocks under its heading. Every section grades the claims it states, Coney's and
+`*-reimpl.md` ones too, so they may give the level of a function another page describes. A section that describes the
+function but states no level takes the level another page states for it, and its note says where from (not when it is
+its own page); a function the research grades two ways keeps one row and its note shows two other grades (a row, a
+block about the function or a code reading) and counts the rest. Anything else has no level and a note saying that the
+import tied none, not that the page has none: the page may state a level in a form the tool does not read. When you
+study such a function, grade it: check its page, write its level and role and drop the note.
+
+Where those rules read a page wrongly and a reader sees it at once, `OVERRIDES` in `progress_import.py` names the
+entry's page and level by address with the words of the page that say so and a one-line reason; a test checks that every
+override still matches its page, so a rewritten page makes it fail instead of leaving a stale grade.
 
 ## Other readers of the file {#other-readers}
 

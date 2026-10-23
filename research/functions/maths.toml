@@ -2,6 +2,15 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00336a00
+name = "Quat_Slerp"
+page = "maths.md#rotations"
+role = "Spherical interpolation of two quaternions by t clamped to [0, 1]; takes the shorter arc (negates when the dot is negative) and falls back to a linear mix within 1e-6 of parallel."
+level = "confirmed-code"
+coney = "src/animation/anim_math.h:slerp"
+status = "legacy"
+
+[[function]]
 address = 0x00336bb8
 name = "Vec_Lerp"
 page = "maths.md#rotations"
@@ -44,4 +53,22 @@ page = "maths.md#rays"
 role = "Larger real root of a x² + b × + c = 0; nothing written when the discriminant is negative."
 level = "confirmed-code"
 coney = "src/ai/move_action.h:largerRoot"
+status = "legacy"
+
+[[function]]
+address = 0x00337920
+name = "RayTriangle_OneSided"
+page = "maths.md#rays"
+role = "Ray-triangle test (Moller-Trumbore), front faces only (determinant at least 1e-6): the hit distance along the ray, or failure."
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.cpp:rayTriangle"
+status = "legacy"
+
+[[function]]
+address = 0x00337a60
+name = "RayTriangle_TwoSided"
+page = "maths.md#rays"
+role = "Ray-triangle test (Moller-Trumbore) for either face (determinant at least 1e-6 in size): the hit distance along the ray, or failure."
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.cpp:rayTriangle"
 status = "legacy"
