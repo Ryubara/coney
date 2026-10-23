@@ -411,6 +411,7 @@ def _build(
             history=History(slots.claims_dir / FILE_NAME),
             test_costs=TestCosts(slots.claims_dir / TEST_COSTS_FILE),
             fast_test_seconds=float(numbers["build_fast_lane_test_seconds"]),
+            test_jobs=numbers["test_jobs"],
             cached=cache.on,
             cache_report=lambda: cache_line(cache, folder, stats_log, toolchain),
         )

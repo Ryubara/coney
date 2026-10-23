@@ -154,8 +154,9 @@ class BuildScan:
 
 
 class TestScan:
-    """Reads ctest output: how many tests there were, how many passed, which failed and how many skipped (ctest counts
-    a skipped test as passed, and the disc tests skip without the disc)."""
+    """Reads ctest output: how many tests there were, how many passed, which failed and how many skipped (ctest's
+    summary counts a skipped test as passed, and the disc tests skip without the disc, so `passed` leaves them out and
+    `passed + failed_count + skipped == total`)."""
 
     __test__ = False  # not a pytest class, despite the name
 
@@ -197,10 +198,11 @@ class TestScan:
 
     @property
     def passed(self) -> int:
-        """The number of tests that passed."""
+        """The number of tests that passed: not the failed ones, and not the skipped ones, which ctest's own summary
+        counts as passed ("100% tests passed" with the disc tests skipped)."""
         if self._summary is not None:
-            return self._summary[0] - self._summary[1]
-        return self._lines_passed
+            return self._summary[0] - self._summary[1] - self.skipped
+        return self._lines_passed - self.skipped
 
     def feed(self, line: str) -> None:
         """Take one line of output."""
@@ -279,6 +281,20 @@ def jobs_for(slots: int, cpus: int | None, override: int | None = None) -> int:
     if override:
         return override
     return max(1, (cpus or 1) // max(slots, 1))
+
+
+def parallel_tests_for(slots: int, cpus: int | None, override: int | None = None, configured: int = 0) -> int:
+    """The parallel tests of one test run: the override (`-j`), else `configured` (`test_jobs` of coney.local.toml),
+    else half the cores or the build's share of them when that is more (at least 1).
+
+    A test run does not overlap its own compile, so it can use more cores than a compile that is sharing them with
+    others' compiles. Half, not all: other agents' runs and the machine's user share the cores, and a disc test holds
+    a level's data in memory."""
+    if override:
+        return override
+    if configured > 0:
+        return configured
+    return max(jobs_for(slots, cpus), (cpus or 1) // 2, 1)
 
 
 # -- the Visual Studio environment --------------------------------------------------------------------------------
@@ -623,6 +639,9 @@ class Context:
     #: A filtered test run whose selected tests' recorded times add up to more seconds than this takes a main slot
     #: (0: the count alone decides).
     fast_test_seconds: float = 0.0
+    #: The parallel tests of a full or filtered test run when no `-j` is given (`test_jobs` of coney.local.toml); 0:
+    #: half the cores, or the build's share of them when that is more (parallel_tests_for).
+    test_jobs: int = 0
 
 
 @dataclass
@@ -993,7 +1012,8 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         context.log.write(line + "\n")
         tests.feed(line)
 
-    command = _ctest(options, "-j", jobs, *options.filters)
+    test_jobs = str(parallel_tests_for(context.slots.slots, context.cpus, options.jobs, context.test_jobs))
+    command = _ctest(options, "-j", test_jobs, *options.filters)
     phase = _Phase(options, context, "test", lane, note, "filtered" if options.filters else "full")
     ran = phase.run([("test", command, test_line)])
     if phase.queued is not None:
@@ -1002,8 +1022,8 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         context.test_costs.record(options.preset, options.folder / COST_DATA)
     _, code, seconds = ran[0]
     counts = f"{tests.passed} passed, {tests.failed_count} failed of {tests.total}"
-    # ctest counts a skipped test as passed, so the skips are named: a run in which every disc test skipped must not
-    # read as a whole one.
+    # The skips are counted apart from the passes (ctest's own summary counts them as passed): a run in which every
+    # disc test skipped must not read as a whole one.
     counts += f", {tests.skipped} skipped" if tests.skipped else ""
     if options.disc is not None:
         result.summary.append(options.disc.line(tests.skipped))

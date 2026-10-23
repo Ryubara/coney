@@ -200,6 +200,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
 | `build_fast_lane_test_seconds` | `300` | a number: such a run takes a main slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools.md#build)); `0` turns that off |
+| `test_jobs` | `0` | a number: the tests `coney-tools build --test` runs in parallel (`ctest -j`); `0` is half the cores, or the compile's share of them when that is more; `build -j N` beats it ([`build`](coney-tools.md#build)) |
 | `ccache_dir` | `cache/ccache` in the main checkout's `../..` (`<clone>-workspace/cache/ccache` in a plain clone) | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
 | `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
 | `deps_dir` | `cache/deps` in the main checkout's `../..` (`<clone>-workspace/cache/deps` in a plain clone) | where `coney-tools build` keeps the [dependency sources](building.md#shared-deps), a folder per version of the pins |

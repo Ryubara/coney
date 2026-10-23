@@ -18,6 +18,7 @@ build_worktree_cap = 7                                 # at most this many workt
 build_fast_lane_steps = 50                              # a build of fewer ninja steps than this uses the fast lane; 0 turns it off
 build_fast_lane_tests = 20                              # a ctest -R run selecting at most this many tests uses the fast lane; 0 turns it off
 build_fast_lane_test_seconds = 300                      # ... unless their recorded times add up to more seconds than this; 0 turns that off
+test_jobs        = 0                                    # tests `build --test` runs in parallel (ctest -j); 0: half the cores, or a slot's share if more; `build -j N` beats it
 ccache_dir       = ""                                   # the compiler cache every checkout's `build` shares; default: ../../cache/ccache beside the main checkout
 ccache_program   = ""                                   # the ccache executable; default: the one `workspace init --fetch ccache` put in ../../tools, else PATH
 ccache_size_gb   = 25                                   # the compiler cache's size cap in GB; 0 turns the cache off

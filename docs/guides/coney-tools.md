@@ -1451,8 +1451,9 @@ stays required whenever the output is not a terminal, as under every agent tool,
    without the roughly thousand test files of `coney_tests`. It is refused with `--test` (the tests would run an
    old `coney_tests` or `coney`) and with `--configure-only`.
 4. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
-   long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N`,
-   with the filters `-R REGEX` and `-L LABEL` when given (see "Choosing tests" below).
+   long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N` (`N` is
+   `-j`, else `test_jobs`, else half the cores: see "Parallelism" below), with the filters `-R REGEX` and `-L LABEL`
+   when given (see "Choosing tests" below).
 
 **The disc for the tests.** The disc tests read only the environment variable `CONEY_DISC`
 (`repo:tests/support/disc_play_fixtures.h`) and skip without it, and ctest counts a skipped test as passed. So the
@@ -1462,8 +1463,10 @@ as not set); otherwise it is the `game_dir` of `coney.local.toml` (the one `.iso
 itself, as `trace` hands it to Coney), when that exists. A folder configured before the variable was set keeps the
 smoke tests it registered then; `--configure` registers them. With `--test` the summary gets a line before the test
 line: `disc tests: ran with the disc (CONEY_DISC from the environment | game_dir in coney.local.toml)`, or
-`disc tests: SKIPPED (<why>)` with the two ways to run them, and `N skipped` joins the test counts when ctest
-reported skips (a disc configured and tests still skipping is named, and the log says which). A suite that passes
+`disc tests: SKIPPED (<why>)` with the two ways to run them, and `S skipped` ends the test counts when ctest
+reported skips (`N passed, M failed of T, S skipped`: ctest's own summary counts a skipped test as passed, but the
+line does not, so `N + M + S = T`; a disc configured and tests still skipping is named, and the log says
+which). A suite that passes
 with `disc tests: SKIPPED` ran no disc test.
 
 **The log.** The full output goes to a file of its own per run, `build-<preset>-<agent>-<date>-<time>.log` in the
@@ -1505,8 +1508,18 @@ by one only lets it start the next, so nothing the command starts may outlive it
   under them, and the run that took over says `stopped N process trees <agent>'s run left running`. A claim that is
   stale only by age (its pid lives) is taken over without stopping anything, as the pid may be somebody else's by now.
 
-**Parallelism.** `-j` defaults to the cores divided by the slots (at least 1), so two builds share the machine
-instead of each starting a job per core; `-j N` overrides it, for both the build and `ctest`.
+**Parallelism.** The compile and the tests each have their own default, and two settings change them:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `-j N` (option of `build`) | none: the two defaults below | the parallel jobs of the compile **and** of `ctest`, beating `test_jobs`; `0` counts as not given |
+| the compile's default | the cores divided by `build_slots`, at least 1 | `cmake --build -j`: with five slots on 16 cores each build starts 3 jobs, so builds sharing the machine do not each start a job per core |
+| the tests' default | half the cores, or the compile's share when that is more, at least 1 | `ctest -j`: a test run does not overlap its own compile, so it can use more cores than a compile that shares them; 16 cores give 8 tests with 2 to 5 slots, and all 16 with one (the compile's share is then the whole machine) |
+| `test_jobs` (key of [`coney.local.toml`](workspace.md#local-config)) | `0` | a whole number: the parallel tests of `build --test`, in place of the tests' default; `0` keeps that default. Raise it on a machine with cores and memory to spare (each disc test holds a level in memory), lower it when others share the machine |
+
+Use the tests' share with care on a busy machine: every test run starts that many tests, a filtered `-R` or `-L` run in
+the fast lane included, so `build_slots` runs in the main lane and one in the fast lane at once start up to
+(`build_slots` + 1) × N processes. Lower `test_jobs` when others share the machine.
 
 **The slots.** Each run holds a claim: a folder `slot-N.claim/` with `owner.json` (agent, worktree, preset, the step it
 is at, pid, start time) in the claims directory, built whole in a private folder and renamed into place, so exactly one
