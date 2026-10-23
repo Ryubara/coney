@@ -314,3 +314,58 @@ def test_an_unusable_entry_point_is_a_study_error(tmp_path: Path) -> None:
 
     with pytest.raises(StudyError, match="entry point"):
         run(tmp_path, Odd())
+
+
+def _forge(tmp_path: Path, old: str, new: str) -> None:
+    """Edit the saved decompile and rewrite study.json's hash to match, as a forger would."""
+    folder = tmp_path / "t" / "study" / ADDRESS
+    saved = folder / "decompile.c"
+    text = saved.read_text(encoding="utf-8")
+    assert old in text
+    saved.write_bytes(text.replace(old, new).encode("utf-8"))
+    meta = json.loads((folder / "study.json").read_text(encoding="utf-8"))
+    meta["decompile_sha256"] = stamps.sha256_hex(saved.read_bytes())
+    (folder / "study.json").write_text(json.dumps(meta), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("  Widget_PlaySound(param_1,0x2a);\n  DAT_00501234 = DAT_00501234 + 1;\n", ""),
+        ("if (param_2 < iVar1)", "if (iVar1 < param_2)"),
+    ],
+)
+def test_recut_refuses_a_decompile_and_study_json_edited_together(tmp_path: Path, old: str, new: str) -> None:
+    run(tmp_path, FakeGhidra())
+    _forge(tmp_path, old, new)
+    before = len(stamp_list(tmp_path))
+    with pytest.raises(StudyError, match="studied stamp"):
+        run(tmp_path, None)
+    assert len(stamp_list(tmp_path)) == before
+
+
+def test_recut_needs_a_studied_stamp(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    for segment in (tmp_path / "t" / "stamps").iterdir():
+        segment.unlink()
+    with pytest.raises(StudyError, match="studied stamp"):
+        run(tmp_path, None)
+
+
+class OtherCallee(FakeGhidra):
+    """The same text with a callee at another address: a name used once cannot show it, the callee list does."""
+
+    def __call__(self, path: str) -> Any:
+        answer = super().__call__(path)
+        if urlparse(path).path == "/get_function_callees":
+            answer["callees"][1] = {"name": "Widget_StopSound", "address": "00501300"}
+        return answer
+
+
+def test_a_different_callee_is_a_change_not_a_rename(tmp_path: Path) -> None:
+    run(tmp_path, FakeGhidra())
+    other = OtherCallee()
+    other.text = WIDGET.replace("Widget_PlaySound(", "Widget_StopSound(")
+    saved = orig_study.load_study(Unit("t", tmp_path / "t"), ADDRESS)
+    assert orig_study.freshness(saved, other) == "stale"
+    assert run(tmp_path, other).change == "changed"

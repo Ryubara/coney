@@ -353,3 +353,17 @@ def test_the_skeleton_ignores_names_and_comments_but_not_operators() -> None:
     assert orig_cut.skeleton_sha256(WIDGET.replace("Widget_Update:", "Widget_Update: changed")) == base
     assert orig_cut.skeleton_sha256(WIDGET.replace("param_2 < iVar1", "param_2 <= iVar1")) != base
     assert orig_cut.skeleton_sha256(WIDGET.replace("0x2a", "0x2b")) != base
+
+
+def test_the_skeleton_tells_a_rename_from_a_different_name() -> None:
+    # Ghidra renames one-to-one, so the skeleton numbers names by first appearance: a consistent rename keeps it,
+    # swapped operands or a different variable, global or callee do not.
+    base = orig_cut.skeleton_sha256(WIDGET)
+    assert orig_cut.skeleton_sha256(WIDGET.replace("iVar1", "health")) == base
+    assert orig_cut.skeleton_sha256(WIDGET.replace("param_2 < iVar1", "iVar1 < param_2")) != base
+    assert orig_cut.skeleton_sha256(WIDGET.replace("param_2 < iVar1", "param_1 < iVar1")) != base
+    assert (
+        orig_cut.skeleton_sha256(WIDGET.replace("DAT_00501234 = DAT_00501234", "DAT_00501234 = DAT_00509999")) != base
+    )
+    # two names merged into one is not a rename either
+    assert orig_cut.skeleton_sha256(WIDGET.replace("Widget_GetOwner", "Widget_PlaySound")) != base

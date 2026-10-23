@@ -404,11 +404,21 @@ def statements_by_line(cut: Cut) -> dict[int, list[Statement]]:
 
 
 def skeleton_sha256(text: str) -> str:
-    """The hash of a decompile with comments, string contents and every name blanked: it changes when an operator, a
-    number or the structure changes, not when Ghidra renames a function, variable or type."""
+    """The hash of a decompile with comments and string contents blanked and each name replaced by the number of its
+    first appearance: it changes when an operator, a number, the structure or which name stands where changes (swapped
+    operands, another global or callee), not when Ghidra renames a function, variable or type, since a rename is
+    one-to-one."""
     code = code_only(normalise(text))
-    bare = _NAME.sub(lambda m: m.group(0) if m.group(0) in _KEYWORDS else "_", code)
-    return hashlib.sha256(_collapse(bare).encode("utf-8")).hexdigest()
+    order: dict[str, int] = {}
+
+    # The name's place in order of first appearance, so `a < b` and `b < a` differ but `x < y` matches `a < b`.
+    def number(match: re.Match[str]) -> str:
+        name = match.group(0)
+        if name in _KEYWORDS:
+            return name
+        return f"_{order.setdefault(name, len(order))}"
+
+    return hashlib.sha256(_collapse(_NAME.sub(number, code)).encode("utf-8")).hexdigest()
 
 
 def render_numbered(text: str, cut: Cut) -> str:

@@ -4,8 +4,8 @@
 A stamp says that a step ended, with what result, on which commit, covering which hashes, run by whom, when, and what
 the stamp before it hashed to. The stage commands (`original study`, `original compare`, `original fails-first`, later
 `task check`, `task review` and `pr open`) are the only writers: they call `append`, which takes the log's lock, checks
-that the chain is intact and writes one line. `verify` re-reads the log and reports every problem; it is what `pr open`
-and CI's `workflow` check call.
+that the chain is intact and writes one line. `verify` re-reads the log and reports every problem; `pr open` and a CI
+check will call it (neither does yet).
 
 The log is a folder of segments `0001.jsonl`, `0002.jsonl`, ... of canonical JSON lines (UTF-8, sorted keys, no
 spaces). A stamp's *body* is its canonical JSON without `sig`; its *hash* is the SHA-256 of the body; `prev` is the
@@ -340,8 +340,8 @@ def verify(
 
     A signature that is present is always checked (with `verifier`, else ssh-keygen against `signers`). A stamp of a
     signed step (`rules.signed`) without one is a warning, or an error with `require_signatures` (what `pr open` and
-    CI use), which also refuses a missing or empty log. With `task`, a log of another task is an error. A `pr-opened`
-    stamp must name the stamp before it as `chain_head`.
+    CI will use), which also refuses a missing or empty log. With `task`, a log of another task is an error. A
+    `pr-opened` stamp must name the stamp before it as `chain_head`.
     """
     report = _read(folder, rules)
     if require_signatures and not report.stamps:

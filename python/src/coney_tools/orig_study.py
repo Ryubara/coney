@@ -8,8 +8,9 @@ statements and cuts the pieces (orig_cut), and appends a `studied` stamp. Everyt
 the decompile is text from the game and never goes in the repository (LEGAL.md).
 
 Freshness: Ghidra is renamed all the time, so a decompile's text changes while the function does not. A saved study is
-*fresh* when Ghidra's function hash and the cut's shape are unchanged, even if the text differs (*renamed*), and
-*stale* otherwise.
+*fresh* when Ghidra's function hash, the cut's shape, the addresses of its callees and globals and the text's skeleton
+(orig_cut.skeleton_sha256: names numbered by first appearance, so only a one-to-one rename keeps it) are unchanged,
+even if the text differs (*renamed*), and *stale* otherwise.
 """
 
 from __future__ import annotations
@@ -272,16 +273,23 @@ def load_study(unit: Unit, address: str) -> Study:
     return study
 
 
+def _same_function(one: Study, other: Study) -> bool:
+    """Whether two studies describe the same function up to renames: Ghidra's hash of its bytes, the cut's shape, the
+    addresses it calls and touches, and the text's skeleton all agree."""
+    return (
+        one.ghidra_function_hash == other.ghidra_function_hash
+        and one.shape_sha256 == other.shape_sha256
+        and one.covers["callees_sha256"] == other.covers["callees_sha256"]
+        and one.covers["globals_sha256"] == other.covers["globals_sha256"]
+        and orig_cut.skeleton_sha256(one.text) == orig_cut.skeleton_sha256(other.text)
+    )
+
+
 def _classify_change(before: Study | None, after: Study) -> str:
     """How the new study differs from the one saved before."""
     if before is None:
         return "new"
-    if (
-        before.ghidra_function_hash != after.ghidra_function_hash
-        or before.shape_sha256 != after.shape_sha256
-        or before.cut_sha256 != after.cut_sha256
-        or orig_cut.skeleton_sha256(before.text) != orig_cut.skeleton_sha256(after.text)
-    ):
+    if not _same_function(before, after) or before.cut_sha256 != after.cut_sha256:
         return "changed"
     return "unchanged" if before.covers == after.covers else "renamed"
 
@@ -321,10 +329,26 @@ def study(
             saved = (folder / "decompile.c").read_bytes()
         except OSError as error:
             raise StudyError(f"{address}: nothing saved to re-cut ({error})") from error
-        if stamps.sha256_hex(saved) != meta["decompile_sha256"]:
+        # study.json sits beside decompile.c and can be edited with it, so the hashes are checked against the newest
+        # `studied` stamp in the verified log instead: a re-cut may change the cut, never what Ghidra gave.
+        last = report.latest("studied", address)
+        if last is None or last.result != "pass":
             raise StudyError(
-                f"{folder / 'decompile.c'} is not the text that was studied (its hash differs); "
-                f"fetch it from Ghidra again with `original study {address}`"
+                f"{address}: no passing studied stamp in {unit.stamps} to re-cut from; "
+                f"fetch it from Ghidra with `original study {address}`"
+            )
+        bound = {
+            "decompile_sha256": stamps.sha256_hex(saved),
+            "ghidra_function_hash": meta.get("ghidra_function_hash"),
+            "callers_sha256": _addresses_hash(_read_json(folder / "callers.json")),
+            "callees_sha256": _addresses_hash(_read_json(folder / "callees.json")),
+            "globals_sha256": _addresses_hash(_read_json(folder / "globals.json")),
+        }
+        differ = sorted(name for name, value in bound.items() if last.covers.get(name) != value)
+        if differ:
+            raise StudyError(
+                f"{folder}: {', '.join(differ)} is not what the latest studied stamp ({last.hash[:12]}) covers "
+                f"(the saved files were changed); fetch it from Ghidra again with `original study {address}`"
             )
         raw = saved.decode("utf-8")
         fetched: Mapping[str, Any] = {
@@ -369,13 +393,10 @@ def study(
 
 def freshness(saved: Study, fetch: Fetch) -> str:
     """Whether a saved study still describes Ghidra's function: "fresh", "renamed" (the text differs only by names) or
-    "stale" (the function's bytes, the cut's shape or anything in the text but names changed). Reads Ghidra; raises
+    "stale" (the function's bytes, the cut's shape, its callees or globals, or anything in the text but a one-to-one
+    rename changed). Reads Ghidra; raises
     GhidraDown when it is down."""
     live = _build(saved.address, _fetch_all(fetch, saved.address))
-    if (
-        live.ghidra_function_hash != saved.ghidra_function_hash
-        or live.shape_sha256 != saved.shape_sha256
-        or orig_cut.skeleton_sha256(live.text) != orig_cut.skeleton_sha256(saved.text)
-    ):
+    if not _same_function(live, saved):
         return "stale"
     return "fresh" if live.decompile_sha256 == saved.decompile_sha256 else "renamed"

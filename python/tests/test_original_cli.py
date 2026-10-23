@@ -237,3 +237,26 @@ def test_show_marks_signatures_it_could_not_check_and_fails_on_a_broken_log(
 def test_none_is_not_combined_with_tests(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["original", "fails-first", "--none", "docs", "--test", "x"]) == 2
     assert main(["original", "fails-first", "--none", "two\nlines"]) == 2
+
+
+def test_signers_and_signers_ref_cannot_be_combined(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # --signers-ref would silently replace the file given with --signers; argparse refuses the pair instead.
+    with pytest.raises(SystemExit) as stop:
+        main(["stamp", "verify", "--signers", "x", "--signers-ref", "main"])
+    assert stop.value.code == 2
+    assert "not allowed with" in capsys.readouterr().err
+
+
+def test_a_rename_also_says_to_carry_the_pairs(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The pairs header binds the decompile's hash, so a rename-only restudy needs `--carry` as much as a change does.
+    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["original", "compare", ADDRESS, "--base", "main"]) == 1
+    capsys.readouterr()
+    renamed = FakeGhidra()
+    renamed.text = renamed.text.replace("iVar1", "health")
+    monkeypatch.setattr(original_cli, "http_fetch", lambda url: renamed)
+    assert main(["original", "study", ADDRESS]) == 0
+    out = capsys.readouterr().out
+    assert "renamed" in out and "--carry" in out

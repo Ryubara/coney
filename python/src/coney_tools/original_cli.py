@@ -38,7 +38,11 @@ def add_parser(groups: Any) -> None:
     study.add_argument("address", help="the function's address, such as 0x00230d00")
     _task(study)
     study.add_argument("--url", default=DEFAULT_GHIDRA_URL, help="the ghidra-mcp server (default: %(default)s)")
-    study.add_argument("--recut", action="store_true", help="re-cut the saved decompile, without Ghidra")
+    study.add_argument(
+        "--recut",
+        action="store_true",
+        help="re-cut the saved decompile without Ghidra (it must match the newest studied stamp)",
+    )
     study.add_argument("--print", action="store_true", dest="show", help="also print the numbered decompile")
 
     compare = commands.add_parser(
@@ -56,13 +60,17 @@ def add_parser(groups: Any) -> None:
         "--base", default="origin/main", help="what the copy check measures from (default: %(default)s)"
     )
     compare.add_argument("--coney-function", help="the unit key, when several Coney functions carry the address")
-    compare.add_argument("--carry", action="store_true", help="bring the pairs forward onto a changed study")
+    compare.add_argument("--carry", action="store_true", help="bring the pairs forward onto a changed or renamed study")
     compare.add_argument("--show", action="store_true", help="print the side-by-side view")
 
     verify = commands.add_parser(
         "verify",
         help="whether a saved study still matches Ghidra: fresh, renamed or stale",
-        description="Re-reads the function from Ghidra and compares its hash and cut shape with the saved study.",
+        description=(
+            "Re-reads the function from Ghidra and compares it with the saved study: Ghidra's hash of its bytes, the "
+            "cut's shape, the addresses of its callees and globals, and the text's skeleton (names numbered by first "
+            "appearance, so only a one-to-one rename keeps it). Exits 1 when stale, 3 when Ghidra is down."
+        ),
     )
     verify.add_argument("address")
     _task(verify)
@@ -77,7 +85,9 @@ def add_parser(groups: Any) -> None:
             "has no such test (docs, tooling) and runs nothing."
         ),
     )
-    first.add_argument("--test", action="append", default=[], help="an exact test name (repeatable)")
+    first.add_argument(
+        "--test", action="append", default=[], help="an exact, whole TEST_CASE name in the test commit (repeatable)"
+    )
     first.add_argument("--test-commit", help="the commit that adds the test (and only the stubs it needs to compile)")
     first.add_argument("--fix-commit", help="the commit that makes it pass (default: HEAD)")
     first.add_argument("--preset", default="dev", help="the CMake preset (default: %(default)s)")
@@ -157,8 +167,9 @@ def _study(
     else:
         print(f"  {result.change}; {'stamped studied' if result.stamped else 'a studied stamp already covers it'}")
     mapping = folder.mapping(address)
-    if result.change == "changed" and mapping.is_file():
-        print(f"  the pairs file {mapping} was made for the old cut: run `original compare {address} --carry`")
+    # The pairs header binds the decompile's hash, so a rename makes the file stale as much as a change does.
+    if result.change in ("changed", "renamed") and mapping.is_file():
+        print(f"  the pairs file {mapping} was made for the old study: run `original compare {address} --carry`")
     return 0
 
 

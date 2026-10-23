@@ -33,14 +33,18 @@ def add_parser(groups: Any) -> None:
     verify.add_argument(
         "--release",
         action="store_true",
-        help="a release check (what `pr open` and CI do): the signed steps must carry valid signatures",
+        help="a release check (what `pr open` and CI will run): the signed steps must carry valid signatures and the "
+        "log must not be missing or empty",
     )
-    verify.add_argument("--signers", type=Path, help="the allowed-signers file (default: the repository's)")
-    verify.add_argument(
+    anchor = verify.add_mutually_exclusive_group()
+    anchor.add_argument(
+        "--signers", type=Path, help="the allowed-signers file (default: the working tree's .github/stamp-signers)"
+    )
+    anchor.add_argument(
         "--signers-ref",
         metavar="REF",
-        help="read .github/stamp-signers and the stamp rules from this commit (CI passes the pull request's base, "
-        "such as origin/main), not from the working tree under review",
+        help="read .github/stamp-signers and the stamp rules from this commit (CI will pass the pull request's "
+        "base, such as origin/main), not from the working tree under review; not with --signers",
     )
 
 

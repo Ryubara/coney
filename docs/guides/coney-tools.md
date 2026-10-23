@@ -452,31 +452,55 @@ uv run --project python coney-tools original fails-first --none REASON
 ```
 
 * `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
-  callees and globals in scratch (never committed), numbers the statements, cuts the pieces and appends `studied`. It writes
-  nothing when Ghidra is down. `--recut` cuts the saved decompile again without Ghidra; `--print` prints the numbered text.
-  [Details](stamps.md#study)
-* `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (only names changed) or `stale`.
+  callees and globals in scratch (never committed), numbers the statements, cuts the pieces and appends `studied`. It
+  writes nothing when Ghidra is down. [Details](stamps.md#study)
+* `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (a one-to-one rename only) or
+  `stale`; it exits 1 when stale.
 * `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
   the Coney function, check the pairs, the committed Coney file and `orig copy-check`, and append `compared` when all of
-  it holds. A refusal writes no stamp. `--carry` brings the pairs onto a changed study. [Details](stamps.md#compare)
+  it holds. A refusal writes no stamp. [Details](stamps.md#compare)
 * `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
-  must pass) and appends a `fails-first` stamp per test; `--none` records that a docs or tooling task has no such test.
-  [Details](stamps.md#fails-first)
+  must pass) and appends a `fails-first` stamp per test. [Details](stamps.md#fails-first)
+
+Every option:
+
+| Command | Option | What it does |
+| --- | --- | --- |
+| all four | `--task T` | The task whose scratch folder and stamp log are used (default: `CONEY_TASK`, else the branch) |
+| `study`, `verify`, `compare` | `ADDR` | The original function's entry point, such as `0x00230d00` (another address is refused, naming the start) |
+| `study`, `verify` | `--url URL` | The ghidra-mcp server (default `http://127.0.0.1:8090`) |
+| `study` | `--recut` | Cut the saved decompile again without Ghidra; refused unless the saved files match the newest `studied` stamp |
+| `study` | `--print` | Also print the numbered decompile |
+| `compare` | `--base REF` | What the copy check measures the Coney change from (default `origin/main`) |
+| `compare` | `--coney-function KEY` | Which Coney function to compare, when several carry `@orig ADDR` |
+| `compare` | `--carry` | Bring the pairs forward onto a changed or renamed study |
+| `compare` | `--show` | Print the side-by-side view |
+| `fails-first` | `--test NAME` | An exact test name, a whole `TEST_CASE` name in the test commit's files (repeatable) |
+| `fails-first` | `--test-commit SHA` | The commit that adds the test, and only the stubs it needs to compile |
+| `fails-first` | `--fix-commit SHA` | The commit that makes it pass (default `HEAD`) |
+| `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
+| `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
+| `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
 
 ## stamp {#stamp}
 
 ```sh
-uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE] [--signers-ref REF]
-uv run --project python coney-tools stamp show [--task T] [--dir LOG]
+uv run --project python coney-tools stamp verify [--task T | --dir LOG] [--release] [--signers FILE | --signers-ref REF]
+uv run --project python coney-tools stamp show [--task T | --dir LOG]
 ```
 
 `verify` checks a stamp log's chain, every field and every signature that is present, against
-[.github/stamp-signers](repo:.github/stamp-signers) and fails when the log is another task's; `--release` also refuses a
-signed step without a signature and a missing or empty log, as `pr open` and CI do, and `--signers-ref REF` takes the
-signers file and the stamp rules from that commit instead of the working tree (CI passes the pull request's base:
-[the trust anchor](stamps.md#signing)). `show` lists the stamps, marks a signature it could not check, and exits 1 when
-the log has errors. Both only read: no command appends a stamp by hand, the stage commands are
-the only writers ([Stamps](stamps.md#log)).
+[.github/stamp-signers](repo:.github/stamp-signers). `show` lists the stamps, marks a signature it could not check, and
+exits 1 when the log has errors. Both only read: no command appends a stamp by hand, the stage commands are the only
+writers ([Stamps](stamps.md#log)).
+
+| Command | Option | What it does |
+| --- | --- | --- |
+| both | `--task T` | The task whose log is read (default: `CONEY_TASK`, else the branch); a log of another task fails |
+| both | `--dir LOG` | Read this log folder instead; without `--task` the task is not checked |
+| `verify` | `--release` | A release check, which `pr open` and CI will run: a signed step without a signature, or a missing or empty log, fails |
+| `verify` | `--signers FILE` | The allowed-signers file (default: the working tree's `.github/stamp-signers`) |
+| `verify` | `--signers-ref REF` | Read the signers file and the stamp rules from commit REF, not the working tree ([the trust anchor](stamps.md#signing)); CI will pass the pull request's base. Not with `--signers` |
 
 ## natives {#natives}
 

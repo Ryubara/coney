@@ -358,6 +358,13 @@ def test_a_name_that_is_in_no_test_file_of_the_test_commit_is_refused_before_any
     assert repo.seen == []
 
 
+def test_a_name_must_match_a_whole_test_name_not_part_of_one(repo: Repo) -> None:
+    # "Widget ready" is only the start of "Widget ready frame": ctest would run nothing under that exact name.
+    with pytest.raises(FailsFirstError, match="Widget ready:"):
+        repo.run(tests=("Widget ready",))
+    assert repo.seen == []
+
+
 def test_the_stamps_of_a_multi_name_run_are_written_all_or_none(repo: Repo) -> None:
     first, second = two_tests(repo)
 
