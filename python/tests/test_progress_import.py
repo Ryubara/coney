@@ -844,3 +844,33 @@ def test_a_section_whose_heading_names_the_function_is_its_home_over_a_block_els
     entry = entries(paragraph_plan(body))[A]
     assert (entry.page, entry.level) == ("sys.md#unit-3", "confirmed-code")
     assert "sys.md#unit-2" in entry.note
+
+
+def test_an_override_whose_block_moved_to_another_section_is_reported() -> None:
+    """The quoted block must lie in the override's own section when the source is the entry's page."""
+    page = (
+        "# Sys\n\n## Behaviour {#behaviour}\n\nNothing here.\n\n## Other {#other}\n\n"
+        "It calls `0x00123400`, confirmed (code).\n"
+    )
+    override = progress_import.Override("sys.md#behaviour", "confirmed-code", "sys.md: It calls", "x")
+    problems = progress_import.override_problems({A: override}, {"sys.md": page})
+    assert problems and "not in the section 'behaviour'" in problems[0]
+    here = progress_import.Override("sys.md#other", "confirmed-code", "sys.md: It calls", "x")
+    assert progress_import.override_problems({A: here}, {"sys.md": page}) == []
+
+
+def test_override_problems_names_a_gone_page_a_bad_level_and_a_gone_source_page() -> None:
+    pages = {"sys.md": "# Sys\n\n## Behaviour {#behaviour}\n\nIt calls `0x00123400`, confirmed (code).\n"}
+    gone = progress_import.Override("none.md#x", "confirmed-code", "none.md: It calls", "x")
+    assert progress_import.override_problems({A: gone}, pages)[0].endswith("the page is gone")
+    bad = progress_import.Override("sys.md#behaviour", "sure", "sys.md: It calls", "x")
+    assert any("is no level" in p for p in progress_import.override_problems({A: bad}, pages))
+    elsewhere = progress_import.Override("sys.md#behaviour", "confirmed-code", "far.md: It calls", "x")
+    assert any("source page far.md is gone" in p for p in progress_import.override_problems({A: elsewhere}, pages))
+
+
+def test_a_closing_statement_that_lists_other_addresses_without_this_one_gives_no_grade() -> None:
+    other = "It does x. Confirmed (code) at `0x00123500`, `0x00123600`."
+    assert progress_import.closing_key(other, A) == ""
+    listed = "It does x. Confirmed (code) at `0x00123400`, `0x00123600`."
+    assert progress_import.closing_key(listed, A) == "confirmed-code"

@@ -100,74 +100,80 @@ class Override:
 
 
 #: The functions whose home or level the rules get wrong and a reader sees at once, by address. Keep it short: a rule
-#: that fixes a kind of case belongs in the importer. The reasons cite the page lines (as of 2026-10-23).
+#: that fixes a kind of case belongs in the importer. The reasons cite a section or the quoted words, no line number.
 OVERRIDES: dict[int, Override] = {
     # The block names the function in the middle of a sentence or after its own topic, so the rules read a mention.
     0x0038D188: Override(  # Car_ReleaseTrunkItem
         "cars.md#parts",
         "confirmed-code",
         "cars.md: `Car_ReleaseTrunkItem` (`0x0038d188`) moves the",
-        "cars.md:158-162: the boot-item item is about it and ends 'Confirmed (code).'; it opens with its topic",
+        "cars.md (Boot item): the item is about it and ends 'Confirmed (code).'; it opens with its topic",
     ),
     0x004134F8: Override(  # PlayerBox_Update
         "scripting.md#triggers",
         "confirmed-code",
         "scripting.md: update `0x004134f8`): the same",
-        "scripting.md:362-367: the kind-2 box item gives its update in the opening parenthesis; 'Confirmed (code).'",
+        "scripting.md (Triggers): the kind-2 box item gives its update in the opening parenthesis; 'Confirmed (code).'",
     ),
     0x002DF288: Override(  # TrackHumanGoal_Start
         "ai-gangs.md#formations",
         "confirmed-code",
         "ai-gangs.md: Start (`0x002df288`) joins the target's formation",
-        "ai-gangs.md:1425-1433: the GoalTrackHuman paragraph walks Start, End and Process and ends 'Confirmed (code)'",
+        "ai-gangs.md (Formations): the GoalTrackHuman paragraph walks Start, End and Process; 'Confirmed (code)'",
     ),
     0x00357998: Override(  # Script_GetPlatform
         "gui.md#coneys-implementation",
         "confirmed-code",
         "gui.md: it returns **1** (`0x00357998`)",
-        "gui.md:1336-1338: 'confirmed (code)' for the return value; the wording is the separate runtime remark",
+        "gui.md (Coney's implementation): 'confirmed (code)' for the return value; the wording is a runtime remark",
     ),
     0x003579A0: Override(  # ScriptSystem_DoFileLua
         "gui.md#coneys-implementation",
         "confirmed-code",
         "formats/lua-chunks.md: confirmed (code) at `0x003579a0` `ScriptSystem_DoFileLua`",
-        "formats/lua-chunks.md:86-88 grades it; that page has front matter, which the importer does not read",
+        "formats/lua-chunks.md grades it at its address; that page has front matter, which the importer does not read",
     ),
     0x002195E0: Override(  # Human_SetCoverFlag5
         "sound-events.md#covered",
         "confirmed-code",
         "sound-events.md: `Human_SetCoverFlag5` `0x002195e0`, which also pauses the wind-blown garbage",
-        "sound-events.md:702-707: the section is about the byte it sets; 'Confirmed (code)'",
+        "sound-events.md (Covered): the section is about the byte it sets; 'Confirmed (code)'",
     ),
     0x00165678: Override(  # Gang_GetLeader
         "ai-gangs.md#tactic-kinds",
         "confirmed-code",
         "ai-gangs.md: **Leader**: gang `+0x44` holds the leader's handle; `0x00165678` returns him",
-        "ai-gangs.md:214-216: the first bullet of 'Shared behaviour, confirmed (code):' describes it",
+        "ai-gangs.md (Tactic kinds): the first bullet of 'Shared behaviour, confirmed (code):' describes it",
     ),
     0x003860B8: Override(  # Object_SetLuaMsgHandler
         "scripting.md#message-handlers",
         "confirmed-code",
         "scripting.md: (`0x00386298` → `0x003860b8`) gives the object a",
-        "scripting.md:276-283: the SetMsgHandler paragraph describes it, 'Confirmed (code).'; cars.md lists addresses",
+        "scripting.md (Message handlers): the SetMsgHandler paragraph describes it, 'Confirmed (code).'",
     ),
     0x00415378: Override(  # VolumeBox_Update
         "scripting.md#triggers",
         "confirmed-code",
         "scripting.md: The update (`0x00415378`), while enabled (byte `+0x68`), collects the humans",
-        "scripting.md:346-352: the volume-box item describes the update, under 'Confirmed (code):'; rumble.md lists",
+        "scripting.md (Triggers): the volume-box item describes the update, under 'Confirmed (code):'; rumble.md lists",
     ),
     0x0041C4E0: Override(  # WarriorCommand_Dispatch
         "ai-gangs.md#warrior-commands",
         "confirmed-code",
         "ai-gangs.md: go through one dispatcher, `0x0041c4e0(state, chief, command, forced, pos, arg)`, confirmed",
-        "ai-gangs.md:873-878: the section's paragraph and steps describe the dispatcher; characters.md names it",
+        "ai-gangs.md (Warrior commands): the section's paragraph and steps describe it",
+    ),
+    0x00393538: Override(  # ThrownObject_OnContact
+        "sound-events.md#objects",
+        "confirmed-code",
+        "sound-events.md: **A thrown object** (`ThrownObject_OnContact` `0x00393538`",
+        "sound-events.md (Objects): the section is confirmed (code) unless a line says otherwise",
     ),
     0x00336A00: Override(  # Quat_Slerp
         "maths.md#rotations",
         "confirmed-code",
         "maths.md: | `0x00336a00` | `Quat_Slerp` | Spherical interpolation of two quaternions",
-        "maths.md:83: its own full row; physics.md:56 is a one-line row and objects.md:90 a shared one",
+        "maths.md: its own full row; physics.md has a one-line row and objects.md a shared one",
     ),
 }
 
@@ -189,8 +195,8 @@ def _source_problems(
     label: str, address: int, override: Override, source: str, words: str, page: docs_page.Page
 ) -> list[str]:
     """Why the block of `page` that holds `words` does not support `override`: it is missing, does not cite the
-    address, or states no such level (itself, or in the lead line of its list: the paragraph above that ends in a
-    colon)."""
+    address, lies in another section than the override's (when `page` is the entry's own page), or states no such
+    level (itself, or in the lead line of its list: the paragraph above that ends in a colon)."""
     wanted = " ".join(words.split())
     found = [
         (index, block)
@@ -202,6 +208,12 @@ def _source_problems(
     cited = [(i, b) for i, b in found if address in _addresses(b.text)]
     if not cited:
         return [f"{label}: the block of {source} with {words!r} does not cite the address"]
+    if source == override.page.partition("#")[0]:
+        ids = docs_page.heading_ids(page)
+        own = override.page.partition("#")[2]
+        cited = [(i, b) for i, b in cited if 0 <= b.section < len(ids) and ids[b.section] == own]
+        if not cited:
+            return [f"{label}: the block of {source} with {words!r} is not in the section {own!r}"]
     for index, block in cited:
         texts = [block.text]
         while index > 0 and page.blocks[index].item:

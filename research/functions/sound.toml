@@ -992,7 +992,7 @@ status = "legacy"
 address = 0x00393538
 name = "ThrownObject_OnContact"
 page = "sound-events.md#objects"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/glass.h:GlassPanes::thrownHit"
 status = "legacy"
 

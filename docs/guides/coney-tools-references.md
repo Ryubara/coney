@@ -99,13 +99,8 @@ A one-off, for the move of the reimplemented list into the function database (is
 "legacy"`. It also serves a branch that still adds rows to the old file: when its rebase meets the file's deletion,
 save the branch's copy of the file outside the checkout, take main's side and run the command on the copy, which adds
 only the rows the database lacks. An entry the database has gets `coney` and keeps everything else; any other function
-gets a new entry from the research that cites it, in this order of preference: a row of a page's function table (the
-page's role, level and section, as [`research import-table`](research-function-database.md#importing) reads it), a
-section that describes the function (it opens with the function, or its heading names it), the function's script
-binding (an entry in the `scripting` system, its page the binding reference, `../references/bindings/<group>.md#<name>`),
-and last a page that only mentions the address; a Coney, open-questions, summary or `*-reimpl.md` section is the last
-resort (it still grades what it states, so it can give the level). A level is taken only where it is tied to that
-function's own claim ([the rules](research-function-database.md#ported)), from this or another page, and never
+gets a new entry from the research that cites it; which page is its home and when a level is tied to it are in [the
+function database](research-function-database.md#ported), the one place that states the order. A level is never
 guessed: an entry whose level cannot be tied has none, and a note saying that the import tied none. A short table of
 overrides in the importer (address, page, level, the page's words and a reason; a test keeps each in step with its
 page) fixes the few entries the rules read wrongly. Among equals it takes the page with the most such functions, and
