@@ -148,7 +148,7 @@ def _check_owners(subject: Subject) -> Iterable[Finding]:
     if owns is None:
         return
     line = key_line(subject.page, "owns")
-    for what, other in owner_conflicts(subject.path, owns, subject.env.corpus):
+    for what, other in owner_conflicts(subject.path, owns, subject.env.corpus, subject.env.source_files):
         yield Finding("owns", line, f"{what} is also owned by {other}: one owner per address, describe it there")
 
 

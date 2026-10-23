@@ -5,7 +5,7 @@ The pages are for people; the data files are for tools. Nothing generated is com
 marker of `docs/research/source-map.md` with the tables of `research/source-files.toml` (mkdocs_hooks.py) and adds
 `research/find/addresses.md` (which page describes each stretch of the executable) and `research/find/words.md` (the
 player's words, from the glossary); `coney-tools research render OUT_DIR` writes the same pages to a folder to look at,
-like the progress tables. The file tables stay on the source map's page, under the same headings as before they were
+like the progress tables. The file tables stay on the source map's page, with the same heading ids as before they were
 data, so the links to `source-map.md#gui` and its kin keep their targets.
 
 Research: docs/guides/research-where.md

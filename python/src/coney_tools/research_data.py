@@ -86,6 +86,15 @@ def check_glossary(root: Path) -> list[str]:
     )
 
 
+def data_counts(root: Path) -> tuple[int, int]:
+    """How many source files and glossary words the checkout at `root` has (0 for a file it lacks), for the report of
+    `research render --check`. The caller has run `check_root` and found no error."""
+    research = load_conventions(root).research
+    files = source_files.load(root, Path(research.files.source_files)).files
+    words = research_glossary.load(root, Path(research.files.glossary)).terms
+    return len(files), len(words)
+
+
 def check_root(root: Path) -> Findings:
     """The findings of every research data file of the checkout at `root`."""
     findings = research_functions_check.check_root(root)

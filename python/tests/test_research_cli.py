@@ -407,3 +407,22 @@ def test_where_exits_2_for_a_query_that_is_no_address_and_for_bad_data(
     assert "not an address" in capsys.readouterr().err
     with_glossary(root, "term: grab\n")
     assert main(["research", "where", "0x00100200"]) == 2
+
+
+def test_check_says_what_it_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The success line counts the functions, the source files and the glossary words, so a missing file shows."""
+    root = checkout(tmp_path, monkeypatch)
+    assert main(["research", "render", "--check"]) == 0
+    assert capsys.readouterr().out.strip() == "1 function in 1 system, 0 source files, 0 words: ok"
+    with_source_files(root)
+    with_glossary(root, GLOSSARY)
+    assert main(["research", "render", "--check"]) == 0
+    assert capsys.readouterr().out.strip() == "1 function in 1 system, 1 source file, 1 word: ok"
+
+
+def test_where_rejects_an_empty_query(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An empty query matches every name, so it is a usage error (exit 2), not an answer."""
+    checkout(tmp_path, monkeypatch)
+    assert main(["research", "where", ""]) == 2

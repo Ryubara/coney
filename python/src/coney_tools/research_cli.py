@@ -37,14 +37,18 @@ def add_parser(groups: Any) -> None:
     """Register `coney-tools research render|import-table|claims|where`."""
     group = groups.add_parser(
         "research",
-        help="the function database (research/functions/), the pages made from it, and the claims a branch changed",
+        help="the research data (function database, source files, glossary), the pages made from it, the lookup of "
+        "where a thing is described, and the claims a branch changed",
     )
     commands = group.add_subparsers(dest="command", required=True)
     research_claims_cli.add_commands(commands)
     render = commands.add_parser(
-        "render", help="check the function database and write each system's generated list page to a folder"
+        "render",
+        help="check the function database, source files and glossary, and write the generated pages to a folder",
     )
-    render.add_argument("out_dir", nargs="?", type=Path, help="a folder to write research/<system>/functions.md to")
+    render.add_argument(
+        "out_dir", nargs="?", type=Path, help="a folder to write the pages to (research/<system>/functions.md, find/)"
+    )
     render.add_argument(
         "--check", action="store_true", help="write nothing; check the data and exit 1 when it has a problem"
     )
@@ -52,7 +56,9 @@ def add_parser(groups: Any) -> None:
         "where",
         help="which page describes an address, function name, source file or player word, and where its logic lives",
     )
-    where.add_argument("query", help="0x<address>, a Ghidra function name, a source file (Combat/Grab.cpp) or a word")
+    where.add_argument(
+        "query", help="0x<address>, a Ghidra function name, a source file (Human/cns/cnsplayertag.cpp) or a word"
+    )
     where.add_argument("--json", action="store_true", help="print the answer as JSON")
     table = commands.add_parser(
         "import-table", help="import a research page's code-index tables into research/functions/<system>.toml"
@@ -83,7 +89,7 @@ def _plural(count: int, noun: str) -> str:
 
 
 def run_render(out_dir: Path | None, check_only: bool) -> int:
-    """Check the database; with `out_dir`, then write the pages there. 1 when the check finds an error."""
+    """Check the research data; with `out_dir`, then write the pages there. 1 when the check finds an error."""
     if check_only == (out_dir is not None):
         raise ConfigError("give a folder to write the pages to, or --check (not both)")
     root = find_repo_root(Path.cwd())
@@ -98,7 +104,11 @@ def run_render(out_dir: Path | None, check_only: bool) -> int:
     systems = rf.load_all(root, research_functions_check.functions_dir(root))
     count = sum(len(s.entries) for s in systems)
     if out_dir is None:
-        print(f"{_plural(count, 'function')} in {_plural(len(systems), 'system')}: ok")
+        files, words = research_data.data_counts(root)
+        print(
+            f"{_plural(count, 'function')} in {_plural(len(systems), 'system')}, {_plural(files, 'source file')}, "
+            f"{_plural(words, 'word')}: ok"
+        )
         return 0
     pages = {**research_data.generated_pages(root), **research_data.filled_pages(root)}
     for name, text in pages.items():
@@ -119,7 +129,8 @@ def run_where(query: str, as_json: bool) -> int:
     if not result.found:
         print(
             f"coney-tools: nothing found for {query!r}. Give an address (0x00100200), a Ghidra function name, a source "
-            "file (Combat/Grab.cpp) or a word a player uses; a word the glossary lacks matches page headings only.",
+            "file (Human/cns/cnsplayertag.cpp) or a word a player uses; a word the glossary lacks matches page "
+            "headings only.",
             file=sys.stderr,
         )
         return 1

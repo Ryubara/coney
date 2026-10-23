@@ -8,7 +8,7 @@ starts from the page that owns the function.
 ```sh
 uv run --project python coney-tools research where 0x0026c548
 uv run --project python coney-tools research where Grab_Start
-uv run --project python coney-tools research where Combat/Grab.cpp
+uv run --project python coney-tools research where Human/cns/cnsplayertag.cpp
 uv run --project python coney-tools research where stamina
 uv run --project python coney-tools research where 0x0026c548 --json
 ```
@@ -22,12 +22,13 @@ When several entries hold it, the most specific one wins:
 
 1. a single function a page lists in `owns.functions`;
 2. otherwise the narrowest range or source file whose address range holds it. A file counts by its range in
-   `research/source-files.toml`, so a page that owns `Combat/Grab.cpp` owns every function the map attributes to it
-   unless another page takes some out with a smaller range or a function.
+   `research/source-files.toml`, so a page that owns `Human/cns/cnsplayertag.cpp` owns every function the map
+   attributes to it unless another page takes some out with a smaller range or a function.
 
-Two pages that own the same thing, or two ranges that cross, never reach the lookup: `docs check` refuses them (the
-`owns` rule in [writing-docs](writing-docs.md#checking)). The code is `research_owners.py`; the function database check,
-the find pages and `research where` all call it, so they cannot disagree.
+Two pages that own the same thing (a file and a range of the same code count), or two ranges or a file and a range
+that cross, never reach the lookup: `docs check` refuses them (the `owns` rule in
+[writing-docs](writing-docs.md#checking)). The code is `research_owners.py`; the function database check, the find
+pages and `research where` all call it, so they cannot disagree.
 
 ## What `where` answers {#forms}
 
@@ -40,15 +41,16 @@ The query decides what is looked up; the output is plain text, or one JSON docum
 | A path with `/`, or ending `.cpp`, `.inl`, `.h` | A source file, by its full path or the end of it | Its attributed range and function count, marked inferred, and the owning page of the whole file |
 | Anything else | A word | The glossary term (its page, functions and other names), else the pages with a heading that holds the word |
 
-The report says which entry makes a page the owning page (`lists function 0x0026c548`, `lists range 0x...-0x...` or `lists
-file Combat/Grab.cpp`), so a disagreement is fixed in that page's front matter. A source file's range is inferred
-([the source map's method](../research/source-map.md#method)); the report says so.
+The report says which entry makes a page the owning page (`lists function 0x0026c548`, `lists range 0x...-0x...` or
+`lists file Human/cns/cnsplayertag.cpp`), so a disagreement is fixed in that page's front matter. A source file's range
+is inferred ([the source map's method](../research/source-map.md#method)); the report says so.
 
 Exit codes: 0 when something matched, 1 when nothing did (with a line saying what a query can be), 2 when the
-arguments are wrong, a query like `0xzz` is no address, or a data file is malformed (the message names the file). `--json`
-prints the same facts under the keys `query`, `addresses`, `files`, `words` and `similar`; an address lists `function`,
-`name`, `size`, `section`, `source_file`, `owner` (`page`, `via`, `what`, or null), `database`, `orig`, `cited` and
-`questions`.
+arguments are wrong, the query is empty, a query like `0xzz` is no address, or a data file is malformed (the message
+names the file). `--json` prints the same facts as the text under the keys `query`, `addresses`, `files`, `words` and
+`similar`. An address lists `function`, `name`, `size`, `offset`, `listed` (whether the Ghidra listing was there),
+`section`, `code`, `source_file`, `owner` (`page`, `via`, `what`, or null), `database` (with `coney` and `status`),
+`orig`, `cited` and `questions`.
 
 ## The find pages {#find-pages}
 
@@ -58,7 +60,7 @@ The docs build makes two pages from the same data, so a reader without a termina
 
 - [Where each address is described](../research/find/addresses.md): the pages that own code with what each lists and how
   many functions it holds, then the executable in address order as runs of consecutive functions with one owning page.
-  A run no page owns is listed too, so the gaps are visible. It needs the Ghidra listing; without it the page says so.
+  A run no page owns is listed too, so the gaps are visible. It needs the Ghidra listing and is left out without it.
 - [Player words](../research/find/words.md): the glossary as a table. It exists once `research/glossary.yaml` does.
 
 The source files' tables stay on the [source map](../research/source-map.md#files-by-subsystem), where

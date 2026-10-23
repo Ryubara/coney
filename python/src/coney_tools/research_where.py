@@ -59,7 +59,8 @@ class AddressReport:
     entry: int | None = None  # the entry of the function that holds it
     name: str = ""  # Ghidra's name for it, '' while Ghidra's default
     size: int = 0
-    section: str = ""  # the data section, for an address outside any function
+    section: str = ""  # the section, for an address outside any function
+    code: bool = False  # whether that section is the code (`.text`)
     source_file: str = ""
     claim: Claim | None = None
     record: tuple[str, Entry] | None = None  # the function database's system and entry
@@ -188,10 +189,10 @@ class Index:
         """The report for `address`: the function that holds it, its file and owning page, and where it is cited."""
         holder = self.catalog.containing(address)
         entry = holder.address if holder else None
-        section = ""
+        section, code = "", False
         if holder is None:
             found = self.catalog.section_of(address)
-            section = found.name if found else ""
+            section, code = (found.name, found.code) if found else ("", False)
         key = entry if entry is not None else address
         ranges = self.files.ranges()
         cited, questions = self._scan()
@@ -203,6 +204,7 @@ class Index:
             name=holder.name if holder and holder.named else "",
             size=holder.size if holder else 0,
             section=section,
+            code=code,
             source_file=source_files.file_of(ranges, [r.start for r in ranges], key),
             claim=self.owners.claim(key),
             record=self._entries.get(key),
@@ -266,6 +268,10 @@ class Index:
     def search(self, query: str) -> Result:
         """Answer `query`: a hex address, a Ghidra name, a source file or a word."""
         text = query.strip()
+        if not text:
+            raise ConfigError(
+                "the query is empty: give an address (0x00100200), a Ghidra function name, a source file or a word"
+            )
         if text.lower().startswith("0x"):
             try:
                 address = int(text, 16)
@@ -276,11 +282,16 @@ class Index:
         exact, similar = self.by_name(text)
         addresses = tuple(self.address(a, text) for a in exact[:SHOWN])
         word = self.word(text) if not files and not addresses else None
-        near = tuple(similar[:MATCHES]) if not addresses else ()
+        near = tuple(similar[:MATCHES])
         return Result(query, addresses, tuple(files), (word,) if word else (), near)
 
 
 # --- the text ---------------------------------------------------------------------------------------------------------
+
+
+def _count(count: int, noun: str) -> str:
+    """`1 function`, `2 functions`."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
 def _places(places: tuple[Place, ...]) -> str:
@@ -293,7 +304,10 @@ def address_lines(report: AddressReport) -> list[str]:
     """The report of an address as lines of text (the caller says what the address is and indents them)."""
     lines: list[str] = []
     if report.entry is None and report.listed:
-        where = f"in the {report.section} data" if report.section else "outside the executable's image"
+        if report.code:
+            where = f"in the code of {report.section}"
+        else:
+            where = f"in the {report.section} data" if report.section else "outside the executable's image"
         lines.append(f"not in a function ({where})")
     elif report.entry is not None and report.offset:
         lines.append(f"{report.offset:#x} bytes into {report.name or 'a function'} at {report.entry:#010x}")
@@ -317,7 +331,7 @@ def address_lines(report: AddressReport) -> list[str]:
     own = report.claim.page if report.claim else ""
     elsewhere = tuple(p for p in report.cited if p.page != own)
     if elsewhere:
-        lines.append(f"also cited on: {_places(elsewhere)}")
+        lines.append(f"{'also ' if report.claim else ''}cited on: {_places(elsewhere)}")
     if report.questions:
         lines.append(f"open questions naming it: {_places(report.questions)}")
     return lines
@@ -336,7 +350,9 @@ def render(result: Result) -> list[str]:
         file = file_report.file
         lines.append(file.path)
         if file.start is not None and file.end is not None:
-            lines.append(f"  range: {file.start:#010x}-{file.end:#010x}, {file.functions} functions (inferred)")
+            lines.append(
+                f"  range: {file.start:#010x}-{file.end:#010x}, {_count(file.functions, 'function')} (inferred)"
+            )
         else:
             lines.append("  no code attributed: no code loads its path string")
         claim = file_report.claim
@@ -377,11 +393,21 @@ def _address_json(report: AddressReport) -> dict[str, Any]:
         "function": f"{report.entry:#010x}" if report.entry is not None else None,
         "name": report.name,
         "size": report.size,
+        "listed": report.listed,
+        "offset": report.offset,
         "section": report.section,
+        "code": report.code,
         "source_file": report.source_file,
         "owner": _claim_json(report.claim),
         "database": (
-            {"system": record[0], "level": record[1].level, "page": record[1].page, "role": record[1].role}
+            {
+                "system": record[0],
+                "level": record[1].level,
+                "page": record[1].page,
+                "role": record[1].role,
+                "coney": record[1].coney,
+                "status": record[1].status,
+            }
             if record
             else None
         ),

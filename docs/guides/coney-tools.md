@@ -731,14 +731,13 @@ look at one without a build. It writes nothing while the data has a problem. Giv
 uv run --project python coney-tools research where QUERY [--json]
 ```
 
-Says which research page describes `QUERY`: a hex address, a Ghidra function name, a source file (`Combat/Grab.cpp`)
-or a word. For an address it prints the function, its source file, the owning page and the entry that gives it the
-page, the function database entry, the `@orig` tags, and the pages that cite it; `--json` prints the same as one
-document. It
-exits with 0 when something matched, 1 when nothing did (and says what a query can be), and 2 for a query like `0xzz`,
-a malformed data file or a run outside a checkout. The forms, the output and how the owning page is chosen are on
-[Finding where a behaviour lives](research-where.md); the project allows the command without a prompt, as it does
-`render`.
+Says which research page describes `QUERY`: a hex address, a Ghidra function name, a source file
+(`Human/cns/cnsplayertag.cpp`) or a word. For an address it prints the function, its source file, the owning page and
+the entry that gives it the page, the function database entry, the `@orig` tags, and the pages that cite it; `--json`
+prints the same as one document. It exits with 0 when something matched, 1 when nothing did (and says what a query can
+be), and 2 for an empty query, a query like `0xzz`, a malformed data file or a run outside a checkout. The forms, the
+output and how the owning page is chosen are on [Finding where a behaviour lives](research-where.md); the project allows
+the command without a prompt, as it does `render`.
 
 ```sh
 uv run --project python coney-tools research import-table PAGE --system NAME [--section ANCHOR] [--replace] [--dry-run]

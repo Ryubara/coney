@@ -31,8 +31,9 @@ def add_parser(groups: Any) -> None:
         description=(
             "Reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, "
             "callers, callees and globals under the task's scratch folder (never committed), numbers the statements, "
-            "cuts them into pieces and appends a `studied` stamp. With --recut it re-cuts the saved decompile without "
-            "Ghidra. Exit 3 when no ghidra-mcp answers."
+            "cuts them into pieces and appends a `studied` stamp. It ends with the lines of `research where` for the "
+            "address (the owning page, the function database entry, the pages that cite it). With --recut it re-cuts "
+            "the saved decompile without Ghidra. Exit 3 when no ghidra-mcp answers."
         ),
     )
     study.add_argument("address", help="the function's address, such as 0x00230d00")

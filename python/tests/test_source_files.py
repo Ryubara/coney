@@ -223,3 +223,10 @@ def test_the_committed_data_passes_its_own_checks() -> None:
     ranged = [f for f in data.files if f.start is not None]
     assert len(ranged) == 136
     assert len(data.files) - len(ranged) == 18
+
+
+def test_the_default_path_is_the_one_the_conventions_name() -> None:
+    """Tools that cannot read the conventions (the progress picture) use `SOURCE_FILES`; it must be the same path."""
+    from coney_tools.conventions import load_conventions
+
+    assert Path(load_conventions(REPO).research.files.source_files) == source_files.SOURCE_FILES

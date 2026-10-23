@@ -119,3 +119,40 @@ def test_without_source_files_data_an_owned_file_is_not_checked() -> None:
 def test_the_check_reports_under_the_existing_owns_rule() -> None:
     """The legacy file waives rules by name; the file check adds none, it reports as `owns`."""
     assert "owns" in research_check.RULES
+
+
+def conflicts(mine: str, theirs: str) -> list[str]:
+    """The `owns` messages for a topic page owning `mine` when a survey page owns `theirs` (files of this module)."""
+    others = {"docs/research/other.md": page(meta=front("survey", owns=theirs), kind="survey")}
+    env = replace(research_support.env(others), source_files=FILES)
+    found = findings(RESEARCH_PATH, page(meta=front("survey", owns=mine), kind="survey"), env)
+    return [item.message for item in found if item.rule == "owns"]
+
+
+def test_a_file_and_an_identical_range_owned_by_two_pages_are_refused() -> None:
+    """A file is its range: owning `Combat/Grab.cpp` and owning `0x00100000-0x00100400` is owning the same code."""
+    for mine, theirs in (
+        ("{files: ['Combat/Grab.cpp']}", "{ranges: ['0x00100000-0x00100400']}"),
+        ("{ranges: ['0x00100000-0x00100400']}", "{files: ['Combat/Grab.cpp']}"),
+    ):
+        messages = conflicts(mine, theirs)
+        assert len(messages) == 1, (mine, theirs)
+        assert "docs/research/other.md" in messages[0]
+
+
+def test_a_file_and_a_crossing_range_owned_by_two_pages_are_refused() -> None:
+    """A range that starts inside the file and ends outside it takes part of two owners' code."""
+    assert conflicts("{files: ['Combat/Grab.cpp']}", "{ranges: ['0x001003f0-0x00100500']}")
+    assert conflicts("{ranges: ['0x001003f0-0x00100500']}", "{files: ['Combat/Grab.cpp']}")
+
+
+def test_a_range_inside_a_file_or_a_file_inside_a_range_is_one_page_taking_part_of_the_other() -> None:
+    """The most specific entry settles these, so they are not conflicts."""
+    assert conflicts("{files: ['Combat/Grab.cpp']}", "{ranges: ['0x00100100-0x00100200']}") == []
+    assert conflicts("{ranges: ['0x00100100-0x00100200']}", "{files: ['Combat/Grab.cpp']}") == []
+    assert conflicts("{files: ['Combat/Grab.cpp']}", "{ranges: ['0x00100000-0x00100800']}") == []
+
+
+def test_two_different_files_do_not_conflict() -> None:
+    """Their ranges are disjoint."""
+    assert conflicts("{files: ['Combat/Grab.cpp']}", "{files: ['Combat/Hold.cpp']}") == []

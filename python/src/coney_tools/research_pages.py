@@ -23,7 +23,7 @@ the systems) and their longer paragraphs (for copies).
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -32,6 +32,7 @@ import yaml
 from coney_tools.conventions import Research
 from coney_tools.docs_page import Finding, Page, kind_of, read_page
 from coney_tools.research_catalog import Catalog
+from coney_tools.source_files import FileRange
 
 _ADDRESS8 = re.compile(r"0x[0-9a-fA-F]{8}")
 _RANGE = re.compile(r"^(0x[0-9a-fA-F]{8})-(0x[0-9a-fA-F]{8})$")
@@ -245,29 +246,56 @@ class Corpus:
         return cls.from_texts(texts, research)
 
 
-def owner_conflicts(path: str, owns: Owns, corpus: Corpus) -> Iterable[tuple[str, str]]:
+def _crosses(first: tuple[int, int], second: tuple[int, int]) -> bool:
+    """Whether two ranges are the same or cross: neither holds the other, yet they share addresses."""
+    (start, end), (other_start, other_end) = first, second
+    if (start, end) == (other_start, other_end):
+        return True
+    inside = (start >= other_start and end <= other_end) or (other_start >= start and other_end <= end)
+    return start < other_end and other_start < end and not inside
+
+
+def _file_spans(owns: Owns, files: Sequence[FileRange]) -> list[tuple[str, tuple[int, int]]]:
+    """The files `owns` lists as (name, [start, end)), for the ones the source files data gives a range."""
+    by_name = {known.path.casefold(): known for known in files}
+    found = []
+    for name in owns.files:
+        known = by_name.get(name.casefold())
+        if known is not None:
+            found.append((name, (known.start, known.end)))
+    return found
+
+
+def owner_conflicts(
+    path: str, owns: Owns, corpus: Corpus, files: Sequence[FileRange] = ()
+) -> Iterable[tuple[str, str]]:
     """Each entry `owns` shares with another page of the corpus, as (what, the other page).
 
-    The same file, the same function or the same range is owned twice; two ranges that cross are too. A range inside
-    another range is a page taking part of what another owns, which the most specific entry settles.
+    The same file, the same function or the same range is owned twice; two ranges that cross are too. A file is its
+    range in `files` (the source files data), so a file against a range, or against another page's file under another
+    spelling, is held to the same rule. A range inside another range is a page taking part of what another owns, which
+    the most specific entry settles.
     """
+    mine_files = _file_spans(owns, files)
     for other in corpus.others(path):
         theirs = other.front.owns
         if theirs is None:
             continue
-        mine_files = {name.casefold() for name in owns.files}
+        their_files = _file_spans(theirs, files)
+        mine_names = {name.casefold() for name in owns.files}
         for name in theirs.files:
-            if name.casefold() in mine_files:
+            if name.casefold() in mine_names:
                 yield f"file {name}", other.path
         for address in sorted(set(owns.functions) & set(theirs.functions)):
             yield f"function 0x{address:08x}", other.path
         for start, end in owns.ranges:
             for other_start, other_end in theirs.ranges:
-                equal = (start, end) == (other_start, other_end)
-                crossing = (
-                    start < other_end
-                    and other_start < end
-                    and not ((start >= other_start and end <= other_end) or (other_start >= start and other_end <= end))
-                )
-                if equal or crossing:
+                if _crosses((start, end), (other_start, other_end)):
                     yield f"range 0x{start:08x}-0x{end:08x}", other.path
+            for name, span in their_files:
+                if _crosses((start, end), span):
+                    yield f"range 0x{start:08x}-0x{end:08x} (the range of {name})", other.path
+        for name, span in mine_files:
+            for other_start, other_end in theirs.ranges:
+                if _crosses(span, (other_start, other_end)):
+                    yield f"file {name} (range 0x{other_start:08x}-0x{other_end:08x})", other.path

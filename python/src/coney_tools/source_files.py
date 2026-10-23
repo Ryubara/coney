@@ -6,8 +6,8 @@ map (docs/research/source-map.md) works out which stretch of `.text` came from w
 file's rows: the file, its attributed range, how many functions lie in it, the static-initialiser stub that probably
 ends its translation unit, and the anchors (functions that load the file's path string) with the allocation tags each
 passes. Tools read the data directly: the owner lookup of the research pages (`research where`, research_owners.py),
-the progress picture (progress_grid.py) and the check of the page `owns` (research_pages.py). `research render` turns
-it into the page `research/find/files.md` for readers (research_find.py).
+the progress picture (progress_grid.py) and the check of the page `owns` (research_owners.py, research_check.py). The
+docs build fills the file tables of the source map page from it (research_find.py), so the page cannot drift.
 
 The ranges are inferred, like the directory ranges of `docs/progress/totals.toml`, which stays hand-kept because its
 subsystem ranges are widened by stretches placed by position and its coverage bytes come from the whole map, neither of

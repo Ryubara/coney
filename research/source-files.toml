@@ -1,7 +1,7 @@
 # The source files of the executable (SLUS_212.15) and the addresses the source map gives each: one [[file]] each,
 # in the source map's order (by directory, then by name). A range is inferred; an anchor, a function that loads the
 # file's path string, is confirmed (code). Fields: docs/research/source-map.md; checks: `research render --check`;
-# the page for readers is research/find/files.md, made from this file by the docs build.
+# the docs build fills the file tables of docs/research/source-map.md from this file.
 
 [[file]]
 directory = "Animation"

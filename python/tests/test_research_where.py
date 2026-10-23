@@ -276,3 +276,63 @@ def test_without_a_listing_the_address_is_not_called_a_non_function(tmp_path: Pa
     [report] = research_where.Index.load(root).search("0x00100200").addresses
     assert report.listed is False
     assert not any("not in a function" in line for line in research_where.address_lines(report))
+
+
+def test_a_name_that_is_also_part_of_other_names_lists_them_after_the_exact_match(tmp_path: Path) -> None:
+    """`Grab_Start` is a function and part of `Grab_StartMug`: the report for one, then the other to pick from."""
+    root = checkout(tmp_path)
+    longer = [*LISTING, progress_research.ListedFunction(0x300000, 0x40, "Grab_StartMug", True)]
+    write(root, "docs/progress/ghidra-functions.tsv", progress_research.format_listing(longer))
+    result = research_where.Index.load(root).search("Grab_Start")
+    assert [r.entry for r in result.addresses] == [0x100200]
+    assert result.similar == ((0x300000, "Grab_StartMug"),)
+    assert "  0x00300000 Grab_StartMug" in research_where.render(result)
+
+
+@pytest.mark.parametrize("query", ["", "   "])
+def test_an_empty_query_is_a_usage_error(index: research_where.Index, query: str) -> None:
+    """An empty string would match every name; ask for something instead."""
+    with pytest.raises(ConfigError, match="empty"):
+        index.search(query)
+
+
+def test_a_file_with_one_function_says_function_not_functions(tmp_path: Path) -> None:
+    """The count in the file report agrees with its noun."""
+    root = checkout(tmp_path)
+    write(root, "research/source-files.toml", SOURCE_FILES.replace("functions = 3", "functions = 1"))
+    text = "\n".join(research_where.render(research_where.Index.load(root).search("Combat/Grab.cpp")))
+    assert "1 function (inferred)" in text and "1 functions" not in text
+
+
+def test_an_address_no_page_owns_is_not_also_cited_elsewhere(index: research_where.Index) -> None:
+    """With no owning page the pages that cite it are the only pages: they are not 'also' anything."""
+    write(index.root, "docs/research/nowhere.md", "# Nowhere\n\nSee `0x00200000` (confirmed (code)).\n")
+    text = "\n".join(research_where.render(research_where.Index.load(index.root).search("0x00200000")))
+    assert "owning page: none" in text
+    assert "\n  cited on: docs/research/nowhere.md:3" in text
+    assert "also cited on" not in text
+
+
+def test_code_outside_every_function_is_not_called_data(tmp_path: Path) -> None:
+    """An address in `.text` before the first function is code with no function; a data section is data."""
+    root = checkout(tmp_path)
+    write(
+        root,
+        "research/elf-sections.toml",
+        '[[section]]\nname = ".text"\nstart = 0x00100000\nend = 0x00300000\ncode = true\n\n'
+        '[[section]]\nname = ".data"\nstart = 0x00300000\nend = 0x00400000\n',
+    )
+    index = research_where.Index.load(root)
+    [code] = index.search("0x00100010").addresses
+    assert "not in a function (in the code of .text)" in research_where.address_lines(code)
+    [data] = index.search("0x00300010").addresses
+    assert "not in a function (in the .data data)" in research_where.address_lines(data)
+
+
+def test_the_json_carries_every_fact_the_text_does(index: research_where.Index) -> None:
+    """The offset into the function, whether a listing was there, and the port's source and status."""
+    [inside] = research_where.to_json(index.search("0x00100210"))["addresses"]
+    assert inside["offset"] == 0x10 and inside["listed"] is True and inside["code"] is False
+    [exact] = research_where.to_json(index.search("0x00100200"))["addresses"]
+    assert exact["database"]["coney"] == "src/core/combat/grab.cpp:Grab::start"
+    assert exact["database"]["status"] == "compared"

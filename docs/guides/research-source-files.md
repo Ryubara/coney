@@ -65,13 +65,13 @@ map; no list of file ranges gives either. The check above is what holds the two 
 ## The generated tables {#generated-tables}
 
 The source map's "Files by subsystem" section ends in a marker line; the docs build replaces it with one table per
-directory, under the same headings as before the tables were data, so a link to `source-map.md#gui` still lands on
-the GUI files. `coney-tools research render <folder>` writes the page as the build shows it, to
+directory, each heading with the id it had before the tables were data, so a link to `source-map.md#gui` still lands
+on the GUI files. `coney-tools research render <folder>` writes the page as the build shows it, to
 `<folder>/research/source-map.md`. Nothing generated is committed.
 
 Once a research page owns a whole file (its front matter lists the file, or a range or function set that holds all
 of it), the file's row gains a Page column that links the page; until then the column is not there. The same lookup
-answers `coney-tools research where Combat/Grab.cpp` ([Finding where a behaviour lives](research-where.md)).
+answers `coney-tools research where Human/cns/cnsplayertag.cpp` ([Finding where a behaviour lives](research-where.md)).
 
 ## Changing a row {#changing}
 
