@@ -137,7 +137,8 @@ as a courtesy.
 | Rule | Written in | Enforced by | Status |
 | --- | --- | --- | --- |
 | A rule a program checks lives in `.github/conventions.yml`; the forms, template and pre-commit agree with it | [Repository conventions](repo-conventions.md) | `repo check`; `repo audit --files` (`files.*`) in `check changed` and CI | enforced |
-| Generated blocks, binding pages, reference lists and mission pages are never edited by hand | [Writing these docs](writing-docs.md#style) | `repo render --check`, `natives render --check`, `refs render --check`, `missions render --check` (CI `python`) | enforced |
+| Generated blocks, binding pages, reference lists, mission pages and function lists are never edited by hand | [Writing these docs](writing-docs.md#style) | `repo render --check`, `natives render --check`, `refs render --check`, `missions render --check`, `research render --check` (CI `python`) | enforced |
+| A function entry names a function Ghidra lists, by Ghidra's name, and a page section that exists, on the page that owns its address | [The function database](research-function-database.md) | `research render --check` (CI `python`; the docs build runs the same checks) | enforced |
 | Every `@orig` tag has its `[[function]]` in `functions.toml` | [Conventions](conventions.md#the-orig-tag) | `progress check` (CI `python`) | enforced |
 | Mission work updates `research/missions.yaml` in the same commit | [AGENTS.md](repo:AGENTS.md) | `missions render --check` checks the file, not that it moved | judgement |
 | CLAUDE.md and GEMINI.md hold only the import line | [AGENTS.md](repo:AGENTS.md) | `repo audit` `files.pointer` | enforced |

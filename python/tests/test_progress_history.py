@@ -163,9 +163,9 @@ def test_a_change_to_the_measuring_code_invalidates_the_cache(tmp_path: Path, mo
 
 
 def test_the_definition_covers_every_module_that_measures() -> None:
-    from coney_tools import progress, progress_research
+    from coney_tools import progress, progress_research, research_functions
 
-    assert set(progress_history.DEFINITION_MODULES) == {progress, progress_research}
+    assert set(progress_history.DEFINITION_MODULES) == {progress, progress_research, research_functions}
 
 
 def test_a_left_out_day_is_not_tried_again_at_the_same_commit(tmp_path: Path) -> None:

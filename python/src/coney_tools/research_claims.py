@@ -34,7 +34,7 @@ from pathlib import Path
 from coney_tools import run_records, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
-from coney_tools.docs_page import Heading, Page, read_page, slug
+from coney_tools.docs_page import Page, heading_ids, read_page
 from coney_tools.research_check import subject_of
 from coney_tools.research_evidence import (
     QUESTION_LINK,
@@ -300,11 +300,6 @@ def _targets(text: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(found))
 
 
-def _anchor(heading: Heading) -> str:
-    """A heading's anchor: its explicit `{#id}`, else the one MkDocs makes."""
-    return heading.anchor or slug(heading.text)
-
-
 def _last_line(page: Page, index: int) -> int:
     """The last source line of block `index`."""
     block = page.blocks[index]
@@ -335,6 +330,7 @@ def _page_claims(
     leads = lead_lines(subject)
     map_section = subject.env.research.map_section
     docs_page = name.removeprefix(RESEARCH_DIR)
+    ids = heading_ids(page)  # the ids MkDocs gives, so a second `## Purpose` is `purpose_1` as `Page.anchors` has it
     for index, block in enumerate(page.blocks):
         if block.kind == "heading" or is_header_row(subject, index) or not graded_section(subject, block.section):
             continue
@@ -362,11 +358,7 @@ def _page_claims(
         stated = tuple(level for level in _NAMES if level in levels.kinds)
         cited = backing.cited
         tests = tuple(
-            dict.fromkeys(
-                t
-                for h in _enclosing(page, block.section)
-                for t in cited.get((docs_page, _anchor(page.headings[h])), [])
-            )
+            dict.fromkeys(t for h in _enclosing(page, block.section) for t in cited.get((docs_page, ids[h]), []))
         )
         links = QUESTION_LINK.finditer(f"{block.text} {grading}")
         site = _Site(
@@ -380,7 +372,7 @@ def _page_claims(
             not _is_edit(block.text, known),
         )
         what = _back(report, backing, site)
-        anchor = _anchor(page.headings[block.section])
+        anchor = ids[block.section]
         report.claims.append(Claim(name, block.line, stated, via, targets, anchor, what, tests, block.text))
 
 

@@ -841,6 +841,8 @@ class ResearchFiles:
     elf_sections: str
     runs: str
     legacy: str
+    #: The function database: one `<system>.toml` per system (docs/guides/research-function-database.md).
+    functions: str
 
 
 @dataclass(frozen=True)
@@ -1857,7 +1859,7 @@ def _read_research(data: object, where: str) -> Research:
     )
     table = _table(data, where, keys)
     files_where = _at(where, "files")
-    files = _table(table["files"], files_where, ("ghidra_functions", "elf_sections", "runs", "legacy"))
+    files = _table(table["files"], files_where, ("ghidra_functions", "elf_sections", "runs", "legacy", "functions"))
     inferred_where = _at(where, "inferred_kind")
     inferred = _table(table["inferred_kind"], inferred_where, ("default", "folders"))
     aliases = _mapping(table["aliases"], _at(where, "aliases"))
@@ -1904,6 +1906,7 @@ def _read_research(data: object, where: str) -> Research:
             elf_sections=_text(files["elf_sections"], _at(files_where, "elf_sections")),
             runs=_text(files["runs"], _at(files_where, "runs")),
             legacy=_text(files["legacy"], _at(files_where, "legacy")),
+            functions=_text(files["functions"], _at(files_where, "functions")),
         ),
         front_matter=_texts(table["front_matter"], _at(where, "front_matter")),
         owns_keys=_texts(table["owns_keys"], _at(where, "owns_keys")),

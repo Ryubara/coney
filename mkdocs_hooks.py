@@ -4,7 +4,7 @@ No file names the repository's or the site's address: they come from the build. 
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
 built from. It also adds the Changelog page, written from the git history at build time, fills the progress page's
 tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress numbers into the
-site, so none of those is committed.
+site, and writes each research system's function list page from research/functions/, so none of those is committed.
 """
 
 import os
@@ -58,15 +58,20 @@ _PROGRESS_PAGE = "progress/index.md"
 _HISTORY_PAGE = "progress/history.md"
 
 
+def _use_checkout_tools(root):
+    """Makes `coney_tools` importable from the checkout at `root`: the docs build installs only MkDocs."""
+    src = str(Path(root) / "python" / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+
+
 def load_progress(root):
     """The progress tracker's state for the checkout at `root`, from `coney_tools` in `python/src`.
 
     The docs build installs only MkDocs, so the tracker is imported from the checkout instead of from an installed
     package. Raises RuntimeError, naming the problems, when the tracker's inputs disagree with each other.
     """
-    src = str(Path(root) / "python" / "src")
-    if src not in sys.path:
-        sys.path.insert(0, src)
+    _use_checkout_tools(root)
     from coney_tools import progress
     from coney_tools.config import ConfigError
 
@@ -131,6 +136,22 @@ def build_progress_site(root, state, repo_url=None):
         history_cache=cache,
         reconstruct_history=os.environ.get("CONEY_PROGRESS_HISTORY") == "full",
     )
+
+
+def research_function_pages(root):
+    """The function list page of each research system, as {path in the site: Markdown}.
+
+    They are made from research/functions/*.toml (coney_tools.research_render) and never committed. Raises
+    RuntimeError, naming every problem, when the function database does not pass `coney-tools research render --check`.
+    """
+    _use_checkout_tools(root)
+    from coney_tools import research_functions, research_functions_check, research_render
+
+    findings = research_functions_check.check_root(Path(root))
+    if findings.errors:
+        raise RuntimeError("the function database has problems:\n  " + "\n  ".join(findings.errors))
+    systems = research_functions.load_all(Path(root), research_functions_check.functions_dir(Path(root)))
+    return research_render.render_pages(Path(root), systems)
 
 
 def progress_badge_files(state):
@@ -252,6 +273,12 @@ def on_files(files, config):
     for uri, text in progress_badge_files(_progress_state).items():
         files.append(File.generated(config, uri, content=text))
     for uri, text in _progress_site.files.items():
+        files.append(File.generated(config, uri, content=text))
+    try:
+        function_pages = research_function_pages(root)
+    except (RuntimeError, ImportError, OSError) as error:
+        raise PluginError(f"research functions: {error}") from error
+    for uri, text in function_pages.items():
         files.append(File.generated(config, uri, content=text))
     for uri in _SERVED_ASSETS:
         if not (root / uri).is_file():

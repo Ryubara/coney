@@ -363,6 +363,23 @@ def test_a_heading_anchor_is_the_one_mkdocs_makes(tmp_path: Path) -> None:
     assert (claim.section, claim.tests) == ("mount-the-man-fast", ("tests/mount_test.cpp:1",))
 
 
+def test_a_second_heading_of_the_same_name_has_the_numbered_anchor(tmp_path: Path) -> None:
+    root = make_repo(tmp_path)
+    edit(root, "### No level here\n", "### Lead line\n")
+    edit(root, "mounts the man.", "mounts the man (confirmed (code)).")
+    (root / "tests").mkdir()
+    (root / "tests" / "first_test.cpp").write_text(
+        "// Expected: research/combat/grabs.md#lead-line\n", encoding="utf-8"
+    )
+    (root / "tests" / "second_test.cpp").write_text(
+        "// Expected: research/combat/grabs.md#lead-line_1\n", encoding="utf-8"
+    )
+    report = claims_of(root)
+    first, second = by_line(report, "Grab_Throw"), by_line(report, "Grab_Mount")
+    assert (first.section, first.tests) == ("lead-line", ("tests/first_test.cpp:1",))
+    assert (second.section, second.tests) == ("lead-line_1", ("tests/second_test.cpp:1",))
+
+
 # --- output -----------------------------------------------------------------------------------------------------------
 
 

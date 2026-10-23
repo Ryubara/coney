@@ -152,10 +152,30 @@ records keeps its level when a change only touches it, with a warning; a new run
 
 ## The research database {#the-research-database}
 
-Research pages are for reading; a research database is planned: the same knowledge as YAML files in `research/` at
-the repository root, one entry per function, global and struct, that tools can check against the code. It does not
-exist yet. Until it does, findings live on the research pages only, and the YAML is seeded from them when it is
-created. One file is already there, because it is Coney's own: the script bindings.
+Research pages are for reading; the research database is the same knowledge as data in `research/`, which tools look
+up directly. It is built one kind of fact at a time: the script bindings ([below](#bindings)) and the functions
+([below](#function-database)) exist, and globals and structs are planned the same way. The rule behind all of it:
+
+> A fact that a tool must find, check or count lives in a data file whose entries all have the same fields. The page a
+> person reads is generated from that file, or links to it.
+
+That layout earns its keep four ways:
+
+- **Lookup.** An agent asks the file (is `0x0026c548` researched, what is it called, which page describes it, has its
+  port been compared?) with `grep` or `tomllib`, and does not read prose to find out.
+- **Uniform fields.** Every entry has the same fields in the same order, so nothing is missing because the author of a
+  page forgot a column.
+- **Checks.** A program proves the answers are still true (the address is a function, the name is Ghidra's, the
+  section exists) and CI refuses a pull request that breaks them; a hand-written table of 600 rows cannot be checked.
+- **Generated pages.** The list a person browses is built from the file by the docs build and is never edited, so the
+  two cannot drift.
+
+### The function database {#function-database}
+
+`research/functions/<system>.toml` lists the researched functions of one system, one entry each with its address,
+Ghidra name, page section, role and evidence level; `coney-tools research render --check` holds it to the Ghidra
+listing and the pages. Its fields, checks, import and generated lists are on their own page,
+[The function database](research-function-database.md).
 
 ### The script bindings {#bindings}
 
@@ -909,8 +929,9 @@ A finding is done when someone else can use it without asking you. For each one:
    reconcile two versions.
 2. **Grade every claim** with an [evidence level](#evidence-levels); a runtime claim cites the
    [run record](#run-records) of the run, and `coney-tools research claims` lists what the branch graded.
-3. **Add or update the YAML entries** for the functions, globals and types the finding touches (once the database exists),
-   with the same evidence level as the page.
+3. **Add or update the entries** of the research database for what the finding touches: the function entries of
+   `research/functions/<system>.toml` ([the function database](#function-database)), with the same evidence level as
+   the page. Globals and types stay on the page until the database has them.
 4. **Cite addresses** as `0x001490b8`: eight hex digits, in the NTSC-U executable `SLUS_212.15` (SHA1
    `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Every address in the project refers to that one file, so a reader
    with the same disc can check any claim. The check holds an address to the Ghidra listing and the executable's
@@ -936,14 +957,16 @@ A finding is done when someone else can use it without asking you. For each one:
 
 A function is researched in full ("understood" on the [progress page](../progress/index.md)) when it has a
 meaningful name and a plate comment in the shared Ghidra project, and a research page cites its address in a table
-row or paragraph that states an evidence level and says what it does. A function nobody needs (dead code, a debug
-stub) is cited with `not needed: <reason>` instead. The bar checks the name and the citation; the plate comment is
-listed in the backlog. Citations on the [source map](../research/source-map.md) do not count; a script binding's
-wrapper counts through its `evidence` in `research/bindings`.
+row or paragraph that states an evidence level and says what it does, or has an entry with a `role` in
+the [function database](#function-database) (every entry has a level). A function nobody needs (dead code, a debug
+stub) is cited with `not needed: <reason>` instead, or has an entry with level `not-needed` and the reason as its
+role. The bar checks the name and the citation; the plate comment is listed in the backlog. Citations on the
+[source map](../research/source-map.md) do not count; a script binding's wrapper counts through its `evidence` in
+`research/bindings`.
 
 The names, sizes and plate flags come from `docs/progress/ghidra-functions.tsv`, exported from Ghidra; the
-citations are read from the pages on every docs build. After renaming functions in Ghidra, refresh both
-(ghidra-mcp on `:8090` must be running; the export only reads):
+citations are read from the pages and the function database on every docs build. After renaming functions in
+Ghidra, refresh both (ghidra-mcp on `:8090` must be running; the export only reads):
 
 ```sh
 uv run --project python coney-tools progress ghidra    # re-export the listing (--check: exit 1 when stale)

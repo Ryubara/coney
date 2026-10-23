@@ -8,6 +8,7 @@ the YAML front matter at the top is kept apart as text.
 
 from __future__ import annotations
 
+import html
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -20,6 +21,7 @@ _HEADING_ATTRIBUTES = re.compile(r"[ \t]*\{(?P<attributes>[^}]*#[^}]*)\}[ \t]*$"
 ANCHOR = re.compile(r"\{#(?P<id>[A-Za-z0-9_.:-]+)[^}]*\}")
 _ITEM = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]+")
 _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+_COUNTED = re.compile(r"^(.*)_([0-9]+)$")
 #: A table header cell that labels the level of each row.
 LEVEL_COLUMN = re.compile(r"(?:evidence(?: level)?|confidence)", re.IGNORECASE)
 
@@ -121,9 +123,8 @@ class Page:
 
     @property
     def anchors(self) -> set[str]:
-        """Every `{#id}` written outside code, and the generated ids of the headings (as MkDocs slugs them)."""
-        found = {heading.anchor for heading in self.headings if heading.anchor}
-        found.update(slug(heading.text) for heading in self.headings)
+        """Every `{#id}` written outside code, and the ids of the headings (as MkDocs gives them, `heading_ids`)."""
+        found = set(heading_ids(self))
         for line in self.lines:
             if not line.fenced:
                 found.update(match.group("id") for match in ANCHOR.finditer(line.text))
@@ -131,11 +132,35 @@ class Page:
 
 
 def slug(text: str) -> str:
-    """The id MkDocs gives a heading without an explicit one: accents folded to ASCII, lower case, words joined by
-    hyphens (the toc extension's `slugify`)."""
-    folded = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
-    words = re.sub(r"[^\w\s-]", "", re.sub(r"`", "", folded).casefold())
-    return re.sub(r"[-\s]+", "-", words).strip("-")
+    """The id MkDocs gives a heading without an explicit one, as Python-Markdown's toc makes it from the rendered
+    text: a link keeps its text only, inline HTML and markup add none, entities are unescaped, accents fold to ASCII,
+    punctuation goes, then lower case with each run of spaces and hyphens one hyphen (one at either end stays)."""
+    plain = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    plain = re.sub(r"<[^>]*>", "", plain)
+    plain = html.unescape(re.sub(r"[`*]", "", plain))
+    plain = unicodedata.normalize("NFKD", plain).encode("ascii", "ignore").decode("ascii")
+    words = re.sub(r"[^\w\s-]", "", plain).strip().lower()
+    return re.sub(r"[-\s]+", "-", words)
+
+
+def heading_ids(page: Page) -> list[str]:
+    """The id of each heading of `page`, in order, as Python-Markdown's toc gives them: a heading's `{#id}` stands as
+    written (two headings may share one), and every explicit id is reserved before the others are made; a slug the page
+    already used gets the next free `_1`, `_2`, ..., so two `## Purpose` headings are `purpose` and `purpose_1`, and
+    `## Purpose` before `## Other {#purpose}` is `purpose_1`."""
+    used = {heading.anchor for heading in page.headings if heading.anchor}
+    ids: list[str] = []
+    for heading in page.headings:
+        if heading.anchor:
+            ids.append(heading.anchor)
+            continue
+        anchor = slug(heading.text)
+        while anchor in used or not anchor:
+            counted = _COUNTED.match(anchor)
+            anchor = f"{counted.group(1)}_{int(counted.group(2)) + 1}" if counted else f"{anchor}_1"
+        used.add(anchor)
+        ids.append(anchor)
+    return ids
 
 
 def blank_comments(text: str) -> str:

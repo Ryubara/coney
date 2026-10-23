@@ -1,26 +1,26 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-six
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-eight
 groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
-checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task),
-which claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
+checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task), which
+claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
 machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions, labels),
 [`pr`](#pr), which checks commit messages, `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`,
-from **your own disc**, [`extract`](#extract), which turns every asset of the disc into open formats,
-[`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox),
-which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the
-docs current, [`orig`](#orig), which indexes the `@orig` tags for the fidelity audit, [`original`](#original), which
-studies an original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log,
-[`lua`](#lua), which decompiles the game's compiled scripts for research, [`natives`](#natives), which renders the
-script-binding masterlist, [`refs`](#refs), which builds the game reference
-lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which
-record the original's per-update traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks,
-publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging servers for agent tools,
-[`doctor`](#doctor), which checks a contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra
-project with our function names, and [`workspace`](#workspace), which sets up the local workspace;
-[`coney-agent`](#coney-agent) is a command of its own, the session launcher. Everything is read in place and
-streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR /
-.WAD](../research/formats/wad-dir.md).
+from **your own disc**, [`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
+which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which reads the Xbox
+disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs current,
+[`orig`](#orig), which indexes the `@orig` tags for the fidelity audit, [`original`](#original), which studies an
+original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log, [`lua`](#lua),
+which decompiles the game's compiled scripts for research, [`natives`](#natives), which renders the script-binding
+masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
+status pages, [`research`](#research), which keeps the function database and its generated lists and reports the claims
+a branch changed on the research pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update
+traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks, publishes and cleans up in-game video
+clips, [`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
+contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and
+[`workspace`](#workspace), which sets up the local workspace; [`coney-agent`](#coney-agent) is a command of its own, the
+session launcher. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is
+described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -694,6 +694,83 @@ levels list, each status consistent with its checkpoints) and writes `docs/missi
 with the script-binding numbers of [Story coverage](../references/bindings/story.md) read from
 `research/bindings/`. With `--check` it writes nothing and exits with 1 when a page is out of date; CI runs it that
 way. Run `natives render` first when bindings changed.
+
+## research {#research}
+
+The [function database](research-function-database.md), one TOML file per system in `research/functions/` that
+tools read directly, and the research pages made from it (`render`, `import-table`); and the claims a branch changed on
+the research pages (`claims`). The database's schema, rules and how to write an entry are on its own page; this section
+is the commands.
+
+```sh
+uv run --project python coney-tools research render --check
+uv run --project python coney-tools research render <folder>
+```
+
+`render --check` checks every file of the database against the checkout and writes nothing; CI runs it (`python`), and
+the docs build runs the same checks before it writes the pages. What it checks is in
+[the function database page](research-function-database.md). It exits with 1 and prints one `error:` line per
+problem when one fails; a name Ghidra still has as `FUN_<address>` is a `warning:` line and does not fail. It exits with
+2 when it is not run inside a checkout or the arguments are wrong.
+
+With `<folder>` instead of `--check`, it runs the same checks and then writes one page per system,
+`<folder>/research/<system>/functions.md`, the page the docs build makes (`mkdocs_hooks.py`; none is committed), so you
+can look at one without a build. It writes nothing while the data has a problem. Give a folder or `--check`, not both.
+
+```sh
+uv run --project python coney-tools research import-table PAGE --system NAME [--section ANCHOR] [--replace] [--dry-run]
+```
+
+Imports the code-index tables of the research page `PAGE` (a file below `docs/research`) into
+`research/functions/NAME.toml`, creating it when it is not there. Which tables and columns it reads, how it merges with
+the file and what its report lists are in [the function database page](research-function-database.md).
+`--section ANCHOR` limits the import to the tables under that heading, `--replace` takes the page's row for an address
+already in the file, and `--dry-run` prints the report and writes nothing. It exits with 0 when at least one function
+was read, 1 when the page gave none, and 2 for a page outside `docs/research`, a bad system name or an unknown
+`--section`.
+
+The code of `render` and `import-table` is `research_functions.py` (the schema and the file format),
+`research_functions_check.py` (the checks that read the checkout, and the `function-entries` rule it adds to `docs
+check`), `research_render.py` (the pages), `research_import.py` (the import), `research_links.py` (moving a role's links
+between folders; pages are read with `docs_page`, as `docs check` reads them) and `research_cli.py`.
+
+```sh
+uv run --project python coney-tools research claims [--base origin/main] [--task TASK] [--stamps DIR] [--require-study] [--json]
+```
+
+Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
+from ([evidence levels](research-workflow.md#evidence-levels)). The changed lines are those of the working tree since
+the branch left `--base`, a new page counting whole. It reads the pages exactly as [`docs check`](#docs) does, with the
+same reader and the same grammar: a block is graded in itself, a table row in its Evidence column, or by the lead line
+of its H3-or-deeper heading. For each graded block it prints the page and line, the level, the addresses and script
+locators the block cites, what backs it and the tests that cite its section:
+
+```text
+docs/research/combat/grabs.md
+  L13  confirmed (code)  0x0026c548  studied
+  L15  confirmed (runtime)  -  run r-20261023-grab-reach  tests: tests/combat/grab_test.cpp:12
+```
+
+What backs a claim: for `confirmed (code)`, a passing `studied` stamp for each cited address in the task's stamp log
+(`--task`, default the branch; `--stamps` names another log folder; none found means `none`); for `confirmed (runtime)`,
+the run record it cites (`confirmed (runtime), run <id>`, in the block or its lead line), which must exist and meet the
+rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
+links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a
+line `// Expected: research/<page>.md#<anchor>` in `tests/` or `python/tests/`. The sections of
+`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are
+counted, not listed: `docs check` reports them.
+
+It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
+missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
+is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
+with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
+version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
+`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
+`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
+error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
+for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
+
+`research claims` is `research_claims.py` and `research_claims_cli.py`.
 
 ## pcsx2 {#pcsx2}
 
@@ -1584,7 +1661,7 @@ line, and any failure makes the command exit 1:
 | `orig` | a file under `src/` changed | [`orig check`](#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `research*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
 | `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
@@ -1673,44 +1750,6 @@ runs the same check on the file whenever the change touches a research page, res
 checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
 fails every mechanical rule page-wide and the grading of the sections the change touches; an entry may list any research
 rule or `stale-wording`.
-
-## research {#research}
-
-```sh
-uv run --project python coney-tools research claims [--base origin/main] [--task TASK] [--stamps DIR] [--require-study] [--json]
-```
-
-Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
-from ([evidence levels](research-workflow.md#evidence-levels)). The changed lines are those of the working tree since
-the branch left `--base`, a new page counting whole. It reads the pages exactly as [`docs check`](#docs) does, with the
-same reader and the same grammar: a block is graded in itself, a table row in its Evidence column, or by the lead line
-of its H3-or-deeper heading. For each graded block it prints the page and line, the level, the addresses and script
-locators the block cites, what backs it and the tests that cite its section:
-
-```text
-docs/research/combat/grabs.md
-  L13  confirmed (code)  0x0026c548  studied
-  L15  confirmed (runtime)  -  run r-20261023-grab-reach  tests: tests/combat/grab_test.cpp:12
-```
-
-What backs a claim: for `confirmed (code)`, a passing `studied` stamp for each cited address in the task's stamp log
-(`--task`, default the branch; `--stamps` names another log folder; none found means `none`); for `confirmed (runtime)`,
-the run record it cites (`confirmed (runtime), run <id>`, in the block or its lead line), which must exist and meet the
-rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
-links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a
-line `// Expected: research/<page>.md#<anchor>` in `tests/` or `python/tests/`. The sections of
-`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are
-counted, not listed: `docs check` reports them.
-
-It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
-missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
-is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
-with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
-version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
-`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
-`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
-error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
-for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 
 ## build {#build}
 

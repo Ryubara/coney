@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
-from coney_tools import progress, progress_research
+from coney_tools import progress, progress_research, research_functions
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
@@ -38,10 +38,10 @@ SCHEMA = 1
 #: Where the file sits in the built site; the deploy fetches the published copy as a cache.
 HISTORY_FILE = "progress/history.json"
 #: The inputs the tracker reads, as git paths: everything `progress.load` needs and nothing else (no images, no code).
-INPUTS = ("docs/progress", "docs/research", "docs/roadmap.md", "research/bindings", "src")
+INPUTS = ("docs/progress", "docs/research", "docs/roadmap.md", "research/bindings", "research/functions", "src")
 MEASURES = ("reimplemented", "understood", "researched")
 #: The modules whose code decides what each measure counts: a change to any of them invalidates the cache.
-DEFINITION_MODULES = (progress, progress_research)
+DEFINITION_MODULES = (progress, progress_research, research_functions)
 #: A day left out of the history: (date, the commit it was tried at).
 Skipped = tuple[str, str]
 
