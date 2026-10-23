@@ -10,10 +10,9 @@
 #include "ai/fight_trace.h"
 #include "core/error.h"
 
-// The file of the all-humans trace (`--trace-humans FILE`, docs/guides/running.md#tracing), shared by the play modes
-// a run loads one after another (a Rumble match goes through its menu and the arena's level), so they write one file
-// with one step count and one numbering of the humans.
-// Research: docs/research/feel.md#method
+// The file of the all-humans trace (`--trace-humans FILE`, docs/guides/running-play-level.md#tracing), shared by the
+// play modes a run loads one after another (a Rumble match goes through its menu and the arena's level), so they write
+// one file with one step count and one numbering of the humans. Research: docs/research/feel.md#method
 
 namespace coney::ai {
 class Brains;

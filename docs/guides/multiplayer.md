@@ -226,7 +226,7 @@ players with their ping and loss; a **Simulate network** submenu (latency, jitte
 what this game sends, live); and a log of what happened, also printed as `net:` lines.
 
 **The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` and `--net-name NAME`
-([Running Coney](running.md#network-play)).
+([Running Coney](running-options.md#network-play)).
 
 ## Player two {#player-two}
 

@@ -53,8 +53,8 @@ Research:
 
 ## Run it in Coney {#run}
 
-With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks where it starts, 1 to
-12:
+With your own disc ([Playing a level](../guides/running-play-level.md#playing-a-level)); `--checkpoint` picks where it
+starts, 1 to 12:
 
 ```text
 coney --disc /path/to/disc --play-level level95 --checkpoint 1

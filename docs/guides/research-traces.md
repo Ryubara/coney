@@ -109,7 +109,7 @@ whose result is the column. Expressions are arithmetic over these names, and not
 | `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
 | `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
 
-A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](running.md#tracing)): `x`, `y`,
+A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](running-play-level.md#tracing)): `x`, `y`,
 `z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
 `look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
 `+0x08`) is the original's only.
@@ -222,7 +222,7 @@ original's spread ([coney-tools](coney-tools-pcsx2.md#trace)). Give one `--origi
 (which gang is side 1), as the gangs and the sides each change the numbers. Keep the recordings in the scratch folder,
 never in the repository. Match the original's set-up on Coney's side: where the recording hands player 1 to the AI after
 the countdown, run Coney with `--ai-player`, and give each Coney match its own `--ai-seed`
-([Running: tracing](running.md#tracing)).
+([Running: tracing](running-play-level.md#tracing)).
 
 ## Differential playthroughs {#differential-playthroughs}
 
@@ -234,10 +234,10 @@ events**, and drives both games through the same stretch with one **adaptive cou
 1. **Event logs on both sides, at the same semantic points.** Each game writes one CSV line per event (`step, kind,
    name, detail`): a script binding called, a call into the scripts by name, a hint shown, a sound started, a human
    appearing, going down or removed. Coney writes them with `--event-log`
-   ([Running Coney](running.md#event-log)); the original's come from hooks at the places that do the same thing (the
-   script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their addresses on
-   the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so both games
-   name the event alike without interpretation.
+   ([Running Coney](running-play-level.md#event-log)); the original's come from hooks at the places that do the same
+   thing (the script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their
+   addresses on the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so
+   both games name the event alike without interpretation.
 2. **One course, two games.** The course is a small policy that looks, once an update, at what is on screen (the
    player and camera, the other humans, the world objects of interest) and at the update's events, and answers with
    the pad: walk into the marker that is shown, fight the nearest enemy when a lesson is armed, stand before a cabinet

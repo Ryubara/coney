@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Which display a window the tools open goes on: `CONEY_WINDOW_DISPLAY`, read the same way as Coney reads it
 (`src/core/window_display.h`), so one setting keeps agents' Coney and PCSX2 windows off the display a person works
-on (docs/guides/running.md#window-display).
+on (docs/guides/running-options.md#window-display).
 
 Pure logic only; `pcsx2_proc` lists the displays and moves the windows.
 """

@@ -35,7 +35,7 @@ struct WorldViewerStats {
     std::uint64_t frames = 0;    ///< Frames run.
 };
 
-/// Coney's streamed-world viewer, behind `coney --view-world NAME` (docs/guides/running.md#the-world-viewer): a
+/// Coney's streamed-world viewer, behind `coney --view-world NAME` (docs/guides/running-viewers.md#the-world-viewer): a
 /// level's streamed worlds loaded in the original's order, streamed one decision a frame around a free-flying camera
 /// driven by pad 1, and drawn in the original's world order with the draw distance and fade-in. The free-flying camera
 /// is Coney's debug camera, but it looks through the player camera's lens (camera::kPlayerCameraLens: 65°, near 0.1,

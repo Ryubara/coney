@@ -60,8 +60,8 @@ Research:
 
 ## Run it in Coney {#run}
 
-With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks where it starts, 1 to
-5:
+With your own disc ([Playing a level](../guides/running-play-level.md#playing-a-level)); `--checkpoint` picks where it
+starts, 1 to 5:
 
 ```text
 coney --disc /path/to/disc --play-level level87 --checkpoint 1

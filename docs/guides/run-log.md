@@ -6,9 +6,9 @@ report, or an agent looking into one, can then see what happened and when, and l
 playthrough. The original game has nothing like it: it is Coney's own debug tooling, and it never changes what the
 game does.
 
-It is not the [event log](running.md#event-log) (`--event-log`, a CSV of what a player would notice, for comparing a
-run with the original) nor a [trace](running.md#tracing) (`--trace`, values per step): those are written for a
-program to diff; the run log is written for a person to read.
+It is not the [event log](running-play-level.md#event-log) (`--event-log`, a CSV of what a player would notice, for
+comparing a run with the original) nor a [trace](running-play-level.md#tracing) (`--trace`, values per step): those are
+written for a program to diff; the run log is written for a person to read.
 
 ## Reading a line {#reading}
 

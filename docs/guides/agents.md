@@ -73,7 +73,7 @@ mistakes; they are not a security boundary.
 **The agents' display.** On a machine with a display set aside for agents, every window an agent opens goes there,
 never on the display a person is working on. It is set once, in the agent tool's own environment, so no brief or
 memory has to carry it: `CONEY_WINDOW_DISPLAY` (`portrait`, a display number or part of its name;
-[Which display](running.md#window-display)) in the environment the tool gives its agents, for Claude Code the `env`
+[Which display](running-options.md#window-display)) in the environment the tool gives its agents, for Claude Code the `env`
 block of your user settings (`~/.claude/settings.json`, `"env": {"CONEY_WINDOW_DISPLAY": "portrait"}`). Coney opens
 its window centred on that display without taking the keyboard focus, and `coney-tools pcsx2 launch` and
 `pcsx2 record` move each PCSX2 window there as it appears ([Driving PCSX2](research-tools.md#driving-pcsx2)). It

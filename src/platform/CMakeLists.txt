@@ -11,7 +11,7 @@ target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
-# Playing a level as Rembrandt (docs/guides/running.md#playing-a-level), in a level's scenery or a sandbox's.
+# Playing a level as Rembrandt (docs/guides/running-play-level.md#playing-a-level), in a level's scenery or a sandbox's.
 target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
@@ -20,7 +20,8 @@ target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
 target_sources(coney_platform PRIVATE log_output.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
-# A driver program's pad and the frame's observation (`--pad-pipe`), and the humans for the event log (docs/guides/running.md#pad-pipe).
+# A driver program's pad and the frame's observation (`--pad-pipe`), and the humans for the event log
+# (docs/guides/running-play-level.md#pad-pipe).
 target_sources(coney_platform PRIVATE pad_pipe.cpp)
 # A level's particle systems and motion blur, drawn in play (docs/research/particles.md#coneys-implementation).
 target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp play_level_effects.cpp
@@ -62,8 +63,8 @@ if(CONEY_DEBUG_TOOLS)
     # same menus (docs/guides/debug-menu.md#the-developer-overlay); the menus' controls of the play mode with its Entity
     # inspector, Animation player, Debug draw lines and Spawner; the sandbox as the play mode's scenery and its renderer
     # (docs/guides/sandbox.md); the texture, character and sandbox viewers; the reference images of characters and objects
-    # (docs/guides/running.md#reference-images); and `--bench`, the scripted benchmark run that spawns fighters through
-    # the debug menus' controls (docs/guides/performance.md).
+    # (docs/guides/running-viewers.md#reference-images); and `--bench`, the scripted benchmark run that spawns fighters
+    # through the debug menus' controls (docs/guides/performance.md).
     add_library(
         coney_devtools STATIC
         character_viewer_mode.cpp
@@ -160,7 +161,7 @@ add_test(NAME coney.view_character_needs_disc COMMAND coney --view-character)
 set_tests_properties(coney.view_character_needs_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.play_level_needs_disc COMMAND coney --play-level level99)
 set_tests_properties(coney.play_level_needs_disc PROPERTIES WILL_FAIL TRUE)
-# Test mode is lockstep with no clock, so a frame cap there is a mistake (docs/guides/running.md#frame-rate).
+# Test mode is lockstep with no clock, so a frame cap there is a mistake (docs/guides/running-options.md#frame-rate).
 add_test(NAME coney.fps_cap_refused_in_test_mode COMMAND coney --headless --frames 3 --fps-cap 60)
 set_tests_properties(coney.fps_cap_refused_in_test_mode PROPERTIES WILL_FAIL TRUE)
 
@@ -197,7 +198,7 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/start_menu.txt")
     set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
     # STORY with a new profile through the profile screens into level99 at checkpoint 1, headless
-    # (docs/guides/running.md#input-scripts). States only.
+    # (docs/guides/running-input.md#input-scripts). States only.
     add_test(NAME coney.story_reaches_level99
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 790 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/story_new_profile_session.txt")
@@ -211,20 +212,20 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
     set_tests_properties(coney.plays_movies PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION
                          "LOGO ended after 114 frames.*PLOGO skipped.*L1_IN skipped.*movies: 3 played \\(2 skipped")
     # The character viewer headless: Rembrandt loaded through the Character List, the orbit camera driven by partial
-    # stick deflections and a clip change, 90 frames (docs/guides/running.md#the-character-viewer). Counts only.
+    # stick deflections and a clip change, 90 frames (docs/guides/running-viewers.md#the-character-viewer). Counts only.
     add_test(NAME coney.views_character
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 90 --view-character
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/character_orbit.txt")
     set_tests_properties(coney.views_character PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "character viewer: 90 frames")
     # Playing level99 headless: Rembrandt walked, run, turned and stopped by partial stick deflections, the follow
-    # camera turned by the right stick, 390 frames (docs/guides/running.md#playing-a-level). Counts only.
+    # camera turned by the right stick, 390 frames (docs/guides/running-play-level.md#playing-a-level). Counts only.
     add_test(NAME coney.plays_level
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level level99
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.plays_level PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded")
     # Levels played with the game's sound exit cleanly: a test with PASS_REGULAR_EXPRESSION ignores the exit code, so a
     # crash after the summary line (a destructor reading the freed sound output) passed unseen. These check the exit
-    # code alone (docs/guides/running.md#shutdown-order).
+    # code alone (docs/guides/conventions.md#shutdown-order).
     foreach(level level95 level99)
         add_test(NAME coney.exits_cleanly_${level}
                  COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 60 --play-level ${level})
@@ -237,8 +238,8 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.plays_sandbox PROPERTIES TIMEOUT 60
                          PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded.*respawns 0.*sandbox \"Traversal course\"")
-    # A matched view of level99 headless (docs/guides/running.md#matched-views): the view pinned, the world frozen
-    # after its first step of play while the walk script pushes the stick, so the player is still where he started.
+    # A matched view of level99 headless (docs/guides/running-play-level.md#matched-views): the view pinned, the world
+    # frozen after its first step of play while the walk script pushes the stick, so the player stays where he started.
     add_test(NAME coney.freezes_level
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 200 --play-level level99 --skip-movies
                      --freeze-world --camera 75.2,41.1,1.8,0,0,0.7071068,0.7071068,65
@@ -280,7 +281,7 @@ set_tests_properties(coney.rejects_unknown_sandbox PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.play_sandbox_needs_disc COMMAND coney --play-level sandbox:parkour)
 set_tests_properties(coney.play_sandbox_needs_disc PROPERTIES WILL_FAIL TRUE)
 # The sound output in test mode: the tone sweep mixed offline, a step of frames per frame, with no device and no clock
-# (docs/guides/running.md#sound). Counts and a hash only.
+# (docs/guides/running-options.md#sound). Counts and a hash only.
 add_test(NAME coney.audio_test_offline COMMAND coney --headless --frames 60 --audio-test)
 set_tests_properties(coney.audio_test_offline PROPERTIES TIMEOUT 30
                      PASS_REGULAR_EXPRESSION "audio: offline, 96000 frames mixed .2.00 s at 48000 Hz., peak [1-9]")

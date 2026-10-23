@@ -6,9 +6,9 @@
 #include <string>
 #include <string_view>
 
-// The all-humans trace (`--trace-humans FILE`, docs/guides/running.md#tracing): one CSV row per human per update,
-// with what a gang fight is judged by (where each human stands and faces, its goals, its target and who else attacks
-// it, its attacks, blocks, grabs and falls), so a big fight can be compared with the original's by behaviour
+// The all-humans trace (`--trace-humans FILE`, docs/guides/running-play-level.md#tracing): one CSV row per human per
+// update, with what a gang fight is judged by (where each human stands and faces, its goals, its target and who else
+// attacks it, its attacks, blocks, grabs and falls), so a big fight can be compared with the original's by behaviour
 // statistics (`coney-tools trace fight-report`). The columns the player's trace and the original's recorder share
 // carry the same names and units. Coney's own tool; the original has none.
 // Research: docs/research/feel.md#method, docs/research/ai.md#brain

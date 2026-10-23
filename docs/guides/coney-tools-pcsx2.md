@@ -93,7 +93,7 @@ holds commas or parentheses), waits until the game runs, and leaves it running; 
 returns once PINE answers; when the copy runs the debug server, it also waits for that port, and prints both. It is the
 only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
 process outside the agent's process tree; why: [Driving PCSX2](research-tools.md#driving-pcsx2)). With
-`CONEY_WINDOW_DISPLAY` set ([Which display](running.md#window-display)), it moves each PCSX2 window onto that
+`CONEY_WINDOW_DISPLAY` set ([Which display](running-options.md#window-display)), it moves each PCSX2 window onto that
 display as it appears, without activating it; `pcsx2 record` does the same. It refuses to
 start when something already serves PINE or the copy's debug server port. It runs under `--agent`'s claim (made, and
 kept, if you hold none) and records
@@ -133,7 +133,7 @@ uv run --project python coney-tools pcsx2 recordings make NAME --script SCRIPT [
     [--frames-per-update 2] [--author TEXT] [--force]
 ```
 
-Writes an input script (Coney's format, [Input scripts](running.md#input-scripts)) as a PCSX2 input recording
+Writes an input script (Coney's format, [Input scripts](running-input.md#input-scripts)) as a PCSX2 input recording
 `NAME.p2m2` in the scratch folder's `recordings/`, so the original replays the script exactly, frame by frame, as Coney
 does. A script's frame is one character update of 1/30 s and PCSX2 takes the pad at 60 Hz, so each script frame becomes
 `--frames-per-update` frames (2). Port 1 follows the script with the pad bytes Coney makes (buttons with full
@@ -255,9 +255,9 @@ uv run --project python coney-tools clips publish (--pr N | --issue N) [--edit] 
 uv run --project python coney-tools clips clean [--older-than HOURS] [--dry-run]
 ```
 
-In-game video clips for issues and pull requests, made by `coney --record` ([Recording a clip](running.md#record)) or
-`pcsx2 clip` (above). The rules and why: [Clips](testing.md#clips); the limits are `workspace.clips` in
-`.github/conventions.yml`.
+In-game video clips for issues and pull requests, made by `coney --record` ([Recording a
+clip](running-options.md#record)) or `pcsx2 clip` (above). The rules and why: [Clips](testing.md#clips); the limits are
+`workspace.clips` in `.github/conventions.yml`.
 
 * `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
   shared scratch folder (`../../scratch` beside the main checkout).
@@ -304,7 +304,7 @@ uv run --project python coney-tools trace fight-report --original TRACE... [--or
 ```
 
 Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)), by the rules of
+original's `pcsx2 record` of the all-humans field set; [Tracing](running-play-level.md#tracing)), by the rules of
 [Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics). The two games draw different
 random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
 columns `step`, `human` and `gang`; a metric whose columns are missing is left out.

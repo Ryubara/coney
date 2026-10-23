@@ -14,7 +14,7 @@
 
 namespace coney::platform {
 
-/// What `coney --render-references` renders (docs/guides/running.md#reference-images).
+/// What `coney --render-references` renders (docs/guides/running-viewers.md#reference-images).
 struct ReferenceRenderSettings {
     std::string outDir;            ///< Where the PNGs go, in a folder per list (characters::referenceFolder()); made
                                    ///< if missing.

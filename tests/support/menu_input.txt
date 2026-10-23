@@ -1,5 +1,5 @@
 # A synthetic input script for the smoke test: START on port 1, then a menu move down and a cross that is let go.
-# Format: docs/guides/running.md#input-scripts
+# Format: docs/guides/running-input.md#input-scripts
 2 tap start
 4 press down
 6 release down

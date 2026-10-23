@@ -125,10 +125,10 @@ struct SceneLine {
 using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mode,
                                                         const human::PlayerSnapshot& snapshot, float alpha)>;
 
-/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/running.md#playing-a-level): Rembrandt
-/// standing in a scenery (PlayScenery) at its start, driven by pad 1's left stick, and the follow camera behind him
-/// turned by the right stick. The scenery is a level's streamed worlds and level file, loaded as the world viewer
-/// loads them and streamed around the follow camera, or a sandbox layout (`--play-level sandbox:NAME`,
+/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/running-play-level.md#playing-a-level):
+/// Rembrandt standing in a scenery (PlayScenery) at its start, driven by pad 1's left stick, and the follow camera
+/// behind him turned by the right stick. The scenery is a level's streamed worlds and level file, loaded as the world
+/// viewer loads them and streamed around the follow camera, or a sandbox layout (`--play-level sandbox:NAME`,
 /// docs/guides/sandbox.md): the same player and camera code on the sandbox's collision mesh.
 ///
 /// Every step (update()): the player's update (human::Player: the human, then the camera), then the scenery's step

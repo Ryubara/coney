@@ -53,7 +53,7 @@ inline constexpr std::uint8_t kTriggerHeldPressure = 64;
 /// Gamepads can come and go at any time. Each port holds at most one: a gamepad that connects takes the first free
 /// port (port 1 first); one pulled out frees its port while the other port's gamepad stays where it is; a waiting
 /// third gamepad fills a freed port. Port 1 is always connected, since the keyboard plays on it too; port 2 only while
-/// it has a gamepad. The mapping (docs/guides/running.md#controls) is Coney's own: SDL names its face
+/// it has a gamepad. The mapping (docs/guides/running-input.md#controls) is Coney's own: SDL names its face
 /// buttons by position, so south is cross, east circle, west square and north triangle on any gamepad.
 ///
 /// It reads device state, so it needs the window's event pump (Window::pumpEvents) to have run before each sample();

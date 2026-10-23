@@ -2,9 +2,9 @@
 #pragma once
 
 // Which display Coney's window opens on (`--window-display`, `CONEY_WINDOW_DISPLAY`), and where on it: Coney's own
-// debug tooling, so agents' runs stay off the display a person works on (docs/guides/running.md#window-display). The
-// choosing and fitting live here, free of SDL, so they can be tested; src/platform/render_engine.cpp asks SDL for the
-// displays and moves the window.
+// debug tooling, so agents' runs stay off the display a person works on
+// (docs/guides/running-options.md#window-display). The choosing and fitting live here, free of SDL, so they can be
+// tested; src/platform/render_engine.cpp asks SDL for the displays and moves the window.
 
 #include <cstddef>
 #include <cstdint>

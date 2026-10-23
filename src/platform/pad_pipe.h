@@ -28,7 +28,8 @@ namespace coney::platform {
 class PlayLevelMode;
 
 /// What a frame left on screen for a driver program, read from the level in play: everything a player sees and a
-/// driver needs to play by sight (docs/guides/running.md#pad-pipe). Null members: nothing of that kind (no level).
+/// driver needs to play by sight (docs/guides/running-play-level.md#pad-pipe). Null members: nothing of that kind (no
+/// level).
 struct PipeView {
     const PlayLevelMode* mode = nullptr;
     const world_objects::SpawnRecords* records = nullptr;

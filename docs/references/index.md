@@ -93,7 +93,7 @@ Not to be listed: the credits (`CfgCredits`) and the text of any string table, w
 
 Characters, objects, cars, radar icons, particle effects and the lists that name an object (hats, inventory)
 may show a thumbnail. Coney renders them itself from the player's disc (`coney --render-references DIR
---names FILE`, [Running Coney](../guides/running.md#reference-images)) as transparent PNGs in
+--names FILE`, [Running Coney](../guides/running-viewers.md#reference-images)) as transparent PNGs in
 `docs/references/images/`, named after the entry's stable reference name, so the renderer and these lists
 agree without a lookup table. Models are 256 x 256; 2D icons and sprites are at most 64 x 64:
 
