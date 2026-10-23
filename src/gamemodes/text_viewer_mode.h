@@ -17,7 +17,7 @@ namespace coney {
 
 /// A game mode that lays out one marked-up text in a font and draws it every frame through a sprite batch and the 2D
 /// pass, as a text widget would: the text's game time advances with the frames, so `<PULSE>` and `<DISPLAYTIME>`
-/// play. It backs `coney --view-text` (docs/guides/running.md#run-coney) and stays until the window
+/// play. It backs `coney --view-text` (docs/guides/running-viewers.md#viewing-text) and stays until the window
 /// closes or the frame limit is hit.
 ///
 /// Coney's own tool; nothing in the original corresponds.

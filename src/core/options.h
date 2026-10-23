@@ -36,8 +36,9 @@ struct StartPlace {
 };
 
 /// What `--camera` asks for: player 1's view pinned to one place and orientation for the whole run, whatever camera
-/// the game would show, so a frame can be matched with one of the original's (docs/guides/running.md#matched-views).
-/// The values are the base camera object's (docs/research/camera.md#the-base-camera-object): Coney's own test aid.
+/// the game would show, so a frame can be matched with one of the original's
+/// (docs/guides/running-play-level.md#matched-views). The values are the base camera object's
+/// (docs/research/camera.md#the-base-camera-object): Coney's own test aid.
 struct CameraPin {
     float x = 0.0F; ///< The eye, game axes (metres, z up): the camera's +0x10.
     float y = 0.0F;
@@ -62,7 +63,7 @@ inline constexpr int kMinRenderSide = 16;
 inline constexpr int kMaxRenderSide = 8192;
 
 /// What `--rumble` asks for: the Rumble set-up the match starts with, written over what the Rumble menu chose when its
-/// arena is confirmed (docs/guides/running.md#rumble-from-the-command-line). Coney's own developer aid: a fresh
+/// arena is confirmed (docs/guides/running-viewers.md#rumble-from-the-command-line). Coney's own developer aid: a fresh
 /// profile's menu offers only 1 ON 1 and WAR PARTY.
 struct RumbleLaunch {
     std::uint16_t gameType = 0; ///< The mode's `RM_*` number (RumbleSetup::kGameType).
@@ -164,11 +165,11 @@ struct Options {
     std::optional<CameraPin> cameraPin;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
-    /// (docs/guides/running.md#tracing). Requires playLevel.
+    /// (docs/guides/running-play-level.md#tracing). Requires playLevel.
     std::optional<std::string> traceFile;
     /// `--trace-humans`: write one CSV row per human per step (ai::FightTracer) of a played level or a Rumble match to
-    /// this file, to compare a gang fight with the original's (docs/guides/running.md#tracing). Requires playLevel
-    /// or rumble.
+    /// this file, to compare a gang fight with the original's (docs/guides/running-play-level.md#tracing). Requires
+    /// playLevel or rumble.
     std::optional<std::string> humansTraceFile;
     /// `--ai-seed N`: vary the AI's random draws by N (0 to 2,147,483,647): the game's random stream starts at index N
     /// (GameRandom::startAt()) and every brain's and the gangs' generator is seeded through ai::variedSeed(). Unset is
@@ -243,7 +244,7 @@ struct Options {
     std::optional<std::string> namesFile;
     /// `--fps-cap N`: draw at most N frames a second, 0 for no cap (the default; vsync still limits the rate while
     /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
-    /// (docs/guides/running.md#frame-rate). Not in test mode.
+    /// (docs/guides/running-options.md#frame-rate). Not in test mode.
     std::optional<int> fpsCap;
     /// `--rumble TYPE [--arena N] [--gang-size N]`: start a Rumble match of that mode as QUICK RUMBLE does, whatever
     /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
@@ -258,8 +259,8 @@ struct Options {
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
     /// `--pad-pipe`: take player 1's pad from standard input, one line per frame, after writing what the frame before
-    /// left on screen to standard output (docs/guides/running.md#pad-pipe), so a driver program can play the game
-    /// by what it sees. Test mode; cannot be combined with `--input-script`.
+    /// left on screen to standard output (docs/guides/running-play-level.md#pad-pipe), so a driver program can play the
+    /// game by what it sees. Test mode; cannot be combined with `--input-script`.
     bool padPipe = false;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
@@ -279,7 +280,7 @@ struct Options {
     /// the window system's list, part of a display's name, or `portrait`. Unset: the `CONEY_WINDOW_DISPLAY`
     /// environment variable, else the window system's own placement. Either one set also keeps the window from taking
     /// the keyboard focus (as --no-activate does). A debug aid that keeps agents' runs off the
-    /// display a person works on (docs/guides/running.md#window-display).
+    /// display a person works on (docs/guides/running-options.md#window-display).
     std::optional<std::string> windowDisplay;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;

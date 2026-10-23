@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's scenes: the stage a playing scene draws through, the scenes stepped with the mode, player 1 handed
 // over to a scene and back, and `--scene`, Coney's test aid that plays one at once (docs/research/scenes.md,
-// docs/guides/running.md#playing-a-level).
+// docs/guides/running-play-level.md#playing-a-level).
 #include <array>
 #include <cstdint>
 #include <format>

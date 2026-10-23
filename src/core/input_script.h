@@ -57,7 +57,8 @@ inline constexpr float kSteerArrival = 1.0F;
 /// bearing turned into the camera's frame.
 [[nodiscard]] std::array<int, 2> steerStick(const SteerView& view, float targetX, float targetY, int percent);
 
-/// Parses an input script: the scripted input of test mode, a Coney format (docs/guides/running.md#input-scripts).
+/// Parses an input script: the scripted input of test mode, a Coney format
+/// (docs/guides/running-input.md#input-scripts).
 ///
 /// One command per line, `FRAME [p1|p2] ACTION ARGS...`; `#` starts a comment and blank lines are skipped:
 ///

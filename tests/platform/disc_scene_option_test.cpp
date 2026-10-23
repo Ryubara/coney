@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that `--scene` (docs/guides/running.md#playing-a-level) plays a scene in a level
-// other than level99, the case of issue 446: the level starts as `coney --play-level level2 --scene l2_c1` starts it,
-// the scene starts with its camera current and puppets exist for its roles, and the stage hands each posed puppet's
-// own mesh to the draw its caller gives it, one call per posed puppet. The crash itself only a window shows, so these
-// tests do not show it. They run only when the environment variable CONEY_DISC names the disc and skip otherwise; they
-// print counts only (LEGAL.md).
+// Checks against the player's own disc that `--scene` (docs/guides/running-play-level.md#playing-a-level) plays a scene
+// in a level other than level99, the case of issue 446: the level starts as `coney --play-level level2 --scene l2_c1`
+// starts it, the scene starts with its camera current and puppets exist for its roles, and the stage hands each posed
+// puppet's own mesh to the draw its caller gives it, one call per posed puppet. The crash itself only a window shows,
+// so these tests do not show it. They run only when the environment variable CONEY_DISC names the disc and skip
+// otherwise; they print counts only (LEGAL.md).
 
 #include <cstddef>
 #include <cstdint>

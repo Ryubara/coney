@@ -44,7 +44,7 @@ struct EntryLoad {
 [[nodiscard]] std::string describeLoad(const EntryLoad& load);
 
 /// A game mode that loads WAD entries through the chunk system, one entry per frame, prints a summary of each and
-/// leaves when all are done. It backs `coney --load` (docs/guides/running.md#run-coney).
+/// leaves when all are done. It backs `coney --load` (docs/guides/running-viewers.md#loading-entries-from-your-disc).
 class LoadEntryMode final : public GameMode {
   public:
     /// The mode's id, outside the original's range of ids.

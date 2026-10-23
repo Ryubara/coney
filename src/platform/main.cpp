@@ -392,7 +392,7 @@ int main(int argc, char** argv) {
     }
 
     // --render-references: one image per character, object, car, radar icon and traced particle effect, then exit
-    // (docs/guides/running.md#reference-images).
+    // (docs/guides/running-viewers.md#reference-images).
     if (const std::optional<std::string> outDir = options->renderReferences; outDir) {
         if (!wad) {
             return 2; // parseOptions refuses --render-references without --disc, so this is never reached

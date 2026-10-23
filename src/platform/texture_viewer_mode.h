@@ -14,8 +14,8 @@ namespace coney::platform {
 
 /// A game mode that shows every texture of some texture dictionaries, laid out in a grid that fills the window
 /// (graphics::layoutGrid()) and drawn with their alpha. It backs `coney --view-txd`
-/// (docs/guides/running.md#run-coney). It stays until the window closes or the frame limit is hit; it reads no clock,
-/// so every frame of a run is the same.
+/// (docs/guides/running-viewers.md#viewing-texture-dictionaries). It stays until the window closes or the frame limit
+/// is hit; it reads no clock, so every frame of a run is the same.
 ///
 /// Coney's own tool; nothing in the original corresponds.
 class TextureViewerMode final : public GameMode {

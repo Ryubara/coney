@@ -11,7 +11,7 @@
 #include "characters/character_model.h"
 
 // The platform-neutral half of Coney's reference renders of models (`coney --render-references`,
-// docs/guides/running.md#reference-images): where the fixed camera stands for a model, how an object's model is
+// docs/guides/running-viewers.md#reference-images): where the fixed camera stands for a model, how an object's model is
 // turned to face it, how a supersampled frame is reduced to the image, and what the image file is called. Pure and
 // deterministic, so the same disc gives byte-identical images on every run; the renderer in src/platform/ only loads,
 // draws and reads back.
