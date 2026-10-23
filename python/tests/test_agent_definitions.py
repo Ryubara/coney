@@ -6,12 +6,14 @@ session. On 2026-10-22 `tooling.md` had an unquoted colon in its description and
 file the way Claude Code does (a YAML block between the first two `---` lines) and require the fields it needs.
 """
 
+import tomllib
 from pathlib import Path
 
 import pytest
 import yaml
 
-AGENTS = Path(__file__).resolve().parents[2] / ".claude" / "agents"
+REPO = Path(__file__).resolve().parents[2]
+AGENTS = REPO / ".claude" / "agents"
 
 
 def _definitions() -> list[Path]:
@@ -36,3 +38,28 @@ def test_agent_frontmatter_loads_with_a_name_and_description(path: Path) -> None
     assert isinstance(data, dict), f"{path.name}: frontmatter is not a mapping"
     assert data.get("name") == path.stem, f"{path.name}: name must match the file name"
     assert isinstance(data.get("description"), str) and data["description"], f"{path.name}: no description"
+
+
+def test_the_coordinator_is_defined_for_the_main_session() -> None:
+    data = _frontmatter(AGENTS / "coordinator.md")
+    assert isinstance(data, dict) and data["name"] == "coordinator"
+    # A main session needs every tool (it starts agents, runs the tools, edits guides); the hooks hold it to its role.
+    assert "tools" not in data and "disallowedTools" not in data
+    # No model: the person picks the one the session runs on.
+    assert "model" not in data
+
+
+def test_every_role_the_hooks_name_has_an_agent_definition() -> None:
+    config = tomllib.loads((REPO / ".claude" / "hooks" / "hooks.toml").read_text(encoding="utf-8"))
+    defined = {path.stem for path in _definitions()}
+    named = set(config["roles"]) | {alias for rules in config["roles"].values() for alias in rules.get("aliases", [])}
+    assert named <= defined, f"hooks.toml names roles with no .claude/agents file: {sorted(named - defined)}"
+    # And the other way: a defined role has rules, so a new role file is not forgotten by the hooks.
+    assert defined <= named | set(config["helpers"]), f"roles the hooks do not know: {sorted(defined - named)}"
+
+
+def test_the_committed_hook_config_is_the_safe_rollout() -> None:
+    config = tomllib.loads((REPO / ".claude" / "hooks" / "hooks.toml").read_text(encoding="utf-8"))
+    assert config["require_role"] is False, "switch require_role on in its own one-line pull request"
+    assert config["pr_guard"]["refuse_pr_create"] is False, "switch it on when `pr open` lands"
+    assert config["identity"]["powershell_modes"] == ["bypassPermissions"]

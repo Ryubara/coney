@@ -19,10 +19,10 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
-| `.claude/agents/` | The roles: `engineer`, `tooling`, `reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer` | Claude Code |
+| `.claude/agents/` | The roles: `coordinator` (the main session), `engineer`, `tooling`, `reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/release_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
-| `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call, and their `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/pr_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `.claude/hooks/` | The dispatcher `dispatch.py` that `settings.json` runs for every event ([The hooks](#hooks)), the guard scripts it runs, the role rules and identity injection (`roles.py`, `identity.py`), their settings `hooks.toml`, and `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -40,14 +40,14 @@ their own copies at once, so connect it to the copy you claimed and to no other.
 <id>` prints the copy's `port` (PINE) and `debug-port`; start PCSX2 with `pcsx2 launch --agent <id>`, then call
 `pcsx2_connect` with `debug_port` and `pine_port` set to those, `mode: "debug"` and `agent: "<your id>"` (the id you
 claimed with). **Pass `agent: "<your id>"` on every `pcsx2_*` call**, not only the connect: it names your connection
-in the server, and the hook refuses a connect without it. Debug mode is the default to use:
-the debug server serves several clients, but PCSX2's PINE serves one, and an MCP server holding it blocks
-`pcsx2 record` and every other PINE client of that copy. Use `mode: "auto"` or `"pine"` only when you need PINE's
-own calls and nothing else uses the copy, and never leave the ports out: the defaults (21512, 28011) are copy
-`pcsx2`'s, someone else's game. An agent tool that starts one server per agent can run
-`coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's ports to the server as `pcsx2_connect`'s defaults
-([`mcp`](coney-tools.md#mcp)); the hook still wants both ports in the call, so those defaults serve a server run
-outside it. **A hook enforces this** ([below](#pcsx2-guard)). What the tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
+in the server, and the hook refuses a connect without it. Debug mode is the default to use: the debug server serves
+several clients, but PCSX2's PINE serves one, and an MCP server holding it blocks `pcsx2 record` and every other PINE
+client of that copy. Use `mode: "auto"` or `"pine"` only when you need PINE's own calls and nothing else uses the
+copy, and never leave the ports out: the defaults (21512, 28011) are copy `pcsx2`'s, someone else's game. An agent
+tool that starts one server per agent can run `coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's
+ports to the server as `pcsx2_connect`'s defaults ([`mcp`](coney-tools.md#mcp)); the hook still wants both ports in
+the call, so those defaults serve a server run outside it. **A hook enforces this** ([below](#pcsx2-guard)). What the
+tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
 guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which
@@ -149,6 +149,60 @@ A fork inherits the coordinator's whole context and its model, and cannot run on
 wrong choice for any long worker: every re-write costs the coordinator's full context plus the fork's own work, and it
 reaches its context limit and compacts sooner. When in doubt, start a fresh agent.
 
+## Which role to start {#roles}
+
+Every session and every Agent call runs as one of Coney's roles (the files in `.claude/agents/`), never as the generic
+"general-purpose" or "claude" agent, which carries none of the repository's rules for the kind of work. The hooks know
+the role from the hook input's `agent_type` (a subagent's type; for the main session, the agent it was started as with
+`claude --agent coordinator`), and hold each role to what it may do:
+
+| Role | Is | May not (a hook refuses it) |
+| --- | --- | --- |
+| `coordinator` | The main session: triage, briefs, answers, pushes and opens pull requests, merges, the maintainer's contact | Write under `src/`, `tests/`, `python/`, `docs/research/`, `research/`; `git commit` in a unit's worktree; the Ghidra and PCSX2 tools; the study, compare, check and review commands of the new workflow |
+| `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open` |
+| `tooling` | A subagent for the project's own tools and process | The same as the engineer; it may edit `src/` (warning fixes) |
+| `reviewer` (and today's `research-reviewer`, `orig-reviewer`, `pr-reviewer`) | A subagent that reports | Writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`), a git command that changes the index, the tree or the worktrees (`commit`, `add`, `rm`, `mv`, `reset`, `restore`, `checkout`, `switch`, `merge`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `worktree remove`, also after global options such as `--no-pager` or `-C dir`), GitHub writes |
+| every role, and a session with none | | Naming `~/.coney` ([Who runs a command](#identity)); naming a file in `~/.ssh/` other than a `.pub`, `config` or `known_hosts`; reading another process's command line or environment; `ssh-keygen -Y sign` and `ssh-add` (listing with `-l` is fine); Edit or Write under a `stamps/` folder and a shell write into one (a stamp log is written by the stage commands only, [Stamps](stamps.md)) |
+
+The role rules are the `[roles.*]` tables of `.claude/hooks/hooks.toml`, read on every call; the rules for every
+session are built into `.claude/hooks/protect.py`, so a settings file that cannot be read does not take them away and
+no setting weakens them. They read the fields that name a path (a Read's file, a Glob's pattern, a shell command's
+words, every string of an MCP tool's input), after folding `./`, `..`, case, both slashes and `~`, `$HOME` and
+`%USERPROFILE%` together, and the aliases Windows gives a folder (trailing dots and spaces, `SSH~1` for `.ssh`, the
+real path of a short name); not a search pattern, a commit message or the text a file is given, so `grep
+".coney/identity" docs`, `grep "ssh-add" docs`, `git log -S`, `pytest -k ssh_add` and `git commit -m "Refuse ssh-add"`
+are fine (text the shell would run, `$(...)` or a backtick, is still read). Some name commands that are planned (`pr
+open`, `task check`) so that they are held from the day they land. A hook judges spelling: a command can be hidden
+from it, so these rules make a break visible and deliberate, not impossible. A setting of the wrong shape is ignored
+and an invalid pattern skipped, so one bad entry never disables the rest.
+
+Pick the role of an Agent call by what the agent does:
+
+| Start | For |
+| --- | --- |
+| `engineer` | Anything that writes code, tests, tools, research pages or docs, or opens Ghidra or PCSX2; also upkeep and measurement runs. When unsure, this one |
+| `tooling` | The project's own tools and process: `coney-tools`, workflows, hooks, build configuration and the guides that describe them |
+| `reviewer` | A review of code, tests, tools, docs or commits, by someone other than the author |
+| `research-reviewer` | A review of research pages and other reverse-engineering work |
+| `orig-reviewer` | The check of `@orig` functions against the original ([The orig reviewer](#orig-reviewer)) |
+| `pr-reviewer` | A pull request description (`PR.md`), before the coordinator pushes it |
+| `Explore`, `Plan`, `claude-code-guide` | A read-only search of many files, a plan that writes nothing, a question about Claude Code |
+| `fork` | A short job that needs the coordinator's conversation ([Who does the work](#who)) |
+
+The model is separate: name it on every call ([Which model](#models)). `agent_guard.py` refuses a call with no
+`subagent_type` (which Claude Code runs as general-purpose), an empty one, `general-purpose`, `claude`, `coordinator`
+(a main-session role) or any type that is neither a role nor one of the helpers above, so Claude Code's other built-in
+types (`statusline-setup`, for one, which edits settings) are refused too. It reads the roles from the files in
+`.claude/agents/` each time, so a new role file works at once, and names the allowed types in its refusal; start the
+agent again with the right one.
+
+**A session with no role.** `require_role` in `hooks.toml` says what a session started without a role (a plain
+`claude`) may do. On, it may only read (Read, Grep, Glob) and every other call is refused with a message to start with
+`claude --agent coordinator`. It is **off in the committed file** until the maintainer's sessions are started that way.
+To switch it on, a tooling agent changes `require_role = false` to `true` in a one-line pull request (the coordinator
+may not commit in a unit's worktree, and every worktree counts as one). Whatever its value, a session start with no
+role shows a notice (a SessionStart hook).
+
 ## Which model {#models}
 
 Match the model to the judgement the task needs, not to its size. A cheaper model that has to redo work, or that
@@ -219,9 +273,102 @@ Agent tool's `isolation: "worktree"` option.** It creates the worktree for you u
 `.claude/worktrees/` with an automatic branch name, which is outside the layout [AGENTS.md](repo:AGENTS.md) fixes:
 the virus scanner exclusion a machine sets for the worktrees folder (without it a build starves the CPU) does not
 cover it, the `.coney-busy` marker and [the workspace cleanup](workspace.md#cleanup) do not look there, and the
-branch name is not the one the release queue and `STATUS.md` use. A hook (`.claude/hooks/agent_guard.py`, registered
-for the Agent tool in `.claude/settings.json`) refuses the call and points here; start the agent again without
-`isolation`.
+branch name is not the one the release queue and `STATUS.md` use. A hook (`.claude/hooks/agent_guard.py`, run by the
+dispatcher for the Agent tool) refuses the call and points here; start the agent again without
+`isolation`. The same hook refuses an agent that is not one of the roles ([Which role to start](#roles)).
+
+## The hooks {#hooks}
+
+`.claude/settings.json` registers **one** hook script, `.claude/hooks/dispatch.py`, for five events: before every tool
+call (`PreToolUse`), after a shell command (`PostToolUse`), when a shell command fails (`PostToolUseFailure`) or is
+denied (`PermissionDenied`), and when a session starts (`SessionStart`). Claude Code starts a process per registered
+hook, and each cost a Python start-up on every shell command; now there is one, and the checks run inside it:
+
+| Event | What runs |
+| --- | --- |
+| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` for the Agent tool; then the identity token |
+| `PostToolUse` | `trailer_guard.py` after a `git commit`; the command's identity file is removed |
+| `PostToolUseFailure`, `PermissionDenied` | The command's identity file is removed (a failing build or a denied command would leave it for its ten minutes) |
+| `SessionStart` | The notice about a session with no role, or about settings that could not be read |
+
+Of the eight guard scripts, five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
+`bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is unchanged but the dispatcher starts it
+only for a real `git commit`; `pr_guard.py` (once `release_guard.py`) and `agent_guard.py` run as before and have a
+rule more each (the `refuse_pr_create` switch, the role check). The dispatcher gives a guard's `main()` the hook input
+and takes its exit code and stderr, so a guard stays a script of its own with its own tests. The refusals of all
+guards come back together, as Claude Code's JSON answer (`permissionDecision: deny` with the reasons before a tool
+runs, `decision: block` after it) with exit code 0, shown to the agent; never exit code 2, which Claude Code also gets
+from a launcher that fails ([Nothing turns the guards off](#hooks)). The settings are in `.claude/hooks/hooks.toml`
+(hand-written, standard-library TOML: the hooks run without packages, so `.github/conventions.yml` cannot be read
+there). Two switches are off in the committed file and are changed in a one-line pull request when their moment comes:
+`require_role` ([Which role to start](#roles)) and `[pr_guard] refuse_pr_create`, which makes the PR guard refuse
+every `gh pr create` and every `gh api` call that opens a pull request, in any session, once `coney-tools pr open` is
+the only way. The hooks run from the checkout the session was started in, so a change to them reaches a session when
+that checkout has it. Whatever the dispatcher runs is judged on spelling; none of it is a security boundary.
+
+**Nothing turns the guards off, and a guard that cannot start blocks nothing.** The guards are what
+keeps agents from breaking the shared machine, so only a guard's own failure may stop that guard. A settings file that
+cannot be read (not UTF-8, invalid TOML, a table of the wrong shape) gives the defaults (no role rule is on); a rule
+module that does not import (`hooklib.py`, `roles.py`, `identity.py`, `protect.py`) is skipped alone, `protect.py`
+apart from the others, since its rules are built in; a rule that crashes is skipped and the others still run; a guard
+that crashes passes the call alone. Each case leaves a line in `coney-hooks.log` in the temp folder, the next session
+start says that the settings could not be read, and the hook command pins the interpreter (`uv run --python
+">=3.12"`) so an old default Python cannot fail an import.
+
+The other failure is before the script runs: uv finds no Python 3.12 or newer (offline, downloads off), or the
+checkout the session was started in no longer has `dispatch.py` (it moved to an older commit; Claude Code keeps the
+hooks it read at start). uv and Python then exit with code 2, which for a `PreToolUse` hook with the matcher `*`
+blocks every tool call, `Read` included, and the agent cannot recover. So the command in `settings.json` ends in
+`|| exit 0`, and the dispatcher refuses only through its JSON answer. A session in that state runs with no guard, and
+`coney-hooks.log` has no line for it; if the guards seem to be missing, run the command by hand.
+
+### Who runs a command {#identity}
+
+The tools that stamp work or check a commit need to know which agent ran them, and an agent's word cannot be trusted:
+spelling cannot stop a shell from setting a variable (`export "CONEY_AGENT_TYPE=x"`, `export $name=x`, `source
+file.sh` all get round a pattern). So the tools do not read the id, type or model from the environment at all. Before a
+shell command that mentions `coney-tools`, or runs `git commit`, the dispatcher writes the caller's identity to
+`~/.coney/identity/<hash>.json`, from the hook input and the agent's own transcript, and puts **only the token**, 128
+random bits, in front of the command; the file is named by the SHA-256 of the token, so listing the folder gives no
+token away:
+
+```text
+export CONEY_AGENT_TOKEN=<32 hex digits>; <the command>
+```
+
+`coney_tools.identity` reads the file the token names, as the first thing a `coney-tools` command does. A token that is
+typed, changed or expired finds no file, so the tool records the identity as **unverified** (every field `unknown`),
+never as another role; `stamps.who_from_env` takes it from there. The file holds the id (the
+subagent's, or `main`), type (or `none`), model (the id of the agent's latest turn in its transcript, or `unknown`),
+the session, agent and tool call it was written for, and when it expires (`[identity] ttl_seconds`, 10 minutes). It is
+read, not consumed, because one command can run several tools (`coney-tools ... && git commit`); the dispatcher removes
+it when the command ends, fails (`PostToolUseFailure`) or is denied (`PermissionDenied`), and a call that issues a
+token removes the expired files and leftover temporary ones. A background command (`run_in_background`) keeps its file
+for the sweep, because the end of the call comes as soon as the process is started, before uv has started the tool. A
+tool that runs for long has read the file at its start and keeps the answer; a tool that starts after the file's life,
+such as a later `coney-tools` in a chain that runs past 10 minutes, finds none and is unverified. The folder is 0700
+and a file 0600.
+
+What an agent can still do: read its own token (it proves only its own identity); write an identity file itself, which
+needs the folder, and the hooks refuse every session to name any of `~/.coney` (and `~/.ssh/`, the stamp logs, signing
+and other processes' command lines, [Which role to start](#roles)), but that is spelling, so a deliberately built path
+gets through; or read another command's token from the command line of its running shell, in a process listing (`ps`,
+Task Manager) for as long as that command runs, which no hook can hide (the readers of `/proc/<pid>/cmdline` and
+`environ`, `wmic process` and `Win32_Process` are refused, `ps` is not). The protection is that a forgery is visible and
+deliberate, that a token lives minutes, and that a typed variable is worth nothing; it is not that a forgery is
+impossible. A command that sets `CONEY_AGENT_*` is still refused, as a courtesy, with that text.
+
+Why a prefix: Claude Code lets a `PreToolUse` hook change a call only by returning a new input (`updatedInput`); it
+cannot set the environment of a Bash call. Measured on 2026-10-22 with `claude -p` 2.1.309:
+
+- The rewritten command is checked against the permission rules like any other. `export ...; <command>` keeps the
+  `Bash(...)` allow rules working because Claude Code checks each part on its own, so `.claude/settings.json` allows
+  `Bash(export CONEY_AGENT_TOKEN=*)`. That rule allows only the export part ([the measurement](enforcement.md#hooks)).
+  A prefix of the form `NAME=x <command>` would stop `Bash(python *)` and the like from matching, so it is not used.
+- The PowerShell tool refuses `$env:NAME = ...` (also `Set-Item Env:` and `[Environment]::SetEnvironmentVariable`) in
+  every permission mode except `bypassPermissions`. So a PowerShell command gets a token only in the modes listed in
+  `[identity] powershell_modes` (`bypassPermissions`); in the others a tool sees the identity as unverified. Use Bash
+  for `coney-tools` where the identity matters.
 
 ## Commit trailers {#trailer-guard}
 
@@ -229,19 +376,18 @@ An agent's commits end with `Co-Authored-By: <the model it runs on> <noreply@ant
 ([AGENTS.md](repo:AGENTS.md)). The coordinator's session gets a system reminder naming the coordinator's own model for
 that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent twice credited Opus, the pull request's
 Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
-each other. A hook (`.claude/hooks/trailer_guard.py`, registered in `.claude/settings.json` for `PostToolUse` on Bash
-and PowerShell commands that start `git commit` or `git -C ... commit`, and `git -c ... commit` on Bash) checks
-every commit right after it is made. Claude Code gives a hook no model, but it does give the main session's
-`transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`; the
-hook does not use it, because the role does not name the model). The agent's own transcript
+each other. A hook (`.claude/hooks/trailer_guard.py`, run by the [dispatcher](#hooks) after a shell command that runs
+`git commit`) checks every commit right after it is made. Claude Code gives a hook no model, but it does give the main
+session's `transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`;
+the hook does not use it, because the role does not name the model). The agent's own transcript
 (`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every assistant entry
 (`claude-sonnet-5-5`), and the hook derives the trailer's name from it (`Claude Sonnet 5.5`) instead of keeping a
 table. A trailer with the vendor's address that names a different model exits 2, and the agent sees the reason and
 amends the commit with the one trailer it should have. A commit that printed nothing (`git commit -q`) is judged from
-the HEAD of the working directory and of the directories the command names, if it was made in the last two minutes.
-Other command shapes are not checked: `git --no-pager commit`, `git --git-dir=... commit`, `git.exe commit`
-and a full path to git. The hook fails open when it cannot tell (no transcript, an id that is not a Claude model, no
-trailer, another vendor, a commit it cannot find), and a person committing outside Claude Code never runs it.
+the HEAD of the working directory and of the directories the command names, if it was made in the last two minutes. A
+commit made by a program the command only starts (a script) prints nothing the hook can read. The hook fails open when
+it cannot tell (no transcript, an id that is not a Claude model, no trailer, another vendor, a commit it cannot find),
+and a person committing outside Claude Code never runs it.
 
 ## Running without losing the cache {#cache}
 

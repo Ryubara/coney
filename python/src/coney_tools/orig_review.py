@@ -10,7 +10,7 @@ what to review and holds its results:
 * `pr_stamp` lists the units a branch adds or changes (`orig review-stamp --branch`), `sweep_stamp` the units of a
   folder or of chosen addresses not yet reviewed at their current body (`orig review-stamp --folder`);
 * `verdict_problems` and `gate` are the release gate on a branch's `ORIG-REVIEW.json` (`orig check-review`, run by
-  `.claude/hooks/release_guard.py` before `gh pr create`);
+  `.claude/hooks/pr_guard.py` before `gh pr create`);
 * the **ledger** (a JSON-lines file in the workspace's scratch, never committed) records each review: the unit, its
   body hash, the commit and the class. A unit with no entry is unreviewed, one whose body changed since is stale,
   and `orig queue` orders by it. A passing gate and `orig record` (a sweep's FINDINGS.tsv) write to it.

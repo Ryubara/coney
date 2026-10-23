@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Claude Code PreToolUse hook: open or edit a pull request only with a title and description that pass CI's checks.
+"""Claude Code PreToolUse hook (the PR guard, once `release_guard.py`): a pull request opens or changes only through a
+title and description that pass CI's checks, and, once `coney-tools pr open` exists, only through that command.
+
+With `refuse_create` on (`[pr_guard] refuse_pr_create` in `hooks.toml`, off until `pr open` lands) every `gh pr create`
+and every `gh api` call that opens a pull request (a POST to `repos/<owner>/<name>/pulls`, the GraphQL
+`createPullRequest`) is refused in a Claude Code session, whoever types it. `pr open` runs `gh` as its own subprocess,
+which is no tool call, so the hook never sees it. A person at their own terminal runs no hook. With it off, the rest
+of this text is the whole behaviour.
 
 The coordinator opens each pull request from an agent's description file with `gh pr create --title ... --body-file
 <file>` (docs/guides/how-we-work.md#release-queue). The rule is that the file passed `coney-tools repo check-review`
@@ -85,6 +92,9 @@ _CONTINUATION = re.compile(r"(?:\\|`)[ \t]*\n")
 _QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
 #: Git Bash's form of a Windows drive (`/c/...`).
 _MSYS_DRIVE = re.compile(r"^/(?P<drive>[A-Za-z])(?:/|$)")
+#: A Windows drive path (`C:/x`), absolute on any system although `Path` on Linux and macOS reads it as relative.
+#: A copy of `hooklib._DRIVE`: this guard stands alone and must work when `hooklib` does not import.
+_DRIVE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
 #: A value the shell fills in (`$TITLE`, `$(...)`, PowerShell's `(...)`), which the hook cannot read.
 EXPANSION = "$(...)"
 #: A GitHub remote address, in the `https://host/owner/name(.git)` or `git@host:owner/name(.git)` form.
@@ -110,6 +120,7 @@ HOW = (
     "`repo check-review`), the checks CI's required `title` and `body` jobs run "
     "(docs/guides/how-we-work.md#release-queue)."
 )
+HOW_OPEN = "A pull request opens only with `uv run --project python coney-tools pr open <task>`."
 
 
 @dataclass
@@ -237,6 +248,11 @@ def native(path: str) -> Path:
     return Path(path).expanduser()
 
 
+def _absolute(path: Path) -> bool:
+    """Whether the path is absolute here or names a Windows drive (a command can carry one on any system)."""
+    return path.is_absolute() or _DRIVE_PATH.match(str(path)) is not None
+
+
 def _directory(text: str, bare: str, end: int, cwd: str) -> str | None:
     """The directory a command at `end` runs in: `cwd`, moved by each `cd` before it; None when a `cd` goes to an
     expansion (`cd "$DIR"`), which the hook cannot follow."""
@@ -250,7 +266,7 @@ def _directory(text: str, bare: str, end: int, cwd: str) -> str | None:
             here = None
             continue
         step = native(target[0])
-        here = step if step.is_absolute() else here / step
+        here = step if _absolute(step) else here / step
     return None if here is None else str(here)
 
 
@@ -285,10 +301,20 @@ def this_repository(cwd: str) -> str | None:
     return match.group("repo").lower() if match else None
 
 
-def refusal(call: PrCall) -> str | None:
-    """Why the command's shape is refused before any check runs, or None."""
+#: What `refuse_create` says when it refuses a pull request opened any other way than `coney-tools pr open`.
+OPEN_ONLY = "opens a pull request outside `coney-tools pr open`, the only way one opens."
+
+
+def refusal(call: PrCall, refuse_create: bool = False) -> str | None:
+    """Why the command's shape is refused before any check runs, or None.
+
+    `refuse_create` is the `[pr_guard] refuse_pr_create` switch of `hooks.toml`: with it on, every `gh pr create`
+    is refused whatever its options.
+    """
     if call.dry_run:
         return None
+    if refuse_create and call.verb == "create":
+        return f"`gh pr create` {OPEN_ONLY}"
     if call.unchecked:
         return f"`gh pr {call.verb} {call.unchecked[0]}` takes the description from somewhere the checks cannot see."
     if call.body is not None:
@@ -340,7 +366,7 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
     if call.body_file is None or "$" in call.body_file or "%" in call.body_file:
         return found
     path = native(call.body_file)
-    if not path.is_absolute():
+    if not _absolute(path):
         if call.cwd is None:
             return found
         path = Path(call.cwd) / path
@@ -356,18 +382,51 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
     return found
 
 
-def check(command: str, cwd: str, powershell: bool = False, runner: Runner = run_coney_tools) -> str | None:
+#: `gh api` where a command starts, with gh's own options before it.
+_GH_API = re.compile(
+    _START + _GH + r"(?:[ \t]+(?:(?:-R|--repo|--hostname)(?:[ \t]+|=)" + _ARG + r"|--?[\w-]+(?:=" + _ARG + r")?))*"
+    r"[ \t]+api(?=[ \t]|$)",
+    re.MULTILINE,
+)
+#: The method of a `gh api` call: `-X POST`, `-XPOST`, `--method POST` or `--method=POST`.
+_METHOD = re.compile(r"(?:^|[ \t])(?:-X[ \t]*|--method(?:[ \t]+|=))[\"']?(?P<method>\w+)", re.IGNORECASE)
+#: A field or input of a `gh api` call, which makes gh send a POST unless a method is given.
+_FIELDS = re.compile(r"(?:^|[ \t])(?:-[fF]|--field|--raw-field|--input)")
+#: The REST endpoint that opens a pull request: `repos/<owner>/<name>/pulls`, nothing after it.
+_PULLS = re.compile(r"(?:^|[ \t])/?repos/[^/\s]+/[^/\s]+/pulls/?(?=[ \t]|$)")
+
+
+def api_reasons(command: str) -> list[str]:
+    """Why each `gh api` call of the command that opens a pull request is refused (only with `refuse_create`)."""
+    text = _clean(command)
+    reasons: list[str] = []
+    for match in _GH_API.finditer(_mask(text)):
+        args = text[match.end() :].split("\n", 1)[0]
+        method = _METHOD.search(args)
+        posts = method.group("method").upper() == "POST" if method else _FIELDS.search(args) is not None
+        if (posts and _PULLS.search(args)) or "createPullRequest" in args:
+            reasons.append(f"`gh api` {OPEN_ONLY}")
+    return reasons
+
+
+def check(
+    command: str,
+    cwd: str,
+    powershell: bool = False,
+    runner: Runner = run_coney_tools,
+    refuse_create: bool = False,
+) -> str | None:
     """The reason the command is refused, or None when it may run."""
     calls = pr_calls(command, powershell, cwd)
-    if not calls:
+    reasons: list[str] = api_reasons(command) if refuse_create else []
+    if not calls and not reasons:
         return None
-    reasons: list[str] = []
-    for call in calls:
+    for call in calls or []:
         if call.repo is not None:
             here = this_repository(call.cwd or cwd)
             if here is not None and call.repo.lower() != here:
                 continue  # another repository's pull request
-        shape = refusal(call)
+        shape = refusal(call, refuse_create)
         if shape is not None:
             reasons.append(shape)
             continue
@@ -375,11 +434,14 @@ def check(command: str, cwd: str, powershell: bool = False, runner: Runner = run
             reasons.extend(problems(call, runner))
     if not reasons:
         return None
-    return "Blocked: " + " ".join(reasons) + "\n" + HOW + "\n"
+    return "Blocked: " + " ".join(reasons) + "\n" + (HOW_OPEN if refuse_create else HOW) + "\n"
 
 
-def main() -> int:
-    """Read the hook's JSON from stdin; 2 (blocked, with the reason on stderr) or 0."""
+def main(refuse_create: bool = False) -> int:
+    """Read the hook's JSON from stdin; 2 (blocked, with the reason on stderr) or 0.
+
+    `refuse_create` is the `[pr_guard] refuse_pr_create` switch, which `dispatch.py` passes from `hooks.toml`.
+    """
     try:
         data = json.loads(sys.stdin.read() or "{}")
         command = data["tool_input"]["command"]
@@ -388,7 +450,7 @@ def main() -> int:
     if not isinstance(command, str) or "gh" not in command:
         return 0
     cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else str(Path.cwd())
-    reason = check(command, cwd, data.get("tool_name") == "PowerShell")
+    reason = check(command, cwd, data.get("tool_name") == "PowerShell", refuse_create=refuse_create)
     if reason is None:
         return 0
     sys.stderr.write(reason)

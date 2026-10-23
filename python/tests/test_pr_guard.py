@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for .claude/hooks/release_guard.py, the Claude Code hook that opens or edits a pull request only with a title
+"""Tests for .claude/hooks/pr_guard.py, the Claude Code hook that opens or edits a pull request only with a title
 and description that pass CI's `title` and `body` checks.
 
 The hook is a standalone, standard-library-only file, so it is loaded by path, like the other guards. The checks it
@@ -10,18 +10,19 @@ import importlib.util
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 
-SCRIPT = REPO / ".claude" / "hooks" / "release_guard.py"
+SCRIPT = REPO / ".claude" / "hooks" / "pr_guard.py"
 
 
 def load() -> ModuleType:
     """The hook script as a module."""
-    spec = importlib.util.spec_from_file_location("release_guard", SCRIPT)
+    spec = importlib.util.spec_from_file_location("pr_guard", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -232,6 +233,35 @@ def test_a_leading_cd_moves_where_the_file_is_found(tmp_path: Path) -> None:
     assert runner.calls[1][0][3] == str(scratch / "PR.md")
 
 
+def test_a_drive_path_is_absolute_on_every_system() -> None:
+    """`Path` on Linux and macOS reads `C:/x` as a relative name; a command can carry one on any system."""
+    assert GUARD._absolute(PurePosixPath("C:/Repositories/PR.md"))
+    assert GUARD._absolute(PurePosixPath("C:" + chr(92) + "Repositories" + chr(92) + "PR.md"))
+    assert GUARD._absolute(PurePosixPath("/srv/PR.md"))
+    assert GUARD._absolute(PureWindowsPath("C:/Repositories/PR.md"))
+    assert not GUARD._absolute(PurePosixPath("scratch/PR.md"))
+
+
+class _PosixPath(PurePosixPath):
+    """A path with Linux and macOS rules (`C:/x` is a relative name) whose files all exist, for the call sites."""
+
+    def is_file(self) -> bool:
+        return True
+
+
+def test_a_windows_path_in_the_command_is_followed_with_posix_rules(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both call sites must read `C:/x` as a folder of its own, not a name under the working directory."""
+    monkeypatch.setattr(GUARD, "Path", _PosixPath)
+    monkeypatch.setattr(GUARD, "native", _PosixPath)
+    command = "cd C:/Repositories/scratch && gh pr create --title 'tools: Add x' --body-file PR.md"
+    calls = GUARD.pr_calls(command, cwd="/home/me/unit")
+    assert calls is not None and calls[0].cwd == "C:/Repositories/scratch"
+    runner = FakeRunner()
+    named = GUARD.PrCall("create", title="tools: Add x", body_file="C:/Repositories/scratch/PR.md", cwd="/home/me/unit")
+    assert GUARD.problems(named, runner) == []
+    assert runner.calls[1][0][3] == "C:/Repositories/scratch/PR.md"
+
+
 def test_a_cd_to_an_expansion_skips_the_file_check(tmp_path: Path) -> None:
     (tmp_path / "PR.md").write_text("decoy", encoding="utf-8")
     runner = FakeRunner()
@@ -310,8 +340,5 @@ def test_main_lets_anything_else_through(
     assert run_main(monkeypatch, capsys, stdin) == (0, "")
 
 
-def test_settings_register_the_hook_for_both_shells() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    entries = [entry for entry in settings["hooks"]["PreToolUse"] if entry["matcher"] == "Bash|PowerShell"]
-    commands = [hook["command"] for entry in entries for hook in entry["hooks"]]
-    assert any("release_guard.py" in command for command in commands)
+def test_the_dispatcher_runs_the_hook_for_both_shells() -> None:
+    assert "pr_guard" in guards_run("Bash", "gh pr create") and "pr_guard" in guards_run("PowerShell", "gh pr edit 1")

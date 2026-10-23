@@ -15,6 +15,7 @@ from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 
 SCRIPT = REPO / ".claude" / "hooks" / "bounded_waits.py"
 
@@ -119,8 +120,6 @@ def test_the_hook_lets_everything_else_through(
     assert run(monkeypatch, capsys, {"tool_input": {"command": 3}}) == (0, "")
 
 
-def test_the_settings_run_the_hook_before_shell_commands() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    entries = settings["hooks"]["PreToolUse"]
-    commands = [h["command"] for e in entries if e["matcher"] == "Bash|PowerShell" for h in e["hooks"]]
-    assert any("bounded_waits.py" in c and c.startswith("uv run --no-project python") for c in commands)
+def test_the_dispatcher_runs_the_hook_before_shell_commands() -> None:
+    assert "bounded_waits" in guards_run("Bash", "sleep 1") and "bounded_waits" in guards_run("PowerShell", "ls")
+    assert "bounded_waits" not in guards_run("Read")

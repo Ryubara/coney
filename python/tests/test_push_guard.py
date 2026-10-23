@@ -14,6 +14,7 @@ from types import ModuleType
 
 import pytest
 from conventions_support import REPO
+from hooks_support import guards_run
 
 SCRIPT = REPO / ".claude" / "hooks" / "push_guard.py"
 
@@ -221,7 +222,5 @@ def test_input_it_cannot_read_passes(
     assert run_main(monkeypatch, capsys, stdin) == (0, "")
 
 
-def test_settings_register_the_hook_for_both_shells() -> None:
-    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    entries = [entry for entry in settings["hooks"]["PreToolUse"] if entry["matcher"] == "Bash|PowerShell"]
-    assert any("push_guard.py" in hook["command"] for entry in entries for hook in entry["hooks"])
+def test_the_dispatcher_runs_the_hook_for_both_shells() -> None:
+    assert "push_guard" in guards_run("Bash", "git push") and "push_guard" in guards_run("PowerShell", "git push")

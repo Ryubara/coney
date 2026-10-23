@@ -21,9 +21,10 @@ After a shell command the hook reads the commits `git commit` printed (`[branch 
 output), finds their `Co-Authored-By` trailers whose address is the vendor's (`@anthropic.com`) and, when one names
 another model, exits 2: the reason on stderr is shown to the agent, which amends the commit. It runs after the
 commit because that is the only point where the final message exists whatever the way it was given (`-m`, `-F`, an
-editor, `--amend`, a here-document). `.claude/settings.json` registers it only for commands that start `git commit`
-or `git -C ... commit` (`git -c ... commit` on Bash), so ordinary commands never start it. Commands of another shape
-are not checked: `git --no-pager commit`, `git --git-dir=... commit`, `git.exe commit` and a full path to git.
+editor, `--amend`, a here-document). The hook dispatcher (`dispatch.py`) runs it after a shell command that runs
+`git commit` (also `git -C ... commit`, `git -c ... commit`, `git --no-pager commit`, `git.exe commit` and a full path
+to git), so ordinary commands, and commands that only mention the word (`git config commit.gpgsign`), never start it.
+A commit made by a program the command only starts (a script) prints nothing it can read.
 
 A commit that printed nothing (`git commit -q`, a pipe to Out-Null) has no hash to read, so when the whole output is
 empty the hook looks at the HEAD of the working directory and of every directory the command names, and judges it
@@ -69,6 +70,9 @@ _DIR = re.compile(
 _AGENT_ID = re.compile(r"[A-Za-z0-9_-]+")
 #: A path in the style Git Bash prints (`/c/Users/x`), which Windows programs need as `c:/Users/x`.
 _MSYS = re.compile(r"^/(?P<drive>[A-Za-z])/(?P<rest>.*)$")
+#: A Windows drive path (`C:/x`): a directory of its own on any system, not a name under the working directory.
+#: A copy of `hooklib._DRIVE`: this guard stands alone and must work when `hooklib` does not import.
+_DRIVE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 def display_name(model: str) -> str | None:
@@ -180,7 +184,7 @@ def candidate_dirs(command: str, cwd: str) -> list[str]:
         drive = _MSYS.match(target) if os.name == "nt" else None
         if drive:
             target = f"{drive.group('drive')}:/{drive.group('rest')}"
-        path = os.path.normpath(Path(cwd) / target if cwd else target)
+        path = os.path.normpath(Path(cwd) / target if cwd and not _DRIVE_PATH.match(target) else target)
         if path not in found:
             found.append(path)
     return found

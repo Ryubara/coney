@@ -19,7 +19,7 @@ where?" When you write a rule into a guide, add its row here in the same commit;
 
 | Point | Sees | Runs | Examples |
 | --- | --- | --- | --- |
-| Claude Code hook (`.claude/hooks/`) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([Setting up](agents.md#setup)) | `build_guard.py`, `issue_guard.py` |
+| Claude Code hook (`.claude/hooks/`, one dispatcher) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([The hooks](#hooks)) | `build_guard.py`, `issue_guard.py`, `roles.py` |
 | pre-commit (`.pre-commit-config.yaml`) | The files of a commit | On commit when installed, in `check changed` and in CI's `format` job (all files) | clang-format, the 512 KB guard, `no-real-clock` |
 | `coney-tools check changed` | The files a branch changed | Before a unit is handed over ([The local gate](testing.md#local-gate)) | `repo audit --files`, mkdocs, pytest |
 | Release gate (`repo check-review`) | The description file, its pictures and the branch tip | Before the coordinator pushes ([The description review](how-we-work.md#pr-review)) | Model line against the trailers |
@@ -29,6 +29,37 @@ where?" When you write a rule into a guide, add its row here in the same commit;
 
 A check that refuses at an earlier point is worth more than the same check later: a hook costs nothing, a CI failure
 costs a CI round and a fresh agent ([When a pull request fails checks](agents.md#ci-failures)).
+
+## The Claude Code hooks {#hooks}
+
+Every Claude Code hook runs through one dispatcher, `.claude/hooks/dispatch.py` (one Python start per call; what it
+runs: [The hooks](agents.md#hooks)). Its settings are `.claude/hooks/hooks.toml`:
+
+| Setting | Committed value | What it does | To change it |
+| --- | --- | --- | --- |
+| `require_role` | `false` | A session with no role (not started with `claude --agent coordinator`) may only read | One line to `true`, in its own pull request made by a tooling agent, once the maintainer's sessions start with a role. On at merge, it would lock out the coordinator session that exists today |
+| `[pr_guard] refuse_pr_create` | `false` | Refuse every `gh pr create` and `gh api` call that opens a pull request | One line to `true` when `coney-tools pr open` lands |
+| `[identity] enabled`, `ttl_seconds` | `true`, `600` | Write the caller's identity file (named by a hash of the token) and put its token in front of `coney-tools` and `git commit` commands; how long the file lives | |
+| `[identity] powershell_modes` | `["bypassPermissions"]` | The permission modes in which a PowerShell command gets a token too | The tool refuses the assignment in the others |
+| (built into `protect.py`) | not a setting | What no session may touch: `~/.coney`, private keys, stamp logs, signing, other processes' command lines. A settings file that cannot be read does not take it away | Edit `protect.py` |
+| `[roles.*]` | see the file | What each role may not do ([Which role to start](agents.md#roles)) | Edit the table; `test_agent_definitions.py` holds it to the files in `.claude/agents/` |
+
+**The permission rule for the identity token.** The token goes in front of the command as `export
+CONEY_AGENT_TOKEN=<token>; <the command>` ([Who runs a command](agents.md#identity)), and `.claude/settings.json` allows
+`Bash(export CONEY_AGENT_TOKEN=*)` for it. That rule does not widen what a command may do, verified on 2026-10-22 with
+`claude -p --permission-mode default --allowedTools "Bash(export CONEY_AGENT_*)"` (the rule before it was narrowed to the
+token) on Claude Code 2.1.309: `export CONEY_AGENT_ID=x; python ...`, the same with `&&` and with a newline each still
+needed approval for the part after the export, and `export CONEY_AGENT_ID=$(...)` was refused as runtime-determined.
+Claude Code checks each part of a compound command against the rules on its own. Re-run this check when Claude Code is
+upgraded.
+
+**What stops a forged identity.** Not a refusal by spelling: shell can spell a variable assignment around any pattern
+(`export "CONEY_AGENT_TYPE=x"`, `export $name=x`, `source file.sh`). The tools take who ran them from the file a
+random, hook-written token names, so a typed variable is worth nothing and a typed token finds no file; the folder is
+one the hooks forbid every session to name (all of `~/.coney`, after folding `./`, `..`, case, slashes and
+`~`/`$HOME`), and a file is named by a hash of its token, so a listing gives no token away. What stays exposed is the
+token in the command line of a running shell, in a process listing. Refusing a command that sets `CONEY_AGENT_*` stays
+as a courtesy.
 
 ## No game data {#legal}
 
@@ -52,6 +83,11 @@ costs a CI round and a fresh agent ([When a pull request fails checks](agents.md
 | Every wait has a bound | [Running agents](agents.md#bounded-waits) | `.claude/hooks/bounded_waits.py` | enforced |
 | No agent pushes, opens, edits, comments on or merges a pull request; no agent writes to GitHub except `coney-tools issue` when briefed | [AGENTS.md](repo:AGENTS.md), [How we work](how-we-work.md#release-queue), [Issues](issues.md#agents) | `.claude/hooks/push_guard.py` refuses `git push` and every writing `gh` command inside a subagent; `issue_guard.py` refuses raw issue writes for everyone | partly: not a separate `claude -p` session or a command run from a script file |
 | An agent works in `worktrees/coney/<branch>/`, never with `isolation: "worktree"` | [Running agents](agents.md#worktrees) | `.claude/hooks/agent_guard.py` | enforced |
+| Every agent starts as a Coney role (`engineer`, `tooling`, a reviewer), never general-purpose or without a type | [Running agents](agents.md#roles) | `.claude/hooks/agent_guard.py` reads the roles from `.claude/agents/` | enforced |
+| Each role does only its work: the coordinator writes no engine code, tests, Python or research, commits in no unit worktree and uses no study tool; an engineer opens no pull request; a reviewer writes only its verdict | [Running agents](agents.md#roles), [the hooks](#hooks) | `.claude/hooks/roles.py` from `agent_type`, rules in `hooks.toml` | enforced for a session started with a role; commands of later phases (`pr open`, `task check`) are listed ahead |
+| No session names `~/.coney` or a private key, signs with `ssh-keygen -Y sign`, reads another process's command line, or writes a stamp log by hand | [Running agents](agents.md#roles), [Stamps](stamps.md) | `.claude/hooks/protect.py` (built in), for every session and role | enforced (spelling: a deliberately built path gets through) |
+| A session has a role: started with `claude --agent coordinator` | [Running agents](agents.md#roles) | `require_role` in `hooks.toml`: with no role a session may only read; a SessionStart notice either way | **not yet**: committed off until the maintainer's sessions start with a role |
+| `coney-tools` and `git commit` know who ran them, and a command cannot say it was someone else | [Running agents](agents.md#identity) | The dispatcher writes the identity to a file named by a random token and puts only the token in front of the command; the tools read the file, and a typed or changed token is "unverified" | enforced in Bash (and PowerShell under `bypassPermissions`); elsewhere a tool sees the identity as unverified |
 | Never edit the main checkout | [How we work](how-we-work.md#shared-machine) | None | written; best point a hook on Edit and Write |
 | Never `git stash`; never stop a program by name | [How we work](how-we-work.md#shared-machine) | `.claude/settings.json` deny rules | partly: they match spelling (`Get-Process x \| Stop-Process` passes) |
 | The commit trailer names the model the agent runs on | [Running agents](agents.md#trailer-guard) | `.claude/hooks/trailer_guard.py` after the commit; `repo check-review` holds the Model line to the trailers | enforced |
@@ -70,10 +106,11 @@ costs a CI round and a fresh agent ([When a pull request fails checks](agents.md
 | Rule | Written in | Enforced by | Status |
 | --- | --- | --- | --- |
 | Title `area: Verb the rest`, within the length limit | [AGENTS.md](repo:AGENTS.md) (`commits.title`) | `repo check-title`; CI `title` (required); `repo check-review` | enforced (branch commit titles are not checked: squash merge keeps only the pull request's) |
-| The description has the template's sections, filled; Checklist all ticked; Screenshots or a reason; AI use; no local paths | [Testing](testing.md#pr-evidence) (`pull_requests`) | `repo check-body`: `release_guard.py` before `gh pr create`, CI `body` (required), `repo check-review` | enforced |
+| The description has the template's sections, filled; Checklist all ticked; Screenshots or a reason; AI use; no local paths | [Testing](testing.md#pr-evidence) (`pull_requests`) | `repo check-body`: `pr_guard.py` before `gh pr create`, CI `body` (required), `repo check-review` | enforced |
 | Gameplay, graphics and audio titles carry a `Runtime:` line with numbers, and it is true | [Testing](testing.md#runtime-line) | `repo check-body --title` (shape); `pr-reviewer` (truth) | enforced (shape), judgement (truth) |
 | A change to `src/` or `python/src/` changes `docs/` or `research/`, or says `Docs: none` | [AGENTS.md](repo:AGENTS.md) | CI `docs` (required, `repo check-docs`) | enforced at CI |
-| Every description is reviewed by `pr-reviewer` and passes `repo check-review` before it is pushed | [How we work](how-we-work.md#release-queue) | `.claude/hooks/release_guard.py` runs CI's title and body checks before `gh pr create` and `gh pr edit`; the verdict itself is `repo check-review`, run by hand | partly: the hook does not require a fresh verdict |
+| A pull request opens only through `coney-tools pr open` | [How we work](how-we-work.md#release-queue) | `.claude/hooks/pr_guard.py` refuses `gh pr create` and a pull request opened through `gh api` behind `[pr_guard] refuse_pr_create` in `hooks.toml` | **not yet**: `pr open` does not exist, the switch is off |
+| Every description is reviewed by `pr-reviewer` and passes `repo check-review` before it is pushed | [How we work](how-we-work.md#release-queue) | `.claude/hooks/pr_guard.py` runs CI's title and body checks before `gh pr create` and `gh pr edit`; the verdict itself is `repo check-review`, run by hand | partly: the hook does not require a fresh verdict |
 | Reimplemented code is ported, not transcribed: no decompiler names, `undefined` types, raw offset reads or `goto` | [Conventions](conventions.md#porting) | `orig copy-check` in `check changed` and CI's `python` job | enforced (the mechanical signs) |
 | Every `@orig` function a branch adds or changes matches the original and is our own expression | [Orig review](review/orig.md) | `orig-reviewer` (judgement); `orig check-review` before release (a passing verdict covering each changed function's body) | judgement, gated at release |
 | Only `Co-Authored-By` trailers; no other email address in a message | [AGENTS.md](repo:AGENTS.md) (`commits.trailers`) | None (the squash message is the description) | written; best point `repo check-body` |
