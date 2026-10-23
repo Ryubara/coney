@@ -68,7 +68,10 @@ type World = {
   /** What the command prints next; change it to move the world on. */
   answer: Answer
   opened: string[]
+  /** The store in memory: the list saved for the checkout under test is `own`, other checkouts' lists keep their keys. */
   stored: Record<string, unknown>
+  /** The keys the mod asked for as its own checkout's saved list. */
+  ownKeys: Set<string>
 }
 
 /** The snapshot as it reads once claims expire: the fixture was written with `claims.release` still off. */
@@ -83,7 +86,15 @@ const fails: Answer = { exitCode: 1, stdout: '', stderr: 'gh: not signed in\nmor
 function engine(
   on: On,
   answer: Answer,
-  options: { store?: Record<string, unknown>; isPaneShown?: boolean; isHung?: boolean; beneath?: Record<string, unknown> } = {},
+  options: {
+    /** The list saved for the checkout under test. */
+    saved?: unknown
+    /** The lists other checkouts saved, by their keys. */
+    elsewhere?: Record<string, unknown>
+    isPaneShown?: boolean
+    isHung?: boolean
+    beneath?: Record<string, unknown>
+  } = {},
 ): World {
   const world: World = {
     statuses: [],
@@ -94,16 +105,26 @@ function engine(
     answer,
     opened: [],
     stored: {},
+    ownKeys: new Set(),
   }
-  // The store in memory, kept here so a test can read what the mod stored (mock.store would hide it).
-  world.stored = { ...(options.store ?? {}) }
-  on('store.get', (_, e) => ({ value: world.stored[e.key] }))
+  // The store in memory, kept here so a test can read what the mod stored (mock.store would hide it). The mod's own
+  // list sits under a key that names its checkout, which the test cannot know: any `offer:` key not given as another
+  // checkout's is the mod's, and is kept as `own`.
+  const elsewhere = options.elsewhere ?? {}
+  world.stored = { ...elsewhere }
+  if (options.saved !== undefined) world.stored.own = options.saved
+  const slot = (key: string): string => {
+    if (!key.startsWith('offer:') || key in elsewhere) return key
+    world.ownKeys.add(key)
+    return 'own'
+  }
+  on('store.get', (_, e) => ({ value: world.stored[slot(e.key)] }))
   on('store.set', (_, e) => {
-    world.stored[e.key] = e.value
+    world.stored[slot(e.key)] = e.value
     return { value: undefined }
   })
   on('store.delete', (_, e) => {
-    delete world.stored[e.key]
+    delete world.stored[slot(e.key)]
     return { value: undefined }
   })
   on('agent.offer', () => ({ isOffered: true }))
@@ -404,14 +425,43 @@ test('a pane under the minimum width says what it needs and points to the band',
   await ui.unmount()
 })
 
-/** The texts among `items` that are wider than the pane: none is allowed in the compact layout. */
-function overflows(items: readonly { text?: string | null }[], columns: number): string[] {
-  return items.map(item => item.text ?? '').filter(text => [...text].length > columns)
+type Drawn = { type: string; props: Record<string, unknown>; children: unknown[] }
+type Line = { columns: number; text: string }
+
+const isElement = (node: unknown): node is Drawn => typeof node === 'object' && node !== null && 'children' in node
+const marginOf = (node: Drawn): number => (Number(node.props.marginLeft) || 0) + (Number(node.props.marginRight) || 0)
+
+/** What a drawn node shows as text, in document order. */
+function textOf(node: unknown): string {
+  return isElement(node) ? node.children.map(textOf).join('') : String(node)
 }
 
-/** Every button and text of a mounted pane. */
-async function drawn(ui: { findAll: (target: { type: 'Button' | 'Text' }) => Promise<readonly { text?: string | null }[]> }) {
-  return [...(await ui.findAll({ type: 'Button' })), ...(await ui.findAll({ type: 'Text' }))]
+/** The columns a drawn node takes, margins included: a text its characters, a row the sum of its parts, a column its widest. */
+function columnsOf(node: unknown): number {
+  if (!isElement(node)) return [...String(node)].length
+  if (node.type === 'Text') return [...textOf(node)].length
+  const parts = node.children.map(columnsOf)
+  const inside = node.props.flexDirection === 'column' ? Math.max(0, ...parts) : parts.reduce((sum, part) => sum + part, 0)
+  return inside + marginOf(node)
+}
+
+/** The lines of a drawn tree: each child of a column is a line of its own, shifted by the column's margin; a row is one. */
+function linesOf(node: unknown): Line[] {
+  if (isElement(node) && node.type === 'Box' && node.props.flexDirection === 'column') {
+    return node.children.flatMap(linesOf).map(line => ({ ...line, columns: line.columns + marginOf(node) }))
+  }
+  return [{ columns: columnsOf(node), text: textOf(node) }]
+}
+
+/** Every line of a mounted pane with the columns it takes, indents of the open rows' details included. */
+async function drawn(ui: { findAll: (target: { type: 'Box' }) => Promise<readonly Drawn[]> }): Promise<Line[]> {
+  const [root] = await ui.findAll({ type: 'Box' })
+  return linesOf(root)
+}
+
+/** The lines wider than the pane leaves room for (one column is kept spare, so a full line never wraps): none is allowed. */
+function overflows(lines: readonly Line[], columns: number): string[] {
+  return lines.filter(line => line.columns > columns - 1).map(line => `${line.columns}: ${line.text}`)
 }
 
 for (const columns of [60, 80, 109] as const) {
@@ -467,12 +517,65 @@ test('the compact claims list gives each claim its countdown', async ($, on) => 
   await ui.unmount()
 })
 
+for (const columns of [60, 80] as const) {
+  test(`the compact pane at ${columns} columns clips a long account and the errors of unread sections`, async ($, on) => {
+    const long = 'task folders cannot be read: '.concat('x'.repeat(120))
+    // the sections that could not be read hold only their error, and the signed-in account sits in the claims section
+    const unitsFailed = engine(
+      on,
+      prints(
+        snapshot(copy => {
+          copy.units = { error: long }
+        }),
+      ),
+    )
+    await start($, unitsFailed)
+    const first = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    expect(await first.find({ type: 'Text', text: /^units not read: / })).toBeDefined()
+    // ... and the 39-character account of the fixture, in the header
+    expect(await first.find({ type: 'Text', text: /^UNITS AND ISSUES \(mine: Ryubara-who-/ })).toBeDefined()
+    expect(overflows(await drawn(first), columns)).toEqual([])
+    await first.unmount()
+  })
+
+  test(`the compact pane at ${columns} columns clips the error of unread claims`, async ($, on) => {
+    const world = engine(
+      on,
+      prints(
+        snapshot(copy => {
+          copy.claims = { error: 'gh: '.concat('not signed in to github.com '.repeat(8)) }
+        }),
+      ),
+    )
+    await start($, world)
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    expect(await ui.find({ type: 'Text', text: /^claims not read: / })).toBeDefined()
+    expect(overflows(await drawn(ui), columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+test("the compact pane's summary keeps the colours the band gives its items", async ($, on) => {
+  const world = engine(on, prints(snapshot(enforced)))
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 80 } })
+  expect((await ui.find({ type: 'Text', text: /^✖1 failed$/ }))?.props.color).toBe('error')
+  expect((await ui.find({ type: 'Text', text: /^PRs 1 / }))?.props.color).toBe('error')
+  expect((await ui.find({ type: 'Text', text: /^claims 2$/ }))?.props.color).toBe('warning')
+  expect((await ui.find({ type: 'Text', text: /^⚠ P-critical/ }))?.props.color).toBe('warning')
+  expect((await ui.find({ type: 'Text', text: /^2 units$/ }))?.props.color).toBeUndefined()
+  await ui.unmount()
+})
+
 test('from the wide width the pane keeps its full rows with the title on the row', async ($, on) => {
   const world = engine(on, prints(snapshot()))
   await start($, world)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 110 } })
   expect((await ui.findAll({ type: 'Button' }))[0]?.text).toContain('gameplay: Fix the uncuff steer')
+  // the compact pane's summary is not drawn here, not even as an empty line
+  expect((await drawn(ui))[0]?.text).toMatch(/^with GitHub/)
   await ui.unmount()
 })
 
@@ -485,7 +588,7 @@ async function isOffered($: Engine, agent: string): Promise<boolean> {
 }
 
 test("a session that starts with the last session's list hides the generic types and keeps roles and helpers", async ($, on) => {
-  engine(on, prints(snapshot()), { store: { offer: { allowed: ALLOWED } } })
+  engine(on, prints(snapshot()), { saved: { allowed: ALLOWED } })
   await $.session.start({ ...SESSION })
 
   for (const agent of ALLOWED) expect(await isOffered($, agent)).toBe(true)
@@ -499,11 +602,11 @@ test('the first session, with no list stored, hides nothing and keeps the list f
 
   // The listing never changes under the prompt cache: a list that lands mid-session waits for the next session.
   expect(await isOffered($, 'general-purpose')).toBe(true)
-  expect((world.stored.offer as { allowed: string[] }).allowed).toEqual(ALLOWED)
+  expect((world.stored.own as { allowed: string[] }).allowed).toEqual(ALLOWED)
 })
 
 test('the list is frozen for the session, so a later read never changes the agent listing', async ($, on) => {
-  const world = engine(on, prints(snapshot()), { store: { offer: { allowed: ALLOWED } } })
+  const world = engine(on, prints(snapshot()), { saved: { allowed: ALLOWED } })
   await $.session.start({ ...SESSION })
 
   world.answer = prints(
@@ -514,7 +617,7 @@ test('the list is frozen for the session, so a later read never changes the agen
   await world.clock.advance(60_000)
 
   expect(await isOffered($, 'general-purpose')).toBe(false)
-  expect((world.stored.offer as { allowed: string[] }).allowed).toContain('general-purpose')
+  expect((world.stored.own as { allowed: string[] }).allowed).toContain('general-purpose')
 })
 
 test('a saved list hides nothing once the hook settings cannot be read, and is dropped', async ($, on) => {
@@ -527,7 +630,7 @@ test('a saved list hides nothing once the hook settings cannot be read, and is d
         copy.config.helpers = []
       }),
     ),
-    { store: { offer: { allowed: ['coordinator', 'Explore'] } } },
+    { saved: { allowed: ['coordinator', 'Explore'] } },
   )
   await $.session.start({ ...SESSION })
   // Until the read lands the saved list stands (nothing is known yet); then nothing is hidden and nothing is kept.
@@ -535,23 +638,97 @@ test('a saved list hides nothing once the hook settings cannot be read, and is d
   await world.clock.advance(1000)
 
   expect(await isOffered($, 'general-purpose')).toBe(true)
-  expect(world.stored.offer).toBeUndefined()
+  expect(world.stored.own).toBeUndefined()
 })
 
 test('a failing read keeps the saved list: only a read that says the settings are unreadable drops it', async ($, on) => {
-  const world = engine(on, fails, { store: { offer: { allowed: ['coordinator', 'Explore'] } } })
+  const world = engine(on, fails, { saved: { allowed: ['coordinator', 'Explore'] } })
   await $.session.start({ ...SESSION })
   await world.clock.advance(1000)
 
   expect(await isOffered($, 'coordinator')).toBe(true)
   expect(await isOffered($, 'engineer')).toBe(false)
-  expect(world.stored.offer).toEqual({ allowed: ['coordinator', 'Explore'] })
+  expect(world.stored.own).toEqual({ allowed: ['coordinator', 'Explore'] })
 })
 
 test('a stored value of the wrong shape is ignored', async ($, on) => {
-  engine(on, fails, { store: { offer: { allowed: 'general-purpose' } } })
+  engine(on, fails, { saved: { allowed: 'general-purpose' } })
   await $.session.start({ ...SESSION })
 
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+})
+
+test("the saved list is the checkout's own: another checkout's list is not applied and is left alone", async ($, on) => {
+  const other = { allowed: ['coordinator'] }
+  const world = engine(on, prints(snapshot()), { elsewhere: { 'offer:/work/worktrees/coney/other': other } })
+  await $.session.start({ ...SESSION })
+  await world.clock.advance(1000)
+
+  // Nothing is saved for this checkout yet, so nothing is hidden, whatever the other one saved.
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+  expect([...world.ownKeys]).toHaveLength(1)
+  expect([...world.ownKeys][0]).toMatch(/^offer:.+/)
+  expect([...world.ownKeys][0]).not.toContain('/tools/claude-mod')
+  expect(world.stored.own).toEqual({ allowed: ALLOWED })
+  expect(world.stored['offer:/work/worktrees/coney/other']).toEqual(other)
+})
+
+test("two checkouts keep different lists: a read that drops one leaves the other's alone", async ($, on) => {
+  const other = { allowed: ['coordinator', 'engineer'] }
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        copy.config.error = '.claude/hooks/hooks.toml: cannot be read'
+        copy.config.roles = []
+        copy.config.helpers = []
+      }),
+    ),
+    { saved: { allowed: ['coordinator', 'Explore'] }, elsewhere: { 'offer:/work/repos/coney': other } },
+  )
+  await $.session.start({ ...SESSION })
+  // This session hides by its own checkout's list, not the other's (which allows `engineer`).
+  expect(await isOffered($, 'engineer')).toBe(false)
+  expect(await isOffered($, 'Explore')).toBe(true)
+  await world.clock.advance(1000)
+
+  expect(world.stored.own).toBeUndefined()
+  expect(world.stored['offer:/work/repos/coney']).toEqual(other)
+})
+
+test('a clear applies the list saved since the session started, and a compaction does not', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await $.session.start({ ...SESSION })
+  await world.clock.advance(1000)
+  // The first read saved the list; this session started without one, so its listing stays whole.
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+
+  // A compaction keeps the prompt cache of the listing, so the listing stays whole.
+  await $.classic.SessionStart({ source: 'compact', agent_type: 'coordinator' })
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+
+  // A clear starts a new prompt cache anyway, so the saved list applies from the new conversation's first turn.
+  await $.classic.SessionStart({ source: 'clear', agent_type: 'coordinator' })
+  expect(await isOffered($, 'general-purpose')).toBe(false)
+  for (const agent of ALLOWED) expect(await isOffered($, agent)).toBe(true)
+})
+
+test('a clear takes up a changed list, and one with no saved list leaves the listing as it is', async ($, on) => {
+  const world = engine(on, prints(snapshot()), { saved: { allowed: ALLOWED } })
+  await $.session.start({ ...SESSION })
+  world.answer = prints(
+    snapshot(copy => {
+      copy.config.roles = ['coordinator', 'general-purpose']
+    }),
+  )
+  await world.clock.advance(60_000)
+  expect(await isOffered($, 'general-purpose')).toBe(false)
+
+  await $.classic.SessionStart({ source: 'clear' })
+  expect(await isOffered($, 'general-purpose')).toBe(true)
+
+  delete world.stored.own
+  await $.classic.SessionStart({ source: 'clear' })
   expect(await isOffered($, 'general-purpose')).toBe(true)
 })
 
@@ -578,7 +755,7 @@ test('the snapshot command keeps Python out of the checkout and is bounded in ti
   await $.session.start({ ...SESSION })
 
   const variable = world.envs[0]?.UV_PROJECT_ENVIRONMENT
-  expect(variable).toMatch(/\/scratch\/conclave\/[^/]+\/venv$/)
+  expect(variable).toMatch(/\/scratch\/[^/]+\/conclave-venv$/)
   expect(variable).not.toContain('/tools/claude-mod')
   expect(world.timeouts[0]).toBeGreaterThan(0)
   expect(world.timeouts[0]).toBeLessThanOrEqual(60_000)

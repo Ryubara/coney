@@ -3,8 +3,8 @@
 import { expect, test } from 'claude-code/testing'
 
 import type { Held, Snapshot } from '../types'
-import { claimTone, clip, countdown, elapsed, issueIds, mark, showUtc, stageText, wrapTokens } from '../src/format'
-import { checkoutOf, firstLine, merged, venvOf } from '../src/snapshot'
+import { claimLineText, claimTone, clip, countdown, elapsed, issueIds, mark, packLines, showUtc, stageText, wrapTokens } from '../src/format'
+import { checkoutOf, firstLine, merged, offerKey, venvOf } from '../src/snapshot'
 import { EMPTY } from '../src/state'
 import fixture from './fixtures/snapshot'
 
@@ -110,12 +110,23 @@ test('a snapshot of a newer schema is not taken in', () => {
   expect(after.newer).toBe(99)
 })
 
-test('the private Python environment sits in the workspace scratch folder, one per checkout', () => {
-  expect(venvOf('C:/Repositories/Coney/worktrees/coney/fix-x')).toBe('C:/Repositories/Coney/scratch/conclave/fix-x/venv')
-  expect(venvOf(String.raw`C:\Repositories\Coney\repos\coney`)).toBe('C:/Repositories/Coney/scratch/conclave/coney/venv')
-  expect(venvOf('/home/a/ws/worktrees/coney/b/')).toBe('/home/a/ws/scratch/conclave/b/venv')
+test("the private Python environment sits in the checkout's own scratch folder", () => {
+  expect(venvOf('C:/Repositories/Coney/worktrees/coney/fix-x')).toBe('C:/Repositories/Coney/scratch/fix-x/conclave-venv')
+  expect(venvOf('/home/a/ws/worktrees/coney/b/')).toBe('/home/a/ws/scratch/b/conclave-venv')
+  // the main checkout has no branch folder of its own: it gets `main`, which no worktree can be named
+  expect(venvOf(String.raw`C:\Repositories\Coney\repos\coney`)).toBe('C:/Repositories/Coney/scratch/main/conclave-venv')
+  // a worktree named like the main checkout's folder shares nothing with it
+  expect(venvOf('/home/a/ws/worktrees/coney/coney')).toBe('/home/a/ws/scratch/coney/conclave-venv')
   // outside the workspace layout the mod cannot say where the scratch folder is, so it leaves the variable alone
   expect(venvOf('/home/a/code/coney')).toBeNull()
+})
+
+test('the saved agent list is kept per checkout, whatever the slashes', () => {
+  const main = offerKey('/ws/repos/coney/tools/claude-mod')
+  const tree = offerKey('/ws/worktrees/coney/fix-x/tools/claude-mod')
+  expect(main).not.toBe(tree)
+  expect(offerKey(String.raw`\ws\worktrees\coney\fix-x\tools\claude-mod`)).toBe(tree)
+  expect(tree).toBe('offer:/ws/worktrees/coney/fix-x')
 })
 
 test('a line is clipped with an ellipsis, and tokens wrap without splitting', () => {
@@ -124,6 +135,31 @@ test('a line is clipped with an ellipsis, and tokens wrap without splitting', ()
   expect(wrapTokens(['✔ assigned', '✔ claimed', '✖ compared'], '  ', 22)).toEqual(['✔ assigned  ✔ claimed', '✖ compared'])
   expect(wrapTokens(['x'.repeat(30)], ' ', 10)).toEqual(['xxxxxxxxx…'])
   expect(wrapTokens([], ' ', 10)).toEqual([''])
+})
+
+test('a claim line says the same in both layouts, and warns only when it has a deadline', () => {
+  const claims = snapshot().claims
+  if (claims === null || claims.error !== null) throw new Error('the fixture holds claims')
+  const [first] = claims.claims
+  if (first === undefined) throw new Error('the fixture holds a claim')
+  const rules = { ...claims.rules, enforced: true }
+  const timed = { ...first, warned: true }
+  const waiting = { ...first, warned: true, deadline: null, waiting: 'S-blocked' }
+
+  // wide: who and stage in the middle, the countdown last; compact: the countdown leads, the stage is left to the row
+  expect(claimLineText(timed, rules, NOW, false)).toBe(`  #741  ${first.claimant}  claimed  expires in 2d 14h  (warned)`)
+  expect(claimLineText(timed, rules, NOW, true)).toBe(`  #741 expires in 2d 14h  ${first.claimant} (warned)`)
+  // a claim that waits has no deadline to warn about, in either layout
+  expect(claimLineText(waiting, rules, NOW, false)).not.toContain('warned')
+  expect(claimLineText(waiting, rules, NOW, true)).not.toContain('warned')
+  expect(claimLineText(waiting, rules, NOW, true)).toContain('waits while S-blocked')
+  expect(claimLineText({ ...first, warned: false }, rules, NOW, false)).not.toContain('warned')
+})
+
+test('items are packed into lines no wider than the pane, each item whole', () => {
+  expect(packLines(['abc', 'def', 'ghi'], ' · ', 9)).toEqual([['abc', 'def'], ['ghi']])
+  expect(packLines(['x'.repeat(30)], ' · ', 10)).toEqual([['xxxxxxxxx…']])
+  expect(packLines([], ' · ', 10)).toEqual([[]])
 })
 
 test('a stage reads the same on the band, the status line and the pane', () => {

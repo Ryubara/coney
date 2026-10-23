@@ -29,17 +29,25 @@ export function checkoutOf(pluginRoot: string): string {
 }
 
 /**
- * The private Python environment for a checkout, in its workspace's scratch folder, or null when the checkout is not
- * in the workspace layout (`<workspace>/repos/coney` or `<workspace>/worktrees/coney/<branch>`). Without it `uv run`
- * would create `python/.venv` inside a worktree, where every tool and linter would then scan it
- * (docs/guides/how-we-work.md, "Keep Python out of the tree"). One per checkout: two checkouts share no editable install.
+ * The private Python environment for a checkout, in that checkout's own scratch folder (`<workspace>/scratch/<branch>/
+ * conclave-venv`, the main checkout's being `scratch/main/`), or null when the checkout is not in the workspace layout
+ * (`<workspace>/repos/coney` or `<workspace>/worktrees/coney/<branch>`). Without it `uv run` would create
+ * `python/.venv` inside a worktree, where every tool and linter would then scan it (docs/guides/how-we-work.md, "Keep
+ * Python out of the tree"). One per checkout, and it goes with the branch's scratch folder, which is pruned like the rest.
  */
 export function venvOf(checkout: string): string | null {
   const parts = checkout.replace(/\\/g, '/').replace(/\/+$/, '').split('/')
   const name = parts.at(-1) ?? ''
-  const home = parts.at(-2) === 'repos' ? 2 : parts.at(-3) === 'worktrees' ? 3 : 0
+  const isMain = parts.at(-2) === 'repos'
+  const home = isMain ? 2 : parts.at(-3) === 'worktrees' ? 3 : 0
   if (home === 0 || name === '') return null
-  return `${parts.slice(0, -home).join('/')}/scratch/conclave/${name}/venv`
+  // No worktree can be named `main` (the main checkout holds that branch), so the main checkout's folder cannot clash.
+  return `${parts.slice(0, -home).join('/')}/scratch/${isMain ? 'main' : name}/conclave-venv`
+}
+
+/** The store key of the agent list saved for the checkout a mod folder belongs to: each checkout keeps its own. */
+export function offerKey(pluginRoot: string): string {
+  return `offer:${checkoutOf(pluginRoot)}`
 }
 
 /** The first line of an error's text, cut to fit a band. */
@@ -124,17 +132,18 @@ export function allowedTypes(snapshot: Snapshot): string[] | null {
 
 /**
  * What a good local read does to the agent list. The list a session hides by is read from the store when the session
- * starts and never changes under the prompt cache, so a read only keeps the list for the NEXT session: it stores the
- * allowed types. A read that says the hook settings cannot be read (or name no role) drops the stored list and the
- * frozen one, because a stale list must not hide anything the settings no longer ask to hide.
+ * starts (or a conversation does: a `/clear` starts a new prompt cache) and never changes under the prompt cache, so a
+ * read only keeps the list for the NEXT start: it stores the allowed types under this checkout's key. A read that says
+ * the hook settings cannot be read (or name no role) drops this checkout's stored list and the frozen one, because a
+ * stale list must not hide anything the settings no longer ask to hide; another checkout's list is never touched.
  */
 async function keepOffer($: EngineInterface, snapshot: Snapshot): Promise<void> {
   const allowed = allowedTypes(snapshot)
   if (allowed !== null) {
-    await $.store.set('offer', { allowed })
+    await $.store.set(offerKey($.plugin.root), { allowed })
     return
   }
-  await $.store.delete('offer')
+  await $.store.delete(offerKey($.plugin.root))
   await clearOffer($)
 }
 

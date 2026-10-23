@@ -23,10 +23,15 @@ HEADER = (
 )
 
 
+#: The account of the synthetic units, as long as a GitHub login can be (39 characters), so the mod's tests draw the
+#: widest header and claim lines it will ever meet; the snapshot tests keep the short name `github_answers` gives.
+LONG_ACCOUNT = "Ryubara-who-maintains-the-coney-project"
+
+
 def portable(value: Any, root: Path) -> Any:
-    """The value with the test's temporary folder written as `/work` and backslashes as slashes."""
+    """The value with the test's temporary folder written as `/work`, backslashes as slashes and the long account."""
     if isinstance(value, str):
-        return value.replace(str(root), "/work").replace("\\", "/")
+        return value.replace(str(root), "/work").replace("\\", "/").replace("Ryubara", LONG_ACCOUNT)
     if isinstance(value, list):
         return [portable(item, root) for item in value]
     if isinstance(value, dict):
@@ -41,6 +46,10 @@ def fixture_layout(root: Path) -> Layout:
     steps = load_conventions(REPO).stamps.steps
     stamp_steps(made.scratch, "add-task-start", [(step, "pass") for step in steps], hours_ago=1)
     return made
+
+
+def test_the_fixture_account_is_as_long_as_a_login_can_be() -> None:
+    assert len(LONG_ACCOUNT) == 39
 
 
 def test_the_fixture_snapshot_is_what_the_command_prints(tmp_path: Path) -> None:

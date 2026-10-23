@@ -10,6 +10,7 @@ import {
   bandItems,
   buildText,
   claimExpiry,
+  claimLineText,
   claimTone,
   clip,
   COLORS,
@@ -17,6 +18,7 @@ import {
   issueIds,
   mark,
   markTone,
+  packLines,
   prText,
   showUtc,
   stageText,
@@ -222,35 +224,47 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     )
   }
 
-  // One held claim's line in the claims list: the compact one leads with the countdown.
+  // One held claim's line in the claims list: the words are format.ts's, and the compact one is clipped to the pane.
   const claimLine = (claim: ClaimRow) => {
     const tone = claimTone(claim, rules, redHours, nowMs)
-    const key = `claim-${claim.issue}`
-    if (isCompact) {
-      const text = `  #${claim.issue} ${claimExpiry(claim, rules, nowMs, true)}  ${claim.claimant}${claim.warned ? ' (warned)' : ''}`
-      return line(clip(text, room), tone, key)
-    }
-    const expiry = claimExpiry(claim, rules, nowMs)
-    const warned = claim.deadline !== null && claim.warned ? '  (warned)' : ''
-    return line(`  #${claim.issue}  ${claim.claimant}  ${claim.stage ?? claim.status}  ${expiry}${warned}`, tone, key)
+    const text = claimLineText(claim, rules, nowMs, isCompact)
+    return line(isCompact ? clip(text, room) : text, tone, `claim-${claim.issue}`)
   }
 
-  // The compact pane opens with the band's own items, so what the band counts is what the rows below list.
-  const summary = isCompact ? wrapTokens(bandItems(state, nowMs).map(item => item.text), ' · ', room) : []
+  // The compact pane opens with the band's own items, in the band's own colours, so what the band counts is what the
+  // rows below list. They pack into lines by their text; each is drawn on its own, with a dim separator between.
+  const items = isCompact ? bandItems(state, nowMs) : []
+  let from = 0
+  const summary = (items.length === 0 ? [] : packLines(items.map(item => item.text), ' · ', room)).map(texts => {
+    from += texts.length
+    return items.slice(from - texts.length, from)
+  })
+  const summaryLine = (row: (typeof items)[number][], index: number) => (
+    <Box key={`summary-${index}`}>
+      {row.flatMap((item, at) => [
+        ...(at > 0 ? [<Text key={`sep-${item.key}`} dimColor>{' · '}</Text>] : []),
+        <Text key={item.key} color={COLORS[item.tone]} dimColor={item.tone === 'dim'}>
+          {clip(item.text, room)}
+        </Text>,
+      ])}
+    </Box>
+  )
+  // A line of the compact pane that may be long (an account, an error) is cut to the pane; the wide pane lets it wrap.
+  const fit = (text: string) => (isCompact ? clip(text, room) : text)
   const readLine = `${snapshot.github ? 'with GitHub' : 'local only'} · read ${fresh}${state.error ? ` · local read failed: ${state.error}` : ''}${state.githubError ? ` · GitHub read failed: ${state.githubError}` : ''}`
   return (
     <Box flexDirection="column">
-      {summary.map((text, index) => line(text, 'normal', `summary-${index}`))}
-      <Text dimColor>{isCompact ? clip(readLine, room) : readLine}</Text>
-      <Text bold>{`UNITS AND ISSUES${account ? ` (mine: ${account})` : ''}`}</Text>
-      {snapshot.units.error !== null && line(`units not read: ${snapshot.units.error}`, 'bad')}
+      {summary.map(summaryLine)}
+      <Text dimColor>{fit(readLine)}</Text>
+      <Text bold>{fit(`UNITS AND ISSUES${account ? ` (mine: ${account})` : ''}`)}</Text>
+      {snapshot.units.error !== null && line(fit(`units not read: ${snapshot.units.error}`), 'bad')}
       {units.length === 0 && mine.length === 0 && snapshot.units.error === null && line('No unit or claim of yours.', 'dim')}
       {units.map(unitRow)}
       {mine.map(issueRow)}
       <Text> </Text>
       <Text bold>CLAIMS (all contributors)</Text>
       {snapshot.claims === null && line('Waiting for the first GitHub read.', 'dim')}
-      {snapshot.claims !== null && snapshot.claims.error !== null && line(`claims not read: ${snapshot.claims.error}`, 'bad')}
+      {snapshot.claims !== null && snapshot.claims.error !== null && line(fit(`claims not read: ${snapshot.claims.error}`), 'bad')}
       {claims !== null && claims.claims.length === 0 && line('No held claims.', 'dim')}
       {claims !== null && claims.claims.map(claimLine)}
     </Box>

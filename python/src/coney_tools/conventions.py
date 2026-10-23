@@ -892,7 +892,8 @@ class Research:
 class Conclave:
     """Conclave, the Claude Code mod (docs/guides/conclave.md): what its snapshot sends and how it draws."""
 
-    #: The Claude Code version the mod is tested on; an older engine gets a note in the band.
+    #: The Claude Code version the mod is tested on. The snapshot carries it; the mod does not compare it yet (a note
+    #: in the band for an older engine is planned).
     claude_code: str
     #: The hook settings the snapshot reads the roles and helpers from, relative to the checkout.
     hooks_file: str

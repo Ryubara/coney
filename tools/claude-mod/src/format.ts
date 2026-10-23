@@ -93,6 +93,20 @@ export function claimExpiry(claim: ClaimRow, rules: ClaimRules, nowMs: number, i
   return isShort ? `would expire in ${left}` : `would expire in ${left} (not enforced yet)`
 }
 
+/**
+ * One held claim's line in the claims list. The wide one gives the claimant, the stage and then the countdown; the
+ * short one (`isShort`, the compact pane) leads with the countdown. Both say `(warned)` only for a claim that has a
+ * deadline: one that waits has no clock to warn about.
+ */
+export function claimLineText(claim: ClaimRow, rules: ClaimRules, nowMs: number, isShort: boolean): string {
+  const warned = claim.deadline !== null && claim.warned
+  if (isShort) {
+    return `  #${claim.issue} ${claimExpiry(claim, rules, nowMs, true)}  ${claim.claimant}${warned ? ' (warned)' : ''}`
+  }
+  const expiry = claimExpiry(claim, rules, nowMs)
+  return `  #${claim.issue}  ${claim.claimant}  ${claim.stage ?? claim.status}  ${expiry}${warned ? '  (warned)' : ''}`
+}
+
 export type UnitKind = MarkKind | 'gone'
 
 /** A unit's mark: failed (a step, its pull request's checks or its task file), merged lately, not started, or active. */
@@ -237,22 +251,32 @@ export function clip(text: string, width: number): string {
 }
 
 /**
- * `tokens` joined by `sep` and broken into lines no wider than `width`: a token never splits unless it is wider than a
- * line alone (then it is clipped), so a compact pane wraps a long value instead of losing its end.
+ * `tokens` (each cut to `width`) grouped into lines that fit `width` when joined by `sep`: a token never splits, so a
+ * compact pane can draw each one in its own colour and still know where a line ends. Always at least one (maybe empty) line.
  */
-export function wrapTokens(tokens: string[], sep: string, width: number): string[] {
-  const lines: string[] = []
-  let line = ''
+export function packLines(tokens: string[], sep: string, width: number): string[][] {
+  const lines: string[][] = []
+  const sepWidth = [...sep].length
+  let line: string[] = []
+  let used = 0
   for (const token of tokens.map(one => clip(one, width))) {
-    if (line !== '' && [...line].length + sep.length + [...token].length > width) {
+    const size = [...token].length
+    if (line.length > 0 && used + sepWidth + size > width) {
       lines.push(line)
-      line = token
+      line = [token]
+      used = size
     } else {
-      line = line === '' ? token : `${line}${sep}${token}`
+      used = line.length === 0 ? size : used + sepWidth + size
+      line.push(token)
     }
   }
-  if (line !== '' || lines.length === 0) lines.push(line)
+  if (line.length > 0 || lines.length === 0) lines.push(line)
   return lines
+}
+
+/** `tokens` joined by `sep` and broken into lines no wider than `width`; a token wider than a line alone is clipped. */
+export function wrapTokens(tokens: string[], sep: string, width: number): string[] {
+  return packLines(tokens, sep, width).map(line => line.join(sep))
 }
 
 const slashes = (path: string): string => path.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()

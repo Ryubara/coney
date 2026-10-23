@@ -9,10 +9,10 @@ import type { Register } from 'claude-code'
 
 import { drawBand, openPane } from '../src/band'
 import { PANE } from '../src/format'
-import { isOffered } from '../src/offer'
+import { applySavedOffer, isOffered } from '../src/offer'
 import { drawPane } from '../src/pane'
-import { isOffer, startPolling } from '../src/snapshot'
-import { getOffer, setOffer, setRole } from '../src/state'
+import { startPolling } from '../src/snapshot'
+import { setRole } from '../src/state'
 import { showStatus } from '../src/status'
 
 export const register: Register = on => {
@@ -23,9 +23,8 @@ export const register: Register = on => {
     cwd = e.cwd
     try {
       await $.command.register({ name: 'conclave', description: 'Show the Conclave pane: units, issues and claims' })
-      // The list the last session stored, applied from the first turn; with none, nothing is hidden this session.
-      const stored = await $.store.get('offer')
-      if (isOffer(stored) && (await getOffer($)) === null) await setOffer($, stored.allowed)
+      // The list this checkout saved, applied from the first turn; with none, nothing is hidden this session.
+      await applySavedOffer($, false)
       // The first read runs in the background: the session never waits for it, and its list serves the next session.
       startPolling($, () => void showStatus($, cwd).catch(() => undefined))
       // Unasked, the pane seats only where the terminal is wide enough; below that it waits for /conclave.
@@ -36,11 +35,14 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Reads the agent type of the session's main thread; the event and its answer pass through untouched.
+  // Reads the agent type of the session's main thread; the event and its answer pass through untouched. A new
+  // conversation after `/clear` also takes up the list saved since the session started: its prompt cache starts empty,
+  // so nothing is rewritten. A compaction keeps the cache of the listing, so it keeps the list too.
   on('classic.SessionStart', async ($, e, next) => {
     const result = await next(e)
     try {
       await setRole($, e.agent_type ?? null)
+      if (e.source !== 'compact') await applySavedOffer($, true)
       await showStatus($, cwd)
     } catch {
       // The status line is a convenience; the answer beneath (Tether's HANDOFF context) is returned whole.

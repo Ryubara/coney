@@ -35,13 +35,13 @@ start with coney-agent` for a session that started with no `--agent`. The role i
 mod reads from the start of the session. The issue and the stage are written as the pane's row writes them.
 
 **The pane** (`/conclave`, or a press on the band) has two sections and two layouts. From `pane_wide_columns` (110) a
-row is one line. Under that, down to `pane_min_columns` (60), the pane is compact: it opens with the band's own items,
-and a row has the key fields on its first line (the mark, the issue, the stage and the pull request) and the title, who
-works on it and the build on a dim second line, clipped to the width. The details of an open row wrap under their label,
-so nothing is lost to the width. Under 60 columns the pane only says it needs that width and the band stays. The words
-(stage, build, pull request, counts) are the band's and the status line's in both layouts. The pane opens by itself at
-the start of a session where the terminal is wide enough for the engine to place an unasked pane, and waits for
-`/conclave` where it is not; the engine seats a pane the person opens at any width.
+row is one line. Under that, down to `pane_min_columns` (60), the pane is compact: it opens with the band's own items in
+the band's colours, and a row has the key fields on its first line (the mark, the issue, the stage and the pull request)
+and the title, who works on it and the build on a dim second line, clipped to the width. The details of an open row wrap
+under their label, so nothing is lost to the width. Under 60 columns the pane only says it needs that width and the band
+stays. The words (stage, build, pull request, counts) are the band's and the status line's in both layouts. The pane
+opens by itself at the start of a session where the terminal is wide enough for the engine to place an unasked pane, and
+waits for `/conclave` where it is not; the engine seats a pane the person opens at any width.
 
 - **Units and issues** lists every unit (a scratch folder with a task file, with a worktree or changed in the last
   `unit_days`) and the issues the signed-in account holds with no unit here. A wide row is one line: a mark, the issue
@@ -64,22 +64,45 @@ Session health belongs to [Tether](coney-tools.md#coord-wakes): the context wind
 automatic `/clear` and the "Continue from HANDOFF.md" message, subagents past their context limit, the checkpoint cycle
 and the cache guard. **Conclave shows no context or cache figure, sends no wake about them and adds no hook that
 overlaps them.** The idle wake stays in Tether too, now and in later versions. `python/tests/test_conclave_mod.py` holds
-the line, so a change that crosses it fails the Python tests:
+the line, so a change that crosses it fails the Python tests. The check does not read spellings: it builds the mod with
+the TypeScript compiler (`python/tests/conclave_boundary.cjs`) and judges the tree and the types, so a renamed `$`, an
+alias, a spread or a cast cannot hide a call. It refuses:
 
-- the mod hooks exactly five events: `session.start`, `command.run`, `agent.offer`, `ui.render` and `classic.SessionStart`
-  (which only reads the session's agent type and passes the event on unchanged and first). The check reads every
-  `on(...)` call whatever quote it is written in, refuses an event that is not a plain string, a renamed or passed-on
-  `on`, and any quoted name of an event Tether hooks (`classic.UserPromptSubmit`, `classic.Stop`, `session.end`,
-  `turn.complete` and the rest);
-- the mod calls only the twelve `$.noun.method` it needs (the clock, the command registration, the plugin's folder, the
-  one process, the store and the UI), so no `$.session.` or `$.model.` call, tool, file, prompt or agent API appears,
-  and `$` is never copied, destructured or read by a computed name;
-- no source names the session's usage figures, the prompt, a stop, a compaction, the transcript, `/clear` or the
-  HANDOFF message;
-- every code file in every subfolder of the mod is scanned (only `tests/`, `types/` and the engine's own typings are
-  not), and the check is itself tested with a case for each way across the line, so a rule that stops catching fails;
-- the only command the mod runs is the read-only snapshot, in one place (`src/snapshot.ts`);
-- a session start never waits for Conclave ([Starting a session](#start)).
+- **Hooks other than the five.** The mod hooks exactly `session.start`, `command.run`, `agent.offer`, `ui.render` and
+  `classic.SessionStart` (which only reads the session's agent type, passes the event on first and returns the answer
+  whole). Every value of the engine's type `On` (the `on` of `register`, whatever it is called) may only be *called*,
+  with a plain string literal that is one of those five: a hook on another event, a template or a variable as the
+  event, `on` renamed, passed on, put in an object, cast or reached through `on.call` are refused, and so is any string
+  that names an event Tether hooks (`classic.UserPromptSubmit`, `classic.Stop`, `session.end`, `turn.complete` and
+  the rest).
+- **Engine calls beyond the eleven the mod needs.** Every value of type `EngineInterface` (the `$` of a hook, or the
+  parameter of any helper, under any name) may only be the object of `$.noun.method`, called, for the clock, the command
+  registration, the one process, the store and the UI, or `$.plugin.root`. So no `$.session.` or `$.model.` call, tool,
+  file, prompt or agent API appears. It may be passed on only to a function of the mod's own that declares the
+  parameter as `EngineInterface`, or to the `read` and `update` of `claude-code` (the mod's own state). Copying it into
+  another name, spreading, destructuring, a computed name (`$['session']`), returning or storing it, putting it in an
+  array or object, and any `as` cast of it are refused, in parentheses or not.
+- **Anything that hides a type from the check.** `any` anywhere in the mod, a `@ts-ignore`, `@ts-expect-error` or
+  `@ts-nocheck` comment, and any type error in a runtime source (the check compiles it against the engine's types).
+  Sources are TypeScript only, so there is no plain script the check cannot see into.
+- **Code loaded or built at run time**, an `import` of anything but `claude-code` and the mod's own checked sources
+  (an import into `tests/` would hide code from the check), and the globals a hooks module has no business with
+  (`fetch`, `globalThis`, `process`, `require`, `eval`, `Function` and the like).
+- **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
+  and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else.
+- **Tether's words.** No string or name in the mod holds the session's usage figures (`context_tokens`,
+  `seconds_since_last_response`, `rateLimits`), `/clear`, `HANDOFF` or `Continue from`, and the mod never calls
+  `usage(...)`. Comments may name them.
+
+Every code file in every subfolder of the mod is checked (only `tests/`, `types/` and the engine's own typings are
+not). The check is itself tested: each way across the line that a reviewer found, or that an earlier version of the
+check missed, is a case that must fail (`CROSSINGS` in the test), the code the mod really writes is a case that must
+pass, and the real sources must pass. A session start never waits for Conclave ([Starting a session](#start)).
+
+**Where it runs.** The check needs Node.js, TypeScript 5.6.3 (fetched once with `npx`) and the engine's types for
+`claude-code`, which Claude Code writes beside the mod when it loads or validates it (`claude plugin validate
+tools/claude-mod` does). Where one is missing the tests skip and say which, so the check belongs to the local checks of
+a change to the mod, with `claude plugin test`; CI has no Claude Code and does not run it.
 
 What Conclave may take over later, because the maintainers allowed it, is Coney's own pollers (pull requests, the
 release queue, builds, triage), the stop guard on unowned pull request problems and the pull request ownership store;
@@ -97,18 +120,22 @@ folder, so an agent never types it. A session started without the mod keeps ever
 
 The mod runs `uv run -q --project <checkout>/python coney-tools conclave snapshot --json` from the checkout its own
 folder belongs to, so a worktree's session shows that worktree's units, and it needs `uv` on `PATH`. It sets
-`UV_PROJECT_ENVIRONMENT` to `<workspace>/scratch/conclave/<checkout folder>/venv` for that call, so `uv` never creates
-`python/.venv` inside a worktree ([Keep Python out of the tree](how-we-work.md#shared-machine)); the first read in
-a checkout builds that environment, and a checkout outside the workspace layout (`repos/coney` or
-`worktrees/coney/<branch>`) is left to the caller's own variable.
+`UV_PROJECT_ENVIRONMENT` to `<workspace>/scratch/<branch>/conclave-venv` for that call (`scratch/main/conclave-venv`
+for the main checkout), so `uv` never creates `python/.venv` inside a worktree ([Keep Python out of the
+tree](how-we-work.md#shared-machine)). The environment lives in the branch's own scratch folder, where the guide
+already puts a private environment, and goes when that folder does: `workspace clean` leaves `scratch/` alone, so prune
+it with the rest of the branch's scratch ([Scratch](workspace.md#scratch)). The first read in a checkout builds the
+environment, and a checkout outside the workspace layout (`repos/coney` or `worktrees/coney/<branch>`) is left to the
+caller's own variable.
 
 ## Starting a session {#start}
 
 Conclave never makes a session start wait, Tether's included. `session.start` registers `/conclave`, applies the agent
-list the last session stored, starts the first read in the background and returns; the band draws when the read lands.
-A read that hangs is killed after 30 seconds (60 with `--github`), and a failed one is tried again. The two classic
-hooks (`classic.SessionStart` and `agent.offer`) pass their event on first and keep a `.catch` that does the same, so a
-failure in Conclave leaves the answer of the plugins beneath whole.
+list this checkout saved, starts the first read in the background and returns; the band draws when the read lands. A
+read that hangs is killed after 30 seconds (60 with `--github`), and a failed one is tried again. `classic.SessionStart`
+passes its event on first and returns the answer of the plugins beneath whole, and `agent.offer` passes its event on
+unless the type is hidden; both keep a `.catch` that passes the event on, so a failure in Conclave leaves that answer
+untouched.
 
 ## The snapshot {#snapshot}
 
@@ -145,19 +172,23 @@ model can still name a hidden type, and the rule that refuses it is a hook, neve
 `.claude/agents/`, so `claude --agent coordinator` works with or without the mod. A checkout without `hooks.toml` (the
 hook dispatcher brings it) reports the reason in `config.error` and hides nothing.
 
-The list is frozen for the session: a listing that changed mid-session would rewrite the prompt cache, and a session
-(`claude -p` included) never waits for a read to learn it. So a session hides by the list the previous session stored,
-from its first turn. The first session in a checkout, with no list stored, hides nothing; its first read stores the list
-for the next one. A change to `hooks.toml` takes effect in the next session as well.
+The list is frozen: a listing that changed mid-session would rewrite the prompt cache, and a session (`claude -p`
+included) never waits for a read to learn it. So a session hides by the list its checkout saved last, from its first
+turn. Each checkout saves its own, under a key that names it (`offer:<checkout>`), because each has its own
+`hooks.toml`: a worktree with other roles never changes what the main checkout hides. The first session in a checkout,
+with no list saved, hides nothing; its first read saves the list. A change to `hooks.toml` takes effect where a new
+prompt cache starts: the next session, or a `/clear` (Tether's automatic one included), which takes up the list saved
+since. A compaction keeps the cache, so it keeps the list.
 
 One read ends the freeze early: a good read that says the settings cannot be read (no file, a bad one, no role) drops
-the stored list and the frozen one, so a list from an earlier session never hides anything the settings no longer ask
-for. The listing changes once in that case, which is the price of not hiding by a stale list. A failed read, one that
+the checkout's saved list and the frozen one, so a list from an earlier session never hides anything the settings no
+longer ask for. The listing changes once in that case, which is the price of not hiding by a stale list. A failed read, one that
 printed nothing usable, changes nothing.
 
 ## Versions and checks {#checks}
 
-`plugin.json` carries the mod's version, and `conclave.claude_code` the Claude Code version it is tested on. The mod's
+`plugin.json` carries the mod's version, and `conclave.claude_code` the Claude Code version it is tested on. The snapshot
+carries that version, but the mod does not compare it yet (a note in the band for an older engine is planned). The mod's
 types are the contract in `tools/claude-mod/types/index.d.ts`. Run these from the checkout:
 
 ```sh
