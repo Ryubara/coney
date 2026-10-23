@@ -168,7 +168,7 @@ def compare(
     report = stamps.verify(unit.stamps, rules)
     if not report.ok:
         raise CompareError(f"{unit.stamps}: the stamp log is not intact, so nothing is compared: {report.problems[0]}")
-    wanted = {k: study.covers[k] for k in ("decompile_sha256", "ghidra_function_hash", "cut_sha256")}
+    wanted = {k: study.covers[k] for k in ("identity_sha256", "decompile_sha256", "ghidra_function_hash", "cut_sha256")}
     if report.current("studied", address, wanted) is None:
         raise CompareError(f"{address}: no current `studied` stamp for the saved study; run `original study {address}`")
     coney = find_unit(root, address, key)

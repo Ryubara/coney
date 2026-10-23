@@ -28,7 +28,11 @@ def add_parser(groups: Any) -> None:
     ):
         sub = commands.add_parser(name, help=text)
         sub.add_argument("--task", help="the task (default: CONEY_TASK, else the branch)")
-        sub.add_argument("--dir", type=Path, help="a stamp log folder (default: the task's, in the scratch folder)")
+        sub.add_argument(
+            "--dir",
+            type=Path,
+            help="a stamp log folder (default: the task's, in the scratch folder); with --task, it must be that task's",
+        )
     verify = commands.choices["verify"]
     verify.add_argument(
         "--release",

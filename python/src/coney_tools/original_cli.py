@@ -41,7 +41,8 @@ def add_parser(groups: Any) -> None:
     study.add_argument(
         "--recut",
         action="store_true",
-        help="re-cut the saved decompile without Ghidra (it must match the newest studied stamp)",
+        help="re-cut the saved decompile without Ghidra (the files, name, program and signature must match the newest "
+        "studied stamp)",
     )
     study.add_argument("--print", action="store_true", dest="show", help="also print the numbered decompile")
 
@@ -86,7 +87,10 @@ def add_parser(groups: Any) -> None:
         ),
     )
     first.add_argument(
-        "--test", action="append", default=[], help="an exact, whole TEST_CASE name in the test commit (repeatable)"
+        "--test",
+        action="append",
+        default=[],
+        help='a whole test name, found as TEST_CASE("NAME" in the test commit (repeatable)',
     )
     first.add_argument("--test-commit", help="the commit that adds the test (and only the stubs it needs to compile)")
     first.add_argument("--fix-commit", help="the commit that makes it pass (default: HEAD)")
@@ -162,7 +166,10 @@ def _study(
     print(f"  numbered decompile (scratch only, never commit): {listing}")
     if args.show:
         print(listing.read_text(encoding="utf-8"), end="")
-    if result.change == "unchanged":
+    if result.change == "unchanged" and result.stamped:
+        # The function is as studied, but the log's newest stamp did not cover all of it (an older tool's).
+        print("  unchanged; stamp updated to cover the identity")
+    elif result.change == "unchanged":
         print("  unchanged since the last study")
     else:
         print(f"  {result.change}; {'stamped studied' if result.stamped else 'a studied stamp already covers it'}")

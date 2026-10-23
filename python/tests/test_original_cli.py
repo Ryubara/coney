@@ -116,6 +116,45 @@ def test_a_release_check_wants_signed_steps_signed(checkout: Path, capsys: pytes
     assert main(["stamp", "verify", "--dir", str(checkout / "nowhere")]) == 0
 
 
+def test_stamp_task_and_dir_are_independent_options(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["original", "study", ADDRESS]) == 0
+    capsys.readouterr()
+    folder = str(log(checkout))
+    assert main(["stamp", "verify", "--dir", folder]) == 0  # --dir alone: the log's task is not checked
+    assert main(["stamp", "verify", "--task", "main", "--dir", folder]) == 0  # both: the log must be that task's
+    assert main(["stamp", "show", "--task", "main", "--dir", folder]) == 0
+    capsys.readouterr()
+    assert main(["stamp", "verify", "--task", "other", "--dir", folder]) == 1  # another task's log fails
+    assert "other" in capsys.readouterr().out
+
+
+def test_an_unchanged_study_under_an_old_stamp_says_the_stamp_was_updated(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["original", "study", ADDRESS]) == 0
+    capsys.readouterr()
+    assert main(["original", "study", ADDRESS]) == 0
+    assert "unchanged since the last study" in capsys.readouterr().out
+    folder = log(checkout)
+    [first] = stamps.verify(folder, load_conventions(checkout).stamps).stamps
+    for segment in folder.iterdir():
+        segment.unlink()
+    stamps.append(
+        folder,
+        rules=load_conventions(checkout).stamps,
+        task="main",
+        step="studied",
+        subject=ADDRESS,
+        result="pass",
+        commit=first.commit,
+        covers={k: v for k, v in first.covers.items() if k != "identity_sha256"},
+        detail=dict(first.detail),
+        who={"kind": "tool", "tool": "test"},
+    )
+    assert main(["original", "study", ADDRESS]) == 0
+    assert "unchanged; stamp updated to cover the identity" in capsys.readouterr().out
+
+
 def test_fails_first_needs_arguments_or_none(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["original", "fails-first"]) == 2
     assert main(["original", "fails-first", "--none", "docs only"]) == 0

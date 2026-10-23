@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for `original compare`: a made-up checkout with one tagged Coney function, a study of an invented original."""
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -8,7 +9,7 @@ from typing import Any
 import pytest
 from git_support import git
 from stamp_support import rules
-from test_orig_study import ADDRESS, COMMIT, FakeGhidra
+from test_orig_study import ADDRESS, COMMIT, FakeGhidra, predate_the_identity
 
 from coney_tools import orig_compare, orig_copy, orig_cut, orig_pairs, orig_study, stamps
 from coney_tools.orig_compare import CompareError
@@ -165,6 +166,22 @@ def test_nothing_studied_or_a_stale_study_stops_the_comparison(setup: Setup, tmp
     for segment in setup.unit.stamps.glob("*.jsonl"):
         segment.unlink()
     with pytest.raises(CompareError, match="studied"):
+        setup.run()
+
+
+def test_compare_wants_a_stamp_that_covers_the_name_program_and_signature(setup: Setup) -> None:
+    meta_path = setup.unit.study(ADDRESS) / "study.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta["name"] = "Widget_Renamed"  # study.json is editable; the stamp is what the name must agree with
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+    with pytest.raises(CompareError, match="studied"):
+        setup.run()
+    assert not setup.path.exists()
+
+
+def test_compare_refuses_a_stamp_that_predates_the_identity(setup: Setup) -> None:
+    predate_the_identity(setup.unit.dir)
+    with pytest.raises(CompareError, match="original study"):
         setup.run()
 
 

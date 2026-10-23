@@ -130,16 +130,21 @@ real one.
   [Ghidra](ghidra.md#start-and-stop-the-server) for the server.
 * **When Ghidra is down** (connection refused, no program open) the command exits with 3 and writes nothing, not a
   file and not a stamp. `--recut` re-cuts the saved decompile without Ghidra. It checks the saved `decompile.c` and
-  the saved callers, callees and globals against the newest `studied` stamp of the address in the verified log, not
-  against `study.json` (which sits beside them and could be edited with them), and refuses when there is no such
-  stamp or any hash differs: an edited text is fetched from Ghidra again with `original study`, never stamped.
+  the saved callers, callees and globals, and the function's name, program and signature, against the newest `studied`
+  stamp of the address in the verified log, not against `study.json` (which sits beside them and could be edited with
+  them), and refuses when there is no such stamp or any hash differs (a stamp made before `identity_sha256` was added
+  is refused as predating the identity check, and is made again with `original study`): an edited text is fetched
+  from Ghidra again with `original study`, never stamped.
 * **What is saved**, in `study/<addr>/` of the scratch folder: `decompile.c` (newlines normalised; its hash is the
   stamp's), `numbered.txt` (a reading copy: each statement's number and its piece), `callers.json`, `callees.json`,
   `globals.json` and `study.json` (hashes and the cut). The decompile is text from the game: it stays in scratch and is
   never committed ([LEGAL.md](repo:LEGAL.md#no-game-data)). A test against a running server, `test_orig_study_live`, is
   left out of a normal run and runs with `pytest -m ghidra`.
 * **The stamp** `studied` (subject: the address) covers the decompile, Ghidra's function hash, the cut and its shape,
-  and the addresses of the callers, callees and globals. A study that changes nothing writes no new stamp.
+  the addresses of the callers, callees and globals, and a hash of the function's name, program and signature
+  (`identity_sha256`). A study that changes nothing writes no new stamp, unless the newest one does not cover all of
+  it (one made before `identity_sha256`): then it writes a new stamp and says `unchanged; stamp updated to cover the
+  identity`.
 * **Freshness.** The shared Ghidra project is renamed all the time, so the decompile's text changes while the function
   does not. A saved study is *fresh* when Ghidra's function hash, the cut's shape and the addresses of its callees and
   globals are unchanged and the text's *skeleton* is the same: comments and strings blanked and each name replaced by
@@ -246,8 +251,9 @@ merge_reason = ""          # needed when lines cover more than one piece
 
 `coney-tools original compare <addr>` is run again and again while the pairs are filled in:
 
-1. The first run needs a current `studied` stamp and a Coney function carrying `@orig <addr>` (several: `--coney-function
-   KEY`). It writes the pairs file with one blank pair per piece and the side-by-side view, and stops.
+1. The first run needs a current `studied` stamp (one that covers the saved study's name, program and signature too,
+   so a study from before `identity_sha256` is studied again) and a Coney function carrying `@orig <addr>` (several:
+   `--coney-function KEY`). It writes the pairs file with one blank pair per piece and the side-by-side view, and stops.
 2. Each later run shows the saved decompile beside the Coney function (the pair number in the gutter of both sides) and
    checks, naming each pair or line:
     * **coverage**: every numbered line is in exactly one pair; a pair holds whole pieces (never split one, never skip a
@@ -293,8 +299,10 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 * **Stubs.** A test for a function that is new cannot compile on a test-only commit, so the test commit may also
   hold the minimal stubs that let it compile. A stub must not implement the behaviour: it returns a default or an empty
   result. The stamp lists every non-test file the commit touches (`detail.stubs`) for the reviewer.
-* Each name must be a whole quoted test name (`TEST_CASE("NAME")`) in a test file the test commit adds or changes; part
-  of a longer name is refused. The branch to come back to is written to
+* Each name must be a whole test name, written `TEST_CASE("NAME"` (then `)`, or `,` and tags), in a test file the test
+  commit adds or changes; part of a longer name, a `SECTION` name or any other quoted string is refused. A name split
+  into adjacent literals (`TEST_CASE("A " "B")`) is joined and matches as `A B`; a name built by a macro does not
+  match. The branch to come back to is written to
   `fails-first/restore.json` in the unit's scratch folder before the first checkout and removed after the last: if a
   run is killed, the next one refuses while the worktree is detached and says `git checkout <branch>`; a restore that
   fails is reported as `COULD NOT RESTORE` with that command.
