@@ -202,7 +202,8 @@ def test_the_config_has_the_roles_with_aliases_and_the_helpers(layout: Layout) -
     assert config["helpers"] == ["Explore", "Plan", "fork"] and config["require_role"] is False
     assert config["claude_code"] == CONVENTIONS.conclave.claude_code
     assert config["intervals"] == {"local": 15, "github": 60, "github_idle": 300}
-    assert config["pane_min_columns"] == 110 and config["merged_visible_minutes"] == 10
+    assert config["pane_min_columns"] == 60 and config["pane_wide_columns"] == 110
+    assert config["merged_visible_minutes"] == 10
     assert config["claim_red_hours"] == 6
     assert config["band_narrow_columns"] == 100 and config["stale_after_reads"] == 3
 

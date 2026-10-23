@@ -16,6 +16,7 @@ export type Config = {
   claude_code: string
   intervals: { local: number; github: number; github_idle: number }
   pane_min_columns: number
+  pane_wide_columns: number
   band_narrow_columns: number
   stale_after_reads: number
   merged_visible_minutes: number

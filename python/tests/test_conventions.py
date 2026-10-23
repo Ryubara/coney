@@ -579,7 +579,7 @@ def test_the_real_conclave_section() -> None:
     assert conclave.claude_code.count(".") == 2 and conclave.hooks_file.endswith("hooks.toml")
     assert 0 < conclave.local_seconds <= conclave.github_seconds <= conclave.github_idle_seconds
     # the numbers the band draws by come from here, so the mod holds none of them
-    assert conclave.band_narrow_columns < conclave.pane_min_columns and conclave.stale_after_reads >= 1
+    assert 0 < conclave.pane_min_columns <= conclave.pane_wide_columns and conclave.stale_after_reads >= 1
 
 
 @pytest.mark.parametrize(
@@ -591,6 +591,8 @@ def test_the_real_conclave_section() -> None:
         ("conclave.local_seconds", 0, "expected a whole number of 1 or more"),
         ("conclave.unknown", 1, "unknown key 'unknown'"),
         ("conclave.pane_min_columns", REMOVE, "missing the key 'pane_min_columns'"),
+        ("conclave.pane_wide_columns", 50, "must not be less than pane_min_columns"),
+        ("conclave.pane_wide_columns", REMOVE, "missing the key 'pane_wide_columns'"),
         ("conclave.band_narrow_columns", REMOVE, "missing the key 'band_narrow_columns'"),
         ("conclave.stale_after_reads", 0, "expected a whole number of 1 or more"),
     ],

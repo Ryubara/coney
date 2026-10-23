@@ -301,7 +301,8 @@ test('the status line says what the session is', async ($, on) => {
   expect(world.statuses.at(-1)).toBe('no role: start with coney-agent')
 
   await $.classic.SessionStart({ source: 'startup', agent_type: 'engineer' })
-  expect(world.statuses.at(-1)).toBe('engineer · fix-frame-812 · compared')
+  // the issue and the stage the pane's rows show, in the same words
+  expect(world.statuses.at(-1)).toBe('engineer · #741 · compared failed')
 
   await $.classic.SessionStart({ source: 'startup', agent_type: 'coordinator' })
   expect(world.statuses.at(-1)).toBe('coordinator · 2 units · ✖1')
@@ -394,12 +395,84 @@ test('a claim in its last hours is red, and one that waits has no countdown', as
   await ui.unmount()
 })
 
-test('a pane under the minimum width points to the band', async ($, on) => {
+test('a pane under the minimum width says what it needs and points to the band', async ($, on) => {
   const world = engine(on, prints(snapshot()))
   await start($, world)
 
-  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 90 } })
-  expect((await ui.find({ type: 'Text' }))?.text).toContain('needs about 110 columns')
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 59 } })
+  expect((await ui.find({ type: 'Text' }))?.text).toContain('needs about 60 columns')
+  await ui.unmount()
+})
+
+/** The texts among `items` that are wider than the pane: none is allowed in the compact layout. */
+function overflows(items: readonly { text?: string | null }[], columns: number): string[] {
+  return items.map(item => item.text ?? '').filter(text => [...text].length > columns)
+}
+
+/** Every button and text of a mounted pane. */
+async function drawn(ui: { findAll: (target: { type: 'Button' | 'Text' }) => Promise<readonly { text?: string | null }[]> }) {
+  return [...(await ui.findAll({ type: 'Button' })), ...(await ui.findAll({ type: 'Text' }))]
+}
+
+for (const columns of [60, 80, 109] as const) {
+  test(`the pane at ${columns} columns is compact: the key fields first, and every line fits`, async ($, on) => {
+    const world = engine(on, prints(snapshot()))
+    await start($, world)
+
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    const rows = await ui.findAll({ type: 'Button' })
+    expect(rows.map(row => row.key)).toEqual(['task:fix-frame-812', 'task:fix-new', 'task:add-task-start'])
+    // line 1 of a row: the mark, the issue, the stage and the pull request; the title and the rest follow below it
+    expect(rows[0]?.text).toContain('#741 compared failed  PR #812')
+    expect(rows[0]?.text).not.toContain('gameplay: Fix the uncuff steer')
+    expect(overflows(await drawn(ui), columns)).toEqual([])
+
+    await ui.press({ key: 'task:fix-frame-812' })
+    expect((await ui.findAll({ type: 'Text', text: /^stamps/ })).length).toBeGreaterThan(0)
+    expect((await ui.findAll({ type: 'Text', text: /^reason/ })).length).toBe(1)
+    // a long value wraps under its label, so nothing an open row says is lost to the width
+    const shown = (await ui.findAll({ type: 'Text' })).map(item => item.text ?? '').join(' ')
+    for (const word of ['2026-10-26', 'UTC)', '/work/worktrees/fix-frame-812', '· finished', 'overlaps']) expect(shown).toContain(word)
+    expect(overflows(await drawn(ui), columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+test("the compact pane opens with what the band says, in the band's own words", async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
+
+  const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  const items = (await band.findAll({ type: 'Button' })).map(item => item.text ?? '')
+  await band.unmount()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 80 } })
+  const summary = (await ui.findAll({ type: 'Text' })).map(item => item.text ?? '').join(' · ')
+  expect(items.length).toBeGreaterThan(3)
+  for (const item of items) expect(summary).toContain(item)
+  await ui.unmount()
+})
+
+test('the compact claims list gives each claim its countdown', async ($, on) => {
+  const world = engine(on, prints(snapshot(enforced)))
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 60 } })
+  const claims = await ui.findAll({ type: 'Text', text: /^ {2}#\d+ / })
+  expect(claims.map(claim => claim.text)).toEqual([
+    expect.stringContaining('#741'),
+    expect.stringContaining('#770'),
+  ])
+  expect(claims[0]?.text).toContain('expires in 2d 14h')
+  expect(overflows(await drawn(ui), 60)).toEqual([])
+  await ui.unmount()
+})
+
+test('from the wide width the pane keeps its full rows with the title on the row', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 110 } })
+  expect((await ui.findAll({ type: 'Button' }))[0]?.text).toContain('gameplay: Fix the uncuff steer')
   await ui.unmount()
 })
 

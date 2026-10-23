@@ -3,7 +3,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import type { Held, Snapshot } from '../types'
-import { claimTone, countdown, elapsed, mark, showUtc } from '../src/format'
+import { claimTone, clip, countdown, elapsed, issueIds, mark, showUtc, stageText, wrapTokens } from '../src/format'
 import { checkoutOf, firstLine, merged, venvOf } from '../src/snapshot'
 import { EMPTY } from '../src/state'
 import fixture from './fixtures/snapshot'
@@ -116,4 +116,19 @@ test('the private Python environment sits in the workspace scratch folder, one p
   expect(venvOf('/home/a/ws/worktrees/coney/b/')).toBe('/home/a/ws/scratch/conclave/b/venv')
   // outside the workspace layout the mod cannot say where the scratch folder is, so it leaves the variable alone
   expect(venvOf('/home/a/code/coney')).toBeNull()
+})
+
+test('a line is clipped with an ellipsis, and tokens wrap without splitting', () => {
+  expect(clip('abcdef', 6)).toBe('abcdef')
+  expect(clip('abcdefg', 6)).toBe('abcde…')
+  expect(wrapTokens(['✔ assigned', '✔ claimed', '✖ compared'], '  ', 22)).toEqual(['✔ assigned  ✔ claimed', '✖ compared'])
+  expect(wrapTokens(['x'.repeat(30)], ' ', 10)).toEqual(['xxxxxxxxx…'])
+  expect(wrapTokens([], ' ', 10)).toEqual([''])
+})
+
+test('a stage reads the same on the band, the status line and the pane', () => {
+  const units = snapshot().units
+  const unit = units.error === null ? units.units.find(one => one.task === 'fix-frame-812') : undefined
+  expect(unit && stageText(unit)).toBe('compared failed')
+  expect(unit && issueIds(unit)).toBe('#741')
 })

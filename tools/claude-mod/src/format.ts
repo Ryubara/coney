@@ -82,11 +82,15 @@ export function claimTone(claim: ClaimRow, rules: ClaimRules, redHours: number, 
   return 'normal'
 }
 
-/** What a claim's right-hand cell says: the countdown, why it waits, or that expiry is not enforced yet. */
-export function claimExpiry(claim: ClaimRow, rules: ClaimRules, nowMs: number): string {
+/**
+ * What a claim's right-hand cell says: the countdown, why it waits, or that expiry is not enforced yet. `isShort` drops
+ * the explanation of an unenforced expiry (`would expire in 2d 14h`), for the compact pane.
+ */
+export function claimExpiry(claim: ClaimRow, rules: ClaimRules, nowMs: number, isShort = false): string {
   if (claim.deadline === null) return claim.waiting === null ? 'no deadline' : `waits while ${claim.waiting}`
   const left = countdown(claim.deadline, nowMs)
-  return rules.enforced ? `expires in ${left}` : `would expire in ${left} (not enforced yet)`
+  if (rules.enforced) return `expires in ${left}`
+  return isShort ? `would expire in ${left}` : `would expire in ${left} (not enforced yet)`
 }
 
 export type UnitKind = MarkKind | 'gone'
@@ -199,6 +203,58 @@ export function bandItems(held: Held, nowMs: number): BandItem[] {
   return items
 }
 
+/** A unit's issue numbers as `#741 #803`, empty when it names none. */
+export function issueIds(unit: Unit): string {
+  return unit.issues.map(number => `#${number}`).join(' ')
+}
+
+/** The stage a unit is at in words the pane, the band and the status line share: `compared failed`, `assigned`. */
+export function stageText(unit: Unit): string {
+  if (unit.error !== null) return 'task file unreadable'
+  return `${unit.stage ?? '?'}${unit.failed !== null ? ' failed' : ''}`
+}
+
+/** What a unit's build says: `build: slot 1 3m`, `build: queue 2`, or nothing. */
+export function buildText(unit: Unit, nowMs: number): string {
+  if (unit.build === null) return ''
+  if (unit.build.state === 'running') {
+    return `build: slot ${unit.build.slot ?? '?'} ${unit.build.since ? elapsed(unit.build.since, nowMs) : ''}`.trimEnd()
+  }
+  return `build: queue ${unit.build.position ?? '?'}`
+}
+
+/** A unit's pull request in a few words: `PR #812`, `merged 4m ago`, or nothing. */
+export function prText(unit: Unit, nowMs: number): string {
+  if (unit.pr === null) return ''
+  if (unit.pr.state === 'open') return `PR #${unit.pr.number}`
+  return `merged ${unit.pr.merged_at ? elapsed(unit.pr.merged_at, nowMs) : ''} ago`
+}
+
+/** `text` cut to `width` characters, ending in an ellipsis when it was cut. */
+export function clip(text: string, width: number): string {
+  const chars = [...text]
+  return chars.length <= width ? text : `${chars.slice(0, Math.max(0, width - 1)).join('')}…`
+}
+
+/**
+ * `tokens` joined by `sep` and broken into lines no wider than `width`: a token never splits unless it is wider than a
+ * line alone (then it is clipped), so a compact pane wraps a long value instead of losing its end.
+ */
+export function wrapTokens(tokens: string[], sep: string, width: number): string[] {
+  const lines: string[] = []
+  let line = ''
+  for (const token of tokens.map(one => clip(one, width))) {
+    if (line !== '' && [...line].length + sep.length + [...token].length > width) {
+      lines.push(line)
+      line = token
+    } else {
+      line = line === '' ? token : `${line}${sep}${token}`
+    }
+  }
+  if (line !== '' || lines.length === 0) lines.push(line)
+  return lines
+}
+
 const slashes = (path: string): string => path.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
 
 /** Whether `cwd` is the worktree of `unit` or a folder inside it. */
@@ -209,7 +265,7 @@ export function inWorktree(unit: Unit, cwd: string): boolean {
   return here === tree || here.startsWith(`${tree}/`)
 }
 
-/** The status line: `role · unit · stage` for a session in a unit's worktree, a short summary for the coordinator. */
+/** The status line: `role · issue · stage` for a session in a unit's worktree, a short summary for the coordinator. */
 export function statusText(role: string | null, cwd: string, held: Held, nowMs: number): string {
   if (role === null) return 'no role: start with coney-agent'
   const snapshot = held.snapshot
@@ -221,5 +277,6 @@ export function statusText(role: string | null, cwd: string, held: Held, nowMs: 
     return ['coordinator', plural(live, 'unit', 'units'), failed > 0 ? `✖${failed}` : ''].filter(Boolean).join(' · ')
   }
   const unit = snapshot.units.units.find(one => inWorktree(one, cwd))
-  return unit === undefined ? role : `${role} · ${unit.task} · ${unit.stage ?? '?'}`
+  // The unit and its stage as the pane's row names them (the issue, else the task, and the same stage words).
+  return unit === undefined ? role : `${role} · ${issueIds(unit) || unit.task} · ${stageText(unit)}`
 }

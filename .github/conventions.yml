@@ -920,7 +920,8 @@ conclave:
   local_seconds: 15                              # between reads of the local snapshot (a `uv` start costs 1-2 s)
   github_seconds: 60                             # between reads with --github while the pane is open
   github_idle_seconds: 300                       # ... and while it is closed
-  pane_min_columns: 110                          # under it only the band and the status line show
+  pane_min_columns: 60                           # under it the pane only says it needs this width (band and status line stay)
+  pane_wide_columns: 110                         # from it the pane draws its full layout, under it the compact one
   band_narrow_columns: 100                       # under it the band takes two short lines
   stale_after_reads: 3                           # the band is dimmed once the last read is older than this many local intervals
   merged_visible_minutes: 10                     # a merged unit stays on the pane this long

@@ -29,16 +29,22 @@ A snapshot older than `stale_after_reads` (3) local intervals dims the band and 
 shows the first line of the error; a snapshot of a newer shape than the mod knows shows "update the checkout" and
 nothing else.
 
-**The status line** reads `role · unit · stage` for a session in a unit's worktree (`engineer · fix-frame-812 ·
-compared`), `coordinator · 2 units · ✖1` for the coordinator, and `no role: start with coney-agent` for a session that
-started with no `--agent`. The role is the session's agent type, which the mod reads from the start of the session.
+**The status line** reads `role · issue · stage` for a session in a unit's worktree (`engineer · #741 · compared
+failed`; the task name when the unit names no issue), `coordinator · 2 units · ✖1` for the coordinator, and `no role:
+start with coney-agent` for a session that started with no `--agent`. The role is the session's agent type, which the
+mod reads from the start of the session. The issue and the stage are written as the pane's row writes them.
 
-**The pane** (`/conclave`, or a press on the band) has two sections. It needs about 110 columns (`pane_min_columns`);
-below that it says so and the band stays. It opens by itself at the start of a session where the terminal is wide enough
-to place an unasked pane, and waits for `/conclave` where it is not.
+**The pane** (`/conclave`, or a press on the band) has two sections and two layouts. From `pane_wide_columns` (110) a
+row is one line. Under that, down to `pane_min_columns` (60), the pane is compact: it opens with the band's own items,
+and a row has the key fields on its first line (the mark, the issue, the stage and the pull request) and the title, who
+works on it and the build on a dim second line, clipped to the width. The details of an open row wrap under their label,
+so nothing is lost to the width. Under 60 columns the pane only says it needs that width and the band stays. The words
+(stage, build, pull request, counts) are the band's and the status line's in both layouts. The pane opens by itself at
+the start of a session where the terminal is wide enough for the engine to place an unasked pane, and waits for
+`/conclave` where it is not; the engine seats a pane the person opens at any width.
 
 - **Units and issues** lists every unit (a scratch folder with a task file, with a worktree or changed in the last
-  `unit_days`) and the issues the signed-in account holds with no unit here. A row is one line: a mark, the issue
+  `unit_days`) and the issues the signed-in account holds with no unit here. A wide row is one line: a mark, the issue
   numbers, the title, who works on it, the stage, the build it runs or waits for, the pull request and its age. A press
   opens the row, one at a time, and shows the claimant and agent, the status and time in stage, the claim's expiry,
   the scope and the units or claims it overlaps, every stamp step (`✔` done, `✖` failed, `–` not needed, `·` missing),
