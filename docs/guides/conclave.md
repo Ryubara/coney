@@ -182,8 +182,8 @@ since. A compaction keeps the cache, so it keeps the list.
 
 One read ends the freeze early: a good read that says the settings cannot be read (no file, a bad one, no role) drops
 the checkout's saved list and the frozen one, so a list from an earlier session never hides anything the settings no
-longer ask for. The listing changes once in that case, which is the price of not hiding by a stale list. A failed read, one that
-printed nothing usable, changes nothing.
+longer ask for. The listing changes once in that case, which is the price of not hiding by a stale list. A failed read,
+one that printed nothing usable, changes nothing.
 
 ## Versions and checks {#checks}
 
