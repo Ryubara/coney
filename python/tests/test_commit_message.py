@@ -63,6 +63,7 @@ def test_another_email_address_is_refused_anywhere_in_the_message() -> None:
     [
         "Moves markdownlint-cli2@0.18.1 and icon@2x.png.",
         "Bumps pkg@1.2.3, logo@3x.png and actions/checkout@v4.",
+        "Adds icon@1.5x.png and logo@2X.PNG.",
         "Pins uvx pre-commit@4.0.1 and ruff@0.14.0 in the hooks.",
     ],
 )
@@ -77,6 +78,17 @@ def test_a_pinned_package_or_an_asset_name_is_not_an_address(text: str) -> None:
         "Mail Jane.Doe@mail.example.co.uk about it.",
         "Or a@b.io",
         "pkg@1.2.3 and jane@example.com",
+        # A domain that starts like an asset's scale suffix is still an address.
+        "Mail jane@2x.com.",
+        "Mail ops@10x.dev.",
+        "Mail x@0x.ai.",
+        "Mail bob@4x.co.uk.",
+        "Mail JANE@2X.COM.",
+        "Mail jane@3x.mail.example.com.",
+        # An image name as the first labels of a domain is a domain.
+        "Mail jane@2x.png.example.com.",
+        "Mail jane@2x.svg.io.",
+        "Mail jane@2x.png-cdn.com.",
     ],
 )
 def test_a_real_address_is_still_refused(text: str) -> None:

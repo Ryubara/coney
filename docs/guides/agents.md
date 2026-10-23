@@ -383,20 +383,19 @@ without Claude Code: only `Co-Authored-By` trailers, no other e-mail address, an
 Code session (its [identity](#identity) file names the model), a trailer naming that model. The hook below stays
 beside it until the git hook has run for real: it reads the model from the transcript, so it still catches the
 commits the identity does not reach (a PowerShell command outside the modes that get a token, and a commit made after
-the identity file's ten minutes). Neither check sees a commit that a program the command only starts makes, such as a
-script that runs `git commit`: the git hook only without a token, the Claude Code hook never. A Claude Code hook
-(`.claude/hooks/trailer_guard.py`, run by the [dispatcher](#hooks) after a shell command that runs `git commit`)
-checks every commit right after it is made. Claude Code gives a hook no model, but it does give the main session's
-`transcript_path` and, inside a subagent, an `agent_id` and an `agent_type` (its role, such as `engineer`; the hook
-does not use it, because the role does not name the model). The agent's own transcript
-(`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every assistant entry
-(`claude-sonnet-5-5`), and the hook derives the trailer's name from it (`Claude Sonnet 5.5`) instead of keeping a
-table. A trailer with the vendor's address that names a different model exits 2, and the agent sees the reason and
-amends the commit with the one trailer it should have. A commit that printed nothing (`git commit -q`) is judged from
-the HEAD of the working directory and of the directories the command names, if it was made in the last two minutes. A
-commit made by a program the command only starts (a script) prints nothing the hook can read. The hook fails open when
-it cannot tell (no transcript, an id that is not a Claude model, no trailer, another vendor, a commit it cannot find),
-and a person committing outside Claude Code never runs it.
+the identity file's ten minutes). The git hook also checks a commit that a script makes by running `git commit`, but
+without the model check (no token). A Claude Code hook (`.claude/hooks/trailer_guard.py`, run by the
+[dispatcher](#hooks) after a shell command that runs `git commit`) checks every commit right after it is made. Claude
+Code gives a hook no model, but it does give the main session's `transcript_path` and, inside a subagent, an `agent_id`
+and an `agent_type` (its role, such as `engineer`; the hook does not use it, because the role does not name the model).
+The agent's own transcript (`<session>/subagents/agent-<id>.jsonl`, [Checking a run](#check)) names the model on every
+assistant entry (`claude-sonnet-5-5`), and the hook derives the trailer's name from it (`Claude Sonnet 5.5`) instead of
+keeping a table. A trailer with the vendor's address that names a different model exits 2, and the agent sees the reason
+and amends the commit with the one trailer it should have. A commit that printed nothing (`git commit -q`) is judged
+from the HEAD of the working directory and of the directories the command names, if it was made in the last two minutes.
+A commit made by a program the command only starts (a script) prints nothing the hook can read, so only the git hook
+checks it. The hook fails open when it cannot tell (no transcript, an id that is not a Claude model, no trailer, another
+vendor, a commit it cannot find), and a person committing outside Claude Code never runs it.
 
 ## Running without losing the cache {#cache}
 

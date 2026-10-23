@@ -500,9 +500,11 @@ hygiene:
         - '(?<![\w.~])/home/[^/\s:*?"<>|]+'
         - '(?<![\w.~])/Users/(?!Shared(?:/|$))[^/\s:*?"<>|]+'
       # Also the commit-msg check's (`coney-tools pr check-commit`). A package pin (`markdownlint-cli2@0.18.1`) has no
-      # letters-only last part, and an asset's `@2x` / `@3x` suffix (`icon@2x.png`) is skipped by the lookahead.
+      # letters-only last part, and an asset's scale suffix (`icon@2x.png`, `logo@1.5x.svg`) is skipped by the
+      # lookahead, which names an image extension and ends the name (no word character, hyphen or further label after
+      # it), so that `jane@2x.com` and `jane@2x.png.example.com` are still addresses.
       email:
-        - '(?i)\b[a-z0-9._%+-]+@(?!\d+x\.)[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
+        - '(?i)\b[a-z0-9._%+-]+@(?!\d+(?:\.\d+)?x\.(?:png|jpe?g|gif|webp|svg|avif)(?![\w-]|\.[a-z0-9]))[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
       # Possible game data: lines of Lua script source (docs/research/scripting.md) ...
       script_source:
         - '^\s*(?:local\s+)?function\s+[\w.:]+\s*\('
