@@ -305,6 +305,8 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
   after `scope:` is at most 400 characters, and at most 10 `Fixes #N` lines of one pull request event are acted on.
 - The sweep runs on the cron `7 * * * *` (UTC): it repairs cards, answers unhandled commands, releases claims over the
   limit and reports issues in progress with nobody assigned.
+- Claim jobs run one at a time for the whole repository; each also handles the commands other issues received in the
+  last 30 minutes, so a job GitHub cancelled while it waited is answered by the next one.
 <!-- conventions:end -->
 
 **The commands.** A comment is a command only when its whole body is exactly one of these (so a sentence that
@@ -323,8 +325,8 @@ contains `/claim` is never one); the Action deletes each real command after acti
 A comment that starts with `/claim`, `/unclaim` or `/progress` but is not exactly one of them gets a reply from the bot
 (`<!-- coney-claim-reply:ID -->`, naming the comment) saying what to write, and **stays**: only a comment that was a
 real command is deleted, a refused one included. A reply is deleted by the sweep a day after its command comment is
-gone. A reply names people without an `@`, so it notifies nobody by name; the only comment of the Action that mentions
-anyone is the 48-hour warning to the claimant.
+gone. A reply mentions only the person who wrote the command; anyone else it names is written without an `@`. The card
+mentions the claimant (its title), and so does the 48-hour warning.
 
 **The checks of a `/claim`**, in this order; the first that fails is the answer.
 
@@ -341,13 +343,13 @@ anyone is the 48-hour warning to the claimant.
    login); only if GitHub will not say does the comment's own association decide, and then only the repository's OWNER
    counts.
 
-After it assigns, the Action recounts the claimant's claims and the `P-critical` issues on fresh data, because runs for
-different issues can overlap. A claim that turns out to be over the limit (the newest of its owner's tasks) or behind a
-new `P-critical` issue is released again with a reply. The sweep recounts the limit only and releases the late claims it
-finds, with the reply posted after the release; a `P-critical` issue that appears later never releases a claim that was
-already held. A claim that failed half way (assigned, no card, because a label call failed) is finished by the next
-pass, with its scope and task, instead of being refused as already taken; it is checked like any claim, as the issue
-stood before it (so a closed or untriaged issue is still refused).
+After it assigns, the Action recounts the claimant's claims and the `P-critical` issues on fresh data, a backstop for a
+run started outside the one-at-a-time queue (below). A claim that turns out to be over the limit (the newest of its
+owner's tasks) or behind a new `P-critical` issue is released again with a reply. The sweep recounts the limit only and
+releases the late claims it finds, with the reply posted after the release; a `P-critical` issue that appears later
+never releases a claim that was already held. A claim that failed half way (assigned, no card, because a label call
+failed) is finished by the next pass, with its scope and task, instead of being refused as already taken; it is checked
+like any claim, as the issue stood before it (so a closed or untriaged issue is still refused).
 
 **The claim card.** The Action posts one comment per claim and keeps editing it: who claimed, when, the task and the
 scope, the status (claimed, the stage, `PR #N open`, merged, released, lost), the claimant's other open claims, and the
@@ -362,8 +364,9 @@ requests on every pass, so a card that drifted is repaired, not trusted.
 **Status labels.** A claimed issue has exactly one `S-` label: `S-in-progress`, or `S-pending-review` while the
 claimant's pull request is open. The exception is a maintainer's `S-blocked` or `S-needs-info` (`claims.paused_labels`):
 it stays on the claimed issue, the claim keeps, and the release clock waits until the label is taken off (it then starts
-again from that moment). The clock also waits while the claimant's pull request is open, however long the review takes;
-the card says what it waits for and is written once when the wait starts, not every hour.
+again from that moment). The clock also waits while the claimant's own pull request is open and ready for review,
+however long the review takes; a draft, or a maintainer's pull request, is activity but does not stop the clock. The
+card says what it waits for and is written once when the wait starts, not every hour.
 
 **What moves the card.** A command; a pull request with `Fixes #N` (at most 10 such lines of one event are acted on)
 that is opened, reopened, made ready for review or pushed to by the claimant or a maintainer (activity; the issue gets
@@ -375,27 +378,30 @@ applies the deadline.
 event or push as above, `/claim renew`) releases the claim, and a warning comment mentions the claimant at 48 hours. The
 clock does not run while the claim waits (an open pull request of the claimant, a paused label); when that ends the 72
 hours start again. Released means unassigned, `S-ready-to-start`, the card marked released. Before a release the Action
-reads the card and the comments again and gives up if either changed since the pass began, so a `/claim renew` that
-arrives meanwhile is never undone. With `claims.adopt` on, the sweep also gives a card ("assigned by hand") to an issue
-someone assigned in the web page, and its clock starts. Two assignees are never left standing: the earliest claim keeps
-the issue, a hand-added second assignee is removed, and a claim that lost a race is marked `lost` and names the winner.
+reads the card and the comments again and gives up if either changed since the pass began, and if the card changes while
+it releases, it puts the assignee and the label back and starts the pass over. With `claims.adopt` on, the sweep also
+gives a card ("assigned by hand") to an issue someone assigned in the web page, and its clock starts. When an issue has
+two assignees, the next pass leaves one: the earliest claim keeps the issue, a hand-added second assignee is removed,
+and a claim that lost a race is marked `lost` and names the winner.
 
 **An issue labelled `S-in-progress` or `S-pending-review` with nobody assigned** (the old way of picking one up) is
 neither adopted nor released. The sweep lists it, the audit reports it as `issue.claim-orphan` in the hygiene report,
 and the coordinator either claims it with `task create` or sets it back to `S-ready-to-start`.
 
-**Two runs at once.** Comment runs of one issue run one at a time, and each run handles every unhandled command of the
-issue oldest first, so the earliest `/claim` wins. GitHub keeps only one pending run per issue, so with three or more
-simultaneous claims a run can be dropped; the next run (or the sweep) handles the command it left. A pull request run
-and the sweep can still touch an issue while its comment run works, and GitHub has no lock: so before every card write
-the Action reads the issue's cards again, and if another run changed one since the pass began, it starts the pass over
-from what GitHub holds now (a stage or a handled command is never lost, and a claim gets one card). If two runs still
-post a card each for the same claim, the next pass merges them into the first; after assigning, the Action reads the
-assignees again and keeps the earliest claim. `task create` adds a 60-second settle before it trusts a claim ([Task
-files](#task-files)).
+**One run at a time.** Every claim job of the repository (comments, issue and pull request events, the sweep) waits in
+one queue, so two runs of the Action never act on an issue together. Each run handles every unhandled command of its
+issue oldest first, so the earliest `/claim` wins. GitHub keeps one pending job in the queue and cancels the older
+pending one when a newer one arrives, so each run also handles the commands other issues received in the last 30 minutes
+(`claims.catch_up_minutes`): a cancelled job's command is answered by the next job, and an older one by the hourly
+sweep. A job takes about 20 seconds (as the hygiene workflow does), so even a burst of claims is answered within a
+minute or two. A comment that is no command, and a label event for any label but a paused one, starts no job. Something
+outside the queue can still write (a person editing a card, `claim run` started by hand), so the Action keeps a
+backstop: before its first change of each step and before every card write it reads the issue's cards again and starts
+the pass over when one changed, and two cards of one claimant are merged into the first (its handled commands, stage,
+scope and latest activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
 
-**If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the
-command's id is on the card, so it is never acted on twice; a maintainer deletes the comment by hand.
+**If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
+id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
 
 `coney-tools claim list [--json]` prints the held claims; `claim run` and `claim sweep` are what the workflow runs
 ([coney-tools](coney-tools.md#claim)).

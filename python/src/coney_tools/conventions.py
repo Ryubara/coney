@@ -761,6 +761,8 @@ class Claims:
     warn_hours: int
     reply_keep_hours: int
     command_lookback_hours: int
+    #: Every claim run also handles the unhandled commands of other issues this recent (a run GitHub cancelled).
+    catch_up_minutes: int
     poll_interval_seconds: int
     create_wait_seconds: int
     settle_seconds: int
@@ -1351,6 +1353,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         "warn_hours",
         "reply_keep_hours",
         "command_lookback_hours",
+        "catch_up_minutes",
         "poll_interval_seconds",
         "create_wait_seconds",
         "settle_seconds",

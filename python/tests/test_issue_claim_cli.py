@@ -404,13 +404,11 @@ def test_no_expression_reaches_a_script_and_the_checkout_takes_no_other_ref() ->
     assert all(re.search(r"@[0-9a-f]{40}", step["uses"]) for step in job["steps"] if "uses" in step)
 
 
-def test_runs_for_one_issue_queue_and_a_chat_comment_cannot_replace_a_claim() -> None:
-    concurrency = workflow()["concurrency"]
-    assert concurrency["cancel-in-progress"] is False
-    group = concurrency["group"]
-    assert "github.event.issue.number" in group and "pull_request.number" in group
+def test_a_chat_comment_cannot_take_the_pending_place_of_a_claim() -> None:
+    job = workflow()["jobs"]["claim"]
+    group = job["concurrency"]["group"]
     assert "startsWith(github.event.comment.body, '/')" in group and "github.run_id" in group
-    assert "startsWith(github.event.comment.body, '/')" in workflow()["jobs"]["claim"]["if"]
+    assert "startsWith(github.event.comment.body, '/')" in job["if"]
 
 
 def test_the_workflow_runs_the_command_with_the_event_file() -> None:

@@ -5,8 +5,11 @@
 # issue_claim_*.py); this file only starts it. The rules (the command shapes, the limits, the labels, the hours and
 # this schedule) are `claims` in .github/conventions.yml.
 #
-# Every run reads the whole issue from GitHub and handles every command comment not yet handled, oldest first, so a run
-# that GitHub drops (it keeps one pending run per concurrency group) is covered by the next run or by the sweep.
+# One claim job runs at a time for the whole repository (the job's concurrency group), so two runs never act on one
+# issue together. GitHub keeps one pending job per group and cancels the older pending one when a newer one queues;
+# every run reads the whole issue, handles every command not yet handled oldest first, and then also handles the
+# commands other issues received in the last `claims.catch_up_minutes`, so a cancelled job's command is answered by the
+# next job, and anything older by the hourly sweep. The choice and its numbers: docs/guides/issues.md#claiming.
 #
 # The token writes issues (assignees, labels, comments) and reads pull requests (the `Fixes #N` links). The events
 # reach the script as a file ($GITHUB_EVENT_PATH), never as text on a command line: nothing a comment or an issue says
@@ -33,24 +36,28 @@ permissions:
   issues: write
   pull-requests: read
 
-# One run per issue (or pull request: they share one number space) at a time, in order. A pull request run (grouped by
-# the pull request) and the sweep can still touch an issue while its own run works: the script reads the issue's cards
-# again before every write and starts over when one changed. A comment that does not start with a slash cannot be a
-# command: it gets a group of its own and its job is skipped, so it never replaces the pending run of a real `/claim`.
-# `labeled` and `unlabeled` let a paused label (`S-blocked`) stop and start the idle clock at once.
-concurrency:
-  group: >-
-    ${{ (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/'))
-    && format('claim-{0}', github.event.issue.number || github.event.pull_request.number || 'sweep')
-    || format('claim-skip-{0}', github.run_id) }}
-  cancel-in-progress: false
-
 jobs:
   claim:
-    # A comment on a pull request is no claim; a comment that does not start with a slash is no command.
+    # Skipped: a comment on a pull request (no claim), a comment that does not start with a slash (no command), and a
+    # label event for any label but a paused one (`claims.paused_labels`, which stop and start the idle clock; a test
+    # checks the two lists below against it).
     if: >-
-      github.event_name != 'issue_comment'
-      || (!github.event.issue.pull_request && startsWith(github.event.comment.body, '/'))
+      ${{ !((github.event_name == 'issue_comment'
+             && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
+            || (github.event_name == 'issues'
+                && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+                && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name))) }}
+    # One group for every claim job: one at a time, in order. An event that is skipped gets a group of its own, so it
+    # can never take the pending place of a real one.
+    concurrency:
+      group: >-
+        ${{ ((github.event_name == 'issue_comment'
+              && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
+             || (github.event_name == 'issues'
+                 && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+                 && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name)))
+            && format('claim-skip-{0}', github.run_id) || 'claim' }}
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

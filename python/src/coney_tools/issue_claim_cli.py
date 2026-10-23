@@ -103,8 +103,11 @@ def run_event(
         try:
             lines.extend(engine.reconcile(number, activity))
         except ConfigError as error:
+            lines.extend(getattr(error, "lines", []))
             errors.append(f"#{number}: {error}")
-    return lines, errors
+    # Runs queue one at a time and GitHub cancels a pending one: answer the commands such a run left.
+    caught = engine.catch_up(numbers)
+    return lines + caught.lines, errors + caught.errors
 
 
 #: The pull request actions that show the author is working on it (the label and unlabel events do not).

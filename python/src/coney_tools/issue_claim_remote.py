@@ -67,6 +67,8 @@ class LinkedPr:
     #: The login of the pull request's author ("" when GitHub does not say); only the claimant's (or a maintainer's)
     #: pull request counts for the claim.
     author: str = ""
+    #: A draft is still being written: it is activity, but the clock does not wait for its review.
+    draft: bool = False
 
 
 @dataclass(frozen=True)
@@ -300,8 +302,8 @@ class GhRemote:
         """The pull requests that close issue `number`, with the date of each head commit."""
         query = (
             "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){"
-            "closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number state merged author{login} "
-            "commits(last:1){nodes{commit{committedDate}}}}}}}}"
+            "closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number state merged isDraft "
+            "author{login} commits(last:1){nodes{commit{committedDate}}}}}}}}"
         )
         data = self._json(
             [
@@ -328,7 +330,8 @@ class GhRemote:
             commits = (node.get("commits") or {}).get("nodes") or []
             date = commits[0]["commit"].get("committedDate") if commits else None
             author = (node.get("author") or {}).get("login", "")
-            found.append(LinkedPr(int(node["number"]), state, parse_time(date) if date else None, str(author)))
+            draft = bool(node.get("isDraft"))
+            found.append(LinkedPr(int(node["number"]), state, parse_time(date) if date else None, str(author), draft))
         return found
 
     # -- writing

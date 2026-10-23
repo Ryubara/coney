@@ -94,11 +94,17 @@ class FakeGitHub:
         self.items[number] = Item(IssueView(number, "pr", "open", None, True, (), (), ""))
 
     def link_pr(
-        self, issue: int, number: int, state: str = "open", head_date: datetime | None = None, author: str = "alice"
+        self,
+        issue: int,
+        number: int,
+        state: str = "open",
+        head_date: datetime | None = None,
+        author: str = "alice",
+        draft: bool = False,
     ) -> None:
         """Make pull request `number` close `issue`."""
         self.items[issue].prs = [pr for pr in self.items[issue].prs if pr.number != number]
-        self.items[issue].prs.append(LinkedPr(number, state, head_date, author))
+        self.items[issue].prs.append(LinkedPr(number, state, head_date, author, draft))
 
     def say(self, number: int, login: str, body: str, association: str = "NONE") -> int:
         """A person comments; returns the comment id."""

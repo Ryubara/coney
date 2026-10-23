@@ -225,14 +225,15 @@ A third, approved by the maintainer on 2026-10-22: `claim.yml` ([Claiming an iss
 comments (the claim card, the replies, the 48 hour warning) and delete the command comments it has handled. It has
 `contents: read`, `issues: write` and `pull-requests: read`, checks out the default branch only (it runs on
 `issue_comment` and `pull_request_target`, so a stranger's comment and a fork's pull request are served), passes the
-event to the script as a file and never expands a comment into a script. Its concurrency group is one run per issue
-number, and a comment that does not start with a slash gets a group of its own so that it cannot replace the pending run
-of a real command. Each run handles every unhandled command of the issue, so a run GitHub drops is covered by the next
-run or the sweep. Two switches in `claims`, `adopt` and `release`, keep the parts that change existing issues (giving a
-card to a hand assignment, the 48 and 72 hour deadlines) off until the cutover. Whether the Actions token may delete
-another person's comment, and whether it may read a collaborator's permission, are checked on the real repository; the
-design works without both (the card remembers which commands it acted on, and the comment's own association decides for
-the repository's owner).
+event to the script as a file and never expands a comment into a script. Its jobs share one concurrency group for the
+whole repository, so one runs at a time; a comment that does not start with a slash, or a label event for a label that
+is not paused, is skipped in a group of its own so that it cannot replace the pending job of a real command. Each run
+handles every unhandled command of its issue and the recent commands of other issues, so a job GitHub cancels is covered
+by the next one or the sweep. Two switches in `claims`, `adopt` and `release`, keep the parts that change existing
+issues (giving a card to a hand assignment, the 48 and 72 hour deadlines) off until the cutover. Whether the Actions
+token may delete another person's comment, and whether it may read a collaborator's permission, are checked on the real
+repository; the design works without both (the card remembers which commands it acted on, and the comment's own
+association decides for the repository's owner).
 
 ## The /repo-hygiene skill {#hygiene-skill}
 

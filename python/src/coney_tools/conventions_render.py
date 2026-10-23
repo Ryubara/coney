@@ -325,6 +325,11 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"The sweep runs on the cron `{claims.sweep}` (UTC): it repairs cards, answers unhandled commands, releases "
         "claims over the limit and reports issues in progress with nobody assigned."
     )
+    lines += _bullet(
+        "Claim jobs run one at a time for the whole repository; each also handles the commands other issues received "
+        f"in the last {claims.catch_up_minutes} minutes, so a job GitHub cancelled while it waited is answered by the "
+        "next one."
+    )
     return lines
 
 
