@@ -74,11 +74,12 @@ A check against the game's files is **corroboration**, not a level: write `Disc 
 
 A run record, `research/runs/<id>.toml`, holds what a run observed in PCSX2: who ran it, the build, the state it started
 from, the recipe or the method and the values read (numbers and addresses only, no dumps). It is written by the tool
-that drives PCSX2, so the method cannot be paraphrased away, and the page does not repeat it. That tool is planned; while
-`research/runs/` does not exist no run id can name a record, so a page that is not legacy cannot make a runtime claim
-(it says `inferred` or `speculative`), and a runtime claim of the old form (PCSX2 named, with the method) stands on a
-page that is listed as legacy. Its method goes to the page's *How this was checked*
-section when the page is next restructured.
+that drives PCSX2, so the method cannot be paraphrased away, and the page does not repeat it. The commands that write
+one are in [Run records](#run-records). While `research/runs/` does not exist no run id can name a record, so a
+page that is not legacy cannot make a runtime claim until the first record is committed (the check names the
+command; a claim nobody observed is `speculative`, and a PCSX2 observation is never written as `inferred`), and a
+runtime claim of the old form (PCSX2 named, with the method) stands on a page that is listed as legacy. Its method
+goes to the page's *How this was checked* section when the page is next restructured.
 
 Where the level sits on the page is the page standard's rule, not a style: in the claim's block, in the Evidence cell of
 its table row, or in the lead line under a `###` heading ([Evidence levels on a page](writing-docs.md#evidence-levels)).

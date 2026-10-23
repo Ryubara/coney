@@ -465,3 +465,67 @@ def test_every_research_page_of_this_repository_meets_the_standard_or_is_excused
 
 def test_the_legacy_file_of_this_repository_lists_nothing_that_passes() -> None:
     assert docs_legacy.problems(REPO, docs_check.context_for(REPO)) == []
+
+
+# --- an old-form runtime claim on a touched legacy page ---------------------------------------------------------------
+
+
+def test_an_old_form_runtime_claim_is_graded_in_the_touched_section_only() -> None:
+    # The Verified line does not name PCSX2, so neither claim is excused as an old-form one by itself.
+    claim = f"It spins at {IN_FUNCTION} (confirmed (runtime)).\n"
+    old = page(claim, sections={"Data": claim}, meta="")
+    lines = old.splitlines()
+    behaviour_line, data_line = (i + 1 for i, line in enumerate(lines) if line == claim.strip())
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 2}})
+    assert rules_of(findings(RESEARCH_PATH, old, listed)) == []
+    touched = findings(RESEARCH_PATH, old, listed, Touch(frozenset({data_line})))
+    errored = [(item.rule, item.line) for item in touched if item.severity == "error"]
+    # The front matter is fixed page-wide; the claim in the section the change touches is graded; the other waits.
+    assert errored == [("front-matter", 1), ("evidence", data_line)]
+    assert [item.line for item in touched if item.rule == "evidence" and item.severity == "warning"] == [behaviour_line]
+
+
+def test_a_refused_run_id_on_a_touched_legacy_page_stays_page_wide() -> None:
+    claim = f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n"
+    old = page(claim, sections={"Data": "Nothing more to say.\n"}, meta="")
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 1}}, runs=frozenset({"r-2"}))
+    data_line = old.splitlines().index("Nothing more to say.") + 1
+    touched = findings(RESEARCH_PATH, old, listed, Touch(frozenset({data_line})))
+    assert [item.rule for item in touched if item.severity == "error"] == ["front-matter", "evidence"]
+
+
+# --- the data the legacy file's truth depends on ----------------------------------------------------------------------
+
+LISTING = "docs/progress/ghidra-functions.tsv"
+
+
+def test_the_legacy_file_is_checked_when_the_function_listing_changes(tmp_path: Path) -> None:
+    root = checkout(tmp_path)
+    # The listing holds one function, far from the old page's address, so that address resolves nowhere.
+    write(root, LISTING, "0x00200000\t64\tOther_Function\t1\n")
+    write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
+    assert "address-resolve" in (root / LEGACY_FILE).read_text(encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "listing")
+    git(root, "checkout", "-q", "-B", "main")
+    git(root, "checkout", "-q", "-b", "work2")
+    assert docs_check.check_changed(root, "main", context(root)).failed == {}
+    # Only the listing changes: it now holds the function that contains the old page's address, so the page passes
+    # `address-resolve` and its entry is stale. The change touches no research page, yet the file must be checked.
+    write(root, LISTING, "0x00123400\t256\tWidget_Spin\t1\n0x00200000\t64\tOther_Function\t1\n")
+    result = docs_check.check_changed(root, "main", context(root))
+    assert any("now passes 'address-resolve'" in item.message for item in result.failed[LEGACY_FILE])
+
+
+def test_every_file_the_legacy_file_depends_on_triggers_its_check() -> None:
+    files = research().files
+    names = [
+        files.ghidra_functions,
+        files.elf_sections,
+        files.legacy,
+        f"{files.runs}/r-1.toml",
+        f"{files.functions}/a.toml",
+    ]
+    for name in names:
+        assert docs_check.legacy_relevant([name], research()), name
+    assert not docs_check.legacy_relevant(["research/missions.yaml", "docs/guides/other.md"], research())

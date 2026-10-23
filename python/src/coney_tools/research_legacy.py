@@ -13,13 +13,15 @@ the page ends the excuse, except for two things that keep the page moving
 (docs/guides/writing-docs.md#legacy-pages, the maintainer's decision "every touch fixes the mechanical rules page-wide
 and grades the touched section"):
 
-* grading: an address with no level (`Finding.by_section`) is an error in a section (a level-2 heading) the change
-  touches and stays a warning elsewhere;
+* grading (`Finding.by_section`): an address with no level, and a runtime claim of the old form (`confirmed (runtime)`
+  with no run id, on a page that does not name PCSX2 where it explains them), is an error in a section (a level-2
+  heading) the change touches and stays a warning elsewhere;
 * `length`: waived until the page's restructure.
 
 Every other finding of a listed rule (front matter, sections, the Verified line, address forms, addresses that do not
-resolve, Ghidra's names, copies, dates, stale wording, refused level spellings and run ids) is an error on a touched
-page. A rule the page now passes is an error until it is removed from the file, so the file only shrinks.
+resolve, Ghidra's names, copies, dates, stale wording, refused level spellings and run ids that name no record) is an
+error on a touched page. A rule the page now passes is an error until it is removed from the file, so the file only
+shrinks.
 
 No new page may be listed, and nothing but a scan with `coney-tools docs legacy --init` ever adds one. The numbers
 tell people deciding what to fix first how much is left; they are never compared with a page.

@@ -25,7 +25,7 @@ from pathlib import Path
 from coney_tools import docs_legacy, local_gate
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import Research, load_conventions
 from coney_tools.docs_page import Finding, Page, kind_of, read_page
 from coney_tools.docs_style import check_style
 from coney_tools.research_catalog import load_catalog
@@ -215,30 +215,37 @@ def change_touches(root: Path, base: str, names: Iterable[str]) -> dict[str, Tou
     return touches
 
 
-#: What a change can touch that moves the legacy file's truth without editing the file: a research page, the research
-#: data, the conventions and the code of the checks.
-_LEGACY_INPUTS = ("docs/research/", "research/", ".github/conventions.yml", "python/src/coney_tools/research_")
+#: What a change can touch that moves the legacy file's truth without editing the file: a research page, the
+#: conventions and the code of the checks. The data files the checks read are named by `research.files`.
+_LEGACY_INPUTS = ("docs/research/", ".github/conventions.yml", "python/src/coney_tools/research_")
 
 
-def _legacy_relevant(names: Iterable[str]) -> bool:
-    """Whether the change can make the legacy file stale: it touches a research page, research data, the conventions or
-    the checks themselves."""
+def legacy_relevant(names: Iterable[str], research: Research) -> bool:
+    """Whether the change can make the legacy file stale: it touches a research page, one of the data files or folders
+    the research checks read (`research.files`: the function listing, the sections, the run records, the function
+    database and the legacy file itself), the conventions or the checks themselves."""
+    files = research.files
+    data = (files.ghidra_functions, files.elf_sections, files.legacy)
+    folders = (f"{files.runs.rstrip('/')}/", f"{files.functions.rstrip('/')}/")
     return any(
-        name.startswith(_LEGACY_INPUTS) or (name.startswith("python/src/coney_tools/docs_") and name.endswith(".py"))
+        name.startswith(_LEGACY_INPUTS)
+        or name in data
+        or name.startswith(folders)
+        or (name.startswith("python/src/coney_tools/docs_") and name.endswith(".py"))
         for name in names
     )
 
 
 def check_changed(root: Path, base: str, context: Context) -> Result:
     """Check the pages changed since the branch left `base`, committed or not, untracked pages included. When the change
-    can make the legacy file stale (`_legacy_relevant`), the file is checked as a whole too (`docs_legacy.problems`)."""
+    can make the legacy file stale (`legacy_relevant`), the file is checked as a whole too (`docs_legacy.problems`)."""
     names = local_gate.changed_files(root, base)
     result = check_files(root, names, context, change_touches(root, base, names))
-    legacy_file = context.research.research.files.legacy if context.research else ""
-    if legacy_file and _legacy_relevant(names):
+    if context.research is not None and legacy_relevant(names, context.research.research):
         # A page that now passes must leave the file, and a changed file may only have shrunk.
         found = [Finding("legacy", 1, line) for line in docs_legacy.problems(root, context, base)]
         if found:
+            legacy_file = context.research.research.files.legacy
             result.pages.append(legacy_file)
             result.findings[legacy_file] = found
     return result
