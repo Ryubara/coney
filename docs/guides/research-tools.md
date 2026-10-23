@@ -5,7 +5,7 @@ window takes the keyboard focus, and how the runtime passes are done by driving 
 and the claims on the copies). Recording and comparing runs is on [Traces and playthroughs](research-traces.md); the
 rest of the research workflow is listed in [its overview](research-workflow.md#pages).
 
-## Tools
+## The tools {#tools}
 
 - **Ghidra with ghidra-mcp.** Static analysis of `SLUS_212.15`, with the Emotion Engine processor extension; the
   ghidra-mcp server lets agents drive it. Setup: [Ghidra + ghidra-mcp](ghidra.md). The Ghidra project holds
