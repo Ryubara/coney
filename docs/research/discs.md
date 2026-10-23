@@ -1,7 +1,9 @@
+---
+kind: format
+---
 # The discs Coney installs from
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); read from the mounted disc
-and from its image on 2026-10-20.
+Verified against: `SLUS_212.15` (NTSC-U), the mounted disc and its ISO image (SHA-1s in the table).
 
 ## Purpose
 
@@ -21,10 +23,11 @@ Nothing in the game reads these lists: the console boots the executable `SYSTEM.
 
 ### The PS2 disc, NTSC-U (SLUS-21215) {#ps2-ntsc-u}
 
-Every file on the disc: the root, and the folders `IOP/`, `MODULES/` and `PSS/` directly below it. The mounted disc
-and its ISO image (`Warriors, The (USA) (En,Fr,De,Es,It).iso`, 4,295,917,568 bytes, image SHA-1
-`3b68f15cc0c831597467b477ecd9c0944b08c17f`) list the same 29 files with the same SHA-1s. Confirmed (runtime: every
-file read whole and hashed, 2026-10-20). The type is the one `index/install.json` counts the file under.
+Every file on the disc: the root, and the folders `IOP/`, `MODULES/` and `PSS/` directly below it. The mounted disc and
+its ISO image (`Warriors, The (USA) (En,Fr,De,Es,It).iso`, 4,295,917,568 bytes, image SHA-1
+`3b68f15cc0c831597467b477ecd9c0944b08c17f`) list the same 29 files with the same SHA-1s. Inferred from every file of
+both read whole and hashed ([How this was checked](#how-this-was-checked)). The type is the one `index/install.json`
+counts the file under.
 
 | File | Type | Bytes | SHA-1 |
 | --- | --- | ---: | --- |
@@ -94,9 +97,15 @@ a full install). A change to the table is a change to this page in the same comm
 
 ## Open questions
 
-1. **Other releases.** The PAL and Japanese discs, and any later NTSC-U printing, are not listed: their files, sizes
-   and SHA-1s are unknown, and so is whether their executable differs from `SLUS_212.15` in code (which every address
-   in this documentation assumes). A player with one gets "another release"; adding it needs its list and a check of
-   the executable against the research.
-2. **The Xbox disc.** Its archive and movies are planned as a second install source
-   ([Xbox assets](xbox-assets.md#coneys-implementation)); its file list goes on this page with that unit.
+- **Other releases** {#q-other-releases}: the PAL and Japanese discs, and any later NTSC-U printing, are not listed:
+  their files, sizes and SHA-1s are unknown, and so is whether their executable differs from `SLUS_212.15` in code
+  (which every address in this documentation assumes). A player with one gets "another release"; adding it needs its
+  list and a check of the executable against the research.
+- **The Xbox disc** {#q-xbox-disc}: its archive and movies are planned as a second install source
+  ([Xbox assets](xbox-assets.md#coneys-implementation)); its file list goes on this page with that unit.
+
+## How this was checked
+
+On 2026-10-20 every file of the mounted disc and of its ISO image was read whole and hashed (Python's `hashlib`,
+SHA-1); the two lists agreed file for file. Full installs from both sources (2026-10-21) and from the image again
+(2026-10-23) copied the 29 files with these SHA-1s and gave the same disc digest.
