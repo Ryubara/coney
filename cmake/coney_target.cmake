@@ -13,6 +13,13 @@ function(coney_target_defaults target)
     if(MSVC)
         # /fp:precise is the default; stated so the float rules below read the same on every compiler.
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8 /fp:precise)
+        # C4062 is an enumerator a `switch` over an enum does not handle (and which has no `default`). It is off by
+        # default in MSVC, but GCC and Clang (-Wswitch, in -Wall) refuse it, so CI found it a build later. For cl.exe
+        # only: clang-cl, which CMake also calls MSVC, gets -Wswitch from /W4 (-Wall -Wextra) and is not given a flag
+        # it might not take.
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            target_compile_options(${target} PRIVATE /w44062)
+        endif()
         if(CONEY_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE /WX)
         endif()

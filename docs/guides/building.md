@@ -194,9 +194,14 @@ does not pick up by itself (`coney-tools build --configure` forces it). Each pre
 | `dev` | Debug | yes | day-to-day work |
 | `playtest` | RelWithDebInfo | yes | an optimised build that can still be debugged, with the debug menus: the one the maintainers play-test |
 | `release` | Release | no | the game as a player gets it, the build the launcher installs ([below](#debug-tools)) |
-| `ci` | Debug, warnings as errors | yes | what CI builds; run it before a pull request |
+| `ci` | Debug, warnings as errors | yes | what CI builds; run it before a pull request, and for the local check of a unit |
 | `ci-release` | Release, warnings as errors | no | what CI builds of the release build |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | yes | memory and undefined-behaviour bugs; Linux and macOS only |
+
+**The `ci` presets show CI's compiler errors locally.** They add `/WX` on MSVC, and every preset gives `cl.exe`
+`/w44062`, MSVC's warning C4062 for a `switch` that misses an enumerator, which CI's GCC and Clang refuse
+([Warnings](conventions.md#warnings) says what it is and why clang-cl does not get it). Build a unit with `ci`
+(`coney-tools build --preset ci --test`) so these show before CI does.
 
 On MSVC every preset keeps debug information in each object (`/Z7`): [Debug information](#debug-info).
 

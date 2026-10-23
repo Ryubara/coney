@@ -57,8 +57,13 @@ that reports C++20 concepts support in full, which Clang first does in version 1
 ([What you need](building.md#what-you-need)). We do not use C++ modules: compiler and CMake support for them is still
 uneven across these four, and one platform failing to build is worse than the benefit.
 
-Every build is warning-free, and CI treats warnings as errors (`/W4 /WX` on MSVC; `-Wall -Wextra -Wpedantic
--Werror` elsewhere). A warning on one compiler is often a real portability bug on another.
+### Warnings {#warnings}
+
+Every build is warning-free, and CI treats warnings as errors (`/W4 /w44062 /WX` on cl.exe, `/W4 /WX` on clang-cl;
+`-Wall -Wextra -Wpedantic -Werror` elsewhere). `/w44062` turns on C4062, an enumerator that a `switch` over an enum
+does not handle, which MSVC leaves off but `-Wswitch` (in `-Wall`) reports on GCC and Clang. It is given to cl.exe
+only: clang-cl, which CMake also calls MSVC, has `-Wswitch` through its `/W4` and gets no `/w44062`, because a flag it
+might not take would fail under `/WX`. A warning on one compiler is often a real portability bug on another.
 
 ### Portability traps {#portability-traps}
 
