@@ -44,8 +44,9 @@ def make_root(
     functions: str = ENTRY,
     listing: dict[int, str] | None = None,
     extra_pages: dict[str, str] | None = None,
+    system: str = "combat",
 ) -> Path:
-    """A made-up checkout with one page, one source file, a Ghidra listing and a `combat` system file."""
+    """A made-up checkout with one page, one source file, a Ghidra listing and a system file (`combat`)."""
     pages = {"combat/grabs.md": GRABS, **(extra_pages or {})}
     for name, text in pages.items():
         path = tmp_path / "docs" / "research" / name
@@ -59,7 +60,7 @@ def make_root(
     listing_path = tmp_path / progress_research.LISTING_FILE
     listing_path.parent.mkdir(parents=True, exist_ok=True)
     listing_path.write_text(progress_research.format_listing(listed), encoding="utf-8")
-    write_systems(tmp_path, {"combat": functions})
+    write_systems(tmp_path, {system: functions})
     return with_conventions(tmp_path)
 
 
@@ -287,7 +288,7 @@ def add_binding_page(root: Path, text: str = "# Script bindings\n\n## StartGrab 
 
 def test_a_binding_page_and_its_section_are_checked_like_a_research_page(tmp_path: Path) -> None:
     """The entry may point at docs/references/bindings; the file and the anchor must exist."""
-    root = make_root(tmp_path, BINDING_ENTRY)
+    root = make_root(tmp_path, BINDING_ENTRY, system="scripting")
     [error] = run(root).errors
     assert "docs/references/bindings/combat.md does not exist" in error
     add_binding_page(root, "# Script bindings\n\n## Other {#other}\n")
@@ -301,7 +302,7 @@ def test_a_binding_page_and_its_section_are_checked_like_a_research_page(tmp_pat
 def test_a_binding_page_is_not_held_to_page_ownership(tmp_path: Path) -> None:
     """A page that owns the address is a research page; the binding reference owns nothing, so no owner is named."""
     owner = '---\nkind: topic\nsystem: combat\nowns:\n  functions: ["0x00100200"]\n---\n# Holds\n'
-    root = make_root(tmp_path, BINDING_ENTRY, extra_pages={"combat/holds.md": owner})
+    root = make_root(tmp_path, BINDING_ENTRY, extra_pages={"combat/holds.md": owner}, system="scripting")
     add_binding_page(root)
     assert run(root).errors == []
 
