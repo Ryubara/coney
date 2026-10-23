@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pine_support import refused_port
 from test_pcsx2 import FakeGame, _repo, _serve
 
 from coney_tools import pcsx2_cli
@@ -204,9 +205,7 @@ def test_the_client_names_a_refusal(debug_server: Callable[..., FakeDebugServer]
 
 
 def test_no_debug_server_is_a_clear_error() -> None:
-    with socket.create_server(("127.0.0.1", 0)) as probe:
-        port = probe.getsockname()[1]
-    with pytest.raises(DebugServerError, match=f"no debug server on port {port}"):
+    with refused_port() as port, pytest.raises(DebugServerError, match=f"no debug server on port {port}"):
         DebugClient(port, connect_timeout=1)
 
 

@@ -13,6 +13,7 @@ from collections.abc import Iterator, Sequence
 from pathlib import Path
 
 import pytest
+from pine_support import refused_port
 
 from coney_tools import pcsx2_state
 from coney_tools.config import ConfigError
@@ -191,9 +192,7 @@ def test_the_client_reads_and_writes_over_a_socket(fake_pine: tuple[FakeGame, in
 
 
 def test_no_server_is_a_clear_error() -> None:
-    with socket.create_server(("127.0.0.1", 0)) as probe:
-        port = probe.getsockname()[1]
-    with pytest.raises(PineError, match="no PINE server"):
+    with refused_port() as port, pytest.raises(PineError, match="no PINE server"):
         PineClient(port, timeout=1.0)
 
 
