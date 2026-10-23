@@ -280,6 +280,44 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
     return found
   }
 
+  /** Whether `node` is a const of the mod's own holding an object literal of plain `key: literal` members. */
+  function isTable(node) {
+    node = unwrap(node)
+    const init = ts.isIdentifier(node) ? constInitializer(node) : null
+    if (init === null || !ts.isObjectLiteralExpression(init) || !isOwn(init)) return false
+    const isLiteral = value =>
+      ts.isStringLiteralLike(value) ||
+      ts.isNumericLiteral(value) ||
+      [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(value.kind) ||
+      (ts.isIdentifier(value) && value.text === 'undefined')
+    return init.properties.every(
+      member =>
+        ts.isPropertyAssignment(member) &&
+        (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name)) &&
+        isLiteral(member.initializer),
+    )
+  }
+
+  /**
+   * Whether `access` reads a value out of a table of the mod's own (or a choice of two): `COLORS[tone]`. Whatever the
+   * key, it reaches a literal or a member every plain object has, and the value is only used, never read further,
+   * called or written.
+   */
+  function isLookup(access) {
+    const object = unwrap(access.expression)
+    const tables = ts.isConditionalExpression(object) ? [object.whenTrue, object.whenFalse] : [object]
+    if (!tables.every(isTable)) return false
+    let outer = access
+    while (outer.parent !== undefined && isWrapper(outer.parent)) outer = outer.parent
+    const use = outer.parent
+    const isAssignment = kind => kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment
+    if ((ts.isPropertyAccessExpression(use) || ts.isElementAccessExpression(use)) && use.expression === outer) return false
+    if ((ts.isCallExpression(use) || ts.isNewExpression(use) || ts.isTaggedTemplateExpression(use)) && (use.expression ?? use.tag) === outer) return false
+    if (ts.isBinaryExpression(use) && use.left === outer && isAssignment(use.operatorToken.kind)) return false
+    if (ts.isDeleteExpression(use) || ts.isPrefixUnaryExpression(use) || ts.isPostfixUnaryExpression(use)) return false
+    return true
+  }
+
   /** The function an argument is, if it is one written in place. */
   function inlineFunction(node) {
     node = unwrap(node)
@@ -390,6 +428,6 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
 
   return {
     unwrap, isName, plainProperties, constText, NOT_THE_COMMAND, snapshotProblem, isRunOptions, inlineFunction,
-    passingHookProblems, sessionStartProblems,
+    passingHookProblems, sessionStartProblems, isLookup,
   }
 }

@@ -154,7 +154,7 @@ uv run --project python coney-tools conclave snapshot --json --github --unit fix
 
 Without `--github` it reads only the machine, in about a second. `--github` adds the claim cards, the open and recently
 merged pull requests (with the [`repo pr-health`](coney-tools-repo.md#repo-pr-health) causes) and the open issues the
-claims, the units and `P-critical` name, through `gh`, in 8 to 14 seconds. `--unit TASK` keeps one unit's row (exit 2
+claims, the units and `P-critical` name, through `gh`, in about 6.6 seconds. `--unit TASK` keeps one unit's row (exit 2
 when there is none). The sections, each with an `error` that is `null` when it was read, and the rest of the shape are
 in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and 2 when the command cannot run at
 all. The limits and intervals it sends are the `conclave` section of [.github/conventions.yml](repo:.github/conventions.yml).

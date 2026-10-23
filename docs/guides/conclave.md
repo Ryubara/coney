@@ -88,8 +88,10 @@ alias, a spread or a cast cannot hide a call. It refuses:
   event on, `session.start` waits only for the engine's quick calls (any but `$.process.run`, directly or in a function
   of the mod's own), never for the snapshot command or a promise of its own, so a session start never waits for
   Conclave. `$.command.register` takes only the name `'conclave'` and a description, and `$.ui.open` only the id
-  `'conclave'` and a title. Each hook is an inline function, which the check can read, and the registration `on(...)`
-  returns is used only as a statement or with that `.catch`.
+  `'conclave'` and a title. Each hook (and each `.catch`) is an arrow function written in place, which the check can
+  read and which has no `arguments` or `this` to reach `e` and `next` another way, and the registration `on(...)`
+  returns is used only as a statement or with that `.catch`. No code of the mod waits in a `for await` loop or declares
+  with `using`.
 - **Engine calls beyond the eleven the mod needs.** Every value of type `EngineInterface` (the `$` of a hook, or the
   parameter of any helper, under any name) may only be the object of `$.noun.method`, called, for the clock, the command
   registration, the one process, the store and the UI, or `$.plugin.root`. So no `$.session.` or `$.model.` call, tool,
@@ -100,13 +102,14 @@ alias, a spread or a cast cannot hide a call. It refuses:
 - **Anything that hides a type from the check.** `any` anywhere in the mod, a `@ts-ignore`, `@ts-expect-error` or
   `@ts-nocheck` comment, and any type error in a runtime source (the check compiles it against the engine's types).
   Sources are TypeScript only, so there is no plain script the check cannot see into.
-- **Code loaded or built at run time**, an `import` of anything but `claude-code` and the mod's own checked sources
-  (an import into `tests/` would hide code from the check), and the globals a hooks module has no business with
-  (`fetch`, `globalThis`, `process`, `require`, `eval`, `Function`, `Reflect`, the timers and the like). The ways to the
-  `Function` constructor are closed too: no `constructor` name or string (`.constructor`, `['constructor']`, `'con' +
-  'structor'`), no prototype reflection (`getPrototypeOf`, `getOwnPropertyDescriptor`, `__proto__`), no function or
-  value of unknown type read by a computed name (`fn[k]`, however `k` is built) and no `as unknown as` cast, which
-  hides a value's type from the check.
+- **Code loaded or built at run time**, an `import` of anything but `claude-code` and the mod's own checked sources (an
+  import into `tests/` would hide code from the check), and the globals a hooks module has no business with (`fetch`,
+  `globalThis`, `process`, `require`, `eval`, `Function`, `Reflect`, `arguments`, the timers and the like). The ways to
+  the `Function` constructor are closed too: no `constructor` name or string (`.constructor`, `['constructor']`,
+  `'con' + 'structor'`), no prototype reflection (`getPrototypeOf`, `getOwnPropertyDescriptor`, `__proto__`), no
+  property read by a name computed at run time (`x[k]`, whatever the type of `x` says) except a value read out of one
+  of the mod's own tables of literals (`COLORS[tone]`, never read further, called or written) and no `as unknown as`
+  cast, which hides a value's type from the check.
 - **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
   and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
   exactly `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag or another folder),
@@ -180,7 +183,7 @@ snapshot carries in `config`, except the three the mod needs before any snapshot
 | Read | Command | Every | Cost measured |
 | --- | --- | --- | --- |
 | Local | `snapshot --json` | `local_seconds` (15) | about 1 s warm |
-| GitHub | `snapshot --json --github` | `github_seconds` (60) while the pane is shown, `github_idle_seconds` (300) while it is not | 8 to 14 s, a handful of `gh` calls |
+| GitHub | `snapshot --json --github` | `github_seconds` (60) while the pane is shown, `github_idle_seconds` (300) while it is not | about 6.6 s, a handful of `gh` calls |
 
 A read never starts while the last one runs. A failed read keeps the last good one, and the band marks it stale; a local
 read keeps the pull requests and claim overlaps of the last GitHub read.

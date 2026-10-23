@@ -148,7 +148,7 @@ CROSSINGS = [
     ("on('session.start', async ($, e, next) => { await next(e) })", "session.start must end"),
     ("on('session.start', async ($, e, next) => next({ ...e, cwd: '' }))", "session.start must end"),
     ("on('session.start', async ($, e, next) => { const again = e; return next(again) })", "session.start must end"),
-    ("on('session.start', fn)", "inline function"),
+    ("on('session.start', fn)", "arrow function"),
     ("on('session.start', async ($, e, next) => next(e)).catch(() => ({ cwd: '' }))", "must end every path in next(e)"),
     ("const reg = on('session.start', async ($, e, next) => next(e))", "registration"),
     ("on('agent.offer', async () => ({ isOffered: false }))", "agent.offer must end"),
@@ -320,6 +320,129 @@ CROSSINGS = [
     ("const k = ['con', 'structor'].join('')\nconst F = (() => {})[k]", "computed name"),
     ("const k = ['con', 'structor'].join('')\nconst F = (JSON.parse('{}') as any)[k]", "computed name"),
     ("const F = Object.getPrototypeOf(async () => {})", "getPrototypeOf"),
+    # Round 5 review: the probes of probe6.py and probe7.py.
+    ("function f(_a: unknown) { return arguments.length }", "global arguments"),
+    (
+        "on('session.start', async function ($, e, next) {\n  await arguments[2]({ ...arguments[1], cwd: 'x' })\n"
+        "  return next(e)\n})",
+        "the hook of session.start must be an arr",
+    ),  # start_arguments_next
+    (
+        "on('classic.SessionStart', async function ($, e, next) {\n  const r = await next(e)\n"
+        "  await arguments[2](arguments[1])\n  return r\n})",
+        "the hook of classic.SessionStart must be",
+    ),  # ss_arguments_next
+    (
+        "on('agent.offer', async function ($, e, next) {\n  const [, ev, go] = [...arguments]\n  await go(ev)\n"
+        "  return next(e)\n})",
+        "the hook of agent.offer must be an arrow",
+    ),  # offer_arguments_rest
+    (
+        "on('session.start', async ($, e, next) => {\n"
+        "  for await (const _ of [new Promise<void>(() => undefined)]) void _\n  return next(e)\n})",
+        "uses `for await`",
+    ),  # start_for_await
+    (
+        "on('session.start', async ($, e, next) => {\n"
+        "  await using _x = { [Symbol.asyncDispose]: () => new Promise<void>(() => undefined) }\n  return next(e)\n})",
+        "declares with `using` or `await using`",
+    ),  # start_await_using
+    (
+        "on('session.start', async ($, e, next) => {\n  const p = new Promise<void>(() => undefined)\n"
+        "  return p.then(() => next(e)) as never\n})",
+        "session.start must end every path in nex",
+    ),  # start_yield_star_like
+    (
+        "async function quick(): Promise<void> { await new Promise<void>(() => undefined) }\nconst alias = quick\n"
+        "on('session.start', async ($, e, next) => {\n  await alias()\n  return next(e)\n})",
+        "session.start waits for something other",
+    ),  # start_own_fn_quick_then_hang
+    (
+        "function snap() { return $.process.run(['uv', 'run', '-q', '--project', "
+        "`${checkoutOf($.plugin.root)}/python`, 'coney-tools', 'conclave', 'snapshot', '--json']) }\n"
+        "on('session.start', async ($, e, next) => {\n  await snap()\n  return next(e)\n})",
+        "session.start waits for something other",
+    ),  # start_own_fn_returns_run
+    (
+        "const o = { async go() { await new Promise<void>(() => undefined) } }\n"
+        "on('session.start', async ($, e, next) => {\n  await o.go()\n  return next(e)\n})",
+        "session.start waits for something other",
+    ),  # start_own_method_obj
+    (
+        "on('classic.SessionStart', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const box = { get v() { return r } }\n  Object.assign(box.v as object, {})\n  return r\n})",
+        "classic.SessionStart must begin with `co",
+    ),  # ss_r_via_this_obj
+    (
+        "on('session.start', async ($, e, next) => {\n  { const next2 = 1; void next2 }\n  return (next)(e)\n})",
+        "session.start uses `next` other than as",
+    ),  # start_next_shadow_param
+    (
+        "const holder: { [k: string]: unknown } = Object.assign(() => undefined, {})\n"
+        "const k = ['con', 'structor'].join('')\nconst F = holder[k] as (s: string) => () => unknown\nF('return 1')()",
+        "reads a property by a computed name",
+    ),  # holder_index
+    (
+        "const f = (() => undefined) as object as Record<string, unknown>\nconst k = ['con', 'structor'].join('')\n"
+        "const F = f[k] as (s: string) => () => unknown",
+        "reads a property by a computed name",
+    ),  # obj_cast_index
+    (
+        "const k = ['con', 'structor'].join('')\nconst F = new Map([[0, (() => undefined)]]).get(0)?.[k as 'name']",
+        "reads a property by a computed name",
+    ),  # map_from_entries
+    (
+        "const k = ['con', 'structor'].join('') as 'name'\nconst F = (async () => undefined)[k]",
+        "reads a property by a computed name",
+    ),  # async_fn_ctor_via_key_cast
+    ("const g = Object.prototype.__lookupGetter__", 'names "__lookupGetter__"'),  # lookupgetter
+    (
+        "const c = checkoutOf($.plugin.root) + '/..'\n"
+        "$.process.run(['uv', 'run', '-q', '--project', `${checkoutOf($.plugin.root)}/python`, 'coney-tools', "
+        "'conclave', 'snapshot', '--json'], { cwd: c })",
+        "passes options to $.process.run other th",
+    ),  # cwd_const_other
+    (
+        "$.process.run(['uv', 'run', '-q', '--project', `${checkoutOf($.plugin.root)}/python`, 'coney-tools', "
+        "'conclave', 'snapshot', '--json'], { env: { UV_PROJECT_ENVIRONMENT: venvOf(checkoutOf($.plugin.root)) + 'x' "
+        "} })",
+        "passes options to $.process.run other th",
+    ),  # venv_other
+    (
+        "$.process.run(['uv', 'run', '-q', '--project', `${checkoutOf($.plugin.root)}/python `, 'coney-tools', "
+        "'conclave', 'snapshot', '--json'])",
+        "runs the snapshot command with a project",
+    ),  # dir_tail_space
+    (
+        "const a = ['uv', 'run', '-q', '--project', `${checkoutOf($.plugin.root)}/python`, 'coney-tools', 'conclave', "
+        "'snapshot', '--json']\na.length = 0\n$.process.run(a)",
+        "changes the snapshot command array other",
+    ),  # argv_let_mutated
+    (
+        "const a = ['uv', 'run', '-q', '--project', `${checkoutOf($.plugin.root)}/python`, 'coney-tools', 'conclave', "
+        "'snapshot', '--json']\na[4] = 'x'\n$.process.run(a)",
+        "changes the snapshot command array other",
+    ),  # argv_index_write
+    (
+        "on('session.start', async function ($, e, next) {\n"
+        "  void arguments[2]({ ...arguments[1], isInteractive: false })\n  return next(e)\n})",
+        "the hook of session.start must be an arr",
+    ),  # start_arguments_rewrite_noawait
+    (
+        "on('session.start', async function ($, e, next) {\n  const go = arguments[2]\n"
+        "  return next(e) && go({ ...e })\n})",
+        "the hook of session.start must be an arr",
+    ),  # start_arguments_return
+    (
+        "on('agent.offer', async ($, e, next) => next(e)).catch(async function ($, e, next) { void "
+        "arguments[2](arguments[1]); return next(e) })",
+        "uses the registration that on(...) retur",
+    ),  # catch_arguments
+    (
+        "const k = ['con', 'structor'].join('')\n"
+        "const F = ({ f: () => undefined } as Record<string, object>)['f'] as Record<string, unknown>\nvoid (F[k])",
+        "reads a property by a computed name",
+    ),  # fn_with_keys_index
     ("$.command.register({ name: 'conclave', description: 'x', immediate: true })", "takes only name and description"),
     ("$.ui.open({ id: 'conclave', title: 'x', focus: true })", "takes only id and title"),
     ("const d = Object.getOwnPropertyDescriptor(Object, 'x')", "getOwnPropertyDescriptor"),

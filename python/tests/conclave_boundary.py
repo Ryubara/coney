@@ -94,6 +94,10 @@ EXACT_WORDS = [
     "getOwnPropertyDescriptor",
     "getOwnPropertyDescriptors",
     "__proto__",
+    "__lookupGetter__",
+    "__lookupSetter__",
+    "__defineGetter__",
+    "__defineSetter__",
 ]
 #: The one name Conclave gives its command and its pane; it is also the filter of its `command.run` and `ui.render`.
 NAME = "conclave"
@@ -118,6 +122,7 @@ BANNED_GLOBALS = [
     "setImmediate",
     "queueMicrotask",
     "Reflect",
+    "arguments",
 ]
 #: The one command the mod runs, through `$.process.run`:
 #: `uv run -q --project <dir> coney-tools conclave snapshot --json`,
