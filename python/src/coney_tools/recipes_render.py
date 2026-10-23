@@ -292,9 +292,10 @@ def run_render(check_only: bool) -> int:
         for name in [*changed, *removed]:
             print(f"  {name}", file=sys.stderr)
         return 1
+    kept = f", {len(foreign)} not generated" if foreign else ""
     if check_only:
-        print(f"0 page(s) stale; {len(wanted)} in all")
+        print(f"0 page(s) stale{kept}; {len(wanted)} in all")
     else:
         gone = f", {len(removed)} removed" if removed else ""
-        print(f"{len(changed)} page(s) written{gone}; {len(wanted)} in all")
+        print(f"{len(changed)} page(s) written{gone}{kept}; {len(wanted)} in all")
     return 1 if foreign else 0

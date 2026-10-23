@@ -422,9 +422,14 @@ def test_render_never_deletes_a_page_it_did_not_write(
     mine = root / recipes_render.PAGES_DIR / "hand-written.md"
     mine.parent.mkdir(parents=True)
     mine.write_text("# Written by a person\n", encoding="utf-8")
-    for check_only in (True, False):
-        assert recipes_render.run_render(check_only) == 1
-        assert "hand-written.md" in capsys.readouterr().err and mine.read_text(encoding="utf-8").startswith("# Written")
+    assert recipes_render.run_render(check_only=False) == 1  # it writes the pages, then reports the foreign one
+    captured = capsys.readouterr()
+    assert "hand-written.md" in captured.err and mine.read_text(encoding="utf-8").startswith("# Written")
+    assert captured.out == "10 page(s) written, 1 not generated; 10 in all\n"
+    assert recipes_render.run_render(check_only=True) == 1  # everything else is current: only the foreign page counts
+    captured = capsys.readouterr()
+    assert "hand-written.md" in captured.err and mine.read_text(encoding="utf-8").startswith("# Written")
+    assert captured.out == "0 page(s) stale, 1 not generated; 10 in all\n"
 
 
 # --- arguments --------------------------------------------------------------------------------------------------------
