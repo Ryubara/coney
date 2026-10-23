@@ -28,6 +28,7 @@ from coney_tools import (
     movies_cli,
     natives_cli,
     orig_cli,
+    original_cli,
     pcsx2_claims_cli,
     pcsx2_cli,
     pcsx2_clip,
@@ -39,6 +40,7 @@ from coney_tools import (
     recordings_make,
     refs_cli,
     stale_processes,
+    stamp_cli,
     trace_cli,
     wad_cli,
     workspace,
@@ -335,6 +337,8 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
     orig_cli.add_parser(groups)
+    original_cli.add_parser(groups)
+    stamp_cli.add_parser(groups)
     _add_natives_commands(groups)
     _add_refs_commands(groups)
     _add_missions_commands(groups)
@@ -998,6 +1002,10 @@ def _run(args: argparse.Namespace) -> int:
         return _run_progress(args)
     if args.group == "orig":
         return orig_cli.run(args)
+    if args.group == "original":
+        return original_cli.run(args)
+    if args.group == "stamp":
+        return stamp_cli.run(args)
     if args.group == "natives":
         if args.command == "render":
             return natives_cli.run_render(args.check)

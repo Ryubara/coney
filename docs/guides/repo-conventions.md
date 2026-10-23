@@ -35,6 +35,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
 | `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr-health --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
+| `stamps` | The proof log of a unit of work: the signature namespace, the allowed-signers file, the segment size, every step, which steps are signed and the results; the pairs' kinds, relations and the words that mark a stand-in at the code ([Stamps](stamps.md)) | `stamp verify`, `original study`, `original compare`, `original fails-first` |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
 

@@ -30,3 +30,6 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# `-m ghidra` runs the tests that need a running ghidra-mcp (docs/guides/stamps.md#study); they are left out otherwise.
+markers = ["ghidra: needs a running ghidra-mcp server (run with -m ghidra)"]
+addopts = "-m 'not ghidra'"

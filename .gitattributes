@@ -1,2 +1,5 @@
 * text=auto
 *.sh text eol=lf
+# A stamp log is canonical JSON lines hashed byte for byte: git must never change their line endings.
+research/units/**/*.jsonl text eol=lf
+research/mappings/*.toml text eol=lf

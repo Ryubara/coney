@@ -66,7 +66,11 @@ Signs of a transcription:
   flag tested twice because two inlined callees each tested it).
 
 `coney-tools orig copy-check` finds the mechanical signs ([orig](../coney-tools.md#orig)); the reviewer judges the
-shape, which no tool can.
+shape, which no tool can. For a function with a pairs file, the reviewer's input is that file: each pair names a piece
+of the original (by line numbers of the saved study, [Pairs](../stamps.md#pairs)), the Coney code that does it and
+whether they are the same, a stand-in or not ported; the tool has already checked that every line is in a pair. The
+reviewer also opens the `stubs` of each `fails-first` stamp ([Fails first](../stamps.md#fails-first)): a stub in a
+test commit that implements the behaviour, rather than returning a default or an empty result, is a finding.
 
 A short function whose logic is its shape (a formula, a three-way test) is not a transcription just for having the
 same shape. The question is whether the code was written from understanding or copied from the listing. Signs of
