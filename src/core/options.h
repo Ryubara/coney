@@ -356,9 +356,9 @@ enum class OptionSet : std::uint8_t {
     Player, ///< A player's options and the three of test mode the release build's smoke tests use.
 };
 
-/// The options the release build takes, as typed (`--disc`): a player's (the disc, the language, the profiles, the
-/// frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window) and test mode's
-/// `--headless`, `--frames` and `--input-script`, which its smoke tests need.
+/// The options the release build takes, as typed (`--disc`): a player's (the install, the disc, the language, the
+/// profiles, the frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window, network
+/// play) and test mode's `--headless`, `--frames` and `--input-script`, which its smoke tests need.
 [[nodiscard]] std::span<const std::string_view> playerOptions();
 
 /// Whether `option` (as typed, `--disc`) is one of playerOptions().
