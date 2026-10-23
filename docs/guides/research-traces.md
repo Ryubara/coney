@@ -234,10 +234,10 @@ events**, and drives both games through the same stretch with one **adaptive cou
 1. **Event logs on both sides, at the same semantic points.** Each game writes one CSV line per event (`step, kind,
    name, detail`): a script binding called, a call into the scripts by name, a hint shown, a sound started, a human
    appearing, going down or removed. Coney writes them with `--event-log`
-   ([Running Coney](running-play-level.md#event-log)); the original's come from hooks at the places that do the same thing (the
-   script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their addresses on
-   the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so both games
-   name the event alike without interpretation.
+   ([Running Coney](running-play-level.md#event-log)); the original's come from hooks at the places that do the same
+   thing (the script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their
+   addresses on the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so
+   both games name the event alike without interpretation.
 2. **One course, two games.** The course is a small policy that looks, once an update, at what is on screen (the
    player and camera, the other humans, the world objects of interest) and at the update's events, and answers with
    the pad: walk into the marker that is shown, fight the nearest enemy when a lesson is armed, stand before a cabinet
