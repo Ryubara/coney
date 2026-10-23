@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from coney_tools import research_claims_cli, research_functions_check, research_import, research_render
+from coney_tools import research_claims_cli, research_data, research_functions_check, research_import
 from coney_tools import research_functions as rf
 from coney_tools.config import ConfigError, find_repo_root
 
@@ -70,20 +70,20 @@ def run_render(out_dir: Path | None, check_only: bool) -> int:
     if check_only == (out_dir is not None):
         raise ConfigError("give a folder to write the pages to, or --check (not both)")
     root = find_repo_root(Path.cwd())
-    findings = research_functions_check.check_root(root)
+    findings = research_data.check_root(root)
     for warning in findings.warnings:
         print(f"warning: {warning}", file=sys.stderr)
     for error in findings.errors:
         print(f"error: {error}", file=sys.stderr)
     if findings.errors:
-        print(f"coney-tools: the function database has {_plural(len(findings.errors), 'problem')}", file=sys.stderr)
+        print(f"coney-tools: the research data has {_plural(len(findings.errors), 'problem')}", file=sys.stderr)
         return 1
     systems = rf.load_all(root, research_functions_check.functions_dir(root))
     count = sum(len(s.entries) for s in systems)
     if out_dir is None:
         print(f"{_plural(count, 'function')} in {_plural(len(systems), 'system')}: ok")
         return 0
-    pages = research_render.render_pages(root, systems)
+    pages = {**research_data.generated_pages(root), **research_data.filled_pages(root)}
     for name, text in pages.items():
         path = out_dir / name
         path.parent.mkdir(parents=True, exist_ok=True)

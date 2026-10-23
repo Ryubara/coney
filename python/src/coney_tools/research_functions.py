@@ -334,7 +334,7 @@ def load_all(root: Path, functions_dir: Path = FUNCTIONS_DIR) -> list[SystemFunc
 # --- writing ------------------------------------------------------------------------------------------------------
 
 
-def _quote(text: str) -> str:
+def quote(text: str) -> str:
     """`text` as a TOML basic string: quotes, backslashes and control characters escaped, the rest kept as written."""
     out = ['"']
     for char in text:
@@ -357,21 +357,21 @@ def _quote(text: str) -> str:
 
 def _entry_text(entry: Entry) -> str:
     """One entry as the canonical `[[function]]` block, its gaps after it."""
-    lines = ["[[function]]", f"address = 0x{entry.address:08x}", f"name = {_quote(entry.name)}"]
-    lines.append(f"page = {_quote(entry.page)}")
+    lines = ["[[function]]", f"address = 0x{entry.address:08x}", f"name = {quote(entry.name)}"]
+    lines.append(f"page = {quote(entry.page)}")
     for key in ("kind", "role"):
         if getattr(entry, key):
-            lines.append(f"{key} = {_quote(getattr(entry, key))}")
-    lines.append(f"level = {_quote(entry.level)}")
+            lines.append(f"{key} = {quote(getattr(entry, key))}")
+    lines.append(f"level = {quote(entry.level)}")
     for key in ("note", "coney", "status"):
         if getattr(entry, key):
-            lines.append(f"{key} = {_quote(getattr(entry, key))}")
+            lines.append(f"{key} = {quote(getattr(entry, key))}")
     for gap in entry.gaps:
-        lines += ["", "[[function.gaps]]", f"what = {_quote(gap.what)}", f"relation = {_quote(gap.relation)}"]
+        lines += ["", "[[function.gaps]]", f"what = {quote(gap.what)}", f"relation = {quote(gap.relation)}"]
         if gap.issue is not None:
             lines.append(f"issue = {gap.issue}")
         if gap.question:
-            lines.append(f"question = {_quote(gap.question)}")
+            lines.append(f"question = {quote(gap.question)}")
     return "\n".join(lines)
 
 

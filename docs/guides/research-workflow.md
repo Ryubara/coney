@@ -178,6 +178,12 @@ Ghidra name, page section, role and evidence level; `coney-tools research render
 listing and the pages. Its fields, checks, import and generated lists are on their own page,
 [The function database](research-function-database.md).
 
+### The source files {#source-files}
+
+`research/source-files.toml` lists the original's source files with the address range the source map gives each, one
+entry per file, and the source map's file tables are generated from it. It is where the owner of an address is looked
+up first. Its fields and checks are on their own page, [The source files](research-source-files.md).
+
 ### The script bindings {#bindings}
 
 The files `research/bindings/<category>.yaml` list every function the game registers with its Lua state, one entry

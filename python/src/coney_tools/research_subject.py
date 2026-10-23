@@ -14,11 +14,11 @@ from dataclasses import dataclass, field
 
 from coney_tools.conventions import Research
 from coney_tools.docs_page import Finding, Page, heading_name
-from coney_tools.progress_grid import FileRange
 from coney_tools.research_catalog import Catalog
 from coney_tools.research_functions import Entry
 from coney_tools.research_legacy import Legacy
 from coney_tools.research_pages import Corpus, FrontMatter
+from coney_tools.source_files import FileRange
 
 #: An address in the executable, written as the conventions say: `0x` and eight hex digits (`0x00149160`), within the
 #: EE's 32 MB of main memory where the executable and its data live (`0x00100000`-`0x01ffffff`). A field offset, a mask

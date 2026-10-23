@@ -303,6 +303,7 @@ nav:
       - Enforcement map: guides/enforcement.md
       - Research workflow: guides/research-workflow.md
       - Function database: guides/research-function-database.md
+      - Source files: guides/research-source-files.md
       - PCSX2 recipes: guides/pcsx2-recipes.md
       - PCSX2 states: guides/pcsx2-states.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

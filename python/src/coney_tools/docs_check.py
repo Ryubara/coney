@@ -22,7 +22,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import docs_legacy, local_gate
+from coney_tools import docs_legacy, local_gate, source_files
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Research, load_conventions
@@ -31,7 +31,7 @@ from coney_tools.docs_style import check_style
 from coney_tools.research_catalog import load_catalog
 from coney_tools.research_check import check_research
 from coney_tools.research_functions import ResearchFunctionsError, load_all
-from coney_tools.research_functions_check import entries_by_page, load_source_files
+from coney_tools.research_functions_check import entries_by_page
 from coney_tools.research_legacy import Touch, apply_legacy, load_legacy
 from coney_tools.research_pages import Corpus
 from coney_tools.research_subject import ResearchEnv
@@ -167,13 +167,17 @@ def context_for(root: Path) -> Context:
         systems = load_all(root, Path(research.files.functions))
     except ResearchFunctionsError:
         systems = []  # `research render --check` reports a broken database; the pages are checked without it
+    try:
+        ranges = source_files.load_ranges(root, Path(research.files.source_files))
+    except source_files.SourceFilesError:
+        ranges = ()  # `research render --check` reports a broken file; the pages are checked without it
     env = ResearchEnv(
         research,
         load_catalog(root, research),
         Corpus.from_root(root, research),
         load_legacy(root, research, docs_legacy.LEGACY_RULES),
         functions=entries_by_page(systems),
-        source_files=load_source_files(root),
+        source_files=ranges,
     )
     return Context(conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env)
 

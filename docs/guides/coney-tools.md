@@ -225,7 +225,8 @@ uv run --project python coney-tools xbox names XBOX_DISC ../../scratch/xbox-name
 The [Progress](../progress/index.md) page and the badges in the Progress section of `README.md` are generated from
 three inputs:
 `docs/progress/functions.toml` (the original functions Coney reimplements), `docs/progress/totals.toml` (the
-denominators, copied from the [source map](../research/source-map.md)) and the status table of the
+denominators, taken from the [source map](../research/source-map.md); its file ranges are
+`research/source-files.toml`) and the status table of the
 [roadmap](../roadmap.md). The page says what the numbers mean; this section says how to run the commands.
 
 ```sh
@@ -255,8 +256,9 @@ publishes them from `main`, so pull requests never conflict on them. `check` fai
 `mkdocs build --strict` shows the tables on the page locally too, and fails on the same problems.
 
 The pictures come from `progress_grid.py` (one square per function, from the Ghidra listing, the tracker's measures
-and the source map's file tables), `progress_picture.py` (layout and SVG), `progress_history.py` (one point per day
-from git) and `progress_site.py` (the page's HTML and the files of the site); `mkdocs_hooks.py` calls them. The
+and the file ranges of `research/source-files.toml`), `progress_picture.py` (layout and SVG), `progress_history.py`
+(one point per day from git) and `progress_site.py` (the page's HTML and the files of the site); `mkdocs_hooks.py`
+calls them. The
 page's tooltips are `docs/javascripts/progress-grid.js`, the colours `docs/stylesheets/progress-grid.css`, and what
 they mean is on [the page](../progress/index.md#the-picture). Where the fidelity audit's results will be read is
 `progress_grid.load_audited`: it returns no addresses until the audit stores a machine-readable result on `main`, and
@@ -697,25 +699,28 @@ way. Run `natives render` first when bindings changed.
 
 ## research {#research}
 
-The [function database](research-function-database.md), one TOML file per system in `research/functions/` that
-tools read directly, and the research pages made from it (`render`, `import-table`); and the claims a branch changed on
-the research pages (`claims`). The database's schema, rules and how to write an entry are on its own page; this section
-is the commands.
+The research data that tools read directly: the [function database](research-function-database.md), one TOML file per
+system in `research/functions/`, and the [source files](research-source-files.md) of the executable in
+`research/source-files.toml`; the research pages made from them (`render`, `import-table`); and the claims a branch
+changed on the research pages (`claims`). Each file's schema, rules and how to write an entry are on its own page; this
+section is the commands.
 
 ```sh
 uv run --project python coney-tools research render --check
 uv run --project python coney-tools research render <folder>
 ```
 
-`render --check` checks every file of the database against the checkout and writes nothing; CI runs it (`python`), and
-the docs build runs the same checks before it writes the pages. What it checks is in
-[the function database page](research-function-database.md). It exits with 1 and prints one `error:` line per
+`render --check` checks every file of the database and the source files data against the checkout and writes nothing;
+CI runs it (`python`), and the docs build runs the same checks before it writes the pages. What it checks is on
+[the function database page](research-function-database.md) and [the source files page](research-source-files.md#checks).
+It exits with 1 and prints one `error:` line per
 problem when one fails; a name Ghidra still has as `FUN_<address>` is a `warning:` line and does not fail. It exits with
 2 when it is not run inside a checkout or the arguments are wrong.
 
 With `<folder>` instead of `--check`, it runs the same checks and then writes one page per system,
-`<folder>/research/<system>/functions.md`, the page the docs build makes (`mkdocs_hooks.py`; none is committed), so you
-can look at one without a build. It writes nothing while the data has a problem. Give a folder or `--check`, not both.
+`<folder>/research/<system>/functions.md`, and the source map with its file tables filled in,
+`<folder>/research/source-map.md`: the pages the docs build makes (`mkdocs_hooks.py`; none is committed), so you can
+look at one without a build. It writes nothing while the data has a problem. Give a folder or `--check`, not both.
 
 ```sh
 uv run --project python coney-tools research import-table PAGE --system NAME [--section ANCHOR] [--replace] [--dry-run]
@@ -729,7 +734,9 @@ already in the file, and `--dry-run` prints the report and writes nothing. It ex
 was read, 1 when the page gave none, and 2 for a page outside `docs/research`, a bad system name or an unknown
 `--section`.
 
-The code of `render` and `import-table` is `research_functions.py` (the schema and the file format),
+The code of `render` and `import-table` is `research_data.py` (the checks and pages of all the data together),
+`source_files.py` (the source files' schema, file format and totals check), `research_find.py` (the file tables),
+`research_functions.py` (the function database's schema and file format),
 `research_functions_check.py` (the checks that read the checkout, and the `function-entries` rule it adds to `docs
 check`), `research_render.py` (the pages), `research_import.py` (the import), `research_links.py` (moving a role's links
 between folders; pages are read with `docs_page`, as `docs check` reads them) and `research_cli.py`.

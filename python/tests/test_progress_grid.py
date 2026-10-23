@@ -43,32 +43,25 @@ PAGE = """# Alpha
 
 The helper at `0x00001500` is dead code: not needed: never called.
 """
-SOURCE_MAP = """# Source map
+SOURCE_FILES = """[[file]]
+directory = "Alpha"
+path = "Alpha/Alpha.cpp"
+start = 0x00001000
+end = 0x00001100
+functions = 1
 
-A table before the file tables must not be read as files:
+[[file]]
+directory = "Alpha"
+path = "Alpha/Gone.cpp"
+path_string = 0x00546ec0
+functions = 0
 
-| Range | Size |
-| --- | --- |
-| `0x00001000`-`0x00001100` | 1 KB |
-
-## Files by subsystem
-
-### Alpha
-
-| File | Attributed range | Functions |
-| --- | --- | --- |
-| `Alpha.cpp` | `0x00001000`-`0x00001100` | 1 |
-| `Gone.cpp` | none (path string at `0x00546ec0` has no code reference) | 0 |
-
-### Device/ps2
-
-| File | Attributed range | Functions |
-| --- | --- | --- |
-| `fileio/Wad.cpp` | `0x00001100`-`0x00001200` | 2 |
-
-## Another section
-
-| `NotAFile.cpp` | `0x00001500`-`0x00001600` | 1 |
+[[file]]
+directory = "Device/ps2"
+path = "Device/ps2/fileio/Wad.cpp"
+start = 0x00001100
+end = 0x00001200
+functions = 2
 """
 
 
@@ -78,7 +71,8 @@ def make_grid_checkout(root: Path) -> Path:
     (root / "docs" / "progress" / "ghidra-functions.tsv").write_text(LISTING, encoding="utf-8")
     (root / "docs" / "research").mkdir(parents=True)
     (root / "docs" / "research" / "alpha.md").write_text(PAGE, encoding="utf-8")
-    (root / "docs" / "research" / "source-map.md").write_text(SOURCE_MAP, encoding="utf-8")
+    (root / "research").mkdir()
+    (root / "research" / "source-files.toml").write_text(SOURCE_FILES, encoding="utf-8")
     return root
 
 
@@ -157,13 +151,8 @@ def test_no_listing_means_no_picture(tmp_path: Path) -> None:
     assert progress_grid.build_grid(progress.load(root), root) is None
 
 
-def test_source_files_and_the_coney_line_come_from_the_map_and_the_tags(tmp_path: Path) -> None:
-    """The file tables place functions by range; a row of another section or without a range is not a file."""
-    ranges = progress_grid.parse_source_files(SOURCE_MAP)
-    assert [(r.path, r.start, r.end) for r in ranges] == [
-        ("Alpha/Alpha.cpp", 0x1000, 0x1100),
-        ("Device/ps2/fileio/Wad.cpp", 0x1100, 0x1200),
-    ]
+def test_source_files_and_the_coney_line_come_from_the_data_and_the_tags(tmp_path: Path) -> None:
+    """The file ranges place functions by address; a file without a range places none."""
     functions = {f.address: f for f in grid_of(make_grid_checkout(tmp_path)).functions}
     assert functions[0x1000].source_file == "Alpha/Alpha.cpp"
     assert functions[0x1100].source_file == "Device/ps2/fileio/Wad.cpp"

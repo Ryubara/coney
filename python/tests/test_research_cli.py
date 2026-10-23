@@ -216,3 +216,91 @@ def test_import_of_a_page_without_a_function_table_fails(
     assert main(import_args()) == 1
     assert "no function" in capsys.readouterr().err
     assert not (root / "research" / "functions" / "throws.toml").exists()
+
+
+# --- the source files ------------------------------------------------------------------------------------------------
+
+SOURCE_FILES = """\
+[[file]]
+directory = "Combat"
+path = "Combat/Grab.cpp"
+start = 0x00100000
+end = 0x00100400
+functions = 2
+"""
+TOTALS = """\
+[text]
+start = 0x00100000
+end = 0x00300000
+
+[[coverage]]
+key = "k"
+label = "k"
+kind = "researched"
+bytes = 2000000
+
+[[subsystem]]
+name = "Combat"
+ranges = [[0x00100000, 0x00100800]]
+"""
+
+
+def with_source_files(root: Path, files: str = SOURCE_FILES, totals: str = TOTALS) -> None:
+    """Add the source files data and the totals file it is held to."""
+    (root / "research").mkdir(exist_ok=True)
+    (root / "research" / "source-files.toml").write_text(files, encoding="utf-8")
+    (root / "docs" / "progress").mkdir(parents=True, exist_ok=True)
+    (root / "docs" / "progress" / "totals.toml").write_text(totals, encoding="utf-8")
+
+
+def test_check_covers_the_source_files_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A source file outside its directory's range in totals.toml fails the check, and a good one passes."""
+    root = checkout(tmp_path, monkeypatch)
+    with_source_files(root)
+    assert main(["research", "render", "--check"]) == 0
+    with_source_files(root, totals=TOTALS.replace("0x00100800", "0x00100200"))
+    assert main(["research", "render", "--check"]) == 1
+    assert "Combat/Grab.cpp" in capsys.readouterr().err
+
+
+def test_check_reports_a_malformed_source_files_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A schema problem in research/source-files.toml is an error line, like one in the function database."""
+    root = checkout(tmp_path, monkeypatch)
+    with_source_files(root, SOURCE_FILES.replace("functions = 2", "functions = 0"))
+    assert main(["research", "render", "--check"]) == 1
+    assert "source-files.toml" in capsys.readouterr().err
+
+
+SOURCE_MAP = "# Source map\n\n## Files\n\n<!-- source-files:generated -->\n"
+
+
+def test_render_writes_the_source_map_with_its_tables_filled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`render OUT` writes `OUT/research/source-map.md` as the docs build shows it, beside the function lists."""
+    root = checkout(tmp_path / "repo", monkeypatch)
+    with_source_files(root)
+    (root / "docs" / "research" / "source-map.md").write_text(SOURCE_MAP, encoding="utf-8")
+    out = tmp_path / "out"
+    assert main(["research", "render", str(out)]) == 0
+    page = (out / "research" / "source-map.md").read_text(encoding="utf-8")
+    assert "#### Combat" in page
+    assert "`Grab.cpp`" in page
+    assert "source-files:generated" not in page
+    assert (out / "research" / "combat" / "functions.md").is_file()
+
+
+def test_check_wants_the_marker_in_the_source_map(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A source map without its marker would show no files; the check says so."""
+    root = checkout(tmp_path, monkeypatch)
+    with_source_files(root)
+    page = root / "docs" / "research" / "source-map.md"
+    page.write_text(SOURCE_MAP, encoding="utf-8")
+    assert main(["research", "render", "--check"]) == 0
+    page.write_text("# Source map\n", encoding="utf-8")
+    assert main(["research", "render", "--check"]) == 1
+    assert "exactly one" in capsys.readouterr().err

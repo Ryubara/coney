@@ -24,15 +24,15 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import progress_research
+from coney_tools import progress_research, source_files
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.docs_page import Finding, read_page
 from coney_tools.progress import ProgressError
-from coney_tools.progress_grid import SOURCE_MAP, FileRange, file_of, parse_source_files
 from coney_tools.research_functions import CONEY, QUESTION, Entry, ResearchFunctionsError, SystemFunctions, load_all
 from coney_tools.research_pages import Corpus, PageFacts, key_line
 from coney_tools.research_subject import Subject
+from coney_tools.source_files import FileRange, file_of
 
 RESEARCH_DIR = Path("docs/research")
 
@@ -141,12 +141,6 @@ def entries_by_page(systems: Iterable[SystemFunctions]) -> dict[str, tuple[Entry
     return {page: tuple(entries) for page, entries in found.items()}
 
 
-def load_source_files(root: Path) -> tuple[FileRange, ...]:
-    """The source map's file ranges in the checkout at `root` (none when the page is missing)."""
-    path = root / SOURCE_MAP
-    return tuple(parse_source_files(path.read_text(encoding="utf-8"))) if path.is_file() else ()
-
-
 def check(
     root: Path,
     systems: list[SystemFunctions],
@@ -218,7 +212,8 @@ def check_systems(root: Path, systems: list[SystemFunctions]) -> Findings:
     try:
         research = load_conventions(root).research
         listing = progress_research.load_listing(root / research.files.ghidra_functions)
+        ranges = source_files.load_ranges(root, Path(research.files.source_files))
     except (ProgressError, ConfigError) as error:
         return Findings(errors=str(error).splitlines())
-    owners = Owners(Corpus.from_root(root, research), load_source_files(root))
+    owners = Owners(Corpus.from_root(root, research), ranges)
     return check(root, systems, listing, listing_file=research.files.ghidra_functions, owners=owners)
