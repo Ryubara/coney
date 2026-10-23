@@ -1,10 +1,10 @@
 # The coney-tools coordination and setup commands
 
 The commands that coordinate agents and set up a machine: [`coord`](#coord), what waits for the coordinator;
-[`doctor`](#doctor), a check of a contributor's machine and disc; [`ghidra`](#ghidra), your own Ghidra project with our
-function names; [`mcp`](#mcp), the debugging servers for agent tools; [`workspace`](#workspace), the local workspace;
-and [`coney-agent`](#coney-agent), the session launcher. The other groups are listed in
-[the command line overview](coney-tools.md#groups).
+[`conclave`](#conclave), the read model of the Claude Code mod; [`doctor`](#doctor), a check of a contributor's machine
+and disc; [`ghidra`](#ghidra), your own Ghidra project with our function names; [`mcp`](#mcp), the debugging servers for
+agent tools; [`workspace`](#workspace), the local workspace; and [`coney-agent`](#coney-agent), the session launcher.
+The other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## coord {#coord}
 
@@ -139,6 +139,25 @@ as soon as your next turn starts. A wake that started no turn is sent again.
 `idleWakeMinutes` above 0 also wakes the session after that many idle minutes with nothing new, but never while a
 subagent is at work. A poller whose read fails shows as failing in the status line and in `/tether-watch`. Its ids
 are never taken for "nothing waits". `/tether-watch` reports each poller's last read.
+
+## conclave {#conclave}
+
+`conclave snapshot` prints everything the [Conclave mod](conclave.md) draws, as one JSON object. The mod is written in
+TypeScript and cannot read the task file, the stamp log, the claim cards or the hook settings, so this command reads
+them and the mod only draws the result. It is read-only: it writes nothing, to GitHub or to disk.
+
+```sh
+uv run --project python coney-tools conclave snapshot            # one line per section
+uv run --project python coney-tools conclave snapshot --json     # the object the mod reads
+uv run --project python coney-tools conclave snapshot --json --github --unit fix-frame-812
+```
+
+Without `--github` it reads only the machine, in about a second. `--github` adds the claim cards, the open and recently
+merged pull requests (with the [`repo pr-health`](coney-tools-repo.md#repo-pr-health) causes) and the open issues the
+claims, the units and `P-critical` name, through `gh`, in about 6.6 seconds. `--unit TASK` keeps one unit's row (exit 2
+when there is none). The sections, each with an `error` that is `null` when it was read, and the rest of the shape are
+in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and 2 when the command cannot run at
+all. The limits and intervals it sends are the `conclave` section of [.github/conventions.yml](repo:.github/conventions.yml).
 
 ## doctor {#doctor}
 

@@ -569,3 +569,35 @@ def test_a_research_page_without_front_matter_is_read_as_the_kind_of_its_folder(
     research = load_conventions(REPO).research
     assert research.kind_of_path("docs/research/formats/wad-dir.md") == "format"
     assert research.kind_of_path("docs/research/combat.md") == "system"
+
+
+# --- the conclave section -----------------------------------------------------------------------------------------
+
+
+def test_the_real_conclave_section() -> None:
+    conclave = load_conventions(REPO).conclave
+    assert conclave.claude_code.count(".") == 2 and conclave.hooks_file.endswith("hooks.toml")
+    assert 0 < conclave.local_seconds <= conclave.github_seconds <= conclave.github_idle_seconds
+    # the numbers the band draws by come from here, so the mod holds none of them
+    assert 0 < conclave.pane_min_columns <= conclave.pane_wide_columns and conclave.stale_after_reads >= 1
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ("conclave.hooks_file", "../outside.toml", "a path inside the checkout"),
+        ("conclave.hooks_file", "C:/hooks.toml", "a path inside the checkout"),
+        ("conclave.github_idle_seconds", 10, "must not be less than github_seconds"),
+        ("conclave.local_seconds", 0, "expected a whole number of 1 or more"),
+        ("conclave.unknown", 1, "unknown key 'unknown'"),
+        ("conclave.pane_min_columns", REMOVE, "missing the key 'pane_min_columns'"),
+        ("conclave.pane_wide_columns", 50, "must not be less than pane_min_columns"),
+        ("conclave.pane_wide_columns", REMOVE, "missing the key 'pane_wide_columns'"),
+        ("conclave.band_narrow_columns", REMOVE, "missing the key 'band_narrow_columns'"),
+        ("conclave.stale_after_reads", 0, "expected a whole number of 1 or more"),
+    ],
+)
+def test_a_wrong_conclave_section_is_refused(path: str, value: object, message: str) -> None:
+    data = changed((path, value))
+    with pytest.raises(ConventionsError, match=message):
+        parse_conventions(data)

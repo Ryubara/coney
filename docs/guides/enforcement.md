@@ -101,6 +101,7 @@ as a courtesy.
 | Never restart or stop the shared Ghidra server; never undo another engineer's names | [Ghidra](ghidra.md) | None | judgement |
 | Keep Python virtual environments out of worktrees | [How we work](how-we-work.md#shared-machine) | None | written; best point `repo audit --local` |
 | Repository rules override a brief; read the guides first | [AGENTS.md](repo:AGENTS.md) | `.claude/agents/*.md` say so | judgement |
+| The Conclave mod leaves session health (context, prompt cache, `/clear`, HANDOFF, the idle wake) to Tether and only reads | [Conclave](conclave.md#boundary) | `python/tests/test_conclave_mod.py` runs the TypeScript compiler over the mod: the events it hooks, what the five hooks do (their filters, and that they pass the event on), the eleven `$.noun.method` calls it may make on any value of the engine's type (no `$.session.` or `$.model.`, no copy, spread, cast or `any`), the one command it runs with its folder and options, the names its sources may not use, each tested with a case that crosses the line | enforced in the local checks and in CI, which has no Claude Code types and reads the stub of them committed in `python/tests` ([Conclave](conclave.md#boundary)); where the check cannot run at all (no Node.js or TypeScript) its tests skip on a machine and fail under `CI` |
 
 ## Commits and pull requests {#pull-requests}
 

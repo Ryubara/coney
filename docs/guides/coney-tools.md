@@ -72,6 +72,7 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 ### [The coordination and setup commands](coney-tools-setup.md)
 
 * [`coord`](coney-tools-setup.md#coord): what waits for the coordinator.
+* [`conclave`](coney-tools-setup.md#conclave): the read model of the Claude Code mod.
 * [`mcp`](coney-tools-setup.md#mcp), [`ghidra`](coney-tools-setup.md#ghidra), [`doctor`](coney-tools-setup.md#doctor)
   and [`workspace`](coney-tools-setup.md#workspace): the debugging servers, your Ghidra project, the machine check and
   the local workspace.
