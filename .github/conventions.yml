@@ -855,7 +855,7 @@ research:
     Disc counts: How this was checked
   ungraded_sections: [Summary, In Coney, Open questions, How this was checked]  # an address there needs no level
   dated_sections: [In Coney, How this was checked]         # the only sections that may hold a date or an issue number
-  map_section: Map                                         # a table there with no level column grades nothing (functions.toml does)
+  map_section: Map                                         # a table there with no level column grades nothing (the function database does)
   # A page with no front matter (all of them before the mechanical pass) is read as this kind.
   inferred_kind:
     default: system

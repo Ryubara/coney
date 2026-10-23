@@ -114,6 +114,11 @@ def _one(**fields: str) -> str:
         (_one(role='"two\\nlines"'), "role must be one line"),
         (_one(kind='"two\\nlines"'), "kind must be one line"),
         (_one(level='"not-needed"'), "not-needed needs a role"),
+        (_one(level='""'), "level must be one of"),
+        (_one(page='"../references/other.md#x"'), "page"),
+        (_one(page='"../references/bindings/ai.md"'), "page"),
+        (_one(page='"../references/bindings/AI.md#x"'), "page"),
+        (_one(page='"../../x.md#x"'), "page"),
         (_one(status='"legacy"'), "status needs coney"),
         (_one(coney='"src/a.cpp"', status='"done"'), "status must be one of"),
         (_one(coney='"has space"'), "coney"),
@@ -225,3 +230,48 @@ def test_the_default_folder_is_the_conventions_one() -> None:
     """The progress tracker reads the database without the conventions; its default folder is `files.functions`."""
     research = parse_conventions(real_data()).research
     assert Path(research.files.functions) == rf.FUNCTIONS_DIR
+
+
+NO_LEVEL = """[[function]]
+address = 0x00100200
+name = "Grab_Start"
+page = "combat.md#grab"
+note = "the page states no level for this function alone; read the section"
+"""
+
+
+def test_the_level_is_optional_and_a_missing_one_is_written_as_none() -> None:
+    """An entry the page grades nowhere has no level; the writer does not invent one and reads it back the same."""
+    system = rf.parse_system("combat", NO_LEVEL, Path("combat.toml"))
+    [entry] = system.entries
+    assert entry.level == ""
+    assert rf.dumps(system).endswith(NO_LEVEL)
+    assert rf.parse_system("combat", rf.dumps(system), Path("combat.toml")).entries == system.entries
+
+
+def test_an_entry_with_no_level_must_say_why_in_its_note() -> None:
+    """Leaving the level out is deliberate: the note says what the page states or where to read it."""
+    text = NO_LEVEL.replace('note = "the page states no level for this function alone; read the section"\n', "")
+    with pytest.raises(rf.ResearchFunctionsError, match="no level needs a note"):
+        rf.parse_system("combat", text, Path("combat.toml"))
+
+
+def test_a_binding_wrapper_may_point_at_its_generated_reference_page() -> None:
+    """A binding page is named relative to docs/research, with the section of the binding."""
+    [entry] = rf.parse_system(
+        "scripting", _one(page='"../references/bindings/ai.md#actlookat"'), Path("scripting.toml")
+    ).entries
+    assert entry.is_binding
+    assert entry.anchor == "actlookat"
+    assert entry.doc_file == "docs/references/bindings/ai.md"
+    other = rf.Entry(0x100200, "A", "combat/grabs.md#grab", "inferred")
+    assert not other.is_binding
+    assert other.doc_file == "docs/research/combat/grabs.md"
+
+
+def test_a_binding_page_belongs_to_the_scripting_system() -> None:
+    """A binding wrapper is described by the scripting system's reference, so no other system's file may point there."""
+    text = _one(page='"../references/bindings/ai.md#actlookat"')
+    rf.parse_system("scripting", text, Path("scripting.toml"))
+    with pytest.raises(rf.ResearchFunctionsError, match=r"binding page.*scripting"):
+        rf.parse_system("combat", text, Path("combat.toml"))

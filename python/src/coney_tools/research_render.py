@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from coney_tools import research_links
-from coney_tools.research_functions import FUNCTIONS_DIR, LEVELS, Entry, Gap, SystemFunctions
+from coney_tools.research_functions import FUNCTIONS_DIR, LEVELS, NO_LEVEL, Entry, Gap, SystemFunctions
 
 RESEARCH_DIR = Path("docs/research")
 
@@ -37,18 +37,21 @@ def _link(target: str, system: str) -> str:
 def _summary(entries: tuple[Entry, ...]) -> str:
     """`12 functions: 9 confirmed (code), 3 inferred.`"""
     counts = [(label, sum(1 for e in entries if e.level == key)) for key, label in LEVELS.items()]
+    counts.append((f"with {NO_LEVEL}", sum(1 for e in entries if not e.level)))
     parts = ", ".join(f"{count} {label}" for label, count in counts if count)
     noun = "function" if len(entries) == 1 else "functions"
     return f"{len(entries)} {noun}: {parts}." if parts else f"{len(entries)} {noun}."
 
 
-def _level_cell(entry: Entry) -> str:
+def _level_cell(entry: Entry, system: str) -> str:
     """The level's label, with the entry's note after it when it has one; a note that already starts with the label
-    (an imported mixed cell, `confirmed (code); the rock inferred`) stands alone, so the label is not doubled."""
-    label = LEVELS[entry.level]
+    (an imported mixed cell, `confirmed (code); the rock inferred`) stands alone, so the label is not doubled. Links in
+    the note are written relative to docs/research, like the role's, and read from the system's folder."""
+    label = LEVELS.get(entry.level, NO_LEVEL)
     if not entry.note:
         return label
-    return _cell(entry.note if entry.note.lower().startswith(label) else f"{label}; {entry.note}")
+    note = _rebased(entry.note, system)
+    return _cell(note if note.lower().startswith(label) else f"{label}; {note}")
 
 
 def _coney_cell(entry: Entry) -> str:
@@ -100,7 +103,7 @@ def render_system(system: SystemFunctions, system_page: str | None) -> str:
         cells = [f'<span id="0x{entry.address:08x}"></span>`0x{entry.address:08x}`', f"`{entry.name}`"]
         if has_kind:
             cells.append(_cell(entry.kind))
-        cells += [_cell(_rebased(entry.role, name)), _level_cell(entry), _link(entry.page, name)]
+        cells += [_cell(_rebased(entry.role, name)), _level_cell(entry, name), _link(entry.page, name)]
         if has_coney:
             cells.append(_coney_cell(entry))
         out.append("| " + " | ".join(cells) + " |")

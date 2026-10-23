@@ -44,8 +44,9 @@ def make_root(
     functions: str = ENTRY,
     listing: dict[int, str] | None = None,
     extra_pages: dict[str, str] | None = None,
+    system: str = "combat",
 ) -> Path:
-    """A made-up checkout with one page, one source file, a Ghidra listing and a `combat` system file."""
+    """A made-up checkout with one page, one source file, a Ghidra listing and a system file (`combat`)."""
     pages = {"combat/grabs.md": GRABS, **(extra_pages or {})}
     for name, text in pages.items():
         path = tmp_path / "docs" / "research" / name
@@ -59,7 +60,7 @@ def make_root(
     listing_path = tmp_path / progress_research.LISTING_FILE
     listing_path.parent.mkdir(parents=True, exist_ok=True)
     listing_path.write_text(progress_research.format_listing(listed), encoding="utf-8")
-    write_systems(tmp_path, {"combat": functions})
+    write_systems(tmp_path, {system: functions})
     return with_conventions(tmp_path)
 
 
@@ -112,10 +113,27 @@ def test_a_page_without_a_section_is_accepted(tmp_path: Path) -> None:
 
 def test_an_address_ghidra_does_not_list_is_an_error(tmp_path: Path) -> None:
     """The address must be a function entry in the committed Ghidra listing."""
-    root = make_root(tmp_path, listing={0x100300: "Other"})
+    unported = ENTRY.replace('coney = "src/core/combat/grab.cpp:Grab::start"\n', "")
+    root = make_root(tmp_path, functions=unported, listing={0x100300: "Other"})
     [error] = run(root).errors
     assert "0x00100200" in error
     assert "ghidra-functions.tsv" in error
+
+
+def test_a_port_at_an_address_ghidra_has_no_function_at_is_a_warning(tmp_path: Path) -> None:
+    """A ported entry (`coney`) in a gap between functions: the original has a function there that Ghidra lacks."""
+    findings = run(make_root(tmp_path, listing={0x100300: "Other"}))
+    assert findings.errors == []
+    [warning] = findings.warnings
+    assert "0x00100200" in warning and "counts, with no size, until Ghidra defines it" in warning
+
+
+def test_a_port_inside_another_function_is_an_error(tmp_path: Path) -> None:
+    """The address lies inside a function Ghidra lists: not a start, so a wrong address (the listing gives 64 bytes)."""
+    findings = run(make_root(tmp_path, listing={0x1001F0: "Other_Function"}))
+    [error] = findings.errors
+    assert "0x00100200" in error and "inside Other_Function" in error and "+0x10" in error and "wrong address" in error
+    assert findings.warnings == []
 
 
 def test_a_name_that_differs_from_ghidra_is_an_error(tmp_path: Path) -> None:
@@ -250,3 +268,46 @@ def test_docs_check_passes_an_entry_its_page_owns() -> None:
     environment = replace(research_support.env(), functions={"docs/research/widget.md": (entry,)})
     found = research_support.findings(research_support.RESEARCH_PATH, research_support.page(), environment)
     assert [f for f in found if f.rule == "function-entries"] == []
+
+
+BINDING_ENTRY = """\
+[[function]]
+address = 0x00100200
+name = "Grab_Start"
+page = "../references/bindings/combat.md#startgrab"
+level = "inferred"
+"""
+
+
+def add_binding_page(root: Path, text: str = "# Script bindings\n\n## StartGrab {#startgrab}\n") -> None:
+    """The generated reference page of the `combat` binding group under docs/references/bindings."""
+    page = root / "docs" / "references" / "bindings" / "combat.md"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(text, encoding="utf-8")
+
+
+def test_a_binding_page_and_its_section_are_checked_like_a_research_page(tmp_path: Path) -> None:
+    """The entry may point at docs/references/bindings; the file and the anchor must exist."""
+    root = make_root(tmp_path, BINDING_ENTRY, system="scripting")
+    [error] = run(root).errors
+    assert "docs/references/bindings/combat.md does not exist" in error
+    add_binding_page(root, "# Script bindings\n\n## Other {#other}\n")
+    [error] = run(root).errors
+    assert "has no section 'startgrab'" in error
+    add_binding_page(root)
+    findings = run(root)
+    assert findings.errors == [] and findings.warnings == []
+
+
+def test_a_binding_page_is_not_held_to_page_ownership(tmp_path: Path) -> None:
+    """A page that owns the address is a research page; the binding reference owns nothing, so no owner is named."""
+    owner = '---\nkind: topic\nsystem: combat\nowns:\n  functions: ["0x00100200"]\n---\n# Holds\n'
+    root = make_root(tmp_path, BINDING_ENTRY, extra_pages={"combat/holds.md": owner}, system="scripting")
+    add_binding_page(root)
+    assert run(root).errors == []
+
+
+def test_an_entry_with_no_level_passes_the_checks(tmp_path: Path) -> None:
+    """No level is a state of the data, not an error: the note says why."""
+    entry = ENTRY.replace('level = "confirmed-code"\n', 'note = "the page states none for it alone"\n')
+    assert run(make_root(tmp_path, entry)).errors == []

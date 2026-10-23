@@ -10,7 +10,6 @@ import pytest
 from coney_tools import elf, progress, progress_cli, progress_render, progress_research
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
-from coney_tools.progress_cli import set_size
 
 # A made-up .text of 0x1000 bytes: 0xC00 of game code (two subsystems of 0x200, one with no ranges, the rest
 # unattributed) and 0x400 of middleware at the end.
@@ -71,13 +70,21 @@ BLOCK = f"before\n\n{progress_render.PAGE_MARKER}\n\nafter\n"
 HISTORY_BLOCK = f"history\n\n{progress_render.HISTORY_MARKER}\n"
 
 
-def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
-    """A made-up checkout with every input of the tracker."""
+def make_checkout(root: Path, functions: str = "", tags: str = "", listing: str = "") -> Path:
+    """A made-up checkout with every input of the tracker.
+
+    `functions` is the text of a function database file (research/functions/alpha.toml), `tags` the text of a source
+    file, `listing` the Ghidra listing that gives the functions their sizes (none: no listing file).
+    """
     root.mkdir(parents=True, exist_ok=True)
     (root / "coney.local.example.toml").write_text("", encoding="utf-8")
     (root / "docs" / "progress").mkdir(parents=True)
     (root / "docs" / "progress" / "totals.toml").write_text(TOTALS, encoding="utf-8")
-    (root / "docs" / "progress" / "functions.toml").write_text(functions, encoding="utf-8")
+    if functions:
+        (root / "research" / "functions").mkdir(parents=True)
+        (root / "research" / "functions" / "alpha.toml").write_text(functions, encoding="utf-8")
+    if listing:
+        (root / "docs" / "progress" / "ghidra-functions.tsv").write_text(listing, encoding="utf-8")
     (root / "docs" / "progress" / "index.md").write_text(BLOCK, encoding="utf-8")
     (root / "docs" / "progress" / "history.md").write_text(HISTORY_BLOCK, encoding="utf-8")
     (root / "docs" / "roadmap.md").write_text(ROADMAP, encoding="utf-8")
@@ -86,8 +93,19 @@ def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
     return root
 
 
-# One function of 0x80 bytes in Alpha, and the header that tags it.
-ONE_FUNCTION = '[[function]]\naddress = 0x00001010\nname = "Thing::Do"\nsubsystem = "Alpha"\nsize = 0x80\n'
+def entry(address: int, name: str, coney: str = "", extra: str = "") -> str:
+    """A function database entry for the tests: a page and a level, `coney` when given, `extra` lines after them."""
+    text = (
+        f'[[function]]\naddress = {address:#010x}\nname = "{name}"\npage = "alpha.md#thing"\nlevel = "confirmed-code"\n'
+    )
+    if coney:
+        text += f'coney = "{coney}"\nstatus = "legacy"\n'
+    return text + extra + "\n"
+
+
+# One ported function in Alpha, the header that tags it, and the listing that gives it 0x80 bytes.
+ONE_FUNCTION = entry(0x1010, "Thing::Do", "src/core/thing.h:doThing")
+ONE_LISTING = "0x00001010\t128\tThing::Do\t0\n"
 ONE_TAG = "/// Does the thing.\n/// @orig 0x00001010 Thing::Do (Thing.cpp)\nvoid doThing();\n"
 
 
@@ -144,10 +162,11 @@ def test_totals_refuse_overlapping_ranges(tmp_path: Path) -> None:
         progress.load_totals(path)
 
 
-def test_functions_refuse_unknown_keys(tmp_path: Path) -> None:
-    path = make_checkout(tmp_path, ONE_FUNCTION + "colour = 1\n") / progress.FUNCTIONS_FILE
-    with pytest.raises(progress.ProgressError, match="unknown key"):
-        progress.load_functions(path)
+def test_a_malformed_database_file_is_a_progress_error(tmp_path: Path) -> None:
+    """The reimplemented list is the function database: a bad entry stops the tracker, naming the file and the key."""
+    root = make_checkout(tmp_path, ONE_FUNCTION + "colour = 1\n", ONE_TAG, ONE_LISTING)
+    with pytest.raises(progress.ProgressError, match=r"alpha\.toml.*unknown key 'colour'"):
+        progress.load(root)
 
 
 def test_milestones_come_from_the_roadmap_table() -> None:
@@ -160,34 +179,68 @@ def test_milestones_come_from_the_roadmap_table() -> None:
 
 
 def test_consistent_inputs_have_no_problems(tmp_path: Path) -> None:
-    state = progress.load(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
-    assert state.problems == []
+    """Entries with `coney` are the reimplemented functions; the size is the listing's, the subsystem the range's."""
+    state = progress.load(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
+    assert state.problems == [] and state.warnings == []
     assert state.reimplemented_bytes == 0x80
+    assert [(f.address, f.subsystem, f.size, f.system, f.coney) for f in state.functions] == [
+        (0x1010, "Alpha", 0x80, "alpha", "src/core/thing.h:doThing")
+    ]
     rows = {name: (total, done, count) for name, total, done, count in state.subsystem_rows()}
     assert rows["Alpha"] == (0x200, 0x80, 1)
     assert rows[progress.UNATTRIBUTED] == (0x800, 0, 0)
 
 
+def test_an_entry_without_coney_is_researched_not_reimplemented(tmp_path: Path) -> None:
+    """The database lists researched functions too: only `coney` makes one count as reimplemented."""
+    functions = ONE_FUNCTION + entry(0x1020, "Researched")
+    state = progress.load(make_checkout(tmp_path, functions, ONE_TAG, ONE_LISTING))
+    assert state.problems == [] and [f.name for f in state.functions] == ["Thing::Do"]
+
+
+def test_a_function_the_listing_lacks_counts_with_no_size(tmp_path: Path) -> None:
+    """A port is tagged where the original has a function that Ghidra may not define yet: it counts, adds no bytes."""
+    state = progress.load(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, "0x00001100\t8\tOther\t0\n"))
+    assert state.problems == []
+    assert [(f.size) for f in state.functions] == [None] and state.reimplemented_bytes == 0
+    assert progress.load(make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG)).reimplemented_bytes == 0  # no listing
+
+
 def test_tags_and_entries_must_match(tmp_path: Path) -> None:
-    tags = ONE_TAG + "/// @orig 0x00001300 Other::Fn (unknown)\n"
-    problems = progress.load(make_checkout(tmp_path, ONE_FUNCTION.replace("Thing::Do", "Thing::Did"), tags)).problems
-    assert any("0x00001300 Other::Fn has no entry" in p and "src/core/thing.h:4" in p for p in problems)
-    assert any("names 'Thing::Do', functions.toml 'Thing::Did'" in p for p in problems)
+    """A tag with no entry, a tag whose entry lacks `coney`, and the other way round, are each a problem."""
+    tags = ONE_TAG + "/// @orig 0x00001300 Other::Fn (unknown)\n/// @orig 0x00001020 Researched (unknown)\n"
+    functions = ONE_FUNCTION + entry(0x1020, "Researched") + entry(0x1030, "Port", "src/core/thing.h:port")
+    problems = progress.load(make_checkout(tmp_path, functions, tags, ONE_LISTING)).problems
+    assert any("0x00001300 Other::Fn has no entry in the function database" in p and "thing.h:4" in p for p in problems)
+    assert any("0x00001020 Researched" in p and "alpha.toml lists it without `coney`" in p for p in problems)
+    assert any("alpha.toml: 0x00001030 Port: no @orig tag in src/ reimplements it" in p for p in problems)
+    assert len(problems) == 3
 
 
-def test_entry_without_tag_and_bad_entries(tmp_path: Path) -> None:
-    """A wrong subsystem, an overlapping or odd size, middleware and a missing tag are each reported."""
-    functions = (
-        ONE_FUNCTION.replace('"Alpha"', '"Beta"')
-        + '[[function]]\naddress = 0x1050\nname = "Overlap"\nsubsystem = "Alpha"\nsize = 6\n'
-        + '[[function]]\naddress = 0x1c10\nname = "Lib"\nsubsystem = "SomeLib"\n'
+def test_coney_must_name_a_file_that_carries_the_tag(tmp_path: Path) -> None:
+    """The port's file is where the tag is; a tag in two files satisfies either."""
+    wrong = ONE_FUNCTION.replace("src/core/thing.h", "src/core/other.h")
+    problems = progress.load(make_checkout(tmp_path, wrong, ONE_TAG, ONE_LISTING)).problems
+    assert problems and "coney names src/core/other.h, but its @orig tag is in src/core/thing.h" in problems[0]
+    both = make_checkout(tmp_path / "two", wrong, ONE_TAG, ONE_LISTING)
+    (both / "src" / "core" / "other.h").write_text(ONE_TAG, encoding="utf-8")
+    assert progress.load(both).problems == []
+
+
+def test_a_tag_that_spells_the_name_differently_is_a_warning(tmp_path: Path) -> None:
+    """The database has Ghidra's name; an older spelling in the tag is reported, but does not fail the check."""
+    state = progress.load(
+        make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG.replace("Thing::Do", "Thing::Did"), ONE_LISTING)
     )
-    problems = progress.load(make_checkout(tmp_path, functions, ONE_TAG)).problems
-    assert any("subsystem is 'Beta'; the source map puts it in 'Alpha'" in p for p in problems)
-    assert any("Thing::Do: its size runs into 0x00001050" in p for p in problems)
-    assert any("size 6 is not a positive multiple of 4" in p for p in problems)
-    assert any("Lib: not game code" in p for p in problems)
-    assert any("Overlap: no @orig tag" in p for p in problems)
+    assert state.problems == []
+    assert len(state.warnings) == 1 and "names 'Thing::Did', the database 'Thing::Do'" in state.warnings[0]
+
+
+def test_ported_middleware_is_not_game_code(tmp_path: Path) -> None:
+    """A port at an address in the middleware (or outside .text) cannot count as reimplemented game code."""
+    functions = entry(0x1C10, "Lib", "src/core/thing.h:lib")
+    state = progress.load(make_checkout(tmp_path, functions, "/// @orig 0x00001c10 Lib (x.cpp)\nvoid lib();\n"))
+    assert any("alpha.toml: 0x00001c10 Lib: not game code" in p for p in state.problems)
 
 
 # --- the commands -----------------------------------------------------------------------------------------------------
@@ -197,7 +250,7 @@ def test_check_passes_on_consistent_inputs_and_fails_otherwise(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """`check` writes nothing; it is 0 for consistent inputs and 1 with each problem listed otherwise."""
-    root = make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG)
+    root = make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING)
     monkeypatch.chdir(root)
     assert main(["progress", "check"]) == 0
     assert "inputs are consistent (1 functions, 3 milestones)" in capsys.readouterr().out
@@ -205,12 +258,25 @@ def test_check_passes_on_consistent_inputs_and_fails_otherwise(
     # A tag with no entry is a problem.
     (root / "src" / "core" / "thing.h").write_text(ONE_TAG + "/// @orig 0x00001300 Other::Fn (unknown)\n")
     assert main(["progress", "check"]) == 1
-    assert "0x00001300 Other::Fn has no entry in functions.toml" in capsys.readouterr().out
+    assert "0x00001300 Other::Fn has no entry in the function database" in capsys.readouterr().out
+
+
+def test_check_prints_name_warnings_and_still_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A tag naming the function differently is printed (the first few, then a count) and does not fail the check."""
+    tags = "".join(f"/// @orig {0x1010 + 4 * i:#010x} Old{i} (x.cpp)\nvoid f{i}();\n" for i in range(8))
+    functions = "".join(entry(0x1010 + 4 * i, f"New{i}", "src/core/thing.h:f") for i in range(8))
+    monkeypatch.chdir(make_checkout(tmp_path, functions, tags, ONE_LISTING))
+    assert main(["progress", "check"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("warning: src/core/thing.h:") == progress_cli.SHOWN_WARNINGS
+    assert "warning: ... and 3 more like these" in out and "inputs are consistent (8 functions" in out
 
 
 def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`render` fills the page's marker and writes one endpoint JSON per badge, leaving the checkout alone."""
-    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG)
+    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG, ONE_LISTING)
     monkeypatch.chdir(root)
     out = tmp_path / "out"
     assert main(["progress", "render", str(out)]) == 0
@@ -221,7 +287,8 @@ def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pyte
     assert "4.2% of the game's own code (128 of 3,072 bytes, 1 function)" in page
     assert "[End](../roadmap.md#end) | not started" in page
     badges = out / "progress" / "badges"
-    assert sorted(p.name for p in badges.iterdir()) == ["milestones.json", "reimplemented.json", "researched.json"]
+    expected = ["milestones.json", "reimplemented.json", "researched.json", "understood.json"]
+    assert sorted(p.name for p in badges.iterdir()) == expected
     assert json.loads((badges / "reimplemented.json").read_text(encoding="utf-8")) == {
         "schemaVersion": 1,
         "label": "reimplemented",
@@ -230,17 +297,17 @@ def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pyte
     }
     assert json.loads((badges / "milestones.json").read_text(encoding="utf-8"))["message"] == "1 of 3 done"
     assert (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8") == BLOCK
-    # The history page and the numbers: no Ghidra listing here, so no function picture, but today's history point.
+    # The history page and the numbers: the listing places the one function, and today's history point is drawn.
     history = (out / "progress" / "history.md").read_text(encoding="utf-8")
     assert history.startswith("history") and progress_render.HISTORY_MARKER not in history and "<svg" in history
-    assert json.loads((out / "progress" / "progress.json").read_text(encoding="utf-8"))["functions"] == 0
-    assert (out / "progress" / "history.svg").is_file() and not (out / "progress" / "progress.svg").exists()
+    assert json.loads((out / "progress" / "progress.json").read_text(encoding="utf-8"))["functions"] == 1
+    assert (out / "progress" / "history.svg").is_file() and (out / "progress" / "progress.svg").is_file()
     assert (root / "docs" / "progress" / "history.md").read_text(encoding="utf-8") == HISTORY_BLOCK
 
 
 def test_render_follows_the_inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The numbers come from the inputs at render time: a roadmap change moves the milestones badge."""
-    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG)
+    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG, ONE_LISTING)
     monkeypatch.chdir(root)
     (root / "docs" / "roadmap.md").write_text(ROADMAP.replace("in progress", "done"), encoding="utf-8")
     assert main(["progress", "render", str(tmp_path / "out")]) == 0
@@ -253,13 +320,13 @@ def test_render_refuses_inconsistent_inputs(
 ) -> None:
     monkeypatch.chdir(make_checkout(tmp_path / "repo", tags=ONE_TAG))
     assert main(["progress", "render", str(tmp_path / "out")]) == 1
-    assert "has no entry in functions.toml" in capsys.readouterr().out
+    assert "has no entry in the function database" in capsys.readouterr().out
     assert not (tmp_path / "out").exists()  # nothing written
 
 
 def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     """`show --json` reports the shares, milestones and subsystems computed from the inputs."""
-    monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
+    monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     assert main(["progress", "show", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
     assert data["reimplemented"] == {"bytes": 128, "total": 3072, "percent": 4.167, "functions": 1}
@@ -270,7 +337,7 @@ def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pyte
 
 def test_render_can_skip_the_history_walk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`--no-history` leaves the history at today's point without reading git."""
-    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG)
+    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG, ONE_LISTING)
     monkeypatch.chdir(root)
     assert main(["progress", "render", str(tmp_path / "out"), "--no-history"]) == 0
     history = json.loads((tmp_path / "out" / "progress" / "history.json").read_text(encoding="utf-8"))
@@ -293,17 +360,6 @@ def test_missing_marker_is_exit_2(
     (tmp_path / "docs" / "progress" / "index.md").write_text("no marker\n", encoding="utf-8")
     assert main(["progress", "check"]) == 2
     assert "index.md: needs exactly one <!-- progress:generated -->" in capsys.readouterr().err
-
-
-def test_set_size_replaces_or_adds() -> None:
-    text = "# header\n[[function]]\naddress = 0x00001010\nname = 'a'\nsize = 4\n\n"
-    text += "[[function]]\naddress = 0x1020\nname = 'b'\n"
-    replaced = set_size(text, 0x1010, 8)
-    assert "size = 8" in replaced and "size = 4" not in replaced
-    added = set_size(text, 0x1020, 12)
-    assert added.endswith("name = 'b'\nsize = 12\n")
-    with pytest.raises(ConfigError, match="no \\[\\[function\\]\\]"):
-        set_size(text, 0x2000, 4)
 
 
 # --- the executable ---------------------------------------------------------------------------------------------------
@@ -410,44 +466,51 @@ def test_read_elf_refuses_other_files() -> None:
         elf.read_elf(bytes(big_endian))
 
 
-def test_sizes_command_checks_and_fills(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    functions = '[[function]]\naddress = 0x00001010\nname = "A"\nsubsystem = "Alpha"\n\n'
-    functions += '[[function]]\naddress = 0x00001020\nname = "B"\nsubsystem = "Alpha"\nsize = 8\n'
-    root = make_checkout(tmp_path / "repo", functions)
+def sizes_checkout(tmp_path: Path, listing: str, addresses: tuple[int, ...] = (0x1010, 0x1020)) -> tuple[Path, Path]:
+    """A checkout whose database ports the functions at `addresses` (tagged, with `listing`), and a disc with an ELF."""
+    functions = "".join(entry(a, f"F{a:x}", f"src/core/thing.h:f{a:x}") for a in addresses)
+    tags = "".join(f"/// @orig {a:#010x} F{a:x} (x.cpp)\nvoid f{a:x}();\n" for a in addresses)
+    root = make_checkout(tmp_path / "repo", functions, tags, listing)
     disc = tmp_path / "disc"
     disc.mkdir()
     (disc / "SLUS_212.15").write_bytes(make_elf(TEXT, DATA))
+    return root, disc
+
+
+def test_sizes_command_checks_the_listings_sizes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The size of a reimplemented function is the Ghidra listing's; the command holds it to the disc's code."""
+    root, disc = sizes_checkout(tmp_path, "0x00001010\t16\tF1010\t0\n")
     monkeypatch.chdir(root)
-    assert main(["progress", "sizes", str(disc), "--fill"]) == 0
+    assert main(["progress", "sizes", str(disc)]) == 0
     out = capsys.readouterr().out
-    assert "0x00001010 A: size -, span to the next known function 16" in out and "filled 1 size(s)" in out
-    loaded = progress.load_functions(root / progress.FUNCTIONS_FILE)
-    assert [(f.name, f.size) for f in loaded] == [("A", 16), ("B", 8)]
+    assert "0x00001010 F1010: size 16, span to the next known function 16" in out
+    assert "0x00001020 F1020: size -, span to the next known function 16" in out  # the listing has no function here
     # A size past the next function is an error.
-    (root / progress.FUNCTIONS_FILE).write_text(functions.replace("size = 8", "size = 32"), encoding="utf-8")
+    (root / "docs" / "progress" / "ghidra-functions.tsv").write_text("0x00001020\t32\tF1020\t0\n", encoding="utf-8")
     assert main(["progress", "sizes", str(disc)]) == 1
     assert "error: size 32 runs past" in capsys.readouterr().out
 
 
-def test_sizes_fill_stops_at_the_next_listed_function(
+def test_sizes_span_stops_at_the_next_reimplemented_function(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A listed function nothing calls (a virtual method) still ends the span of the one before it."""
-    functions = '[[function]]\naddress = 0x00001010\nname = "A"\nsubsystem = "Alpha"\n\n'
-    functions += '[[function]]\naddress = 0x00001018\nname = "C"\nsubsystem = "Alpha"\n'
-    root = make_checkout(tmp_path / "repo", functions)
-    disc = tmp_path / "disc"
-    disc.mkdir()
-    (disc / "SLUS_212.15").write_bytes(make_elf(TEXT, DATA))
+    """A reimplemented function nothing calls (a virtual method) still ends the span of the one before it."""
+    root, disc = sizes_checkout(tmp_path, "0x00001010\t8\tF1010\t0\n", (0x1010, 0x1018))
     monkeypatch.chdir(root)
-    assert main(["progress", "sizes", str(disc), "--fill"]) == 0
+    assert main(["progress", "sizes", str(disc)]) == 0
     out = capsys.readouterr().out
-    assert "0x00001010 A: size -, span to the next known function 8" in out
-    assert "0x00001018 C: size -, span to the next known function 8" in out
-    loaded = progress.load_functions(root / progress.FUNCTIONS_FILE)
-    assert [(f.name, f.size) for f in loaded] == [("A", 8), ("C", 8)]
+    assert "0x00001010 F1010: size 8, span to the next known function 8" in out
+    assert "0x00001018 F1018: size -, span to the next known function 8" in out
+
+
+def test_sizes_command_with_nothing_reimplemented(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(make_checkout(tmp_path / "repo"))
+    assert main(["progress", "sizes", str(tmp_path)]) == 0
+    assert "nothing to check" in capsys.readouterr().out
 
 
 # --- the "Understood" measure -----------------------------------------------------------------------------------------
@@ -597,3 +660,17 @@ def test_export_listing_reads_through_fetch() -> None:
         progress_research.ListedFunction(0x1000, 256, "Alpha_Init", True),
         progress_research.ListedFunction(0x1100, 64, "FUN_00001100", False),
     ]
+
+
+def test_no_size_says_why(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Without the listing file the sizes are missing for want of it; with it, for want of a function at the address."""
+    bare = make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG)
+    monkeypatch.chdir(bare)
+    assert main(["progress", "show"]) == 0
+    assert "1 functions have no size: there is no docs/progress/ghidra-functions.tsv" in capsys.readouterr().out
+    assert "no docs/progress/ghidra-functions.tsv" in progress_render.render_page(progress.load(bare))
+    lacking = make_checkout(tmp_path / "lacking", ONE_FUNCTION, ONE_TAG, "0x00001100\t8\tOther\t0\n")
+    monkeypatch.chdir(lacking)
+    assert main(["progress", "show"]) == 0
+    assert "1 functions have no size: the Ghidra listing has no function at their address" in capsys.readouterr().out
+    assert "the Ghidra listing has no function at their address." in progress_render.render_page(progress.load(lacking))

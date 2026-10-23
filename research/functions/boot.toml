@@ -1,0 +1,82 @@
+# The researched functions of the boot system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00145a10
+name = "GameTimer_Update"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/core/game_timer.h:GameTimer::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015cae0
+name = "Gm_Mode0C_Enter"
+page = "boot.md#game-mode"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_failed_mode.h:MissionFailedMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015cf70
+name = "Gm_InGame_Enter"
+page = "boot.md#game-mode"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015d160
+name = "Gm_InGame_Update"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_complete_mode.h:MissionCompleteMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015e5e8
+name = "GameModeStack_Push"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/game_mode_stack.h:GameModeStack::push"
+status = "legacy"
+
+[[function]]
+address = 0x0015e650
+name = "GameModeStack_Pop"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/game_mode_stack.h:GameModeStack::pop"
+status = "legacy"
+
+[[function]]
+address = 0x0015e6b8
+name = "GameModeStack_RunUntilEmpty"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/game_mode_stack.h:GameModeStack::runUntilEmpty"
+status = "legacy"
+
+[[function]]
+address = 0x0015e718
+name = "GameModeStack_Top"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/game_mode_stack.h:GameModeStack::top"
+status = "legacy"
+
+[[function]]
+address = 0x0015e748
+name = "GameModeStack_TopId"
+page = "boot.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/game_mode_stack.h:GameModeStack::topId"
+status = "legacy"
+
+[[function]]
+address = 0x0015f1a0
+name = "Gm_Mode14_Enter"
+page = "boot.md#game-mode"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::enter"
+status = "legacy"

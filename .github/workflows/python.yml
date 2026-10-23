@@ -79,9 +79,10 @@ jobs:
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools repo audit --files
       # The progress inputs (docs/progress/, the @orig tags, the roadmap) must agree. The tables and the README's badge
-      # data are not committed: the docs build writes them (mkdocs_hooks.py).
+      # data are not committed: the docs build writes them (mkdocs_hooks.py). The name rule compares the tags with
+      # HEAD^1, as `orig check` does below, and --require-base fails when that commit cannot be read.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools progress check
+        run: uv run --project python coney-tools progress check --base HEAD^1 --require-base
       # A function a pull request adds to a gameplay folder carries @orig or @coney-only, and every folder of src/ is
       # listed as gameplay or Coney-only (docs/guides/conventions.md#coney-only). HEAD^1 is the branch the pull
       # request's merge commit joins, so only what the pull request adds is checked.

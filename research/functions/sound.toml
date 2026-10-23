@@ -1,0 +1,1085 @@
+# The researched functions of the sound system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0010d8e8
+name = "Music_Play"
+page = "sound.md#original-structure"
+role = "queue a music track"
+level = "confirmed-code"
+coney = "src/audio/music_player.h:MusicPlayer::play"
+status = "legacy"
+
+[[function]]
+address = 0x0010d9a0
+name = "Music_StopTrack"
+page = "sound.md#function-index"
+role = "`SoundStopMusicTrack`, per channel by state: queued, dropped; pre-loading or blocked, stopped at once; playing or waiting for the bar, a fade-out over one bar of its track from now; fading in, the same fade-out started from the level it has reached"
+level = "confirmed-code"
+coney = "src/audio/music_player.h:MusicPlayer::stop"
+status = "legacy"
+
+[[function]]
+address = 0x0010dfe0
+name = "MusicChannel_Update"
+page = "sound.md#original-structure"
+role = "the music state machine"
+level = "confirmed-code"
+coney = "src/audio/music_player.h:MusicPlayer::update"
+status = "legacy"
+
+[[function]]
+address = 0x0010e7d0
+name = "SystemMusic_Update"
+page = "sound.md#original-structure"
+role = "mood-driven track choice"
+level = "confirmed-code"
+coney = "src/audio/music_player.cpp:MusicPlayer::updateSystemMusic"
+status = "legacy"
+
+[[function]]
+address = 0x0010f3a0
+name = "SoundClasses_LoadChunk"
+page = "sound.md#function-index"
+role = "chunk `0x48` handler: the class table `0x00598670`"
+level = "confirmed-code"
+coney = "src/audio/sound_data.h:SoundTables::parseSoundClasses"
+status = "legacy"
+
+[[function]]
+address = 0x0010f618
+name = "AudioManager_Reset"
+page = "sound.md#original-structure"
+role = "defaults (below); bank `none`"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::SoundEngine"
+status = "legacy"
+
+[[function]]
+address = 0x0010f810
+name = "AudioManager_Update"
+page = "sound.md#original-structure"
+role = "the tasks, the ambient emitters, the music, the device"
+level = "confirmed-code"
+coney = "src/audio/game_sound.h:GameSound::update"
+status = "legacy"
+
+[[function]]
+address = 0x0010f900
+name = "SoundList_Load"
+page = "sound.md#function-index"
+role = "makes the sound list: `n` 4-byte entries, each a pointer to a 16-byte record of the chunk"
+level = "confirmed-code"
+coney = "src/audio/sound_data.h:SoundTables::parseSoundList"
+status = "legacy"
+
+[[function]]
+address = 0x0010f988
+name = "StereoTable_Load"
+page = "sound.md#function-index"
+role = "stores the stereo table's count `0x00598678` and records `0x00598674`"
+level = "confirmed-code"
+coney = "src/audio/sound_data.h:SoundTables::parseStereoTable"
+status = "legacy"
+
+[[function]]
+address = 0x0010f9d8
+name = "MusicList_Load"
+page = "sound.md#function-index"
+role = "makes the track list: per 104-byte record a 16-byte track (`MusicTrack_Init`)"
+level = "confirmed-code"
+coney = "src/audio/sound_data.h:SoundTables::parseMusicList"
+status = "legacy"
+
+[[function]]
+address = 0x0010fa50
+name = "AudioManager_LoadBank"
+page = "sound.md#original-structure"
+role = "loads a bank unless it is the current one"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::loadBank"
+status = "legacy"
+
+[[function]]
+address = 0x0010fb20
+name = "AudioManager_Pause"
+page = "sound.md#reverb"
+level = "confirmed-code"
+coney = "src/audio/mixer.h:Mixer::pauseAll"
+status = "legacy"
+
+[[function]]
+address = 0x0010fc30
+name = "Sound_PlayInterfaceCue"
+page = "sound.md#function-index"
+role = "plays interface cue `n` of the sound matrix (`0x00111130` → `0x00116828`) as a 2D sound with flags `0x12`"
+level = "confirmed-code"
+coney = "src/gamemodes/front_end_services.h:FrontEndServices::playCue"
+status = "legacy"
+
+[[function]]
+address = 0x0010fdd0
+name = "PlaySound3DByHash"
+page = "sound.md#original-structure"
+role = "a sound at a position (`SoundPlay`)"
+level = "confirmed-code"
+coney = "src/audio/game_sound.h:GameSound::play3D"
+status = "legacy"
+
+[[function]]
+address = 0x0010ff68
+name = "Scene_PreloadSoundtrack"
+page = "sound.md#function-index"
+role = "stops a live soundtrack, claims a stream pair or falls back (`0x00112d60`), prepares the sound and keeps its handle in `+0x24268` and the music player's `+0x08` ([Scene soundtracks](sound.md#scene-sound))"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::preloadSceneSound"
+status = "legacy"
+
+[[function]]
+address = 0x00110018
+name = "Scene_StartSoundtrack"
+page = "sound.md#function-index"
+role = "scene event 13: starts whatever task `+0x24268` holds and sets `+0x2426c` to whether it is alive"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::startSceneSound"
+status = "legacy"
+
+[[function]]
+address = 0x00110078
+name = "Scene_StopSoundtrack"
+page = "sound.md#function-index"
+role = "stops the soundtrack's task and clears `+0x2426c`"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::stopSceneSound"
+status = "legacy"
+
+[[function]]
+address = 0x001102a0
+name = "Sound_IsPrepared"
+page = "sound.md#function-index"
+role = "a prepared task's stream is primed (device slot `+0x80`); a bank sound counts as ready, a dead handle as not"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::sceneSoundReady"
+status = "legacy"
+
+[[function]]
+address = 0x00110790
+name = "Sound_PlayMaterialHit"
+page = "sound.md#function-index"
+role = "plays the first sound of a material pair's [matrix](sound.md#sound-matrix) entry at a position, volume × the entry's first column volume (`0x0021f700`)"
+level = "confirmed-code"
+coney = "src/audio/material_sounds.h:MaterialSoundPlayer::playMaterialHit"
+status = "legacy"
+
+[[function]]
+address = 0x00110830
+name = "Sound_PlayMaterialPair"
+page = "sound.md#function-index"
+role = "plays columns 2 and 1 of a material pair's entry at a position, each with its column volume; for first material 13 the second plays at pitch `0x003354e0() × 0.2` (16 callers: contacts, objects, footsteps)"
+level = "confirmed-code"
+coney = "src/audio/material_sounds.h:MaterialSoundPlayer::playMaterialPair"
+status = "legacy"
+
+[[function]]
+address = 0x00110940
+name = "Sound_PlayMaterialPairPlain"
+page = "sound.md#function-index"
+role = "the same without the material-13 pitch (`0x0021f290`)"
+level = "confirmed-code"
+coney = "src/audio/material_sounds.h:MaterialSoundPlayer::playMaterialPairPlain"
+status = "legacy"
+
+[[function]]
+address = 0x00110a08
+name = "Sound_PlayAnimSound"
+page = "sound.md#function-index"
+role = "plays column 1 of an [animation sound](sound.md#sound-matrix) entry at a position with its column volume"
+level = "confirmed-code"
+coney = "src/audio/material_sounds.h:MaterialSoundPlayer::playAnimSound"
+status = "legacy"
+
+[[function]]
+address = 0x00110aa8
+name = "Sound_RemapFootMaterial"
+page = "sound.md#function-index"
+role = "for the footstep caller (`0x0021f290`): material `0x12` → `0x6a`, 6 → 5, `0x79` → `0x23` at half volume, else unchanged at 1"
+level = "confirmed-code"
+coney = "src/audio/material_sounds.h:MaterialSoundPlayer::remapFootMaterial"
+status = "legacy"
+
+[[function]]
+address = 0x00110b60
+name = "AmbientTrack_Play"
+page = "sound.md#original-structure"
+role = "the level's ambience bed"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::playAmbientTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00110c70
+name = "AmbientTrack_Stop"
+page = "sound.md#original-structure"
+role = "the level's ambience bed"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::stopAmbientTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00111178
+name = "AudioManager_StartLoadScreen"
+page = "sound.md#original-structure"
+role = "the load-screen bank and its two sounds ([Banks](sound.md#banks))"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::startLoadScreen"
+status = "legacy"
+
+[[function]]
+address = 0x00111428
+name = "AudioManager_StopLoadScreen"
+page = "sound.md#original-structure"
+role = "the load-screen bank and its two sounds ([Banks](sound.md#banks))"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::endLoadScreen"
+status = "legacy"
+
+[[function]]
+address = 0x001119d0
+name = "SoundList_Find"
+page = "sound.md#function-index"
+role = "binary search by the record's hash `+0x08`; index or -1"
+level = "confirmed-code"
+coney = "src/audio/sound_data.h:SoundTables::find"
+status = "legacy"
+
+[[function]]
+address = 0x00111de8
+name = "AudioManager_Play"
+page = "sound.md#original-structure"
+role = "start a task"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.h:SoundEngine::play"
+status = "legacy"
+
+[[function]]
+address = 0x001120c8
+name = "AudioManager_NewTask"
+page = "sound.md#original-structure"
+role = "admission, task, voice"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::startTask"
+status = "legacy"
+
+[[function]]
+address = 0x00112560
+name = "Task_GetVoice"
+page = "sound.md#original-structure"
+role = "voice allocation and stealing"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::takeVoice"
+status = "legacy"
+
+[[function]]
+address = 0x00112700
+name = "Task_FindVictim"
+page = "sound.md#original-structure"
+role = "voice allocation and stealing"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::findVictim"
+status = "legacy"
+
+[[function]]
+address = 0x00112b10
+name = "Tasks_Update"
+page = "sound.md#original-structure"
+role = "per update: run each task, free the finished"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::update"
+status = "legacy"
+
+[[function]]
+address = 0x00113370
+name = "Audio_SetPitchMod"
+page = "sound.md#function-index"
+role = "`SndSetPitchMod`: the global pitch factor `+0x3fa5c`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001133b0
+name = "Audio_SetNIDuck"
+page = "sound.md#function-index"
+role = "`SndSetNIDuck`: `+0x3faac`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001133d0
+name = "Sound_LoadBank"
+page = "sound.md#function-index"
+role = "`SndLoadBank`: loads at once, or while `+0x3fa58` is set keeps the name pending"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113438
+name = "Snd_CfgMusicInfo"
+page = "sound.md#function-index"
+role = "`SndCfgMusicInfo`: clamps the volume to 0-1, then `Sound_CfgMusicInfo`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113490
+name = "Snd_LoadMatrix"
+page = "sound.md#function-index"
+role = "`SndLoadMatrix` → `Sound_LoadMatrix`"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001134b8
+name = "Snd_SetMusicVolume"
+page = "sound.md#function-index"
+role = "`SoundSetMusicVolume` → `Sound_SetMusicVolume`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113510
+name = "Snd_PlayMusicTrack"
+page = "sound.md#function-index"
+role = "`SoundPlayMusicTrack` by name, fade bars 1"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makePlayMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00113590
+name = "Snd_LoopMusicTrack"
+page = "sound.md#function-index"
+role = "`SoundLoopMusicTrack` by name"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makePlayMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x001135e0
+name = "Snd_StopMusicTrack"
+page = "sound.md#function-index"
+role = "`SoundStopMusicTrack`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeStopMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00113608
+name = "Snd_PlayAmbientTrack"
+page = "sound.md#function-index"
+role = "`SoundPlayAmbientTrack` → `AmbientTrack_PlayByName`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113630
+name = "Snd_StopAmbientTrack"
+page = "sound.md#function-index"
+role = "`SoundStopAmbientTrack` → `AmbientTrack_Stop`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113658
+name = "Snd_SetAmbientTrackVolume"
+page = "sound.md#function-index"
+role = "`SetAmbientTrackVolume` → `AmbientTrack_SetVolume`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113680
+name = "Audio_PlaySoundAt"
+page = "sound.md#function-index"
+role = "`SoundPlay(name, pos)`: `PlaySound3DByHash` at volume and pitch 1, duckable"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113700
+name = "Audio_PreloadSoundAt"
+page = "sound.md#function-index"
+role = "`SoundPreLoad(name, pos)`: `Sound_PrepareAtCopy` with `0x00512c14` set for the call, which spares the sound the load screen's virtual rule"
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113780
+name = "Audio_StartPreloadedSound"
+page = "sound.md#function-index"
+role = "`SoundStart(handle)` → `Sound_StartPrepared`"
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x001137a8
+name = "Snd_Play2D"
+page = "sound.md#function-index"
+role = "`SoundPlay2D(name)`: `PlaySound2DByHash` with flags 0, 0 and duckable"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113810
+name = "Snd_AddAmbientSound"
+page = "sound.md#function-index"
+role = "`AddAmbientSound(slot, name)` → `Ambient_SetTableSlot`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113840
+name = "Sound_AddAmbientEmitter"
+page = "sound.md#function-index"
+role = "`AddAmbientSoundEmitter`: the sound name's hash (0 for none) → `Ambient_AddParticleEmitter`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeAddAmbientSoundEmitter"
+status = "legacy"
+
+[[function]]
+address = 0x00113920
+name = "Snd_AddAmbientSoundEmitter2"
+page = "sound.md#function-index"
+role = "`AddAmbientSoundEmitter2`: the sound name's hash (0 for none) → `Ambient_AddEmitter`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeAddAmbientSoundEmitter2"
+status = "legacy"
+
+[[function]]
+address = 0x00113a58
+name = "Snd_SetAmbientEmitterPositions"
+page = "sound.md#function-index"
+role = "`SetAmbientEmitterPositions(emitter, p1-p5, n)`: up to 5 points (w = 1) → `Ambient_SetEmitterPoints`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeSetAmbientEmitterPositions"
+status = "legacy"
+
+[[function]]
+address = 0x00113bc8
+name = "Audio_EnableAmbientEmitter"
+page = "sound.md#function-index"
+role = "`EnableAmbientEmitter` → `AmbientManager_EnableEmitter`"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113c00
+name = "Sound_SetAmbientEmitterVolume"
+page = "sound.md#function-index"
+role = "`SetAmbientEmitterVolumeMod` → `AmbientEmitter_SetVolume`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeSetAmbientEmitterVolumeMod"
+status = "legacy"
+
+[[function]]
+address = 0x00113c58
+name = "Snd_NewMaterialSlots"
+page = "sound.md#function-index"
+role = "`NewMaterialSlots` → `Sound_NewMaterialSlots`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113c98
+name = "Snd_NewMaterialSound"
+page = "sound.md#function-index"
+role = "`NewMaterialSound` → `Sound_NewMaterialSound`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113ce8
+name = "Snd_DuplicateSoundMaterials"
+page = "sound.md#function-index"
+role = "`DuplicateSoundMaterials` → `Sound_DuplicateSoundMaterials`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113d18
+name = "Snd_SetNumberOfMaterialSlots"
+page = "sound.md#function-index"
+role = "`SetNumberOfMaterialSlots` → `Sound_SetNumberOfMaterialSlots`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113d50
+name = "Snd_NewAnimSlots"
+page = "sound.md#function-index"
+role = "`NewAnimSlots` → `Sound_NewAnimSlots`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113d88
+name = "Snd_NewAnimSound"
+page = "sound.md#function-index"
+role = "`NewAnimSound` → `Sound_NewAnimSound`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113dd0
+name = "Snd_AllocateCharacterVoices"
+page = "sound.md#function-index"
+role = "`SndAllocateCharacterVoices` → `Sound_AllocateCharacterVoices`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113df8
+name = "Snd_SetCommandSoundPercent"
+page = "sound.md#function-index"
+role = "`SndSetCommandSoundPercent` → `Sound_SetCommandSoundPercent`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00113e60
+name = "Sound_SetSystemMusicState"
+page = "sound.md#function-index"
+role = "`SoundSetSystemMusicState(mood)` → `GameState_SetMusicMood`"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSoundSetSystemMusicState"
+status = "legacy"
+
+[[function]]
+address = 0x00113ea8
+name = "Sound_EnableSystemMusic"
+page = "sound.md#function-index"
+role = "`SoundEnableSystemMusic` → `GameState_SetSystemMusic`"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSoundEnableSystemMusic"
+status = "legacy"
+
+[[function]]
+address = 0x00113ed0
+name = "Snd_SetMusicTrack"
+page = "sound.md#function-index"
+role = "`SoundSetMusicTrack(mood, a, b, c)`: the non-empty names' hashes → `Sound_SetMusicTrack`, then the system music on and the music player's `+0x68` (manager `+0xcc`) set"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSoundSetMusicTrack"
+status = "legacy"
+
+[[function]]
+address = 0x00114018
+name = "Snd_SetListener"
+page = "sound.md#function-index"
+role = "`SndSetListener(n)`: the audio manager's `+0x60`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00114028
+name = "Snd_SetEffect"
+page = "sound.md#function-index"
+role = "`SoundSetEffect(type, depth, delay, feedback)` → `Sound_SetEffect`"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSoundSetEffect"
+status = "legacy"
+
+[[function]]
+address = 0x00114060
+name = "Snd_EnableEffects"
+page = "sound.md#function-index"
+role = "`SoundEnableEffects(on)` → `Sound_EnableEffects`"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSoundEnableEffects"
+status = "legacy"
+
+[[function]]
+address = 0x00114088
+name = "Audio_PauseSound"
+page = "sound.md#function-index"
+role = "`SoundPauseSound(on)` → `AudioManager_Pause` / `_Resume`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001140d8
+name = "Sound_PlayHumanCommand"
+page = "sound.md#function-index"
+role = "`SoundPlayCommand` → `Human_SayCommand`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:makeSoundPlayCommand"
+status = "legacy"
+
+[[function]]
+address = 0x001141b0
+name = "Snd_CfgInterfaceSound"
+page = "sound.md#function-index"
+role = "`SoundCfgInterfaceSound` → `Sound_CfgInterfaceSound`"
+level = "confirmed-code"
+coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00114220
+name = "SoundMatrix_Init"
+page = "sound.md#function-index"
+role = "allocates the matrix pools: 3,000 sound-hash words, 1,200 material records and 150 animation records of 28 bytes; clears both tables, name `sound`, then `0x00116848`"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::SoundMatrix"
+status = "legacy"
+
+[[function]]
+address = 0x00114628
+name = "SoundMatrix_Load"
+page = "sound.md#function-index"
+role = "`SndLoadMatrix(name)`: when the name differs from the current one (`+0x23d64`), resets the matrix, keeps the name and runs the script `<name>_preload`"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::load"
+status = "legacy"
+
+[[function]]
+address = 0x001146c0
+name = "SoundMatrix_GetMaterialSounds"
+page = "sound.md#function-index"
+role = "a material pair's next alternative: up to three hashes and the three column volumes; a second material of 0 or 1 uses the caller's default, and an empty entry falls back to it; the alternatives play **in turn** (cursor byte 2, wrapping at byte 0)"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::nextMaterialSounds"
+status = "legacy"
+
+[[function]]
+address = 0x00114800
+name = "SoundMatrix_GetAnimSounds"
+page = "sound.md#function-index"
+role = "an animation sound's next alternative (cursor byte 1), hashes and volumes"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::nextAnimSounds"
+status = "legacy"
+
+[[function]]
+address = 0x00114b20
+name = "VoiceTable_NextLine"
+page = "sound.md#original-structure"
+role = "the next line's sound for a voice set and command, or none"
+level = "confirmed-code"
+coney = "src/audio/voice_table.h:VoiceTable::nextLine"
+status = "legacy"
+
+[[function]]
+address = 0x00115bb0
+name = "VoiceTable_SetCommandPercent"
+page = "sound.md#function-index"
+role = "`SndSetCommandSoundPercent(set, command, percent)`: byte 2 of the entry; set -1 for every set"
+level = "confirmed-code"
+coney = "src/audio/voice_table.h:VoiceTable::setPercent"
+status = "legacy"
+
+[[function]]
+address = 0x00115c30
+name = "SoundMatrix_ClearMaterials"
+page = "sound.md#function-index"
+role = "clears the 191 × 191 material table"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::clear"
+status = "legacy"
+
+[[function]]
+address = 0x00115c80
+name = "SoundMatrix_ClearAnims"
+page = "sound.md#function-index"
+role = "clears the 162-entry animation table"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::clear"
+status = "legacy"
+
+[[function]]
+address = 0x00115cb0
+name = "SoundMatrix_NewMaterialSlots"
+page = "sound.md#function-index"
+role = "`NewMaterialSlots(m1, m2, count, columns, v1, v2, v3)`: takes a record, `count` hash words per column (1-3), zeroes them, stores the three volumes; the last three floats are not read"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::newMaterialSlots"
+status = "legacy"
+
+[[function]]
+address = 0x00115ee8
+name = "SoundMatrix_NewMaterialSound"
+page = "sound.md#function-index"
+role = "`NewMaterialSound(i, m1, m2, s1, s2, s3)`: sets alternative `i`'s columns to the names' hashes (`none` stores 0, nil leaves it)"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::newMaterialSound"
+status = "legacy"
+
+[[function]]
+address = 0x00116080
+name = "SoundMatrix_NewAnimSlots"
+page = "sound.md#function-index"
+role = "`NewAnimSlots(event, count, columns, v1, v2, v3)`: as the material version, for the animation table (cursor byte 1)"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::newAnimSlots"
+status = "legacy"
+
+[[function]]
+address = 0x001162a0
+name = "SoundMatrix_NewAnimSound"
+page = "sound.md#function-index"
+role = "`NewAnimSound(i, event, s1, s2, s3)`"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::newAnimSound"
+status = "legacy"
+
+[[function]]
+address = 0x00116438
+name = "SoundMatrix_DuplicateMaterials"
+page = "sound.md#function-index"
+role = "`DuplicateSoundMaterials(a, b)`: entry `[b][a]` = entry `[a][b]` (the pair works both ways)"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::duplicateMaterials"
+status = "legacy"
+
+[[function]]
+address = 0x00116480
+name = "SoundMatrix_SetMaterialCount"
+page = "sound.md#function-index"
+role = "`SetNumberOfMaterialSlots(m1, m2, n)`: alternatives used, cursor reset"
+level = "confirmed-code"
+coney = "src/audio/sound_matrix.h:SoundMatrix::setMaterialSlotCount"
+status = "legacy"
+
+[[function]]
+address = 0x001164a8
+name = "VoiceTable_Build"
+page = "sound.md#original-structure"
+role = "allocates `n` voice sets and counts each one's lines per speech command"
+level = "confirmed-code"
+coney = "src/audio/voice_table.h:VoiceTable::build"
+status = "legacy"
+
+[[function]]
+address = 0x00117280
+name = "Sound_PlayMaterialPairAt"
+page = "sound.md#function-index"
+role = "`Sound_PlayMaterialPair(1.0, a, b, pos, default 5)`: glass and other objects"
+level = "confirmed-code"
+coney = "src/audio/material_sounds.h:MaterialSoundPlayer::playMaterialPairAt"
+status = "legacy"
+
+[[function]]
+address = 0x0011a170
+name = "SoundTask_Update"
+page = "sound.md#original-structure"
+role = "fades, 3D volume and pan, pitch"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::updateTask"
+status = "legacy"
+
+[[function]]
+address = 0x0011b450
+name = "StereoSlots_Claim"
+page = "sound.md#function-index"
+role = "the preload's claim: refused (-1) when either slot holds a stereo sound and the claim is for one; slot 0 if free, else 1 if free, else -1"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::claimStereoSlot"
+status = "legacy"
+
+[[function]]
+address = 0x0011b498
+name = "StereoSlots_Take"
+page = "sound.md#function-index"
+role = "making a task or a music channel: slot 0 if free, else 1; both taken: -1 while a started soundtrack lives or a cinematic runs, else a slot holding a stereo sound is taken over (`0x0011b6c0`)"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::takeStereoPair"
+status = "legacy"
+
+[[function]]
+address = 0x00143f68
+name = "Crc32_Hash"
+page = "sound.md#original-structure"
+role = "CRC-32 of a name as written (no case folding), table at `0x005d91e0`"
+level = "confirmed-code"
+coney = "src/audio/sound_player.h:soundIdOf"
+status = "legacy"
+
+[[function]]
+address = 0x0014c620
+name = "AudioDevice_LoadBank"
+page = "sound.md#device"
+role = "slot `+0x30`: waits for stream 0, then loads `<name>.msb` into sound RAM at `+0x844` and `<name>.msd` into IOP memory at `+0x884` through stream 0 (`./ee_files/%s.msb` and `.msd` in the WAD; partial: the first 64 KB of the `.msb`), running the blocking update and the loading callback `0x0050b728` while it waits; then registers the index (`0x00151dc0`)"
+level = "confirmed-code"
+coney = "src/audio/sound_bank.h:loadSoundBank"
+status = "legacy"
+
+[[function]]
+address = 0x0014d2d8
+name = "AudioDevice_Duration"
+page = "sound.md#device"
+role = "slot `+0x48`: `⌊⌊size × 3.5⌋ / (2 × rate)⌋ × 1000` ms"
+level = "confirmed-code"
+coney = "src/audio/sound_engine.cpp:SoundEngine::durationMs"
+status = "legacy"
+
+[[function]]
+address = 0x00150078
+name = "RateToPitch"
+page = "sound.md#device"
+role = "`rate × 4096 / 48000`"
+level = "confirmed-code"
+coney = "src/audio/mixer.h:rateToPitch"
+status = "legacy"
+
+[[function]]
+address = 0x002195e0
+name = "Human_SetCoverFlag5"
+page = "sound-events.md#covered"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::onCoveredGround"
+status = "legacy"
+
+[[function]]
+address = 0x0021e400
+name = "Human_PlaySpeech"
+page = "sound.md#original-structure"
+role = "plays a line at the human with an end callback (the second also cuts a line off)"
+level = "confirmed-code"
+coney = "src/audio/speech.h:Speech::say"
+status = "legacy"
+
+[[function]]
+address = 0x0021e698
+name = "Human_PlaySpeechCutting"
+page = "sound.md#original-structure"
+role = "plays a line at the human with an end callback (the second also cuts a line off)"
+level = "confirmed-code"
+coney = "src/audio/speech.h:Speech::say"
+status = "legacy"
+
+[[function]]
+address = 0x002205e0
+name = "Human_SayCommand"
+page = "sound.md#original-structure"
+role = "a human says a speech command (the work of `SoundPlayCommand`)"
+level = "confirmed-code"
+coney = "src/audio/game_sound.h:GameSound::sayCommandAt"
+status = "legacy"
+
+[[function]]
+address = 0x00220ac8
+name = "Human_PlayImpactSound"
+page = "sound-events.md#players"
+level = "confirmed-code"
+coney = "src/audio/human_sound_events.h:HumanSoundEvents::impact"
+status = "legacy"
+
+[[function]]
+address = 0x00228228
+name = "HumanRecord_AreActionsBlocked"
+page = "sound-events.md#tag-lines"
+level = "confirmed-code"
+coney = "src/ai/swap_prompt.h:actionsBlocked"
+status = "legacy"
+
+[[function]]
+address = 0x0022c730
+name = "Grab_Link"
+page = "sound-events.md#speech"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::linkedWith"
+status = "legacy"
+
+[[function]]
+address = 0x0023bf00
+name = "Human_PickUpObject"
+page = "sound-events.md#pickup-sound"
+level = "confirmed-code"
+note = "the level is from [crimes.md#owned-items](crimes.md#owned-items)"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::take"
+status = "legacy"
+
+[[function]]
+address = 0x00291ed0
+name = "Ambient_MayGesture"
+page = "sound-events.md#command-ids"
+level = "confirmed-code"
+coney = "src/ai/script_services.h:ScriptServices::mayGesture"
+status = "legacy"
+
+[[function]]
+address = 0x002ae2e8
+name = "MeleeGoal_ProcessTarget"
+page = "sound-events.md#speech"
+level = "confirmed-code"
+coney = "src/ai/melee_goal.h:MeleeGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002d1c38
+name = "RiotGoal_Process"
+page = "sound-events.md#speech"
+level = "confirmed-code"
+coney = "src/ai/riot_goals.h:RiotGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002e6668
+name = "ShopkeeperGoal_Process"
+page = "sound-events.md#speech"
+level = "confirmed-code"
+coney = "src/ai/hub_goals.h:ShopkeeperGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x0030eec0
+name = "ConfrontTactic_Process"
+page = "sound-events.md#speech"
+level = "confirmed-code"
+coney = "src/ai/tactic_confront.h:TacticConfront::update"
+status = "legacy"
+
+[[function]]
+address = 0x00354d28
+name = "SceneTrack_FindSoundtrackEvent"
+page = "sound.md#scene-sound"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/scenes/scene_record.h:soundtrackOf"
+status = "legacy"
+
+[[function]]
+address = 0x0038a830
+name = "Car_BreakWindow"
+page = "sound-events.md#cars"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world_objects/cars.h:carBreakWindowEffect"
+status = "legacy"
+
+[[function]]
+address = 0x0038bea0
+name = "Car_OnHit"
+page = "sound-events.md#cars"
+level = "confirmed-code"
+note = "the level is from [cars.md#hit-volumes](cars.md#hit-volumes)"
+coney = "src/world_objects/car_hits.h:carHumanHitParts"
+status = "legacy"
+
+[[function]]
+address = 0x00393538
+name = "ThrownObject_OnContact"
+page = "sound-events.md#objects"
+level = "confirmed-code"
+coney = "src/world_objects/glass.h:GlassPanes::thrownHit"
+status = "legacy"
+
+[[function]]
+address = 0x003ac4d0
+name = "Radio_Setup"
+page = "sound.md#radios"
+level = "confirmed-code"
+coney = "src/world_objects/radios.h:Radios::setup"
+status = "legacy"
+
+[[function]]
+address = 0x003ac600
+name = "Radio_SetMode"
+page = "sound.md#radios"
+level = "confirmed-code"
+coney = "src/world_objects/radios.h:Radios::setMode"
+status = "legacy"
+
+[[function]]
+address = 0x003ad440
+name = "Radio_Update"
+page = "sound.md#radios"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world_objects/radios.h:Radios::update"
+status = "legacy"
+
+[[function]]
+address = 0x00419030
+name = "Breathing_Start"
+page = "sound.md#warriors-functions"
+role = "starts the 2D loop (handle `+0x234`) at volume 0 rising to 1.0, or turns a fading one round; stops it and clears the state `+0x248`"
+level = "confirmed-code"
+coney = "src/audio/game_sound.cpp:GameSound::updateBreathing"
+status = "legacy"
+
+[[function]]
+address = 0x00419108
+name = "Breathing_Stop"
+page = "sound.md#warriors-functions"
+role = "starts the 2D loop (handle `+0x234`) at volume 0 rising to 1.0, or turns a fading one round; stops it and clears the state `+0x248`"
+level = "confirmed-code"
+coney = "src/audio/game_sound.cpp:GameSound::updateBreathing"
+status = "legacy"
+
+[[function]]
+address = 0x00419150
+name = "Breathing_Update"
+page = "sound.md#warriors-functions"
+role = "each frame (from `0x0041a370`): while the camera frames combat (`Camera_IsCombatFraming`) the loop fades in over `+0x250` ms; once it does not, it fades out over `+0x254` ms and stops at 0"
+level = "confirmed-code"
+coney = "src/audio/game_sound.cpp:GameSound::updateBreathing"
+status = "legacy"
+
+[[function]]
+address = 0x00419fc8
+name = "GameState_SetMusicMood"
+page = "sound.md#warriors-functions"
+role = "the system music's mood `+0x40c`; mood 4 switches the system music off and stores 3"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeSoundSetSystemMusicState"
+status = "legacy"
+
+[[function]]
+address = 0x0041a060
+name = "SystemMusic_UpdateMood"
+page = "sound.md#warriors-functions"
+role = "every 30th update, and from `GameState_SetSystemMusic` and `Gang_SetAlertState`: with system music off (`+0x3f8` 0) mood 4; otherwise, unless locked (`+0x3f4`) outside mood 3, picks a mood from player 1's gang and the nearest other gang: 1 (combat) when one of that gang's members fights ours, or when it is farther than both radii + 30 m but at least `CfgGangSizeForCombatMusic` strong (`0x005148a8`) and in sight of a player; 2 when our gang is hunted (`Gang_IsBeingHunted`); else 0"
+level = "confirmed-code"
+note = "confirmed (code); the reading of each test inferred"
+coney = "src/gamemodes/system_music.h:stepSystemMusic"
+status = "legacy"
+
+[[function]]
+address = 0x0041d920
+name = "Cfg_SetGangSizeForCombatMusic"
+page = "sound.md#warriors-functions"
+role = "`CfgGangSizeForCombatMusic` (`0x005148a8`, read by `SystemMusic_UpdateMood`) / `CfgDisableMusicForScenes` (`0x005148ac`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041d930
+name = "Cfg_SetDisableMusicForScenes"
+page = "sound.md#warriors-functions"
+role = "`CfgGangSizeForCombatMusic` (`0x005148a8`, read by `SystemMusic_UpdateMood`) / `CfgDisableMusicForScenes` (`0x005148ac`)"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"

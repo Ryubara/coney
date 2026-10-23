@@ -200,12 +200,8 @@ One tag per original function. A Coney function that does the work of two origin
 helper that does part of an original function's work (a step the original inlined) carries that function's tag. A
 function with no original counterpart carries `@coney-only <reason>` instead ([Coney-only code](#coney-only)).
 
-**Every tag is counted.** In the same commit as the code, add a `[[function]]` block for each newly tagged original
-function to `docs/progress/functions.toml` (address, original name, subsystem and, when known, size), then run
-`uv run --project python coney-tools progress check`. Nothing generated is committed: the progress page's tables
-come from the docs build. CI fails when a tag and the file disagree. `coney-tools progress sizes --fill` finds a
-size from your own disc. Details:
-[the progress commands](coney-tools-references.md#progress) and [Progress](../progress/index.md).
+**Every tag is counted.** In the same commit as the code, record the port on the function's entry in the function
+database and run `progress check`: [Recording a port](research-function-database.md#ported).
 
 ### A complete example
 

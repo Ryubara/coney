@@ -443,13 +443,14 @@ related, Expected tests, Decision points, Related PRs and open questions. Goal a
 "What done means", quoted line by line (with a leading `>`) so that no line of issue text can start a section of the
 file; Expected tests says "no fails-first test" for `docs` and `tooling`; the coordinator prunes the rest.
 
-**Where to look** comes from a search of prepared indexes with the terms the coordinator chose (`--terms`): the headings
-and cited addresses of the research pages, `docs/progress/functions.toml`, the committed Ghidra function list, the
-`@orig` tags of `src/`, the merged pull requests (titles and files) and, when it exists, `research/glossary.yaml`. Names
-are split into parts (`Goal_ThrowObject` is `goal throw object`), a part found in few entries ranks above a common one,
-and the exact identifiers, addresses, paths and references written in the issue are always included, outside the limits.
-Every match carries the reason it matched, and the terms that matched nothing go to "Searched, not related". The limits
-are `tasks.leads`; `coney-tools task leads` runs the same search without claiming anything.
+**Where to look** comes from a search of prepared indexes with the terms the coordinator chose (`--terms`): the
+headings and cited addresses of the research pages, the reimplemented functions of the function database, the
+committed Ghidra function list, the `@orig` tags of `src/`, the merged pull requests (titles and files) and, when it
+exists, `research/glossary.yaml`. Names are split into parts (`Goal_ThrowObject` is `goal throw object`), a part found
+in few entries ranks above a common one, and the exact identifiers, addresses, paths and references written in the
+issue are always included, outside the limits. Every match carries the reason it matched, and the terms that matched
+nothing go to "Searched, not related". The limits are `tasks.leads`; `coney-tools task leads` runs the same search
+without claiming anything.
 
 ## Working from an issue {#agents}
 

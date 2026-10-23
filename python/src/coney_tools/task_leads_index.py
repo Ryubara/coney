@@ -6,7 +6,8 @@ never game data (`LEGAL.md`):
 
 * `research`: the headings (with their anchors) of `docs/research/*.md`, with the addresses and the code-span names
   cited under each heading;
-* `functions`: `docs/progress/functions.toml`, the original functions Coney reimplements;
+* `functions`: the entries with `coney` in the function database (`research/functions/`), the original functions Coney
+  reimplements;
 * `ghidra`: `docs/progress/ghidra-functions.tsv`, the committed list of the functions the shared Ghidra project names;
 * `orig`: the `@orig` tags of `src/` (`orig_index`), with the Coney file and line;
 * `pr`: the merged pull requests (title and changed files), read with `gh`;
@@ -21,7 +22,6 @@ from __future__ import annotations
 
 import json
 import re
-import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -30,6 +30,7 @@ from typing import Any
 
 import yaml
 
+from coney_tools import research_functions
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import iso_time, parse_time
@@ -143,28 +144,22 @@ def research_entries(root: Path) -> list[Entry]:
 
 
 def function_entries(root: Path) -> list[Entry]:
-    """The functions Coney reimplements (`docs/progress/functions.toml`)."""
-    path = root / "docs" / "progress" / "functions.toml"
-    if not path.is_file():
-        return []
-    try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise ConfigError(f"{path}: cannot be read ({error})") from error
+    """The functions Coney reimplements: the entries with `coney` in the function database."""
     entries: list[Entry] = []
-    for block in data.get("function", []):
-        address = f"0x{int(block['address']):08x}"
-        name = str(block["name"])
-        entries.append(
-            Entry(
-                "functions",
-                name,
-                address,
-                split_name(name),
-                (address, name),
-                f"reimplemented ({block.get('subsystem', '')})",
-            )
-        )
+    for system in research_functions.load_all(root):
+        for function in system.entries:
+            if function.coney:
+                address = f"0x{function.address:08x}"
+                entries.append(
+                    Entry(
+                        "functions",
+                        function.name,
+                        address,
+                        split_name(function.name),
+                        (address, function.name),
+                        f"reimplemented ({function.coney.partition(':')[0]})",
+                    )
+                )
     return entries
 
 

@@ -115,6 +115,16 @@ def test_links_are_rebased_to_the_research_root() -> None:
     assert {e.name: e.page for e in sub.entries}["TaskManager_Construct"] == "combat/grabs.md#code-index"
 
 
+def test_links_in_an_evidence_note_are_rebased_too() -> None:
+    """The note of a mixed evidence cell is rebased like the role, so the rendered list reads it from its own folder."""
+    page = (
+        "| Address | Name | Evidence |\n| --- | --- | --- |\n"
+        "| `0x00100200` | `A` | confirmed (code); the id [inferred](grabs.md#x) |\n"
+    )
+    [entry] = research_import.import_tables(page, "combat/other.md", source="s").entries
+    assert entry.note == "confirmed (code); the id [inferred](combat/grabs.md#x)"
+
+
 def test_a_table_that_is_not_a_function_list_is_skipped() -> None:
     """A table without an address and name, or without an evidence column, gives no entries and is reported."""
     result = run()

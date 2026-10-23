@@ -1,0 +1,651 @@
+# The researched functions of the graphics system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00159c08
+name = "StartupScreen_Draw"
+page = "graphics.md#original-structure"
+role = "draws the legal screen"
+level = "confirmed-code"
+coney = "src/gamemodes/legal_screen_mode.h:LegalScreenMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0016e8f0
+name = "ResourceMgr_GetCharData"
+page = "graphics.md#code-resources"
+role = "get, type 5 (file `\"%u\"` of the id, [Characters](characters.md#files))"
+level = "confirmed-code"
+coney = "src/characters/character_data.h:loadCharacterData"
+status = "legacy"
+
+[[function]]
+address = 0x00170330
+name = "Garbage_Start"
+page = "graphics.md#code-camera-effects"
+role = "`StartGarbage`"
+level = "confirmed-code"
+coney = "src/effects/camera_litter.h:CameraLitter::start"
+status = "legacy"
+
+[[function]]
+address = 0x00170528
+name = "Garbage_End"
+page = "graphics.md#code-camera-effects"
+role = "`EndGarbage`: clears the active flag"
+level = "confirmed-code"
+coney = "src/effects/camera_litter.h:CameraLitter::end"
+status = "legacy"
+
+[[function]]
+address = 0x00170c88
+name = "Garbage_Update"
+page = "graphics.md#code-camera-effects"
+role = "steps every piece at 30 Hz, from `Humans_Update`"
+level = "confirmed-code"
+coney = "src/effects/camera_litter.h:CameraLitter::step"
+status = "legacy"
+
+[[function]]
+address = 0x001728e0
+name = "CarInstance_PartColour"
+page = "graphics.md#code-car-render"
+role = "the car's tint for the painted parts (mask `0x157c31`), white for the others"
+level = "confirmed-code"
+coney = "src/graphics/car_draw.h:carPartPainted"
+status = "legacy"
+
+[[function]]
+address = 0x00172940
+name = "CarPart_RenderCallback"
+page = "graphics.md#code-car-render"
+role = "draws one atomic by its part's damage and the pass ([Drawing a car](graphics.md#car-draw))"
+level = "confirmed-code"
+coney = "src/graphics/car_draw.h:carAtomicDraws"
+status = "legacy"
+
+[[function]]
+address = 0x00172c70
+name = "CarInstance_Render"
+page = "graphics.md#code-car-render"
+role = "[Drawing a car](graphics.md#car-draw)"
+level = "confirmed-code"
+coney = "src/platform/parked_cars.h:ParkedCars::draw"
+status = "legacy"
+
+[[function]]
+address = 0x00174320
+name = "HumanRender_Draw"
+page = "graphics.md#code-characters"
+role = "[Drawing a human](graphics.md#human-draw), [Lighting](lighting.md#humans)"
+level = "confirmed-code"
+coney = "src/graphics/human_blood.h:bloodLayerFor"
+status = "legacy"
+
+[[function]]
+address = 0x00175210
+name = "TaskStack_Top"
+page = "graphics.md#code-characters"
+role = "[task stack](formats/animation.md#task-stack)"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:AnimTaskStack::top"
+status = "legacy"
+
+[[function]]
+address = 0x001754e8
+name = "TaskStack_InsertBottom"
+page = "graphics.md#code-characters"
+role = "[task stack](formats/animation.md#task-stack)"
+level = "confirmed-code"
+coney = "src/animation/anim_task.h:AnimTaskStack::change"
+status = "legacy"
+
+[[function]]
+address = 0x00178098
+name = "CharacterList_OnLoaded"
+page = "graphics.md#code-characters"
+role = "chunk `0x44` ([Chunk system](chunk-system.md))"
+level = "confirmed-code"
+coney = "src/characters/character_list.h:CharacterList::parse"
+status = "legacy"
+
+[[function]]
+address = 0x001783d0
+name = "ResourceMgr_GetCharModel"
+page = "graphics.md#code-characters"
+role = "request / get, type 3"
+level = "confirmed-code"
+coney = "src/characters/character_model.h:loadCharacterModel"
+status = "legacy"
+
+[[function]]
+address = 0x00179808
+name = "Font_Size"
+page = "graphics.md#code-misc"
+role = "[GUI](gui.md#text)"
+level = "confirmed-code"
+coney = "src/graphics/font.h:fontMetrics"
+status = "legacy"
+
+[[function]]
+address = 0x00179958
+name = "Font_Measure"
+page = "graphics.md#code-misc"
+role = "[GUI](gui.md#text)"
+level = "confirmed-code"
+coney = "src/graphics/font.h:Font::measure"
+status = "legacy"
+
+[[function]]
+address = 0x00179c30
+name = "Font_Draw"
+page = "graphics.md#code-misc"
+role = "[GUI](gui.md#text)"
+level = "confirmed-code"
+coney = "src/graphics/font.h:Font::draw"
+status = "legacy"
+
+[[function]]
+address = 0x0017a258
+name = "Colour_LerpPacked"
+page = "graphics.md#code-misc"
+role = "blends two packed RGBA colours by `t` (VU0)"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.cpp:mix"
+status = "legacy"
+
+[[function]]
+address = 0x0017a560
+name = "Occluders_Set"
+page = "graphics.md#code-misc"
+role = "[Level loading](level-loading.md)"
+level = "confirmed-code"
+coney = "src/world/level_object.h:readOccluders"
+status = "legacy"
+
+[[function]]
+address = 0x0017ae38
+name = "ColourTable_Init"
+page = "graphics.md#code-misc"
+role = "[GUI](gui.md#colour-table)"
+level = "confirmed-code"
+coney = "src/gui/colour_table.h"
+status = "legacy"
+
+[[function]]
+address = 0x0017f2c0
+name = "ClumpChunk_Read"
+page = "graphics.md#code-models"
+role = "reads a RenderWare clump from a chunk (`0x09`, `0x25`, `0x47`, [Chunk system](chunk-system.md)) and pushes it as `0x0A` (one atomic), `0x41` (one atomic, a single frame) or `0x50` (several)"
+level = "confirmed-code"
+coney = "src/platform/level_file.h:readPreinstanceObjectChunk"
+status = "legacy"
+
+[[function]]
+address = 0x0017fa80
+name = "ObjectRender_ApplyFadeDistance"
+page = "graphics.md#code-models"
+role = "[World objects](objects.md)"
+level = "confirmed-code"
+coney = "src/world_objects/object_tasks.h:showDistanceFade"
+status = "legacy"
+
+[[function]]
+address = 0x0017fd78
+name = "ObjectRender_Draw"
+page = "graphics.md#code-models"
+role = "[World objects](objects.md), [Lighting](lighting.md)"
+level = "confirmed-code"
+coney = "src/platform/placed_objects.h:PlacedObjects::draw"
+status = "legacy"
+
+[[function]]
+address = 0x00181170
+name = "ObjectList_OnLoaded"
+page = "graphics.md#code-models"
+role = "chunk `0x46` ([WAD contents](formats/wad-contents.md#object-list))"
+level = "confirmed-code"
+coney = "src/world_objects/object_list.h:ObjectList::parse"
+status = "legacy"
+
+[[function]]
+address = 0x001811b0
+name = "ObjectList_FindByHash"
+page = "graphics.md#code-models"
+role = "[World objects](objects.md)"
+level = "confirmed-code"
+coney = "src/world_objects/object_list.h:ObjectList::findByHash"
+status = "legacy"
+
+[[function]]
+address = 0x00181e38
+name = "Page_Rect"
+page = "graphics.md#code-sheets"
+role = "[GUI](gui.md#particle-page)"
+level = "confirmed-code"
+coney = "src/graphics/particle_page.h:ParticlePage::rect"
+status = "legacy"
+
+[[function]]
+address = 0x00181e50
+name = "ResourceMgr_SheetSize"
+page = "graphics.md#code-sheets"
+role = "[GUI](gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header)"
+level = "confirmed-code"
+coney = "src/graphics/particle_page.h:SpriteSheetTable::sizeOf"
+status = "legacy"
+
+[[function]]
+address = 0x00182820
+name = "ChunkLoaded_ParticlePageHeader"
+page = "graphics.md#code-sheets"
+role = "[GUI](gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header)"
+level = "confirmed-code"
+coney = "src/graphics/particle_page.h:onParticlePageHeaderLoaded"
+status = "legacy"
+
+[[function]]
+address = 0x001828c0
+name = "ResourceMgr_SheetRecord"
+page = "graphics.md#code-sheets"
+role = "[GUI](gui.md#sprite-sheet-table-chunk-0x4d-particle-page-header)"
+level = "confirmed-code"
+coney = "src/graphics/particle_page.h:SpriteSheetTable::record"
+status = "legacy"
+
+[[function]]
+address = 0x00182de0
+name = "Instance_AddSprite"
+page = "graphics.md#code-sheets"
+role = "[GUI](gui.md#sprite-record)"
+level = "confirmed-code"
+coney = "src/graphics/sprite_batch.h:SpriteBatch::addSprite"
+status = "legacy"
+
+[[function]]
+address = 0x001831c0
+name = "Instance_DrawOneSpriteIm3D"
+page = "graphics.md#code-sheets"
+role = "[World objects](objects.md)"
+level = "confirmed-code"
+coney = "src/platform/scene_lighting.h:SceneLighting::drawGlass"
+status = "legacy"
+
+[[function]]
+address = 0x00184890
+name = "ResourceMgr_CompareOverlayKeys"
+page = "graphics.md#code-sheets"
+role = "[GUI](gui.md#draw-order)"
+level = "confirmed-code"
+coney = "src/graphics/sprite_batch.h:OverlayPass::draw"
+status = "legacy"
+
+[[function]]
+address = 0x00185cc8
+name = "ResourceMgr_EmptyInstances"
+page = "graphics.md#code-resource-manager"
+role = "[GUI](gui.md#draw-order)"
+level = "confirmed-code"
+coney = "src/graphics/sprite_batch.h:OverlayPass::empty"
+status = "legacy"
+
+[[function]]
+address = 0x00185d20
+name = "ResourceMgr_RenderOverlay"
+page = "graphics.md#code-resource-manager"
+role = "[GUI](gui.md#draw-order)"
+level = "confirmed-code"
+coney = "src/graphics/sprite_batch.h:OverlayPass::draw"
+status = "legacy"
+
+[[function]]
+address = 0x0018c8c8
+name = "ScreenFx_BlendBlurTo"
+page = "graphics.md#code-screen-effects"
+role = "starts that blend (instant when 0 s)"
+level = "confirmed-code"
+coney = "src/effects/motion_blur.h:MotionBlur::step"
+status = "legacy"
+
+[[function]]
+address = 0x0018c988
+name = "ScreenFx_BlendTintTo"
+page = "graphics.md#code-screen-effects"
+role = "starts the tint blend from the current tint (instant when 0 s); [Tint blend](graphics.md#tint-blend)"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.h:ScreenTint::blendTintTo"
+status = "legacy"
+
+[[function]]
+address = 0x0018ca50
+name = "ScreenFx_DrawTint"
+page = "graphics.md#code-screen-effects"
+role = "the tint's current colour along its blend, filled over the viewport (`0x0018cc20`)"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.h:ScreenTint::current"
+status = "legacy"
+
+[[function]]
+address = 0x0018cb78
+name = "ScreenFx_FinishTintBlend"
+page = "graphics.md#code-screen-effects"
+role = "jumps the tint to its target once the time is past"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.h:ScreenTint::finishBlend"
+status = "legacy"
+
+[[function]]
+address = 0x0018cc60
+name = "ScreenFx_StartFade"
+page = "graphics.md#code-screen-effects"
+role = "[Fade](graphics.md#fade), [Front end](frontend.md)"
+level = "confirmed-code"
+coney = "src/graphics/screen_fade.h:ScreenFade::queue"
+status = "legacy"
+
+[[function]]
+address = 0x0018ce58
+name = "ScreenFx_DrawFade"
+page = "graphics.md#code-screen-effects"
+role = "[Fade](graphics.md#fade), [Front end](frontend.md)"
+level = "confirmed-code"
+coney = "src/graphics/screen_fade.h:ScreenFade::update"
+status = "legacy"
+
+[[function]]
+address = 0x0018d058
+name = "ScreenFx_StartBlurPulse"
+page = "graphics.md#code-screen-effects"
+role = "[Blur pulse](graphics.md#blur-pulse)"
+level = "confirmed-code"
+coney = "src/effects/blur_pulse.h:BlurPulse::end"
+status = "legacy"
+
+[[function]]
+address = 0x0018d1d0
+name = "ScreenFx_DrawBlurPulse"
+page = "graphics.md#code-screen-effects"
+role = "[Blur pulse](graphics.md#blur-pulse)"
+level = "confirmed-code"
+coney = "src/effects/blur_pulse.h:BlurPulse::step"
+status = "legacy"
+
+[[function]]
+address = 0x0018d450
+name = "ScreenFx_QueueEffect"
+page = "graphics.md#code-screen-effects"
+role = "[Screen effects](graphics.md#screen-effects)"
+level = "confirmed-code"
+coney = "src/effects/blur_pulse.h:BlurPulse::queueEnd"
+status = "legacy"
+
+[[function]]
+address = 0x0018d5f8
+name = "ScreenFx_DrawLetterbox"
+page = "graphics.md#code-screen-effects"
+role = "[Screen effects](graphics.md#screen-effects), [HUD](hud.md)"
+level = "confirmed-code"
+coney = "src/scenes/letterbox.h"
+status = "legacy"
+
+[[function]]
+address = 0x0018dac0
+name = "ScreenFx_Render"
+page = "graphics.md#code-screen-effects"
+role = "device slot `+0x128`: each view's blur pulse, tint, fade, letterbox and motion blur, in that order"
+level = "confirmed-code"
+coney = "src/platform/play_level_effects.h:PlayLevelEffects::drawScreenEffects"
+status = "legacy"
+
+[[function]]
+address = 0x0018e070
+name = "ScreenFx_StartRoomSmoke"
+page = "graphics.md#code-screen-effects"
+role = "[Room smoke](graphics.md#room-smoke)"
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x0018e0f8
+name = "ScreenFx_EndRoomSmoke"
+page = "graphics.md#code-screen-effects"
+role = "[Room smoke](graphics.md#room-smoke)"
+level = "confirmed-code"
+coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x0018e148
+name = "Fog3D_Start"
+page = "graphics.md#code-screen-effects"
+role = "[Drifting fog](particles.md#fog)"
+level = "confirmed-code"
+coney = "src/effects/ground_fog.h:GroundFog::start"
+status = "legacy"
+
+[[function]]
+address = 0x0018e2f0
+name = "Fog3D_SetMaxParticles"
+page = "graphics.md#code-screen-effects"
+role = "[Drifting fog](particles.md#fog)"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeMaxFogParticles"
+status = "legacy"
+
+[[function]]
+address = 0x0018e3c8
+name = "Fog3D_End"
+page = "graphics.md#code-screen-effects"
+role = "[Drifting fog](particles.md#fog)"
+level = "confirmed-code"
+coney = "src/scripting/story_effects_bindings.cpp:makeEnd3DFog"
+status = "legacy"
+
+[[function]]
+address = 0x0018e5f0
+name = "ScreenFx_SetColourOverlay"
+page = "graphics.md#code-screen-effects"
+role = "`SetLevelColour`: look 9's tint (× 255) and base look 9"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.h:ScreenTint::setLevelColour"
+status = "legacy"
+
+[[function]]
+address = 0x0018e6b8
+name = "ScreenFx_EnterStore"
+page = "graphics.md#code-screen-effects"
+role = "`EnterStore`: look 10's tint and base look 10; `ExitStore` (and leaving a store screen): base look 9"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.h:ScreenTint::enterStore"
+status = "legacy"
+
+[[function]]
+address = 0x0018e780
+name = "ScreenFx_ExitStore"
+page = "graphics.md#code-screen-effects"
+role = "`EnterStore`: look 10's tint and base look 10; `ExitStore` (and leaving a store screen): base look 9"
+level = "confirmed-code"
+coney = "src/effects/screen_tint.h:ScreenTint::exitStore"
+status = "legacy"
+
+[[function]]
+address = 0x0018f268
+name = "ThrowArc_Create"
+page = "graphics.md#code-textures"
+role = "the arc's model: texture `aimthrow_tex` (loaded once, `0x005971b0`), 36 vertices (18 pairs) and 34 triangles, prelit and unlit, in one material ([The throw-aim arc](graphics.md#throw-arc))"
+level = "confirmed-code"
+coney = "src/graphics/throw_arc.h:throwArcStrip"
+status = "legacy"
+
+[[function]]
+address = 0x0018fa68
+name = "ThrowArc_BuildStrip"
+page = "graphics.md#code-textures"
+role = "writes the arc's points as a strip 0.16 m wide: alpha 0 at the hand, then 127-143; (127, 127, 127) or, when `hit` is set, (170, 43, 43) ([The throw-aim arc](graphics.md#throw-arc))"
+level = "confirmed-code"
+coney = "src/graphics/throw_arc.h:throwArcStrip"
+status = "legacy"
+
+[[function]]
+address = 0x0018fee0
+name = "Human_TraceThrowAim"
+page = "graphics.md#code-textures"
+role = "each frame of the aiming state (`0x00244770`): steps the throw from the hand at 1/60 s with gravity (z speed − 0.2613 a step) for 108 steps, keeps every sixth point (18), sweeps a sphere of half the object's size along them, stops at the first non-friendly AI human (human `+0x638`) unless a body with `THROWNWEAPONTARGET` or the level mesh comes first (that body is `+0x634`; [Objects: throws](objects.md#throws)), and rebuilds the strip"
+level = "confirmed-code"
+coney = "src/combat/throw_aim.h:ThrowAimState::trace"
+status = "legacy"
+
+[[function]]
+address = 0x00190588
+name = "ThrowArc_Render"
+page = "graphics.md#code-textures"
+role = "from `WorldManager_Render`, while its human is in the aiming state: draws the clump in each view with back-face culling off"
+level = "confirmed-code"
+coney = "src/platform/throw_arc_renderer.h:ThrowArcRenderer"
+status = "legacy"
+
+[[function]]
+address = 0x001906e8
+name = "ChunkReader_TextureDictionaryTid"
+page = "graphics.md#code-textures"
+role = "[Chunk system](chunk-system.md)"
+level = "confirmed-code"
+coney = "src/platform/texture_dictionary.h:readTextureDictionaryChunk"
+status = "legacy"
+
+[[function]]
+address = 0x00190770
+name = "ChunkReader_RenderwareTextureDic"
+page = "graphics.md#code-textures"
+role = "[Chunk system](chunk-system.md)"
+level = "confirmed-code"
+coney = "src/platform/texture_dictionary.h:readRwTextureDictionaryChunk"
+status = "legacy"
+
+[[function]]
+address = 0x00191230
+name = "WaterEffect_Init"
+page = "graphics.md#code-water"
+role = "[`SetPositionOfWater`](../references/bindings/world.md#setpositionofwater): the fields above from its arguments"
+level = "confirmed-code"
+coney = "src/effects/water.h:Water"
+status = "legacy"
+
+[[function]]
+address = 0x00191dd8
+name = "WaterEffect_Update"
+page = "graphics.md#code-water"
+role = "from `WorldManager_Render`, when loaded and visible: at most every `0x0050cd84` s rewrites each column's height (sin(time × speed + column) × wave height), alpha and the texture's scroll along x, then draws the clump"
+level = "confirmed-code"
+coney = "src/effects/water.h:Water"
+status = "legacy"
+
+[[function]]
+address = 0x00192688
+name = "AtomicPlugin_Read"
+page = "graphics.md#code-water"
+role = "[Atomic plugin `0x3F0`](world.md#atomic-plugin)"
+level = "confirmed-code"
+coney = "src/world/world_streams.h:readAtomicPluginData"
+status = "legacy"
+
+[[function]]
+address = 0x00193d80
+name = "RwDevice_BlurPass"
+page = "graphics.md#motion-blur"
+level = "confirmed-code"
+coney = "src/platform/render_engine.h:RenderEngine::blurScreen"
+status = "legacy"
+
+[[function]]
+address = 0x00195238
+name = "RwDevice_GuiToOverlay"
+page = "graphics.md#2d-drawing"
+level = "confirmed-code"
+coney = "src/graphics/overlay_camera.h:OverlayCamera::guiToOverlay"
+status = "legacy"
+
+[[function]]
+address = 0x00195330
+name = "RwDevice_GuiWidthToOverlay"
+page = "graphics.md#device-vtable"
+level = "confirmed-code"
+coney = "src/graphics/overlay_camera.h:OverlayCamera::guiWidthToOverlay"
+status = "legacy"
+
+[[function]]
+address = 0x00197b30
+name = "ChunkReader_SectorBspData"
+page = "graphics.md#code-device"
+role = "chunk `0x15` ([Chunk system](chunk-system.md)): a world through device slot `+0x170`, pushed as `0x42`"
+level = "confirmed-code"
+coney = "src/platform/level_file.h:readSectorBspChunk"
+status = "legacy"
+
+[[function]]
+address = 0x0019add0
+name = "OE_RoomSmoke_Construct"
+page = "graphics.md#room-smoke"
+level = "confirmed-code"
+coney = "src/effects/room_smoke.h:RoomSmoke::start"
+status = "legacy"
+
+[[function]]
+address = 0x0019b070
+name = "OE_RoomSmoke_FollowCamera"
+page = "graphics.md#room-smoke"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/room_smoke.h:RoomSmoke::followCamera"
+status = "legacy"
+
+[[function]]
+address = 0x0019b198
+name = "OE_RoomSmoke_PickDrift"
+page = "graphics.md#room-smoke"
+level = "confirmed-code"
+coney = "src/effects/room_smoke.h:RoomSmoke::pickDrift"
+status = "legacy"
+
+[[function]]
+address = 0x0019b2a8
+name = "OE_RoomSmoke_BlendDrift"
+page = "graphics.md#room-smoke"
+level = "confirmed-code"
+coney = "src/effects/room_smoke.h:RoomSmoke::blend"
+status = "legacy"
+
+[[function]]
+address = 0x0019b4c0
+name = "OE_RoomSmoke_Update"
+page = "graphics.md#room-smoke"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/room_smoke.h:RoomSmoke::step"
+status = "legacy"
+
+[[function]]
+address = 0x00410648
+name = "World_LoadStream"
+page = "graphics.md#original-structure"
+role = "reads `%s_sec.wld`"
+level = "confirmed-code"
+coney = "src/platform/world_set.h:WorldSet::loadWorld"
+status = "legacy"
+
+[[function]]
+address = 0x00419da0
+name = "ThrowArcs_RenderAll"
+page = "graphics.md#warriors-functions"
+role = "from `WorldManager_Render`: draws each player's throw arc (game state `+0x5740 + 0x30 × p`)"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::drawThrowArc"
+status = "legacy"
+
+[[function]]
+address = 0x0041d728
+name = "Cfg_SetOutdoorMode"
+page = "graphics.md#warriors-functions"
+role = "`CfgSetOutdoorMode`: `+0x3e4`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"

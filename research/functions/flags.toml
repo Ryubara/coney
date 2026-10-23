@@ -1,0 +1,153 @@
+# The researched functions of the flags system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00385db0
+name = "Object_TeleportToFlag"
+page = "flags.md#position"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeTeleportToFlag"
+status = "legacy"
+
+[[function]]
+address = 0x00415740
+name = "Path_Add"
+page = "flags.md#original-structure"
+role = "[`AddPath`](../references/bindings/world.md#addpath): the first of 32 slots at `0x006fd870`; by name"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeAddPath"
+status = "legacy"
+
+[[function]]
+address = 0x004158f8
+name = "FlagPool_Create"
+page = "flags.md#original-structure"
+role = "allocates the pool of `n + 2` flags and the slot array"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::createPool"
+status = "legacy"
+
+[[function]]
+address = 0x00415a38
+name = "FlagPool_Destroy"
+page = "flags.md#original-structure"
+role = "frees both (from `UnloadLevel`, `0x001607b8`)"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::clear"
+status = "legacy"
+
+[[function]]
+address = 0x00415af0
+name = "FlagPool_Take"
+page = "flags.md#original-structure"
+role = "the first empty slot; counts it"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::add"
+status = "legacy"
+
+[[function]]
+address = 0x00415b68
+name = "Flag_New"
+page = "flags.md#original-structure"
+role = "takes a slot and constructs the flag in it"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::add"
+status = "legacy"
+
+[[function]]
+address = 0x00415c18
+name = "Flag_Add"
+page = "flags.md#original-structure"
+role = "`Flag_New` with no parent (`NilHandle`)"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::add"
+status = "legacy"
+
+[[function]]
+address = 0x00415c48
+name = "Flag_FindByName"
+page = "flags.md#original-structure"
+role = "linear search by name, `strcmp` (`0x00430c4c`)"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::findByName"
+status = "legacy"
+
+[[function]]
+address = 0x00415ce8
+name = "Flag_Enable"
+page = "flags.md#original-structure"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeFlagEnable"
+status = "legacy"
+
+[[function]]
+address = 0x00415dc8
+name = "Flag_SetEnabled"
+page = "flags.md#original-structure"
+role = "writes `+0xd4` (for `FlagEnable`, `0x00415ce8`)"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeFlagEnable"
+status = "legacy"
+
+[[function]]
+address = 0x00415e70
+name = "Flag_Construct"
+page = "flags.md#original-structure"
+role = "fills the record (below) and registers the handle"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::add"
+status = "legacy"
+
+[[function]]
+address = 0x004161e8
+name = "Flag_Position"
+page = "flags.md#original-structure"
+role = "the parent's position when the parent exists, else `+0x10`"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::position"
+status = "legacy"
+
+[[function]]
+address = 0x00416258
+name = "Flag_Heading"
+page = "flags.md#original-structure"
+role = "the parent's heading when the parent exists, else `+0x44`"
+level = "confirmed-code"
+coney = "src/world_objects/flags.h:WorldFlags::headingDegrees"
+status = "legacy"
+
+[[function]]
+address = 0x00416b68
+name = "Flag_SetPosition"
+page = "flags.md#original-structure"
+role = "resolves the handle and writes `+0x10` with `w` = 1 / writes `+0x10` as given"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeSetFlagPos"
+status = "legacy"
+
+[[function]]
+address = 0x00416bb8
+name = "Flag_GetPosition"
+page = "flags.md#original-structure"
+role = "resolves the handle (`0x00390288`), then `Flag_Position`"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeGetFlagPos"
+status = "legacy"
+
+[[function]]
+address = 0x00416ed0
+name = "Flag_GetOwner"
+page = "flags.md#original-structure"
+role = "clears the user to `NilHandle` only if it is `h` / `FlagGetOwner`: the user, `NilHandle` for a non-flag"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeFlagGetOwner"
+status = "legacy"
+
+[[function]]
+address = 0x0041d628
+name = "Cfg_SetDatabaseSizes"
+page = "flags.md#pool"
+level = "confirmed-code"
+note = "the level is from [tasks.md#classes](tasks.md#classes)"
+coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
+status = "legacy"

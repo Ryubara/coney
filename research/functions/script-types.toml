@@ -1,0 +1,425 @@
+# The researched functions of the script-types system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x003b7538
+name = "DynMasks_Init"
+page = "script-types.md#dyn-masks-blaster"
+kind = "`dyn_masks` init"
+role = "as above; update every 20 ticks"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::stateOf"
+status = "legacy"
+
+[[function]]
+address = 0x003b7a88
+name = "DynMasks_OnHit"
+page = "script-types.md#dyn-masks"
+kind = "`dyn_masks` message 1 (called by `0x003bf1b8`)"
+role = "hit points, break, effects by model hash, as above"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::masksHit"
+status = "legacy"
+
+[[function]]
+address = 0x003bf548
+name = "DynMasks_Update"
+page = "script-types.md#dyn-masks"
+kind = "`dyn_masks` update"
+role = "done (1) once broken; once removed, its interval grows by one each update"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::takeRemoved"
+status = "legacy"
+
+[[function]]
+address = 0x003bffd0
+name = "DynCashregB_Update"
+page = "script-types.md#dyn-cashreg"
+kind = "`dyn_cashreg_b` update"
+role = "when open, at its second update a `dyn_money` 0.22 m above holding $25-50, then interval 240"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::tick"
+status = "legacy"
+
+[[function]]
+address = 0x003c04e0
+name = "DynCashreg_Init"
+page = "script-types.md#dyn-cashreg"
+kind = "`dyn_cashreg` init"
+role = "interval 20, flags `0x228001`, its model by name, hit points from type property 1, spawns its drawer"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::initCashRegister"
+status = "legacy"
+
+[[function]]
+address = 0x003c06b0
+name = "DynCashreg_OnMessage"
+page = "script-types.md#dyn-cashreg"
+kind = "`dyn_cashreg` message"
+role = "0 use, 1 hit, 4 a knock, 10 hittable, `0x1b` / `0x1c` hand, `0x20` the drawer removed, `0x30` knocked, `0x3c` broken model and the drawer told"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::cashRegisterHit"
+status = "legacy"
+
+[[function]]
+address = 0x003c3448
+name = "PartExplosion_Init"
+page = "script-types.md#part-explosion"
+kind = "`part_explosion` init"
+role = "as above"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::spawnExplosionParts"
+status = "legacy"
+
+[[function]]
+address = 0x003c4580
+name = "SubFireballEmitter_Init"
+page = "script-types.md#part-explosion"
+kind = "`sub_fireball_emitter` init"
+role = "flags `0x404`; six fireballs at fixed directions about its rotation"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::spawnFireballs"
+status = "legacy"
+
+[[function]]
+address = 0x003c4a58
+name = "SubFireball_Init"
+page = "script-types.md#part-explosion"
+kind = "`sub_fireball` init"
+role = "sprite `0x4002a` (batch 4, rectangle 42), flags `0x80000`, size from the table × the given scale, a random flip"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::makeFireball"
+status = "legacy"
+
+[[function]]
+address = 0x003c4c38
+name = "SubFireball_Update"
+page = "script-types.md#part-explosion"
+kind = "`sub_fireball` update"
+role = "next stage: interval, colour, 80-88 % size; done at stage 7"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::stepStages"
+status = "legacy"
+
+[[function]]
+address = 0x003c54b8
+name = "SubExplode_Update"
+page = "script-types.md#part-explosion"
+kind = "`sub_explode` update"
+role = "three stages of interval and size; done at 3"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::stepStages"
+status = "legacy"
+
+[[function]]
+address = 0x003c61d8
+name = "FadeObject_Update"
+page = "script-types.md#fade-object"
+kind = "`fade_object` update"
+role = "the removal tests, the landing, the messes, the register's money and the fade above"
+level = "confirmed-code"
+coney = "src/world_objects/loose_objects.cpp:LooseObjects::update"
+status = "legacy"
+
+[[function]]
+address = 0x003c6ae0
+name = "FadeObject_Launch"
+page = "script-types.md#fade-object"
+kind = "helper (message `0x30`, from `0x003c6c48`)"
+role = "not busy; x and y 2-5 × the normalised direction, z 0; interval 2; flags `0x4200000`"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::launchPiece"
+status = "legacy"
+
+[[function]]
+address = 0x003ca658
+name = "SubFog_Init"
+page = "script-types.md#fog-wisp"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/ground_fog.h:GroundFog::makeWisp"
+status = "legacy"
+
+[[function]]
+address = 0x003ca9d8
+name = "SubFog_Update"
+page = "script-types.md#fog-wisp"
+kind = "`sub_fog` update"
+role = "as above"
+level = "confirmed-code"
+note = "confirmed (code); the distance roles inferred"
+coney = "src/effects/ground_fog.h:GroundFog::update"
+status = "legacy"
+
+[[function]]
+address = 0x003cadd8
+name = "PartFog_Init"
+page = "script-types.md#part-fog"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/ground_fog.h:GroundFog::step"
+status = "legacy"
+
+[[function]]
+address = 0x003d3d30
+name = "DynPile_OnMessage"
+page = "script-types.md#dyn-pile"
+kind = "`dyn_pile` message"
+role = "0 taken: message `0x14` to the taker; for model `0x69b9d1a0` one more take, and at the limit flag `0x8000` toggled, every 240 ticks, empty; 1 pops a hit only; `0x19` flag `0x8000`; `0x1b` message 3 to the holder; `0x1c` released; `0x22` the limit; `0x30` knocked"
+level = "confirmed-code"
+coney = "src/world_objects/pickups.h:pileTake"
+status = "legacy"
+
+[[function]]
+address = 0x003d4058
+name = "DynPile_Update"
+page = "script-types.md#dyn-pile"
+kind = "`dyn_pile` update"
+role = "done once empty and its colour word `+0xc8` is 0; done below −500 m when thrown"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::takeFromPile"
+status = "legacy"
+
+[[function]]
+address = 0x003d7f10
+name = "PartGarbageFlies_Update"
+page = "script-types.md#flies"
+kind = "`part_garbage_flies` update"
+role = "the three swarms (every 60 ticks), or none (every 120)"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::stepFlyPile"
+status = "legacy"
+
+[[function]]
+address = 0x003e02a8
+name = "SubNeonLight_Init"
+page = "script-types.md#neon-signs"
+level = "confirmed-code"
+coney = "src/effects/light_tasks.h:makeNeonLight"
+status = "legacy"
+
+[[function]]
+address = 0x003e03d8
+name = "SubNeonLight_Update"
+page = "script-types.md#neon-signs"
+kind = "`sub_neon_light` update"
+role = "random flicker: every few updates swaps the drawn colour between its two (data `+0x08`, `+0x0c`), with a random off spell"
+level = "confirmed-code"
+coney = "src/effects/light_tasks.cpp:updateNeon"
+status = "legacy"
+
+[[function]]
+address = 0x003e07a0
+name = "SubPolarBugs_Init"
+page = "script-types.md#polar-bugs"
+kind = "`sub_polar_bugs` init"
+role = "one bug sprite circling a point at the popped radius (1.5 m for the garbage flies), random phases, update every 20 ([Flies](script-types.md#flies))"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::makeFly"
+status = "legacy"
+
+[[function]]
+address = 0x003e0980
+name = "SubPolarBugs_Update"
+page = "script-types.md#polar-bugs"
+kind = "`sub_polar_bugs` update"
+role = "moves on two angles (0.63 and 1.26 rad per update), next update in 20 ticks or (2 in 11) 10; ends when marked"
+level = "confirmed-code"
+coney = "src/effects/particles.h:ParticleSystems::updateFly"
+status = "legacy"
+
+[[function]]
+address = 0x003e77c0
+name = "HatObject_Wear"
+page = "script-types.md#hat-object"
+kind = "helper (`0x32`)"
+role = "attached to the head, placed (`Human_PlaceHat`) and scaled to the human; message 3 to him"
+level = "confirmed-code"
+coney = "src/world_objects/hats.h:hatAttachment"
+status = "legacy"
+
+[[function]]
+address = 0x003e7958
+name = "HatObject_Drop"
+page = "script-types.md#hat-object"
+kind = "helper (`0x1c`)"
+role = "detached at its world pose and falls; three models get flag `0x80`"
+level = "confirmed-code"
+coney = "src/world_objects/hats.h:FallingHats::knockOff"
+status = "legacy"
+
+[[function]]
+address = 0x003e8408
+name = "Strober_Init"
+page = "script-types.md#small-lights-functions"
+kind = "`strober` init"
+role = "a red light, radius 10, update every 10, on"
+level = "confirmed-code"
+coney = "src/effects/light_tasks.h:makeStrober"
+status = "legacy"
+
+[[function]]
+address = 0x003e8518
+name = "Strober_Update"
+page = "script-types.md#small-lights-functions"
+kind = "`strober` update"
+role = "red and dark in a four-step cycle; done when off"
+level = "confirmed-code"
+coney = "src/effects/light_tasks.cpp:updateStrober"
+status = "legacy"
+
+[[function]]
+address = 0x003e8fa0
+name = "DynIcon_Init"
+page = "script-types.md#glint-icon"
+kind = "`dyn_icon` init"
+role = "model, attached to the human, spin and height ([AI](ai-scripting.md#dealer-icon))"
+level = "confirmed-code"
+coney = "src/world_objects/spinning_icons.h:spinningIconPose"
+status = "legacy"
+
+[[function]]
+address = 0x003e92e0
+name = "DynIcon_Update"
+page = "script-types.md#glint-icon"
+kind = "`dyn_icon` update"
+role = "the colour fade and the hidden state ([AI](ai-scripting.md#dealer-icon))"
+level = "confirmed-code"
+coney = "src/world_objects/spinning_icons.h:spinningIconPose"
+status = "legacy"
+
+[[function]]
+address = 0x003e96a0
+name = "SubGlint_Update"
+page = "script-types.md#glint-icon"
+kind = "`sub_glint` update"
+role = "blinks on and off every 20-30 ticks"
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglint::tick"
+status = "legacy"
+
+[[function]]
+address = 0x003eade8
+name = "SubTriglint_SpawnGlints"
+page = "script-types.md#triglint"
+kind = "helper"
+role = "spawns the missing glints of its three"
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglint::spawnGlints"
+status = "legacy"
+
+[[function]]
+address = 0x003eaf38
+name = "SubTriglint_RemoveGlints"
+page = "script-types.md#triglint"
+kind = "helper"
+role = "removes its three glints"
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglint::removeGlints"
+status = "legacy"
+
+[[function]]
+address = 0x003eaf98
+name = "SubTriglint_Init"
+page = "script-types.md#triglint"
+kind = "`sub_triglint` init"
+role = "hidden, update every 60, spawns the glints"
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglint::Triglint"
+status = "legacy"
+
+[[function]]
+address = 0x003eb060
+name = "SubTriglint_OnMessage"
+page = "script-types.md#triglint"
+kind = "`sub_triglint` message"
+role = "`0x15`: removes the glints and itself"
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglints::sync"
+status = "legacy"
+
+[[function]]
+address = 0x003eb0d0
+name = "SubTriglint_Update"
+page = "script-types.md#triglint"
+kind = "`sub_triglint` update"
+role = "glints removed off screen and spawned again on screen"
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglint::tick"
+status = "legacy"
+
+[[function]]
+address = 0x003f16e8
+name = "PickupItem_ShowGlint"
+page = "script-types.md#pickup-item"
+kind = "helper (`pickup_item`)"
+role = "Makes its sub_triglint glint when it has none and is not held."
+level = "confirmed-code"
+coney = "src/effects/glints.h:Triglints::sync"
+status = "legacy"
+
+[[function]]
+address = 0x003f17e0
+name = "PickupItem_Init"
+page = "script-types.md#pickup-item"
+kind = "`pickup_item` init"
+role = "Pose, flags 0x208081, model; seven model hashes mark it as never glinting."
+level = "confirmed-code"
+coney = "src/world_objects/pickups.h:pickable"
+status = "legacy"
+
+[[function]]
+address = 0x003f6b40
+name = "Steam_OnMessage"
+page = "script-types.md#type-table"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/effects/particles.h:ParticleSystems::configureSteam"
+status = "legacy"
+
+[[function]]
+address = 0x003fd420
+name = "MeleeWeapon_Init"
+page = "script-types.md#melee-weapon"
+kind = "`melee_weapon` init"
+role = "flags `0x218081`, update 20, model; one model (hash `0x13ff8ee4`) clears `0x80`; a type of `CfgObj` kind 11 links to itself (message 10 off) with a counter of 6-11"
+level = "confirmed-code"
+coney = "src/world_objects/pickups.h:pickable"
+status = "legacy"
+
+[[function]]
+address = 0x003ffe90
+name = "OverheadWeapon_Break"
+page = "script-types.md#overhead-weapon"
+kind = "message 1"
+role = "the break above"
+level = "confirmed-code"
+coney = "src/world_objects/props.h:Props::overheadBreak"
+status = "legacy"
+
+[[function]]
+address = 0x004034b8
+name = "ThrownWeapon_Break"
+page = "script-types.md#thrown-weapon"
+kind = "message 1"
+role = "state −5 (removed next update), position set to the hit point, effects by model hash (below)"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+status = "legacy"
+
+[[function]]
+address = 0x00404c48
+name = "DynMolotov_OnMessage"
+page = "script-types.md#molotov"
+kind = "`dyn_molotv` message"
+role = "0 pick-up offer; 1 break: fuse sound stopped, one `sub_explode` 0.7 m above it, state −5; 4 thrown (the flame lit with `0x12`); 10 hittable (forwarded to the flame); `0x12` light; `0x15` flag `0x40`; `0x1b` picked up (lights the flame, attaches to the hand); `0x1c` dropped (flame told `0x22`); `0x20` put out (flame `0x13`, then `0x15`); `0x30` thrown"
+level = "confirmed-code"
+coney = "src/world_objects/object_breaks.h:sendDestroyInRadius"
+status = "legacy"
+
+[[function]]
+address = 0x00405600
+name = "DynMolotov_Update"
+page = "script-types.md#molotov"
+kind = "`dyn_molotv` update"
+role = "broken: tells the flame and ends; airborne below z velocity −500: state −5; keeps its last position"
+level = "confirmed-code"
+coney = "src/world_objects/object_breaks.h:stepSelfBreaks"
+status = "legacy"

@@ -1,0 +1,100 @@
+# The researched functions of the save system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00155308
+name = "Autosave_Request"
+page = "save.md#original-structure"
+role = "pushes mode 6 in save mode"
+level = "confirmed-code"
+coney = "src/gamemodes/start_up_flow.h:StartUpFlow::startSaveSequence"
+status = "legacy"
+
+[[function]]
+address = 0x0015baa0
+name = "Gm_MemoryCard_Enter"
+page = "save.md#original-structure"
+role = "the card dialogs"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::enter"
+status = "legacy"
+
+[[function]]
+address = 0x0015be00
+name = "Gm_MemoryCard_Update"
+page = "save.md#original-structure"
+role = "the card dialogs"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015c2c0
+name = "Gm_MemoryCard_Exit"
+page = "save.md#original-structure"
+role = "the card dialogs"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::exit"
+status = "legacy"
+
+[[function]]
+address = 0x00421638
+name = "ProfileHeader_Write"
+page = "save.md#original-structure"
+role = "the 16-byte slot header"
+level = "confirmed-code"
+coney = "src/warriors/profile_record.h:ProfileRecord::serialise"
+status = "legacy"
+
+[[function]]
+address = 0x00421708
+name = "Profile_Write"
+page = "save.md#original-structure"
+role = "serialises the game state into one slot"
+level = "confirmed-code"
+coney = "src/warriors/disk_profile_store.h:captureProfile"
+status = "legacy"
+
+[[function]]
+address = 0x004219d0
+name = "ProfileHeader_Read"
+page = "save.md#original-structure"
+role = "the 16-byte slot header"
+level = "confirmed-code"
+coney = "src/warriors/profile_record.h:ProfileRecord::parse"
+status = "legacy"
+
+[[function]]
+address = 0x00421ad0
+name = "Profile_Read"
+page = "save.md#original-structure"
+role = "the reverse, applying each option"
+level = "confirmed-code"
+coney = "src/warriors/disk_profile_store.h:applyProfile"
+status = "legacy"
+
+[[function]]
+address = 0x00421d98
+name = "SaveSystem_WriteCurrent"
+page = "save.md#original-structure"
+role = "all six headers, then the current slot's record"
+level = "confirmed-code"
+coney = "src/warriors/disk_profile_store.h:DiskProfileStore::save"
+status = "legacy"
+
+[[function]]
+address = 0x00421e68
+name = "Profile_Create"
+page = "save.md#original-structure"
+role = "a new profile from the template"
+level = "confirmed-code"
+coney = "src/warriors/disk_profile_store.h:DiskProfileStore::create"
+status = "legacy"
+
+[[function]]
+address = 0x00421f98
+name = "Profile_Delete"
+page = "save.md#original-structure"
+level = "confirmed-code"
+coney = "src/warriors/disk_profile_store.h:DiskProfileStore::remove"
+status = "legacy"

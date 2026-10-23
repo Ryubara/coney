@@ -11,7 +11,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest
-from test_progress import BLOCK, ONE_FUNCTION, ONE_TAG, make_checkout
+from test_progress import BLOCK, ONE_FUNCTION, ONE_LISTING, ONE_TAG, make_checkout
 
 from coney_tools import progress, progress_render
 
@@ -36,7 +36,7 @@ def page_of(src_uri: str) -> SimpleNamespace:
 def test_the_page_is_filled_from_the_checkout(tmp_path: Path) -> None:
     """The hook loads the tracker for the checkout and puts the tables where the committed page has its marker."""
     hooks = load_hooks()
-    state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
+    state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     filled = hooks.fill_progress_page(BLOCK, state)
     assert progress_render.PAGE_MARKER not in filled
     assert filled.startswith("before") and filled.endswith("after\n")
@@ -46,7 +46,7 @@ def test_the_page_is_filled_from_the_checkout(tmp_path: Path) -> None:
 def test_only_the_progress_page_is_filled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`on_page_markdown` fills the marker on progress/index.md and leaves every other page as it was."""
     hooks = load_hooks()
-    state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
+    state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     monkeypatch.setattr(hooks, "_progress_state", state, raising=True)
     config = {"repo_url": None}
     filled = hooks.on_page_markdown(BLOCK, config, page=page_of("progress/index.md"))
@@ -58,12 +58,13 @@ def test_only_the_progress_page_is_filled(tmp_path: Path, monkeypatch: pytest.Mo
 def test_badge_files_are_shields_endpoints_in_the_site(tmp_path: Path) -> None:
     """Each badge is a file below progress/badges/ holding the JSON schema shields.io's endpoint badge reads."""
     hooks = load_hooks()
-    state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
+    state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     files = hooks.progress_badge_files(state)
     assert sorted(files) == [
         "progress/badges/milestones.json",
         "progress/badges/reimplemented.json",
         "progress/badges/researched.json",
+        "progress/badges/understood.json",
     ]
     for text in files.values():
         data = json.loads(text)
@@ -76,7 +77,7 @@ def test_badge_files_are_shields_endpoints_in_the_site(tmp_path: Path) -> None:
 def test_disagreeing_inputs_fail_the_build(tmp_path: Path) -> None:
     """A tag without an entry stops the docs build, naming the problem, instead of publishing wrong numbers."""
     hooks = load_hooks()
-    with pytest.raises(RuntimeError, match=r"has no entry in functions\.toml"):
+    with pytest.raises(RuntimeError, match=r"has no entry in the function database"):
         hooks.load_progress(make_checkout(tmp_path, tags=ONE_TAG))
     with pytest.raises(RuntimeError, match=r"totals\.toml"):
         hooks.load_progress(tmp_path / "missing")

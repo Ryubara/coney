@@ -6,7 +6,7 @@ colour never invents a definition. A function is in exactly one state, the furth
 
 * `audited`: the fidelity audit found Coney's version matches the original. No machine-readable audit result is on
   `main` yet, so `load_audited` returns nothing and the state is not drawn (the hook for the audit team, see there);
-* `reimplemented`: listed in docs/progress/functions.toml, so Coney has code with an `@orig` tag for it;
+* `reimplemented`: recorded with `coney` in the function database, so Coney has code with an `@orig` tag for it;
 * `understood`: named in Ghidra and cited with an evidence level (the tracker's "Understood" measure);
 * `researched`: placed in a source directory or file by the source map (the tracker's "Researched" measure);
 * `untouched`: none of the above.
@@ -156,7 +156,7 @@ class Grid:
     """Every block of the picture and what the listing could not place."""
 
     blocks: list[GridBlock]
-    unlisted_reimplemented: int = 0  # listed in functions.toml but missing from the Ghidra listing: not drawn
+    unlisted_reimplemented: int = 0  # recorded in the database but missing from the Ghidra listing: not drawn
     audited_known: bool = False
     functions: list[GridFunction] = field(default_factory=list)
 

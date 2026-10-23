@@ -19,8 +19,8 @@ PAGE_MARKER = "<!-- progress:generated -->"
 #: Where docs/progress/history.md says "the chart and the table of days go here".
 HISTORY_MARKER = "<!-- progress:history -->"
 GENERATED_NOTE = (
-    "<!-- Generated when the docs are built, from docs/progress/*.toml, the @orig tags in src/\n"
-    "     and the roadmap's status table. Edit those, not this. -->"
+    "<!-- Generated when the docs are built, from docs/progress/totals.toml, the function database\n"
+    "     (research/functions/), the @orig tags in src/ and the roadmap's status table. Edit those, not this. -->"
 )
 #: Where the badge JSON files sit in the built site, below its root.
 BADGES_DIR = "progress/badges"
@@ -182,7 +182,7 @@ def _function_table(progress: Progress) -> list[str]:
         return ["None yet."]
     lines = ["| Address | Original name | Subsystem | Bytes |", "| --- | --- | --- | --- |"]
     for f in sorted(progress.functions, key=lambda f: f.address):
-        size = f"{f.size:,}" if f.size is not None else "not filled in"
+        size = f"{f.size:,}" if f.size is not None else "not in the listing"
         lines.append(f"| `{f.address:#010x}` | `{f.name}` | `{f.subsystem}` | {size} |")
     return lines
 
@@ -196,7 +196,10 @@ def render_page(progress: Progress, grid_html: str = "", missions_html: str = ""
     lines = ["## Overall", "", _badges(progress), "", *_summary_rows(progress, "../roadmap.md"), ""]
     missing = sum(1 for f in progress.functions if f.size is None)
     if missing:
-        lines += [f"{missing} reimplemented function(s) have no size yet and add no bytes.", ""]
+        lines += [
+            f"{missing} reimplemented function(s) have no size and add no bytes: {progress.no_size_reason}.",
+            "",
+        ]
     if grid_html:
         lines += ["## Every function", "", grid_html, ""]
     lines += ["## Milestones", "", "| Milestone | Status |", "| --- | --- |"]

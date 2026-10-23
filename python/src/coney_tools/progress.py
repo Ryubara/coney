@@ -1,18 +1,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The progress tracker's data: what share of the original game Coney reimplements, and how much is researched.
 
-Three committed inputs feed it, none of them game data:
+Four committed inputs feed it, none of them game data:
 
 * `docs/progress/totals.toml`: the denominators, taken by hand from the source map
   (docs/research/source-map.md): `.text`, the coverage categories, each subsystem's address ranges and the
   middleware, which Coney replaces rather than reimplements;
-* `docs/progress/functions.toml`: the numerator, one entry per original function Coney reimplements;
+* the function database, `research/functions/<system>.toml` (coney_tools.research_functions): the numerator is every
+  entry that has a `coney` field, the place in `src/` where the port lives; an entry's subsystem is the one whose range
+  holds its address and its size is the function's size in the Ghidra listing;
 * the status table of `docs/roadmap.md`, parsed rather than copied;
-* `docs/progress/ghidra-functions.tsv` and the research pages, for the "Understood" measure
+* `docs/progress/ghidra-functions.tsv` and the research pages, for the sizes and for the "Understood" measure
   (coney_tools.progress_research).
 
-It also checks that functions.toml agrees with the `@orig` tags in `src/` (docs/guides/conventions.md), so an
-engineer cannot add a tag without counting it, or the other way round.
+It also checks that the entries with `coney` agree with the `@orig` tags in `src/` (docs/guides/conventions.md), so an
+engineer cannot add a tag without recording the port, or the other way round.
+
+The retired list `docs/progress/functions.toml` is read only by the one-off importer and by the history of days before
+the move (coney_tools.progress_import).
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from coney_tools import research_functions
 from coney_tools.config import ConfigError
 
 if TYPE_CHECKING:
@@ -31,7 +37,8 @@ if TYPE_CHECKING:
 
 DATA_DIR = Path("docs/progress")
 TOTALS_FILE = DATA_DIR / "totals.toml"
-FUNCTIONS_FILE = DATA_DIR / "functions.toml"
+#: The retired list of reimplemented functions; only the importer and the history of earlier days read it.
+LEGACY_FUNCTIONS_FILE = DATA_DIR / "functions.toml"
 #: The committed page; the docs build fills its marker with the generated tables (progress_render.PAGE_MARKER).
 PAGE_FILE = DATA_DIR / "index.md"
 #: The committed history page, whose marker the build fills with the chart and the table of days.
@@ -137,12 +144,14 @@ class Totals:
 
 @dataclass(frozen=True)
 class Function:
-    """An original function Coney reimplements (one [[function]] of functions.toml)."""
+    """An original function Coney reimplements: an entry of the function database that has a `coney` field."""
 
     address: int
-    name: str
-    subsystem: str
-    size: int | None  # None until someone fills it in
+    name: str  # the name in the shared Ghidra project
+    subsystem: str  # the totals.toml subsystem whose range holds the address; "" for an address outside game code
+    size: int | None  # the Ghidra listing's size; None while the listing has no function at the address
+    coney: str = ""  # where the port lives: `src/core/combat/grab.cpp:Grab::start`
+    system: str = ""  # the database file that lists it
 
 
 @dataclass(frozen=True)
@@ -152,6 +161,19 @@ class OrigTag:
     address: int
     name: str
     where: str  # "src/fileio/wad_index.h:42"
+
+
+@dataclass(frozen=True)
+class Mismatch:
+    """An `@orig` tag that spells a function's name differently from the database, which has Ghidra's."""
+
+    tag: OrigTag
+    name: str  # the database's
+
+    @property
+    def text(self) -> str:
+        """`src/x.h:3: @orig 0x... names 'Old', the database 'New'`."""
+        return f"{self.tag.where}: @orig {self.tag.address:#010x} names {self.tag.name!r}, the database {self.name!r}"
 
 
 @dataclass(frozen=True)
@@ -172,6 +194,21 @@ class Progress:
     milestones: list[Milestone]
     problems: list[str] = field(default_factory=list)
     understanding: Understanding | None = None  # None until the checkout has a Ghidra listing
+    mismatches: list[Mismatch] = field(default_factory=list)  # tags spelling a name differently; `new_mismatches`
+
+    @property
+    def no_size_reason(self) -> str:
+        """Why a reimplemented function can have no size: the listing is missing, or it lacks a function there."""
+        if self.understanding is None:
+            return (
+                "there is no docs/progress/ghidra-functions.tsv, which gives the sizes (`coney-tools progress ghidra`)"
+            )
+        return "the Ghidra listing has no function at their address"
+
+    @property
+    def warnings(self) -> list[str]:
+        """The mismatches as messages."""
+        return [m.text for m in self.mismatches]
 
     @property
     def reimplemented_bytes(self) -> int:
@@ -339,24 +376,46 @@ def load_totals(path: Path) -> Totals:
     return totals
 
 
-def load_functions(path: Path) -> list[Function]:
-    """Read functions.toml (an empty file is no functions). Raises ProgressError for a malformed entry."""
-    functions = []
-    for i, item in enumerate(_tables(path, _read_toml(path), "function")):
-        where = f"function {i + 1}"
-        unknown = sorted(set(item) - {"address", "name", "subsystem", "size"})
-        if unknown:
-            raise ProgressError(f"{path}: {where} has unknown key(s) {', '.join(unknown)}")
-        size = item.get("size")
-        functions.append(
-            Function(
-                _int(path, f"{where}.address", item.get("address")),
-                _str(path, f"{where}.name", item.get("name")),
-                _str(path, f"{where}.subsystem", item.get("subsystem")),
-                None if size is None else _int(path, f"{where}.size", size),
-            )
+def load_database(root: Path) -> list[research_functions.SystemFunctions]:
+    """The function database under `root`. Raises ProgressError when a file of it is malformed."""
+    try:
+        return research_functions.load_all(root)
+    except research_functions.ResearchFunctionsError as error:
+        raise ProgressError(str(error)) from error
+
+
+def reimplemented(
+    systems: list[research_functions.SystemFunctions], totals: Totals, sizes: dict[int, int] | None = None
+) -> list[Function]:
+    """The functions Coney reimplements: the entries of `systems` that have `coney`, in address order.
+
+    `sizes` maps an address to the size of the function there in the Ghidra listing (None without a listing; an
+    address the listing has no function at has none either, and the function then counts but adds no bytes).
+    """
+    functions = [
+        Function(
+            entry.address,
+            entry.name,
+            totals.subsystem_of(entry.address) or "",
+            (sizes or {}).get(entry.address),
+            entry.coney,
+            system.system,
         )
-    return functions
+        for system in systems
+        for entry in system.entries
+        if entry.coney
+    ]
+    return sorted(functions, key=lambda f: f.address)
+
+
+def tags_in(path: str, text: str) -> list[OrigTag]:
+    """The `@orig` tags in the C++ file `path` whose text is `text`."""
+    tags = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        match = _ORIG_TAG.search(line)
+        if match:
+            tags.append(OrigTag(int(match["address"], 16), match["name"], f"{path}:{number}"))
+    return tags
 
 
 def scan_orig_tags(root: Path, source_dir: Path = SOURCE_DIR) -> list[OrigTag]:
@@ -367,12 +426,28 @@ def scan_orig_tags(root: Path, source_dir: Path = SOURCE_DIR) -> list[OrigTag]:
         return tags
     for path in sorted(p for p in base.rglob("*") if p.suffix in _SOURCE_SUFFIXES and p.is_file()):
         text = path.read_text(encoding="utf-8", errors="replace")
-        for number, line in enumerate(text.splitlines(), start=1):
-            match = _ORIG_TAG.search(line)
-            if match:
-                where = f"{path.relative_to(root).as_posix()}:{number}"
-                tags.append(OrigTag(int(match["address"], 16), match["name"], where))
+        tags += tags_in(path.relative_to(root).as_posix(), text)
     return tags
+
+
+def base_tag_keys(root: Path, base: str) -> set[tuple[int, str]]:
+    """The (address, name) of every `@orig` tag as it was where HEAD left `base`.
+
+    The files the branch changed are read at that commit (a renamed file under its old path), the rest as they are.
+    Raises ConfigError when git cannot say (no such base, no repository).
+    """
+    # Imported here: these modules build on this one.
+    from coney_tools import local_gate
+
+    changed = {p for p in local_gate.changed_files(root, base) if p.startswith(f"{SOURCE_DIR.as_posix()}/")}
+    since = local_gate.merge_base(root, base)
+    renamed = local_gate.renamed_files(root, base)
+    keys = {(t.address, t.name) for t in scan_orig_tags(root) if t.where.rsplit(":", 1)[0] not in changed}
+    for path in changed:
+        text = local_gate.file_at(root, since, renamed.get(path, path))
+        if text is not None:
+            keys |= {(t.address, t.name) for t in tags_in(path, text)}
+    return keys
 
 
 def parse_milestones(roadmap: str) -> list[Milestone]:
@@ -388,49 +463,90 @@ def parse_milestones(roadmap: str) -> list[Milestone]:
 # --- checks -----------------------------------------------------------------------------------------------------------
 
 
-def check(totals: Totals, functions: list[Function], tags: list[OrigTag]) -> list[str]:
-    """Problems with functions.toml, alone and against the `@orig` tags; an empty list means consistent."""
-    # functions.toml on its own: no duplicates, each in the subsystem the source map gives, sizes that fit.
-    problems = []
-    seen: dict[int, Function] = {}
-    for f in functions:
-        label = f"functions.toml: {f.address:#010x} {f.name}"
-        expected = totals.subsystem_of(f.address)
-        if f.address in seen:
-            problems.append(f"{label}: listed twice")
-        seen[f.address] = f
-        if expected is None:
-            problems.append(f"{label}: not game code (outside .text or inside middleware, which is not reimplemented)")
-        elif f.subsystem != expected:
-            problems.append(f"{label}: subsystem is {f.subsystem!r}; the source map puts it in {expected!r}")
-        if f.size is not None and (f.size == 0 or f.size % 4):
-            problems.append(f"{label}: size {f.size} is not a positive multiple of 4 (one MIPS instruction)")
-    ordered = sorted((f for f in functions if f.size), key=lambda f: f.address)
-    for f, after in pairwise(ordered):
-        if f.address + (f.size or 0) > after.address:
-            problems.append(f"functions.toml: {f.address:#010x} {f.name}: its size runs into {after.address:#010x}")
+def _database(function: Function) -> str:
+    """How a problem names the database entry of `function`."""
+    path = f"{research_functions.FUNCTIONS_DIR.as_posix()}/{function.system}.toml"
+    return f"{path}: {function.address:#010x} {function.name}"
 
-    # Against the source: every tag listed under the same name, and every listed function tagged.
-    tagged: dict[int, OrigTag] = {}
-    for tag in tags:
-        tagged.setdefault(tag.address, tag)
-        listed = seen.get(tag.address)
-        if listed is None:
-            problems.append(f"{tag.where}: @orig {tag.address:#010x} {tag.name} has no entry in functions.toml")
-        elif tag.name and tag.name != listed.name:
+
+def check(
+    totals: Totals, functions: list[Function], tags: list[OrigTag], unported: dict[int, str] | None = None
+) -> list[str]:
+    """Problems with the reimplemented functions, alone and against the `@orig` tags; an empty list means consistent.
+
+    `unported` maps the address of every database entry without `coney` to its system, to tell a tag whose entry lacks
+    the field from a tag with no entry at all.
+    """
+    problems = []
+    listed = {f.address: f for f in functions}
+    for f in functions:
+        if not f.subsystem:
             problems.append(
-                f"{tag.where}: @orig {tag.address:#010x} names {tag.name!r}, functions.toml {listed.name!r}"
+                f"{_database(f)}: not game code (outside .text or inside middleware, which is not reimplemented)"
+            )
+
+    # Against the source: every tag recorded in the database, and every recorded port tagged in its file.
+    tagged: dict[int, list[OrigTag]] = {}
+    for tag in tags:
+        tagged.setdefault(tag.address, []).append(tag)
+    for address, here in sorted(tagged.items()):
+        tag = here[0]
+        if address in listed:
+            continue
+        if unported is not None and address in unported:
+            problems.append(
+                f"{tag.where}: @orig {address:#010x} {tag.name}: {research_functions.FUNCTIONS_DIR.as_posix()}/"
+                f"{unported[address]}.toml lists it without `coney`, the place of the port"
+            )
+        else:
+            problems.append(
+                f"{tag.where}: @orig {address:#010x} {tag.name} has no entry in the function database "
+                f"({research_functions.FUNCTIONS_DIR.as_posix()}/<system>.toml)"
             )
     for f in functions:
-        if f.address not in tagged:
-            problems.append(f"functions.toml: {f.address:#010x} {f.name}: no @orig tag in src/ reimplements it")
+        found = tagged.get(f.address)
+        if not found:
+            problems.append(f"{_database(f)}: no @orig tag in src/ reimplements it")
+            continue
+        port = research_functions.CONEY.match(f.coney)
+        files = {t.where.rsplit(":", 1)[0] for t in found}
+        if port and port["file"] not in files:
+            problems.append(
+                f"{_database(f)}: coney names {port['file']}, but its @orig tag is in {', '.join(sorted(files))}"
+            )
     return problems
 
 
-def load(root: Path) -> Progress:
-    """Read every input under the checkout `root` and check them against each other."""
+def name_mismatches(functions: list[Function], tags: list[OrigTag]) -> list[Mismatch]:
+    """The tags that spell a function's name differently from the database, which has Ghidra's name.
+
+    The tag's name is free text copied when the function was ported; Ghidra's name is the one to use. `progress check`
+    fails on the ones a branch adds (`new_mismatches`) and warns about the rest.
+    """
+    listed = {f.address: f for f in functions}
+    return [
+        Mismatch(tag, listed[tag.address].name)
+        for tag in tags
+        if tag.address in listed and tag.name and tag.name != listed[tag.address].name
+    ]
+
+
+def new_mismatches(mismatches: list[Mismatch], base_tags: set[tuple[int, str]]) -> list[Mismatch]:
+    """The mismatches of tags that did not exist, under that address and name, where the branch left its base."""
+    return [m for m in mismatches if (m.tag.address, m.tag.name) not in base_tags]
+
+
+def load(root: Path, functions: list[Function] | None = None) -> Progress:
+    """Read every input under the checkout `root` and check them against each other.
+
+    `functions` replaces the database as the list of reimplemented functions, for a checkout from before the database
+    held them (the history of earlier days); nothing is then checked against the `@orig` tags.
+    """
+    # Imported here: progress_research builds on this module's Totals.
+    from coney_tools import progress_research
+
     totals = load_totals(root / TOTALS_FILE)
-    functions = load_functions(root / FUNCTIONS_FILE)
+    listing = progress_research.load_listing(root / progress_research.LISTING_FILE)
     try:
         roadmap = (root / ROADMAP_FILE).read_text(encoding="utf-8")
     except OSError as error:
@@ -438,8 +554,14 @@ def load(root: Path) -> Progress:
     milestones = parse_milestones(roadmap)
     if not milestones:
         raise ProgressError(f"{ROADMAP_FILE}: no status table (rows like `| [Name](#anchor) | status |`)")
-    problems = check(totals, functions, scan_orig_tags(root))
-    # Imported here: progress_research builds on this module's Totals.
-    from coney_tools import progress_research
-
-    return Progress(totals, functions, milestones, problems, progress_research.load(root, totals))
+    problems: list[str] = []
+    mismatches: list[Mismatch] = []
+    if functions is None:
+        systems = load_database(root)
+        sizes = {f.address: f.size for f in listing} if listing is not None else None
+        functions = reimplemented(systems, totals, sizes)
+        tags = scan_orig_tags(root)
+        unported = {e.address: s.system for s in systems for e in s.entries if not e.coney}
+        problems = check(totals, functions, tags, unported)
+        mismatches = name_mismatches(functions, tags)
+    return Progress(totals, functions, milestones, problems, progress_research.load(root, totals, listing), mismatches)

@@ -1,0 +1,95 @@
+# The researched functions of the input system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00144a08
+name = "Pad_GetHistory"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::buttons"
+status = "legacy"
+
+[[function]]
+address = 0x00144a80
+name = "Pad_Pressed"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressed"
+status = "legacy"
+
+[[function]]
+address = 0x00144b88
+name = "Pad_IsHeld"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::held"
+status = "legacy"
+
+[[function]]
+address = 0x00144ba8
+name = "Pad_IsNewlyReleased"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::released"
+status = "legacy"
+
+[[function]]
+address = 0x00144bf0
+name = "Pad_IsNewlyPressed"
+page = "input.md#pad-queries"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::pressed"
+status = "legacy"
+
+[[function]]
+address = 0x00144fb0
+name = "Pad_Update"
+page = "input.md#pads"
+role = "the per-frame update ([Input on the front end](frontend.md#input))"
+level = "confirmed-code"
+coney = "src/core/pad.h:Pad::update"
+status = "legacy"
+
+[[function]]
+address = 0x001454a8
+name = "Pads_Update"
+page = "input.md#pads"
+role = "the per-frame update ([Input on the front end](frontend.md#input))"
+level = "confirmed-code"
+coney = "src/core/pads.h:Pads::update"
+status = "legacy"
+
+[[function]]
+address = 0x00145698
+name = "Pad_SetLuaHandler"
+page = "input.md#pads"
+role = "`PadSetHandler`: takes the pad index of the HUD's virtual pad (`HUD_GetVirtualPad`) for player `player != 0` when that pad record's player (`+0x42`) is the same, otherwise `player` itself as the pad index, and stores the script reference at `0x005dda90 + pad × 0x40 + 4 × b`, `b` the highest set bit of `button`"
+level = "confirmed-code"
+coney = "src/core/pad_handlers.h:PadHandlers::set"
+status = "legacy"
+
+[[function]]
+address = 0x001463e0
+name = "PlayerCommand_EnableAllForHuman"
+page = "input.md#commands"
+role = "`EnableCommands`: sets or clears the human's pad bit in the mask of every bound entry"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeEnableCommands"
+status = "legacy"
+
+[[function]]
+address = 0x001467a8
+name = "PlayerCommand_EnableForHuman"
+page = "input.md#commands"
+role = "`EnableCommand`: the same for the entries of one command"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeEnableCommand"
+status = "legacy"
+
+[[function]]
+address = 0x00148210
+name = "PadHandlerEx_SetThunk"
+page = "input.md#commands"
+level = "confirmed-code"
+coney = "src/core/pad_handlers.h:PadHandlers::setTargetHandler"
+status = "legacy"

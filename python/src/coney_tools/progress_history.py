@@ -4,9 +4,11 @@
 A point is the tracker's own headline numbers (reimplemented, researched and understood bytes with their
 denominators, and the function counts) for the last first-parent commit of a UTC day. The days come from git, so the
 history needs no state of its own: `reconstruct` extracts the few inputs the tracker reads (docs/progress, the
-research pages, the roadmap, the bindings and the `@orig` tags in `src/`) from each day's commit into a temporary
-folder and loads them with today's code, so every day is measured by the same definition. A day whose inputs cannot
-be loaded (before the tracker existed, or a format since changed) is left out. Today's point is the build's own state.
+research pages, the function database, the roadmap, the bindings and the `@orig` tags in `src/`) from each day's
+commit into a temporary folder and loads them with today's code, so every day is measured by the same definition. A
+day before the function database held the reimplemented functions has the retired list `docs/progress/functions.toml`
+instead, which is read for that day (progress_import.legacy_functions). A day whose inputs cannot be loaded (before
+the tracker existed, or a format since changed) is left out. Today's point is the build's own state.
 
 A previously published `history.json` can be passed in as a cache (`merge`): its days are kept, only missing days are
 extracted, so a deploy costs one snapshot instead of all of them. The file carries `SCHEMA` (its layout) and
@@ -30,7 +32,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
-from coney_tools import progress, progress_research, research_functions
+from coney_tools import progress, progress_import, progress_research, research_functions
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
@@ -41,7 +43,7 @@ HISTORY_FILE = "progress/history.json"
 INPUTS = ("docs/progress", "docs/research", "docs/roadmap.md", "research/bindings", "research/functions", "src")
 MEASURES = ("reimplemented", "understood", "researched")
 #: The modules whose code decides what each measure counts: a change to any of them invalidates the cache.
-DEFINITION_MODULES = (progress, progress_research, research_functions)
+DEFINITION_MODULES = (progress, progress_import, progress_research, research_functions)
 #: A day left out of the history: (date, the commit it was tried at).
 Skipped = tuple[str, str]
 
@@ -198,7 +200,9 @@ def snapshot_point(root: Path, date: str, commit: str) -> Point | None:
         try:
             if not extract_snapshot(root, commit, dest):
                 return None
-            return point_of(progress.load(dest), date, commit)
+            # A day before the function database held the reimplemented functions has the retired list instead.
+            listing = progress_research.load_listing(dest / progress_research.LISTING_FILE)
+            return point_of(progress.load(dest, progress_import.legacy_functions(dest, listing)), date, commit)
         except (ConfigError, OSError, tarfile.TarError, ValueError, KeyError):
             return None
 

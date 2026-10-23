@@ -1,0 +1,416 @@
+# The researched functions of the crimes system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x001698c8
+name = "Gang_SetSecondWantedTimer"
+page = "crimes.md#wanted"
+level = "confirmed-code"
+coney = "src/warriors/crime_reports.h:CrimeReports::setSecondWanted"
+status = "legacy"
+
+[[function]]
+address = 0x001698f0
+name = "Gang_UpdateWanted"
+page = "crimes.md#original-structure"
+role = "the gang's wanted timer"
+level = "confirmed-code"
+coney = "src/warriors/crime_reports.h:CrimeReports::update"
+status = "legacy"
+
+[[function]]
+address = 0x0022ceb8
+name = "Mug_End"
+page = "crimes.md#code-crimes"
+role = "Turns a mugging back into a rear grab, withdraws the hint and calls the mug callback."
+level = "confirmed-code"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::mugEnded"
+status = "legacy"
+
+[[function]]
+address = 0x0022d3f8
+name = "Uncuff_BeginMash"
+page = "crimes.md#original-structure"
+role = "the uncuff mash's start ([Uncuffing](crimes.md#uncuffing))"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_uncuff.cpp:uncuffDropsHeld"
+status = "legacy"
+
+[[function]]
+address = 0x0022d628
+name = "MiniGame_Abort"
+page = "crimes.md#original-structure"
+role = "dispatch by mini-game mode"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::endUncuff"
+status = "legacy"
+
+[[function]]
+address = 0x0022d790
+name = "LockPick_Start"
+page = "crimes.md#original-structure"
+role = "the lock-picking set-up and outcome"
+level = "confirmed-code"
+coney = "src/world_objects/lock_pick.h:LockPick::LockPick"
+status = "legacy"
+
+[[function]]
+address = 0x0022d908
+name = "LockPick_End"
+page = "crimes.md#original-structure"
+role = "the lock-picking set-up and outcome"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::lockPickSucceeded"
+status = "legacy"
+
+[[function]]
+address = 0x0022dd98
+name = "StereoTheft_Start"
+page = "crimes.md#original-structure"
+role = "the stereo's set-up and outcome"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startStereoTheft"
+status = "legacy"
+
+[[function]]
+address = 0x0022e020
+name = "StereoTheft_End"
+page = "crimes.md#original-structure"
+role = "the stereo's set-up and outcome"
+level = "confirmed-code"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::stereoStolen"
+status = "legacy"
+
+[[function]]
+address = 0x0022e848
+name = "Tag_End"
+page = "crimes.md#original-structure"
+role = "the player's tag each update; its end"
+level = "confirmed-code"
+coney = "src/world_objects/tag_spots.h:TagSpots::endSpray"
+status = "legacy"
+
+[[function]]
+address = 0x0022ec18
+name = "Human_Arrest"
+page = "crimes.md#original-structure"
+role = "`HuSetArrested` 1 / 0: the cuffed state, its style, record and icon ([Arrest](crimes.md#arrest))"
+level = "confirmed-code"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::setArrested"
+status = "legacy"
+
+[[function]]
+address = 0x0022ef58
+name = "Human_Unarrest"
+page = "crimes.md#original-structure"
+role = "`HuSetArrested` 1 / 0: the cuffed state, its style, record and icon ([Arrest](crimes.md#arrest))"
+level = "confirmed-code"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::setArrested"
+status = "legacy"
+
+[[function]]
+address = 0x00236508
+name = "Cfg_SetStereoTheftHandler"
+page = "crimes.md#code-crimes"
+role = "`CfgSetSteroTheftHandler`: interns the stereo theft's Lua handler (0x0051027c)."
+level = "confirmed-code"
+coney = "src/scripting/player_bindings.cpp:addWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00238100
+name = "Human_SetMoney"
+page = "crimes.md#starting-money"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeSetMoney"
+status = "legacy"
+
+[[function]]
+address = 0x00238db0
+name = "Human_Tag"
+page = "crimes.md#original-structure"
+role = "`HuTag`: starts tagging"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeHuTag"
+status = "legacy"
+
+[[function]]
+address = 0x00238f50
+name = "Tag_CallStartCallback"
+page = "crimes.md#tag-callbacks"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callTagStart"
+status = "legacy"
+
+[[function]]
+address = 0x00239f20
+name = "Human_SetInterrogation"
+page = "crimes.md#interrogation"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/scripting/story_bindings.cpp:makeHuSetInterrogation"
+status = "legacy"
+
+[[function]]
+address = 0x00255f08
+name = "MiniGame_Update"
+page = "crimes.md#original-structure"
+role = "each update: success, failure or the meter"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateUncuff"
+status = "legacy"
+
+[[function]]
+address = 0x002606e8
+name = "Uncuff_MashSuccess"
+page = "crimes.md#original-structure"
+role = "the mash's outcome"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_uncuff.cpp:GameplayMode::uncuffSucceeded"
+status = "legacy"
+
+[[function]]
+address = 0x00260a70
+name = "Uncuff_MashFail"
+page = "crimes.md#original-structure"
+role = "the mash's outcome"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateUncuff"
+status = "legacy"
+
+[[function]]
+address = 0x00260ca8
+name = "Uncuff_Start"
+page = "crimes.md#original-structure"
+role = "the uncuff mash's start ([Uncuffing](crimes.md#uncuffing))"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::startUncuff"
+status = "legacy"
+
+[[function]]
+address = 0x00273a68
+name = "Tag_SayNearbyLine"
+page = "crimes.md#code-crimes"
+role = "Has a random nearby gang member say a line while a player tags."
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::sayTagLine"
+status = "legacy"
+
+[[function]]
+address = 0x00273c60
+name = "Tag_UpdatePlayer"
+page = "crimes.md#original-structure"
+role = "the player's tag each update; its end"
+level = "confirmed-code"
+coney = "src/warriors/tag_session.h:TagSession::update"
+status = "legacy"
+
+[[function]]
+address = 0x00273ff0
+name = "Tag_CatmullRomPoint"
+page = "crimes.md#code-crimes"
+role = "A point on the uniform Catmull-Rom curve through the pattern points ([Tagging](crimes.md#tagging))."
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:tagPath"
+status = "legacy"
+
+[[function]]
+address = 0x002741d8
+name = "TagGame_Init"
+page = "crimes.md#original-structure"
+role = "the tag's stick game"
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:tagPath"
+status = "legacy"
+
+[[function]]
+address = 0x00274638
+name = "Tag_GetChargeLeft"
+page = "crimes.md#code-crimes"
+role = "The charge left: 1 - elapsed / the difficulty's time, from +0x518."
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:TagGame::chargeLeft"
+status = "legacy"
+
+[[function]]
+address = 0x00274710
+name = "TagGame_SpendPaint"
+page = "crimes.md#original-structure"
+role = "the tag's stick game"
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:TagGame::update"
+status = "legacy"
+
+[[function]]
+address = 0x002748a0
+name = "TagGame_IsOnTrack"
+page = "crimes.md#code-crimes"
+role = "The stick game's on-track flag (+0x500); the HUD cursor is plain white while it is set."
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:TagGame::onTrack"
+status = "legacy"
+
+[[function]]
+address = 0x002748a8
+name = "TagGame_Update"
+page = "crimes.md#original-structure"
+role = "the tag's stick game"
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:TagGame::update"
+status = "legacy"
+
+[[function]]
+address = 0x00274e38
+name = "Tag_GetProgress"
+page = "crimes.md#code-crimes"
+role = "The painted fraction +0x508 / +0x268 (1.0 once +0x508 + +0x264 exceeds +0x268)."
+level = "confirmed-code"
+coney = "src/warriors/tag_game.h:TagGame::fraction"
+status = "legacy"
+
+[[function]]
+address = 0x00278018
+name = "Tag_StartSprayClips"
+page = "crimes.md#original-structure"
+role = "the spray clips and the turn to the tag"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::startTagSpray"
+status = "legacy"
+
+[[function]]
+address = 0x00278210
+name = "Tag_RestartSprayClips"
+page = "crimes.md#code-crimes"
+role = "Requeues the spray clips (the spray effect hook) when the tag still exists, dropping a kind 4 or 6 weapon."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::restartTagSpray"
+status = "legacy"
+
+[[function]]
+address = 0x002783b0
+name = "Tag_EndSprayClips"
+page = "crimes.md#code-crimes"
+role = "Unless the tag is gone: a 0.05 s fade into 336 (held `0x800000`), then the idle loop (anim state 0) or, in the fight stance, the fight idle + 1 transition (held `0x80000`) and the fight idle (state `0xb`); then `Tag_End` at once ([The end](crimes.md#tag-look))."
+level = "confirmed-code"
+coney = "src/human/human_animator.h:HumanAnimator::playTagEnd"
+status = "legacy"
+
+[[function]]
+address = 0x0027bc48
+name = "Mash_IsQuitCommand"
+page = "crimes.md#original-structure"
+role = "the mash's input tests"
+level = "confirmed-code"
+coney = "src/combat/stick_games.h:ButtonMash"
+status = "legacy"
+
+[[function]]
+address = 0x0027bcd8
+name = "Mash_IsAlternation"
+page = "crimes.md#original-structure"
+role = "the mash's input tests"
+level = "confirmed-code"
+coney = "src/combat/stick_games.h:ButtonMash"
+status = "legacy"
+
+[[function]]
+address = 0x003fc8d8
+name = "SprayTag_OnMessage"
+page = "crimes.md#tag-spots"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world_objects/tag_spots.h:TagSpots::setState"
+status = "legacy"
+
+[[function]]
+address = 0x003fca68
+name = "SprayTag_Update"
+page = "crimes.md#tag-spots"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world_objects/tag_spots.h:TagSpots::update"
+status = "legacy"
+
+[[function]]
+address = 0x00412dc8
+name = "Item_TakeOwned"
+page = "crimes.md#original-structure"
+role = "taking an owned item: witnesses, the shoplifting score"
+level = "confirmed-code"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::sendTheft"
+status = "legacy"
+
+[[function]]
+address = 0x00417af0
+name = "Cfg_SetActionDistance"
+page = "crimes.md#warriors-functions"
+role = "`CfgActionDistance(d, kind)`: stores d² at `0x00514878 + kind × 4` ([Context records](crimes.md#context-records))"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00418150
+name = "ContextActions_Pick"
+page = "crimes.md#original-structure"
+role = "the registry of context records; the per-update choice"
+level = "confirmed-code"
+coney = "src/gamemodes/level_pickups.h:LevelPickups::actionObject"
+status = "legacy"
+
+[[function]]
+address = 0x0041b6a8
+name = "Script_EnableCrimeReports"
+page = "crimes.md#warriors-functions"
+role = "the workers of `ReportCrime` (`+0x288`), `SetCrimeSceneTimeLength` (`+0x2b0`) and `SetCopGuardArrestedRange` (`+0x320`)"
+level = "confirmed-code"
+coney = "src/warriors/crime_reports.h:CrimeReports::setReporting"
+status = "legacy"
+
+[[function]]
+address = 0x0041b6e0
+name = "Crime_IsHappening"
+page = "crimes.md#wanted"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeCrimeIsHappening"
+status = "legacy"
+
+[[function]]
+address = 0x0041b8b0
+name = "GameState_ReportCrime"
+page = "crimes.md#break-in-police"
+level = "confirmed-code"
+coney = "src/warriors/crime_reports.h:CrimeReports::report"
+status = "legacy"
+
+[[function]]
+address = 0x0041d8a0
+name = "Cfg_SetCrimeResponders"
+page = "crimes.md#warriors-functions"
+role = "`CfgCrimeResponders(type, n)`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041d8d0
+name = "GameState_SetForceCrimeLevel"
+page = "crimes.md#warriors-functions"
+role = "`ForceCrimeLevel`: `+0x28c`"
+level = "confirmed-code"
+coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041da80
+name = "Cfg_EnableCrimeType"
+page = "crimes.md#warriors-functions"
+role = "`CfgEnableCrimeType(type, on)` for types 0-14 / `CfgSetCrimeCallback`"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0041ddd8
+name = "Store_Reset"
+page = "crimes.md#stores"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:resetStore"
+status = "legacy"

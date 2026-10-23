@@ -210,7 +210,7 @@ def _names(cell: str, count: int) -> list[tuple[str, str]] | str:
     return [name for name in names if isinstance(name, tuple)]
 
 
-def _level(cell: str) -> tuple[str, str, str] | None:
+def level_of(cell: str) -> tuple[str, str, str] | None:
     """The level an evidence cell gives, the whole cell when it says more than the level, and a `not needed` reason.
 
     None when the cell names no level. The first level named is the entry's: `confirmed (code); the rock inferred` is
@@ -236,11 +236,11 @@ def _page_fields(entry: rf.Entry) -> rf.Entry:
     return replace(entry, coney="", status="", gaps=())
 
 
-def _entry_problem(entry: rf.Entry) -> str:
-    """Why the schema would refuse `entry`, or an empty string when it is valid."""
-    system = rf.SystemFunctions("import", Path("import.toml"), "", (entry,))
+def entry_problem(entry: rf.Entry, system: str = "import") -> str:
+    """Why the schema would refuse `entry` in the file of `system`, or an empty string when it is valid."""
+    holder = rf.SystemFunctions(system, Path(f"{system}.toml"), "", (entry,))
     try:
-        rf.parse_system("import", rf.dumps(system), Path("import.toml"))
+        rf.parse_system(system, rf.dumps(holder), Path(f"{system}.toml"))
     except rf.ResearchFunctionsError as error:
         return str(error).splitlines()[0].split(": ", 2)[-1]
     return ""
@@ -250,7 +250,7 @@ def _add(
     result: ImportResult, seen: dict[int, rf.Entry], entry: rf.Entry, row: str, padded: bool, dropped: str
 ) -> None:
     """Add one entry from the row `row` to `result`, or skip it with the reason: invalid, or an address seen before."""
-    if problem := _entry_problem(entry):
+    if problem := entry_problem(entry):
         result.skipped.append(f"{row}: {entry.name}: {problem}")
         return
     if entry.address in seen:
@@ -309,13 +309,15 @@ def import_tables(markdown: str, page: str, *, source: str, section: str = "") -
             if isinstance(names, str):
                 result.skipped.append(f"{row}: {names}")
                 continue
-            level = _level(cells[columns.evidence])
+            level = level_of(cells[columns.evidence])
             if level is None:
                 result.skipped.append(
                     f"{row}: {', '.join(n for n, _ in names)}: the evidence cell names no evidence level"
                 )
                 continue
             key, note, reason = level
+            note = research_links.rebase_links(note, page_dir, "", page)
+            reason = research_links.rebase_links(reason, page_dir, "", page)
             role = research_links.rebase_links(cells[columns.role], page_dir, "", page) if columns.role >= 0 else ""
             kind = cells[columns.kind] if columns.kind >= 0 else ""
             if key == "not-needed":

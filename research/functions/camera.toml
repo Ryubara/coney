@@ -1,0 +1,747 @@
+# The researched functions of the camera system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0011b838
+name = "Camera_GetActiveHandle"
+page = "camera.md#fn-script"
+role = "[`CameraGetActive`](../references/bindings/camera.md#cameragetactive): handle (vtable `+0x2c`) of the player's current camera, or the null handle `0x006ebd30`."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::activeHandle"
+status = "legacy"
+
+[[function]]
+address = 0x0011b888
+name = "Camera_DeleteScripted"
+page = "camera.md#fn-script"
+role = "[`CamDelete`](../references/bindings/camera.md#camdelete): releases (Camera_Release `0x0011e440`) a camera by handle, but only a fixed (type 0) or locked (type 1) camera; shared kinds are kept."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::deleteCamera"
+status = "legacy"
+
+[[function]]
+address = 0x0011b920
+name = "Camera_GetPositionByHandle"
+page = "camera.md#fn-script"
+role = "[`CamGetPos`](../references/bindings/camera.md#camgetpos): a camera's position (vtable `+0x21c`) by handle, or the zero vector `0x005116c0`."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::positionOf"
+status = "legacy"
+
+[[function]]
+address = 0x0011bad8
+name = "Camera_ResetByHandle"
+page = "camera.md#fn-script"
+role = "[`CameraReset`](../references/bindings/camera.md#camerareset): vtable `+0x13c` reset; for a follow camera the other player's follow camera (if made) is reset too."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::reset"
+status = "legacy"
+
+[[function]]
+address = 0x0011bb98
+name = "Camera_SetClipping"
+page = "camera.md#fn-script"
+role = "[`CameraSetClipping`](../references/bindings/camera.md#camerasetclipping): near plane (not for a follow camera) and far clip capped at 150."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setClipping"
+status = "legacy"
+
+[[function]]
+address = 0x0011bdc0
+name = "Camera_LockLocked"
+page = "camera.md#fn-script"
+role = "[`CamLockLocked`](../references/bindings/camera.md#camlocklocked): adds/removes a human in a locked camera's kept-in-view list (`0x001358d0`)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::lockLocked"
+status = "legacy"
+
+[[function]]
+address = 0x0011be18
+name = "Camera_CreateThird"
+page = "camera.md#fn-script"
+role = "[`CameraCreateThird`](../references/bindings/camera.md#cameracreatethird): factory type 0x10 on a target object (`+0x1e0`); fov (vtable `+0x194`); distance/height at `+0x210`/`+0x214`, angle (`0x001207b0`), offset `+0x220`; near; far capped at 150; returns the handle."
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCameraCreateThird"
+status = "legacy"
+
+[[function]]
+address = 0x0011bfa8
+name = "Camera_SetupFollow"
+page = "camera.md#fn-script"
+role = "[`CamSetupFollow`](../references/bindings/camera.md#camsetupfollow): puts the player's Cam_Follow on a target (vtable `+0x1bc`), places it at the target plus the offset `+0x200`, Cam_Follow_PlaceBehind(180, -1), returns its handle. [setting up](camera.md#setting-up)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setupFollow"
+status = "legacy"
+
+[[function]]
+address = 0x0011c0b8
+name = "Cam_ConfigureFollow"
+page = "camera.md#fn-script"
+role = "CfgFollowCamera (player 1's follow camera): distances, pitch, fov, near plane, offset, slow-motion factor `0x005148a0`; band to the minimum with one player camera. [setting up](camera.md#setting-up)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::configure"
+status = "legacy"
+
+[[function]]
+address = 0x0011c270
+name = "Camera_TargetList"
+page = "camera.md#fn-script"
+role = "[`CamTarget`](../references/bindings/camera.md#camtarget): adds or removes a human in the shared target list `0x005d91a8`. [script calls](camera.md#script-calls)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::target"
+status = "legacy"
+
+[[function]]
+address = 0x0011c2f0
+name = "Camera_SetFollowHeading"
+page = "camera.md#fn-script"
+role = "[`CamSetFollowHeading`](../references/bindings/camera.md#camsetfollowheading): snaps every player's follow camera to a heading round its target (Cam_Follow_SetHeading), no blend."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setFollowHeading"
+status = "legacy"
+
+[[function]]
+address = 0x0011c3b8
+name = "Camera_SetFollowPitch"
+page = "camera.md#fn-script"
+role = "[`CamSetFollowAngle`](../references/bindings/camera.md#camsetfollowangle): every follow camera's target pitch, clamped, reached at once (Cam_Follow_SetTargetPitch). [script calls](camera.md#script-calls)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::setPitch"
+status = "legacy"
+
+[[function]]
+address = 0x0011c470
+name = "Camera_SetFollowZoom"
+page = "camera.md#fn-script"
+role = "[`CamSetFollowZoom`](../references/bindings/camera.md#camsetfollowzoom): band to the minimum, default or maximum, zoom step and upper pitch limit. [script calls](camera.md#script-calls)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::setZoom"
+status = "legacy"
+
+[[function]]
+address = 0x0011c638
+name = "Camera_SetFollowPosition"
+page = "camera.md#fn-script"
+role = "[`CamSetFollowPos`](../references/bindings/camera.md#camsetfollowpos): puts a player's follow camera at a world position at once (Cam_Follow_SetPosition)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::placeAt"
+status = "legacy"
+
+[[function]]
+address = 0x0011c6b8
+name = "Camera_CreateFixed"
+page = "camera.md#fn-script"
+role = "[`CameraCreateFixed`](../references/bindings/camera.md#cameracreatefixed): factory type 0 at a position, target put on the shared target list (CameraTargets_Add), offset, lens; returns the handle."
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCameraCreateFixed"
+status = "legacy"
+
+[[function]]
+address = 0x0011c858
+name = "Camera_CreateWin"
+page = "camera.md#fn-script"
+role = "[`CameraCreateWin`](../references/bindings/camera.md#cameracreatewin): sets up the shared Cam_Win (`0x00120188`): name (vtable `+0x18c`), target human `+0x1e0`, fov (vtable `+0x194`), distance, angle, height and speed (`+0x1e4`..`+0x1f0`), direction (`0x00143c58`); near 0.1; far capped at 150; returns the handle."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::createWin"
+status = "legacy"
+
+[[function]]
+address = 0x0011c9e0
+name = "Camera_SetupPoizo"
+page = "camera.md#fn-script"
+role = "[`CamSetupPoizo`](../references/bindings/camera.md#camsetuppoizo): starts the path camera from an existing camera's view, clearing its points; time to the first point, end callback, fov, far. [path cameras](camera.md#path-cameras)."
+level = "confirmed-code"
+coney = "src/camera/path_camera.h:PathCamera::setup"
+status = "legacy"
+
+[[function]]
+address = 0x0011cb70
+name = "Camera_ReversePoizo"
+page = "camera.md#fn-script"
+role = "[`CamReversePoizo`](../references/bindings/camera.md#camreversepoizo): reverses the path camera (PoizoCam_Reverse `0x00142578`) if it exists; returns whether it does."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::reversePath"
+status = "legacy"
+
+[[function]]
+address = 0x0011cbb0
+name = "Camera_AddPoizoPoint"
+page = "camera.md#fn-script"
+role = "[`CamAddPoizoPoint`](../references/bindings/camera.md#camaddpoizopoint): appends a path point (position; orientation from heading, pitch, roll) with its time and callback."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::addPathPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0011cc68
+name = "Camera_AddPoizoPointCam"
+page = "camera.md#fn-script"
+role = "[`CamAddPoizoPointCam`](../references/bindings/camera.md#camaddpoizopointcam): appends a path point taken from another camera's view."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::addPathPointFrom"
+status = "legacy"
+
+[[function]]
+address = 0x0011cce8
+name = "Camera_SetupRail"
+page = "camera.md#fn-script"
+role = "[`CamSetupRail`](../references/bindings/camera.md#camsetuprail): a player's rail camera: name, target on the target list, fov, offset, near, far; CamRail_Reset. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::setup"
+status = "legacy"
+
+[[function]]
+address = 0x0011cf70
+name = "Camera_SetRailLead"
+page = "camera.md#fn-script"
+role = "[`CamLeadRail`](../references/bindings/camera.md#camleadrail): puts a player's rail camera into leading mode 1 or 2 with a lead distance. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::setLead"
+status = "legacy"
+
+[[function]]
+address = 0x0011d098
+name = "Camera_AddRailPoint"
+page = "camera.md#fn-script"
+role = "[`CamAddRailPoint`](../references/bindings/camera.md#camaddrailpoint): appends a rail point (CamRail_AppendPoint). [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::addRailPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0011d228
+name = "Camera_ModifyRail"
+page = "camera.md#fn-script"
+role = "[`CamModifyRail`](../references/bindings/camera.md#cammodifyrail): a rail setting's target and ease time. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::modify"
+status = "legacy"
+
+[[function]]
+address = 0x0011dcf0
+name = "Camera_SetFollowSecondary"
+page = "camera.md#fn-script"
+role = "[`CamSetSecondary`](../references/bindings/camera.md#camsetsecondary): a human/object for a player's follow camera to keep in view (`+0x320`) and its range (`+0x3fc`)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setSecondary"
+status = "legacy"
+
+[[function]]
+address = 0x0011dd78
+name = "Camera_CanSeeObject"
+page = "camera.md#fn-script"
+role = "[`CamCanSee`](../references/bindings/camera.md#camcansee): is a point 0.3 m (1 m for class flag 0x40) above the object seen by any player's camera within range (Camera_AnyPlayerCanSeePoint)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::canSee"
+status = "legacy"
+
+[[function]]
+address = 0x0011de58
+name = "Camera_EnableFeature"
+page = "camera.md#fn-script"
+role = "CamEnable(switch, on, player): writes one of the 14 camera switches ([switches](../references/cameras.md#switch))."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::enable"
+status = "legacy"
+
+[[function]]
+address = 0x0011e0a8
+name = "Camera_SetSplitMode"
+page = "camera.md#fn-script"
+role = "[`CamSetSplitMode`](../references/bindings/camera.md#camsetsplitmode): split layout 0 or 1 into `0x0050b1a0`; when it changes, re-lays out the views (`0x00122ed0`)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setSplitMode"
+status = "legacy"
+
+[[function]]
+address = 0x0011e198
+name = "Camera_AssignReverseButton"
+page = "camera.md#fn-script"
+role = "[`CamAssignRevCamButton`](../references/bindings/camera.md#camassignrevcambutton): the reverse-camera button `0x0050b230`."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setReverseButton"
+status = "legacy"
+
+[[function]]
+address = 0x0011e878
+name = "Cameras_Update"
+page = "camera.md#fn-manager"
+role = "Cameras' update (dt): counts the target list `0x005d91a8` into `0x0050b194`; if player 1 has no current and no base camera but a follow camera, makes it both; runs each player's current camera update (vtable `+0x134`)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::update"
+status = "legacy"
+
+[[function]]
+address = 0x0011ee08
+name = "Camera_MakeActive"
+page = "camera.md#fn-manager"
+role = "Makes a camera current for a player, optionally blending (Cam_Transition `0x0011fac8`) over the given time; while a scene camera is current it replaces the camera the scene returns to instead. [blends](camera.md#blends)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::makeActive"
+status = "legacy"
+
+[[function]]
+address = 0x0011fbb0
+name = "Camera_GetPlayerRail"
+page = "camera.md#fn-manager"
+role = "A player's Cam_Rail (`0x005d9160`[player], 0x3f0 bytes), made on first use when asked."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::setupRail"
+status = "legacy"
+
+[[function]]
+address = 0x001202e8
+name = "Camera_AnyPlayerCanSeePoint"
+page = "camera.md#fn-manager"
+role = "Is a point within range of and seen by any player's current camera (Camera_CanSeePoint)."
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:ScriptSpawnerWorld::seen"
+status = "legacy"
+
+[[function]]
+address = 0x001205e8
+name = "Cam3rdPerson_Update"
+page = "camera.md#fn-3rdperson"
+role = "Cam_3rdPerson update (vtable `+0x134`): look-at = target position + offset (`+0x220`); orientation (`+0x200`) slerps 10% to the target's; camera = look-at + orientation × (0,-distance(`+0x210`),0), height (`+0x214`) added, swung by the angle quaternion (`+0x1f0`); shake; look-at matrix (`0x00337028`) to `+0x20`/`+0x10`; base finish `0x00120a30`."
+level = "confirmed-code"
+coney = "src/camera/third_camera.h:ThirdCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x001210f8
+name = "Cam_StartShake"
+page = "camera.md#fn-base"
+role = "Base shake start (vtable `+0x15c` entry, call slot `+0x15c`): level 1-3 sets amplitude 0.5/0.75/1.0, time 0.10/0.15/0.18 s, rumble base 0/0x30/0x60; 0 stops. [shake](camera.md#shake)."
+level = "confirmed-code"
+coney = "src/camera/camera_shake.h:CameraShake::start"
+status = "legacy"
+
+[[function]]
+address = 0x00121298
+name = "Cam_UpdateShake"
+page = "camera.md#fn-base"
+role = "Shake and rumble update (every camera kind): eases the amplitude 65% toward the level's, counts the time down, drives the pad rumble byte (`+0x41`) and adds a random view offset while switch 6 is on. [shake](camera.md#shake)."
+level = "confirmed-code"
+coney = "src/camera/camera_shake.h:CameraShake::update"
+status = "legacy"
+
+[[function]]
+address = 0x00122248
+name = "CameraTargets_Contains"
+page = "camera.md#fn-base"
+role = "Is an object's handle in the shared target list `0x005d91a8`."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::switchTarget"
+status = "legacy"
+
+[[function]]
+address = 0x00122548
+name = "Camera_CanSeePoint"
+page = "camera.md#fn-base"
+role = "Is a point within range (capped at the camera's far clip) of a camera, inside its frustum and with no collision hit on the ray from the camera."
+level = "confirmed-code"
+coney = "src/camera/camera_view.h:canSeePoint"
+status = "legacy"
+
+[[function]]
+address = 0x00123630
+name = "CamFailed_Construct"
+page = "camera.md#fn-failed"
+role = "Cam_Failed (death camera, type 12) constructor, 0x200 bytes, vtable `0x005357d0`: no human (`+0x1e0`), height 5 (`+0x1e8`), turn rate 1 (`+0x1ec`), `+0x1f0`/`+0x1f4` 1, rotating flag `+0x1fe` = 1."
+level = "confirmed-code"
+coney = "src/camera/failed_camera.h:FailedCamera::FailedCamera"
+status = "legacy"
+
+[[function]]
+address = 0x001236e0
+name = "CamFailed_Activate"
+page = "camera.md#fn-failed"
+role = "Death camera activation (vtable `+0x144`): looks at the last target `0x005d91b8` if it is a player human, else at whichever player is nearer the previous camera (`+0x1e4`); then places itself (`0x001238a8`)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::startFailed"
+status = "legacy"
+
+[[function]]
+address = 0x001238a8
+name = "CamFailed_Place"
+page = "camera.md#fn-failed"
+role = "Death camera placement: look-at = the human's position (`+0x180`); height (`+0x1e8`) = an upward ray of near + 5 m (mask 0x200) less the near plane; camera straight above, looking down (pitch about -88°) at a random yaw (Random_Int(36) × 10° - 180°); rotating flag set."
+level = "confirmed-code"
+coney = "src/camera/failed_camera.h:FailedCamera::FailedCamera"
+status = "legacy"
+
+[[function]]
+address = 0x00123bf0
+name = "CamFailed_Update"
+page = "camera.md#fn-failed"
+role = "Death camera update: while rotating, yaws by turn rate × 15°/s and closes in on the body at 0.18 m/s down to 2.5 m; when player 1's screen-effects manager's fade out has fully covered the screen (fade level `+0x1d8` >= 1, rate `+0x1dc` > 0) ends the blur pulse at once (`0x0018d058`, 0 s, reverse) and stops rotating ([Graphics](graphics.md#fade))."
+level = "confirmed-code"
+coney = "src/camera/failed_camera.h:FailedCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x00124000
+name = "CamFixed_ComputeLookAt"
+page = "camera.md#fn-fixed"
+role = "Fixed camera: look-at point = the average position of the listed targets that still count, plus the offset."
+level = "confirmed-code"
+coney = "src/camera/fixed_camera.h:FixedCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x00124690
+name = "CamFixed_Update"
+page = "camera.md#fn-fixed"
+role = "Fixed camera update: with targets, recomputes and (unless snapped) smooths the look-at, shakes, and faces it (`0x00337028`); base finish; clears the snap flag."
+level = "confirmed-code"
+coney = "src/camera/fixed_camera.h:FixedCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x00124d00
+name = "Cam_Follow_Reset"
+page = "camera.md#fn-follow"
+role = "Follow camera reset (vtable `+0x13c`, CameraReset): place behind the target (`0x00124f38`(180,-1)), target pitch and fov back to the configured ones, line-of-sight pull-in. [setting up](camera.md#setting-up)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::reset"
+status = "legacy"
+
+[[function]]
+address = 0x00124f38
+name = "Cam_Follow_PlaceBehind"
+page = "camera.md#fn-follow"
+role = "Places the camera at a heading from the target's facing (180 = behind) at a distance picked from the band presets (min/default/max-0.5) and sets the zoom step. [setting up](camera.md#setting-up)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::placeBehind"
+status = "legacy"
+
+[[function]]
+address = 0x001250a8
+name = "Cam_Follow_PlaceAtHeading"
+page = "camera.md#fn-follow"
+role = "Puts the camera at a heading relative to the target's facing and a distance about the look-at point, pitch to the target pitch; optionally sets the band to that distance (+0.5 deep) and the zoom step from it."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::placeBehind"
+status = "legacy"
+
+[[function]]
+address = 0x001254f0
+name = "Cam_Follow_StepZoom"
+page = "camera.md#fn-follow"
+role = "Sets the zoom step `+0x400` and the upper pitch limit `+0x3ac` from a distance (50/40/30°). [pitch](camera.md#pitch)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::stepZoom"
+status = "legacy"
+
+[[function]]
+address = 0x00125888
+name = "Cam_Follow_ApplyConfig"
+page = "camera.md#fn-follow"
+role = "Turns the view to the configured pitch at once and eases the fov to its new value over 1 s (`+0x39c`); height-hold ease scale `+0x398` = 0.25. [setting up](camera.md#setting-up)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::configure"
+status = "legacy"
+
+[[function]]
+address = 0x00125cc0
+name = "Cam_Follow_Activate"
+page = "camera.md#fn-follow"
+role = "Follow activation (vtable `+0x144`): recount targets, snap look-at, distance clamped to the band, hard band = band, wanted near edge cleared, recovered distance = near edge. [setting up](camera.md#setting-up)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::activate"
+status = "legacy"
+
+[[function]]
+address = 0x00126a30
+name = "Cam_Follow_EnableSprintZoom"
+page = "camera.md#fn-follow"
+role = "CamEnable(5): the sprint zoom switch `+0x468`; off also clears its state. [sprint zoom](camera.md#sprint-zoom)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::enableSprintZoom"
+status = "legacy"
+
+[[function]]
+address = 0x00127d88
+name = "Cam_Follow_LookAt"
+page = "camera.md#fn-follow"
+role = "Look-at point = target + offset, its move limited by length (20% above 0.8 m); hidden-in-shadow height 1.65 m. [update step 5](camera.md#update)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::followLookAt"
+status = "legacy"
+
+[[function]]
+address = 0x00128cf0
+name = "Cam_Follow_SprintZoom"
+page = "camera.md#fn-follow"
+role = "Sprint zoom: pulls the band in to the minimum and the target pitch to 7° while sprinting, back 250 ms after. [sprint zoom](camera.md#sprint-zoom)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::sprintZoom"
+status = "legacy"
+
+[[function]]
+address = 0x00129c78
+name = "Cam_Follow_AutoFollow"
+page = "camera.md#fn-follow"
+role = "Auto-follow gate: picks the default (`0x0012a400`) or auto-centre (`0x00129f88`) rule. [heading](camera.md#heading)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::autoFollow"
+status = "legacy"
+
+[[function]]
+address = 0x00129f88
+name = "Cam_Follow_AutoCentre"
+page = "camera.md#fn-follow"
+role = "Auto-centre rule: rate from the angle between the facing and the view. [heading](camera.md#heading)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:autoCentreRate"
+status = "legacy"
+
+[[function]]
+address = 0x0012a400
+name = "Cam_Follow_AutoFollowDefault"
+page = "camera.md#fn-follow"
+role = "Default auto-follow rule (22.5-157.5°). [heading](camera.md#heading)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:defaultFollowRate"
+status = "legacy"
+
+[[function]]
+address = 0x0012aae0
+name = "Cam_Follow_EaseBand"
+page = "camera.md#fn-follow"
+role = "Eases the band's near edge to the wanted `+0x34c` and steps the zoom. [sprint zoom step 4](camera.md#sprint-zoom)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::easeBand"
+status = "legacy"
+
+[[function]]
+address = 0x0012ae58
+name = "Cam_Follow_Update"
+page = "camera.md#fn-follow"
+role = "The follow camera's update: look-at, fov, stick, auto-follow, leash, pitch, height hold, heading target, lag, hard band, collision. [update](camera.md#update)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x0012d4e8
+name = "Cam_Follow_Pitch"
+page = "camera.md#fn-follow"
+role = "Pitch about the look-at point, clamped to [`+0x3b0`, `+0x3ac`]. [pitch](camera.md#pitch)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::pitchToward"
+status = "legacy"
+
+[[function]]
+address = 0x0012d688
+name = "Cam_Follow_Yaw"
+page = "camera.md#fn-follow"
+role = "Yaw about the look-at point. [heading](camera.md#heading)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::yaw"
+status = "legacy"
+
+[[function]]
+address = 0x0012d7a8
+name = "Cam_Follow_MoveBand"
+page = "camera.md#fn-follow"
+role = "Moves the distance band and recomputes the lower pitch limit. [pitch](camera.md#pitch)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::updateLowerPitch"
+status = "legacy"
+
+[[function]]
+address = 0x0012e170
+name = "Cam_Follow_KeepInView"
+page = "camera.md#fn-follow"
+role = "Keeps a watched target in view, yaw at most 270°/s. [heading](camera.md#heading)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::keepInView"
+status = "legacy"
+
+[[function]]
+address = 0x0012e9a8
+name = "Cam_Follow_FrameEnemy"
+page = "camera.md#fn-follow"
+role = "Combat camera: holds the enemy 27° off centre. [combat camera](camera.md#combat-camera)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::combat"
+status = "legacy"
+
+[[function]]
+address = 0x00130990
+name = "Cam_Follow_Collide"
+page = "camera.md#fn-follow"
+role = "Follow world collision: rays, side probes, swing away, sphere pushes, next update's lag. [collision](camera.md#collision)."
+level = "confirmed-code"
+coney = "src/camera/follow_camera.h:FollowCamera::collide"
+status = "legacy"
+
+[[function]]
+address = 0x001353e0
+name = "CamLocked_BuildOrientation"
+page = "camera.md#fn-locked"
+role = "Locked camera orientation = rotation about z by the heading × about × by the pitch × about y by the roll."
+level = "confirmed-code"
+coney = "src/camera/locked_camera.h:scriptedOrientation"
+status = "legacy"
+
+[[function]]
+address = 0x00135680
+name = "CamLocked_Update"
+page = "camera.md#fn-locked"
+role = "Locked camera update: placed, aimed 3 m ahead, kept out of walls, keeps its listed humans inside the view's sides, shake. [locked cameras](camera.md#locked-cameras)."
+level = "confirmed-code"
+coney = "src/camera/locked_camera.h:LockedCamera::view"
+status = "legacy"
+
+[[function]]
+address = 0x001358d0
+name = "CamLocked_SetKeptHuman"
+page = "camera.md#fn-locked"
+role = "[`CamLockLocked`](../references/bindings/camera.md#camlocklocked) core: adds or removes a human in the locked camera's kept-in-view list (two entries)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::lockLocked"
+status = "legacy"
+
+[[function]]
+address = 0x00135960
+name = "CamLocked_PushHumanIntoView"
+page = "camera.md#fn-locked"
+role = "Pushes a listed human back inside the view when within 0.3 m of the left or right frustum plane, with a world ray and a ground snap. [locked cameras](camera.md#locked-cameras)."
+level = "confirmed-code"
+coney = "src/camera/locked_camera.h:keepInView"
+status = "legacy"
+
+[[function]]
+address = 0x00135ca8
+name = "LockedCam_KeepHumansInView"
+page = "camera.md#fn-locked"
+role = "Runs the push for each human of the locked camera's list. [locked cameras](camera.md#locked-cameras)."
+level = "confirmed-code"
+coney = "src/camera/locked_camera.h:keepInView"
+status = "legacy"
+
+[[function]]
+address = 0x0013b2b8
+name = "CamRail_Reset"
+page = "camera.md#fn-rail"
+role = "CamSetupRail's reset: no points, mode 0, settings and ease times off, fov target the current fov, switches 7 and 8 on. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::setup"
+status = "legacy"
+
+[[function]]
+address = 0x0013b780
+name = "CamRail_AppendPoint"
+page = "camera.md#fn-rail"
+role = "Appends a rail point (16 bytes at `+0x1e0`, at most 16). [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::addPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0013d010
+name = "CamRail_Update"
+page = "camera.md#fn-rail"
+role = "Rail camera update: ease settings and lead, targets, target point, damping, placement by mode, split extras. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x0013f930
+name = "CamRail_EaseValue"
+page = "camera.md#fn-rail"
+role = "Moves one rail setting toward its target by (target - current) × dt / time left. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:EasedValue::step"
+status = "legacy"
+
+[[function]]
+address = 0x00142578
+name = "PoizoCam_Reverse"
+page = "camera.md#fn-spline"
+role = "[`CamReversePoizo`](../references/bindings/camera.md#camreversepoizo) core: puts the points in reverse order with their times shifted, progress to the start, placed at the new first point, restarted with the new end callback."
+level = "confirmed-code"
+coney = "src/camera/path_camera.h:PathCamera::reverse"
+status = "legacy"
+
+[[function]]
+address = 0x001426c0
+name = "PoizoCam_Update"
+page = "camera.md#fn-spline"
+role = "Path camera update: while it is player 1's current camera, advances along the Catmull-Rom curve through the points (`0x00142db8`), slerping orientations, calling each point's callback and the end callback. [path cameras](camera.md#path-cameras)."
+level = "confirmed-code"
+coney = "src/camera/path_camera.h:PathCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x00142a58
+name = "PoizoCam_AddPoint"
+page = "camera.md#fn-spline"
+role = "Appends a path point (position, orientation, time, callback); at most 8."
+level = "confirmed-code"
+coney = "src/camera/path_camera.h:PathCamera::addPoint"
+status = "legacy"
+
+[[function]]
+address = 0x00142ac8
+name = "CamSpline_AddPointAngles"
+page = "camera.md#fn-spline"
+role = "[`CamAddPoizoPoint`](../references/bindings/camera.md#camaddpoizopoint) core: orientation from heading (about z), pitch (about x) and roll (about y) in°rees, then PoizoCam_AddPoint."
+level = "confirmed-code"
+coney = "src/camera/locked_camera.h:scriptedOrientation"
+status = "legacy"
+
+[[function]]
+address = 0x00143078
+name = "CamBlend_Start"
+page = "camera.md#fn-blend"
+role = "Starts a blend: the duration and the cameras. [blends](camera.md#blends)."
+level = "confirmed-code"
+coney = "src/camera/camera_blend.h:CameraBlend::CameraBlend"
+status = "legacy"
+
+[[function]]
+address = 0x00143590
+name = "CamBlend_Update"
+page = "camera.md#fn-blend"
+role = "Blend update: destination (and source) updated, then a linear blend of look-at and position and a slerp of orientation by t, far clip min'd; at t = 1 the destination becomes current. [blends](camera.md#blends)."
+level = "confirmed-code"
+coney = "src/camera/camera_blend.h:CameraBlend::step"
+status = "legacy"
+
+[[function]]
+address = 0x001439d8
+name = "CamWin_Activate"
+page = "camera.md#fn-win"
+role = "Win camera start (vtable `+0x144`): look-at above the target, placed on its circle. [Rumble: win camera](rumble.md#win-camera)."
+level = "confirmed-code"
+coney = "src/camera/win_camera.h:WinCamera::WinCamera"
+status = "legacy"
+
+[[function]]
+address = 0x00143c78
+name = "CamWin_Update"
+page = "camera.md#fn-win"
+role = "Win camera update: circles the target. [Rumble: win camera](rumble.md#win-camera)."
+level = "confirmed-code"
+coney = "src/camera/win_camera.h:WinCamera::update"
+status = "legacy"
+
+[[function]]
+address = 0x0041ab30
+name = "SlowMotion_On"
+page = "camera.md#original-structure"
+level = "confirmed-code"
+coney = "src/camera/slow_motion.h:SlowMotion::event"
+status = "legacy"
+
+[[function]]
+address = 0x0041ab60
+name = "SlowMotion_Off"
+page = "camera.md#original-structure"
+level = "confirmed-code"
+coney = "src/camera/slow_motion.h:SlowMotion::event"
+status = "legacy"

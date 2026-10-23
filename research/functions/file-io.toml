@@ -1,0 +1,77 @@
+# The researched functions of the file-io system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00148aa0
+name = "PS2StreamFileSys_Open"
+page = "file-io.md#original-structure"
+role = "start an IOP read of a WAD entry"
+level = "confirmed-code"
+coney = "src/fileio/wad.h:Wad::openEntry"
+status = "legacy"
+
+[[function]]
+address = 0x001490b8
+name = "DVDWadIndex_Find"
+page = "file-io.md#original-structure"
+role = "name → entry"
+level = "confirmed-code"
+coney = "src/fileio/wad_index.h:WadIndex::find"
+status = "legacy"
+
+[[function]]
+address = 0x00149160
+name = "DVDWadIndex_Construct"
+page = "file-io.md#original-structure"
+role = "read the index"
+level = "confirmed-code"
+coney = "src/fileio/wad_index.h:WadIndex::parse"
+status = "legacy"
+
+[[function]]
+address = 0x00155180
+name = "MissionSelect_Show"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001551e0
+name = "GameStats_Show"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x00155228
+name = "RumbleMenu_Show"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::show"
+status = "legacy"
+
+[[function]]
+address = 0x00155378
+name = "SSMC_StartLoadSequence"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::startLoadSequence"
+status = "legacy"
+
+[[function]]
+address = 0x001553c0
+name = "SSMC_StartDeleteSequence"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::startDeleteSequence"
+status = "legacy"
+
+[[function]]
+address = 0x00155648
+name = "RumbleResult_Toggle"
+page = "file-io.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::update"
+status = "legacy"

@@ -1,0 +1,10 @@
+# The researched functions of the armies system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0041d110
+name = "GameState_IsArmiesLevel"
+page = "armies.md#what-it-is"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_items.h:usesArmiesPauseMenu"
+status = "legacy"

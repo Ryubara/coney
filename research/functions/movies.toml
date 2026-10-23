@@ -1,0 +1,101 @@
+# The researched functions of the movies system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x001cabc0
+name = "Captions_Init"
+page = "movies.md#original-structure"
+role = "resets the captions and picks the language"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::Captions"
+status = "legacy"
+
+[[function]]
+address = 0x001cad38
+name = "Captions_SelectScene"
+page = "movies.md#original-structure"
+role = "finds a scene's (or movie's) captions"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::selectScene"
+status = "legacy"
+
+[[function]]
+address = 0x001cb010
+name = "Captions_SetKind"
+page = "movies.md#original-structure"
+role = "style and placement for a kind"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::command"
+status = "legacy"
+
+[[function]]
+address = 0x001cb190
+name = "Captions_Next"
+page = "movies.md#original-structure"
+role = "makes the next record the current caption"
+level = "confirmed-code"
+coney = "src/movies/captions.h:Captions::next"
+status = "legacy"
+
+[[function]]
+address = 0x0041d7f0
+name = "GameState_GetLanguage"
+page = "movies.md#warriors-functions"
+role = "`GetLanguage`: `+0x120`"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetLanguage"
+status = "legacy"
+
+[[function]]
+address = 0x0041da30
+name = "Cfg_SetSubtitles"
+page = "movies.md#original-structure"
+role = "the subtitle option, `W_GameState + 0x438`"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeCfgSubtitles"
+status = "legacy"
+
+[[function]]
+address = 0x00429b18
+name = "Movie_BuildUploadPacket"
+page = "movies.md#original-structure"
+role = "the GS image transfer of one frame"
+level = "confirmed-code"
+coney = "src/movies/movie_mode.h:MovieMode::render"
+status = "legacy"
+
+[[function]]
+address = 0x00429fe8
+name = "BinkMovie_Play"
+page = "movies.md#original-structure"
+role = "the Bink session and the frame loop"
+level = "confirmed-code"
+coney = "src/movies/movie_mode.h:MovieMode::step"
+status = "legacy"
+
+[[function]]
+address = 0x0042a718
+name = "Movie_AdvanceCaptions"
+page = "movies.md#original-structure"
+role = "moves the caption scene on by the real time passed"
+level = "confirmed-code"
+coney = "src/movies/captions.h:CaptionTimeline::advance"
+status = "legacy"
+
+[[function]]
+address = 0x0042a820
+name = "Movie_CheckSkip"
+page = "movies.md#original-structure"
+role = "any button on any pad ends a skippable movie"
+level = "confirmed-code"
+coney = "src/movies/movie_mode.h:MovieMode::anyButton"
+status = "legacy"
+
+[[function]]
+address = 0x0042a938
+name = "Movie_Play"
+page = "movies.md#original-structure"
+role = "everything around one movie"
+level = "confirmed-code"
+coney = "src/gamemodes/movie_player.h:MoviePlayer::playMovie"
+status = "legacy"

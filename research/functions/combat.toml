@@ -1,0 +1,986 @@
+# The researched functions of the combat system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00147430
+name = "PlayerCommand_Add"
+page = "combat.md#original-structure"
+role = "appends `{mask, command, buttons, extra}` to one of nine trigger tables"
+level = "confirmed-code"
+coney = "src/combat/commands.h:CommandTables::add"
+status = "legacy"
+
+[[function]]
+address = 0x00147940
+name = "Commands_Match"
+page = "combat.md#original-structure"
+role = "matches the tables each update, stores the command at per-player `+0x20`"
+level = "confirmed-code"
+coney = "src/combat/commands.h:CommandMatcher::update"
+status = "legacy"
+
+[[function]]
+address = 0x001480e0
+name = "PadHandlerEx_DispatchCommand"
+page = "combat.md#commands"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callPadHandler"
+status = "legacy"
+
+[[function]]
+address = 0x00158728
+name = "Gm_Level_Update"
+page = "combat-reactions.md#original-structure"
+role = "the mission failing and the hand-off to its screen"
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::startFailed"
+status = "legacy"
+
+[[function]]
+address = 0x0021b290
+name = "Strike_Contact"
+page = "combat.md#original-structure"
+role = "computes a hit's damage"
+level = "confirmed-code"
+coney = "src/combat/meters.h:strikeDamage"
+status = "legacy"
+
+[[function]]
+address = 0x0021c570
+name = "Human_CanSeeObject"
+page = "combat-targets.md#breakables"
+level = "confirmed-code"
+coney = "src/world_objects/pickups.h:inSight"
+status = "legacy"
+
+[[function]]
+address = 0x0021d5c0
+name = "Human_WarnOfAttack"
+page = "combat.md#attack-warnings"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::warnTarget"
+status = "legacy"
+
+[[function]]
+address = 0x00222ef0
+name = "Human_GetHealthPercentRaw"
+page = "combat.md#original-structure"
+role = "health over maximum"
+level = "confirmed-code"
+coney = "src/combat/meters.h:Health::fraction"
+status = "legacy"
+
+[[function]]
+address = 0x00224778
+name = "Human_CanStartAttack"
+page = "combat.md#code-grabs"
+role = "Range and state checks for an attack kind ([An AI's attacks](combat-targets.md#ai-attacks))."
+level = "confirmed-code"
+coney = "src/ai/attack_choice.h:canStartAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00226448
+name = "Human_SpendPower"
+page = "combat.md#original-structure"
+role = "the power meter"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/meters.h:PowerMeter::spend"
+status = "legacy"
+
+[[function]]
+address = 0x00226510
+name = "Human_PowerFraction"
+page = "combat.md#original-structure"
+role = "the power meter"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/meters.h:PowerMeter::fraction"
+status = "legacy"
+
+[[function]]
+address = 0x00227a90
+name = "Human_ExitThrowAim"
+page = "combat.md#dispatch"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/combat/throw_aim.h:ThrowAimState::leave"
+status = "legacy"
+
+[[function]]
+address = 0x00229b60
+name = "AttackKind_IsCharge"
+page = "combat.md#code-grabs"
+role = "Kinds 0 and 19-21 ([An AI's attacks](combat-targets.md#ai-attacks))."
+level = "confirmed-code"
+coney = "src/ai/attack_choice.h:isChargeKind"
+status = "legacy"
+
+[[function]]
+address = 0x00229b90
+name = "Human_ScaleAttackDamages"
+page = "combat.md#damage-table"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/human/human.h:Human::applyDamageModifier"
+status = "legacy"
+
+[[function]]
+address = 0x0022b1a0
+name = "Tandem_LinkThree"
+page = "combat.md#code-grabs"
+role = "Ends a grab and links grabber, victim and attacker in a three-person move (states 0x1000 / 0x2000)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startTandem"
+status = "legacy"
+
+[[function]]
+address = 0x0022eb40
+name = "Human_Heal"
+page = "combat.md#original-structure"
+role = "spends a flash, its sound, the heal (full, or half on fury and rumble)"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::heal"
+status = "legacy"
+
+[[function]]
+address = 0x0022f100
+name = "Human_KnockDown"
+page = "combat.md#original-structure"
+role = "grounded and its timer"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/victim.h:Victim::react"
+status = "legacy"
+
+[[function]]
+address = 0x0022f658
+name = "Human_Stun"
+page = "combat.md#original-structure"
+role = "the stun timer"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::stunFor"
+status = "legacy"
+
+[[function]]
+address = 0x0022f8d8
+name = "Human_EndStun"
+page = "combat.md#original-structure"
+role = "the stun timer"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::endStun"
+status = "legacy"
+
+[[function]]
+address = 0x00230328
+name = "Human_KnockOut"
+page = "combat.md#original-structure"
+role = "health gone: wounded, knocked out or dead ([Defeat](combat-reactions.md#defeat))"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::blocksHumans"
+status = "legacy"
+
+[[function]]
+address = 0x00230930
+name = "Attack_FarReachSquared"
+page = "combat.md#code-grabs"
+role = "The squared far reach of an attack kind ([An AI's attacks](combat-targets.md#ai-attacks))."
+level = "confirmed-code"
+coney = "src/ai/attack_reach.h:farReachSource"
+status = "legacy"
+
+[[function]]
+address = 0x00230d00
+name = "Attack_ReachSquared"
+page = "combat.md#code-grabs"
+role = "Squared reach of an attack kind for a human: kind to anim id to AttackTable_GetReach, with fixed values for some kinds."
+level = "confirmed-code"
+coney = "src/ai/attack_reach.h:nearReachSource"
+status = "legacy"
+
+[[function]]
+address = 0x00231590
+name = "Attack_GetNextAttackDelay"
+page = "combat.md#code-grabs"
+role = "The time before a target may be attacked again: the attacker's clip length for the kind in ms ([An AI's attacks](combat-targets.md#ai-attacks))."
+level = "confirmed-code"
+coney = "src/ai/attack_places.h:swingTimeMs"
+status = "legacy"
+
+[[function]]
+address = 0x00236038
+name = "Human_ApplyDamageModifier"
+page = "combat.md#damage-table"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/scripting/story_bindings.cpp:addStoryBindings"
+status = "legacy"
+
+[[function]]
+address = 0x0023a1b0
+name = "Human_SetCombatMode"
+page = "combat-targets.md#fight-stance"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/scripted_hub.h:ScriptedHub::setCombatMode"
+status = "legacy"
+
+[[function]]
+address = 0x0023bde8
+name = "Human_GetBoneTransform"
+page = "combat-grabs.md#grab-pose-runtime"
+level = "confirmed-code"
+note = "the level is from [camera.md#body-point](camera.md#body-point)"
+coney = "src/human/human.h:Human::bodyPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0023cf88
+name = "Human_TurnToOver"
+page = "combat.md#original-structure"
+role = "turn to a heading, or move to a point, over a time"
+level = "confirmed-code"
+coney = "src/human/turn_and_slide.h:TurnAndSlide::turnToOver"
+status = "legacy"
+
+[[function]]
+address = 0x0023d2b8
+name = "Human_MoveToOver"
+page = "combat.md#original-structure"
+role = "turn to a heading, or move to a point, over a time"
+level = "confirmed-code"
+coney = "src/human/turn_and_slide.h:TurnAndSlide::moveToOver"
+status = "legacy"
+
+[[function]]
+address = 0x0023f5e0
+name = "Human_ApplyTurnAndSlide"
+page = "combat.md#original-structure"
+role = "each step, applies a stored turn rate and slide velocity until their time runs out"
+level = "confirmed-code"
+coney = "src/human/turn_and_slide.h:TurnAndSlide::step"
+status = "legacy"
+
+[[function]]
+address = 0x00241b90
+name = "Human_FightStanceMove"
+page = "combat.md#original-structure"
+role = "movement in a fight stance; lock-on"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/human.h:Human::combatWalk"
+status = "legacy"
+
+[[function]]
+address = 0x00244e78
+name = "Human_MoveAttached"
+page = "combat.md#original-structure"
+role = "movement states of the held victim and of a grabbing player"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::placeAttached"
+status = "legacy"
+
+[[function]]
+address = 0x00245310
+name = "Human_MoveGrabbing"
+page = "combat.md#original-structure"
+role = "movement states of the held victim and of a grabbing player"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::moveGrab"
+status = "legacy"
+
+[[function]]
+address = 0x002542e8
+name = "AnimRange_Damage"
+page = "combat.md#original-structure"
+role = "the Anim Range List's `+0x0a`"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/anim_ranges.h:AnimRangeList::damage"
+status = "legacy"
+
+[[function]]
+address = 0x00254418
+name = "AttackTable_GetOffset"
+page = "combat-moves.md#targeting"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/human/fighter.h:Fighter::attackDirection"
+status = "legacy"
+
+[[function]]
+address = 0x00254508
+name = "AttackTable_GetFarRange"
+page = "combat.md#block"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/attack_reach.h:farReach"
+status = "legacy"
+
+[[function]]
+address = 0x002548f0
+name = "AnimRange_ApplyClassDamage"
+page = "combat.md#original-structure"
+role = "writes the character class's damages over the list ([Damage](combat.md#damage-table))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/anim_ranges.h:applyClassDamage"
+status = "legacy"
+
+[[function]]
+address = 0x00258a88
+name = "Human_BreakPair"
+page = "combat.md#original-structure"
+role = "ends any grab, mount, mugging or throw link from outside; only the other human plays a clip ([Breaking a pair](combat-grabs.md#pair-break))"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::breakPair"
+status = "legacy"
+
+[[function]]
+address = 0x00258e10
+name = "Tandem_CanStart"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/tandem.h:tandemCanStart"
+status = "legacy"
+
+[[function]]
+address = 0x00258e88
+name = "Human_CanCounterGrab"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/ai_counter.h:aiCounterFor"
+status = "legacy"
+
+[[function]]
+address = 0x002590f8
+name = "Human_CanCounterTackle"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/ai_counter.h:aiCounterFor"
+status = "legacy"
+
+[[function]]
+address = 0x0025e5a8
+name = "Human_PlayPickupClip"
+page = "combat-throws.md#bat"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::startPickUp"
+status = "legacy"
+
+[[function]]
+address = 0x002617f8
+name = "Block_DuckCounter"
+page = "combat.md#original-structure"
+role = "the counter from a duck, 617-620 by the target's side"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::duckCounter"
+status = "legacy"
+
+[[function]]
+address = 0x002625a8
+name = "Attack_Start"
+page = "combat.md#original-structure"
+role = "starts an attack clip, counts the combo"
+level = "confirmed-code"
+coney = "src/combat/attacks.h:AttackChain::start"
+status = "legacy"
+
+[[function]]
+address = 0x00262ac8
+name = "Attack_StartPaired"
+page = "combat.md#original-structure"
+role = "a grab move on the victim: power check and spend, damage"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::answerCounter"
+status = "legacy"
+
+[[function]]
+address = 0x00263380
+name = "Grab_StartPairedMove"
+page = "combat.md#code-grabs"
+role = "Starts a paired move on the victim: spends power, aligns the pair, deals AnimRange damage (doubled by state 0x4000), plays clip n on the attacker and n + 1 on the victim, or a death reaction when it defeats."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::throwAfterSpin"
+status = "legacy"
+
+[[function]]
+address = 0x00263c90
+name = "Player_SpecialAttack"
+page = "combat.md#original-structure"
+role = "the special or strong grapple: target search, id by rage, variant and side, then a solo clip, a grab, a tackle or a paired move by the clip's flags ([Strong grapple](combat-grabs.md#strong-grapple))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/player_combat.h:PlayerCombat::strongGrapple"
+status = "legacy"
+
+[[function]]
+address = 0x00264178
+name = "Player_ObjectAttack"
+page = "combat.md#original-structure"
+role = "strikes at a breakable object"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/attacks.h:objectAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00264878
+name = "Player_StartDive"
+page = "combat.md#code-grabs"
+role = "Starts the dive attack ([Moving attacks](combat.md#run-attacks))."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::steerDive"
+status = "legacy"
+
+[[function]]
+address = 0x00264a80
+name = "Player_StartCharge"
+page = "combat-targets.md#fight-stance"
+level = "confirmed-code"
+coney = "src/human/fighter.cpp:Fighter::steer"
+status = "legacy"
+
+[[function]]
+address = 0x00264bd8
+name = "Human_AddPendingDamage"
+page = "combat.md#original-structure"
+role = "keeps the update's largest damage on the target"
+level = "confirmed-code"
+coney = "src/combat/meters.h:PendingDamage::add"
+status = "legacy"
+
+[[function]]
+address = 0x00264cf8
+name = "Human_AddRage"
+page = "combat.md#original-structure"
+role = "rage gain"
+level = "confirmed-code"
+coney = "src/combat/meters.h:RageMeter::add"
+status = "legacy"
+
+[[function]]
+address = 0x002653d8
+name = "Hit_Score"
+page = "combat-rage.md#original-structure"
+role = "a hit's rage awards and the repeat tracker"
+level = "confirmed-code"
+coney = "src/combat/rage_awards.h:awardHitRage"
+status = "legacy"
+
+[[function]]
+address = 0x00265c28
+name = "Human_IsDamageDefeating"
+page = "combat.md#code-reactions"
+role = "Whether damage would defeat the human: tripled when cuffed; never with human flag 0x10 or 0x20000000000, knocked out or state 0x100000000; else health (+0x144) at most the damage."
+level = "confirmed-code"
+coney = "src/combat/tandem.h:damageDefeats"
+status = "legacy"
+
+[[function]]
+address = 0x00265dd0
+name = "Rage_NoteHit"
+page = "combat.md#original-structure"
+role = "a landed or blocked hit's kind into the attacker's repeat tracker (halved rage, the throw bonus)"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/rage_awards.h:RepeatTracker::note"
+status = "legacy"
+
+[[function]]
+address = 0x00265f70
+name = "Human_ApplyPendingDamage"
+page = "combat.md#original-structure"
+role = "each update: block, damage, armour, then the reaction by state"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/target_human.h:TargetHuman::step"
+status = "legacy"
+
+[[function]]
+address = 0x00266d00
+name = "Hit_PickReaction"
+page = "combat.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/reactions.h:hitReaction"
+status = "legacy"
+
+[[function]]
+address = 0x002674c0
+name = "Human_OnHealthOut"
+page = "combat.md#original-structure"
+role = "health gone: wounded, knocked out or dead ([Defeat](combat-reactions.md#defeat))"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::blocksHumans"
+status = "legacy"
+
+[[function]]
+address = 0x00269f30
+name = "Human_BlockHit"
+page = "combat.md#original-structure"
+role = "a hit on a held block"
+level = "confirmed-code"
+coney = "src/combat/reactions.h:blockReaction"
+status = "legacy"
+
+[[function]]
+address = 0x0026a6d0
+name = "Human_PlayReaction"
+page = "combat.md#original-structure"
+role = "plays it; stun and knockdown"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/victim.h:Victim::react"
+status = "legacy"
+
+[[function]]
+address = 0x0026b0a0
+name = "Hit_PlayReaction"
+page = "combat-reactions.md#original-structure"
+role = "a normal hit's reaction, by hit code; plays it"
+level = "confirmed-code"
+coney = "src/combat/reactions.h:hitReaction"
+status = "legacy"
+
+[[function]]
+address = 0x0026bad8
+name = "Grab_ConnectEnd"
+page = "combat.md#original-structure"
+role = "end of 72 / 74: distance check, snap and attach in the hold"
+level = "confirmed-code"
+coney = "src/human/pair_placement.h:holdGatePasses"
+status = "legacy"
+
+[[function]]
+address = 0x0026be68
+name = "Grab_Connect"
+page = "combat.md#original-structure"
+role = "aligns the pair and starts 72 / 73 (74 / 75 from the rear), then the holds"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::connect"
+status = "legacy"
+
+[[function]]
+address = 0x0026c1d8
+name = "Grab_IntroEnd"
+page = "combat.md#original-structure"
+role = "end of the intro clip: grab from the front or rear, or a counter"
+level = "confirmed-code"
+coney = "src/combat/grabbed.h:counterAtCatch"
+status = "legacy"
+
+[[function]]
+address = 0x0026cc18
+name = "Grab_Escape"
+page = "combat-grabs.md#original-structure"
+role = "the escape, the reversal and their shared roll"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::victimEscapes"
+status = "legacy"
+
+[[function]]
+address = 0x0026dd08
+name = "Player_Throw"
+page = "combat.md#original-structure"
+role = "picks the throw by stick direction and walls"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/grab.h:throwAttack"
+status = "legacy"
+
+[[function]]
+address = 0x0026ef68
+name = "Grab_MountClipEnd"
+page = "combat.md#original-structure"
+role = "circle in the front hold: 118 / 119, then the mount"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::seatMount"
+status = "legacy"
+
+[[function]]
+address = 0x0026f780
+name = "Tandem_OnVictimIntroEnd"
+page = "combat-moves.md#tandem"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::tandemVictimIntroEnd"
+status = "legacy"
+
+[[function]]
+address = 0x0026f860
+name = "Tandem_Start"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startTandem"
+status = "legacy"
+
+[[function]]
+address = 0x00274ee0
+name = "Revive_Finish"
+page = "combat.md#code-reactions"
+role = "Ends a revive: the partner takes the item, interface cue 0x17, the revived says 75 revive_thank and is healed."
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::finishRevive"
+status = "legacy"
+
+[[function]]
+address = 0x002752a0
+name = "Revive_Start"
+page = "combat.md#code-reactions"
+role = "Starts reviving a downed partner; says 76 revive_reasure."
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::tryRevive"
+status = "legacy"
+
+[[function]]
+address = 0x00275678
+name = "Attack_SteerLed"
+page = "combat-targets.md#original-structure"
+role = "the turn and slide into an attack, and its led variant"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::steerOnto"
+status = "legacy"
+
+[[function]]
+address = 0x00276008
+name = "Attack_TurnToTarget"
+page = "combat.md#original-structure"
+role = "an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](combat-targets.md#targets))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::steer"
+status = "legacy"
+
+[[function]]
+address = 0x002761c8
+name = "Attack_SteerToTarget"
+page = "combat.md#original-structure"
+role = "an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](combat-targets.md#targets))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::steerOnto"
+status = "legacy"
+
+[[function]]
+address = 0x00276998
+name = "Pair_AlignStart"
+page = "combat.md#original-structure"
+role = "range gate, then turns and slides the attacker so the victim stands at the clip's reach"
+level = "confirmed-code"
+coney = "src/human/pair_placement.h:alignPair"
+status = "legacy"
+
+[[function]]
+address = 0x00276d98
+name = "Pair_SnapAttach"
+page = "combat.md#original-structure"
+role = "puts the victim at the hold's offset and ties its movement to the grabber"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::snapAttach"
+status = "legacy"
+
+[[function]]
+address = 0x00277248
+name = "Human_AlignToVictimFacing"
+page = "combat.md#code-reactions"
+role = "Places the human at a clip's offset from another along that one's facing, over a time (the mount's 210, [The mount](combat-grabs.md#mount))."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::seatMount"
+status = "legacy"
+
+[[function]]
+address = 0x00277458
+name = "Tandem_AlignThree"
+page = "combat-moves.md#tandem"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::alignTandem"
+status = "legacy"
+
+[[function]]
+address = 0x00277958
+name = "Pair_CheckPlace"
+page = "combat.md#original-structure"
+role = "a move in the hold needs the victim within 0.3 m of the move's offset"
+level = "confirmed-code"
+coney = "src/human/pair_placement.h:pairInPlace"
+status = "legacy"
+
+[[function]]
+address = 0x00279f50
+name = "Target_CarFilter"
+page = "combat.md#original-structure"
+role = "the square's object targets ([Targets](combat-targets.md#targets))"
+level = "confirmed-code"
+coney = "src/world_objects/car_hits.h:carTargetable"
+status = "legacy"
+
+[[function]]
+address = 0x0027a4b0
+name = "Player_FindAttackTarget"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::findAttackTarget"
+status = "legacy"
+
+[[function]]
+address = 0x0027a6c0
+name = "Player_PickTarget"
+page = "combat.md#original-structure"
+role = "keeps or searches a target for an action"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::pickTarget"
+status = "legacy"
+
+[[function]]
+address = 0x0027b058
+name = "Attack_FindNearestInReach"
+page = "combat.md#code-targets"
+role = "The charge and dive's target: the nearest human between the clip's reach and far range within 54 degrees, then objects and glass ([where they aim](combat.md#charge-aim))."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::nearestInReach"
+status = "legacy"
+
+[[function]]
+address = 0x0027d6e0
+name = "Player_TryCounterGrab"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/ai_counter.h:aiCounterAllowed"
+status = "legacy"
+
+[[function]]
+address = 0x0027d800
+name = "Player_Charge"
+page = "combat.md#original-structure"
+role = "L2 + cross / L2 + square at a run"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/attacks.h:runningAttackAllowed"
+status = "legacy"
+
+[[function]]
+address = 0x0027d900
+name = "Player_Dive"
+page = "combat.md#original-structure"
+role = "L2 + cross / L2 + square at a run"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/attacks.h:runningAttackAllowed"
+status = "legacy"
+
+[[function]]
+address = 0x0027df38
+name = "Player_UpdatePowerMove"
+page = "combat.md#original-structure"
+role = "in a power strike (state `0x1000`): square or cross in the window plays the next part, id + 2"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/player_combat.h:PlayerCombat::extendPowerMove"
+status = "legacy"
+
+[[function]]
+address = 0x0027e6d8
+name = "Player_UpdateTheft"
+page = "combat.md#original-structure"
+role = "the theft minigames (stereo) by mode"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/stick_games.h:ButtonMash::update"
+status = "legacy"
+
+[[function]]
+address = 0x0027ec20
+name = "Player_UpdateMounting"
+page = "combat.md#original-structure"
+role = "strikes, power strike, back to the hold, get off, in the mount"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/grab.h:updateMount"
+status = "legacy"
+
+[[function]]
+address = 0x0027f3b0
+name = "Player_UpdateGrabbing"
+page = "combat.md#original-structure"
+role = "strikes, power strike, throws, mug, spin in a grab"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/grab.h:updateGrab"
+status = "legacy"
+
+[[function]]
+address = 0x0027fd68
+name = "Player_UpdateGrabbed"
+page = "combat.md#original-structure"
+role = "the struggle in another human's grab"
+level = "confirmed-code"
+coney = "src/combat/grabbed.h:updateGrabbed"
+status = "legacy"
+
+[[function]]
+address = 0x002802a0
+name = "Pair_Attach"
+page = "combat.md#original-structure"
+role = "puts the victim at the hold's offset and ties its movement to the grabber"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::snapAttach"
+status = "legacy"
+
+[[function]]
+address = 0x00280630
+name = "Player_BufferChain"
+page = "combat.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/attacks.h:AttackChain::update"
+status = "legacy"
+
+[[function]]
+address = 0x00280708
+name = "Player_UpdateChain"
+page = "combat.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/attacks.h:AttackChain::update"
+status = "legacy"
+
+[[function]]
+address = 0x00284280
+name = "Flash_Use"
+page = "combat-rage.md#original-structure"
+role = "spends a flash and heals"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
+status = "legacy"
+
+[[function]]
+address = 0x002843f8
+name = "Player_UseItemCommand"
+page = "combat-rage.md#original-structure"
+role = "L1 + R1, the flash, the key when cuffed, the R2 command menu"
+level = "confirmed-code"
+coney = "src/combat/meters.h:RageMeter::start"
+status = "legacy"
+
+[[function]]
+address = 0x00284920
+name = "Player_GrabOrTackle"
+page = "combat.md#original-structure"
+role = "circle: target search, then grab or tackle"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/player_combat.h:PlayerCombat::grabOrTackle"
+status = "legacy"
+
+[[function]]
+address = 0x002854b0
+name = "Brain_SetInterrogateOverride"
+page = "combat-throws.md#mugging"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeSetInterrogateParam"
+status = "legacy"
+
+[[function]]
+address = 0x002855f8
+name = "Mug_MoveTargetAngle"
+page = "combat-throws.md#mugging"
+level = "confirmed-code"
+coney = "src/combat/stick_games.h:MuggingGame::moveTarget"
+status = "legacy"
+
+[[function]]
+address = 0x002856b8
+name = "Player_UpdateMugging"
+page = "combat.md#original-structure"
+role = "the mugging stick game"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/stick_games.h:MuggingGame::update"
+status = "legacy"
+
+[[function]]
+address = 0x00286ba8
+name = "Player_TryRevive"
+page = "combat-rage.md#original-structure"
+role = "the revive ([Reviving](combat-rage.md#revive))"
+level = "confirmed-code"
+coney = "src/combat/revive.h:mayRevive"
+status = "legacy"
+
+[[function]]
+address = 0x00286cc8
+name = "Player_Square"
+page = "combat.md#original-structure"
+role = "square: standing, walking, running, snap, grounded and object attacks"
+level = "confirmed-code"
+coney = "src/combat/attack_target.h:attackTarget"
+status = "legacy"
+
+[[function]]
+address = 0x00287730
+name = "Player_Special"
+page = "combat.md#original-structure"
+role = "cross + square, circle + cross, circle + triangle outside a grab"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/player_combat.h:PlayerCombat::special"
+status = "legacy"
+
+[[function]]
+address = 0x002878b8
+name = "LockPick_JudgePress"
+page = "combat.md#original-structure"
+role = "mini-game mode 2, lock picking ([Crimes](crimes.md#lockpick))"
+level = "confirmed-code"
+coney = "src/world_objects/lock_pick.h:LockPickDial::press"
+status = "legacy"
+
+[[function]]
+address = 0x00287a18
+name = "Player_Cross"
+page = "combat.md#original-structure"
+role = "cross: the X attacks"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/attack_target.h:attackTarget"
+status = "legacy"
+
+[[function]]
+address = 0x002880d8
+name = "Player_CrossWithWeapon"
+page = "combat-moves.md#original-structure"
+level = "confirmed-code"
+coney = "src/combat/attacks.h:throwAttack"
+status = "legacy"
+
+[[function]]
+address = 0x00290e78
+name = "Brain_SetAttackableTime"
+page = "combat-targets.md#ai-attacks"
+level = "confirmed-code"
+coney = "src/ai/attack_places.h:attackableGapMs"
+status = "legacy"
+
+[[function]]
+address = 0x00418428
+name = "RepeatTracker_Note"
+page = "combat.md#original-structure"
+role = "a landed or blocked hit's kind into the attacker's repeat tracker (halved rage, the throw bonus)"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/rage_awards.h:RepeatTracker::note"
+status = "legacy"
+
+[[function]]
+address = 0x0041d940
+name = "Cfg_SetMaxThrowError"
+page = "combat.md#warriors-functions"
+role = "`CfgSetMaxThrowError(a, b)`: both angles from degrees to radians, `0x005148b0` and `0x005148b4`"
+level = "confirmed-code"
+coney = "src/scripting/world_bindings.cpp:makeCfgSetMaxThrowError"
+status = "legacy"
+
+[[function]]
+address = 0x0041daf8
+name = "Cfg_SetPlayerMugging"
+page = "combat.md#warriors-functions"
+role = "`CfgPlayerMugging`: `+0x5708`"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeCfgPlayerMugging"
+status = "legacy"

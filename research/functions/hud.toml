@@ -1,0 +1,1160 @@
+# The researched functions of the hud system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00166158
+name = "Gang_CountLiving"
+page = "hud-functions-lua.md#gang-count-what"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::countLiving"
+status = "legacy"
+
+[[function]]
+address = 0x0017b2e0
+name = "GroundRing_DrawQueued"
+page = "hud.md#original-structure"
+role = "the ring queue (`0x005fd330`, `0xc0` bytes each, count `0x0050ccd4`) and its draw"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/platform/scene_lighting.h:SceneLighting::drawGroundRings"
+status = "legacy"
+
+[[function]]
+address = 0x0017b8a8
+name = "Im2D_DrawTexturedRing"
+page = "hud.md#original-structure"
+role = "a textured disc, and a ring with a fading edge"
+level = "confirmed-code"
+coney = "src/hud/radar.h:addRadarDisc"
+status = "legacy"
+
+[[function]]
+address = 0x0017bc28
+name = "Im2D_DrawTexturedDisc"
+page = "hud.md#original-structure"
+role = "a textured disc, and a ring with a fading edge"
+level = "confirmed-code"
+coney = "src/hud/radar.h:addRadarDisc"
+status = "legacy"
+
+[[function]]
+address = 0x0019f1b0
+name = "ActionPrompt_SetText"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "restarts the prompt (slot `+0xe8`) when the owner or text changed"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setActionPrompt"
+status = "legacy"
+
+[[function]]
+address = 0x0019f270
+name = "ActionPrompt_StartCycle"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "`HUDTurnOnActionCycleAnim` / `Off`: the sprite words at `+0x440`, rate `+0x448`, hold `+0x458`, on `+0x45c`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::startActionCycle"
+status = "legacy"
+
+[[function]]
+address = 0x0019f320
+name = "ActionPrompt_StopCycle"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "`HUDTurnOnActionCycleAnim` / `Off`: the sprite words at `+0x440`, rate `+0x448`, hold `+0x458`, on `+0x45c`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::stopActionCycle"
+status = "legacy"
+
+[[function]]
+address = 0x0019f328
+name = "ActionPrompt_UpdateCycle"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "every `+0x448` updates the icon switches between the two words; with a hold, the icon shows for `hold` frames and hides for `hold` frames"
+level = "confirmed-code"
+coney = "src/hud/hud.h:ActionCycle::step"
+status = "legacy"
+
+[[function]]
+address = 0x0019f430
+name = "ActionPrompt_SetRaise"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "[Action prompts](hud-messages.md#action-prompts)"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::promptRaise"
+status = "legacy"
+
+[[function]]
+address = 0x001a1138
+name = "HudBar_Draw"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](hud.md#the-rage-meter))"
+level = "confirmed-code"
+coney = "src/gui/bar.h:Bar::render"
+status = "legacy"
+
+[[function]]
+address = 0x001a3338
+name = "MashMeter_SetFill"
+page = "hud-functions-parts.md#fn-after-basewidget"
+role = "from the mini-games (`MiniGame_Update`, `MiniGame_Abort`): button id `+0x04` and its sprite; fill `+0x188` clamped to 0-1"
+level = "confirmed-code"
+coney = "src/hud/mash_meter.h:MashMeter::setFill"
+status = "legacy"
+
+[[function]]
+address = 0x001a3360
+name = "MashMeter_Render"
+page = "hud-functions-parts.md#fn-after-basewidget"
+role = "slot `+0x38`: button, bar and a blinking text at the table's period: button `0x171` alternates texts 2 and 3, any other shows text 1 every other period"
+level = "confirmed-code"
+coney = "src/hud/mash_meter.h:MashMeter::render"
+status = "legacy"
+
+[[function]]
+address = 0x001a3990
+name = "ChaseGauge_Update"
+page = "hud-functions-parts.md#fn-chase-gauge"
+role = "places track, end icon and marker; the marker's colour from its position"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::renderGauge"
+status = "legacy"
+
+[[function]]
+address = 0x001a3c00
+name = "ChaseGauge_Render"
+page = "hud-functions-parts.md#fn-chase-gauge"
+role = "draws the three sprites once ready"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::render"
+status = "legacy"
+
+[[function]]
+address = 0x001a5e38
+name = "RingArc_Draw"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "when on: the shown fill `+0x2c` eases 5 % per call toward `+0x28` (snapping on a jump over 0.5); radii by video mode; a textured ring segment (`Im2D_DrawTexturedRing`) from the start over fill × span"
+level = "confirmed-code"
+coney = "src/hud/crime_panel.h:CrimePanel::renderArc"
+status = "legacy"
+
+[[function]]
+address = 0x001a6c58
+name = "WarCommandDisplay_Issue"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "on R2's release ([Warrior command menu](hud.md#warrior-command-menu)), once per opening (`+0x1548`): issues the selected command through `0x0041c4e0` and stores it as the player's last (`+0x41c` + player)"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:WarCommandDisplay::issue"
+status = "legacy"
+
+[[function]]
+address = 0x001a6d28
+name = "WarCommandDisplay_Open"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "from `0x002843f8`: for a war chief (`+0x3ac` = 1) shows the display and resets its sprites and timer"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:WarCommandDisplay::open"
+status = "legacy"
+
+[[function]]
+address = 0x001a7040
+name = "WarCommandDisplay_ReadStick"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "every `*0x0050d280` ms, with the stick (pad record bytes `+0x2a`/`+0x2b`) more than 110 from centre: the stick's angle picks one of six sectors (with hysteresis `0x0050d2b8`) as the selection `+0x1540`; interface cue `0x20` on a change"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:WarCommandDisplay::update"
+status = "legacy"
+
+[[function]]
+address = 0x001a7e48
+name = "WarCommandDisplay_Update"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "slot `+0x30`: closed when the player is down; the stick read unless the menu is locked; after an issue the sprites fade and the display closes when its text expires; text = the command's name, or entry 6, the out-of-range text, while game state `+0x414` + player is set (load at `0x001a8028`; [out-of-range flag](ai-gangs.md#warrior-range-flag)); entry 7 for a disabled command"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:WarCommandDisplay::update"
+status = "legacy"
+
+[[function]]
+address = 0x001a8530
+name = "WarCommand_FromSlot"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "jump table `0x00553fe0`: display slot 0-5 → command id; 7 otherwise"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:warCommandOfSlot"
+status = "legacy"
+
+[[function]]
+address = 0x001a8590
+name = "WarCommandDisplay_Render"
+page = "hud-functions-parts.md#fn-after-checklistmessagehud"
+role = "slot `+0x38`: the selected slot white / gold `(255, 183, 0)` / grey, the others white / dark `(35, 35, 35)` / black; a disabled command in `(30, 30, 30)`"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:WarCommandDisplay::render"
+status = "legacy"
+
+[[function]]
+address = 0x001aa720
+name = "HudCrimePanel_OnMessage"
+page = "hud-functions-parts.md#fn-radar-frame"
+role = "from the HUD message `0x001b2520`: `msg` 0-13 (unless the same text is already up) sets the `+0x450` widget up (scale 1.0, font slot 6, colour `0x6060bfff`) with crime message `msg` (message 4: the custom text) and copies it to the HUD's centred text `+0xe150`, the copy that shows ([above](hud-functions-parts.md#fn-radar-frame)); `+0x890` gets global string `0xe4`; 14 keeps the text while player 1's gang is wanted; negative or other: cleared; `+0xaa0` = `msg`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setWanted"
+status = "legacy"
+
+[[function]]
+address = 0x001aa9b0
+name = "HudCrimePanel_Update"
+page = "hud-functions-parts.md#fn-radar-frame"
+role = "from `HUD_Update`: inner arcs' target `+0x38` / `+0x148` and outer `+0x258` / `+0x368` from the two gang timers (time left × 0.0001, clamped, 1 above 0.9; 0 when the timer is 0); message at (0.5, 0, 0.4, 1)"
+level = "confirmed-code"
+coney = "src/hud/crime_panel.h:CrimePanel::update"
+status = "legacy"
+
+[[function]]
+address = 0x001aaba8
+name = "HudCrimePanel_Render"
+page = "hud-functions-parts.md#fn-radar-frame"
+role = "from `HUD_Render`, when set up and shown: inner pair blue when either inner target or value is above 0.03; outer pair orange, at the outer radii if the inner pair drew, else at the inner"
+level = "confirmed-code"
+coney = "src/hud/crime_panel.h:CrimePanel::render"
+status = "legacy"
+
+[[function]]
+address = 0x001acd60
+name = "ActionPrompt_FindNearbyHuman"
+page = "hud-functions-parts.md#fn-before-hudinterface"
+role = "([Action prompts](hud-messages.md#action-prompts))"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::talkPrompt"
+status = "legacy"
+
+[[function]]
+address = 0x001acee0
+name = "HUD_Construct"
+page = "hud-functions-parts.md#fn-before-hudinterface"
+role = "constructs the parts above and points `+0x08` / `+0x0c` at the player panels"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud"
+status = "legacy"
+
+[[function]]
+address = 0x001ad588
+name = "HUD_InitLevel"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "per-level set-up (from `InitLevel`, `0x0015fe90`): the layout floats for the video mode, then every part of [the HUD object](hud.md#hud-object) that is not yet set up, the two player panels (`ANHud` panels allocated in levels 60-69, otherwise the static ones at `+0x19130`), the Armies of the Night widgets (`0x0041d110`); ends hidden (`HUD_Hide`) with `+0x177a4` = `+0x177ac` = `+0x177b4` = 1"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::levelSetUp"
+status = "legacy"
+
+[[function]]
+address = 0x001ae980
+name = "HUD_ShutdownLevel"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "undoes `HUD_InitLevel` (from `0x001607b8`): `+0x177a4` = 0, every part's shutdown, the `ANHud` panels freed, the six menus' `Shutdown`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::levelShutDown"
+status = "legacy"
+
+[[function]]
+address = 0x001aef50
+name = "HUD_IsPlayerStickPushed"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "1 unless both raw right-stick bytes `+0x1a`, `+0x1b` of the player's pad record are within 64-176 (stored with the right stick's floats, `0x00149990`; [Fixed-camera icon](hud.md#hud-fixed-cam-icon))"
+level = "confirmed-code"
+coney = "src/hud/fixed_cam_icon.h:FixedCamIcon::stickPushed"
+status = "legacy"
+
+[[function]]
+address = 0x001af010
+name = "HUD_Update"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "the HUD's frame ([The HUD's frame](hud.md#the-huds-frame)); `a` and `b` go to the two radars' updates (`0x001c5210`)"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateActionPrompt"
+status = "legacy"
+
+[[function]]
+address = 0x001b1688
+name = "HUD_Render"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "the HUD's draw ([The HUD's frame](hud.md#the-huds-frame))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::render"
+status = "legacy"
+
+[[function]]
+address = 0x001b1f38
+name = "HUD_Hide"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "`HideHud`'s work ([Showing and hiding](hud.md#showing-and-hiding)); does nothing in an Armies of the Night level while game state `+0x14c` = 1"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::hideAll"
+status = "legacy"
+
+[[function]]
+address = 0x001b2030
+name = "HUD_HidePlayerPanelsBoth"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "each panel's \"may show\" `+0x4108` = 0 or 1, then hidden or shown"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::hidePlayers"
+status = "legacy"
+
+[[function]]
+address = 0x001b2088
+name = "HUD_ShowPlayerPanelsBoth"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "each panel's \"may show\" `+0x4108` = 0 or 1, then hidden or shown"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::showPlayers"
+status = "legacy"
+
+[[function]]
+address = 0x001b20f8
+name = "HUD_Restore"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "`RestoreHud`'s work ([Showing and hiding](hud.md#showing-and-hiding))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::showAll"
+status = "legacy"
+
+[[function]]
+address = 0x001b2200
+name = "HUD_AttachPlayer"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "binds a panel to a human (`Human_MakePlayer`): for slot < 2 and a panel not locked (`+0x40f8`), init once (interface `+0x14`), reset (`+0x24`), bind (`+0x34`); hidden unless the HUD is shown; returns slot or -1"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::attachPlayer"
+status = "legacy"
+
+[[function]]
+address = 0x001b24d0
+name = "HUD_SetSpinner"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "`+0x19128` = rate, spinner shown (`+0xe054`, `+0xe058`) = on; also used by the memory-card and preload screens"
+level = "confirmed-code"
+coney = "src/hud/spinner.h:Spinner::set"
+status = "legacy"
+
+[[function]]
+address = 0x001b2520
+name = "HUD_SetWanted"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "messages 7-9: when the radar's wanted flag `+0x1c` (HUD `+0x15ec`) is 0 it becomes 1 and interface cue 2 (`hudalarm`) plays; the radar frame shows crime message `+0x290` of the game state, the last crime type (`0x001aa720`); other messages clear the flag and the message. `+0x30` = 1.0 and `+0x34` = 0 both ways. No code reads the three fields ([The crime message](hud-functions-parts.md#fn-radar-frame))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setWanted"
+status = "legacy"
+
+[[function]]
+address = 0x001b26a8
+name = "HUD_RadarSetTintBlue"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "radar colour state 1 or 0 (`0x001c4500`; radar 0 in a two-player game with one view); state 1 only while the HUD is shown and the human is in neither state `0x00227dd8` nor `0x00223b70`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setRadarTint"
+status = "legacy"
+
+[[function]]
+address = 0x001b2790
+name = "HUD_RadarSetTintGrey"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "radar colour state 1 or 0 (`0x001c4500`; radar 0 in a two-player game with one view); state 1 only while the HUD is shown and the human is in neither state `0x00227dd8` nor `0x00223b70`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setRadarTint"
+status = "legacy"
+
+[[function]]
+address = 0x001b2e10
+name = "HudManager_SetRadarRange"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "both radars' `+0x20`, `+0x28` = r and `+0x24` = r2"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setRadarRange"
+status = "legacy"
+
+[[function]]
+address = 0x001b38b8
+name = "HUD_LoadCredits"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "`Credits_Load` / `Credits_Start` on `+0xea30`"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::load"
+status = "legacy"
+
+[[function]]
+address = 0x001b38d8
+name = "HUD_StartCredits"
+page = "hud-functions-parts.md#fn-hudinterface"
+role = "`Credits_Load` / `Credits_Start` on `+0xea30`"
+level = "confirmed-code"
+coney = "src/hud/credits.h:Credits::start"
+status = "legacy"
+
+[[function]]
+address = 0x001b3f98
+name = "HUD_RadarAddObjective"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "type 10, type 1, recolour with `{r, g, b}` packed as `0xRRGGBBff`"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b4038
+name = "HUD_RadarSetIcon"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "icon then colour; remove a handle"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b4098
+name = "HUD_RadarRemove"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "icon then colour; remove a handle"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b40e0
+name = "HUD_SetRadarZoomScale"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "the range; both radars' zoom `+0x2920` (`0x00604730`, `0x00607070`)"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setRadarZoomScale"
+status = "legacy"
+
+[[function]]
+address = 0x001b4298
+name = "HUD_RadarFlash"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "flash; remove an item; remove a handle"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b4328
+name = "HUD_RadarOn"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "`+0x177ac` (`0x00617fec`) = 1 or 0, then one player's radar, or both for 2 ([The radars across a scene](hud.md#radars-across-a-scene))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::radarOn"
+status = "legacy"
+
+[[function]]
+address = 0x001b43a8
+name = "HUD_RadarOff"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "`+0x177ac` (`0x00617fec`) = 1 or 0, then one player's radar, or both for 2 ([The radars across a scene](hud.md#radars-across-a-scene))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::radarOff"
+status = "legacy"
+
+[[function]]
+address = 0x001b4438
+name = "HUD_SetNumIndicator"
+page = "hud-functions-lua.md#fn-hudlua-start"
+role = "players 0 and 1: the panel's interface `+0x54(n)` and `+0x4c(value, 0 when n is -1)`; player 2: `0x001b6770` on the Rumble widget `0x00617370`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setNumIndicator"
+status = "legacy"
+
+[[function]]
+address = 0x001b4740
+name = "HUD_EnableFixedCamIcon"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUD_SetFixedCamIconVisible(HUD, on)`"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addPanelAndArrowBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b4790
+name = "HUD_PanelAlloc"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the counter panels at `0x0060b4f0` (HUD `+0xacb0`): take one (`0x001c2f90`), free one (`0x001c3088`), set a value (`0x001c3280(panels, id, value)`, the Lua arguments swapped)"
+level = "confirmed-code"
+coney = "src/hud/counter_panels.h:CounterPanels::take"
+status = "legacy"
+
+[[function]]
+address = 0x001b47b8
+name = "HUD_PanelRelease"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the counter panels at `0x0060b4f0` (HUD `+0xacb0`): take one (`0x001c2f90`), free one (`0x001c3088`), set a value (`0x001c3280(panels, id, value)`, the Lua arguments swapped)"
+level = "confirmed-code"
+coney = "src/hud/counter_panels.h:CounterPanels::release"
+status = "legacy"
+
+[[function]]
+address = 0x001b47e0
+name = "HUD_PanelSetValue"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the counter panels at `0x0060b4f0` (HUD `+0xacb0`): take one (`0x001c2f90`), free one (`0x001c3088`), set a value (`0x001c3280(panels, id, value)`, the Lua arguments swapped)"
+level = "confirmed-code"
+coney = "src/hud/counter_panels.h:CounterPanels::setValue"
+status = "legacy"
+
+[[function]]
+address = 0x001b4908
+name = "LightManager_SetColourOffset"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "(r, g, b, 0) to `0x0017ec80` (light manager `+0xa0`)"
+level = "confirmed-code"
+coney = "src/scripting/lighting_bindings.cpp:addLightingBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b4948
+name = "HUD_ShowWarCommand"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`WarCommandDisplay_SetAllowed(player panel + 0x1ef0, on)`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.cpp:makeHudShowWarCommand"
+status = "legacy"
+
+[[function]]
+address = 0x001b4a88
+name = "ChaseHud_Destroy"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`ChaseHud_SetState(value, 0x00609e80, state, time)`: state 1 (100, 10), state 3 (`value`, negated when the sign argument is 0; then the label, `0x001a4310`), state 6 (100, 10)"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b4ba0
+name = "HUD_EnableRedBar"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "kind 0: generic bar slot 0, red (200, 30, 30), 0.17 × 0.025 (`0x001c1da0`)"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::enable"
+status = "legacy"
+
+[[function]]
+address = 0x001b4c98
+name = "HUD_EnableLabelledBar"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "kind 1 (and each kind-3 bar): a labelled generic bar"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::enable"
+status = "legacy"
+
+[[function]]
+address = 0x001b4f00
+name = "HUD_EnableGaugeBar"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "kind 2: the chase gauge on or off"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::enable"
+status = "legacy"
+
+[[function]]
+address = 0x001b5008
+name = "HUD_EnableBarStack"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "kind 3: up to four labelled bars, or one shown or hidden"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::enable"
+status = "legacy"
+
+[[function]]
+address = 0x001b53b0
+name = "HUD_EnableBar"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "`HUDEnableBar`: dispatch by kind"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::enable"
+status = "legacy"
+
+[[function]]
+address = 0x001b5450
+name = "HUD_SetBarPercentage"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "`HUDSetBarPercentage`: dispatch by kind; kinds 1 and 2 also set the gauge"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::setPercentage"
+status = "legacy"
+
+[[function]]
+address = 0x001b54f0
+name = "HUD_SetBarProperty"
+page = "hud-functions-lua.md#fn-hudlua-bars"
+role = "`HUDSetBarProperty`: fill colour, gradient flag, width"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::setProperty"
+status = "legacy"
+
+[[function]]
+address = 0x001b5590
+name = "HUD_EnableTextProgress"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "on: sets up `count` of the six score rows at `0x00615320` (`0x560`-byte markup text widgets, set-up flag `+0x434`) at (0.95, 0.22 + 0.06 × row), alignment 5, the label (`+0x540`) and a score of 0 (`+0x558`); off: shuts down every set-up row. The count goes to `0x00622e40` when `flag` is set, else to `0x00622e44`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::enableTextProgress"
+status = "legacy"
+
+[[function]]
+address = 0x001b57c8
+name = "HUD_SetTextProgress"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the set-up row whose label matches gets the score and colour and is redrawn; then a selection sort of the first count rows (`0x00622e40` or `0x00622e44` by `flag`), highest score first, swapping labels, scores and colours"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setTextProgress"
+status = "legacy"
+
+[[function]]
+address = 0x001b5a90
+name = "HUD_TurnOnActionCycleAnim"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`0x001b3dd0(0.1, HUD, {a3, a4}, 2, a1, a2, a5)` / `0x001b3df8(HUD, player)`: the action prompt's button-cycle animation ([Action prompts](hud-messages.md#action-prompts))"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b5ae0
+name = "HUD_TurnOffActionCycleAnim"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`0x001b3dd0(0.1, HUD, {a3, a4}, 2, a1, a2, a5)` / `0x001b3df8(HUD, player)`: the action prompt's button-cycle animation ([Action prompts](hud-messages.md#action-prompts))"
+level = "confirmed-code"
+coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b5b08
+name = "HUD_SetAnnounceMessage"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "kind 5: `MarkupText_SetText` on the custom widget `0x0060e990`, its flags `+0x4` and `+0x8` = 1; other kinds `HUD_ShowAnnouncement`; `arg` to `0x00617fe8` ([Announcements](hud-messages.md#announcements-and-other-messages))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setAnnouncement"
+status = "legacy"
+
+[[function]]
+address = 0x001b5c30
+name = "HUD_EnableInstructionArrow"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "enable flag HUD `+0x134a4`; when on, `InstArrow_SetRotation(angle)` and `InstArrow_SetBasePosition((x, 0, y, 1), 1)` ([The instruction arrow](hud-messages.md#the-instruction-arrow-hudenableinstarrow))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::enableArrow"
+status = "legacy"
+
+[[function]]
+address = 0x001b5e90
+name = "Tutorial_SetCallback"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the Lua reference to `0x006095f0` ([Tutorial callback](hud-messages.md#tutorial-callback))"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setTutorialCallback"
+status = "legacy"
+
+[[function]]
+address = 0x001b5ea8
+name = "HUD_SetActionTextHigh"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the action-prompt text's y (`0x00607d74`, copied to `0x006077e4`): 0.86, or 0.125 when high; PAL (device flag 2) 0.78 / 0.2; PAL 16:9 0.8 / 0.15; progressive 16:9 (`0x20` and 4, not PAL) 0.08 either way"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setClubActionText"
+status = "legacy"
+
+[[function]]
+address = 0x001b5f88
+name = "HUD_ShowRumbleModeIntro"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`0x001b3880(HUD, a, b)`, `0x001b38b8(HUD)`, `0x001b38d8(HUD)`"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_intro_layer.h:RumbleIntroLayer::show"
+status = "legacy"
+
+[[function]]
+address = 0x001b5fb0
+name = "HUD_PreloadCredits"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`0x001b3880(HUD, a, b)`, `0x001b38b8(HUD)`, `0x001b38d8(HUD)`"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addCreditBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b5fd0
+name = "HUD_ShowCredits"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`0x001b3880(HUD, a, b)`, `0x001b38b8(HUD)`, `0x001b38d8(HUD)`"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addCreditBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b5ff0
+name = "GameState_SetTutorialText"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "byte `W_GameState + 0x56e2`"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
+status = "legacy"
+
+[[function]]
+address = 0x001b6358
+name = "NumIndicator_Setup"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "from the HUD's set-up (`0x001ad588`): the header sprite when given, two black shadows, nine tally sprites; count 9, gang −1, off"
+level = "confirmed-code"
+coney = "src/hud/num_indicator.h:NumIndicator::headerRecord"
+status = "legacy"
+
+[[function]]
+address = 0x001b67b8
+name = "NumIndicator_Update"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x30`: when shown, recounts (`Gang_CountLiving(gang, 1)` again, `0x001b68a4`) and lays out the tally marks ([below](hud-functions-lua.md#gang-count-indicator))"
+level = "confirmed-code"
+coney = "src/hud/num_indicator.h:NumIndicator::markPlace"
+status = "legacy"
+
+[[function]]
+address = 0x001b6ba0
+name = "NumIndicator_Render"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x68`: shuts the header (when made) and the nine tally sprites down (slot `+0x70`); slot `+0x38`: when shown, the shadows, the header and `count` tally sprites"
+level = "confirmed-code"
+coney = "src/hud/num_indicator.h:NumIndicator::render"
+status = "legacy"
+
+[[function]]
+address = 0x001b7a18
+name = "LockPickDial_SetDifficulty"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "the band globals for difficulty 0-2 ([Lock picking](crimes.md#lockpick)): arc sizes `0x0050d6b8` (35, 27, 20) and `0x0050d6bc` (14, 12, 9.2), good bounds `0x0050d6c4`/`c8`, perfect `0x0050d6cc` (less 0.2) / `d0`"
+level = "confirmed-code"
+coney = "src/world_objects/lock_pick.h:LockPickDial::LockPickDial"
+status = "legacy"
+
+[[function]]
+address = 0x001b7c10
+name = "LockPickDial_ApplyVideoMode"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "from the HUD's set-up / the options' video change (`0x001d8258`): the player's layout entry (`0x0050d670` + player × `0x20`, [below](hud-functions-lua.md#lock-pick-dial-layout)) for the video mode, the three pins (sheet 10 rectangle 11, grey 191, rotation π, sizes 0.19 × (1 − 0.2 i)), the centre batch, the disc record, player `+0x474`, hidden"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::layout"
+status = "legacy"
+
+[[function]]
+address = 0x001b7eb0
+name = "LockPickDial_Init"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "from the HUD's set-up / the options' video change (`0x001d8258`): the player's layout entry (`0x0050d670` + player × `0x20`, [below](hud-functions-lua.md#lock-pick-dial-layout)) for the video mode, the three pins (sheet 10 rectangle 11, grey 191, rotation π, sizes 0.19 × (1 − 0.2 i)), the centre batch, the disc record, player `+0x474`, hidden"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::layout"
+status = "legacy"
+
+[[function]]
+address = 0x001b8428
+name = "LockPickDial_Show"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "on: pins back to 3.14, the loop `vags/misc/lock_spins_01` started (handle `+0x450`), `vags/misc/click_open1` prepared (`0x00622e48`), pin 0, counters 0; off: both stopped; `+0x478` = on"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::show"
+status = "legacy"
+
+[[function]]
+address = 0x001b8530
+name = "LockPickDial_Draw"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x30` (the update, 30 times a second: confirmed (runtime), [Lock picking](crimes.md#lockpick)): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick))"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::layout"
+status = "legacy"
+
+[[function]]
+address = 0x001b8d38
+name = "LockPickDial_Judge"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "2 perfect (next pin, `click_01` and `click_open1`), 1 good (next pin, `click_open1`), 0 miss (`click_01`, every pin back to 3.14, pin 0)"
+level = "confirmed-code"
+coney = "src/world_objects/lock_pick.h:LockPickDial::press"
+status = "legacy"
+
+[[function]]
+address = 0x001b8ed0
+name = "LockPickDial_Render"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x38`: while resident, shown and a pin is left (`+0x468` < 3), the three pins"
+level = "confirmed-code"
+coney = "src/hud/lock_pick_hud.h:LockPickHud::render"
+status = "legacy"
+
+[[function]]
+address = 0x001becb0
+name = "HudMoney_Update"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "[Score and money](hud.md#score-and-money): the `±$N` line for 1,000 ms, counting by (difference / 16) ± 1 per frame with cue `0x10`, grey leading zeros (`Hud_GreyLeadingZeros`)"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel::updateMoneySound"
+status = "legacy"
+
+[[function]]
+address = 0x001bf7e0
+name = "MugMeter_Setup"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "two dark (32, 32, 32) bars (sprite word `0x30036`: batch 3 (`part_page0`) rectangles 54-57), two `hud_minigames` sprites (rectangles 5 and 6, grey 128, batch 11), three arrows (rectangles 7-9, (225, 186, 65)), the prompt (string `0x180`)"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter"
+status = "legacy"
+
+[[function]]
+address = 0x001bfcc0
+name = "MugMeter_SetFills"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "both bars' fills, clamped to 0-1"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter::setFills"
+status = "legacy"
+
+[[function]]
+address = 0x001bfd30
+name = "MugMeter_SetStick"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "the stick dot moves by 0.01 × stick from its rest point; a stick beyond 0.5 in one of eight directions (and within 0.1 on the other axis for the four straight ones) picks the arrows' position and angle from `0x00622f70` and `0x0050e924`-`0x0050e940`"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter::setStick"
+status = "legacy"
+
+[[function]]
+address = 0x001c0640
+name = "MugMeter_SetArrowsOn"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "`HUDMugMeterSet`: `+0x84c`"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter::setOnTarget"
+status = "legacy"
+
+[[function]]
+address = 0x001c0648
+name = "MugMeter_SetMode"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "the colours by mode: 0 and 1 swap red (170, 43, 43) and amber (128, 100, 0) between the two bars and the arrows; 2 and 3 do the same with blue (35, 83, 188); the prompt becomes string `0x180` or `0x181`"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter::setMode"
+status = "legacy"
+
+[[function]]
+address = 0x001c09f8
+name = "MugMeter_Render"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "only while the player is mugging or in a grab (`0x00228070`, `0x00228090`, `0x002280f0`): both bars (`HudBar_Draw`), the two sprites, the prompt, and the arrows by mode and `+0x84c`"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter::render"
+status = "legacy"
+
+[[function]]
+address = 0x001c0bb0
+name = "MugMeter_AnimateArrows"
+page = "hud-functions-panels.md#fn-missionselecthud-hud"
+role = "places the three arrows at the chosen direction and lights them one after another, each for `+0x848` frames, the previous one at half alpha; returns the phase 0-3"
+level = "confirmed-code"
+coney = "src/hud/mug_meter.h:MugMeter::update"
+status = "legacy"
+
+[[function]]
+address = 0x001c22b0
+name = "HudGenericBar_SetWidth"
+page = "hud-functions-panels.md#fn-generic-bar"
+role = "the `HudBar` width (`+0x40`), × 0.7 with device flag `0x02`"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::setProperty"
+status = "legacy"
+
+[[function]]
+address = 0x001c2530
+name = "HudGenericBar_SetFill"
+page = "hud-functions-panels.md#fn-generic-bar"
+role = "when created, the fill (`+0x78`) clamped to 0-1"
+level = "confirmed-code"
+coney = "src/hud/scripted_bars.h:ScriptedBars::setPercentage"
+status = "legacy"
+
+[[function]]
+address = 0x001c8b08
+name = "ScrollIn_Queue"
+page = "hud-functions-panels.md#fn-scrollinhud"
+role = "[Objectives](hud-messages.md#objectives-hudsetobjective)"
+level = "confirmed-code"
+coney = "src/hud/messages.h:ScrollInQueue::queue"
+status = "legacy"
+
+[[function]]
+address = 0x001c9028
+name = "ScrollIn_Update"
+page = "hud-functions-panels.md#fn-scrollinhud"
+role = "[Objectives](hud-messages.md#objectives-hudsetobjective); in a split screen a kind-1 message moves 0.21-0.26 right by mode"
+level = "confirmed-code"
+coney = "src/hud/messages.h:ScrollInQueue::update"
+status = "legacy"
+
+[[function]]
+address = 0x001c9818
+name = "StereoHud_Construct"
+page = "hud-functions-panels.md#fn-after-scrollinhud"
+role = "nine `BaseWidget`s (`+0x50`-`+0x9f0`) and two `TextWidget`s (`+0x850`, `+0x920`)"
+level = "confirmed-code"
+coney = "src/hud/stereo_hud.h:StereoHud"
+status = "legacy"
+
+[[function]]
+address = 0x001ca118
+name = "StereoHud_Start"
+page = "hud-functions-panels.md#fn-after-scrollinhud"
+role = "set-up, target `+0x4c`, done `+0x40` = 0, pop step `+0xb04` = 0.001, progress 0"
+level = "confirmed-code"
+coney = "src/hud/stereo_hud.h:StereoHud::start"
+status = "legacy"
+
+[[function]]
+address = 0x001ca180
+name = "StereoHud_Shutdown"
+page = "hud-functions-panels.md#fn-after-scrollinhud"
+role = "releases every part"
+level = "confirmed-code"
+coney = "src/hud/stereo_hud.h:StereoHud::end"
+status = "legacy"
+
+[[function]]
+address = 0x001ca210
+name = "StereoHud_SetProgress"
+page = "hud-functions-panels.md#fn-after-scrollinhud"
+role = "`+0x48` value (the angle turned), `+0x44` stage (0-3), done cleared"
+level = "confirmed-code"
+coney = "src/hud/stereo_hud.h:StereoHud::setProgress"
+status = "legacy"
+
+[[function]]
+address = 0x001ca260
+name = "StereoHud_Render"
+page = "hud-functions-panels.md#fn-after-scrollinhud"
+role = "the backdrop; unless done, the arrow, gauge, stick and ring"
+level = "confirmed-code"
+coney = "src/hud/stereo_hud.h:StereoHud::render"
+status = "legacy"
+
+[[function]]
+address = 0x001ca2d0
+name = "StereoHud_Update"
+page = "hud-functions-panels.md#fn-after-scrollinhud"
+role = "the arrow at the stage's corner of the backdrop (anchor ± (size + 0.025 if flag `0x02`), ∓ 0.05) turned 0, −π/2, −π or −3π/2; the gauge sized 0.025-0.05 by value / target and turned by −value; at value ≥ target it rises by a step that doubles each frame; the stick cycles `part_page0` rectangles 3, 2, 1, 0 every 320 ms; the ring turns −0.004 rad per ms"
+level = "confirmed-code"
+coney = "src/hud/stereo_hud.h:StereoHud::update"
+status = "legacy"
+
+[[function]]
+address = 0x001cb6f0
+name = "TagHud_Setup"
+page = "hud-functions-panels.md#fn-after-subtitle"
+role = "the frame sprite: `part_page0` rectangle 93, size 0.04, depth 11,000, (191, 191, 191, 191)"
+level = "confirmed-code"
+coney = "src/hud/tag_hud.h:TagHud"
+status = "legacy"
+
+[[function]]
+address = 0x001cb798
+name = "TagHud_Render"
+page = "hud-functions-panels.md#fn-after-subtitle"
+role = "below the table"
+level = "confirmed-code"
+coney = "src/hud/tag_hud.h:TagHud::render"
+status = "legacy"
+
+[[function]]
+address = 0x001cdc80
+name = "HintBox_Update"
+page = "hud.md#original-structure"
+role = "`TutorialHUD.cpp`; the box at HUD `+0x8a10` (`0x00609250`)"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:HintBox::update"
+status = "legacy"
+
+[[function]]
+address = 0x001ce3c0
+name = "HintBox_Queue"
+page = "hud-functions-panels.md#fn-tutorialhud"
+role = "`HUDSetTutorialText`; a more urgent hint pushes the showing one back"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:HintBox::queue"
+status = "legacy"
+
+[[function]]
+address = 0x001ce550
+name = "HintBox_Contains"
+page = "hud-functions-panels.md#fn-tutorialhud"
+role = "`HUDCheckTutorialText`"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:HintBox::contains"
+status = "legacy"
+
+[[function]]
+address = 0x001ce5c0
+name = "HintBox_Withdraw"
+page = "hud-functions-panels.md#fn-tutorialhud"
+role = "removes one hint by its text pointer"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:HintBox::withdraw"
+status = "legacy"
+
+[[function]]
+address = 0x001ce748
+name = "HintBox_FlushPriority"
+page = "hud-functions-panels.md#fn-tutorialhud"
+role = "`HUDFlushTutorialText(p)`; 4 removes all"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:HintBox::flush"
+status = "legacy"
+
+[[function]]
+address = 0x001ce8b8
+name = "HintBox_Render"
+page = "hud-functions-panels.md#fn-tutorialhud"
+role = "from `HUD_Render`: box alpha = 125 (`0x0050ebd4`) × the text's alpha / 255, draws the box, re-applies the text width 0.74 (0.52 split, `0x0050ebd8` / `0x0050ebd0`) and colour `0x005fd310`, draws the text"
+level = "confirmed-code"
+coney = "src/hud/hint_box.h:HintBox::render"
+status = "legacy"
+
+[[function]]
+address = 0x001ce9a8
+name = "Tutorial_CallCallback"
+page = "hud.md#original-structure"
+role = "calls the `HUDSetTutorialCallback` function on each player-1 hit ([Tutorial callback](hud-messages.md#tutorial-callback))"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callTutorialCallback"
+status = "legacy"
+
+[[function]]
+address = 0x001dad88
+name = "HUD_SetObjective"
+page = "hud.md#original-structure"
+role = "`HUDSetObjective`"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setObjective"
+status = "legacy"
+
+[[function]]
+address = 0x0020dc98
+name = "PlayerHUD_SetBanner"
+page = "hud.md#original-structure"
+role = "picks the name banner"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:bannerRecord"
+status = "legacy"
+
+[[function]]
+address = 0x0020e028
+name = "PlayerHUD_Show"
+page = "hud-functions-panels.md#fn-player-panel-base"
+role = "when attached and allowed (`+0x4108`): shown `+0x40fc` = 1, the money counter (`+0x3454`) and the banner (`+0x3ce8`) visible"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel::show"
+status = "legacy"
+
+[[function]]
+address = 0x00211ca0
+name = "PlayerHUD_Construct"
+page = "hud.md#original-structure"
+role = "the player panel (`0x4a50` bytes; interface vtable `0x0053edf8` at `+0x4120`)"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel"
+status = "legacy"
+
+[[function]]
+address = 0x00212840
+name = "PlayerHUD_Init"
+page = "hud.md#original-structure"
+role = "builds the panel from the layout table"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel::attach"
+status = "legacy"
+
+[[function]]
+address = 0x00213290
+name = "PlayerHUD_Render"
+page = "hud.md#original-structure"
+role = "fade, rage flashing, draws the parts"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel::render"
+status = "legacy"
+
+[[function]]
+address = 0x00213e68
+name = "PlayerHUD_LayoutTallyMarks"
+page = "hud-functions-panels.md#fn-player-panel"
+role = "`+0x413c` marks from the origin `+0x40e0` with the table's `+0x1f0`-`+0x230`, every fifth crossing the four before, shifted below the counters ([The panel's tally](hud-functions-lua.md#panel-tally))"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel::tallyMarkPlace"
+status = "legacy"
+
+[[function]]
+address = 0x00214138
+name = "PlayerHUD_Update"
+page = "hud.md#original-structure"
+role = "values, colours and positions each frame"
+level = "confirmed-code"
+coney = "src/hud/player_panel.h:PlayerPanel::update"
+status = "legacy"
+
+[[function]]
+address = 0x002274a8
+name = "Humans_FindAhead"
+page = "hud-messages.md#action-prompts"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/ai/steering.h:humansAround"
+status = "legacy"
+
+[[function]]
+address = 0x00227d28
+name = "Human_IsInSceneState"
+page = "hud.md#who-shows-the-hud-again"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::playerInScene"
+status = "legacy"
+
+[[function]]
+address = 0x00227e60
+name = "Human_IsDownOrDead"
+page = "hud-functions-lua.md#gang-count-what"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:humanIsDownOrDead"
+status = "legacy"
+
+[[function]]
+address = 0x0024a230
+name = "Reticule_QueueHealthRings"
+page = "hud.md#original-structure"
+role = "one human's two rings: values, colours, size"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/hud/health_rings.h:healthColour"
+status = "legacy"
+
+[[function]]
+address = 0x0024b780
+name = "Reticules_Update"
+page = "hud.md#original-structure"
+role = "per update: who gets a health ring, with what alpha ([The health rings](hud-radar.md#the-health-rings))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/hud/health_rings.h:HealthRings"
+status = "legacy"
+
+[[function]]
+address = 0x00279078
+name = "Human_FindRevivableNear"
+page = "hud-messages.md#action-prompts"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::revivableInReach"
+status = "legacy"
+
+[[function]]
+address = 0x0041d160
+name = "GameState_IsRumbleLevel"
+page = "hud-functions-lua.md#panel-tally"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_items.h:isRumbleLevel"
+status = "legacy"

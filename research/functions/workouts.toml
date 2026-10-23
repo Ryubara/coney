@@ -1,0 +1,10 @@
+# The researched functions of the workouts system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00386298
+name = "Script_SetMsgHandler"
+page = "workouts.md#start"
+level = "confirmed-code"
+coney = "src/scripting/trigger_bindings.cpp:makeSetMsgHandler"
+status = "legacy"

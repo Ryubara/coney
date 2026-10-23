@@ -607,7 +607,15 @@ def _add_progress_commands(groups: Any) -> None:
     commands = tracker.add_subparsers(dest="command", required=True)
     show = commands.add_parser("show", help="print how much is reimplemented and researched")
     show.add_argument("--json", action="store_true", help="print everything as JSON")
-    commands.add_parser("check", help="check the tracker's inputs (functions.toml, @orig tags, ranges, roadmap)")
+    check = commands.add_parser(
+        "check", help="check the tracker's inputs (the function database, @orig tags, ranges, roadmap)"
+    )
+    check.add_argument("--base", default="origin/main", help="what tag names are measured from (default: %(default)s)")
+    check.add_argument(
+        "--require-base",
+        action="store_true",
+        help="fail when --base cannot be read, instead of skipping the name rule (CI)",
+    )
     render = commands.add_parser(
         "render", help="write the pages, pictures, badge JSON and numbers the docs build publishes, to a folder"
     )
@@ -615,11 +623,19 @@ def _add_progress_commands(groups: Any) -> None:
     render.add_argument(
         "--no-history", action="store_true", help="skip rebuilding the daily history from git (only today's point)"
     )
-    sizes = commands.add_parser("sizes", help="check the listed functions' sizes against your own disc")
+    sizes = commands.add_parser("sizes", help="check the reimplemented functions' sizes against your own disc")
     sizes.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
-    sizes.add_argument("--fill", action="store_true", help="write the estimated size of entries that have none")
+    import_functions = commands.add_parser(
+        "import-functions",
+        help="one-off: move the rows of the retired docs/progress/functions.toml into the function database",
+    )
+    import_functions.add_argument(
+        "file", nargs="?", type=Path, help="the old list (default docs/progress/functions.toml)"
+    )
+    import_functions.add_argument("--dry-run", action="store_true", help="write nothing; print what would be done")
+    import_functions.add_argument("--all", action="store_true", help="list every row of the report, not the first few")
     ghidra = commands.add_parser(
         "ghidra", help="re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only)"
     )
@@ -943,14 +959,16 @@ def _run_progress(args: argparse.Namespace) -> int:
     if args.command == "show":
         return progress_cli.run_show(args.json)
     if args.command == "check":
-        return progress_cli.run_check()
+        return progress_cli.run_check(args.base, args.require_base)
     if args.command == "render":
         return progress_cli.run_render(args.out_dir, history=not args.no_history)
     if args.command == "ghidra":
         return progress_cli.run_ghidra(args.url, args.check)
     if args.command == "backlog":
         return progress_cli.run_backlog(args.out_dir)
-    return progress_cli.run_sizes(args.disc, args.fill)
+    if args.command == "import-functions":
+        return progress_cli.run_import_functions(args.file, args.dry_run, args.all)
+    return progress_cli.run_sizes(args.disc)
 
 
 def _run_wad(args: argparse.Namespace) -> int:

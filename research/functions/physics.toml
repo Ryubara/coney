@@ -1,0 +1,593 @@
+# The researched functions of the physics system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x0021ce08
+name = "Human_CreatePhysicsBody"
+page = "physics-bodies.md#u9-callers"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::heal"
+status = "legacy"
+
+[[function]]
+address = 0x00335b08
+name = "Quat_IntegrateAngular"
+page = "physics.md#original-structure"
+role = "`q += ½ ω q dt`, normalised"
+level = "confirmed-code"
+coney = "src/world_objects/loose_objects.cpp:integrateAngular"
+status = "legacy"
+
+[[function]]
+address = 0x0033d2d8
+name = "IPhysics_SweepShapeVsMesh"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [characters.md#walls](characters.md#walls)"
+coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
+status = "legacy"
+
+[[function]]
+address = 0x0033d340
+name = "IPhysics_SweepBodyVsMesh"
+page = "physics-bodies.md#u3-mesh"
+level = "confirmed-code"
+coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
+status = "legacy"
+
+[[function]]
+address = 0x0033d498
+name = "PhysicsBody_SweepHumanMask"
+page = "physics-bodies.md#u11-body-pass"
+level = "confirmed-code"
+note = "the level is from [physics-kernels.md#u12-callers](physics-kernels.md#u12-callers)"
+coney = "src/human/human.h:Human::meetHumans"
+status = "legacy"
+
+[[function]]
+address = 0x0033d718
+name = "Contact_InsertSorted"
+page = "physics-bodies.md#u3-insert"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/physics/contact.h:insertSorted"
+status = "legacy"
+
+[[function]]
+address = 0x0033d7b8
+name = "PhysicsVec_BackOffPlane"
+page = "physics-bodies.md#u3-backoff"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/physics/body_sweep.h:backOffPlane"
+status = "legacy"
+
+[[function]]
+address = 0x0033d870
+name = "Vec_RemoveNormalPart"
+page = "physics-bodies.md#u3-remove"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/physics/body_sweep.h:removeNormalPart"
+status = "legacy"
+
+[[function]]
+address = 0x0033d8f0
+name = "PhysicsVec_Bounce"
+page = "physics-bodies.md#u3-bounce"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/physics/body_sweep.h:bounce"
+status = "legacy"
+
+[[function]]
+address = 0x0033d9d8
+name = "PhysicsBody_ResolveContacts"
+page = "physics-bodies.md#u3-resolve"
+level = "confirmed-code"
+note = "the level is from [physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)"
+coney = "src/human/human_contacts.h:contactPush"
+status = "legacy"
+
+[[function]]
+address = 0x00340918
+name = "IPhysics_Step"
+page = "physics-world.md#u15-step"
+level = "confirmed-code"
+note = "the level is from [physics.md#step](physics.md#step)"
+coney = "src/world_objects/loose_objects.h:SettleTurn::tick"
+status = "legacy"
+
+[[function]]
+address = 0x00340b38
+name = "Settle_NearestAxis"
+page = "physics-world.md#u15-nearest"
+level = "confirmed-code"
+note = "the level is from [physics.md#settle](physics.md#settle)"
+coney = "src/world_objects/loose_objects.h:settleAxis"
+status = "legacy"
+
+[[function]]
+address = 0x00340d08
+name = "Settle_ComputeTarget"
+page = "physics-world.md#u15-target"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/world_objects/loose_objects.h:settleTarget"
+status = "legacy"
+
+[[function]]
+address = 0x003414c0
+name = "AABB_ScaleAboutCentre"
+page = "physics-bodies.md#u3-scale-box"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/physics/body_sweep.h:scaleAboutCentre"
+status = "legacy"
+
+[[function]]
+address = 0x00341840
+name = "AABB_ExtendByMove"
+page = "physics-bodies.md#u3-extend"
+level = "confirmed-code"
+coney = "src/physics/body_sweep.h:extendByMove"
+status = "legacy"
+
+[[function]]
+address = 0x00341e18
+name = "PhysicsBody_GetContactScale"
+page = "physics-bodies.md#u3-contact-scale"
+level = "confirmed-code"
+coney = "src/physics/body_sweep.h:contactScale"
+status = "legacy"
+
+[[function]]
+address = 0x00342288
+name = "PhysicsHumanBody_GetContactScale"
+page = "physics-bodies.md#u3-human-scale"
+level = "confirmed-code"
+coney = "src/physics/body_sweep.h:contactScale"
+status = "legacy"
+
+[[function]]
+address = 0x00343518
+name = "PhysicsCapsule_Pose"
+page = "physics-bodies.md#u6-capsule-pose"
+level = "confirmed-code"
+note = "the level is from [combat.md#capsule-strike](combat.md#capsule-strike)"
+coney = "src/human/human.h:Human::struckCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x00343a90
+name = "CollTri_ComputeEdges"
+page = "physics-kernels.md#u1-compute-edges"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:computeEdges"
+status = "legacy"
+
+[[function]]
+address = 0x00343b20
+name = "CollTri_ComputeEdgeNormals"
+page = "physics-kernels.md#u1-edge-normals"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:normaliseEdges"
+status = "legacy"
+
+[[function]]
+address = 0x00343c30
+name = "CollTri_ComputeNormal"
+page = "physics-kernels.md#u1-compute-normal"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:computeNormal"
+status = "legacy"
+
+[[function]]
+address = 0x00343c90
+name = "CollTri_Flip"
+page = "physics-kernels.md#u1-flip"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:flip"
+status = "legacy"
+
+[[function]]
+address = 0x00343cd8
+name = "PhysicsSweep_CapsuleCapsule"
+page = "physics-bodies.md#u11-capsule-capsule"
+level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
+coney = "src/human/human_contacts.h:sweepCapsules"
+status = "legacy"
+
+[[function]]
+address = 0x003453f8
+name = "PhysicsSweep_SphereBox"
+page = "physics-kernels.md#u4b-physicssweep-spherebox-003453f8"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.h:sweepSphereBox"
+status = "legacy"
+
+[[function]]
+address = 0x003454c0
+name = "PhysicsSweep_BoxSphere"
+page = "physics-kernels.md#u4b-physicssweep-boxsphere-003454c0"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.h:sweepBoxSphere"
+status = "legacy"
+
+[[function]]
+address = 0x00345d58
+name = "PhysicsOverlap_SphereSphere"
+page = "physics-kernels.md#u4-physicsoverlap-spheresphere-00345d58"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSphereSphere"
+status = "legacy"
+
+[[function]]
+address = 0x00345dd8
+name = "PhysicsOverlap_BoxBox"
+page = "physics-kernels.md#u4-physicsoverlap-boxbox-00345dd8"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapBoxBox"
+status = "legacy"
+
+[[function]]
+address = 0x00346388
+name = "PhysicsOverlap_CapsuleCapsule"
+page = "physics-kernels.md#u4-physicsoverlap-capsulecapsule-00346388"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapCapsuleCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x00346500
+name = "PhysicsOverlap_SegmentSegment"
+page = "physics-kernels.md#u4-physicsoverlap-segmentsegment-00346500"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSegmentSegment"
+status = "legacy"
+
+[[function]]
+address = 0x00346680
+name = "PhysicsOverlap_BoxSphere"
+page = "physics-kernels.md#u4-physicsoverlap-boxsphere-00346680"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapBoxSphere"
+status = "legacy"
+
+[[function]]
+address = 0x00346808
+name = "PhysicsOverlap_CapsuleBox"
+page = "physics-kernels.md#u4-physicsoverlap-capsulebox-00346808"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapCapsuleBox"
+status = "legacy"
+
+[[function]]
+address = 0x00346d18
+name = "PhysicsOverlap_BoxCapsule"
+page = "physics-kernels.md#u4-physicsoverlap-boxcapsule-00346d18"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapBoxCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x00346db8
+name = "PhysicsOverlap_SphereBox"
+page = "physics-kernels.md#u4-physicsoverlap-spherebox-00346db8"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSphereBox"
+status = "legacy"
+
+[[function]]
+address = 0x00346de0
+name = "PhysicsOverlap_SegmentSphere"
+page = "physics-kernels.md#u4-physicsoverlap-segmentsphere-00346de0"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSegmentSphere"
+status = "legacy"
+
+[[function]]
+address = 0x00346eb0
+name = "PhysicsOverlap_SphereSegment"
+page = "physics-kernels.md#u4-physicsoverlap-spheresegment-00346eb0"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSphereSegment"
+status = "legacy"
+
+[[function]]
+address = 0x00346ed8
+name = "PhysicsOverlap_CapsuleSphere"
+page = "physics-kernels.md#u4-physicsoverlap-capsulesphere-00346ed8"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapCapsuleSphere"
+status = "legacy"
+
+[[function]]
+address = 0x00346f90
+name = "PhysicsOverlap_SphereCapsule"
+page = "physics-kernels.md#u4-physicsoverlap-spherecapsule-00346f90"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSphereCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x00346fb8
+name = "PhysicsOverlap_SegmentCapsule"
+page = "physics-kernels.md#u4-physicsoverlap-segmentcapsule-00346fb8"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapSegmentCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x00347148
+name = "PhysicsOverlap_CapsuleSegment"
+page = "physics-kernels.md#u4-physicsoverlap-capsulesegment-00347148"
+level = "confirmed-code"
+coney = "src/physics/overlaps.h:overlapCapsuleSegment"
+status = "legacy"
+
+[[function]]
+address = 0x00347170
+name = "CollisionMesh_BeginShapeQuery"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [physics-bodies.md#u3-sweep](physics-bodies.md#u3-sweep)"
+coney = "src/physics/mesh_sweep.h:beginShapeQuery"
+status = "legacy"
+
+[[function]]
+address = 0x00347300
+name = "MeshContacts_SortByFraction"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
+coney = "src/physics/mesh_sweep.h:sortByFraction"
+status = "legacy"
+
+[[function]]
+address = 0x003473b8
+name = "PhysicsMeshOverlap_Box"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
+coney = "src/physics/mesh_sweep.h:overlapNothing"
+status = "legacy"
+
+[[function]]
+address = 0x003473c0
+name = "PhysicsMeshOverlap_Capsule"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
+coney = "src/physics/mesh_sweep.h:overlapNothing"
+status = "legacy"
+
+[[function]]
+address = 0x003473c8
+name = "PhysicsMeshOverlap_Sphere"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
+coney = "src/physics/mesh_sweep.h:overlapSphereMesh"
+status = "legacy"
+
+[[function]]
+address = 0x00348a50
+name = "PhysicsMesh_SweepSphere"
+page = "physics-bodies.md#unit-2"
+level = "confirmed-code"
+note = "the level is from [physics-kernels.md#issue-150](physics-kernels.md#issue-150)"
+coney = "src/physics/mesh_sweep.h:sweepSphereMesh"
+status = "legacy"
+
+[[function]]
+address = 0x00349a60
+name = "Sweep_SphereCapsule"
+page = "physics.md#kernels"
+level = "confirmed-code"
+coney = "src/human/human.cpp:meetsCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x0034a2d0
+name = "CapsuleBox_CornerCircle"
+page = "physics-kernels.md#u4-capsulebox-cornercircle-0034a2d0"
+level = "confirmed-code"
+coney = "src/physics/segment_kernels.h:capsuleBoxCornerCircle"
+status = "legacy"
+
+[[function]]
+address = 0x0034a6a0
+name = "CapsuleBox_SideInterval"
+page = "physics-kernels.md#u4-capsulebox-sideinterval-0034a6a0"
+level = "confirmed-code"
+coney = "src/physics/segment_kernels.h:capsuleBoxSideInterval"
+status = "legacy"
+
+[[function]]
+address = 0x0034ac08
+name = "Segment_ClosestParam"
+page = "physics-kernels.md#u4-segment-closestparam-0034ac08"
+level = "confirmed-code"
+coney = "src/physics/segment_kernels.h:segmentClosestParam"
+status = "legacy"
+
+[[function]]
+address = 0x0034acc8
+name = "Segment_ClosestPoint"
+page = "physics-kernels.md#u4-segment-closestpoint-0034acc8"
+level = "confirmed-code"
+coney = "src/physics/segment_kernels.h:segmentClosestPoint"
+status = "legacy"
+
+[[function]]
+address = 0x0034ad50
+name = "Segment_ClosestPoints"
+page = "physics-kernels.md#u4-segment-closestpoints-0034ad50"
+level = "confirmed-code"
+coney = "src/physics/segment_kernels.h:segmentClosestPoints"
+status = "legacy"
+
+[[function]]
+address = 0x0034af50
+name = "Ray_SphereRoot"
+page = "physics-kernels.md#u1-ray-sphere-root"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.h:raySphereRoot"
+status = "legacy"
+
+[[function]]
+address = 0x0034afd8
+name = "Ray_CircleRoot"
+page = "physics-kernels.md#u1-ray-circle-root"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.h:rayCircleRoot"
+status = "legacy"
+
+[[function]]
+address = 0x0034b040
+name = "SphereBox_SweepCorner"
+page = "physics-kernels.md#u4b-spherebox-sweepcorner-0034b040-the-face"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.cpp:faceStep"
+status = "legacy"
+
+[[function]]
+address = 0x0034b3b8
+name = "SphereBox_SweepEdge"
+page = "physics-kernels.md#u4b-spherebox-sweepedge-0034b3b8"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.cpp:edgeStep"
+status = "legacy"
+
+[[function]]
+address = 0x0034b600
+name = "SphereBox_SweepEdges"
+page = "physics-kernels.md#u4b-spherebox-sweepedges-0034b600-the-edge-r"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.cpp:edgeRegionStep"
+status = "legacy"
+
+[[function]]
+address = 0x0034b7b0
+name = "SphereBox_SweepFaceEdges"
+page = "physics-kernels.md#u4b-spherebox-sweepfaceedges-0034b7b0-the-co"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.cpp:cornerStep"
+status = "legacy"
+
+[[function]]
+address = 0x0034baf0
+name = "SphereBox_ToBoxSpace"
+page = "physics-kernels.md#u4b-spherebox-toboxspace-0034baf0"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.h:sweepSphereOrientedBox"
+status = "legacy"
+
+[[function]]
+address = 0x0034bbe8
+name = "Sweep_SphereOrientedBox"
+page = "physics-kernels.md#u4b-sweep-sphereorientedbox-0034bbe8"
+level = "confirmed-code"
+coney = "src/physics/sphere_box_sweep.h:sweepSphereOrientedBox"
+status = "legacy"
+
+[[function]]
+address = 0x0034d938
+name = "Ray_InfiniteCylinder"
+page = "physics-kernels.md#u1-capsule"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sweepSphereCapsule"
+status = "legacy"
+
+[[function]]
+address = 0x0034dff8
+name = "SphereSweep_EdgeCylinder"
+page = "physics-kernels.md#u1-edge-cylinder"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sphereSweepEdgeCylinder"
+status = "legacy"
+
+[[function]]
+address = 0x0034e120
+name = "Segment_SphereIntersect"
+page = "physics-kernels.md#u1-segment-sphere"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:segmentSphereIntersect"
+status = "legacy"
+
+[[function]]
+address = 0x0034e3b8
+name = "SphereSweep_Edge"
+page = "physics-kernels.md#u1-edge"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sphereSweepEdge"
+status = "legacy"
+
+[[function]]
+address = 0x0034e5d0
+name = "SphereSweep_VertexRegion"
+page = "physics-kernels.md#u1-vertex-region"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sphereSweepVertexRegion"
+status = "legacy"
+
+[[function]]
+address = 0x0034e840
+name = "PointTriangle_DistanceSq"
+page = "physics-kernels.md#u1-point-triangle"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:pointTriangleDistanceSq"
+status = "legacy"
+
+[[function]]
+address = 0x0034edd0
+name = "SphereTriangle_Penetration"
+page = "physics-kernels.md#u1-penetration"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sphereTrianglePenetration"
+status = "legacy"
+
+[[function]]
+address = 0x0034ee40
+name = "Sweep_SphereTriangleThunk"
+page = "physics.md#kernels"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
+status = "legacy"
+
+[[function]]
+address = 0x0034ee60
+name = "Sweep_SphereTriangle"
+page = "physics-kernels.md#u1-sweep-sphere-triangle"
+level = "confirmed-code"
+coney = "src/physics/sphere_triangle.h:sweepSphereTriangle"
+status = "legacy"
+
+[[function]]
+address = 0x00391d48
+name = "Obj_CreatePhysicsBody"
+page = "physics.md#bodies"
+level = "confirmed-code"
+coney = "src/platform/play_level_mode.h:PlayLevelMode::stepObjectBodies"
+status = "legacy"
+
+[[function]]
+address = 0x00394050
+name = "WorldObject_OnContact"
+page = "physics.md#original-structure"
+role = "the world object's contact handler (vtable `0x005453a0` `+0xfc`)"
+level = "confirmed-code"
+note = "confirmed (code); role inferred"
+coney = "src/world_objects/loose_objects.h:LooseObjects::contact"
+status = "legacy"
+
+[[function]]
+address = 0x00395a10
+name = "WorldObject_Integrate"
+page = "physics.md#original-structure"
+role = "the world object's integrator (vtable `+0x144`)"
+level = "confirmed-code"
+coney = "src/world_objects/loose_objects.h:LooseObjects::update"
+status = "legacy"

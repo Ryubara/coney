@@ -27,9 +27,9 @@ That layout earns its keep four ways:
 ### The function database {#function-database}
 
 `research/functions/<system>.toml` lists the researched functions of one system, one entry each with its address,
-Ghidra name, page section, role and evidence level; `coney-tools research render --check` holds it to the Ghidra
-listing and the pages. Its fields, checks, import and generated lists are on their own page,
-[The function database](research-function-database.md).
+Ghidra name, page section, role and, where the page states one for the function, evidence level;
+`coney-tools research render --check` holds it to the Ghidra listing and the pages. Its fields, checks, import and
+generated lists are on their own page, [The function database](research-function-database.md).
 
 ### The source files {#source-files}
 

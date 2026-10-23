@@ -11,14 +11,15 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
-from test_progress import ONE_FUNCTION, ONE_TAG, make_checkout
+from test_progress import ONE_FUNCTION, ONE_LISTING, ONE_TAG, entry, make_checkout
 
 from coney_tools import progress, progress_history
 from coney_tools.progress_history import Point
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
 
-SECOND_FUNCTION = '\n[[function]]\naddress = 0x00001210\nname = "Other::Do"\nsubsystem = "Beta"\nsize = 64\n'
+SECOND_FUNCTION = entry(0x1210, "Other::Do", "src/core/thing.h:other")
+SECOND_LISTING = "0x00001210\t64\tOther::Do\t0\n"
 SECOND_TAG = "/// @orig 0x00001210 Other::Do (Other.cpp)\nvoid other();\n"
 
 
@@ -51,10 +52,11 @@ def make_repo(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     git(repo, "init", "-q", "-b", "main")
     (repo / "README.md").write_text("hello\n", encoding="utf-8")
     shas = {"early": commit(repo, "2026-10-04T10:00:00")}
-    make_checkout(repo, ONE_FUNCTION, ONE_TAG)
+    make_checkout(repo, ONE_FUNCTION, ONE_TAG, ONE_LISTING)
     shas["d5a"] = commit(repo, "2026-10-05T09:00:00")
     shas["d5b"] = commit(repo, "2026-10-05T18:00:00")  # the last of its day: this one counts
-    (repo / "docs" / "progress" / "functions.toml").write_text(ONE_FUNCTION + SECOND_FUNCTION, encoding="utf-8")
+    (repo / "research" / "functions" / "alpha.toml").write_text(ONE_FUNCTION + SECOND_FUNCTION, encoding="utf-8")
+    (repo / "docs" / "progress" / "ghidra-functions.tsv").write_text(ONE_LISTING + SECOND_LISTING, encoding="utf-8")
     (repo / "src" / "core" / "thing.h").write_text(ONE_TAG + SECOND_TAG, encoding="utf-8")
     shas["d6"] = commit(repo, "2026-10-06T12:00:00")
     return repo, shas
@@ -84,9 +86,32 @@ def test_each_day_is_measured_at_its_commit_and_unreadable_days_are_left_out(tmp
         ("2026-10-07", "head", 2),
     ]
     assert points[0].reimplemented_bytes == 0x80 and points[1].reimplemented_bytes == 0x80 + 64
-    assert points[0].understood_bytes is None  # no Ghidra listing in this checkout
+    assert points[0].understood_bytes == 0  # the listing has the function, no page cites it
     assert points[0].share("reimplemented") == pytest.approx(100 * 0x80 / points[0].game_bytes)
-    assert points[0].share("understood") is None
+    assert points[0].share("understood") == 0.0
+
+
+def test_a_day_before_the_move_is_measured_from_the_retired_list(tmp_path: Path) -> None:
+    """A day that has `docs/progress/functions.toml` and no database is read from it, with the row's size when the day
+    has no Ghidra listing (as then); the day after the move, from the database, counts the same function."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    make_checkout(repo, tags=ONE_TAG)
+    old = '[[function]]\naddress = 0x00001010\nname = "Thing::Do"\nsubsystem = "Alpha"\nsize = 100\n'
+    (repo / "docs" / "progress" / "functions.toml").write_text(old, encoding="utf-8")
+    shas = {"old": commit(repo, "2026-10-05T09:00:00")}
+    (repo / "docs" / "progress" / "functions.toml").unlink()
+    (repo / "research" / "functions").mkdir(parents=True)
+    (repo / "research" / "functions" / "alpha.toml").write_text(ONE_FUNCTION, encoding="utf-8")
+    (repo / "docs" / "progress" / "ghidra-functions.tsv").write_text(ONE_LISTING, encoding="utf-8")
+    shas["new"] = commit(repo, "2026-10-06T09:00:00")
+    points, skipped = progress_history.build(repo, current_point(repo))
+    assert skipped == []
+    assert [(p.date, p.reimplemented_functions, p.reimplemented_bytes) for p in points[:2]] == [
+        ("2026-10-05", 1, 100),
+        ("2026-10-06", 1, 128),  # the listing's size, 28 bytes more than the row had
+    ]
 
 
 def test_today_is_the_builds_own_point_and_later_days_are_not_measured(tmp_path: Path) -> None:
@@ -115,7 +140,7 @@ def test_a_cached_day_is_reused_only_for_the_commit_it_was_measured_at(tmp_path:
 
 def test_without_git_history_the_history_is_today(tmp_path: Path) -> None:
     """A folder that is not a repository (a copy of the files) still builds: one point."""
-    root = make_checkout(tmp_path / "plain", ONE_FUNCTION, ONE_TAG)
+    root = make_checkout(tmp_path / "plain", ONE_FUNCTION, ONE_TAG, ONE_LISTING)
     points, skipped = progress_history.build(root, current_point(root))
     assert [p.date for p in points] == ["2026-10-07"] and skipped == []
 
@@ -163,9 +188,14 @@ def test_a_change_to_the_measuring_code_invalidates_the_cache(tmp_path: Path, mo
 
 
 def test_the_definition_covers_every_module_that_measures() -> None:
-    from coney_tools import progress, progress_research, research_functions
+    from coney_tools import progress, progress_import, progress_research, research_functions
 
-    assert set(progress_history.DEFINITION_MODULES) == {progress, progress_research, research_functions}
+    assert set(progress_history.DEFINITION_MODULES) == {
+        progress,
+        progress_import,
+        progress_research,
+        research_functions,
+    }
 
 
 def test_a_left_out_day_is_not_tried_again_at_the_same_commit(tmp_path: Path) -> None:
@@ -198,10 +228,10 @@ def test_chart_has_a_titled_marker_per_day_and_measure(tmp_path: Path) -> None:
     svg = progress_history.render_chart(points)
     root = ET.fromstring(svg)
     titles = [t.text or "" for t in root.iter("title")]
-    # Two measures are known on every day here (the third needs a Ghidra listing); each has one marker per day.
-    assert sum("Reimplemented" in t for t in titles) == 3 and sum("Researched" in t for t in titles) == 3
-    assert not any("Understood" in t for t in titles)
-    assert len(list(root.iter("polyline"))) == 2
+    # All three measures are known on every day here; each has one marker per day.
+    for label in ("Reimplemented", "Researched", "Understood"):
+        assert sum(label in t for t in titles) == 3
+    assert len(list(root.iter("polyline"))) == 3
     assert "\n\n" not in svg
 
 

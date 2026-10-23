@@ -6,9 +6,9 @@ A game function counts as understood when both hold:
 * it has a meaningful name in the shared Ghidra project (not Ghidra's default `FUN_<address>`), and
 * its address is cited in docs/research/** (the source map excepted: placing a function is not understanding it)
   in a table row or paragraph that states an evidence level (confirmed, inferred, speculative) or says
-  `not needed: <reason>`, or it is an entry with a `role` in the function database (research/functions/<system>.toml,
-  whose every entry has a level), or it is the wrapper of a script binding in research/bindings/*.yaml with an
-  `evidence`.
+  `not needed: <reason>`, or it is an entry with a `role` and a level in the function database
+  (research/functions/<system>.toml; an entry with no level says nothing the tracker can count), or it is the
+  wrapper of a script binding in research/bindings/*.yaml with an `evidence`.
 
 The names and sizes come from a committed listing, docs/progress/ghidra-functions.tsv, exported from Ghidra by
 `coney-tools progress ghidra`: addresses, sizes and our own names only, which LEGAL.md allows as reference data.
@@ -311,15 +311,18 @@ def scan_citations(root: Path) -> dict[int, Citation]:
                 name = _BINDING_NAME.search(entry.lstrip().removeprefix("- "))
                 evidence = bool(_BINDING_EVIDENCE.search(entry))
                 _cite(citations, int(wrapper.group(1), 16), page, evidence, f"lua_{name.group(1)}" if name else "")
-    # The function database: an entry always has a level and its name is Ghidra's, so it names the function; it states
-    # evidence only with a `role`, the line that says what the function does (an entry without one says nothing).
+    # The function database: its name is Ghidra's, so it names the function; it states evidence only with a `role`,
+    # the line that says what the function does, and a level (an entry without either says nothing, and one with no
+    # level is a pointer to a page that states none for it alone).
     try:
         systems = research_functions.load_all(root)
     except research_functions.ResearchFunctionsError as error:
         raise ProgressError(str(error)) from error
     for system in systems:
         for entry in system.entries:
-            _cite(citations, entry.address, system.path.as_posix(), bool(entry.role.strip()), entry.name)
+            _cite(
+                citations, entry.address, system.path.as_posix(), bool(entry.role.strip() and entry.level), entry.name
+            )
             citations[entry.address].page_name = entry.name
     return citations
 
@@ -334,9 +337,13 @@ def measure(totals: Totals, functions: list[ListedFunction], citations: dict[int
     return Understanding(statuses)
 
 
-def load(root: Path, totals: Totals) -> Understanding | None:
-    """The measure for the checkout at `root`, or None when it has no listing yet."""
-    functions = load_listing(root / LISTING_FILE)
+def load(root: Path, totals: Totals, listing: list[ListedFunction] | None = None) -> Understanding | None:
+    """The measure for the checkout at `root`, or None when it has no listing yet.
+
+    `listing` is the checkout's listing when the caller has read it already (the listing is read from its file when
+    none is given).
+    """
+    functions = listing if listing is not None else load_listing(root / LISTING_FILE)
     if functions is None:
         return None
     return measure(totals, functions, scan_citations(root))

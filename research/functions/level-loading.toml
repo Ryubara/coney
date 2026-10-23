@@ -1,0 +1,204 @@
+# The researched functions of the level-loading system: one [[function]] per entry, in address order.
+# The fields: docs/guides/research-function-database.md; `research render --check`.
+
+[[function]]
+address = 0x00158580
+name = "Gm_Level_Resume"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::resume"
+status = "legacy"
+
+[[function]]
+address = 0x00158660
+name = "Gm_Level_Suspend"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.h:GameplayMode::suspend"
+status = "legacy"
+
+[[function]]
+address = 0x0015f248
+name = "RumbleResult_Exit"
+page = "level-loading.md#game-mode-functions"
+role = "mode 0x14 `Exit`: closes the result menu (`0x0050ee94`, slot `+0xb4`), finishes the task manager's list `+0x834`, reloads the bank named at `+0x20` and resumes audio"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::exit"
+status = "legacy"
+
+[[function]]
+address = 0x0015f308
+name = "RumbleResult_Update"
+page = "level-loading.md#game-mode-functions"
+role = "mode 0x14 `Update`: one world frame (phase 0, no second manager pass), the alternate viewport and overlays, then the result menu (`0x0050ee94`, slots `+0x3c`, `+0x34`); never pops itself"
+level = "confirmed-code"
+coney = "src/gamemodes/rumble_result_mode.h:RumbleResultMode::update"
+status = "legacy"
+
+[[function]]
+address = 0x0015fe50
+name = "SaveSystemMode_SetReturnName"
+page = "level-loading.md#game-mode-functions"
+role = "copies up to 32 characters to `0x005e6d88`, or clears it"
+level = "confirmed-code"
+coney = "src/scripting/level_bindings.cpp:makeSetStartGameCallback"
+status = "legacy"
+
+[[function]]
+address = 0x001612b0
+name = "LoadScreen_Begin"
+page = "level-loading.md#loading-screen"
+level = "confirmed-code"
+coney = "src/gamemodes/loading_screen.h:LoadingScreen::begin"
+status = "legacy"
+
+[[function]]
+address = 0x00161378
+name = "LoadScreen_End"
+page = "level-loading.md#loading-screen"
+level = "confirmed-code"
+coney = "src/gamemodes/loading_screen.h:LoadingScreen::end"
+status = "legacy"
+
+[[function]]
+address = 0x001613f0
+name = "LoadScreen_DrawPulse"
+page = "level-loading.md#game-mode-functions"
+role = "the loading indicator ([HUD](hud.md)): the HUD element at `0x0060e890` in a dark red brightened 1.3 times, fading to and from transparent on a 2.2 s cycle of the real-time clock"
+level = "confirmed-code"
+coney = "src/hud/spinner.h:Spinner::drawPulse"
+status = "legacy"
+
+[[function]]
+address = 0x001619d0
+name = "MemCardLoadScreen_Tick"
+page = "level-loading.md#loading-screen"
+level = "confirmed-code"
+coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::stepMemoryCardScreen"
+status = "legacy"
+
+[[function]]
+address = 0x001620a0
+name = "MemCardLoadScreen_Start"
+page = "level-loading.md#loading-screen"
+level = "confirmed-code"
+coney = "src/gamemodes/loading_screen.h:LoadingScreen::beginMemoryCard"
+status = "legacy"
+
+[[function]]
+address = 0x00162598
+name = "LevelLoadScreen_Finish"
+page = "level-loading.md#level-screen"
+level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
+coney = "src/gamemodes/loading_screen.h:LoadingScreen::finish"
+status = "legacy"
+
+[[function]]
+address = 0x00162688
+name = "LevelLoadScreen_DrawProgressBar"
+page = "level-loading.md#level-screen"
+level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
+coney = "src/gamemodes/loading_screen.h:loadScreenBarColour"
+status = "legacy"
+
+[[function]]
+address = 0x00162b88
+name = "LevelLoadScreen_Tick"
+page = "level-loading.md#level-screen"
+level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
+coney = "src/gamemodes/loading_screen.h:LoadingScreen::render"
+status = "legacy"
+
+[[function]]
+address = 0x00163270
+name = "LoadScreen_FormatTextureName"
+page = "level-loading.md#loading-screen"
+level = "confirmed-code"
+coney = "src/gamemodes/loading_screen.h:loadScreenPictureName"
+status = "legacy"
+
+[[function]]
+address = 0x001635d0
+name = "LoadScreen_FormatTextureNameEx"
+page = "level-loading.md#loading-screen"
+level = "confirmed-code"
+coney = "src/gamemodes/loading_screen.h:rumbleLoadScreenPictureName"
+status = "legacy"
+
+[[function]]
+address = 0x00163888
+name = "LevelLoadScreen_Start"
+page = "level-loading.md#level-screen"
+level = "confirmed-code"
+note = "the level is from [level-loading.md#loading-screen](level-loading.md#loading-screen)"
+coney = "src/gamemodes/loading_screen.h:LoadingScreen::begin"
+status = "legacy"
+
+[[function]]
+address = 0x0024e720
+name = "PathData_Load"
+page = "level-loading.md#path-data"
+level = "confirmed-code"
+coney = "src/world/level_object.h:onPathDataLoaded"
+status = "legacy"
+
+[[function]]
+address = 0x0024eef0
+name = "NavPolygon_ContainsPoint"
+page = "level-loading.md#path-data"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/world/path_map.h:PathMap::inside"
+status = "legacy"
+
+[[function]]
+address = 0x0040cdd8
+name = "LevelModel_LinkFirstTexture"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/platform/level_file.h:linkLevelModel"
+status = "legacy"
+
+[[function]]
+address = 0x0040ce30
+name = "LevelHeader_OnLoaded"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/world/level_object.h:makeLevelHeaderHandler"
+status = "legacy"
+
+[[function]]
+address = 0x0040d0a8
+name = "LevelObject_RenderBackground"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/platform/world_renderer.h:WorldRenderer::renderBackground"
+status = "legacy"
+
+[[function]]
+address = 0x0040e2d8
+name = "WorldManager_Preload"
+page = "level-loading.md#original-structure"
+level = "confirmed-code"
+coney = "src/world/world_streamer.h:preloadWorlds"
+status = "legacy"
+
+[[function]]
+address = 0x0041d6f0
+name = "GameState_GetLevelId"
+page = "level-loading.md#warriors-functions"
+role = "the workers of `GetNumberOfLevelsPacked` (`+0x56d8`), `GetLevelNamePacked` (the record found by `0x0041f4d0`, its name at `+0x14`), `GetLevelId` (record n's `+0x04`; records of 0x84 bytes from `+0x14d4`) and `GetCurrentLevelIndex` (`+0x56dc`)"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetLevelId"
+status = "legacy"
+
+[[function]]
+address = 0x0041d718
+name = "GameState_GetCurrentLevelIndex"
+page = "level-loading.md#warriors-functions"
+role = "the workers of `GetNumberOfLevelsPacked` (`+0x56d8`), `GetLevelNamePacked` (the record found by `0x0041f4d0`, its name at `+0x14`), `GetLevelId` (record n's `+0x04`; records of 0x84 bytes from `+0x14d4`) and `GetCurrentLevelIndex` (`+0x56dc`)"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetCurrentLevelIndex"
+status = "legacy"

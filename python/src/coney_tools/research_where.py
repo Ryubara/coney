@@ -21,7 +21,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import Research, load_conventions
 from coney_tools.docs_page import ANCHOR, address_line, heading_ids, heading_name, read_page
 from coney_tools.research_catalog import Catalog, load_catalog
-from coney_tools.research_functions import Entry, SystemFunctions, load_all
+from coney_tools.research_functions import NO_LEVEL, Entry, SystemFunctions, load_all
 from coney_tools.research_glossary import Glossary, Term
 from coney_tools.research_glossary import load as load_glossary
 from coney_tools.research_owners import Claim, Owners
@@ -318,7 +318,7 @@ def address_lines(report: AddressReport) -> list[str]:
         lines.append("owning page: none (no page owns this address yet)")
     if report.record is not None:
         system, entry = report.record
-        lines.append(f"function database: {system}.toml: {entry.level}, described at {entry.page}")
+        lines.append(f"function database: {system}.toml: {entry.level or NO_LEVEL}, described at {entry.page}")
         if entry.role:
             lines.append(f"  role: {entry.role}")
         if entry.coney:
@@ -401,7 +401,7 @@ def _address_json(report: AddressReport) -> dict[str, Any]:
         "database": (
             {
                 "system": record[0],
-                "level": record[1].level,
+                "level": record[1].level or None,
                 "page": record[1].page,
                 "role": record[1].role,
                 "coney": record[1].coney,

@@ -4,22 +4,28 @@
 research_functions.py holds the schema, which a file satisfies on its own. These checks compare the entries with the
 rest of the repository, so a pointer cannot rot:
 
-* the entry's page is a file below docs/research and its section is an anchor of that page;
+* the entry's page is a file below docs/research (or, for a script binding's wrapper, the generated reference page
+  under docs/references/bindings) and its section is an anchor of that page;
 * the address is a function the shared Ghidra project lists (docs/progress/ghidra-functions.tsv) and the name is the
-  one Ghidra has: the fix for a difference is the page or a refreshed listing, never a second name;
+  one Ghidra has: the fix for a difference is the page or a refreshed listing, never a second name; a ported entry
+  (`coney`) at an address in a gap between functions is a warning, since the port is already tagged there; inside a
+  listed function it is an error;
 * the source file that `coney` names exists, and the page a gap's question names has that section;
 * no committed page sits where the docs build writes a system's generated list;
 * the entry's page owns the address (its front matter's `owns`, the most specific owner winning), once the page
   says what it owns: `docs check` runs the same check on the page (`research_owners.check_function_entries`, one of
   research_check's `EXTRA_RULES`).
 
-`coney-tools research render --check` runs them; they are errors (exit 1) except a name Ghidra has not got yet.
+`coney-tools research render --check` runs them; they are errors (exit 1) except a name Ghidra has not got yet, and an
+address it has no function at for an entry that is ported (`coney`).
 
 Research: docs/guides/research-function-database.md
 """
 
 from __future__ import annotations
 
+import bisect
+import posixpath
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -50,16 +56,17 @@ def generated_page(system: str) -> str:
 
 
 class Pages:
-    """The anchors of the research pages, each page read once."""
+    """The anchors of the pages the entries point at, each page read once."""
 
     def __init__(self, root: Path) -> None:
-        self._base = root / RESEARCH_DIR
+        self._root = root
         self._anchors: dict[str, set[str] | None] = {}
 
     def anchors(self, page: str) -> set[str] | None:
-        """The anchors of `page` (below docs/research), or None when it is not a file."""
+        """The anchors of `page` (below docs/research, or `../references/bindings/<group>.md` for a binding's
+        reference page), or None when it is not a file."""
         if page not in self._anchors:
-            path = self._base / page
+            path = self._root / posixpath.normpath(posixpath.join(RESEARCH_DIR.as_posix(), page))
             try:
                 self._anchors[page] = read_page(path.read_text(encoding="utf-8")).anchors if path.is_file() else None
             except (OSError, UnicodeDecodeError):
@@ -70,10 +77,11 @@ class Pages:
         """Why `page.md#section` does not resolve, or an empty string when it does."""
         page, _, section = target.partition("#")
         known = self.anchors(page)
+        shown = posixpath.normpath(posixpath.join(RESEARCH_DIR.as_posix(), page))
         if known is None:
-            return f"the page {(RESEARCH_DIR / page).as_posix()} does not exist"
+            return f"the page {shown} does not exist"
         if section and section not in known:
-            return f"the page {(RESEARCH_DIR / page).as_posix()} has no section {section!r}"
+            return f"the page {shown} has no section {section!r}"
         return ""
 
 
@@ -82,8 +90,19 @@ def entries_by_page(systems: Iterable[SystemFunctions]) -> dict[str, tuple[Entry
     found: dict[str, list[Entry]] = {}
     for system in systems:
         for entry in system.entries:
-            found.setdefault(f"{RESEARCH_DIR.as_posix()}/{entry.page.partition('#')[0]}", []).append(entry)
+            found.setdefault(entry.doc_file, []).append(entry)
     return {page: tuple(entries) for page, entries in found.items()}
+
+
+def _container(
+    starts: list[int], listed: dict[int, progress_research.ListedFunction], address: int
+) -> progress_research.ListedFunction | None:
+    """The listed function whose body holds `address` (past its start), or None when it is in a gap."""
+    index = bisect.bisect_right(starts, address) - 1
+    if index < 0:
+        return None
+    function = listed[starts[index]]
+    return function if function.address < address < function.address + function.size else None
 
 
 def check(
@@ -99,6 +118,7 @@ def check(
     findings = Findings()
     pages = Pages(root)
     listed = {f.address: f for f in listing} if listing is not None else None
+    starts = sorted(listed) if listed is not None else []
     for system in systems:
         where = system.path.as_posix()
         if (root / RESEARCH_DIR / generated_page(system.system)).exists():
@@ -120,10 +140,24 @@ def check(
                 continue
             ghidra = listed.get(entry.address)
             if ghidra is None:
-                findings.errors.append(
+                container = _container(starts, listed, entry.address)
+                message = (
                     f"{label}: not a function entry in {listing_file} "
                     "(a wrong address, or the listing needs `coney-tools progress ghidra`)"
                 )
+                if container is not None:
+                    # Inside a function Ghidra lists, so not the start of another: the address is wrong.
+                    findings.errors.append(
+                        f"{label}: inside {container.name or 'a function'} at "
+                        f"+{entry.address - container.address:#x} ({container.address:#010x}), a wrong address; "
+                        "a function's entry is where the original's code for it starts"
+                    )
+                elif entry.coney:
+                    # A port is tagged with the address it was read at, so the original has a function there that
+                    # the shared Ghidra project may not define yet; any other entry Ghidra lacks is a typo.
+                    findings.warnings.append(message + "; the port counts, with no size, until Ghidra defines it")
+                else:
+                    findings.errors.append(message)
             elif not ghidra.named:
                 findings.warnings.append(
                     f"{label}: Ghidra's listing still calls it {ghidra.name or f'FUN_{entry.address:08x}'}; "
