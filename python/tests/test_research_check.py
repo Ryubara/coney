@@ -28,8 +28,9 @@ from research_support import (
 from coney_tools import research_check
 from coney_tools.docs_check import Context, check_page
 from coney_tools.docs_page import Finding
-from coney_tools.research_check import EXTRA_RULES, Subject
+from coney_tools.research_check import EXTRA_RULES
 from coney_tools.research_evidence import cites, levels_in
+from coney_tools.research_subject import Subject
 
 # --- a page that meets the standard -----------------------------------------------------------------------------------
 
