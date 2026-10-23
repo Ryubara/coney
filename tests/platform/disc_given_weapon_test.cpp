@@ -176,12 +176,15 @@ TEST_CASE("the disc's level80 checkpoint 3: a bat given to a Warrior is held, dr
     run.run(1);
     std::optional<coney::platform::PlayLevelMode::HeldDraw> held = drawnIn(*play, member);
     REQUIRE(held.has_value());
-    CHECK(held->handle == bat);
-    CHECK(held->bone == kRightHand);
-    CHECK(inReach(*held, member));
+    // The guard an `if`: clang-tidy does not follow REQUIRE.
+    if (held.has_value()) {
+        CHECK(held->handle == bat);
+        CHECK(held->bone == kRightHand);
+        CHECK(inReach(*held, member));
+        std::printf("  level80 given bat: held %.0f on bone %zu, %.2f m above his feet\n", held->handle, held->bone,
+                    held->pose.position.z - member.position().z);
+    }
     CHECK_FALSE(drawnIn(*play, player).has_value());
-    std::printf("  level80 given bat: held %.0f on bone %zu, %.2f m above his feet\n", held->handle, held->bone,
-                held->pose.position.z - member.position().z);
 
     // His attacks are the bat's: an AI attacks through the player's dispatcher
     // (docs/research/combat-targets.md#ai-attacks), whose square and cross take the held set's swings (34 and 36 for a
@@ -199,6 +202,8 @@ TEST_CASE("the disc's level80 checkpoint 3: a bat given to a Warrior is held, dr
     run.run(90);
     held = drawnIn(*play, member);
     REQUIRE(held.has_value());
-    CHECK(held->handle == bat);
-    CHECK(inReach(*held, member));
+    if (held.has_value()) {
+        CHECK(held->handle == bat);
+        CHECK(inReach(*held, member));
+    }
 }

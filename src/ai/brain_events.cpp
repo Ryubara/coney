@@ -191,6 +191,9 @@ void gloatOver(Brain& downed) {
     const float middle = (downed.meleeNear() + downed.meleeFar()) / 2.0F;
     const anim::Vec3 where = downed.human().position();
     // A copy: a taunter's cleared actions may change the slot list.
+    // NOLINTNEXTLINE(performance-unnecessary-copy-initialization): a false positive; the copy is the point, since
+    // clearActions() aborts actions through virtual calls the check cannot see into, and any of them may change the
+    // list `downed` holds while the loop runs.
     const std::vector<Brain*> holders = downed.attackSlots();
     for (Brain* taunter : holders) {
         if (taunter == nullptr ||

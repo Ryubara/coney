@@ -655,15 +655,16 @@ std::vector<UncuffMeasured> measureUncuffPoses(coney::platform::RenderEngine& en
     level.play()->teleportPlayer(
         coney::world_objects::Placement{.position = {-195.8F, 226.6F, 1.3F}, .headingDegrees = 0.0F});
     int frame = 0;
-    REQUIRE(level.runUntil(
-        [&level, &frame] {
-            constexpr int kTapEvery = 30;
-            level.pad.buttons = (++frame % kTapEvery == 0) ? coney::pad::kCross : 0;
-            return std::ranges::count_if(level.log, [](const std::string& line) {
-                       return line.starts_with("uncuff: human ") && line.contains(" arrested");
-                   }) >= 2;
-        },
-        kWait));
+    // A local, not written inside REQUIRE: clang-tidy reads the whole lambda as part of REQUIRE's condition.
+    const auto tapUntilBothCuffed = [&level, &frame] {
+        constexpr int kTapEvery = 30;
+        ++frame;
+        level.pad.buttons = (frame % kTapEvery == 0) ? coney::pad::kCross : 0;
+        return std::ranges::count_if(level.log, [](const std::string& line) {
+                   return line.starts_with("uncuff: human ") && line.contains(" arrested");
+               }) >= 2;
+    };
+    REQUIRE(level.runUntil(tapUntilBothCuffed, kWait));
     level.pad.buttons = 0;
     REQUIRE(skipToPad(level, kWait));
 
