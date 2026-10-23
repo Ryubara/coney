@@ -80,10 +80,10 @@ constexpr std::uint32_t kBBits = 9;
 constexpr std::int64_t kMaxArgS = ((std::int64_t{1} << 26) - 1) >> 1;
 // The B operand of CALL that asks for every result.
 constexpr std::uint32_t kMultipleResults = 255;
-// How many list items one SETLIST stores at most; its A operand counts blocks of this size. The game's build flushes
-// every 62 items, not stock Lua 4.0's 64 (`luaV_execute`, 0x00334478, multiplies A by 0x3e; the largest B on the disc
-// is 62): with 64, every list item past the 62nd lands at the wrong index (docs/research/scripting.md, "Notes for
-// implementers").
+// How many list items one SETLIST stores at most; its A operand counts blocks of this size. The game flushes every 62
+// items (`luaV_execute`, 0x00334478, multiplies A by 0x3e; the largest B on the disc is 62), which is stock Lua 4.0.1:
+// its LFIELDS_PER_FLUSH of 64 is capped at a quarter of the 250-slot stack limit. Using 64 would put every list item
+// past the 62nd at the wrong index (docs/research/formats/lua-bytecode.md).
 constexpr std::uint32_t kFieldsPerFlush = 62;
 
 // The operands of one instruction.
