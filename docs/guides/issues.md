@@ -380,7 +380,10 @@ event or push as above, `/claim renew`) releases the claim, and a warning commen
 clock does not run while the claim waits (an open pull request of the claimant, a paused label); when that ends the 72
 hours start again. Released means unassigned, `S-ready-to-start`, the card marked released. Before a release the Action
 reads the card and the comments again and gives up if either changed since the pass began, and if the card changes while
-it releases, it puts the assignee and the label back (only if the claim is still held) and starts the pass over. With
+it releases, it puts the assignee and the label back (only if the claimant still holds an active card on the issue, so a
+re-claim made meanwhile counts) and starts the pass over. That undo is best effort against writers outside the queue:
+it reads the cards and then assigns, and a hand-run `claim run` or `claim sweep` can still act between the two, which
+no check closes without a lock. The sweep (or the audit) catches the result on its next pass. With
 `claims.adopt` on, the sweep also gives a card ("assigned by hand") to an issue someone assigned in the web page, and
 its clock starts. When an issue has two assignees, the next pass leaves one: the earliest claim keeps the issue, a
 hand-added second assignee is removed, and a claim that lost a race is marked `lost` and names the winner.
