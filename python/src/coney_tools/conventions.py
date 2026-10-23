@@ -719,6 +719,8 @@ class ClaimLimits:
 
     maintainer: int
     contributor: int
+    #: The most issues one task id may hold, so a `task:` id is no way round the limit.
+    issues_per_task: int
 
 
 @dataclass(frozen=True)
@@ -734,7 +736,9 @@ class Claims:
     commands: ClaimCommands
     #: The stages `/progress` may name.
     stages: tuple[str, ...]
-    #: The `author_association` values of a comment that make its author a maintainer.
+    #: The repository permissions (`admin`, `write`) that make a commenter a maintainer.
+    maintainer_permissions: tuple[str, ...]
+    #: The `author_association` values that decide only when GitHub will not say the permission.
     maintainer_associations: tuple[str, ...]
     limits: ClaimLimits
     critical_label: str
@@ -743,6 +747,16 @@ class Claims:
     working_label: str
     review_label: str
     released_label: str
+    #: The longest scope text after `scope:`.
+    scope_max_characters: int
+    #: The `Fixes #N` lines of one pull request event that are acted on; the rest are ignored.
+    closing_per_event: int
+    #: Status labels a claimed issue keeps; the release clock waits while one is on it.
+    paused_labels: tuple[str, ...]
+    #: Whether the sweep gives a card to an issue assigned by hand.
+    adopt: bool
+    #: Whether the warning and the release for idleness are enforced.
+    release: bool
     deadline_hours: int
     warn_hours: int
     reply_keep_hours: int
@@ -1351,9 +1365,15 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             "reply_marker",
             "commands",
             "stages",
+            "maintainer_permissions",
             "maintainer_associations",
             "limits",
             "sweep",
+            "scope_max_characters",
+            "closing_per_event",
+            "paused_labels",
+            "adopt",
+            "release",
             *labels,
             *counts,
         ),
@@ -1375,9 +1395,11 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         if not _MARKER.match(markers[key]):
             raise _fail(_at(where, key), "letters, digits and hyphens only (it sits inside an HTML comment)")
     limits_where = _at(where, "limits")
-    limits = _table(table["limits"], limits_where, ("maintainer", "contributor"))
+    limits = _table(table["limits"], limits_where, ("maintainer", "contributor", "issues_per_task"))
     names = {key: _text(table[key], _at(where, key)) for key in labels}
     _names_in(names.values(), label_names, where, "in labels.list")
+    paused = _texts(table["paused_labels"], _at(where, "paused_labels"))
+    _names_in(paused, label_names, _at(where, "paused_labels"), "in labels.list")
     numbers = {key: _count(table[key], _at(where, key)) for key in counts}
     if numbers["warn_hours"] >= numbers["deadline_hours"]:
         raise _fail(_at(where, "warn_hours"), "must be less than deadline_hours")
@@ -1387,10 +1409,17 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         reply_marker=markers["reply_marker"],
         commands=ClaimCommands(**{name: str(commands[name]) for name in _COMMAND_GROUPS}),
         stages=_texts(table["stages"], _at(where, "stages")),
+        maintainer_permissions=_texts(table["maintainer_permissions"], _at(where, "maintainer_permissions")),
         maintainer_associations=_texts(table["maintainer_associations"], _at(where, "maintainer_associations")),
+        scope_max_characters=_count(table["scope_max_characters"], _at(where, "scope_max_characters")),
+        closing_per_event=_count(table["closing_per_event"], _at(where, "closing_per_event")),
+        paused_labels=paused,
+        adopt=_flag(table["adopt"], _at(where, "adopt")),
+        release=_flag(table["release"], _at(where, "release")),
         limits=ClaimLimits(
             maintainer=_count(limits["maintainer"], _at(limits_where, "maintainer")),
             contributor=_count(limits["contributor"], _at(limits_where, "contributor")),
+            issues_per_task=_count(limits["issues_per_task"], _at(limits_where, "issues_per_task")),
         ),
         critical_label=names["critical_label"],
         claimable_status=names["claimable_status"],

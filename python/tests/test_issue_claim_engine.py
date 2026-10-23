@@ -7,7 +7,7 @@ import pytest
 from claim_support import BOT, RULES, START, Clock, FakeGitHub, make_engine
 
 from coney_tools import issue_claim_model as model
-from coney_tools.issue_claim_engine import Engine
+from coney_tools.issue_claim_engine import Activity, Engine
 from coney_tools.issue_claim_remote import Blocker
 
 
@@ -109,7 +109,7 @@ def test_an_issue_held_by_someone_else_is_refused(engine: Engine, github: FakeGi
     engine.reconcile(10)
     claim(github, 10, "bob")
     engine.reconcile(10)
-    assert "already claimed by @alice" in reasons(github, 10)
+    assert "already claimed by alice" in reasons(github, 10)
     assert github.view(10).assignees == ("alice",)
 
 
@@ -125,7 +125,7 @@ def test_the_earliest_claim_wins_even_when_only_one_run_happens(
     engine.reconcile(10)
     assert github.view(10).assignees == ("alice",)
     assert card_of(github, 10).claimant == "alice" and card_of(github, 10).handled == (first,)
-    assert reasons(github, 10).count("already claimed by @alice") == 2
+    assert reasons(github, 10).count("already claimed by alice") == 2
     assert [c for c in github.comments(10) if c.user_type != "Bot"] == []
 
 
@@ -256,10 +256,10 @@ def test_progress_renew_and_scope_belong_to_the_claimant(engine: Engine, github:
     )
     assert reasons(github, 10).count("only the claimant") == 2
     clock.advance(hours=1)
-    claim(github, 10, "alice", "/claim scope: src/ai/ task: t-1")
+    claim(github, 10, "alice", "/claim scope: src/ai/")
     engine.reconcile(10)
     card = card_of(github, 10)
-    assert (card.scope, card.task, card.last_activity_why) == (("src/ai/",), "t-1", "scope")
+    assert (card.scope, card.task, card.last_activity_why) == (("src/ai/",), None, "scope")
     claim(github, 10, "alice", "/claim")
     engine.reconcile(10)
     assert "already yours" in reasons(github, 10)
@@ -274,13 +274,13 @@ def test_unclaim_by_the_claimant_or_a_maintainer_releases(engine: Engine, github
     engine.reconcile(10)
     claim(github, 10, "mallory", "/unclaim")
     engine.reconcile(10)
-    assert github.view(10).assignees == ("alice",) and "only @alice or a maintainer" in reasons(github, 10)
+    assert github.view(10).assignees == ("alice",) and "only alice or a maintainer" in reasons(github, 10)
     claim(github, 10, "Ryubara", "/unclaim", "OWNER")
     engine.reconcile(10)
     view = github.view(10)
     assert view.assignees == () and "S-ready-to-start" in view.labels and "S-in-progress" not in view.labels
     card = card_of(github, 10)
-    assert card.status == "released" and "unclaimed by @Ryubara" in (card.released_why or "")
+    assert card.status == "released" and "unclaimed by Ryubara" in (card.released_why or "")
     claim(github, 10, "bob")
     engine.reconcile(10)
     assert github.view(10).assignees == ("bob",) and len(github.cards(10)) == 2
@@ -307,7 +307,7 @@ def test_an_open_pull_request_changes_the_label_and_the_status_and_is_activity(
     view = github.view(10)
     assert "S-pending-review" in view.labels and "S-in-progress" not in view.labels
     card = card_of(github, 10)
-    assert (card.status, card.pr, card.last_activity_why) == ("pr-open", 50, "push")
+    assert (card.status, card.pr, card.last_activity_why) == ("pr-open", 50, "pull request")
     assert "PR #50 open" in github.cards(10)[-1].body and github.others(10) == []
 
 
@@ -377,8 +377,8 @@ def test_a_push_reported_by_the_event_is_activity(engine: Engine, github: FakeGi
     clock.advance(hours=50)
     github.add_pr(50)
     github.link_pr(10, 50, "open")
-    engine.reconcile(10, push_at=clock.now())
-    assert github.others(10) == [] and card_of(github, 10).last_activity_why == "push"
+    engine.reconcile(10, Activity(clock.now(), "alice"))
+    assert github.others(10) == [] and card_of(github, 10).last_activity_why == "pull request"
 
 
 def test_a_hand_unassignment_ends_the_claim(engine: Engine, github: FakeGitHub) -> None:
@@ -420,7 +420,7 @@ def test_two_held_cards_on_one_issue_keep_the_earliest(engine: Engine, github: F
     engine.reconcile(10)
     assert github.view(10).assignees == ("alice",)
     loser = model.parse_card(github.cards(10)[1].body, RULES)
-    assert loser is not None and (loser.status, loser.released_why) == ("lost", "lost to @alice")
+    assert loser is not None and (loser.status, loser.released_why) == ("lost", "lost to alice")
     assert card_of(github, 10).claimant == "bob"  # the newest card is the loser's, now ended
     engine2 = make_engine(github, clock)
     assert engine2.reconcile(10) == []

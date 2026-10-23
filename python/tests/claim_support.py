@@ -14,11 +14,14 @@ from datetime import UTC, datetime, timedelta
 from audit_support import CONVENTIONS
 
 from coney_tools.config import ConfigError
+from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import command_shaped
 from coney_tools.issue_claim_remote import Blocker, Comment, IssueView, LinkedPr
 
-RULES = CONVENTIONS.claims
+#: The conventions with adoption and release switched on, as they are from the cutover; the engine tests run on them.
+LIVE = replace(CONVENTIONS, claims=replace(CONVENTIONS.claims, adopt=True, release=True))
+RULES = LIVE.claims
 START = datetime(2026, 10, 22, 12, 0, 0, tzinfo=UTC)
 BOT = RULES.bot_login
 
@@ -61,6 +64,10 @@ class FakeGitHub:
         self.actor = "Ryubara"
         self.association_of_actor = "OWNER"
         self.refuse_delete = False
+        #: login -> repository permission; unlisted people have none, and `None` values mean GitHub will not say.
+        self.permissions: dict[str, str | None] = {"Ryubara": "admin"}
+        #: Raise on the next `add_label` (a claim that fails half way).
+        self.fail_add_label = 0
         self.unassignable: set[str] = set()
         self.blockers: dict[int, Blocker] = {}
         self.writes: list[str] = []
@@ -86,10 +93,12 @@ class FakeGitHub:
         """Add a pull request."""
         self.items[number] = Item(IssueView(number, "pr", "open", None, True, (), (), ""))
 
-    def link_pr(self, issue: int, number: int, state: str = "open", head_date: datetime | None = None) -> None:
+    def link_pr(
+        self, issue: int, number: int, state: str = "open", head_date: datetime | None = None, author: str = "alice"
+    ) -> None:
         """Make pull request `number` close `issue`."""
         self.items[issue].prs = [pr for pr in self.items[issue].prs if pr.number != number]
-        self.items[issue].prs.append(LinkedPr(number, state, head_date))
+        self.items[issue].prs.append(LinkedPr(number, state, head_date, author))
 
     def say(self, number: int, login: str, body: str, association: str = "NONE") -> int:
         """A person comments; returns the comment id."""
@@ -182,7 +191,10 @@ class FakeGitHub:
         self.writes.append(f"unassign {number} {','.join(logins)}")
 
     def add_label(self, number: int, label: str) -> None:
-        """Add a label."""
+        """Add a label (or fail, `fail_add_label` times)."""
+        if self.fail_add_label:
+            self.fail_add_label -= 1
+            raise ConfigError("cannot write to GitHub with gh (gh api failed: boom)")
         view = self.items[number].view
         if label not in view.labels:
             self.items[number].view = replace(view, labels=(*view.labels, label))
@@ -226,11 +238,24 @@ class FakeGitHub:
         """The signed-in account."""
         return self.actor
 
-    def association(self, login: str) -> str:
-        """The signed-in person's association; everyone else is a stranger."""
-        return self.association_of_actor if login == self.actor else "NONE"
+    def permission(self, login: str) -> str | None:
+        """The repository permission of a person: `none` unless listed in `permissions`."""
+        return self.permissions.get(login, "none")
 
 
-def make_engine(github: FakeGitHub, clock: Clock) -> Engine:
-    """An engine over the fake with the fake clock and the real conventions."""
-    return Engine(github, CONVENTIONS, clock.now)
+def make_engine(github: FakeGitHub, clock: Clock, conventions: Conventions = LIVE) -> Engine:
+    """An engine over the fake with the fake clock; by default with adoption and release on."""
+    return Engine(github, conventions, clock.now)
+
+
+def plant_claim(
+    github: FakeGitHub, number: int, login: str, at: datetime | None = None, task: str | None = None
+) -> None:
+    """A claim another run made: the assignee, the working label and a card, without going through the engine."""
+    from coney_tools.issue_claim_model import Card, render_card
+
+    view = github.items[number].view
+    kept = tuple(label for label in view.labels if not label.startswith("S-"))
+    github.items[number].view = replace(view, assignees=(login,), labels=(*kept, RULES.working_label))
+    card = Card(issue=number, claimant=login, claimed_at=at or github.clock.now(), task=task)
+    github.create_comment(number, render_card(card, RULES))

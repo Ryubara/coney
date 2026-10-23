@@ -120,6 +120,11 @@ def parse_command(body: str, rules: Claims) -> Command | Rejected | None:
     found = re.fullmatch(commands.claim, text)
     if found:
         scope_text = found.group("scope")
+        if scope_text is not None and len(scope_text.strip()) > rules.scope_max_characters:
+            return Rejected(
+                f"the scope is {len(scope_text.strip())} characters; {rules.scope_max_characters} at most "
+                "(name the folders, not every file)"
+            )
         try:
             scope = parse_scope(scope_text) if scope_text is not None else None
         except ValueError as error:
@@ -303,7 +308,12 @@ def render_card(card: Card, rules: Claims) -> str:
     if card.task:
         lines.append(f"- **Task:** `{card.task}`")
     lines.append("- **Scope:** " + (", ".join(f"`{token}`" for token in card.scope) if card.scope else "not stated"))
-    if card.active:
+    if card.active and not rules.release:
+        lines.append(
+            "- **Expiration:** not enforced yet; it starts with the new workflow "
+            f"(it would be {show_time(card.deadline(rules))})"
+        )
+    elif card.active:
         deadline = card.deadline(rules)
         lines.append(
             f'- **Expiration:** <relative-time datetime="{iso_time(deadline)}">{show_time(deadline)}</relative-time>'

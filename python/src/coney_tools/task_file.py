@@ -121,6 +121,11 @@ def parse_task_file(text: str, tasks: Tasks) -> TaskFile:
     )
 
 
+def quote_block(text: str) -> str:
+    """Text from an issue, quoted line by line (`> `), so none of its lines can start a section of the task file."""
+    return "\n".join(f"> {line}".rstrip() for line in text.replace("\r\n", "\n").split("\n"))
+
+
 def slug(title: str) -> str:
     """A task id's words from an issue title: `gameplay: Fix the fight goal` is `fix-the-fight-goal`, 40 characters
     at most, cut at a word."""

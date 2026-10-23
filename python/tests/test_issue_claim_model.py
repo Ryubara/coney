@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.issue_claim_model: the command grammar, scopes, the claim card and its hidden JSON."""
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -9,7 +10,7 @@ from audit_support import CONVENTIONS
 from coney_tools import issue_claim_model as model
 from coney_tools.issue_claim_model import Card, Command, Rejected
 
-RULES = CONVENTIONS.claims
+RULES = replace(CONVENTIONS.claims, release=True)
 T0 = datetime(2026, 10, 22, 14, 3, 11, tzinfo=UTC)
 
 

@@ -473,6 +473,11 @@ def test_the_real_claim_rules() -> None:
     claims = load_conventions(REPO).claims
     assert claims.limits.maintainer == 3 and claims.limits.contributor == 2
     assert (claims.warn_hours, claims.deadline_hours) == (48, 72)
+    assert claims.limits.issues_per_task == 3 and claims.closing_per_event == 10 and claims.scope_max_characters == 400
+    assert claims.paused_labels == ("S-blocked", "S-needs-info")
+    # Both switch on at the cutover, by a change to this file.
+    assert (claims.adopt, claims.release) == (False, False)
+    assert claims.maintainer_permissions == ("admin", "write") and claims.maintainer_associations == ("OWNER",)
     assert claims.claimable_status == claims.released_label == "S-ready-to-start"
     assert claims.critical_label == "P-critical" and claims.bot_login == "github-actions[bot]"
     assert "assigned" in claims.stages and "fix" in claims.stages

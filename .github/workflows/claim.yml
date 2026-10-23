@@ -22,7 +22,7 @@ on:
   issues:
     types: [closed, reopened, assigned, unassigned]
   pull_request_target:
-    types: [opened, reopened, edited, synchronize, closed]
+    types: [opened, reopened, ready_for_review, edited, synchronize, closed]
   # Must equal claims.sweep in .github/conventions.yml (a test checks it).
   schedule:
     - cron: "7 * * * *"

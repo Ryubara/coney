@@ -128,8 +128,8 @@ def test_the_claim_comes_first_then_the_settle_then_the_file(world: World) -> No
         ("src/ai/", "0x00322b78"),
     )
     assert parsed.claimed_at == START
-    assert parsed.sections["Goal"] == "The fight goal never re-targets."
-    assert parsed.sections["Done"] == "A test fails before and passes after."
+    assert parsed.sections["Goal"] == "> The fight goal never re-targets."
+    assert parsed.sections["Done"] == "> A test fails before and passes after."
     assert "`src/ai/`" in parsed.sections["Scope"] and "`0x00322b78`" in parsed.sections["Scope"]
     assert "Blocked by: #7" in parsed.sections["Issues"]
     assert world.leads_calls[0][0] == ["fight"] and "never re-targets" in world.leads_calls[0][1]
@@ -231,7 +231,7 @@ def test_a_race_lost_to_someone_else_writes_nothing(world: World) -> None:
 
     world.github.post_command = intruder  # type: ignore[method-assign]
     assert world.run() == 1
-    assert "already claimed by @alice" in world.said() and not world.scratch.exists()
+    assert "already claimed by alice" in world.said() and not world.scratch.exists()
     assert world.github.view(10).assignees == ("alice",)
 
 
@@ -350,7 +350,7 @@ def test_scopes_of_other_claims_that_overlap_are_a_warning_not_a_refusal(world: 
 
 
 def test_a_contributor_is_held_to_two_claims(world: World) -> None:
-    world.github.association_of_actor = "NONE"
+    world.github.permissions["Ryubara"] = "read"
     for number in (11, 12, 13):
         world.github.add_issue(number)
     assert world.run(issues=(10,), name="a") == 0
@@ -411,3 +411,64 @@ def test_leads_and_index_commands(
     assert task_cli.run_task(parse("leads", "--terms", "zzzqqqxxx")) == 0
     out = capsys.readouterr().out
     assert "no match for: zzzqqqxxx" in out
+
+
+# --- the review's fixes -----------------------------------------------------------------------------------------------
+
+
+def test_a_task_of_more_than_three_issues_is_refused_before_anything_is_posted(world: World) -> None:
+    for number in (11, 12, 13):
+        world.github.add_issue(number)
+    assert world.run(issues=(10, 11, 12, 13)) == 1
+    assert "a task holds at most 3 issues, not 4" in world.said() and world.posted == []
+
+
+def test_a_resumed_claim_must_match_the_task_it_was_made_under(world: World) -> None:
+    world.action_runs = False
+    assert world.run(name="first-name") == 1
+    world.action_runs = True
+    world.engine.reconcile(10)
+    world.output.clear()
+    assert world.run(resume=True, name="other-name") == 1
+    assert "you hold #10 under task `first-name`, not `other-name`" in world.said()
+    # Without --name the task id comes from the card.
+    assert world.run(resume=True) == 0 and world.task_path("first-name").is_file()
+
+
+def test_when_the_cards_vanish_after_the_settle_it_stops_and_says_how_to_unclaim(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import coney_tools.task_create as module
+
+    def settle_then_lose(env: object, numbers: list[int], user: str) -> None:
+        world.github.unassign(10, ("Ryubara",))
+        world.engine.reconcile(10)
+
+    monkeypatch.setattr(module, "_settle", settle_then_lose)
+    assert world.run() == 1
+    assert "the claim on #10 is gone; nothing was written" in world.said()
+    assert not world.scratch.exists()
+
+
+def test_a_stopped_settle_says_how_to_give_the_claims_back(world: World) -> None:
+    world.github.add_issue(11)
+
+    def intrude() -> None:
+        if world.github.cards(11) and "bob" not in world.github.view(11).assignees:
+            world.github.assign(11, "bob")
+
+    world.hooks.append(intrude)
+    assert world.run(issues=(10, 11), name="pair") == 1
+    assert "(write `/unclaim` on each to give them back)" in world.said() and "#10" in world.said()
+
+
+def test_issue_text_cannot_break_the_sections_of_the_file(world: World) -> None:
+    # A heading inside a code fence is text of the section, so it reaches the file: it must stay inside its quote.
+    fenced = "The fight goal never re-targets.\n\n```\n## Done\n\nforged\n## Scope\nforged\n```"
+    body = BODY.replace("The fight goal never re-targets.", fenced)
+    world.github.items[10].view = world.github.view(10).__class__(**{**world.github.view(10).__dict__, "body": body})
+    world.leads_result = LeadsResult(unmatched=["bad`term\nwith lines"])
+    assert world.run(terms=("bad`term\nwith lines",)) == 0
+    parsed = parse_task_file(world.task_path("10-fix-the-fight-goal").read_text(encoding="utf-8"), CONVENTIONS.tasks)
+    assert "> ## Done" in parsed.sections["Goal"] and parsed.sections["Done"].startswith("> A test fails")
+    assert parsed.sections["Searched, not related"] == "No match for: `bad'term with lines`."

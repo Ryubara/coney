@@ -430,6 +430,24 @@ def test_info_and_progress_ages_count_from_the_last_activity() -> None:
     assert items(found(gh.issue_progress_idle, ctx)) == ["#3"]
 
 
+def test_an_issue_in_progress_or_review_with_nobody_assigned_is_an_orphan() -> None:
+    labels = ("task", "A-tools", "P-low")
+    ctx = context(
+        issues=[
+            issue(1, labels=(*labels, "S-in-progress"), assignees=()),
+            issue(2, labels=(*labels, "S-pending-review"), assignees=()),
+            issue(3, labels=(*labels, "S-in-progress")),
+            issue(4, labels=(*labels, "S-ready-to-start"), assignees=()),
+            issue(5, labels=(*labels, "S-in-progress"), assignees=(), state="CLOSED"),
+        ]
+    )
+    assert items(found(gh.issue_claim_orphan, ctx)) == ["#1", "#2"]
+
+
+def test_the_orphan_check_is_report_only() -> None:
+    assert "issue.claim-orphan" in CONVENTIONS.hygiene.comments.report_only
+
+
 def test_a_pending_review_issue_needs_an_open_pull_request_that_names_it() -> None:
     pending = ("task", "A-tools", "P-low", "S-pending-review")
     ctx = context(

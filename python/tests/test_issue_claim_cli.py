@@ -54,12 +54,12 @@ def test_a_comment_event_runs_the_claim_and_a_push_event_is_activity() -> None:
     cli.run_event(
         engine,
         "pull_request_target",
-        {"action": "synchronize", "pull_request": {"body": "Fixes #10"}},
+        {"action": "synchronize", "pull_request": {"body": "Fixes #10", "user": {"login": "alice"}}},
         CONVENTIONS,
         clock.now,
     )
     card = model.parse_card(github.cards(10)[-1].body, RULES)
-    assert card is not None and card.last_activity_why == "push" and github.others(10) == []
+    assert card is not None and card.last_activity_why == "pull request" and github.others(10) == []
 
 
 def test_a_schedule_event_runs_the_sweep() -> None:
@@ -164,6 +164,7 @@ def test_the_listing_filters_are_built_in_gh_so_only_matching_comments_are_downl
     remote(gh).recent_commands(START)
     cards, replies, commands = (" ".join(call) for call in gh.calls)
     assert 'startswith("<!-- coney-claim -->")' in cards and BOT in cards
+    assert "issues/comments?per_page=100" in cards and "issues/comments?per_page=100" in replies
     assert 'startswith("<!-- coney-claim-reply:")' in replies
     assert "since=2026-10-22T12:00:00Z" in commands and "claim|unclaim|progress" in commands
 
@@ -255,6 +256,23 @@ def test_linked_pull_requests_carry_their_state_and_head_date() -> None:
     found = remote(Gh({"graphql": out})).linked_prs(5)
     assert [(pr.number, pr.state) for pr in found] == [(3, "open"), (4, "merged")] and found[0].head_date == START
     assert remote(Gh({"graphql": "{}"})).linked_prs(5) == []
+
+
+def test_the_permission_is_asked_of_github_and_unknown_is_not_none() -> None:
+    assert remote(Gh({"permission": "write\n"})).permission("alice") == "write"
+    assert remote(Gh(fail={"permission"})).permission("alice") is None
+
+    def raising(arguments: list[str]) -> str:
+        raise OSError("gh api failed: Not Found (HTTP 404)")
+
+    assert GhRemote(RULES.bot_login, RULES.card_marker, RULES.reply_marker, raising).permission("alice") == "none"
+
+
+def test_a_linked_pull_request_carries_its_author() -> None:
+    nodes = [{"number": 3, "state": "OPEN", "merged": False, "author": {"login": "alice"}, "commits": {"nodes": []}}]
+    out = json.dumps({"data": {"repository": {"issue": {"closedByPullRequestsReferences": {"nodes": nodes}}}}})
+    (found,) = remote(Gh({"graphql": out})).linked_prs(5)
+    assert found.author == "alice"
 
 
 def test_a_gh_failure_is_a_config_error() -> None:

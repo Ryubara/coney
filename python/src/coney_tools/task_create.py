@@ -27,7 +27,7 @@ from coney_tools.issue_claim_model import Card, Command, parse_command, reply_ta
 from coney_tools.issue_claim_remote import IssueView, Remote
 from coney_tools.issue_claim_rules import check_claim
 from coney_tools.issue_form import section_heading, section_text
-from coney_tools.task_file import NO_FAILING_TEST, TaskFile, render_task_file, slug
+from coney_tools.task_file import NO_FAILING_TEST, TaskFile, quote_block, render_task_file, slug
 from coney_tools.task_leads import LeadsResult, Match
 
 _TASK_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
@@ -107,7 +107,8 @@ def searched_line(result: LeadsResult, terms: tuple[str, ...]) -> str:
         return "No terms were searched."
     if not result.unmatched:
         return "Every term matched something; prune the table above of what is not related."
-    return "No match for: " + ", ".join(f"`{term}`" for term in result.unmatched) + "."
+    shown = (" ".join(term.replace("`", "'").split()) for term in result.unmatched)
+    return "No match for: " + ", ".join(f"`{term}`" for term in shown) + "."
 
 
 def _scope_section(scope: tuple[str, ...], overlaps: list[str]) -> str:
@@ -149,8 +150,13 @@ def build_task_file(
     first = issues[0]
     summary_heading = section_heading(conventions, "summary")
     done_heading = section_heading(conventions, "done")
-    goal = (section_text(first.body, summary_heading) if summary_heading else None) or f"See issue #{first.number}."
-    done = (section_text(first.body, done_heading) if done_heading else None) or f"See issue #{first.number}."
+    # Issue text is quoted line by line: a line of it that starts with "## " must not become a section of the file.
+    goal = quote_block(
+        (section_text(first.body, summary_heading) if summary_heading else None) or f"See issue #{first.number}."
+    )
+    done = quote_block(
+        (section_text(first.body, done_heading) if done_heading else None) or f"See issue #{first.number}."
+    )
     tests = (
         NO_FAILING_TEST if kind in ("docs", "tooling") else "A test that fails before the change and passes after it."
     )
@@ -282,8 +288,8 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
     rules = env.conventions.claims
     out = env.out
     user = env.remote.current_user()
-    association = env.remote.association(user)
     engine = Engine(env.remote, env.conventions, env.now)
+    maintainer = engine.is_maintainer(user)
     held = engine.held_cards()
     wanted = (request.fix_of,) if request.fix_of is not None else request.issues
     issues = [env.remote.issue(number) for number in wanted]
@@ -300,7 +306,13 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
         return 1
     if request.fix_of is not None:
         return _fix_task(request, env, user, issues[0], held.get(request.fix_of))
-    task_id = request.name or f"{issues[0].number}-{slug(issues[0].title)}"
+    if len(issues) > rules.limits.issues_per_task:
+        out(f"refused: a task holds at most {rules.limits.issues_per_task} issues, not {len(issues)}: split it")
+        return 1
+    # A claim that landed late is resumed under the task id it was made with.
+    held_tasks = [held[i.number].task for i in issues if i.number in held and held[i.number].claimant == user]
+    resumed_id = next((task for task in held_tasks if task), None) if request.resume else None
+    task_id = request.name or resumed_id or f"{issues[0].number}-{slug(issues[0].title)}"
     if not _TASK_ID.match(task_id):
         out(f"refused: '{task_id}' is not a task id (lower case letters, digits and hyphens, 60 at most)")
         return 1
@@ -315,12 +327,16 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
             if not request.resume:
                 out(f"refused: you hold #{issue.number} already (--resume continues a claim that landed late)")
                 return 1
+            if mine.task != task_id:
+                held_as = f"task `{mine.task}`" if mine.task else "no task"
+                out(f"refused: you hold #{issue.number} under {held_as}, not `{task_id}`: pass --name to match it")
+                return 1
             continue
         refusal = check_claim(
             Command("claim", scope=request.scope or None, task=task_id),
             issue,
             user,
-            association,
+            maintainer,
             mine,
             held.values(),
             env.remote,
@@ -357,24 +373,35 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
         card, why = _wait_for_card(env, issue.number, comment_id, user)
         if card is None:
             out(f"refused: {why}")
-            if claimed:
-                out(f"already claimed: {', '.join(f'#{n}' for n in claimed)} (`/unclaim` on each to give them back)")
+            _unclaim_hint(env, claimed)
             return 1
         claimed.append(issue.number)
+    mine_now = [n for n in numbers if n in claimed or (n in held and held[n].claimant == user)]
     out(f"claimed; settling for {rules.settle_seconds} s")
     problem = _settle(env, numbers, user)
     if problem is not None:
         out(f"stopped: {problem}; nothing was written")
+        _unclaim_hint(env, mine_now)
         return 1
-    claimed_at = min(
-        card.claimed_at for number in numbers if (card := _held_card(env.remote, env.conventions, number)) is not None
-    )
+    cards = {number: _held_card(env.remote, env.conventions, number) for number in numbers}
+    gone = [number for number, card in cards.items() if card is None or card.claimant != user]
+    if gone:
+        out(f"stopped: the claim on {', '.join(f'#{n}' for n in gone)} is gone; nothing was written")
+        _unclaim_hint(env, [n for n in mine_now if n not in gone])
+        return 1
+    claimed_at = min(card.claimed_at for card in cards.values() if card is not None)
     task = build_task_file(request, task_id, kind, user, claimed_at, issues, leads, overlaps, env.conventions)
     path = _write(env, task)
     for number in numbers:
         env.remote.post_command(number, "/progress assigned")
     out(f"wrote {path}")
     return 0
+
+
+def _unclaim_hint(env: CreateEnv, numbers: list[int]) -> None:
+    """Say how to give back the claims that were made before the task stopped."""
+    if numbers:
+        env.out(f"claimed: {', '.join(f'#{n}' for n in numbers)} (write `/unclaim` on each to give them back)")
 
 
 def _fix_task(request: CreateRequest, env: CreateEnv, user: str, issue: IssueView, card: Card | None) -> int:

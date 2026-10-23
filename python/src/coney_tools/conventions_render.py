@@ -289,22 +289,34 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"`/unclaim` sets `{claims.released_label}`."
     )
     lines += _bullet(
-        f"A maintainer (a commenter whose GitHub association is one of {_codes(claims.maintainer_associations)}) "
-        f"holds {limits.maintainer} open claims at most, a contributor {limits.contributor}. Issues whose cards "
-        "share a `task:` id count as one claim."
+        f"A maintainer (someone with {_join_and([f'`{name}`' for name in claims.maintainer_permissions])} permission "
+        f"on the repository) holds {limits.maintainer} open claims at most, a contributor {limits.contributor}. "
+        f"Issues whose cards share a `task:` id count as one claim, and a task holds {limits.issues_per_task} issues "
+        "at most."
     )
     lines += _bullet(
-        f"While an open `{claims.critical_label}` issue has no claim, only a `{claims.critical_label}` issue can be "
-        "claimed."
+        f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "
+        f"`{claims.critical_label}` issue can be claimed."
     )
     lines += _bullet(
-        f"A claim is released after {claims.deadline_hours} hours without activity (`/progress`, a push to its pull "
-        f"request, `/claim renew`); the claimant is mentioned at {claims.warn_hours} hours. The stages `/progress` "
-        f"accepts: {_codes(claims.stages)}."
+        f"A claimed issue that carries {_codes(claims.paused_labels)} keeps that label; the claim stays and its "
+        "release clock waits."
+    )
+    state = "on" if claims.release else "off until the cutover"
+    lines += _bullet(
+        f"Release is {state}: a claim is released after {claims.deadline_hours} hours without activity (`/progress`, a "
+        f"pull request opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is "
+        f"mentioned at {claims.warn_hours} hours. The stages `/progress` accepts: {_codes(claims.stages)}."
+    )
+    adopt = "on" if claims.adopt else "off until the cutover"
+    lines += _bullet(
+        f"Adoption is {adopt}: the sweep gives a card (and the deadline) to an issue assigned by hand. The text after "
+        f"`scope:` is at most {claims.scope_max_characters} characters, and at most {claims.closing_per_event} "
+        "`Fixes #N` lines of one pull request event are acted on."
     )
     lines += _bullet(
-        f"The sweep runs on the cron `{claims.sweep}` (UTC): it repairs cards, answers unhandled commands, warns and "
-        "releases."
+        f"The sweep runs on the cron `{claims.sweep}` (UTC): it repairs cards, answers unhandled commands, releases "
+        "claims over the limit and reports issues in progress with nobody assigned."
     )
     return lines
 

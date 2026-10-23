@@ -331,13 +331,27 @@ claims:
   # no-comment hook allows exactly these shapes on Coney issues, read from here. `scope` is folders, files and addresses
   # separated by commas; `task` is the task id, so issues of one task count as one claim.
   commands:
-    claim: '^/claim(?: scope: (?P<scope>[A-Za-z0-9_./*+, -]{1,400}?))?(?: task: (?P<task>[a-z0-9][a-z0-9-]{0,59}))?$'
+    claim: '^/claim(?: scope: (?P<scope>[A-Za-z0-9_./*+, -]+?))?(?: task: (?P<task>[a-z0-9][a-z0-9-]{0,59}))?$'
     renew: '^/claim renew$'
     unclaim: '^/unclaim$'
     progress: '^/progress (?P<stage>[a-z][a-z-]{0,30})$'
   stages: [assigned, claimed, studied, fails-first, compared, checked, reviewed, pr-opened, fix, finished]
-  maintainer_associations: [OWNER, MEMBER, COLLABORATOR]   # GitHub's author_association of the commenter
-  limits: {maintainer: 3, contributor: 2}         # open claims; issues of one task count once; a fix task reuses its claim
+  # A commenter is a maintainer when the repository says they have one of these permissions (write or above), asked of
+  # GitHub by login. Only when GitHub will not say (the token may not read it) does the comment's own author_association
+  # decide, and then only the repository's OWNER counts: COLLABORATOR also covers read access.
+  maintainer_permissions: [admin, write]
+  maintainer_associations: [OWNER]
+  # Open claims per account: a maintainer 3, a contributor 2. Issues of one task count once, but a task holds at most
+  # `issues_per_task` issues, so a task id is no way round the limit. A fix task reuses its claim.
+  limits: {maintainer: 3, contributor: 2, issues_per_task: 3}
+  scope_max_characters: 400                       # the text after `scope:` in /claim
+  closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
+  # A claimed issue with one of these status labels keeps it (the claim stays) and its release clock waits.
+  paused_labels: [S-blocked, S-needs-info]
+  # Both false until the cutover (docs/guides/issues.md#claiming): adopt = the sweep gives a card to an issue assigned
+  # by hand; release = the 48 h warning and the 72 h release are enforced (the card says so until then).
+  adopt: false
+  release: false
   critical_label: P-critical                      # while one has no claim, only a P-critical issue can be claimed
   claimable_status: S-ready-to-start              # the only status an issue can be claimed in, for everyone
   working_label: S-in-progress                    # on a claimed issue
@@ -425,7 +439,7 @@ hygiene:
     on_events: true
     on_sweep: false
     max_per_sweep: 25                            # with on_sweep true, item comments created or edited per sweep
-    report_only: [issue.triage-age, issue.info-age, issue.progress-idle, pr.idle]   # idleness: a comment would hide it
+    report_only: [issue.triage-age, issue.info-age, issue.progress-idle, issue.claim-orphan, pr.idle]   # idleness: a comment would hide it
   thresholds:
     needs_triage_days: 7
     needs_info_days: 21
@@ -659,6 +673,12 @@ hygiene:
       fix: skill
       keys: [hygiene.thresholds.in_progress_idle_days]
       summary: "an S-in-progress issue has had no activity for longer than the limit"
+    issue.claim-orphan:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [claims.working_label, claims.review_label]
+      summary: "an open issue is labelled in progress or in review but nobody is assigned: claim it or set it back to ready"
     issue.review-without-pr:
       scope: github
       severity: warn

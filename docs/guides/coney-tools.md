@@ -1323,6 +1323,15 @@ copied into the code.
   applies it; it changes nothing. `--apply` runs the `auto` renames, `--include-review` the others too (the
   coordinator does that once, when the rule starts). Exit 1 while some title is wrong.
 
+Every argument and option of `titles`:
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `--json` | off | Print the proposals as JSON (`number`, `current`, `proposed`, `confidence`, `why`) instead of lines and commands |
+| `--apply` | off | Rename the issues whose proposal is `auto` with `gh issue edit`; reports a failed rename and goes on |
+| `--include-review` | off | With `--apply`, rename the `review` proposals too |
+| `--limit N` | 500 | How many open issues to read |
+
 The body is filed without the draft's comments. Exit 2 when the conventions, a form file or the body file cannot be
 read.
 
@@ -1338,16 +1347,28 @@ The claim Action's commands ([Claiming an issue](issues.md#claiming)); `.github/
 All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are `claims` of `.github/conventions.yml`.
 
 * `run` handles one GitHub event. `--payload` is the event's JSON file (`$GITHUB_EVENT_PATH`): only the issue or pull
-  request number is taken from it, everything else is read again from GitHub, so no text of a comment or an issue is ever
-  parsed from the event. `issue_comment` and `issues` reconcile that issue; `pull_request_target` reconciles each issue
-  the pull request closes (`Fixes #N`), and a `synchronize` counts as a push (activity); `schedule` and
-  `workflow_dispatch` run the sweep. Reconciling acts on every command comment nobody handled (oldest first), rebuilds the
-  card from the assignee, labels and linked pull requests, then applies the warning (48 h) and release (72 h).
+  request number is taken from it, everything else is read again from GitHub, so no text of a comment or an issue is
+  ever parsed from the event. `issue_comment` and `issues` reconcile that issue; `pull_request_target` reconciles each
+  issue the pull request closes (`Fixes #N`), and a `synchronize` counts as a push (activity); `schedule` and
+  `workflow_dispatch` run the sweep. Reconciling acts on every command comment nobody handled (oldest first), rebuilds
+  the card from the assignee, labels and linked pull requests, then (when `claims.release` is on) applies the warning
+  (48 h) and release (72 h). A pull request opened, reopened, made ready or pushed to by the claimant counts as
+  activity.
 * `sweep` does the same for every issue that may need it: those with a held card, a working or review label, an assignee
-  or a command comment from the last day, and it deletes refusal replies a day after their command is gone. It carries on
-  past an issue it cannot read and exits 1 at the end, naming it.
+  or a command comment from the last day, and it deletes refusal replies a day after their command is gone. It carries
+  on past an issue it cannot read and exits 1 at the end, naming it. It also releases the claims that are over the limit
+  of open claims or of a task, and lists as `orphan:` the open issues labelled in progress with nobody assigned.
 * `list` prints the held claims (issue, claimant, status, task, scope, expiry); `--json` prints the cards' data for the
   mod. The claims are read from the cards' hidden JSON.
+
+Every argument and option:
+
+| Command | Argument or option | Default | What it does |
+| --- | --- | --- | --- |
+| `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
+| `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
+| `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
+| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline`, `warned`, `adopted`) instead of one line each |
 
 It needs `gh` signed in (the Action passes `GH_TOKEN`). Exit 1 when an issue could not be finished, 2 when the payload or
 the conventions cannot be read.
@@ -1380,6 +1401,23 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
   `tasks.leads.index_max_age_hours`); `--no-gh` leaves the merged pull requests out. The sources, name splitting and
   ranking are in [Task files](issues.md#task-files).
+
+Every argument and option:
+
+| Command | Argument or option | Default | What it does |
+| --- | --- | --- | --- |
+| `create` | `ISSUE ...` | none | The issue numbers of the task, one to `claims.limits.issues_per_task` of them; written before the options. Optional with `--fix-of` |
+| `create` | `--terms TERM ...` | none | One or more names to search the indexes for (a name, a function, a player's word); each becomes part of "Where to look" or of "Searched, not related" |
+| `create` | `--scope TEXT` | none | The planned folders, files and original addresses, comma separated (`"src/ai/, 0x00322b78"`), at most `claims.scope_max_characters` characters; it goes into the `/claim` comment and the task file, and is compared with the other held claims |
+| `create` | `--kind K` | from the labels: `docs` for the `docs` label, `tooling` for `A-tools`, else `feature` | The task kind, one of `tasks.kinds`; `fix` is only for `--fix-of` |
+| `create` | `--name ID` | `<first issue>-<words of its title>` (a resumed claim: the task id on its card) | The task id and the name of the scratch folder; lower case letters, digits and hyphens, 60 at most. It is the `task:` of the claim, so issues of one task share it |
+| `create` | `--fix-of ISSUE` | none | Make a fix task for an issue whose claim you hold: no `/claim`, no limit; posts `/progress fix` and writes `<issue>-fix` (`-2`, `-3` for the next ones) |
+| `create` | `--resume` | off | Continue a claim of yours that landed after the wait ended: issues you hold are not claimed again, and the task id must match the one on their cards |
+| `create` | `--dry-run` | off | Check, search and print the claims it would post and the file it would write; post and write nothing |
+| `leads` | `--terms TERM ...` | required | The names to search for |
+| `leads` | `--issue N` | none | Also match the addresses, code names, repository paths and `#N` references that issue writes |
+| `leads` | `--refresh` | off | Rebuild the cached index before searching |
+| `index` | `--no-gh` | off | Leave the merged pull requests out of the index (no `gh` call) |
 
 ## check {#check}
 

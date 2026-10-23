@@ -126,6 +126,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.triage-age` | github | warn | skill | an issue has waited in S-needs-triage longer than the limit |
 | `issue.info-age` | github | warn | skill | an issue has waited in S-needs-info with no activity longer than the limit |
 | `issue.progress-idle` | github | warn | skill | an S-in-progress issue has had no activity for longer than the limit |
+| `issue.claim-orphan` | github | warn | skill | an open issue is labelled in progress or in review but nobody is assigned: claim it or set it back to ready |
 | `issue.review-without-pr` | github | warn | skill | an S-pending-review issue that no open pull request mentions |
 | `pr.title` | github | error | skill | an open pull request's title breaks the commit title rules |
 | `pr.body` | github | error | skill | an open pull request's description breaks the template rules (sections, local file paths, images not uploaded) |
@@ -219,17 +220,19 @@ title `hygiene.report_issue.title`; creating an issue is a write beyond a commen
 explicitly when merging the pull request that added the workflow. Turning on `on_sweep` is a one-line change to the
 conventions.
 
-A third, from the workflow plan the maintainer approved on 2026-10-22: `claim.yml` ([Claiming an
-issue](issues.md#claiming)) assigns an issue, sets its status label, posts and edits one claim card, and deletes the
-`/claim`, `/unclaim`, `/progress` and `/claim renew` comments after acting on them; its hourly sweep releases a claim
-idle for 72 hours. It has `contents: read`, `issues: write` and `pull-requests: read`, checks out the default branch
-only (it runs on `issue_comment` and `pull_request_target`, so a stranger's comment and a fork's pull request are
-served), passes the event to the script as a file and never expands a comment into a script. Its concurrency group is
-one run per issue number, and a comment that does not start with a slash gets a group of its own so that it cannot
-replace the pending run of a real command. Each run handles every unhandled command of the issue, so a run GitHub drops
-is covered by the next run or the sweep. The workflow needs the maintainer's approval as the other writing workflows
-did; whether the Actions token may delete another person's comment is checked on the real repository, and the design
-works without it (the card remembers which commands it acted on).
+A third, approved by the maintainer on 2026-10-22: `claim.yml` ([Claiming an issue](issues.md#claiming)) may handle
+`/claim`, `/unclaim`, `/claim renew` and `/progress` comments, assign and unassign, set labels, post and edit its own
+comments (the claim card, the replies, the 48 hour warning) and delete the command comments it has handled. It has
+`contents: read`, `issues: write` and `pull-requests: read`, checks out the default branch only (it runs on
+`issue_comment` and `pull_request_target`, so a stranger's comment and a fork's pull request are served), passes the
+event to the script as a file and never expands a comment into a script. Its concurrency group is one run per issue
+number, and a comment that does not start with a slash gets a group of its own so that it cannot replace the pending run
+of a real command. Each run handles every unhandled command of the issue, so a run GitHub drops is covered by the next
+run or the sweep. Two switches in `claims`, `adopt` and `release`, keep the parts that change existing issues (giving a
+card to a hand assignment, the 48 and 72 hour deadlines) off until the cutover. Whether the Actions token may delete
+another person's comment, and whether it may read a collaborator's permission, are checked on the real repository; the
+design works without both (the card remembers which commands it acted on, and the comment's own association decides for
+the repository's owner).
 
 ## The /repo-hygiene skill {#hygiene-skill}
 

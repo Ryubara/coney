@@ -64,6 +64,9 @@ class LinkedPr:
     state: str
     #: The date of the head commit, a sign of life when the push event was missed; None if unknown.
     head_date: datetime | None
+    #: The login of the pull request's author ("" when GitHub does not say); only the claimant's (or a maintainer's)
+    #: pull request counts for the claim.
+    author: str = ""
 
 
 @dataclass(frozen=True)
@@ -152,8 +155,8 @@ class Remote(Protocol):
         """The login of the signed-in account."""
         ...
 
-    def association(self, login: str) -> str:
-        """What GitHub would call `login` on a comment: `COLLABORATOR` for someone who can write here, else `NONE`."""
+    def permission(self, login: str) -> str | None:
+        """`login`'s permission here (`admin`, `write`, `read`, `none`), or None when GitHub will not say."""
         ...
 
 
@@ -238,7 +241,8 @@ class GhRemote:
     def _bot_comments(self, prefix: str) -> list[Comment]:
         """The bot's comments of the whole repository whose text starts with `prefix`."""
         select = f'.[] | select(.user.login == "{self._bot}" and (.body | startswith("{prefix}"))) | tojson'
-        items = self._lines(["api", "repos/{owner}/{repo}/issues/comments", "--paginate", "--jq", select])
+        path = "repos/{owner}/{repo}/issues/comments?per_page=100"
+        items = self._lines(["api", path, "--paginate", "--jq", select])
         return [_comment_from(item) for item in items]
 
     def all_cards(self) -> list[Comment]:
@@ -296,7 +300,7 @@ class GhRemote:
         """The pull requests that close issue `number`, with the date of each head commit."""
         query = (
             "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){"
-            "closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number state merged "
+            "closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number state merged author{login} "
             "commits(last:1){nodes{commit{committedDate}}}}}}}}"
         )
         data = self._json(
@@ -323,7 +327,8 @@ class GhRemote:
             state = "merged" if node.get("merged") else str(node.get("state", "OPEN")).lower()
             commits = (node.get("commits") or {}).get("nodes") or []
             date = commits[0]["commit"].get("committedDate") if commits else None
-            found.append(LinkedPr(int(node["number"]), state, parse_time(date) if date else None))
+            author = (node.get("author") or {}).get("login", "")
+            found.append(LinkedPr(int(node["number"]), state, parse_time(date) if date else None, str(author)))
         return found
 
     # -- writing
@@ -433,8 +438,8 @@ class GhRemote:
         out = self._write(["api", "user", "--jq", ".login"]).strip()
         return _safe(out, "the signed-in login")
 
-    def association(self, login: str) -> str:
-        """`COLLABORATOR` when `login` has write access or more (admin, maintain, write), else `NONE`."""
+    def permission(self, login: str) -> str | None:
+        """`login`'s permission here; `none` when GitHub answers not found, None when it will not say."""
         try:
             out = self._run(
                 [
@@ -444,6 +449,6 @@ class GhRemote:
                     ".permission",
                 ]
             )
-        except OSError:
-            return "NONE"
-        return "COLLABORATOR" if out.strip() in ("admin", "maintain", "write") else "NONE"
+        except OSError as error:
+            return "none" if "404" in str(error) or "Not Found" in str(error) else None
+        return out.strip() or None

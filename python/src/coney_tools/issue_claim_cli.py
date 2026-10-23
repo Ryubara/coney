@@ -21,7 +21,7 @@ from typing import Any
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
-from coney_tools.issue_claim_engine import Engine
+from coney_tools.issue_claim_engine import Activity, Engine
 from coney_tools.issue_claim_model import Card, iso_time, show_time
 from coney_tools.issue_claim_remote import GhRemote, Remote
 
@@ -53,15 +53,21 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-def closing_numbers(body: str, conventions: Conventions) -> list[int]:
-    """The issue numbers a pull request body closes: lines `Fixes #N` (the `pull_requests.closing` keyword)."""
+def closing_numbers(body: str, conventions: Conventions) -> tuple[list[int], int]:
+    """The issue numbers a pull request body closes (lines `Fixes #N`, the `pull_requests.closing` keyword), at most
+    `claims.closing_per_event` of them, and how many more were ignored."""
     keyword = re.escape(conventions.pull_requests.closing.keyword)
     found = re.findall(rf"(?im)^[ \t]*{keyword}[ \t]+#(\d+)[ \t]*$", body.replace("\r\n", "\n"))
-    return list(dict.fromkeys(int(number) for number in found))
+    numbers = list(dict.fromkeys(int(number) for number in found))
+    limit = conventions.claims.closing_per_event
+    return numbers[:limit], max(0, len(numbers) - limit)
 
 
 def issues_of_event(name: str, payload: dict[str, Any], conventions: Conventions) -> list[int] | None:
-    """The issues an event concerns, or None when it calls for the sweep (`schedule`, `workflow_dispatch`)."""
+    """The issues an event concerns, or None when it calls for the sweep (`schedule`, `workflow_dispatch`).
+
+    A pull request names at most `claims.closing_per_event` issues; the rest are ignored.
+    """
     if name in ("schedule", "workflow_dispatch"):
         return None
     if name in ("issue_comment", "issues"):
@@ -73,7 +79,7 @@ def issues_of_event(name: str, payload: dict[str, Any], conventions: Conventions
         pull = payload.get("pull_request")
         if not isinstance(pull, dict):
             return []
-        return closing_numbers(str(pull.get("body") or ""), conventions)
+        return closing_numbers(str(pull.get("body") or ""), conventions)[0]
     raise ConfigError(f"claim run: no handler for the event {name!r}")
 
 
@@ -85,15 +91,36 @@ def run_event(
     if numbers is None:
         result = engine.sweep()
         return result.lines, result.errors
-    push_at = now() if name.startswith("pull_request") and payload.get("action") == "synchronize" else None
+    activity = _pull_request_activity(name, payload, now)
     lines: list[str] = []
     errors: list[str] = []
+    pull = payload.get("pull_request")
+    if isinstance(pull, dict):
+        ignored = closing_numbers(str(pull.get("body") or ""), conventions)[1]
+        if ignored:
+            lines.append(f"ignored {ignored} more `Fixes #N` line(s): at most {conventions.claims.closing_per_event}")
     for number in numbers:
         try:
-            lines.extend(engine.reconcile(number, push_at))
+            lines.extend(engine.reconcile(number, activity))
         except ConfigError as error:
             errors.append(f"#{number}: {error}")
     return lines, errors
+
+
+#: The pull request actions that show the author is working on it (the label and unlabel events do not).
+ACTIVE_PULL_REQUEST_ACTIONS = ("opened", "reopened", "ready_for_review", "synchronize")
+
+
+def _pull_request_activity(name: str, payload: dict[str, Any], now: Callable[[], datetime]) -> Activity | None:
+    """The activity a pull request event reports: opened, reopened, made ready or pushed to, by its author."""
+    pull = payload.get("pull_request")
+    if not name.startswith("pull_request") or not isinstance(pull, dict):
+        return None
+    if payload.get("action") not in ACTIVE_PULL_REQUEST_ACTIONS:
+        return None
+    user = pull.get("user")
+    login = str(user.get("login", "")) if isinstance(user, dict) else ""
+    return Activity(now(), login)
 
 
 def run_claim(args: argparse.Namespace, run: Runner = run_gh, now: Callable[[], datetime] = _utc_now) -> int:
