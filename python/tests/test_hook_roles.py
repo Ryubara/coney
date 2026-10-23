@@ -16,6 +16,7 @@ hooklib = load_hook_module("hooklib")
 roles = load_hook_module("roles")
 
 CONFIG = hooklib.load_config(HOOKS / "hooks.toml")
+BACKSLASH = chr(92)
 STRICT = {**copy.deepcopy(CONFIG), "require_role": True}
 
 
@@ -153,6 +154,43 @@ def test_the_coordinator_may_not_commit_in_a_unit_worktree_but_may_in_the_main_c
     assert roles.check(CONFIG, bash(f"cd {main}; git -C {unit} commit -m x", agent_type="coordinator", cwd=main))
     assert roles.check(CONFIG, bash(f"git -C {unit} commit-tree HEAD", agent_type="coordinator", cwd=main)) is None
     assert roles.check(CONFIG, bash("git commit -m x", agent_type="engineer", cwd=unit)) is None
+
+
+@pytest.mark.parametrize(
+    ("base", "text", "folder"),
+    [
+        # A drive path replaces the base, as on Windows: Linux and macOS would read `C:/x` as a name under it.
+        ("C:/Repositories/unit", "C:/Repositories/main", "C:/Repositories/main"),
+        ("C:/Repositories/unit", '"C:' + BACKSLASH + "Repositories" + BACKSLASH + 'main"', "C:/Repositories/main"),
+        ("/home/me/unit", "C:/Repositories/main", "C:/Repositories/main"),
+        ("C:/Repositories/unit", "../other", "C:/Repositories/other"),
+        ("", "C:/Repositories/main", "C:/Repositories/main"),
+        # Without a drive the system's own rules stay: a relative name joins, an absolute one replaces.
+        ("/home/me/unit", "sub", "/home/me/unit/sub"),
+        ("/home/me/unit", "/srv/main", "/srv/main"),
+        ("/home/me/unit", "/c/x", "/c/x"),
+    ],
+)
+def test_a_drive_path_is_absolute_on_every_system(base: str, text: str, folder: str) -> None:
+    """The first case is the one the Linux and macOS CI hit when only Windows tested it."""
+    assert hooklib._folder(base, text, windows=False).replace(BACKSLASH, "/") == folder
+
+
+def test_git_bashs_drive_form_is_a_drive_path_on_windows_only() -> None:
+    assert (
+        hooklib._folder("C:/Repositories/unit", "/c/Repositories/main", windows=True).replace(BACKSLASH, "/")
+        == "c:/Repositories/main"
+    )
+    assert hooklib._folder("/home/me", "/c/Repositories/main", windows=False) == "/c/Repositories/main"
+
+
+def test_the_commit_folders_follow_a_windows_path_on_any_system() -> None:
+    unit = "C:/Repositories/Coney/worktrees/coney/some-branch"
+    main = "C:/Repositories/Coney/repos/coney"
+    command = f"cd {unit} && git log; cd {main} && git commit -m x"
+    assert hooklib.commit_folders(command, unit, windows=False) == [main.replace("/", "\\")]
+    assert hooklib.commit_folders(f"git -C {main} commit -m x", unit, windows=False) == [main.replace("/", "\\")]
+    assert hooklib.commit_folders("git commit -m x", unit, windows=False) == [unit.replace("/", "\\")]
 
 
 # --- the engineer, the tooling agent and the reviewers --------------------------------------------------------------

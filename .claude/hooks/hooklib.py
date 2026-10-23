@@ -9,7 +9,9 @@
 from __future__ import annotations
 
 import importlib.util
+import ntpath
 import os
+import posixpath
 import re
 import sys
 import tempfile
@@ -50,6 +52,8 @@ _CD = re.compile(
     re.MULTILINE | re.IGNORECASE,
 )
 _MSYS = re.compile(r"^/(?P<drive>[A-Za-z])/(?P<rest>.*)$")
+#: A Windows drive path (`C:/x`, or `C:` and a backslash), which is absolute whatever system the hook runs on.
+_DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
 
 _guards: dict[str, ModuleType] = {}
 
@@ -120,26 +124,39 @@ def is_git_commit(command: str) -> bool:
     return GIT_COMMIT.search(clean_command(command)) is not None
 
 
-def _folder(base: str, text: str) -> str:
-    """The folder `text` names (quotes dropped, Git Bash's `/c/x` as `c:/x` on Windows), from `base` if relative."""
+def is_drive_path(text: str) -> bool:
+    """Whether the text starts with a Windows drive (`C:/x`, or `C:` and a backslash): absolute on any system, where
+    `Path` on Linux and macOS would read it as a relative name."""
+    return _DRIVE.match(text) is not None
+
+
+def _folder(base: str, text: str, windows: bool | None = None) -> str:
+    """The folder `text` names (quotes dropped, Git Bash's `/c/x` as `c:/x` on Windows), from `base` if relative.
+
+    A command can carry a Windows path on any system (an agent on Linux told to look at a Windows worktree), so a drive
+    path replaces the base everywhere and a path joined to a drive base follows Windows rules. `windows` says which
+    system's rules apply to everything else; it defaults to the running one and is only set by the tests.
+    """
+    windows = os.name == "nt" if windows is None else windows
     target = text.strip("\"'")
-    drive = _MSYS.match(target) if os.name == "nt" else None
+    drive = _MSYS.match(target) if windows else None
     if drive:
         target = f"{drive.group('drive')}:/{drive.group('rest')}"
-    return os.path.normpath(str(Path(base) / target) if base else target)
+    style = ntpath if windows or is_drive_path(target) or is_drive_path(base) else posixpath
+    return style.normpath(style.join(base, target) if base else target)
 
 
-def commit_folders(command: str, cwd: str) -> list[str]:
+def commit_folders(command: str, cwd: str, windows: bool | None = None) -> list[str]:
     """The folder each `git commit` of the command runs in: the working directory moved by the last `cd` before it,
     then by that git's own `-C`. Another folder the command merely names (`git -C x log`) is not one of them."""
     text = clean_command(command)
     found: list[str] = []
     for commit in GIT_COMMIT.finditer(text):
-        here = os.path.normpath(cwd) if cwd else ""
+        here = _folder("", cwd, windows) if cwd else ""
         for change in _CD.finditer(text[: commit.start()]):
-            here = _folder(here, change.group("dir"))
+            here = _folder(here, change.group("dir"), windows)
         for option in re.finditer(r"-C[ \t]+(\"[^\"\n]+\"|'[^'\n]+'|\S+)", commit.group("opts")):
-            here = _folder(here, option.group(1))
+            here = _folder(here, option.group(1), windows)
         found.append(here)
     return found
 

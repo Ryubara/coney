@@ -70,6 +70,8 @@ _DIR = re.compile(
 _AGENT_ID = re.compile(r"[A-Za-z0-9_-]+")
 #: A path in the style Git Bash prints (`/c/Users/x`), which Windows programs need as `c:/Users/x`.
 _MSYS = re.compile(r"^/(?P<drive>[A-Za-z])/(?P<rest>.*)$")
+#: A Windows drive path (`C:/x`): a directory of its own on any system, not a name under the working directory.
+_DRIVE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 def display_name(model: str) -> str | None:
@@ -181,7 +183,7 @@ def candidate_dirs(command: str, cwd: str) -> list[str]:
         drive = _MSYS.match(target) if os.name == "nt" else None
         if drive:
             target = f"{drive.group('drive')}:/{drive.group('rest')}"
-        path = os.path.normpath(Path(cwd) / target if cwd else target)
+        path = os.path.normpath(Path(cwd) / target if cwd and not _DRIVE_PATH.match(target) else target)
         if path not in found:
             found.append(path)
     return found

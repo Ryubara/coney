@@ -10,7 +10,7 @@ import importlib.util
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import ModuleType
 
 import pytest
@@ -231,6 +231,15 @@ def test_a_leading_cd_moves_where_the_file_is_found(tmp_path: Path) -> None:
     command = f'Set-Location "{scratch}"; gh pr create --title "tools: Add x" --body-file PR.md'
     assert GUARD.check(command, str(tmp_path), powershell=True, runner=runner) is None
     assert runner.calls[1][0][3] == str(scratch / "PR.md")
+
+
+def test_a_drive_path_is_absolute_on_every_system() -> None:
+    """`Path` on Linux and macOS reads `C:/x` as a relative name; a command can carry one on any system."""
+    assert GUARD._absolute(PurePosixPath("C:/Repositories/PR.md"))
+    assert GUARD._absolute(PurePosixPath("C:" + chr(92) + "Repositories" + chr(92) + "PR.md"))
+    assert GUARD._absolute(PurePosixPath("/srv/PR.md"))
+    assert GUARD._absolute(PureWindowsPath("C:/Repositories/PR.md"))
+    assert not GUARD._absolute(PurePosixPath("scratch/PR.md"))
 
 
 def test_a_cd_to_an_expansion_skips_the_file_check(tmp_path: Path) -> None:

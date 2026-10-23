@@ -92,6 +92,8 @@ _CONTINUATION = re.compile(r"(?:\\|`)[ \t]*\n")
 _QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
 #: Git Bash's form of a Windows drive (`/c/...`).
 _MSYS_DRIVE = re.compile(r"^/(?P<drive>[A-Za-z])(?:/|$)")
+#: A Windows drive path (`C:/x`), absolute on any system although `Path` on Linux and macOS reads it as relative.
+_DRIVE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
 #: A value the shell fills in (`$TITLE`, `$(...)`, PowerShell's `(...)`), which the hook cannot read.
 EXPANSION = "$(...)"
 #: A GitHub remote address, in the `https://host/owner/name(.git)` or `git@host:owner/name(.git)` form.
@@ -245,6 +247,11 @@ def native(path: str) -> Path:
     return Path(path).expanduser()
 
 
+def _absolute(path: Path) -> bool:
+    """Whether the path is absolute here or names a Windows drive (a command can carry one on any system)."""
+    return path.is_absolute() or _DRIVE_PATH.match(str(path)) is not None
+
+
 def _directory(text: str, bare: str, end: int, cwd: str) -> str | None:
     """The directory a command at `end` runs in: `cwd`, moved by each `cd` before it; None when a `cd` goes to an
     expansion (`cd "$DIR"`), which the hook cannot follow."""
@@ -258,7 +265,7 @@ def _directory(text: str, bare: str, end: int, cwd: str) -> str | None:
             here = None
             continue
         step = native(target[0])
-        here = step if step.is_absolute() else here / step
+        here = step if _absolute(step) else here / step
     return None if here is None else str(here)
 
 
@@ -358,7 +365,7 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
     if call.body_file is None or "$" in call.body_file or "%" in call.body_file:
         return found
     path = native(call.body_file)
-    if not path.is_absolute():
+    if not _absolute(path):
         if call.cwd is None:
             return found
         path = Path(call.cwd) / path

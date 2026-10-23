@@ -12,7 +12,7 @@ import io
 import json
 import os
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import ModuleType
 
 import pytest
@@ -133,6 +133,13 @@ def test_the_directories_to_look_in_are_the_cwd_then_the_commands_own() -> None:
     dirs = GUARD.candidate_dirs("cd sub && git commit -m x; git -C 'other dir' commit", cwd)
     assert dirs[0] == cwd
     assert str(Path(cwd) / "sub") in dirs and str(Path(cwd) / "other dir") in dirs
+
+
+def test_a_drive_path_in_the_command_is_a_directory_of_its_own_on_any_system(monkeypatch: pytest.MonkeyPatch) -> None:
+    """On Linux and macOS `Path` reads `C:/x` as a relative name, so it must not be joined to the working directory."""
+    monkeypatch.setattr(GUARD, "Path", PurePosixPath)
+    found = GUARD.candidate_dirs("cd C:/Repositories/main && git commit -m x", "/home/me/unit")
+    assert [d.replace(chr(92), "/") for d in found] == ["/home/me/unit", "C:/Repositories/main"]
 
 
 # --- end to end, in a temporary repository ---------------------------------------------------------------------
