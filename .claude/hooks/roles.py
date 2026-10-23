@@ -6,7 +6,7 @@ agent it was started as (`claude --agent coordinator`). The rules live in `hooks
 (docs/guides/enforcement.md#hooks); this module reads them and judges one tool call:
 
 * **require_role**: when on, a call whose type is no Coney role (and no allowed helper) may use only the read-only
-  tools in `readonly_tools`, and the refusal tells the person to start with `claude --agent coordinator`. It is off in
+  tools in `readonly_tools`, and the refusal tells the person to start with `coney-agent`. It is off in
   the committed file until the maintainer's sessions start that way.
 * **a role's refusals**: tools by name prefix, `coney-tools` commands, shell commands by pattern, folders Edit and
   Write may not change, the only files a role may write, a `git commit` under a unit worktree, and the GitHub writes
@@ -162,8 +162,9 @@ def missing_role_refusal(config: dict[str, Any], payload: dict[str, Any]) -> str
         return None
     return (
         "Blocked: this session has no Coney role, so it may only read "
-        f"({', '.join(allowed)}). Start Claude Code with `claude --agent coordinator` "
-        "(docs/guides/agents.md#roles).\n"
+        f"({', '.join(allowed)}). Start Claude Code with the session launcher, `coney-agent` (or "
+        "`uv run --project python coney-agent`), which starts it as the coordinator "
+        "(docs/guides/agents.md#session-launcher).\n"
     )
 
 
@@ -181,9 +182,10 @@ def session_notice(config: dict[str, Any], payload: dict[str, Any]) -> str | Non
     if config.get("require_role") is True:
         return (
             "Coney: this session has no role, so it is read-only (Read, Grep, Glob). Quit and start it with "
-            "`claude --agent coordinator`."
+            "`coney-agent` (or `uv run --project python coney-agent`)."
         )
     return (
-        "Coney: this session was not started with a role (`claude --agent coordinator`), so the role rules do not "
-        "apply. Sessions without a role will be read-only."
+        "Coney: this session was not started through `coney-agent`, so it has no role and the role rules do not "
+        "apply. Start with `coney-agent` (or `uv run --project python coney-agent`); sessions without a role will "
+        "be read-only."
     )

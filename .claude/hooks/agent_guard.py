@@ -30,7 +30,7 @@ AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
 # Built-in helpers that read and never write, and the fork of the caller; allowed beside the Coney roles.
 BUILT_IN = ("Explore", "Plan", "fork", "claude-code-guide")
 
-# Roles of the main session (started with `claude --agent coordinator`), never a subagent.
+# Roles of the main session (started by the `coney-agent` session launcher), never a subagent.
 MAIN_SESSION_ONLY = ("coordinator",)
 
 # Types that mean "no role": a missing type runs as general-purpose.

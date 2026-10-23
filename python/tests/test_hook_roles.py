@@ -71,7 +71,7 @@ def test_with_require_role_on_a_session_with_no_role_may_read(tool: str) -> None
 )
 def test_with_require_role_on_a_session_with_no_role_may_do_nothing_else(tool: str) -> None:
     reason = roles.check(STRICT, call(tool, {"command": "ls"}))
-    assert reason is not None and reason.startswith("Blocked:") and "claude --agent coordinator" in reason
+    assert reason is not None and reason.startswith("Blocked:") and "`coney-agent`" in reason
 
 
 @pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer", "pr-reviewer", "Explore"])
@@ -87,7 +87,7 @@ def test_a_generic_agent_has_no_role() -> None:
 def test_session_start_names_a_missing_role_in_both_modes() -> None:
     off = roles.session_notice(CONFIG, {"hook_event_name": "SessionStart"})
     on = roles.session_notice(STRICT, {"hook_event_name": "SessionStart"})
-    assert off and "claude --agent coordinator" in off and "do not apply" in off
+    assert off and "`coney-agent`" in off and "do not apply" in off
     assert on and "read-only" in on
     assert roles.session_notice(STRICT, {"agent_type": "coordinator"}) is None
 
