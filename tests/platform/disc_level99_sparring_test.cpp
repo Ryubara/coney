@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -30,8 +31,6 @@
 
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/generators/catch_generators.hpp>
-#include <catch2/generators/catch_generators_range.hpp>
 
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
@@ -65,6 +64,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "support/each_case.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -179,12 +179,12 @@ void countGloat(Watched& watched) {
     }
 }
 
-} // namespace
+// Every AI sequence the lesson can take: the brains' variation (`--ai-seed`) 0-7, each a test case of its own so that
+// ctest runs them in parallel (docs/guides/testing.md#one-test-per-item).
+constexpr std::array<std::uint32_t, 8> kSeeds{0, 1, 2, 3, 4, 5, 6, 7};
 
-TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on the player and attack",
-          "[disc][story][ai]") {
-    // Every AI sequence the lesson can take: the brains' variation (`--ai-seed`) 0-7.
-    const auto seed = GENERATE(range(0U, 8U));
+// The lesson's fight under one AI seed: the Warriors close on the player and attack.
+void playSparringFight(std::uint32_t seed) {
     CAPTURE(seed);
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
@@ -416,3 +416,15 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     CHECK(attacked > 0);
     CHECK(scripts.scripts().errors() == 0);
 }
+
+// A test case per seed.
+[[maybe_unused]] const bool kSparringRegistered = coney::test::registerEach(
+    kSeeds, "[disc][story][ai]",
+    [](std::uint32_t seed) {
+        return std::format(
+            "the disc's level99: the sparring Warriors of the last lesson close on the player and attack, AI seed {}",
+            seed);
+    },
+    [](std::uint32_t seed) { playSparringFight(seed); });
+
+} // namespace

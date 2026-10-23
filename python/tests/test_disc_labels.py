@@ -36,6 +36,42 @@ def test_every_test_case_that_needs_the_disc_is_tagged_disc() -> None:
     assert missing == [], "test cases that skip without CONEY_DISC need the tag [disc]:\n" + "\n".join(missing)
 
 
+#: A registration of one test case per item (tests/support/each_case.h): `registerEach(items, "tags", ...)`, the tags
+#: being the second argument and the items one identifier (a constant list).
+_EACH = re.compile(r'registerEach\(\s*[\w:]+\s*,\s*"([^"]*)"')
+
+
+def _each_tags(text: str) -> list[str]:
+    """The tags of each `registerEach` call in a source file."""
+    return _EACH.findall(text)
+
+
+def test_the_tags_of_a_registration_are_found() -> None:
+    text = 'bool k = test::registerEach(\n    kSeeds, "[disc][story]",\n    [](int) { return "n"; }, body);'
+    assert _each_tags(text) == ["[disc][story]"]
+    assert _each_tags('registerEach(a, "[x]", n, b); registerEach(c, "[disc]", n, b);') == ["[x]", "[disc]"]
+    # An inline list as the items is not read: the file check counts the calls and fails on the difference.
+    assert _each_tags('registerEach(std::array{1, 2}, "[x]", n, b);') == []
+
+
+def test_every_registered_case_that_needs_the_disc_is_tagged_disc() -> None:
+    # A case registered by registerEach is no TEST_CASE, so the check above does not see it: a file that names
+    # CONEY_DISC (its skip message) tags every case it registers [disc].
+    missing = []
+    for path in sorted((REPO / "tests").rglob("*.cpp")):
+        text = path.read_text(encoding="utf-8")
+        if "CONEY_DISC" in text:
+            # Fail closed: a call whose tags the pattern cannot read (an inline list as the items) is not skipped.
+            if text.count("registerEach(") != len(_each_tags(text)):
+                missing.append(
+                    f"{path.relative_to(REPO).as_posix()}: a registerEach call of a shape the check cannot read"
+                )
+            missing += [
+                f"{path.relative_to(REPO).as_posix()}: {tags}" for tags in _each_tags(text) if "[disc]" not in tags
+            ]
+    assert missing == [], "registered cases that skip without CONEY_DISC need the tag [disc]:\n" + "\n".join(missing)
+
+
 def test_the_tags_become_ctest_labels() -> None:
     text = (REPO / "tests" / "CMakeLists.txt").read_text(encoding="utf-8")
     assert re.search(r"catch_discover_tests\(coney_tests[^)]*\bADD_TAGS_AS_LABELS\b", text)

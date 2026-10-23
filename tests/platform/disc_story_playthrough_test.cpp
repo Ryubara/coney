@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <format>
 #include <functional>
 #include <optional>
 #include <span>
@@ -32,6 +33,7 @@
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "support/each_case.h"
 
 namespace {
 
@@ -274,65 +276,73 @@ constexpr std::array kChaseRoute{
 // How long the chase may take before it counts as stuck: 3 minutes of frames.
 constexpr std::uint64_t kChaseLimit = 5400;
 
-} // namespace
+// The AI's seeds the chase is run for (`--ai-seed` 0-7), each a test case of its own so that ctest runs them in
+// parallel (docs/guides/testing.md#one-test-per-item).
+constexpr std::array<std::uint32_t, 8> kSeeds{0, 1, 2, 3, 4, 5, 6, 7};
 
-TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the gallery for every AI seed",
-          "[disc][story][playthrough]") {
-    // docs/research/scripting.md#level3: the AI walks Snow to vbStartRail, the stick then runs him east along the
-    // roofs, and vbEnterGallery hands over to the gallery chapter (SetCheckPoint(5)). A fall fails the mission. The
-    // chase is run for each of the AI's seeds 0-7 (`--ai-seed`): the pursuers' draws differ, and a driver that wins
-    // for one sequence only passes by luck (issue #531).
+// docs/research/scripting.md#level3: the AI walks Snow to vbStartRail, the stick then runs him east along the roofs,
+// and vbEnterGallery hands over to the gallery chapter (SetCheckPoint(5)). A fall fails the mission. The chase is run
+// for each of the AI's seeds: the pursuers' draws differ, and a driver that wins for one sequence only passes by luck
+// (issue #531).
+void playChase(std::uint32_t seed) {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    constexpr std::uint32_t kSeeds = 8;
-    for (std::uint32_t seed = 0; seed < kSeeds; ++seed) {
-        INFO("--ai-seed " << seed);
-        coney::test::DiscSession* session = nullptr;
-        RouteDriver driver(kChaseRoute, [&session]() -> const coney::human::Player* {
-            coney::platform::PlayLevelMode* play = session != nullptr ? session->session().play() : nullptr;
-            return play != nullptr ? &play->player() : nullptr;
-        });
-        const coney::platform::GameSessionSettings settings{
-            .skipMovies = true, .rumble = std::nullopt, .aiSeed = seed, .profiles = std::nullopt};
-        coney::test::DiscSession run(*wad, driver, settings);
-        session = &run;
-        run.session().startAtLevel("level3", 4);
-        REQUIRE(run.runUntilPlay());
+    INFO("--ai-seed " << seed);
+    coney::test::DiscSession* session = nullptr;
+    RouteDriver driver(kChaseRoute, [&session]() -> const coney::human::Player* {
+        coney::platform::PlayLevelMode* play = session != nullptr ? session->session().play() : nullptr;
+        return play != nullptr ? &play->player() : nullptr;
+    });
+    const coney::platform::GameSessionSettings settings{
+        .skipMovies = true, .rumble = std::nullopt, .aiSeed = seed, .profiles = std::nullopt};
+    coney::test::DiscSession run(*wad, driver, settings);
+    session = &run;
+    run.session().startAtLevel("level3", 4);
+    REQUIRE(run.runUntilPlay());
 
-        const auto failed = [&run] {
-            return std::ranges::any_of(run.log(),
-                                       [](const std::string& line) { return line.starts_with("mission failed"); });
-        };
-        const auto& state = run.session().flow().state();
-        // The chapter's Setup turns player 1's Warrior commands 0-5 off (docs/research/scripting.md#level3), so
-        // through the chase the chief's automatic attack is refused and the crew keeps running ahead
-        // (docs/research/ai-gangs.md#warrior-auto-commands): the race the driver has to win.
-        bool commandsOn = false;
-        run.runUntil(
-            [&] {
-                const auto& commands = state.characters.warriorCommands.at(0);
-                // Until the gallery's chapter (checkpoint 5), which sets its own.
-                commandsOn =
-                    commandsOn || (state.checkPoint < 5 &&
-                                   std::ranges::any_of(commands.begin(), commands.begin() + 6, std::identity{}));
-                return state.checkPoint >= 5 || failed();
-            },
-            kChaseLimit);
+    const auto failed = [&run] {
+        return std::ranges::any_of(run.log(),
+                                   [](const std::string& line) { return line.starts_with("mission failed"); });
+    };
+    const auto& state = run.session().flow().state();
+    // The chapter's Setup turns player 1's Warrior commands 0-5 off (docs/research/scripting.md#level3), so
+    // through the chase the chief's automatic attack is refused and the crew keeps running ahead
+    // (docs/research/ai-gangs.md#warrior-auto-commands): the race the driver has to win.
+    bool commandsOn = false;
+    run.runUntil(
+        [&] {
+            const auto& commands = state.characters.warriorCommands.at(0);
+            // Until the gallery's chapter (checkpoint 5), which sets its own.
+            commandsOn = commandsOn || (state.checkPoint < 5 &&
+                                        std::ranges::any_of(commands.begin(), commands.begin() + 6, std::identity{}));
+            return state.checkPoint >= 5 || failed();
+        },
+        kChaseLimit);
 
-        const coney::platform::PlayLevelMode* play = run.session().play();
-        const std::uint64_t errors = run.session().flow().scripts().errors();
-        const int health = play != nullptr ? play->player().human().health().value() : 0;
-        std::printf("  level3 checkpoint 4 chase, ai seed %u: checkpoint %.0f after %llu frames of play, legs %zu of "
-                    "%zu, climbs %d, jumps %d, charges %d, health %d, %llu script errors, %s\n",
-                    seed, state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
-                    kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.charges(), health,
-                    static_cast<unsigned long long>(errors), failed() ? "failed" : "not failed");
-        CHECK(errors == 0);
-        CHECK_FALSE(commandsOn);
-        CHECK_FALSE(failed());
-        CHECK(state.checkPoint == 5);
-        CHECK(health > 0);
-    }
+    const coney::platform::PlayLevelMode* play = run.session().play();
+    const std::uint64_t errors = run.session().flow().scripts().errors();
+    const int health = play != nullptr ? play->player().human().health().value() : 0;
+    std::printf("  level3 checkpoint 4 chase, ai seed %u: checkpoint %.0f after %llu frames of play, legs %zu of "
+                "%zu, climbs %d, jumps %d, charges %d, health %d, %llu script errors, %s\n",
+                seed, state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
+                kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.charges(), health,
+                static_cast<unsigned long long>(errors), failed() ? "failed" : "not failed");
+    CHECK(errors == 0);
+    CHECK_FALSE(commandsOn);
+    CHECK_FALSE(failed());
+    CHECK(state.checkPoint == 5);
+    CHECK(health > 0);
 }
+
+// A test case per seed.
+[[maybe_unused]] const bool kChaseRegistered = coney::test::registerEach(
+    kSeeds, "[disc][story][playthrough]",
+    [](std::uint32_t seed) {
+        return std::format("the disc's level3 rooftop chase, driven by the pad, reaches the gallery for AI seed {}",
+                           seed);
+    },
+    [](std::uint32_t seed) { playChase(seed); });
+
+} // namespace
