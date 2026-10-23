@@ -241,3 +241,30 @@ def test_a_pattern_that_does_not_compile_is_refused() -> None:
 def test_the_attachment_settings_are_read() -> None:
     assert RULES.link == "https://github.com/user-attachments/files/"
     assert RULES.extensions == (".txt", ".log") and RULES.large_kb <= RULES.download_kb
+
+
+def test_a_package_pin_and_an_asset_name_are_not_an_email_address() -> None:
+    # The pattern is shared with the commit-msg check (`pr check-commit`), where these appear in messages.
+    result = scan("[info] using markdownlint-cli2@0.18.1 and icon@2x.png\n" + CLEAN_LOG)
+    assert result.personal == ()
+    result = scan("[info] icon@1.5x.png and logo@2X.PNG\n" + CLEAN_LOG)
+    assert result.personal == ()
+
+
+@pytest.mark.parametrize(
+    "address",
+    [
+        "jane@2x.com",
+        "ops@10x.dev",
+        "x@0x.ai",
+        "bob@4x.co.uk",
+        "JANE@2X.COM",
+        "jane@3x.mail.example.com",
+        "jane@2x.png.example.com",
+        "jane@2x.svg.io",
+        "jane@2x.png-cdn.com",
+    ],
+)
+def test_an_address_whose_domain_starts_like_a_scale_suffix_is_still_personal(address: str) -> None:
+    result = scan(f"[info] signed in as {address}\n" + CLEAN_LOG)
+    assert result.personal == ("shows an email address on line 1",)

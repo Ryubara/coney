@@ -17,6 +17,7 @@ from coney_tools import (
     build_cli,
     check_cli,
     clips,
+    commit_message,
     coord_cli,
     docs_cli,
     doctor,
@@ -133,6 +134,32 @@ def _repo_check_title(file: str) -> int:
         print(f"title refused: {title!r}: {'; '.join(problems)} (see AGENTS.md, Commits and GitHub)")
         return 1
     print("title: ok")
+    return 0
+
+
+def _pr_check_commit(file: str, model: str | None) -> int:
+    """Check the trailers of the commit message in `file`; 1 when refused, 2 when the file cannot be read."""
+    try:
+        # An editor or a locale can write another encoding; the check reads what it can instead of stopping.
+        message = Path(file).read_bytes().decode("utf-8", errors="replace")
+    except OSError as error:
+        print(f"coney-tools: {file}: cannot be read ({error})", file=sys.stderr)
+        return 2
+    if model is None:
+        found = identity.current()
+        model = found.model if found.verified and found.model != identity.UNKNOWN else None
+    conventions = _conventions()
+    problems = commit_message.check_commit_message(
+        message,
+        conventions.commits.trailers,
+        model,
+        commit_message.configured_comment_char(),
+        emails=conventions.hygiene.attachments.patterns.email,
+    )
+    if problems:
+        print("commit message refused: " + "; ".join(problems) + " (see AGENTS.md, Commits and GitHub)")
+        return 1
+    print("commit message: ok")
     return 0
 
 
@@ -319,6 +346,18 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     render_parser.add_argument(
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
+    )
+    pr = groups.add_parser("pr", help="pull request and commit checks")
+    check_commit = pr.add_subparsers(dest="command", required=True).add_parser(
+        "check-commit",
+        help="check a commit message's trailers and e-mail addresses (the git commit-msg hook runs this)",
+    )
+    check_commit.add_argument("file", help="the commit message file, as git passes it to the commit-msg hook")
+    check_commit.add_argument(
+        "--model",
+        help="the id of the model the committing agent runs on (claude-sonnet-5-5): the Co-Authored-By trailer must "
+        "name it (default: the model in the identity file the Claude Code hooks wrote for this command, if there is "
+        "one; typed variables are not trusted)",
     )
     add_audit_parser(repo_commands)
     issue_cli.add_issue_parser(groups)
@@ -1107,6 +1146,8 @@ def _run(args: argparse.Namespace) -> int:
         return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":
         return _repo_labels(args.apply, args.repo)
+    if args.group == "pr":
+        return _pr_check_commit(args.file, args.model)
     if args.command == "check-title":
         return _repo_check_title(args.file)
     if args.command == "check-docs":
