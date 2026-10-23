@@ -217,7 +217,7 @@ to the merged result, is in [From research to code](research-to-code.md).
   and engineers save states to files.
 - **Traces and frames.** `coney-tools pcsx2 record` and `coney-tools trace` record the same scripted scenario on the
   original and on Coney and diff them; Coney's `--camera`, `--freeze-world` and `--screenshot` flags reproduce a
-  reference frame ([coney-tools](coney-tools-pcsx2.md#trace)).
+  reference frame ([coney-tools](coney-tools-trace.md#trace)).
 - **Extraction.** `coney-tools extract` turns the player's disc into open formats (PNG, glTF, WAV) in a folder
   outside the repository ([extract](coney-tools-disc.md#extract)).
 

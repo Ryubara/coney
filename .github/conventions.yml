@@ -559,6 +559,12 @@ hygiene:
       fix: auto
       keys: [commits, labels, merge, paths, pull_requests]
       summary: "a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render)"
+    files.command-reference:
+      scope: files
+      severity: error
+      fix: auto
+      keys: [paths.docs]
+      summary: "a coney-tools command or parameter is missing from the guides, or a generated parameter block there is out of date (coney-tools docs render)"
     files.ci-scope:
       scope: files
       severity: error

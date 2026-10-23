@@ -109,7 +109,7 @@ An issue filed from the command line skips the web form, so a guard runs before 
 links an issue with a raw `gh` command: `coney-tools issue` is the only way, and it reads every rule from
 `.github/conventions.yml` (`issues`) and the form files in `.github/ISSUE_TEMPLATE/`, so a change to a form or a rule
 changes the command with it ([Repository conventions](repo-conventions.md)). The commands are in
-[coney-tools](coney-tools-repo.md#issue).
+[coney-tools](coney-tools-issues.md#issue).
 
 1. **Draft.** `coney-tools issue draft task` (or `bug`) prints a blank body with the form's `###` headings in its
    order. A comment before each section carries the form's own description, whether the section is required, and
@@ -411,7 +411,7 @@ before it trusts a claim ([Task files](#task-files)).
 id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
 
 `coney-tools claim list [--json]` prints the held claims; `claim run` and `claim sweep` are what the workflow runs
-([coney-tools](coney-tools-repo.md#claim)).
+([coney-tools](coney-tools-issues.md#claim)).
 
 ## Task files {#task-files}
 

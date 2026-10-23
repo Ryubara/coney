@@ -153,9 +153,11 @@ request or in one that follows at once.
   owns it, link to that page (a heading anchor) and do not restate it. Two copies drift apart.
 - **Pages say what and how; code comments say why.** A guide says how to do the thing and links the reasons; do not
   paste a command or a list that another page owns.
-- **Generated text is never edited.** A block between `<!-- conventions:begin ... -->` markers, and the pages under
+- **Generated text is never edited.** A block between `<!-- conventions:begin ... -->` markers, the parameters of the
+  coney-tools commands (between `<!-- command-reference:begin ... -->` markers), and the pages under
   `docs/references/`, `docs/missions/` and the progress tables, are rebuilt from their source; change the source
-  ([Repository conventions](repo-conventions.md#generated-blocks)).
+  ([Repository conventions](repo-conventions.md#generated-blocks),
+  [the parameter reference](coney-tools.md#parameter-reference)).
 - **Links.** A file outside `docs/` is `repo:<path>` (step 3 above). Link a heading, not just a page, when the
   point is in one section.
 - **Name roles, not people.** Write "the user" for the person who tests, reports or directs and "a maintainer" for the

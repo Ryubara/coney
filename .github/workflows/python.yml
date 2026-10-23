@@ -63,8 +63,8 @@ jobs:
       # The local gate (docs/guides/testing.md#local-gate) is run by hand on one machine at a time, so this runs it on
       # every OS the job tests: the steps that depend on the OS (pre-commit in command-line-sized groups, the program
       # lookup) fail here the way they would for a contributor. Its repo step is `repo audit --files`, which holds
-      # `repo check` and `repo render --check` too, so those still run on every OS. clang-tidy and the docs build have
-      # their own jobs; pre-commit over every file is the format job (build.yml).
+      # `repo check`, `repo render --check` and `docs render --check` too, so those still run on every OS. clang-tidy
+      # and the docs build have their own jobs; pre-commit over every file is the format job (build.yml).
       - run: uv run --project python coney-tools check changed --base HEAD^1 --only repo --only pre-commit
         shell: bash
       # The repository checks below compare the checkout's own files and do not depend on the OS (each comparison turns

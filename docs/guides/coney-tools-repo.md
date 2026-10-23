@@ -1,9 +1,9 @@
 # The coney-tools repository commands
 
-The commands that check the repository's own rules and run the issue and pull request process: [`repo`](#repo)
-(titles, descriptions, labels), [`pr`](#pr) (commit messages), [`issue`](#issue), [`claim`](#claim) (the issue claims)
-and [`task`](#task) (claiming issues and writing a task file). The other groups are listed in
-[the command line overview](coney-tools.md#groups).
+The commands that check the repository's own rules and run the pull request process: [`repo`](#repo) (titles,
+descriptions, labels), [`pr`](#pr) (commit messages) and [`task`](#task) (claiming issues and writing a task file).
+[`issue`](coney-tools-issues.md#issue) and [`claim`](coney-tools-issues.md#claim) have a page of their own. The other
+groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## repo {#repo}
 
@@ -282,6 +282,194 @@ comment. Text from GitHub quoted in a comment (a title in a finding) cannot ment
 close the marker, and the report writes `#12` so that it makes no cross-reference in the item's timeline. Exit code 0
 when it ran, 2 when `gh` or the conventions cannot be read.
 
+<!-- command-reference:begin repo -->
+## Parameters of `repo` {#repo-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `repo check` {#repo-check-usage}
+
+Check .github/conventions.yml and the agent pointer files.
+
+```text
+coney-tools repo check
+```
+
+Takes no parameters.
+
+### `repo check-title` {#repo-check-title-usage}
+
+Check a commit or pull request title against the commit title rules.
+
+```text
+coney-tools repo check-title FILE
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `FILE` | text | required | a file whose first line (not blank, not #) is the title; - for stdin |
+
+### `repo check-docs` {#repo-check-docs-usage}
+
+Check that a pull request which changes code also changes the docs (changed paths on stdin).
+
+```text
+coney-tools repo check-docs [--body BODY]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | text | none | a file holding the pull request description (for `Docs: none`) |
+
+### `repo check-body` {#repo-check-body-usage}
+
+Check a pull request description against the template: sections, summary, AI use.
+
+```text
+coney-tools repo check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [--base BASE] [--local-images]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | text | none | a file holding the pull request description; - or omitted reads stdin |
+| `--title TITLE` | text | none | the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the Testing section's `Runtime:` line, as in CI; without it that rule is not checked |
+| `--worktree WORKTREE` | path | none | the branch's worktree: also require the Model line to name every model its commits credit in a Co-Authored-By trailer (what `repo check-review` does) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, with --worktree (default: origin/main) |
+| `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads |
+
+### `repo render` {#repo-render-usage}
+
+Rewrite the generated blocks of AGENTS.md, CONTRIBUTING.md and the guides from .github/conventions.yml.
+
+```text
+coney-tools repo render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when a block is out of date |
+
+### `repo audit` {#repo-audit-usage}
+
+Report where the repository departs from .github/conventions.yml (read only).
+
+```text
+coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK] [--strict] [--show N] [--snapshot FILE]
+    [--attachments] [--save-snapshot FILE] [--workspace WORKSPACE] [--list]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--files` | flag | off | check the checkout (the default when no scope is given) |
+| `--github` | flag | off | check issues, pull requests, labels and settings (gh) |
+| `--local` | flag | off | check the workspace: disk, worktrees, scratch folders |
+| `--json` | flag | off | print the report as JSON instead of text |
+| `--only CHECK` | text | none | run only this check or group (issue). Repeatable. |
+| `--strict` | flag | off | exit 1 on a warning too |
+| `--show N` | integer | `10` | findings printed per check; 0 for all (text only) |
+| `--snapshot FILE` | path | none | with --github: read this saved snapshot, not GitHub |
+| `--attachments` | flag | off | with --github: download the logs attached to open issues and scan them (hygiene.attachments) |
+| `--save-snapshot FILE` | path | none | with --github: also write the snapshot read |
+| `--workspace WORKSPACE` | path | none | with --local: the workspace folder (default: found from the checkout) |
+| `--list` | flag | off | list the checks and exit |
+
+### `repo pr-health` {#repo-pr-health-usage}
+
+List the open pull requests that are stuck (failed required check, conflict, stuck CI, no auto-merge).
+
+```text
+coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the report as JSON instead of text |
+| `--pending-hours H` | number | none | hours a required check may be pending (default: hygiene.thresholds.pr_pending_hours) |
+| `--verbose` | flag | off | also show drafts, stacked pull requests and unknown mergeability |
+| `--labels` | flag | off | also list the labels to add to or remove from the open pull requests (hygiene.pr_health.labels) |
+| `--rerun` | flag | off | also list the failed required checks that are stale (text fixed since, runner lost) and would be rerun |
+| `--apply` | flag | off | with --labels: make those label changes through gh; with --rerun: really rerun the checks (gh run rerun) |
+
+### `repo review` {#repo-review-usage}
+
+Run the pr-reviewer agent headlessly on a description, then check its verdict.
+
+```text
+coney-tools repo review PR_FILE --worktree WORKTREE [--base BASE] [--claude CLAUDE] [--model MODEL] [--effort EFFORT]
+    [--timeout-minutes TIMEOUT_MINUTES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `PR_FILE` | path | required | the description file: the title on line 1, then the body (PR.md in the scratch folder) |
+| `--worktree WORKTREE` | path | required | the branch's worktree (its HEAD is the tip the verdict must quote) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, for the diff and the commits' trailers (default: origin/main) |
+| `--claude CLAUDE` | text | `claude` | the Claude Code executable (default: claude) |
+| `--model MODEL` | text | none | the model (default: the agent file's) |
+| `--effort EFFORT` | choice | none | the effort level. One of `low`, `medium`, `high`, `xhigh`, `max`. |
+| `--timeout-minutes TIMEOUT_MINUTES` | number | `30` | stop the review after this long |
+
+### `repo check-review` {#repo-check-review-usage}
+
+Check the title and body as CI does, and that the reviewer's verdict passes and is current (tip, description and images
+unchanged).
+
+```text
+coney-tools repo check-review PR_FILE --worktree WORKTREE [--base BASE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `PR_FILE` | path | required | the description file: the title on line 1, then the body (PR.md in the scratch folder) |
+| `--worktree WORKTREE` | path | required | the branch's worktree (its HEAD is the tip the verdict must quote) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, for the diff and the commits' trailers (default: origin/main) |
+
+### `repo review-stamp` {#repo-review-stamp-usage}
+
+Print, as JSON, the tip, description hash and image hashes a verdict must quote; refuses, with the title and body
+reasons, a description check-review would refuse.
+
+```text
+coney-tools repo review-stamp PR_FILE --worktree WORKTREE [--base BASE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `PR_FILE` | path | required | the description file: the title on line 1, then the body (PR.md in the scratch folder) |
+| `--worktree WORKTREE` | path | required | the branch's worktree (its HEAD is the tip the verdict must quote) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, for the diff and the commits' trailers (default: origin/main) |
+
+### `repo hygiene` {#repo-hygiene-usage}
+
+Write the audit's findings as comments on issues and pull requests (what the hygiene workflow runs).
+
+Exactly one of `--event`, `--sweep` is required.
+
+```text
+coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--event N` | integer | none | issue or pull request N changed: update its comment. Not with `--sweep`. |
+| `--sweep` | flag | off | the weekly run: update the report (and item comments if on). Not with `--event`. |
+| `--apply` | flag | off | write the comments (default: print the plan only) |
+| `--snapshot FILE` | path | none | read this saved audit snapshot, not GitHub |
+
+### `repo labels` {#repo-labels-usage}
+
+Print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply.
+
+```text
+coney-tools repo labels [--apply] [--repo REPO]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--apply` | flag | off | create or update the labels through gh now |
+| `--repo REPO` | text | none | OWNER/NAME to sync; default: the repository gh finds from the checkout |
+<!-- command-reference:end -->
+
 ## pr {#pr}
 
 The checks on a pull request and its commits. Today it holds one command. The pull-request checks of [repo](#repo)
@@ -324,98 +512,24 @@ people's commits; and the messages git writes about an earlier commit (`Revert "
 
 Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or the conventions are unusable.
 
-## issue {#issue}
+<!-- command-reference:begin pr -->
+## Parameters of `pr` {#pr-parameters}
 
-```sh
-uv run --project python coney-tools issue draft [task|bug]
-uv run --project python coney-tools issue check --title T --body FILE [--form F] [--leftover] [--online] [--attach F]
-uv run --project python coney-tools issue create --title T --body FILE [--label L ...] [--parent N] [--leftover]
-    [--attach F] [--offline] [--dry-run]
-uv run --project python coney-tools issue edit N --body FILE [--title T] [--offline] [--dry-run]
-uv run --project python coney-tools issue link N --parent P [--dry-run]
-uv run --project python coney-tools issue titles [--json] [--apply [--include-review]] [--limit N]
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `pr check-commit` {#pr-check-commit-usage}
+
+Check a commit message's trailers and e-mail addresses (the git commit-msg hook runs this).
+
+```text
+coney-tools pr check-commit FILE [--model MODEL]
 ```
 
-Drafts, checks and files issues in their form's exact shape ([Filing an issue](issues.md#filing)). Every rule is
-read from `issues` in `.github/conventions.yml` and from the form files in `.github/ISSUE_TEMPLATE/`; nothing is
-copied into the code.
-
-* `draft` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
-  description, required or optional, and the allowed values (the Area's `A-` labels, a bug's dropdown choices), then
-  the `From:` line. The form is `task` unless you name `bug`.
-* `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
-  (`title`, `headings`, `empty`, `choices`, `screenshots`, `from`, `links`, `wording`, `status`); exit 0 when there is
-  none, 1 otherwise. A dropdown answer is the option as written under its heading, with or without a list bullet or
-  backticks (`--play-level` is an option, not a bullet). The title must be `area: Verb the rest`, as a pull request's
-  ([Titles](issues.md#titles)). The form comes from `--form`, else the headings. Docs and research pages and their
-  `{#anchor}`s are looked up in `origin/main` of the checkout with git, offline; a missing `origin/main` is a note, not
-  a pass. `--leftover` wants the `From:` line. `--online` reads the state of each cited `#N` with `gh` and compares it
-  with the words "open", "merged" and "closed" beside it. `--attach` says local screenshots will be uploaded, so a local
-  image in the Screenshots section is accepted.
-* `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
-  the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
-  form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
-  `issue link` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running none.
-* `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
-  `gh issue edit`. `link` makes an existing issue a sub-issue of another.
-* `titles` lists the open issues whose title breaks the title rule, each with a proposed title, how sure the proposal is
-  (`auto`, or `review` when a verb or an area was guessed or the title was cut) and the `gh issue edit` command that
-  applies it; it changes nothing. `--apply` runs the `auto` renames, `--include-review` the others too (the
-  coordinator does that once, when the rule starts). Exit 1 while some title is wrong.
-
-Every argument and option of `titles`:
-
-| Option | Default | What it does |
-| --- | --- | --- |
-| `--json` | off | Print the proposals as JSON (`number`, `current`, `proposed`, `confidence`, `why`) instead of lines and commands |
-| `--apply` | off | Rename the issues whose proposal is `auto` with `gh issue edit`; reports a failed rename and goes on |
-| `--include-review` | off | With `--apply`, rename the `review` proposals too |
-| `--limit N` | 500 | How many open issues to read |
-
-The body is filed without the draft's comments. Exit 2 when the conventions, a form file or the body file cannot be
-read.
-
-## claim {#claim}
-
-```sh
-uv run --project python coney-tools claim run --event NAME --payload FILE
-uv run --project python coney-tools claim sweep
-uv run --project python coney-tools claim list [--json]
-```
-
-The claim Action's commands ([Claiming an issue](issues.md#claiming)); `.github/workflows/claim.yml` only starts them.
-All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are `claims` of `.github/conventions.yml`.
-
-* `run` handles one GitHub event. `--payload` is the event's JSON file (`$GITHUB_EVENT_PATH`): only the issue or pull
-  request number is taken from it, everything else is read again from GitHub, so no text of a comment or an issue is
-  ever parsed from the event. `issue_comment` and `issues` reconcile that issue; `pull_request_target` reconciles each
-  issue the pull request closes (`Fixes #N`), and a `synchronize` counts as a push (activity); `schedule` and
-  `workflow_dispatch` run the sweep. Reconciling acts on every command comment nobody handled (oldest first), rebuilds
-  the card from the assignee, labels and linked pull requests, then (when `claims.release` is on) applies the warning
-  (48 h) and release (72 h). A pull request opened, reopened, made ready or pushed to by the claimant counts as
-  activity, and while it is open and ready for review the clock waits. Then it handles the commands other issues
-  received in the last `claims.catch_up_minutes` (a job the one-at-a-time queue cancelled); a failed read of those is an
-  error (exit 1), after the event's own issues are done. Before its first change of each step and each card write it
-  reads the issue's cards again and starts over when one changed; when the attempts run out it prints what each did and
-  exits 1.
-* `sweep` does the same for every issue that may need it: those with a held card, a working or review label, an assignee
-  or a command comment from the last day, and it deletes refusal replies a day after their command is gone. It carries
-  on past an issue it cannot read and exits 1 at the end, naming it. It also releases the claims that are over the limit
-  of open claims or of a task, and lists as `orphan:` the open issues labelled in progress with nobody assigned.
-* `list` prints the held claims (issue, claimant, status, task, scope, expiry or what the clock waits for); `--json`
-  prints the cards' data for the mod. The claims are read from the cards' hidden JSON.
-
-Every argument and option:
-
-| Command | Argument or option | Default | What it does |
+| Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
-| `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
-| `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
-| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`) instead of one line each |
-
-It needs `gh` signed in (the Action passes `GH_TOKEN`). Exit 1 when an issue could not be finished, 2 when the payload or
-the conventions cannot be read.
+| `FILE` | text | required | the commit message file, as git passes it to the commit-msg hook |
+| `--model MODEL` | text | none | the id of the model the committing agent runs on (claude-sonnet-5-5): the Co-Authored-By trailer must name it (default: the model in the identity file the Claude Code hooks wrote for this command, if there is one; typed variables are not trusted) |
+<!-- command-reference:end -->
 
 ## task {#task}
 
@@ -462,3 +576,55 @@ Every argument and option:
 | `leads` | `--issue N` | none | Also match the addresses, code names, repository paths and `#N` references that issue writes |
 | `leads` | `--refresh` | off | Rebuild the cached index before searching |
 | `index` | `--no-gh` | off | Leave the merged pull requests out of the index (no `gh` call) |
+
+<!-- command-reference:begin task -->
+## Parameters of `task` {#task-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `task create` {#task-create-usage}
+
+Claim the issues through the claim Action, wait until the claim holds, write \<scratch\>/\<task\>/TASK.md.
+
+```text
+coney-tools task create [ISSUE ...] [--terms TERM [TERM ...]] [--scope SCOPE] [--kind KIND] [--name NAME]
+    [--fix-of ISSUE] [--resume] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[ISSUE ...]` | integer | none | the issues of the task (before the options) |
+| `--terms TERM [TERM ...]` | text | none | names to search the indexes for |
+| `--scope SCOPE` | text | none | the planned folders, files and addresses, comma separated |
+| `--kind KIND` | text | none | the task kind (default: from the labels) |
+| `--name NAME` | text | none | the task id (default: \<first issue\>-\<words of its title\>) |
+| `--fix-of ISSUE` | integer | none | a fix task: reuse your claim on this issue |
+| `--resume` | flag | off | continue a claim of yours that landed late |
+| `--dry-run` | flag | off | check and print; post and write nothing |
+
+### `task leads` {#task-leads-usage}
+
+Search the indexes for the terms (no claim, nothing written).
+
+```text
+coney-tools task leads --terms TERM [TERM ...] [--issue N] [--refresh]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--terms TERM [TERM ...]` | text | required | names to search for |
+| `--issue N` | integer | none | also match the identifiers this issue writes |
+| `--refresh` | flag | off | rebuild the index first |
+
+### `task index` {#task-index-usage}
+
+Rebuild the cached leads index.
+
+```text
+coney-tools task index [--no-gh]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--no-gh` | flag | off | leave the merged pull requests out |
+<!-- command-reference:end -->

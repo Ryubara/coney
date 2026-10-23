@@ -121,7 +121,7 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 
 `--trace-humans FILE` (with `--play-level` or `--rumble`) writes **every** human's state after every step to `FILE`, one
 CSV row per human per step (`step`, then `human`, the human's number), in a Rumble match as well as in a level. It is
-Coney's side of the gang-battle comparison: [`coney-tools trace fight-report`](coney-tools-pcsx2.md#trace) turns the rows
+Coney's side of the gang-battle comparison: [`coney-tools trace fight-report`](coney-tools-trace.md#trace) turns the rows
 into behaviour statistics per human and per gang and compares them with the original's recording, because the two
 games draw different random numbers and a fight cannot be compared update by update. `--trace` stays the player's
 trace for `--play-level`, and in a Rumble match (where there is no one level to trace the player of) it means

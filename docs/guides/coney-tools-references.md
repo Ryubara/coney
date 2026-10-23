@@ -110,6 +110,101 @@ system and lists the rows whose name is not Ghidra's, the rows with no function 
 level and any row left out (the exit code is 1 for those); `--dry-run` writes nothing and `--all` lists every row.
 Delete the old file afterwards. The command is to be removed once no branch carries the old list.
 
+<!-- command-reference:begin progress -->
+## Parameters of `progress` {#progress-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `progress show` {#progress-show-usage}
+
+Print how much is reimplemented and researched.
+
+```text
+coney-tools progress show [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print everything as JSON |
+
+### `progress check` {#progress-check-usage}
+
+Check the tracker's inputs (the function database, @orig tags, ranges, roadmap).
+
+```text
+coney-tools progress check [--base BASE] [--require-base]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | what tag names are measured from (default: origin/main) |
+| `--require-base` | flag | off | fail when --base cannot be read, instead of skipping the name rule (CI) |
+
+### `progress render` {#progress-render-usage}
+
+Write the pages, pictures, badge JSON and numbers the docs build publishes, to a folder.
+
+```text
+coney-tools progress render OUT_DIR [--no-history]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `OUT_DIR` | path | required | a folder to write progress/ (the pages, badges and pictures) to |
+| `--no-history` | flag | off | skip rebuilding the daily history from git (only today's point) |
+
+### `progress sizes` {#progress-sizes-usage}
+
+Check the reimplemented functions' sizes against your own disc.
+
+```text
+coney-tools progress sizes [DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+
+### `progress import-functions` {#progress-import-functions-usage}
+
+One-off: move the rows of the retired docs/progress/functions.toml into the function database.
+
+```text
+coney-tools progress import-functions [FILE] [--dry-run] [--all]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[FILE]` | path | none | the old list (default docs/progress/functions.toml) |
+| `--dry-run` | flag | off | write nothing; print what would be done |
+| `--all` | flag | off | list every row of the report, not the first few |
+
+### `progress ghidra` {#progress-ghidra-usage}
+
+Re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only).
+
+```text
+coney-tools progress ghidra [--url URL] [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--url URL` | text | none | the ghidra-mcp server (default `http://127.0.0.1:8090`) |
+| `--check` | flag | off | change nothing; exit 1 when the listing is stale |
+
+### `progress backlog` {#progress-backlog-usage}
+
+Write one Markdown file per subsystem of not-yet-understood code.
+
+```text
+coney-tools progress backlog OUT_DIR
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `OUT_DIR` | path | required | a folder outside the repository |
+<!-- command-reference:end -->
+
 ## natives {#natives}
 
 The script-binding reference (`docs/references/bindings/`, under Game references) is generated from
@@ -182,6 +277,84 @@ uv run --project python coney-tools natives stats
 Prints the counts by category, evidence level, detail and Coney status, and how many bindings the game's scripts
 call.
 
+<!-- command-reference:begin natives -->
+## Parameters of `natives` {#natives-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `natives render` {#natives-render-usage}
+
+Check the YAML and regenerate docs/references/bindings/.
+
+```text
+coney-tools natives render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when a page is stale |
+
+### `natives coney` {#natives-coney-usage}
+
+Set each entry's coney status from src/scripting/script_bindings.cpp.
+
+```text
+coney-tools natives coney [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when a status is stale |
+
+### `natives cpp` {#natives-cpp-usage}
+
+Write the debug menus' C++ signature table, src/debug/native_signatures.cpp.
+
+```text
+coney-tools natives cpp [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when the table is stale |
+
+### `natives stats` {#natives-stats-usage}
+
+Print the counts by category, evidence level and usage.
+
+```text
+coney-tools natives stats
+```
+
+Takes no parameters.
+
+### `natives mission1` {#natives-mission1-usage}
+
+Set usage.mission1 from the first mission's scripts on your disc.
+
+```text
+coney-tools natives mission1 [DISC] [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+| `--check` | flag | off | change nothing; exit 1 when a marker is stale |
+
+### `natives missions` {#natives-missions-usage}
+
+Set usage.levels from the scripts of the story's later levels on your disc.
+
+```text
+coney-tools natives missions [DISC] [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+| `--check` | flag | off | change nothing; exit 1 when a list is stale |
+<!-- command-reference:end -->
+
 ## refs {#refs}
 
 The [Game references](../references/index.md) are generated from the lists in `research/references/`
@@ -219,6 +392,50 @@ under a quarter of that and look the same at 256 pixels. The quantizer is determ
 files. A file the palette would not make smaller (most radar icons) is left as it is. Run it after rendering and before
 `refs extract` links the images.
 
+<!-- command-reference:begin refs -->
+## Parameters of `refs` {#refs-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `refs render` {#refs-render-usage}
+
+Check the lists and write the pages of docs/references/.
+
+```text
+coney-tools refs render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when a page is stale |
+
+### `refs extract` {#refs-extract-usage}
+
+Refresh the lists from your own disc, keeping hand-written fields.
+
+```text
+coney-tools refs extract [DISC] [--only LIST [LIST ...]] [--names NAMES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+| `--only LIST [LIST ...]` | choice | none | these lists only. One of `characters`, `character-models`, `gangs`, `goal-types`, `speed-classes`, `objects`, `object-groups`, `cars`, `particles`, `levels`, `level-starts`, `flags`, `zones`, `boxes`, `scenes`, `glass-types`, `doors`, `tints`, `lights`, `spawner-states`, `crime-types`, `cameras`, `screen-effects`, `inventory`, `unlockables`, `power-classes`, `warrior-classes`, `attacks`, `hats`, `rumble`, `statistics`, `animations`, `anim-ids`, `controls`, `commands`, `hud-colours`, `radar-icons`, `text-formatting`, `text-labels`, `enums`, `sound`, `speech`, `script-events`, `wad-names`. |
+| `--names NAMES` | path | none | extra WAD names, one per line (the last word of each line) |
+
+### `refs compress-images` {#refs-compress-images-usage}
+
+Rewrite the thumbnails as 256-colour PNGs, in place.
+
+```text
+coney-tools refs compress-images [FOLDER]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[FOLDER]` | path | none | default: docs/references/images/ |
+<!-- command-reference:end -->
+
 ## missions {#missions}
 
 The [Missions](../missions/index.md) pages are generated from `research/missions.yaml`
@@ -233,3 +450,21 @@ levels list, each status consistent with its checkpoints) and writes `docs/missi
 with the script-binding numbers of [Story coverage](../references/bindings/story.md) read from
 `research/bindings/`. With `--check` it writes nothing and exits with 1 when a page is out of date; CI runs it that
 way. Run `natives render` first when bindings changed.
+
+<!-- command-reference:begin missions -->
+## Parameters of `missions` {#missions-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `missions render` {#missions-render-usage}
+
+Check the list and write the pages of docs/missions/.
+
+```text
+coney-tools missions render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when a page is stale |
+<!-- command-reference:end -->

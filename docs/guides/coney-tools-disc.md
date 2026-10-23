@@ -80,6 +80,76 @@ cameras and lights, total frames, broken segment chains, how many headers' frame
 event types seen, and SHA-256 digests of the list and of the records. Records whose list names are cut to 16
 characters are found by content. Exits 1 when a record fails to parse.
 
+<!-- command-reference:begin wad -->
+## Parameters of `wad` {#wad-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `wad info` {#wad-info-usage}
+
+Entry count, sizes and a breakdown by first four bytes.
+
+```text
+coney-tools wad info [DISC] [--names NAMES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+
+### `wad list` {#wad-list-usage}
+
+One line per entry: index, offset, size, hash, name.
+
+```text
+coney-tools wad list [DISC] [--names NAMES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+
+### `wad extract` {#wad-extract-usage}
+
+Write entries to OUT_DIR (outside the repository).
+
+```text
+coney-tools wad extract [DISC] OUT_DIR [[DISC] OUT_DIR ...] [--names NAMES] [--only HASH_OR_NAME [HASH_OR_NAME ...]]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC] OUT_DIR [[DISC] OUT_DIR ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml) and OUT_DIR |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--only HASH_OR_NAME [HASH_OR_NAME ...]` | text | none | extract just these entries |
+
+### `wad names` {#wad-names-usage}
+
+Recover names by hashing strings found on the disc.
+
+```text
+coney-tools wad names [DISC] OUT_FILE [[DISC] OUT_FILE ...]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC] OUT_FILE [[DISC] OUT_FILE ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml) and OUT_FILE |
+
+### `wad scenes` {#wad-scenes-usage}
+
+Parse every scene record of scene_list.cnk; counts and hashes.
+
+```text
+coney-tools wad scenes [DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+<!-- command-reference:end -->
+
 ## extract: every asset in open formats {#extract}
 
 ```sh
@@ -126,6 +196,29 @@ The Xbox disc adds about half an hour (matching the world textures) and its `def
 `--xbox-texture-map FILE` also writes which Xbox texture replaced which PS2 one, for a reader of the disc formats
 ([layout](../research/xbox-assets.md#texture-map)).
 
+<!-- command-reference:begin extract -->
+## Parameters of `extract` {#extract-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+Extract every asset of your disc to open formats in OUT_DIR (outside the repository).
+
+```text
+coney-tools extract [DISC] OUT_DIR [[DISC] OUT_DIR ...] [--only TYPE [TYPE ...]] [--verify] [--jobs N]
+    [--xbox XBOX_DISC] [--xbox-index FILE] [--xbox-texture-map FILE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC] OUT_DIR [[DISC] OUT_DIR ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml) and OUT_DIR |
+| `--only TYPE [TYPE ...]` | choice | none | just these types: disc, movies, audio, scripts, textures, models, animations, levels, worlds, scenes, data, index, raw. One of `disc`, `movies`, `audio`, `scripts`, `textures`, `models`, `animations`, `levels`, `worlds`, `scenes`, `data`, `index`, `raw`. |
+| `--verify` | flag | off | compare the file counts with the expected ones |
+| `--jobs N` | integer | none | worker processes for decoding audio (default: up to 4) |
+| `--xbox XBOX_DISC` | path | none | your Xbox disc (image, XISO or folder): its larger textures and HD movies replace the PS2 ones |
+| `--xbox-index FILE` | path | none | the Xbox resource index (`xbox index`): read when it fits the disc, else built and written there |
+| `--xbox-texture-map FILE` | path | none | also write the Xbox texture map there: which Xbox texture replaced which PS2 one (needs textures) |
+<!-- command-reference:end -->
+
 ## audio {#audio}
 
 The game's sound data, read from your own disc (`DISC` as for `wad`): the sound, music and class tables of
@@ -146,6 +239,50 @@ WAV file and prints its length, peak and RMS: `NAME` is a sound's name as the ga
 (`vags/character/voices/5/attack_01`), a track's (`music/warriors_theme`) or a `0x` hash; `--bank` takes a bank
 sound from that bank. Like `wad extract`, it refuses a path inside the repository.
 
+<!-- command-reference:begin audio -->
+## Parameters of `audio` {#audio-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `audio info` {#audio-info-usage}
+
+Counts of sounds, banks and music tracks, with hashes of the tables.
+
+```text
+coney-tools audio info [DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+
+### `audio list` {#audio-list-usage}
+
+One line per sound, music track or bank sound.
+
+```text
+coney-tools audio list WHAT [DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `WHAT` | choice | required | which list. One of `sounds`, `music`, `banks`. |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+
+### `audio decode` {#audio-decode-usage}
+
+Decode one sound or music track to a WAV file outside the repository.
+
+```text
+coney-tools audio decode [DISC] NAME OUT [[DISC] NAME OUT ...] [--bank BANK]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC] NAME OUT [[DISC] NAME OUT ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml), a sound or track name or 0x hash, and the WAV file |
+| `--bank BANK` | text | none | decode from this bank instead of where the sound list says |
+<!-- command-reference:end -->
+
 ## movies {#movies}
 
 ```sh
@@ -157,6 +294,24 @@ file size, Bink revision letter, width and height, frame count, frame rate, runn
 channels, sample size, transform (DCT or RDFT) and flags; then the totals and a SHA-256 of the headers and frame
 indexes. Nothing is decoded. Exits 1 when a movie is missing or its header does not hold together. What the values
 mean for playback: [Movies](../research/movies.md#the-movies).
+
+<!-- command-reference:begin movies -->
+## Parameters of `movies` {#movies-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `movies list` {#movies-list-usage}
+
+One line per movie: size, Bink revision, size, frames, rate, audio.
+
+```text
+coney-tools movies list [DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir |
+<!-- command-reference:end -->
 
 ## xbox {#xbox}
 
@@ -205,3 +360,130 @@ uv run --project python coney-tools xbox names XBOX_DISC ../../scratch/xbox-name
 !!! warning "Game data stays out of the checkout"
     `xbox extract`, `xbox names`, `xbox index` and `xbox texture-map` refuse an output path inside the repository, as
     `wad extract` and `wad names` do.
+
+<!-- command-reference:begin xbox -->
+## Parameters of `xbox` {#xbox-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `xbox files` {#xbox-files-usage}
+
+Every file on the disc with its size.
+
+```text
+coney-tools xbox files DISC
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+
+### `xbox info` {#xbox-info-usage}
+
+Entries and bytes by volume and by kind.
+
+```text
+coney-tools xbox info DISC [--names NAMES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `--names NAMES` | path | none | a names file, one name per line (made by `xbox names`, or a PS2 names file) |
+
+### `xbox list` {#xbox-list-usage}
+
+One line per entry: index, volume, offset, size, hash, name.
+
+```text
+coney-tools xbox list DISC [--names NAMES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `--names NAMES` | path | none | a names file, one name per line (made by `xbox names`, or a PS2 names file) |
+
+### `xbox names` {#xbox-names-usage}
+
+Match candidate names against the index; write the matches.
+
+```text
+coney-tools xbox names DISC OUT_FILE [--candidates FILE [FILE ...]]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `OUT_FILE` | path | required | where to write the names (outside the repository) |
+| `--candidates FILE [FILE ...]` | path | none | names files to try |
+
+### `xbox extract` {#xbox-extract-usage}
+
+Write entries to OUT_DIR (outside the repository).
+
+```text
+coney-tools xbox extract DISC OUT_DIR [--names NAMES] [--only HASH_OR_NAME [HASH_OR_NAME ...]]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `OUT_DIR` | path | required | the folder to write to |
+| `--names NAMES` | path | none | a names file, one name per line (made by `xbox names`, or a PS2 names file) |
+| `--only HASH_OR_NAME [HASH_OR_NAME ...]` | text | none | extract just these entries |
+
+### `xbox resources` {#xbox-resources-usage}
+
+The resource index: counts and graphics-chunk kinds.
+
+```text
+coney-tools xbox resources DISC [--ps2 PS2_DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `--ps2 PS2_DISC` | text | none | also compare with the PS2 disc (a folder or .iso, as for the wad commands) |
+
+### `xbox index` {#xbox-index-usage}
+
+Write the resource index (xbox-resources.bin) to OUT_FILE.
+
+```text
+coney-tools xbox index DISC OUT_FILE
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `OUT_FILE` | path | required | where to write it (outside the repository) |
+
+### `xbox texture-map` {#xbox-texture-map-usage}
+
+Match every PS2 texture and write the texture map (xbox-textures.bin) to OUT_FILE.
+
+```text
+coney-tools xbox texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `PS2_DISC` | text | required | the PS2 disc (a folder or .iso) |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `OUT_FILE` | path | required | where to write it (outside the repository) |
+| `--xbox-index FILE` | path | none | the resource index, as for extract |
+
+### `xbox textures` {#xbox-textures-usage}
+
+Texture chunk counts by format, mip count and size.
+
+```text
+coney-tools xbox textures DISC [--ps2 PS2_DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+| `--ps2 PS2_DISC` | text | none | also compare with the PS2 disc (a folder or .iso, as for the wad commands) |
+<!-- command-reference:end -->

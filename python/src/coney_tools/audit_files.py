@@ -266,6 +266,17 @@ def generated_blocks_current(context: FilesContext) -> Iterator[Problem]:
         yield Problem(name, "a generated block is out of date (run `coney-tools repo render`)")
 
 
+@check("files.command-reference")
+def command_reference_current(context: FilesContext) -> Iterator[Problem]:
+    """Every group of the command line has its generated parameter block in the coney-tools guides, the blocks are what
+    the parsers render, and every command and parameter has help text."""
+    # Imported here: the command line imports the audit, so a module-level import would be circular.
+    from coney_tools import command_reference
+
+    for finding in command_reference.findings(context.root, command_reference.command_groups()):
+        yield Problem(finding.item, finding.message)
+
+
 #: The line of ci-scope.sh that names the file it reads.
 _SCOPE_READS_FILE = re.compile(r"conventions\.yml")
 #: A regular expression of paths the script must not hold itself (`DOCS_ONLY='^(docs/|...)'`): it reads the lists.
