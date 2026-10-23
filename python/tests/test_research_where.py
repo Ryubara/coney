@@ -329,10 +329,27 @@ def test_code_outside_every_function_is_not_called_data(tmp_path: Path) -> None:
     assert "not in a function (in the .data data)" in research_where.address_lines(data)
 
 
+def test_code_and_section_say_what_the_section_is_for_every_address(tmp_path: Path) -> None:
+    """`code` is whether the section holding the address is code, inside a function as much as outside every one."""
+    root = checkout(tmp_path)
+    write(
+        root,
+        "research/elf-sections.toml",
+        '[[section]]\nname = ".text"\nstart = 0x00100000\nend = 0x00300000\ncode = true\n\n'
+        '[[section]]\nname = ".data"\nstart = 0x00300000\nend = 0x00400000\n',
+    )
+    index = research_where.Index.load(root)
+    queries = ("0x00100210", "0x00100010", "0x00300010")
+    [inside, before, data] = (research_where.to_json(index.search(q))["addresses"][0] for q in queries)
+    assert (inside["function"], inside["section"], inside["code"]) == ("0x00100200", ".text", True)
+    assert (before["function"], before["section"], before["code"]) == (None, ".text", True)
+    assert (data["function"], data["section"], data["code"]) == (None, ".data", False)
+
+
 def test_the_json_carries_every_fact_the_text_does(index: research_where.Index) -> None:
     """The offset into the function, whether a listing was there, and the port's source and status."""
     [inside] = research_where.to_json(index.search("0x00100210"))["addresses"]
-    assert inside["offset"] == 0x10 and inside["listed"] is True and inside["code"] is False
+    assert inside["offset"] == 0x10 and inside["listed"] is True
     [exact] = research_where.to_json(index.search("0x00100200"))["addresses"]
     assert exact["database"]["coney"] == "src/core/combat/grab.cpp:Grab::start"
     assert exact["database"]["status"] == "compared"

@@ -57,8 +57,6 @@ _progress_site = None
 # The committed progress pages, whose markers the build fills.
 _PROGRESS_PAGE = "progress/index.md"
 _HISTORY_PAGE = "progress/history.md"
-# The committed source map, whose marker the build fills with the file tables of research/source-files.toml.
-_SOURCE_MAP_PAGE = "research/source-map.md"
 
 
 def _use_checkout_tools(root):
@@ -157,6 +155,14 @@ def research_generated_pages(root):
     return research_data.generated_pages(Path(root))
 
 
+def is_source_map_page(src_uri, root):
+    """Whether `src_uri` is the committed source map, whose marker the build fills (the page the tools name)."""
+    _use_checkout_tools(root)
+    from coney_tools import research_find
+
+    return src_uri == research_find.SOURCE_MAP_PAGE
+
+
 def fill_source_map_page(markdown, root):
     """The source map page's Markdown with its marker replaced by the file tables of research/source-files.toml.
 
@@ -189,8 +195,10 @@ def on_page_markdown(markdown, config, page=None, **_):
         markdown = fill_progress_page(markdown, _progress_state, _progress_site)
     if page is not None and page.file.src_uri == _HISTORY_PAGE and _progress_site is not None:
         markdown = fill_history_page(markdown, _progress_site)
-    if page is not None and page.file.src_uri == _SOURCE_MAP_PAGE:
-        markdown = fill_source_map_page(markdown, Path(config.config_file_path).parent)
+    # A real MkDocsConfig always has config_file_path; the fallback is for the plain dicts tests of other pages pass.
+    config_file = getattr(config, "config_file_path", None)
+    if page is not None and config_file and is_source_map_page(page.file.src_uri, Path(config_file).parent):
+        markdown = fill_source_map_page(markdown, Path(config_file).parent)
     base = config.get("repo_url")
     if not base:
         # No repository to point at (a copy without git): an empty anchor keeps the strict build passing.

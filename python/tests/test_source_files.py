@@ -211,6 +211,56 @@ def test_a_file_in_a_middleware_range_is_fine_and_a_directory_with_no_subsystem_
     assert "Stray/x.cpp" in found[0]
 
 
+def with_subsystems(*subsystems: progress.Subsystem) -> progress.Totals:
+    """The made-up totals with the subsystems replaced."""
+    base = totals()
+    return progress.Totals(base.text, base.coverage, subsystems, base.middleware)
+
+
+def test_a_subsystem_range_grown_over_another_directorys_file_is_named() -> None:
+    """The other direction: a range that takes in a neighbour's file (here Alpha reaching into Beta) is too wide.
+
+    This builds `Totals` directly, with overlapping ranges `progress.load_totals` would refuse, to check the message
+    that names the range that grew.
+    """
+    alpha = progress.Subsystem("Alpha", (progress.Range(0x100200, 0x200080),))
+    beta = totals().subsystems[1]
+    found = source_files.check_totals(parse(), with_subsystems(alpha, beta))
+    assert len(found) == 1
+    assert "Alpha" in found[0] and "Beta/(no path string)" in found[0] and "too wide" in found[0]
+
+
+def test_a_subsystem_range_grown_over_a_middleware_file_is_named() -> None:
+    """A file no subsystem owns (Lua, tolua) is the library's: a game range may not reach into it either.
+
+    Like the test above, this builds `Totals` the loader would refuse (the range overlaps a middleware range).
+    """
+    lib = FULL + (
+        '\n[[file]]\ndirectory = "Lib"\npath = "Lib/lua.cpp"\nstart = 0x00280000\nend = 0x00280080\nfunctions = 1\n'
+    )
+    alpha, _ = totals().subsystems
+    beta = progress.Subsystem("Beta", (progress.Range(0x200000, 0x280040),))
+    found = source_files.check_totals(parse(lib), with_subsystems(alpha, beta))
+    assert len(found) == 1
+    assert "Lib/lua.cpp" in found[0] and "Beta" in found[0]
+
+
+def test_a_subsystem_range_that_holds_none_of_its_files_is_named() -> None:
+    """A subsystem with files whose second range holds none of them points at the wrong place."""
+    alpha, _ = totals().subsystems
+    beta = progress.Subsystem("Beta", (progress.Range(0x200000, 0x200200), progress.Range(0x250000, 0x250100)))
+    found = source_files.check_totals(parse(), with_subsystems(alpha, beta))
+    assert len(found) == 1
+    assert "Beta" in found[0] and "0x00250000" in found[0] and "none of its files" in found[0]
+
+
+def test_a_subsystem_with_no_files_is_placed_by_position_and_may_hold_none() -> None:
+    """Maths and link-once have no file with an address: their ranges are placed by position, so only overlap counts."""
+    alpha, beta = totals().subsystems
+    maths = progress.Subsystem("Maths", (progress.Range(0x210000, 0x210400),))
+    assert source_files.check_totals(parse(), with_subsystems(alpha, beta, maths)) == []
+
+
 def test_the_committed_data_passes_its_own_checks() -> None:
     """The file in the repository parses, matches totals.toml and keeps the figures the source map states."""
     root = REPO

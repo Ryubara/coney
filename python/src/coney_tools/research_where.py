@@ -59,7 +59,7 @@ class AddressReport:
     entry: int | None = None  # the entry of the function that holds it
     name: str = ""  # Ghidra's name for it, '' while Ghidra's default
     size: int = 0
-    section: str = ""  # the section, for an address outside any function
+    section: str = ""  # the section that holds the address, '' outside the executable's image
     code: bool = False  # whether that section is the code (`.text`)
     source_file: str = ""
     claim: Claim | None = None
@@ -189,10 +189,9 @@ class Index:
         """The report for `address`: the function that holds it, its file and owning page, and where it is cited."""
         holder = self.catalog.containing(address)
         entry = holder.address if holder else None
-        section, code = "", False
-        if holder is None:
-            found = self.catalog.section_of(address)
-            section, code = (found.name, found.code) if found else ("", False)
+        # The section of the address itself, whether or not a function holds it.
+        found = self.catalog.section_of(address)
+        section, code = (found.name, found.code) if found else ("", False)
         key = entry if entry is not None else address
         ranges = self.files.ranges()
         cited, questions = self._scan()
