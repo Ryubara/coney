@@ -10,7 +10,8 @@ SessionStart), and the checks run inside it:
   (`identity.py`);
   then the guards that were separate hooks, loaded as modules and run unchanged (`build_guard.py`, `issue_guard.py`,
   `bounded_waits.py`, `pr_guard.py`, `push_guard.py` for the shell tools; `pcsx2_guard.py` for the shell commands that
-  name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` for the Agent tool). Every refusal is collected and sent
+  name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` for the Agent tool; `lua_guard.py` for Write, Edit,
+  MultiEdit and NotebookEdit). Every refusal is collected and sent
   together, as the separate hooks' were. When nothing refuses, a `coney-tools` or `git commit` command gets the
   caller's identity token put in front of it (`identity.py`, returned as `updatedInput`).
 * **PostToolUse**: `trailer_guard.py` after a `git commit`; the identity file of the command is removed, also when
@@ -138,6 +139,15 @@ def _agent(payload: dict[str, Any]) -> bool:
     return payload.get("tool_name") in ("Agent", "Task")
 
 
+#: The tools that write a file's text, which lua_guard reads.
+WRITERS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
+
+
+def _writes(payload: dict[str, Any]) -> bool:
+    """Whether the call writes text into a file."""
+    return payload.get("tool_name") in WRITERS
+
+
 #: What `git commit` looks like (`git commit`, `git -C x commit`, `git -c k=v commit`), without hooklib.
 _COMMIT = re.compile(
     r"(?:^|[;&|(\n]|\$\()[ \t]*(?:[A-Za-z_]\w*=\S*[ \t]+)*(?:\S*[/\\])?git(?:\.exe)?"
@@ -159,6 +169,7 @@ PRE_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [
     ("push_guard", _shell),
     ("pcsx2_guard", _pcsx2),
     ("agent_guard", _agent),
+    ("lua_guard", _writes),
 ]
 #: The guards of PostToolUse.
 POST_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [("trailer_guard", _commit)]

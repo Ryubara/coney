@@ -18,6 +18,7 @@ from coney_tools.config import ConfigError
 from coney_tools.workspace_fetch import (
     CCACHE_VERSION,
     CLONED,
+    LUA,
     MOVE_ATTEMPTS,
     PINS,
     PLATFORMS,
@@ -25,6 +26,7 @@ from coney_tools.workspace_fetch import (
     Pin,
     fetch_file,
     fetch_tool,
+    lua_build_commands,
     move_into_place,
     newest_release,
     packaged,
@@ -156,7 +158,8 @@ def test_every_pin_is_an_upstream_release_with_a_hash() -> None:
     for tool in TOOLS:
         for platform in PLATFORMS:
             for pin in PINS[tool](platform):
-                assert pin.url.startswith("https://github.com/"), pin
+                # Lua's source comes from its authors' own site, the one place it is published.
+                assert pin.url.startswith("https://www.lua.org/ftp/" if tool == "lua" else "https://github.com/"), pin
                 assert len(pin.digest) == 40 if tool in CLONED else len(pin.digest) == 64, pin
                 # LEGAL.md: the bootstrapper never fetches firmware or game files.
                 assert "bios" not in pin.url.lower()
@@ -310,3 +313,104 @@ def test_a_move_refused_every_time_says_to_run_again(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="run the command again"):
         move_into_place(tmp_path / "staging", tmp_path / "dest", rename, waits.append)
     assert len(waits) == MOVE_ATTEMPTS - 1
+
+
+def make_tar_gz(files: dict[str, bytes], links: dict[str, str]) -> bytes:
+    """A .tar.gz archive holding `files` and symbolic links (`links`: archive path -> target), as Lua's has."""
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+        for name, target in links.items():
+            info = tarfile.TarInfo(name)
+            info.type = tarfile.SYMTYPE
+            info.linkname = target
+            archive.addfile(info)
+    return buffer.getvalue()
+
+
+def test_lua_is_the_pinned_4_0_1_source_on_every_platform(tmp_path: Path) -> None:
+    """One stock Lua 4.0.1 for the decompiler's round trip, built from its source everywhere (no package has it)."""
+    for platform in PLATFORMS:
+        assert PINS["lua"](platform) == [LUA] and not packaged("lua", platform)
+    assert LUA.url == "https://www.lua.org/ftp/lua-4.0.1.tar.gz" and LUA.version == "4.0.1"
+    assert tool_destination("lua", tmp_path) == tmp_path / "tools" / "lua-4.0.1"
+
+
+def test_lua_unpacks_only_its_c_source_and_is_built(tmp_path: Path) -> None:
+    """Only the regular files of src/, include/ and the licence are kept (the archive's links point outside it and
+    cannot be made on Windows); the build gets the source folder and writes bin/."""
+    archive = make_tar_gz(
+        {
+            "lua-4.0.1/COPYRIGHT": b"licence",
+            "lua-4.0.1/src/lapi.c": b"core",
+            "lua-4.0.1/src/luac/luac.c": b"luac",
+            "lua-4.0.1/include/lua.h": b"header",
+            "lua-4.0.1/doc/manual.html": b"doc",
+            "lua-4.0.1/test/hello.lua": b"test",
+        },
+        {"lua-4.0.1/bin/lua": "../test/lua", "lua-4.0.1/src/escape.c": "../../outside.c"},
+    )
+    pin = pin_for("lua-4.0.1.tar.gz", archive)
+    built: list[tuple[Path, Path, str]] = []
+
+    def build(source: Path, bin_dir: Path, platform: str) -> None:
+        built.append((source, bin_dir, platform))
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "luac").write_bytes(b"program")
+
+    dest = tmp_path / "tools" / "lua-4.0.1"
+    fetch_tool("lua", dest, "linux", tmp_path / "cache", FakeWeb({pin.url: archive}), [pin], build_lua=build)
+    files = sorted(path.relative_to(dest).as_posix() for path in dest.rglob("*") if path.is_file())
+    assert files == [
+        "bin/luac",
+        "source/COPYRIGHT",
+        "source/include/lua.h",
+        "source/src/lapi.c",
+        "source/src/luac/luac.c",
+    ]
+    assert len(built) == 1 and built[0][2] == "linux"
+
+
+def test_a_failed_lua_build_leaves_nothing_behind(tmp_path: Path) -> None:
+    archive = make_tar_gz({"lua-4.0.1/src/lapi.c": b"core"}, {})
+    pin = pin_for("lua-4.0.1.tar.gz", archive)
+
+    def build(source: Path, bin_dir: Path, platform: str) -> None:
+        raise ConfigError("cc: error")
+
+    dest = tmp_path / "tools" / "lua-4.0.1"
+    with pytest.raises(ConfigError, match="cc"):
+        fetch_tool("lua", dest, "linux", tmp_path / "cache", FakeWeb({pin.url: archive}), [pin], build_lua=build)
+    assert not dest.exists()
+
+
+def _lua_source(tmp_path: Path) -> Path:
+    source = tmp_path / "source"
+    for name in ("src/lapi.c", "src/lvm.c", "src/luac/luac.c", "src/luac/stubs.c", "src/lib/lmathlib.c"):
+        (source / name).parent.mkdir(parents=True, exist_ok=True)
+        (source / name).write_bytes(b"")
+    (source / "include").mkdir()
+    return source
+
+
+@pytest.mark.parametrize("platform", ["windows", "linux"])
+def test_luac_links_the_core_as_a_library(tmp_path: Path, platform: str) -> None:
+    """The core (src/*.c) becomes a library first and luac (src/luac/*.c) links against it: linking every object
+    directly fails, as luac's stubs.c defines what the core's undump defines too. The standard libraries are not
+    needed by luac and are not built."""
+    source = _lua_source(tmp_path)
+    steps = lua_build_commands(source, tmp_path / "bin", tmp_path / "obj", platform)
+    assert len(steps) == 3
+    (core, _), (archive, _), (link, _) = steps
+    text = [" ".join(command) for command in (core, archive, link)]
+    assert "lapi.c" in text[0] and "lvm.c" in text[0] and "luac.c" not in text[0] and "lmathlib" not in text[0]
+    assert "stubs.c" in text[2] and "luac.c" in text[2]
+    if platform == "windows":
+        assert core[0] == "cl" and archive[0] == "lib" and text[2].endswith("luac.exe")
+        assert "lua.lib" in text[2]
+    else:
+        assert core[0] == "cc" and archive[:2] == ["ar", "rcs"] and "-std=gnu89" in core
+        assert "liblua.a" in text[2] and link[-1] == str(tmp_path / "bin" / "luac")

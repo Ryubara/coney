@@ -14,6 +14,13 @@ at run time comes out as `UNKNOWN`.
 
 Research: docs/research/scripting.md (the Lua state, the 62-item `SETLIST` flush), docs/research/formats/wad-contents.md
 (the chunk header).
+
+This is one of two chunk readers in python/src. The other is the decompiler's (`lua4/chunk.py`, the top-level `lua4`
+package), which must stand alone and import nothing from Coney (a maintainer decision), so it cannot use this one;
+it also reads any int and size_t size, which the round trip needs (a 64-bit `luac` writes 8-byte sizes). This one
+stays because the reference tools, the natives tools and `coney-tools lua`'s index are built on its walk, which
+reads values the decompiler has no use for. Making it parse through `lua4.chunk` (Coney may import the package, not
+the reverse) would leave one parser; until then a change to the chunk format is made in both.
 """
 
 from __future__ import annotations
@@ -24,7 +31,8 @@ from dataclasses import dataclass, field
 #: Every compiled chunk on the disc starts with these 13 bytes (Lua 4.0, little-endian, 4/4/4-byte sizes, 32-bit
 #: instructions with a 6-bit opcode and a 9-bit B field, 8-byte numbers).
 HEADER = bytes.fromhex("1b4c7561400104040420060908")
-#: This build's `LFIELDS_PER_FLUSH` (stock Lua 4.0 uses 64): a `SETLIST` with A = n stores from item n * 62 + 1.
+#: Lua 4.0.1's `LFIELDS_PER_FLUSH`, 64 capped at MAXSTACK / 4 = 62 in its `llimits.h` (stock, not a change in the
+#: game's build): a `SETLIST` with A = n stores from item n * 62 + 1.
 FIELDS_PER_FLUSH = 62
 _MAXARG_S = ((1 << 26) - 1) >> 1
 _MULTRET = 255
@@ -88,7 +96,8 @@ class LuaError(Exception):
 
 @dataclass
 class Proto:
-    """One function prototype: its constants, nested functions and code."""
+    """One function prototype: its constants, nested functions and code, and the line it was defined on (0 for the
+    main chunk; a stripped chunk keeps it)."""
 
     params: int
     is_vararg: bool
@@ -97,6 +106,7 @@ class Proto:
     protos: list[Proto]
     code: list[int]
     local_names: list[str] = field(default_factory=list)
+    line_defined: int = 0
 
 
 class _Reader:
@@ -134,7 +144,7 @@ class _Reader:
 def _read_proto(reader: _Reader) -> Proto:
     """Read one function prototype (lundump.c's LoadFunction for 4.0)."""
     reader.string()  # source name, stripped to "=(none)" on the disc
-    reader.int32()  # line defined
+    line_defined = reader.int32()
     params = reader.int32()
     is_vararg = bool(reader.take("<B"))
     reader.int32()  # max stack size
@@ -150,7 +160,7 @@ def _read_proto(reader: _Reader) -> Proto:
     numbers = [float(reader.take("<d")) for _ in range(reader.int32())]
     protos = [_read_proto(reader) for _ in range(reader.int32())]
     code = [int(reader.take("<I")) for _ in range(reader.int32())]
-    return Proto(params, is_vararg, strings, numbers, protos, code, local_names)
+    return Proto(params, is_vararg, strings, numbers, protos, code, local_names, line_defined)
 
 
 def parse_chunk(data: bytes) -> Proto:

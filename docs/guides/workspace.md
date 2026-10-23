@@ -17,7 +17,7 @@ Coney/                          the workspace (a plain folder, not a repository)
   game/                         your disc image and files extracted from it
   emulators/pcsx2, pcsx2-b, ... portable PCSX2 copies of the PCSX2-MCP fork build (plus BIOS), one per agent
   emulators/state-library/      the shared library of PCSX2 save states (pcsx2-states.md); game memory, so never in a repo
-  tools/                        local installs: Ghidra (with the EE extension), RenderDoc, a JDK if needed
+  tools/                        local installs: Ghidra (with the EE extension), Lua 4.0.1's luac, RenderDoc, a JDK if needed
   ghidra/                       local Ghidra projects (rebuildable caches)
 ```
 
@@ -87,8 +87,8 @@ PCSX2 copy's `bios/` folder.
 ### Fetching the research tools {#fetch}
 
 Engineers studying the original need Ghidra and PCSX2. `--fetch TOOL` (repeatable, or `--fetch all`) downloads
-each from its own project's GitHub releases (or clones its repository) at the version below, checks it against the
-SHA-256 pinned in
+each from its own project's GitHub releases (or clones its repository, or for Lua takes its authors' source archive)
+at the version below, checks it against the SHA-256 pinned in
 `python/src/coney_tools/workspace_fetch.py` and unpacks it; downloads are kept in `scratch/downloads/`. Every file
 of a tool is downloaded and checked before any is unpacked, and the tool's folder appears only once it is complete,
 so a failed or interrupted fetch leaves nothing half-installed: run the command again to retry it. An archive entry
@@ -101,6 +101,7 @@ that would land outside the tool's folder is refused.
 | `ccache` | ccache 4.14.1, the [compiler cache](building.md#compiler-cache) `coney-tools build` uses; Windows only (the release CI's Windows job installs), on Linux and macOS install the `ccache` package with apt or Homebrew | `tools/ccache-4.14.1` | GPL-3.0 |
 | `pcsx2-mcp-release` | the PCSX2-MCP fork's release v1.1.0 (Windows only): PCSX2 2.9.129 built with the debug server, the MCP server with its dependencies in `pcsx2-mcp-server/`, and the patch's source | `tools/PCSX2-MCP-v1.1.0-win64` | GPL-3.0 |
 | `pcsx2-mcp` | the maintainer's PCSX2-MCP fork (`Ryubara/PCSX2-MCP`) at a pinned commit: its PCSX2 2.9.129 patch and the Node.js MCP server's source, to change the fork | `tools/pcsx2-mcp` | GPL-3.0 |
+| `lua` | Lua 4.0.1's source (`lua-4.0.1.tar.gz` from lua.org; only `src/`, `include/` and the licence are unpacked), from which `luac` is built with the machine's C compiler (Visual Studio's on Windows, loaded as `coney-tools build` loads it; `cc` and `ar` elsewhere) into `bin/`, for [`lua decompile --roundtrip`](coney-tools.md#lua) | `tools/lua-4.0.1` | MIT |
 
 A stock PCSX2 is never downloaded: every copy runs the fork's build, the release or one made from the clone
 ([PCSX2 copies](#pcsx2-copies)).
@@ -209,6 +210,8 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
 | `pcsx2_mcp_dir` | none (`init` sets it to the clone's newest build under `tools/pcsx2-mcp/release/`, else to the fetched release `tools/PCSX2-MCP-v1.1.0-win64`) | a PCSX2-MCP fork build, the release or one made from the clone: the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
+| `luac_program` | the `luac` that `workspace init --fetch lua` built in `../../tools/lua-4.0.1/bin` | a stock Lua 4.0 `luac`, for [`lua decompile --roundtrip`](coney-tools.md#lua) |
+| `lua_dir` | `scratch/lua` in the main checkout's `../..` (`<clone>-workspace/scratch/lua` in a plain clone) | the shared folder of decompiled game scripts, their index and fingerprints ([`lua decompile --all`](coney-tools.md#lua)); game data, so never in a checkout |
 | `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 | `stamp_key` | none (stamps are then written unsigned) | the *public* half of your stamp signing key, a file; the private half stays in the SSH agent. Only maintainers have one ([Signing](stamps.md#signing)) |
 

@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-five
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-six
 groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
 checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task),
 which claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
@@ -11,7 +11,8 @@ from **your own disc**, [`extract`](#extract), which turns every asset of the di
 which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the
 docs current, [`orig`](#orig), which indexes the `@orig` tags for the fidelity audit, [`original`](#original), which
 studies an original function and compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log,
-[`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the game reference
+[`lua`](#lua), which decompiles the game's compiled scripts for research, [`natives`](#natives), which renders the
+script-binding masterlist, [`refs`](#refs), which builds the game reference
 lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which
 record the original's per-update traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks,
 publishes and cleans up in-game video clips, [`mcp`](#mcp), which starts the debugging servers for agent tools,
@@ -613,6 +614,71 @@ transparency. `coney --render-references` writes full-colour images of about 26 
 under a quarter of that and look the same at 256 pixels. The quantizer is deterministic, so a re-render gives the same
 files. A file the palette would not make smaller (most radar icons) is left as it is. Run it after rendering and before
 `refs extract` links the images.
+
+## lua {#lua}
+
+The game's 467 scripts are compiled Lua 4.0 ([Compiled Lua chunks](../research/formats/lua-chunks.md)). `lua
+decompile` turns them back into readable Lua for research, with Coney's own decompiler (the `lua4` package under
+`python/src/`; how it works and what it gets back: [Lua 4.0 bytecode](../research/formats/lua-bytecode.md)). Its
+output is game script text: it is written only outside the repository, and research pages describe what a script does
+in our own words ([The game's scripts](research-workflow.md#scripts)).
+
+```sh
+uv run --project python coney-tools lua decompile [DISC] --all [--out DIR] [--roundtrip] [--chunks DIR] [--luac PATH]
+uv run --project python coney-tools lua decompile [DISC] NAME OUT_DIR [--roundtrip] [--chunks DIR] [--luac PATH]
+```
+
+`--all` decompiles every chunk of your disc (`DISC` works as for the `wad` commands) into the **shared folder**,
+`lua_dir` in `coney.local.toml` (default `<workspace>/scratch/lua`), so every worktree and agent reads the same copy;
+`--out` writes elsewhere. Each chunk becomes `<name>.lua` (the WAD's file name, or the entry's hash in hex when the
+name is not known). Beside them it writes:
+
+* `index.md` and `index.json`: per script, every function (named by the global or table field that holds it, with
+  its path among the chunk's functions and the line it is defined on), the natives it calls (the names in
+  `research/bindings/`), the script functions it calls, and the handlers it registers (calls of a native whose name
+  ends in `Handler` or `Callback`, `RegisterUpdate`, `ScheduleFunc*` and `TriggerSphereCfg`) with their constant
+  arguments (`python/src/coney_tools/lua_index.py`). Start a level's research here.
+* `fingerprints.txt`: a hash of every distinctive line of every script, which the guard below reads.
+
+`NAME OUT_DIR` decompiles one chunk, by file name (`level99.lua`) or hash, into `OUT_DIR`. Both refuse an output
+folder inside a checkout. `--chunks DIR` reads the chunks from a folder (`wad extract` or `extract` output) instead of
+the disc. The output prints counts only: chunks, functions, the functions that could not be read with the kind of
+problem (a pc and an opcode, never a constant). A chunk the loader refuses (another Lua version, cut short) is named
+with the reason: `--all` goes on with the rest, still writes the fingerprints and the index for every script it wrote,
+and exits 1; one chunk by name is a one-line error.
+
+`--roundtrip` compiles each output with a stock Lua 4.0.1 `luac` and compares the result with the original chunk,
+function by function: instructions, constants, parameters, vararg flag, stack size and nested functions. It prints how
+many chunks match, the kind of each first difference and the names of the chunks that failed, never the script's
+text, and exits 1 when any differs. On the NTSC-U disc all 467 match (about two minutes). The `luac` is `--luac`,
+else `luac_program` in `coney.local.toml`, else the one `coney-tools workspace init --fetch lua` builds from Lua's
+pinned source in `<workspace>/tools/lua-4.0.1/bin/` ([Fetching the research tools](workspace.md#fetch)).
+
+**The guard.** `.claude/hooks/lua_guard.py` refuses decompiled Lua in the repository: every file the command writes
+ends with a marker line (`-- lua4 decompile <hash> <name>`), and text holding that line is refused. So is text in
+which three of any five distinctive lines in a row (24 characters or more) have their fingerprint in the shared
+folder's `fingerprints.txt`. A line is compared without the markup a paste picks up: quote markers, list bullets and
+numbers, inline-code backticks, `--` before commented-out code and a trailing `--` comment are stripped, and each cell
+of a table row counts as a line. One quoted line passes, and so do short lines. It runs in pre-commit
+(`no-decompiled-lua`, on every text file) and as a Claude Code hook before every Write, Edit, MultiEdit and
+NotebookEdit into a checkout ([The hooks](enforcement.md#hooks)). Without the shared folder (CI, or before the first
+`--all`) only the marker is checked. A shell command that writes a file is not seen by the hook; pre-commit catches
+the commit. Text that never enters a checkout is not checked at all: an issue or pull request body, or a description
+file in scratch. Neither is a paraphrase. After a change to the guard's normalising, rerun `--all` so the
+fingerprints match it.
+
+**The decompiler's tests** (`python/tests/lua4/`) run on our own Lua source, compiled with a stock `luac` with and
+without debug information (`fixtures/<name>.luac`, `<name>.s.luac`), against the decompiles committed beside them
+(`<name>.expected.lua`, `<name>.s.expected.lua`). With a `luac` found (`LUA4_LUAC`, else `luac_program` or its
+default) they also round-trip each fixture. CI has no `luac`, so it runs neither the round trip nor the check that
+the committed chunks match their source: there the expected outputs only catch a change in the output, not a wrong
+one, and the round trip is a local check. After a change to the decompiler or a fixture, rewrite them with
+`LUA4_REGENERATE=1 uv run --project python pytest python/tests/lua4 -k regenerate`, run the tests again with the
+`luac` found and read the diff. The committed chunks have 4-byte sizes, as the game's do, and the index's reader takes
+only those. The `luac` that `--fetch lua` builds is a 64-bit program that writes 8-byte sizes (fine for the round
+trip, which compares functions, not headers), so the regenerate step refuses it. Regenerate with a 32-bit build named
+by `LUA4_LUAC`: on Windows, the same build as `--fetch lua` from the x86 tools (`vcvars32.bat`), with the core
+`src/*.c` in a library and `src/luac/*.c` linked against it.
 
 ## missions {#missions}
 
@@ -2087,10 +2153,11 @@ uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url
 
 Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
 (`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
-`--fetch ghidra|ghidra-mcp|pcsx2-mcp-release|pcsx2-mcp|ccache|all`, downloads the research tools and, on Windows,
-the [compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (`pcsx2-mcp-release` is the
-PCSX2-MCP fork's Windows release, the PCSX2 the copies run, `pcsx2 setup-copies`; the two MCP projects are cloned at
-a pinned commit; on Linux and macOS ccache comes from the package manager).
+`--fetch ghidra|ghidra-mcp|pcsx2-mcp-release|pcsx2-mcp|ccache|lua|all`, downloads the research tools and, on
+Windows, the [compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (`pcsx2-mcp-release`
+is the PCSX2-MCP fork's Windows release, the PCSX2 the copies run, `pcsx2 setup-copies`; the two MCP projects are
+cloned at a pinned commit; on Linux and macOS ccache comes from the package manager; `lua` builds Lua 4.0.1's `luac`
+from its source for [`lua decompile --roundtrip`](#lua)).
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
 `bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it, adding

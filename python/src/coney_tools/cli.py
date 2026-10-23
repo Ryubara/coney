@@ -25,6 +25,7 @@ from coney_tools import (
     identity,
     issue_claim_cli,
     issue_cli,
+    lua_cli,
     mcp_serve,
     mission_cli,
     missions_render,
@@ -385,6 +386,7 @@ def _build_parser() -> argparse.ArgumentParser:
     orig_cli.add_parser(groups)
     original_cli.add_parser(groups)
     stamp_cli.add_parser(groups)
+    lua_cli.add_parser(groups)
     _add_natives_commands(groups)
     _add_refs_commands(groups)
     _add_missions_commands(groups)
@@ -1100,6 +1102,8 @@ def _run(args: argparse.Namespace) -> int:
         return original_cli.run(args)
     if args.group == "stamp":
         return stamp_cli.run(args)
+    if args.group == "lua":
+        return lua_cli.run(args)
     if args.group == "natives":
         if args.command == "render":
             return natives_cli.run_render(args.check)

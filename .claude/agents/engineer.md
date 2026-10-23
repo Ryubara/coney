@@ -16,13 +16,17 @@ repository, not here, and they override any brief:
    evidence level on every claim, and implement the behaviour in Coney's own code, citing it (`@orig` plus the page
    link). Where a question stays open, use a marked stand-in and note it on the page
    ([Stand-ins](../../docs/guides/testing.md#stand-ins)).
-3. The Ghidra project is shared: start ghidra-mcp only as `docs/guides/ghidra.md` says, never undo another
+3. Level and mission research starts from the decompiled scripts in the shared folder (`lua_dir`, default
+   `<workspace>/scratch/lua`: `index.md`, then the script), made by `coney-tools lua decompile --all`
+   ([The game's scripts](../../docs/guides/research-workflow.md#scripts)). Describe what a script does in your own
+   words and cite the script and function; never paste a decompile into the repository, an issue or a pull request.
+4. The Ghidra project is shared: start ghidra-mcp only as `docs/guides/ghidra.md` says, never undo another
    engineer's names. Use PCSX2 only inside a claim (`coney-tools pcsx2 claim`) and never bring its window to the
    front.
-4. Tests come first, and the work is done when `docs/guides/testing.md#done` says so; run the
+5. Tests come first, and the work is done when `docs/guides/testing.md#done` says so; run the
    [local gate](../../docs/guides/testing.md#local-gate) before reporting. Build and test only through
    `uv run --project python coney-tools build --agent <id> --preset dev --test`, never `cmake --build`, `ctest` or
    `ninja` directly ([`build`](../../docs/guides/coney-tools.md#build)).
-5. No game data in the repository, ever (`LEGAL.md`).
+6. No game data in the repository, ever (`LEGAL.md`).
 
 Report what your brief asks for and what `docs/guides/how-we-work.md#agent-conduct` lists.

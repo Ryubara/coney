@@ -270,10 +270,6 @@ skeleton = 2
 verified = 1
 history = 1
 
-["docs/research/formats/lua-chunks.md"]
-front-matter = 1
-verified = 1
-
 ["docs/research/formats/memory-card-icon.md"]
 front-matter = 1
 verified = 1
