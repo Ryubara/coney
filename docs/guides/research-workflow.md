@@ -212,8 +212,9 @@ A finding is done when someone else can use it without asking you. For each one:
 
 A function is researched in full ("understood" on the [progress page](../progress/index.md)) when it has a meaningful
 name and a plate comment in the shared Ghidra project, and a research page cites its address in a table row or paragraph
-that states an evidence level and says what it does, or has an entry with a `role` in the
-[function database](research-data.md#function-database) (every entry has a level). A function nobody needs (dead code, a
+that states an evidence level and says what it does, or has an entry with a `role` and a `level` in the
+[function database](research-data.md#function-database) (an entry whose page states no level for the function has
+none and does not count). A function nobody needs (dead code, a
 debug stub) is cited with `not needed: <reason>` instead, or has an entry with level `not-needed` and the reason as its
 role. The bar checks the name and the citation; the plate comment is listed in the backlog. Citations on the
 [source map](../research/source-map.md) do not count; a script binding's wrapper counts through its `evidence` in

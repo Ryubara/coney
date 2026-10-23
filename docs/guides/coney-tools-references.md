@@ -99,14 +99,15 @@ save the branch's copy of the file outside the checkout, take main's side and ru
 only the rows the database lacks. An entry the database has gets `coney` and keeps everything else; any other function
 gets a new entry from the research that cites it, in this order of preference: a row of a page's function table (the
 page's role, level and section, as [`research import-table`](research-function-database.md#importing) reads it), a
-paragraph or table row that states a level, the evidence of the function's script binding (its page is
-`scripting.md#bindings`), and last a page that only mentions the address (the weakest level, `speculative`, and a note
-saying that none was stated). Among equals it takes the page with the most such functions, and the entry goes in the
-file of that page's system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The name is Ghidra's,
-`coney` comes from the `@orig` tag in `src/`. The report counts the new entries by source and by system and lists the
-rows whose name is not Ghidra's, the rows with no function in the listing, the entries with the weakest level and any
-row left out (the exit code is 1 for those); `--dry-run` writes nothing and `--all` lists every row. Delete the old
-file afterwards. The command is to be removed once no branch carries the old list.
+sentence or block of a page that states a code reading tied to that function's own claim, the function's script
+binding (an entry in the `scripting` system, its page the binding reference, `../references/bindings/<group>.md#<name>`),
+and last a page that only mentions the address. It never guesses a level: an entry whose level cannot be tied to
+the function's own claim has none, and a note saying so. Among equals it takes the page with the most such functions,
+and the entry goes in the file of that page's system (`combat-grabs.md` is in `combat` when `combat.md` is a page). The
+name is Ghidra's, `coney` comes from the `@orig` tag in `src/`. The report counts the new entries by source and by
+system and lists the rows whose name is not Ghidra's, the rows with no function in the listing, the entries with no
+level and any row left out (the exit code is 1 for those); `--dry-run` writes nothing and `--all` lists every row.
+Delete the old file afterwards. The command is to be removed once no branch carries the old list.
 
 ## natives {#natives}
 

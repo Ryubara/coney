@@ -18,8 +18,8 @@ name = "Grab_Start"             # the name in the shared Ghidra project, exactly
 page = "combat/grabs.md#grab"   # below docs/research: the page, and the section that describes the function
 kind = "start"                  # optional: a short tag (helper, init, binding, ...), as a table's Role column had
 role = "plays the grab intro (anim 71) and decides miss, counter, front or rear grab"   # one line
-level = "confirmed-code"        # confirmed-code | confirmed-runtime | inferred | speculative | not-needed
-note = "the anim id inferred"   # optional: what the level alone does not say
+level = "confirmed-code"        # optional: confirmed-code | confirmed-runtime | inferred | speculative | not-needed
+note = "the anim id inferred"   # optional with a level (what it does not say), required without one
 coney = "src/core/combat/grab.cpp:Grab::start"   # optional: where the port lives
 status = "compared"             # optional, only with coney: legacy | compared
 
@@ -34,11 +34,11 @@ issue = 123                     # the issue that does
 | --- | --- | --- |
 | `address` | yes | The function's entry point in `SLUS_212.15`, written `0x` and eight hex digits |
 | `name` | yes | The Ghidra name: letters, digits, `_`, and `::` for a member (`DVDWadIndex::Find`) |
-| `page` | yes | `<page>.md` or `<page>.md#section`, below `docs/research`. The section describes the function and is the one to open first |
-| `level` | yes | How we know what the function does: the [evidence levels](research-evidence.md#evidence-levels), spelled as the YAML values, and `not-needed` for a function nobody needs (dead code, a debug stub) |
+| `page` | yes | `<page>.md` or `<page>.md#section`, below `docs/research`: the section describes the function and is the one to open first. The wrapper of a script binding names the generated binding reference instead, `../references/bindings/<group>.md#<name>` (relative to `docs/research`, the name in lower case) |
+| `level` | no | How we know what the function does: the [evidence levels](research-evidence.md#evidence-levels), spelled as the YAML values, and `not-needed` for a function nobody needs (dead code, a debug stub). Leave it out when the page states no level for this function's own claim: an entry never claims a level the page does not give it |
 | `role` | no; with `not-needed`, the reason | What the function does, in one line of our own words; Markdown, with links relative to `docs/research` |
 | `kind` | no | A short tag for the sort of function |
-| `note` | no | The part of the claim the level does not cover (`confirmed (code); the rock inferred` becomes level `confirmed-code` with that text as the note); Markdown, links relative to `docs/research` like the role's |
+| `note` | with no `level`; else no | The part of the claim the level does not cover (`confirmed (code); the rock inferred` becomes level `confirmed-code` with that text as the note), or, for an entry with no level, why it has none and where to read about the function; Markdown, links relative to `docs/research` like the role's |
 | `coney` | no | The source file of the port and, after a colon, its function or class |
 | `status` | no | How far the port has been checked against the original: `legacy` (ported before the side-by-side comparison) or `compared`. Only a function with `coney` has one |
 | `gaps` | no | Each piece the port leaves out or does differently: `what`, a `relation` (`stand-in`: on purpose, the reason on the open question; `not-ported`: waits for the issue) and an `issue` number, a `question` (`page.md#q-...`), or both |
@@ -54,7 +54,8 @@ whether to open that section. Pseudocode, decompiler output and game data never 
 (`python`) and in the docs build, and fails on:
 
 - a file that breaks the schema above: an unknown key, a wrong type, a level, relation or status not in its list,
-  `status` without `coney`, a gap with no issue and no question, addresses out of order or twice;
+  an entry with no `level` and no `note`, `status` without `coney`, a gap with no issue and no question, addresses
+  out of order or twice;
 - decompiler output in `role`, `kind`, `note` or a gap's `what`: the marks `orig copy-check` refuses in C++ (Ghidra's
   made-up names such as `iVar1`, `param_2`, `DAT_003a1f20` or `FUN_00123456`, its `undefined4` types, a raw read at
   a byte offset), as on a research page: cite an unnamed function by its address;
@@ -62,7 +63,8 @@ whether to open that section. Pseudocode, decompiler output and game data never 
 - an address that is not a function entry in the committed Ghidra listing (`docs/progress/ghidra-functions.tsv`), or a
   name that is not the one Ghidra has; for a ported entry (`coney`) an address in a gap between listed functions is a warning
   ([below](#ported)), and one inside a listed function an error;
-- a `page` that is not a file, or a section that is not an anchor of it, and a gap's question that does not resolve;
+- a `page` that is not a file, or a section that is not an anchor of it (for a binding page, the file under
+  `docs/references/bindings` and the binding's name as its anchor), and a gap's question that does not resolve;
 - a `coney` file that is not in the checkout;
 - an entry whose page does not own its address, once that page has front matter (with or without `owns`), or whose
   address another page owns ([one owner per address](writing-docs.md#research-pages), the most specific `owns` entry
@@ -121,7 +123,8 @@ docs build. Each row has an anchor, `functions.md#0x0026c548`, for a page that w
 
 The entry is also where Coney says it ports the function. Whoever tags a function `@orig 0x... Name` adds, in the same
 commit, to the entry of that function (or a new entry, when the function has none: a page and a level are needed
-first, which is the [research](research-workflow.md#understood) the port was made from):
+first, which is the [research](research-workflow.md#understood) the port was made from; the level can wait, the page
+cannot):
 
 - `coney`, the file that carries the tag and, after a colon, the function or class: `src/core/combat/grab.cpp:Grab::start`.
   A function tagged in several files names one of them;
@@ -146,12 +149,18 @@ what the branch changed). Write new tags with the name the entry has.
 
 The reimplemented list used to be `docs/progress/functions.toml` (address, name, subsystem, size). The move into this
 database is `coney-tools progress import-functions`, kept for a branch that still adds rows to the old file
-([the progress commands](coney-tools-references.md#progress)). It gave the entries that had no page-table row the
-page that cites the function, which is a starting point: when you study such a function, check its page and level and
-write its role.
+([the progress commands](coney-tools-references.md#progress)). An entry it made from prose is a starting point, and
+it gives a level only when it can tie one to that function's own claim: a page-table row's Evidence cell, or a
+sentence that cites the function (and no other function the sentence does not name) and reads its code. A function
+that only a paragraph mentions, or whose level sits beside other functions' claims, has no level and a note saying
+so, and a script binding's wrapper points at the binding reference. When you study such a function, grade it: check
+its page, write its level and role and drop the note.
 
 ## Other readers of the file {#other-readers}
 
-The Understood measure counts an entry with a `role` as a citation with evidence ([the Understood
-measure](research-workflow.md#understood)); without one the entry says nothing of what the function does. The progress
-tracker reads the `coney` field ([above](#ported)). `research where` prints an entry's page, level and port.
+The Understood measure counts an entry with a `role` and a `level` as a citation with evidence ([the Understood
+measure](research-workflow.md#understood)); without a role the entry says nothing of what the function does, and
+without a level nothing says how we know. `research render` lists an entry with no level as "no level" and counts
+them in its summary, and `research where` prints an entry's page, level (`null` in its JSON when there is none) and
+port. The page-ownership check (`function-entries`) skips the entries of binding wrappers, whose page is not a
+research page. The progress tracker reads the `coney` field ([above](#ported)).
