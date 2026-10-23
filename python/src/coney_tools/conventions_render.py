@@ -76,6 +76,13 @@ def _join_and(values: list[str]) -> str:
     return ", ".join(values[:-1]) + " and " + values[-1]
 
 
+def _join_or(values: list[str]) -> str:
+    """`a`, `a or b`, `a, b or c`."""
+    if len(values) <= 1:
+        return "".join(values)
+    return ", ".join(values[:-1]) + " or " + values[-1]
+
+
 def _cell(text: str) -> str:
     """Text safe inside a table cell."""
     return text.replace("|", "\\|")
@@ -279,6 +286,53 @@ def _scope_paths(patterns: tuple[str, ...]) -> list[str]:
     return lines
 
 
+def _claim_rules(conventions: Conventions) -> list[str]:
+    """The numbers and names of claiming an issue (docs/guides/issues.md#claiming)."""
+    claims = conventions.claims
+    limits = claims.limits
+    lines = _bullet(
+        f"An issue can be claimed only when it carries `{claims.claimable_status}`, whoever claims it. A claim sets "
+        f"`{claims.working_label}` (`{claims.review_label}` while its pull request is open); a release or "
+        f"`/unclaim` sets `{claims.released_label}`."
+    )
+    lines += _bullet(
+        f"A maintainer (someone with {_join_or([f'`{name}`' for name in claims.maintainer_permissions])} permission "
+        f"on the repository) holds {limits.maintainer} open claims at most, a contributor {limits.contributor}. "
+        f"Issues whose cards share a `task:` id count as one claim, and a task holds {limits.issues_per_task} issues "
+        "at most."
+    )
+    lines += _bullet(
+        f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "
+        f"`{claims.critical_label}` issue can be claimed."
+    )
+    lines += _bullet(
+        f"A claimed issue that carries {_codes(claims.paused_labels)} keeps that label; the claim stays and its "
+        "release clock waits, as it does while the claimant's pull request is open."
+    )
+    state = "on" if claims.release else "off until the cutover"
+    lines += _bullet(
+        f"Release is {state}: a claim is released after {claims.deadline_hours} hours without activity (`/progress`, a "
+        f"pull request opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is "
+        f"mentioned at {claims.warn_hours} hours. The stages `/progress` accepts: {_codes(claims.stages)}."
+    )
+    adopt = "on" if claims.adopt else "off until the cutover"
+    lines += _bullet(
+        f"Adoption is {adopt}: the sweep gives a card (and the deadline) to an issue assigned by hand. The text after "
+        f"`scope:` is at most {claims.scope_max_characters} characters, and at most {claims.closing_per_event} "
+        "`Fixes #N` lines of one pull request event are acted on."
+    )
+    lines += _bullet(
+        f"The sweep runs on the cron `{claims.sweep}` (UTC): it repairs cards, answers unhandled commands, releases "
+        "claims over the limit and reports issues in progress with nobody assigned."
+    )
+    lines += _bullet(
+        "Claim jobs run one at a time for the whole repository; each also handles the commands other issues received "
+        f"in the last {claims.catch_up_minutes} minutes, so the command of a job GitHub cancelled while it waited "
+        "is usually answered by the next one, and otherwise by the next sweep that runs."
+    )
+    return lines
+
+
 def _audit_checks(conventions: Conventions) -> list[str]:
     """The checks `coney-tools repo audit` runs (`hygiene.checks`) as a table: scope, severity, fix class, finds."""
     lines = ["| Check | Scope | Severity | Fix | Finds |", "| --- | --- | --- | --- | --- |"]
@@ -300,6 +354,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "tools-only-paths": lambda conventions: _scope_paths(conventions.paths.tools_only),
     "engine-paths": lambda conventions: _scope_paths(conventions.paths.engine),
     "audit-checks": _audit_checks,
+    "claim-rules": _claim_rules,
 }
 
 

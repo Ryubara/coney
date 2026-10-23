@@ -58,6 +58,8 @@ class Issue:
     created: datetime
     updated: datetime
     url: str
+    #: The logins of the assignees.
+    assignees: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -158,6 +160,9 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
                 created=_time(item.get("createdAt")),
                 updated=_time(item.get("updatedAt")),
                 url=str(item.get("url", "")),
+                assignees=tuple(
+                    str(person["login"]) for person in item.get("assignees") or [] if isinstance(person, dict)
+                ),
             )
             for item in data["issues"]
         )
@@ -217,7 +222,7 @@ def run_gh(arguments: list[str]) -> str:
     return done.stdout
 
 
-ISSUE_FIELDS = "number,title,body,state,stateReason,labels,createdAt,updatedAt,url"
+ISSUE_FIELDS = "number,title,body,state,stateReason,labels,assignees,createdAt,updatedAt,url"
 PULL_FIELDS = (
     "number,title,body,state,labels,createdAt,updatedAt,mergedAt,baseRefName,headRefName,isDraft,"
     "autoMergeRequest,closingIssuesReferences,url"
@@ -707,6 +712,22 @@ def issue_progress_idle(context: GithubContext) -> Iterator[Problem]:
         idle = _days(issue.updated, context.now)
         if idle > limit:
             yield _problem(issue, f"in progress with no activity for {idle} days (limit {limit})")
+
+
+@check("issue.claim-orphan")
+def issue_claim_orphan(context: GithubContext) -> Iterator[Problem]:
+    """An open issue labelled as being worked on (`S-in-progress` or `S-pending-review`) has an assignee.
+
+    One without cannot be released, followed or shown as a claim: claim it with `task create`, or set it back to
+    `S-ready-to-start` (docs/guides/issues.md#claiming).
+    """
+    claims = context.conventions.claims
+    for issue in context.snapshot.open_issues():
+        if (claims.working_label in issue.labels or claims.review_label in issue.labels) and not issue.assignees:
+            yield _problem(
+                issue,
+                f"labelled {claims.working_label}/{claims.review_label} but nobody is assigned: claim it or reset it",
+            )
 
 
 @check("issue.review-without-pr")

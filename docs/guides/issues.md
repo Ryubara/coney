@@ -117,16 +117,16 @@ changes the command with it ([Repository conventions](repo-conventions.md)). The
    `Screenshots: none (<reason>)` convention are there too. Fill it in; the comments may stay, they are not shown and
    the issue is filed without them.
 2. **Check.** `coney-tools issue check --title "..." --body FILE [--leftover] [--online]` says what is wrong, one line
-   per problem, and exits 1: headings at the wrong level (`## Screenshots`), with other names, extra, missing or out
-   of order; a required section empty or `x`; an Area that is not an option; a docs or research page written as plain
-   text instead of `[docs/x.md](../blob/main/docs/x.md)`, or linked to a file or `{#anchor}` that is not on `main`
-   (read from `origin/main` in your checkout, no network; `git fetch origin` first); a Screenshots section with
-   neither an uploaded image nor the `none (<reason>)` line; a leftover without its `From:` line; "owner" for the
-   user; the repository's address. The form is the one the body's headings belong to (a "Bug:" title on a task-form
-   body is checked as a task); `--form` overrides it. The bug form's "How often does it happen?" also allows
-   `Unknown`. A page that exists only on a branch stays plain text with a note such as
-   "not on `main` yet". With `--online`, the words that call `#N` open, merged or closed are compared with
-   `gh` ([State the status as it is](#writing)).
+   per problem, and exits 1: headings at the wrong level (`## Screenshots`), with other names, extra, missing or out of
+   order; a required section empty or `x`; an Area that is not an option; a docs or research page written as plain text
+   instead of `[docs/x.md](../blob/main/docs/x.md)`, or linked to a file or `{#anchor}` that is not on `main` (read from
+   `origin/main` in your checkout, no network; `git fetch origin` first); a Screenshots section with neither an uploaded
+   image nor the `none (<reason>)` line; a leftover without its `From:` line; "owner" for the user; the repository's
+   address; a title that is not `area: Verb the rest` ([Titles](#titles)). The form is the one the body's headings
+   belong to (the title says nothing about it); `--form` overrides it. The bug form's "How often does it happen?" also
+   allows `Unknown`. A page that exists only on a branch stays plain text with a note such as "not on `main` yet". With
+   `--online`, the words that call `#N` open, merged or closed are compared with `gh` ([State the status as it
+   is](#writing)).
 3. **File.** `coney-tools issue create --title "..." --body FILE [--label L ...] [--parent N] [--leftover] [--attach F]`
    runs the same check and then `gh issue create` with the form's labels and the Area's `A-` label; every label is
    validated against the labels of the conventions, and a `--label` of the type or status family replaces the form's
@@ -138,6 +138,18 @@ changes the command with it ([Repository conventions](repo-conventions.md)). The
 
 The coordinator, and an agent whose brief says to file, use these commands; any other agent hands the checked body
 file to the coordinator.
+
+### Titles {#titles}
+
+An issue title is a pull request title: `area: Verb the rest`, with the areas, the verbs, the length limit and the
+`(BREAKING)` ending of [AGENTS.md](repo:AGENTS.md), and no `Bug:` or `Task:` prefix (the forms add none). One
+definition (`commits.title` in `.github/conventions.yml`) serves both, so `issue check`, the `issue-check` workflow and
+the audit refuse the same titles. `coney-tools issue titles` lists the open issues whose title breaks the rule, with a
+proposed title for each and the `gh issue edit` command that applies it; `--apply` runs those commands (the coordinator
+does that once, when the rule starts). The proposal takes the area from the issue's labels
+(`issues.title_area_by_label`), keeps a verb the title already starts with, otherwise picks `Fix` for a `bug` or `parity`
+and `Add` for the rest, and marks any title it had to guess or cut as `review`: a person reads those before applying
+them.
 
 **How the rules are enforced.** Four layers, each for a way an issue could skip the form:
 
@@ -191,7 +203,8 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `A-platform` | Area: window, input, gamepad, rumble, saves, loading, disc files |
 | | `A-core` | Area: engine core: memory, chunks, tasks, scripting runtime |
 | | `A-tools` | Area: coney-tools, build, CI, the sandbox |
-| Priority | `P-high` | Priority: blocks play or other work |
+| Priority | `P-critical` | Priority: main or a nightly run is broken; before everything else |
+| | `P-high` | Priority: blocks play or other work |
 | | `P-medium` | Priority: next in line |
 | | `P-low` | Priority: when there is room |
 | Status | `S-needs-triage` | Status: not yet looked at |
@@ -225,8 +238,9 @@ The coordinator reads each new issue and:
 3. closes a repeat as `duplicate` (pointing at the first), and a request outside the project as `wontfix`;
 4. turns a vague report into a task that an agent can take, with a research page link and an acceptance test.
 
-Whoever picks up an `S-ready-to-start` issue moves it to `S-in-progress`. The audit counts every status except
-`S-needs-triage` as triaged, so an `S-ready-to-start` issue already needs its priority label
+Whoever picks up an `S-ready-to-start` issue claims it ([Claiming an issue](#claiming)), which moves it to
+`S-in-progress`. Only an `S-ready-to-start` issue can be claimed, so the coordinator triages first. The audit counts
+every status except `S-needs-triage` as triaged, so an `S-ready-to-start` issue already needs its priority label
 ([Repository conventions](repo-conventions.md)).
 
 ## The life of an issue {#life}
@@ -239,8 +253,8 @@ Every open issue has exactly one status label, and the coordinator moves it:
 | `S-ready-to-start` | Triage accepted the issue: type, area and priority are set and nothing blocks it. |
 | `S-needs-info` | Triage found the report incomplete and asked the reporter. Back to triage when they answer. |
 | `S-needs-research` | No research page describes the behaviour of the original. |
-| `S-in-progress` | An agent or person picks up an `S-ready-to-start` issue and starts work. |
-| `S-pending-review` | The coordinator opens the pull request, with `Fixes #N` in its body. |
+| `S-in-progress` | An agent or person claims an `S-ready-to-start` issue ([Claiming](#claiming)); a release or `/unclaim` sets `S-ready-to-start` again. |
+| `S-pending-review` | The pull request is open, with `Fixes #N` in its body (the claim Action sets it on a claimed issue). |
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
 
 An issue is closed automatically when its pull request is squash-merged into `main`, because the body says
@@ -265,6 +279,174 @@ The `issue-status` workflow (`.github/workflows/issue-status.yml`) keeps this tr
 It is the one workflow that writes to GitHub, and its token is limited to `issues: write`
 ([Workflows](repo-conventions.md#workflows)). If it ever fails, `coney-tools repo audit --github` reports the closed
 issue under `issue.closed-status` and the coordinator removes the label by hand.
+
+## Claiming an issue {#claiming}
+
+To work on an issue, take it: one comment, answered by a GitHub Action, so that two people never work on the same
+issue and nobody has to remember to say so. It is the same for everyone, the maintainers and the coordinator included
+(the coordinator's `coney-tools task create` posts the comment, [Task files](#task-files)). The rules are `claims` of
+`.github/conventions.yml`; the first list below is generated from it. Claiming is available now but nothing makes it
+mandatory until the new workflow starts ([How we work](how-we-work.md)); two switches, `claims.adopt` and
+`claims.release`, are off until then and say below what they hold back.
+
+<!-- conventions:begin claim-rules -->
+- An issue can be claimed only when it carries `S-ready-to-start`, whoever claims it. A claim sets `S-in-progress`
+  (`S-pending-review` while its pull request is open); a release or `/unclaim` sets `S-ready-to-start`.
+- A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
+  2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
+- While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
+- A claimed issue that carries `S-blocked`, `S-needs-info` keeps that label; the claim stays and its release clock
+  waits, as it does while the claimant's pull request is open.
+- Release is off until the cutover: a claim is released after 72 hours without activity (`/progress`, a pull request
+  opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is mentioned at 48 hours. The
+  stages `/progress` accepts: `assigned`, `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`,
+  `pr-opened`, `fix`, `finished`.
+- Adoption is off until the cutover: the sweep gives a card (and the deadline) to an issue assigned by hand. The text
+  after `scope:` is at most 400 characters, and at most 10 `Fixes #N` lines of one pull request event are acted on.
+- The sweep runs on the cron `7 * * * *` (UTC): it repairs cards, answers unhandled commands, releases claims over the
+  limit and reports issues in progress with nobody assigned.
+- Claim jobs run one at a time for the whole repository; each also handles the commands other issues received in the
+  last 30 minutes, so the command of a job GitHub cancelled while it waited is usually answered by the next one, and
+  otherwise by the next sweep that runs.
+<!-- conventions:end -->
+
+**The commands.** A comment is a command only when its whole body is exactly one of these (so a sentence that
+contains `/claim` is never one); the Action deletes each real command after acting on it, so the issue stays readable.
+
+| Comment | What it does | Who |
+| --- | --- | --- |
+| `/claim` | Takes the issue after the checks below | anyone |
+| `/claim scope: src/ai/, 0x00322b78` | The same, saying which folders, files and original addresses the work touches | anyone |
+| `/claim scope: ... task: <task id>` | The same for one issue of a task of several issues | anyone |
+| `/claim scope: ...` on your own claim | Replaces the scope of your claim (the task cannot change) | the claimant |
+| `/claim renew` | Starts the idle clock again | the claimant |
+| `/unclaim` | Gives the claim up: unassigns, back to `S-ready-to-start` | the claimant, or a maintainer |
+| `/progress <stage>` | Records a stage (`assigned`, `studied`, ...); the tools post it at each stage | the claimant |
+
+A comment that starts with `/claim`, `/unclaim` or `/progress` but is not exactly one of them gets a reply from the bot
+(`<!-- coney-claim-reply:ID -->`, naming the comment) saying what to write, and **stays**: only a comment that was a
+real command is deleted, a refused one included. A reply is deleted by the sweep a day after its command comment is
+gone. A reply mentions only the person who wrote the command; anyone else it names is written without an `@`. The card
+mentions the claimant (its title), and so does the 48-hour warning.
+
+**The checks of a `/claim`**, in this order; the first that fails is the answer.
+
+1. It is an open issue, not a pull request.
+2. Nobody holds it: no assignee, no claim card, no `S-in-progress` or `S-pending-review`.
+3. It carries `S-ready-to-start` (not `S-needs-triage`, `S-needs-info`, `S-needs-research` or `S-blocked`).
+4. While an open `P-critical` issue that can be claimed (ready, unassigned) has no claim, only a `P-critical` issue can
+   be claimed; one that is blocked or already held does not stop anyone.
+5. Every issue in its "Blocked by" section is done: closed as completed by a merged pull request (a listed pull
+   request must be merged). Work is never stacked on an unmerged task.
+6. The claimant holds fewer open claims than the limit (3 for a maintainer, 2 for a contributor), and a `task:` id
+   holds at most 3 issues. Issues that share a `task:` id count as one claim, so the id is no way round the limit; a
+   fix task reuses its claim. A maintainer is whoever the repository gives write permission or more (asked of GitHub by
+   login); only if GitHub will not say does the comment's own association decide, and then only the repository's OWNER
+   counts.
+
+After it assigns, the Action recounts the claimant's claims and the `P-critical` issues on fresh data, a backstop for a
+run started outside the one-at-a-time queue (below). A claim that turns out to be over the limit (the newest of its
+owner's tasks) or behind a new `P-critical` issue is released again with a reply. The sweep recounts the limit only and
+releases the late claims it finds, with the reply posted after the release; a `P-critical` issue that appears later
+never releases a claim that was already held. A claim that failed half way (assigned, no card, because a label call
+failed) is finished by the next pass, with its scope and task, instead of being refused as already taken; it is checked
+like any claim, as the issue stood before it (so a closed or untriaged issue is still refused).
+
+**The claim card.** The Action posts one comment per claim and keeps editing it: who claimed, when, the task and the
+scope, the status (claimed, the stage, `PR #N open`, merged, released, lost), the claimant's other open claims, and the
+Expiration. From the cutover GitHub shows the Expiration as a live countdown ("in 3 days", then hours) from the
+`<relative-time datetime="...">` element, with the exact UTC deadline as its text; until then the card says it is not
+enforced yet. A hidden JSON block on the card's last line carries the same fields for the tools (`task create`'s overlap
+warning, `coney-tools claim list`, the mod); the visible words are never parsed. The card keeps only what GitHub cannot
+tell later (the time of the claim, the scope, the task, the last stage and activity, the ids of handled commands). The
+claimant, the status, the pull request and the labels are recomputed from the assignee, the labels and the linked pull
+requests on every pass, so a card that drifted is repaired, not trusted.
+
+**Status labels.** A claimed issue has exactly one `S-` label: `S-in-progress`, or `S-pending-review` while the
+claimant's pull request is open. The exception is a maintainer's `S-blocked` or `S-needs-info` (`claims.paused_labels`):
+it stays on the claimed issue, the claim keeps, and the release clock waits until the label is taken off (it then starts
+again from that moment). The clock also waits while the claimant's own pull request is open and ready for review,
+however long the review takes; a draft, or a maintainer's pull request, is activity but does not stop the clock. The
+card says what it waits for and is written once when the wait starts, not every hour.
+
+**What moves the card.** A command; a pull request with `Fixes #N` (at most 10 such lines of one event are acted on)
+that is opened, reopened, made ready for review or pushed to by the claimant or a maintainer (activity; the issue gets
+`S-pending-review` and the status `PR #N open`), or merged; someone else's pull request counts for nothing; the issue
+closing; and an hourly sweep that rebuilds every claim from GitHub, answers any command comment nobody handled, and
+applies the deadline.
+
+**The deadline (from the cutover).** With `claims.release` on, 72 hours without activity (a `/progress`, a pull request
+event or push as above, `/claim renew`) releases the claim, and a warning comment mentions the claimant at 48 hours. The
+clock does not run while the claim waits (an open pull request of the claimant, a paused label); when that ends the 72
+hours start again. Released means unassigned, `S-ready-to-start`, the card marked released. Before a release the Action
+reads the card and the comments again and gives up if either changed since the pass began, and if the card changes while
+it releases, it puts the assignee and the label back (only if the claim is still held) and starts the pass over. With
+`claims.adopt` on, the sweep also gives a card ("assigned by hand") to an issue someone assigned in the web page, and
+its clock starts. When an issue has two assignees, the next pass leaves one: the earliest claim keeps the issue, a
+hand-added second assignee is removed, and a claim that lost a race is marked `lost` and names the winner.
+
+**An issue labelled `S-in-progress` or `S-pending-review` with nobody assigned** (the old way of picking one up) is
+neither adopted nor released. The sweep lists it, the audit reports it as `issue.claim-orphan` in the hygiene report,
+and the coordinator either claims it with `task create` or sets it back to `S-ready-to-start`.
+
+**One run at a time.** Every claim job of the repository (comments, issue and pull request events, the sweep) waits in
+one queue, so two runs of the Action never act on an issue together. Each run handles every unhandled command of its
+issue oldest first, so the earliest `/claim` wins. GitHub keeps one pending job in the queue and cancels the older
+pending one when a newer one arrives, so each run also handles the commands other issues received in the last 30 minutes
+(`claims.catch_up_minutes`). A job takes about 20 seconds (as the hygiene workflow does), so a command is usually
+answered within a minute or two, by its own job or the next one. One that no job reaches within 30 minutes is answered
+by the next sweep that runs; a sweep waiting in the queue can be cancelled too, which delays that by an hour. Only
+commands are caught up: a cancelled issue or pull request event is read back by the next pass of that issue (its pull
+requests, assignees and labels), at the latest by the sweep. A comment that is no command, and a label event for any
+label but a paused one, starts no job. Something outside the queue can still write (a person editing a card, `claim run`
+or `claim sweep` started by hand), so the Action keeps a backstop: before its first change of each step and before every
+card write it reads the issue's cards again and starts the pass over when one changed, and two cards of one claimant are
+merged into the first (its handled commands, stage, scope and latest activity). `task create` adds a 60-second settle
+before it trusts a claim ([Task files](#task-files)).
+
+**If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
+id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
+
+`coney-tools claim list [--json]` prints the held claims; `claim run` and `claim sweep` are what the workflow runs
+([coney-tools](coney-tools.md#claim)).
+
+## Task files {#task-files}
+
+The coordinator turns triaged issues into tasks with `coney-tools task create <issue> [<issue>...] --terms ...`
+([coney-tools](coney-tools.md#task)). It claims first and writes after, so a task file exists only for a claim that
+held:
+
+1. It reads the issues and runs the claim checks above locally, so a claim that cannot succeed fails in a second, with
+   the Action's words. A task holds at most 3 issues.
+2. It compares the planned scope with every other held claim's and warns about an overlap (a folder holding another
+   claim's folder or file, the same address). A warning only.
+3. It posts `/claim scope: ... task: <task id>` on each issue and waits for the card that names the claimant (a refusal
+   reply ends it with the reason): at most 5 minutes.
+4. It **settles for 60 seconds**, looking every 10 seconds that the card still names the claimant, that the claimant is
+   the only assignee and that no earlier `/claim` by someone else is waiting; any change stops it with nothing written
+   and prints the `/unclaim` hint for the claims it did make.
+5. It writes `<scratch>/<task>/TASK.md` and posts `/progress assigned`. If a card has vanished by then it stops cleanly
+   with the same hint.
+
+`--resume` skips posting when a held claim of yours is already there (after a timeout, the claim may still have landed);
+the task id is the one on the card, and a `--name` that differs is refused. A **fix task** is `--fix-of <issue>`: it
+reuses the claim you hold (no `/claim`, no limit) and posts `/progress fix`. The kinds are `feature`, `fix`, `docs`,
+`tooling` and `ci-fix` (`tasks.kinds`); `ci-fix` repairs main or a nightly run through its `P-critical` issue and is an
+ordinary claim.
+
+The task file starts with a small YAML block the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
+`scope`, `terms`) and has these sections, in this order: Issues, Goal, Done, Scope, Where to look, Searched, not
+related, Expected tests, Decision points, Related PRs and open questions. Goal and Done start as the issue's Summary and
+"What done means", quoted line by line (with a leading `>`) so that no line of issue text can start a section of the
+file; Expected tests says "no fails-first test" for `docs` and `tooling`; the coordinator prunes the rest.
+
+**Where to look** comes from a search of prepared indexes with the terms the coordinator chose (`--terms`): the headings
+and cited addresses of the research pages, `docs/progress/functions.toml`, the committed Ghidra function list, the
+`@orig` tags of `src/`, the merged pull requests (titles and files) and, when it exists, `research/glossary.yaml`. Names
+are split into parts (`Goal_ThrowObject` is `goal throw object`), a part found in few entries ranks above a common one,
+and the exact identifiers, addresses, paths and references written in the issue are always included, outside the limits.
+Every match carries the reason it matched, and the terms that matched nothing go to "Searched, not related". The limits
+are `tasks.leads`; `coney-tools task leads` runs the same search without claiming anything.
 
 ## Working from an issue {#agents}
 

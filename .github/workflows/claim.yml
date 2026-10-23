@@ -1,0 +1,82 @@
+# Claiming an issue (docs/guides/issues.md#claiming): a `/claim` comment makes the commenter the issue's assignee, sets
+# its status label, posts one claim card and deletes the command; `/claim renew`, `/unclaim` and `/progress <stage>`
+# keep the card true; an hourly sweep repairs what drifted, answers command comments nobody handled, warns a claimant at
+# 48 h of idleness and releases the claim at 72 h. All the logic is `coney-tools claim run` (python/src/coney_tools/
+# issue_claim_*.py); this file only starts it. The rules (the command shapes, the limits, the labels, the hours and
+# this schedule) are `claims` in .github/conventions.yml.
+#
+# One claim job runs at a time for the whole repository (the job's concurrency group), so two runs never act on one
+# issue together. GitHub keeps one pending job per group and cancels the older pending one when a newer one queues;
+# every run reads the whole issue, handles every command not yet handled oldest first, and then also handles the
+# commands other issues received in the last `claims.catch_up_minutes`. So a command is usually answered by its own job
+# or the next one; one that waits longer is answered by the next sweep that runs (a pending sweep can be cancelled too,
+# which delays it by an hour). The choice and its numbers: docs/guides/issues.md#claiming.
+#
+# The token writes issues (assignees, labels, comments) and reads pull requests (the `Fixes #N` links). The events
+# reach the script as a file ($GITHUB_EVENT_PATH), never as text on a command line: nothing a comment or an issue says
+# is expanded into a script. It runs with `pull_request_target` and `issue_comment` so a fork's pull request and a
+# stranger's comment are served; for that reason it checks out the default branch only (no `ref`, no `repository`:
+# never a pull request's own code), and a dispatch started on any other branch is skipped. Events caused by this token start no workflow, so it cannot trigger itself.
+# Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: claim
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [closed, reopened, assigned, unassigned, labeled, unlabeled]
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, edited, synchronize, closed]
+  # Must equal claims.sweep in .github/conventions.yml (a test checks it).
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  claim:
+    # Skipped: a comment on a pull request (no claim), a comment that does not start with a slash (no command), a
+    # label event for any label but a paused one (`claims.paused_labels`, which stop and start the idle clock; a test
+    # checks the two lists below against it), and a dispatch from a branch other than the default one (it would run
+    # that branch's code with this token).
+    if: >-
+      ${{ (github.event_name != 'workflow_dispatch'
+           || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          && !((github.event_name == 'issue_comment'
+                && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
+               || (github.event_name == 'issues'
+                   && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+                   && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name))) }}
+    # One group for every claim job: one at a time, in order. An event that is skipped gets a group of its own, so it
+    # can never take the pending place of a real one.
+    concurrency:
+      group: >-
+        ${{ ((github.event_name == 'workflow_dispatch'
+              && github.ref != format('refs/heads/{0}', github.event.repository.default_branch))
+             || (github.event_name == 'issue_comment'
+                 && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
+             || (github.event_name == 'issues'
+                 && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+                 && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name)))
+            && format('claim-skip-{0}', github.run_id) || 'claim' }}
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # No `with:`: an issue, a comment and a schedule check out the default branch, pull_request_target the base
+      # branch (never the pull request's head), and a dispatch the branch it was started on, which the job's `if:`
+      # allows only for the default branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Handle the event
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          uv run --project python coney-tools claim run --event "$EVENT_NAME" --payload "$GITHUB_EVENT_PATH"

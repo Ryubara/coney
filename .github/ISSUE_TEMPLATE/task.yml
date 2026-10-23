@@ -1,6 +1,5 @@
 name: Task
 description: A piece of work for a maintainer or an agent (a fix, a feature, a research question)
-title: "Task: "
 labels: ["task", "S-needs-triage"]
 body:
   - type: markdown

@@ -18,7 +18,7 @@ from coney_tools import audit_github, cli, issue_cli
 from coney_tools.audit import Problem
 from coney_tools.config import ConfigError
 
-TITLE = "Reimplement the Throw orders"
+TITLE = "gameplay: Add the Throw orders"
 
 
 class FakeGh:
@@ -41,7 +41,7 @@ class FakeGh:
         if arguments[0] == "api" and arguments[-1] == ".id":
             return "9001\n"
         if arguments[:2] == ["issue", "view"] and "title" in arguments[-1]:
-            return json.dumps({"title": "The current title"})
+            return json.dumps({"title": "gameplay: Add the current title"})
         if arguments[0] in ("pr", "issue") and arguments[1] == "view":
             number = int(arguments[2])
             if number in self.states:
@@ -151,7 +151,7 @@ def test_create_dry_run_checks_and_prints_the_command_but_writes_nothing(
     )
     assert issue_cli.run_create(args, gh) == 0
     out = capsys.readouterr().out
-    assert 'gh issue create --title "Reimplement the Throw orders" --body-file' in out
+    assert 'gh issue create --title "gameplay: Add the Throw orders" --body-file' in out
     assert "--label task --label S-needs-triage --label A-ai" in out
     assert "/issues/334/sub_issues" in out and "dry run: nothing was written" in out
     assert gh.calls == []
@@ -253,17 +253,23 @@ def test_edit_checks_with_the_current_title_then_replaces_the_body(tmp_path: Pat
 
 def test_edit_can_change_the_title_and_refuses_a_bad_body(tmp_path: Path, capsys: CaptureFixture[str]) -> None:
     gh = FakeGh()
-    ok = parse("edit", "340", "--body", write(tmp_path, GOOD), "--title", "A new title", "--offline")
+    ok = parse("edit", "340", "--body", write(tmp_path, GOOD), "--title", "tools: Add a new title", "--offline")
     assert issue_cli.run_edit(ok, gh) == 0
-    assert gh.writes()[0][-2:] == ["--title", "A new title"] and gh.calls[0][0] == "issue" and gh.calls[0][1] == "edit"
-    bad = parse("edit", "340", "--body", write(tmp_path, "no headings"), "--title", "T", "--offline")
+    assert (
+        gh.writes()[0][-2:] == ["--title", "tools: Add a new title"]
+        and gh.calls[0][0] == "issue"
+        and gh.calls[0][1] == "edit"
+    )
+    bad = parse("edit", "340", "--body", write(tmp_path, "no headings"), "--title", "tools: Fix a thing", "--offline")
     other = FakeGh()
     assert issue_cli.run_edit(bad, other) == 1 and other.calls == []
 
 
 def test_edit_dry_run_writes_nothing(tmp_path: Path, capsys: CaptureFixture[str]) -> None:
     gh = FakeGh()
-    args = parse("edit", "340", "--body", write(tmp_path, GOOD), "--title", "T", "--offline", "--dry-run")
+    args = parse(
+        "edit", "340", "--body", write(tmp_path, GOOD), "--title", "tools: Fix a thing", "--offline", "--dry-run"
+    )
     assert issue_cli.run_edit(args, gh) == 0
     assert gh.calls == [] and "dry run" in capsys.readouterr().out
 

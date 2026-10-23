@@ -51,16 +51,18 @@ def bug_body(frequency: str = "Always", log: str = "") -> str:
 def issue(
     number: int,
     *,
-    title: str = "Check the repository",
+    title: str = "tools: Add a repository check",
     body: str | None = None,
     labels: tuple[str, ...] = ("task", "A-tools", "P-medium", "S-in-progress"),
     state: str = "OPEN",
     reason: str = "",
     created: float = 1.0,
     updated: float = 1.0,
+    assignees: tuple[str, ...] = ("alice",),
 ) -> dict[str, Any]:
     """An issue as `gh issue list --json` returns it; the defaults describe a clean one."""
     return {
+        "assignees": [{"login": name} for name in assignees],
         "number": number,
         "title": title,
         "body": task_body() if body is None else body,

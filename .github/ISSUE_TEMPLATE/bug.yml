@@ -1,6 +1,5 @@
 name: Bug report
 description: Something in Coney is broken, or behaves differently from the original game
-title: "Bug: "
 labels: ["bug", "S-needs-triage"]
 body:
   - type: markdown

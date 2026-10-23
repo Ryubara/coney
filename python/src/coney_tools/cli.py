@@ -21,6 +21,7 @@ from coney_tools import (
     docs_cli,
     doctor,
     ghidra_cli,
+    issue_claim_cli,
     issue_cli,
     mcp_serve,
     mission_cli,
@@ -41,6 +42,7 @@ from coney_tools import (
     refs_cli,
     stale_processes,
     stamp_cli,
+    task_cli,
     trace_cli,
     wad_cli,
     workspace,
@@ -319,6 +321,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_audit_parser(repo_commands)
     issue_cli.add_issue_parser(groups)
+    issue_claim_cli.add_claim_parser(groups)
+    task_cli.add_task_parser(groups)
     add_pr_health_parser(repo_commands)
     add_review_parsers(repo_commands)
     add_hygiene_parser(repo_commands)
@@ -983,6 +987,10 @@ def _run(args: argparse.Namespace) -> int:
         return check_cli.run_check(args)
     if args.group == "issue":
         return issue_cli.run_issue(args)
+    if args.group == "claim":
+        return issue_claim_cli.run_claim(args)
+    if args.group == "task":
+        return task_cli.run_task(args)
     if args.group == "wad":
         return _run_wad(args)
     if args.group == "xbox":

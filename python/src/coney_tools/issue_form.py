@@ -28,7 +28,7 @@ from coney_tools import audit_text
 from coney_tools.audit_github import MainTree, _label_problems
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
-from coney_tools.repo_checks import screenshots_problems
+from coney_tools.repo_checks import check_title, screenshots_problems
 
 #: What a problem is about, which the audit uses to leave out what a sibling rule already reports.
 KINDS = ("title", "headings", "empty", "choices", "screenshots", "from", "links", "wording", "status")
@@ -79,7 +79,6 @@ class FormSpec:
     name: str
     title: str
     description: str
-    title_prefix: str
     labels: tuple[str, ...]
     fields: tuple[FieldSpec, ...]
 
@@ -168,7 +167,6 @@ def load_form(root: Path, conventions: Conventions, name: str) -> FormSpec:
         name=name,
         title=_text(data.get("name")),
         description=_text(data.get("description")),
-        title_prefix=form.title_prefix,
         labels=form.labels,
         fields=tuple(fields),
     )
@@ -180,9 +178,9 @@ def _norm(text: str) -> str:
 
 
 def detect_form(title: str, body: str, conventions: Conventions) -> str:
-    """The form a title and body follow: the form most of the body's headings belong to (a "Bug:" title on a task-form
-    body is still a task, #461), else, when the headings tie or none match, the title prefix, else the form the
-    command line uses."""
+    """The form a title and body follow: the form most of the body's headings belong to; when the headings tie (a body
+    with only the shared "Screenshots" heading) or none match, the form the command line uses (a title says nothing
+    about the form: it is `area: Verb the rest` for every issue)."""
     forms = conventions.issues.forms
     _, blocks = _blocks(body)
     seen = {_norm(block.name) for block in blocks}
@@ -193,11 +191,6 @@ def detect_form(title: str, body: str, conventions: Conventions) -> str:
     leaders = [name for name, score in scores.items() if score == top and top > 0]
     if len(leaders) == 1:
         return leaders[0]
-    # A tie (a body with only the shared "Screenshots" heading) or no headings: the title prefix decides among them.
-    for name in leaders or list(forms):
-        prefix = forms[name].title_prefix
-        if prefix and title.casefold().startswith(prefix.casefold()):
-            return name
     return conventions.issues.cli_uses_form
 
 
@@ -297,6 +290,24 @@ def _blocks(body: str) -> tuple[str, list[Block]]:
     return "\n".join(preamble).strip(), [Block(level, name, "\n".join(lines).strip()) for level, name, lines in found]
 
 
+def section_text(body: str, heading: str) -> str | None:
+    """The text under the heading `heading` (compared as the form's headings are) in an issue body, or None."""
+    wanted = _norm(heading)
+    for block in _blocks(body)[1]:
+        if _norm(block.name) == wanted:
+            return block.text
+    return None
+
+
+def section_heading(conventions: Conventions, section_id: str) -> str | None:
+    """The heading of the form section with this id (`blocked-by`) in any form, or None."""
+    for form in conventions.issues.forms.values():
+        for section in form.sections:
+            if section.id == section_id:
+                return section.heading
+    return None
+
+
 def _hashes(level: int) -> str:
     """`#` repeated `level` times."""
     return "#" * level
@@ -332,11 +343,17 @@ def check_issue(title: str, body: str, spec: FormSpec, conventions: Conventions,
 
 
 def _check_title(title: str, conventions: Conventions, found: list[IssueProblem]) -> None:
-    """The title says something, on one line."""
+    """The title is one line in the pull request form, `area: Verb the rest` (`commits.title`, one definition)."""
     if not title.strip():
         found.append(IssueProblem("title", "the title is empty"))
     elif "\n" in title.strip():
         found.append(IssueProblem("title", "the title must be one line"))
+    else:
+        rules = conventions.commits.title
+        found.extend(
+            IssueProblem("title", f"{problem} (an issue title reads like a pull request title: {rules.form})")
+            for problem in check_title(title.strip(), rules)
+        )
     wording = conventions.repo.wording
     if audit_text.word_uses(title, wording.avoid):
         found.append(IssueProblem("wording", f"the title says {wording.avoid[0]!r}: say {wording.person!r}"))

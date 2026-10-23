@@ -1,22 +1,23 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-two
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twenty-four
 groups: [`check`](#check), which runs what CI would fail on for the files a change touched, [`docs`](#docs), which
-checks pages against the documentation standards, [`build`](#build), which configures, builds and tests the engine
-under the machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions,
-labels), `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
-[`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio), which reads its sound
-data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which reads the Xbox disc's archive,
-[`progress`](#progress), which keeps the progress tables of the README and the docs current, [`orig`](#orig), which
-indexes the `@orig` tags for the fidelity audit, [`original`](#original), which studies an original function and
-compares it with Coney's, [`stamp`](#stamp), which verifies a unit's stamp log, [`natives`](#natives), which renders
-the script-binding masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which
-builds the mission status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update
-traces in PCSX2 and compare them with Coney's, [`clips`](#clips), which checks, publishes and cleans up in-game video
-clips, [`mcp`](#mcp), which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a
-contributor's machine and disc, [`ghidra`](#ghidra), which sets up your own Ghidra project with our function names,
-and [`workspace`](#workspace), which sets up the local workspace. Everything is read in place and streamed, so the 1.4
-GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+checks pages against the documentation standards, [`claim`](#claim), which runs the issue claims, [`task`](#task), which
+claims issues and writes a task file, [`build`](#build), which configures, builds and tests the engine under the
+machine's build slots, [`repo`](#repo), which checks the repository's own rules (titles, descriptions, labels), `wad`,
+which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which
+turns every asset of the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies),
+which reads the movies' headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which
+keeps the progress tables of the README and the docs current, [`orig`](#orig), which indexes the `@orig` tags for the
+fidelity audit, [`original`](#original), which studies an original function and compares it with Coney's,
+[`stamp`](#stamp), which verifies a unit's stamp log, [`natives`](#natives), which renders the script-binding
+masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
+status pages, [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in PCSX2 and
+compare them with Coney's, [`clips`](#clips), which checks, publishes and cleans up in-game video clips, [`mcp`](#mcp),
+which starts the debugging servers for agent tools, [`doctor`](#doctor), which checks a contributor's machine and disc,
+[`ghidra`](#ghidra), which sets up your own Ghidra project with our function names, and [`workspace`](#workspace), which
+sets up the local workspace. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory.
+The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -1292,6 +1293,7 @@ uv run --project python coney-tools issue create --title T --body FILE [--label 
     [--attach F] [--offline] [--dry-run]
 uv run --project python coney-tools issue edit N --body FILE [--title T] [--offline] [--dry-run]
 uv run --project python coney-tools issue link N --parent P [--dry-run]
+uv run --project python coney-tools issue titles [--json] [--apply [--include-review]] [--limit N]
 ```
 
 Drafts, checks and files issues in their form's exact shape ([Filing an issue](issues.md#filing)). Every rule is
@@ -1304,20 +1306,122 @@ copied into the code.
 * `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
   (`title`, `headings`, `empty`, `choices`, `screenshots`, `from`, `links`, `wording`, `status`); exit 0 when there is
   none, 1 otherwise. A dropdown answer is the option as written under its heading, with or without a list bullet or
-  backticks (`--play-level` is an option, not a bullet). The form comes from `--form`, else the title prefix, else
-  the headings. Docs and research pages and their `{#anchor}`s are looked up in `origin/main` of the checkout with
-  git, offline; a missing `origin/main` is a note, not a pass. `--leftover` wants the `From:` line. `--online` reads
-  the state of each cited `#N` with `gh` and compares it with the words "open", "merged" and "closed" beside it.
-  `--attach` says local screenshots will be uploaded, so a local image in the Screenshots section is accepted.
+  backticks (`--play-level` is an option, not a bullet). The title must be `area: Verb the rest`, as a pull request's
+  ([Titles](issues.md#titles)). The form comes from `--form`, else the headings. Docs and research pages and their
+  `{#anchor}`s are looked up in `origin/main` of the checkout with git, offline; a missing `origin/main` is a note, not
+  a pass. `--leftover` wants the `From:` line. `--online` reads the state of each cited `#N` with `gh` and compares it
+  with the words "open", "merged" and "closed" beside it. `--attach` says local screenshots will be uploaded, so a local
+  image in the Screenshots section is accepted.
 * `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
   the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
   form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
   `issue link` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running none.
 * `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
   `gh issue edit`. `link` makes an existing issue a sub-issue of another.
+* `titles` lists the open issues whose title breaks the title rule, each with a proposed title, how sure the proposal is
+  (`auto`, or `review` when a verb or an area was guessed or the title was cut) and the `gh issue edit` command that
+  applies it; it changes nothing. `--apply` runs the `auto` renames, `--include-review` the others too (the
+  coordinator does that once, when the rule starts). Exit 1 while some title is wrong.
+
+Every argument and option of `titles`:
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `--json` | off | Print the proposals as JSON (`number`, `current`, `proposed`, `confidence`, `why`) instead of lines and commands |
+| `--apply` | off | Rename the issues whose proposal is `auto` with `gh issue edit`; reports a failed rename and goes on |
+| `--include-review` | off | With `--apply`, rename the `review` proposals too |
+| `--limit N` | 500 | How many open issues to read |
 
 The body is filed without the draft's comments. Exit 2 when the conventions, a form file or the body file cannot be
 read.
+
+## claim {#claim}
+
+```sh
+uv run --project python coney-tools claim run --event NAME --payload FILE
+uv run --project python coney-tools claim sweep
+uv run --project python coney-tools claim list [--json]
+```
+
+The claim Action's commands ([Claiming an issue](issues.md#claiming)); `.github/workflows/claim.yml` only starts them.
+All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are `claims` of `.github/conventions.yml`.
+
+* `run` handles one GitHub event. `--payload` is the event's JSON file (`$GITHUB_EVENT_PATH`): only the issue or pull
+  request number is taken from it, everything else is read again from GitHub, so no text of a comment or an issue is
+  ever parsed from the event. `issue_comment` and `issues` reconcile that issue; `pull_request_target` reconciles each
+  issue the pull request closes (`Fixes #N`), and a `synchronize` counts as a push (activity); `schedule` and
+  `workflow_dispatch` run the sweep. Reconciling acts on every command comment nobody handled (oldest first), rebuilds
+  the card from the assignee, labels and linked pull requests, then (when `claims.release` is on) applies the warning
+  (48 h) and release (72 h). A pull request opened, reopened, made ready or pushed to by the claimant counts as
+  activity, and while it is open and ready for review the clock waits. Then it handles the commands other issues
+  received in the last `claims.catch_up_minutes` (a job the one-at-a-time queue cancelled); a failed read of those is an
+  error (exit 1), after the event's own issues are done. Before its first change of each step and each card write it
+  reads the issue's cards again and starts over when one changed; when the attempts run out it prints what each did and
+  exits 1.
+* `sweep` does the same for every issue that may need it: those with a held card, a working or review label, an assignee
+  or a command comment from the last day, and it deletes refusal replies a day after their command is gone. It carries
+  on past an issue it cannot read and exits 1 at the end, naming it. It also releases the claims that are over the limit
+  of open claims or of a task, and lists as `orphan:` the open issues labelled in progress with nobody assigned.
+* `list` prints the held claims (issue, claimant, status, task, scope, expiry or what the clock waits for); `--json`
+  prints the cards' data for the mod. The claims are read from the cards' hidden JSON.
+
+Every argument and option:
+
+| Command | Argument or option | Default | What it does |
+| --- | --- | --- | --- |
+| `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
+| `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
+| `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
+| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`) instead of one line each |
+
+It needs `gh` signed in (the Action passes `GH_TOKEN`). Exit 1 when an issue could not be finished, 2 when the payload or
+the conventions cannot be read.
+
+## task {#task}
+
+```sh
+uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM ...] [--scope "a, b"] [--kind K]
+    [--name ID] [--resume] [--dry-run]
+uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
+uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
+uv run --project python coney-tools task index [--no-gh]
+```
+
+The coordinator's triage step ([Task files](issues.md#task-files)); the rules are `claims` and `tasks` of
+`.github/conventions.yml`.
+
+* `create` claims every issue through the claim Action and writes `<scratch>/<task id>/TASK.md` only after the claim
+  held. List the issues first, then the options (`--terms` takes several words). It checks the claim locally with the
+  Action's own function (ready status, `P-critical` first, blockers, your limit of open tasks), warns when `--scope`
+  overlaps another held claim, posts `/claim scope: ... task: <id>` on each issue and waits for the card (at most 5
+  minutes; a refusal reply ends it with the reason), settles for 60 seconds (the card still names you, you are the only
+  assignee, no earlier `/claim` waits) and then writes the file and posts `/progress assigned`. Anything that goes wrong
+  before the file is written leaves no file; a claim that landed late is continued with `--resume`, which posts nothing.
+  The task id is `--name` or `<first issue>-<words of its title>`; `--kind` is one of `tasks.kinds` (default from the
+  labels). A fix task is `--fix-of ISSUE`: it reuses your claim, posts `/progress fix` and writes `<issue>-fix`.
+  `--dry-run` posts and writes nothing and prints the file. Exit 1 when it stopped, 0 when the file was written.
+* `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
+  that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
+* `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
+  `tasks.leads.index_max_age_hours`); `--no-gh` leaves the merged pull requests out. The sources, name splitting and
+  ranking are in [Task files](issues.md#task-files).
+
+Every argument and option:
+
+| Command | Argument or option | Default | What it does |
+| --- | --- | --- | --- |
+| `create` | `ISSUE ...` | none | The issue numbers of the task, one to `claims.limits.issues_per_task` of them; written before the options. Optional with `--fix-of` |
+| `create` | `--terms TERM ...` | none | One or more names to search the indexes for (a name, a function, a player's word); each becomes part of "Where to look" or of "Searched, not related" |
+| `create` | `--scope TEXT` | none | The planned folders, files and original addresses, comma separated (`"src/ai/, 0x00322b78"`), at most `claims.scope_max_characters` characters; it goes into the `/claim` comment and the task file, and is compared with the other held claims |
+| `create` | `--kind K` | from the labels: `docs` for the `docs` label, `tooling` for `A-tools`, else `feature` | The task kind, one of `tasks.kinds`; `fix` is only for `--fix-of` |
+| `create` | `--name ID` | `<first issue>-<words of its title>` (a resumed claim: the task id on its card) | The task id and the name of the scratch folder; lower case letters, digits and hyphens, 60 at most. It is the `task:` of the claim, so issues of one task share it |
+| `create` | `--fix-of ISSUE` | none | Make a fix task for an issue whose claim you hold: no `/claim`, no limit; posts `/progress fix` and writes `<issue>-fix` (`-2`, `-3` for the next ones) |
+| `create` | `--resume` | off | Continue a claim of yours that landed after the wait ended: issues you hold are not claimed again, and the task id must match the one on their cards |
+| `create` | `--dry-run` | off | Check, search and print the claims it would post and the file it would write; post and write nothing |
+| `leads` | `--terms TERM ...` | required | The names to search for |
+| `leads` | `--issue N` | none | Also match the addresses, code names, repository paths and `#N` references that issue writes |
+| `leads` | `--refresh` | off | Rebuild the cached index before searching |
+| `index` | `--no-gh` | off | Leave the merged pull requests out of the index (no `gh` call) |
 
 ## check {#check}
 

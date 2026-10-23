@@ -65,6 +65,7 @@ do not invent it.
 | `issue.triage-age` | Triage it now ([Triage](../../../docs/guides/issues.md#triage)). |
 | `issue.info-age` | Ask once more in a comment, or close as not planned with the reason. |
 | `issue.progress-idle` | Ask the track for its state; return the issue to `S-ready-to-start` when nobody works on it. |
+| `issue.claim-orphan` | The issue says it is being worked on but nobody is assigned: claim it with `task create` if someone is on it, else set it back to `S-ready-to-start`. |
 | `issue.review-without-pr` | Find the pull request (`gh pr list --search "#N"`) and link it, or set the status back to `S-in-progress`. |
 | `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `repo check-body`. |
 | `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `repo check-body`. |
