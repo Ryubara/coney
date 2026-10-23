@@ -1,11 +1,12 @@
 # Running Coney
 
-Every option of the `coney` executable and what each mode does. This page is the overview: how to start Coney, the
-command line and which page documents which options, the window, the viewers, playing a level or the controls. It
-assumes you have built Coney ([Building and testing](building.md)); the viewers and the game need your own copy of
-the game (`--disc`), while `--headless`, `--sandbox` and `--audio-test` do not
-([Local workspace](workspace.md) says where to keep it). How tests drive the executable, and what a change must show
-before it is done, is in [Testing](testing.md); the debug menus have [their own page](debug-menu.md).
+Every option of the `coney` executable and what each mode does. This page says how to start Coney, shows the whole
+command line, and lists the pages that document the options: the window, sound and network, loading and viewing your
+disc, playing a level with its traces and logs, and the controls. It assumes you have built Coney ([Building and
+testing](building.md)); the viewers and the game need your own copy of the game (`--disc`), while `--headless`,
+`--sandbox` and `--audio-test` do not ([Local workspace](workspace.md) says where to keep it). How tests drive the
+executable, and what a change must show before it is done, is in [Testing](testing.md); the debug menus have [their own
+page](debug-menu.md).
 
 ## Starting Coney {#run-coney}
 
@@ -49,8 +50,9 @@ coney [--disc PATH] [--language CODE] [--profiles DIR]
 
 It plays the story from boot (or shows the idle screen without a disc), and hosts or joins network play
 ([Network play](running-options.md#network-play)) as any build does. `--headless`, `--frames` and
-`--input-script` are there for its own smoke tests; everything else on this page (the viewers, `--play-level`, the
-sandbox, the traces, the event log, the pad pipe, screenshots, clips, the debug menus) needs the debug tools.
+`--input-script` are there for its own smoke tests; everything else in the command line above (the viewers,
+`--play-level`, the sandbox, the traces, the event log, the pad pipe, screenshots, clips, the debug menus) needs the
+debug tools.
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
 ES). Where the driver offers less than OpenGL 3.3 (Windows' own OpenGL 1.1 renderer on a machine with no graphics
@@ -77,11 +79,12 @@ its profiles in memory, so tests never touch yours ([Profiles and saving](../res
 
 ## The pages {#pages}
 
-### [The window, sound and network options](running-options.md)
+### [Window, sound, network, recording and debug options](running-options.md)
 
 * [`--record`](running-options.md#record): a short video clip of the run.
 * [`--window-display`](running-options.md#window-display): which display the window opens on.
-* [`--fps-cap`, `--vsync`, `--line-blend`, `--show-fps`](running-options.md#frame-rate): the frame rate.
+* [`--fps-cap`, `--vsync`, `--line-blend`, `--show-fps`, `--bench`](running-options.md#frame-rate): the frame rate
+  and the benchmark.
   {#frame-rate}
 * [`--no-audio`, `--audio-test`](running-options.md#sound): the sound.
   {#sound}
@@ -110,7 +113,6 @@ its profiles in memory, so tests never touch yours ([Profiles and saving](../res
   {#tracing}
 * [`--event-log`](running-play-level.md#event-log), [`--log-file`](running-play-level.md#run-log),
   [`--pad-pipe`](running-play-level.md#pad-pipe) and [matched views](running-play-level.md#matched-views).
-  {#event-log}
 
 ### [Controls and input scripts](running-input.md)
 
@@ -122,13 +124,3 @@ its profiles in memory, so tests never touch yours ([Profiles and saving](../res
 <!-- The ids on the list items above keep the links that name running.md#<section> working in the legacy research pages
 that cite them. Touching a research page holds it to the whole research standard, so they go, with these ids, once those
 pages are touched and cite the page that holds the section. -->
-
-## Shutdown order {#shutdown-order}
-
-`main` destroys things in reverse order of declaration, so whatever points at the sound output must be declared
-after it or reset before it. The game session (`session`) is reset explicitly right after the run summaries, before the
-sound output goes: its scripts' binding context and play mode hold the game sound, and tearing them down afterwards
-read freed state and segfaulted `--play-level level95` at exit. Any new
-object that keeps a pointer into the sound output, the scene or the renderer follows the same rule. A ctest with
-`PASS_REGULAR_EXPRESSION` ignores the exit code, so `coney.exits_cleanly_level95` and `_level99` (with `CONEY_DISC`
-set) check the exit code alone.

@@ -50,9 +50,8 @@ Coney stretches each stick's circle onto the square and a full diagonal runs as 
 
 `--input-script FILE` replaces the keyboard and gamepads with a script, so a test or a headless run gets the same
 input every time without a human. Each line is `FRAME [p1|p2] ACTION ARGS`, where `FRAME` counts from 0 (the frame
-the line takes effect on; a script puts Coney in test mode, where a frame is one fixed step); `#` starts
- a comment and blank lines are skipped. Frames must not go down from one line to
-the next.
+the line takes effect on; a script puts Coney in test mode, where a frame is one fixed step); `#` starts a
+comment and blank lines are skipped. Frames must not go down from one line to the next.
 
 | Action | Meaning |
 | --- | --- |

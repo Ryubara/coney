@@ -225,7 +225,7 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
     set_tests_properties(coney.plays_level PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded")
     # Levels played with the game's sound exit cleanly: a test with PASS_REGULAR_EXPRESSION ignores the exit code, so a
     # crash after the summary line (a destructor reading the freed sound output) passed unseen. These check the exit
-    # code alone (docs/guides/running.md#shutdown-order).
+    # code alone (docs/guides/conventions.md#shutdown-order).
     foreach(level level95 level99)
         add_test(NAME coney.exits_cleanly_${level}
                  COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 60 --play-level ${level})

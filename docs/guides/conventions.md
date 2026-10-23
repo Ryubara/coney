@@ -513,6 +513,15 @@ comparisons against the original game are repeatable. Engine code therefore neve
 source or the input devices directly; it asks the platform layer, which test mode can replace. Don't design this
 out.
 
+### Shutdown order {#shutdown-order}
+
+In `src/platform/main.cpp`, objects are destroyed in reverse order of declaration, so whatever points at the sound
+output must be declared after it or reset before it. The game session (`session`) is reset explicitly right after the
+run summaries, before the sound output goes: its scripts' binding context and play mode hold the game sound, and tearing
+them down afterwards read freed state and segfaulted `--play-level level95` at exit. Any new object that keeps a pointer
+into the sound output, the scene or the renderer follows the same rule. A ctest with `PASS_REGULAR_EXPRESSION` ignores
+the exit code, so `coney.exits_cleanly_level95` and `_level99` (with `CONEY_DISC` set) check the exit code alone.
+
 ## Update and render {#update-and-render}
 
 The game runs at the original's fixed step of exactly 1/30 s at any display rate, from 30 frames a second to

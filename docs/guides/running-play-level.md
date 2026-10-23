@@ -20,7 +20,7 @@ third checkpoint does. He is drawn as the character the script's type names (Cle
 type with no model falls back to Rembrandt with a log line. The scripts' world flags are kept, so a script that
 teleports player 1 to a flag puts him there with the flag's heading, without snapping him to the ground, as the
 original: the hub, `level95`, starts the Warchief at one of its doors, chosen with the game's own random numbers (read
-from your disc's executable; door 5 while the tutorial is locked, which it always is for now), and an arena run alone
+from your disc's executable; door 5 while the tutorial is locked), and an arena run alone
 (`--play-level level102`) uses the Rumble menu's default set-up ([Flags](../research/flags.md#coneys-implementation)).
 The scripts keep running in play, one script frame per step: their scheduled calls, their volume-box triggers and their
 message handlers, and every other human they create is an AI human with its own model, driven by the scripts' goals and
@@ -35,7 +35,9 @@ charge and the dive, the block, rage, the grab with its strikes, spins, throws a
 original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets that
 take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
 settings do: he faces it and the stick walks him at one speed in any direction with the combat walk until it is more
-than 2.5 m away or down. There are no objects yet, and scenes end at once; a fall out of the world puts him back at the
+than 2.5 m away or down. The level's glass panes and doors work: his hits break the panes and the breakable doors, and
+the lock pick opens a door ([World objects](../research/objects.md#coneys-implementation)). The level's scenes play and
+hand him back ([Scenes](../research/scenes.md#coneys-implementation)). A fall out of the world puts him back at the
 start. Coney prints a line whenever the clip changes and a summary when it stops (the player's position, speed, gait,
 clip, traversal state, stamina, the camera's distance and counts only).
 

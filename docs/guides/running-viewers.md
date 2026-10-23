@@ -37,19 +37,22 @@ frame 458.
 
 **STORY** starts a new game as the original does, through the profile screens: (with two pads, how many players), the
 profile manager (CREATE NEW PROFILE when there is none), the name keyboard (cross types the key under the cursor, OK
-accepts), the difficulty, the brightness (left and right) and the subtitles. Profiles last for the run only (Coney has
-no saves yet). The menus fade out and the game's own scripts take it from there (`Menu.startGame`, `runNextMission(1)`,
-the mission-complete mode, `UnlockAndLoad`), to `level99` at checkpoint 1. Its level script creates Rembrandt, and Coney
-loads the level with him where the script put him, under your control ([Playing a
-level](running-play-level.md#playing-a-level)), after the level's loading screen (its pictures, the timed bar and the
-fades, for about 3.2 s: [Level loading](../research/level-loading.md#coneys-implementation)), and its intro movie
-`L99_IN` plays over it (skipped with `--skip-movies`). There is no intro scene, tutorial or other character yet. The log
-shows the way: `profile manager: PM_Create` and the other screens, `profile manager: profile "A" created in slot 0`,
-`script: Menu.startGame()`, `mission complete: kind 4`, `level flow: starting level99`,
-`loading screen: level99 (3 pictures: ...)`, `gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then
-`movie: L99_IN`. The scripted way (`tests/support/story_new_profile_session.txt`: a one-letter name, the defaults, the
-cursor moved with the left stick at 70 %; the test harnesses without the memory-card screen play the same presses 220
-frames earlier, `tests/support/story_new_profile.txt`):
+accepts), the difficulty, the brightness (left and right) and the subtitles. The profile is saved like any other (where:
+[Starting Coney](running.md#run-coney)), or kept in memory in a test-mode run without `--profiles`. The menus fade out
+and the game's own scripts take it from there (`Menu.startGame`, `runNextMission(1)`, the mission-complete mode,
+`UnlockAndLoad`), to `level99` at checkpoint 1. Its level script creates Rembrandt, and Coney loads the level with him
+where the script put him, under your control ([Playing a level](running-play-level.md#playing-a-level)), after the
+level's loading screen (its pictures, the timed bar and the fades, for about 3.2 s: [Level
+loading](../research/level-loading.md#coneys-implementation)), and its intro movie `L99_IN` plays over it (skipped with
+`--skip-movies`). At checkpoint 1 the level's script starts with its intro scene `l99_c1`
+([Scenes](../research/scenes.md#coneys-implementation)), and the humans it creates are AI humans ([Playing a
+level](running-play-level.md#playing-a-level)). The log shows the way: `profile manager: PM_Create` and the other
+screens, `profile manager: profile "A" created in slot 0`, `script: Menu.startGame()`, `mission complete: kind 4`,
+`level flow: starting level99`, `loading screen: level99 (3 pictures: ...)`,
+`gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then `movie: L99_IN`. The scripted way
+(`tests/support/story_new_profile_session.txt`: a one-letter name, the defaults, the cursor moved with the left stick at
+70 %; the test harnesses without the memory-card screen play the same presses 220 frames earlier,
+`tests/support/story_new_profile.txt`):
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 790 --skip-movies --input-script tests/support/story_new_profile_session.txt
@@ -215,8 +218,8 @@ the nearest scenery not yet loaded, up to the player camera's far clip of 115, w
 white until a level script sets one. The camera looks through the player camera's lens (65°, near clip 0.1). For a
 level, its level file (`<name>.lev`) loads too. Its night sky, turning clouds and skyline are drawn behind the scenery,
 and its light glows (the halos round lamps) are drawn over it. Fog still fades the nearest scenery to white, and the
-white shows below the horizon once you leave the streets. There are no objects or script yet. Coney prints one line
-for each part read or freed and a summary when it stops (counts only).
+white shows below the horizon once you leave the streets. The viewer loads no objects and runs no script; `--play-level`
+does both. Coney prints one line for each part read or freed and a summary when it stops (counts only).
 
 The camera starts above the middle of the first part and is driven by pad 1. These controls are Coney's own; the
 original's cameras follow the player:

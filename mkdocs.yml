@@ -288,7 +288,7 @@ nav:
       - Building and testing: guides/building.md
       - Running Coney:
           - guides/running.md
-          - Window, sound and network options: guides/running-options.md
+          - Window, sound, network, recording and debug options: guides/running-options.md
           - Loading and viewing your disc: guides/running-viewers.md
           - Playing a level, tracing and logs: guides/running-play-level.md
           - Controls and input scripts: guides/running-input.md

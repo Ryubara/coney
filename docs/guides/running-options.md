@@ -1,7 +1,7 @@
-# The window, sound and network options
+# Window, sound, network, recording and debug options
 
-The options that shape the window and what it plays, apart from what it loads: [recording a clip](#record) with
-`--record`, [which display](#window-display) the window opens on, the [frame rate](#frame-rate), [sound](#sound),
+The options that shape the window and the run, apart from what it loads: [recording a clip](#record) with `--record`,
+[which display](#window-display) the window opens on, the [frame rate](#frame-rate) with `--bench`, [sound](#sound),
 [network play](#network-play) and [the debug menus' options](#the-debug-menus). The other pages are listed in [the
 overview](running.md#pages).
 
@@ -136,10 +136,10 @@ build/dev/src/platform/coney --headless --frames 60 --audio-test
 
 ## Network play {#network-play}
 
-Coney's [network play](multiplayer.md) is in progress: a game can host and one other can join it, with the ping and
-loss on the debug menus' Network page. The guest's pad plays the host's pad port 2, as a second pad plugged into the
-host's machine would ([Player two](multiplayer.md#player-two)); the guest's own screen does not show the host's game
-yet. `--host` hosts from the start, on UDP
+Coney's [network play](multiplayer.md): a game can host and one other can join it, with the ping and loss on the
+debug menus' Network page. The guest's pad plays the host's pad port 2, as a second pad plugged into the
+host's machine would ([Player two](multiplayer.md#player-two)); the guest's own screen does not show the host's game.
+`--host` hosts from the start, on UDP
 port 27615 of every interface unless told otherwise: `--host 30000` picks the port, `--host 127.0.0.1:0` listens on
 this machine only on any free port (the tests do), and the run prints the port it got. `--join ADDR[:PORT]` joins the
 game at a host name or IPv4 address. `--net-name NAME` is the name the other players see (1 to 32 printable ASCII
