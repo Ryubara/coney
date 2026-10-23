@@ -375,9 +375,8 @@ cannot set the environment of a Bash call. Measured on 2026-10-22 with `claude -
 `coney-agent` starts Claude Code as a role, from the Coney checkout that holds the current folder: `claude --agent
 coordinator`, plus `--plugin-dir` for the Coney mod when the checkout has it (the mod loads in every mode, trusted
 folder or not). Run it as `uv run --project python coney-agent`, or put `tools/` on `PATH` for `coney-agent` (the
-`.ps1` wrapper on PowerShell 7, or on Windows PowerShell 5.1 once its execution policy allows scripts (it is
-Restricted by default; until then `uv run --project python coney-agent`), the `.cmd` one for `cmd.exe`, an `sh` one
-elsewhere). It is not the player-facing launcher of the game. Every parameter:
+`.ps1` wrapper in PowerShell, the `.cmd` one for `cmd.exe`, an `sh` one elsewhere). It is not the player-facing
+launcher of the game. Every parameter, and what Windows PowerShell 5.1 needs first:
 [`coney-agent`](coney-tools.md#coney-agent).
 
 ## Commit trailers {#trailer-guard}
