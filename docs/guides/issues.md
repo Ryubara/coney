@@ -292,11 +292,11 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
 <!-- conventions:begin claim-rules -->
 - An issue can be claimed only when it carries `S-ready-to-start`, whoever claims it. A claim sets `S-in-progress`
   (`S-pending-review` while its pull request is open); a release or `/unclaim` sets `S-ready-to-start`.
-- A maintainer (someone with `admin` and `write` permission on the repository) holds 3 open claims at most, a
-  contributor 2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
+- A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
+  2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info` keeps that label; the claim stays and its release clock
-  waits.
+  waits, as it does while the claimant's pull request is open.
 - Release is off until the cutover: a claim is released after 72 hours without activity (`/progress`, a pull request
   opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is mentioned at 48 hours. The
   stages `/progress` accepts: `assigned`, `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`,
@@ -321,9 +321,10 @@ contains `/claim` is never one); the Action deletes each real command after acti
 | `/progress <stage>` | Records a stage (`assigned`, `studied`, ...); the tools post it at each stage | the claimant |
 
 A comment that starts with `/claim`, `/unclaim` or `/progress` but is not exactly one of them gets a reply from the bot
-(`<!-- coney-claim-reply:ID -->`, naming the comment) saying what to write, and **stays**: only a comment that was a real
-command is deleted, a refused one included. A reply is deleted by the sweep a day after its command comment is gone. A
-refusal names another person without an `@`; only the person who wrote the command is mentioned.
+(`<!-- coney-claim-reply:ID -->`, naming the comment) saying what to write, and **stays**: only a comment that was a
+real command is deleted, a refused one included. A reply is deleted by the sweep a day after its command comment is
+gone. A reply names people without an `@`, so it notifies nobody by name; the only comment of the Action that mentions
+anyone is the 48-hour warning to the claimant.
 
 **The checks of a `/claim`**, in this order; the first that fails is the answer.
 
@@ -342,9 +343,11 @@ refusal names another person without an `@`; only the person who wrote the comma
 
 After it assigns, the Action recounts the claimant's claims and the `P-critical` issues on fresh data, because runs for
 different issues can overlap. A claim that turns out to be over the limit (the newest of its owner's tasks) or behind a
-new `P-critical` issue is released again with a reply. The sweep applies the same recount and releases the late claims
-it finds. A claim that failed half way (assigned, no card, because a label call failed) is finished by the next pass,
-with its scope and task, instead of being refused as already taken.
+new `P-critical` issue is released again with a reply. The sweep recounts the limit only and releases the late claims it
+finds, with the reply posted after the release; a `P-critical` issue that appears later never releases a claim that was
+already held. A claim that failed half way (assigned, no card, because a label call failed) is finished by the next
+pass, with its scope and task, instead of being refused as already taken; it is checked like any claim, as the issue
+stood before it (so a closed or untriaged issue is still refused).
 
 **The claim card.** The Action posts one comment per claim and keeps editing it: who claimed, when, the task and the
 scope, the status (claimed, the stage, `PR #N open`, merged, released, lost), the claimant's other open claims, and the
@@ -359,7 +362,8 @@ requests on every pass, so a card that drifted is repaired, not trusted.
 **Status labels.** A claimed issue has exactly one `S-` label: `S-in-progress`, or `S-pending-review` while the
 claimant's pull request is open. The exception is a maintainer's `S-blocked` or `S-needs-info` (`claims.paused_labels`):
 it stays on the claimed issue, the claim keeps, and the release clock waits until the label is taken off (it then starts
-again from that moment).
+again from that moment). The clock also waits while the claimant's pull request is open, however long the review takes;
+the card says what it waits for and is written once when the wait starts, not every hour.
 
 **What moves the card.** A command; a pull request with `Fixes #N` (at most 10 such lines of one event are acted on)
 that is opened, reopened, made ready for review or pushed to by the claimant or a maintainer (activity; the issue gets
@@ -368,22 +372,27 @@ closing; and an hourly sweep that rebuilds every claim from GitHub, answers any 
 applies the deadline.
 
 **The deadline (from the cutover).** With `claims.release` on, 72 hours without activity (a `/progress`, a pull request
-event or push as above, `/claim renew`) releases the claim, with a warning comment that mentions the claimant at 48
-hours. Released means unassigned, `S-ready-to-start`, the card marked released. Before a release the Action reads the
-card and the comments again and gives up if either changed since the pass began, so a `/claim renew` that arrives
-meanwhile is never undone. With `claims.adopt` on, the sweep also gives a card ("assigned by hand") to an issue someone
-assigned in the web page, and its clock starts. Two assignees are never left standing: the earliest claim keeps the
-issue, a hand-added second assignee is removed, and a claim that lost a race is marked `lost` and names the winner.
+event or push as above, `/claim renew`) releases the claim, and a warning comment mentions the claimant at 48 hours. The
+clock does not run while the claim waits (an open pull request of the claimant, a paused label); when that ends the 72
+hours start again. Released means unassigned, `S-ready-to-start`, the card marked released. Before a release the Action
+reads the card and the comments again and gives up if either changed since the pass began, so a `/claim renew` that
+arrives meanwhile is never undone. With `claims.adopt` on, the sweep also gives a card ("assigned by hand") to an issue
+someone assigned in the web page, and its clock starts. Two assignees are never left standing: the earliest claim keeps
+the issue, a hand-added second assignee is removed, and a claim that lost a race is marked `lost` and names the winner.
 
 **An issue labelled `S-in-progress` or `S-pending-review` with nobody assigned** (the old way of picking one up) is
 neither adopted nor released. The sweep lists it, the audit reports it as `issue.claim-orphan` in the hygiene report,
 and the coordinator either claims it with `task create` or sets it back to `S-ready-to-start`.
 
-**Two claims at once.** The Action runs one job per issue at a time, and each run handles every unhandled command of
-the issue oldest first, so the earliest `/claim` wins. GitHub keeps only one pending run per issue, so with three or
-more simultaneous claims a run can be dropped; the next run (or the sweep) handles the command it left, and after
-assigning, the Action reads the assignees again and keeps the earliest. `task create` adds a 60-second settle before it
-trusts a claim ([Task files](#task-files)).
+**Two runs at once.** Comment runs of one issue run one at a time, and each run handles every unhandled command of the
+issue oldest first, so the earliest `/claim` wins. GitHub keeps only one pending run per issue, so with three or more
+simultaneous claims a run can be dropped; the next run (or the sweep) handles the command it left. A pull request run
+and the sweep can still touch an issue while its comment run works, and GitHub has no lock: so before every card write
+the Action reads the issue's cards again, and if another run changed one since the pass began, it starts the pass over
+from what GitHub holds now (a stage or a handled command is never lost, and a claim gets one card). If two runs still
+post a card each for the same claim, the next pass merges them into the first; after assigning, the Action reads the
+assignees again and keeps the earliest claim. `task create` adds a 60-second settle before it trusts a claim ([Task
+files](#task-files)).
 
 **If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the
 command's id is on the card, so it is never acted on twice; a maintainer deletes the comment by hand.

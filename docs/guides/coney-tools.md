@@ -1353,13 +1353,14 @@ All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are 
   `workflow_dispatch` run the sweep. Reconciling acts on every command comment nobody handled (oldest first), rebuilds
   the card from the assignee, labels and linked pull requests, then (when `claims.release` is on) applies the warning
   (48 h) and release (72 h). A pull request opened, reopened, made ready or pushed to by the claimant counts as
-  activity.
+  activity, and while it is open the clock waits. Before each card write it reads the issue's cards again and starts
+  over when another run changed one.
 * `sweep` does the same for every issue that may need it: those with a held card, a working or review label, an assignee
   or a command comment from the last day, and it deletes refusal replies a day after their command is gone. It carries
   on past an issue it cannot read and exits 1 at the end, naming it. It also releases the claims that are over the limit
   of open claims or of a task, and lists as `orphan:` the open issues labelled in progress with nobody assigned.
-* `list` prints the held claims (issue, claimant, status, task, scope, expiry); `--json` prints the cards' data for the
-  mod. The claims are read from the cards' hidden JSON.
+* `list` prints the held claims (issue, claimant, status, task, scope, expiry or what the clock waits for); `--json`
+  prints the cards' data for the mod. The claims are read from the cards' hidden JSON.
 
 Every argument and option:
 
@@ -1368,7 +1369,7 @@ Every argument and option:
 | `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
 | `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
 | `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
-| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline`, `warned`, `adopted`) instead of one line each |
+| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`) instead of one line each |
 
 It needs `gh` signed in (the Action passes `GH_TOKEN`). Exit 1 when an issue could not be finished, 2 when the payload or
 the conventions cannot be read.

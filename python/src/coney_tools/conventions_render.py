@@ -76,6 +76,13 @@ def _join_and(values: list[str]) -> str:
     return ", ".join(values[:-1]) + " and " + values[-1]
 
 
+def _join_or(values: list[str]) -> str:
+    """`a`, `a or b`, `a, b or c`."""
+    if len(values) <= 1:
+        return "".join(values)
+    return ", ".join(values[:-1]) + " or " + values[-1]
+
+
 def _cell(text: str) -> str:
     """Text safe inside a table cell."""
     return text.replace("|", "\\|")
@@ -289,7 +296,7 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"`/unclaim` sets `{claims.released_label}`."
     )
     lines += _bullet(
-        f"A maintainer (someone with {_join_and([f'`{name}`' for name in claims.maintainer_permissions])} permission "
+        f"A maintainer (someone with {_join_or([f'`{name}`' for name in claims.maintainer_permissions])} permission "
         f"on the repository) holds {limits.maintainer} open claims at most, a contributor {limits.contributor}. "
         f"Issues whose cards share a `task:` id count as one claim, and a task holds {limits.issues_per_task} issues "
         "at most."
@@ -300,7 +307,7 @@ def _claim_rules(conventions: Conventions) -> list[str]:
     )
     lines += _bullet(
         f"A claimed issue that carries {_codes(claims.paused_labels)} keeps that label; the claim stays and its "
-        "release clock waits."
+        "release clock waits, as it does while the claimant's pull request is open."
     )
     state = "on" if claims.release else "off until the cutover"
     lines += _bullet(

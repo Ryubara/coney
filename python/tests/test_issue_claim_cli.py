@@ -337,6 +337,26 @@ def test_claim_list_prints_the_held_claims(monkeypatch: pytest.MonkeyPatch, caps
     assert row["issue"] == 7 and row["deadline"] == "2026-10-25T12:00:00Z" and row["scope"] == ["src/ai/"]
 
 
+def test_claim_list_says_what_a_waiting_claim_waits_for(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(REPO)
+    held = model.Card(issue=7, claimant="alice", claimed_at=START, status="pr-open", pr=60, waiting="PR #60 open")
+    item = {
+        "id": 9,
+        "issue_url": "https://api.invalid/repos/o/r/issues/7",
+        "user": {"login": BOT, "type": "Bot"},
+        "body": model.render_card(held, RULES),
+        "created_at": "2026-10-22T12:00:00Z",
+    }
+    gh = Gh({"issues/comments": json.dumps(item)})
+    assert cli.run_claim(parse("list"), gh) == 0
+    assert "#7 alice pr-open: scope not stated; waits while PR #60 open" in capsys.readouterr().out
+    assert cli.run_claim(parse("list", "--json"), gh) == 0
+    (row,) = json.loads(capsys.readouterr().out)
+    assert row["waiting"] == "PR #60 open" and row["deadline"] is None
+
+
 def test_the_command_is_registered() -> None:
     with pytest.raises(SystemExit) as stop:
         main(["claim", "--help"])

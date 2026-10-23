@@ -172,7 +172,8 @@ def _list(remote: Remote, conventions: Conventions, as_json: bool) -> int:
                 "pr": card.pr,
                 "claimed_at": iso_time(card.claimed_at),
                 "last_activity": iso_time(card.activity),
-                "deadline": iso_time(card.deadline(rules)),
+                "deadline": None if card.waiting else iso_time(card.deadline(rules)),
+                "waiting": card.waiting,
                 "warned": card.warned_at is not None,
                 "adopted": card.adopted,
             }
@@ -185,5 +186,6 @@ def _list(remote: Remote, conventions: Conventions, as_json: bool) -> int:
     for card in cards:
         scope = ", ".join(card.scope) or "scope not stated"
         task = f" task {card.task}" if card.task else ""
-        print(f"#{card.issue} {card.claimant} {card.status}{task}: {scope}; expires {show_time(card.deadline(rules))}")
+        when = f"waits while {card.waiting}" if card.waiting else f"expires {show_time(card.deadline(rules))}"
+        print(f"#{card.issue} {card.claimant} {card.status}{task}: {scope}; {when}")
     return 0

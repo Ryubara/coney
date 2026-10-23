@@ -198,7 +198,8 @@ def test_a_pull_request_event_is_activity_only_when_it_shows_work(
     payload = {"action": action, "pull_request": {"body": "Fixes #10", "user": {"login": "alice"}}}
     cli.run_event(engine, "pull_request_target", payload, CONVENTIONS, clock.now)
     assert (card_of(github, 10).last_activity_why == "pull request") is counts
-    assert (github.others(10) == []) is counts
+    # Either way the open pull request of the claimant suspends the clock: no warning.
+    assert github.others(10) == [] and card_of(github, 10).waiting == "PR #60 open"
 
 
 def test_someone_elses_pull_request_is_not_the_claims(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
@@ -296,8 +297,10 @@ def test_a_blocked_claim_keeps_its_label_and_its_clock_waits(engine: Engine, git
     engine.reconcile(10)
     assert github.view(10).assignees == ("alice",) and github.others(10) == []
     assert "S-blocked" in github.view(10).labels and "S-in-progress" in github.view(10).labels
-    assert "paused: S-blocked" in github.cards(10)[-1].body
+    assert "waits while S-blocked" in github.cards(10)[-1].body
     github.remove_label(10, "S-blocked")
+    engine.reconcile(10)  # the `unlabeled` event: the clock starts again now
+    assert card_of(github, 10).last_activity_why == "S-blocked ended"
     clock.advance(hours=71)
     engine.reconcile(10)
     assert github.view(10).assignees == ("alice",)

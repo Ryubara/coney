@@ -20,7 +20,7 @@ on:
   issue_comment:
     types: [created]
   issues:
-    types: [closed, reopened, assigned, unassigned]
+    types: [closed, reopened, assigned, unassigned, labeled, unlabeled]
   pull_request_target:
     types: [opened, reopened, ready_for_review, edited, synchronize, closed]
   # Must equal claims.sweep in .github/conventions.yml (a test checks it).
@@ -33,9 +33,11 @@ permissions:
   issues: write
   pull-requests: read
 
-# One run per issue (or pull request: they share one number space) at a time, in order. A comment that does not start
-# with a slash cannot be a command: it gets a group of its own and its job is skipped, so it never replaces the pending
-# run of a real `/claim`.
+# One run per issue (or pull request: they share one number space) at a time, in order. A pull request run (grouped by
+# the pull request) and the sweep can still touch an issue while its own run works: the script reads the issue's cards
+# again before every write and starts over when one changed. A comment that does not start with a slash cannot be a
+# command: it gets a group of its own and its job is skipped, so it never replaces the pending run of a real `/claim`.
+# `labeled` and `unlabeled` let a paused label (`S-blocked`) stop and start the idle clock at once.
 concurrency:
   group: >-
     ${{ (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/'))

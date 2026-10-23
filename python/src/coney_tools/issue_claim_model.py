@@ -188,6 +188,8 @@ class Card:
     handled: tuple[int, ...] = ()
     #: The issues the claimant holds open, for the card's text (not used for the limit).
     open_claims: tuple[int, ...] = ()
+    #: Why the idle clock waits (`S-blocked`, `PR #12 open`), or None while it runs; it starts again when this ends.
+    waiting: str | None = None
 
     def __post_init__(self) -> None:
         """A card with no last activity has had none since the claim."""
@@ -273,6 +275,7 @@ def _data(card: Card) -> dict[str, Any]:
         "adopted": card.adopted,
         "handled": list(card.handled),
         "open_claims": list(card.open_claims),
+        "waiting": card.waiting,
     }
 
 
@@ -312,6 +315,11 @@ def render_card(card: Card, rules: Claims) -> str:
         lines.append(
             "- **Expiration:** not enforced yet; it starts with the new workflow "
             f"(it would be {show_time(card.deadline(rules))})"
+        )
+    elif card.active and card.waiting:
+        lines.append(
+            f"- **Expiration:** waits while {card.waiting}; the {rules.deadline_hours} h idle clock starts again "
+            "when that ends"
         )
     elif card.active:
         deadline = card.deadline(rules)
@@ -376,6 +384,7 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             adopted=bool(data.get("adopted", False)),
             handled=tuple(int(item) for item in data.get("handled", ())),
             open_claims=tuple(int(item) for item in data.get("open_claims", ())),
+            waiting=str(data["waiting"]) if data.get("waiting") else None,
         )
     except (ValueError, KeyError, TypeError):
         return None
