@@ -144,7 +144,7 @@ request or in one that follows at once.
 4. On a research page, start with the front matter of its kind and keep the sections of that kind
    ([Research pages](#research-pages)), and give every behaviour an address and an evidence level: confirmed (code),
    confirmed (runtime), inferred or speculative. The levels and their spellings are in
-   [Research workflow](research-evidence.md#evidence-levels). A new page is never legacy. Run [the check](#checking)
+   [Evidence levels](research-evidence.md#evidence-levels). A new page is never legacy. Run [the check](#checking)
    before you commit.
 
 ## Style
@@ -304,7 +304,7 @@ Circle catches the man in front; held, it runs him down. Throws are on [Combat: 
 
 ### Evidence levels on a page {#evidence-levels}
 
-The four levels and how each is spelled are in [Research workflow](research-evidence.md#evidence-levels). The check
+The four levels and how each is spelled are in [Evidence levels](research-evidence.md#evidence-levels). The check
 looks at every block (a paragraph, a list item or a table row) that cites an address, or a script locator, outside
 Summary, In Coney, Open questions and How this was checked, and passes it when a level stands:
 

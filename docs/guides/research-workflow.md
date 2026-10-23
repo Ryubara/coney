@@ -3,7 +3,7 @@
 Research turns what engineers learn about the original game into documents. A research page says what a part of the
 game does, what its data looks like and how sure we are of each claim, so the next engineer does not have to work it
 out again. This guide is the overview: how we study the original, how findings are written up and how a function
-counts as understood. The grading of claims, the research data and the tools each have a page of their own.
+counts as understood. The grading of claims, the research data, the tools and the traces each have a page of their own.
 
 The pages themselves live in `docs/research/`, one living page per subject. Their kinds, front matter and sections
 are in [Writing these docs](writing-docs.md#research-pages).

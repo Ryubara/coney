@@ -5,8 +5,9 @@ This is reverse-engineering work, so it is reviewed on Opus 5.5 ([index](index.m
 reviewer may consult the original binary; it reports findings in the
 [format on the index page](index.md#finding-format) and never edits.
 
-How claims are graded and written up is set in the [research workflow](../research-workflow.md); the page layout
-is in [Writing these docs](../writing-docs.md#research-pages). This page says what to check.
+How claims are graded is set in [Evidence levels](../research-evidence.md#evidence-levels) and how they are written
+up in the [research workflow](../research-workflow.md); the page layout is in
+[Writing these docs](../writing-docs.md#research-pages). This page says what to check.
 
 ## Checklist
 

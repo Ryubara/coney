@@ -95,7 +95,7 @@ gives a size that looks too large for what the research page describes, check th
 ## natives {#natives}
 
 The script-binding reference (`docs/references/bindings/`, under Game references) is generated from
-`research/bindings/<category>.yaml` (schema: [Research workflow](research-data.md#bindings)).
+`research/bindings/<category>.yaml` (schema: [The research data](research-data.md#bindings)).
 
 ```sh
 uv run --project python coney-tools natives render [--check]
@@ -167,7 +167,7 @@ call.
 ## refs {#refs}
 
 The [Game references](../references/index.md) are generated from the lists in `research/references/`
-([Research workflow](research-data.md#reference-lists) has their schema and rules).
+([The research data](research-data.md#reference-lists) has their schema and rules).
 
 ```sh
 uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]
@@ -204,7 +204,7 @@ files. A file the palette would not make smaller (most radar icons) is left as i
 ## missions {#missions}
 
 The [Missions](../missions/index.md) pages are generated from `research/missions.yaml`
-([Research workflow](research-data.md#missions) has its schema and who updates it).
+([The research data](research-data.md#missions) has its schema and who updates it).
 
 ```sh
 uv run --project python coney-tools missions render [--check]

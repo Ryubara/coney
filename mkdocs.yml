@@ -317,9 +317,9 @@ nav:
           - The research data: guides/research-data.md
           - Research tools: guides/research-tools.md
           - Traces and playthroughs: guides/research-traces.md
-      - Function database: guides/research-function-database.md
-      - Source files: guides/research-source-files.md
-      - Finding where a behaviour lives: guides/research-where.md
+          - Function database: guides/research-function-database.md
+          - Source files: guides/research-source-files.md
+          - Finding where a behaviour lives: guides/research-where.md
       - PCSX2 recipes: guides/pcsx2-recipes.md
       - PCSX2 states: guides/pcsx2-states.md
       - Ghidra + ghidra-mcp: guides/ghidra.md
