@@ -4,20 +4,29 @@ claims a branch changed on the research pages.
 
 * `research render OUT_DIR` writes the generated list page of each system; `research render --check` checks the whole
   database (schema, pages and sections, Ghidra names, source files) and writes nothing; CI runs it.
+* `research where QUERY` says which page describes an address, a function name, a source file or a player word, and
+  where its logic lives (research_where.py).
 * `research import-table PAGE --system NAME` fills a system file from the code-index tables of a research page.
 * `research claims` lists the graded blocks the branch changed, with what backs each (research_claims_cli.py).
 
-Research: docs/guides/research-function-database.md
+Research: docs/guides/research-function-database.md, docs/guides/research-where.md
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any
 
-from coney_tools import research_claims_cli, research_data, research_functions_check, research_import
+from coney_tools import (
+    research_claims_cli,
+    research_data,
+    research_functions_check,
+    research_import,
+    research_where,
+)
 from coney_tools import research_functions as rf
 from coney_tools.config import ConfigError, find_repo_root
 
@@ -25,7 +34,7 @@ RESEARCH_DIR = research_functions_check.RESEARCH_DIR
 
 
 def add_parser(groups: Any) -> None:
-    """Register `coney-tools research render|import-table|claims`."""
+    """Register `coney-tools research render|import-table|claims|where`."""
     group = groups.add_parser(
         "research",
         help="the function database (research/functions/), the pages made from it, and the claims a branch changed",
@@ -39,6 +48,12 @@ def add_parser(groups: Any) -> None:
     render.add_argument(
         "--check", action="store_true", help="write nothing; check the data and exit 1 when it has a problem"
     )
+    where = commands.add_parser(
+        "where",
+        help="which page describes an address, function name, source file or player word, and where its logic lives",
+    )
+    where.add_argument("query", help="0x<address>, a Ghidra function name, a source file (Combat/Grab.cpp) or a word")
+    where.add_argument("--json", action="store_true", help="print the answer as JSON")
     table = commands.add_parser(
         "import-table", help="import a research page's code-index tables into research/functions/<system>.toml"
     )
@@ -57,6 +72,8 @@ def run(args: argparse.Namespace) -> int:
         return research_claims_cli.run(args)
     if args.command == "render":
         return run_render(args.out_dir, args.check)
+    if args.command == "where":
+        return run_where(args.query, args.json)
     return run_import_table(args.page, args.system, args.section, args.replace, args.dry_run)
 
 
@@ -89,6 +106,24 @@ def run_render(out_dir: Path | None, check_only: bool) -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(text.encode("utf-8"))
     print(f"{_plural(len(pages), 'page')} written to {out_dir} ({_plural(count, 'function')})")
+    return 0
+
+
+def run_where(query: str, as_json: bool) -> int:
+    """Print where `query` is described: 0 when something matched, 1 when nothing did (with a hint)."""
+    root = find_repo_root(Path.cwd())
+    result = research_where.Index.load(root).search(query)
+    if as_json:
+        print(json.dumps(research_where.to_json(result), indent=2))
+        return 0 if result.found else 1
+    if not result.found:
+        print(
+            f"coney-tools: nothing found for {query!r}. Give an address (0x00100200), a Ghidra function name, a source "
+            "file (Combat/Grab.cpp) or a word a player uses; a word the glossary lacks matches page headings only.",
+            file=sys.stderr,
+        )
+        return 1
+    print("\n".join(research_where.render(result)))
     return 0
 
 

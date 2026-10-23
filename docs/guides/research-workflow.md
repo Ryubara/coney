@@ -33,6 +33,10 @@ layouts, constants, file formats, what a subsystem does and the questions still 
 the repository on the way ([LEGAL.md](repo:LEGAL.md#no-game-data)): a page holds facts and behaviour, with short
 pseudocode or a short snippet where it explains a point (see [Writing up a finding](#writing-up-a-finding)).
 
+Start with the lookup: `coney-tools research where` says which page already describes an address, a function name, a
+source file or a word a player uses, and `original study` prints the same lines under its own summary
+([Finding where a behaviour lives](research-where.md)). Read the page it names before the decompile.
+
 ### When a research page isn't enough
 
 Sooner or later you need something the page doesn't say. Look at the original to answer it, and put the answer on
@@ -183,6 +187,14 @@ listing and the pages. Its fields, checks, import and generated lists are on the
 `research/source-files.toml` lists the original's source files with the address range the source map gives each, one
 entry per file, and the source map's file tables are generated from it. It is where the owner of an address is looked
 up first. Its fields and checks are on their own page, [The source files](research-source-files.md).
+
+### Owning pages and the glossary {#owning-pages}
+
+Every research page of a kind that owns code lists what it owns in its front matter, so every address has one owning
+page; `coney-tools research where` answers from that, and the docs build makes the
+[address page](../research/find/addresses.md) from it. `research/glossary.yaml` links the words a player uses to the
+page and functions that describe them, and the [words page](../research/find/words.md) is made from it. How the lookup
+works, its output and the glossary's schema are on [Finding where a behaviour lives](research-where.md).
 
 ### The script bindings {#bindings}
 

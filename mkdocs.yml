@@ -125,6 +125,8 @@ nav:
   - Research:
       - Overview: research/overview.md
       - Source map: research/source-map.md
+      - Where each address is described: research/find/addresses.md
+      - Player words: research/find/words.md
       - Compiler & code conventions: research/compiler.md
       - Name hashing (CRC-32): research/name-hash.md
       - Engine core:
@@ -304,6 +306,7 @@ nav:
       - Research workflow: guides/research-workflow.md
       - Function database: guides/research-function-database.md
       - Source files: guides/research-source-files.md
+      - Finding where a behaviour lives: guides/research-where.md
       - PCSX2 recipes: guides/pcsx2-recipes.md
       - PCSX2 states: guides/pcsx2-states.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

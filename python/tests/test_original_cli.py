@@ -51,6 +51,22 @@ def test_study_prints_the_summary_and_a_second_run_is_unchanged(
     assert len(stamps.verify(log(checkout), load_conventions(checkout).stamps).stamps) == 1
 
 
+def test_study_prints_where_the_function_is_described(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The lookup lines follow the summary; a checkout without research data gets the no-owner line, not a failure."""
+    assert main(["original", "study", ADDRESS]) == 0
+    out = capsys.readouterr().out
+    assert out.index("research (coney-tools research where):") > out.index("stamped studied")
+    assert "  owning page: none (no page owns this address yet)" in out
+
+
+def test_study_says_when_the_research_lookup_cannot_run(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A malformed glossary does not fail the study: the lookup says it is unavailable in one line."""
+    (checkout / "research").mkdir(exist_ok=True)
+    (checkout / "research" / "glossary.yaml").write_text("term: grab\n", encoding="utf-8")
+    assert main(["original", "study", ADDRESS]) == 0
+    assert "research lookup: not available" in capsys.readouterr().out
+
+
 def test_study_with_ghidra_down_exits_3_and_writes_nothing(
     checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -4,8 +4,9 @@
 A research page is a map from what the game does to the original code that does it, and this module holds the rules
 that a program can see. Each yields `Finding`s whose `rule` names it (the legacy file waives rules by these names):
 
-* `front-matter`, `owns`: the page says what kind it is, which system it belongs to and which addresses it owns, and no
-  other page owns the same ones (`research_pages`);
+* `front-matter`, `owns`: the page says what kind it is, which system it belongs to and which addresses it owns, no
+  other page owns the same ones (`research_pages`) and a source file it owns is one the source files data has
+  (`research_owners.check_owned_files`);
 * `skeleton`: a `# Title`, then the kind's sections in order and no others, none of them empty;
 * `verified`: one `Verified against:` line, short;
 * `evidence`: every block that cites an address outside the ungraded sections carries a level in the forms of the
@@ -15,7 +16,7 @@ that a program can see. Each yields `Finding`s whose `rule` names it (the legacy
 * `decompile`: none of Ghidra's made-up names (`param_1`, `uVar2`, `DAT_005127e4`) stands in the text, the mark of a
   pasted decompile (LEGAL.md#research-limits);
 * `function-entries`: each function database entry that points at the page is for an address the page owns
-  (`research_functions_check`, the first of `EXTRA_RULES`);
+  (`research_owners`, the first of `EXTRA_RULES`);
 * `copied`: no paragraph of 200 characters or more is written on two pages;
 * `history`: no date and no issue number outside In Coney and How this was checked;
 * `length`: no page longer than its kind allows.
@@ -38,7 +39,7 @@ from collections.abc import Iterable
 from coney_tools.docs_page import Finding, Line, Page, section_text
 from coney_tools.orig_copy import FINGERPRINTS
 from coney_tools.research_evidence import check_evidence
-from coney_tools.research_functions_check import check_function_entries
+from coney_tools.research_owners import check_function_entries, check_owned_files
 from coney_tools.research_pages import key_line, owner_conflicts, paragraph_key, read_front_matter
 from coney_tools.research_subject import (
     ADDRESS,
@@ -87,7 +88,7 @@ _NAME_BEFORE = re.compile(
 
 
 #: The rules the later parts of the rework add (see the module docstring). Each takes the subject of the check.
-EXTRA_RULES: tuple[Rule, ...] = (check_function_entries,)
+EXTRA_RULES: tuple[Rule, ...] = (check_function_entries, check_owned_files)
 
 
 def subject_of(path: str, page: Page, env: ResearchEnv, *, legacy_page: bool = False) -> tuple[Subject, list[Finding]]:

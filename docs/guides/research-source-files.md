@@ -69,6 +69,10 @@ directory, under the same headings as before the tables were data, so a link to 
 the GUI files. `coney-tools research render <folder>` writes the page as the build shows it, to
 `<folder>/research/source-map.md`. Nothing generated is committed.
 
+Once a research page owns a whole file (its front matter lists the file, or a range or function set that holds all
+of it), the file's row gains a Page column that links the page; until then the column is not there. The same lookup
+answers `coney-tools research where Combat/Grab.cpp` ([Finding where a behaviour lives](research-where.md)).
+
 ## Changing a row {#changing}
 
 When you place a function in a file, or find a range's real end, change the row in `research/source-files.toml`, keep

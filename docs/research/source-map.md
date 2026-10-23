@@ -11,7 +11,8 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 `c:/Warriors/Source/<Subsystem>/<File>.cpp` (152 `.cpp` files plus `Scripting/ScriptLua.inl`). This page uses them to
 say which address ranges of `.text` came from which original source file, and where the middleware (Lua, tolua,
 RenderWare, Bink, the SCE libraries, the C and C++ runtimes) sits. It is the index for every later engineer: before
-studying a subsystem, look up its range here.
+studying a subsystem, look up its range here, or ask `coney-tools research where` for a file or an address
+([Finding where a behaviour lives](../guides/research-where.md)).
 
 The per-file ranges are data, [research/source-files.toml](repo:research/source-files.toml), and the
 [file tables](#files-by-subsystem) below are made from it when the docs are built; fix a row in the file, not here.
