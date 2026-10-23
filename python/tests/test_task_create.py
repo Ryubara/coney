@@ -309,7 +309,16 @@ def test_a_fix_task_reuses_the_claim_and_posts_progress_fix(world: World) -> Non
     assert [c.body for c in world.github.comment_list[10][before:] if c.login == "Ryubara"] == ["/progress fix"]
     parsed = parse_task_file(world.task_path("10-fix").read_text(encoding="utf-8"), CONVENTIONS.tasks)
     assert parsed.kind == "fix" and parsed.issues == (10,)
+    # The fix names the task of the claim it reuses, so `task start` opens that task's unit (stamps.md#api).
+    assert parsed.parent == "10-fix-the-fight-goal"
     assert world.run(issues=(), fix_of=10) == 0 and world.task_path("10-fix-2").is_file()
+
+
+def test_a_fix_of_a_claim_made_without_a_task_has_no_unit_to_fix(world: World) -> None:
+    world.github.say(10, "Ryubara", "/claim", "OWNER")
+    world.engine.reconcile(10)
+    assert world.run(issues=(), fix_of=10) == 1
+    assert "was made without a task id" in world.said() and not world.task_path("10-fix").exists()
 
 
 def test_a_fix_task_needs_your_own_claim(world: World) -> None:

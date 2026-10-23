@@ -228,6 +228,10 @@ main checkout and share its siblings. From the repository root:
 git worktree add ../../worktrees/coney/<branch> -b <branch>
 ```
 
+A task that `task create` made is the exception: its engineer runs `coney-tools task start <task id>`, which makes the
+worktree (and the branch, named like the task id) from the tip of the default branch and records where it is in
+`<scratch>/<task>/unit.json` ([Starting a task](issues.md#starting)).
+
 A worktree has no `coney.local.toml` of its own, and needs none: every tool run from a worktree (`coney-tools`
 and `tools/start-ghidra-mcp.ps1`) finds the main checkout through git's common dir, reads its `coney.local.toml` and
 resolves the relative paths from the main checkout, so `../../game` is the same `game/` folder from every worktree.

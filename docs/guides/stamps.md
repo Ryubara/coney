@@ -48,6 +48,7 @@ functions makes about 120 stamps, one segment.
 
 | Where | What |
 | --- | --- |
+| `<scratch>/<task>/unit.json` | The unit record `task start` wrote: branch, worktree, base commit, which task's log it writes to ([Starting a task](issues.md#starting)) |
 | `<scratch>/<task>/stamps/` | The log while the work is going on (local) |
 | `<scratch>/<task>/study/<addr>/` | A function's study: the saved decompile and what was cut from it. Scratch only, never committed |
 | `<scratch>/<task>/mapping/<addr>.toml` | The pairs of one function |
@@ -329,7 +330,8 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 
 ## For the commands that write more stamps {#api}
 
-`task start`, `task check`, `task review`, `pr open` and the hooks, once written, will call the same small API in
+`task start` (which writes the first two stamps, `assigned` and `claimed`: [Starting a task](issues.md#starting)),
+`task check`, `task review`, `pr open` and the hooks, once written, call the same small API in
 `coney_tools/stamps.py`:
 `append(folder, rules=, task=, step=, subject=, result=, commit=, covers=, detail=, who=, sign=)`,
 `append_many(folder, rules=, task=, entries=, sign=)` (several stamps, all or none),

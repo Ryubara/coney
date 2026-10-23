@@ -523,6 +523,29 @@ def test_the_real_claim_rules() -> None:
     assert load_conventions(REPO).tasks.kinds == ("feature", "fix", "docs", "tooling", "ci-fix")
 
 
+def test_the_real_task_start_rules() -> None:
+    start = load_conventions(REPO).tasks.start
+    assert start.unit_file == "unit.json"
+    # The limit is for code work under the finished workflow: reported, not enforced, until the cutover.
+    assert (start.slots.task, start.slots.fix, start.slots.enforce) == (3, 1, False)
+
+
+@pytest.mark.parametrize(
+    ("change", "why"),
+    [
+        (("tasks.start.unit_file", "a/unit.json"), r"tasks\.start\.unit_file: a file name"),
+        (("tasks.start.unit_file", "TASK.md"), r"tasks\.start\.unit_file: a file name"),
+        (("tasks.start.slots.task", 0), r"tasks\.start\.slots\.task: expected a whole number"),
+        (("tasks.start.slots.enforce", "yes"), r"tasks\.start\.slots\.enforce"),
+        (("tasks.start.slots.extra", 1), "unknown key 'extra'"),
+        (("tasks.start", REMOVE), "missing the key 'start'"),
+    ],
+)
+def test_wrong_task_start_rules_are_refused(change: tuple[str, object], why: str) -> None:
+    with pytest.raises(ConventionsError, match=why):
+        conventions_with(change)
+
+
 def test_the_real_run_record_rules() -> None:
     runs = load_conventions(REPO).runs
     assert runs.folder == "research/runs" and runs.kinds == ("recipe", "trace", "method")

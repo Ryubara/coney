@@ -373,6 +373,12 @@ tasks:
   # Task files (docs/guides/issues.md#task-files) and the leads search (`task create --terms`, `task leads`).
   kinds: [feature, fix, docs, tooling, ci-fix]
   file: TASK.md
+  # `task start` (docs/guides/issues.md#starting): the unit record it writes beside the task file, and the engineer
+  # slots it counts. The slot limit is for code work under the finished workflow; until the cutover it is only
+  # reported (`enforce: false`), so design, docs and tooling work runs in parallel without a limit.
+  start:
+    unit_file: unit.json                          # the unit record, in the task's scratch folder
+    slots: {task: 3, fix: 1, enforce: false}      # task units in work per machine, fix units, and whether a start over them is refused
   leads:
     rare_max_entries: 12                          # a name part in at most this many index entries is rare: ranked first
     common_min_entries: 200                       # in at least this many it is common: not a match on its own

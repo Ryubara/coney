@@ -2,8 +2,8 @@
 """The task file: `scratch/<task>/TASK.md`, written by `task create`, read by the tools after it and by the engineer.
 
 A small YAML block between `---` lines holds what the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
-`scope`, `terms`); the sections below it are prose the coordinator prunes. The section names are fixed so a tool and a
-person find the same thing in the same place (docs/guides/issues.md#task-files).
+`scope`, `terms`, and `parent` for a fix task); the sections below it are prose the coordinator prunes. The section
+names are fixed so a tool and a person find the same thing in the same place (docs/guides/issues.md#task-files).
 """
 
 from __future__ import annotations
@@ -34,6 +34,8 @@ SECTIONS = (
 NO_FAILING_TEST = "no fails-first test: this task changes documentation or tools, not the game."
 _HEADING = re.compile(r"^## (?P<name>.+?)\s*$", re.MULTILINE)
 _KEYS = ("task", "issues", "kind", "claimant", "claimed_at", "scope", "terms")
+#: What a task id looks like: it names the scratch folder and, for an ordinary task, the branch.
+TASK_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
 
 
 class TaskFileError(ConfigError):
@@ -53,6 +55,8 @@ class TaskFile:
     terms: tuple[str, ...] = ()
     #: The text of each section, by name, in file order.
     sections: dict[str, str] = field(default_factory=dict)
+    #: For a fix task, the task whose unit (branch, worktree, stamp log) the fix works in; empty otherwise.
+    parent: str = ""
 
 
 def render_task_file(task: TaskFile) -> str:
@@ -66,6 +70,8 @@ def render_task_file(task: TaskFile) -> str:
         "scope": list(task.scope),
         "terms": list(task.terms),
     }
+    if task.parent:
+        front["parent"] = task.parent
     block = yaml.safe_dump(front, default_flow_style=None, sort_keys=False, allow_unicode=True, width=1000).strip()
     lines = ["---", block, "---", f"# Task {task.task}", ""]
     for name in SECTIONS:
@@ -98,6 +104,11 @@ def parse_task_file(text: str, tasks: Tasks) -> TaskFile:
         raise TaskFileError(f"the --- block holds a wrong value ({error})") from error
     if not issues:
         raise TaskFileError("the task covers no issue")
+    parent = str(front.get("parent") or "")
+    if parent and kind != "fix":
+        raise TaskFileError(f"the task has a parent '{parent}' but its kind is '{kind}': only a fix task has a parent")
+    if parent and not TASK_ID.match(parent):
+        raise TaskFileError(f"the parent '{parent}' is not a task id")
     body = parts[1]
     headings = list(_HEADING.finditer(body))
     sections: dict[str, str] = {}
@@ -118,6 +129,7 @@ def parse_task_file(text: str, tasks: Tasks) -> TaskFile:
         scope=tuple(str(item) for item in front["scope"] or ()),
         terms=tuple(str(item) for item in front["terms"] or ()),
         sections=sections,
+        parent=parent,
     )
 
 

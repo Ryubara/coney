@@ -269,7 +269,9 @@ issue stays the one place to read it.
 ## Where an agent works {#worktrees}
 
 Every agent works in a worktree at `../../worktrees/coney/<branch>/` on a branch its brief names, and creates it
-itself (`git worktree add ../../worktrees/coney/<branch> -b <branch> origin/main`). **Never start an agent with the
+itself (`git worktree add ../../worktrees/coney/<branch> -b <branch> origin/main`); an engineer given a task that
+`task create` made runs `coney-tools task start <task id>` instead, which makes the same worktree and the rest of the
+unit ([Starting a task](issues.md#starting)). **Never start an agent with the
 Agent tool's `isolation: "worktree"` option.** It creates the worktree for you under the main checkout's
 `.claude/worktrees/` with an automatic branch name, which is outside the layout [AGENTS.md](repo:AGENTS.md) fixes:
 the virus scanner exclusion a machine sets for the worktrees folder (without it a build starves the CPU) does not

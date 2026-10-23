@@ -73,6 +73,29 @@ def test_a_damaged_file_names_the_problem(change: object, why: str) -> None:
         task_file.parse_task_file(text, TASKS)
 
 
+def test_a_fix_task_names_the_task_it_fixes_and_an_ordinary_one_has_no_parent_line() -> None:
+    fix = sample(task="301-fix", kind="fix", issues=(301,), parent="301-fix-the-fight-goal")
+    text = task_file.render_task_file(fix)
+    assert "parent: 301-fix-the-fight-goal" in text
+    assert task_file.parse_task_file(text, TASKS).parent == "301-fix-the-fight-goal"
+    ordinary = task_file.render_task_file(sample())
+    assert "parent" not in ordinary
+    assert task_file.parse_task_file(ordinary, TASKS).parent == ""
+
+
+@pytest.mark.parametrize(
+    ("change", "why"),
+    [
+        ({"kind": "feature", "parent": "301-x"}, "only a fix task has a parent"),
+        ({"kind": "fix", "parent": "Not A Task"}, "'Not A Task' is not a task id"),
+    ],
+)
+def test_a_wrong_parent_is_refused(change: dict[str, object], why: str) -> None:
+    text = task_file.render_task_file(sample(**change))
+    with pytest.raises(TaskFileError, match=why):
+        task_file.parse_task_file(text, TASKS)
+
+
 def test_sections_out_of_order_are_refused() -> None:
     text = task_file.render_task_file(sample())
     swapped = text.replace("## Goal", "## TMP").replace("## Done", "## Goal").replace("## TMP", "## Done")
