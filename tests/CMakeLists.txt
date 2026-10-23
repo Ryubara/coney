@@ -1,9 +1,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# The unit tests need the debug tools for now: the release build (CONEY_DEBUG_TOOLS off) runs its smoke tests alone
-# (src/platform/CMakeLists.txt, docs/guides/building.md#debug-tools).
-if(NOT CONEY_DEBUG_TOOLS)
-    return()
-endif()
 add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
@@ -57,11 +52,9 @@ add_executable(coney_tests
     gamemodes/movie_player_test.cpp
     movies/captions_test.cpp
     movies/movie_mode_test.cpp
-    gamemodes/sheet_viewer_mode_test.cpp
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp
     gamemodes/story_start_test.cpp
-    gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
@@ -79,7 +72,6 @@ add_executable(coney_tests
     graphics/sprite_batch_test.cpp
     graphics/texture_grid_test.cpp
     graphics/texture_lod_test.cpp
-    gui/debug_menu_view_test.cpp
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
@@ -107,25 +99,17 @@ add_executable(coney_tests
     hud/lock_pick_hud_test.cpp
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
-    platform/disc_anim_player_test.cpp
-    platform/disc_change_character_test.cpp
-    platform/disc_debug_clear_fighters_test.cpp
-    platform/disc_fighter_models_test.cpp
-    platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_gang_count_test.cpp
     platform/disc_rumble_test.cpp
     platform/disc_hub_cutscene_audio_test.cpp
-    platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_end_test.cpp
     platform/disc_level80_test.cpp
-    platform/disc_fall_camera_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_given_weapon_test.cpp
     platform/disc_revive_test.cpp
-    platform/disc_rise_counter_test.cpp
     platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
@@ -139,32 +123,19 @@ add_executable(coney_tests
     platform/disc_level99_scene_grab_test.cpp
     platform/disc_level99_snaps_test.cpp
     platform/disc_level99_course_test.cpp
-    platform/disc_level99_powerups_test.cpp
-    platform/disc_level99_money_sound_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
     platform/disc_scene_option_test.cpp
-    platform/disc_level99_noclip_test.cpp
-    platform/disc_sprint_attacks_test.cpp
-    platform/disc_tandem_test.cpp
     platform/disc_bat_cross_test.cpp
-    platform/disc_level99_spawner_test.cpp
     platform/disc_spawner_money_test.cpp
-    platform/disc_level99_car_climb_test.cpp
-    platform/disc_level99_street_props_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
-    platform/disc_game_session_test.cpp
-    platform/disc_level99_handover_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_vermin_fence_test.cpp
-    platform/disc_level99_store_glass_test.cpp
-    platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_level34_objectives_test.cpp
-    platform/disc_level93_molotov_test.cpp
     platform/disc_level99_fence_dealer_test.cpp
     platform/disc_level99_fence_lesson_test.cpp
     platform/disc_story_chain_test.cpp
@@ -177,13 +148,10 @@ add_executable(coney_tests
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
-    platform/disc_debug_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp
     platform/ffmpeg_info_test.cpp
-    platform/imgui_model_view_test.cpp
-    platform/imgui_ui_scale_test.cpp
     platform/profile_folder_test.cpp
     platform/room_smoke_overlay_test.cpp
     platform/scene_stage_test.cpp
@@ -359,43 +327,15 @@ target_sources(coney_tests PRIVATE
     combat/stick_games_test.cpp
     combat/tandem_test.cpp
     combat/throw_aim_test.cpp
-    combat/throw_velocity_test.cpp
-    debug/combat_tunables_test.cpp)
+    combat/throw_velocity_test.cpp)
 # Scenes: the records, the slots and the player (docs/research/scenes.md).
 target_sources(coney_tests PRIVATE
     scenes/disc_scenes_test.cpp
     scenes/scene_player_test.cpp
     scenes/scene_record_test.cpp)
-# The sandbox and the collision writer it uses (docs/guides/sandbox.md).
+# The collision writer the sandbox and the Spawner use (the sandbox's own tests are the debug tools', below).
 target_sources(coney_tests PRIVATE
-    raycast/collision_builder_test.cpp
-    raycast/collision_extras_test.cpp
-    sandbox/disc_sandbox_combat_test.cpp
-    sandbox/disc_throw_direction_test.cpp
-    sandbox/disc_sandbox_player_test.cpp
-    sandbox/disc_sandbox_traversal_test.cpp
-    sandbox/sandbox_layout_test.cpp
-    sandbox/sandbox_mesh_test.cpp
-    sandbox/sandbox_world_test.cpp)
-# The debug menus (docs/guides/debug-menu.md).
-target_sources(coney_tests PRIVATE
-    debug/anim_catalog_test.cpp
-    debug/anim_page_test.cpp
-    debug/audio_page_test.cpp
-    debug/debug_session_test.cpp
-    debug/fighter_spawn_test.cpp
-    debug/entity_inspector_test.cpp
-    debug/human_shapes_test.cpp
-    debug/input_gate_test.cpp
-    debug/menu_navigator_test.cpp
-    debug/movies_page_test.cpp
-    debug/native_caller_test.cpp
-    debug/pad_menu_input_test.cpp
-    debug/play_pages_test.cpp
-    debug/story_missions_test.cpp
-    debug/time_scale_test.cpp
-    debug/ui_scale_test.cpp
-    debug/tunables_test.cpp)
+    raycast/collision_builder_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
@@ -447,8 +387,7 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/protocol_test.cpp
-                                   net/sessions_test.cpp
-                                   platform/enet_transport_test.cpp platform/net_play_test.cpp debug/net_page_test.cpp)
+                                   net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)
@@ -462,9 +401,70 @@ target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_sources(coney_tests PRIVATE support/test_paths.cpp)
 set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
     "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\"")
-# coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_devtools
-# for the debug tools' own tests (the menus' glue, the overlay, the viewers), which test what developers use.
-target_link_libraries(coney_tests PRIVATE coney_platform coney_devtools Catch2::Catch2WithMain)
+# coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU).
+target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
+# The tests of the debug tools (the menus, the overlay, the sandbox, the viewers, the play mode's debug controls and the
+# disc tests that drive them through those), only in a build with them (docs/guides/building.md#debug-tools); the
+# release build runs every other test, so the game is tested without them.
+if(CONEY_DEBUG_TOOLS)
+    target_sources(
+        coney_tests PRIVATE
+        debug/anim_catalog_test.cpp
+        debug/anim_page_test.cpp
+        debug/audio_page_test.cpp
+        debug/combat_tunables_test.cpp
+        debug/debug_session_test.cpp
+        debug/entity_inspector_test.cpp
+        debug/fighter_spawn_test.cpp
+        debug/human_shapes_test.cpp
+        debug/input_gate_test.cpp
+        debug/menu_navigator_test.cpp
+        debug/movies_page_test.cpp
+        debug/net_page_test.cpp
+        debug/native_caller_test.cpp
+        debug/pad_menu_input_test.cpp
+        debug/play_pages_test.cpp
+        debug/story_missions_test.cpp
+        debug/time_scale_test.cpp
+        debug/tunables_test.cpp
+        debug/ui_scale_test.cpp
+        gamemodes/sheet_viewer_mode_test.cpp
+        gamemodes/text_viewer_mode_test.cpp
+        gui/debug_menu_view_test.cpp
+        platform/disc_anim_player_test.cpp
+        platform/disc_change_character_test.cpp
+        platform/disc_debug_clear_fighters_test.cpp
+        platform/disc_debug_movies_test.cpp
+        platform/disc_fall_camera_test.cpp
+        platform/disc_fighter_models_test.cpp
+        platform/disc_game_session_test.cpp
+        platform/disc_hub_doors_test.cpp
+        platform/disc_inspector_freeze_test.cpp
+        platform/disc_level93_molotov_test.cpp
+        platform/disc_level99_car_climb_test.cpp
+        platform/disc_level99_handover_test.cpp
+        platform/disc_level99_money_sound_test.cpp
+        platform/disc_level99_noclip_test.cpp
+        platform/disc_level99_powerups_test.cpp
+        platform/disc_level99_spawner_test.cpp
+        platform/disc_level99_store_glass_test.cpp
+        platform/disc_level99_store_register_test.cpp
+        platform/disc_level99_street_props_test.cpp
+        platform/disc_rise_counter_test.cpp
+        platform/disc_sprint_attacks_test.cpp
+        platform/disc_tandem_test.cpp
+        platform/imgui_model_view_test.cpp
+        platform/imgui_ui_scale_test.cpp
+        raycast/collision_extras_test.cpp
+        sandbox/disc_sandbox_combat_test.cpp
+        sandbox/disc_sandbox_player_test.cpp
+        sandbox/disc_sandbox_traversal_test.cpp
+        sandbox/disc_throw_direction_test.cpp
+        sandbox/sandbox_layout_test.cpp
+        sandbox/sandbox_mesh_test.cpp
+        sandbox/sandbox_world_test.cpp)
+    target_link_libraries(coney_tests PRIVATE coney_devtools)
+endif()
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
 # A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)

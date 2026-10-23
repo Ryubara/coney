@@ -17,10 +17,16 @@ namespace {
 
 // An RGBA image of `width` × `height` whose pixel (x, y) is (x, y, 7, 255): every pixel tells where it came from.
 std::vector<std::uint8_t> coordinateImage(int width, int height) {
-    std::vector<std::uint8_t> rgba;
+    // Sized once and written by index: GCC 13 at -O3 warns a false stringop-overflow on an insert of a braced list into
+    // a vector that may have to grow.
+    std::vector<std::uint8_t> rgba(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    std::size_t at = 0;
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            rgba.insert(rgba.end(), {static_cast<std::uint8_t>(x), static_cast<std::uint8_t>(y), 7, 255});
+            rgba[at++] = static_cast<std::uint8_t>(x);
+            rgba[at++] = static_cast<std::uint8_t>(y);
+            rgba[at++] = 7;
+            rgba[at++] = 255;
         }
     }
     return rgba;
