@@ -77,6 +77,55 @@ def test_a_pasted_block_is_refused_and_a_quoted_line_passes(tmp_path: Path) -> N
     assert GUARD.problem(reindented, prints) is not None
 
 
+#: Our own notes, long enough to be distinctive, that a page might put between pasted lines.
+NOTES = [
+    "this line is a note of our own about the call",
+    "and this one says what the script does next",
+]
+
+
+def _wrapped_forms() -> dict[str, str]:
+    """The block SCRIPT_LINES[1:5] as it might land in a page or a listing, each form named for the failure message."""
+    block = [line.strip() for line in SCRIPT_LINES[1:5]]
+    return {
+        "quoted": "\n".join("> " + line for line in block),
+        "nested quote": "\n".join("> > " + line for line in block),
+        "bullets": "\n".join("- " + line for line in block),
+        "numbered": "\n".join(f"{index}. {line}" for index, line in enumerate(block, start=1)),
+        "inline code bullets": "\n".join("* `" + line + "`" for line in block),
+        "table": "| Line | What it does |\n| --- | --- |\n" + "\n".join(f"| `{line}` | {NOTES[0]} |" for line in block),
+        "commented out": "\n".join("-- " + line for line in block),
+        "commented out, no space": "\n".join("--" + line for line in block),
+        "trailing comments": "\n".join(line + "  -- " + NOTES[index % 2] for index, line in enumerate(block)),
+        "interleaved notes": "\n".join(line + "\n" + NOTES[index % 2] for index, line in enumerate(block)),
+        "quoted bullets with comments": "\n".join("> - " + line + " -- why" for line in block),
+    }
+
+
+@pytest.mark.parametrize("form", list(_wrapped_forms()))
+def test_a_wrapped_paste_is_refused(tmp_path: Path, form: str) -> None:
+    """A block wrapped in Markdown or comment markup, or broken up by notes of our own, is still a pasted block."""
+    prints = GUARD.load_fingerprints(_checkout(tmp_path))
+    assert GUARD.problem("Some prose.\n" + _wrapped_forms()[form] + "\nMore prose.\n", prints) is not None, form
+
+
+def test_scattered_lines_pass(tmp_path: Path) -> None:
+    """Fingerprinted lines spread out among more lines of our own than the window allows are not a pasted block, and a
+    `--` inside a string is not a comment."""
+    prints = GUARD.load_fingerprints(_checkout(tmp_path))
+    spread = [SCRIPT_LINES[1], NOTES[0], NOTES[1], SCRIPT_LINES[2], NOTES[0], NOTES[1], SCRIPT_LINES[3]]
+    assert GUARD.problem("\n".join(spread), prints) is None
+    for line in ('Print("a -- b is not a comment", x)', "Print('a -- b', [[c -- d]], x)"):
+        assert GUARD.normalised(line) == line
+
+
+def test_normalising_keeps_a_decompile_line(tmp_path: Path) -> None:
+    """A line as the decompiler writes it (indented code, negative numbers in a list) keeps its text, so the
+    fingerprints `--all` writes are the ones a paste is checked against."""
+    for line in ("    -1, -2, -3, 4, 5, 6, 7, 8, 9, 10,", "    local l1 = Thing.field[1] * 2 - 3", "x = 'a|b'"):
+        assert GUARD.normalised(line) == " ".join(line.split())
+
+
 def test_lua_dir_matches_coney_tools(tmp_path: Path) -> None:
     """The hook finds the shared folder where coney-tools does: the configured `lua_dir`, else the default."""
     from coney_tools import lua_decompile

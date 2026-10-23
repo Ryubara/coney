@@ -1,16 +1,11 @@
+---
+kind: format
+---
 # Lua 4.0 bytecode and its decompiler
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the 467 compiled
-scripts of the NTSC-U disc's `WARRIORS.WAD`, read with `coney-tools lua decompile --all --roundtrip` and a stock Lua
-4.0.1 `luac` built from the authors' source (`workspace init --fetch lua`). No runtime claims.
+Verified against: `SLUS_212.15` (NTSC-U), the 467 compiled scripts of the NTSC-U disc and Lua 4.0.1's source.
 
-How each kind of claim is graded: what Lua's compiler does is read in Lua 4.0.1's own source (MIT licence; `lopcodes.h`,
-`lcode.c`, `lparser.c`, `llimits.h`, and `luac.c` and `opt.c` of its `luac`), and is confirmed for the game's chunks by
-the round trip, which compiles every decompiled script again and gets the game's instructions and constants back; a
-count from the disc is a **disc check** (the command's output, counts only); an address of the game's own loader or
-virtual machine is confirmed (code), cited from the page that owns it. A claim that is a conclusion says inferred.
-
-## Purpose
+## Summary
 
 The game's levels, missions, menus and configuration are Lua 4.0 scripts, shipped compiled ([Compiled Lua
 chunks](lua-chunks.md) is the container, [Scripting](../scripting.md) how the game runs them). Coney runs that original
@@ -28,12 +23,22 @@ can never come back and why; and the round trip's results. How to run the comman
 never enter the repository ([LEGAL.md](repo:LEGAL.md#no-game-data)); this page shows Lua's patterns, never a line of
 a game script.
 
-## Original structure
+How each kind of claim is graded: what Lua's compiler does is read in Lua 4.0.1's own source (MIT licence; `lopcodes.h`,
+`lcode.c`, `lparser.c`, `llimits.h`, and `luac.c` and `opt.c` of its `luac`), so for the game's chunks it is inferred
+from that source. The round trip, which compiles every decompiled script again and gets the game's instructions and
+constants back, corroborates it; like every count from the disc it is a **disc check** ([How this was
+checked](#how-this-was-checked)), not a level. An address of the game's own loader or virtual machine is confirmed
+(code), cited from the page that owns it. There are no runtime claims.
+
+## Map
 
 ### The game's side
 
-The game links stock Lua 4.0's loader and virtual machine. The functions that matter here (names are ours, after
-Lua's), all confirmed (code) on the pages that own them:
+The game links stock Lua 4.0.1's loader and virtual machine, compiled as C++. Inferred from the source path
+`lua-4.0.1/src/lmem.cpp` at `0x0032c758` and Lua's own messages in the same block of code
+([Source map](../source-map.md#middleware)), and from the interpreter loop at `0x00334478`, which dispatches 49 cases,
+one per opcode of 4.0's `lopcodes.h`. The functions that matter here (names are ours, after Lua's), all confirmed
+(code) on the pages that own them:
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -43,8 +48,10 @@ Lua's), all confirmed (code) on the pages that own them:
 
 ### How the chunks were made
 
-Every chunk on the disc is the output of a stock Lua 4.0.1 `luac` run with `-s`, which strips the debug information.
-Inferred, from four disc checks that each point the same way:
+Every chunk on the disc is the output of a stock Lua 4.0 `luac` run with `-s`, which strips the debug information.
+Nothing in a chunk tells 4.0 from 4.0.1 (both write version byte `0x40`), so the chunks match either; the round trip
+used 4.0.1, the version of the runtime the game links ([above](#the-games-side)). Inferred from four disc checks that
+each point the same way:
 
 - the header is stock Lua 4.0's for a 32-bit little-endian build: 6 bits of opcode, 9 of the B field, 8-byte numbers
   ([Compiled Lua chunks](lua-chunks.md#header-13-bytes-then-a-test-number));
@@ -57,8 +64,8 @@ Inferred, from four disc checks that each point the same way:
   instructions, constants, parameter counts, vararg flags, stack sizes and nested functions as the disc's chunk, for
   every function ([below](#round-trip)).
 
-So the code is exactly what Lua 4.0.1's code generator writes for some source, and every pattern below applies as
-Lua's source states it. The game's own build of Lua changes nothing a chunk shows.
+So the code is exactly what Lua 4.0's code generator writes for some source, and every pattern below applies as
+Lua's source states it (inferred from the same checks). The game's own build of Lua changes nothing a chunk shows.
 
 ### The decompiler
 
@@ -73,27 +80,32 @@ can move to a repository of its own. Its parts, in the order a chunk goes throug
 | `conditions.py` | Rebuilds the `and`/`or` tree of a condition from its jumps |
 | `expressions.py` | Symbolic execution of expression code: a stack of expression trees |
 | `decompiler.py` | The statement reader: blocks, loops, `if`, `break`, locals |
+| `ast.py` | The syntax tree the readers build and the renderer writes; `failures` lists the functions left unread |
 | `render.py` | Writes Lua: operator priorities, literals, `function a.b()` sugar, functions placed on their `lineDefined` |
 | `compare.py`, `luac.py` | The round trip: compile with `luac`, compare function by function without quoting a constant |
 
 Coney's side is `python/src/coney_tools/lua_decompile.py` (the disc, the shared folder, the guard's marks, the round
 trip), `lua_index.py` (the per-script index) and `.claude/hooks/lua_guard.py` (the guard).
 
-## Data
+## Layout
 
 ### Instruction encoding
 
 An instruction is 32 bits, little-endian. The low 6 bits are the opcode; the remaining 26 bits are either one argument
 or two. `U` is unsigned (0 to 2^26 - 1); `S` is signed, stored with an excess of `MAXARG_S` (2^25 - 1), and every jump
-is an `S` that counts from the next instruction; `A` is the high 17 bits and `B` the 9 bits above the opcode. Lua
-4.0.1's `lopcodes.h`; confirmed for the disc by the header's field sizes and by every chunk decoding to known opcodes.
+is an `S` that counts from the next instruction; `A` is the high 17 bits and `B` the 9 bits above the opcode. Inferred
+from Lua 4.0.1's `lopcodes.h`. Disc check: every chunk's header gives these field sizes (6-bit opcode, 9-bit `B`), and
+every instruction of the 467 chunks decodes to one of the 49 opcodes.
 
 ### The instruction set
+
+Inferred from Lua 4.0.1's `lopcodes.h` (the opcode numbers and the "What it does" column) and `lcode.c` (the stack
+effects); the round trip corroborates every row the disc uses (disc check).
 
 Lua 4.0 is a stack machine: an instruction pops its operands from the top of the function's stack and pushes its
 result. The stack effect is the change the code generator counts (`lcode.c`), which the decompiler replays to know
 the depth at every instruction. "On the disc" is the number of times the instruction occurs in all 467 chunks (disc
-check); the opcode numbers are `lopcodes.h`'s.
+check).
 
 | # | Opcode | Operands | Stack | What it does | On the disc |
 | --- | --- | --- | --- | --- | --- |
@@ -147,10 +159,14 @@ check). `CALL`, `RETURN` and `TAILCALL` set the count rather than adding to it, 
 
 ### Limits
 
+Inferred from Lua 4.0.1's `llimits.h`, except the game's own multiplier, which is read at its address.
+
 - **`SETLIST` flushes every 62 items, and that is stock Lua 4.0.1.** `llimits.h` sets `LFIELDS_PER_FLUSH` to 64 and
   then caps it at a quarter of `MAXSTACK` (250), so it is 62; `RFIELDS_PER_FLUSH` (pairs per `SETMAP`) is half that,
-  31. The game's VM multiplies by 62 (`0x00334478`, confirmed (code)) because it is built from the same headers, and the
-  round trip with stock `luac` reproduces every one of the disc's 62,099 `SETLIST`s.
+  31. The game's VM multiplies the A operand by 62 in its `SETLIST` case (`0x003348c4`-`0x003348d8` in `0x00334478`,
+  confirmed (code)). That it does so because it is built from the same headers is inferred from the stock source path
+  ([above](#the-games-side)). Disc check: the round trip with stock `luac` reproduces every one of the disc's 62,099
+  `SETLIST`s.
 - `MAXSTACK` is 250 values per function; `MULT_RET` (255) is a call's "all results".
 
 ### What a chunk keeps, and what stripping removes
@@ -174,6 +190,9 @@ pass, so the constant tables come back in the same order.
 
 ### The code generator's patterns {#patterns}
 
+Inferred from Lua 4.0.1's `lparser.c` and `lcode.c`; the round trip of all 467 chunks corroborates every pattern the
+disc uses (disc check).
+
 Lua 4.0.1 compiles in one pass, straight from the parser (`lparser.c` calls `lcode.c`), and keeps a count of the stack
 as it goes. Two facts make the patterns fixed and readable:
 
@@ -187,7 +206,7 @@ The patterns, each with how the decompiler (`decompiler.py`, `expressions.py`) r
 
 | Construct | What it compiles to | How it is recognised |
 | --- | --- | --- |
-| `local a, b = x, y` | the values pushed (missing ones as `PUSHNIL`, extra ones popped); no instruction of its own | values still on the stack when a statement ends, or left under the next statement's operands, or a slot a `GETLOCAL`, `SETLOCAL` or `GETINDEXED` names |
+| `local a, b = x, y` | the values pushed (missing ones as `PUSHNIL`, extra ones popped); no instruction of its own | values still on the stack when a statement ends, or left under the next statement's operands (also when that statement is an assignment that drops surplus values), or a slot a `GETLOCAL`, `SETLOCAL` or `GETINDEXED` names |
 | `x = e` (global, local) | `e`, then `SETGLOBAL` or `SETLOCAL` | the store ends the statement |
 | `t.k = e`, `t[k] = e` | t, k, e, then `SETTABLE 3 3` | `SETTABLE` with its table and key under the value |
 | `a, t.k = x, y` | every target's table and key, then the values, then stores from the last target to the first; `SETTABLE`'s A counts the values above its table | the run of stores after the values, matched from the end |
@@ -248,7 +267,7 @@ comparison with nil. One chunk on the disc needs this (disc check).
   logic, assignments; our own source) round-trip with and without debug information, and together use all 49
   opcodes, `PUSHUPVALUE` included.
 
-## Coney's implementation
+## In Coney
 
 Coney runs the game's bytecode in its own virtual machine (`src/scripting/lua_vm.cpp`, `lua_chunk.cpp`); the decompiler
 plays no part in the game. It is a research tool: `coney-tools lua decompile` writes into a folder outside the
@@ -256,7 +275,28 @@ repository, and a guard refuses its output in the repository ([coney-tools](../.
 
 ## Open questions
 
-- 111 of the 467 chunks have no recovered file name, so their decompiles are named by the entry's hash
-  ([Compiled Lua chunks](lua-chunks.md#open-questions)).
-- Whether the executable also links Lua's parser (`lparser.c`, `dostring` of source text) has not been looked at; the
-  game only loads compiled chunks.
+### Which scripts the unnamed chunks are {#q-unnamed-chunks}
+
+111 of the 467 chunks have no recovered file name, so their decompiles are named by the entry's hash
+([Compiled Lua chunks](lua-chunks.md#open-questions)). What depends on it: research finds a level's script by name
+in the index, so an unnamed script is found only through the natives and handlers the index lists for it. How to
+find out: `wad names` keeps only names it finds as strings ([coney-tools](../../guides/coney-tools.md#names)); the
+rest could come from names a script builds at run time (a `doFile` of a concatenated name, read in the decompiles
+that call it) hashed the same way ([Name hashing](../name-hash.md)).
+
+### Whether the game links Lua's parser {#q-parser}
+
+Nobody has looked at whether the executable also links Lua's parser (`lparser.c`, `llex.c`, `dostring` of source
+text). The lead: Lua's `syntax error` message, which only the lexer and parser raise, sits at `0x0032e6d0` inside
+the Lua block ([Source map](../source-map.md#middleware)), which suggests the parser is linked. What depends on it:
+whether Coney's VM must also compile source text (a script or console that passes Lua source) or only load compiled
+chunks, which is all the game is known to do. How to find out: in Ghidra, follow the function that loads that message
+to the parser's entry (`luaY_parser`) and the lexer (`luaX_*`), and see whether anything outside the Lua block calls
+them.
+
+## How this was checked
+
+The disc checks are the output of `coney-tools lua decompile --all --roundtrip` on the NTSC-U disc (counts only:
+chunks, functions, unread functions and the round trip's result), with a stock Lua 4.0.1 `luac` built from the
+authors' pinned source by `coney-tools workspace init --fetch lua`, and the opcode and construct counts of a script
+that reads the same chunks ([coney-tools](../../guides/coney-tools.md#lua)).

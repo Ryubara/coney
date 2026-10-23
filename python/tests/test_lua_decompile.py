@@ -178,7 +178,44 @@ def test_decompile_all_writes_the_scripts_fingerprints_and_index(
     index = json.loads((out / lua_index.INDEX_JSON).read_text(encoding="utf-8"))
     assert sorted(index["scripts"]) == ["closures.lua", "control.lua"]
     printed = capsys.readouterr().out
-    assert "decompiled 2 chunks" in printed and "0 functions could not be read" in printed
+    assert "decompiled 2 of 2 chunks" in printed and "0 functions could not be read" in printed
+
+
+#: Chunks the loader refuses: a Lua 5.1 header, and a fixture cut short.
+BAD_CHUNKS = {
+    "newer.lua": b"\x1bLuaQ\x00\x01\x04\x04\x04\x08\x00",
+    "truncated.lua": (FIXTURES / "logic.s.luac").read_bytes()[:40],
+}
+
+
+def test_decompile_all_reports_a_bad_chunk_and_goes_on(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A chunk the loader refuses is named with the reason, and every other chunk is still written, fingerprinted and
+    indexed; the command then exits 1."""
+    chunks = _chunks(tmp_path)
+    for name, data in BAD_CHUNKS.items():
+        (chunks / name).write_bytes(data)
+    out = tmp_path / "shared"
+    assert lua_decompile.run_all(REPO, None, lua_decompile.Options(chunks=chunks, out=out), frozenset()) == 1
+    assert sorted(path.name for path in out.glob("*.lua")) == ["closures.lua", "control.lua"]
+    guard = lua_decompile.guard()
+    prints = frozenset((out / guard.FINGERPRINTS).read_text(encoding="ascii").split())
+    assert guard.pasted((out / "control.lua").read_text(encoding="latin-1"), prints)
+    index = json.loads((out / lua_index.INDEX_JSON).read_text(encoding="utf-8"))
+    assert sorted(index["scripts"]) == ["closures.lua", "control.lua"]
+    printed = capsys.readouterr()
+    assert "decompiled 2 of 4 chunks" in printed.out and "2 chunks could not be loaded" in printed.out
+    for name in BAD_CHUNKS:
+        assert f"{name}: not loaded (" in printed.err
+
+
+def test_decompile_one_bad_chunk_is_one_line(tmp_path: Path) -> None:
+    """One chunk the loader refuses is a ConfigError naming it (one line from the command), and nothing is written."""
+    chunks = _chunks(tmp_path)
+    (chunks / "newer.lua").write_bytes(BAD_CHUNKS["newer.lua"])
+    out = tmp_path / "out"
+    with pytest.raises(ConfigError, match=r"newer\.lua: not loaded \(Lua version"):
+        lua_decompile.run_one(REPO, None, "newer.lua", out, lua_decompile.Options(chunks=chunks))
+    assert not out.exists()
 
 
 def test_round_trip_counts_without_quoting_the_script(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

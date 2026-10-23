@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import lua4
+from coney_tools import lua4 as coney_lua4
 from coney_tools import lua_decompile, lua_index
 
 FIXTURES = Path(__file__).parent / "lua_index_fixtures"
@@ -40,6 +41,20 @@ def test_functions_are_named_by_the_global_or_table_field_that_holds_them() -> N
     }
     lines = {entry.path: entry.line for entry in script.functions}
     assert lines["main/0"] == 3 and lines["main/3"] == 18 and lines["main/3/0"] == 21
+
+
+def test_the_index_reads_each_chunk_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The index takes everything, the first lines included, from one reader (`coney_tools.lua4`), not a second parse
+    by the decompiler's loader; that reader keeps each function's first line."""
+
+    def refuse(data: bytes) -> object:
+        raise AssertionError("the index parsed the chunk a second time")
+
+    monkeypatch.setattr(lua4, "load", refuse)
+    lines = {entry.path: entry.line for entry in _script().functions}
+    assert lines["main"] == 0 and lines["main/3"] == 18 and lines["main/3/0"] == 21
+    main = coney_lua4.parse_chunk((FIXTURES / "mission.s.luac").read_bytes())
+    assert main.line_defined == 0 and main.protos[3].line_defined == 18
 
 
 def test_natives_and_the_scripts_own_calls_are_listed_per_function() -> None:

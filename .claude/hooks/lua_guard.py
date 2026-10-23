@@ -9,10 +9,13 @@ marks catch a slip:
 * **The marker.** Every file the command writes ends with `-- lua4 decompile <16 hex digits> <chunk name>`
   (`marker_line`; last, so the decompile's lines keep their numbers). Text holding that line anywhere is refused.
 * **Fingerprints.** `lua decompile --all` also writes `fingerprints.txt` into the shared folder (`lua_dir`): a hash
-  of every distinctive line of every decompiled script (at least MIN_LENGTH characters once its spacing is
-  collapsed). Text holding RUN or more consecutive distinctive lines that are all listed is a pasted block and is
-  refused; a single line quoted in a research page passes, and so do short lines (`end`, `local l1 = 1`). Without the
-  shared folder (in CI, or before the first `--all`) only the marker is checked.
+  of every distinctive line of every decompiled script (at least MIN_LENGTH characters once it is normalised). Text
+  in which RUN of any WINDOW distinctive lines in a row are listed is a pasted block and is refused; a single line
+  quoted in a research page passes, and so do short lines (`end`, `local l1 = 1`). Each line is normalised before it
+  is hashed, on both sides: the markup a paste picks up is stripped (quote markers, list bullets and numbers,
+  inline-code backticks, `--` before commented-out code, a trailing `--` comment, spacing), and each cell of a table
+  row counts as a line. The window, rather than a strict run, catches a block broken up by notes of our own. Without
+  the shared folder (in CI, or before the first `--all`) only the marker is checked.
 
 This file is the one definition of both marks: `coney_tools/lua_decompile.py` loads it to write them, and a test
 checks that what it writes is refused here. It is standard-library only, as every hook is.
@@ -21,6 +24,8 @@ checks that what it writes is refused here. It is standard-library only, as ever
 * Claude Code: `.claude/hooks/dispatch.py` runs `main()` for Write, Edit, MultiEdit and NotebookEdit; it reads the
   hook's JSON from stdin and returns 2 with the reason on stderr when the new text would go into a Coney checkout.
   Anything it cannot read passes. A shell command that writes a file is not seen here; pre-commit catches the commit.
+  Text that never enters a checkout (an issue or pull request body, a description file in scratch) is not seen at
+  all, and neither is a paraphrase (docs/guides/enforcement.md).
 
 The shared folder is found as `coney-tools` finds it (`coney_tools/config.py`): `lua_dir` in the `coney.local.toml`
 of the checkout or of its main checkout, relative to that file, else `scratch/lua` in the workspace (two levels above
@@ -29,6 +34,7 @@ the main checkout in the workspace layout, else a folder named after the clone w
 
 from __future__ import annotations
 
+import collections
 import hashlib
 import json
 import re
@@ -41,8 +47,10 @@ from pathlib import Path
 MARKER = re.compile(r"^-- lua4 decompile [0-9a-f]{16}(?: |$)", re.MULTILINE)
 #: A line shorter than this (spacing collapsed) is too common to fingerprint.
 MIN_LENGTH = 24
-#: This many consecutive fingerprinted lines make a pasted block.
+#: This many fingerprinted lines among WINDOW distinctive lines in a row make a pasted block.
 RUN = 3
+#: How many distinctive lines are looked at together, so that a block broken up by notes of our own still counts.
+WINDOW = 5
 #: The fingerprint file in the shared folder.
 FINGERPRINTS = "fingerprints.txt"
 #: Marks a Coney checkout (as coney_tools/config.py finds one).
@@ -61,9 +69,47 @@ def marker_line(name: str, data: bytes) -> str:
     return f"-- lua4 decompile {hashlib.sha256(data).hexdigest()[:16]} {name}"
 
 
+#: Markup a pasted line picks up in front of the code: a quote marker, a list bullet or number, inline-code
+#: backticks, or `--` before commented-out code. Stripped repeatedly, so "> - `x`" loses all three.
+_LEADING = re.compile(r"^(?:>|[-*+](?=\s)|\d+[.)](?=\s)|`+|--+(?:\[\[)?)\s*")
+
+
+def _cut_comment(line: str) -> str:
+    """`line` without a trailing `--` comment. A `--` inside a string ('...', "..." or [[...]]) is not a comment."""
+    closing = ""
+    index = 0
+    while index < len(line):
+        if closing:
+            if line[index] == "\\" and closing != "]]":
+                index += 1  # an escaped character, never the closing quote
+            elif line.startswith(closing, index):
+                index += len(closing) - 1
+                closing = ""
+        elif line[index] in "'\"":
+            closing = line[index]
+        elif line.startswith("[[", index):
+            closing = "]]"
+            index += 1
+        elif line.startswith("--", index):
+            return line[:index]
+        index += 1
+    return line
+
+
+def normalised(line: str) -> str:
+    """One line (or table cell) as it is fingerprinted: the markup a paste picks up stripped from its front, a trailing
+    `--` comment and closing backticks cut, its spacing collapsed. A line the decompiler writes keeps its text (it
+    never starts with markup or carries a comment), so the fingerprints `--all` writes match a pasted copy."""
+    text = line.strip()
+    while (stripped := _LEADING.sub("", text, count=1)) != text:
+        text = stripped
+    text = _cut_comment(text).rstrip().rstrip("`")
+    return " ".join(text.split())
+
+
 def _distinctive(line: str) -> str | None:
-    """The line with its spacing collapsed, or None when it is too short to fingerprint."""
-    text = " ".join(line.split())
+    """The line normalised, or None when it is too short to fingerprint."""
+    text = normalised(line)
     return text if len(text) >= MIN_LENGTH else None
 
 
@@ -73,17 +119,24 @@ def fingerprint(line: str) -> str | None:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16] if text is not None else None
 
 
+def _line_prints(line: str) -> list[str]:
+    """The fingerprints one line of text offers: one per distinctive cell of a Markdown table row, else its own."""
+    stripped = line.strip()
+    cells = stripped.strip("|").split("|") if stripped.startswith("|") else [line]
+    return [found for cell in cells if (found := fingerprint(cell)) is not None]
+
+
 def pasted(text: str, prints: frozenset[str]) -> bool:
-    """Whether `text` holds RUN consecutive distinctive lines that are all fingerprints of decompiled scripts."""
+    """Whether RUN of any WINDOW distinctive lines in a row of `text` are fingerprints of decompiled scripts."""
     if not prints:
         return False
-    run = 0
+    recent: collections.deque[bool] = collections.deque(maxlen=WINDOW)
     for line in text.splitlines():
-        found = fingerprint(line)
-        if found is None:
-            continue
-        run = run + 1 if found in prints else 0
-        if run >= RUN:
+        found = _line_prints(line)
+        if not found:
+            continue  # a short line (`end`, a blank) neither counts nor breaks the window
+        recent.append(any(value in prints for value in found))
+        if sum(recent) >= RUN:
             return True
     return False
 
@@ -93,7 +146,7 @@ def problem(text: str, prints: frozenset[str]) -> str | None:
     if MARKER.search(text):
         return "it holds the marker line of a `coney-tools lua decompile` output"
     if pasted(text, prints):
-        return f"it holds {RUN} or more consecutive lines of a decompiled script"
+        return f"it holds {RUN} or more lines of a decompiled script within {WINDOW} lines"
     return None
 
 
@@ -107,6 +160,8 @@ def checkout_of(path: Path) -> Path | None:
 
 
 def _main_checkout(root: Path) -> Path:
+    """The main checkout of the worktree at `root` (the folder holding the shared `.git`), else `root`: a worktree
+    may have no coney.local.toml of its own, and the workspace layout is counted from the main checkout."""
     try:
         done = subprocess.run(
             ["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-common-dir"],

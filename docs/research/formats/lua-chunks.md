@@ -1,10 +1,14 @@
+---
+kind: format
+---
 # Compiled Lua chunks (`.lua`)
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the NTSC-U disc's
-`WARRIORS.WAD`. This page documents the container only, never the scripts' contents ([LEGAL.md](repo:LEGAL.md)).
-The instructions inside, and how Coney's decompiler reads them back, are on [Lua 4.0 bytecode](lua-bytecode.md).
+Verified against: `SLUS_212.15` (NTSC-U) and the NTSC-U disc's `WARRIORS.WAD`.
 
 ## Purpose
+
+This page documents the container only, never the scripts' contents ([LEGAL.md](repo:LEGAL.md)). The instructions
+inside, and how Coney's decompiler reads them back, are on [Lua 4.0 bytecode](lua-bytecode.md).
 
 The game's 467 scripts ship as Lua 4.0 bytecode, the output of `luac`, in WAD entries named `<name>.lua`. What they
 do and how the game runs them is on [Scripting](../scripting.md); this page is the file layout an extractor or a

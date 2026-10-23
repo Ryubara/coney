@@ -94,6 +94,7 @@ class _Reader:
         self.size_t_size = 4
 
     def raw(self, count: int) -> bytes:
+        """The next `count` bytes; ChunkError when the chunk ends first."""
         if self.pos + count > len(self.data):
             raise ChunkError(f"truncated chunk: {count} bytes wanted at offset {self.pos:#x}")
         chunk = self.data[self.pos : self.pos + count]
@@ -101,9 +102,11 @@ class _Reader:
         return chunk
 
     def byte(self) -> int:
+        """One unsigned byte (a header field or a flag)."""
         return self.raw(1)[0]
 
     def _unsigned(self, size: int) -> int:
+        """An unsigned integer of `size` bytes in the chunk's byte order."""
         return int.from_bytes(self.raw(size), "little" if self.order == "<" else "big")
 
     def word(self) -> int:
@@ -111,12 +114,14 @@ class _Reader:
         return self._unsigned(4)
 
     def integer(self) -> int:
+        """A signed C `int` of the header's int size (a count, a line, a parameter count)."""
         value = self._unsigned(self.int_size)
         if value >= 1 << (8 * self.int_size - 1):
             value -= 1 << (8 * self.int_size)
         return value
 
     def size_t(self) -> int:
+        """A C `size_t` of the header's size_t size (4 on the PS2, 8 from a 64-bit luac)."""
         return self._unsigned(self.size_t_size)
 
     def count(self, what: str) -> int:
@@ -127,6 +132,7 @@ class _Reader:
         return value
 
     def number(self) -> float:
+        """A Lua number: an 8-byte double in the chunk's byte order."""
         value: float = struct.unpack(self.order + "d", self.raw(8))[0]
         return value
 
@@ -141,6 +147,9 @@ class _Reader:
 
 
 def _header(reader: _Reader) -> None:
+    """Check the chunk header and take its byte order and sizes into `reader`. Only Lua 4.0 (version 0x40)
+    with 32-bit instructions (a 6-bit opcode, a 9-bit B; lopcodes.h) and 8-byte doubles is read; int and size_t may be
+    2, 4 or 8 bytes, as luac writes the host's. The test number catches a wrong number format."""
     if reader.raw(4) != SIGNATURE:
         raise ChunkError("not a Lua chunk (no ESC 'Lua' signature)")
     version = reader.byte()
@@ -162,6 +171,9 @@ def _header(reader: _Reader) -> None:
 
 
 def _proto(reader: _Reader, depth: int) -> Proto:
+    """One function prototype, in luac's order (ldump.c): source, first line, parameters, vararg flag, max
+    stack, local records, line table, string and number constants, nested functions, then the code, which
+    must end with END. `depth` stops a corrupt chunk from recursing without end."""
     if depth > 200:
         raise ChunkError("functions nested too deeply")
     source = reader.string() or ""

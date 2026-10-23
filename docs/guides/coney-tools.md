@@ -643,7 +643,9 @@ name is not known). Beside them it writes:
 `NAME OUT_DIR` decompiles one chunk, by file name (`level99.lua`) or hash, into `OUT_DIR`. Both refuse an output
 folder inside a checkout. `--chunks DIR` reads the chunks from a folder (`wad extract` or `extract` output) instead of
 the disc. The output prints counts only: chunks, functions, the functions that could not be read with the kind of
-problem (a pc and an opcode, never a constant).
+problem (a pc and an opcode, never a constant). A chunk the loader refuses (another Lua version, cut short) is named
+with the reason: `--all` goes on with the rest, still writes the fingerprints and the index for every script it wrote,
+and exits 1; one chunk by name is a one-line error.
 
 `--roundtrip` compiles each output with a stock Lua 4.0.1 `luac` and compares the result with the original chunk,
 function by function: instructions, constants, parameters, vararg flag, stack size and nested functions. It prints how
@@ -653,18 +655,30 @@ else `luac_program` in `coney.local.toml`, else the one `coney-tools workspace i
 pinned source in `<workspace>/tools/lua-4.0.1/bin/` ([Fetching the research tools](workspace.md#fetch)).
 
 **The guard.** `.claude/hooks/lua_guard.py` refuses decompiled Lua in the repository: every file the command writes
-ends with a marker line (`-- lua4 decompile <hash> <name>`), and text holding that line, or three consecutive lines
-whose fingerprints are in the shared folder's `fingerprints.txt`, is refused. One quoted line passes. It runs in
-pre-commit (`no-decompiled-lua`, on every text file) and as a Claude Code hook before every Write, Edit, MultiEdit and
+ends with a marker line (`-- lua4 decompile <hash> <name>`), and text holding that line is refused. So is text in
+which three of any five distinctive lines in a row (24 characters or more) have their fingerprint in the shared
+folder's `fingerprints.txt`. A line is compared without the markup a paste picks up: quote markers, list bullets and
+numbers, inline-code backticks, `--` before commented-out code and a trailing `--` comment are stripped, and each cell
+of a table row counts as a line. One quoted line passes, and so do short lines. It runs in pre-commit
+(`no-decompiled-lua`, on every text file) and as a Claude Code hook before every Write, Edit, MultiEdit and
 NotebookEdit into a checkout ([The hooks](enforcement.md#hooks)). Without the shared folder (CI, or before the first
 `--all`) only the marker is checked. A shell command that writes a file is not seen by the hook; pre-commit catches
-the commit.
+the commit. Text that never enters a checkout is not checked at all: an issue or pull request body, or a description
+file in scratch. Neither is a paraphrase. After a change to the guard's normalising, rerun `--all` so the
+fingerprints match it.
 
 **The decompiler's tests** (`python/tests/lua4/`) run on our own Lua source, compiled with a stock `luac` with and
 without debug information (`fixtures/<name>.luac`, `<name>.s.luac`), against the decompiles committed beside them
 (`<name>.expected.lua`, `<name>.s.expected.lua`). With a `luac` found (`LUA4_LUAC`, else `luac_program` or its
-default) they also round-trip each fixture. After a change to the decompiler or a fixture, rewrite them with
-`LUA4_REGENERATE=1 uv run --project python pytest python/tests/lua4 -k regenerate` and read the diff.
+default) they also round-trip each fixture. CI has no `luac`, so it runs neither the round trip nor the check that
+the committed chunks match their source: there the expected outputs only catch a change in the output, not a wrong
+one, and the round trip is a local check. After a change to the decompiler or a fixture, rewrite them with
+`LUA4_REGENERATE=1 uv run --project python pytest python/tests/lua4 -k regenerate`, run the tests again with the
+`luac` found and read the diff. The committed chunks have 4-byte sizes, as the game's do, and the index's reader takes
+only those. The `luac` that `--fetch lua` builds is a 64-bit program that writes 8-byte sizes (fine for the round
+trip, which compares functions, not headers), so the regenerate step refuses it. Regenerate with a 32-bit build named
+by `LUA4_LUAC`: on Windows, the same build as `--fetch lua` from the x86 tools (`vcvars32.bat`), with the core
+`src/*.c` in a library and `src/luac/*.c` linked against it.
 
 ## missions {#missions}
 

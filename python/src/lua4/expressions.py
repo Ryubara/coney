@@ -11,7 +11,7 @@ The stack (`Frame`) holds the whole frame, locals included, so the code generato
 it starts: in stripped code that is how the reader finds where a `local` statement ended and the next began. A
 call whose results are left open counts as no slot, as the generator counts it.
 
-Research: docs/research/formats/lua-bytecode.md#expressions.
+Research: docs/research/formats/lua-bytecode.md#patterns.
 """
 
 from __future__ import annotations
@@ -278,6 +278,7 @@ class ExpressionReader:
         return call
 
     def _table_below(self, pc: int, frame: Frame, count: int) -> Table:
+        """The table constructor under the `count` items a SETLIST or SETMAP at `pc` stores into it."""
         if len(frame) < count + 1 or not isinstance(frame.items[-count - 1], Table):
             raise DecompileError(f"pc {pc}: no table constructor under its items")
         table = frame.items[-count - 1]
@@ -285,6 +286,7 @@ class ExpressionReader:
         return table
 
     def _setlist(self, pc: int, instr: Instr, frame: Frame) -> None:
+        """SETLIST: move the B list items on top of the stack into the constructor below them."""
         table = self._table_below(pc, frame, instr.b)
         if table.fields and not table.items:
             table.fields_first = True
@@ -294,6 +296,7 @@ class ExpressionReader:
         table.items.extend(items)
 
     def _setmap(self, pc: int, instr: Instr, frame: Frame) -> None:
+        """SETMAP: move the key-value pairs on top of the stack into the constructor below them."""
         count = 2 * instr.arg
         table = self._table_below(pc, frame, count)
         lines = self.info.lines
@@ -330,6 +333,9 @@ class ExpressionReader:
             raise
 
     def _value(self, pc: int, frame: Frame, names: Sequence[str], region: ValueRegion) -> int:
+        """Read the value expression of `region`, which starts with the jump at `pc`: each operand's code up to its
+        jump (or the last operand's value), then the and/or tree that fits every jump. Pushes the expression
+        and returns the pc where its value is complete."""
         operands = 2 if self.info.code[pc].op in COMPARES else 1
         start = frame.starts[-operands] if len(frame) >= operands else pc
         leaves = [self.leaf(pc, frame, region)]

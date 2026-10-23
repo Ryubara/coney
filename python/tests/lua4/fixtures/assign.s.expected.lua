@@ -17,3 +17,8 @@ l12 = l12 + 1
 t.count = t.count + 1
 local l13
 local l14 = 1
+x2, y2 = 1, 2, 3 function drops(p1)
+    local l15 = 1
+    p1[p], p1[q], z = 1, 2, 3, 4
+    return l15
+end

@@ -27,7 +27,6 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-import lua4 as decompiler
 from coney_tools import lua4
 
 INDEX_JSON = "index.json"
@@ -74,7 +73,7 @@ def _names(facts: lua4.ChunkFacts) -> dict[str, str]:
     found = {path: name for name, path in facts.functions().items()}
 
     def fields(prefix: str, table: lua4.Table, depth: int) -> None:
-        # A table's fields, and the fields of the tables in it (a few levels: `Mission.Stage.Setup`).
+        """Name each function in `table`'s fields, and in the tables in it (a few levels: `Mission.Stage.Setup`)."""
         for key, value in table.fields.items():
             if isinstance(value, lua4.Function):
                 found.setdefault(value.path, f"{prefix}.{key}")
@@ -91,13 +90,22 @@ def _arg(value: lua4.Value) -> object:
     return {"function": value.path} if isinstance(value, lua4.Function) else lua4.plain(value)
 
 
+def _prototypes(proto: lua4.Proto, path: str) -> list[tuple[str, lua4.Proto]]:
+    """`proto` and every function nested in it, depth first, each with the path `walk_chunk` gives it (`main/3/0`)."""
+    found = [(path, proto)]
+    for index, child in enumerate(proto.protos):
+        found += _prototypes(child, f"{path}/{index}")
+    return found
+
+
 def index_script(name: str, data: bytes, natives: frozenset[str]) -> Script:
     """The index of the chunk `data` named `name`, with `natives` the binding names."""
-    facts = lua4.walk_chunk(lua4.parse_chunk(data))
+    main = lua4.parse_chunk(data)
+    facts = lua4.walk_chunk(main)
     names = _names(facts)
     functions = {
         path: Function(path, MAIN_NAME if path == "main" else names.get(path), proto.line_defined)
-        for path, proto in decompiler.load(data).walk()
+        for path, proto in _prototypes(main, "main")
     }
     for call in facts.calls:
         entry = functions.get(call.path)

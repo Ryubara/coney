@@ -7,7 +7,7 @@ inside a statement cannot come back: `luac` keeps neither. Parentheses follow Lu
 (`lparser.c`'s `priority` table): `and` and `or` share the lowest priority and group to the left, `..` and `^` group
 to the right, and the unary operators bind tighter than everything but `^`.
 
-Research: docs/research/formats/lua-bytecode.md#rendering.
+Research: docs/research/formats/lua-bytecode.md#what-cannot-come-back.
 """
 
 from __future__ import annotations

@@ -290,7 +290,10 @@ def run_one(root: Path, disc: str | None, name: str, out_dir: Path, options: Opt
     wad.refuse_inside_repo(out_dir)
     compile_text = _compiler(root, options) if options.roundtrip else None
     data = one_chunk(root, name, disc, options.chunks)
-    result = decompile_chunk(name, data)
+    try:
+        result = decompile_chunk(name, data)
+    except lua4.ChunkError as error:  # its reason names sizes and offsets only, never a constant
+        raise ConfigError(f"{name}: not loaded ({error})") from error
     path = output_path(out_dir, name)
     _write(path, result.text)
     unread = len(result.failures)
@@ -314,7 +317,9 @@ def _binding_names(root: Path) -> frozenset[str]:
 
 def run_all(root: Path, disc: str | None, options: Options, known_natives: frozenset[str] | None = None) -> int:
     """`lua decompile [DISC] --all`: every chunk into the shared folder (or `--out`), with the guard's fingerprints and
-    the index; with `--roundtrip`, check every one. Prints counts only. 1 when the round trip fails."""
+    the index; with `--roundtrip`, check every one. Prints counts only. A chunk the loader refuses is named on stderr
+    with the reason, and the rest still go through, so the shared folder's fingerprints and index cover every script
+    that was written. 1 when a chunk could not be loaded or the round trip fails."""
     out_dir = options.out or lua_dir(root)
     wad.refuse_inside_repo(out_dir)
     compile_text = _compiler(root, options) if options.roundtrip else None
@@ -328,8 +333,14 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
     scripts: list[lua_index.Script] = []
     functions = 0
     reasons: collections.Counter[str] = collections.Counter()
+    not_loaded: list[str] = []
     for count, (name, data) in enumerate(chunks, start=1):
-        result = decompile_chunk(name, data)
+        try:
+            result = decompile_chunk(name, data)
+        except lua4.ChunkError as error:  # its reason names sizes and offsets only, never a constant
+            print(f"coney-tools: {name}: not loaded ({error})", file=sys.stderr)
+            not_loaded.append(name)
+            continue
         _write(output_path(out_dir, name), result.text)
         written.append((name, data, result.text))
         functions += result.functions
@@ -342,15 +353,18 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
         if count % 100 == 0:
             print(f"coney-tools: decompiled {count} of {len(chunks)} chunks", file=sys.stderr)
     _write(out_dir / marks.FINGERPRINTS, "".join(f"{value}\n" for value in sorted(prints)))
-    lua_index.write_index(out_dir, scripts, source=f"{len(chunks)} chunks")
+    lua_index.write_index(out_dir, scripts, source=f"{len(written)} chunks")
     unread = sum(reasons.values())
-    print(f"decompiled {len(chunks)} chunks, {functions} functions -> {out_dir}")
+    print(f"decompiled {len(written)} of {len(chunks)} chunks, {functions} functions -> {out_dir}")
+    if not_loaded:
+        print(f"{len(not_loaded)} chunks could not be loaded: {', '.join(not_loaded)}")
     print(f"{unread} functions could not be read" + (":" if unread else ""))
     for reason, count in reasons.most_common():
         print(f"  {count:4d}  {reason}")
     print(f"fingerprints: {len(prints)} lines; index: {lua_index.INDEX_MD}, {lua_index.INDEX_JSON}")
+    status = int(bool(not_loaded))
     if compile_text is None:
-        return 0
+        return status
     trip = round_trip(written, compile_text)
     print_round_trip(trip)
-    return int(trip.same != trip.total)
+    return status or int(trip.same != trip.total)

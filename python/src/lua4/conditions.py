@@ -58,6 +58,7 @@ def build(leaves: list[Leaf], true_exits: frozenset[int], false_exits: frozenset
     memo: dict[tuple[int, int, frozenset[int], frozenset[int]], Expr | None] = {}
 
     def sub(first: int, last: int, true: frozenset[int], false: frozenset[int]) -> Expr | None:
+        """The tree of leaves `first`..`last` whose true and false exits are `true` and `false`, or None."""
         key = (first, last, true, false)
         if key in memo:
             return memo[key]

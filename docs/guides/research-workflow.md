@@ -271,10 +271,11 @@ happen:
 **Describe, never paste.** A decompile is game script text ([LEGAL.md](repo:LEGAL.md#no-game-data)): it stays in the
 shared folder. A research page says in our own words what a script does and cites it by script and function
 (`level99.lua`, `Setup`, the native and its arguments where they matter), as for code read in Ghidra
-([Writing up a finding](#writing-up-a-finding)). A guard refuses a decompiled file, or three consecutive lines of one,
-in the repository, in pre-commit and before every file write an agent makes ([The guard](coney-tools.md#lua)); a
-single quoted line passes, and a whole listing is still wrong when the guard cannot see it (a decompile you did not
-fingerprint, a paraphrase line by line). The same holds for an issue or a pull request description.
+([Writing up a finding](#writing-up-a-finding)). A guard refuses a decompiled file, or three of any five lines of one
+(quoted, in a list or table, or commented out alike), in the repository, in pre-commit and before every file write an
+agent makes ([The guard](coney-tools.md#lua)). A single quoted line passes, and a whole listing is still wrong when the
+guard cannot see it: a decompile you did not fingerprint, a paraphrase line by line. The same holds for an issue or a
+pull request description, which no guard checks.
 
 ## Tools
 

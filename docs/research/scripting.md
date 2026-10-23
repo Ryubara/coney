@@ -2737,13 +2737,9 @@ confirmed):
 ## Notes for implementers
 
 - **Table constructors flush every 62 items**, not 64: `SETLIST` stores its items at `A × 62 + 1` onwards
-  (`luaV_execute`, `0x00334478`, the multiplier `0x3e`; the largest `B` on the disc is 62). This is stock Lua 4.0.1's
-  `LFIELDS_PER_FLUSH`, 64 capped at a quarter of `MAXSTACK` (250) in `llimits.h`, not a change in the game's build
-  ([Lua 4.0 bytecode](formats/lua-bytecode.md#limits)). A VM that uses 64 shifts every list item past the 62nd (in
-  `config_preload3.lua`'s `levelNames`, every level record after the 62nd). confirmed (code).
-- **Reading a script.** `coney-tools lua decompile` turns any chunk back into Lua that compiles to the same code, for
-  research outside the repository ([Lua 4.0 bytecode](formats/lua-bytecode.md),
-  [The game's scripts](../guides/research-workflow.md#scripts)).
+  (`luaV_execute`, `0x00334478`, the multiplier `0x3e`; the largest `B` on the disc is 62). This is this build's
+  `LFIELDS_PER_FLUSH`. A VM that uses 64 shifts every list item past the 62nd (in `config_preload3.lua`'s
+  `levelNames`, every level record after the 62nd). confirmed (code).
 - What a script needs to run without errors on the front-end path: the preloads in one state, then `global.lua` and
   `level100.lua` in that same state, with numbers from `GetLanguage`, `GetPlatform`, `GetCurrentLevelIndex`,
   `GetLevelId` and `UM_IsLevelComplete` (nil for false).

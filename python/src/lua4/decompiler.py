@@ -26,7 +26,7 @@ generator's jump threading (`analysis.FunctionInfo.equivalents`) makes some diff
 code (an `if` at the end of a `while` body jumps straight back to the loop's head); any reading that compiles back
 to the same instructions is correct, and the order only picks the more natural one.
 
-Research: docs/research/formats/lua-bytecode.md#statements.
+Research: docs/research/formats/lua-bytecode.md#patterns.
 """
 
 from __future__ import annotations
@@ -282,15 +282,20 @@ class _Reader:
             after = frame.start_at(pending.slot + 1, pending.pc)
             return self.declare(start, frame, base, pending.slot + 1, after, scope)
         if own is None or own > base:
-            upto = frame.depth() if own is None else own
-            if extras:
+            if own is None and extras:
+                # Values dropped as an assignment's surplus, but no assignment follows: not a reading that fits.
                 raise DecompileError(f"pc {pc}: dropped values before a local statement")
+            # The values below the event's operands are locals (`local x = 1` then `c, d = 1, 2, 3`): declare them,
+            # and the assignment, surplus values and all, is read again as the next statement. The dropped values
+            # were above its operands, so the locals' values are still in the frame.
+            upto = frame.depth() if own is None else own
             return self.declare(start, frame, base, upto, frame.start_at(upto, pc), scope)
         if own < base:
             raise DecompileError(f"pc {pc}: a statement that uses its locals' slots")
         return self.dispatch(start, pc, frame, base, extras, limit, loop, scope)
 
     def _is_store(self, pc: int) -> bool:
+        """Whether the instruction at `pc` stores a value (an assignment's own opcode)."""
         return pc < len(self.info.code) and self.info.code[pc].op in (Op.SETLOCAL, Op.SETGLOBAL, Op.SETTABLE)
 
     def _own_position(self, pc: int, frame: Frame, base: int, scope: Scope) -> int | None:
@@ -432,6 +437,7 @@ class _Reader:
         )
 
     def _returned(self, pc: int, frame: Frame) -> list[Expr]:
+        """The values a RETURN or TAILCALL at `pc` returns: the frame's items from the first returned slot up."""
         instr = self.info.code[pc]
         if instr.op == Op.TAILCALL:
             # `return f(x)`: the open call became a tail call; values below it (from B) are returned too.
@@ -547,10 +553,14 @@ class _Reader:
         raise error or DecompileError(f"pc {start}: no condition fits this if")
 
     def _if_rest(self, start: int, cond: _Cond, limit: int, loop: _Loop | None, scope: Scope) -> Reading:
+        """Read an `if` from its condition on: the then part up to where the condition's false exit lands, an
+        else part when the then part ends with a jump past it (an `elseif` when that part is one `if`), and
+        DecompileError when the parts do not end where the jumps say."""
         info = self.info
         false = cond.false
 
         def then_ends(pc: int) -> bool:
+            """The then part ends at a jump past the else part, or where the condition's false exit lands."""
             return self.is_escape(pc, false, loop, cond.after) or false in info.equivalents(pc)
 
         then, at = self.block(cond.after, limit, loop, scope, then_ends)
