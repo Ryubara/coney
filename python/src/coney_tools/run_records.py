@@ -4,10 +4,11 @@
 A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipe run --record`,
 `pcsx2 record --run-record`, `pcsx2 record-run`) and by nothing else, so the method cannot be paraphrased away. It holds
 who ran it, the PCSX2 version and copy, the state and patches it started from, the recipe, the trace or the method in
-words, and the values read: names, numbers and addresses only, never memory or game text (LEGAL.md). The rules (the
-folder, the id, the sizes) are `runs` in `.github/conventions.yml`. Those limits cap how much a record can hold; they
-do not tell game data from our own (English game text is printable ASCII too, and numbers can carry bytes), so the
-reviewer reads the method, the args and the value names (docs/guides/research-workflow.md#run-records).
+words, and the values read: names, numbers and addresses only, never memory or game text (LEGAL.md). The rules (the id,
+the sizes, the kinds) are `runs` in `.github/conventions.yml`, and the folder is `research.files.runs` there. Those
+limits cap how much a record can hold; they do not tell game data from our own (English game text is printable ASCII
+too, and numbers can carry bytes), so the reviewer reads the method, the args and the value names
+(docs/guides/research-workflow.md#run-records).
 
 ```toml
 version = 1

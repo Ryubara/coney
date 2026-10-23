@@ -39,7 +39,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 | `stamps` | The proof log of a unit of work: the signature namespace, the allowed-signers file, the segment size, every step, which steps are signed and the results; the pairs' kinds, relations and the words that mark a stand-in at the code ([Stamps](stamps.md)) | `stamp verify`, `original study`, `original compare`, `original fails-first` |
 | `research` | The kinds of research page, the sections each keeps, their length limits, the old section names, the data files an address is checked against and the legacy file ([Research pages](writing-docs.md#research-pages)) | `docs check` and `docs legacy`; `repo render` (the `research-pages` block) |
-| `runs` | Run records: their folder, the id's shape, the largest record, the most values and the kinds of run ([Run records](research-workflow.md#run-records)) | `pcsx2 record-run`, `pcsx2 recipe run --record`, `pcsx2 record --run-record`, `research claims` |
+| `runs` | Run records: the id's shape (their folder is `research.files.runs`), the largest record, the most values and the kinds of run ([Run records](research-workflow.md#run-records)) | `pcsx2 record-run`, `pcsx2 recipe run --record`, `pcsx2 record --run-record`, `research claims` |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
 
