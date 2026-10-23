@@ -23,8 +23,8 @@ from research_support import (
 from coney_tools import docs_check, docs_cli, docs_legacy
 from coney_tools.config import ConfigError
 from coney_tools.docs_check import Context
+from coney_tools.docs_legacy import LEGACY_RULES
 from coney_tools.docs_page import Finding
-from coney_tools.research_check import RULES
 from coney_tools.research_legacy import Legacy, Touch, apply_legacy, format_legacy, parse_legacy
 
 LEGACY_FILE = "research/legacy.toml"
@@ -34,7 +34,7 @@ LEGACY_FILE = "research/legacy.toml"
 
 def test_the_file_is_read_by_page_and_rule() -> None:
     text = '# note\n["docs/research/a.md"]\nevidence = 3\nskeleton = 1\n\n["docs/research/b/c.md"]\nlength = 90\n'
-    legacy = parse_legacy(text, RULES)
+    legacy = parse_legacy(text, LEGACY_RULES)
     assert legacy.pages == {
         "docs/research/a.md": {"skeleton": 1, "evidence": 3},
         "docs/research/b/c.md": {"length": 90},
@@ -48,7 +48,7 @@ def test_writing_then_reading_gives_the_same_file() -> None:
     text = format_legacy(legacy)
     assert text.index("a.md") < text.index("b.md")
     assert "evidence = 4\nlength = 90\n" in text
-    assert parse_legacy(text, RULES) == legacy
+    assert parse_legacy(text, LEGACY_RULES) == legacy
     assert text.splitlines()[0].startswith("# Research pages that do not meet the standard yet")
 
 
@@ -66,54 +66,67 @@ def test_writing_then_reading_gives_the_same_file() -> None:
 )
 def test_a_file_that_is_not_allowed_is_refused(text: str, message: str) -> None:
     with pytest.raises(ConfigError, match=message):
-        parse_legacy(text, RULES)
+        parse_legacy(text, LEGACY_RULES)
 
 
 # --- what a listed page is excused from -------------------------------------------------------------------------------
 
 
-def finding(rule: str, line: int, severity: str = "error") -> Finding:
-    """A finding of `rule` on `line`."""
-    return Finding(rule, line, f"{rule} at {line}", severity)
+def finding(rule: str, line: int, severity: str = "error", by_section: bool = False) -> Finding:
+    """A finding of `rule` on `line` (`by_section`: it grades a block, which only the touched sections owe)."""
+    return Finding(rule, line, f"{rule} at {line}", severity, by_section)
 
 
 def test_the_findings_of_an_excused_rule_become_one_warning() -> None:
     found = [finding("evidence", 5), finding("evidence", 9), finding("verified", 1)]
-    kept = apply_legacy(found, {"evidence": 2}, LEGACY_FILE, lambda _: False)
+    kept = apply_legacy(found, {"evidence": 2}, LEGACY_FILE, None)
     assert [(item.rule, item.severity) for item in kept] == [("verified", "error"), ("evidence", "warning")]
     assert "2 findings excused" in kept[1].message and "evidence at 5" in kept[1].message and kept[1].line == 5
 
 
 def test_a_rule_the_page_is_not_excused_from_stays_an_error() -> None:
-    kept = apply_legacy([finding("history", 3)], {"evidence": 2, "length": 10}, LEGACY_FILE, lambda _: False)
+    kept = apply_legacy([finding("history", 3)], {"evidence": 2, "length": 10}, LEGACY_FILE, None)
     assert [item.rule for item in kept if item.severity == "error"] == ["legacy", "legacy", "history"]
 
 
 def test_an_excused_rule_the_page_now_passes_is_an_error() -> None:
-    kept = apply_legacy([], {"evidence": 2}, LEGACY_FILE, lambda _: False)
+    kept = apply_legacy([], {"evidence": 2}, LEGACY_FILE, None)
     assert [(item.rule, item.severity) for item in kept] == [("legacy", "error")]
     assert "'evidence'" in kept[0].message and LEGACY_FILE in kept[0].message
 
 
 def test_a_warning_of_an_excused_rule_is_dropped_and_does_not_keep_the_rule_alive() -> None:
-    kept = apply_legacy([finding("evidence", 4, "warning")], {"evidence": 2}, LEGACY_FILE, lambda _: False)
+    kept = apply_legacy([finding("evidence", 4, "warning")], {"evidence": 2}, LEGACY_FILE, None)
     assert [item.rule for item in kept] == ["legacy"]
 
 
-def test_evidence_findings_in_a_touched_section_stay_errors() -> None:
-    found = [finding("evidence", 5), finding("evidence", 40), finding("skeleton", 8)]
-    kept = apply_legacy(found, {"evidence": 2, "skeleton": 1}, LEGACY_FILE, lambda item: item.line < 10)
+def test_grading_in_a_touched_section_stays_an_error() -> None:
+    found = [finding("evidence", 5, by_section=True), finding("evidence", 40, by_section=True)]
+    kept = apply_legacy(found, {"evidence": 2}, LEGACY_FILE, lambda item: item.line < 10)
     assert [(item.rule, item.line, item.severity) for item in kept] == [
         ("evidence", 5, "error"),
-        ("skeleton", 8, "warning"),
         ("evidence", 40, "warning"),
     ]
-    assert "1 finding excused" in kept[2].message
+    assert "1 finding excused" in kept[1].message
 
 
-def test_only_evidence_is_read_by_section() -> None:
-    kept = apply_legacy([finding("history", 5)], {"history": 1}, LEGACY_FILE, lambda _: True)
-    assert [(item.rule, item.severity) for item in kept] == [("history", "warning")]
+def test_a_touched_page_is_held_to_every_mechanical_rule_page_wide() -> None:
+    # Maintainer decision Q5: "every touch fixes the mechanical rules page-wide and grades the touched section".
+    mechanical = ["front-matter", "owns", "skeleton", "verified", "address-form", "address-resolve"]
+    mechanical += ["decompile", "copied", "history", "stale-wording"]
+    found = [finding(rule, 40) for rule in mechanical]
+    found += [finding("evidence", 40), finding("evidence", 41, by_section=True), finding("length", 1)]
+    excused = dict.fromkeys([*mechanical, "evidence", "length"], 1)
+    kept = apply_legacy(found, excused, LEGACY_FILE, lambda _: False)
+    # A refused spelling is page-wide; an ungraded block outside the touched sections and the length are excused.
+    assert [item.rule for item in kept if item.severity == "error"] == [*mechanical, "evidence"]
+    assert sorted(item.rule for item in kept if item.severity == "warning") == ["evidence", "length"]
+
+
+def test_an_untouched_page_is_excused_everything_it_lists() -> None:
+    found = [finding("history", 5), finding("evidence", 6)]
+    kept = apply_legacy(found, {"history": 1, "evidence": 1}, LEGACY_FILE, None)
+    assert [(item.rule, item.severity) for item in kept] == [("history", "warning"), ("evidence", "warning")]
 
 
 # --- a listed page, checked ------------------------------------------------------------------------------------
@@ -160,13 +173,35 @@ def test_a_section_the_change_touches_is_graded_on_a_listed_page() -> None:
     text = three_sections()
     listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 2}})
     data_line = text.splitlines().index(f"The field is set at {IN_FUNCTION}.") + 1
-    untouched = findings(RESEARCH_PATH, text, listed, Touch(frozenset({1})))
-    assert rules_of(untouched) == []
-    touched = findings(RESEARCH_PATH, text, listed, Touch(frozenset({data_line})))
-    errored = [item for item in touched if item.severity == "error"]
-    assert [(item.rule, item.line) for item in errored] == [("evidence", data_line)]
-    # Without knowing the changed lines (a named page), nothing is touched.
+    # Without knowing the changed lines (a named page), nothing is touched and everything listed is excused.
     assert rules_of(findings(RESEARCH_PATH, text, listed)) == []
+    touched = findings(RESEARCH_PATH, text, listed, Touch(frozenset({data_line})))
+    errored = [(item.rule, item.line) for item in touched if item.severity == "error"]
+    # The touched section is graded, and the front matter, a mechanical rule, is fixed page-wide.
+    assert errored == [("front-matter", 1), ("evidence", data_line)]
+
+
+def test_a_touched_page_loses_its_excuse_for_the_mechanical_rules_and_the_refused_spellings() -> None:
+    spelled = f"The field is confirmed (disc) at {IN_FUNCTION}.\n"
+    old = page(
+        f"The widget spins at {IN_FUNCTION}.\n",
+        sections={"Data": spelled, "Summary": "Checked on 2026-10-12.\n"},
+        meta="",
+        head="",
+    )
+    lines = old.splitlines()
+    summary_line = lines.index("Checked on 2026-10-12.") + 1
+    behaviour_line = lines.index(f"The widget spins at {IN_FUNCTION}.") + 1
+    spelling_line = lines.index(spelled.strip()) + 1
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "verified": 1, "history": 1, "evidence": 3}})
+    touched = findings(RESEARCH_PATH, old, listed, Touch(frozenset({summary_line})))
+    errored = sorted((item.rule, item.line) for item in touched if item.severity == "error")
+    # Front matter, Verified line, the date and the refused spelling are errors although the change touched none of
+    # their lines; the ungraded Behaviour claim is not, because its section is not the touched one.
+    assert ("front-matter", 1) in errored and ("history", summary_line) in errored
+    assert any(rule == "verified" for rule, _ in errored) and ("evidence", spelling_line) in errored
+    assert ("evidence", behaviour_line) not in errored
+    assert rules_of(findings(RESEARCH_PATH, old, listed)) == []
 
 
 # --- making, shrinking and checking the file --------------------------------------------------------------------
@@ -269,16 +304,75 @@ def test_the_check_finds_a_page_or_a_rule_added_to_a_file_that_existed(tmp_path:
     assert any("good.md is added" in line for line in found)
 
 
+def test_a_branch_behind_main_is_compared_with_the_file_where_it_left_main(tmp_path: Path) -> None:
+    root = checkout(tmp_path)
+    write(root, "docs/research/old2.md", "# Old two\n\nNo sections.\n")
+    both = '["docs/research/old.md"]\nfront-matter = 1\n\n["docs/research/old2.md"]\nfront-matter = 1\nskeleton = 1\n'
+    write(root, LEGACY_FILE, both)
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "two legacy pages")
+    git(root, "checkout", "-q", "-B", "main")
+    git(root, "checkout", "-q", "-b", "behind")
+    # The branch prunes a rule of old2.md; main, meanwhile, prunes old2.md out of the file altogether.
+    write(root, LEGACY_FILE, '["docs/research/old.md"]\nfront-matter = 1\n\n["docs/research/old2.md"]\nskeleton = 1\n')
+    git(root, "commit", "-q", "-am", "branch prunes a rule")
+    git(root, "checkout", "-q", "main")
+    write(root, LEGACY_FILE, '["docs/research/old.md"]\nfront-matter = 1\n')
+    git(root, "commit", "-q", "-am", "main prunes old2")
+    git(root, "checkout", "-q", "behind")
+    # Nothing was added since the branch left main, whatever main has pruned since.
+    assert docs_legacy.problems(root, context(root), "main") == []
+    assert LEGACY_FILE not in docs_check.check_changed(root, "main", context(root)).failed
+
+
 def test_the_first_legacy_file_may_list_any_page(tmp_path: Path) -> None:
     root = checkout(tmp_path)
     write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
     assert docs_legacy.problems(root, context(root), "main") == []
 
 
+STALE = "The mission list is yet to be written.\n"
+SURVEY_META = "---\nkind: survey\n---\n"
+
+
+def test_a_scan_counts_stale_wording_so_the_file_can_excuse_it(tmp_path: Path) -> None:
+    root = checkout(tmp_path)
+    name = "docs/research/stale.md"
+    write(root, name, page(kind="survey", meta=SURVEY_META, extra=STALE + "\n"))
+    assert docs_legacy.scan(root, context(root))[name] == {"stale-wording": 1}
+    write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
+    result = docs_check.check_paths(root, [name], context(root))
+    assert result.failed == {} and result.findings[name][0].rule == "stale-wording"
+    # Touched, the page is held to it like every mechanical rule.
+    touched = docs_check.check_files(root, [name], context(root), {name: Touch(frozenset({1}))})
+    assert [item.rule for item in touched.failed[name] if item.severity == "error"] == ["stale-wording"]
+
+
+def test_an_unlisted_page_fails_stale_wording(tmp_path: Path) -> None:
+    root = checkout(tmp_path)
+    name = "docs/research/stale.md"
+    write(root, name, page(kind="survey", meta=SURVEY_META, extra=STALE + "\n"))
+    failed = docs_check.check_paths(root, [name], context(root)).failed
+    assert [item.rule for item in failed[name]] == ["stale-wording"]
+
+
+def test_the_whole_legacy_file_is_checked_when_a_research_page_changes(tmp_path: Path) -> None:
+    root = checkout(tmp_path, '["docs/research/old.md"]\nfront-matter = 1\nhistory = 1\n')
+    write(root, "docs/research/good.md", page(kind="survey", meta=SURVEY_META, extra="Added.\n\n"))
+    result = docs_check.check_changed(root, "main", context(root))
+    assert any("old.md now passes 'history'" in item.message for item in result.failed[LEGACY_FILE])
+
+
+def test_the_legacy_file_is_left_alone_when_the_change_has_nothing_to_do_with_research(tmp_path: Path) -> None:
+    root = checkout(tmp_path, '["docs/research/old.md"]\nfront-matter = 1\nhistory = 1\n')
+    write(root, "docs/guides/other.md", "# Other\n\nA line.\n")
+    assert docs_check.check_changed(root, "main", context(root)).failed == {}
+
+
 # --- a whole change ---------------------------------------------------------------------------------------------------
 
 
-def test_a_change_to_a_listed_page_passes_where_it_is_excused_and_fails_where_it_touches(tmp_path: Path) -> None:
+def test_a_change_to_a_listed_page_fails_the_mechanical_rules_page_wide_and_grades_the_section(tmp_path: Path) -> None:
     root = checkout(tmp_path)
     write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
     git(root, "add", "-A")
@@ -287,11 +381,15 @@ def test_a_change_to_a_listed_page_passes_where_it_is_excused_and_fails_where_it
     git(root, "checkout", "-q", "-b", "work2")
     write(root, "docs/research/good.md", page(kind="survey", meta="---\nkind: survey\n---\n", extra="Added.\n\n"))
     assert docs_check.check_changed(root, "main", context(root)).failed == {}
-    # A line added to the Data section of the legacy page makes that section's ungraded address an error.
+    # A line added to the Data section of the legacy page: its front matter, sections and Verified line are errors
+    # (page-wide), and so is the Data section's ungraded address.
     write(root, "docs/research/old.md", "# Old\n\nNo sections.\n\n## Data\n\nSomething at 0x00123456.\n\nMore.\n")
     result = docs_check.check_changed(root, "main", context(root))
-    errored = [(item.rule, item.line) for item in result.failed["docs/research/old.md"] if item.severity == "error"]
-    assert errored == [("evidence", 7)]
+    errored = sorted(
+        (item.rule, item.line) for item in result.failed["docs/research/old.md"] if item.severity == "error"
+    )
+    assert ("front-matter", 1) in errored and ("evidence", 7) in errored
+    assert any(rule == "verified" for rule, _ in errored) and any(rule == "skeleton" for rule, _ in errored)
 
 
 def test_a_new_page_in_the_legacy_file_is_an_error_even_when_it_would_be_excused(tmp_path: Path) -> None:
@@ -357,7 +455,7 @@ def test_the_command_reports_an_unusable_checkout(
 def test_every_research_page_of_this_repository_meets_the_standard_or_is_excused() -> None:
     context_ = docs_check.context_for(REPO)
     result = docs_check.check_paths(REPO, ["docs/research"], context_)
-    standard = {*RULES, "legacy"}
+    standard = {*LEGACY_RULES, "legacy"}
     failing = {
         page_: sorted({item.rule for item in found if item.severity == "error" and item.rule in standard})
         for page_, found in result.findings.items()

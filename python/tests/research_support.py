@@ -15,9 +15,9 @@ from coney_tools.conventions import Research, parse_conventions
 from coney_tools.docs_check import Context, Finding, check_page
 from coney_tools.progress_research import ListedFunction
 from coney_tools.research_catalog import Catalog, Section
-from coney_tools.research_check import ResearchEnv
 from coney_tools.research_legacy import Legacy, Touch
 from coney_tools.research_pages import Corpus
+from coney_tools.research_subject import ResearchEnv
 
 RESEARCH_PATH = "docs/research/widget.md"
 VERIFIED = "Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.\n"

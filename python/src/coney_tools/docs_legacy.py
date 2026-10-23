@@ -4,14 +4,14 @@
 `research/legacy.toml` lists the research pages that do not meet the standard yet, each under the rules it fails
 (`research_legacy`). This module builds it from the pages themselves:
 
-* `scan` runs the research rules on every page and counts the errors of each rule (for `length`, the lines over the
-  limit), reading each page as a legacy one, so an old-form runtime claim stands;
+* `scan` runs the research rules and the stale-wording rule on every page and counts the errors of each rule (for
+  `length`, the lines over the limit), reading each page as a legacy one, so an old-form runtime claim stands;
 * `initial_text` is the file's first text, from a scan; it refuses to overwrite a file, because afterwards the file
   only shrinks;
 * `pruned` is the file with every rule a page now passes taken out, every page that passes or is gone taken out and the
   counts lowered to the scan's, and nothing added;
 * `problems` finds what is wrong with the file as it is: a page that is gone, a rule a page now passes, and (against a
-  base) a page or a rule added to a file that already existed there.
+  base) a page or a rule added to a file that already existed where the branch left it.
 """
 
 from __future__ import annotations
@@ -21,14 +21,20 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from coney_tools import local_gate
 from coney_tools.config import ConfigError
 from coney_tools.docs_page import read_page
+from coney_tools.docs_style import check_style
 from coney_tools.research_check import RULES, check_research
 from coney_tools.research_legacy import Legacy, format_legacy, parse_legacy
 from coney_tools.research_pages import read_front_matter
 
 if TYPE_CHECKING:
     from coney_tools.docs_check import Context
+
+#: The rules a legacy entry may excuse: the research rules, and the one Style rule the research pages carry from
+#: before the standard (a research page says what is true now, `docs_style`).
+LEGACY_RULES: tuple[str, ...] = (*RULES, "stale-wording")
 
 
 def scan_page(path: str, text: str, context: Context) -> dict[str, int]:
@@ -39,14 +45,15 @@ def scan_page(path: str, text: str, context: Context) -> dict[str, int]:
         raise ConfigError("the research standard is not loaded")
     page = read_page(text)
     found = check_research(path, page, replace(env, legacy=Legacy()), legacy_page=True)
+    found.extend(check_style(path, page, "research", context.avoid, context.address_terms))
     counts: dict[str, int] = {}
     for finding in found:
-        if finding.severity == "error" and finding.rule in RULES:
+        if finding.severity == "error" and finding.rule in LEGACY_RULES:
             counts[finding.rule] = counts.get(finding.rule, 0) + 1
     if "length" in counts:
         kind = read_front_matter(page, env.research)[0].kind or env.research.kind_of_path(path)
         counts["length"] = max(page.body_lines - env.research.kinds[kind].max_lines, 1)
-    return {rule: counts[rule] for rule in RULES if rule in counts}
+    return {rule: counts[rule] for rule in LEGACY_RULES if rule in counts}
 
 
 def scan(root: Path, context: Context) -> dict[str, dict[str, int]]:
@@ -103,9 +110,11 @@ def problems(root: Path, context: Context, base: str | None = None) -> list[str]
         for rule in rules:
             if rule not in now.get(path, {}):
                 found.append(f"{file}: {path} now passes '{rule}': remove it")
-    before = _file_at(root, base, file) if base else None
+    # The file where the branch left `base`: what main has pruned since is not the branch's to match.
+    since = local_gate.merge_base(root, base) if base else None
+    before = _file_at(root, since, file) if since else None
     if before is not None:
-        earlier = parse_legacy(before, RULES, f"{base}:{file}")
+        earlier = parse_legacy(before, LEGACY_RULES, f"{base}:{file}")
         for path, rules in env.legacy.pages.items():
             if path not in earlier.pages:
                 found.append(f"{file}: {path} is added: a page that does not meet the standard is fixed, not listed")

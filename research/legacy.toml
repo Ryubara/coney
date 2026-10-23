@@ -101,6 +101,7 @@ front-matter = 1
 skeleton = 1
 verified = 1
 evidence = 115
+address-form = 1
 address-resolve = 4
 history = 18
 length = 1910
@@ -111,6 +112,7 @@ verified = 1
 evidence = 20
 address-resolve = 1
 history = 2
+stale-wording = 2
 
 ["docs/research/characters.md"]
 front-matter = 1
@@ -161,6 +163,7 @@ front-matter = 1
 skeleton = 3
 verified = 1
 evidence = 29
+address-form = 2
 copied = 1
 history = 7
 
@@ -169,6 +172,7 @@ front-matter = 1
 skeleton = 8
 verified = 1
 evidence = 55
+address-form = 1
 copied = 1
 history = 12
 
@@ -303,6 +307,7 @@ front-matter = 1
 skeleton = 2
 verified = 1
 evidence = 139
+address-form = 2
 address-resolve = 1
 history = 2
 length = 1017
@@ -397,6 +402,7 @@ verified = 1
 evidence = 63
 address-resolve = 6
 history = 3
+stale-wording = 1
 
 ["docs/research/lighting.md"]
 front-matter = 1
@@ -435,12 +441,13 @@ front-matter = 1
 skeleton = 5
 verified = 1
 evidence = 1
-address-form = 3
+address-form = 4
 
 ["docs/research/objects.md"]
 front-matter = 1
 verified = 1
 evidence = 66
+address-form = 1
 address-resolve = 6
 decompile = 1
 copied = 1
@@ -451,7 +458,7 @@ length = 773
 front-matter = 1
 skeleton = 11
 verified = 1
-address-form = 1
+address-form = 4
 history = 1
 
 ["docs/research/particles.md"]
@@ -505,6 +512,7 @@ verified = 1
 evidence = 32
 address-resolve = 2
 history = 12
+stale-wording = 3
 
 ["docs/research/player-state.md"]
 front-matter = 1
@@ -527,12 +535,14 @@ skeleton = 9
 verified = 1
 evidence = 3
 history = 1
+stale-wording = 1
 
 ["docs/research/rumble.md"]
 front-matter = 1
 skeleton = 12
 verified = 1
 evidence = 22
+address-form = 1
 history = 5
 
 ["docs/research/save.md"]
@@ -541,6 +551,7 @@ skeleton = 2
 verified = 1
 evidence = 15
 history = 1
+stale-wording = 2
 
 ["docs/research/scenes.md"]
 front-matter = 1
@@ -554,6 +565,7 @@ front-matter = 1
 skeleton = 7
 verified = 1
 evidence = 310
+address-form = 1
 address-resolve = 145
 history = 1
 length = 836
@@ -582,6 +594,7 @@ evidence = 55
 address-resolve = 1
 history = 4
 length = 146
+stale-wording = 2
 
 ["docs/research/source-map.md"]
 front-matter = 1
@@ -594,6 +607,7 @@ front-matter = 1
 skeleton = 1
 verified = 1
 evidence = 5
+stale-wording = 1
 
 ["docs/research/tasks.md"]
 front-matter = 1

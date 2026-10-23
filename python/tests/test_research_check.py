@@ -7,6 +7,8 @@ executable is made up (`research_support`), and so is every page.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from research_support import (
     FUNCTIONS,
@@ -23,8 +25,11 @@ from research_support import (
     rules_of,
 )
 
+from coney_tools import research_check
 from coney_tools.docs_check import Context, check_page
-from coney_tools.research_check import cites, levels_in
+from coney_tools.docs_page import Finding
+from coney_tools.research_check import EXTRA_RULES, Subject
+from coney_tools.research_evidence import cites, levels_in
 
 # --- a page that meets the standard -----------------------------------------------------------------------------------
 
@@ -275,7 +280,6 @@ def test_an_address_with_no_level_is_reported_on_its_line() -> None:
     [
         "confirmed (code)",
         "Confirmed (code)",
-        "confirmed (runtime), run r-1",
         "inferred from the vtable layout",
         "speculative ([q-spin](#q-spin))",
         "not needed: debug stub",
@@ -458,9 +462,11 @@ def test_an_evidence_cell_states_a_level_not_a_hedge() -> None:
 
 def test_confirmed_runtime_cites_the_run_that_observed_it() -> None:
     bare = page(f"It spins at {IN_FUNCTION} (confirmed (runtime)).\n")
-    found = findings(RESEARCH_PATH, bare)
+    found = findings(RESEARCH_PATH, bare, env(runs=frozenset()))
     assert rules_of(found) == ["evidence"] and "run <id>" in found[0].message
-    assert errors(page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-20261023-spin).\n")) == []
+    recorded = env(runs=frozenset({"r-20261023-spin"}))
+    claim = page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-20261023-spin).\n")
+    assert errors(claim, recorded) == []
 
 
 def test_a_run_record_must_exist_once_there_are_run_records() -> None:
@@ -729,3 +735,81 @@ def test_the_method_name_alone_stands_for_ghidras_class_and_method() -> None:
     )
     found = findings(RESEARCH_PATH, page(sections={"Summary": "`Turn` `0x00123400`.\n"}))
     assert rules_of(found, "warning") == ["address-name"]
+
+
+# --- run ids before there are run records -----------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("claim", ["confirmed (runtime), run r-1", "confirmed (runtime)"])
+def test_a_runtime_claim_cannot_pass_while_there_are_no_run_records(claim: str) -> None:
+    # No research/runs/ folder: a run id would name nothing, so it must not pass on its form (T4 creates the folder).
+    found = findings(RESEARCH_PATH, page(f"It spins at {IN_FUNCTION} ({claim}).\n"))
+    assert rules_of(found) == ["evidence"] and "run records arrive with T4" in found[0].message
+
+
+def test_a_legacy_page_keeps_its_run_ids_while_there_are_no_run_records() -> None:
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1}})
+    text = page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n", meta="")
+    assert errors(text, listed) == []
+
+
+def test_once_the_folder_exists_the_record_is_what_counts() -> None:
+    text = page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n")
+    assert errors(text, env(runs=frozenset({"r-1"}))) == []
+    found = findings(RESEARCH_PATH, text, env(runs=frozenset()))
+    assert "no run record research/runs/r-1.toml" in found[0].message
+
+
+# --- short forms of globals, and the method section -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("short", ["0x410000", "0x310000"])
+def test_a_short_form_inside_a_data_section_is_refused(short: str) -> None:
+    # `.data` and `.bss` of the made-up executable: a global written without its leading zeros.
+    found = findings(RESEARCH_PATH, page(sections={"Summary": f"The flag is the word at {short}.\n"}))
+    assert rules_of(found) == ["address-form"] and "0x00" + short[2:] in found[0].message
+
+
+def test_a_flag_or_a_mask_that_lies_outside_the_data_sections_is_not_an_address() -> None:
+    text = "The flags are 0x1000, 0x240000 and the mask 0x7e796f.\n"
+    assert errors(page(sections={"Summary": text})) == []
+
+
+def test_how_this_was_checked_may_name_an_address_that_is_no_global() -> None:
+    watched = f"Watched the heap word at {NOWHERE} for ten frames.\n"
+    assert errors(page(sections={"How this was checked": watched})) == []
+    assert errors(page(sections={"Summary": watched})) == ["address-resolve"]
+
+
+# --- Ghidra's names in a survey ---------------------------------------------------------------------------------------
+
+
+def test_a_survey_may_name_ghidras_registers_in_a_code_span() -> None:
+    text = survey("Ghidra shows the registers as `in_EAX` and `unaff_ESI` in its output.\n")
+    assert errors(text) == []
+    assert errors(survey("Ghidra shows the registers as unaff_ESI in its output.\n")) == ["decompile"]
+    assert errors(survey("A line reads `uVar2 = param_1 + 4` in the output.\n")) == ["decompile"]
+    assert errors(survey("```\nuVar2 = 4;\n```\n")) == ["decompile"]
+
+
+def test_any_other_page_refuses_a_name_in_a_code_span_too() -> None:
+    assert errors(page(sections={"Summary": "The register `unaff_ESI` is read.\n"})) == ["decompile"]
+
+
+# --- the hook for the later rules -------------------------------------------------------------------------------------
+
+
+def test_a_later_rule_takes_the_public_subject_of_the_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    def extra(subject: Subject) -> list[Finding]:
+        return [Finding("owns", 1, f"extra rule saw a {subject.kind} page at {subject.path}")]
+
+    monkeypatch.setattr(research_check, "EXTRA_RULES", (*EXTRA_RULES, extra))
+    found = findings(RESEARCH_PATH, page())
+    assert [item.message for item in found] == [f"extra rule saw a topic page at {RESEARCH_PATH}"]
+
+
+def test_the_modules_of_the_check_stay_near_the_size_of_a_file() -> None:
+    folder = Path(research_check.__file__).parent
+    for name in ("research_check", "research_evidence", "research_subject", "docs_check", "docs_style"):
+        lines = len((folder / f"{name}.py").read_text(encoding="utf-8").splitlines())
+        assert lines <= 520, f"{name}.py is {lines} lines: split it (docs/guides/conventions.md#file-size)"

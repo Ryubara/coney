@@ -8,14 +8,21 @@
     length = 1910
 
 A listed page is held to every rule it is not listed under, as any page is. Under a rule it is listed for, its findings
-are reported as one warning and do not fail the check, with two exceptions that keep the page moving:
+are reported as one warning and do not fail the check, while the change does not touch the page. A change that touches
+the page ends the excuse, except for two things that keep the page moving
+(docs/guides/writing-docs.md#legacy-pages, the maintainer's decision "every touch fixes the mechanical rules page-wide
+and grades the touched section"):
 
-* `evidence`: the findings in a section (a level-2 heading) the change touches are errors, so whoever edits a section
-  grades it ("every touch grades the section it touches", docs/guides/writing-docs.md#legacy-pages);
-* a rule the page now passes is an error until it is removed from the file, so the file only shrinks.
+* grading: an address with no level (`Finding.by_section`) is an error in a section (a level-2 heading) the change
+  touches and stays a warning elsewhere;
+* `length`: waived until the page's restructure.
 
-No new page may be listed, and nothing but a scan with `coney-tools docs legacy --init` ever adds one. The numbers are
-for the banner of the docs build and for people deciding what to fix first; they are never compared with a page.
+Every other finding of a listed rule (front matter, sections, the Verified line, address forms, addresses that do not
+resolve, Ghidra's names, copies, dates, stale wording, refused level spellings and run ids) is an error on a touched
+page. A rule the page now passes is an error until it is removed from the file, so the file only shrinks.
+
+No new page may be listed, and nothing but a scan with `coney-tools docs legacy --init` ever adds one. The numbers
+tell people deciding what to fix first how much is left; they are never compared with a page.
 """
 
 from __future__ import annotations
@@ -107,24 +114,28 @@ def apply_legacy(
     findings: list[Finding],
     excused: Mapping[str, int],
     legacy_file: str,
-    touched: Callable[[Finding], bool],
+    touched: Callable[[Finding], bool] | None,
 ) -> list[Finding]:
     """`findings` of a listed page with its excuses applied.
 
-    A finding of an excused rule becomes part of one warning per rule, except an `evidence` finding for which `touched`
-    is true, which stays an error. A rule in `excused` without any finding is an error: take it out of the file.
-    Findings of other rules, warnings included, pass through; a warning of an excused rule is dropped.
+    `touched` is None when the change does not touch the page (it is checked by name): every finding of an excused rule
+    becomes part of one warning per rule. When the change touches the page, `touched` says whether a finding lies in a
+    section the change touches, and only `length` and a grading finding (`Finding.by_section`) outside those sections
+    stay excused; every other finding of an excused rule is an error. A rule in `excused` without any finding is an
+    error: take it out of the file. Findings of other rules, warnings included, pass through; a warning of an excused
+    rule is dropped.
     """
     kept: list[Finding] = []
     waived: dict[str, list[Finding]] = {rule: [] for rule in excused}
     for finding in findings:
         if finding.rule not in excused:
             kept.append(finding)
-        elif finding.severity == "error" and not (finding.rule == "evidence" and touched(finding)):
+        elif finding.severity != "error":
+            continue  # a warning of an excused rule is part of what the legacy page is excused from
+        elif _stays_excused(finding, touched):
             waived[finding.rule].append(finding)
-        elif finding.severity == "error":
+        else:
             kept.append(finding)
-        # A warning of an excused rule is part of what the legacy page is excused from, and is dropped.
     for rule, items in waived.items():
         if not items:
             if not any(f.rule == rule and f.severity == "error" for f in kept):
@@ -147,3 +158,11 @@ def apply_legacy(
             )
         )
     return sorted(kept, key=lambda item: item.line)
+
+
+def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None) -> bool:
+    """Whether an error of an excused rule is still excused: always while the change leaves the page alone, and on a
+    touched page only the length and the grading of a section the change does not touch."""
+    if touched is None or finding.rule == "length":
+        return True
+    return finding.by_section and not touched(finding)

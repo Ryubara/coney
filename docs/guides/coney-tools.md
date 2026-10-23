@@ -1569,9 +1569,11 @@ and name), `research/elf-sections.toml` (the sections of `SLUS_212.15`) and, onc
 ([Legacy pages](writing-docs.md#legacy-pages)). Without an option it scans every research page and prints how many fail
 each rule. `--init` writes the file from a scan and refuses when it exists; `--prune` takes out the pages and rules that
 now pass and lowers the counts, and adds nothing; `--check` exits 1 when the file lists a page that is gone or a rule
-that now passes, or (when `--base` has the file) adds a page or a rule. `docs check` runs the same check on the file when
-a change touches it, and fails a legacy rule that passes, a new page that is listed, and an `evidence` finding in a
-section the change touches.
+that now passes, or (when `--base` has the file) adds a page or a rule since the branch left `--base`. `docs check`
+runs the same check on the file whenever the change touches a research page, research data, the conventions or the
+checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
+fails every mechanical rule page-wide and the grading of the sections the change touches; an entry may list any research
+rule or `stale-wording`.
 
 ## build {#build}
 

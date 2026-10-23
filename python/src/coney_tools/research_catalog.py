@@ -100,9 +100,14 @@ class Catalog:
         image = self.image
         return self.section_of(address) is not None if image else self.containing(address) is not None
 
+    @property
+    def has_records(self) -> bool:
+        """Whether the repository has a folder of run records at all (none until the run-record tool is built)."""
+        return self.runs is not None
+
     def has_run(self, run: str) -> bool:
-        """Whether run record `run` exists (always, while the repository has no run records at all)."""
-        return self.runs is None or run in self.runs
+        """Whether run record `run` exists: never while there is no folder, because nothing can back an id then."""
+        return self.runs is not None and run in self.runs
 
 
 def parse_sections(text: str, where: str = "research/elf-sections.toml") -> tuple[Section, ...]:

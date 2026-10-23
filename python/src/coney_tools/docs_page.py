@@ -44,12 +44,15 @@ def kind_of(path: str) -> str:
 
 @dataclass(frozen=True)
 class Finding:
-    """One thing a page gets wrong: the rule, the line (1-based) and what to do. `severity` is `error` or `warning`."""
+    """One thing a page gets wrong: the rule, the line (1-based) and what to do. `severity` is `error` or `warning`.
+    `by_section` marks a finding that grades a block (an address with no level): a legacy page owes that only in the
+    sections a change touches, where every other finding is owed page-wide (writing-docs.md#legacy-pages)."""
 
     rule: str
     line: int
     message: str
     severity: str = "error"
+    by_section: bool = False
 
 
 @dataclass(frozen=True)

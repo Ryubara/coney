@@ -13,7 +13,7 @@ from conventions_support import REPO
 from git_support import git
 from research_support import page as survey_page
 
-from coney_tools import check_cli, docs_check, docs_cli
+from coney_tools import check_cli, docs_check, docs_cli, docs_legacy
 from coney_tools.config import ConfigError
 from coney_tools.docs_check import Context, Finding, check_page
 from coney_tools.local_gate import StepResult
@@ -347,16 +347,38 @@ def test_the_command_reports_an_unusable_checkout(
 def test_the_docs_step_of_check_changed_runs_the_standards_on_the_changed_pages(tmp_path: Path) -> None:
     root = checkout_with_conventions(tmp_path)
     write(root, "docs/research/old.md", "# Old\n\nSome line.\n")
-    checked, problems, notes = check_cli._standards(root, ["docs/research/old.md", "docs/research/good.md", "a.cpp"])
-    assert checked == 2 and notes == []
+    checked, problems, notes = check_cli._standards(root, "main")
+    assert checked == 1 and notes == []
     assert any(line.startswith("docs/research/old.md:1: skeleton") for line in problems)
     assert not any("good.md" in line for line in problems)
+
+
+def test_the_gate_holds_a_touched_legacy_page_to_the_mechanical_rules_as_the_ci_check_does(tmp_path: Path) -> None:
+    root = checkout_with_conventions(tmp_path)
+    write(root, "research/legacy.toml", docs_legacy.initial_text(root, docs_check.context_for(root)))
+    assert check_cli._standards(root, "main")[1] == []  # listed and not touched: excused
+    write(root, "docs/research/old.md", "# Old\n\nNo sections, still small.\n\nA new line.\n")
+    _, problems, _ = check_cli._standards(root, "main")
+    assert any(line.startswith("docs/research/old.md:1: front-matter") for line in problems)
+    assert any("stale-wording" in line for line in problems)
+
+
+def test_the_gate_checks_the_legacy_file_when_a_research_page_changes(tmp_path: Path) -> None:
+    root = checkout_with_conventions(tmp_path)
+    write(root, "research/legacy.toml", '["docs/research/good.md"]\nhistory = 1\n')
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "a stale entry")
+    git(root, "checkout", "-q", "-B", "main")
+    git(root, "checkout", "-q", "-b", "work2")
+    write(root, "docs/research/old.md", "# Old\n\nNo sections, still small.\n\nA new line.\n")
+    _, problems, _ = check_cli._standards(root, "main")
+    assert any("good.md now passes 'history'" in line for line in problems)
 
 
 def test_a_long_page_that_otherwise_passes_is_only_a_note_in_the_gate(tmp_path: Path) -> None:
     root = checkout_with_conventions(tmp_path)
     write(root, "docs/guides/long.md", "# Long\n\n" + "A line.\n\n" * docs_check.LENGTH_WARNING["guide"])
-    checked, problems, notes = check_cli._standards(root, ["docs/guides/long.md"])
+    checked, problems, notes = check_cli._standards(root, "main")
     assert (checked, problems) == (1, []) and "warning: length" in notes[0]
 
 
@@ -380,11 +402,12 @@ def test_the_docs_step_runs_the_standards_and_the_build_and_fails_on_either(
     write(root, "docs/research/old.md", "# Old\n\nSome line.\n")
     built = StepResult("docs", True, "mkdocs build --strict")
     monkeypatch.setattr(check_cli, "_mkdocs_build", lambda root: built)
-    failed = check_cli._step_docs(root, ["docs/research/old.md"])
+    failed = check_cli._step_docs(root, "main", ["docs/research/old.md"])
     assert not failed.ok and "page standards failed" in failed.detail and "mkdocs build --strict" in failed.detail
-    assert check_cli._step_docs(root, ["docs/research/good.md"]).ok
+    git(root, "checkout", "--", "docs/research/old.md")  # the change is now the good page's alone
+    assert check_cli._step_docs(root, "main", ["docs/research/good.md"]).ok
     built = StepResult("docs", False, "mkdocs build --strict failed", output=("ERROR x",))
-    broken = check_cli._step_docs(root, ["docs/research/good.md"])
+    broken = check_cli._step_docs(root, "main", ["docs/research/good.md"])
     assert not broken.ok and "ERROR x" in broken.output
 
 

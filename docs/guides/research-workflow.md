@@ -75,8 +75,9 @@ A check against the game's files is **corroboration**, not a level: write `Disc 
 A run record, `research/runs/<id>.toml`, holds what a run observed in PCSX2: who ran it, the build, the state it started
 from, the recipe or the method and the values read (numbers and addresses only, no dumps). It is written by the tool
 that drives PCSX2, so the method cannot be paraphrased away, and the page does not repeat it. That tool is planned; while
-`research/runs/` does not exist the check reads only the form of the id, and a runtime claim of the old form (PCSX2
-named, with the method) stands on a page that is listed as legacy. Its method goes to the page's *How this was checked*
+`research/runs/` does not exist no run id can name a record, so a page that is not legacy cannot make a runtime claim
+(it says `inferred` or `speculative`), and a runtime claim of the old form (PCSX2 named, with the method) stands on a
+page that is listed as legacy. Its method goes to the page's *How this was checked*
 section when the page is next restructured.
 
 Where the level sits on the page is the page standard's rule, not a style: in the claim's block, in the Evidence cell of
@@ -854,8 +855,8 @@ A finding is done when someone else can use it without asking you. For each one:
    file, a dump or an extracted asset never do.
 7. **Check and build the docs:** `coney-tools docs check` holds every page you touched to the standard
    ([Checking a page](writing-docs.md#checking)), and `mkdocs build --strict` catches broken links and pages missing
-   from the navigation. A page in the legacy file keeps its excuses for what it fails; a section you edit is graded
-   ([Legacy pages](writing-docs.md#legacy-pages)).
+   from the navigation. A page in the legacy file keeps its excuses until a change touches it; then the mechanical
+   rules apply page-wide and the section you edit is graded ([Legacy pages](writing-docs.md#legacy-pages)).
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with

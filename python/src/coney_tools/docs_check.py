@@ -16,7 +16,6 @@ docs/guides/coney-tools.md#docs.
 from __future__ import annotations
 
 import bisect
-import posixpath
 import re
 from collections import Counter
 from collections.abc import Callable, Iterable
@@ -28,11 +27,12 @@ from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.docs_page import Finding, Page, kind_of, read_page
+from coney_tools.docs_style import check_style
 from coney_tools.research_catalog import load_catalog
-from coney_tools.research_check import RULES as RESEARCH_RULES
-from coney_tools.research_check import ResearchEnv, check_research
+from coney_tools.research_check import check_research
 from coney_tools.research_legacy import Touch, apply_legacy, load_legacy
 from coney_tools.research_pages import Corpus
+from coney_tools.research_subject import ResearchEnv
 
 __all__ = ["Context", "Finding", "Result", "check_page", "kind_of"]
 
@@ -43,39 +43,7 @@ CHECKED_KINDS: tuple[str, ...] = ("research", "guide", "page")
 #: A warning, because splitting a page is the author's call: the cut is usually along a sub-subject that deserves its
 #: own page. A research page's limit is its kind's `max_lines` in `.github/conventions.yml`.
 LENGTH_WARNING: dict[str, int] = {"guide": 800}
-#: Wording that says when something is true instead of saying what is true ("say what is true now").
-STALE = re.compile(
-    r"\bstill small\b|\bnot yet\b|\bonce (?:it|this|that|they) (?:exists?|is built|are built)\b"
-    r"|\b(?:does|do)(?:n't| not) exist yet\b|\byet to be (?:written|built|done|implemented)\b",
-    re.IGNORECASE,
-)
-#: On a guide or another page, "not yet" dates a claim when it says what the project has not done ("not yet
-#: implemented"); "not yet looked at" (an issue's state) or "scenery not yet loaded" (the game) describe something else.
-#: A research page tells them apart by section and by naming Coney instead (`_is_status`).
-NOT_YET_WORK = re.compile(
-    r"\bnot yet (?:been )?(?:implemented|written|built|done|ported|supported|listed|documented|wired|available|merged"
-    r"|exposed|added|covered|tested|checked|known|understood|decided|in place)\b",
-    re.IGNORECASE,
-)
-#: A path on somebody's machine: a user folder, or a drive-letter path that goes two folders deep. `H:\`, a file at a
-#: drive's root, `C:\Program Files\...` (where a tool installs) and the original's build paths (`c:/Warriors/...`) are
-#: not the writer's.
-_USER_PATH = re.compile(
-    r"(?i)\b[a-z]:[\\/]users[\\/](?!<)[^\\/\s<`\"']+|(?<![\w.:\\/])/(?:home|users)/(?!<)[^/\s<`\"']+"
-)
-_DRIVE_PATH = re.compile(r"(?<![\w])[A-Za-z]:[\\/](?P<first>[^\\/\s`'\"<>|*?:]+)[\\/]")
-_DRIVE_OK = frozenset({"program", "windows", "users"})
-#: The original's own build paths, which its executable carries as debug strings and the research pages quote.
-ORIGINAL_BUILD_PATHS: tuple[str, ...] = ("c:/warriors", "d:/warriors", "/home/ack")
-#: Text that mentions a phrase instead of using it: inline code and a short quotation.
-_MENTION = re.compile(r"`[^`\n]*`|\"[^\"\n]{1,60}\"|\u201c[^\u201d\n]{1,60}\u201d")
-_CODE = re.compile(r"`[^`\n]*`")
-_LINK = re.compile(r"!?\[[^\]\n]*\]\(<?(?P<target>[^)\s>]+)")
-_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-_REF_DEF = re.compile(r"^[ \t]{0,3}\[[^\]\n]+\]:[ \t]*<?(?P<target>[^\s>]+)")
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@", re.MULTILINE)
-#: The sections of a research page that say what Coney has, where "not yet" dates a claim.
-_STATUS_SECTIONS = frozenset({"in coney", "coney's implementation", "open questions"})
 
 
 @dataclass(frozen=True)
@@ -123,100 +91,6 @@ class Result:
         return counts
 
 
-# --- style ------------------------------------------------------------------------------------------------------------
-
-
-def _without_mentions(text: str) -> str:
-    """`text` without inline code, short quotations and URLs: a phrase there is mentioned, not used."""
-    return re.sub(r"https?://\S+", " ", _MENTION.sub(" ", text))
-
-
-def _machine_path(line: int, path: str) -> Iterable[Finding]:
-    """A finding for `path` unless it is one of the original's build paths (`ORIGINAL_BUILD_PATHS`)."""
-    if not path.casefold().replace(chr(92), "/").startswith(ORIGINAL_BUILD_PATHS):
-        yield Finding(
-            "machine-path", line, f"'{path}' is a path on a machine: write <workspace>, scratch/ or a relative path"
-        )
-
-
-def _line_sections(page: Page) -> list[str]:
-    """For each line, the lower-case name of the level-2 section it sits in ('' above the first one)."""
-    names: list[str] = []
-    current = ""
-    headings = {heading.line: heading for heading in page.headings}
-    for line in page.lines:
-        heading = headings.get(line.number)
-        if heading is not None and heading.level <= 2:
-            current = heading.text.replace(chr(0x2019), "'").casefold().strip("`*_ ") if heading.level == 2 else ""
-        names.append(current)
-    return names
-
-
-def _is_status(section: str, text: str) -> bool:
-    """Whether a line of a research page says what Coney has (so "not yet" dates it) and not what the original does
-    ("a store that is not yet broken"): it sits in Coney's implementation or the open questions, or names Coney."""
-    return section in _STATUS_SECTIONS or "coney" in text.casefold()
-
-
-def _person_words(words: tuple[str, ...]) -> re.Pattern[str]:
-    """The pattern for the avoided words in their person sense: "the owner", "the project owner", "repository owner".
-    "An object's owner" and `owner/repo` are not people and stay."""
-    alternatives = "|".join(re.escape(word) for word in words)
-    return re.compile(
-        rf"\b(?:the|project|repository|repo)\s+(?:{alternatives})(?:'s|s)?\b(?![/_])(?!\s+of\b)", re.IGNORECASE
-    )
-
-
-def _check_style(path: str, page: Page, kind: str, context: Context) -> Iterable[Finding]:
-    """The Style rules a program can see, line by line."""
-    folder = posixpath.dirname(path)
-    sections = _line_sections(page)
-    for index, line in enumerate(page.lines):
-        text = line.text
-        if not text.strip():
-            continue
-        lowered = text.casefold()
-        for term in context.address_terms:
-            if term in lowered:
-                yield Finding(
-                    "address", line.number, "names the repository's or the docs site's address; only the README may"
-                )
-                break
-        for found in _USER_PATH.finditer(text):
-            yield from _machine_path(line.number, found.group(0))
-        for found in _DRIVE_PATH.finditer(text):
-            if found.group("first").casefold() not in _DRIVE_OK:
-                yield from _machine_path(line.number, found.group(0))
-        if line.fenced:
-            continue
-        mentioned = _without_mentions(text)
-        for stale in STALE.finditer(mentioned):
-            if stale.group(0).casefold() == "not yet":
-                if kind == "research" and not _is_status(sections[index], text):
-                    continue
-                if kind != "research" and not NOT_YET_WORK.match(mentioned, stale.start()):
-                    continue
-            yield Finding(
-                "stale-wording",
-                line.number,
-                f"'{stale.group(0)}' says when it is true: say what is true now, or 'planned' in the page that owns it",
-            )
-        if kind != "research" and context.avoid:
-            for person in _person_words(context.avoid).finditer(mentioned):
-                yield Finding(
-                    "person-wording",
-                    line.number,
-                    f"'{person.group(0)}' names a person: say 'the user' or 'a maintainer'",
-                )
-        for target in [*_LINK.finditer(_CODE.sub(" ", text)), *_REF_DEF.finditer(text)]:
-            link = target.group("target")
-            if _SCHEME.match(link) or link.startswith(("#", "/")):
-                continue
-            resolved = posixpath.normpath(posixpath.join(folder, link.split("#", 1)[0].split("?", 1)[0]))
-            if link.split("#", 1)[0] and resolved != "docs" and not resolved.startswith("docs/"):
-                yield Finding("repo-link", line.number, f"'{link}' leaves docs/: write repo:<path>")
-
-
 def _check_length(kind: str, text: str) -> Iterable[Finding]:
     """A warning when a guide is longer than `LENGTH_WARNING` allows (a research page's limit is its kind's)."""
     limit = LENGTH_WARNING.get(kind)
@@ -233,20 +107,20 @@ def _check_length(kind: str, text: str) -> Iterable[Finding]:
 # --- the research standard and the legacy file -----------------------------------------------------------------------
 
 
-def _touched(page: Page, lines: frozenset[int] | None) -> Callable[[Finding], bool]:
+def _touched(page: Page, lines: frozenset[int]) -> Callable[[Finding], bool]:
     """A test for "this finding is in a section the change touched": the sections are the level-2 headings (and the
-    title's part above the first); nothing is touched when the changed lines are not known."""
-    if not lines:
-        return lambda _finding: False
+    title's part above the first), and `lines` are the lines the change added or changed."""
     starts = [heading.line for heading in page.headings if heading.level <= 2] or [1]
     changed = {max(bisect.bisect_right(starts, number) - 1, 0) for number in lines}
     return lambda finding: max(bisect.bisect_right(starts, finding.line) - 1, 0) in changed
 
 
-def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch) -> list[Finding]:
-    """The research standard for `path`, with the legacy file's excuses applied."""
+def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding]) -> list[Finding]:
+    """The research standard for `path` and its `style` findings, with the legacy file's excuses applied. A change that
+    touches a listed page ends the excuse for every rule but the length and the grading of the sections it leaves
+    alone (`apply_legacy`)."""
     listed = path in env.legacy
-    findings = check_research(path, page, env, legacy_page=listed)
+    findings = [*check_research(path, page, env, legacy_page=listed), *style]
     if not listed:
         return findings
     if touch.new:
@@ -258,7 +132,8 @@ def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch) -> li
             )
         )
         return findings
-    return apply_legacy(findings, env.legacy.rules(path), env.research.files.legacy, _touched(page, touch.lines))
+    touched = _touched(page, touch.lines) if touch.lines else None
+    return apply_legacy(findings, env.legacy.rules(path), env.research.files.legacy, touched)
 
 
 # --- checking ---------------------------------------------------------------------------------------------------------
@@ -273,10 +148,9 @@ def check_page(path: str, text: str, context: Context | None = None, touch: Touc
         return []
     context = context or Context()
     page = read_page(text)
-    found: list[Finding] = []
+    found = list(check_style(path, page, kind, context.avoid, context.address_terms))
     if kind == "research" and context.research is not None:
-        found.extend(_check_research(path, page, context.research, touch or Touch()))
-    found.extend(_check_style(path, page, kind, context))
+        found = _check_research(path, page, context.research, touch or Touch(), found)
     if kind != "research":
         found.extend(_check_length(kind, text))
     return sorted(found, key=lambda item: item.line)
@@ -291,7 +165,7 @@ def context_for(root: Path) -> Context:
         research,
         load_catalog(root, research),
         Corpus.from_root(root, research),
-        load_legacy(root, research, RESEARCH_RULES),
+        load_legacy(root, research, docs_legacy.LEGACY_RULES),
     )
     return Context(conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env)
 
@@ -333,13 +207,28 @@ def change_touches(root: Path, base: str, names: Iterable[str]) -> dict[str, Tou
     return touches
 
 
+#: What a change can touch that moves the legacy file's truth without editing the file: a research page, the research
+#: data, the conventions and the code of the checks.
+_LEGACY_INPUTS = ("docs/research/", "research/", ".github/conventions.yml", "python/src/coney_tools/research_")
+
+
+def _legacy_relevant(names: Iterable[str]) -> bool:
+    """Whether the change can make the legacy file stale: it touches a research page, research data, the conventions or
+    the checks themselves."""
+    return any(
+        name.startswith(_LEGACY_INPUTS) or (name.startswith("python/src/coney_tools/docs_") and name.endswith(".py"))
+        for name in names
+    )
+
+
 def check_changed(root: Path, base: str, context: Context) -> Result:
-    """Check the pages changed since the branch left `base`, committed or not, untracked pages included."""
+    """Check the pages changed since the branch left `base`, committed or not, untracked pages included. When the change
+    can make the legacy file stale (`_legacy_relevant`), the file is checked as a whole too (`docs_legacy.problems`)."""
     names = local_gate.changed_files(root, base)
     result = check_files(root, names, context, change_touches(root, base, names))
     legacy_file = context.research.research.files.legacy if context.research else ""
-    if legacy_file in names:
-        # The legacy file itself changed: it may only have shrunk and may list nothing that now passes.
+    if legacy_file and _legacy_relevant(names):
+        # A page that now passes must leave the file, and a changed file may only have shrunk.
         found = [Finding("legacy", 1, line) for line in docs_legacy.problems(root, context, base)]
         if found:
             result.pages.append(legacy_file)

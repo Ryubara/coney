@@ -360,22 +360,23 @@ def _python_changed(changed: list[str]) -> bool:
     return any(name.startswith(("python/", ".claude/")) for name in changed)
 
 
-def _standards(root: Path, changed: list[str]) -> tuple[int, list[str], list[str]]:
-    """The page standards (`coney-tools docs check`) on the pages among `changed`: how many pages were checked, the
-    findings of the pages that fail, and the warnings of those that pass."""
-    result = docs_check.check_files(root, changed, docs_check.context_for(root))
+def _standards(root: Path, base: str) -> tuple[int, list[str], list[str]]:
+    """The page standards (`coney-tools docs check`, as CI runs it) on the pages changed since `base`: how many pages
+    were checked, the findings of the pages that fail, and the warnings of those that pass. A listed research page is
+    read as touched (`docs_check.change_touches`), and the legacy file is checked when the change can make it stale."""
+    result = docs_check.check_changed(root, base, docs_check.context_for(root))
     failed = result.failed
     problems = [line for page in result.pages if page in failed for line in docs_cli.page_lines(result, page)]
     notes = [line for page in result.pages if page not in failed for line in docs_cli.page_lines(result, page)]
     return len(result.pages), problems, notes
 
 
-def _step_docs(root: Path, changed: list[str]) -> StepResult:
+def _step_docs(root: Path, base: str, changed: list[str]) -> StepResult:
     """The page standards on the changed pages, then `mkdocs build --strict` into a throwaway folder, when docs or the
     site setup changed. Both run, so one run shows every problem."""
     if not _docs_changed(changed, load_conventions(root).paths):
         return _skipped("docs", "no docs changed")
-    pages, problems, notes = _standards(root, changed)
+    pages, problems, notes = _standards(root, base)
     built = _mkdocs_build(root)
     ok = built.ok and not problems
     parts = [f"{pages} pages meet the standards" if not problems else "page standards failed"]
@@ -517,7 +518,7 @@ def run_changed(
         "orig": lambda: _step_orig(root, base, changed),
         "pre-commit": lambda: _step_pre_commit(root, changed),
         "clang-tidy": lambda: _step_tidy(root, changed, build_path, jobs, clang_tidy, gate),
-        "docs": lambda: _step_docs(root, changed),
+        "docs": lambda: _step_docs(root, base, changed),
         "python": lambda: _step_python(root, changed),
     }
     if local_gate.needs_full_tidy_pass(changed) and "clang-tidy" in wanted:

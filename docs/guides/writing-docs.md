@@ -123,7 +123,8 @@ touches and fails on any rule the page breaks, however old the line that breaks 
 
 Fixing a page means the page, not the lines you wrote: add the missing sections (a section with nothing known says so
 in one line), grade the claims, reword what the Style rules refuse. A research page that cannot be brought up in one
-change is [legacy](#legacy-pages) and keeps its excuses until it can; every other page meets the standard in full.
+change is [legacy](#legacy-pages): it is excused only from what its entry lists, and only while no change touches
+it; every other page meets the standard in full.
 A page that has grown past its length limit is split along a sub-subject that has its own page, in the same pull
 request or in one that follows at once.
 
@@ -311,16 +312,20 @@ Summary, In Coney, Open questions and How this was checked, and passes it when a
   heading until the next heading of any level, and the reviewer checks that it is true of every one of them.
 
 A sentence at the top of the page, a level in a neighbouring paragraph, a level in a heading and a lead line under a
-`##` heading grade nothing: they cover pages, not claims. A Map table with no Evidence column is an index of functions
-and needs no level (the levels of the functions are in their entries). The forms are checked too:
+`##` heading grade nothing: they cover pages, not claims. A Map table with no Evidence column is an index: it is not
+graded as a table of claims, because the behaviour it points to is graded where it is described (Behaviour). Once the
+function entries exist (`research/functions/`), a Map row will be exempt only when its address has an entry, and this
+paragraph will say so. The forms are checked too ([the spellings](research-workflow.md#level-forms) are listed once,
+there):
 
-- `confirmed (runtime)` says `, run <id>`, and the record `research/runs/<id>.toml` must exist once any run record
-  does. A page in the [legacy file](#legacy-pages) may keep an old runtime claim that names PCSX2 in its Verified line
-  or in How this was checked.
+- `confirmed (runtime)` says `, run <id>`, and the record `research/runs/<id>.toml` must exist. There is no such folder
+  yet, so a new or restructured page cannot make a runtime claim: it says `inferred from <basis>`, or `speculative`
+  with an open question, until the run-record tool arrives (the check says "run records arrive with T4"). A page in the
+  [legacy file](#legacy-pages) may keep an old runtime claim that names PCSX2 in its Verified line or in How this was
+  checked, and its run ids are not checked while the folder is missing.
 - `speculative` links an open question of the page (`[q-name](#q-name)`) that exists.
 - `inferred` should say what it follows from (`inferred from the call order`): a warning when it does not.
-- Refused: `confirmed (disc)` (write `Disc check:` beside the claim: it corroborates and grades nothing),
-  `confirmed (name hash)`, `confirmed (runtime, coney)`, `Confidence:`, and "probably" or "likely" in an Evidence cell.
+- A spelling that is no level is refused, and so is "probably" or "likely" in an Evidence cell.
 
 ### Addresses {#addresses}
 
@@ -329,12 +334,14 @@ An address is `0x` and eight hex digits in `SLUS_212.15`: `0x0026c548`. Cite a f
 gives it (a warning: refresh `docs/progress/ghidra-functions.tsv`, or the page, never undo a name in Ghidra). The
 check refuses:
 
-- the short form of a named function's entry (`0x149160`): write `0x00149160`. A field offset (`+0xb4`), a mask or a
-  value is written short and is not an address;
+- the short form of a named function's entry (`0x149160`) and of a global in `.data` or `.bss` (`0x6fe998`): write
+  `0x00149160` and `0x006fe998`. A field offset (`+0xb4`), a mask or a value is written short and is not an address
+  (a colour that happens to fall inside `.bss` is the one false hit: write it in decimal or as its parts);
 - an address that is no function entry, no place inside a function of that listing and in no data section of the
   executable (`research/elf-sections.toml`). The end of a range (`0x00284920-0x00288000`) need only lie in the image.
   A function Ghidra has not made yet is created and named first; an address in memory the program allocates (a heap
-  object) is not in the executable: cite the global that holds it.
+  object) is not in the executable: cite the global that holds it. The section How this was checked is not held to
+  this, because a run may watch a heap address and the method says which.
 
 ### Dates, plans and length
 
@@ -347,16 +354,20 @@ cure is a topic page split off along a group of behaviours with its own entry fu
 A research page that cannot meet this standard in the change that touches it is listed in `research/legacy.toml`, under
 the rules it fails and with the number of findings at the last scan. `docs check` then:
 
-- reports the findings of those rules as one warning each and fails on every other rule, as for any page;
-- fails an `evidence` finding in a section (a `##` heading and what is under it) that the change touches, so whoever
-  edits a section grades it; and, on a legacy page that is not touched there, leaves the rest of the grading to the
-  page's restructure;
+- reports the findings of those rules as one warning each, while no change touches the page (it is checked by name),
+  and fails on every other rule, as for any page;
+- ends the excuse when a change touches the page: **every touch fixes the mechanical rules page-wide and grades the
+  touched section**. The front matter, the sections, the Verified line, the address forms, the addresses that resolve,
+  Ghidra's names, copied paragraphs, dates, stale wording, and the spellings and run ids of the levels are errors on the
+  whole page. Only the grading of a block (an address with no level) is held to the sections (a `##` heading and what
+  is under it) that the change touches, and the page's length stays waived, both until the page's restructure;
 - fails a rule the page now passes until it is removed from the file, so the file only shrinks; and
 - refuses a new page in the file. A new or restructured page meets the standard in full.
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
-exits 1 when the file lists something that passes or grew since `--base`. The file is first written by `--init`, which
-refuses to run again.
+exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by
+`--init`, which refuses to run again. An entry may list any research rule of the table below and `stale-wording`, the
+one Style rule that older research pages break ("not yet" and the like); no other Style rule is excused.
 
 ## Checking a page {#checking}
 
@@ -382,8 +393,8 @@ is read as any other page. What each rule looks at, by the kind of page ([Page k
 | `skeleton` | research | A missing or second `# Title`; a missing, empty, repeated or out-of-order section of the kind; a `##` heading that is no section of the kind (the old names count) |
 | `verified` | research | No `Verified against: ...` line above the first section, or one that wraps or is over the limit |
 | `evidence` | research | An address or locator with no level in its block, Evidence cell or lead line; a level in a form the [standard](#evidence-levels) refuses; a runtime claim with no existing run; a speculative claim with no open question |
-| `address-form`, `address-resolve` | research | The short form of a function entry; an address in no function and no data section. `address-name` is a warning when the name beside an address is not Ghidra's |
-| `decompile` | research | One of Ghidra's made-up names (`param_1`, `uVar2`, `DAT_005127e4`, `FUN_00123456`), in the text or in a code block: the mark of a pasted decompile, which the page never holds ([LEGAL.md](repo:LEGAL.md#research-limits)). Cite the address, or name the thing for what it is |
+| `address-form`, `address-resolve` | research | The short form of a function entry or of a global in `.data` or `.bss`; an address in no function and no data section (not checked in How this was checked). `address-name` is a warning when the name beside an address is not Ghidra's |
+| `decompile` | research | One of Ghidra's made-up names (`param_1`, `uVar2`, `DAT_005127e4`, `FUN_00123456`), in the text or in a code block: the mark of a pasted decompile, which the page never holds ([LEGAL.md](repo:LEGAL.md#research-limits)). Cite the address, or name the thing for what it is. A survey may name a register or placeholder (`in_EAX`, `unaff_ESI`) by itself in a code span, as the subject of what Ghidra makes of an executable; an expression, a bare word and a code block are refused on every page |
 | `copied` | research | A paragraph of 200 characters or more that is also on another research page |
 | `history` | research | A date or an issue number outside In Coney and How this was checked |
 | `length` | research, guides | Research: more lines than the kind's limit, an error unless the page is legacy. Guides: a **warning** above 800 lines, because a guide past that is several guides and where to cut is the author's call |
