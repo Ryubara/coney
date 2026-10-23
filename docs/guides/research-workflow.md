@@ -5,8 +5,8 @@ game does, what its data looks like and how sure we are of each claim, so the ne
 out again. This guide covers how we study the original, how claims are graded, where findings go and how to write
 them up.
 
-The pages themselves live in `docs/research/`, one living page per subsystem or file format. How to lay a page out
-is in [Writing these docs](writing-docs.md#subsystem-page).
+The pages themselves live in `docs/research/`, one living page per subject. Their kinds, front matter and sections
+are in [Writing these docs](writing-docs.md#research-pages).
 
 ## Before you research {#upstream}
 
@@ -52,37 +52,61 @@ to know whether it was read in the code, seen happening, or worked out from clue
 | Level | Meaning | YAML value |
 | --- | --- | --- |
 | **confirmed (code)** | Read in the original's code, at a cited address | `confirmed-code` |
-| **confirmed (runtime)** | Observed in the original game running under PCSX2; the claim states the PCSX2 version and the method (a breakpoint at an address, a memory watch, a frame) | `confirmed-runtime` |
+| **confirmed (runtime)** | Observed in the original game running under PCSX2; the claim cites the run record that observed it (an older claim states the PCSX2 version and the method: a breakpoint at an address, a memory watch, a frame) | `confirmed-runtime` |
 | **inferred** | Follows from evidence that points one way, without being read or observed directly | `inferred` |
 | **speculative** | A plausible guess, written down so it can be tested | `speculative` |
 
-Examples:
+### How a level is written {#level-forms}
+
+`coney-tools docs check` accepts only these spellings, so a claim graded one way reads the same on every page:
+
+| Level | In prose | In a table cell | Must carry |
+| --- | --- | --- | --- |
+| confirmed (code) | `confirmed (code)` | `confirmed (code)` | An address (or script locator) in the same block |
+| confirmed (runtime) | `confirmed (runtime), run <id>` | `confirmed (runtime), run <id>` | The id of a run record, `research/runs/<id>.toml` |
+| inferred | `inferred from <basis>` | `inferred` (the basis in the role text) | What it follows from |
+| speculative | `speculative ([q-...](#q-...))` | `speculative` and a question link in the row | A linked open question that says how to test it |
+
+Mixed grades are written out: `confirmed (code); role inferred`. A claim that is not worth a level because nobody needs
+it is `not needed: <reason>` (the [Understood measure](#understood) reads it). Refused: `confirmed (disc)`,
+`confirmed (name hash)`, `confirmed (runtime, coney)`, `Confidence:` and "probably" or "likely" in an Evidence cell.
+A check against the game's files is **corroboration**, not a level: write `Disc check:` beside the claim it supports.
+
+A run record, `research/runs/<id>.toml`, holds what a run observed in PCSX2: who ran it, the build, the state it started
+from, the recipe or the method and the values read (numbers and addresses only, no dumps). It is written by the tool
+that drives PCSX2, so the method cannot be paraphrased away, and the page does not repeat it. That tool is planned; while
+`research/runs/` does not exist no run id can name a record, so a page that is not legacy cannot make a runtime claim
+(it says `inferred` or `speculative`), and a runtime claim of the old form (PCSX2 named, with the method) stands on a
+page that is listed as legacy. Its method goes to the page's *How this was checked*
+section when the page is next restructured.
+
+Where the level sits on the page is the page standard's rule, not a style: in the claim's block, in the Evidence cell of
+its table row, or in the lead line under a `###` heading ([Evidence levels on a page](writing-docs.md#evidence-levels)).
+The examples:
 
 - **Confirmed (code).** [WARRIORS.DIR](../research/formats/wad-dir.md): the index's constructor at `0x00149160`
   reads the entry count, seeks to `0x10`, allocates `count * 12` bytes and reads the entry table. The claim names
   the address where anyone with the executable can check it.
 - **Confirmed (runtime).** [Memory](../research/memory.md#sizes-at-runtime): the `Sector Pool` is 17,217,536 bytes,
-  read in PCSX2 2.9.94 over PINE from the pool object the page documents (`0x00760f80`, block size at `+0x0c`) on
-  a retail boot, with the moments of the reads (start-up movies, main menu, a fight in `level102`). The claim says
-  what was read, where, when and in which emulator version, so anyone can repeat it.
+  read in PCSX2 over PINE from the pool object the page documents (`0x00760f80`, block size at `+0x0c`) on a retail
+  boot. The page is a legacy one and names the emulator version and the moments of the reads; a new claim cites the run
+  that made them.
 - **Inferred.** [Compiler](../research/compiler.md): the vtables use 8-byte `{delta, fn}` slots, the GCC 2.x
   layout, which points to GCC 2.95.x. The layout is confirmed; the compiler version is a conclusion drawn from it,
   and the page says the exact version is not confirmed.
 - **Speculative.** [Recon](../research/overview.md#disc-layout): the custom `IOP.IRX` module is "probably" the
   audio driver. Nothing has been read or observed yet; the guess is recorded so that someone can test it.
 
-A check against the game's own files is **corroboration**, not a level of its own: it is written next to the
-claim it supports. [WARRIORS.DIR](../research/formats/wad-dir.md) does this: its layout is confirmed (code), and the
-line beside it notes that the layout predicts `16 + 10701 × 12 = 128,428` bytes, the size of `WARRIORS.DIR` on the
-disc. The check makes the claim more trustworthy, but it grades nothing by itself.
+A check against the game's files makes a claim more trustworthy but grades nothing by itself.
+[WARRIORS.DIR](../research/formats/wad-dir.md) shows it: its layout is confirmed (code), and the line beside it notes
+that the layout predicts `16 + 10701 × 12 = 128,428` bytes, the size of `WARRIORS.DIR` on the disc.
 
-Write the level next to the claim it grades, for example `**Evidence:** confirmed (code) at 0x00149160.` A claim
-that moves up a level (a guess confirmed in the code, say) is updated in place, and the old level goes away. Some
-older pages say "Confidence: confirmed from code"; that means confirmed (code), and those pages are brought to the
+A claim that moves up a level (a guess confirmed in the code, say) is updated in place, and the old level goes away.
+Some older pages say "Confidence: confirmed from code"; that means confirmed (code), and those pages are brought to the
 new wording when they are next edited.
 
-A page also says what it was checked against: the executable (`SLUS_212.15`, see
-[Writing up a finding](#writing-up-a-finding)) and, for runtime claims, the PCSX2 version.
+A page also says what it was checked against, in one line: the executable (`SLUS_212.15`, see
+[Writing up a finding](#writing-up-a-finding)) and nothing about how.
 
 ## The research database {#the-research-database}
 
@@ -821,7 +845,8 @@ A finding is done when someone else can use it without asking you. For each one:
    with the same evidence level as the page.
 4. **Cite addresses** as `0x001490b8`: eight hex digits, in the NTSC-U executable `SLUS_212.15` (SHA1
    `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Every address in the project refers to that one file, so a reader
-   with the same disc can check any claim.
+   with the same disc can check any claim. The check holds an address to the Ghidra listing and the executable's
+   sections ([Addresses](writing-docs.md#addresses)), and a function is cited with the name Ghidra gives it.
 5. **Describe, don't reproduce.** Explain behaviour in prose, with short pseudocode or a short snippet where it
    makes the point clearer. Never paste a whole function listing from Ghidra or a disassembly, and never paste a long
    stretch of one: it puts the original's code in the repository. See
@@ -830,7 +855,8 @@ A finding is done when someone else can use it without asking you. For each one:
    file, a dump or an extracted asset never do.
 7. **Check and build the docs:** `coney-tools docs check` holds every page you touched to the standard
    ([Checking a page](writing-docs.md#checking)), and `mkdocs build --strict` catches broken links and pages missing
-   from the navigation.
+   from the navigation. A page in the legacy file keeps its excuses until a change touches it; then the mechanical
+   rules apply page-wide and the section you edit is graded ([Legacy pages](writing-docs.md#legacy-pages)).
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with

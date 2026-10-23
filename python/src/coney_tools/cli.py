@@ -412,6 +412,15 @@ def _add_docs_commands(groups: Any) -> None:
     check.add_argument("--base", default="origin/main", help="the branch the change is measured from")
     check.add_argument("--summary", action="store_true", help="also count the pages that pass, per kind, and per rule")
     check.add_argument("--quiet", action="store_true", help="print only the counts, not each finding")
+    legacy = commands.add_parser(
+        "legacy",
+        help="the research pages that do not meet the standard yet (research/legacy.toml): scan, write, shrink, check",
+    )
+    mode = legacy.add_mutually_exclusive_group()
+    mode.add_argument("--init", action="store_true", help="write the legacy file from a scan (refuses if it exists)")
+    mode.add_argument("--prune", action="store_true", help="take out what is fixed and lower the counts; never adds")
+    mode.add_argument("--check", action="store_true", help="exit 1 when the file lists a page or rule that now passes")
+    legacy.add_argument("--base", default="origin/main", help="with --check: the branch the file may not grow since")
 
 
 def _add_check_commands(groups: Any) -> None:
@@ -1022,6 +1031,10 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
     if args.group == "docs":
+        if args.command == "legacy":
+            return docs_cli.run_legacy(
+                "init" if args.init else "prune" if args.prune else "check" if args.check else "scan", args.base
+            )
         return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet)
     if args.group == "check":
         return check_cli.run_check(args)

@@ -792,6 +792,79 @@ class Tasks:
 
 
 @dataclass(frozen=True)
+class ResearchKind:
+    """One kind of research page: its sections, in order, and what its front matter and length must be."""
+
+    name: str
+    #: Every section the kind may have, in the order they appear.
+    sections: tuple[str, ...]
+    #: The sections of `sections` a page may leave out.
+    optional: tuple[str, ...]
+    #: Old section names this kind accepts as new ones, on top of `Research.aliases`.
+    aliases: Mapping[str, str]
+    #: Lines above which the page is too long (front matter not counted).
+    max_lines: int
+    #: Whether the front matter's `system` is `required` or `none`.
+    system: str
+    #: Whether the front matter's `owns` is `required`, `optional` or `none`.
+    owns: str
+
+    @property
+    def required(self) -> tuple[str, ...]:
+        """The sections every page of the kind has."""
+        return tuple(name for name in self.sections if name not in self.optional)
+
+
+@dataclass(frozen=True)
+class ResearchFiles:
+    """The data files the research rules read, relative to the repository root."""
+
+    ghidra_functions: str
+    elf_sections: str
+    runs: str
+    legacy: str
+
+
+@dataclass(frozen=True)
+class Research:
+    """The research page standard (`coney-tools docs check`; docs/guides/writing-docs.md#research-pages)."""
+
+    files: ResearchFiles
+    front_matter: tuple[str, ...]
+    owns_keys: tuple[str, ...]
+    verified_max_chars: int
+    copy_min_chars: int
+    #: Old section name to the section it is now (every kind).
+    aliases: Mapping[str, str]
+    ungraded_sections: tuple[str, ...]
+    dated_sections: tuple[str, ...]
+    map_section: str
+    #: The kind a page without front matter is read as, and the kind of the pages under a folder.
+    inferred_default: str
+    inferred_folders: Mapping[str, str]
+    kinds: Mapping[str, ResearchKind]
+
+    def kind_of_path(self, path: str) -> str:
+        """The kind a page at `path` (repository-relative, forward slashes) is read as when it names none."""
+        for folder, kind in self.inferred_folders.items():
+            if path.startswith(folder):
+                return kind
+        return self.inferred_default
+
+    def canonical(self, kind: str, heading: str) -> str:
+        """The section a level-2 heading is in `kind`'s list (its own name or an old name), or '' for none."""
+        spec = self.kinds[kind]
+        folded = heading.replace(chr(0x2019), "'").casefold().strip("`*_ ")
+        for name in spec.sections:
+            if name.casefold() == folded:
+                return name
+        for old, new in {**self.aliases, **spec.aliases}.items():
+            if old.casefold() == folded and new in spec.sections:
+                return new
+        return ""
+
+
+@dataclass(frozen=True)
 class Conventions:
     """Everything in `.github/conventions.yml`."""
 
@@ -808,6 +881,7 @@ class Conventions:
     hygiene: Hygiene
     workspace: Workspace
     stamps: Stamps
+    research: Research
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
@@ -1747,6 +1821,85 @@ def _read_stamps(data: object, where: str) -> Stamps:
     )
 
 
+def _read_research(data: object, where: str) -> Research:
+    """The `research` section: the kinds of research page, their sections and limits."""
+    keys = (
+        "files",
+        "front_matter",
+        "owns_keys",
+        "verified_max_chars",
+        "copy_min_chars",
+        "aliases",
+        "ungraded_sections",
+        "dated_sections",
+        "map_section",
+        "inferred_kind",
+        "kinds",
+    )
+    table = _table(data, where, keys)
+    files_where = _at(where, "files")
+    files = _table(table["files"], files_where, ("ghidra_functions", "elf_sections", "runs", "legacy"))
+    inferred_where = _at(where, "inferred_kind")
+    inferred = _table(table["inferred_kind"], inferred_where, ("default", "folders"))
+    aliases = _mapping(table["aliases"], _at(where, "aliases"))
+    kinds_where = _at(where, "kinds")
+    kind_tables = _mapping(table["kinds"], kinds_where)
+    if not kind_tables:
+        raise _fail(kinds_where, "expected at least one kind")
+    kinds: dict[str, ResearchKind] = {}
+    for name, value in kind_tables.items():
+        kind_where = _at(kinds_where, name)
+        spec = _table(value, kind_where, ("sections", "optional", "max_lines", "system", "owns"), ("aliases",))
+        sections = _texts(spec["sections"], _at(kind_where, "sections"))
+        optional = _texts(spec["optional"], _at(kind_where, "optional"), empty_ok=True)
+        _names_in(optional, sections, _at(kind_where, "optional"), "one of the kind's sections")
+        aliases_where = _at(kind_where, "aliases")
+        kind_aliases = _mapping(spec.get("aliases", {}), aliases_where)
+        kind = ResearchKind(
+            name=name,
+            sections=sections,
+            optional=optional,
+            aliases=MappingProxyType({old: _text(new, _at(aliases_where, old)) for old, new in kind_aliases.items()}),
+            max_lines=_count(spec["max_lines"], _at(kind_where, "max_lines"), minimum=100),
+            system=_choice(spec["system"], _at(kind_where, "system"), ("required", "none")),
+            owns=_choice(spec["owns"], _at(kind_where, "owns"), ("required", "optional", "none")),
+        )
+        _names_in(kind.aliases.values(), sections, aliases_where, "one of the kind's sections")
+        kinds[name] = kind
+    every_section = {section for spec in kinds.values() for section in spec.sections}
+    alias_map = {old: _text(new, _at(_at(where, "aliases"), old)) for old, new in aliases.items()}
+    _names_in(alias_map.values(), every_section, _at(where, "aliases"), "a section of some kind")
+    ungraded = _texts(table["ungraded_sections"], _at(where, "ungraded_sections"))
+    dated = _texts(table["dated_sections"], _at(where, "dated_sections"))
+    _names_in(ungraded, every_section, _at(where, "ungraded_sections"), "a section of some kind")
+    _names_in(dated, every_section, _at(where, "dated_sections"), "a section of some kind")
+    map_section = _text(table["map_section"], _at(where, "map_section"))
+    _names_in([map_section], every_section, _at(where, "map_section"), "a section of some kind")
+    default = _choice(inferred["default"], _at(inferred_where, "default"), kinds)
+    folders = _mapping(inferred["folders"], _at(inferred_where, "folders"))
+    for folder, kind_name in folders.items():
+        _choice(kind_name, _at(_at(inferred_where, "folders"), folder), kinds)
+    return Research(
+        files=ResearchFiles(
+            ghidra_functions=_text(files["ghidra_functions"], _at(files_where, "ghidra_functions")),
+            elf_sections=_text(files["elf_sections"], _at(files_where, "elf_sections")),
+            runs=_text(files["runs"], _at(files_where, "runs")),
+            legacy=_text(files["legacy"], _at(files_where, "legacy")),
+        ),
+        front_matter=_texts(table["front_matter"], _at(where, "front_matter")),
+        owns_keys=_texts(table["owns_keys"], _at(where, "owns_keys")),
+        verified_max_chars=_count(table["verified_max_chars"], _at(where, "verified_max_chars"), minimum=40),
+        copy_min_chars=_count(table["copy_min_chars"], _at(where, "copy_min_chars"), minimum=40),
+        aliases=MappingProxyType(alias_map),
+        ungraded_sections=ungraded,
+        dated_sections=dated,
+        map_section=map_section,
+        inferred_default=default,
+        inferred_folders=MappingProxyType(dict(folders)),
+        kinds=MappingProxyType(kinds),
+    )
+
+
 def parse_conventions(data: object) -> Conventions:
     """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key."""
     keys = (
@@ -1762,6 +1915,7 @@ def parse_conventions(data: object) -> Conventions:
         "hygiene",
         "workspace",
         "stamps",
+        "research",
     )
     table = _table(data, "", ("version", *keys))
     version = table["version"]
@@ -1803,6 +1957,7 @@ def parse_conventions(data: object) -> Conventions:
         hygiene=hygiene,
         workspace=_read_workspace(table["workspace"], "workspace"),
         stamps=_read_stamps(table["stamps"], "stamps"),
+        research=_read_research(table["research"], "research"),
     )
 
 

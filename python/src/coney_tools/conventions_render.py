@@ -341,6 +341,37 @@ def _audit_checks(conventions: Conventions) -> list[str]:
     return lines
 
 
+def _research_pages(conventions: Conventions) -> list[str]:
+    """The kinds of research page as a table (sections, limit, front matter), and the limits that apply to all."""
+    research = conventions.research
+    lines = ["| Kind | Sections, in order | Lines | `system` | `owns` |", "| --- | --- | --- | --- | --- |"]
+    for kind in research.kinds.values():
+        sections = ", ".join(f"*{name}* (optional)" if name in kind.optional else name for name in kind.sections)
+        lines.append(f"| `{kind.name}` | {sections} | {kind.max_lines:,} | {kind.system} | {kind.owns} |")
+    lines.append("")
+    aliases = [f"`{old}` for {new}" for old, new in research.aliases.items()]
+    lines += _bullet(f"Old section names are accepted as the new ones: {_join_and(aliases)}.")
+    kind_aliases = [
+        f"`{old}` for {new} on a `{kind.name}` page"
+        for kind in research.kinds.values()
+        for old, new in kind.aliases.items()
+    ]
+    if kind_aliases:
+        lines += _bullet(f"And {_join_and(kind_aliases)}.")
+    lines += _bullet(
+        f"The `Verified against:` line is one line of at most {research.verified_max_chars} characters. A paragraph of "
+        f"{research.copy_min_chars} characters or more written on two research pages is a copy."
+    )
+    lines += _bullet(f"An address needs no level in {_join_and(list(research.ungraded_sections))}.")
+    lines += _bullet(f"A date or an issue number may stand only in {_join_and(list(research.dated_sections))}.")
+    lines += _bullet(
+        f"A page with no front matter is read as `{research.inferred_default}`"
+        + "".join(f", or `{kind}` under `{folder}`" for folder, kind in research.inferred_folders.items())
+        + "."
+    )
+    return lines
+
+
 #: Block name to what fills it. The names appear in the marker lines of the files.
 BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "commit-rules": _commit_rules,
@@ -355,6 +386,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "engine-paths": lambda conventions: _scope_paths(conventions.paths.engine),
     "audit-checks": _audit_checks,
     "claim-rules": _claim_rules,
+    "research-pages": _research_pages,
 }
 
 

@@ -150,4 +150,4 @@ A checklist before calling a page ready:
 7. Does `coney-tools docs check` pass on the page? A page you touched is brought wholly up to the standard
    ([Touch a page, fix the page](writing-docs.md#touch-it)).
 
-The page kinds and the skeleton are in [Writing these docs](writing-docs.md#subsystem-page).
+The page kinds and their sections are in [Writing these docs](writing-docs.md#research-pages).

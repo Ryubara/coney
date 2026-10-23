@@ -1,125 +1,60 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The page standards of docs/guides/writing-docs.md, checked by program: `coney-tools docs check`.
 
-A page is held to the rules of its kind (`kind_of`): a research page keeps the subsystem skeleton, a "Verified against"
-line and an evidence level beside every address it cites; every hand-written page keeps the Style rules that a program
-can see (no machine paths, no time-bound wording, `repo:` links, roles not people, no repository or site address). The
-check runs on the pages a change touches and on those only, so the standard ratchets: whoever touches a page brings the
-whole page up to it, and untouched pages wait until someone does.
+A page is held to the rules of its kind (`kind_of`): a research page keeps the research standard (front matter, the
+sections of its kind, a level beside every address it cites, addresses that resolve; `research_check`), and every
+hand-written page keeps the Style rules that a program can see (no machine paths, no time-bound wording, `repo:` links,
+roles not people, no repository or site address). The check runs on the pages a change touches and on those only, so
+the standard ratchets: whoever touches a page brings the whole page up to it, and a research page that cannot meet the
+standard yet is listed in the legacy file (`research_legacy`), which excuses it from the rules it fails and no more.
 
 Everything here is a function of the page text, so the tests use made-up pages. The heuristics are deliberately
 forgiving (they flag what is surely a gap, not what might be one); each is described where it is implemented and in
 docs/guides/coney-tools.md#docs.
-
-The module is longer than most because it keeps every rule in one place, in sections that follow a page: reading it,
-the skeleton, evidence levels, the Style rules, and driving the check over files.
 """
 
 from __future__ import annotations
 
-import posixpath
+import bisect
 import re
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import local_gate
+from coney_tools import docs_legacy, local_gate
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
+from coney_tools.docs_page import Finding, Page, kind_of, read_page
+from coney_tools.docs_style import check_style
+from coney_tools.research_catalog import load_catalog
+from coney_tools.research_check import check_research
+from coney_tools.research_legacy import Touch, apply_legacy, load_legacy
+from coney_tools.research_pages import Corpus
+from coney_tools.research_subject import ResearchEnv
+
+__all__ = ["Context", "Finding", "Result", "check_page", "kind_of"]
 
 #: The kinds of file `kind_of` tells apart. Only the first three are checked.
 CHECKED_KINDS: tuple[str, ...] = ("research", "guide", "page")
 #: Lines above which a page gets a length warning (never a failure). A reader takes a page in whole before changing
-#: it, and the Read tool shows 2,000 lines at a time; a research page past 1,500 lines (the top sixth of the pages
-#: today, median 530) no longer fits one sitting with room for the code beside it, and a guide past 800 (the top
-#: tenth, median 260) is several guides. A warning, because splitting a page is the author's call: the cut is usually
-#: along a sub-subject that deserves its own page.
-LENGTH_WARNING: dict[str, int] = {"research": 1500, "guide": 800}
-#: The sections of a subsystem page, in order. `names` are lower case; a heading counts when it equals one of them or
-#: starts with one followed by a space, colon or dash (so "Data layout" is the Data section).
-SKELETON: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("Purpose", ("purpose",)),
-    ("Original structure", ("original structure",)),
-    ("Data", ("data",)),
-    ("Behaviour", ("behaviour", "behavior")),
-    ("Coney's implementation", ("coney's implementation",)),
-    ("Open questions", ("open questions",)),
-)
-#: The sections that state no behaviour of the original, so an address in them needs no evidence level: what the page
-#: is for, where Coney's code lives (an `@orig` tag cites an address without claiming anything) and the questions.
-UNGRADED_SECTIONS = frozenset({"purpose", "coney's implementation", "open questions"})
-#: An address in the executable, written as the conventions say: `0x` and eight hex digits (`0x00149160`), within the
-#: EE's 32 MB of main memory where the executable and its data live (`0x00100000`-`0x01ffffff`). A field offset, a mask
-#: or a flag value is written shorter; a name hash, a disc offset or a full-width mask (`0x80000000`) falls outside.
-ADDRESS = re.compile(r"(?<![\w])0x0(?:0[1-9a-fA-F]|1[0-9a-fA-F])[0-9a-fA-F]{5}\b")
-#: A sentence in the opening of a page that grades every claim at once ("every claim is confirmed (code) at the cited
-#: address unless it says otherwise"); the page then needs no level beside each address.
-PAGE_LEVEL = re.compile(
-    r"(?<!not )\b(?:every|all|each)\b(?:[^.]|\.(?=\w)){0,120}\b(?:confirmed|inferred|speculative)\b"
-    r"|\b(?:confirmed|inferred|speculative)\b(?:[^.]|\.(?=\w)){0,120}\bunless\b",
-    re.IGNORECASE,
-)
-#: A word that grades a claim (research-workflow.md#evidence-levels), or the label `Evidence:`.
-LEVEL = re.compile(r"\b(?:confirmed|inferred|speculative)\b|\bevidence\s*:", re.IGNORECASE)
-#: A table column that holds the level of each row.
-LEVEL_COLUMN = re.compile(r"(?:evidence(?: level)?|confidence)", re.IGNORECASE)
-#: Wording that says when something is true instead of saying what is true ("say what is true now").
-STALE = re.compile(
-    r"\bstill small\b|\bnot yet\b|\bonce (?:it|this|that|they) (?:exists?|is built|are built)\b"
-    r"|\b(?:does|do)(?:n't| not) exist yet\b|\byet to be (?:written|built|done|implemented)\b",
-    re.IGNORECASE,
-)
-#: On a guide or another page, "not yet" dates a claim when it says what the project has not done ("not yet
-#: implemented"); "not yet looked at" (an issue's state) or "scenery not yet loaded" (the game) describe something else.
-#: A research page tells them apart by section and by naming Coney instead (`_is_status`).
-NOT_YET_WORK = re.compile(
-    r"\bnot yet (?:been )?(?:implemented|written|built|done|ported|supported|listed|documented|wired|available|merged"
-    r"|exposed|added|covered|tested|checked|known|understood|decided|in place)\b",
-    re.IGNORECASE,
-)
-#: A path on somebody's machine: a user folder, or a drive-letter path that goes two folders deep. `H:\`, a file at a
-#: drive's root, `C:\Program Files\...` (where a tool installs) and the original's build paths (`c:/Warriors/...`) are
-#: not the writer's.
-_USER_PATH = re.compile(
-    r"(?i)\b[a-z]:[\\/]users[\\/](?!<)[^\\/\s<`\"']+|(?<![\w.:\\/])/(?:home|users)/(?!<)[^/\s<`\"']+"
-)
-_DRIVE_PATH = re.compile(r"(?<![\w])[A-Za-z]:[\\/](?P<first>[^\\/\s`'\"<>|*?:]+)[\\/]")
-_DRIVE_OK = frozenset({"program", "windows", "users"})
-#: The original's own build paths, which its executable carries as debug strings and the research pages quote.
-ORIGINAL_BUILD_PATHS: tuple[str, ...] = ("c:/warriors", "d:/warriors", "/home/ack")
-#: Text that mentions a phrase instead of using it: inline code and a short quotation.
-_MENTION = re.compile(r"`[^`\n]*`|\"[^\"\n]{1,60}\"|\u201c[^\u201d\n]{1,60}\u201d")
-_CODE = re.compile(r"`[^`\n]*`")
-_LINK = re.compile(r"!?\[[^\]\n]*\]\(<?(?P<target>[^)\s>]+)")
-_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-_FENCE = re.compile(r"^[ \t]*(?P<marker>`{3,}|~{3,})")
-_REF_DEF = re.compile(r"^[ \t]{0,3}\[[^\]\n]+\]:[ \t]*<?(?P<target>[^\s>]+)")
-_HEADING = re.compile(r"^(?P<hashes>#{1,6})[ \t]+(?P<text>\S.*?)[ \t]*#*[ \t]*$")
-_ANCHOR = re.compile(r"[ \t]*\{#[^}]*\}[ \t]*$")
-_ITEM = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]+")
-_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-_VERIFIED = re.compile(r"^[ \t>*_]*verified against\b[ \t*_]*:?[ \t*_]*(?P<rest>.*)$", re.IGNORECASE)
-
-
-@dataclass(frozen=True)
-class Finding:
-    """One thing a page gets wrong: the rule, the line (1-based) and what to do. `severity` is `error` or `warning`."""
-
-    rule: str
-    line: int
-    message: str
-    severity: str = "error"
+#: it, and the Read tool shows 2,000 lines at a time; a guide past 800 (the top tenth, median 260) is several guides.
+#: A warning, because splitting a page is the author's call: the cut is usually along a sub-subject that deserves its
+#: own page. A research page's limit is its kind's `max_lines` in `.github/conventions.yml`.
+LENGTH_WARNING: dict[str, int] = {"guide": 800}
+_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@", re.MULTILINE)
 
 
 @dataclass(frozen=True)
 class Context:
-    """What the rules take from the repository: the words that must not name a person (`repo.wording.avoid`) and the
-    lower-case strings that spell the repository's and the docs site's address."""
+    """What the rules take from the repository: the words that must not name a person (`repo.wording.avoid`), the
+    lower-case strings that spell the repository's and the docs site's address and, for research pages, everything the
+    research standard checks against (`ResearchEnv`; without it a research page is held to the Style rules only)."""
 
     avoid: tuple[str, ...] = ()
     address_terms: tuple[str, ...] = ()
+    research: ResearchEnv | None = None
 
 
 @dataclass
@@ -128,6 +63,8 @@ class Result:
 
     pages: list[str] = field(default_factory=list)
     findings: dict[str, list[Finding]] = field(default_factory=dict)
+    #: How many of the pages are listed in the legacy file.
+    legacy: int = 0
 
     @property
     def failed(self) -> dict[str, list[Finding]]:
@@ -139,6 +76,8 @@ class Result:
         failed = self.failed
         totals: dict[str, list[int]] = {}
         for page in self.pages:
+            if kind_of(page) not in CHECKED_KINDS:
+                continue
             counts = totals.setdefault(kind_of(page), [0, 0])
             counts[1] += 1
             counts[0] += page not in failed
@@ -152,475 +91,8 @@ class Result:
         return counts
 
 
-def kind_of(path: str) -> str:
-    """The kind of file at `path` (forward slashes, relative to the repository): `research`, `guide`, `page` (any other
-    hand-written page of the site), `generated` (rebuilt from its source, so never edited or checked) or `other`."""
-    if not path.endswith(".md") or not path.startswith("docs/"):
-        return "other"
-    if path.startswith(("docs/missions/", "docs/progress/")):
-        return "generated"
-    if path.startswith("docs/references/"):
-        return "page" if path == "docs/references/entities.md" else "generated"
-    if path.startswith("docs/research/"):
-        return "research"
-    if path.startswith("docs/guides/"):
-        return "guide"
-    return "page"
-
-
-# --- reading a page ---------------------------------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class _Line:
-    """One line of the page: its number, its text and whether it is inside a fenced code block (fence lines too)."""
-
-    number: int
-    text: str
-    fenced: bool
-
-
-@dataclass(frozen=True)
-class _Heading:
-    """A heading outside code: its line, level, text without the `{#anchor}`, and the index of the next block."""
-
-    line: int
-    level: int
-    text: str
-
-
-@dataclass
-class _Block:
-    """A paragraph, a list item, a table row or a heading, which is the unit an evidence level covers."""
-
-    kind: str  # "heading", "text" or "row"
-    line: int
-    text: str
-    table: int | None = None  # the table a row belongs to
-    section: int = -1  # index of the nearest heading before it
-    offsets: list[tuple[int, int]] = field(default_factory=list)  # (offset in text, line number) of each source line
-
-
-@dataclass
-class _Table:
-    """A run of table rows: whether its header has a level column, and the first and last block index."""
-
-    graded: bool
-    first: int
-    last: int
-
-
-@dataclass
-class _Page:
-    """A page read into lines, headings and blocks."""
-
-    lines: list[_Line]
-    headings: list[_Heading]
-    blocks: list[_Block]
-    tables: list[_Table]
-    front_matter: int  # lines of front matter at the top
-
-
-def _blank_comments(text: str) -> str:
-    """`text` with every HTML comment replaced by blank lines of the same count, so line numbers hold."""
-    return _COMMENT.sub(lambda match: "\n" * match.group(0).count("\n"), text)
-
-
-def _read(text: str) -> _Page:
-    """Split `text` into lines (comments and front matter blanked), headings and blocks."""
-    raw = _blank_comments(text.replace("\r\n", "\n").replace("\r", "\n")).split("\n")
-    front = 0
-    if raw and raw[0].strip() == "---":
-        for index in range(1, len(raw)):
-            if raw[index].strip() == "---":
-                front = index + 1
-                break
-    lines: list[_Line] = []
-    opener = ""  # the fence that opened the code block we are in ("" outside one)
-    for number, content in enumerate(raw, start=1):
-        if number <= front:
-            lines.append(_Line(number, "", False))
-            continue
-        fence = _FENCE.match(content)
-        if fence:
-            marker = fence.group("marker")
-            # A block closes only on a fence of the same character, at least as long, with nothing after it, so a
-            # four-backtick block can show a three-backtick one.
-            if not opener:
-                opener = marker
-            elif marker[0] == opener[0] and len(marker) >= len(opener) and not content.strip()[len(marker) :].strip():
-                opener = ""
-            lines.append(_Line(number, content, True))
-            continue
-        lines.append(_Line(number, content, bool(opener)))
-    page = _Page(lines, [], [], [], front)
-    _split_blocks(page)
-    return page
-
-
-def _has_level_column(header: str) -> bool:
-    """Whether a table header row has a cell headed Evidence, Evidence level or Confidence. A bare "Level" is not one:
-    it is as likely a game level."""
-    return any(LEVEL_COLUMN.fullmatch(cell.strip(" *`")) for cell in header.strip().strip("|").split("|"))
-
-
-def _split_blocks(page: _Page) -> None:
-    """Fill `page.headings`, `page.blocks` and `page.tables` from its lines."""
-    current: _Block | None = None
-    open_table: _Table | None = None
-    header_seen = False
-
-    def close() -> None:
-        nonlocal current
-        if current is not None:
-            page.blocks.append(current)
-            current = None
-
-    for line in page.lines:
-        content = line.text
-        if line.fenced or not content.strip():
-            close()
-            open_table = None
-            continue
-        section = len(page.headings) - 1
-        heading = _HEADING.match(content)
-        if heading:
-            close()
-            open_table = None
-            title = _ANCHOR.sub("", heading.group("text"))
-            page.headings.append(_Heading(line.number, len(heading.group("hashes")), title))
-            page.blocks.append(_Block("heading", line.number, title, section=len(page.headings) - 1))
-            continue
-        if content.lstrip().startswith("|"):
-            close()
-            cells = content.strip()
-            if open_table is None:
-                open_table = _Table(_has_level_column(cells), len(page.blocks), len(page.blocks))
-                page.tables.append(open_table)
-                header_seen = False
-                page.blocks.append(_Block("row", line.number, cells, len(page.tables) - 1, section))
-                continue
-            if not header_seen:
-                header_seen = True
-                if re.fullmatch(r"[|\s:-]+", cells):
-                    continue
-            page.blocks.append(_Block("row", line.number, cells, len(page.tables) - 1, section))
-            open_table.last = len(page.blocks) - 1
-            continue
-        open_table = None
-        if _ITEM.match(content):
-            close()
-        if current is None:
-            current = _Block("text", line.number, content.strip(), section=section, offsets=[(0, line.number)])
-        else:
-            current.offsets.append((len(current.text) + 1, line.number))
-            current.text += " " + content.strip()
-    close()
-    # A table whose header row was the only one read still needs its last index.
-    for table in page.tables:
-        table.last = max(table.last, table.first)
-
-
-# --- the skeleton -----------------------------------------------------------------------------------------------------
-
-
-def _name(heading: str) -> str:
-    """A heading's text as the skeleton compares it: lower case, curly apostrophes straight, markup trimmed."""
-    return heading.replace(chr(0x2019), "'").casefold().strip("`*_ ")
-
-
-def _is_named(text: str, names: tuple[str, ...]) -> bool:
-    """Whether heading text `text` (as `_name` gives it) is one of `names`, or starts with one, then a space, colon or
-    dash ("Data layout" is the Data section)."""
-    return any(text == name or re.match(rf"{re.escape(name)}[\s:\u2013\u2014-]", text) for name in names)
-
-
-def _skeleton_key(text: str) -> str:
-    """The skeleton section a level-2 heading's text (as `_name` gives it) counts as, lower case; '' for none."""
-    for title, names in SKELETON:
-        if _is_named(text, names):
-            return title.casefold()
-    return ""
-
-
-def _skeleton_index(headings: list[_Heading], names: tuple[str, ...]) -> int | None:
-    """The index in `headings` of the first level-2 heading that is one of `names` (`_is_named`); None when there is
-    none."""
-    for index, heading in enumerate(headings):
-        if heading.level == 2 and _is_named(_name(heading.text), names):
-            return index
-    return None
-
-
-def _section_text(page: _Page, index: int) -> str:
-    """The text under heading `index` up to the next heading of the same or a higher level (subsections included)."""
-    start = page.headings[index]
-    end = len(page.lines) + 1
-    for later in page.headings[index + 1 :]:
-        if later.level <= start.level:
-            end = later.line
-            break
-    return "\n".join(line.text for line in page.lines if start.line < line.number < end).strip()
-
-
-def _check_skeleton(page: _Page) -> Iterable[Finding]:
-    """The title, the six sections in order, none of them empty, and the "Verified against" line."""
-    if not page.headings or page.headings[0].level != 1:
-        yield Finding("skeleton", 1, "the page has no `# Title` before its first section")
-    positions: list[int] = []
-    for name, aliases in SKELETON:
-        index = _skeleton_index(page.headings, aliases)
-        if index is None:
-            yield Finding(
-                "skeleton",
-                1,
-                f"missing the section '{name}' (a section with nothing known says so in one line, "
-                "writing-docs.md#subsystem-page)",
-            )
-            continue
-        positions.append(index)
-        if not _section_text(page, index):
-            yield Finding(
-                "skeleton",
-                page.headings[index].line,
-                f"the section '{name}' is empty: say in one line that nothing is known",
-            )
-    if positions != sorted(positions):
-        yield Finding(
-            "skeleton",
-            page.headings[min(positions)].line,
-            "the skeleton sections are out of order; the order is " + ", ".join(name for name, _ in SKELETON),
-        )
-    yield from _check_verified(page)
-
-
-def _check_verified(page: _Page) -> Iterable[Finding]:
-    """A "Verified against: ..." line before the first level-2 heading, saying what the page was checked against."""
-    first_section = next((heading.line for heading in page.headings if heading.level == 2), len(page.lines) + 1)
-    for index, line in enumerate(page.lines):
-        if line.number >= first_section:
-            break
-        found = _VERIFIED.match(line.text) if not line.fenced else None
-        if not found:
-            continue
-        following = page.lines[index + 1].text if index + 1 < len(page.lines) else ""
-        if found.group("rest").strip() or (following.strip() and line.number + 1 < first_section):
-            return
-    yield Finding(
-        "verified",
-        1,
-        "no 'Verified against: ...' line before the first section (the executable and, for runtime claims, the PCSX2 "
-        "version)",
-    )
-
-
-# --- evidence levels --------------------------------------------------------------------------------------------------
-
-
-def _section_name(page: _Page, index: int) -> str:
-    """The lower-case name of the level-2 section that heading `index` sits in ('' above the first one)."""
-    for position in range(index, -1, -1):
-        heading = page.headings[position]
-        if heading.level == 1:
-            return ""
-        if heading.level == 2:
-            return _name(heading.text)
-    return ""
-
-
-def _lead_in(page: _Page, index: int) -> str:
-    """The first block under heading `index`, when it is a statement and not itself a claim: not a heading and
-    citing no address ('' otherwise). "Everything here is confirmed (code)" is such a line."""
-    heading_line = page.headings[index].line
-    for block in page.blocks:
-        if block.line > heading_line:
-            return "" if block.kind == "heading" or ADDRESS.search(block.text) else block.text
-    return ""
-
-
-def _enclosing(page: _Page, index: int) -> list[int]:
-    """The headings a block under heading `index` sits in, nearest first: that heading and each shallower one before
-    it, up to the level-2 section (the title is left out)."""
-    chain = [index]
-    level = page.headings[index].level
-    for position in range(index - 1, -1, -1):
-        heading = page.headings[position]
-        if heading.level < level and heading.level >= 2:
-            chain.append(position)
-            level = heading.level
-    return chain
-
-
-def _has_page_level(page: _Page) -> bool:
-    """Whether the opening of the page (above its first level-2 heading) grades every claim at once."""
-    first = next((heading.line for heading in page.headings if heading.level == 2), len(page.lines) + 1)
-    opening = " ".join(line.text.strip() for line in page.lines if line.number < first and not line.fenced)
-    return bool(PAGE_LEVEL.search(opening))
-
-
-def _address_line(block: _Block, found: re.Match[str]) -> int:
-    """The line of the source file that holds the address `found` in `block`."""
-    line = block.line
-    for offset, number in block.offsets:
-        if offset <= found.start():
-            line = number
-    return line
-
-
-def _check_evidence(page: _Page) -> Iterable[Finding]:
-    """Every block that cites an address and states behaviour has an evidence level nearby.
-
-    "Nearby" is: the block itself, the block before or after it, the heading it sits under or any heading above that
-    up to its level-2 section, or the first block under such a heading when that is a statement and not a claim (a
-    lead-in such as "everything here is confirmed (code) unless it says otherwise"). A table row is a block of its
-    own; a row of a table with a level column must hold the level itself, otherwise the table is covered like a
-    paragraph. Not checked: a page whose opening grades every claim at once (`PAGE_LEVEL`), the sections that grade
-    nothing (`UNGRADED_SECTIONS`), the part above the first level-2 heading and code blocks. One finding per block, for
-    its first address.
-    """
-    if _has_page_level(page):
-        return
-    blocks = page.blocks
-    for index, block in enumerate(blocks):
-        if block.kind == "heading" or block.section < 0 or _is_header_row(page, index):
-            continue
-        address = ADDRESS.search(block.text)
-        name = _section_name(page, block.section)
-        if not address or not name or _skeleton_key(name) in UNGRADED_SECTIONS or LEVEL.search(block.text):
-            continue
-        line = _address_line(block, address) if block.kind == "text" else block.line
-        if block.kind == "row" and block.table is not None and page.tables[block.table].graded:
-            yield Finding("evidence", line, f"the row cites {address.group(0)} but its level column is empty")
-            continue
-        around = [
-            blocks[other].text for other in (_outer(page, index, -1), _outer(page, index, +1)) if other is not None
-        ]
-        for heading in _enclosing(page, block.section):
-            around += [page.headings[heading].text, _lead_in(page, heading)]
-        if any(LEVEL.search(text) for text in around):
-            continue
-        yield Finding(
-            "evidence",
-            line,
-            f"{address.group(0)} is cited with no evidence level nearby (confirmed (code), confirmed (runtime), "
-            "inferred or speculative; research-workflow.md#evidence-levels)",
-        )
-
-
-def _is_header_row(page: _Page, index: int) -> bool:
-    """Whether block `index` is the first row of its table (the header, which labels columns and claims nothing)."""
-    block = page.blocks[index]
-    return block.kind == "row" and block.table is not None and page.tables[block.table].first == index
-
-
-def _outer(page: _Page, index: int, step: int) -> int | None:
-    """The block before (`step` -1) or after (+1) the block at `index`; for a table row, the block outside the table."""
-    block = page.blocks[index]
-    position = index + step
-    if block.kind == "row" and block.table is not None:
-        table = page.tables[block.table]
-        position = table.first - 1 if step < 0 else table.last + 1
-    if 0 <= position < len(page.blocks):
-        return position
-    return None
-
-
-# --- style ------------------------------------------------------------------------------------------------------------
-
-
-def _without_mentions(text: str) -> str:
-    """`text` without inline code, short quotations and URLs: a phrase there is mentioned, not used."""
-    return re.sub(r"https?://\S+", " ", _MENTION.sub(" ", text))
-
-
-def _machine_path(line: int, path: str) -> Iterable[Finding]:
-    """A finding for `path` unless it is one of the original's build paths (`ORIGINAL_BUILD_PATHS`)."""
-    if not path.casefold().replace(chr(92), "/").startswith(ORIGINAL_BUILD_PATHS):
-        yield Finding(
-            "machine-path", line, f"'{path}' is a path on a machine: write <workspace>, scratch/ or a relative path"
-        )
-
-
-def _line_sections(page: _Page) -> list[str]:
-    """For each line, the lower-case name of the level-2 section it sits in ('' above the first one)."""
-    names: list[str] = []
-    current = ""
-    headings = {heading.line: heading for heading in page.headings}
-    for line in page.lines:
-        heading = headings.get(line.number)
-        if heading is not None and heading.level <= 2:
-            current = _name(heading.text) if heading.level == 2 else ""
-        names.append(current)
-    return names
-
-
-def _is_status(section: str, text: str) -> bool:
-    """Whether a line of a research page says what Coney has (so "not yet" dates it) and not what the original does
-    ("a store that is not yet broken"): it sits in Coney's implementation or the open questions, or names Coney."""
-    return _skeleton_key(section) in ("coney's implementation", "open questions") or "coney" in text.casefold()
-
-
-def _person_words(words: tuple[str, ...]) -> re.Pattern[str]:
-    """The pattern for the avoided words in their person sense: "the owner", "the project owner", "repository owner".
-    "An object's owner" and `owner/repo` are not people and stay."""
-    alternatives = "|".join(re.escape(word) for word in words)
-    return re.compile(
-        rf"\b(?:the|project|repository|repo)\s+(?:{alternatives})(?:'s|s)?\b(?![/_])(?!\s+of\b)", re.IGNORECASE
-    )
-
-
-def _check_style(path: str, page: _Page, kind: str, context: Context) -> Iterable[Finding]:
-    """The Style rules a program can see, line by line."""
-    folder = posixpath.dirname(path)
-    sections = _line_sections(page)
-    for index, line in enumerate(page.lines):
-        text = line.text
-        if not text.strip():
-            continue
-        lowered = text.casefold()
-        for term in context.address_terms:
-            if term in lowered:
-                yield Finding(
-                    "address", line.number, "names the repository's or the docs site's address; only the README may"
-                )
-                break
-        for found in _USER_PATH.finditer(text):
-            yield from _machine_path(line.number, found.group(0))
-        for found in _DRIVE_PATH.finditer(text):
-            if found.group("first").casefold() not in _DRIVE_OK:
-                yield from _machine_path(line.number, found.group(0))
-        if line.fenced:
-            continue
-        mentioned = _without_mentions(text)
-        for stale in STALE.finditer(mentioned):
-            if stale.group(0).casefold() == "not yet":
-                if kind == "research" and not _is_status(sections[index], text):
-                    continue
-                if kind != "research" and not NOT_YET_WORK.match(mentioned, stale.start()):
-                    continue
-            yield Finding(
-                "stale-wording",
-                line.number,
-                f"'{stale.group(0)}' says when it is true: say what is true now, or 'planned' in the page that owns it",
-            )
-        if kind != "research" and context.avoid:
-            for person in _person_words(context.avoid).finditer(mentioned):
-                yield Finding(
-                    "person-wording",
-                    line.number,
-                    f"'{person.group(0)}' names a person: say 'the user' or 'a maintainer'",
-                )
-        for target in [*_LINK.finditer(_CODE.sub(" ", text)), *_REF_DEF.finditer(text)]:
-            link = target.group("target")
-            if _SCHEME.match(link) or link.startswith(("#", "/")):
-                continue
-            resolved = posixpath.normpath(posixpath.join(folder, link.split("#", 1)[0].split("?", 1)[0]))
-            if link.split("#", 1)[0] and resolved != "docs" and not resolved.startswith("docs/"):
-                yield Finding("repo-link", line.number, f"'{link}' leaves docs/: write repo:<path>")
-
-
 def _check_length(kind: str, text: str) -> Iterable[Finding]:
-    """A warning when the page is longer than `LENGTH_WARNING` allows for its kind."""
+    """A warning when a guide is longer than `LENGTH_WARNING` allows (a research page's limit is its kind's)."""
     limit = LENGTH_WARNING.get(kind)
     count = len(text.splitlines())
     if limit and count > limit:
@@ -632,48 +104,136 @@ def _check_length(kind: str, text: str) -> Iterable[Finding]:
         )
 
 
+# --- the research standard and the legacy file -----------------------------------------------------------------------
+
+
+def _touched(page: Page, lines: frozenset[int]) -> Callable[[Finding], bool]:
+    """A test for "this finding is in a section the change touched": the sections are the level-2 headings (and the
+    title's part above the first), and `lines` are the lines the change added or changed."""
+    starts = [heading.line for heading in page.headings if heading.level <= 2] or [1]
+    changed = {max(bisect.bisect_right(starts, number) - 1, 0) for number in lines}
+    return lambda finding: max(bisect.bisect_right(starts, finding.line) - 1, 0) in changed
+
+
+def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding]) -> list[Finding]:
+    """The research standard for `path` and its `style` findings, with the legacy file's excuses applied. A change that
+    touches a listed page ends the excuse for every rule but the length and the grading of the sections it leaves
+    alone (`apply_legacy`)."""
+    listed = path in env.legacy
+    findings = [*check_research(path, page, env, legacy_page=listed), *style]
+    if not listed:
+        return findings
+    if touch.new:
+        findings.append(
+            Finding(
+                "legacy",
+                1,
+                f"a new page cannot be legacy: meet the standard and take it out of {env.research.files.legacy}",
+            )
+        )
+        return findings
+    touched = _touched(page, touch.lines) if touch.lines else None
+    return apply_legacy(findings, env.legacy.rules(path), env.research.files.legacy, touched)
+
+
 # --- checking ---------------------------------------------------------------------------------------------------------
 
 
-def check_page(path: str, text: str, context: Context | None = None) -> list[Finding]:
+def check_page(path: str, text: str, context: Context | None = None, touch: Touch | None = None) -> list[Finding]:
     """Every finding for the page at `path` (relative to the repository, forward slashes) with content `text`, by line.
-    A file that is not a checked page (`kind_of`) has none."""
+    A file that is not a checked page (`kind_of`) has none. `touch` says what the change did to the page, which decides
+    how strictly a legacy page is read."""
     kind = kind_of(path)
     if kind not in CHECKED_KINDS:
         return []
     context = context or Context()
-    page = _read(text)
-    found: list[Finding] = []
-    if kind == "research":
-        found.extend(_check_skeleton(page))
-        found.extend(_check_evidence(page))
-    found.extend(_check_style(path, page, kind, context))
-    found.extend(_check_length(kind, text))
+    page = read_page(text)
+    found = list(check_style(path, page, kind, context.avoid, context.address_terms))
+    if kind == "research" and context.research is not None:
+        found = _check_research(path, page, context.research, touch or Touch(), found)
+    if kind != "research":
+        found.extend(_check_length(kind, text))
     return sorted(found, key=lambda item: item.line)
 
 
 def context_for(root: Path) -> Context:
-    """The `Context` of the checkout at `root`: the wording to avoid and the address of the repository."""
+    """The `Context` of the checkout at `root`: the wording to avoid, the address of the repository and the research
+    standard with the data it checks against."""
     conventions = load_conventions(root)
-    return Context(conventions.repo.wording.avoid, tuple(repository_address_terms(root)))
+    research = conventions.research
+    env = ResearchEnv(
+        research,
+        load_catalog(root, research),
+        Corpus.from_root(root, research),
+        load_legacy(root, research, docs_legacy.LEGACY_RULES),
+    )
+    return Context(conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env)
 
 
-def check_files(root: Path, names: Iterable[str], context: Context) -> Result:
+def check_files(root: Path, names: Iterable[str], context: Context, touches: dict[str, Touch] | None = None) -> Result:
     """Check each of `names` (repository-relative, forward slashes) that is a checked page and exists."""
     result = Result()
     for name in names:
         if kind_of(name) not in CHECKED_KINDS or not (root / name).is_file():
             continue
         result.pages.append(name)
-        found = check_page(name, (root / name).read_text(encoding="utf-8", errors="replace"), context)
+        if context.research is not None and name in context.research.legacy:
+            result.legacy += 1
+        text = (root / name).read_text(encoding="utf-8", errors="replace")
+        found = check_page(name, text, context, (touches or {}).get(name))
         if found:
             result.findings[name] = found
     return result
 
 
+def change_touches(root: Path, base: str, names: Iterable[str]) -> dict[str, Touch]:
+    """For each research page among `names`, what the change since HEAD left `base` did to it: whether it is new, and
+    which lines it added or changed (committed or not)."""
+    since = local_gate.merge_base(root, base)
+    touches: dict[str, Touch] = {}
+    for name in names:
+        if kind_of(name) != "research":
+            continue
+        code, _ = local_gate.run_command(["git", "-C", str(root), "cat-file", "-e", f"{since}:{name}"], root)
+        if code != 0:
+            touches[name] = Touch(None, True)
+            continue
+        diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
+        lines: set[int] = set()
+        for hunk in _HUNK.finditer(diff):
+            start, count = int(hunk.group("start")), int(hunk.group("count") or 1)
+            lines.update(range(start, start + max(count, 1)))
+        touches[name] = Touch(frozenset(lines))
+    return touches
+
+
+#: What a change can touch that moves the legacy file's truth without editing the file: a research page, the research
+#: data, the conventions and the code of the checks.
+_LEGACY_INPUTS = ("docs/research/", "research/", ".github/conventions.yml", "python/src/coney_tools/research_")
+
+
+def _legacy_relevant(names: Iterable[str]) -> bool:
+    """Whether the change can make the legacy file stale: it touches a research page, research data, the conventions or
+    the checks themselves."""
+    return any(
+        name.startswith(_LEGACY_INPUTS) or (name.startswith("python/src/coney_tools/docs_") and name.endswith(".py"))
+        for name in names
+    )
+
+
 def check_changed(root: Path, base: str, context: Context) -> Result:
-    """Check the pages changed since the branch left `base`, committed or not, untracked pages included."""
-    return check_files(root, local_gate.changed_files(root, base), context)
+    """Check the pages changed since the branch left `base`, committed or not, untracked pages included. When the change
+    can make the legacy file stale (`_legacy_relevant`), the file is checked as a whole too (`docs_legacy.problems`)."""
+    names = local_gate.changed_files(root, base)
+    result = check_files(root, names, context, change_touches(root, base, names))
+    legacy_file = context.research.research.files.legacy if context.research else ""
+    if legacy_file and _legacy_relevant(names):
+        # A page that now passes must leave the file, and a changed file may only have shrunk.
+        found = [Finding("legacy", 1, line) for line in docs_legacy.problems(root, context, base)]
+        if found:
+            result.pages.append(legacy_file)
+            result.findings[legacy_file] = found
+    return result
 
 
 def check_paths(root: Path, paths: Iterable[str], context: Context) -> Result:
