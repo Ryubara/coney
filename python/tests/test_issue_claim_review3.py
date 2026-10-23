@@ -262,6 +262,30 @@ def test_two_releases_of_one_claim_do_not_bring_it_back(github: FakeGitHub, cloc
     assert all(not card.active for card in (model.parse_card(c.body, RULES) for c in github.cards(10)) if card)
 
 
+def test_a_release_in_flight_does_not_strand_a_reclaim_made_at_the_unassign(github: FakeGitHub, clock: Clock) -> None:
+    github.say(10, "alice", "/claim")
+    make_engine(github, clock).reconcile(10)
+    clock.advance(hours=73)
+    stale = make_engine(github, clock)
+
+    def meanwhile() -> None:
+        # A run outside the queue releases the idle claim and alice claims again (a new card, a new comment id), all
+        # after the stale pass passed its checks and before it unassigns.
+        make_engine(github, clock).reconcile(10)
+        clock.advance(seconds=10)
+        github.say(10, "alice", "/claim")
+        make_engine(github, clock).reconcile(10)
+
+    once_before(github, "unassign", meanwhile)
+    stale.reconcile(10)
+    view = github.view(10)
+    assert view.assignees == ("alice",) and "S-in-progress" in view.labels and "S-ready-to-start" not in view.labels
+    cards = [model.parse_card(c.body, RULES) for c in github.cards(10)]
+    held = [card for card in cards if card and card.active]
+    assert [card.claimant for card in held] == ["alice"]
+    assert not any(card and card.released_why == "unassigned by hand" for card in cards)
+
+
 def test_a_catch_up_that_cannot_read_github_is_an_error_not_a_crash(
     engine: Engine, github: FakeGitHub, clock: Clock, monkeypatch: pytest.MonkeyPatch
 ) -> None:

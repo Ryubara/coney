@@ -16,7 +16,9 @@
 # reach the script as a file ($GITHUB_EVENT_PATH), never as text on a command line: nothing a comment or an issue says
 # is expanded into a script. It runs with `pull_request_target` and `issue_comment` so a fork's pull request and a
 # stranger's comment are served; for that reason it checks out the default branch only (no `ref`, no `repository`:
-# never a pull request's own code), and a dispatch started on any other branch is skipped. Events caused by this token start no workflow, so it cannot trigger itself.
+# never a pull request's own code). A dispatch started on any other branch is skipped only while that branch carries
+# this file unchanged: a branch runs its own copy of the workflow, so one that edits this file also edits the skip.
+# Events caused by this token start no workflow, so it cannot trigger itself.
 # Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: claim
 

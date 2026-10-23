@@ -497,17 +497,24 @@ class Engine:
         return True
 
     def _undo_release(self, work: _Pass, stored: Stored, before: IssueView, keep_assignees: bool) -> None:
-        """Put back the assignees and the status label a release removed when the card changed under it and the claim
-        is still held (a `/progress` landed); the pass starts over and decides again from fresh data.
+        """Put back the assignees and the status label a release removed when the card changed under it and the
+        claimant still holds the issue (a `/progress` landed, or a re-claim posted a new card); the pass starts over
+        and decides again from fresh data.
 
-        When the change was the claim ending elsewhere (another writer released it too), nothing is put back.
+        The claim is judged by its claimant, not by the card's comment id: a re-claim is a new card, and its old card
+        is ended. When the claimant holds no active card any more (the claim ended elsewhere too), nothing is put
+        back.
+
+        This is best effort against writers outside the queue. The cards are read, then the assignee is put back, and
+        a hand-run writer can still act between the two; that cannot be closed without a lock. The sweep (or the
+        audit) catches such a result on its next pass.
         """
         if keep_assignees:
             return
         number = work.issue.number
+        claimant = stored.card.claimant
         fresh = stored_cards(self.remote.comments(number), self.rules)
-        now = next((item.card for item in fresh if item.comment_id == stored.comment_id), None)
-        if now is None or not now.active:
+        if not any(item.card.active and item.card.claimant == claimant for item in fresh):
             work.log.append(f"#{number}: the claim was ended elsewhere meanwhile; the release stands")
             return
         for login in before.assignees:
