@@ -1,6 +1,6 @@
 # Camera types and switches: a Coney game reference list. The page docs/references/cameras.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Camera types and switches"
 about: |
   The camera classes the game makes, by the type number each class reports, and the switches `CamEnable`

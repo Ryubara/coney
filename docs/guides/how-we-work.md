@@ -54,7 +54,7 @@ Every feature goes through the same steps:
    the next engineer. What the recording shows is read against the code in Ghidra, and the debugger's breakpoints and
    memory reads fill in what neither shows alone.
 3. **Write it down.** The finding goes on a research page in `docs/research/`, in prose, with the address it comes
-   from and an [evidence level](research-workflow.md#evidence-levels) on every claim.
+   from and an [evidence level](research-evidence.md#evidence-levels) on every claim.
 4. **Implement it.** The engineer ports the behaviour from the original function at its address in Ghidra. The
    research page is the map to that function (which one, where, what it touches), not the source of its logic: the
    logic is read from the function itself, and any disagreement with the page's cited addresses is recorded on the
@@ -65,7 +65,7 @@ Every feature goes through the same steps:
    the exception: it carries no `@orig` tag and is checked by its own tests.
 5. **Compare.** Work a player sees is checked against the original running, not only against our reading of its code:
    the same scenario runs on both games, or the same moment is taken from a PCSX2 save state and from Coney, and
-   traces, values or frames are compared ([Comparing with Coney](research-workflow.md#comparing-with-coney),
+   traces, values or frames are compared ([Comparing with Coney](research-traces.md#comparing-with-coney),
    [the runtime comparison](testing.md#runtime-comparison)). A difference goes back to step 1 or 4 as a question or a
    fix. The pull request states the result in its `Runtime:` line.
 6. **Merge.** Finished work goes to `main` after the full set of checks.
@@ -76,7 +76,7 @@ Recipes are the shared ways of making things happen in the running original: fin
 editing their attributes and the player's stats, giving the crew orders, raising events, going to a level, mission or
 checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipe` on a PCSX2 copy
 you hold a claim on; the list, with the address and evidence behind each recipe, is [PCSX2 recipes](pcsx2-recipes.md).
-A new way of triggering something becomes a recipe there ([Driving PCSX2](research-workflow.md#driving-pcsx2) explains
+A new way of triggering something becomes a recipe there ([Driving PCSX2](research-tools.md#driving-pcsx2) explains
 the techniques underneath).
 
 The places to start from are shared too: the [PCSX2 state library](pcsx2-states.md) keeps save states of the original
@@ -161,7 +161,7 @@ subsystem at a time, in the order of the `@orig` index, and avoids files that ot
 - **Compare function by function.** For each function that carries an `@orig` tag, the engineer opens the original
   function at that address in Ghidra and reads it next to Coney's. Where the code leaves a point unclear, the engineer
   runs the original in PCSX2, inside a claim, and reads the values
-  ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
+  ([Driving PCSX2](research-tools.md#driving-pcsx2)).
 - **Fix what differs, with a test.** Each fix comes with a test that fails before it and passes after
   ([Testing](testing.md)). A difference that is deliberate (a PC platform call in place of a PS2 one) stays, and its
   comment says why. A fix a player sees is a gameplay pull request like any other and carries a `Runtime:` line
@@ -169,7 +169,7 @@ subsystem at a time, in the order of the `@orig` index, and avoids files that ot
 - **Research pages keep their structure and gain references.** Next to each behaviour a page describes, the audit adds
   the address and name of the original function where its logic lives, so the next engineer is sent to the function.
   A claim is rewritten only when the original contradicts it, with the address and evidence level
-  ([Evidence levels](research-workflow.md#evidence-levels)).
+  ([Evidence levels](research-evidence.md#evidence-levels)).
 - **Coney-only code is out of scope:** networking, the launcher, debug tooling and enhancements have no original
   function to compare with.
 - **Check the expression too.** Each function is judged on two counts: fidelity, and own expression (ported, not
@@ -208,7 +208,7 @@ to the merged result, is in [From research to code](research-to-code.md).
   debug server port, so several engineers can run the game at once. A copy is used only inside a claim:
   `coney-tools pcsx2 claim --agent <id>` hands out a free copy and its two ports, `pcsx2 release` frees it, `pcsx2
   status` shows who holds what, and a claim whose process died is taken over; an agent connects the `pcsx2` MCP server
-  to its own copy's ports only, which a hook checks at the connect ([Driving PCSX2](research-workflow.md#driving-pcsx2),
+  to its own copy's ports only, which a hook checks at the connect ([Driving PCSX2](research-tools.md#driving-pcsx2),
   [Agents](agents.md#setup), [the PCSX2 MCP guard](agents.md#pcsx2-guard)).
 - **Input without the keyboard.** The game is driven by writing pad state into its memory over PINE (the
   `scripted-pad`, `right-stick` and `puppet` patches), with analog sticks at realistic partial deflections, or by the
@@ -385,7 +385,7 @@ something:
   children its shell started, so check that nothing of yours is still running.
 - **Keep the machine usable.** Nothing you start may take the keyboard focus or send keystrokes to another
   window; drive programs through their own interfaces (for the emulator, see
-  [Driving PCSX2](research-workflow.md#driving-pcsx2)). Keep build parallelism moderate, and do not run
+  [Driving PCSX2](research-tools.md#driving-pcsx2)). Keep build parallelism moderate, and do not run
   virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds and no
   clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is fixed forward on the branch
   ([CI](building.md#what-ci-runs)).
@@ -405,7 +405,7 @@ something:
   cap](agents.md#build-cap)); research, tools and docs tracks are not counted.
 - **Share the long-lived tools, one user per copy.** One Ghidra server serves every engineer: use it as it is, never
   restart or stop it, and start it only if it is down ([Ghidra + ghidra-mcp](ghidra.md)). An emulator copy has one
-  user at a time, through a claim that is released when done ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
+  user at a time, through a claim that is released when done ([Driving PCSX2](research-tools.md#driving-pcsx2)).
 - **Keep Python out of the tree.** Use a private virtual environment in your scratch folder
   (`UV_PROJECT_ENVIRONMENT`) rather than a `.venv` inside a worktree, which every tool and linter would then scan.
 - **Scratch is yours per branch.** Put output in `scratch/<branch>/`; game-derived files (captures, states, dumps,

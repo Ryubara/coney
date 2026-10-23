@@ -4,7 +4,7 @@
 `trace coney` plays a scenario's input script on Coney headless (`--play-level`, `--input-script`, `--trace`), so the
 same file drives both games. `trace diff` compares the original's trace with Coney's (coney_tools.trace_diff) and
 exits with 1 when a column is outside its tolerance, so a parity check can gate a change
-(docs/guides/research-workflow.md#comparing-with-coney). `trace fight-report` computes the behaviour statistics of
+(docs/guides/research-traces.md#comparing-with-coney). `trace fight-report` computes the behaviour statistics of
 an all-humans trace and compares the original's runs with Coney's (coney_tools.fight_report).
 """
 

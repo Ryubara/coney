@@ -68,7 +68,7 @@ from coney_tools.pine import Memory
 
 RECIPES_FILE = Path("research/pcsx2-recipes.toml")
 PATCHES_DIR = Path("research/traces/patches")
-#: The evidence levels of docs/guides/research-workflow.md#evidence-levels, as the YAML values spell them.
+#: The evidence levels of docs/guides/research-evidence.md#evidence-levels, as the YAML values spell them.
 EVIDENCE = ("confirmed-code", "confirmed-runtime", "inferred", "speculative")
 EMULATION = ("running", "paused", "either")
 #: A PCSX2 state library id (`coney-tools pcsx2 states`, docs/guides/pcsx2-states.md): a short slug, also the state's

@@ -1,6 +1,6 @@
 # Statistics: a Coney game reference list. The page docs/references/statistics.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: Statistics
 about: |
   How a mission is scored. The game counts events per player in six **categories** (`StatAdd(human, group, index, n)`

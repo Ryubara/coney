@@ -113,4 +113,4 @@ left out of the table.
 Edit the YAML in `research/references/`, then run `uv run --project python coney-tools refs render`. The
 hand-written fields (who a character is, what a constant means) are kept when the lists are refreshed from
 the disc with `coney-tools refs extract`. The schema and rules are in
-[Research workflow](../guides/research-workflow.md#reference-lists).
+[The research data](../guides/research-data.md#reference-lists).

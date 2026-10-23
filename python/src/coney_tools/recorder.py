@@ -8,7 +8,7 @@ has run since the last one; the step is the number of updates since the first sa
 After the sample of step N it writes the pad for frame N of the script, which the update of step N + 1 reads: the same
 numbering as Coney's `--trace`, where frame N of an input script is step N + 1. A step the poll did not see is a
 missed update (a frame that caught up runs two); its input is applied late, and the step is reported
-(docs/guides/research-workflow.md#recording-a-trace).
+(docs/guides/research-traces.md#recording-a-trace).
 
 The pad goes through the patched pad read (the `scripted-pad` patch): the button bytes at `0x005de3aa` / `0x005de3ab`
 and the sticks at `0x005de3ac`-`0x005de3af` (right x, right y, left x, left y).

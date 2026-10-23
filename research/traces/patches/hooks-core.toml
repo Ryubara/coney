@@ -1,4 +1,4 @@
-# Hooks: call logging (python/src/coney_tools/hooks.py, docs/guides/research-workflow.md#hooks). A scenario names
+# Hooks: call logging (python/src/coney_tools/hooks.py, docs/guides/research-traces.md#hooks). A scenario names
 # them in its `patches` like a patch; each displaces the two instruction words `original` at `address` (checked
 # against the state) with a jump to a cave that logs the values of `log` and runs them. The hook's address must not be
 # a delay slot or a branch target.
@@ -72,7 +72,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "brain
 
 [hook.call-brains]
 description = "A call hook at Brains_Update's entry (step 5 of the character step): the recorder's scenario calls (a fight started as GoalFight starts it) run there, on the game's thread, before the brains update."
-research = "docs/guides/research-workflow.md#hooks"
+research = "docs/guides/research-traces.md#hooks"
 address = 0x00293b28
 # addiu sp,sp,-0x60; lui v0,0x51
 original = [0x27bdffa0, 0x3c020051]

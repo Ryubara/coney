@@ -1,6 +1,6 @@
 # World flags: a Coney game reference list. The page docs/references/flags.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "World flags"
 about: |
   The named points with a heading that level scripts add with `AddFlag(name, {x, y, z}, heading,

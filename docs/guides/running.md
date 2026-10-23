@@ -114,7 +114,7 @@ its profiles in memory, so tests never touch yours ([Profiles and saving](../res
 
 `--window-display DISPLAY`, or the environment variable `CONEY_WINDOW_DISPLAY` when the option is not given, opens the
 window centred on one display. It is debug tooling, there so that agents' runs stay off the display a person is
-working on ([Running Coney](research-workflow.md#running-coney)). The value is one of:
+working on ([Running Coney](research-tools.md#running-coney)). The value is one of:
 
 | Value | Display |
 | --- | --- |
@@ -149,7 +149,7 @@ units, the framebuffer cache, fog and its colour, the 2D shader override and the
 before the stop). What librw leaves behind, and what Coney does about each piece, is on [Restarting the
 renderer](../research/graphics-restart.md). The same variable places the
 windows of PCSX2 copies that `coney-tools pcsx2 launch` and `pcsx2 record` start
-([Driving PCSX2](research-workflow.md#driving-pcsx2)).
+([Driving PCSX2](research-tools.md#driving-pcsx2)).
 
 ### Frame rate {#frame-rate}
 
@@ -177,7 +177,7 @@ and `--show-fps` are refused there.
 
 A test-mode run's window opens without taking the keyboard focus, so a scripted run never interrupts someone typing;
 `--no-activate` does the same for any other run, and `--render-references` never takes it. Agents start Coney only
-this way ([Running Coney](research-workflow.md#running-coney)).
+this way ([Running Coney](research-tools.md#running-coney)).
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --show-fps
@@ -704,7 +704,7 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 
 The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the same names and units for the columns
 both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`
-compares the two, column by column ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
+compares the two, column by column ([Comparing with Coney](research-traces.md#comparing-with-coney)).
 
 **The story's own set-up.** A level played with `--play-level` is the story's level, started there directly: it runs in
 the same game session as the story from the main menu and the debug menus' jumps (`src/platform/game_session.h`,
@@ -733,7 +733,7 @@ started (`sound`, its hash), and the level's humans other than player 1 appearin
 removed (`human_in`, `human_out`, `human_gone`). It works in any mode, from the front end on; with `--play-level`
 it starts when the level's Lua state is made, before its scripts run, with the step counted from there, so the
 loading screen's events stay out. The file is flushed every update, so a run that is killed keeps its events. It is
-the Coney side of a [differential playthrough](research-workflow.md#differential-playthroughs). Like
+the Coney side of a [differential playthrough](research-traces.md#differential-playthroughs). Like
 `--script-trace` it holds the game's own text: keep it out of the repository.
 
 #### The run log {#run-log}

@@ -201,7 +201,7 @@ def test_no_server_is_a_clear_error() -> None:
 PATCHES = """
 [patch.demo]
 description = "test"
-research = "docs/guides/research-workflow.md#driving-pcsx2"
+research = "docs/guides/research-tools.md#driving-pcsx2"
 edits = [
   { address = 0x1000, original = [0x92220002], replacement = [0x92220022] },
   { address = 0x2000, bytes = "ff ff 80" },

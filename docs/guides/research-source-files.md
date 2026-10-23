@@ -5,7 +5,7 @@ The executable has no symbols, but its read-only data holds the paths of the sou
 data in `research/source-files.toml`, one `[[file]]` for each file, in the order the source map's tables had. Tools
 read the file directly: the lookup of which research page describes an address, the progress picture and the check of
 a page's `owns`. The tables a person reads on the source map are made from it by the docs build, so the two cannot
-drift. This is the [research database](research-workflow.md#the-research-database)'s rule applied to the map: a fact
+drift. This is the [research database](research-data.md#the-research-database)'s rule applied to the map: a fact
 a tool must find lives in a file whose entries all have the same fields.
 
 ## A file {#file}

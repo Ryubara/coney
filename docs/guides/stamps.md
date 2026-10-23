@@ -71,7 +71,7 @@ transcript, to a file named by a random token and puts only that token (`CONEY_A
 action. The stamp records `who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise,
 with every field `unknown`, however the environment was set (a person at a terminal, a PowerShell command outside
 `bypassPermissions`, an agent that typed variables or a token of its own). Recording never refuses a command: the check
-that `source` is `hook` will belong to `pr open` and CI. A [run record](research-workflow.md#run-records) takes its
+that `source` is `hook` will belong to `pr open` and CI. A [run record](research-evidence.md#run-records) takes its
 `who` the same way and marks its source the same way; a run itself is not stamped.
 
 ### Verifying a log {#verify}

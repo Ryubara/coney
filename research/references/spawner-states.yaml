@@ -1,6 +1,6 @@
 # Spawner states: a Coney game reference list. The page docs/references/spawner-states.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Spawner states"
 about: |
   A gang's spawners (four per gang, `GangAddSpawner`) make humans according to their state:

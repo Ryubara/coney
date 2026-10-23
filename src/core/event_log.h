@@ -7,7 +7,7 @@
 #include <string_view>
 
 /// A run's event log (`--event-log`): what a player would notice happening, in order, for a differential playthrough
-/// against the original (docs/guides/research-workflow.md#differential-playthroughs). Each event is a kind, a name and
+/// against the original (docs/guides/research-traces.md#differential-playthroughs). Each event is a kind, a name and
 /// a detail, stamped with the step (the play update) it happened in:
 ///
 /// | Kind | Name | Detail |

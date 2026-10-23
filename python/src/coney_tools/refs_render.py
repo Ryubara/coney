@@ -5,7 +5,7 @@ Every entry gets a stable anchor, `<topic anchor>-<key>` (`characters.md#char-32
 can link to it. The pages are generated: `coney-tools refs render` rewrites them and `--check` fails when one is out
 of date with its YAML.
 
-Research: docs/guides/research-workflow.md#reference-lists
+Research: docs/guides/research-data.md#reference-lists
 """
 
 from __future__ import annotations
@@ -348,7 +348,7 @@ def index(
         "Edit the YAML in `research/references/`, then run `uv run --project python coney-tools refs render`. The",
         "hand-written fields (who a character is, what a constant means) are kept when the lists are refreshed from",
         "the disc with `coney-tools refs extract`. The schema and rules are in",
-        "[Research workflow](../guides/research-workflow.md#reference-lists).",
+        "[The research data](../guides/research-data.md#reference-lists).",
     ]
     return "\n".join(lines) + "\n"
 

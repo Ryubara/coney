@@ -48,5 +48,5 @@ Evidence levels used: confirmed-code.
 | `kind` | str | | The name's extension ([WAD contents](../research/formats/wad-contents.md)). |
 | `index` | int | | The entry's position in WARRIORS.DIR (stable for the NTSC-U disc). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

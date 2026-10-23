@@ -5,7 +5,7 @@ The list is hand-kept (an engineer updates it in the same commit as mission work
 `docs/missions/`. Each mission's checkpoint count is checked against the Sections column of the levels list, and its
 status against its checkpoints', so the page cannot claim more than the checklist shows.
 
-Research: docs/guides/research-workflow.md#missions
+Research: docs/guides/research-data.md#missions
 """
 
 from __future__ import annotations

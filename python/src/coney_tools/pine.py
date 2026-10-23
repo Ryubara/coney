@@ -4,7 +4,7 @@
 A message is a little-endian `u32` total size (the four size bytes included) followed by one or more commands, each
 an opcode byte and its arguments; the reply is a `u32` size, a result byte (0 for success) and the commands' results
 back to back. Batching every read of a sample into one message is what lets a recorder keep up with the game: one
-round trip per sample instead of one per field (docs/guides/research-workflow.md#driving-pcsx2).
+round trip per sample instead of one per field (docs/guides/research-tools.md#driving-pcsx2).
 
 The client sends only memory reads and writes and the status query. It has no way to save a state: PINE's save
 writes a quick-save slot, and the slots belong to whoever made them.

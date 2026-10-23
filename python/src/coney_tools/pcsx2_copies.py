@@ -3,7 +3,7 @@
 
 Copy i (`pcsx2`, `pcsx2-b`, `pcsx2-c`, ...) runs the PCSX2-MCP fork's build that `pcsx2_mcp_dir` names, with its own
 PINE port (`pcsx2_pine_base` + i) and debug server port (`pcsx2_debug_base` + i), so several agents each drive their
-own (docs/guides/research-workflow.md#several-at-once). `setup-copies` copies only the build's program files over a
+own (docs/guides/research-tools.md#several-at-once). `setup-copies` copies only the build's program files over a
 copy and edits its ini in place: a copy's settings, BIOS, memory cards, save states and recordings stay as they are.
 A copy whose PCSX2 runs is refused (its program files are in use, and its ports would change under its user).
 

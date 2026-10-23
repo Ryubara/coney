@@ -1,6 +1,6 @@
 # Script enums: a Coney game reference list. The page docs/references/enums.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Script enums"
 about: |
   Constant tables (`MATERIAL.GLASS`) and loose constants (`LT_PLAY`) the preload scripts and

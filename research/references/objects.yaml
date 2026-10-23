@@ -1,6 +1,6 @@
 # Objects and weapons: a Coney game reference list. The page docs/references/objects.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Objects and weapons"
 about: |
   Every object type `CfgObj` configures: weapons, hats and masks, pick-ups, doors and props. The name

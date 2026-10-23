@@ -31,10 +31,10 @@ def test_the_guide_counts_the_false_hits_of_the_short_form_rule() -> None:
 
 
 def test_the_guides_name_no_plan_for_the_run_record_tool() -> None:
-    for name in ("writing-docs.md", "research-workflow.md"):
+    for name in ("writing-docs.md", "research-evidence.md"):
         text = guide(name)
         assert "arrive with T4" not in text and "tool is planned" not in text, name
-    assert "pcsx2 record-run" in guide("research-workflow.md")
+    assert "pcsx2 record-run" in guide("research-evidence.md")
 
 
 def test_the_guide_does_not_advise_inferred_for_a_runtime_claim_and_links_the_commands() -> None:
@@ -42,9 +42,9 @@ def test_the_guide_does_not_advise_inferred_for_a_runtime_claim_and_links_the_co
     start = text.index("- `confirmed (runtime)` says")
     bullet = text[start : text.index("- `speculative` links", start)]
     # `inferred` is the level of what the code implies: a claim waiting for a run record is `speculative`. The
-    # commands that write a record belong to research-workflow.md#run-records: the bullet links them, not repeats them.
+    # commands that write a record belong to research-evidence.md#run-records: the bullet links them, not repeats them.
     assert "inferred" not in bullet and "`speculative`" in bullet
-    assert "research-workflow.md#run-records" in bullet and "record-run" not in bullet
+    assert "research-evidence.md#run-records" in bullet and "record-run" not in bullet
 
 
 def test_the_guide_scopes_an_old_runtime_claim_to_the_touched_section() -> None:

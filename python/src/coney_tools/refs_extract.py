@@ -9,7 +9,7 @@ lists hold what a modder needs to name a thing.
 Each `topic_*` function returns the entries of one list, in the order the page shows them. Hand-written fields are
 never produced here; `refs.merge` keeps them from the YAML.
 
-Research: docs/guides/research-workflow.md#reference-lists, docs/research/characters.md,
+Research: docs/guides/research-data.md#reference-lists, docs/research/characters.md,
 docs/research/formats/animation.md, docs/research/gui.md#markup, docs/research/frontend.md#input.
 """
 

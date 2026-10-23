@@ -4,7 +4,7 @@
 Each copy (a `pcsx2*` folder with its own `PCSX2.ini`, PINE port and debug server port) is held through a claim: a
 folder `<claims dir>/<copy>.claim/` holding `owner.json`, built complete in a private folder and renamed into place,
 which succeeds for exactly one caller and never shows a half-made claim. The
-claims dir is one shared place every worktree sees (docs/guides/research-workflow.md#several-at-once). Everything
+claims dir is one shared place every worktree sees (docs/guides/research-tools.md#several-at-once). Everything
 reported (`status`) is rebuilt from the claim folders and the live processes each time; no cached state file exists
 to go stale, and nobody maintains one by hand.
 

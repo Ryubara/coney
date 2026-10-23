@@ -11,7 +11,7 @@ The pure functions take the walked scripts (`lua4.ChunkFacts` by script name) so
 facts; the `topic_*` functions are the disc readers `refs extract` calls.
 
 Research: docs/research/objects.md, docs/research/ai-gangs.md#spawners, docs/research/ai-gangs.md#crimes,
-docs/research/lighting.md#record, docs/guides/research-workflow.md#reference-lists.
+docs/research/lighting.md#record, docs/guides/research-data.md#reference-lists.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 # Sound and music: a Coney game reference list. The page docs/references/sound.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Sound and music"
 about: |
   The music tracks `SndCfgMusicInfo` configures, the interface sounds of `SoundCfgInterfaceSound`,

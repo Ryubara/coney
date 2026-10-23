@@ -1,6 +1,6 @@
 # Hat fittings: a Coney game reference list. The page docs/references/hats.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Hat fittings"
 about: |
   Where each hat sits on each Warrior. `CfgHat(set, type, hat, {x, y, z}, {i, j, k, r})` adds one fitting to a hat-fit

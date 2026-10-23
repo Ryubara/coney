@@ -40,7 +40,7 @@ first hour; the rest of this file is for agents.
   server), write `docs/research/` pages where they help, citing addresses and short snippets, and implement the
   behaviour in Coney's own code (`docs/guides/research-workflow.md`).
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
-  or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-workflow.md`.
+  or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-evidence.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
 - **Faithful first:** gameplay matches the original exactly until the game is complete. Coney's own mechanics and
   enhancements wait (designs may be written now); debug tooling is not a mechanic and is fine.

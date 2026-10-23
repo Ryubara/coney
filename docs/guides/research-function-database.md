@@ -1,6 +1,6 @@
 # The function database
 
-The function database is the [research database](research-workflow.md#the-research-database)'s list of the original's
+The function database is the [research database](research-data.md#the-research-database)'s list of the original's
 functions: what each is called, which research page describes it, how sure we are and where Coney ports it.
 
 `research/functions/<system>.toml` lists the functions of one system of the original that we have researched, one
@@ -35,7 +35,7 @@ issue = 123                     # the issue that does
 | `address` | yes | The function's entry point in `SLUS_212.15`, written `0x` and eight hex digits |
 | `name` | yes | The Ghidra name: letters, digits, `_`, and `::` for a member (`DVDWadIndex::Find`) |
 | `page` | yes | `<page>.md` or `<page>.md#section`, below `docs/research`. The section describes the function and is the one to open first |
-| `level` | yes | How we know what the function does: the [evidence levels](research-workflow.md#evidence-levels), spelled as the YAML values, and `not-needed` for a function nobody needs (dead code, a debug stub) |
+| `level` | yes | How we know what the function does: the [evidence levels](research-evidence.md#evidence-levels), spelled as the YAML values, and `not-needed` for a function nobody needs (dead code, a debug stub) |
 | `role` | no; with `not-needed`, the reason | What the function does, in one line of our own words; Markdown, with links relative to `docs/research` |
 | `kind` | no | A short tag for the sort of function |
 | `note` | no | The part of the claim the level does not cover (`confirmed (code); the rock inferred` becomes level `confirmed-code` with that text as the note) |

@@ -12,7 +12,7 @@ scripts so the tests can feed them synthetic chunks. The topics themselves, and 
 too and registered in `refs_topics` and `refs_cli`.
 
 Research: docs/research/characters.md#power-classes, docs/research/combat.md, docs/research/ai.md#attack-kinds,
-docs/research/frontend.md#rumble, docs/research/gui.md#statistics, docs/guides/research-workflow.md#reference-lists.
+docs/research/frontend.md#rumble, docs/research/gui.md#statistics, docs/guides/research-data.md#reference-lists.
 """
 
 from __future__ import annotations

@@ -119,7 +119,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 
 Whoever changes a page brings the **whole page** up to this standard in the same pull request: its kind's rules
 ([Page kinds](#page-kinds)), the [Style](#style) rules and, for a research page, the [research page](#research-pages)
-rules and the [evidence levels](research-workflow.md#evidence-levels). There is no cleanup pass and no agent for
+rules and the [evidence levels](research-evidence.md#evidence-levels). There is no cleanup pass and no agent for
 one. A page nobody touches is left as it is until someone does, so the pages that matter, the ones people work in,
 reach the standard first. A program holds the line ([Checking a page](#checking)): it checks every page a change
 touches and fails on any rule the page breaks, however old the line that breaks it.
@@ -144,7 +144,7 @@ request or in one that follows at once.
 4. On a research page, start with the front matter of its kind and keep the sections of that kind
    ([Research pages](#research-pages)), and give every behaviour an address and an evidence level: confirmed (code),
    confirmed (runtime), inferred or speculative. The levels and their spellings are in
-   [Research workflow](research-workflow.md#evidence-levels). A new page is never legacy. Run [the check](#checking)
+   [Evidence levels](research-evidence.md#evidence-levels). A new page is never legacy. Run [the check](#checking)
    before you commit.
 
 ## Style
@@ -304,7 +304,7 @@ Circle catches the man in front; held, it runs him down. Throws are on [Combat: 
 
 ### Evidence levels on a page {#evidence-levels}
 
-The four levels and how each is spelled are in [Research workflow](research-workflow.md#evidence-levels). The check
+The four levels and how each is spelled are in [Evidence levels](research-evidence.md#evidence-levels). The check
 looks at every block (a paragraph, a list item or a table row) that cites an address, or a script locator, outside
 Summary, In Coney, Open questions and How this was checked, and passes it when a level stands:
 
@@ -318,12 +318,12 @@ A sentence at the top of the page, a level in a neighbouring paragraph, a level 
 `##` heading grade nothing: they cover pages, not claims. A Map table with no Evidence column is an index: it is not
 graded as a table of claims, because the behaviour it points to is graded where it is described (Behaviour). Once the
 function entries exist (`research/functions/`), a Map row will be exempt only when its address has an entry, and this
-paragraph will say so. The forms are checked too ([the spellings](research-workflow.md#level-forms) are listed once,
+paragraph will say so. The forms are checked too ([the spellings](research-evidence.md#level-forms) are listed once,
 there):
 
 - `confirmed (runtime)` says `, run <id>`, and the record `research/runs/<id>.toml` must exist. There is no such folder
   yet, so a new or restructured page cannot make a runtime claim until the first run record is committed
-  ([Run records](research-workflow.md#run-records) says how to write one, and the check names the command). What no
+  ([Run records](research-evidence.md#run-records) says how to write one, and the check names the command). What no
   run observed is `speculative`, with an open question. A page in the [legacy file](#legacy-pages) may keep an old
   runtime claim that names PCSX2 in its Verified line or in How this was checked, and its run ids are not checked
   while the folder is missing.

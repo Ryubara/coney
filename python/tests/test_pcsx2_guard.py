@@ -724,6 +724,6 @@ def test_the_guides_tell_an_engineer_to_pass_agent_on_every_call() -> None:
     setup = (REPO / "docs" / "guides" / "agents.md").read_text(encoding="utf-8")
     section = setup.split("**The PCSX2 server and your copy.**", 1)[1].split("**The roles.**", 1)[0]
     assert wanted.search(section) and "every" in section, "agents.md#setup does not say to pass `agent` on every call"
-    research = (REPO / "docs" / "guides" / "research-workflow.md").read_text(encoding="utf-8")
+    research = (REPO / "docs" / "guides" / "research-tools.md").read_text(encoding="utf-8")
     driving = research.split("What the debug server gives", 1)[1].split("input-recordings", 1)[0]
-    assert wanted.search(driving), "research-workflow.md#driving-pcsx2 does not say to pass `agent`"
+    assert wanted.search(driving), "research-tools.md#driving-pcsx2 does not say to pass `agent`"

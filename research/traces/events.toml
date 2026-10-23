@@ -1,5 +1,5 @@
 # How `coney-tools trace events-diff` reads and compares two event logs of a playthrough, and how the original's hook
-# logs become its event log (python/src/coney_tools/events.py; method: docs/guides/research-workflow.md#differential-
+# logs become its event log (python/src/coney_tools/events.py; method: docs/guides/research-traces.md#differential-
 # playthroughs). Names and argument positions only: no game text.
 
 [compare]

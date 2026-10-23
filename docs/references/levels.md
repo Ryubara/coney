@@ -162,5 +162,5 @@ Evidence levels used: inferred.
 | `has_lev` | bool | | Whether `<name>.lev` exists on the disc (a level without one cannot load). |
 | `packs` | int | | Number of `<name>_<k>.pak` packs on the disc. |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

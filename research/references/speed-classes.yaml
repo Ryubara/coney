@@ -1,6 +1,6 @@
 # Speed classes: a Coney game reference list. The page docs/references/speed-classes.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Speed classes"
 about: |
   The fallback speed table `CfgSpeedClass` fills at `0x006b6548` (six floats per class). In play the

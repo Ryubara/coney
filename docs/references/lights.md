@@ -101,5 +101,5 @@ Evidence levels used: confirmed-code.
 | `state` | int | | Fourteenth argument: 1 on, 0 off, 2 removes the light. |
 | `script` | str | | The script that makes it (without `.lua`). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
-| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-workflow.md#evidence-levels)). |
+| `evidence` | str | yes | How we know: confirmed-code, confirmed-runtime, inferred or speculative ([evidence levels](../guides/research-evidence.md#evidence-levels)). |
 | `notes` | str | yes | Our own short notes. |

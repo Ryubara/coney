@@ -7,7 +7,7 @@ sets, the ambient sounds, emitters and speech lines, and the gang messages. Each
 readers in `refs_extract` call them.
 
 Research: docs/research/gui.md#strings, docs/research/combat.md#commands, docs/research/ai-gangs.md#warrior-commands,
-docs/research/sound.md#speech, docs/guides/research-workflow.md#reference-lists.
+docs/research/sound.md#speech, docs/guides/research-data.md#reference-lists.
 """
 
 from __future__ import annotations

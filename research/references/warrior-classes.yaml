@@ -1,6 +1,6 @@
 # Warrior classes: a Coney game reference list. The page docs/references/warrior-classes.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Warrior classes"
 about: |
   The playable Warriors' stats: a player's health and damage scales, rage, and how hard each context game is for him

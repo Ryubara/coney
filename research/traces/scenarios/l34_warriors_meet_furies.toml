@@ -16,7 +16,7 @@ slot = 7
 # The script's binding calls (GangMakeEnemies, TacticAttack, HuSetWounded, ...) and the functions it calls by name
 # (P3.EndParkScene, P3.FuryTimeout, P3.MoveFromFence), to time each step against the humans' rows.
 patches = ["event-call", "event-callback"]
-# 19 humans a sample: slowed so that no sample tears (research-workflow.md#recording-a-trace).
+# 19 humans a sample: slowed so that no sample tears (research-traces.md#recording-a-trace).
 speed = 0.4
 
 [coney]

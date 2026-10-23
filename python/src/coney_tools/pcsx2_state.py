@@ -5,13 +5,13 @@ replaces.
 A PCSX2 save state (`.p2s`) is a zip whose `eeMemory.bin` is the Emotion Engine's 32 MB of RAM, so an address below
 `0x02000000` is its offset in that file. A code edit has to be in RAM before the recompiler first compiles the block,
 which is why it is made in a copy of the state and PCSX2 is started on that copy
-(docs/guides/research-workflow.md#driving-pcsx2). The edits are declared in a TOML file
+(docs/guides/research-tools.md#driving-pcsx2). The edits are declared in a TOML file
 (the files of `research/traces/patches/`, one per pass):
 
 ```toml
 [patch.scripted-pad]
 description = "what the patch does"
-research = "docs/guides/research-workflow.md#driving-pcsx2"
+research = "docs/guides/research-tools.md#driving-pcsx2"
 edits = [
   { address = 0x00149dd4, original = [0x92220002], replacement = [0x92220022] },
   { address = 0x005de3aa, bytes = "ff ff 80 80 80 80" },

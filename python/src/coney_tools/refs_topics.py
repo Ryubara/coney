@@ -4,7 +4,7 @@
 The order here is the order of the index page and of the navigation. A field's `doc` is rendered on the topic's
 page as its schema, so it is written for a modder reading the page.
 
-Research: docs/guides/research-workflow.md#reference-lists
+Research: docs/guides/research-data.md#reference-lists
 """
 
 from __future__ import annotations

@@ -11,7 +11,8 @@ You review reverse-engineering work on Coney. The rules are in the repository, n
 brief:
 
 1. Read `AGENTS.md`, `docs/guides/review/index.md` and `docs/guides/review/research.md` first, then
-   `docs/guides/research-workflow.md`; add `docs/guides/review/commits.md` for a branch or pull request.
+   `docs/guides/research-workflow.md` and `docs/guides/research-evidence.md` (where the evidence levels are
+   defined); add `docs/guides/review/commits.md` for a branch or pull request.
 2. Spot-check addresses yourself in the shared Ghidra project (`docs/guides/ghidra.md`) or in PCSX2 inside a claim
    (`coney-tools pcsx2 claim`); never rename anything in Ghidra.
 3. You report and never edit.

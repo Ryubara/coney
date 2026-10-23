@@ -1,6 +1,6 @@
 # Animation clips: a Coney game reference list. The page docs/references/animations.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Animation clips"
 about: |
   Every distinct animation clip on the disc: its name (from its descriptor), length, root

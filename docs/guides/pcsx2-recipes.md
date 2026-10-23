@@ -8,17 +8,17 @@ PCSX2 and says when, on which copy and from which state; each names the Ghidra a
 research page that explains it. The list is generated from `research/pcsx2-recipes.toml` by `coney-tools pcsx2 recipe
 render`; edit that file, never this page.
 
-Run a recipe on a copy you hold a claim on ([Driving PCSX2](research-workflow.md#driving-pcsx2)): `coney-tools pcsx2
-claim --agent ID`, `coney-tools pcsx2 launch --agent ID STATE`, then `coney-tools pcsx2 recipe run NAME --copy COPY
---agent ID --arg name=value`. `recipe list` lists them and `recipe show NAME` prints one. The runner talks to the copy's
-PINE port (and its debug server for the emulation steps), so the `pcsx2` MCP server must be connected in `mode:
-"debug"`, which leaves PINE free. It checks first that the copy runs, that you hold its claim, that the emulation is
-running or paused as the recipe needs, and that the running state holds every patch the recipe names: a patch goes into
-a copy of a state with `coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
+Run a recipe on a copy you hold a claim on ([Driving PCSX2](research-tools.md#driving-pcsx2)): `coney-tools pcsx2 claim
+--agent ID`, `coney-tools pcsx2 launch --agent ID STATE`, then `coney-tools pcsx2 recipe run NAME --copy COPY --agent ID
+--arg name=value`. `recipe list` lists them and `recipe show NAME` prints one. The runner talks to the copy's PINE port
+(and its debug server for the emulation steps), so the `pcsx2` MCP server must be connected in `mode: "debug"`, which
+leaves PINE free. It checks first that the copy runs, that you hold its claim, that the emulation is running or paused
+as the recipe needs, and that the running state holds every patch the recipe names: a patch goes into a copy of a state
+with `coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
 
 A run that backs a research claim is recorded: add `--record --state ID` (the library state the copy started from, or
 `unknown`) and a good run writes `research/runs/<id>.toml` with the numbers it showed, for the page to cite as
-`confirmed (runtime), run <id>` ([Run records](research-workflow.md#run-records)).
+`confirmed (runtime), run <id>` ([Run records](research-evidence.md#run-records)).
 
 Start from the shared state library rather than driving to the same place again: `coney-tools pcsx2 states list` shows
 the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states use ID --copy COPY --agent ID --launch`
@@ -32,9 +32,9 @@ state the same way, so every script binding (`HuCreate`, `GiveMoney`, `MenuLoadL
 script uses it; [the script bindings](../references/bindings/index.md) list them with their arguments.
 
 **Input: prefer recordings.** For runtime evidence that depends on input, drive the original with a PCSX2 input
-recording (`pcsx2 record --recording`, [Input recordings](research-workflow.md#input-recordings)): it replays the same
-pad frame by frame. The `scripted-pad` recipes below are for closed-loop drivers that decide each input from what the
-game shows, which a recording cannot do.
+recording (`pcsx2 record --recording`, [Input recordings](research-tools.md#input-recordings)): it replays the same pad
+frame by frame. The `scripted-pad` recipes below are for closed-loop drivers that decide each input from what the game
+shows, which a recording cannot do.
 
 ## Finding humans
 
@@ -808,7 +808,7 @@ above 0, `95 - round(0.95 |v|)` below, 128 at rest), so both games see the same 
 it like a gamepad](testing.md#gamepad)). The patch must be in the state before the code is compiled: `pcsx2
 prepare-state SOURCE OUT --patch scripted-pad right-stick`, then launch OUT. Find the player as the human whose `+0x1b0`
 is 0 (`find-player`); the per-player record is indexed by its `+0x92`. For input that does not depend on what the game
-shows, use an input recording instead ([Input recordings](research-workflow.md#input-recordings)).
+shows, use an input recording instead ([Input recordings](research-tools.md#input-recordings)).
 
 | | |
 | --- | --- |
@@ -816,7 +816,7 @@ shows, use an input recording instead ([Input recordings](research-workflow.md#i
 | Preconditions | patches: `scripted-pad`, `right-stick`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00149da0 PadPort_ReadPressure` |
-| Research | [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2) |
+| Research | [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); left stick 60 % left for 30 updates: the pad record read -0.6, the player walked (gait 2, 1.63 m/s) and stood after the release |
 
 ```sh
@@ -857,7 +857,7 @@ with every runtime claim that depends on input.
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00129050 Cam_Follow_RightStick` |
-| Research | [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2) |
+| Research | [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); 0.5 written and read back, then restored to 1.0 |
 
 ```sh
@@ -894,7 +894,7 @@ name: an ally's hits play reactions without damage.
 | Preconditions | patches: `puppet`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00146078 PlayerRecord_Update`, `0x00146000 PlayerRecord_ClearCommand` |
-| Research | [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2), [research/combat.md#commands](../research/combat.md#commands) |
+| Research | [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2), [research/combat.md#commands](../research/combat.md#commands) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); PoizoCiv given 0x12 then 0x10, aimed at the player: its anim id went from 0x29f to 11, ANIM_ATTACK_X1 |
 
 ```sh
@@ -946,7 +946,7 @@ functions through their script binding with `lua`. The state must have the hook 
 | Preconditions | patches: `call-brains`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00293b28 Brains_Update` |
-| Research | [guides/research-workflow.md#hooks](research-workflow.md#hooks) |
+| Research | [guides/research-traces.md#hooks](research-traces.md#hooks) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); GetCheckPoint's worker 0x0041abe8 returned the checkpoint the game state holds |
 
 ```sh
@@ -979,7 +979,7 @@ constructor's braces doubled, `{{x, y, z}}`.
 | Preconditions | patches: `call-brains`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00356a78 ScriptSystem_DoString`, `0x00293b28 Brains_Update` |
-| Research | [research/scripting.md](../research/scripting.md), [guides/research-workflow.md#hooks](research-workflow.md#hooks) |
+| Research | [research/scripting.md](../research/scripting.md), [guides/research-traces.md#hooks](research-traces.md#hooks) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); set a global and read it back with lua-globals; GiveMoney(5) took the inventory money from 191 to 196 |
 
 ```sh
@@ -1010,7 +1010,7 @@ a mission has gone. A table value prints as its address; its nodes read the same
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00356a78 ScriptSystem_DoString`, `0x00328a30 Lua_CallCClosure` |
-| Research | [research/scripting.md](../research/scripting.md), [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2) |
+| Research | [research/scripting.md](../research/scripting.md), [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); 1505 globals with a non-nil value; the node count u16 at +0x6 read 3500 (0xdac) and the node array held valid nodes up to there |
 
 ```sh
@@ -1213,7 +1213,7 @@ The PCSX2-MCP fork's debug server pauses and resumes emulation as a whole (`emul
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00154f28 PauseMenu_Toggle` |
-| Research | [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2) |
+| Research | [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); the tick count 0x005104f4 stood still while paused |
 
 ```sh
@@ -1240,7 +1240,7 @@ hook makes the call from inside the game's own update.
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x003a2ea0 TaskManager_TickGame`, `0x00249108 Humans_Update` |
-| Research | [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2) |
+| Research | [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
@@ -1270,7 +1270,7 @@ two frames: `frames=2` is one update. Emulation must be paused first (`pause`).
 | Preconditions | patches: none; emulation paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x003a2ea0 TaskManager_TickGame`, `0x00249108 Humans_Update` |
-| Research | [research/tasks.md#tick](../research/tasks.md#tick), [guides/research-workflow.md#driving-pcsx2](research-workflow.md#driving-pcsx2) |
+| Research | [research/tasks.md#tick](../research/tasks.md#tick), [guides/research-tools.md#driving-pcsx2](research-tools.md#driving-pcsx2) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); frames=10 moved the tick count by 10, frames=2 by 3 |
 
 ```sh

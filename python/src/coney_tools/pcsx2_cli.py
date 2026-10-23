@@ -4,7 +4,7 @@
 Paths come from flags or from `coney.local.toml` (`pcsx2_dir`, `game_dir`, `scratch_dir`); nothing here knows a
 machine's own folders. Everything the commands write (state copies, the disc link, traces) is game data or measured
 from it, so it goes to the scratch folder or a path the user gives outside the repository
-(docs/guides/research-workflow.md#recording-a-trace).
+(docs/guides/research-traces.md#recording-a-trace).
 """
 
 from __future__ import annotations

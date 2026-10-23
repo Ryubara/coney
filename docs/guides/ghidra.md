@@ -168,7 +168,7 @@ the counts are the ones a real run would give. Measured on 2026-10-21 on a proje
 11,530 less three that are Ghidra-style `FUN_` names), 11,345 were matched (11,290 renamed, 55 already the same) and
 182 created, none skipped; a second run found all 11,527 the same, in 15 s. Plate comments, structures and signatures
 are not shared at all until the
-research database exists ([The research database](research-workflow.md#the-research-database)).
+research database exists ([The research database](research-data.md#the-research-database)).
 
 ### ghidra-mcp on your machine {#own-ghidra-mcp}
 

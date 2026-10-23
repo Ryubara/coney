@@ -276,7 +276,7 @@ uv run --project python coney-tools research claims [--base origin/main] [--task
 ```
 
 Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
-from ([evidence levels](research-workflow.md#evidence-levels)). The changed lines are those of the working tree since
+from ([evidence levels](research-evidence.md#evidence-levels)). The changed lines are those of the working tree since
 the branch left `--base`, a new page counting whole. It reads the pages exactly as
 [`docs check`](coney-tools-build.md#docs) does, with the same reader and the same grammar: a block is graded in itself,
 a table row in its Evidence column, or by the lead line of its H3-or-deeper heading. For each graded block it prints the

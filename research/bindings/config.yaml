@@ -1,5 +1,5 @@
 # The Warriors' script bindings, category `config`: one entry per Lua global the game registers.
-# Schema: docs/guides/research-workflow.md#bindings. docs/references/bindings/ is generated from these
+# Schema: docs/guides/research-data.md#bindings. docs/references/bindings/ is generated from these
 # files by `coney-tools natives render`; edit them here, then render.
 
 - name: CfgClimbWithGhetto

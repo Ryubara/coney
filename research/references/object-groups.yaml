@@ -1,6 +1,6 @@
 # Object groups: a Coney game reference list. The page docs/references/object-groups.md is generated
 # from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
-# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "Object groups"
 about: |
   The item groups a character type may carry and drop (`CfgChar`'s drop group).

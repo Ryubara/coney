@@ -47,7 +47,7 @@ copy, and never leave the ports out: the defaults (21512, 28011) are copy `pcsx2
 tool that starts one server per agent can run `coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's
 ports to the server as `pcsx2_connect`'s defaults ([`mcp`](coney-tools-setup.md#mcp)); the hook still wants both ports in
 the call, so those defaults serve a server run outside it. **A hook enforces this** ([below](#pcsx2-guard)). What the
-tools do: [Driving PCSX2](research-workflow.md#driving-pcsx2).
+tools do: [Driving PCSX2](research-tools.md#driving-pcsx2).
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
 guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which
@@ -76,7 +76,7 @@ memory has to carry it: `CONEY_WINDOW_DISPLAY` (`portrait`, a display number or 
 [Which display](running.md#window-display)) in the environment the tool gives its agents, for Claude Code the `env`
 block of your user settings (`~/.claude/settings.json`, `"env": {"CONEY_WINDOW_DISPLAY": "portrait"}`). Coney opens
 its window centred on that display without taking the keyboard focus, and `coney-tools pcsx2 launch` and
-`pcsx2 record` move each PCSX2 window there as it appears ([Driving PCSX2](research-workflow.md#driving-pcsx2)). It
+`pcsx2 record` move each PCSX2 window there as it appears ([Driving PCSX2](research-tools.md#driving-pcsx2)). It
 is each machine's own setting and stays out of the repository; a machine with one display leaves it unset. An agent
 that runs anything else with a window puts it on the same display.
 
@@ -238,7 +238,7 @@ instead of repeating it:
   the pull request's Testing section that reports it ([the Runtime line](testing.md#runtime-line)); it points at
   `coney-tools pcsx2 recipe` for the PCSX2 recipes that capture and read the original (a save state's values and
   picture, a trace; being added, with its own guide page), and the agent works in a PCSX2 claim
-  ([Driving PCSX2](research-workflow.md#driving-pcsx2)). An agent that is not told compares nothing with the running
+  ([Driving PCSX2](research-tools.md#driving-pcsx2)). An agent that is not told compares nothing with the running
   original, and the pull request is then refused;
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";

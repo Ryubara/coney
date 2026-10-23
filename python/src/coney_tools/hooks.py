@@ -3,7 +3,7 @@
 spare EE memory each time the game runs it, and the recorder reads the ring as the game plays.
 
 PINE has no breakpoints, so a question such as "who sets this field" or "which objects does the wheel update" is
-answered by patching the game's code in a state copy (docs/guides/research-workflow.md#driving-pcsx2). A hook takes
+answered by patching the game's code in a state copy (docs/guides/research-tools.md#driving-pcsx2). A hook takes
 two instructions at its address: they become `j cave; nop`, and the cave, in memory the game leaves empty,
 
 1. saves the four registers it works with (`at`, `v1`, `t8`, `t9`, all 128 bits) below the stack pointer,
@@ -500,7 +500,7 @@ def build(hooks: list[Hook]) -> Patch:
         caves.append(Edit(CALL_BASE, bytes(CALL_DONE + 4 - CALL_BASE), None))
     names = ", ".join(hook.name for hook in hooks)
     # The jumps come first: the launcher reads a patch's first edit back to know the patched state runs.
-    return Patch("hooks", f"call logging: {names}", "docs/guides/research-workflow.md#hooks", (*jumps, header, *caves))
+    return Patch("hooks", f"call logging: {names}", "docs/guides/research-traces.md#hooks", (*jumps, header, *caves))
 
 
 # --- reading the ring ----------------------------------------------------------------------------------------------

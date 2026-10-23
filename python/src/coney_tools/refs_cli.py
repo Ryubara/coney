@@ -6,7 +6,7 @@ with `--check` it changes nothing and fails when a page is out of date (CI runs 
 player's disc, merges what it finds into the YAML (keeping every hand-written field) and renders.
 `refs compress-images` turns the rendered thumbnails into small palette PNGs before they are committed.
 
-Research: docs/guides/research-workflow.md#reference-lists
+Research: docs/guides/research-data.md#reference-lists
 """
 
 from __future__ import annotations
