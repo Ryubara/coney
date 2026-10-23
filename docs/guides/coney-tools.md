@@ -832,9 +832,10 @@ uv run --project python coney-tools pcsx2 record-run --agent ID --copy COPY --st
 Writes a [run record](research-workflow.md#run-records) for an observation made by hand, through the `pcsx2` MCP server:
 a watch, a memory read, a count of frames. It refuses a copy `--agent` does not hold or whose PCSX2 is not running, and
 reads the copy's PCSX2 version over PINE; the date, the agent and its model (from the identity the hook's
-`CONEY_AGENT_TOKEN` names, marked `unverified` without one: [Who](stamps.md#who)), the copy and the state's patches from the library are
-filled in by the tool. `--method` is how the value was observed, in words; `--value` is a number read and `--address`
-an address of the original the run names, both repeatable, within the [record's limits](research-workflow.md#run-records).
+`CONEY_AGENT_TOKEN` names, marked `unverified` without one: [Who](stamps.md#who)), the copy and the state's patches
+from the library are filled in by the tool. `--method` is how the value was observed, in words; `--value` is a number
+read and `--address` an address of the original the run names, both repeatable, within the
+[record's limits](research-workflow.md#run-records).
 Nothing else goes in: no memory, no game text. The record is `research/runs/r-<date>-<name>.toml`; it is never
 overwritten, so a second run of the same name on the same day needs another `--name`. It prints the id to cite.
 
@@ -1632,18 +1633,18 @@ the run record it cites (`confirmed (runtime), run <id>`, in the block or its le
 rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
 links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a
 line `// Expected: research/<page>.md#<anchor>` in `tests/` or `python/tests/`. The sections of
-`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are counted, not listed: `docs check`
-reports them.
+`research.ungraded_sections` and a lead line itself are not claims. Blocks that cite an address and carry no level are
+counted, not listed: `docs check` reports them.
 
 It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
 missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
 is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
 with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
 version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
-`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is `docs check`'s. `--require-study` also makes `confirmed (code)`
-at an address that was not studied in the task an error (a new or changed claim cites an address studied in its own
-task, or is written `inferred`); without it `none` is for the reviewer to check in Ghidra.
-`--json` prints the same report as JSON.
+`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
+`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
+error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
+for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 
 ## build {#build}
 
