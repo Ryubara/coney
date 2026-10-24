@@ -78,6 +78,9 @@ def run_show(as_json: bool) -> int:
     print(f"reimplemented: {pct(state.reimplemented_bytes, game)} ({state.reimplemented_bytes:,} of {game:,} bytes,")
     print(f"               {len(state.functions)} functions)")
     print(f"researched:    {pct(totals.researched_bytes, game)} ({totals.researched_bytes:,} bytes)")
+    compared = state.compared_bytes
+    print(f"compared:      {pct(compared, state.reimplemented_bytes)} of the reimplemented bytes,")
+    print(f"               {state.compared_functions} of {len(state.functions)} functions")
     u = state.understanding
     if u is not None:
         print(f"understood:    {pct(u.understood_bytes, u.bytes)} ({u.understood_bytes:,} of {u.bytes:,} bytes,")

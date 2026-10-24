@@ -205,6 +205,27 @@ few seconds stays a loop); a scenario whose stages build on one another, as the 
 loot, then the meter), stays one test. `build --test` then runs the cases `-j` at a time, longest first once a run has
 recorded their costs ([How long the tests take](building.md#test-timings)).
 
+### Cite the expected values {#citations}
+
+Every test case says where its expected numbers come from, so a reviewer can check the claim and not only the test. A
+line in the case (or in the comment block right above it) names the research section that gives the values:
+
+```cpp
+TEST_CASE("a front grab on a standing target plays the grab intro") {
+    // Expected: combat/grabs.md#grab, confirmed (code)
+    ...
+}
+```
+
+The form is `// Expected: <page>.md#<anchor>` with the page below `docs/research` (a leading `research/` is read too) and
+the claim's evidence level after a comma. A value no research claim backs yet is written `// Expected: unverified, #<issue>`
+with an issue that verifies it, never left bare. `coney-tools research claims` lists the claims a branch changed with the
+tests that cite their sections, and `coney-tools standards` finds the cases that cite nothing: the test files that do not
+yet are listed, and a test file a change touches is held to the rule as a whole
+([the standards](coney-tools-standards.md#standards)). The marker, the macros and the form are `standards.tests` in
+[.github/conventions.yml](repo:.github/conventions.yml), and both commands read the form from there, so a citation
+with or without the leading `research/` counts for both.
+
 ### Diff against the original {#diff-against-the-original}
 
 A recorded run of the original, with the same pad input from the same start, is replayed into Coney, and the two

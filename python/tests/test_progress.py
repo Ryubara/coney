@@ -191,6 +191,19 @@ def test_consistent_inputs_have_no_problems(tmp_path: Path) -> None:
     assert rows[progress.UNATTRIBUTED] == (0x800, 0, 0)
 
 
+def test_the_compared_share_counts_the_functions_with_the_status_compared(tmp_path: Path) -> None:
+    """`status` says how far a port is checked against the original: only `compared` counts toward the share."""
+    compared = entry(0x1030, "Port", "src/core/thing.h:port").replace('status = "legacy"', 'status = "compared"')
+    listing = ONE_LISTING + "0x00001030\t64\tPort\t0\n"
+    tags = ONE_TAG + "/// @orig 0x00001030 Port (Thing.cpp)\nvoid port();\n"
+    state = progress.load(make_checkout(tmp_path, ONE_FUNCTION + compared, tags, listing))
+    assert state.problems == [] and (state.compared_functions, state.compared_bytes) == (1, 0x40)
+    assert state.reimplemented_bytes == 0xC0
+    assert state.to_json()["compared"] == {"functions": 1, "bytes": 0x40, "total": 0xC0, "percent": 33.333}
+    page = progress_render.render_page(state, "", "")
+    assert "| **Compared** |" in page and "1 of 2 functions" in page
+
+
 def test_an_entry_without_coney_is_researched_not_reimplemented(tmp_path: Path) -> None:
     """The database lists researched functions too: only `coney` makes one count as reimplemented."""
     functions = ONE_FUNCTION + entry(0x1020, "Researched")

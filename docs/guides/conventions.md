@@ -181,6 +181,10 @@ for a reviewer reading a diff without the docs open. That sets these rules.
 8. **No commented-out code.** Git keeps the history; dead code in comments only makes the reader wonder whether it
    matters.
 
+A file you touch meets rules 1 and 2 and carries its tags as a whole, not only on the lines you changed. The files that
+do not yet are listed and `coney-tools standards check` holds the touched ones to them
+([the standards](coney-tools-standards.md#standards)).
+
 ### The @orig tag
 
 Everything that reimplements a function of the original game carries an `@orig` tag in its doc comment:
@@ -348,7 +352,8 @@ are Coney's own by nature and need no marker; every folder of `src/` is in one o
 `coney-tools orig check` ([orig](coney-tools-fidelity.md#orig)), run by `check changed` and CI, refuses a new function that
 says neither, and a new folder in neither list. The functions written before the rule are the fidelity audit's
 backlog (`orig index`); the older wording ("Coney's own", "(no @orig)") is still read as a marker on them until
-they are converted, never on a new function.
+they are converted, never on a new function. [The standards](coney-tools-standards.md#standards) do not count it at
+all: a file a change touches is converted as a whole, each such function getting `@orig` or `@coney-only`.
 
 ### Coney-only capabilities {#coney-only-capabilities}
 

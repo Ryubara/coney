@@ -940,3 +940,33 @@ conclave:
   merged_visible_minutes: 10                     # a merged unit stays on the pane this long
   unit_days: 3                                   # a unit with no worktree stays on the pane this long after its last change
   claim_red_hours: 6                             # a claim's countdown is red in its last hours (amber from claims.warn_hours)
+
+standards:
+  # What a file is held to when a change touches it, and the files that do not meet it yet
+  # (docs/guides/coney-tools-standards.md#standards; `coney-tools standards`). Research pages have their own legacy file
+  # (research.files.legacy) and a ported function its `status` in the function database; this file lists the code and
+  # test files below standard, each under the rules it fails with the number of findings at the last scan. The file only
+  # shrinks: a file leaves it once it passes, and nothing new is added after the first scan.
+  legacy_file: research/legacy-files.toml
+  # false: every report of `standards check` (a touched file or @orig function below standard, a mark out of step) is a
+  # warning and nothing fails. true from the cutover: each is an error.
+  enforce: false
+  # The day the workflow went live ("YYYY-MM-DD"), empty before it. From then on a branch may not mark a function legacy.
+  cutover: ""
+  code:
+    # The rules: `comment` (a doc comment on every public function a header declares, and a comment above every other
+    # one whose name does not say everything: not a non-public definition of one statement, a special member with no
+    # statement or an override), `type-doc` (a comment above every public type a header declares) and `tag` (`@orig` or `@coney-only` on
+    # every function of a gameplay folder, `paths.gameplay`). The whole-file clang-tidy pass is CI's.
+    folders: ["src/"]
+    suffixes: [".h", ".hpp", ".cpp", ".cc", ".inl"]
+  tests:
+    # The rule `citation`: every test case carries a line `// Expected: <page>#<anchor>, <level>` (the section of
+    # docs/research that gives the expected value) or `// Expected: unverified, #<issue>`.
+    folders: ["tests/"]
+    suffixes: [".cpp", ".h"]
+    macros: [TEST_CASE, TEST_CASE_METHOD, TEMPLATE_TEST_CASE, SCENARIO]
+    citation:
+      marker: "Expected:"
+      unverified: "unverified, #"
+      reference: '[A-Za-z0-9_./-]+\.md#[A-Za-z0-9_-]+'

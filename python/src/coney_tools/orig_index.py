@@ -21,6 +21,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
+from typing import NamedTuple
 
 from coney_tools.orig_scan import CONEY_ONLY_TAG, LEGACY_CONEY_ONLY, RESEARCH_LINK, Function, SourceFile, read_source
 from coney_tools.progress_research import claim_blocks
@@ -224,21 +225,31 @@ def _marker(text: str) -> str:
     return ""
 
 
-class _Coverage:
+class _Entry(NamedTuple):
+    """One declaration or definition in the lookup tables."""
+
+    params: str
+    state: str
+    where: str
+    function: Function
+
+
+class TagCoverage:
     """Which functions are tagged or marked, through their own comment or their declaration's.
 
     A declaration covers a definition with the same scope, name and parameter types, looked up in the same file
     pair (`brain.h`, `brain.cpp`), then the same folder, then (for a member) anywhere. When the parameter types differ
     (a declaration and its definition spelt differently) a declaration still covers it if its name is not
-    overloaded. A file's private helper is covered only by a declaration in its own file.
+    overloaded. A file's private helper is covered only by a declaration in its own file. `orig check` and the
+    touch-it rule of `standards check` both match a definition to its declaration this way.
     """
 
     def __init__(self, sources: list[SourceFile]) -> None:
-        # (table, key) -> every declaration and definition with that scope and name: (params, state, where).
-        self.by_file: dict[str, dict[tuple[str, str], list[tuple[str, str, str]]]] = defaultdict(dict)
-        self.by_stem: dict[tuple[str, str], dict[tuple[str, str], list[tuple[str, str, str]]]] = defaultdict(dict)
-        self.by_dir: dict[str, dict[tuple[str, str], list[tuple[str, str, str]]]] = defaultdict(dict)
-        self.scoped: dict[tuple[str, str], list[tuple[str, str, str]]] = {}
+        # (table, key) -> every declaration and definition with that scope and name.
+        self.by_file: dict[str, dict[tuple[str, str], list[_Entry]]] = defaultdict(dict)
+        self.by_stem: dict[tuple[str, str], dict[tuple[str, str], list[_Entry]]] = defaultdict(dict)
+        self.by_dir: dict[str, dict[tuple[str, str], list[_Entry]]] = defaultdict(dict)
+        self.scoped: dict[tuple[str, str], list[_Entry]] = {}
         self.file_marks: dict[tuple[str, str], str] = {}
         for source in sources:
             stem = _stem(source.path)
@@ -246,7 +257,7 @@ class _Coverage:
             if mark:
                 self.file_marks[stem] = self.file_marks.get(stem) or mark
             for function in source.functions:
-                entry = (function.params, self.state(function), f"{function.path}:{function.line}")
+                entry = _Entry(function.params, self.state(function), f"{function.path}:{function.line}", function)
                 tables = [self.by_file[source.path], self.by_stem[stem], self.by_dir[stem[0]]]
                 if function.scope:
                     tables.append(self.scoped)
@@ -261,39 +272,46 @@ class _Coverage:
         return _marker(function.comment)
 
     @staticmethod
-    def _decide(function: Function, entries: list[tuple[str, str, str]]) -> str | None:
-        """The state the declarations in `entries` give `function`; None when none of them is its declaration."""
+    def _matching(function: Function, entries: list[_Entry]) -> list[_Entry] | None:
+        """The declarations in `entries` that are `function`'s; None when none of them is."""
         where = f"{function.path}:{function.line}"
-        others = [e for e in entries if e[2] != where]
-        exact = [state for params, state, _ in others if params == function.params]
+        others = [e for e in entries if e.where != where]
+        exact = [e for e in others if e.params == function.params]
         if exact:
-            return max(exact, key=_STATE_ORDER.index)
+            return exact
         # Spelt differently, but the name is not overloaded (no file has two of it): still its declaration.
         per_file: dict[str, set[str]] = defaultdict(set)
-        for params, _, place in entries:
-            per_file[place.rsplit(":", 1)[0]].add(params)
+        for entry in entries:
+            per_file[entry.where.rsplit(":", 1)[0]].add(entry.params)
         if others and all(len(kinds) == 1 for kinds in per_file.values()):
-            return max((state for _, state, _ in others), key=_STATE_ORDER.index)
+            return others
         return None
 
-    def lookup(self, function: Function) -> str:
-        """The function's state: the strongest of its own comments', its declaration's and its file header's."""
-        own = self.state(function)
-        if own == "tagged":
-            return own
+    def _tables(self, function: Function) -> list[dict[tuple[str, str], list[_Entry]]]:
+        """The tables to look `function` up in, nearest first."""
         stem = _stem(function.path)
         tables = [self.by_file[function.path]]
         if not function.helper:
             tables += [self.by_stem[stem], self.by_dir[stem[0]]]
             if function.scope:
                 tables.append(self.scoped)
-        declared = ""
-        for table in tables:
-            decided = self._decide(function, table.get(function.key, []))
-            if decided is not None:
-                declared = decided
-                break
-        return max(own, declared, self.file_marks.get(stem, ""), key=_STATE_ORDER.index)
+        return tables
+
+    def declarations(self, function: Function) -> list[Function]:
+        """The other declarations and definitions of `function`, from the nearest table that has one."""
+        for table in self._tables(function):
+            matched = self._matching(function, table.get(function.key, []))
+            if matched is not None:
+                return [entry.function for entry in matched]
+        return []
+
+    def lookup(self, function: Function) -> str:
+        """The function's state: the strongest of its own comments', its declaration's and its file header's."""
+        own = self.state(function)
+        if own == "tagged":
+            return own
+        declared = max((self.state(d) for d in self.declarations(function)), key=_STATE_ORDER.index, default="")
+        return max(own, declared, self.file_marks.get(_stem(function.path), ""), key=_STATE_ORDER.index)
 
 
 #: The states from weakest to strongest: a tag wins over a marker, a marker over the older wording.
@@ -329,7 +347,7 @@ def find_untagged(
     the counts of what was looked at: `in_scope`, `tagged`, `marker` and `legacy` (the older wording). With
     `with_legacy`, the functions marked only by the older wording are listed too (`legacy` set): `orig check` accepts
     that wording only on functions that had it before the check existed."""
-    coverage = _Coverage(sources)
+    coverage = TagCoverage(sources)
     untagged: list[Untagged] = []
     counts = {"in_scope": 0, "tagged": 0, "marker": 0, "legacy": 0}
     for source in sources:

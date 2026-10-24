@@ -22,7 +22,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import docs_legacy, local_gate, source_files
+from coney_tools import docs_legacy, local_gate, source_files, standards_check
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Research, load_conventions
@@ -252,7 +252,27 @@ def check_changed(root: Path, base: str, context: Context) -> Result:
             legacy_file = context.research.research.files.legacy
             result.pages.append(legacy_file)
             result.findings[legacy_file] = found
+    if context.research is not None:
+        _add_standards(result, root, base, names)
     return result
+
+
+def _add_standards(result: Result, root: Path, base: str, names: list[str]) -> None:
+    """Hold the files the change touches to the code and test standards, and the legacy marks to their rules, when the
+    change can move them (`standards_check`). Each file with a report becomes a "page" of the result, so the output
+    reads like the pages'."""
+    conventions = load_conventions(root)
+    if not standards_check.relevant(names, conventions):
+        return
+    try:
+        reports = standards_check.check(root, conventions, base)
+    except ResearchFunctionsError:
+        return  # `research render --check` reports a broken function database
+    for report in reports:
+        if report.path not in result.findings:
+            result.pages.append(report.path)
+        severity = "error" if report.error else "warning"
+        result.findings.setdefault(report.path, []).append(Finding(report.rule, report.line, report.message, severity))
 
 
 def check_paths(root: Path, paths: Iterable[str], context: Context) -> Result:

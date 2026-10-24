@@ -4,7 +4,8 @@ The commands behind the fidelity audit and the research pages: [`orig`](#orig) i
 [`original`](#original) studies an original function and compares it with Coney's, [`stamp`](#stamp) verifies a unit's
 stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed on the
 research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are listed in
-[the command line overview](coney-tools.md#groups).
+[the command line overview](coney-tools.md#groups); `standards`, which marks what is below today's standards and
+holds a touched file to them, has [its own page](coney-tools-standards.md).
 
 ## orig {#orig}
 

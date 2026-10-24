@@ -85,8 +85,22 @@ def _summary_rows(progress: Progress, roadmap_link: str) -> list[str]:
         f"| **Researched** | {bar(totals.researched_bytes, game)} | {percent(totals.researched_bytes, game)} "
         f"placed in a source file or directory ({totals.researched_bytes:,} bytes) |",
         *_understood_row(progress),
+        *_compared_row(progress),
         f"| **[Milestones]({roadmap_link})** | {bar(finished, len(milestones))} "
         f"| {finished} of {len(milestones)} done |",
+    ]
+
+
+def _compared_row(progress: Progress) -> list[str]:
+    """The summary's "Compared" row: how much of the reimplemented code is checked side by side with the original."""
+    done = progress.reimplemented_bytes
+    if not progress.functions:
+        return []
+    count = len(progress.functions)
+    return [
+        f"| **Compared** | {bar(progress.compared_bytes, done)} | {percent(progress.compared_bytes, done)} of the "
+        f"reimplemented code compared with the original ({progress.compared_bytes:,} of {done:,} bytes; "
+        f"{progress.compared_functions:,} of {count:,} functions) |"
     ]
 
 

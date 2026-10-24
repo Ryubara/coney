@@ -341,6 +341,19 @@ def test_a_test_that_expects_a_section_is_listed_with_its_claims(tmp_path: Path)
     assert by_line(report, "Grab_Throw").tests == ()
 
 
+def test_a_citation_without_the_research_folder_is_seen_too(tmp_path: Path) -> None:
+    # The form is `standards.tests.citation` in conventions.yml: the page below docs/research, `research/` optional.
+    root = make_repo(tmp_path)
+    (root / "tests").mkdir()
+    (root / "tests" / "grab_test.cpp").write_text(
+        'TEST_CASE("x") {\n    // Expected: combat/grabs.md#grab-intro, confirmed (code)\n}\n'
+        'TEST_CASE("y") {\n    // Expected: unverified, #12\n}\n',
+        encoding="utf-8",
+    )
+    report = claims_of(root)
+    assert by_line(report, "plays anim 71").tests == ("tests/grab_test.cpp:2",)
+
+
 def test_a_runtime_lead_line_names_the_run_record_of_the_blocks_under_it(tmp_path: Path) -> None:
     root = make_repo(tmp_path)
     lead = "### Reach\n\nConfirmed (runtime), run r-20261023-grab-reach.\n\nThe reach is 1.5 at `0x00123456`.\n\n"

@@ -630,3 +630,40 @@ def test_a_wrong_conclave_section_is_refused(path: str, value: object, message: 
     data = changed((path, value))
     with pytest.raises(ConventionsError, match=message):
         parse_conventions(data)
+
+
+# --- the standards section ----------------------------------------------------------------------------------------
+
+
+def test_the_real_standards_section() -> None:
+    standards = load_conventions(REPO).standards
+    assert standards.legacy_file == "research/legacy-files.toml"
+    assert standards.code.folders == ("src/",) and ".cpp" in standards.code.suffixes
+    assert "TEST_CASE" in standards.tests.macros and standards.tests.citation.marker == "Expected:"
+    # Before the cutover a file below standard is a warning and a function may still be marked legacy.
+    assert standards.enforce is False and standards.cutover is None
+
+
+def test_a_cutover_day_is_read_as_a_moment() -> None:
+    standards = conventions_with(("standards.cutover", "2026-11-01")).standards
+    assert standards.cutover is not None and standards.cutover.year == 2026 and standards.cutover.day == 1
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ("standards.legacy_file", "../legacy.toml", "a path inside the checkout"),
+        ("standards.enforce", "yes", "expected true or false"),
+        ("standards.cutover", "soon", "expected a day or moment"),
+        ("standards.unknown", 1, "unknown key 'unknown'"),
+        ("standards.code.folders", ["src"], "trailing slash"),
+        ("standards.code.suffixes", ["cpp"], "not a file ending"),
+        ("standards.tests.macros", [], "expected a non-empty list"),
+        ("standards.tests.citation.reference", "([", "not a regular expression"),
+        ("standards.tests.citation.marker", REMOVE, "missing the key 'marker'"),
+    ],
+)
+def test_a_wrong_standards_section_is_refused(path: str, value: object, message: str) -> None:
+    data = changed((path, value))
+    with pytest.raises(ConventionsError, match=message):
+        parse_conventions(data)

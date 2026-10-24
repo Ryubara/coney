@@ -44,6 +44,11 @@ _ENUM = re.compile(r"^(?:enum)\b")
 _ACCESS = re.compile(r"\b(?:public|private|protected)\s*:(?!:)")
 #: A statement that is only an access label so far: the member below it is a new statement.
 _ACCESS_ONLY = re.compile(r"(?:public|private|protected)\s*:")
+#: The endings of a header: what it declares is what other files use.
+HEADER_SUFFIXES = (".h", ".hpp")
+#: The words after a function's parameter list that make it an override of a virtual.
+_OVERRIDE = re.compile(r"\)\s*(?:(?:const|volatile|noexcept|&&?)\s*)*\b(?:override|final)\b")
+_CLASS_KEY = re.compile(r"^(?:template\s*<.*>\s*)?(class|struct|union)\b")
 _INIT_LIST = re.compile(r"\)\s*(?:noexcept\s*)?:(?!:)")
 #: The statements that branch or loop: a body holding one is not a one-statement accessor even without braces.
 _CONTROL = re.compile(r"^(?:if|for|while|switch|do)\b|\belse\b")
@@ -79,6 +84,10 @@ class Function:
     tags: list[Tag] = field(default_factory=list)  # tags in that comment block
     body_tags: list[Tag] = field(default_factory=list)  # tags in comments inside its body
     params: str = ""  # the parameter types, `int,float`: what tells overloads apart
+    override: bool = False  # declared `override` or `final`: its doc comment is the base declaration's
+    #: Declared in a header where every class around it is open, in no anonymous namespace and not `static`: part of
+    #: what the header offers, so it needs a doc comment (conventions.md rule 1).
+    public: bool = False
 
     @property
     def signature(self) -> tuple[str, str, str]:
@@ -110,6 +119,10 @@ class SourceFile:
     tag_owner: dict[int, str]  # tag line -> the qualified name of what it documents, for loose tags too
     class_comments: dict[str, str] = field(default_factory=dict)  # "Outer::Inner" -> the comment above the class
     malformed: list[tuple[int, str]] = field(default_factory=list)  # (line, text) of `@orig 0x` lines not in the form
+    class_lines: dict[str, int] = field(default_factory=dict)  # "Outer::Inner" -> the line its statement starts on
+    #: "Outer::Inner" -> whether the type is public: every class around it is open (`public:`, or a `struct`'s start)
+    #: where it is declared, and it is in no anonymous namespace.
+    class_public: dict[str, bool] = field(default_factory=dict)
 
 
 def parse_tags(comment: str, first_line: int) -> list[Tag]:
@@ -213,6 +226,8 @@ class _Frame:
     kind: str  # namespace, anon, class, function, init, block
     name: str = ""
     function: Function | None = None
+    #: For a class: the access label in force (`public`, `private` or `protected`); a `struct` starts open.
+    access: str = "public"
 
 
 class _Reader:
@@ -226,6 +241,8 @@ class _Reader:
         self.loose: list[Tag] = []
         self.owner: dict[int, str] = {}
         self.class_comments: dict[str, str] = {}
+        self.class_lines: dict[str, int] = {}
+        self.class_public: dict[str, bool] = {}
         self.malformed: list[tuple[int, str]] = []
         self.paren = 0  # open parentheses: a brace or `;` inside them is code, not structure
         self.statement: list[str] = []
@@ -246,6 +263,11 @@ class _Reader:
     def _at_declaration_level(self) -> bool:
         """True at namespace or class level, where statements declare things."""
         return all(f.kind in ("namespace", "anon", "class") for f in self.stack)
+
+    def _declared_open(self) -> bool:
+        """Whether a type declared here is public: in no anonymous namespace, and every class around it has its
+        `public` label in force."""
+        return all(f.kind != "anon" and (f.kind != "class" or f.access == "public") for f in self.stack)
 
     def _class_scope(self) -> list[str]:
         """The classes the reader is inside, outermost first."""
@@ -310,6 +332,8 @@ class _Reader:
             self.path, self.statement_line, scope, name, body, helper, bool(self._class_scope()), 1, comment, tags
         )
         function.params = params
+        function.override = _OVERRIDE.search(statement) is not None
+        function.public = self.path.endswith(HEADER_SUFFIXES) and not helper and self._declared_open()
         for tag in tags:
             self.owner[tag.line] = function.qualified
         self.functions.append(function)
@@ -344,8 +368,12 @@ class _Reader:
             name = match.group(1)
             qualified = "::".join([*self._class_scope(), name])
             self.class_comments[qualified] = "\n".join(t for _, t in self.lead)
+            self.class_lines[qualified] = self.statement_line
+            self.class_public[qualified] = self._declared_open()
             self._drop_lead(qualified)
-            self.stack.append(_Frame("class", name))
+            keyword = _CLASS_KEY.match(statement)
+            opening = "private" if keyword is not None and keyword.group(1) == "class" else "public"
+            self.stack.append(_Frame("class", name, access=opening))
         elif _ENUM.match(statement):
             self._drop_lead("(enum)")
             self.stack.append(_Frame("block"))
@@ -408,6 +436,8 @@ class _Reader:
             self.statement.append(char)
         if char == ":" and _ACCESS_ONLY.fullmatch("".join(self.statement).strip()):
             # `public:` ends nothing but is no part of the member below it, whose line and length start after it.
+            if self.stack and self.stack[-1].kind == "class":
+                self.stack[-1].access = "".join(self.statement).strip().rstrip(":").strip()
             self._reset_statement()
 
     def _digit_separator(self, i: int) -> bool:
@@ -497,7 +527,15 @@ class _Reader:
         if self.header_comment is None:
             self.header_comment = "\n".join(t for _, t in self.lead)
         return SourceFile(
-            self.path, self.header_comment, self.functions, self.loose, self.owner, self.class_comments, self.malformed
+            self.path,
+            self.header_comment,
+            self.functions,
+            self.loose,
+            self.owner,
+            self.class_comments,
+            self.malformed,
+            self.class_lines,
+            self.class_public,
         )
 
     def _skip_string(self, i: int) -> int:

@@ -1,0 +1,3115 @@
+# Source and test files that do not meet the standard yet (docs/guides/coney-tools-standards.md#standards), each
+# under the rules it fails with the number of findings at the last scan. The file only shrinks: a file leaves it
+# once it passes (`coney-tools standards prune`); nothing is added after the first scan, which is
+# `coney-tools standards init`. Research pages are in research/legacy.toml and a function's status is in the
+# function database.
+
+["src/ai/address_person_goal.cpp"]
+tag = 1
+
+["src/ai/ai_config.cpp"]
+tag = 7
+
+["src/ai/ai_humans.cpp"]
+tag = 16
+
+["src/ai/ai_humans.h"]
+comment = 5
+
+["src/ai/attack_action.cpp"]
+tag = 3
+
+["src/ai/attack_choice.cpp"]
+tag = 3
+
+["src/ai/attack_kinds.cpp"]
+tag = 5
+
+["src/ai/attack_places.cpp"]
+tag = 7
+
+["src/ai/attack_reach.cpp"]
+tag = 8
+
+["src/ai/attack_views.cpp"]
+tag = 20
+
+["src/ai/block_goal.cpp"]
+tag = 9
+
+["src/ai/boss_goals.cpp"]
+comment = 1
+tag = 14
+
+["src/ai/boss_goals.h"]
+comment = 4
+
+["src/ai/brain.cpp"]
+comment = 2
+tag = 29
+
+["src/ai/brain.h"]
+comment = 40
+tag = 1
+
+["src/ai/brain_events.cpp"]
+tag = 6
+
+["src/ai/brains.cpp"]
+tag = 11
+
+["src/ai/brains.h"]
+comment = 5
+tag = 1
+
+["src/ai/chase_goals.cpp"]
+tag = 16
+
+["src/ai/crew.cpp"]
+tag = 18
+
+["src/ai/crew.h"]
+comment = 3
+
+["src/ai/dealer_goal.cpp"]
+tag = 6
+
+["src/ai/dealer_goal.h"]
+comment = 7
+
+["src/ai/enemy_scan.cpp"]
+tag = 8
+
+["src/ai/engage_goals.cpp"]
+comment = 1
+tag = 6
+
+["src/ai/engage_goals.h"]
+comment = 2
+
+["src/ai/fidget_action.h"]
+comment = 2
+
+["src/ai/fight_book.cpp"]
+tag = 2
+
+["src/ai/fight_checks.cpp"]
+tag = 3
+
+["src/ai/fight_checks.h"]
+comment = 1
+
+["src/ai/fight_goal.cpp"]
+tag = 13
+
+["src/ai/fight_reactions.cpp"]
+tag = 12
+
+["src/ai/fight_trace.cpp"]
+tag = 10
+
+["src/ai/formations.cpp"]
+tag = 11
+
+["src/ai/formations.h"]
+comment = 4
+
+["src/ai/gangs.cpp"]
+tag = 18
+
+["src/ai/gangs.h"]
+comment = 4
+
+["src/ai/give_way.cpp"]
+tag = 4
+
+["src/ai/give_way.h"]
+comment = 3
+
+["src/ai/hiding.cpp"]
+tag = 3
+
+["src/ai/hub_goals.cpp"]
+tag = 13
+
+["src/ai/hub_goals.h"]
+comment = 2
+
+["src/ai/idle_goals.cpp"]
+tag = 6
+
+["src/ai/melee_goal.cpp"]
+tag = 2
+
+["src/ai/move_action.cpp"]
+comment = 1
+tag = 7
+
+["src/ai/move_to_flag_goal.cpp"]
+tag = 2
+
+["src/ai/move_to_flag_goal.h"]
+comment = 1
+
+["src/ai/move_to_human_action.cpp"]
+tag = 3
+
+["src/ai/pedestrian_goal.cpp"]
+tag = 5
+
+["src/ai/perception.cpp"]
+tag = 3
+
+["src/ai/play_anim_action.cpp"]
+tag = 2
+
+["src/ai/play_anim_action.h"]
+comment = 1
+
+["src/ai/play_dyn_animation_goal.cpp"]
+tag = 1
+
+["src/ai/play_dyn_animation_goal.h"]
+comment = 1
+
+["src/ai/reaction_goals.cpp"]
+tag = 4
+
+["src/ai/riot_goals.cpp"]
+tag = 15
+
+["src/ai/route_follower.cpp"]
+tag = 6
+
+["src/ai/route_follower.h"]
+comment = 1
+tag = 2
+
+["src/ai/route_planner.cpp"]
+comment = 1
+tag = 11
+
+["src/ai/scripted_brains.cpp"]
+tag = 67
+
+["src/ai/scripted_brains.h"]
+comment = 5
+tag = 4
+
+["src/ai/scripted_goals.cpp"]
+tag = 11
+
+["src/ai/scripted_goals.h"]
+comment = 4
+
+["src/ai/scripted_hub.cpp"]
+tag = 16
+
+["src/ai/scripted_humans.cpp"]
+tag = 51
+
+["src/ai/scripted_humans.h"]
+comment = 2
+tag = 1
+
+["src/ai/scripted_story.cpp"]
+tag = 62
+
+["src/ai/sectors.cpp"]
+tag = 4
+
+["src/ai/sectors.h"]
+comment = 1
+tag = 1
+
+["src/ai/spawners.cpp"]
+tag = 8
+
+["src/ai/steal_goals.cpp"]
+tag = 5
+
+["src/ai/steal_goals.h"]
+comment = 1
+
+["src/ai/steering.cpp"]
+tag = 8
+
+["src/ai/steering.h"]
+tag = 1
+
+["src/ai/story_goals.cpp"]
+tag = 12
+
+["src/ai/story_tactics.cpp"]
+tag = 21
+
+["src/ai/swap_prompt.cpp"]
+tag = 3
+
+["src/ai/swap_prompt.h"]
+tag = 1
+
+["src/ai/tactic_attack.cpp"]
+tag = 8
+
+["src/ai/tactic_attack.h"]
+comment = 3
+
+["src/ai/tactic_boss.cpp"]
+tag = 4
+
+["src/ai/tactic_confront.cpp"]
+tag = 4
+
+["src/ai/tactic_crowd.cpp"]
+tag = 2
+
+["src/ai/tactic_crowd.h"]
+comment = 2
+
+["src/ai/tactic_domination.cpp"]
+tag = 3
+
+["src/ai/tactic_domination.h"]
+comment = 1
+
+["src/ai/tactic_scout.cpp"]
+comment = 1
+tag = 5
+
+["src/ai/tactic_scout.h"]
+comment = 1
+
+["src/ai/targeting.cpp"]
+tag = 3
+
+["src/ai/taunt_action.h"]
+comment = 1
+
+["src/ai/threats.cpp"]
+tag = 2
+
+["src/ai/track_human_goal.cpp"]
+tag = 1
+
+["src/ai/track_human_goal.h"]
+comment = 1
+
+["src/ai/turn_action.cpp"]
+tag = 1
+
+["src/animation/anim_clip.cpp"]
+tag = 12
+
+["src/animation/anim_math.cpp"]
+comment = 2
+tag = 18
+
+["src/animation/anim_math.h"]
+comment = 4
+
+["src/animation/anim_pose.cpp"]
+tag = 7
+
+["src/animation/anim_pose.h"]
+comment = 1
+
+["src/animation/anim_task.cpp"]
+tag = 28
+
+["src/animation/anim_task.h"]
+comment = 7
+tag = 2
+
+["src/audio/adpcm.cpp"]
+tag = 3
+
+["src/audio/ambient_emitters.cpp"]
+tag = 15
+
+["src/audio/audio_format.h"]
+tag = 1
+
+["src/audio/game_sound.cpp"]
+tag = 63
+
+["src/audio/game_sound.h"]
+comment = 1
+
+["src/audio/human_sound_events.cpp"]
+tag = 9
+
+["src/audio/material_sounds.cpp"]
+tag = 2
+
+["src/audio/material_sounds.h"]
+tag = 1
+
+["src/audio/mixer.cpp"]
+comment = 1
+tag = 38
+
+["src/audio/music_player.cpp"]
+comment = 1
+tag = 11
+
+["src/audio/music_player.h"]
+comment = 1
+
+["src/audio/object_sounds.cpp"]
+tag = 4
+
+["src/audio/offline_device.cpp"]
+tag = 2
+
+["src/audio/pcm_sound.cpp"]
+tag = 1
+
+["src/audio/pcm_stream.cpp"]
+tag = 5
+
+["src/audio/sound_bank.cpp"]
+tag = 4
+
+["src/audio/sound_data.cpp"]
+tag = 8
+
+["src/audio/sound_data.h"]
+comment = 11
+tag = 1
+
+["src/audio/sound_engine.cpp"]
+tag = 29
+
+["src/audio/sound_engine.h"]
+comment = 3
+
+["src/audio/sound_matrix.cpp"]
+tag = 6
+
+["src/audio/sound_player.cpp"]
+comment = 1
+tag = 16
+
+["src/audio/sound_player.h"]
+comment = 1
+
+["src/audio/sound_stream.cpp"]
+tag = 8
+
+["src/audio/sound_stream.h"]
+tag = 1
+
+["src/audio/speech.cpp"]
+tag = 7
+
+["src/audio/spsc_queue.h"]
+tag = 2
+
+["src/audio/test_tone.cpp"]
+tag = 2
+
+["src/audio/voice_table.cpp"]
+tag = 7
+
+["src/camera/camera_blend.cpp"]
+tag = 1
+
+["src/camera/camera_lens.cpp"]
+tag = 1
+
+["src/camera/camera_shake.cpp"]
+tag = 1
+
+["src/camera/camera_view.cpp"]
+tag = 5
+
+["src/camera/cameras.cpp"]
+comment = 1
+tag = 28
+
+["src/camera/cameras.h"]
+comment = 1
+tag = 1
+
+["src/camera/failed_camera.cpp"]
+tag = 1
+
+["src/camera/failed_camera.h"]
+comment = 1
+
+["src/camera/fixed_camera.cpp"]
+tag = 2
+
+["src/camera/follow_camera.cpp"]
+tag = 23
+
+["src/camera/follow_camera.h"]
+comment = 2
+
+["src/camera/follow_collision.cpp"]
+comment = 1
+tag = 6
+
+["src/camera/locked_camera.cpp"]
+tag = 2
+
+["src/camera/path_camera.cpp"]
+tag = 4
+
+["src/camera/rail_camera.cpp"]
+tag = 11
+
+["src/camera/slow_motion.h"]
+comment = 1
+
+["src/camera/third_camera.cpp"]
+tag = 5
+
+["src/camera/win_camera.cpp"]
+tag = 2
+
+["src/camera/win_camera.h"]
+comment = 3
+
+["src/characters/anim_set.cpp"]
+tag = 3
+
+["src/characters/character_assets.cpp"]
+tag = 3
+
+["src/characters/character_class.cpp"]
+tag = 4
+
+["src/characters/character_data.cpp"]
+tag = 3
+
+["src/characters/character_list.cpp"]
+tag = 4
+
+["src/characters/character_model.cpp"]
+tag = 5
+
+["src/characters/character_rig.cpp"]
+tag = 5
+
+["src/characters/character_types.cpp"]
+tag = 13
+
+["src/characters/clump_reader.cpp"]
+tag = 15
+
+["src/characters/dynamic_clips.cpp"]
+tag = 3
+
+["src/characters/orbit_camera.cpp"]
+tag = 2
+
+["src/characters/orbit_camera.h"]
+comment = 4
+
+["src/characters/reference_render.cpp"]
+tag = 8
+
+["src/characters/starting_money.cpp"]
+tag = 1
+
+["src/combat/ai_counter.cpp"]
+tag = 1
+
+["src/combat/anim_ranges.cpp"]
+tag = 4
+
+["src/combat/attack_target.cpp"]
+tag = 2
+
+["src/combat/attacks.cpp"]
+tag = 13
+
+["src/combat/being_hit.cpp"]
+tag = 10
+
+["src/combat/combat_tuning.cpp"]
+tag = 1
+
+["src/combat/commands.cpp"]
+tag = 6
+
+["src/combat/grab.cpp"]
+tag = 6
+
+["src/combat/grabbed.cpp"]
+tag = 2
+
+["src/combat/lock_on.cpp"]
+tag = 4
+
+["src/combat/meters.cpp"]
+tag = 11
+
+["src/combat/meters.h"]
+comment = 10
+tag = 1
+
+["src/combat/player_combat.cpp"]
+tag = 12
+
+["src/combat/player_combat.h"]
+comment = 10
+
+["src/combat/rage_awards.cpp"]
+tag = 6
+
+["src/combat/reactions.cpp"]
+tag = 7
+
+["src/combat/revive.h"]
+tag = 1
+
+["src/combat/stick.h"]
+tag = 2
+
+["src/combat/stick_games.cpp"]
+tag = 9
+
+["src/combat/tandem.cpp"]
+tag = 2
+
+["src/combat/tandem.h"]
+tag = 1
+
+["src/combat/throw_aim.cpp"]
+tag = 3
+
+["src/combat/throw_aim.h"]
+comment = 3
+
+["src/combat/throw_velocity.cpp"]
+tag = 3
+
+["src/core/log.cpp"]
+comment = 2
+
+["src/core/log.h"]
+comment = 5
+
+["src/core/pad.cpp"]
+comment = 1
+
+["src/core/ps2_float.h"]
+comment = 2
+
+["src/debug/debug_lines.h"]
+comment = 2
+
+["src/debug/debug_session.h"]
+comment = 1
+
+["src/debug/net_controls.h"]
+comment = 3
+
+["src/debug/play_controls.h"]
+comment = 1
+
+["src/debug/tunables.cpp"]
+comment = 1
+
+["src/effects/blur_pulse.cpp"]
+tag = 1
+
+["src/effects/blur_pulse.h"]
+comment = 3
+tag = 1
+
+["src/effects/camera_litter.cpp"]
+tag = 5
+
+["src/effects/camera_litter.h"]
+comment = 1
+
+["src/effects/glints.cpp"]
+tag = 6
+
+["src/effects/ground_fog.cpp"]
+tag = 8
+
+["src/effects/ground_fog.h"]
+comment = 2
+
+["src/effects/level_effects.h"]
+tag = 1
+
+["src/effects/light_tasks.cpp"]
+tag = 1
+
+["src/effects/motion_blur.cpp"]
+tag = 2
+
+["src/effects/motion_blur.h"]
+tag = 1
+
+["src/effects/particle_types.cpp"]
+tag = 3
+
+["src/effects/particles.cpp"]
+tag = 28
+
+["src/effects/room_smoke.cpp"]
+tag = 3
+
+["src/effects/screen_tint.cpp"]
+tag = 4
+
+["src/effects/screen_tint.h"]
+tag = 1
+
+["src/effects/water.cpp"]
+tag = 5
+
+["src/gamemodes/front_end_services.cpp"]
+tag = 6
+
+["src/gamemodes/front_end_services.h"]
+tag = 1
+
+["src/gamemodes/game_mode_stack.cpp"]
+tag = 7
+
+["src/gamemodes/gameplay_mode.cpp"]
+tag = 30
+
+["src/gamemodes/gameplay_mode.h"]
+comment = 1
+type-doc = 1
+tag = 2
+
+["src/gamemodes/gameplay_revive.cpp"]
+tag = 3
+
+["src/gamemodes/gameplay_tag.cpp"]
+tag = 4
+
+["src/gamemodes/gameplay_uncuff.cpp"]
+tag = 5
+
+["src/gamemodes/gameplay_war_commands.cpp"]
+tag = 2
+
+["src/gamemodes/idle_mode.h"]
+tag = 1
+
+["src/gamemodes/legal_screen_mode.cpp"]
+tag = 6
+
+["src/gamemodes/level_crime_services.cpp"]
+tag = 6
+
+["src/gamemodes/level_crime_services.h"]
+tag = 1
+
+["src/gamemodes/level_flow_mode.cpp"]
+tag = 8
+
+["src/gamemodes/level_flow_mode.h"]
+tag = 1
+
+["src/gamemodes/level_items.cpp"]
+tag = 6
+
+["src/gamemodes/level_object_services.cpp"]
+tag = 21
+
+["src/gamemodes/level_object_services.h"]
+tag = 3
+
+["src/gamemodes/level_pickups.cpp"]
+tag = 19
+
+["src/gamemodes/level_pickups.h"]
+comment = 2
+
+["src/gamemodes/level_start.cpp"]
+comment = 1
+tag = 9
+
+["src/gamemodes/level_start.h"]
+comment = 8
+
+["src/gamemodes/load_entry_mode.cpp"]
+tag = 4
+
+["src/gamemodes/loading_screen.cpp"]
+tag = 10
+
+["src/gamemodes/loading_screen.h"]
+tag = 1
+
+["src/gamemodes/memory_card_mode.cpp"]
+tag = 3
+
+["src/gamemodes/mission_complete_mode.cpp"]
+tag = 1
+
+["src/gamemodes/mission_failed_mode.cpp"]
+tag = 4
+
+["src/gamemodes/movie_player.cpp"]
+tag = 5
+
+["src/gamemodes/pause_mode.cpp"]
+tag = 8
+
+["src/gamemodes/player_frame.cpp"]
+tag = 2
+
+["src/gamemodes/profile_manager_mode.cpp"]
+tag = 5
+
+["src/gamemodes/rumble_intro_layer.cpp"]
+tag = 4
+
+["src/gamemodes/rumble_menu_mode.cpp"]
+tag = 6
+
+["src/gamemodes/rumble_menu_mode.h"]
+comment = 1
+
+["src/gamemodes/rumble_result_mode.cpp"]
+tag = 3
+
+["src/gamemodes/rumble_result_mode.h"]
+comment = 1
+
+["src/gamemodes/sheet_viewer_mode.cpp"]
+tag = 4
+
+["src/gamemodes/start_up_flow.cpp"]
+tag = 21
+
+["src/gamemodes/text_viewer_mode.cpp"]
+tag = 3
+
+["src/graphics/bitmap_font.cpp"]
+tag = 4
+
+["src/graphics/car_draw.h"]
+tag = 2
+
+["src/graphics/font.cpp"]
+tag = 6
+
+["src/graphics/frame_stats.cpp"]
+tag = 1
+
+["src/graphics/human_blood.h"]
+tag = 1
+
+["src/graphics/human_lighting.cpp"]
+tag = 4
+
+["src/graphics/level_lighting.cpp"]
+tag = 1
+
+["src/graphics/light_manager.cpp"]
+tag = 18
+
+["src/graphics/light_manager.h"]
+comment = 7
+tag = 2
+
+["src/graphics/overlay_camera.cpp"]
+tag = 4
+
+["src/graphics/particle_page.cpp"]
+tag = 2
+
+["src/graphics/ps2_world_mesh.cpp"]
+tag = 7
+
+["src/graphics/reference_sprites.cpp"]
+tag = 8
+
+["src/graphics/rw_stream.cpp"]
+tag = 9
+
+["src/graphics/screen.cpp"]
+tag = 3
+
+["src/graphics/screen.h"]
+tag = 1
+
+["src/graphics/screen_fade.cpp"]
+tag = 2
+
+["src/graphics/sprite_batch.cpp"]
+tag = 8
+
+["src/graphics/sprite_batch.h"]
+tag = 1
+
+["src/graphics/texture_grid.cpp"]
+tag = 3
+
+["src/graphics/texture_lod.cpp"]
+tag = 2
+
+["src/graphics/throw_arc.cpp"]
+tag = 2
+
+["src/gui/bar.cpp"]
+tag = 1
+
+["src/gui/base_widget.cpp"]
+tag = 2
+
+["src/gui/colour_table.h"]
+tag = 1
+
+["src/gui/debug_menu_view.cpp"]
+tag = 8
+
+["src/gui/debug_text_painter.cpp"]
+tag = 8
+
+["src/gui/global_strings.cpp"]
+tag = 2
+
+["src/gui/markup.cpp"]
+tag = 4
+
+["src/gui/menu_input.cpp"]
+tag = 2
+
+["src/gui/message_box.cpp"]
+tag = 2
+
+["src/gui/option_grid.cpp"]
+tag = 13
+
+["src/gui/pause_menu/control_menu.cpp"]
+tag = 6
+
+["src/gui/pause_menu/mission_failed_menu.cpp"]
+tag = 5
+
+["src/gui/pause_menu/pause_menu.cpp"]
+tag = 18
+
+["src/gui/pause_menu/yes_no_box.cpp"]
+tag = 7
+
+["src/gui/profile_management_gui/pm_controller.cpp"]
+tag = 3
+
+["src/gui/profile_management_gui/pm_extras.cpp"]
+tag = 1
+
+["src/gui/profile_management_gui/pm_greet.cpp"]
+tag = 2
+
+["src/gui/profile_management_gui/pm_list_screen.cpp"]
+tag = 4
+
+["src/gui/profile_management_gui/pm_look.cpp"]
+tag = 8
+
+["src/gui/profile_management_gui/pm_mode.cpp"]
+tag = 2
+
+["src/gui/profile_management_gui/pm_new_game_screens.cpp"]
+tag = 10
+
+["src/gui/profile_management_gui/pm_new_game_screens.h"]
+comment = 5
+
+["src/gui/profile_management_gui/pm_placeholder.cpp"]
+tag = 2
+
+["src/gui/profile_management_gui/pm_profile_screens.cpp"]
+tag = 8
+
+["src/gui/profile_management_gui/pm_screen.cpp"]
+tag = 12
+
+["src/gui/profile_management_gui/pm_shared.h"]
+tag = 3
+
+["src/gui/profile_management_gui/pm_widgets.cpp"]
+tag = 6
+
+["src/gui/rumble_mode_gui/rumble_data.cpp"]
+tag = 2
+
+["src/gui/rumble_mode_gui/rumble_gang_chooser.cpp"]
+tag = 7
+
+["src/gui/rumble_mode_gui/rumble_intro.cpp"]
+tag = 10
+
+["src/gui/rumble_mode_gui/rumble_intro.h"]
+comment = 4
+tag = 1
+
+["src/gui/rumble_mode_gui/rumble_menu.cpp"]
+tag = 21
+
+["src/gui/rumble_mode_gui/rumble_menu.h"]
+comment = 2
+
+["src/gui/rumble_mode_gui/rumble_result_menu.cpp"]
+tag = 4
+
+["src/gui/rumble_mode_gui/rumble_result_menu.h"]
+comment = 4
+
+["src/gui/screen_flow_controller.cpp"]
+tag = 5
+
+["src/gui/scrolling_menu.cpp"]
+tag = 7
+
+["src/gui/text_layout.cpp"]
+comment = 1
+tag = 14
+
+["src/gui/text_widget.cpp"]
+tag = 5
+
+["src/gui/widget.cpp"]
+tag = 2
+
+["src/hud/counter_panels.cpp"]
+tag = 4
+
+["src/hud/counting_number.cpp"]
+tag = 2
+
+["src/hud/credits.cpp"]
+comment = 1
+tag = 6
+
+["src/hud/credits.h"]
+comment = 4
+
+["src/hud/crime_panel.cpp"]
+tag = 3
+
+["src/hud/crime_panel.h"]
+comment = 1
+
+["src/hud/fixed_cam_icon.cpp"]
+tag = 3
+
+["src/hud/fixed_cam_icon.h"]
+comment = 2
+
+["src/hud/health_rings.cpp"]
+tag = 10
+
+["src/hud/health_rings.h"]
+comment = 1
+
+["src/hud/hint_box.cpp"]
+tag = 10
+
+["src/hud/hud.cpp"]
+tag = 16
+
+["src/hud/hud.h"]
+comment = 11
+tag = 2
+
+["src/hud/hud_audio.h"]
+tag = 1
+
+["src/hud/hud_canvas.cpp"]
+tag = 7
+
+["src/hud/hud_canvas.h"]
+tag = 3
+
+["src/hud/lock_pick_hud.cpp"]
+tag = 8
+
+["src/hud/lock_pick_hud.h"]
+comment = 1
+
+["src/hud/mash_meter.cpp"]
+tag = 3
+
+["src/hud/messages.cpp"]
+tag = 5
+
+["src/hud/mug_meter.cpp"]
+tag = 4
+
+["src/hud/mug_meter.h"]
+comment = 4
+
+["src/hud/num_indicator.cpp"]
+tag = 3
+
+["src/hud/player_panel.cpp"]
+tag = 12
+
+["src/hud/player_panel.h"]
+comment = 11
+tag = 1
+
+["src/hud/player_panel_render.cpp"]
+comment = 5
+tag = 6
+
+["src/hud/radar.cpp"]
+comment = 1
+tag = 3
+
+["src/hud/scripted_bars.cpp"]
+tag = 6
+
+["src/hud/spinner.cpp"]
+tag = 3
+
+["src/hud/spinner.h"]
+comment = 1
+
+["src/hud/stereo_hud.cpp"]
+tag = 8
+
+["src/hud/stereo_hud.h"]
+comment = 1
+
+["src/hud/tag_hud.cpp"]
+tag = 3
+
+["src/hud/tag_hud.h"]
+comment = 2
+
+["src/hud/war_command_display.cpp"]
+tag = 6
+
+["src/human/body.cpp"]
+tag = 7
+
+["src/human/carried_prop.h"]
+tag = 1
+
+["src/human/climb.cpp"]
+comment = 2
+tag = 9
+
+["src/human/combatant.h"]
+comment = 1
+tag = 1
+
+["src/human/fighter.cpp"]
+tag = 34
+
+["src/human/fighter.h"]
+comment = 13
+tag = 3
+
+["src/human/fighter_clips.h"]
+tag = 6
+
+["src/human/fighter_counter.cpp"]
+tag = 1
+
+["src/human/fighter_grab.cpp"]
+comment = 1
+tag = 21
+
+["src/human/fighter_tandem.cpp"]
+tag = 5
+
+["src/human/fighter_victim.cpp"]
+tag = 12
+
+["src/human/holdable.h"]
+comment = 1
+tag = 1
+
+["src/human/human.cpp"]
+comment = 2
+tag = 52
+
+["src/human/human.h"]
+comment = 11
+tag = 3
+
+["src/human/human_animator.cpp"]
+tag = 39
+
+["src/human/human_animator.h"]
+comment = 4
+
+["src/human/human_flight.cpp"]
+tag = 2
+
+["src/human/human_held.cpp"]
+tag = 4
+
+["src/human/human_hiding.cpp"]
+tag = 1
+
+["src/human/human_revive.cpp"]
+tag = 4
+
+["src/human/human_script.cpp"]
+tag = 3
+
+["src/human/human_sounds.cpp"]
+comment = 1
+tag = 2
+
+["src/human/human_sounds.h"]
+comment = 1
+
+["src/human/humans.cpp"]
+tag = 7
+
+["src/human/jump.cpp"]
+tag = 1
+
+["src/human/locomotion.cpp"]
+tag = 10
+
+["src/human/locomotion_gate.cpp"]
+tag = 1
+
+["src/human/pair_placement.cpp"]
+tag = 5
+
+["src/human/player.cpp"]
+tag = 22
+
+["src/human/player.h"]
+comment = 6
+
+["src/human/player_trace.cpp"]
+tag = 2
+
+["src/human/stamina.cpp"]
+tag = 3
+
+["src/human/stamina.h"]
+comment = 2
+
+["src/human/strike_shapes.cpp"]
+tag = 14
+
+["src/human/strike_shapes.h"]
+comment = 4
+
+["src/human/tag_colour.h"]
+tag = 2
+
+["src/human/target_human.cpp"]
+tag = 14
+
+["src/human/target_human.h"]
+comment = 9
+
+["src/human/turn_and_slide.cpp"]
+tag = 3
+
+["src/human/turn_and_slide.h"]
+comment = 3
+
+["src/human/victim.cpp"]
+tag = 10
+
+["src/human/victim.h"]
+comment = 4
+tag = 2
+
+["src/human/way_clear.cpp"]
+tag = 1
+
+["src/human/workout.cpp"]
+tag = 4
+
+["src/human/workout.h"]
+comment = 1
+
+["src/movies/captions.cpp"]
+tag = 3
+
+["src/movies/disc_captions.cpp"]
+tag = 4
+
+["src/movies/movie_mode.cpp"]
+tag = 11
+
+["src/net/bit_stream.cpp"]
+comment = 3
+
+["src/net/bit_stream.h"]
+comment = 6
+
+["src/net/input_buffer.h"]
+comment = 2
+
+["src/net/link_conditioner.h"]
+comment = 1
+
+["src/net/link_quality.h"]
+comment = 2
+
+["src/net/net_client.h"]
+comment = 5
+
+["src/net/net_server.h"]
+comment = 2
+
+["src/physics/body_sweep.cpp"]
+tag = 10
+
+["src/physics/contact.h"]
+tag = 3
+
+["src/physics/mesh_sweep.cpp"]
+tag = 11
+
+["src/physics/overlaps.cpp"]
+tag = 23
+
+["src/physics/shapes.h"]
+tag = 2
+
+["src/physics/sphere_box_sweep.cpp"]
+tag = 7
+
+["src/physics/sphere_triangle.cpp"]
+tag = 8
+
+["src/platform/character_lights.cpp"]
+comment = 1
+
+["src/platform/character_mesh.cpp"]
+comment = 1
+
+["src/platform/character_viewer_mode.cpp"]
+comment = 1
+
+["src/platform/character_viewer_mode.h"]
+comment = 3
+
+["src/platform/clip_recorder.cpp"]
+comment = 1
+
+["src/platform/ffmpeg_movie_decoder.cpp"]
+comment = 1
+
+["src/platform/front_end_scene.cpp"]
+comment = 1
+
+["src/platform/game_session.h"]
+comment = 1
+
+["src/platform/hud_layer.cpp"]
+comment = 2
+
+["src/platform/hud_layer.h"]
+comment = 1
+
+["src/platform/imgui_model_view.cpp"]
+comment = 2
+
+["src/platform/imgui_model_view.h"]
+comment = 2
+
+["src/platform/imgui_overlay.cpp"]
+comment = 1
+
+["src/platform/imgui_ui_scale.cpp"]
+comment = 3
+
+["src/platform/imgui_ui_scale.h"]
+comment = 3
+
+["src/platform/parked_cars.cpp"]
+comment = 1
+
+["src/platform/perf_probes.cpp"]
+comment = 6
+
+["src/platform/placed_objects.cpp"]
+comment = 2
+
+["src/platform/placed_objects.h"]
+comment = 1
+
+["src/platform/play_level_controls.h"]
+comment = 1
+
+["src/platform/play_level_inspect.cpp"]
+comment = 1
+
+["src/platform/play_level_mode.cpp"]
+comment = 1
+
+["src/platform/play_level_mode.h"]
+comment = 2
+
+["src/platform/play_scenery.h"]
+comment = 1
+
+["src/platform/reference_renderer.cpp"]
+comment = 1
+
+["src/platform/sandbox_play_scenery.h"]
+comment = 1
+
+["src/platform/sandbox_renderer.cpp"]
+comment = 1
+
+["src/platform/sandbox_viewer_mode.h"]
+comment = 2
+
+["src/platform/scene_lighting.cpp"]
+comment = 1
+
+["src/platform/scene_stage.cpp"]
+comment = 2
+
+["src/platform/scene_stage.h"]
+comment = 3
+
+["src/platform/texture_dictionary.cpp"]
+comment = 1
+
+["src/platform/texture_lookup.cpp"]
+comment = 1
+
+["src/platform/world_atomic.cpp"]
+comment = 2
+
+["src/platform/world_viewer_mode.h"]
+comment = 2
+
+["src/raycast/collision_builder.cpp"]
+comment = 2
+tag = 11
+
+["src/raycast/collision_mesh.cpp"]
+comment = 4
+tag = 16
+
+["src/raycast/collision_mesh.h"]
+tag = 1
+
+["src/sandbox/sandbox_mesh.cpp"]
+comment = 2
+
+["src/sandbox/sandbox_world.h"]
+comment = 3
+
+["src/scenes/letterbox.cpp"]
+tag = 3
+
+["src/scenes/scene_cache.cpp"]
+tag = 7
+
+["src/scenes/scene_cache.h"]
+comment = 1
+
+["src/scenes/scene_disc.cpp"]
+tag = 2
+
+["src/scenes/scene_list.cpp"]
+tag = 1
+
+["src/scenes/scene_list.h"]
+comment = 2
+
+["src/scenes/scene_player.cpp"]
+tag = 34
+
+["src/scenes/scene_player.h"]
+comment = 3
+
+["src/scenes/scene_record.cpp"]
+tag = 20
+
+["src/scenes/scene_record.h"]
+comment = 3
+
+["src/scripting/ai_bindings.cpp"]
+tag = 10
+
+["src/scripting/ai_bindings.h"]
+comment = 2
+
+["src/scripting/anim_callbacks.cpp"]
+tag = 3
+
+["src/scripting/anim_callbacks.h"]
+comment = 1
+
+["src/scripting/arena_bindings.cpp"]
+tag = 11
+
+["src/scripting/binding_args.h"]
+tag = 6
+
+["src/scripting/camera_bindings.cpp"]
+tag = 8
+
+["src/scripting/car_bindings.cpp"]
+tag = 3
+
+["src/scripting/character_bindings.cpp"]
+tag = 8
+
+["src/scripting/config_strings.cpp"]
+tag = 4
+
+["src/scripting/effects_bindings.cpp"]
+tag = 6
+
+["src/scripting/gang_bindings.cpp"]
+tag = 5
+
+["src/scripting/hub_bindings.cpp"]
+tag = 14
+
+["src/scripting/hub_bindings.h"]
+comment = 4
+tag = 1
+
+["src/scripting/hub_world_bindings.cpp"]
+tag = 8
+
+["src/scripting/hud_bindings.cpp"]
+tag = 15
+
+["src/scripting/human_bindings.cpp"]
+tag = 18
+
+["src/scripting/level_bindings.cpp"]
+tag = 5
+
+["src/scripting/lighting_bindings.cpp"]
+tag = 5
+
+["src/scripting/lua_chunk.cpp"]
+tag = 6
+
+["src/scripting/lua_libraries.cpp"]
+tag = 56
+
+["src/scripting/lua_value.cpp"]
+comment = 1
+tag = 11
+
+["src/scripting/lua_value.h"]
+comment = 1
+
+["src/scripting/lua_vm.cpp"]
+tag = 17
+
+["src/scripting/message_handlers.cpp"]
+tag = 4
+
+["src/scripting/message_handlers.h"]
+tag = 2
+
+["src/scripting/mission4_bindings.cpp"]
+tag = 10
+
+["src/scripting/mission7_bindings.cpp"]
+tag = 7
+
+["src/scripting/object_bindings.cpp"]
+tag = 21
+
+["src/scripting/player_bindings.cpp"]
+tag = 9
+
+["src/scripting/rumble_bindings.cpp"]
+tag = 5
+
+["src/scripting/rumble_match_bindings.cpp"]
+tag = 5
+
+["src/scripting/scene_bindings.cpp"]
+tag = 8
+
+["src/scripting/script_bindings.cpp"]
+comment = 3
+tag = 19
+
+["src/scripting/script_system.cpp"]
+tag = 15
+
+["src/scripting/sound_bindings.cpp"]
+tag = 19
+
+["src/scripting/sound_bindings.h"]
+tag = 1
+
+["src/scripting/spawn_bindings.cpp"]
+tag = 3
+
+["src/scripting/story_bindings.cpp"]
+tag = 28
+
+["src/scripting/story_bindings.h"]
+comment = 2
+tag = 1
+
+["src/scripting/story_effects_bindings.cpp"]
+tag = 9
+
+["src/scripting/trigger_bindings.cpp"]
+tag = 3
+
+["src/scripting/world_bindings.cpp"]
+tag = 4
+
+["src/warriors/character_rules.h"]
+comment = 1
+
+["src/warriors/created_humans.cpp"]
+tag = 5
+
+["src/warriors/created_humans.h"]
+tag = 1
+
+["src/warriors/crime_reports.cpp"]
+tag = 13
+
+["src/warriors/crime_reports.h"]
+comment = 1
+tag = 1
+
+["src/warriors/disk_profile_store.cpp"]
+tag = 13
+
+["src/warriors/game_over.cpp"]
+tag = 2
+
+["src/warriors/game_over.h"]
+comment = 1
+
+["src/warriors/inventory.cpp"]
+tag = 7
+
+["src/warriors/level_table.cpp"]
+tag = 5
+
+["src/warriors/player_state.h"]
+tag = 2
+
+["src/warriors/player_stats.cpp"]
+tag = 6
+
+["src/warriors/profile_record.cpp"]
+tag = 11
+
+["src/warriors/profile_record.h"]
+tag = 1
+
+["src/warriors/profile_store.cpp"]
+tag = 7
+
+["src/warriors/stop_watch.cpp"]
+tag = 1
+
+["src/warriors/story_state.h"]
+tag = 1
+
+["src/warriors/tag_game.cpp"]
+tag = 12
+
+["src/warriors/tag_game.h"]
+comment = 7
+
+["src/warriors/tag_session.cpp"]
+tag = 5
+
+["src/warriors/tag_session.h"]
+comment = 2
+
+["src/warriors/unlock_records.cpp"]
+tag = 4
+
+["src/warriors/unlockables.cpp"]
+tag = 1
+
+["src/warriors/unlockables.h"]
+tag = 2
+
+["src/world/debug_camera.cpp"]
+tag = 3
+
+["src/world/debug_camera.h"]
+comment = 3
+
+["src/world/level_object.cpp"]
+tag = 8
+
+["src/world/path_map.cpp"]
+tag = 15
+
+["src/world/path_map.h"]
+comment = 5
+
+["src/world/sector_budget.cpp"]
+tag = 4
+
+["src/world/streamed_world.cpp"]
+tag = 11
+
+["src/world/view_frustum.cpp"]
+tag = 4
+
+["src/world/world_manifest.cpp"]
+tag = 2
+
+["src/world/world_streamer.cpp"]
+tag = 1
+
+["src/world/world_streams.cpp"]
+tag = 24
+
+["src/world_objects/car_hits.cpp"]
+tag = 7
+
+["src/world_objects/cars.cpp"]
+tag = 10
+
+["src/world_objects/cars.h"]
+tag = 3
+
+["src/world_objects/doors.cpp"]
+comment = 4
+tag = 34
+
+["src/world_objects/doors.h"]
+comment = 4
+
+["src/world_objects/drawn_poses.cpp"]
+tag = 1
+
+["src/world_objects/drawn_poses.h"]
+tag = 3
+
+["src/world_objects/flag_net.cpp"]
+tag = 2
+
+["src/world_objects/flags.cpp"]
+tag = 3
+
+["src/world_objects/flags.h"]
+tag = 1
+
+["src/world_objects/glass.cpp"]
+tag = 8
+
+["src/world_objects/hats.cpp"]
+tag = 9
+
+["src/world_objects/level_objects.cpp"]
+tag = 4
+
+["src/world_objects/level_objects.h"]
+tag = 1
+
+["src/world_objects/lock_pick.cpp"]
+tag = 6
+
+["src/world_objects/lock_pick.h"]
+comment = 2
+
+["src/world_objects/loose_objects.cpp"]
+tag = 10
+
+["src/world_objects/nav_links.cpp"]
+tag = 10
+
+["src/world_objects/object_bodies.cpp"]
+tag = 5
+
+["src/world_objects/object_breaks.cpp"]
+tag = 1
+
+["src/world_objects/object_list.cpp"]
+tag = 2
+
+["src/world_objects/object_services.cpp"]
+tag = 9
+
+["src/world_objects/object_tasks.cpp"]
+tag = 9
+
+["src/world_objects/object_tasks.h"]
+comment = 3
+tag = 2
+
+["src/world_objects/object_types.cpp"]
+tag = 2
+
+["src/world_objects/pickups.cpp"]
+tag = 1
+
+["src/world_objects/placed_objects_file.cpp"]
+tag = 5
+
+["src/world_objects/props.cpp"]
+tag = 13
+
+["src/world_objects/props.h"]
+tag = 1
+
+["src/world_objects/radios.cpp"]
+tag = 8
+
+["src/world_objects/spawn_records.cpp"]
+tag = 3
+
+["src/world_objects/spawn_records.h"]
+tag = 1
+
+["src/world_objects/spinning_icons.cpp"]
+tag = 3
+
+["src/world_objects/tag_spots.cpp"]
+tag = 10
+
+["src/world_objects/tag_spots.h"]
+comment = 2
+
+["src/world_objects/trigger_spheres.cpp"]
+tag = 5
+
+["src/world_objects/trigger_spheres.h"]
+comment = 1
+tag = 1
+
+["src/world_objects/volume_boxes.cpp"]
+tag = 2
+
+["tests/ai/attack_choice_test.cpp"]
+citation = 8
+
+["tests/ai/attack_reach_test.cpp"]
+citation = 4
+
+["tests/ai/boss_goals_test.cpp"]
+citation = 4
+
+["tests/ai/brain_events_test.cpp"]
+citation = 6
+
+["tests/ai/brain_test.cpp"]
+citation = 24
+
+["tests/ai/crew_test.cpp"]
+citation = 17
+
+["tests/ai/disc_ai_config_test.cpp"]
+citation = 1
+
+["tests/ai/disc_route_test.cpp"]
+citation = 3
+
+["tests/ai/enemy_scan_test.cpp"]
+citation = 4
+
+["tests/ai/fidget_action_test.cpp"]
+citation = 5
+
+["tests/ai/fight_goal_test.cpp"]
+citation = 11
+
+["tests/ai/fight_reactions_test.cpp"]
+citation = 7
+
+["tests/ai/fight_trace_test.cpp"]
+citation = 23
+
+["tests/ai/formations_test.cpp"]
+citation = 4
+
+["tests/ai/gangs_test.cpp"]
+citation = 13
+
+["tests/ai/give_way_test.cpp"]
+citation = 9
+
+["tests/ai/hiding_test.cpp"]
+citation = 3
+
+["tests/ai/move_action_test.cpp"]
+citation = 29
+
+["tests/ai/perception_test.cpp"]
+citation = 4
+
+["tests/ai/riot_goals_test.cpp"]
+citation = 8
+
+["tests/ai/route_planner_test.cpp"]
+citation = 15
+
+["tests/ai/rumble_tactics_test.cpp"]
+citation = 5
+
+["tests/ai/run_carrot_test.cpp"]
+citation = 6
+
+["tests/ai/scout_tactic_test.cpp"]
+citation = 4
+
+["tests/ai/scripted_character_test.cpp"]
+citation = 6
+
+["tests/ai/scripted_goals_test.cpp"]
+citation = 16
+
+["tests/ai/scripted_hub_test.cpp"]
+citation = 5
+
+["tests/ai/scripted_humans_test.cpp"]
+citation = 21
+
+["tests/ai/scripted_story_test.cpp"]
+citation = 15
+
+["tests/ai/sectors_test.cpp"]
+citation = 5
+
+["tests/ai/spawner_money_test.cpp"]
+citation = 2
+
+["tests/ai/spawners_test.cpp"]
+citation = 17
+
+["tests/ai/steal_goals_test.cpp"]
+citation = 6
+
+["tests/ai/steering_test.cpp"]
+citation = 18
+
+["tests/ai/swap_prompt_test.cpp"]
+citation = 8
+
+["tests/ai/tactic_attack_test.cpp"]
+citation = 17
+
+["tests/ai/tactics_test.cpp"]
+citation = 16
+
+["tests/ai/targeting_test.cpp"]
+citation = 6
+
+["tests/ai/taunt_action_test.cpp"]
+citation = 4
+
+["tests/ai/threats_test.cpp"]
+citation = 6
+
+["tests/animation/anim_clip_test.cpp"]
+citation = 4
+
+["tests/animation/anim_math_test.cpp"]
+citation = 3
+
+["tests/animation/anim_pose_test.cpp"]
+citation = 6
+
+["tests/animation/anim_task_test.cpp"]
+citation = 11
+
+["tests/animation/clip_sound_events_test.cpp"]
+citation = 3
+
+["tests/animation/disc_anim_clips_test.cpp"]
+citation = 1
+
+["tests/animation/held_flags_test.cpp"]
+citation = 7
+
+["tests/animation/skeleton_test.cpp"]
+citation = 2
+
+["tests/audio/adpcm_test.cpp"]
+citation = 3
+
+["tests/audio/disc_sound_test.cpp"]
+citation = 1
+
+["tests/audio/game_sound_test.cpp"]
+citation = 22
+
+["tests/audio/human_sound_events_test.cpp"]
+citation = 13
+
+["tests/audio/mixer_test.cpp"]
+citation = 19
+
+["tests/audio/music_player_test.cpp"]
+citation = 6
+
+["tests/audio/object_sounds_test.cpp"]
+citation = 1
+
+["tests/audio/sound_data_test.cpp"]
+citation = 7
+
+["tests/audio/sound_engine_test.cpp"]
+citation = 21
+
+["tests/audio/sound_matrix_test.cpp"]
+citation = 7
+
+["tests/camera/camera_lens_test.cpp"]
+citation = 2
+
+["tests/camera/cameras_test.cpp"]
+citation = 18
+
+["tests/camera/failed_camera_test.cpp"]
+citation = 5
+
+["tests/camera/follow_camera_test.cpp"]
+citation = 27
+
+["tests/camera/follow_collision_test.cpp"]
+citation = 3
+
+["tests/camera/follow_script_test.cpp"]
+citation = 11
+
+["tests/camera/path_camera_test.cpp"]
+citation = 5
+
+["tests/camera/rail_camera_test.cpp"]
+citation = 5
+
+["tests/camera/win_camera_test.cpp"]
+citation = 5
+
+["tests/characters/character_class_test.cpp"]
+citation = 4
+
+["tests/characters/character_data_test.cpp"]
+citation = 2
+
+["tests/characters/character_list_test.cpp"]
+citation = 2
+
+["tests/characters/character_model_test.cpp"]
+citation = 2
+
+["tests/characters/character_rig_test.cpp"]
+citation = 1
+
+["tests/characters/character_types_test.cpp"]
+citation = 7
+
+["tests/characters/disc_characters_test.cpp"]
+citation = 1
+
+["tests/characters/dynamic_clips_test.cpp"]
+citation = 1
+
+["tests/characters/orbit_camera_test.cpp"]
+citation = 3
+
+["tests/characters/reference_render_test.cpp"]
+citation = 9
+
+["tests/characters/starting_money_test.cpp"]
+citation = 2
+
+["tests/combat/ai_counter_test.cpp"]
+citation = 3
+
+["tests/combat/anim_ranges_test.cpp"]
+citation = 3
+
+["tests/combat/attack_target_test.cpp"]
+citation = 4
+
+["tests/combat/attacks_test.cpp"]
+citation = 17
+
+["tests/combat/being_hit_test.cpp"]
+citation = 5
+
+["tests/combat/commands_test.cpp"]
+citation = 8
+
+["tests/combat/disc_combat_test.cpp"]
+citation = 1
+
+["tests/combat/grab_test.cpp"]
+citation = 11
+
+["tests/combat/grabbed_test.cpp"]
+citation = 6
+
+["tests/combat/lock_on_test.cpp"]
+citation = 4
+
+["tests/combat/meters_test.cpp"]
+citation = 10
+
+["tests/combat/player_combat_test.cpp"]
+citation = 28
+
+["tests/combat/rage_awards_test.cpp"]
+citation = 7
+
+["tests/combat/reactions_test.cpp"]
+citation = 8
+
+["tests/combat/revive_test.cpp"]
+citation = 5
+
+["tests/combat/stick_games_test.cpp"]
+citation = 9
+
+["tests/combat/tandem_test.cpp"]
+citation = 6
+
+["tests/combat/throw_aim_test.cpp"]
+citation = 8
+
+["tests/combat/throw_velocity_test.cpp"]
+citation = 6
+
+["tests/core/chunk_system_test.cpp"]
+citation = 11
+
+["tests/core/clip_recording_test.cpp"]
+citation = 7
+
+["tests/core/deferred_input_test.cpp"]
+citation = 1
+
+["tests/core/event_log_test.cpp"]
+citation = 2
+
+["tests/core/frame_clock_test.cpp"]
+citation = 12
+
+["tests/core/frame_rate_meter_test.cpp"]
+citation = 3
+
+["tests/core/game_random_test.cpp"]
+citation = 4
+
+["tests/core/game_timer_test.cpp"]
+citation = 3
+
+["tests/core/input_script_test.cpp"]
+citation = 13
+
+["tests/core/interpolation_test.cpp"]
+citation = 4
+
+["tests/core/log_test.cpp"]
+citation = 14
+
+["tests/core/name_hash_test.cpp"]
+citation = 4
+
+["tests/core/options_test.cpp"]
+citation = 59
+
+["tests/core/pad_test.cpp"]
+citation = 9
+
+["tests/core/parse_number_test.cpp"]
+citation = 2
+
+["tests/core/perf_test.cpp"]
+citation = 8
+
+["tests/core/player_options_test.cpp"]
+citation = 6
+
+["tests/core/ps2_float_test.cpp"]
+citation = 2
+
+["tests/core/window_display_test.cpp"]
+citation = 8
+
+["tests/debug/anim_catalog_test.cpp"]
+citation = 4
+
+["tests/debug/anim_page_test.cpp"]
+citation = 2
+
+["tests/debug/audio_page_test.cpp"]
+citation = 2
+
+["tests/debug/combat_tunables_test.cpp"]
+citation = 2
+
+["tests/debug/debug_session_test.cpp"]
+citation = 12
+
+["tests/debug/entity_inspector_test.cpp"]
+citation = 9
+
+["tests/debug/fighter_spawn_test.cpp"]
+citation = 7
+
+["tests/debug/human_shapes_test.cpp"]
+citation = 7
+
+["tests/debug/input_gate_test.cpp"]
+citation = 7
+
+["tests/debug/menu_navigator_test.cpp"]
+citation = 7
+
+["tests/debug/movies_page_test.cpp"]
+citation = 3
+
+["tests/debug/native_caller_test.cpp"]
+citation = 8
+
+["tests/debug/net_page_test.cpp"]
+citation = 3
+
+["tests/debug/pad_menu_input_test.cpp"]
+citation = 4
+
+["tests/debug/play_pages_test.cpp"]
+citation = 15
+
+["tests/debug/story_missions_test.cpp"]
+citation = 3
+
+["tests/debug/time_scale_test.cpp"]
+citation = 6
+
+["tests/debug/tunables_test.cpp"]
+citation = 7
+
+["tests/debug/ui_scale_test.cpp"]
+citation = 6
+
+["tests/effects/blur_pulse_test.cpp"]
+citation = 4
+
+["tests/effects/effect_culling_test.cpp"]
+citation = 2
+
+["tests/effects/glints_test.cpp"]
+citation = 5
+
+["tests/effects/ground_fog_test.cpp"]
+citation = 11
+
+["tests/effects/light_tasks_test.cpp"]
+citation = 3
+
+["tests/effects/motion_blur_test.cpp"]
+citation = 2
+
+["tests/effects/particles_test.cpp"]
+citation = 16
+
+["tests/effects/room_smoke_test.cpp"]
+citation = 4
+
+["tests/effects/screen_tint_test.cpp"]
+citation = 3
+
+["tests/effects/water_test.cpp"]
+citation = 3
+
+["tests/fileio/disc_test.cpp"]
+citation = 8
+
+["tests/fileio/executable_test.cpp"]
+citation = 2
+
+["tests/fileio/reader_test.cpp"]
+citation = 2
+
+["tests/fileio/stream_test.cpp"]
+citation = 2
+
+["tests/fileio/wad_index_test.cpp"]
+citation = 5
+
+["tests/fileio/wad_test.cpp"]
+citation = 2
+
+["tests/gamemodes/disc_front_end_test.cpp"]
+citation = 1
+
+["tests/gamemodes/disc_lighting_test.cpp"]
+citation = 1
+
+["tests/gamemodes/frame_rate_test.cpp"]
+citation = 2
+
+["tests/gamemodes/game_mode_stack_test.cpp"]
+citation = 17
+
+["tests/gamemodes/gameplay_objects_test.cpp"]
+citation = 5
+
+["tests/gamemodes/gameplay_sound_call_test.cpp"]
+citation = 1
+
+["tests/gamemodes/gameplay_tag_test.cpp"]
+citation = 4
+
+["tests/gamemodes/idle_mode_test.cpp"]
+citation = 2
+
+["tests/gamemodes/legal_screen_mode_test.cpp"]
+citation = 6
+
+["tests/gamemodes/level_pickups_test.cpp"]
+citation = 15
+
+["tests/gamemodes/load_entry_mode_test.cpp"]
+citation = 2
+
+["tests/gamemodes/loading_screen_test.cpp"]
+citation = 13
+
+["tests/gamemodes/movie_player_test.cpp"]
+citation = 5
+
+["tests/gamemodes/pause_mode_test.cpp"]
+citation = 7
+
+["tests/gamemodes/rumble_start_test.cpp"]
+citation = 3
+
+["tests/gamemodes/sheet_viewer_mode_test.cpp"]
+citation = 1
+
+["tests/gamemodes/start_up_flow_test.cpp"]
+citation = 17
+
+["tests/gamemodes/story_start_test.cpp"]
+citation = 11
+
+["tests/gamemodes/text_viewer_mode_test.cpp"]
+citation = 1
+
+["tests/graphics/car_draw_test.cpp"]
+citation = 6
+
+["tests/graphics/font_test.cpp"]
+citation = 7
+
+["tests/graphics/frame_stats_test.cpp"]
+citation = 2
+
+["tests/graphics/human_blood_test.cpp"]
+citation = 3
+
+["tests/graphics/human_lighting_test.cpp"]
+citation = 5
+
+["tests/graphics/light_manager_test.cpp"]
+citation = 13
+
+["tests/graphics/overlay_camera_test.cpp"]
+citation = 7
+
+["tests/graphics/particle_page_test.cpp"]
+citation = 5
+
+["tests/graphics/ps2_world_mesh_test.cpp"]
+citation = 8
+
+["tests/graphics/reference_sprites_test.cpp"]
+citation = 5
+
+["tests/graphics/rw_stream_test.cpp"]
+citation = 6
+
+["tests/graphics/screen_fade_test.cpp"]
+citation = 4
+
+["tests/graphics/screen_test.cpp"]
+citation = 5
+
+["tests/graphics/sprite_batch_test.cpp"]
+citation = 8
+
+["tests/graphics/texture_grid_test.cpp"]
+citation = 6
+
+["tests/graphics/texture_lod_test.cpp"]
+citation = 3
+
+["tests/graphics/throw_arc_test.cpp"]
+citation = 11
+
+["tests/gui/control_menu_test.cpp"]
+citation = 10
+
+["tests/gui/debug_menu_view_test.cpp"]
+citation = 7
+
+["tests/gui/disc_text_test.cpp"]
+citation = 1
+
+["tests/gui/markup_test.cpp"]
+citation = 5
+
+["tests/gui/menu_input_test.cpp"]
+citation = 8
+
+["tests/gui/pause_menu_test.cpp"]
+citation = 16
+
+["tests/gui/profile_management_gui/pm_controller_test.cpp"]
+citation = 19
+
+["tests/gui/rumble_mode_gui/rumble_match_screens_test.cpp"]
+citation = 9
+
+["tests/gui/rumble_mode_gui/rumble_menu_test.cpp"]
+citation = 12
+
+["tests/gui/screen_flow_controller_test.cpp"]
+citation = 7
+
+["tests/gui/text_layout_test.cpp"]
+citation = 11
+
+["tests/gui/widgets_test.cpp"]
+citation = 22
+
+["tests/hud/credits_test.cpp"]
+citation = 9
+
+["tests/hud/crime_panel_test.cpp"]
+citation = 4
+
+["tests/hud/fixed_cam_icon_test.cpp"]
+citation = 3
+
+["tests/hud/health_rings_test.cpp"]
+citation = 12
+
+["tests/hud/hud_test.cpp"]
+citation = 28
+
+["tests/hud/lock_pick_hud_test.cpp"]
+citation = 13
+
+["tests/hud/mash_meter_test.cpp"]
+citation = 2
+
+["tests/hud/mug_meter_test.cpp"]
+citation = 4
+
+["tests/hud/num_indicator_test.cpp"]
+citation = 2
+
+["tests/hud/player_panel_test.cpp"]
+citation = 13
+
+["tests/hud/radar_test.cpp"]
+citation = 8
+
+["tests/hud/scripted_bars_test.cpp"]
+citation = 4
+
+["tests/hud/spinner_test.cpp"]
+citation = 2
+
+["tests/hud/stereo_hud_test.cpp"]
+citation = 5
+
+["tests/hud/tag_hud_test.cpp"]
+citation = 4
+
+["tests/hud/war_command_display_test.cpp"]
+citation = 7
+
+["tests/human/being_hit_test.cpp"]
+citation = 24
+
+["tests/human/body_test.cpp"]
+citation = 4
+
+["tests/human/climb_test.cpp"]
+citation = 7
+
+["tests/human/combat_test.cpp"]
+citation = 33
+
+["tests/human/combat_timing_test.cpp"]
+citation = 25
+
+["tests/human/damage_flags_test.cpp"]
+citation = 4
+
+["tests/human/debug_clip_test.cpp"]
+citation = 4
+
+["tests/human/disc_player_test.cpp"]
+citation = 6
+
+["tests/human/flight_test.cpp"]
+citation = 6
+
+["tests/human/hiding_test.cpp"]
+citation = 4
+
+["tests/human/human_contacts_test.cpp"]
+citation = 8
+
+["tests/human/human_grab_test.cpp"]
+citation = 18
+
+["tests/human/human_revive_test.cpp"]
+citation = 2
+
+["tests/human/human_tandem_test.cpp"]
+citation = 8
+
+["tests/human/human_test.cpp"]
+citation = 23
+
+["tests/human/human_uncuff_test.cpp"]
+citation = 3
+
+["tests/human/humans_test.cpp"]
+citation = 7
+
+["tests/human/jump_test.cpp"]
+citation = 2
+
+["tests/human/locomotion_gate_test.cpp"]
+citation = 2
+
+["tests/human/locomotion_test.cpp"]
+citation = 18
+
+["tests/human/moving_attacks_test.cpp"]
+citation = 11
+
+["tests/human/pair_placement_test.cpp"]
+citation = 6
+
+["tests/human/player_snapshot_test.cpp"]
+citation = 2
+
+["tests/human/player_trace_test.cpp"]
+citation = 1
+
+["tests/human/rise_counter_test.cpp"]
+citation = 7
+
+["tests/human/script_state_test.cpp"]
+citation = 18
+
+["tests/human/stamina_test.cpp"]
+citation = 6
+
+["tests/human/strike_hits_test.cpp"]
+citation = 6
+
+["tests/human/strike_shapes_test.cpp"]
+citation = 7
+
+["tests/human/throw_direction_test.cpp"]
+citation = 2
+
+["tests/human/traversal_test.cpp"]
+citation = 13
+
+["tests/human/turn_and_slide_test.cpp"]
+citation = 4
+
+["tests/human/way_clear_test.cpp"]
+citation = 2
+
+["tests/human/workout_test.cpp"]
+citation = 6
+
+["tests/movies/captions_test.cpp"]
+citation = 5
+
+["tests/movies/movie_mode_test.cpp"]
+citation = 11
+
+["tests/net/bit_stream_test.cpp"]
+citation = 10
+
+["tests/net/input_buffer_test.cpp"]
+citation = 6
+
+["tests/net/link_conditioner_test.cpp"]
+citation = 8
+
+["tests/net/link_quality_test.cpp"]
+citation = 3
+
+["tests/net/loopback_transport_test.cpp"]
+citation = 6
+
+["tests/net/protocol_test.cpp"]
+citation = 9
+
+["tests/net/sessions_test.cpp"]
+citation = 22
+
+["tests/physics/body_sweep_test.cpp"]
+citation = 15
+
+["tests/physics/mesh_sweep_test.cpp"]
+citation = 14
+
+["tests/physics/overlaps_test.cpp"]
+citation = 11
+
+["tests/physics/sphere_box_sweep_test.cpp"]
+citation = 16
+
+["tests/physics/sphere_triangle_test.cpp"]
+citation = 8
+
+["tests/platform/character_mesh_test.cpp"]
+citation = 1
+
+["tests/platform/clip_recorder_test.cpp"]
+citation = 4
+
+["tests/platform/disc_anim_player_test.cpp"]
+citation = 2
+
+["tests/platform/disc_bat_cross_test.cpp"]
+citation = 2
+
+["tests/platform/disc_change_character_test.cpp"]
+citation = 1
+
+["tests/platform/disc_credits_test.cpp"]
+citation = 1
+
+["tests/platform/disc_crew_commands_test.cpp"]
+citation = 1
+
+["tests/platform/disc_debug_clear_fighters_test.cpp"]
+citation = 2
+
+["tests/platform/disc_debug_movies_test.cpp"]
+citation = 1
+
+["tests/platform/disc_fall_camera_test.cpp"]
+citation = 1
+
+["tests/platform/disc_fighter_models_test.cpp"]
+citation = 1
+
+["tests/platform/disc_flash_test.cpp"]
+citation = 2
+
+["tests/platform/disc_front_end_wheel_test.cpp"]
+citation = 1
+
+["tests/platform/disc_game_session_test.cpp"]
+citation = 1
+
+["tests/platform/disc_given_weapon_test.cpp"]
+citation = 1
+
+["tests/platform/disc_hub_cutscene_audio_test.cpp"]
+citation = 1
+
+["tests/platform/disc_hub_doors_test.cpp"]
+citation = 1
+
+["tests/platform/disc_hub_test.cpp"]
+citation = 1
+
+["tests/platform/disc_hub_workout_test.cpp"]
+citation = 2
+
+["tests/platform/disc_inspector_freeze_test.cpp"]
+citation = 3
+
+["tests/platform/disc_level34_furies_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level34_objectives_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level5_boss_camera_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level5_fights_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level80_end_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level80_story_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level80_test.cpp"]
+citation = 7
+
+["tests/platform/disc_level93_molotov_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_audio_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_car_climb_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_change_character_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_course_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_fence_dealer_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level99_fence_lesson_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_handover_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_heap_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_hud_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_money_sound_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_noclip_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level99_player2_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level99_power_lesson_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_powerups_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_scene_grab_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_scene_speech_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_snaps_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_spawner_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level99_store_glass_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_store_register_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level99_story_sounds_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_street_props_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_street_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level99_vermin_fence_test.cpp"]
+citation = 2
+
+["tests/platform/disc_level99_world_test.cpp"]
+citation = 1
+
+["tests/platform/disc_level_test.cpp"]
+citation = 1
+
+["tests/platform/disc_movies_test.cpp"]
+citation = 2
+
+["tests/platform/disc_pause_controls_test.cpp"]
+citation = 1
+
+["tests/platform/disc_play_frame_rate_test.cpp"]
+citation = 1
+
+["tests/platform/disc_revive_test.cpp"]
+citation = 1
+
+["tests/platform/disc_rise_counter_test.cpp"]
+citation = 2
+
+["tests/platform/disc_rumble_gang_count_test.cpp"]
+citation = 1
+
+["tests/platform/disc_rumble_test.cpp"]
+citation = 9
+
+["tests/platform/disc_scene_option_test.cpp"]
+citation = 2
+
+["tests/platform/disc_spawner_money_test.cpp"]
+citation = 1
+
+["tests/platform/disc_sprint_attacks_test.cpp"]
+citation = 1
+
+["tests/platform/disc_sprite_sheets_test.cpp"]
+citation = 2
+
+["tests/platform/disc_story_chain_test.cpp"]
+citation = 1
+
+["tests/platform/disc_story_missions_test.cpp"]
+citation = 7
+
+["tests/platform/disc_story_start_test.cpp"]
+citation = 7
+
+["tests/platform/disc_tagging_test.cpp"]
+citation = 1
+
+["tests/platform/disc_tandem_test.cpp"]
+citation = 1
+
+["tests/platform/disc_textures_test.cpp"]
+citation = 1
+
+["tests/platform/disc_throw_arc_test.cpp"]
+citation = 1
+
+["tests/platform/disc_world_streaming_test.cpp"]
+citation = 2
+
+["tests/platform/disc_world_test.cpp"]
+citation = 1
+
+["tests/platform/enet_transport_test.cpp"]
+citation = 4
+
+["tests/platform/ffmpeg_info_test.cpp"]
+citation = 1
+
+["tests/platform/front_end_scene_test.cpp"]
+citation = 2
+
+["tests/platform/imgui_model_view_test.cpp"]
+citation = 4
+
+["tests/platform/imgui_ui_scale_test.cpp"]
+citation = 8
+
+["tests/platform/log_output_test.cpp"]
+citation = 4
+
+["tests/platform/net_play_test.cpp"]
+citation = 12
+
+["tests/platform/pad_pipe_test.cpp"]
+citation = 2
+
+["tests/platform/placed_objects_test.cpp"]
+citation = 3
+
+["tests/platform/profile_folder_test.cpp"]
+citation = 1
+
+["tests/platform/render_engine_restart_test.cpp"]
+citation = 1
+
+["tests/platform/room_smoke_overlay_test.cpp"]
+citation = 2
+
+["tests/platform/scene_stage_test.cpp"]
+citation = 6
+
+["tests/platform/sdl_devices_test.cpp"]
+citation = 5
+
+["tests/platform/sdl_input_test.cpp"]
+citation = 4
+
+["tests/platform/sprite_sheets_test.cpp"]
+citation = 4
+
+["tests/platform/texture_dictionary_test.cpp"]
+citation = 7
+
+["tests/platform/window_activation_test.cpp"]
+citation = 1
+
+["tests/platform/world_atomic_test.cpp"]
+citation = 3
+
+["tests/platform/world_renderer_test.cpp"]
+citation = 1
+
+["tests/platform/world_set_test.cpp"]
+citation = 5
+
+["tests/raycast/collision_builder_test.cpp"]
+citation = 6
+
+["tests/raycast/collision_extras_test.cpp"]
+citation = 4
+
+["tests/raycast/collision_mesh_test.cpp"]
+citation = 12
+
+["tests/raycast/disc_collision_test.cpp"]
+citation = 1
+
+["tests/sandbox/disc_sandbox_combat_test.cpp"]
+citation = 8
+
+["tests/sandbox/disc_sandbox_player_test.cpp"]
+citation = 2
+
+["tests/sandbox/disc_sandbox_traversal_test.cpp"]
+citation = 7
+
+["tests/sandbox/disc_throw_direction_test.cpp"]
+citation = 2
+
+["tests/sandbox/sandbox_layout_test.cpp"]
+citation = 8
+
+["tests/sandbox/sandbox_mesh_test.cpp"]
+citation = 8
+
+["tests/sandbox/sandbox_world_test.cpp"]
+citation = 6
+
+["tests/scenes/disc_scenes_test.cpp"]
+citation = 1
+
+["tests/scenes/scene_player_test.cpp"]
+citation = 18
+
+["tests/scenes/scene_record_test.cpp"]
+citation = 5
+
+["tests/scripting/ai_bindings_test.cpp"]
+citation = 6
+
+["tests/scripting/anim_callbacks_test.cpp"]
+citation = 2
+
+["tests/scripting/arena_bindings_test.cpp"]
+citation = 11
+
+["tests/scripting/camera_bindings_test.cpp"]
+citation = 6
+
+["tests/scripting/car_bindings_test.cpp"]
+citation = 3
+
+["tests/scripting/config_strings_test.cpp"]
+citation = 2
+
+["tests/scripting/disc_script_system_test.cpp"]
+citation = 1
+
+["tests/scripting/disc_strings_test.cpp"]
+citation = 1
+
+["tests/scripting/effects_bindings_test.cpp"]
+citation = 9
+
+["tests/scripting/hub_bindings_test.cpp"]
+citation = 9
+
+["tests/scripting/hud_bindings_test.cpp"]
+citation = 8
+
+["tests/scripting/level_bindings_test.cpp"]
+citation = 8
+
+["tests/scripting/lighting_bindings_test.cpp"]
+citation = 3
+
+["tests/scripting/lua_chunk_test.cpp"]
+citation = 4
+
+["tests/scripting/lua_libraries_test.cpp"]
+citation = 5
+
+["tests/scripting/lua_vm_test.cpp"]
+citation = 10
+
+["tests/scripting/mission4_bindings_test.cpp"]
+citation = 9
+
+["tests/scripting/mission7_bindings_test.cpp"]
+citation = 11
+
+["tests/scripting/object_bindings_test.cpp"]
+citation = 8
+
+["tests/scripting/player_bindings_test.cpp"]
+citation = 13
+
+["tests/scripting/rumble_match_bindings_test.cpp"]
+citation = 8
+
+["tests/scripting/scene_bindings_test.cpp"]
+citation = 7
+
+["tests/scripting/script_bindings_test.cpp"]
+citation = 10
+
+["tests/scripting/script_system_test.cpp"]
+citation = 11
+
+["tests/scripting/sound_bindings_test.cpp"]
+citation = 11
+
+["tests/scripting/spawn_bindings_test.cpp"]
+citation = 9
+
+["tests/scripting/trigger_bindings_test.cpp"]
+citation = 3
+
+["tests/scripting/world_bindings_test.cpp"]
+citation = 8
+
+["tests/support/each_case_test.cpp"]
+citation = 1
+
+["tests/warriors/created_humans_test.cpp"]
+citation = 1
+
+["tests/warriors/disk_profile_store_test.cpp"]
+citation = 6
+
+["tests/warriors/game_over_test.cpp"]
+citation = 5
+
+["tests/warriors/level_table_test.cpp"]
+citation = 2
+
+["tests/warriors/player_state_test.cpp"]
+citation = 13
+
+["tests/warriors/profile_record_test.cpp"]
+citation = 4
+
+["tests/warriors/tag_game_test.cpp"]
+citation = 15
+
+["tests/world/debug_camera_test.cpp"]
+citation = 3
+
+["tests/world/level_object_test.cpp"]
+citation = 6
+
+["tests/world/path_map_test.cpp"]
+citation = 9
+
+["tests/world/streamed_world_test.cpp"]
+citation = 8
+
+["tests/world/view_frustum_test.cpp"]
+citation = 2
+
+["tests/world/world_manifest_test.cpp"]
+citation = 3
+
+["tests/world/world_streamer_test.cpp"]
+citation = 9
+
+["tests/world/world_streams_test.cpp"]
+citation = 5
+
+["tests/world_objects/car_hits_test.cpp"]
+citation = 6
+
+["tests/world_objects/cars_test.cpp"]
+citation = 10
+
+["tests/world_objects/disc_doors_test.cpp"]
+citation = 1
+
+["tests/world_objects/disc_object_list_test.cpp"]
+citation = 1
+
+["tests/world_objects/door_blocking_test.cpp"]
+citation = 7
+
+["tests/world_objects/doors_test.cpp"]
+citation = 16
+
+["tests/world_objects/drawn_poses_test.cpp"]
+citation = 5
+
+["tests/world_objects/flag_net_test.cpp"]
+citation = 3
+
+["tests/world_objects/flags_test.cpp"]
+citation = 5
+
+["tests/world_objects/glass_test.cpp"]
+citation = 13
+
+["tests/world_objects/hats_test.cpp"]
+citation = 5
+
+["tests/world_objects/lock_pick_test.cpp"]
+citation = 5
+
+["tests/world_objects/loose_objects_test.cpp"]
+citation = 11
+
+["tests/world_objects/nav_links_test.cpp"]
+citation = 5
+
+["tests/world_objects/object_bodies_test.cpp"]
+citation = 3
+
+["tests/world_objects/object_breaks_test.cpp"]
+citation = 2
+
+["tests/world_objects/object_list_test.cpp"]
+citation = 2
+
+["tests/world_objects/object_tasks_test.cpp"]
+citation = 8
+
+["tests/world_objects/pickups_test.cpp"]
+citation = 8
+
+["tests/world_objects/props_test.cpp"]
+citation = 20
+
+["tests/world_objects/radios_test.cpp"]
+citation = 6
+
+["tests/world_objects/spinning_icons_test.cpp"]
+citation = 3
+
+["tests/world_objects/tag_spots_test.cpp"]
+citation = 9
+
+["tests/world_objects/trigger_spheres_test.cpp"]
+citation = 5
+
+["tests/world_objects/volume_boxes_test.cpp"]
+citation = 6

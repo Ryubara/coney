@@ -1,6 +1,6 @@
 # Progress
 
-How far Coney has come, measured three ways:
+How far Coney has come, measured four ways:
 
 - **Reimplemented:** the share of the original game's own code that Coney's code reimplements, in bytes of the
   executable's `.text`. This is the decompilation projects' progress bar, adapted to a functional reimplementation:
@@ -16,6 +16,11 @@ How far Coney has come, measured three ways:
   `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
   (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
   bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
+- **Compared:** the share of the reimplemented code (in bytes, and by count of functions) whose port has been checked
+  side by side with the original function in Ghidra, paired and reviewed: its `status` in the
+  [function database](../guides/research-function-database.md#entry) is `compared` and not `legacy`. It starts at 0%
+  because every function ported before the standards were set is `legacy`; it rises as a port is compared, which a
+  change to a ported function owes ([the standards](../guides/coney-tools-standards.md#standards)).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the user's play-test, with its checkpoints and the script bindings it needs.

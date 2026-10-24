@@ -152,6 +152,9 @@ class Function:
     size: int | None  # the Ghidra listing's size; None while the listing has no function at the address
     coney: str = ""  # where the port lives: `src/core/combat/grab.cpp:Grab::start`
     system: str = ""  # the database file that lists it
+    status: str = (
+        ""  # how far the port is checked against the original: `legacy` or `compared` (research_functions.STATUSES)
+    )
 
 
 @dataclass(frozen=True)
@@ -215,6 +218,16 @@ class Progress:
         """Bytes of the original's code that Coney reimplements (functions with a known size)."""
         return sum(f.size or 0 for f in self.functions)
 
+    @property
+    def compared_functions(self) -> int:
+        """How many reimplemented functions are compared side by side with the original (`status = "compared"`)."""
+        return sum(1 for f in self.functions if f.status == "compared")
+
+    @property
+    def compared_bytes(self) -> int:
+        """Bytes of the reimplemented functions that have been compared (functions with a known size)."""
+        return sum(f.size or 0 for f in self.functions if f.status == "compared")
+
     def subsystem_rows(self) -> list[tuple[str, int, int, int]]:
         """(name, total bytes, reimplemented bytes, reimplemented functions) per subsystem, then unattributed."""
         rows = [(s.name, s.bytes) for s in self.totals.subsystems] + [(UNATTRIBUTED, self.totals.unattributed_bytes)]
@@ -230,6 +243,7 @@ class Progress:
         return {
             "reimplemented": _share(self.reimplemented_bytes, game) | {"functions": len(self.functions)},
             "researched": _share(self.totals.researched_bytes, game),
+            "compared": _share(self.compared_bytes, self.reimplemented_bytes) | {"functions": self.compared_functions},
             "functions_without_size": sum(1 for f in self.functions if f.size is None),
             "subsystems": [
                 {"name": name, "functions": count} | _share(done, total)
@@ -400,6 +414,7 @@ def reimplemented(
             (sizes or {}).get(entry.address),
             entry.coney,
             system.system,
+            entry.status,
         )
         for system in systems
         for entry in system.entries

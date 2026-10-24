@@ -247,3 +247,48 @@ def test_a_body_counts_its_statements_and_inner_blocks() -> None:
     )
     found = {f.name: (f.statements, f.blocks) for f in read_source("src/ai/s.h", text).functions}
     assert found == {"get": (1, 0), "S": (0, 0), "work": (2, 1)}
+
+
+def test_an_override_or_final_member_is_marked_whether_declared_or_defined_in_its_class() -> None:
+    source = read_source(
+        "src/net/socket.h",
+        "class Socket : public Sink {\n"
+        "public:\n"
+        "    void send(int text) override;\n"
+        "    void flush(int mode) const noexcept final;\n"
+        "    void plain(int text);\n"
+        "    int size() const override { return 1; }\n"
+        "};\n",
+    )
+    assert {f.name: f.override for f in source.functions} == {"send": True, "flush": True, "plain": False, "size": True}
+
+
+def test_a_type_is_public_when_every_class_around_it_is_open_at_its_declaration() -> None:
+    source = read_source(
+        "src/core/schedule.h",
+        "class Schedule {\n"
+        "public:\n"
+        "    struct Visible { int x; };\n"
+        "private:\n"
+        "    struct Hidden { int x; };\n"
+        "protected:\n"
+        "    struct Guarded { int x; };\n"
+        "};\n"
+        "struct Open {\n"
+        "    struct Inside { int y; };\n"
+        "private:\n"
+        "    int m_z = 0;\n"
+        "};\n"
+        "namespace {\n"
+        "struct Local { int x; };\n"
+        "}\n",
+    )
+    assert source.class_public == {
+        "Schedule": True,
+        "Schedule::Visible": True,
+        "Schedule::Hidden": False,
+        "Schedule::Guarded": False,
+        "Open": True,
+        "Open::Inside": True,
+        "Local": False,
+    }
