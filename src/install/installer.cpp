@@ -109,28 +109,32 @@ std::expected<std::optional<Sha1Digest>, Error> copyFile(InstallFolder& folder, 
     }
     auto digest = stream(source, tracker, [&](std::span<const std::byte> piece) { return (*out)->write(piece); });
     auto closed = (*out)->close();
-    if (!digest || !*digest || !closed) {
-        // Nothing half-copied keeps a name.
+    // Nothing half-copied keeps a name. The digest is copied out into a local optional so clang-tidy's flow analysis
+    // sees each check before the access; it does not follow an optional reached through `expected::operator*`.
+    if (!digest) {
         dropPart(folder, part);
-        if (!digest) {
-            return std::unexpected(std::move(digest.error()));
-        }
-        if (!*digest) {
-            return std::optional<Sha1Digest>{};
-        }
+        return std::unexpected(std::move(digest.error()));
+    }
+    const std::optional<Sha1Digest> got = *digest;
+    if (!got) {
+        dropPart(folder, part);
+        return std::optional<Sha1Digest>{};
+    }
+    if (!closed) {
+        dropPart(folder, part);
         return std::unexpected(std::move(closed.error()));
     }
-    if (expected && **digest != *expected) {
+    if (expected && *got != *expected) {
         dropPart(folder, part);
         return fail(ErrorCode::Invalid,
                     std::format("{}: SHA-1 {} is not the known disc's {}: a read error or a modified disc; the file "
                                 "was not kept. Run the install again to retry",
-                                dest, toHex(**digest), toHex(*expected)));
+                                dest, toHex(*got), toHex(*expected)));
     }
     if (auto renamed = folder.rename(part, dest); !renamed) {
         return std::unexpected(std::move(renamed.error()));
     }
-    return digest;
+    return got;
 }
 
 // Writes `text` to `path` through a part file, so a reader never sees half of it.
@@ -302,11 +306,13 @@ std::expected<InstallReport, Error> install(InstallFolder& folder, const Install
                 if (!digest) {
                     return std::unexpected(std::move(digest.error()));
                 }
-                if (!*digest) {
+                // A local optional, so clang-tidy sees the check before the access.
+                const std::optional<Sha1Digest> got = *digest;
+                if (!got) {
                     report.cancelled = true;
                     return report;
                 }
-                keep = **digest == *expected;
+                keep = *got == *expected;
                 tracker.state.fileDone = 0;
                 tracker.state.done = before;
             }
@@ -366,11 +372,13 @@ std::expected<InstallReport, Error> install(InstallFolder& folder, const Install
         if (!copied) {
             return std::unexpected(std::move(copied.error()));
         }
-        if (!*copied) {
+        // A local optional, so clang-tidy sees the check before the access.
+        const std::optional<Sha1Digest> digest = *copied;
+        if (!digest) {
             report.cancelled = true;
             return report;
         }
-        manifest.program.push_back({name, size, toHex(**copied)});
+        manifest.program.push_back({name, size, toHex(*digest)});
     }
 
     // The empty override folders, then the manifest, last.
