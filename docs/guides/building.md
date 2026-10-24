@@ -494,6 +494,15 @@ runs](#what-a-pull-request-runs)). Otherwise:
    job prints the findings as workflow commands (`::error file=...`), which annotate the diff as well. Either way the
    job's summary lists the first findings and the log holds all of them.
 
+**The checks** are the list in `.clang-tidy`: every check is named in full, none by wildcard, so a newer clang-tidy
+never adds a check nobody chose (a pull request would go red after a runner image update with no change of ours). The
+first entry, `-*`, turns off clang-tidy's own defaults, and the rest is sorted, one check per line. **A new check is
+added by name, never by wildcard**: put its full name in its place in the list (`clang-tidy-19 --checks='-*,bugprone-*'
+--list-checks` prints a family's names). A check that is left out on purpose has its reason in a comment at the end of
+the file. The file is a build-setup file (`ci.tidy.whole_when`), so the pull request that changes it runs the
+whole-codebase pass and must pass it. A test (`python/tests/test_clang_tidy_config.py`) refuses a wildcard, a removal or
+an unsorted list.
+
 To check again after a fix, push (the job reruns) or use "Re-run jobs". A finding that is a false positive is
 silenced at its line with `// NOLINT(check-name)` and a reason, rarely. A finding your change causes in a line you did
 not touch (you removed a null check that code elsewhere relied on) is not on the pull request: the nightly run reports
