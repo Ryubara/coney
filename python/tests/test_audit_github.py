@@ -716,7 +716,7 @@ def graphql_page(*nodes: dict[str, Any]) -> str:
 
 def edit_page(numbers: list[int], cursor: str | None, more: bool) -> str:
     """A `gh api graphql` answer with one page of issues numbered `numbers`."""
-    nodes = [
+    nodes: list[dict[str, Any]] = [
         {"number": n, "createdAt": "2026-10-01T00:00:00Z", "lastEditedAt": None, "timelineItems": {"nodes": []}}
         for n in numbers
     ]
