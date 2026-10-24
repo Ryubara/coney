@@ -69,8 +69,8 @@ class Value {
 };
 
 /// Parses one JSON document. Fails with ErrorCode::Invalid and the byte offset for anything RFC 8259 refuses
-/// (trailing commas, comments, single quotes, a lone surrogate, text after the value), a repeated object key, or
-/// nesting deeper than 64 levels.
+/// (trailing commas, comments, single quotes, a lone surrogate, a string that is not UTF-8, text after the value), a
+/// repeated object key, or nesting deeper than 64 levels.
 [[nodiscard]] std::expected<Value, Error> parse(std::string_view text);
 
 } // namespace coney::json

@@ -183,7 +183,41 @@ class Reader {
         }
     }
 
-    // A string, from its opening quote; escapes decoded, `\u` pairs joined into one code point.
+    // The length of the well-formed UTF-8 sequence that starts at `pos` (a lead byte of 0x80 or above), or 0 when it
+    // is not one: no overlong form, no surrogate, nothing past U+10FFFF (RFC 3629, section 4).
+    [[nodiscard]] std::size_t utf8Length(std::size_t pos) const {
+        const auto byte = [&](std::size_t i) { return static_cast<unsigned char>(m_text[i]); };
+        const unsigned char lead = byte(pos);
+        std::size_t length = 0;
+        // The second byte's range is what rules out overlong forms, surrogates and code points past U+10FFFF.
+        unsigned char low = 0x80;
+        unsigned char high = 0xBF;
+        if (lead >= 0xC2 && lead <= 0xDF) {
+            length = 2;
+        } else if (lead >= 0xE0 && lead <= 0xEF) {
+            length = 3;
+            low = lead == 0xE0 ? 0xA0 : 0x80;
+            high = lead == 0xED ? 0x9F : 0xBF;
+        } else if (lead >= 0xF0 && lead <= 0xF4) {
+            length = 4;
+            low = lead == 0xF0 ? 0x90 : 0x80;
+            high = lead == 0xF4 ? 0x8F : 0xBF;
+        } else {
+            return 0;
+        }
+        if (m_text.size() - pos < length || byte(pos + 1) < low || byte(pos + 1) > high) {
+            return 0;
+        }
+        for (std::size_t i = 2; i < length; ++i) {
+            if (byte(pos + i) < 0x80 || byte(pos + i) > 0xBF) {
+                return 0;
+            }
+        }
+        return length;
+    }
+
+    // A string, from its opening quote; escapes decoded, `\u` pairs joined into one code point, and raw bytes checked
+    // to be UTF-8 as RFC 8259 requires (section 8.1), so whoever reads the result never meets a malformed sequence.
     std::expected<std::string, Error> parseString() {
         ++m_pos;
         std::string out;
@@ -197,6 +231,16 @@ class Reader {
             }
             if (static_cast<unsigned char>(c) < 0x20) {
                 return failAt("a control character in a string");
+            }
+            if (static_cast<unsigned char>(c) >= 0x80) {
+                const std::size_t length = utf8Length(m_pos - 1);
+                if (length == 0) {
+                    --m_pos;
+                    return failAt("a string that is not UTF-8");
+                }
+                out.append(m_text.substr(m_pos - 1, length));
+                m_pos += length - 1;
+                continue;
             }
             if (c != '\\') {
                 out.push_back(c);

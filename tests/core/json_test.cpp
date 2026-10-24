@@ -65,6 +65,23 @@ TEST_CASE("text JSON refuses is refused with where it went wrong", "[json]") {
     }
 }
 
+TEST_CASE("JSON strings must be UTF-8", "[json]") {
+    // Two, three and four bytes, at the edges of what each length may hold.
+    const auto good =
+        parse("[\"\xc2\x80\", \"\xed\x9f\xbf\", \"\xee\x80\x80\", \"\xf4\x8f\xbf\xbf\", \"caf\xc3\xa9\"]");
+    REQUIRE(good.has_value());
+    CHECK(*(*good->asArray())[4].asString() == "caf\xc3\xa9");
+    // A stray continuation byte, an overlong '/', an overlong three-byte form, a surrogate (U+D800), a code point past
+    // U+10FFFF, a byte that never starts a sequence, a sequence cut short by the quote, and one cut short by the end.
+    for (const char* bad : {"\"\x80\"", "\"\xc0\xaf\"", "\"\xe0\x80\xaf\"", "\"\xed\xa0\x80\"", "\"\xf4\x90\x80\x80\"",
+                            "\"\xff\"", "\"\xe2\x82\"", "\"\xf0\x9f\x98"}) {
+        INFO(bad);
+        const auto doc = parse(bad);
+        REQUIRE_FALSE(doc.has_value());
+        CHECK(doc.error().message.find("not UTF-8") != std::string::npos);
+    }
+}
+
 TEST_CASE("JSON nesting deeper than 64 levels is refused", "[json]") {
     CHECK(parse(std::string(64, '[') + std::string(64, ']')).has_value());
     CHECK_FALSE(parse(std::string(65, '[') + std::string(65, ']')).has_value());
