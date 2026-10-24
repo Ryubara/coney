@@ -571,7 +571,8 @@ TEST_CASE("a snap plays to its end under square spam, then the stick at rest giv
     // (the stance takes the nearest within 2 m; a snap never goes for the current target).
     Fight fight(timingCharacter(), 0.0F, 1.1F);
     static_cast<void>(fight.addTarget(timingCharacter(), 0.9F, 0.0F));
-    // The stick flicked fully right for one update with square (combat.md#input-scripts), then square every 2.
+    // The stick flicked fully right for one update with square (docs/engine/combat.md#input-scripts), then square
+    // every 2.
     const std::string script = "10 stick left 100 0\n10 tap square\n11 stick left 0 0\n" + taps("square", 12, 60, 2);
     const Timeline line = Timeline::record(fight, script, 80);
     CHECK(line.nthStart(id::kSnapRight, 0) == 10);

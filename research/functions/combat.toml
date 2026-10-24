@@ -4,7 +4,7 @@
 [[function]]
 address = 0x00147430
 name = "PlayerCommand_Add"
-page = "combat.md#original-structure"
+page = "combat.md#commands"
 role = "appends `{mask, command, buttons, extra}` to one of nine trigger tables"
 level = "confirmed-code"
 coney = "src/combat/commands.h:CommandTables::add"
@@ -13,7 +13,7 @@ status = "legacy"
 [[function]]
 address = 0x00147940
 name = "Commands_Match"
-page = "combat.md#original-structure"
+page = "combat.md#commands"
 role = "matches the tables each update, stores the command at per-player `+0x20`"
 level = "confirmed-code"
 coney = "src/combat/commands.h:CommandMatcher::update"
@@ -39,7 +39,7 @@ status = "legacy"
 [[function]]
 address = 0x0021b290
 name = "Strike_Contact"
-page = "combat.md#original-structure"
+page = "combat.md#damage-table"
 role = "computes a hit's damage"
 level = "confirmed-code"
 coney = "src/combat/meters.h:strikeDamage"
@@ -64,7 +64,7 @@ status = "legacy"
 [[function]]
 address = 0x00222ef0
 name = "Human_GetHealthPercentRaw"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#damage"
 role = "health over maximum"
 level = "confirmed-code"
 coney = "src/combat/meters.h:Health::fraction"
@@ -82,7 +82,7 @@ status = "legacy"
 [[function]]
 address = 0x00226448
 name = "Human_SpendPower"
-page = "combat.md#original-structure"
+page = "combat-rage.md#power-meter"
 role = "the power meter"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -92,7 +92,7 @@ status = "legacy"
 [[function]]
 address = 0x00226510
 name = "Human_PowerFraction"
-page = "combat.md#original-structure"
+page = "combat-rage.md#power-meter"
 role = "the power meter"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -125,6 +125,13 @@ coney = "src/human/human.h:Human::applyDamageModifier"
 status = "legacy"
 
 [[function]]
+address = 0x0022af48
+name = "Human_GoDown"
+page = "combat.md#code-grabs"
+role = "Pushes move style 0xf, makes the body immovable, goes down (0x0022f4f8) and clears stance; a pad player leaves the lock and drops the target, and tutorial hints 24 or 25 may show."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0022b1a0
 name = "Tandem_LinkThree"
 page = "combat.md#code-grabs"
@@ -134,9 +141,100 @@ coney = "src/human/fighter.h:Fighter::startTandem"
 status = "legacy"
 
 [[function]]
+address = 0x0022b328
+name = "Tandem_Unlink"
+page = "combat.md#code-grabs"
+role = "Ends a three-person move: clears the states and links, restores push weight and body group, and puts the victim down."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022b5a8
+name = "Tandem_UnlinkQuiet"
+page = "combat.md#code-grabs"
+role = "Like Tandem_Unlink without putting anyone down."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022b760
+name = "Tandem_BreakFromVictim"
+page = "combat.md#code-grabs"
+role = "Breaks a three-person move from the victim's side, then Tandem_Unlink."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022b960
+name = "Grab_BreakOnHit"
+page = "combat.md#code-grabs"
+role = "Breaks the grab, tackle or tag a hit human is in, stunning and damaging by the anim's knockdown value."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022bce0
+name = "Throw_ClearLink"
+page = "combat.md#code-grabs"
+role = "Clears the thrower's state 0x1000 and link, restores push weight and body, then the victim's side."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022bdc0
+name = "Throw_ClearVictimLink"
+page = "combat.md#code-grabs"
+role = "Clears the thrown human's state 0x2000 and link; puts it down or stuns it by its state."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022bfd0
+name = "Pair_LinkMount"
+page = "combat-grabs.md#mount"
+role = "the mount's states for both (also the tackle's and the grounded mount's)"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022c388
+name = "Tackle_End"
+page = "combat.md#code-grabs"
+role = "Ends a tackle on both humans: pops style 0xc and puts the victim down."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022c548
+name = "Tackle_Mount"
+page = "combat.md#code-grabs"
+role = "Turns a tackle into the mount: clears 0x400 / 0x800, makes both immovable and sets the mounted states."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022cb00
+name = "Grab_End"
+page = "combat.md#code-grabs"
+role = "Ends a grab: clears the grab states 0xc0, restores weights and styles, the mug camera and speech."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022cd78
+name = "Grab_StartMug"
+page = "combat.md#code-grabs"
+role = "Turns a rear grab into a mugging (0x100 / 0x200) and reads the mug parameters."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022d030
+name = "Tackle_StartHold"
+page = "combat.md#code-grabs"
+role = "From a tackle to the hold (0x8000000000 / 0x10000000000), starting the mini camera."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0022d1f8
+name = "Tackle_EndHold"
+page = "combat.md#code-grabs"
+role = "From the hold back to the tackle (0x400 / 0x800)."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0022eb40
 name = "Human_Heal"
-page = "combat.md#original-structure"
+page = "combat-rage.md#rage"
 role = "spends a flash, its sound, the heal (full, or half on fury and rumble)"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::heal"
@@ -145,7 +243,7 @@ status = "legacy"
 [[function]]
 address = 0x0022f100
 name = "Human_KnockDown"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#reactions"
 role = "grounded and its timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -155,7 +253,7 @@ status = "legacy"
 [[function]]
 address = 0x0022f658
 name = "Human_Stun"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#reactions"
 role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -165,7 +263,7 @@ status = "legacy"
 [[function]]
 address = 0x0022f8d8
 name = "Human_EndStun"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#reactions"
 role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -175,7 +273,7 @@ status = "legacy"
 [[function]]
 address = 0x00230328
 name = "Human_KnockOut"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#defeat"
 role = "health gone: wounded, knocked out or dead ([Defeat](combat-reactions.md#defeat))"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::blocksHumans"
@@ -209,6 +307,13 @@ coney = "src/ai/attack_places.h:swingTimeMs"
 status = "legacy"
 
 [[function]]
+address = 0x00232be8
+name = "Grab_EndBoth"
+page = "combat.md#code-grabs"
+role = "Ends a grab between two humans (Grab_End, 0x00280548) and sets state 0x20000000 on both."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00236038
 name = "Human_ApplyDamageModifier"
 page = "combat.md#damage-table"
@@ -236,7 +341,7 @@ status = "legacy"
 [[function]]
 address = 0x0023cf88
 name = "Human_TurnToOver"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "turn to a heading, or move to a point, over a time"
 level = "confirmed-code"
 coney = "src/human/turn_and_slide.h:TurnAndSlide::turnToOver"
@@ -245,7 +350,7 @@ status = "legacy"
 [[function]]
 address = 0x0023d2b8
 name = "Human_MoveToOver"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "turn to a heading, or move to a point, over a time"
 level = "confirmed-code"
 coney = "src/human/turn_and_slide.h:TurnAndSlide::moveToOver"
@@ -254,7 +359,7 @@ status = "legacy"
 [[function]]
 address = 0x0023f5e0
 name = "Human_ApplyTurnAndSlide"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "each step, applies a stored turn rate and slide velocity until their time runs out"
 level = "confirmed-code"
 coney = "src/human/turn_and_slide.h:TurnAndSlide::step"
@@ -263,7 +368,7 @@ status = "legacy"
 [[function]]
 address = 0x00241b90
 name = "Human_FightStanceMove"
-page = "combat.md#original-structure"
+page = "combat-targets.md#fight-stance"
 role = "movement in a fight stance; lock-on"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -273,7 +378,7 @@ status = "legacy"
 [[function]]
 address = 0x00244e78
 name = "Human_MoveAttached"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-turn"
 role = "movement states of the held victim and of a grabbing player"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::placeAttached"
@@ -282,7 +387,7 @@ status = "legacy"
 [[function]]
 address = 0x00245310
 name = "Human_MoveGrabbing"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-turn"
 role = "movement states of the held victim and of a grabbing player"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::moveGrab"
@@ -291,7 +396,7 @@ status = "legacy"
 [[function]]
 address = 0x002542e8
 name = "AnimRange_Damage"
-page = "combat.md#original-structure"
+page = "combat.md#damage-table"
 role = "the Anim Range List's `+0x0a`"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -317,7 +422,7 @@ status = "legacy"
 [[function]]
 address = 0x002548f0
 name = "AnimRange_ApplyClassDamage"
-page = "combat.md#original-structure"
+page = "combat.md#damage-table"
 role = "writes the character class's damages over the list ([Damage](combat.md#damage-table))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -327,7 +432,7 @@ status = "legacy"
 [[function]]
 address = 0x00258a88
 name = "Human_BreakPair"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#pair-break"
 role = "ends any grab, mount, mugging or throw link from outside; only the other human plays a clip ([Breaking a pair](combat-grabs.md#pair-break))"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::breakPair"
@@ -366,27 +471,97 @@ coney = "src/human/human.h:Human::startPickUp"
 status = "legacy"
 
 [[function]]
+address = 0x002600f0
+name = "Cuff_OnCufferClipEnd"
+page = "combat.md#code-grabs"
+role = "End hook of the cuffer's clip 266: an AI drops its target; clears state 0x8000000 and the pair link unless still busy."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00260178
+name = "Cuff_OnCuffedClipEnd"
+page = "combat.md#code-grabs"
+role = "End hook of the cuffed human's clip 261: arrests it, uses one of the cuffer's cuffs and scores style; otherwise unlinks both."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00260250
+name = "Cuff_Start"
+page = "combat.md#code-grabs"
+role = "Attack kind 41 from the mount: the cuffer plays 252, 260, 266 then the stance idle; the victim 253, 261, 267 then loops 320 ([An AI's attacks](combat-targets.md#ai-attacks))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002605f0
+name = "Uncuff_FreerEndHook"
+page = "combat.md#code-grabs"
+role = "End hook of the freer's uncuff clip."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00260670
+name = "Uncuff_FreedEndHook"
+page = "combat.md#code-grabs"
+role = "End hook of the freed human's uncuff clip."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002613a8
+name = "Pair_StartLoop256"
+page = "combat.md#code-grabs"
+role = "Both partners loop a clip (256 and 257) after a 0.05 s fade, anim state 0."
+level = "confirmed-code"
+
+[[function]]
 address = 0x002617f8
 name = "Block_DuckCounter"
-page = "combat.md#original-structure"
+page = "combat.md#block"
 role = "the counter from a duck, 617-620 by the target's side"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::duckCounter"
 status = "legacy"
 
 [[function]]
+address = 0x00261e78
+name = "Human_StartMeleeThrow"
+page = "combat.md#code-grabs"
+role = "Starts a melee-weapon throw (clip 471 / 472 at a walk or run, or a standing throw) and removes the held set's move style."
+level = "confirmed-code"
+
+[[function]]
 address = 0x002625a8
 name = "Attack_Start"
-page = "combat.md#original-structure"
+page = "combat.md#attacks"
 role = "starts an attack clip, counts the combo"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::start"
 status = "legacy"
 
 [[function]]
+address = 0x00262920
+name = "Pair_EndTopTasks"
+page = "combat.md#code-grabs"
+role = "Ends the top anim task of the human and of its partner."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002629a8
+name = "Attack_OnPairedClipEnd"
+page = "combat.md#code-grabs"
+role = "End hook of a paired move: scores it, lets the crowd taunt and clears the throw link."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00262a38
+name = "Pair_OnVictimClipEnd"
+page = "combat.md#code-grabs"
+role = "End hook of a paired move's victim clip: clears the throw link to the attacker."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00262ac8
 name = "Attack_StartPaired"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grabbing"
 role = "a grab move on the victim: power check and spend, damage"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -405,7 +580,7 @@ status = "legacy"
 [[function]]
 address = 0x00263c90
 name = "Player_SpecialAttack"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#strong-grapple"
 role = "the special or strong grapple: target search, id by rage, variant and side, then a solo clip, a grab, a tackle or a paired move by the clip's flags ([Strong grapple](combat-grabs.md#strong-grapple))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -413,9 +588,16 @@ coney = "src/combat/player_combat.h:PlayerCombat::strongGrapple"
 status = "legacy"
 
 [[function]]
+address = 0x00263eb8
+name = "Human_AttackObject"
+page = "combat.md#code-grabs"
+role = "Attacks an object or car: slot 19's clip (slot 17 when the object is over 1 m up), turning to it by the first event when it is within 1.5 x the far range and beyond half the reach."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00264178
 name = "Player_ObjectAttack"
-page = "combat.md#original-structure"
+page = "combat-targets.md#breakables"
 role = "strikes at a breakable object"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -442,7 +624,7 @@ status = "legacy"
 [[function]]
 address = 0x00264bd8
 name = "Human_AddPendingDamage"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#damage"
 role = "keeps the update's largest damage on the target"
 level = "confirmed-code"
 coney = "src/combat/meters.h:PendingDamage::add"
@@ -451,7 +633,7 @@ status = "legacy"
 [[function]]
 address = 0x00264cf8
 name = "Human_AddRage"
-page = "combat.md#original-structure"
+page = "combat-rage.md#rage"
 role = "rage gain"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::add"
@@ -476,9 +658,16 @@ coney = "src/combat/tandem.h:damageDefeats"
 status = "legacy"
 
 [[function]]
+address = 0x00265cd8
+name = "Hit_MaybeQueueHint15"
+page = "combat.md#code-reactions"
+role = "A player hit by an attack id 11-24 that does not defeat it, not blocking, outside Armies levels: queues game hint 15 once unlocked."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00265dd0
 name = "Rage_NoteHit"
-page = "combat.md#original-structure"
+page = "combat-rage.md#rage"
 role = "a landed or blocked hit's kind into the attacker's repeat tracker (halved rage, the throw bonus)"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -488,7 +677,7 @@ status = "legacy"
 [[function]]
 address = 0x00265f70
 name = "Human_ApplyPendingDamage"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#damage"
 role = "each update: block, damage, armour, then the reaction by state"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -496,40 +685,251 @@ coney = "src/human/target_human.h:TargetHuman::step"
 status = "legacy"
 
 [[function]]
+address = 0x00266b50
+name = "Hit_IsReactionWeakened"
+page = "combat.md#code-reactions"
+role = "The strength -1 test: victim flag 0x200, or a combo id against a victim without 0x400 that is not hurt ([Hit codes](combat.md#hit-codes))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00266c40
+name = "Hit_IsReactionStrengthened"
+page = "combat.md#code-reactions"
+role = "The strength +1 test: attacker flag 0x200000 and victim 0x400, or a combo id ([Hit codes](combat.md#hit-codes))."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00266d00
 name = "Hit_PickReaction"
-page = "combat.md#original-structure"
+page = "combat.md#hit-codes"
+role = "the reaction id from the hit code, the height and the side"
 level = "confirmed-code"
 coney = "src/combat/reactions.h:hitReaction"
 status = "legacy"
 
 [[function]]
+address = 0x00266fd8
+name = "Hit_PickDyingReaction"
+page = "combat.md#code-reactions"
+role = "The dying reaction: strength 2, half the time the DIE set 304-315, else 292 ([Hit codes](combat.md#hit-codes))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00267338
+name = "Hit_GetSideFromPoint"
+page = "combat.md#code-reactions"
+role = "The side (0 front within 45 degrees, 3 left, 1 right, 2 behind) of a point around the human ([Hit codes](combat.md#hit-codes))."
+level = "confirmed-code"
+
+[[function]]
 address = 0x002674c0
 name = "Human_OnHealthOut"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#defeat"
 role = "health gone: wounded, knocked out or dead ([Defeat](combat-reactions.md#defeat))"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::blocksHumans"
 status = "legacy"
 
 [[function]]
+address = 0x002678c8
+name = "Human_PlayGangDeathReaction"
+page = "combat.md#code-reactions"
+role = "The lethal reaction for Human_PlayLethalReaction: blends out, plays the death reaction (held 0x2000) and breaks a pair; a gang member says 13 near ([Damage](combat-reactions.md#damage))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268430
+name = "HitReact_InSpecial"
+page = "combat.md#code-reactions"
+role = "Pending damage while in a special state: ends it and plays 674, or knocks the human down (198, then 674)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002686e8
+name = "HitReact_WhileOut"
+page = "combat.md#code-reactions"
+role = "Pending damage while knocked out or in states 0x100000000 / 0x80000000: health 1 when flagged, a lying reaction, held flag 0x400."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002688d0
+name = "HitReact_WhileGrabbed"
+page = "combat.md#code-reactions"
+role = "Pending damage from a third human while grabbed: ends the grab and plays a pair-break reaction, a stun or a paired reaction."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268ab0
+name = "HitReact_WhileCuffing"
+page = "combat.md#code-reactions"
+role = "Pending damage while cuffing someone (state 0x8000000): falls (0x80000), unlinks the pair and plays a paired reaction."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268b88
+name = "HitReact_WhileBeingCuffed"
+page = "combat.md#code-reactions"
+role = "Pending damage while being cuffed (0x10000000): the cuffer falls, the pair is unlinked and a paired reaction plays."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268c50
+name = "HitReact_InMiniGame"
+page = "combat.md#code-reactions"
+role = "Pending damage in a mini-game: aborts it; in mini-game mode 2 the normal reaction, else 331 then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268df8
+name = "HitReact_WhileMugging"
+page = "combat.md#code-reactions"
+role = "Pending damage while mugging: ends the mugging, then reacts as a grabber."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268e50
+name = "HitReact_WhileMugged"
+page = "combat.md#code-reactions"
+role = "Pending damage while being mugged: ends the mugging, then reacts as grabbed."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00268ea8
+name = "HitReact_WhileGrabbing"
+page = "combat.md#code-reactions"
+role = "Pending damage from a third human while grabbing: ends the grab and plays a pair-break or paired reaction from the reaction table."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002690f0
+name = "PairBreak_Play106"
+page = "combat.md#code-reactions"
+role = "A pair break: the fight stance, 106 holding 0x40000000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269250
+name = "PairBreak_Play138"
+page = "combat.md#code-reactions"
+role = "A pair break: the fight stance, 138 holding 0x40000000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002693b0
+name = "PairBreak_Play145"
+page = "combat.md#code-reactions"
+role = "A pair break: the fight stance, 145 holding 0x40000000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269510
+name = "PairBreak_Play107"
+page = "combat.md#code-reactions"
+role = "A pair break: the fight stance, 107 holding 0x40000000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269670
+name = "HitReact_WhileTackling"
+page = "combat.md#code-reactions"
+role = "Pending damage from a third human while tackling: ends the tackle (the victim falls) and plays 216 or 218 by side, or gets up."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002697a8
+name = "PairBreak_Play244"
+page = "combat.md#code-reactions"
+role = "A pair break: 244 holding 0x8000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269908
+name = "PairBreak_GetUp199"
+page = "combat.md#code-reactions"
+role = "A pair break from the ground: gets up with 245 then 199 holding 0x8000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269ab0
+name = "HitReact_WhileTackled"
+page = "combat.md#code-reactions"
+role = "Pending damage while tackled: cleared, no reaction."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269ac0
+name = "HitReact_WhileMounting"
+page = "combat.md#code-reactions"
+role = "Pending damage while holding a tackled human (state 0x8000000000): ends the hold, then reacts as a tackler."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269b18
+name = "HitReact_WhileMounted"
+page = "combat.md#code-reactions"
+role = "Pending damage while held down (state 0x10000000000): ends the hold for the holder; no reaction."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269b80
+name = "Hit_PlayBegReaction"
+page = "combat.md#code-reactions"
+role = "A hit on a knocked-down, cuffed or wounded human: the beg reaction; says 73 beg."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00269dc8
+name = "Human_MoveAlongAxisOver"
+page = "combat.md#code-reactions"
+role = "Moves the human over a time along its own axis (forward, side or back by the argument), for the block dodge and the early block."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00269f30
 name = "Human_BlockHit"
-page = "combat.md#original-structure"
+page = "combat.md#block"
 role = "a hit on a held block"
 level = "confirmed-code"
 coney = "src/combat/reactions.h:blockReaction"
 status = "legacy"
 
 [[function]]
+address = 0x0026a1f8
+name = "HitReact_OnSpecialEnd"
+page = "combat.md#code-reactions"
+role = "End hook: sends message 0x15; when the human's foe is the player (brain type 0) and the player's target is this human, clears the player's target (`Brain_SetTarget`, force 0)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026a298
+name = "Human_PlayRecoilClip"
+page = "combat.md#code-reactions"
+role = "Blends into a recoil clip chained to the fight idle, holding 0x400 (629 BAT_BLOCK_REACT on a bat block)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026a408
+name = "Pair_PlayPairedReaction"
+page = "combat.md#code-reactions"
+role = "Both humans play a paired reaction (clip n and n + 1) holding 0x2000, then the stance idle."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0026a6d0
 name = "Human_PlayReaction"
-page = "combat.md#original-structure"
+page = "combat-reactions.md#reactions"
 role = "plays it; stun and knockdown"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
 status = "legacy"
+
+[[function]]
+address = 0x0026adf0
+name = "Block_OnDodgeEnd"
+page = "combat.md#code-reactions"
+role = "End hook of the block dodge: clears the foe when no damage is pending."
+level = "confirmed-code"
 
 [[function]]
 address = 0x0026b0a0
@@ -541,9 +941,44 @@ coney = "src/combat/reactions.h:hitReaction"
 status = "legacy"
 
 [[function]]
+address = 0x0026b170
+name = "HitReact_FromObject"
+page = "combat.md#code-reactions"
+role = "Pending damage from a thrown object, car or hazard: a reaction by the object's kind and weight, from its side."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026b328
+name = "HitReact_InJump"
+page = "combat.md#code-reactions"
+role = "Pending damage in a jump: clears the air states and plays 294 when the human hit itself."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026b3d8
+name = "HitReact_WhileFalling"
+page = "combat.md#code-reactions"
+role = "Pending damage while falling or landing (state 0x1c00000000): cleared, no reaction."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026b3e8
+name = "HitReact_OnFire"
+page = "combat.md#code-reactions"
+role = "Self-inflicted damage while on fire: breaks a pair and plays a burn reaction (290-293 for an AI, a third of the time)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026b848
+name = "ButtonMiniGame_Update"
+page = "combat.md#code-reactions"
+role = "The button mini-game's update (record +0x46 mode 2)."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0026bad8
 name = "Grab_ConnectEnd"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-posing"
 role = "end of 72 / 74: distance check, snap and attach in the hold"
 level = "confirmed-code"
 coney = "src/human/pair_placement.h:holdGatePasses"
@@ -552,20 +987,56 @@ status = "legacy"
 [[function]]
 address = 0x0026be68
 name = "Grab_Connect"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-posing"
 role = "aligns the pair and starts 72 / 73 (74 / 75 from the rear), then the holds"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::connect"
 status = "legacy"
 
 [[function]]
+address = 0x0026c1b8
+name = "Grab_OnStartEnd"
+page = "combat.md#code-reactions"
+role = "End hook of the grab start: push sphere off."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0026c1d8
 name = "Grab_IntroEnd"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab"
 role = "end of the intro clip: grab from the front or rear, or a counter"
 level = "confirmed-code"
 coney = "src/combat/grabbed.h:counterAtCatch"
 status = "legacy"
+
+[[function]]
+address = 0x0026c548
+name = "Grab_Start"
+page = "combat-grabs.md#grab"
+role = "the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026c7e0
+name = "Grab_Release"
+page = "combat-grabs.md#pair-break"
+role = "both let go of a grab: 95 / 94 (107 / 106 from the rear); refused in a scene ([Breaking a pair](combat-grabs.md#pair-break))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+
+[[function]]
+address = 0x0026cb20
+name = "Grab_OnEscapeEnd"
+page = "combat.md#code-reactions"
+role = "End hook of an escape: push weight back to 1.0, the object's +0x3c cleared."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026cb98
+name = "Grab_OnEscapeEndClear"
+page = "combat.md#code-reactions"
+role = "End hook of an escape: as Grab_OnEscapeEnd, and clears the grab link."
+level = "confirmed-code"
 
 [[function]]
 address = 0x0026cc18
@@ -577,9 +1048,16 @@ coney = "src/human/fighter.h:Fighter::victimEscapes"
 status = "legacy"
 
 [[function]]
+address = 0x0026d110
+name = "Grab_OnReverseEnd"
+page = "combat.md#code-reactions"
+role = "End hook of a grab reversal: clears the throw link when no partner is left."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0026dd08
 name = "Player_Throw"
-page = "combat.md#original-structure"
+page = "combat-throws.md#throws"
 role = "picks the throw by stick direction and walls"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -587,14 +1065,50 @@ coney = "src/combat/grab.h:throwAttack"
 status = "legacy"
 
 [[function]]
+address = 0x0026e5f8
+name = "Grab_Strike"
+page = "combat.md#code-reactions"
+role = "A grab strike: AnimRange damage (doubled by state 0x4000); clip n on the grabber and n + 1 on the victim, or 139 when it defeats ([In the grab](combat-grabs.md#grabbing))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026ec10
+name = "Grab_SpinToFront"
+page = "combat.md#code-reactions"
+role = "The rear-to-front spin before a power strike: states 0x40 / 0x10, move styles 7 / 8, 80 and 81 ([In the grab](combat-grabs.md#grabbing))."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0026ef68
 name = "Grab_MountClipEnd"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#mount"
 role = "circle in the front hold: 118 / 119, then the mount"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::seatMount"
 status = "legacy"
+
+[[function]]
+address = 0x0026f008
+name = "Grab_StartMountFromFront"
+page = "combat-grabs.md#mount"
+role = "circle in the front hold: 118 / 119, then the mount"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+
+[[function]]
+address = 0x0026f2c8
+name = "Grab_PullOffTackler"
+page = "combat.md#code-reactions"
+role = "Grabs a tackler off its victim: 214 on the grabber, 215 on the tackler, the victim gets up with 199."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0026f760
+name = "Tandem_OnAttackerEnd"
+page = "combat.md#code-reactions"
+role = "End hook of the tandem attacker's end clip: unlinks it."
+level = "confirmed-code"
 
 [[function]]
 address = 0x0026f780
@@ -605,12 +1119,117 @@ coney = "src/human/fighter.h:Fighter::tandemVictimIntroEnd"
 status = "legacy"
 
 [[function]]
+address = 0x0026f840
+name = "Tandem_OnEnd"
+page = "combat.md#code-reactions"
+role = "End hook of a tandem clip: unlinks the three quietly."
+level = "confirmed-code"
+
+[[function]]
 address = 0x0026f860
 name = "Tandem_Start"
 page = "combat-moves.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::startTandem"
 status = "legacy"
+
+[[function]]
+address = 0x00270028
+name = "Tackle_OnVictimRiseEnd"
+page = "combat.md#code-reactions"
+role = "End hook on a tackled victim left alone: unless he is dead or dying or his pair link `+0xc4` is still set, ends the tackle and plays the rise 199, whose end wakes him if he is knocked out ([the knocked-out bit](combat-reactions.md#knocked-out-bit))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002700a8
+name = "Mount_OnStrikeEnd"
+page = "combat.md#code-reactions"
+role = "End hook of a mount strike or the grounded mount: gets off when the victim is over 0.2 m up or down, beyond max(reach + 0.34, reach x 1.2) or not clear; else re-places the mounter at clip 210's offset, scores the move, and may let a player victim reverse it."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00270560
+name = "Tackle_OnIntroEnd"
+page = "combat.md#code-reactions"
+role = "End of the tackle's run-in: a target in front with human flag 0x20000 (or a player that counters) plays the counter (Attack_StartPaired kind 9); otherwise the mount starts from front or behind ([Grab and tackle](combat-grabs.md#grab))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00270a70
+name = "Mount_CheckVictim"
+page = "combat.md#code-reactions"
+role = "During a mount strike: gets off when the victim is no longer tackled, or is dead or out; clears record +0xb8 and +0xbc."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00270f88
+name = "Mount_OnGetOffEnd"
+page = "combat.md#code-reactions"
+role = "End hook of getting off: ends the tackle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00270fc0
+name = "Mount_OnVictimGetOffEnd"
+page = "combat.md#code-reactions"
+role = "End hook of the victim's get-off clip: ends the tackle (or clears 0x800 and sets 0x20000000 alone) and clears the down timers."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00271028
+name = "Mount_OnGetOffThrowEnd"
+page = "combat.md#code-reactions"
+role = "End hook: clears the throw link of a mounter that was throwing."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00271060
+name = "Mount_OnVictimThrowEnd"
+page = "combat.md#code-reactions"
+role = "End hook: clears the victim's throw link when it has state 0x2000."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00271098
+name = "Mount_GetOff"
+page = "combat.md#code-reactions"
+role = "Gets the mounter off the victim and ends the tackle ([The mount](combat-grabs.md#mount))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00271808
+name = "Mount_ReturnToFrontGrab"
+page = "combat.md#code-reactions"
+role = "From the mount back to a front grab (Grab_Link) ([The mount](combat-grabs.md#mount))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00271b30
+name = "Mount_StartOnGrounded"
+page = "combat.md#code-reactions"
+role = "Mounts a grounded target: clip 237 + its side (far range x 1.25 for a player), steered on, then Pair_LinkMount ([Grab and tackle](combat-grabs.md#grab))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00272310
+name = "Mount_OnReversalEnd"
+page = "combat.md#code-reactions"
+role = "End hook of the mount reversal: links the reversed mount (the victim on top); gets off when the new victim has human flag 0x20000."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002723a8
+name = "Mount_OnReversedEnd"
+page = "combat.md#code-reactions"
+role = "End hook of the reversed mounter's clip: clears its throw link when alone."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002723e8
+name = "Mount_StartReversal"
+page = "combat.md#code-reactions"
+role = "The mounted victim's reversal: 242 then 210 on the victim, 243 then 207 on the mounter."
+level = "confirmed-code"
 
 [[function]]
 address = 0x00274ee0
@@ -640,9 +1259,16 @@ coney = "src/human/fighter.h:Fighter::steerOnto"
 status = "legacy"
 
 [[function]]
+address = 0x002759c0
+name = "Human_AlignToObject"
+page = "combat.md#code-reactions"
+role = "Turns and moves the human onto an object's side (front, back or a side) at the attack table's offset and reach for a clip, over a time."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00276008
 name = "Attack_TurnToTarget"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](combat-targets.md#targets))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -652,7 +1278,7 @@ status = "legacy"
 [[function]]
 address = 0x002761c8
 name = "Attack_SteerToTarget"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](combat-targets.md#targets))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -660,9 +1286,23 @@ coney = "src/human/fighter.h:Fighter::steerOnto"
 status = "legacy"
 
 [[function]]
+address = 0x002766b0
+name = "Human_AlignToPoint"
+page = "combat.md#code-reactions"
+role = "Turns and moves the human toward a point over 0.1 s (a script message)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00276810
+name = "Human_AlignForObjectAttack"
+page = "combat.md#code-reactions"
+role = "Turns and moves the human to an object at a clip's reach and offset, by the clip's first event at most."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00276998
 name = "Pair_AlignStart"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-posing"
 role = "range gate, then turns and slides the attacker so the victim stands at the clip's reach"
 level = "confirmed-code"
 coney = "src/human/pair_placement.h:alignPair"
@@ -671,11 +1311,18 @@ status = "legacy"
 [[function]]
 address = 0x00276d98
 name = "Pair_SnapAttach"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-posing"
 role = "puts the victim at the hold's offset and ties its movement to the grabber"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::snapAttach"
 status = "legacy"
+
+[[function]]
+address = 0x00276ff0
+name = "Human_AlignToHuman"
+page = "combat.md#code-reactions"
+role = "Turns and moves the human to another at a clip's reach and offset over a time."
+level = "confirmed-code"
 
 [[function]]
 address = 0x00277248
@@ -697,20 +1344,139 @@ status = "legacy"
 [[function]]
 address = 0x00277958
 name = "Pair_CheckPlace"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-posing"
 role = "a move in the hold needs the victim within 0.3 m of the move's offset"
 level = "confirmed-code"
 coney = "src/human/pair_placement.h:pairInPlace"
 status = "legacy"
 
 [[function]]
+address = 0x00277b20
+name = "Pair_AlignForMove"
+page = "combat.md#code-reactions"
+role = "Aligns a free victim for a paired move: refused beyond the far range, then both turned and the attacker placed at the clip's offset and reach over 1/60 s."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00278ef8
+name = "Human_IsFreeableBy"
+page = "combat.md#code-reactions"
+role = "Whether a helper may free a human: a friend or the same gang (or human flag bit 0x80 of +0xe1), and cuffed or dead or out."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00278fa0
+name = "Human_IsRevivableBy"
+page = "combat.md#code-reactions"
+role = "Whether a helper may revive a human: a friend or the same gang, knocked out and not cuffed."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00279050
+name = "Human_FindFreeable"
+page = "combat.md#code-reactions"
+role = "Lists the visible humans within 3 m that Human_IsFreeableBy accepts."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002790a8
+name = "Target_AngleFromAimHeading"
+page = "combat.md#code-targets"
+role = "The absolute angle between the heading to another and record +0xd4 (the heading the pick wrote), 0 to pi."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002791b0
+name = "TargetFilter_StanceEnemy"
+page = "combat.md#code-targets"
+role = "The stance's nearest-enemy filter: a targetable, unfriendly, non-pad human within 2 m in height who is a threat (gangs enemies), not down, dead or held; a neutral civilian is refused."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002792c8
+name = "TargetFilter_LockFirst"
+page = "combat.md#code-targets"
+role = "The L1 search's first filter (6 m, 63 degrees): a targetable human of another gang, not friendly, not down or airborne, within the angle; a player's own record decides some cases."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002797b0
+name = "TargetFilter_AnyAngle"
+page = "combat.md#code-targets"
+role = "An enemy human at any angle: other gang, not friendly, within 2 m of height, not down or airborne."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002798c0
+name = "TargetFilter_AlongFirst"
+page = "combat.md#code-targets"
+role = "Human_FindTargetAlong's first filter: an enemy human within the angle, not down, without some held flags."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00279a08
+name = "TargetFilter_AlongThird"
+page = "combat.md#code-targets"
+role = "Human_FindTargetAlong's last filter: an enemy human within the angle that is not dead."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00279b30
+name = "TargetFilter_AlongSecond"
+page = "combat.md#code-targets"
+role = "Human_FindTargetAlong's second filter: an enemy human within the angle, with fewer held-flag limits."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00279c48
+name = "TargetFilter_NearAhead"
+page = "combat.md#code-targets"
+role = "The L1 search's near pass: a targetable human within the angle and 2 m of height, not down."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00279d38
+name = "TargetFilter_KnockedOut"
+page = "combat.md#code-targets"
+role = "The L1 search's last pass: a targetable human that is knocked out or dead."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00279f50
 name = "Target_CarFilter"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "the square's object targets ([Targets](combat-targets.md#targets))"
 level = "confirmed-code"
 coney = "src/world_objects/car_hits.h:carTargetable"
 status = "legacy"
+
+[[function]]
+address = 0x0027a070
+name = "Target_GlassFilter"
+page = "combat-targets.md#targets"
+role = "the square's object targets ([Targets](combat-targets.md#targets))"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027a120
+name = "Target_ObjectFilter"
+page = "combat-targets.md#targets"
+role = "the square's object targets ([Targets](combat-targets.md#targets))"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027a1e8
+name = "TargetFilter_ThrowObject"
+page = "combat.md#code-targets"
+role = "The throw-target pick's object filter: within the angle and height, a world object that is a strike target."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027a2f8
+name = "Human_FindTargetAlong"
+page = "combat.md#code-targets"
+role = "A script message's target pick: humans within the vector's length and 54 degrees of its heading, through three filters, nearest first."
+level = "confirmed-code"
 
 [[function]]
 address = 0x0027a4b0
@@ -723,11 +1489,18 @@ status = "legacy"
 [[function]]
 address = 0x0027a6c0
 name = "Player_PickTarget"
-page = "combat.md#original-structure"
+page = "combat-targets.md#targets"
 role = "keeps or searches a target for an action"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::pickTarget"
 status = "legacy"
+
+[[function]]
+address = 0x0027ad80
+name = "Player_PickThrowTarget"
+page = "combat.md#code-targets"
+role = "Picks a throw target within the range (20 m for a melee throw): humans within 27 degrees, then objects and glass; sets record +0xd4 / +0xd8."
+level = "confirmed-code"
 
 [[function]]
 address = 0x0027b058
@@ -737,6 +1510,356 @@ role = "The charge and dive's target: the nearest human between the clip's reach
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::nearestInReach"
 status = "legacy"
+
+[[function]]
+address = 0x0027b2a8
+name = "Player_FindLockTarget"
+page = "combat.md#code-targets"
+role = "The L1 lock-on search: humans within 6 m and 63 degrees, then enemies within 4 m and 6 m, any angle within 4 m, near ahead, a car within 1 m, then 2.5 m passes; the first in a clear line."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b548
+name = "Player_LockOnTarget"
+page = "combat.md#code-targets"
+role = "L1 pressed or held: makes the lock-on search's result the human or object target."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b5c0
+name = "PlayerCmd_IsAny"
+page = "combat.md#code-targets"
+role = "This sample's command is not 0."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b5e0
+name = "PlayerCmd_IsCrossLongHold"
+page = "combat.md#code-targets"
+role = "Command 0x10 (cross released after a tap, or held 4 samples)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b608
+name = "PlayerCmd_IsSquarePressOnly"
+page = "combat.md#code-targets"
+role = "Command 0xf (square pressed)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b630
+name = "PlayerCmd_IsL2Cross"
+page = "combat.md#code-targets"
+role = "Command 0x20 (L2 + cross)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b658
+name = "PlayerCmd_IsL2Square"
+page = "combat.md#code-targets"
+role = "Command 0x21 (L2 + square)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b680
+name = "PlayerCmd_IsCrossPress"
+page = "combat.md#code-targets"
+role = "Command 0x12 (cross pressed, or the AI's chain cross)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b6a8
+name = "PlayerCmd_IsSquarePress"
+page = "combat.md#code-targets"
+role = "Command 0xf or 0x11 (square pressed, or the AI's chain square)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b700
+name = "PlayerCmd_IsCommand14"
+page = "combat.md#code-targets"
+role = "Command 0x14."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b728
+name = "PlayerCmd_IsCommand13"
+page = "combat.md#code-targets"
+role = "Command 0x13."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b750
+name = "PlayerCmd_IsR1Press"
+page = "combat.md#code-targets"
+role = "Command 3 (R1 pressed)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b778
+name = "PlayerCmd_IsCommand17"
+page = "combat.md#code-targets"
+role = "Command 0x17."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b7a0
+name = "PlayerCmd_IsCircleTap"
+page = "combat.md#code-targets"
+role = "Command 0xd (circle tapped)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b7c8
+name = "PlayerCmd_IsCircleHold"
+page = "combat.md#code-targets"
+role = "Command 0xe (circle held 7 samples)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b7f0
+name = "PlayerCmd_IsCrossSquareB"
+page = "combat.md#code-targets"
+role = "Command 0x22 (cross + square)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b818
+name = "PlayerCmd_IsCommand30"
+page = "combat.md#code-targets"
+role = "Command 0x30."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b840
+name = "PlayerCmd_IsCrossSquare"
+page = "combat.md#code-targets"
+role = "Command 0x22 (cross + square)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b868
+name = "PlayerCmd_IsCircleCross"
+page = "combat.md#code-targets"
+role = "Command 0x23 (circle + cross)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b890
+name = "PlayerCmd_IsCircleTriangle"
+page = "combat.md#code-targets"
+role = "Command 0x24 (circle + triangle)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b8b8
+name = "PlayerCmd_IsCommand39"
+page = "combat.md#code-targets"
+role = "Command 0x39."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b8e0
+name = "PlayerCmd_IsL1Held"
+page = "combat.md#code-targets"
+role = "Command 6 (L1 held)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b908
+name = "PlayerCmd_IsL1Release"
+page = "combat.md#code-targets"
+role = "Command 8 (L1 released)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b930
+name = "PlayerCmd_IsL1Press"
+page = "combat.md#code-targets"
+role = "Command 7 (L1 pressed)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b960
+name = "PlayerCmd_IsR1Held"
+page = "combat.md#code-targets"
+role = "Command 4 (R1 held)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027b9e8
+name = "PlayerCmd_IsL2Held"
+page = "combat.md#code-targets"
+role = "Command 5 (L2 held)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027ba10
+name = "PlayerCmd_IsTriangle"
+page = "combat.md#code-targets"
+role = "Command 0xa (triangle pressed)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027ba38
+name = "PlayerCmd_IsTriangleHold"
+page = "combat.md#code-targets"
+role = "Command 0xb (triangle held 7 samples)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027ba68
+name = "PlayerCmd_IsOtherInput"
+page = "combat.md#code-targets"
+role = "A command other than 0, 1, 2, 6-8, 0xa-0xc, 0x10, 0x12, 0x16 and 0x25-0x2c; the mini-games, the tag, the stereo and the mugging test it."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bb28
+name = "PlayerCmd_IsCommand37"
+page = "combat.md#code-targets"
+role = "Command 0x37."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bb50
+name = "PlayerCmd_IsCommand38"
+page = "combat.md#code-targets"
+role = "Command 0x38."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bb78
+name = "PlayerCmd_IsCommand36"
+page = "combat.md#code-targets"
+role = "Command 0x36."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bba0
+name = "PlayerCmd_IsCommand33"
+page = "combat.md#code-targets"
+role = "Command 0x33."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bbd0
+name = "PlayerCmd_IsDpadRight"
+page = "combat.md#code-targets"
+role = "Command 0x28 (d-pad right, the flash)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bbf8
+name = "PlayerCmd_IsDpadLeft"
+page = "combat.md#code-targets"
+role = "Command 0x27 (d-pad left)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bc20
+name = "PlayerCmd_IsCommand32"
+page = "combat.md#code-targets"
+role = "Command 0x32."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bcc8
+name = "Mash_ResetAlternation"
+page = "combat.md#code-targets"
+role = "Clears the mash alternation 0x0051097c."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bd98
+name = "PlayerCmd_IsGrabSpin"
+page = "combat.md#code-targets"
+role = "Command 0x00510988 (R1 pressed) or 0x19: spins a grab."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bdf8
+name = "PlayerCmd_IsSquareAny"
+page = "combat.md#code-targets"
+role = "Command 0x11 or 0xf (square, or the AI's chain square)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027be50
+name = "PlayerCmd_IsCrossAny"
+page = "combat.md#code-targets"
+role = "Command 0x12 or 0x10 (cross pressed or released)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bea8
+name = "PlayerCmd_IsGrabReverse"
+page = "combat.md#code-targets"
+role = "Command 0x00510988 (R1 pressed) or 0x19, for a grabbed or tackled human: reverses it."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bf08
+name = "PlayerCmd_IsLetGo"
+page = "combat.md#code-targets"
+role = "Command 5 (L2 held): lets go of a grab or mount."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bf30
+name = "PlayerCmd_IsCircleAny"
+page = "combat.md#code-targets"
+role = "Command 0x1e, 0xd or 0xe (circle pressed, tapped or held)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bf98
+name = "PlayerCmd_IsCommand31"
+page = "combat.md#code-targets"
+role = "Command 0x31 or the word at 0x0051098c (3, R1 pressed): the mount's cuff command ([Cuffing hold](combat-throws.md#cuffing-hold))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027bff0
+name = "PlayerCmd_IsCircleAnyB"
+page = "combat.md#code-targets"
+role = "Command 0x1e, 0xd or 0xe (circle), for the mount and the grab."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027c058
+name = "PlayerCmd_IsR2Held"
+page = "combat.md#code-targets"
+role = "Command 1 (R2 held)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027c080
+name = "PlayerCmd_IsR2Released"
+page = "combat.md#code-targets"
+role = "Command 2 (R2 released)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027c0a8
+name = "PlayerCmd_IsL1R1"
+page = "combat.md#code-targets"
+role = "Command 0x1f (L1 + R1)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027c0d0
+name = "PlayerCmd_IsDpadUp"
+page = "combat.md#code-targets"
+role = "Command 0x26 (d-pad up)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x0027c0f8
+name = "PlayerCmd_IsDpadDown"
+page = "combat.md#code-targets"
+role = "Command 0x25 (d-pad down)."
+level = "confirmed-code"
 
 [[function]]
 address = 0x0027d6e0
@@ -749,7 +1872,7 @@ status = "legacy"
 [[function]]
 address = 0x0027d800
 name = "Player_Charge"
-page = "combat.md#original-structure"
+page = "combat.md#run-attacks"
 role = "L2 + cross / L2 + square at a run"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -759,7 +1882,7 @@ status = "legacy"
 [[function]]
 address = 0x0027d900
 name = "Player_Dive"
-page = "combat.md#original-structure"
+page = "combat.md#run-attacks"
 role = "L2 + cross / L2 + square at a run"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -769,7 +1892,7 @@ status = "legacy"
 [[function]]
 address = 0x0027df38
 name = "Player_UpdatePowerMove"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grabbing"
 role = "in a power strike (state `0x1000`): square or cross in the window plays the next part, id + 2"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -779,7 +1902,7 @@ status = "legacy"
 [[function]]
 address = 0x0027e6d8
 name = "Player_UpdateTheft"
-page = "combat.md#original-structure"
+page = "combat-targets.md#stereo-theft"
 role = "the theft minigames (stereo) by mode"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -789,7 +1912,7 @@ status = "legacy"
 [[function]]
 address = 0x0027ec20
 name = "Player_UpdateMounting"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#mount"
 role = "strikes, power strike, back to the hold, get off, in the mount"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -799,7 +1922,7 @@ status = "legacy"
 [[function]]
 address = 0x0027f3b0
 name = "Player_UpdateGrabbing"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grabbing"
 role = "strikes, power strike, throws, mug, spin in a grab"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -809,7 +1932,7 @@ status = "legacy"
 [[function]]
 address = 0x0027fd68
 name = "Player_UpdateGrabbed"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grabbed"
 role = "the struggle in another human's grab"
 level = "confirmed-code"
 coney = "src/combat/grabbed.h:updateGrabbed"
@@ -818,16 +1941,24 @@ status = "legacy"
 [[function]]
 address = 0x002802a0
 name = "Pair_Attach"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab-posing"
 role = "puts the victim at the hold's offset and ties its movement to the grabber"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::snapAttach"
 status = "legacy"
 
 [[function]]
+address = 0x00280548
+name = "Grab_End"
+page = "combat.md#code-holds"
+role = "Ends a grab: clears the victim's +0xc0 and restores the attached and grabbing controls to their defaults."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00280630
 name = "Player_BufferChain"
-page = "combat.md#original-structure"
+page = "combat.md#attacks"
+role = "the chain's entry from the dispatcher: while the attack holds `0x8` it buffers one press in record `+0xb8`, while it holds any of `0x7` it runs `Player_UpdateChain`"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::update"
 status = "legacy"
@@ -835,10 +1966,102 @@ status = "legacy"
 [[function]]
 address = 0x00280708
 name = "Player_UpdateChain"
-page = "combat.md#original-structure"
+page = "combat.md#attacks"
+role = "buffers the next button in record `+0xb8` and plays the next attack of the combo when the chain window opens"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::update"
 status = "legacy"
+
+[[function]]
+address = 0x00280d20
+name = "Grab_StickDirectionBits"
+page = "combat.md#code-holds"
+role = "The stick's direction relative to the grabber's facing as a direction bit (0x80 with the stick at rest), for the hold's end."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00280ee0
+name = "Player_AnnounceObjective"
+page = "combat.md#code-holds"
+role = "Announces the current objective (the pause menu's text)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00280f08
+name = "Player_AnnounceBonusObjective"
+page = "combat.md#code-holds"
+role = "Announces the bonus objective."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00280f30
+name = "PlayerRec_GetActionDelayLeft"
+page = "combat.md#code-holds"
+role = "The per-player action delay left (+0x50 past now), or -1 with none."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00280fa0
+name = "PlayerRec_ClearActionDelay"
+page = "combat.md#code-holds"
+role = "Clears the per-player action delay (+0x4d, +0x50)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00280fd8
+name = "PlayerRec_SetActionDelay"
+page = "combat.md#code-holds"
+role = "Sets the per-player action delay: +0x4d = 1, +0x50 = now + ms (3000 after an uncuff)."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00281048
+name = "Float_NearlyEqual"
+page = "combat.md#code-holds"
+role = "Whether two floats differ by less than a tolerance."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00281070
+name = "Climb_IsSpaceClear"
+page = "combat.md#code-holds"
+role = "Whether a sphere of the human's capsule radius at a point overlaps nothing."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00281368
+name = "Human_RestoreBodyAfterClimb"
+page = "combat.md#code-holds"
+role = "Clears body flag 0x4000 and resets the body's fields; reports the anim's sound to the AI as a noise."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00282b68
+name = "Hold_GetParams"
+page = "combat.md#code-holds"
+role = "The cuffing hold's holder record, by the held human's category +0x11b and the holding player's Warrior class byte +0x07 ([values](combat-throws.md#cuffing-hold))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00283078
+name = "Hold_GetParamsB"
+page = "combat.md#code-holds"
+role = "The cuffing hold's held-player record, by that player's Warrior class byte +0x07 ([values](combat-throws.md#cuffing-hold))."
+level = "confirmed-code"
+
+[[function]]
+address = 0x002833c0
+name = "Player_UpdateCuffHold"
+page = "combat.md#code-holds"
+role = "The holder's side of the cuffing hold (state 0x8000000000): the stick game with the mug meter; when it ends, cuffs (+0x5b4 set) or gets off."
+level = "confirmed-code"
+
+[[function]]
+address = 0x00283a30
+name = "Player_UpdateMugHold"
+page = "combat.md#code-holds"
+role = "The held human's side of the cuffing hold (state 0x10000000000): the stick game (state byte +0x128); says 8 swear."
+level = "confirmed-code"
 
 [[function]]
 address = 0x00284280
@@ -848,6 +2071,14 @@ role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
 status = "legacy"
+
+[[function]]
+address = 0x00284340
+name = "Rage_Enter"
+page = "combat-rage.md#rage"
+role = "L1 + R1 with a full meter, the flash, the key when cuffed, the R2 map ([Rage](combat-rage.md#rage))"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
 
 [[function]]
 address = 0x002843f8
@@ -861,7 +2092,7 @@ status = "legacy"
 [[function]]
 address = 0x00284920
 name = "Player_GrabOrTackle"
-page = "combat.md#original-structure"
+page = "combat-grabs.md#grab"
 role = "circle: target search, then grab or tackle"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -887,12 +2118,19 @@ status = "legacy"
 [[function]]
 address = 0x002856b8
 name = "Player_UpdateMugging"
-page = "combat.md#original-structure"
+page = "combat-throws.md#mugging"
 role = "the mugging stick game"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/stick_games.h:MuggingGame::update"
 status = "legacy"
+
+[[function]]
+address = 0x00286550
+name = "Player_UpdateMuggedGame"
+page = "combat.md#code-holds"
+role = "A player being mugged: the victim's stick game with the mug meter (Mug_GetParams, Mug_GetPlayerVictimParams)."
+level = "confirmed-code"
 
 [[function]]
 address = 0x00286ba8
@@ -906,7 +2144,7 @@ status = "legacy"
 [[function]]
 address = 0x00286cc8
 name = "Player_Square"
-page = "combat.md#original-structure"
+page = "combat.md#attacks"
 role = "square: standing, walking, running, snap, grounded and object attacks"
 level = "confirmed-code"
 coney = "src/combat/attack_target.h:attackTarget"
@@ -915,7 +2153,7 @@ status = "legacy"
 [[function]]
 address = 0x00287730
 name = "Player_Special"
-page = "combat.md#original-structure"
+page = "combat.md#run-attacks"
 role = "cross + square, circle + cross, circle + triangle outside a grab"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -925,7 +2163,7 @@ status = "legacy"
 [[function]]
 address = 0x002878b8
 name = "LockPick_JudgePress"
-page = "combat.md#original-structure"
+page = "crimes.md#lockpick"
 role = "mini-game mode 2, lock picking ([Crimes](crimes.md#lockpick))"
 level = "confirmed-code"
 coney = "src/world_objects/lock_pick.h:LockPickDial::press"
@@ -934,7 +2172,7 @@ status = "legacy"
 [[function]]
 address = 0x00287a18
 name = "Player_Cross"
-page = "combat.md#original-structure"
+page = "combat.md#attacks"
 role = "cross: the X attacks"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -958,14 +2196,120 @@ coney = "src/ai/attack_places.h:attackableGapMs"
 status = "legacy"
 
 [[function]]
+address = 0x004182e8
+name = "HitBalance_Construct"
+page = "combat.md#warriors-functions"
+role = "a two-byte pair of counts in every human, zeroed by `Human_Construct` and `Human_Init`"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00418310
+name = "HitBalance_Reset"
+page = "combat.md#warriors-functions"
+role = "a two-byte pair of counts in every human, zeroed by `Human_Construct` and `Human_Init`"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00418330
+name = "HitBalance_Note"
+page = "combat.md#warriors-functions"
+role = "from `Rage_NoteHit`: for kind 0 or 1, that count goes up by 1 (at most 20) and the other count, when above 3, down by 4; its reader is not traced"
+level = "confirmed-code"
+note = "confirmed (code); purpose inferred"
+
+[[function]]
+address = 0x004183d8
+name = "RepeatTracker_Construct"
+page = "combat.md#warriors-functions"
+role = "the [repeat tracker](combat-rage.md#rage): both set the counts and the flag to 0 and the last kind to 4; the constructor also sets the time 0 and the throw bonus 1.0"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00418408
+name = "RepeatTracker_Reset"
+page = "combat.md#warriors-functions"
+role = "the [repeat tracker](combat-rage.md#rage): both set the counts and the flag to 0 and the last kind to 4; the constructor also sets the time 0 and the throw bonus 1.0"
+level = "confirmed-code"
+
+[[function]]
 address = 0x00418428
 name = "RepeatTracker_Note"
-page = "combat.md#original-structure"
+page = "combat-rage.md#rage"
 role = "a landed or blocked hit's kind into the attacker's repeat tracker (halved rage, the throw bonus)"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/rage_awards.h:RepeatTracker::note"
 status = "legacy"
+
+[[function]]
+address = 0x00418530
+name = "PlayerRecord_Reset"
+page = "combat.md#warriors-functions"
+role = "clears a per-player record: the repeat tracker at `+0x10`, `+0x28`, the mini-game fields `+0x40`-`+0x58` ([Crimes](crimes.md#mini-game-record)); from `Human_Destroy`, `Human_MakePlayer`, the game state's set-up"
+level = "confirmed-code"
+
+[[function]]
+address = 0x004193f8
+name = "RageSound_Hook"
+page = "combat.md#warriors-functions"
+role = "empty; called from `Human_UpdateMeters`"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419400
+name = "RageSound_PlayEnd"
+page = "combat.md#warriors-functions"
+role = "`Human_EndRageMode`'s one-shot `vags/misc/rage_ends_01`"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419460
+name = "RageSound_Prepare"
+page = "combat.md#warriors-functions"
+role = "prepares the loop when no one rages (from `Human_UpdateMeters`); restarts it when a player has flag `0x80000` at human `+0xe0` and none plays (each frame, `0x0041a370`); stops it when no player has that flag"
+level = "confirmed-code"
+
+[[function]]
+address = 0x004194b8
+name = "GameState_PlayRageSound"
+page = "combat.md#warriors-functions"
+role = "(already named) the rage loop: when no sound is held at `W_GameState + 0x264` plays the 2D rage-mode loop by name and marks the task owned; otherwise restarts the prepared one"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419558
+name = "RageSound_StopIfNoneRaging"
+page = "combat.md#warriors-functions"
+role = "prepares the loop when no one rages (from `Human_UpdateMeters`); restarts it when a player has flag `0x80000` at human `+0xe0` and none plays (each frame, `0x0041a370`); stops it when no player has that flag"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419630
+name = "RageSound_RestartIfRaging"
+page = "combat.md#warriors-functions"
+role = "prepares the loop when no one rages (from `Human_UpdateMeters`); restarts it when a player has flag `0x80000` at human `+0xe0` and none plays (each frame, `0x0041a370`); stops it when no player has that flag"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419718
+name = "RageSound_AddRager"
+page = "combat.md#warriors-functions"
+role = "count of raging humans `+0x268`: `Human_StartRageMode` adds one, `Human_EndRageMode` takes one and at 0 stops the rage loop"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419728
+name = "RageSound_RemoveRager"
+page = "combat.md#warriors-functions"
+role = "count of raging humans `+0x268`: `Human_StartRageMode` adds one, `Human_EndRageMode` takes one and at 0 stops the rage loop"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00419758
+name = "RageSound_Stop"
+page = "combat.md#warriors-functions"
+role = "fades the rage loop (`vags/misc/rage_mode_06`, handle `+0x264`) out over 2 s and zeroes the count"
+level = "confirmed-code"
 
 [[function]]
 address = 0x0041d940
