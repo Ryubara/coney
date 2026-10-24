@@ -67,6 +67,29 @@ TEST_CASE("a release manifest that could write outside the install is refused", 
         CHECK(release.error().message.find("path") != std::string::npos);
     }
     CHECK(parseRelease(manifest("licences/SDL3.txt")).has_value());
+    // Only printable ASCII, which keeps the case-aside comparison of paths complete.
+    CHECK_FALSE(parseRelease(manifest("caf\xc3\xa9.txt")).has_value());
+}
+
+TEST_CASE("a release manifest asset name is a plain file name", "[launcher]") {
+    // The asset is downloaded under its name, so `.` and `..` would name the download folder or its parent.
+    for (const char* asset : {".", "..", "", "a/b", "../coney.exe", "a\\\\b", "C:coney.exe"}) {
+        INFO(asset);
+        std::string text = manifest();
+        text.replace(text.find("coney-windows.exe"), 17, asset);
+        const auto release = parseRelease(text);
+        REQUIRE_FALSE(release.has_value());
+        CHECK(release.error().message.find("asset name") != std::string::npos);
+    }
+}
+
+TEST_CASE("a release manifest path repeated in another case is refused", "[launcher]") {
+    // Windows and macOS would write both to one file.
+    const auto twice = parseRelease(manifest("Coney.exe", R"(, {"path": "coney.EXE", "size": 1, "sha256": ")" +
+                                                              std::string(64, 'b') + R"(", "asset": "x"})"));
+    REQUIRE_FALSE(twice.has_value());
+    CHECK(twice.error().message.find("repeats the path coney.EXE") != std::string::npos);
+    CHECK(coney::launcher::pathKey("Licences/SDL3.TXT") == "licences/sdl3.txt");
 }
 
 TEST_CASE("a release manifest with a bad field names it", "[launcher]") {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "launcher/release_manifest.h"
 
+#include <algorithm>
 #include <charconv>
 #include <format>
 #include <set>
@@ -77,10 +78,16 @@ const std::string* stringField(const json::Value& object, std::string_view key) 
     return value != nullptr ? value->asString() : nullptr;
 }
 
-// Whether `path` is a relative path that stays inside the install folder: no root, no drive, no `..`, no `\`, no
-// empty part.
+// Whether every byte is printable ASCII. Coney's program files are named in ASCII, which keeps pathKey's case folding
+// complete: Windows and macOS also fold letters outside ASCII, which lowering byte by byte would miss.
+bool printableAscii(std::string_view text) {
+    return std::ranges::all_of(text, [](char c) { return c >= 0x20 && c < 0x7F; });
+}
+
+// Whether `path` is a relative path that stays inside the install folder: printable ASCII, no root, no drive, no `..`,
+// no `\`, no empty part.
 bool safeRelativePath(std::string_view path) {
-    if (path.empty() || path.front() == '/' || path.find('\\') != std::string_view::npos ||
+    if (path.empty() || !printableAscii(path) || path.front() == '/' || path.find('\\') != std::string_view::npos ||
         path.find(':') != std::string_view::npos) {
         return false;
     }
@@ -119,8 +126,9 @@ std::expected<std::vector<ReleaseFile>, Error> parseFiles(const json::Value& lis
         if (path == nullptr || !safeRelativePath(*path)) {
             return invalid(where, "has no path inside the install folder");
         }
-        if (!seen.insert(*path).second) {
-            return invalid(where, std::format("repeats the path {}", *path));
+        // Windows and macOS ignore case, so `Coney.exe` and `coney.exe` would be one file there.
+        if (!seen.insert(pathKey(*path)).second) {
+            return invalid(where, std::format("repeats the path {} (case aside)", *path));
         }
         if (size == nullptr || !size->asInteger() || *size->asInteger() < 0) {
             return invalid(where, "has no size in bytes");
@@ -129,8 +137,10 @@ std::expected<std::vector<ReleaseFile>, Error> parseFiles(const json::Value& lis
         if (!digest) {
             return invalid(where, "has no sha256 of 64 hex digits");
         }
-        if (asset == nullptr || asset->empty() || asset->find_first_of("/\\") != std::string::npos) {
-            return invalid(where, "has no asset name");
+        // The asset is downloaded under its own name before it is moved into place, so it is held to the rules of one
+        // part of a path: `.` or `..` would name the download folder or its parent.
+        if (asset == nullptr || !safeRelativePath(*asset) || asset->find('/') != std::string::npos) {
+            return invalid(where, "has no asset name (a plain file name, not . or ..)");
         }
         files.push_back({*path, static_cast<std::uint64_t>(*size->asInteger()), *digest, *asset});
     }
@@ -138,6 +148,16 @@ std::expected<std::vector<ReleaseFile>, Error> parseFiles(const json::Value& lis
 }
 
 } // namespace
+
+std::string pathKey(std::string_view path) {
+    std::string key(path);
+    for (char& c : key) {
+        if (c >= 'A' && c <= 'Z') {
+            c = static_cast<char>(c - 'A' + 'a');
+        }
+    }
+    return key;
+}
 
 std::string Version::text() const {
     std::string out = std::format("{}.{}.{}", major, minor, patch);

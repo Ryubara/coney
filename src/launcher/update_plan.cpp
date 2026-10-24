@@ -3,6 +3,7 @@
 
 #include <map>
 #include <set>
+#include <string>
 
 namespace coney::launcher {
 
@@ -24,14 +25,16 @@ UpdatePlan planUpdate(const Release& release, std::string_view platform, std::sp
         return plan;
     }
 
-    std::map<std::string_view, const InstalledFile*> byPath;
+    // Paths are matched case aside: on Windows and macOS `Coney.exe` and `coney.exe` are one file, and removing the
+    // old spelling after downloading the new one would delete the file just downloaded.
+    std::map<std::string, const InstalledFile*, std::less<>> byPath;
     for (const InstalledFile& file : installed) {
-        byPath.emplace(file.path, &file);
+        byPath.emplace(pathKey(file.path), &file);
     }
-    std::set<std::string_view> wanted;
+    std::set<std::string, std::less<>> wanted;
     for (const ReleaseFile& file : files->second) {
-        wanted.insert(file.path);
-        const auto it = byPath.find(file.path);
+        wanted.insert(pathKey(file.path));
+        const auto it = byPath.find(pathKey(file.path));
         const bool same = it != byPath.end() && it->second->size == file.size && it->second->sha256 == file.sha256;
         if (!same) {
             plan.download.push_back(file);
@@ -39,7 +42,7 @@ UpdatePlan planUpdate(const Release& release, std::string_view platform, std::sp
         }
     }
     for (const InstalledFile& file : installed) {
-        if (!wanted.contains(file.path)) {
+        if (!wanted.contains(pathKey(file.path))) {
             plan.remove.push_back(file.path);
         }
     }

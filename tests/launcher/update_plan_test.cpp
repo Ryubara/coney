@@ -75,3 +75,15 @@ TEST_CASE("a repair restores the installed version's files", "[launcher]") {
     REQUIRE(repair.download.size() == 1);
     CHECK(repair.download[0].path == "assets/sandbox/a.layout");
 }
+
+TEST_CASE("an update matches installed files case aside, as Windows and macOS do", "[launcher]") {
+    // The install spells two files differently in case: they are the release's files, not ones it dropped, so nothing
+    // is removed (removing `Coney.EXE` there would delete the `coney.exe` just downloaded).
+    const std::vector<InstalledFile> installed{
+        {"Coney.EXE", 90, digest(9)}, {"Licences/GPL.txt", 10, digest(2)}, {"assets/sandbox/a.layout", 5, digest(3)}};
+    const auto plan = planUpdate(release(), "windows-x64", installed, *parseVersion("0.1.0"), *parseVersion("0.1.0"));
+    CHECK(plan.verdict == UpdatePlan::Verdict::Ready);
+    REQUIRE(plan.download.size() == 1);
+    CHECK(plan.download[0].path == "coney.exe");
+    CHECK(plan.remove.empty());
+}

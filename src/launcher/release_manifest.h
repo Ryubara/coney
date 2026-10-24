@@ -53,9 +53,14 @@ struct Release {
     std::map<std::string, std::vector<ReleaseFile>, std::less<>> platforms; ///< `windows-x64`, `linux-x64`, ...
 };
 
+/// A file path as the file systems that ignore case compare it (Windows, macOS): ASCII letters lowered. A manifest's
+/// paths are printable ASCII, so for them this is the whole comparison.
+[[nodiscard]] std::string pathKey(std::string_view path);
+
 /// Parses a `launcher.json`. Fails with ErrorCode::Invalid, naming the field, for a format other than 1, a version
-/// that does not parse, a file path that is absolute, climbs out (`..`), is empty or appears twice, a size that is not
-/// a whole number, a SHA-256 that is not 64 hex digits, or an asset name with a folder in it.
+/// that does not parse, a file path that is not printable ASCII, is absolute, climbs out (`..`), is empty or appears
+/// twice (case aside, as pathKey compares), a size that is not a whole number, a SHA-256 that is not 64 hex digits, or
+/// an asset name that is not a plain file name (a folder in it, `.` or `..`).
 [[nodiscard]] std::expected<Release, Error> parseRelease(std::string_view json);
 
 } // namespace coney::launcher
