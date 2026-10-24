@@ -403,8 +403,8 @@ def check_checked(subject: Subject) -> list[Refusal]:
         return [
             Refusal("checked", "checked: the newest Check failed; fix what it found and run task check", "task check")
         ]
-    if stamp.covers.get("diff_sha256") != subject.diff_sha256:
-        saved = stamp.covers.get("diff_sha256")
+    if stamp.covers.get(stamps.CHANGE) != subject.diff_sha256:
+        saved = stamp.covers.get(stamps.CHANGE)
         text = (
             f"checked: stale: the branch changed since Check (diff {_hex(saved)} now {_hex(subject.diff_sha256)}"
             f"{_since(stamp.detail.get('files'), subject)})"
@@ -713,7 +713,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
         count = f"{blockers} blocker{'s' if blockers != 1 else ''}" if isinstance(blockers, int) else "blockers"
         return [refuse(f"Review failed ({count}, see the verdict)")]
     stale: list[Refusal] = []
-    if stamp.covers.get("diff_sha256") != subject.diff_sha256:
+    if stamp.covers.get(stamps.CHANGE) != subject.diff_sha256:
         stale.append(
             refuse(
                 f"stale: the branch changed since Review (diff {_hex(stamp.covers.get('diff_sha256'))} now "
