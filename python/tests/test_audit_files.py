@@ -261,6 +261,26 @@ def test_a_block_edited_by_hand_is_found(root: Path) -> None:
     assert problem.item == "docs/guides/issues.md" and "coney-tools repo render" in problem.message
 
 
+# --- files.command-reference --------------------------------------------------------------------------------------
+
+
+def test_a_parameter_block_edited_by_hand_is_found(root: Path) -> None:
+    edit(root, "docs/guides/coney-tools-repo.md", "| `--check` | flag | off |", "| `--check` | flag | on |")
+    (problem,) = found(af.command_reference_current, context(root))
+    assert problem.item == "docs/guides/coney-tools-repo.md"
+    assert "out of date" in problem.message and "coney-tools docs render" in problem.message
+
+
+def test_a_group_whose_block_was_removed_is_found(root: Path) -> None:
+    page = root / "docs/guides/coney-tools-setup.md"
+    text = page.read_text(encoding="utf-8")
+    start = text.index("<!-- command-reference:begin doctor -->")
+    end = text.index("<!-- command-reference:end -->", start) + len("<!-- command-reference:end -->")
+    page.write_text(text[:start] + text[end:], encoding="utf-8", newline="\n")
+    (problem,) = found(af.command_reference_current, context(root))
+    assert problem.item == "doctor" and "no block of its parameters" in problem.message
+
+
 # --- files.ci-scope and files.large-file-limit ------------------------------------------------------------------
 
 

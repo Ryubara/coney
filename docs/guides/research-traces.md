@@ -218,7 +218,7 @@ several of Coney with the all-humans trace (one row per human per update; Coney'
 rules of [Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics) (attacks, blocks, reactions
 and target changes per standing minute, goal shares and fight goals, fighters on one enemy and active places, waiting
 distances, help, each side's tactic, the match's length and winner) and flags each metric where Coney is outside the
-original's spread ([coney-tools](coney-tools-pcsx2.md#trace)). Give one `--original` and one `--coney` per orientation
+original's spread ([coney-tools](coney-tools-trace.md#trace)). Give one `--original` and one `--coney` per orientation
 (which gang is side 1), as the gangs and the sides each change the numbers. Keep the recordings in the scratch folder,
 never in the repository. Match the original's set-up on Coney's side: where the recording hands player 1 to the AI after
 the countdown, run Coney with `--ai-player`, and give each Coney match its own `--ai-seed`

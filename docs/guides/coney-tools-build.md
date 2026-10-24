@@ -80,10 +80,49 @@ a setup problem (no compile database, no clang-tidy), 75 clang-tidy gave up wait
 most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits,
 macOS, the sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
 
+<!-- command-reference:begin check -->
+## Parameters of `check` {#check-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `check changed` {#check-changed-usage}
+
+Clang-tidy (with GCC/Clang warnings), pre-commit, docs, Python and repo checks on what changed.
+
+```text
+coney-tools check changed [--base BASE] [--build-dir BUILD_DIR] [--only ONLY] [--skip SKIP] [--jobs JOBS]
+    [--clang-tidy CLANG_TIDY] [--agent AGENT] [--max-wait MIN] [--no-cache] [--detach]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | the branch the change is measured from |
+| `--build-dir BUILD_DIR` | text | `build/dev` | the build folder holding compile_commands.json |
+| `--only ONLY` | choice | none | run only this step (repeatable). One of `repo`, `orig`, `pre-commit`, `clang-tidy`, `docs`, `python`. |
+| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `repo`, `orig`, `pre-commit`, `clang-tidy`, `docs`, `python`. |
+| `--jobs JOBS` | integer | none | clang-tidy processes at once in the tidy slot (default: tidy_jobs of coney.local.toml, else a build's share, the cores divided by build_slots) |
+| `--clang-tidy CLANG_TIDY` | text | none | the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH |
+| `--agent AGENT` | text | none | your id, for your place in the clang-tidy queue (default: CONEY_AGENT, else the worktree) |
+| `--max-wait MIN` | number | none | minutes to wait for a clang-tidy slot before giving up with exit 75 (default and most 40; with --detach default 240) |
+| `--no-cache` | flag | off | tidy every file, ignoring the shared clang-tidy result cache |
+| `--detach` | flag | off | run in the background, apart from this shell, and return at once; `check result` shows the outcome |
+
+### `check result` {#check-result-usage}
+
+The output and outcome of the worktree's last `check changed --detach`.
+
+```text
+coney-tools check result
+```
+
+Takes no parameters.
+<!-- command-reference:end -->
+
 ## docs {#docs}
 
 ```sh
 uv run --project python coney-tools docs check [PATHS ...] [--base origin/main] [--summary] [--quiet]
+uv run --project python coney-tools docs render [--check]
 uv run --project python coney-tools docs legacy [--init | --prune | --check] [--base origin/main]
 ```
 
@@ -100,6 +139,15 @@ on `docs` for the standing of the whole tree, with the number of legacy pages. E
 one has, 2 when the command is not run inside a checkout, the conventions cannot be read, `--base` is unknown, or a
 named path is missing, outside the checkout or not a page the check covers (`README.md`, a generated page).
 
+`docs render` writes the parameter reference of every command into the guides: the generated **Parameters of** block
+at the end of each group's section, read from the command line's own definitions ([the parameter
+reference](coney-tools.md#parameter-reference)). `--check` changes nothing and exits 1 naming each page with a stale
+block; either way it exits 1, naming the group, for a group with no block or two, a marker that names no group, and a
+command or parameter that has no `help=` text, which no rendering fixes. It is the audit check
+`files.command-reference` too, so `check changed` and the `python` workflow run it on every change: a command or a
+parameter that is missing from the guides, or a block that is stale, does not merge. Exit 2 when the command is not run
+inside a checkout.
+
 A research page is read against the executable's data: `docs/progress/ghidra-functions.tsv` (every function, its size
 and name), `research/elf-sections.toml` (the sections of `SLUS_212.15`) and, once the folder exists, the run records of
 `research/runs/`. The other research pages are read too, for the owner of an address and for copied paragraphs.
@@ -114,6 +162,54 @@ listing, the sections, the run records, the function database or the file itself
 it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it fails every
 mechanical rule page-wide and the grading of the sections the change touches (an address with no level, an old-form
 runtime claim); an entry may list any research rule or `stale-wording`.
+
+<!-- command-reference:begin docs -->
+## Parameters of `docs` {#docs-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `docs check` {#docs-check-usage}
+
+Check pages against their kind's rules; without PATHS, the pages changed against the base.
+
+```text
+coney-tools docs check [PATHS ...] [--base BASE] [--summary] [--quiet]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[PATHS ...]` | text | none | pages or folders to check (default: the pages changed since --base) |
+| `--base BASE` | text | `origin/main` | the branch the change is measured from |
+| `--summary` | flag | off | also count the pages that pass, per kind, and per rule |
+| `--quiet` | flag | off | print only the counts, not each finding |
+
+### `docs render` {#docs-render-usage}
+
+Write the parameter reference of every command into its guide page (generated blocks), from the parsers.
+
+```text
+coney-tools docs render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when a block is stale or missing |
+
+### `docs legacy` {#docs-legacy-usage}
+
+The research pages that do not meet the standard yet (research/legacy.toml): scan, write, shrink, check.
+
+```text
+coney-tools docs legacy [--init | --prune | --check] [--base BASE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--init` | flag | off | write the legacy file from a scan (refuses if it exists). Not with `--prune`, `--check`. |
+| `--prune` | flag | off | take out what is fixed and lower the counts; never adds. Not with `--init`, `--check`. |
+| `--check` | flag | off | exit 1 when the file lists a page or rule that now passes. Not with `--init`, `--prune`. |
+| `--base BASE` | text | `origin/main` | with --check: the branch the file may not grow since |
+<!-- command-reference:end -->
 
 ## build {#build}
 
@@ -362,6 +458,84 @@ crashed run left running, and drops its tickets. A slot whose process still runs
 which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and
 tests](agents.md#builds).
 
+<!-- command-reference:begin build -->
+## Parameters of `build` {#build-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `build` {#build-usage}
+
+Configure, build and test under the build slots (at most two at once); status, release.
+
+```text
+coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [--configure-only] [--test]
+    [--target NAME] [--regex REGEX] [--label LABEL] [--build-dir BUILD_DIR] [--env NAME=VALUE] [--priority]
+    [--lane RUN_LANE] [--max-wait MIN] [--budget MIN] [--detach] [--jobs JOBS]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent AGENT` | text | none | your id: letters, digits, '.', '_' and '-' (default for a person: your user name; agents must pass it) |
+| `--preset PRESET` | choice | `dev` | the CMake preset (default dev). One of `dev`, `playtest`, `release`, `ci`, `ci-release`, `asan`. |
+| `--dir DIR` | path | none | the checkout to build (default: the current one) |
+| `--configure` | flag | off | configure even when the build folder has a cache |
+| `--configure-only` | flag | off | configure and stop (no build): the compile database for check |
+| `--test` | flag | off | run ctest after a successful build |
+| `--target NAME` | text | none | build only this target and what it needs (repeatable), e.g. `coney` for a play build without the tests; not with --test |
+| `-R, --regex REGEX` | text | none | run only the tests whose names match (ctest -R, a CMake regular expression: escape . + ( ) with a backslash); a few tests are quick |
+| `-L, --label LABEL` | text | none | run only the tests with a label that matches (ctest -L); `disc` is every test that needs the game's disc |
+| `--build-dir BUILD_DIR` | path | none | build in this folder instead of build/\<preset\> (relative to the checkout), with the preset's settings; for a second configuration, such as the Clang one clang-tidy reads |
+| `--env NAME=VALUE` | text | none | set an environment variable for the run, e.g. CC=clang-19 (repeatable); CMake reads CC and CXX at the first configure of a folder |
+| `--priority` | flag | off | go ahead of the normal queue (a build someone awaits) |
+| `--lane RUN_LANE` | choice | `auto` | auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you know is long. One of `auto`, `main`. |
+| `--max-wait, --slots-wait-timeout MIN` | number | none | minutes to wait for a slot, per phase, before exiting with code 75 (default and most 40; with --detach default 240, no limit) |
+| `--budget MIN` | number | none | minutes the whole call may take, waits and steps together: stop waiting (exit 75) once the wait plus what the step usually takes would pass it (default and most 45, inside an hour's prompt cache; with --detach default 0: no budget) |
+| `--detach` | flag | off | run in the background, apart from this shell, and return at once: the result goes to build-result.json in the worktree's scratch folder (`build result` shows it); for a wait or a run that would outlast your prompt cache |
+| `-j, --jobs JOBS` | integer | none | parallel jobs (default: the cores divided by the slots) |
+
+### `build status` {#build-status-usage}
+
+Who holds the slots (build lanes and the clang-tidy lane), who waits, and stale entries.
+
+```text
+coney-tools build status [--dir DIR] [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
+| `--json` | flag | off | print JSON instead of text |
+
+### `build result` {#build-result-usage}
+
+The outcome of the worktree's last --detach run.
+
+```text
+coney-tools build result [--json] [--dir DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the record as JSON |
+| `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
+
+### `build release` {#build-release-usage}
+
+Manual cleanup: free an agent's slots and drop its queue places.
+
+```text
+coney-tools build release --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane LANE] [--dir DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent RELEASE_AGENT` | text | required | the agent whose entries to remove |
+| `--force` | flag | off | also another agent's, or a build that still runs |
+| `--slot SLOT` | integer | none | one slot by number (with --lane for the fast or tidy lane) |
+| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`, `tidy`. |
+| `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
+<!-- command-reference:end -->
+
 ## perf {#perf}
 
 ```sh
@@ -379,3 +553,42 @@ the frame times (mean, 95th and 99th percentile, frames a second), the main zone
 build and renderer the rows came from. Coney is `build/PRESET/src/platform/coney` (`release` by default: measure an
 optimised build), the disc `game_dir`. Exit 1 when a run fails. `perf table` prints the same table from reports
 already written.
+
+<!-- command-reference:begin perf -->
+## Parameters of `perf` {#perf-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `perf bench` {#perf-bench-usage}
+
+Play a level once per fighter count with `coney --bench` and print a table of the reports.
+
+```text
+coney-tools perf bench [--coney CONEY] [--preset PRESET] [--disc DISC] [--level LEVEL] [--fighters FIGHTERS]
+    [--frames FRAMES] [--warmup WARMUP] [--headless] --out OUT
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--coney CONEY` | path | none | Coney's executable; default: build/PRESET/src/platform/coney |
+| `--preset PRESET` | text | `release` | the build folder to take Coney from (default release) |
+| `--disc DISC` | text | none | the disc; default: game_dir from coney.local.toml |
+| `--level LEVEL` | text | `level95` | the level to play (default level95) |
+| `--fighters FIGHTERS` | text | `0, 10, 25, 50, 100` | the fighter counts, comma-separated (default 0,10,25,50,100) |
+| `--frames FRAMES` | integer | `600` | frames measured per run (default 600) |
+| `--warmup WARMUP` | integer | `60` | frames before measuring (default 60) |
+| `--headless` | flag | off | no window: the simulation's cost alone |
+| `--out OUT` | path | required | the folder for the reports and logs (scratch) |
+
+### `perf table` {#perf-table-usage}
+
+Print the table of bench reports already written.
+
+```text
+coney-tools perf table REPORTS [REPORTS ...]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `REPORTS [REPORTS ...]` | path | required | the JSON reports, in row order |
+<!-- command-reference:end -->

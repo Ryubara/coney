@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools docs check` command: the page standards of docs/guides/writing-docs.md (see `docs_check`)."""
+"""The `coney-tools docs` commands: `check`, the page standards of docs/guides/writing-docs.md (see `docs_check`);
+`render`, the parameter reference of the coney-tools guides (see `command_reference`); and `legacy`."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from coney_tools import docs_check, docs_legacy
+from coney_tools import command_reference, docs_check, docs_legacy
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.research_legacy import format_legacy
 
@@ -63,6 +64,16 @@ def run_check(paths: list[str], base: str, summary: bool, quiet: bool) -> int:
     if failed and not quiet:
         print("Bring each failing page wholly up to docs/guides/writing-docs.md (a touched page is held to all of it).")
     return 1 if failed else 0
+
+
+def run_render(check: bool) -> int:
+    """Write the generated parameter blocks of the coney-tools guides from the command line, or with `check` only report
+    the stale ones. Exit 1 when a block is stale or missing, 2 when the checkout cannot be found."""
+    try:
+        return command_reference.run_render(find_repo_root(Path.cwd()), command_reference.command_groups(), check)
+    except ConfigError as error:
+        print(f"coney-tools docs render: {error}")
+        return 2
 
 
 def run_legacy(mode: str, base: str) -> int:

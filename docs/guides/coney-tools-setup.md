@@ -140,6 +140,27 @@ as soon as your next turn starts. A wake that started no turn is sent again.
 subagent is at work. A poller whose read fails shows as failing in the status line and in `/tether-watch`. Its ids
 are never taken for "nothing waits". `/tether-watch` reports each poller's last read.
 
+<!-- command-reference:begin coord -->
+## Parameters of `coord` {#coord-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `coord status` {#coord-status-usage}
+
+Issues, pull requests, CI, PCSX2 copies, build slots, release queue and tracks, with action ids.
+
+```text
+coney-tools coord status [--json] [--github] [--ids] [--kind KIND]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the report as JSON |
+| `--github` | flag | off | also read GitHub through gh (slower) |
+| `--ids` | flag | off | print only the action ids, one per line; exit 1 when a section they come from could not be read |
+| `--kind KIND` | choice | none | read only what these action kinds need, and print only their ids (repeatable). One of `build`, `issue`, `pr`, `unit`. |
+<!-- command-reference:end -->
+
 ## conclave {#conclave}
 
 `conclave snapshot` prints everything the [Conclave mod](conclave.md) draws, as one JSON object. The mod is written in
@@ -159,6 +180,26 @@ when there is none). The sections, each with an `error` that is `null` when it w
 in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and 2 when the command cannot run at
 all. The limits and intervals it sends are the `conclave` section of [.github/conventions.yml](repo:.github/conventions.yml).
 
+<!-- command-reference:begin conclave -->
+## Parameters of `conclave` {#conclave-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `conclave snapshot` {#conclave-snapshot-usage}
+
+Units, stamps, builds, claims, pull requests and the machine, as one JSON object.
+
+```text
+coney-tools conclave snapshot [--json] [--github] [--unit TASK]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the snapshot as JSON (the mod's input) |
+| `--github` | flag | off | also read GitHub through gh (slower) |
+| `--unit TASK` | text | none | keep only this unit's row |
+<!-- command-reference:end -->
+
 ## doctor {#doctor}
 
 ```sh
@@ -170,6 +211,22 @@ disc, research tools, disk), and prints a fix for each problem. Exit code 1 when
 disc needs is missing, 0 otherwise (notes, such as another release of the game or a missing research tool, do not
 change it). Read only; no `--agent`, works without `coney.local.toml`. What it checks:
 [Check your setup](building.md#doctor).
+
+<!-- command-reference:begin doctor -->
+## Parameters of `doctor` {#doctor-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+Check this machine and your disc for building and contributing, with a fix for each problem.
+
+```text
+coney-tools doctor [--disc DISC]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--disc DISC` | text | none | a mounted disc, folder or .iso to check (default: game_dir) |
+<!-- command-reference:end -->
 
 ## ghidra {#ghidra}
 
@@ -189,6 +246,49 @@ skipped. Both need a JDK 21, skip what is done, print counts and hashes only, an
 scratch folder; `--dry-run` changes nothing (for `import-names` it opens the program read-only and prints the counts a
 real run would give). Exit codes: 0 done, 2 a missing piece, a refused disc or a failed Ghidra step (the message names
 its log). What each step does and what the counts mean: [Starting your own project](ghidra.md#own-project).
+
+<!-- command-reference:begin ghidra -->
+## Parameters of `ghidra` {#ghidra-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `ghidra setup` {#ghidra-setup-usage}
+
+Fetch Ghidra, compile the EE language, import SLUS_212.15 from your disc, apply our names.
+
+```text
+coney-tools ghidra setup [--disc DISC] [--no-names] [--any-release] [--project-dir PROJECT_DIR]
+    [--project-name PROJECT_NAME] [--overwrite] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--disc DISC` | text | none | a mounted disc, folder or .iso (default: game_dir) |
+| `--no-names` | flag | off | stop after the import; do not apply the names |
+| `--any-release` | flag | off | import an executable that is not the NTSC-U release anyway |
+| `--project-dir PROJECT_DIR` | path | none | the folder holding the project (default: ghidra_projects) |
+| `--project-name PROJECT_NAME` | text | `warriors` | the project's name (default warriors) |
+| `--overwrite` | flag | off | also replace names you gave by hand |
+| `--dry-run` | flag | off | print what would happen; save nothing |
+
+### `ghidra import-names` {#ghidra-import-names-usage}
+
+Apply docs/progress/ghidra-functions.tsv's names to your project by address.
+
+```text
+coney-tools ghidra import-names [--program PROGRAM] [--listing LISTING] [--project-dir PROJECT_DIR]
+    [--project-name PROJECT_NAME] [--overwrite] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--program PROGRAM` | text | `SLUS_212.15` | the program in the project (default SLUS_212.15) |
+| `--listing LISTING` | path | none | the names listing (default docs/progress/ghidra-functions.tsv) |
+| `--project-dir PROJECT_DIR` | path | none | the folder holding the project (default: ghidra_projects) |
+| `--project-name PROJECT_NAME` | text | `warriors` | the project's name (default warriors) |
+| `--overwrite` | flag | off | also replace names you gave by hand |
+| `--dry-run` | flag | off | print what would happen; save nothing |
+<!-- command-reference:end -->
 
 ## mcp {#mcp}
 
@@ -210,6 +310,25 @@ guard](agents.md#pcsx2-guard)). The checkout is `CLAUDE_PROJECT_DIR` when the ag
 sets it, else the current folder; a worktree reads the main checkout's `coney.local.toml`. A missing key, folder or
 program (`uv`, `node`) prints one line on stderr and exits with code 2, so a server that is not installed fails
 without affecting the others. Why and how it is set up: [Setting up an agent tool](agents.md#setup).
+
+<!-- command-reference:begin mcp -->
+## Parameters of `mcp` {#mcp-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `mcp serve` {#mcp-serve-usage}
+
+Run a server found through coney.local.toml, over stdin and stdout.
+
+```text
+coney-tools mcp serve NAME [--copy COPY]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `NAME` | choice | required | which server to run. One of `ghidra-mcp`, `pcsx2`. |
+| `--copy COPY` | text | none | pcsx2 only: the PCSX2 copy (pcsx2, pcsx2-b, ...) whose ports pcsx2_connect defaults to |
+<!-- command-reference:end -->
 
 ## workspace {#workspace}
 
@@ -253,6 +372,88 @@ unchanged for `--log-idle-hours` (default 1), and orphaned `ctest` or `coney_tes
 [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).
 
+<!-- command-reference:begin workspace -->
+## Parameters of `workspace` {#workspace-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `workspace init` {#workspace-init-usage}
+
+Create the workspace folders, clone, write coney.local.toml and check the prerequisites.
+
+```text
+coney-tools workspace init [--workspace WORKSPACE] [--repo-url REPO_URL] [--fetch FETCH] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--workspace WORKSPACE` | path | none | the workspace folder (default: found from the checkout) |
+| `--repo-url REPO_URL` | text | none | the repository to clone when not run inside a checkout |
+| `--fetch FETCH` | choice | none | also download a research tool, or ccache on Windows, at its pinned version (repeatable; never a BIOS or game files). One of `ghidra`, `ghidra-mcp`, `pcsx2-mcp`, `pcsx2-mcp-release`, `ccache`, `lua`, `all`. |
+| `--dry-run` | flag | off | print the steps without doing any |
+
+### `workspace clean` {#workspace-clean-usage}
+
+Remove merged worktrees and old build folders (all idle ones when the drive is low), stop stale waits and orphaned test
+runs (a dry run unless --apply).
+
+```text
+coney-tools workspace clean [--workspace WORKSPACE] [--apply] [--build-hours BUILD_HOURS] [--min-gb MIN_GB]
+    [--margin-gb MARGIN_GB] [--worktree-hours WORKTREE_HOURS] [--fetch] [--shell-hours SHELL_HOURS]
+    [--log-idle-hours LOG_IDLE_HOURS]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--workspace WORKSPACE` | path | none | the workspace folder (default: found from the checkout) |
+| `--apply` | flag | off | act; without it, only report what would be done |
+| `--build-hours BUILD_HOURS` | number | none | delete build/ folders of worktrees untouched this many hours (default: workspace.build_idle_hours) |
+| `--min-gb MIN_GB` | number | none | disk pressure: under this much free space, delete idle build/ folders (default: workspace.disk_min_free_gb) |
+| `--margin-gb MARGIN_GB` | number | none | ... until this much more than --min-gb is free (default: workspace.disk_margin_gb) |
+| `--worktree-hours WORKTREE_HOURS` | number | `1.0` | remove merged worktrees only when untouched this many hours (default: 1) |
+| `--fetch` | flag | off | git fetch origin main first, so merges are current |
+| `--shell-hours SHELL_HOURS` | number | `3.0` | a shell waiting in a loop is stale only when older than this many hours (default: 3) |
+| `--log-idle-hours LOG_IDLE_HOURS` | number | `1.0` | ... and every file its loop reads is unchanged this many hours (default: 1) |
+
+### `workspace disk` {#workspace-disk-usage}
+
+Print the free space of the workspace drive; exit 1 below --min-gb.
+
+```text
+coney-tools workspace disk [--workspace WORKSPACE] [--min-gb MIN_GB]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--workspace WORKSPACE` | path | none | the workspace folder (default: found from the checkout) |
+| `--min-gb MIN_GB` | number | none | the free space in GB below which the exit code is 1 (default: workspace.disk_min_free_gb) |
+<!-- command-reference:end -->
+
+## config {#config}
+
+```sh
+uv run --project python coney-tools config show
+```
+
+Prints the paths your `coney.local.toml` sets, so you can see which checkout, game folder and tools a command will
+use (start from `coney.local.example.toml`; [Local workspace](workspace.md) explains each key).
+
+<!-- command-reference:begin config -->
+## Parameters of `config` {#config-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `config show` {#config-show-usage}
+
+Show the configured paths.
+
+```text
+coney-tools config show
+```
+
+Takes no parameters.
+<!-- command-reference:end -->
+
 ## coney-agent {#coney-agent}
 
 ```sh
@@ -288,3 +489,21 @@ the `.cmd` wrapper asks the same; the `.ps1` wrapper does not, but Windows Power
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`; PowerShell 7 runs it as it is. Exit codes: Claude Code's own
 exit code when it runs; 2 for an unknown role or when `claude` is not on `PATH` or `--mod-dir` names a folder that is
 not there.
+
+<!-- command-reference:begin coney-agent -->
+## Parameters of `coney-agent` {#coney-agent-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+Start Claude Code as one of Coney's roles, from the checkout that holds the current folder.
+
+```text
+coney-agent [ROLE] [--mod-dir MOD_DIR] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[ROLE]` | text | `coordinator` | the role to start (default coordinator) |
+| `--mod-dir MOD_DIR` | path | none | the Coney mod folder to load with --plugin-dir (default tools/claude-mod of the checkout) |
+| `--dry-run` | flag | off | print the command and the folder; start nothing |
+<!-- command-reference:end -->

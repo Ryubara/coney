@@ -1,9 +1,9 @@
 # The coney-tools PCSX2 and clip commands
 
-The commands that record the original's behaviour in PCSX2 and compare it with Coney's: [`pcsx2`](#pcsx2) and
-[`trace`](#trace) record and compare per-update traces, and [`clips`](#clips) checks, publishes and cleans up in-game
-video clips, whether made in PCSX2 or by `coney --record`. The other groups are listed in
-[the command line overview](coney-tools.md#groups).
+The commands that record the original's behaviour in PCSX2: [`pcsx2`](#pcsx2) drives the emulator and records
+per-update traces ([`trace`](coney-tools-trace.md#trace) compares them with Coney's), and [`clips`](#clips) checks,
+publishes and cleans up in-game video clips, whether made in PCSX2 or by `coney --record`. The other groups are listed
+in [the command line overview](coney-tools.md#groups).
 
 ## pcsx2 {#pcsx2}
 
@@ -246,6 +246,393 @@ on it. The library file is never played on or changed. `verify` hashes the files
 that is missing, changed or not listed (exit code 1). `render` rewrites the list between the markers of
 [the page](pcsx2-states.md#the-states) from the catalog.
 
+<!-- command-reference:begin pcsx2 -->
+## Parameters of `pcsx2` {#pcsx2-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `pcsx2 prepare-state` {#pcsx2-prepare-state-usage}
+
+Copy a save state with patches applied to its EE memory.
+
+```text
+coney-tools pcsx2 prepare-state SOURCE OUT [--patch NAME [NAME ...]] [--pcsx2-dir PCSX2_DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
+| `OUT` | path | required | the patched copy (outside the repository and sstates/) |
+| `--patch NAME [NAME ...]` | text | none | patches of research/traces/patches/ |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+
+### `pcsx2 repack-state` {#pcsx2-repack-state-usage}
+
+Copy a save state with plain deflate in place of zstd.
+
+```text
+coney-tools pcsx2 repack-state SOURCE OUT [--pcsx2-dir PCSX2_DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
+| `OUT` | path | required | the repacked copy (outside the repository and sstates/) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+
+### `pcsx2 launch` {#pcsx2-launch-usage}
+
+Start PCSX2 (never taking the focus) on a state file and wait until its game runs.
+
+```text
+coney-tools pcsx2 launch [STATE] [--agent AGENT] [--pcsx2-dir PCSX2_DIR] [--iso ISO] [--scratch SCRATCH]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[STATE]` | path | none | a .p2s file (a patched copy); omitted: boot the disc and wait for PINE |
+| `--agent AGENT` | text | none | your id; PCSX2 starts under your claim (made if you hold none) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
+| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
+
+### `pcsx2 record` {#pcsx2-record-usage}
+
+Play a scenario on the original and write its per-update trace.
+
+```text
+coney-tools pcsx2 record SCENARIO --out OUT [--state STATE] [--attach] [--keep-open] [--agent AGENT]
+    [--recording RECORDING] [--let NAME=EXPR] [--run-record] [--library-state LIBRARY_STATE] [--run-name RUN_NAME]
+    [--pcsx2-dir PCSX2_DIR] [--iso ISO] [--scratch SCRATCH]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `SCENARIO` | path | required | a scenario TOML (research/traces/scenarios/) |
+| `--out OUT` | path | required | the trace CSV (outside the repository) |
+| `--state STATE` | text | none | the state to copy instead of the scenario's slot: a .p2s file or slot:N |
+| `--attach` | flag | off | record a PCSX2 already running a patched state |
+| `--keep-open` | flag | off | leave PCSX2 running afterwards |
+| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
+| `--recording RECORDING` | path | none | an input recording (.p2m2, its savestate beside it) to replay through the debug server as the pad |
+| `--let NAME=EXPR` | text | none | give or replace a name of the scenario's let (a random stream's offset per match); repeatable |
+| `--run-record` | flag | off | also write research/runs/\<id\>.toml (scenario, patches, counts, the CSV's hash) for a claim to cite |
+| `--library-state LIBRARY_STATE` | text | none | with --run-record: the state library id the run started from, or unknown |
+| `--run-name RUN_NAME` | text | none | with --run-record: the run's name in its id (default: the scenario's) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
+| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
+
+### `pcsx2 clip` {#pcsx2-clip-usage}
+
+Record a short clip of the original with PCSX2's own capture of its game output (never the screen).
+
+```text
+coney-tools pcsx2 clip STATE --out OUT [--seconds SECONDS] [--agent AGENT] [--pcsx2-dir PCSX2_DIR] [--iso ISO]
+    [--scratch SCRATCH]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `STATE` | path | required | the .p2s state to start from (a copy outside sstates/) |
+| `--out OUT` | path | required | the clip: \<scratch\>/\<task\>/clips/\<name\>.mp4 |
+| `--seconds SECONDS` | integer | `10` | how long, 1 to the cap of 10 (default 10) |
+| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
+| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
+
+### `pcsx2 claim` {#pcsx2-claim-usage}
+
+Claim a free PCSX2 copy for an agent (every PCSX2 use starts here).
+
+```text
+coney-tools pcsx2 claim --agent AGENT [--copy COPY] [--json] [--max-age-hours MAX_AGE_HOURS]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent AGENT` | text | required | your id: letters, digits, '.', '_' and '-' |
+| `--copy COPY` | text | none | a copy by name (pcsx2, pcsx2-b, ...); default: the first free one |
+| `--json` | flag | off | print the claim as one JSON line |
+| `--max-age-hours MAX_AGE_HOURS` | number | none | a claim with no process is stale after this (default 4) |
+
+### `pcsx2 release` {#pcsx2-release-usage}
+
+Close the copy's PCSX2 and drop the claim.
+
+```text
+coney-tools pcsx2 release --agent AGENT [--copy COPY] [--force]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent AGENT` | text | required | your id |
+| `--copy COPY` | text | none | one copy; default: all of the agent's |
+| `--force` | flag | off | release another agent's claim |
+
+### `pcsx2 status` {#pcsx2-status-usage}
+
+Who holds each PCSX2 copy and whether its PCSX2 runs.
+
+```text
+coney-tools pcsx2 status [--json] [--max-age-hours MAX_AGE_HOURS]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print JSON instead of a table |
+| `--max-age-hours MAX_AGE_HOURS` | number | none | a claim with no process is stale after this (default 4) |
+
+### `pcsx2 check-ports` {#pcsx2-check-ports-usage}
+
+Exit 2 unless the ports are those of a copy you hold (the check the pcsx2 MCP guard makes).
+
+```text
+coney-tools pcsx2 check-ports --agent AGENT [--debug-port DEBUG_PORT] [--pine-port PINE_PORT]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--debug-port DEBUG_PORT` | integer | none | the debug server port you are about to connect to |
+| `--pine-port PINE_PORT` | integer | none | the PINE port you are about to connect to |
+
+### `pcsx2 keys` {#pcsx2-keys-usage}
+
+Post keys to a claimed copy's window by handle (never takes focus).
+
+```text
+coney-tools pcsx2 keys KEY [KEY ...] --agent AGENT --copy COPY [--hold-ms HOLD_MS] [--gap-ms GAP_MS]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `KEY [KEY ...]` | text | required | a key (space, return, up, f4, w, ...); W+K presses both |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--copy COPY` | text | required | the copy |
+| `--hold-ms HOLD_MS` | integer | `300` | how long each key stays down (default 300) |
+| `--gap-ms GAP_MS` | integer | `100` | pause after each key (default 100) |
+
+### `pcsx2 screenshot` {#pcsx2-screenshot-usage}
+
+Write a copy's window as a PNG, read by handle (no focus change).
+
+```text
+coney-tools pcsx2 screenshot --copy COPY --out OUT
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--copy COPY` | text | required | the copy |
+| `--out OUT` | path | required | the PNG (outside the repository) |
+
+### `pcsx2 setup-copies` {#pcsx2-setup-copies-usage}
+
+Make or update the PCSX2 copies from the PCSX2-MCP fork build pcsx2_mcp_dir names.
+
+```text
+coney-tools pcsx2 setup-copies [--count COUNT] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--count COUNT` | integer | none | how many copies: pcsx2, pcsx2-b, ... (default: pcsx2_copies, 5) |
+| `--dry-run` | flag | off | print what would change, change nothing |
+
+### `pcsx2 recordings` {#pcsx2-recordings-usage}
+
+Make an input recording from an input script, or move one (.p2m2 and its savestate) between scratch and a claimed copy.
+
+```text
+coney-tools pcsx2 recordings DIRECTION NAME [--agent AGENT] [--copy COPY] [--force] [--script SCRIPT] [--state STATE]
+    [--updates UPDATES] [--frames-per-update FRAMES_PER_UPDATE] [--author AUTHOR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DIRECTION` | choice | required | push: scratch to the copy's recordings/; pull: back; make: write one from an input script. One of `push`, `pull`, `make`. |
+| `NAME` | text | required | the recording below recordings/, such as fights/rumble-1.p2m2 |
+| `--agent AGENT` | text | none | push and pull: your id (must hold the claim) |
+| `--copy COPY` | text | none | push and pull: the copy |
+| `--force` | flag | off | replace a different file of that name |
+| `--script SCRIPT` | path | none | make: the input script (Coney's format) |
+| `--state STATE` | path | none | make: the savestate it starts from (none: from power-on) |
+| `--updates UPDATES` | integer | none | make: how many 1/30 s updates (default: the script and 1 s) |
+| `--frames-per-update FRAMES_PER_UPDATE` | integer | `2` | make: PCSX2 frames in one script frame (default 2) |
+| `--author AUTHOR` | text | none | make: the author written into the header |
+
+### `pcsx2 recipe list` {#pcsx2-recipe-list-usage}
+
+List every recipe with its one-line summary.
+
+```text
+coney-tools pcsx2 recipe list
+```
+
+Takes no parameters.
+
+### `pcsx2 recipe show` {#pcsx2-recipe-show-usage}
+
+Print one recipe: what it does, its parameters, preconditions and steps.
+
+```text
+coney-tools pcsx2 recipe show NAME
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `NAME` | text | required | the recipe's name (pcsx2 recipe list shows them) |
+
+### `pcsx2 recipe run` {#pcsx2-recipe-run-usage}
+
+Run a recipe on a PCSX2 copy you hold a claim on.
+
+```text
+coney-tools pcsx2 recipe run NAME --copy COPY --agent AGENT [--arg NAME=VALUE] [--json] [--record] [--state STATE]
+    [--name RUN_NAME]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `NAME` | text | required | the recipe's name (pcsx2 recipe list shows them) |
+| `--copy COPY` | text | required | the claimed copy (pcsx2, pcsx2-b, ...) |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--arg NAME=VALUE` | text | none | a parameter; repeatable |
+| `--json` | flag | off | print what the show steps showed as one JSON line too |
+| `--record` | flag | off | after a good run, write research/runs/\<id\>.toml: the numbers it showed, for a runtime claim to cite |
+| `--state STATE` | text | none | with --record: the state library id the copy started from, or unknown |
+| `--name RUN_NAME` | text | none | with --record: the run's name in its id (default: the recipe's name) |
+
+### `pcsx2 recipe render` {#pcsx2-recipe-render-usage}
+
+Write the recipe pages (pcsx2-recipes.md and pcsx2-recipes/) from the recipe file.
+
+```text
+coney-tools pcsx2 recipe render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | write nothing; exit 1 when a page is out of date |
+
+### `pcsx2 record-run` {#pcsx2-record-run-usage}
+
+Write a run record for an observation made by hand on a PCSX2 copy you hold (research/runs/).
+
+```text
+coney-tools pcsx2 record-run --agent AGENT --copy COPY --state STATE --name NAME --method METHOD [--value NAME=NUMBER]
+    [--address NAME=0xADDRESS] [--patch NAME]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--copy COPY` | text | required | the claimed copy the observation was made on |
+| `--state STATE` | text | required | the state library id the copy started from, or unknown |
+| `--name NAME` | text | required | what the run is about; the record's id is r-\<date\>-\<name\> |
+| `--method METHOD` | text | required | how it was observed, in words (a watch, a read, a frame count) |
+| `--value NAME=NUMBER` | text | none | a number read; repeatable |
+| `--address NAME=0xADDRESS` | text | none | an address named; repeatable |
+| `--patch NAME` | text | none | a patch the run needed; repeatable |
+
+### `pcsx2 states list` {#pcsx2-states-list-usage}
+
+List the states, filtered by level or tag.
+
+```text
+coney-tools pcsx2 states list [--level LEVEL] [--tag TAG] [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--level LEVEL` | text | none | only this level (level99) |
+| `--tag TAG` | text | none | only states with this tag |
+| `--json` | flag | off | print the entries as JSON |
+
+### `pcsx2 states show` {#pcsx2-states-show-usage}
+
+Print one state's whole catalog entry.
+
+```text
+coney-tools pcsx2 states show ID [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ID` | text | required | the state's id (pcsx2 states list shows them) |
+| `--json` | flag | off | print the entry as JSON |
+
+### `pcsx2 states add` {#pcsx2-states-add-usage}
+
+Copy a state file into the library and describe it.
+
+```text
+coney-tools pcsx2 states add FILE --id ID --desc DESC [--level LEVEL] [--checkpoint CHECKPOINT] [--tag TAG]
+    [--made-by MADE_BY] [--author AUTHOR] [--made DATE] [--pcsx2 PCSX2] [--position X,Y,Z] [--heading DEG] [--copy COPY]
+    [--agent AGENT] [--no-read] [--pcsx2-dir PCSX2_DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `FILE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
+| `--id ID` | text | required | the state's id: a short slug (pedestrian-grab) |
+| `--desc DESC` | text | required | what the scene shows and what it is set up for |
+| `--level LEVEL` | text | none | the level (level99) or unknown; default: read from the state |
+| `--checkpoint CHECKPOINT` | text | none | the checkpoint number or unknown; default: read from the state |
+| `--tag TAG` | text | none | a tag (repeatable): grab, fence, ... |
+| `--made-by MADE_BY` | text | none | the recipe or steps that produced it |
+| `--author AUTHOR` | text | none | who made it (default: --agent) |
+| `--made DATE` | text | none | when it was made, YYYY-MM-DD (default: the file's own date) |
+| `--pcsx2 PCSX2` | text | none | the PCSX2 version that saved it (default: the file's own) |
+| `--position X,Y,Z` | text | none | the player's position in metres (default: read) |
+| `--heading DEG` | number | none | the player's heading in degrees (default: read) |
+| `--copy COPY` | text | none | read level, checkpoint, position and heading over PINE from this running copy |
+| `--agent AGENT` | text | none | your id (must hold the claim on --copy) |
+| `--no-read` | flag | off | read nothing from the state: give everything by flags |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder for slot:N; default: pcsx2_dir |
+
+### `pcsx2 states use` {#pcsx2-states-use-usage}
+
+Hand out a copy of a state to a PCSX2 copy you hold a claim on.
+
+```text
+coney-tools pcsx2 states use ID --copy COPY --agent AGENT [--patch NAME [NAME ...]] [--launch]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ID` | text | required | the state's id (pcsx2 states list shows them) |
+| `--copy COPY` | text | required | the claimed copy (pcsx2, pcsx2-b, ...) |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--patch NAME [NAME ...]` | text | none | patches of research/traces/patches/ |
+| `--launch` | flag | off | start PCSX2 on the copy of the state |
+
+### `pcsx2 states verify` {#pcsx2-states-verify-usage}
+
+Hash the library's files against the catalog.
+
+```text
+coney-tools pcsx2 states verify [ID ...]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[ID ...]` | text | none | only these (default: every state) |
+
+### `pcsx2 states render` {#pcsx2-states-render-usage}
+
+Write the library's list into docs/guides/pcsx2-states.md.
+
+```text
+coney-tools pcsx2 states render [--out OUT]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--out OUT` | path | none | another page with the marked block (default: the guide) |
+<!-- command-reference:end -->
+
 ## clips {#clips}
 
 ```sh
@@ -276,130 +663,64 @@ FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside 
 `--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a
 capture device or any input that is not a file.
 
-## trace {#trace}
+<!-- command-reference:begin clips -->
+## Parameters of `clips` {#clips-parameters}
 
-```sh
-uv run --project python coney-tools trace coney SCENARIO --out CSV [--coney EXE] [--disc DISC]
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `clips folder` {#clips-folder-usage}
+
+Make and print a task's clips folder (\<scratch\>/\<task\>/clips).
+
+```text
+coney-tools clips folder TASK
 ```
 
-Plays the scenario's input script on Coney headless (`--play-level` and the options of its `[coney]` table, `--frames`
-its updates, `--trace CSV`). `--coney` defaults to `build/dev/src/platform/coney`, `--disc` to `game_dir`.
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `TASK` | text | required | the task's scratch folder name (your branch or track) |
 
-```sh
-uv run --project python coney-tools trace diff ORIGINAL CONEY [--scenario SCENARIO] [--columns COLUMN ...]
-    [--tolerance COLUMN=VALUE ...] [--from STEP] [--to STEP] [--shift N] [--start-frame] [--context N]
+### `clips check` {#clips-check-usage}
+
+Check clips as publish does (place, length, metadata), upload nothing.
+
+```text
+coney-tools clips check CLIP [CLIP ...]
 ```
 
-Compares two traces step by step and prints, per column, the first step outside its tolerance, the largest difference
-and its step, then the rows of both around each divergence. It exits with 0 when every column is within tolerance, 1
-when one is not and 2 when a trace cannot be read. With `--scenario`, the columns, tolerances, start frame and first
-step (the first update of input) come from the scenario's `[diff]` table; flags override them.
-[Comparing with Coney](research-traces.md#comparing-with-coney) explains the alignment and the start frame.
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `CLIP [CLIP ...]` | path | required | the clip files to check |
 
-```sh
-uv run --project python coney-tools trace fight-report TRACE... [--humans] [--hz N] [--exclude HUMAN ...]
-    [--engage-distance METRES] [--from STEP] [--original-gangs ID,ID,...]
-uv run --project python coney-tools trace fight-report --original TRACE... [--original TRACE...]
-    --coney TRACE... [--coney TRACE...] [--margin SHARE] [--original-gangs ID,ID,...] [--coney-gangs ID,ID,...]
+### `clips publish` {#clips-publish-usage}
+
+Upload clips with gh --attach to a pull request or issue, then delete them.
+
+Exactly one of `--pr`, `--issue` is required.
+
+```text
+coney-tools clips publish CLIP [CLIP ...] (--pr PR | --issue ISSUE) [--edit] [--body BODY | --body-file BODY_FILE]
 ```
 
-Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](running-play-level.md#tracing)), by the rules of
-[Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics). The two games draw different
-random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
-columns `step`, `human` and `gang`; a metric whose columns are missing is left out.
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `CLIP [CLIP ...]` | path | required | the clip files to upload |
+| `--pr PR` | integer | none | the pull request's number. Not with `--issue`. |
+| `--issue ISSUE` | integer | none | the issue's number. Not with `--pr`. |
+| `--edit` | flag | off | put them into the description instead of a comment |
+| `--body BODY` | text | none | the comment's (or description's) text. Not with `--body-file`. |
+| `--body-file BODY_FILE` | path | none | a file with the text; ./clips/\<name\>.mp4 references are replaced. Not with `--body`. |
 
-* **The fighters** are the humans of the gangs in `--original-gangs` (`--coney-gangs` for Coney's runs), or else of
-  the gangs that fight (a target, an attack, a block or a knock-out), less a crowd of brain type 4 (`btype`).
-* **The fight** runs from the first step a fighter's brain is on (`brain_off` 0, or without that column the first
-  goal pushed) to `RumbleOver`, the step before every fighter's `brain_off` is 1 (or every goal stack has been empty
-  for 30 steps). A trace without those columns runs from `--from` to the first step where one gang or none stands.
-* **Out of the fight** is `Human_IsDownOrDead`'s mask, `state` `0x80050000` (dying, knocked out, wounded) or
-  `state_hi` `0x1` (dead), or clip 349, or gone from the trace; in a trace without `clip` and `state`, `ko` 1 or
-  `health` 0. Every rate is per minute a human stands, at `--hz` updates a second (30).
+### `clips clean` {#clips-clean-usage}
 
-For the whole match (`all`) and each side (and each human with `--humans`) it prints:
+Delete clips left in the scratch clips folders past the age limit.
 
-* **attacks** (`attack.total_per_min`, the wind-ups: `phase` bit `0x1` turning on, with `attack.distance_p10`,
-  `p50`, `p90` to the target then; without `phase`, a change to an attack command in `command`, also by kind as
-  `attack.square_per_min`, ...);
-* **blocks** (`block.per_min`, the Blocking goal, 27, coming on top) and **held blocks** (`block.held_per_min`,
-  `blocking` or the block command); **reactions** (`react.per_min`), **knock-downs** (`down.per_min`), **health
-  losses** (`health.losses_per_min`) and **taunts** (`taunt.per_min`, clip 603 starting);
-* **target changes** (`target.changes_per_min`, split into `target.switch_per_min` A to B, `set_per_min` from none
-  and `clear_per_min` to none, and by cause as `target.cause.pick_per_min`, `front`, `hit_back`, `help`, `engage`,
-  `displaced`, `reaction`, `order`, `other` and `unknown`: from Coney's `target_causes` column, or the original's
-  `set-target` hook log beside the trace, `<stem>.set-target.csv`, counting only the calls that change the target,
-  each caller named by the table `SET_TARGET_CAUSES` in `repo:python/src/coney_tools/fight_trace.py`, which follows
-  [What each set-target caller means](../research/gang-fights.md#set-target-causes); a caller it does not name yet is
-  `unknown`. The causes are not a split of `target.changes_per_min` and need not add up to it: they count every
-  change in the window, also while the human is out (the knock-out's drop) and both halves of a pick's clear and set,
-  where `changes_per_min` counts the changes seen between two sampled rows while he stands; both are divided by the
-  minutes he stands) and goal changes and interruptions (`goal.changes_per_min`,
-  `goal.interruptions_per_min`: a goal pushed over another, or a stack replaced instead of popped);
-* the **time share of each goal** (`goal.NAME`) and the **idle share** (`idle.share`, an empty stack while standing);
-  the **fight goals**, runs of Fight on top, a new one when `fight_updates` starts again (`fight_goal.count`,
-  `median_s`, `p90_s`, `share_4s`);
-* **fighters on one enemy** (`attackers.mean`, `p90`, `max`, `share1` to `share4`) and the **active places** held on
-  a fighter (`active.share0`, `share1`, `share2`, `share3plus`);
-* **waiting**: the distance to the target with Fight on top and no active place (`fight_active` 0), split by whether
-  the target's own target is him (`wait.mutual_p50`, `wait.other_p50`, and the share in 4-4.75 m, `_band`);
-* **help** (`help.calls_per_min`, `help.helpers_per_min`, `help.respond_per_min`): Coney's `help_calls` and
-  `helpers_sent` columns, or for the original the `help-call` and `send-helper` hook logs beside the trace
-  (`<stem>.help-call.csv`, `<stem>.send-helper.csv`);
-* the **distance to the target** (`distance.p10`, `p50`, `p90`), the **time to the first engagement**
-  (`engage.first_s`, `median_s`, `share`: the first attack, or a target within `--engage-distance`, 3 m by default)
-  and the **knock-out times** (`ko.count`, `first_s`, `median_s`, `last_s`);
-* per side, its **fighters out at the end** (`out.at_end`), its **tactic** (`tactic.first`, `last`, `changes`,
-  `first_updates`, from `g_tactic`), `teamups.max`, `order.share` and `chosen.share`;
-* the **match's length and winner** (`match.length_s`, `match.winner`: the side with fighters standing at the end).
-
-`--exclude` leaves humans out (a spectator, the pad's player); `--from` skips the steps before one.
-
-With `--original` and `--coney` it prints, for every metric, the original's spread (min / median / max over its runs)
-beside Coney's and marks with `<<` each metric where Coney's median is outside the original's spread (`above`,
-`below`, `missing`, or `different` for a winner the original never had). `--margin` widens the spread by that share of
-its width. A goal or an attack one side never uses counts as zero. Each `--original` and `--coney` names the runs of
-one orientation (which gang is side 1), and the two are paired in order, so each orientation of Coney's is compared
-with the original's runs of the same orientation; give as many of one as of the other. Sides are labelled `g0`, `g1`,
-... by rank, the lowest id first, or in the order of `--original-gangs` and `--coney-gangs` when their ids differ. The
-exit code is 1 when a metric is outside the spread, 0 when none is, 2 when a trace cannot be read. With one run of the
-original the spread is a point, so record several ([Comparing with Coney](research-traces.md#comparing-with-coney)).
-
-```sh
-uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
-    [--state STATE] [--agent ID] [--updates N] [--follow ROUTE [--follow-from EVENT]]
+```text
+coney-tools clips clean [--older-than HOURS] [--dry-run]
 ```
 
-Plays a mission scenario (`research/traces/missions/*.toml`) on one game with its course, an adaptive pad that plays
-by what is on screen, and writes the game's event log to `CSV` (keep it outside the repository: it holds the game's
-text). `--side coney` runs Coney headless with `--pad-pipe` and `--event-log` (`--coney`, `--disc` as for `trace
-coney`); `--side original` starts PCSX2 on the scenario's state with its patches and event hooks, as `pcsx2 record`
-does, under your claim (`--agent`), and reads the events from the hooks' ring. `--state` starts from another state
-file or `slot:N` (a copy, never the slot itself); `--updates` caps the run. It prints its progress every 1000 updates
-and ends when the scenario's `until` event comes, or at its `updates`. Beside the log it writes the run's route,
-`<CSV stem>.route.csv` (`step,x,y,z,heading,buttons,lx,ly`: the player's feet and heading after each update in play,
-then the pad given for the next one; the buttons are Coney's bits in hexadecimal, the left stick as raw bytes).
-
-`--follow ROUTE` (Coney only) plays another run's route instead of the course, usually the original's, so Coney's
-player goes where the original's went and what is heard and spawned on the way can be compared. The route is cut
-into walks (a waypoint each 0.5 m of the recorded travel, walked to with the stick at 60 %) and actions (the updates
-in which the recorded player pressed a button, or turned the stick while standing still, played back pad for pad once
-he stands within 0.25 m of where it began and faces its heading); updates out of play hold the pad at rest, so a
-scene or a load does not use up the route. `--follow-from "kind name"` lets the scenario's course play until that
-event (`"call CarSpawnRadio"`), then follows the route from the step its own run saw it, found in the event log beside
-the route: for a stretch one game's start state has half done. A route is followed, not replayed: Coney may take
-longer over it (a waypoint it cannot reach is given up after 40 updates without headway).
-
-```sh
-uv run --project python coney-tools trace events-diff ORIGINAL CONEY [--rules RULES] [--kinds KIND ...] [--window N]
-    [--limit N] [--labels JSON] [--from EVENT]
-```
-
-Compares two event logs in order, not frame by frame, by the rules of `research/traces/events.toml` (`--rules` for
-another): the furthest milestone both reached and the one Coney never reached, then the events missing in Coney, the
-extra ones, those out of order, milestones whose spacing differs by more than `--window` updates, and the frequent
-events by count. `--from "kind name"` starts both logs at their first such event, for two runs that began at
-different points of a mission; `--labels` names hashed texts by a JSON object of label to text (a string table read
-from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
-[Differential playthroughs](research-traces.md#differential-playthroughs) explains the method.
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--older-than HOURS` | number | none | default: workspace.clips.keep_hours (24) |
+| `--dry-run` | flag | off | list what would go, delete nothing |
+<!-- command-reference:end -->

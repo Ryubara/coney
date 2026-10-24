@@ -143,6 +143,122 @@ It is one JSON object per review and is never committed. `orig queue` reads it:
 * an unreviewed one gains 3 points, and a stale one 5;
 * a review finding adds its class's weight, from `unclear` (6) to `diff-bug` (40).
 
+<!-- command-reference:begin orig -->
+## Parameters of `orig` {#orig-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `orig index` {#orig-index-usage}
+
+Index every @orig tag in src/, check it against Ghidra, list untagged gameplay functions.
+
+```text
+coney-tools orig index --out OUT [--ghidra GHIDRA] [--url URL]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--out OUT` | path | required | the folder to write to (the scratch folder) |
+| `--ghidra GHIDRA` | choice | `auto` | check the tags against a running ghidra-mcp (live), the committed listing docs/progress/ghidra-functions.tsv (listing), the first that is there (auto, the default), or not at all. One of `auto`, `live`, `listing`, `off`. |
+| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
+
+### `orig check` {#orig-check-usage}
+
+Refuse a new gameplay function with neither @orig nor @coney-only (check changed and CI run it).
+
+```text
+coney-tools orig check [--base BASE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | what the change is measured from (default: origin/main) |
+
+### `orig copy-check` {#orig-copy-check-usage}
+
+Refuse decompiler fingerprints (iVar1, param_1, undefined4, \*(T \*)(x + 0x10), goto) in changed C++ lines.
+
+```text
+coney-tools orig copy-check [--base BASE] [--all]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | what the change is measured from (default: origin/main) |
+| `--all` | flag | off | check every line of src/, not only the changed ones |
+
+### `orig queue` {#orig-queue-usage}
+
+Rank the functions to audit first: open bug issues, Ghidra problems, weak research, untagged code.
+
+```text
+coney-tools orig queue --out OUT [--ghidra GHIDRA] [--url URL] [--issues ISSUES] [--label LABEL] [--show SHOW]
+    [--ledger LEDGER]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--out OUT` | path | required | the folder to write to (the scratch folder) |
+| `--ghidra GHIDRA` | choice | `auto` | check the tags against a running ghidra-mcp (live), the committed listing docs/progress/ghidra-functions.tsv (listing), the first that is there (auto, the default), or not at all. One of `auto`, `live`, `listing`, `off`. |
+| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
+| `--issues ISSUES` | path | none | read the issues from this saved `gh issue list --json` file |
+| `--label LABEL` | text | `bug` | the label of the issues to read (default: bug) |
+| `--show SHOW` | integer | `300` | entries written to queue.md (default: 300) |
+| `--ledger LEDGER` | path | none | the review ledger (default: pull_requests.orig_review.ledger in the scratch folder) |
+
+### `orig review-stamp` {#orig-review-stamp-usage}
+
+Print, as JSON, the @orig functions an orig review covers (a branch's changes, or a sweep's scope).
+
+Exactly one of `--branch`, `--worktree`, `--folder`, `--address` is required.
+
+```text
+coney-tools orig review-stamp (--branch BRANCH | --worktree WORKTREE | --folder FOLDER | --address ADDRESS)
+    [--base BASE] [--ref REF] [--every] [--ledger LEDGER]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--branch BRANCH` | text | none | the branch to review (pr mode). Not with `--worktree`, `--folder`, `--address`. |
+| `--worktree WORKTREE` | path | none | review the commit checked out in this worktree (pr mode). Not with `--branch`, `--folder`, `--address`. |
+| `--folder FOLDER` | text | none | a src/ folder to sweep (repeatable). Not with `--branch`, `--worktree`, `--address`. |
+| `--address ADDRESS` | text | none | an @orig address to sweep (repeatable). Not with `--branch`, `--worktree`, `--folder`. |
+| `--base BASE` | text | `origin/main` | pr mode: the branch's base (default: origin/main) |
+| `--ref REF` | text | `HEAD` | sweep mode: the commit to read (default: HEAD) |
+| `--every` | flag | off | sweep mode: list reviewed functions too |
+| `--ledger LEDGER` | path | none | the review ledger (default: pull_requests.orig_review.ledger in the scratch folder) |
+
+### `orig check-review` {#orig-check-review-usage}
+
+A branch that changes @orig functions needs a passing ORIG-REVIEW.json for its tip.
+
+```text
+coney-tools orig check-review --body BODY [--head HEAD] [--base BASE] [--cwd CWD] [--ledger LEDGER]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | path | required | the description file (PR.md) |
+| `--head HEAD` | text | none | the branch (as gh pr create --head names it) |
+| `--base BASE` | text | none | the base branch (default: the default branch on origin) |
+| `--cwd CWD` | text | none | the folder the release runs in |
+| `--ledger LEDGER` | path | none | the review ledger (default: pull_requests.orig_review.ledger in the scratch folder) |
+
+### `orig record` {#orig-record-usage}
+
+Record a sweep's FINDINGS.tsv files in the review ledger and print the ledger's counts.
+
+```text
+coney-tools orig record [FINDINGS ...] [--ref REF] [--ledger LEDGER]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[FINDINGS ...]` | path | none | FINDINGS.tsv files |
+| `--ref REF` | text | `HEAD` | the commit the findings were made at (default: HEAD) |
+| `--ledger LEDGER` | path | none | the review ledger (default: pull_requests.orig_review.ledger in the scratch folder) |
+<!-- command-reference:end -->
+
 ## original {#original}
 
 The commands of the study-and-compare stage ([Stamps, studies and pairs](stamps.md)). Each writes into the task's
@@ -190,6 +306,78 @@ Every option:
 | `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
 | `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
 
+<!-- command-reference:begin original -->
+## Parameters of `original` {#original-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `original study` {#original-study-usage}
+
+Save an original function's decompile and neighbours from Ghidra, number its lines, cut its pieces.
+
+```text
+coney-tools original study ADDRESS [--task TASK] [--url URL] [--recut] [--print]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
+| `--recut` | flag | off | re-cut the saved decompile without Ghidra (the files, name, program and signature must match the newest studied stamp) |
+| `--print` | flag | off | also print the numbered decompile |
+
+### `original compare` {#original-compare-usage}
+
+Show the decompile beside the Coney function, check its pairs and stamp `compared`.
+
+```text
+coney-tools original compare ADDRESS [--task TASK] [--base BASE] [--coney-function CONEY_FUNCTION] [--carry] [--show]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--base BASE` | text | `origin/main` | what the copy check measures from (default: origin/main) |
+| `--coney-function CONEY_FUNCTION` | text | none | the unit key, when several Coney functions carry the address |
+| `--carry` | flag | off | bring the pairs forward onto a changed or renamed study |
+| `--show` | flag | off | print the side-by-side view |
+
+### `original verify` {#original-verify-usage}
+
+Whether a saved study still matches Ghidra: fresh, renamed or stale.
+
+```text
+coney-tools original verify ADDRESS [--task TASK] [--url URL]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
+
+### `original fails-first` {#original-fails-first-usage}
+
+Run named tests on the test commit and on the fix commit and stamp `fails-first`.
+
+```text
+coney-tools original fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-commit FIX_COMMIT] [--preset PRESET]
+    [--agent AGENT] [--none REASON] [--task TASK]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--test TEST` | text | none | a whole test name, found as TEST_CASE("NAME" in the test commit (repeatable) |
+| `--test-commit TEST_COMMIT` | text | none | the commit that adds the test (and only the stubs it needs to compile) |
+| `--fix-commit FIX_COMMIT` | text | none | the commit that makes it pass (default: HEAD) |
+| `--preset PRESET` | text | `dev` | the CMake preset (default: dev) |
+| `--agent AGENT` | text | none | your id for the build slots (as `build --agent`) |
+| `--none REASON` | text | none | stamp that there is no fails-first test, with the reason |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+<!-- command-reference:end -->
+
 ## stamp {#stamp}
 
 ```sh
@@ -209,6 +397,41 @@ writers ([Stamps](stamps.md#log)).
 | `verify` | `--release` | A release check, which `pr open` and CI will run: a signed step without a signature, or a missing or empty log, fails |
 | `verify` | `--signers FILE` | The allowed-signers file (default: the working tree's `.github/stamp-signers`) |
 | `verify` | `--signers-ref REF` | Read the signers file and the stamp rules from commit REF, not the working tree ([the trust anchor](stamps.md#signing)); CI will pass the pull request's base. Not with `--signers` |
+
+<!-- command-reference:begin stamp -->
+## Parameters of `stamp` {#stamp-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `stamp verify` {#stamp-verify-usage}
+
+Check the chain, every field and the signatures of a stamp log.
+
+```text
+coney-tools stamp verify [--task TASK] [--dir DIR] [--release] [--signers SIGNERS | --signers-ref REF]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--dir DIR` | path | none | a stamp log folder (default: the task's, in the scratch folder); with --task, it must be that task's |
+| `--release` | flag | off | a release check (what `pr open` and CI will run): the signed steps must carry valid signatures and the log must not be missing or empty |
+| `--signers SIGNERS` | path | none | the allowed-signers file (default: the working tree's .github/stamp-signers). Not with `--signers-ref`. |
+| `--signers-ref REF` | text | none | read .github/stamp-signers and the stamp rules from this commit (CI will pass the pull request's base, such as origin/main), not from the working tree under review; not with --signers. Not with `--signers`. |
+
+### `stamp show` {#stamp-show-usage}
+
+List the stamps of a log, one line each.
+
+```text
+coney-tools stamp show [--task TASK] [--dir DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--dir DIR` | path | none | a stamp log folder (default: the task's, in the scratch folder); with --task, it must be that task's |
+<!-- command-reference:end -->
 
 ## research {#research}
 
@@ -309,6 +532,70 @@ for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 
 `research claims` is `research_claims.py` and `research_claims_cli.py`.
 
+<!-- command-reference:begin research -->
+## Parameters of `research` {#research-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `research claims` {#research-claims-usage}
+
+List the graded blocks the branch changed on the research pages, with what backs each (for review).
+
+```text
+coney-tools research claims [--base BASE] [--task TASK] [--stamps STAMPS] [--require-study] [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | the branch point to compare with (default origin/main) |
+| `--task TASK` | text | none | the task whose stamp log backs the code claims (default: CONEY_TASK, else the branch) |
+| `--stamps STAMPS` | path | none | a stamp log folder to use instead of the task's |
+| `--require-study` | flag | off | an error for a confirmed (code) claim whose addresses were not studied in the task (maintainer decision) |
+| `--json` | flag | off | print the report as JSON |
+
+### `research render` {#research-render-usage}
+
+Check the function database, source files and glossary, and write the generated pages to a folder.
+
+```text
+coney-tools research render [OUT_DIR] [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[OUT_DIR]` | path | none | a folder to write the pages to (research/\<system\>/functions.md, find/) |
+| `--check` | flag | off | write nothing; check the data and exit 1 when it has a problem |
+
+### `research where` {#research-where-usage}
+
+Which page describes an address, function name, source file or player word, and where its logic lives.
+
+```text
+coney-tools research where QUERY [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `QUERY` | text | required | 0x\<address\>, a Ghidra function name, a source file (Human/cns/cnsplayertag.cpp) or a word |
+| `--json` | flag | off | print the answer as JSON |
+
+### `research import-table` {#research-import-table-usage}
+
+Import a research page's code-index tables into research/functions/\<system\>.toml.
+
+```text
+coney-tools research import-table PAGE --system SYSTEM [--section SECTION] [--replace] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `PAGE` | path | required | the research page, below docs/research |
+| `--system SYSTEM` | text | required | the system's file: lower case with hyphens, such as combat |
+| `--section SECTION` | text | none | import only the tables under this heading's anchor |
+| `--replace` | flag | off | take the page's row for an address the file has with other contents |
+| `--dry-run` | flag | off | print the report and write nothing |
+<!-- command-reference:end -->
+
 ## lua {#lua}
 
 The game's 467 scripts are compiled Lua 4.0 ([Compiled Lua chunks](../research/formats/lua-chunks.md)). `lua
@@ -373,3 +660,26 @@ only those. The `luac` that `--fetch lua` builds is a 64-bit program that writes
 trip, which compares functions, not headers), so the regenerate step refuses it. Regenerate with a 32-bit build named
 by `LUA4_LUAC`: on Windows, the same build as `--fetch lua` from the x86 tools (`vcvars32.bat`), with the core
 `src/*.c` in a library and `src/luac/*.c` linked against it.
+
+<!-- command-reference:begin lua -->
+## Parameters of `lua` {#lua-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `lua decompile` {#lua-decompile-usage}
+
+Decompile one chunk (NAME OUT_DIR) or every chunk (--all) to readable Lua, outside the repository.
+
+```text
+coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunks DIR] [--luac PATH] [--roundtrip]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[[DISC] NAME OUT_DIR ...]` | text | none | a mounted disc, folder or .iso (default: game_dir), the chunk's file name or hash in hex, the folder to write it to; with --all, only [DISC] |
+| `--all` | flag | off | every chunk, into the shared folder (lua_dir) |
+| `--out DIR` | path | none | with --all: write here instead of lua_dir |
+| `--chunks DIR` | path | none | read chunks from this folder (`wad extract` output), not a disc |
+| `--luac PATH` | path | none | the stock Lua 4.0 luac (default: luac_program) |
+| `--roundtrip` | flag | off | compile each output with luac and compare it with the chunk; prints counts only; exit 1 on a mismatch |
+<!-- command-reference:end -->

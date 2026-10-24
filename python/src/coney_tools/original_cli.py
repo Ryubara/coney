@@ -56,7 +56,7 @@ def add_parser(groups: Any) -> None:
             "committed and that `orig copy-check` is clean, and only then appends the `compared` stamp."
         ),
     )
-    compare.add_argument("address")
+    compare.add_argument("address", help="the function's address, such as 0x00230d00")
     _task(compare)
     compare.add_argument(
         "--base", default="origin/main", help="what the copy check measures from (default: %(default)s)"
@@ -74,7 +74,7 @@ def add_parser(groups: Any) -> None:
             "appearance, so only a one-to-one rename keeps it). Exits 1 when stale, 3 when Ghidra is down."
         ),
     )
-    verify.add_argument("address")
+    verify.add_argument("address", help="the function's address, such as 0x00230d00")
     _task(verify)
     verify.add_argument("--url", default=DEFAULT_GHIDRA_URL, help="the ghidra-mcp server (default: %(default)s)")
 

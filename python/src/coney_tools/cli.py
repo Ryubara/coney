@@ -304,7 +304,7 @@ def _build_parser() -> argparse.ArgumentParser:
     serve = mcp.add_subparsers(dest="command", required=True).add_parser(
         "serve", help="run a server found through coney.local.toml, over stdin and stdout"
     )
-    serve.add_argument("name", choices=mcp_serve.SERVERS)
+    serve.add_argument("name", choices=mcp_serve.SERVERS, help="which server to run")
     serve.add_argument(
         "--copy", help="pcsx2 only: the PCSX2 copy (pcsx2, pcsx2-b, ...) whose ports pcsx2_connect defaults to"
     )
@@ -419,6 +419,11 @@ def _add_docs_commands(groups: Any) -> None:
     check.add_argument("--base", default="origin/main", help="the branch the change is measured from")
     check.add_argument("--summary", action="store_true", help="also count the pages that pass, per kind, and per rule")
     check.add_argument("--quiet", action="store_true", help="print only the counts, not each finding")
+    render = commands.add_parser(
+        "render",
+        help="write the parameter reference of every command into its guide page (generated blocks), from the parsers",
+    )
+    render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a block is stale or missing")
     legacy = commands.add_parser(
         "legacy",
         help="the research pages that do not meet the standard yet (research/legacy.toml): scan, write, shrink, check",
@@ -830,7 +835,7 @@ def _add_clips_commands(groups: Any) -> None:
     folder = commands.add_parser("folder", help="make and print a task's clips folder (<scratch>/<task>/clips)")
     folder.add_argument("task", help="the task's scratch folder name (your branch or track)")
     check = commands.add_parser("check", help="check clips as publish does (place, length, metadata), upload nothing")
-    check.add_argument("clips", nargs="+", type=Path, metavar="CLIP")
+    check.add_argument("clips", nargs="+", type=Path, metavar="CLIP", help="the clip files to check")
     publish = commands.add_parser(
         "publish", help="upload clips with gh --attach to a pull request or issue, then delete them"
     )
@@ -841,7 +846,7 @@ def _add_clips_commands(groups: Any) -> None:
     text = publish.add_mutually_exclusive_group()
     text.add_argument("--body", help="the comment's (or description's) text")
     text.add_argument("--body-file", type=Path, help="a file with the text; ./clips/<name>.mp4 references are replaced")
-    publish.add_argument("clips", nargs="+", type=Path, metavar="CLIP")
+    publish.add_argument("clips", nargs="+", type=Path, metavar="CLIP", help="the clip files to upload")
     clean = commands.add_parser("clean", help="delete clips left in the scratch clips folders past the age limit")
     clean.add_argument("--older-than", type=float, metavar="HOURS", help="default: workspace.clips.keep_hours (24)")
     clean.add_argument("--dry-run", action="store_true", help="list what would go, delete nothing")
@@ -1078,6 +1083,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
     if args.group == "docs":
+        if args.command == "render":
+            return docs_cli.run_render(args.check)
         if args.command == "legacy":
             return docs_cli.run_legacy(
                 "init" if args.init else "prune" if args.prune else "check" if args.check else "scan", args.base
