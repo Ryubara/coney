@@ -586,13 +586,15 @@ that cite it ([Merging safely](how-we-work.md#merging)):
 2. For each issue: change what the pull request made untrue (a pull request called open is merged, a renamed file), tick
    the fix-list items it finished, set the status label (`S-in-progress` when work remains, `S-ready-to-start` when
    nobody is on it), and close it if it is now done. Edit the body with `coney-tools issue edit N --body FILE`; a
-   label or a comment is `gh`. An issue the line does not change after all gets a one-line comment saying so.
+   label or a comment is `gh`. An issue the line does not change after all gets a one-line note in its body saying so (a
+   comment alone does not count for the audit).
 3. Look for what the author missed: `coney-tools issue impact --base <merge base> --head <the pull request's tip>`
    run on the merged branch's commits lists the other issues that cite what changed.
 4. The audit's `pr.affected-unedited` reports a pull request merged since the rule began whose listed open issues have
    not been updated since the merge; `/repo-hygiene` fixes those first
-   ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)). The check counts any update of the issue (a body
-   edit, a label, a comment) after the merge time as the edit.
+   ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)). The check counts only a body edit or a label
+   change after the merge time as the edit; a comment does not count, so an issue the line does not change after all
+   gets a short note in its body saying it was checked.
 
 ## Work found along the way becomes its own issue {#follow-up-work}
 

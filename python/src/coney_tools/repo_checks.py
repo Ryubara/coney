@@ -514,14 +514,17 @@ def runtime_problems(section: str, title: str, rules: PullRequests) -> list[str]
 
 #: An item of the Issues affected section once its list marker is gone: `#12: how it is affected`.
 _ORDERED_MARKER = re.compile(r"^\d+[.)][ \t]+")
-_AFFECTED_ITEM = re.compile(r"^#(?P<number>\d+)\b[ \t]*[:;,\u2014\u2013-]?[ \t]*(?P<how>.*)$")
+_AFFECTED_ITEM = re.compile(
+    r"^(?P<numbers>#\d+(?:[ \t]*(?:,|and|&)[ \t]*#\d+)*)\b[ \t]*[:;,\u2014\u2013-]?[ \t]*(?P<how>.*)$", re.IGNORECASE
+)
 
 
 def _affected_entries(section: str, rules: PullRequests) -> tuple[list[tuple[int, str]], str | None, list[str]]:
     """Read the Issues affected section: its items `(number, how)` in order, the text of its `None` line (None when it
     has none) and the lines that are neither (prose, an item with no number).
 
-    A line indented under an item continues it. Placeholders (`- ...`) and empty lines are skipped.
+    `- #12 and #13: how` lists both numbers with the same line on how. A line indented under an item continues it
+    unless it is itself an item (`#13: also`) or the `None` line. Placeholders (`- ...`) and empty lines are skipped.
     """
     items: list[tuple[int, str]] = []
     none_text: str | None = None
@@ -533,13 +536,15 @@ def _affected_entries(section: str, rules: PullRequests) -> tuple[list[tuple[int
         if not content or content in rules.placeholders:
             continue
         item = _AFFECTED_ITEM.match(content)
-        if continuing and line[:1] in (" ", "\t") and not LIST_MARKER.match(line.strip()):
+        is_none = re.match(rf"^{none_word}\b", content, re.IGNORECASE) is not None
+        if continuing and line[:1] in (" ", "\t") and not LIST_MARKER.match(line.strip()) and not item and not is_none:
             number, how = items[-1]
             items[-1] = (number, f"{how} {content}".strip())
         elif item:
-            items.append((int(item.group("number")), item.group("how").strip()))
+            how = item.group("how").strip()
+            items.extend((int(number), how) for number in re.findall(r"\d+", item.group("numbers")))
             continuing = True
-        elif re.match(rf"^{none_word}\b", content, re.IGNORECASE):
+        elif is_none:
             none_text = content
             continuing = False
         else:
@@ -593,8 +598,8 @@ def issues_affected_problems(section: str, rules: PullRequests) -> list[str]:
 def affected_issues(body: str, rules: PullRequests) -> list[int]:
     """The issue numbers the Issues affected section of a description lists, in order, each once.
 
-    A `None` section, a missing one and a comment list nothing. The after-merge check of the audit and
-    `coney-tools pr text` read the list from here.
+    A `None` section, a missing one and a comment list nothing. The after-merge check of the audit reads the list
+    from here, and so may any tool that reads descriptions.
     """
     section = _split_sections(strip_comments(body)).get(rules.issues_affected.section.casefold())
     if section is None:

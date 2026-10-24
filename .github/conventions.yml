@@ -789,7 +789,7 @@ hygiene:
       severity: warn
       fix: skill
       keys: [pull_requests.issues_affected]
-      summary: "a pull request merged since the Issues affected rule lists open issues that were not edited after the merge"
+      summary: "a pull request merged since the Issues affected rule lists open issues with no body edit or label change after the merge"
     pr.idle:
       scope: github
       severity: warn

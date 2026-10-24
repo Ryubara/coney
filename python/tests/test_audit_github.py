@@ -58,11 +58,12 @@ def test_fetch_reads_with_gh_only_and_keeps_what_it_reads() -> None:
         "api repos/someone/coney": {"allow_squash_merge": True},
         "api repos/someone/coney/rulesets": [{"id": 9}],
         "api repos/someone/coney/rulesets/9": {"id": 9, "rules": []},
+        "api graphql": {"data": {"repository": {"issues": {"pageInfo": {"hasNextPage": False}, "nodes": []}}}},
     }
 
     def run(arguments: list[str]) -> str:
         calls.append(arguments)
-        key = " ".join(arguments[:2]) if arguments[0] != "api" else " ".join(arguments)
+        key = " ".join(arguments[:2]) if arguments[0] != "api" or arguments[1] == "graphql" else " ".join(arguments)
         return json.dumps(answers[key])
 
     raw = gh.fetch_raw(run)
@@ -71,7 +72,10 @@ def test_fetch_reads_with_gh_only_and_keeps_what_it_reads() -> None:
     # every command is a read
     assert {call[0] for call in calls} <= {"repo", "issue", "pr", "label", "api"}
     writes = {"edit", "create", "close", "reopen", "comment", "merge", "--method", "-X", "-f", "-F", "--field"}
-    assert not any(token in writes for call in calls for token in call)
+    # `-f` only passes the variables of the one GraphQL query (a read: no `mutation`).
+    plain = [call for call in calls if call[:2] != ["api", "graphql"]]
+    assert not any(token in writes for call in plain for token in call)
+    assert not any("mutation" in token for call in calls for token in call)
 
 
 def test_unreadable_settings_become_a_notice_not_a_failure() -> None:
@@ -671,9 +675,9 @@ def affected_context(**kwargs: Any) -> Any:
 def test_a_merged_pull_request_whose_listed_issues_were_not_edited_since_is_found() -> None:
     ctx = affected_context(
         issues=[
-            issue(20, updated=EDITED_BEFORE_THE_MERGE),
-            issue(21, updated=EDITED_AFTER_THE_MERGE),
-            issue(22, updated=EDITED_BEFORE_THE_MERGE),
+            issue(20, edited=EDITED_BEFORE_THE_MERGE),
+            issue(21, edited=EDITED_AFTER_THE_MERGE),
+            issue(22, edited=EDITED_BEFORE_THE_MERGE),
         ],
         pulls=[pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
     )
@@ -684,15 +688,76 @@ def test_a_merged_pull_request_whose_listed_issues_were_not_edited_since_is_foun
 
 def test_listed_issues_edited_after_the_merge_are_fine() -> None:
     ctx = affected_context(
-        issues=[issue(n, updated=EDITED_AFTER_THE_MERGE) for n in (20, 21, 22)],
+        issues=[issue(n, edited=EDITED_AFTER_THE_MERGE) for n in (20, 21, 22)],
         pulls=[pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
     )
     assert found(gh.pr_affected_unedited, ctx) == []
 
 
+def test_a_comment_after_the_merge_is_not_the_edit() -> None:
+    ctx = affected_context(
+        issues=[
+            issue(20, edited=EDITED_BEFORE_THE_MERGE, updated=EDITED_AFTER_THE_MERGE),
+            issue(21, edited=EDITED_AFTER_THE_MERGE, updated=EDITED_AFTER_THE_MERGE),
+            issue(22, updated=EDITED_AFTER_THE_MERGE),  # edit time unknown: not judged
+        ],
+        pulls=[pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
+    )
+    (problem,) = found(gh.pr_affected_unedited, ctx)
+    assert "#20" in problem.message and "#21" not in problem.message and "#22" not in problem.message
+    assert "a comment does not count" in problem.message
+
+
+def graphql_page(*nodes: dict[str, Any]) -> str:
+    """A `gh api graphql` answer holding one last page of issues."""
+    page = {"pageInfo": {"hasNextPage": False, "endCursor": None}, "nodes": list(nodes)}
+    return json.dumps({"data": {"repository": {"issues": page}}})
+
+
+def test_fetch_reads_the_body_edit_and_label_times_and_a_failure_is_a_notice() -> None:
+    def run(arguments: list[str]) -> str:
+        if arguments[:2] == ["repo", "view"]:
+            return json.dumps({"nameWithOwner": "a/b", "defaultBranchRef": {"name": "main"}})
+        if arguments[:2] == ["issue", "list"]:
+            return json.dumps([issue(1), issue(2)])
+        if arguments[:2] == ["api", "graphql"]:
+            return graphql_page(
+                {
+                    "number": 1,
+                    "createdAt": "2026-10-01T00:00:00Z",
+                    "lastEditedAt": "2026-10-05T00:00:00Z",
+                    "timelineItems": {"nodes": [{"createdAt": "2026-10-07T00:00:00Z"}]},
+                },
+                {
+                    "number": 2,
+                    "createdAt": "2026-10-02T00:00:00Z",
+                    "lastEditedAt": None,
+                    "timelineItems": {"nodes": []},
+                },
+            )
+        if arguments[0] == "api":
+            raise OSError("no admin")
+        return "[]"
+
+    shot = gh.parse_snapshot(gh.fetch_raw(run))
+    first, second = shot.issue(1), shot.issue(2)
+    assert first is not None and first.edited == datetime(2026, 10, 7, tzinfo=UTC)
+    assert second is not None and second.edited == datetime(2026, 10, 2, tzinfo=UTC)
+
+    def broken(arguments: list[str]) -> str:
+        if arguments[:2] == ["api", "graphql"]:
+            raise OSError("graphql failed")
+        return run(arguments)
+
+    raw = gh.fetch_raw(broken)
+    assert any("pr.affected-unedited did not run" in notice for notice in raw["notices"])
+    unread = gh.parse_snapshot(raw).issue(1)
+    assert unread is not None and unread.edited is None
+
+
 def test_a_closed_issue_a_pull_request_and_a_missing_number_are_not_held_to_the_edit() -> None:
     ctx = affected_context(
-        issues=[issue(20, state="CLOSED", updated=EDITED_BEFORE_THE_MERGE)],
+        issues=[issue(20, state="CLOSED", edited=EDITED_BEFORE_THE_MERGE)],
         pulls=[pull(21, state="OPEN"), pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
     )
     assert found(gh.pr_affected_unedited, ctx) == []
@@ -700,7 +765,7 @@ def test_a_closed_issue_a_pull_request_and_a_missing_number_are_not_held_to_the_
 
 def test_a_pull_request_merged_before_the_rule_or_listing_none_or_still_open_is_not_held_to_it() -> None:
     ctx = affected_context(
-        issues=[issue(n, updated=EDITED_BEFORE_THE_MERGE) for n in (20, 21, 22)],
+        issues=[issue(n, edited=EDITED_BEFORE_THE_MERGE) for n in (20, 21, 22)],
         pulls=[
             pull(1, state="MERGED", body=AFFECTED, merged="2026-10-08T08:00:00Z"),
             pull(2, state="MERGED", merged=MERGED_AT),

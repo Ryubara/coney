@@ -142,7 +142,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `pr.person-word` | github | error | skill | an open pull request says 'owner' for a person (say 'user' for who tested or filed it, 'maintainer' for who decides) |
 | `pr.unfinished-items` | github | error | skill | a pull request merged since the Checklist rule began has an unticked Checklist item (an open one is pr.body) |
 | `pr.remaining-uncited` | github | error | skill | a pull request merged before the Checklist rule left an unchecked Remaining item that names no issue |
-| `pr.affected-unedited` | github | warn | skill | a pull request merged since the Issues affected rule lists open issues that were not edited after the merge |
+| `pr.affected-unedited` | github | warn | skill | a pull request merged since the Issues affected rule lists open issues that had no body edit or label change after the merge (a comment does not count) |
 | `pr.idle` | github | warn | skill | an open pull request has had no activity for longer than the limit |
 | `pr.stacked-depends` | github | error | skill | an open pull request on a branch other than main has no Depends on #N line |
 | `pr.stacked-automerge` | github | error | skill | auto-merge is enabled on a pull request whose base is not main |

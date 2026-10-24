@@ -20,7 +20,16 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import audit_files, audit_github, audit_text, issue_form, issue_impact, issue_titles
+from coney_tools import (
+    audit_files,
+    audit_github,
+    audit_text,
+    issue_form,
+    issue_impact,
+    issue_impact_open,
+    issue_impact_report,
+    issue_titles,
+)
 from coney_tools.audit_github import Runner
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
@@ -110,7 +119,9 @@ def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
     impact.add_argument(
         "--description", metavar="FILE", help="the pull request text: its 'Fixes #N' issues are left out of the list"
     )
-    impact.add_argument("--json", action="store_true", help="print the report as JSON (for `pr text`)")
+    impact.add_argument(
+        "--json", action="store_true", help="print the report as JSON (version 1, a stable output for tools to read)"
+    )
     impact.add_argument(
         "--refresh", action="store_true", help="read the open issues from GitHub even if the cache is fresh"
     )
@@ -448,17 +459,19 @@ def run_impact(
     notices: list[str] = []
     if args.issues:
         try:
-            issues = issue_impact.parse_issues(json.loads(Path(args.issues).read_text(encoding="utf-8")))
+            issues = issue_impact_open.parse_issues(json.loads(Path(args.issues).read_text(encoding="utf-8")))
         except (OSError, ValueError) as error:
             raise ConfigError(f"--issues {args.issues}: cannot be read ({error})") from error
     else:
         cache = scratch_folder(root) / "issue-impact" / "open-issues.json"
-        issues, notices = issue_impact.read_open_issues(cache, rules, run, now(), args.refresh)
+        issues, notices = issue_impact_open.read_open_issues(cache, rules, run, now(), args.refresh)
     candidates, excluded = issue_impact.match_issues(issues, touched, rules)
     if args.json:
-        print(json.dumps(issue_impact.report_json(touched, candidates, excluded, notices), indent=2))
+        print(json.dumps(issue_impact_report.report_json(touched, candidates, excluded, notices), indent=2))
     else:
-        for line in issue_impact.report_lines(candidates, excluded, [*touched.notices, *notices], rules.max_reasons):
+        for line in issue_impact_report.report_lines(
+            candidates, excluded, [*touched.notices, *notices], rules.max_reasons
+        ):
             print(line)
     return 0
 

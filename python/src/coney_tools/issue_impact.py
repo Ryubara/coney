@@ -17,33 +17,29 @@ of date). This module reads what a branch touches from its diff and matches it a
   address or path that more than `issues.impact.common_max_issues` open issues cite says little about any one of
   them and is skipped.
 
-The result is a suggestion for the author to read, never a verdict: `pr text` and the Issues affected section take the
-issues a person confirms. `gh` is injected, so the tests never touch the network.
+The result is a suggestion for the author to read, never a verdict: the Issues affected section lists the issues a
+person confirms. The open issues come from `issue_impact_open` (`gh` or its cache) and the output is built by
+`issue_impact_report`. A page section is matched by the anchors of the head and of the base, so an issue citing a
+heading the change removed or renamed still matches. A name or address that only a changed test file holds is not
+counted (invented fixture values match real issues by chance).
 """
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 from collections import Counter
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from coney_tools import audit_text, orig_review
 from coney_tools.config import ConfigError
 from coney_tools.conventions import ImpactRules
+from coney_tools.issue_impact_open import OpenIssue
 from coney_tools.task_leads import code_spans, is_code_like
 
-#: The shape of the JSON `--json` prints; raise it when a key changes meaning.
-JSON_VERSION = 1
-#: What `gh issue list` is asked for.
-ISSUE_FIELDS = "number,title,body,labels,url,updatedAt"
-#: How many open issues one read asks for (the audit uses the same figure).
-ISSUE_LIMIT = 3000
 #: The strongest reason first: the order issues and reasons are listed in.
 KINDS = ("replaced", "branch", "address", "section", "path", "folder", "name")
 
@@ -62,10 +58,14 @@ _REPLACING = re.compile(
     r"^[ \t]*(?:replaces|supersedes|obsoletes)[ \t]+(?P<refs>#\d+(?:[ \t,]+(?:and[ \t]+)?#\d+)*)", re.I | re.M
 )
 #: A hunk header of `git diff -U0`: the new side's first line and length, then the function context git found.
-_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@ ?(?P<context>.*)$")
+_HUNK = re.compile(
+    r"^@@ -(?P<old_start>\d+)(?:,(?P<old_count>\d+))? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@ ?(?P<context>.*)$"
+)
 _DIFF_HEADER = re.compile(r"^diff --git a/(?P<old>.+) b/(?P<new>.+)$")
 #: Folders are named by their first two components at the shortest (`src/ai`), never `src` alone.
 _MIN_FOLDER_DEPTH = 2
+#: A test file: invented fixture names and addresses in its changed lines say nothing about an issue's.
+_TEST_FILE = re.compile(r"(?:^|/)(?:tests?|testing)/|(?:^|/)test_[^/]*$|_tests?\.\w+$")
 #: Files whose changed lines say nothing about a name an issue cites (generated, binary or very large).
 _SKIP_CONTENT = re.compile(
     r"\.(?:png|jpe?g|gif|webp|bin|lock|svg|toml|csv|tsv|json)$|^docs/progress/|^docs/references/"
@@ -114,17 +114,6 @@ class Candidate:
             "strength": self.strength,
             "reasons": [reason.to_json() for reason in self.reasons],
         }
-
-
-@dataclass(frozen=True)
-class OpenIssue:
-    """An open issue as the match reads it."""
-
-    number: int
-    title: str
-    body: str
-    url: str
-    labels: tuple[str, ...]
 
 
 @dataclass
@@ -181,7 +170,7 @@ def replaced_refs(text: str) -> list[str]:
 
 
 def _is_code_name(word: str) -> bool:
-    """Whether a word of a changed line reads like an identifier worth matching: code-like, not a keyword."""
+    """Whether a word of a changed line reads like an identifier worth matching (`is_code_like`'s test)."""
     return is_code_like(word)
 
 
@@ -203,8 +192,9 @@ class _FileDiff:
     old: str
     new: str
     status: str = "changed"
-    #: The new side's changed line ranges (first, last).
+    #: The new side's changed line ranges (first, last), and the old side's.
     ranges: list[tuple[int, int]] = field(default_factory=list)
+    old_ranges: list[tuple[int, int]] = field(default_factory=list)
     #: The text of every added and removed line, and the function context of each hunk.
     text: list[str] = field(default_factory=list)
 
@@ -238,6 +228,9 @@ def parse_diff(patch: str) -> list[_FileDiff]:
                 start = int(hunk.group("start"))
                 count = 1 if hunk.group("count") is None else int(hunk.group("count"))
                 current.ranges.append((start, start + max(count, 1) - 1))
+                old_start = int(hunk.group("old_start"))
+                old_count = 1 if hunk.group("old_count") is None else int(hunk.group("old_count"))
+                current.old_ranges.append((old_start, old_start + max(old_count, 1) - 1))
                 current.text.append(hunk.group("context"))
         elif line.startswith(("+", "-")) and not line.startswith(("+++", "---")):
             current.text.append(line[1:])
@@ -271,7 +264,7 @@ def gather(
     merge_base = git_output(root, "merge-base", base, head).strip()
     patch = git_output(root, "diff", "-M", "-U0", "--no-color", "--no-ext-diff", merge_base, head)
     for diff in parse_diff(patch):
-        _add_file(root, touched, diff, head)
+        _add_file(root, touched, diff, merge_base, head)
     _add_functions(root, touched, base, head)
     for text in (*messages, description):
         touched.fixes |= closing_numbers(text)
@@ -279,7 +272,7 @@ def gather(
     return touched
 
 
-def _add_file(root: Path, touched: Touched, diff: _FileDiff, head: str) -> None:
+def _add_file(root: Path, touched: Touched, diff: _FileDiff, base: str, head: str) -> None:
     """Record one changed file: its paths, the addresses and names in its changed lines, its changed sections."""
     if diff.status == "renamed":
         touched.paths[diff.old] = f"renamed to {diff.new}"
@@ -288,23 +281,37 @@ def _add_file(root: Path, touched: Touched, diff: _FileDiff, head: str) -> None:
         touched.paths[diff.new] = diff.status
     if _SKIP_CONTENT.search(diff.new):
         return
-    for text in diff.text:
-        for address in _ADDRESS.findall(text):
-            touched.addresses.setdefault(address.lower(), f"a changed line of {diff.new} holds it")
-        for name in _names_in_line(text):
-            touched.names.setdefault(name, diff.new)
-    if diff.new.endswith(".md") and diff.status != "deleted" and diff.ranges:
-        try:
-            page = git_output(root, "show", f"{head}:{diff.new}")
-        except ConfigError:
-            return
-        spans = audit_text.heading_spans(page)
-        anchors: set[str] = set()
-        for first, last in diff.ranges:
-            for line in range(first, last + 1):
-                anchors |= _heading_chain(spans, line)
+    if not _TEST_FILE.search(diff.new):
+        for text in diff.text:
+            for address in _ADDRESS.findall(text):
+                touched.addresses.setdefault(address.lower(), f"a changed line of {diff.new} holds it")
+            for name in _names_in_line(text):
+                touched.names.setdefault(name, diff.new)
+    if diff.new.endswith(".md") and diff.status != "deleted":
+        anchors = _changed_anchors(root, head, diff.new, diff.ranges) | _changed_anchors(
+            root, base, diff.old, diff.old_ranges
+        )
         if anchors:
             touched.sections[diff.new] = frozenset(anchors)
+
+
+def _changed_anchors(root: Path, ref: str, path: str, ranges: Sequence[tuple[int, int]]) -> set[str]:
+    """The anchors of the sections of `path` at `ref` that the changed line `ranges` fall in (and their parents).
+
+    Read from the base too, so a heading the change removed or renamed is still known by its old anchor.
+    """
+    if not ranges:
+        return set()
+    try:
+        page = git_output(root, "show", f"{ref}:{path}")
+    except ConfigError:
+        return set()
+    spans = audit_text.heading_spans(page)
+    anchors: set[str] = set()
+    for first, last in ranges:
+        for line in range(first, last + 1):
+            anchors |= _heading_chain(spans, line)
+    return anchors
 
 
 def _add_functions(root: Path, touched: Touched, base: str, head: str) -> None:
@@ -472,119 +479,3 @@ def match_issues(
         candidates.append(Candidate(number, issue.title, issue.url, issue.labels, tuple(ordered)))
     candidates.sort(key=lambda c: (KINDS.index(c.strength), -len(c.reasons), c.number))
     return candidates, excluded
-
-
-# --- the open issues, from gh or the cache ---------------------------------------------------------------------
-
-#: Runs `gh` and returns its output; raises OSError when it fails.
-Runner = Callable[[list[str]], str]
-
-
-def parse_issues(data: object) -> list[OpenIssue]:
-    """The open issues of `gh issue list --json` output; ConfigError when it is not a list of issues."""
-    if not isinstance(data, list):
-        raise ConfigError("the issue list is not a JSON list")
-    try:
-        return [
-            OpenIssue(
-                number=int(item["number"]),
-                title=str(item.get("title", "")),
-                body=str(item.get("body") or ""),
-                url=str(item.get("url", "")),
-                labels=tuple(str(label["name"]) for label in item.get("labels") or [] if isinstance(label, dict)),
-            )
-            for item in data
-        ]
-    except (KeyError, TypeError, ValueError) as error:
-        raise ConfigError(f"the issue list is malformed ({type(error).__name__}: {error})") from error
-
-
-def read_open_issues(
-    cache: Path | None, rules: ImpactRules, run: Runner, now: datetime, refresh: bool = False
-) -> tuple[list[OpenIssue], list[str]]:
-    """The open issues and the notices about how they were read.
-
-    The list is read from GitHub once and kept in `cache` for `rules.cache_minutes`; `refresh` reads it again. When
-    GitHub cannot be reached a cache of any age is used, with a notice; with no cache either, ConfigError.
-    """
-    notices: list[str] = []
-    stored = _load_cache(cache)
-    if stored is not None and not refresh and now - stored[0] < timedelta(minutes=rules.cache_minutes):
-        return parse_issues(stored[1]), notices
-    try:
-        raw = json.loads(run(["issue", "list", "--state", "open", "--limit", str(ISSUE_LIMIT), "--json", ISSUE_FIELDS]))
-    except (OSError, ValueError) as error:
-        if stored is None:
-            raise ConfigError(f"cannot read the open issues with gh ({error})") from error
-        notices.append(
-            f"gh could not be reached ({error}); the issues are from the cache of {stored[0]:%Y-%m-%d %H:%M} UTC"
-        )
-        return parse_issues(stored[1]), notices
-    if isinstance(raw, list) and len(raw) >= ISSUE_LIMIT:
-        notices.append(f"{len(raw)} open issues read: the limit, so some may be missing")
-    _save_cache(cache, now, raw)
-    return parse_issues(raw), notices
-
-
-def _load_cache(cache: Path | None) -> tuple[datetime, Any] | None:
-    """The cached issue list and when it was read; None when there is none or it is damaged."""
-    if cache is None or not cache.is_file():
-        return None
-    try:
-        data = json.loads(cache.read_text(encoding="utf-8"))
-        return datetime.fromisoformat(str(data["read"])), data["issues"]
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
-
-
-def _save_cache(cache: Path | None, now: datetime, issues: object) -> None:
-    """Keep the issue list for the next run; a folder that cannot be written costs only the cache."""
-    if cache is None:
-        return
-    try:
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text(json.dumps({"read": now.astimezone(UTC).isoformat(), "issues": issues}), encoding="utf-8")
-    except OSError:
-        return
-
-
-# --- the output ------------------------------------------------------------------------------------------------
-
-
-def report_json(
-    touched: Touched, candidates: Sequence[Candidate], excluded: Sequence[dict[str, Any]], notices: Sequence[str]
-) -> dict[str, Any]:
-    """The machine-readable report (`--json`; `pr text` reads it): see `JSON_VERSION`."""
-    return {
-        "version": JSON_VERSION,
-        "base": touched.base,
-        "head": touched.head,
-        "branch": touched.branch,
-        "touched": {
-            "paths": len(touched.paths),
-            "addresses": len(touched.addresses),
-            "names": len(touched.names),
-            "sections": sum(len(anchors) for anchors in touched.sections.values()),
-        },
-        "issues": [candidate.to_json() for candidate in candidates],
-        "excluded": list(excluded),
-        "notices": [*touched.notices, *notices],
-    }
-
-
-def report_lines(
-    candidates: Sequence[Candidate], excluded: Sequence[dict[str, Any]], notices: Sequence[str], max_reasons: int
-) -> list[str]:
-    """The report as text: one line per issue with why it matched, then what was left out and the notices."""
-    lines = []
-    for candidate in candidates:
-        shown = [reason.text() for reason in candidate.reasons[:max_reasons]]
-        more = len(candidate.reasons) - max_reasons
-        if more > 0:
-            shown.append(f"and {more} more")
-        lines.append(f"#{candidate.number}  {candidate.title}  --  " + "; ".join(shown))
-    lines.append(f"{len(candidates)} open issue(s) may be affected")
-    for item in excluded:
-        lines.append(f"left out: #{item['number']} ({item['why']})")
-    lines.extend(f"note: {notice}" for notice in notices)
-    return lines

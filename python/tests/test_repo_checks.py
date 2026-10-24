@@ -977,3 +977,20 @@ def test_affected_issues_lists_the_numbers_in_order_and_none_lists_nothing() -> 
 def test_affected_issues_ignores_a_comment_and_text_of_other_sections() -> None:
     text = body(affected="<!-- - #99: in a comment -->\n- #12: x").replace("Adds a check.", "It fixes #77.")
     assert affected_issues(text, BODY_RULES) == [12]
+
+
+def test_an_item_naming_several_issues_records_each_number() -> None:
+    for line in ("- #12 and #13: both are done", "- #12, #13: both are done", "- #12 & #13 - both are done"):
+        assert affected_issues(body(affected=line), BODY_RULES) == [12, 13], line
+        assert check_body(body(affected=line), BODY_RULES) == [], line
+    twice = body(affected="- #12 and #13: both\n- #13: and again")
+    assert any("#13 is listed twice" in problem for problem in check_body(twice, BODY_RULES))
+
+
+def test_an_indented_item_or_none_line_is_its_own_not_a_continuation() -> None:
+    nested = body(affected="- #12: step 2 is done\n  #13: also out of date")
+    assert affected_issues(nested, BODY_RULES) == [12, 13] and check_body(nested, BODY_RULES) == []
+    both = body(affected="- #12: step 2 is done\n  None (and nothing else)")
+    assert any("None and issues together" in problem for problem in check_body(both, BODY_RULES))
+    bare = body(affected="- #12: step 2 is done\n  None")
+    assert any("'None' needs its reason" in problem for problem in check_body(bare, BODY_RULES))

@@ -15,7 +15,7 @@ from conventions_support import conventions_with, write_checkout
 from git_support import git
 from pytest import CaptureFixture, MonkeyPatch
 
-from coney_tools import audit_text, cli, issue_cli, issue_impact
+from coney_tools import audit_text, cli, issue_cli, issue_impact, issue_impact_open, issue_impact_report
 from coney_tools.config import ConfigError
 
 RULES = conventions_with().issues.impact
@@ -109,7 +109,7 @@ def run(
     messages = [git(repo, "log", "--format=%B", "main..impact-demo")]
     touched = issue_impact.gather(repo, "main", "impact-demo", messages, **kwargs)
     touched.branch = "impact-demo"
-    candidates, excluded = issue_impact.match_issues(issue_impact.parse_issues(issues), touched, rules)
+    candidates, excluded = issue_impact.match_issues(issue_impact_open.parse_issues(issues), touched, rules)
     return candidates, excluded, touched
 
 
@@ -280,7 +280,7 @@ def test_the_branch_main_is_never_matched_by_name(repo: Path) -> None:
     touched = issue_impact.gather(repo, "main", "impact-demo")
     touched.branch = "main"
     candidates, _ = issue_impact.match_issues(
-        issue_impact.parse_issues([issue(40, "Merged into main last week.")]), touched, RULES
+        issue_impact_open.parse_issues([issue(40, "Merged into main last week.")]), touched, RULES
     )
     assert candidates == []
 
@@ -306,20 +306,20 @@ class FakeGh:
 def test_the_issues_are_read_once_and_cached_for_the_configured_time(tmp_path: Path) -> None:
     gh = FakeGh([issue(1, "a")])
     cache = tmp_path / "scratch" / "issue-impact" / "open.json"
-    first, _ = issue_impact.read_open_issues(cache, RULES, gh, NOW)
-    again, _ = issue_impact.read_open_issues(cache, RULES, gh, NOW + timedelta(minutes=RULES.cache_minutes - 1))
+    first, _ = issue_impact_open.read_open_issues(cache, RULES, gh, NOW)
+    again, _ = issue_impact_open.read_open_issues(cache, RULES, gh, NOW + timedelta(minutes=RULES.cache_minutes - 1))
     assert [i.number for i in first] == [i.number for i in again] == [1] and len(gh.calls) == 1
     assert gh.calls[0][:4] == ["issue", "list", "--state", "open"]
-    issue_impact.read_open_issues(cache, RULES, gh, NOW + timedelta(minutes=RULES.cache_minutes + 1))
+    issue_impact_open.read_open_issues(cache, RULES, gh, NOW + timedelta(minutes=RULES.cache_minutes + 1))
     assert len(gh.calls) == 2
-    issue_impact.read_open_issues(cache, RULES, gh, NOW + timedelta(minutes=RULES.cache_minutes + 2), refresh=True)
+    issue_impact_open.read_open_issues(cache, RULES, gh, NOW + timedelta(minutes=RULES.cache_minutes + 2), refresh=True)
     assert len(gh.calls) == 3
 
 
 def test_a_failed_read_falls_back_to_an_old_cache_with_a_notice(tmp_path: Path) -> None:
     cache = tmp_path / "open.json"
-    issue_impact.read_open_issues(cache, RULES, FakeGh([issue(1, "a")]), NOW)
-    issues, notices = issue_impact.read_open_issues(
+    issue_impact_open.read_open_issues(cache, RULES, FakeGh([issue(1, "a")]), NOW)
+    issues, notices = issue_impact_open.read_open_issues(
         cache, RULES, FakeGh([], fail=True), NOW + timedelta(days=2), refresh=True
     )
     assert [i.number for i in issues] == [1]
@@ -328,7 +328,7 @@ def test_a_failed_read_falls_back_to_an_old_cache_with_a_notice(tmp_path: Path) 
 
 def test_a_failed_read_with_no_cache_is_a_configuration_error(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="cannot read the open issues"):
-        issue_impact.read_open_issues(tmp_path / "open.json", RULES, FakeGh([], fail=True), NOW)
+        issue_impact_open.read_open_issues(tmp_path / "open.json", RULES, FakeGh([], fail=True), NOW)
 
 
 def test_a_damaged_cache_is_read_again_and_a_missing_cache_folder_is_made(tmp_path: Path) -> None:
@@ -336,7 +336,7 @@ def test_a_damaged_cache_is_read_again_and_a_missing_cache_folder_is_made(tmp_pa
     cache.parent.mkdir()
     cache.write_text("not json", encoding="utf-8")
     gh = FakeGh([issue(2, "b")])
-    issues, _ = issue_impact.read_open_issues(cache, RULES, gh, NOW)
+    issues, _ = issue_impact_open.read_open_issues(cache, RULES, gh, NOW)
     assert [i.number for i in issues] == [2] and json.loads(cache.read_text(encoding="utf-8"))["issues"][0][
         "number"
     ] == 2
@@ -344,9 +344,9 @@ def test_a_damaged_cache_is_read_again_and_a_missing_cache_folder_is_made(tmp_pa
 
 def test_a_malformed_issue_list_is_a_configuration_error() -> None:
     with pytest.raises(ConfigError, match="not a JSON list"):
-        issue_impact.parse_issues({"number": 1})
+        issue_impact_open.parse_issues({"number": 1})
     with pytest.raises(ConfigError, match="malformed"):
-        issue_impact.parse_issues([{"title": "no number"}])
+        issue_impact_open.parse_issues([{"title": "no number"}])
 
 
 # --- the reports -----------------------------------------------------------------------------------------------
@@ -354,7 +354,7 @@ def test_a_malformed_issue_list_is_a_configuration_error() -> None:
 
 def test_the_json_report_has_a_stable_shape(repo: Path) -> None:
     candidates, excluded, touched = run(repo, [issue(101, "At `0x001490b8`.", "ai: Fix the brain", ("task", "A-ai"))])
-    data = issue_impact.report_json(touched, candidates, excluded, ["a notice"])
+    data = issue_impact_report.report_json(touched, candidates, excluded, ["a notice"])
     assert list(data) == ["version", "base", "head", "branch", "touched", "issues", "excluded", "notices"]
     assert data["version"] == 1 and data["base"] == "main" and data["branch"] == "impact-demo"
     (item,) = data["issues"]
@@ -368,7 +368,7 @@ def test_the_json_report_has_a_stable_shape(repo: Path) -> None:
 def test_the_text_report_is_one_line_per_issue_with_the_reasons_cut_to_the_limit(repo: Path) -> None:
     body = "At `0x001490b8`, in `src/ai/brain.cpp`, `Brain::think`, `kHungerLimit` and `TOOL_LIMIT`."
     candidates, excluded, _ = run(repo, [issue(101, body, "ai: Fix the brain"), issue(109, "x")])
-    lines = issue_impact.report_lines(candidates, excluded, ["a note"], max_reasons=2)
+    lines = issue_impact_report.report_lines(candidates, excluded, ["a note"], max_reasons=2)
     assert lines[0].startswith("#101  ai: Fix the brain  --  cites 0x001490b8")
     assert lines[0].count(";") == 2 and "and 3 more" in lines[0]
     assert lines[1:] == [
@@ -461,3 +461,69 @@ def test_unreadable_inputs_are_a_usage_error(
 ) -> None:
     assert cli.main(["issue", "impact", *extra]) == 2
     assert message in capsys.readouterr().err
+
+
+def test_an_issue_citing_a_section_the_change_removed_or_renamed_still_matches(repo: Path) -> None:
+    page = (repo / "docs/research/ai.md").read_text(encoding="utf-8")
+    renamed = page.replace("## Goals {#goals}", "## Aims {#aims}").replace(
+        "### Hunger\n\nHunger counts", "Hunger counts"
+    )
+    put(repo, "docs/research/ai.md", renamed)
+    commit_all(repo, "docs: Rename a heading")
+    issues = [
+        issue(30, "Goals are in docs/research/ai.md#goals"),
+        issue(31, "Hunger is in docs/research/ai.md#hunger"),
+        issue(32, "The new name is docs/research/ai.md#aims"),
+        issue(33, "Untouched: docs/research/ai.md#nothing-like-it"),
+    ]
+    candidates, _, touched = run(repo, issues)
+    assert {"goals", "aims", "hunger"} <= touched.sections["docs/research/ai.md"]
+    found = by_number(candidates)
+    assert set(found) == {30, 31, 32}
+    assert found[30].reasons[0].kind == "section" and found[31].reasons[0].kind == "section"
+
+
+def test_names_and_addresses_only_in_a_changed_test_file_are_not_touched(repo: Path) -> None:
+    put(repo, "tests/test_thing.py", "kOnlyInTest = 0x00999999\n")
+    commit_all(repo, "tests: Add a test")
+    touched = issue_impact.gather(repo, "main", "impact-demo")
+    assert touched.paths["tests/test_thing.py"] == "added"
+    assert "kOnlyInTest" not in touched.names and "0x00999999" not in touched.addresses
+    candidates, _, _ = run(
+        repo, [issue(40, "Mentions `kOnlyInTest` at 0x00999999."), issue(41, "The file tests/test_thing.py is odd.")]
+    )
+    assert [c.number for c in candidates] == [41]
+
+
+def test_a_reply_that_is_not_a_list_is_refused_and_never_cached(tmp_path: Path) -> None:
+    cache = tmp_path / "open.json"
+    bad = FakeGh([])
+    bad.issues = {"message": "rate limited"}  # type: ignore[assignment]
+    with pytest.raises(ConfigError, match="not a JSON list"):
+        issue_impact_open.read_open_issues(cache, RULES, bad, NOW)
+    assert not cache.exists()
+    good = FakeGh([issue(1, "a")])
+    issues, _ = issue_impact_open.read_open_issues(cache, RULES, good, NOW)
+    assert [i.number for i in issues] == [1] and len(good.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "stored",
+    [
+        {"read": "2026-10-24T12:00:00", "issues": [{"number": 1}]},  # no time zone
+        {"read": "yesterday", "issues": []},
+        {"read": "2026-10-24T12:00:00+00:00", "issues": {"not": "a list"}},
+        {"read": "2026-10-24T12:00:00+00:00", "issues": [{"title": "no number"}]},
+        ["not", "an", "object"],
+    ],
+)
+def test_bad_cache_data_is_a_cache_miss_not_a_crash(tmp_path: Path, stored: Any) -> None:
+    cache = tmp_path / "open.json"
+    cache.write_text(json.dumps(stored), encoding="utf-8")
+    gh = FakeGh([issue(2, "b")])
+    issues, notices = issue_impact_open.read_open_issues(cache, RULES, gh, NOW)
+    assert [i.number for i in issues] == [2] and notices == [] and len(gh.calls) == 1
+    # With gh down as well, the bad cache is no fallback either.
+    cache.write_text(json.dumps(stored), encoding="utf-8")
+    with pytest.raises(ConfigError, match="cannot read the open issues"):
+        issue_impact_open.read_open_issues(cache, RULES, FakeGh([], fail=True), NOW)

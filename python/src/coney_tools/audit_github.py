@@ -62,6 +62,8 @@ class Issue:
     url: str
     #: The logins of the assignees.
     assignees: tuple[str, ...] = ()
+    #: When the body was last edited or a label last added or removed (a comment does not count); None when unknown.
+    edited: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -165,6 +167,7 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
                 assignees=tuple(
                     str(person["login"]) for person in item.get("assignees") or [] if isinstance(person, dict)
                 ),
+                edited=_time(item["editedAt"]) if item.get("editedAt") else None,
             )
             for item in data["issues"]
         )
@@ -231,6 +234,45 @@ PULL_FIELDS = (
 )
 
 
+#: One page of open issues with the times `gh issue list` does not give: the last body edit and the last label change.
+_EDIT_QUERY = """query($owner: String!, $name: String!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    issues(states: OPEN, first: 100, after: $after) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number lastEditedAt createdAt
+        timelineItems(last: 1, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]) {
+          nodes { ... on LabeledEvent { createdAt } ... on UnlabeledEvent { createdAt } }
+        }
+      }
+    }
+  }
+}"""
+
+
+def fetch_edit_times(run: Runner, name: str) -> dict[int, str]:
+    """For each open issue, when its body was last edited or a label last changed (the creation time if neither).
+
+    Reads GraphQL through `gh api graphql`; OSError, ValueError, KeyError or TypeError when it cannot be read. A
+    comment moves `updatedAt` but is neither, which is why the audit cannot use `updatedAt` for the edit.
+    """
+    owner, repo = name.split("/", 1)
+    found: dict[int, str] = {}
+    after = ""
+    while True:
+        command = ["api", "graphql", "-f", f"query={_EDIT_QUERY}", "-f", f"owner={owner}", "-f", f"name={repo}"]
+        if after:
+            command += ["-f", f"after={after}"]
+        page = json.loads(run(command))["data"]["repository"]["issues"]
+        for node in page["nodes"]:
+            times = [node["createdAt"], node.get("lastEditedAt")]
+            times += [event["createdAt"] for event in node["timelineItems"]["nodes"] if event]
+            found[int(node["number"])] = max(time for time in times if time)
+        if not page["pageInfo"]["hasNextPage"]:
+            return found
+        after = page["pageInfo"]["endCursor"]
+
+
 def fetch_raw(run: Runner = run_gh, now: datetime | None = None) -> dict[str, Any]:
     """Read the repository's issues, pull requests, labels and settings from GitHub into the raw snapshot JSON.
 
@@ -242,6 +284,13 @@ def fetch_raw(run: Runner = run_gh, now: datetime | None = None) -> dict[str, An
     notices: list[str] = []
     issues = json.loads(run(["issue", "list", "--state", "all", "--limit", str(FETCH_LIMIT), "--json", ISSUE_FIELDS]))
     pulls = json.loads(run(["pr", "list", "--state", "all", "--limit", str(FETCH_LIMIT), "--json", PULL_FIELDS]))
+    try:
+        edits = fetch_edit_times(run, name)
+        for item in issues:
+            if item["number"] in edits:
+                item["editedAt"] = edits[item["number"]]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        notices.append(f"body-edit and label times not read ({error}); pr.affected-unedited did not run")
     labels = json.loads(run(["label", "list", "--limit", "500", "--json", "name,color,description"]))
     for noun, items in (("issues", issues), ("pull requests", pulls)):
         if len(items) >= FETCH_LIMIT:
@@ -813,9 +862,10 @@ def pr_remaining_uncited(context: GithubContext) -> Iterator[Problem]:
 def pr_affected_unedited(context: GithubContext) -> Iterator[Problem]:
     """A pull request merged since the Issues affected rule began has its listed open issues edited after the merge.
 
-    The section names the open issues the change partly fixed, changed or made out of date; an issue whose last update
-    is older than the merge was not brought up to date (a label, a comment or an edit counts as an update). A closed
-    issue, a number that is no issue and a pull request that lists none are not held to it.
+    The section names the open issues the change partly fixed, changed or made out of date; an issue whose body was
+    not edited and whose labels did not change since the merge was not brought up to date. A comment does not count
+    (a bot or a bystander writes those), and neither does an issue whose edit time was not read. A closed issue, a
+    number that is no issue and a pull request that lists none are not held to it.
     """
     rule = context.conventions.pull_requests.issues_affected
     for pull in context.snapshot.pulls_in("merged"):
@@ -824,14 +874,17 @@ def pr_affected_unedited(context: GithubContext) -> Iterator[Problem]:
         stale = [
             number
             for number in affected_issues(pull.body, context.conventions.pull_requests)
-            if (listed := context.snapshot.issue(number)) is not None and listed.open and listed.updated <= pull.merged
+            if (listed := context.snapshot.issue(number)) is not None
+            and listed.open
+            and listed.edited is not None
+            and listed.edited <= pull.merged
         ]
         if stale:
             shown = ", ".join(f"#{number}" for number in stale)
             yield _problem(
                 pull,
-                f"merged {pull.merged:%Y-%m-%d} listing {shown} under '{rule.section}', not edited since it merged: "
-                "bring each up to date (body, checklist, labels) or close it",
+                f"merged {pull.merged:%Y-%m-%d} listing {shown} under '{rule.section}', not edited since it merged "
+                "(a comment does not count): bring each up to date (body, checklist, labels) or close it",
             )
 
 

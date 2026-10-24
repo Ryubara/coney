@@ -59,9 +59,12 @@ def issue(
     created: float = 1.0,
     updated: float = 1.0,
     assignees: tuple[str, ...] = ("alice",),
+    edited: float | None = None,
 ) -> dict[str, Any]:
     """An issue as `gh issue list --json` returns it; the defaults describe a clean one."""
+    extra = {} if edited is None else {"editedAt": stamp(edited)}
     return {
+        **extra,
         "assignees": [{"login": name} for name in assignees],
         "number": number,
         "title": title,
