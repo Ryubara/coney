@@ -562,9 +562,9 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   `--dry-run` posts and writes nothing and prints the file. Exit 1 when it stopped, 0 when the file was written.
 * `start` is the engineer's first step for a task `create` made ([Starting a task](issues.md#starting)). It checks that
   the claim is still yours for this task, that you are within your limit of open claims and that the branch and folder
-  are free and its stamp log is usable, then makes the branch (named like the task id) and its worktree in the folder
-  `workspace.worktrees` names (`../../worktrees/coney/<task id>/`) from
-  the tip of the default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed`
+  are free and its stamp log is usable, then makes the branch (named like the task id) and its worktree, at the place
+  the `workspace.worktrees` setting gives for that branch ([Worktrees](workspace.md#worktrees)), from the tip of the
+  default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed`
   in the task's log and posts `/progress claimed`. It prints the branch, worktree, the
   stamps written and `slots: N of L task slots in use`; the limit (`tasks.start.slots`) is only reported until
   `tasks.start.slots.enforce` is on. Nothing is made when a check fails (exit 1); a git or fetch failure stops it with

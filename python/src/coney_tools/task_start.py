@@ -318,7 +318,8 @@ def _summary(record: UnitRecord, steps: list[str], line: str, scratch: Path, hea
     if steps:
         out(f"  stamps    {', '.join(steps)}")
     out(f"  {line}")
-    out(f"next: work in {record.worktree}; the stage commands find this unit from its branch")
+    # The worktree is printed above; repeating the path here only made the output longer.
+    out("next: work in the worktree; the stage commands find this unit from its branch")
 
 
 def _resume(record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv, line: str, dry_run: bool) -> int:

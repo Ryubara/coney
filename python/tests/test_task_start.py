@@ -171,6 +171,38 @@ def test_a_started_task_has_its_branch_and_worktree_in_the_workspace_layout(worl
     assert "[origin" not in git(tree, "status", "-sb")
 
 
+def named_once(world: World, text: str) -> None:
+    """The unit's worktree and its scratch folder each appear in `text` exactly once."""
+    assert text.count(str(world.worktree())) == 1, text
+    assert text.count(str(world.scratch / TASK)) == 1, text
+
+
+def test_the_closing_output_names_the_worktree_and_the_scratch_folder_once_each(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    named_once(world, world.said())
+    # The last line still says what to do next, without repeating the folder printed above it.
+    assert world.output[-1].startswith("next: work in the worktree")
+
+
+def test_a_rerun_of_a_started_task_names_each_folder_once_too(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    world.output.clear()
+    assert world.run() == 0
+    assert "already started" in world.said()
+    named_once(world, world.said())
+
+
+def test_a_fix_start_names_the_parents_worktree_and_the_scratch_folder_once_each(world: World) -> None:
+    started_parent(world)
+    fix_file(world)
+    world.output.clear()
+    assert world.run(FIX) == 0
+    text = world.said()
+    assert text.count(str(world.worktree())) == 1 and text.count(str(world.scratch / FIX)) == 1, text
+
+
 def test_the_branch_starts_at_the_tip_of_the_default_branch_after_a_fetch(world: World) -> None:
     world.ready()
     tip = world.push_to_origin()
