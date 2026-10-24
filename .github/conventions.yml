@@ -348,7 +348,10 @@ claims:
   scope_max_characters: 400                       # the text after `scope:` in /claim
   closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
   # A claimed issue with one of these status labels keeps it (the claim stays) and its release clock waits.
-  paused_labels: [S-blocked, S-needs-info]
+  paused_labels: [S-blocked, S-needs-info, S-on-hold]
+  # Paused labels that also take the place of the claim's own label: while one is on, the claimed issue loses
+  # working_label (or review_label); when it comes off and the claim still stands, that label comes back.
+  hold_labels: [S-on-hold]
   # Both false until the cutover (docs/guides/issues.md#claiming): adopt = the sweep gives a card to an issue assigned
   # by hand; release = the 48 h warning and the 72 h release are enforced (the card says so until then).
   adopt: false
@@ -423,6 +426,7 @@ labels:
     - {name: S-in-progress, color: 5319e7, description: "Status: an agent or person is working on it"}
     - {name: S-pending-review, color: 1d76db, description: "Status: a pull request is open"}
     - {name: S-blocked, color: "000000", description: "Status: waiting for another issue or a decision"}
+    - {name: S-on-hold, color: bfd4f2, description: "Status: paused by decision; a branch may exist; not in progress"}
     - {name: S-conflict, color: e99695, description: "Status: a pull request conflicts with main (set by CI)"}
     - {name: S-failing, color: b60205, description: "Status: a pull request fails a required check (set by CI)"}
     - {name: good first issue, color: 7057ff, description: "Good for newcomers"}

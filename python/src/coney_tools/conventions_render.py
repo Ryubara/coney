@@ -309,6 +309,11 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"A claimed issue that carries {_codes(claims.paused_labels)} keeps that label; the claim stays and its "
         "release clock waits, as it does while the claimant's pull request is open."
     )
+    lines += _bullet(
+        f"{_codes(claims.hold_labels)} also takes the place of the claim's own label: while it is on, the claimed "
+        f"issue loses `{claims.working_label}` (or `{claims.review_label}`), and when it comes off while the claim "
+        "stands, that label comes back."
+    )
     state = "on" if claims.release else "off until the cutover"
     lines += _bullet(
         f"Release is {state}: a claim is released after {claims.deadline_hours} hours without activity (`/progress`, a "

@@ -95,7 +95,7 @@ def test_the_real_labels_are_in_their_families() -> None:
         and labels.names("priority")[0] == "P-critical"
         and len(labels.names("priority")) == 4
     )
-    assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 9
+    assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 10
     assert labels.names("other") == ("good first issue", "help wanted", "duplicate", "wontfix")
     assert labels.names() == tuple(label.name for label in labels.list)
 
@@ -200,6 +200,11 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         r"claims\.warn_hours: must be less than deadline_hours",
     ),
     ("a bad claim marker", (("claims.card_marker", "a b"),), r"claims\.card_marker: letters, digits and hyphens"),
+    (
+        "a hold label that does not pause the claim",
+        (("claims.hold_labels", ["S-in-progress"]),),
+        r"claims\.hold_labels: 'S-in-progress' is not in claims\.paused_labels",
+    ),
     ("a task file with a path", (("tasks.file", "a/TASK.md"),), r"tasks\.file: a file name"),
     ("rare above common", (("tasks.leads.rare_max_entries", 500),), r"must be less than common_min_entries"),
     (
@@ -513,7 +518,8 @@ def test_the_real_claim_rules() -> None:
     assert claims.limits.maintainer == 3 and claims.limits.contributor == 2
     assert (claims.warn_hours, claims.deadline_hours) == (48, 72)
     assert claims.limits.issues_per_task == 3 and claims.closing_per_event == 10 and claims.scope_max_characters == 400
-    assert claims.paused_labels == ("S-blocked", "S-needs-info")
+    assert claims.paused_labels == ("S-blocked", "S-needs-info", "S-on-hold")
+    assert claims.hold_labels == ("S-on-hold",)
     # Both switch on at the cutover, by a change to this file.
     assert (claims.adopt, claims.release) == (False, False)
     assert claims.maintainer_permissions == ("admin", "write") and claims.maintainer_associations == ("OWNER",)

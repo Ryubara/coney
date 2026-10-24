@@ -764,6 +764,8 @@ class Claims:
     closing_per_event: int
     #: Status labels a claimed issue keeps; the release clock waits while one is on it.
     paused_labels: tuple[str, ...]
+    #: Paused labels that replace the claim's own status label while they are on the issue.
+    hold_labels: tuple[str, ...]
     #: Whether the sweep gives a card to an issue assigned by hand.
     adopt: bool
     #: Whether the warning and the release for idleness are enforced.
@@ -1519,6 +1521,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             "scope_max_characters",
             "closing_per_event",
             "paused_labels",
+            "hold_labels",
             "adopt",
             "release",
             *labels,
@@ -1547,6 +1550,8 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     _names_in(names.values(), label_names, where, "in labels.list")
     paused = _texts(table["paused_labels"], _at(where, "paused_labels"))
     _names_in(paused, label_names, _at(where, "paused_labels"), "in labels.list")
+    hold = _texts(table["hold_labels"], _at(where, "hold_labels"))
+    _names_in(hold, paused, _at(where, "hold_labels"), "in claims.paused_labels")
     numbers = {key: _count(table[key], _at(where, key)) for key in counts}
     if numbers["warn_hours"] >= numbers["deadline_hours"]:
         raise _fail(_at(where, "warn_hours"), "must be less than deadline_hours")
@@ -1561,6 +1566,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         scope_max_characters=_count(table["scope_max_characters"], _at(where, "scope_max_characters")),
         closing_per_event=_count(table["closing_per_event"], _at(where, "closing_per_event")),
         paused_labels=paused,
+        hold_labels=hold,
         adopt=_flag(table["adopt"], _at(where, "adopt")),
         release=_flag(table["release"], _at(where, "release")),
         limits=ClaimLimits(
