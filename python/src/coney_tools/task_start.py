@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import stamps
-from coney_tools.config import ConfigError, main_checkout, workspace_root
+from coney_tools.config import ConfigError, main_checkout
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import Card, iso_time
@@ -159,6 +159,11 @@ def _claim_problem(task: TaskFile, user: str, expected_task: str, engine: Engine
             return f"#{number}: no claim card is held (it was never made, or it was released): ask the coordinator"
         if card.claimant != user:
             return f"#{number} is claimed by {card.claimant}, not {user}"
+        if not card.task:
+            return (
+                f"#{number}: the claim has no task id (it was made by hand, not by `task create`): "
+                "ask the coordinator to claim it again with task create"
+            )
         if card.task != expected_task:
             return f"#{number}: the claim was made for the task '{card.task}', not '{expected_task}'"
     return None
@@ -210,18 +215,50 @@ def _fetch_and_resolve(request: StartRequest, env: StartEnv, main: Path) -> tupl
 # --- what a start makes -----------------------------------------------------------------------------------------------
 
 
+def _log_report(log_task: str, env: StartEnv) -> tuple[stamps.Report, str | None]:
+    """The stamp log of `log_task` and, when it cannot be written to (damaged, or another task's), why not."""
+    folder = env.scratch / log_task / "stamps"
+    report = stamps.verify(folder, env.conventions.stamps, task=log_task)
+    if report.ok:
+        return report, None
+    return report, f"{folder}: the stamp log cannot be used: {report.problems[0]}"
+
+
+def _missing_steps(record: UnitRecord, report: stamps.Report) -> list[str]:
+    """The stamps the log of `record` lacks: `assigned` and `claimed` for an ordinary task, only `claimed` for a fix
+    (the parent's log already has the first)."""
+    fix = record.task if record.parent else ""
+    steps = []
+    if not record.parent and report.latest("assigned") is None:
+        steps.append("assigned")
+    if not any(s.step == "claimed" and s.detail.get("fix", "") == fix for s in report.stamps):
+        steps.append("claimed")
+    return steps
+
+
+def _warn_unverified(who: dict[str, Any], env: StartEnv) -> None:
+    """Say so when the hook did not vouch for the agent: the stamps then record `unverified`, `pr open` will refuse
+    them and a rerun cannot rewrite them."""
+    if who.get("source") != "hook":
+        env.out(
+            "warning: the hook did not vouch for who is running this, so the stamps will say source `unverified` "
+            "and pr open will refuse them; start the task from a session started with coney-agent"
+        )
+
+
 def _stamp_start(
-    record: UnitRecord, task: TaskFile, who: dict[str, Any], env: StartEnv, commit: str, base_commit: str
-) -> list[str]:
-    """Append the stamps the log of `record` is missing: `assigned` and `claimed` for an ordinary task, only `claimed`
-    for a fix (the parent's log already has the first). Returns the steps written."""
-    folder = env.scratch / record.log_task / "stamps"
-    report = stamps.verify(folder, env.conventions.stamps)
-    if not report.ok:
-        raise ConfigError(f"{folder}: the stamp log is not intact: {report.problems[0]}")
+    record: UnitRecord,
+    task: TaskFile,
+    who: dict[str, Any],
+    env: StartEnv,
+    steps: list[str],
+    commit: str,
+    base_commit: str,
+) -> None:
+    """Append the stamps `steps` names (from `_missing_steps`) to the log of `record`."""
     fix = record.task if record.parent else ""
     entries: list[dict[str, Any]] = []
-    if not record.parent and report.latest("assigned") is None:
+    if "assigned" in steps:
         entries.append(
             {
                 "step": "assigned",
@@ -238,7 +275,7 @@ def _stamp_start(
                 "who": who,
             }
         )
-    if not any(s.step == "claimed" and s.detail.get("fix", "") == fix for s in report.stamps):
+    if "claimed" in steps:
         entries.append(
             {
                 "step": "claimed",
@@ -251,8 +288,8 @@ def _stamp_start(
             }
         )
     if entries:
+        folder = env.scratch / record.log_task / "stamps"
         stamps.append_many(folder, rules=env.conventions.stamps, task=record.log_task, entries=entries, clock=env.now)
-    return [entry["step"] for entry in entries]
 
 
 def _post_progress(record: UnitRecord, record_path: Path, env: StartEnv) -> None:
@@ -284,16 +321,32 @@ def _summary(record: UnitRecord, steps: list[str], line: str, scratch: Path, hea
     out(f"next: work in {record.worktree}; the stage commands find this unit from its branch")
 
 
-def _resume(record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv, line: str) -> int:
-    """A task that has a unit record: finish what a stopped start left (stamps, progress, marker), never remake."""
+def _resume(record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv, line: str, dry_run: bool) -> int:
+    """A task that has a unit record: finish what a stopped start left (stamps, progress), never remake. With a dry
+    run, only say what would be finished."""
+    out = env.out
     if not record.worktree.is_dir():
-        env.out(
+        out(
             f"refused: the unit's worktree is gone ({record.worktree}); the task cannot be restarted: ask the "
             f"coordinator (the record is {record_path.as_posix()})"
         )
         return 1
+    report, problem = _log_report(record.log_task, env)
+    if problem is not None:
+        out(f"refused: {problem}")
+        return 1
+    steps = _missing_steps(record, report)
+    if dry_run:
+        todo = [f"stamp {', '.join(steps)}"] if steps else []
+        if not record.progress_posted:
+            todo.append("post /progress claimed on each issue")
+        what = "would " + " and ".join(todo) if todo else "nothing to do"
+        out(f"dry run: task {record.task} is started already; {what}")
+        return 0
     who = env.who()
-    steps = _stamp_start(record, task, who, env, record.base_commit, record.base_commit)
+    if steps:
+        _warn_unverified(who, env)
+        _stamp_start(record, task, who, env, steps, record.base_commit, record.base_commit)
     if not record.progress_posted:
         _post_progress(record, record_path, env)
     _summary(record, steps, line, env.scratch, "already started", env)
@@ -346,7 +399,7 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
     record_path = env.scratch / request.task / conventions.tasks.start.unit_file
     slot_line, slot_problem = _slot_check(task, env)
     if record_path.is_file():
-        return _resume(read_record(record_path), record_path, task, env, slot_line)
+        return _resume(read_record(record_path), record_path, task, env, slot_line, request.dry_run)
     if not task.parent:
         problem = _limit_problem(task, user, engine)
         if problem is not None:
@@ -363,14 +416,21 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
 def _start_unit(
     request: StartRequest, env: StartEnv, main: Path, task: TaskFile, user: str, record_path: Path, line: str
 ) -> int:
-    """Make the branch, worktree, record, marker, stamps and progress of an ordinary task."""
+    """Make the branch, worktree, record, stamps and progress of an ordinary task."""
     out = env.out
-    tree = workspace_root(main) / "worktrees" / main.resolve().name / task.task
+    template = env.conventions.workspace.worktrees
+    if "<branch>" not in template:
+        raise ConfigError(f"workspace.worktrees ({template}) must contain <branch>")
+    tree = (main / template.replace("<branch>", task.task)).resolve()
     if _git(main, "show-ref", "--verify", "--quiet", f"refs/heads/{task.task}").returncode == 0:
         out(f"refused: the branch '{task.task}' exists already; a task's branch is made once (rename or delete it)")
         return 1
     if tree.exists():
         out(f"refused: {tree} exists already; a task's worktree is made once")
+        return 1
+    report, problem = _log_report(task.task, env)
+    if problem is not None:
+        out(f"refused: {problem}")
         return 1
     base_ref, base_commit = _fetch_and_resolve(request, env, main)
     record = UnitRecord(
@@ -394,7 +454,9 @@ def _start_unit(
         raise ConfigError(f"git worktree add {tree} failed: {done.stderr.strip() or 'no output'}")
     write_record(record_path, record)
     who = env.who()
-    steps = _stamp_start(record, task, who, env, base_commit, base_commit)
+    steps = _missing_steps(record, report)
+    _warn_unverified(who, env)
+    _stamp_start(record, task, who, env, steps, base_commit, base_commit)
     _post_progress(record, record_path, env)
     _summary(record, steps, line, env.scratch, "started", env)
     return 0
@@ -411,11 +473,10 @@ def _start_fix(request: StartRequest, env: StartEnv, task: TaskFile, user: str, 
     if not parent.worktree.is_dir():
         out(f"refused: the worktree is gone ({parent.worktree}), so the unit of '{task.parent}' cannot be fixed")
         return 1
-    report = stamps.verify(env.scratch / parent.log_task / "stamps", env.conventions.stamps)
-    if not report.ok:
-        raise ConfigError(
-            f"{env.scratch / parent.log_task / 'stamps'}: the stamp log is not intact: {report.problems[0]}"
-        )
+    report, problem = _log_report(parent.log_task, env)
+    if problem is not None:
+        out(f"refused: {problem}")
+        return 1
     if report.latest("pr-opened", result="pass") is None:
         out(
             f"refused: the unit of '{task.parent}' was never released (its log has no pr-opened stamp), "
@@ -441,6 +502,8 @@ def _start_fix(request: StartRequest, env: StartEnv, task: TaskFile, user: str, 
         return 0
     write_record(record_path, record)
     who = env.who()
-    steps = _stamp_start(record, task, who, env, head_commit(parent.worktree), parent.base_commit)
+    steps = _missing_steps(record, report)
+    _warn_unverified(who, env)
+    _stamp_start(record, task, who, env, steps, head_commit(parent.worktree), parent.base_commit)
     _summary(record, steps, line, env.scratch, "started", env)
     return 0

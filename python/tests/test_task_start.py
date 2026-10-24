@@ -454,7 +454,132 @@ def test_a_record_whose_worktree_is_gone_is_not_silently_remade(world: World) ->
     assert str(world.scratch / TASK / "unit.json").replace("\\", "/") in world.said().replace("\\", "/")
 
 
+def not_made(world: World, task: str = TASK) -> bool:
+    """Whether no branch, worktree or unit record was made (a log the test planted may be there)."""
+    return (
+        not world.worktree(task).exists()
+        and task not in world.branches()
+        and not (world.scratch / task / world.conventions.tasks.start.unit_file).exists()
+        and not world.posted
+    )
+
+
+def test_a_dry_run_of_a_started_task_finishes_nothing(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    world.ready()
+    real = stamps.append_many
+    calls = {"n": 0}
+
+    def broken(*args: object, **kwargs: object) -> list[stamps.Stamp]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise stamps.StampError("disk full")
+        return real(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(stamps, "append_many", broken)
+    with pytest.raises(stamps.StampError):
+        world.run()
+    world.output.clear()
+    # The unit has no stamps and no progress comment yet; a dry run says so and does neither.
+    assert world.run(dry_run=True) == 0
+    assert not (world.scratch / TASK / "stamps").exists() and not world.posted
+    assert world.record().progress_posted is False
+    said = world.said()
+    assert "dry run" in said and "assigned" in said and "claimed" in said and "/progress claimed" in said
+    assert calls["n"] == 1
+    assert world.run() == 0 and [s.step for s in world.log().stamps] == ["assigned", "claimed"]
+    assert world.posted == [(10, "/progress claimed")]
+
+
+def test_a_dry_run_of_a_complete_unit_has_nothing_to_do(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    posted = len(world.posted)
+    world.output.clear()
+    assert world.run(dry_run=True) == 0
+    assert "nothing to do" in world.said() and len(world.posted) == posted and len(world.log().stamps) == 2
+
+
+def plant_bad_log(world: World, task: str = TASK) -> None:
+    """A stamp log that cannot be trusted: a line that is not a stamp."""
+    folder = world.scratch / task / "stamps"
+    folder.mkdir(parents=True)
+    (folder / "0001.jsonl").write_text("not a stamp\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_a_log_that_cannot_be_trusted_stops_the_start_before_anything_is_made(world: World, dry_run: bool) -> None:
+    world.ready()
+    plant_bad_log(world)
+    assert world.run(dry_run=dry_run) == 1
+    assert "the stamp log cannot be used" in world.said() and "not valid JSON" in world.said()
+    assert not_made(world)
+
+
+def test_the_log_of_another_task_stops_the_start(world: World) -> None:
+    world.ready()
+    plant_unit(world, "30-other")
+    shutil.copytree(world.scratch / "30-other" / "stamps", world.scratch / TASK / "stamps")
+    assert world.run() == 1 and "the stamp log cannot be used" in world.said() and "30-other" in world.said()
+    assert not_made(world)
+
+
+def test_a_rerun_with_a_damaged_log_is_refused_not_raised(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    segment = world.scratch / TASK / "stamps" / "0001.jsonl"
+    segment.write_text(segment.read_text(encoding="utf-8").replace('"seq":1', '"seq":9'), encoding="utf-8")
+    world.output.clear()
+    assert world.run() == 1 and "the stamp log cannot be used" in world.said()
+
+
+def test_a_fix_whose_parents_log_is_damaged_is_refused_not_raised(world: World) -> None:
+    started_parent(world)
+    fix_file(world)
+    segment = world.scratch / TASK / "stamps" / "0001.jsonl"
+    segment.write_text(segment.read_text(encoding="utf-8").replace('"seq":1', '"seq":9'), encoding="utf-8")
+    assert world.run(FIX) == 1 and "the stamp log cannot be used" in world.said()
+    assert not (world.scratch / FIX / "unit.json").exists()
+
+
+def test_the_worktree_goes_where_the_workspace_rule_says(world: World) -> None:
+    workspace = replace(world.conventions.workspace, worktrees="../../trees/<branch>/")
+    world.conventions = replace(world.conventions, workspace=workspace)
+    world.ready()
+    assert world.run() == 0
+    assert (world.ws / "trees" / TASK / "README.md").is_file() and not world.worktree().exists()
+    assert world.record().worktree.resolve() == (world.ws / "trees" / TASK).resolve()
+
+
+def test_a_start_the_hook_did_not_vouch_for_warns_that_the_stamps_will_say_so(world: World) -> None:
+    world.ready()
+    env = world.env()
+    env.who = lambda: {
+        "kind": "tool",
+        "tool": "coney-tools task start",
+        "agent": {"id": "unknown", "type": "unknown", "model": "unknown"},
+        "source": "unverified",
+    }
+    assert start_task(StartRequest(task=TASK), env) == 0
+    assert "warning" in world.said() and "unverified" in world.said() and "coney-agent" in world.said()
+    assert world.log().stamps[0].who["source"] == "unverified"
+
+
+def test_a_vouched_start_has_no_such_warning(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    assert "unverified" not in world.said()
+
+
+def test_a_claim_made_without_a_task_id_says_so(world: World) -> None:
+    plant_claim(world.github, 10, USER, task=None)
+    world.task_file()
+    assert world.run() == 1
+    assert "has no task id" in world.said() and "None" not in world.said() and untouched(world)
+
+
 # --- slots ----------------------------------------------------------------------------------------------------------
+
+
 def plant_unit(world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True) -> None:
     """Another unit of this machine: a record, a worktree folder and a log that ends at `end` (reviewed, finished)."""
     folder = world.scratch / task

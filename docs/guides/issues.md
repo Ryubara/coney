@@ -465,17 +465,19 @@ scratch folder and proof log) and makes everything the later stages look for, so
 1. `<scratch>/<task>/TASK.md` exists, is the task's own and belongs to the account that is signed in.
 2. Every issue of the task is open and its claim card is held by that account for this task id: a claim the Action has
    released, or one made for another task, is refused, and the coordinator claims again.
-3. The account does not hold more open claims than the limit (3 for a maintainer, 2 for a contributor): the Action
-   enforces it when it assigns, and this is the backstop. A fix task reuses its claim and is not counted.
+3. The account does not hold more open claims than [the limit](#claiming): the Action enforces it when it assigns,
+   and this is the backstop. A fix task reuses its claim and is not counted.
 4. The engineer slots ([below](#slots)).
-5. The branch and the folder are free, and the base is a commit: `<remote>/<default branch>` after
+5. The task's stamp log (a fix task's: its parent's) can be written to: it is intact and is this task's own. A damaged
+   log is refused here, before anything is made, rather than after the branch exists.
+6. The branch and the folder are free, and the base is a commit: `<remote>/<default branch>` after
    `git fetch`, or `--base`. A fetch that fails stops the command (`--no-fetch` starts from the ref as it is).
 
 **It makes**, in this order:
 
 | What | Where |
 | --- | --- |
-| The branch, named like the task id, and its worktree, from the tip of the default branch | `../../worktrees/coney/<task id>/` in the workspace ([Worktrees](workspace.md#worktrees)); the branch name is the task id, so `CONEY_TASK` is not needed inside the worktree |
+| The branch, named like the task id, and its worktree, from the tip of the default branch | The folder `workspace.worktrees` names, in the workspace ([Worktrees](workspace.md#worktrees)); the branch name is the task id, so `CONEY_TASK` is not needed inside the worktree |
 | The **unit record**: task, kind, issues, claimant, branch, worktree, the base ref and commit, the time, and whether `/progress claimed` was posted | `<scratch>/<task>/unit.json` (`tasks.start.unit_file`); `task check`, `task review`, `pr open` and the mod read it |
 | The stamps `assigned` and `claimed` ([Stamps](stamps.md#log)): `assigned` covers the task file's YAML block (`task_sha256`) and lists the issues, kind, claimant and claim time; `claimed` covers the base commit and names the branch, base ref and kind. Both carry the agent the hook vouched for, so the log says which engineer took the task | `<scratch>/<task>/stamps/` |
 | `/progress claimed` on each issue, which restarts the claim's idle clock | the issue's claim card |
@@ -483,9 +485,13 @@ scratch folder and proof log) and makes everything the later stages look for, so
 Running it again is safe. A task with a unit record is not made twice: the command finishes what a stopped start left
 (a missing stamp, a `/progress` that failed) and says `already started`; if the worktree has been removed meanwhile it
 refuses and leaves the record. A `/progress` comment that cannot be posted is a warning, not a failure.
-`--dry-run` prints the branch, worktree and stamps it would make and changes nothing. It does not write the
-`.coney-busy` marker: one with an id in it protects the worktree from `workspace clean` until someone deletes it, so
-the engineer writes it only for a stretch where files do not change ([the busy file](workspace.md#cleanup)).
+`--dry-run` prints the branch, worktree and stamps it would make (for a started task: what it would finish) and
+changes nothing, posts nothing and runs the same checks. If the hook did not vouch for who runs the command, the
+command warns: its stamps then say `unverified`, which `pr open` refuses, and a rerun cannot rewrite them.
+
+It does not write the `.coney-busy` marker: one with an id in it protects the worktree from `workspace clean` until
+someone deletes it, so the engineer writes it only for a stretch where files do not change
+([the busy file](workspace.md#cleanup)).
 
 **A fix task** (`kind: fix`, from `task create --fix-of`) makes no branch or worktree. It opens the unit of the task
 named by its `parent`: the parent must have a unit, its worktree must still exist and its log must hold a `pr-opened`
@@ -496,11 +502,12 @@ uses the parent's task id, because the claim is the parent's.
 
 ### Slots {#slots}
 
-A machine runs at most 3 task units and 1 fix unit at a time (`tasks.start.slots`). A unit holds its slot from
+A machine runs a limited number of task units and of fix units at a time (`tasks.start.slots` in
+[.github/conventions.yml](repo:.github/conventions.yml)). A unit holds its slot from
 `task start` until a passing `reviewed` stamp follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until
 its worktree is gone; a unit whose log cannot be trusted keeps its slot. The limit is for code work under the finished
-workflow, so until the cutover `task start` only reports the count (`slots: 4 of 3 task slots in use (over the limit,
-which is not enforced ...)`) and design, documentation and tooling work runs in parallel; the cutover sets
+workflow, so until the cutover `task start` only reports the count (`slots: N of L task slots in use`, with a note
+when N is over L) and design, documentation and tooling work runs in parallel; the cutover sets
 `tasks.start.slots.enforce`, and a start over the limit is then refused. Work in other repositories (Tether, Conclave's
 own plugin repository) has no unit here and is not counted.
 
