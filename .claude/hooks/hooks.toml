@@ -66,6 +66,9 @@ hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note
 write_only = [
   "REVIEW.json", "REVIEW.md", "ORIG-REVIEW.json", "ORIG-REVIEW.md", "VERDICT.json", "VERDICT.md",
   "FINDINGS.tsv", "PROGRESS.md", "HANDOVER.md", "SUMMARY.md",
+  # The report of a code review made outside `task review` (a fix round, a conflict resolution, a stacked branch):
+  # `CODE-REVIEW.md`, `CODE-REVIEW-2.md`. An entry may be a pattern for the file name.
+  "CODE-REVIEW*.md",
 ]
 deny_coney_tools = ["pr open"]
 # A reviewer starts no agent: any helper has Bash and no role rules, so it could write a stamp or a file for the
@@ -74,8 +77,11 @@ deny_coney_tools = ["pr open"]
 allow_agent_types = []
 # Every git verb that changes the index, the tree or the worktrees. The options before the verb follow git's grammar
 # (`-C dir` and `-c k=v` take a value, `-P`, `--no-pager` and `--git-dir=x` do not), as hooklib.GIT_COMMIT reads them.
+# `merge-base` and `merge-tree` are not in the list: they only read (`merge-tree --write-tree` adds objects to the
+# object store but changes no index, tree or ref), and a reviewer needs them to find the base of a stacked branch;
+# `merge` and the other `merge-*` verbs (`merge-file`, `merge-index`, `merge-one-file`) stay refused.
 deny_commands = [
-  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+(?:commit|add|rm|mv|reset|restore|merge|rebase|cherry-pick|checkout|switch|apply|am|clean|revert|worktree\s+remove)\b',
+  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+(?:commit|add|rm|mv|reset|restore|merge(?!-(?:base|tree)\b)|rebase|cherry-pick|checkout|switch|apply|am|clean|revert|worktree\s+remove)\b',
   # Nor a session by the shell, in any letter case (Windows ignores it): `claude`, `coney-agent` or
   # `npx @anthropic-ai/claude-code` where a command starts (the line start; after `&&`, `;`, `|`, `(`, `{`, `!`, `$(`,
   # a backtick, `then`, `do`, `else` or `find -exec`), after `NAME=v` and launchers with their options (`uv run

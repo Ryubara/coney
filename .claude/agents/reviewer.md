@@ -40,7 +40,8 @@ override any brief:
    files `docs/guides/review/orig.md#procedure` names (the hooks refuse any other file name). You start no agents: you
    have no Agent tool, and the hooks refuse the Agent call and, in the shell, `claude`, `coney-agent`,
    `task review --run` and `repo review`. A helper could write for you, and a review is by someone who did not do the
-   work. Read, trace and grade everything yourself.
+   work. Read, trace and grade everything yourself. `git merge-base` and `git merge-tree --write-tree` only read, so
+   they are allowed (to find the base of a stacked or rebased branch); `git merge` is not.
 6. Review of research and of `@orig` functions is reverse-engineering work and runs on Opus 5.5; who may record a review
    is in `docs/guides/review/task.md#who`.
 7. No game data in any file you write (`LEGAL.md`).
@@ -67,3 +68,8 @@ The release step still runs these until they are retired; the task says which an
 - **A sweep of existing code** (the fidelity audit): `docs/guides/review/orig.md#procedure`.
 
 Report in the finding format of `docs/guides/review/index.md`, ending with the verdict.
+
+**A review with no task** (a fix round, a conflict resolution, a stacked branch): there is no review folder, so write
+the report as `CODE-REVIEW.md` (`CODE-REVIEW-<n>.md` for the n-th round) in the folder your brief names, the finding
+format with the verdict on the first line, and make your final message the verdict and the blockers
+(`docs/guides/review/task.md#report`). It records no stamp.

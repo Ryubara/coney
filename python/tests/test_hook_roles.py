@@ -228,6 +228,31 @@ def test_a_reviewer_writes_only_its_verdict(agent_type: str, tmp_path: Path, che
     assert roles.check(CONFIG, call("NotebookEdit", {"notebook_path": str(checkout / "n.ipynb")}, agent_type))
 
 
+@pytest.mark.parametrize(
+    "name", ["CODE-REVIEW.md", "CODE-REVIEW-2.md", "code-review-fix-round.md", "CODE-REVIEW-orig.MD"]
+)
+def test_a_reviewer_may_write_a_code_review_report(name: str, tmp_path: Path) -> None:
+    # A review outside `task review` (a fix round, a conflict resolution) has no REVIEW.md to write; the report is named
+    # CODE-REVIEW*.md so the coordinator need not copy it out of the reply.
+    report = call("Write", {"file_path": str(tmp_path / "scratch/x" / name)}, "reviewer", "a1")
+    assert roles.check(CONFIG, report) is None, name
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["CODE-REVIEW", "CODE-REVIEW.json", "CODE-REVIEW.py", "NOT-CODE-REVIEW.md", "CODE-REVIEWER.sh", "REVIEW-NOTES.md"],
+)
+def test_a_code_review_name_does_not_open_other_files(name: str, tmp_path: Path) -> None:
+    report = call("Write", {"file_path": str(tmp_path / "scratch/x" / name)}, "reviewer", "a1")
+    assert roles.check(CONFIG, report), name
+
+
+def test_a_pattern_in_write_only_matches_the_file_name_not_the_folder(tmp_path: Path, checkout: Path) -> None:
+    # Only the last part counts, so a CODE-REVIEW folder does not open the files in it.
+    inside = call("Write", {"file_path": str(checkout / "docs/CODE-REVIEW.md/a.cpp")}, "reviewer", "a1")
+    assert roles.check(CONFIG, inside)
+
+
 def test_a_reviewer_may_not_commit_or_stage() -> None:
     for command in ("git commit -m x", "git -C repo add -A", "git add ."):
         assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")), command
@@ -256,6 +281,15 @@ def test_a_reviewer_may_not_commit_or_stage() -> None:
         "git switch main",
         "git am x.patch",
         "ls && git -P add x",
+        # `merge` itself still mutates, and so do the other merge-* verbs that write the tree or a file.
+        "git merge main",
+        "git merge --no-ff feature",
+        "git -C repo merge --abort",
+        "git merge-file a b c",
+        "git merge-index -o git-merge-one-file -a",
+        "git merge-one-file a b c",
+        "git merge-base a b && git merge main",
+        "git merge-tree --write-tree a b && git merge a",
     ],
 )
 def test_a_reviewer_may_not_change_or_discard_the_tree(command: str) -> None:
@@ -277,6 +311,14 @@ def test_a_reviewer_may_not_change_or_discard_the_tree(command: str) -> None:
         "git config --get commit.gpgsign",
         "git diff --name-only | grep -c add",
         "git blame -L1,5 file",
+        # Read-only: the base of a stacked or rebased branch, and a merge computed without touching the tree.
+        "git merge-base main HEAD",
+        "git merge-base --is-ancestor a b",
+        "git -C repo merge-base --fork-point origin/main branch",
+        "git --no-pager merge-base origin/main HEAD",
+        "git merge-tree --write-tree main HEAD",
+        "git -P merge-tree --write-tree --name-only a b",
+        "git merge-base a b && git merge-tree --write-tree a b",
     ],
 )
 def test_a_reviewer_may_read_the_history(command: str) -> None:

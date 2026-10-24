@@ -182,6 +182,22 @@ launcher it does not list, a name built up at run time and other indirection get
 spellings fail and a deliberate dodge visible in the transcript. The `--record` check above is the last line of
 defence, and it cannot see a stamp written by a session the reviewer started.
 
+## A review outside `task review` {#report}
+
+A change is sometimes reviewed with no task of its own: a fix round, a conflict resolution, a stacked branch or a branch
+of the launcher stack. There is then no review folder, packet or stamp, and the `reviewer` has nowhere to write its
+report. It writes the report as `CODE-REVIEW.md`, or `CODE-REVIEW-<n>.md` for the n-th round, in the folder the brief
+names (usually the scratch folder of the branch), in the [finding format](index.md#finding-format) with the verdict on
+the first line; the coordinator reads it there instead of copying it out of the reply. The hooks allow exactly the
+names `CODE-REVIEW*.md` besides the verdict files (`write_only` in `[roles.reviewer]` of `.claude/hooks/hooks.toml`;
+an entry may be a pattern for the file name, matched in any letter case). Such a report is not a verdict: it writes no
+`reviewed` stamp, and a task's own review still ends in `REVIEW.json` and `--record`.
+
+To find where a stacked or rebased branch starts, the reviewer may run `git merge-base` and `git merge-tree
+--write-tree`: both only read (the second adds objects to the object store and changes no index, tree or ref). `git
+merge` and the other `merge-*` verbs that write (`merge-file`, `merge-index`, `merge-one-file`) stay refused with the
+rest of the verbs that change the tree.
+
 ## Release checks that predate it {#legacy}
 
 `repo review` (the description) and `orig check-review` (a branch's `@orig` functions) still gate a release until
