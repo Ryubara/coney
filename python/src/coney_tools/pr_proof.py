@@ -7,9 +7,10 @@ for the change on the branch, each with the exact message and the command to red
 together with all the others, not alone. `pr open` will run the same function before it pushes.
 
 What the stamps are bound to is the *change* (`pr_diff.change_sha256`), not the tip, so a clean rebase keeps them. The
-profiles, the checks they need and the build preset are read from the remote's default branch, never from the branch
-being released (`conventions.load_proof_rules_at`, the reader `task check` uses too), and the required profile and
-checks come from `proof_profiles`, the functions `task check` stamps with, so the two always agree.
+profiles, the checks they need and the build preset are read from `origin/<default branch>` (the branch `origin/HEAD`
+names), never from the branch being released (`conventions.load_proof_rules_at`, the reader `task check` uses too),
+and the required profile and checks come from `proof_profiles`, the functions `task check` stamps with, so the two
+always agree.
 
 Nothing here writes: no stamp, no file, no git state.
 """
@@ -53,8 +54,6 @@ NO_TEST_KINDS = ("docs", "tooling", "ci-fix")
 PASSING_CLASSES = ("clean", "diff-deliberate-ok")
 #: The longest statement of the original that a note may not repeat, in characters.
 QUOTE_MIN = 20
-#: Where a Check's build records live, in the task's scratch folder.
-
 #: The step that follows each stage's refusal: the command to run again (`{subject}` is the stamp's).
 _REDO = {
     "assigned": "task start",
@@ -97,7 +96,7 @@ class Subject:
     task: str
     #: The task's kind (`TASK.md`).
     kind: str
-    #: The branch's rules, with `proof` and the path scope classes as the remote's default branch has them.
+    #: The branch's rules, with `proof` and the path scope classes as `origin/<default branch>` has them.
     conventions: Conventions
     #: Where `proof` came from: `base`, `branch` while the base has no `proof` section yet, or `given` (a test's).
     rules_from: str
@@ -162,6 +161,23 @@ def dirty_paths(root: Path) -> tuple[str, ...]:
     return tuple(sorted(paths))
 
 
+#: The remote whose default branch holds the proof rules a release is held to.
+RULES_REMOTE = "origin"
+
+
+def default_branch(root: Path) -> str:
+    """The default branch, as `origin`'s `HEAD` names it (`refs/remotes/origin/HEAD`, which `git clone` sets), not as
+    the branch's own conventions file says: a branch could name another branch there. ConfigError when it is unset."""
+    try:
+        ref = _git(root, "symbolic-ref", "--quiet", f"refs/remotes/{RULES_REMOTE}/HEAD").strip()
+    except ConfigError:
+        raise ConfigError(
+            f"{RULES_REMOTE}/HEAD is not set here, so the default branch is unknown; "
+            f"run `git remote set-head {RULES_REMOTE} --auto`"
+        ) from None
+    return ref.removeprefix(f"refs/remotes/{RULES_REMOTE}/")
+
+
 def load_subject(
     root: Path,
     unit: Unit,
@@ -172,22 +188,28 @@ def load_subject(
     now: datetime | None = None,
     conventions: Conventions | None = None,
 ) -> Subject:
-    """Read the unit at `root` (its worktree): the branch tip, where it left `<remote>/<default branch>`, the rules at
-    that base (`conventions` replaces them, for the tests), the stamp log and the `@orig` functions it changes.
+    """Read the unit at `root` (its worktree): the branch tip, where it left `<remote>/<default branch>`, the rules of
+    `origin/<default branch>` (`conventions` replaces them, for the tests), the stamp log and the `@orig` functions it
+    changes.
 
-    ConfigError when the base ref is unknown (fetch it first), or git or the rules cannot be read.
+    The default branch is the one `origin`'s `HEAD` names (`default_branch`), and the proof rules are always read from
+    `origin/<default branch>`, whatever `remote` is: nothing the branch holds or names (its conventions file, a remote
+    it adds) chooses the ref its rules come from. ConfigError when a ref is unknown (fetch it first), or git or the
+    rules cannot be read.
     """
-    default = load_conventions(root).repo.default_branch
+    default = default_branch(root)
     remote_ref = f"{remote}/{default}"
-    try:
-        _git(root, "rev-parse", "--verify", "--quiet", f"{remote_ref}^{{commit}}")
-    except ConfigError:
-        raise ConfigError(f"{remote_ref} is not known here; run `git fetch {remote} {default}` first") from None
+    rules_ref = f"{RULES_REMOTE}/{default}"
+    for ref, name in ((remote_ref, remote), (rules_ref, RULES_REMOTE)):
+        try:
+            _git(root, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+        except ConfigError:
+            raise ConfigError(f"{ref} is not known here; run `git fetch {name} {default}` first") from None
     if conventions is not None:
         rules, rules_from = conventions, "given"
     else:
         try:
-            rules, rules_from = load_proof_rules_at(root, remote_ref, load_conventions(root))
+            rules, rules_from = load_proof_rules_at(root, rules_ref, load_conventions(root))
         except ConventionsError as error:
             raise ConfigError(str(error)) from error
     tip = _git(root, "rev-parse", "--verify", "HEAD").strip()

@@ -494,7 +494,7 @@ redo), or `ok`. It changes no stamp, file or git state and does not fetch.
 | --- | --- | --- |
 | `TASK` | `CONEY_TASK`, else the branch | The task whose unit is verified; its `TASK.md` must exist. A task whose front block has `parent: <task>` is a fix: it continues its parent's log and text |
 | `--worktree DIR` | the current checkout | The unit's worktree: its HEAD is the tip, and it must be clean |
-| `--remote NAME` | `origin` | The remote whose default branch is the base; the rules are read from there |
+| `--remote NAME` | `origin` | The remote whose default branch is the base of the change; the rules are always read from `origin/<default branch>`, the branch `origin/HEAD` names |
 | `--text FILE` | `PR.md` in the task's scratch folder | The engineer's file whose title, paragraph and pictures Review covered |
 | `--json` | off | Print the result as one JSON object: the facts, `ok`, the refusals (`stage`, `text`, `redo`) and the notes |
 
@@ -575,7 +575,7 @@ coney-tools pr verify [TASK] [--worktree WORKTREE] [--remote REMOTE] [--json] [-
 | --- | --- | --- | --- |
 | `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
 | `--worktree WORKTREE` | path | none | the unit's worktree (default: the current checkout) |
-| `--remote REMOTE` | text | `origin` | the git remote whose default branch is the base |
+| `--remote REMOTE` | text | `origin` | the git remote whose default branch is the base of the change (the rules are always origin's) |
 | `--json` | flag | off | print the result as one JSON object |
 | `--text FILE` | path | none | the file Review covered (default: PR.md) |
 
@@ -592,7 +592,7 @@ coney-tools pr text [TASK] [--worktree WORKTREE] [--remote REMOTE] [--json] [--t
 | --- | --- | --- | --- |
 | `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
 | `--worktree WORKTREE` | path | none | the unit's worktree (default: the current checkout) |
-| `--remote REMOTE` | text | `origin` | the git remote whose default branch is the base |
+| `--remote REMOTE` | text | `origin` | the git remote whose default branch is the base of the change (the rules are always origin's) |
 | `--json` | flag | off | print the result as one JSON object |
 | `--text FILE` | path | none | the engineer's file (default: PR.md) |
 | `--dry-run` | flag | off | check and print; write no file |

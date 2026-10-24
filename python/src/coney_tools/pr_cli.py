@@ -50,7 +50,11 @@ def add_pr_commands(commands: Any) -> None:
         sub = commands.add_parser(name, help=text)
         sub.add_argument("task", nargs="?", metavar="TASK", help="the task (default: CONEY_TASK, else the branch)")
         sub.add_argument("--worktree", type=Path, help="the unit's worktree (default: the current checkout)")
-        sub.add_argument("--remote", default="origin", help="the git remote whose default branch is the base")
+        sub.add_argument(
+            "--remote",
+            default="origin",
+            help="the git remote whose default branch is the base of the change (the rules are always origin's)",
+        )
         sub.add_argument("--json", action="store_true", help="print the result as one JSON object")
         if name == "text":
             sub.add_argument("--text", type=Path, metavar="FILE", help="the engineer's file (default: PR.md)")
@@ -109,6 +113,16 @@ def _refusal_json(refusal: Refusal) -> dict[str, str]:
     return {"stage": refusal.stage, "text": refusal.text, "redo": refusal.redo}
 
 
+def _reason(error: ConfigError, path: Path) -> str:
+    """Why the engineer's file at `path` cannot be read, naming the path once: the reader's message starts with it,
+    and an OS error's text repeats it, so its bare reason is used instead."""
+    cause = error.__cause__
+    if isinstance(cause, OSError) and cause.strerror:
+        return f"{path}: {cause.strerror}"
+    text = str(error)
+    return text if text.startswith(str(path)) else f"{path}: {text}"
+
+
 def run_verify(args: argparse.Namespace) -> int:
     """`pr verify`: print every stage that does not hold; 0 when all hold."""
     subject, _task, _keys, text_path = _load(args)
@@ -120,7 +134,7 @@ def run_verify(args: argparse.Namespace) -> int:
         hashes = None
         unreadable = Refusal(
             "reviewed",
-            f"reviewed: the text Review covered cannot be read ({error})",
+            f"reviewed: the text Review covered cannot be read: {_reason(error, text_path)}",
             "engineer, then task review --text",
         )
     result: ProofResult = pr_proof.verify(subject, hashes)

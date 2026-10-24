@@ -30,6 +30,8 @@ from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS
 
 from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof
+from coney_tools import conventions as conventions_module
+from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, parse_conventions
 
 
@@ -552,3 +554,40 @@ def test_the_hashes_of_the_paragraph_title_and_images_are_stable(tmp_path: Path)
     assert NOW.year == 2026
     assert json.loads(json.dumps(dataclasses.asdict(one))) == dataclasses.asdict(one)
     assert agent("reviewer")["agent"]["id"] == "reviewer-1"
+
+
+# --- where the rules come from ---------------------------------------------------------------------------------------
+
+
+def test_the_rules_are_read_from_origins_default_branch_whatever_the_branch_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    # The branch names another default branch, points a ref of that name at its own tip and adds a remote of its own.
+    path = built.root / ".github" / "conventions.yml"
+    built.edit(
+        ".github/conventions.yml",
+        path.read_text(encoding="utf-8").replace("default_branch: main", "default_branch: lax"),
+    )
+    git(built.root, "update-ref", "refs/remotes/origin/lax", "HEAD")
+    git(built.root, "remote", "add", "elsewhere", str(built.origin))
+    git(built.root, "fetch", "-q", "elsewhere")
+    git(built.root, "update-ref", "refs/remotes/elsewhere/main", "HEAD")
+    seen: list[str] = []
+    real = conventions_module.load_proof_rules_at
+
+    def spy(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
+        seen.append(ref)
+        return real(root, ref, own)
+
+    monkeypatch.setattr(pr_proof, "load_proof_rules_at", spy)
+    subject = pr_proof.load_subject(built.root, built.unit, built.task, built.kind, remote="elsewhere")
+    assert seen == ["origin/main"] and subject.rules_from == "base"
+    assert subject.remote_ref == "elsewhere/main"
+
+
+def test_without_origins_head_the_default_branch_is_unknown_and_nothing_runs(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    git(built.root, "remote", "set-head", "origin", "--delete")
+    with pytest.raises(ConfigError, match=r"origin/HEAD is not set here.*git remote set-head origin --auto"):
+        pr_proof.load_subject(built.root, built.unit, built.task, built.kind)

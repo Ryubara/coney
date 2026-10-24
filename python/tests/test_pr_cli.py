@@ -67,7 +67,8 @@ def test_verify_refuses_when_the_text_review_covered_cannot_be_read(
         path.write_text(text, encoding="utf-8")
     assert run(built, monkeypatch, "verify") == 1
     out = capsys.readouterr().out
-    assert "  reviewed: the text Review covered cannot be read (" in out
+    assert f"  reviewed: the text Review covered cannot be read: {path}: " in out
+    assert out.count(str(path)) == 1, out
     assert "redo: engineer, then task review --text" in out and "ok:" not in out
 
 

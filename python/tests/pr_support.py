@@ -397,6 +397,8 @@ def build(tmp_path: Path, shape: str = "feature", skip: frozenset[str] = frozens
     commit_all(root, "base")
     git(root, "remote", "add", "origin", str(origin))
     git(root, "push", "-q", "-u", "origin", "main")
+    # As `git clone` leaves it: origin/HEAD names the default branch, which pr verify reads its rules from.
+    git(root, "remote", "set-head", "origin", "main")
     git(root, "checkout", "-q", "-b", "work")
     unit = Unit("work", tmp_path / "scratch" / "work")
     kind = _KINDS[shape]
