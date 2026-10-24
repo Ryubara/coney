@@ -18,10 +18,11 @@ and grades the touched section"):
   heading) the change touches and stays a warning elsewhere;
 * `length`: waived until the page's restructure.
 
-Every other finding of a listed rule (front matter, sections, the Verified line, address forms, addresses that do not
-resolve, Ghidra's names, copies, dates, stale wording, refused level spellings and run ids that name no record) is an
-error on a touched page. A rule the page now passes is an error until it is removed from the file, so the file only
-shrinks.
+A page that moved with git (a rename the change's diff detects, `Touch.moved_from`) is read as any touched page, from
+the lines git's diff of the renamed pair changes, with one difference: its entry excuses the grading alone. Only its
+`evidence` entry counts; the front matter, sections, length and every other rule it lists are checked in full. The entry
+follows the page to its new path (`docs_legacy`), so the grading of the sections the move left alone stays excused until
+a later change touches them.
 
 No new page may be listed, and nothing but a scan with `coney-tools docs legacy --init` ever adds one. The numbers
 tell people deciding what to fix first how much is left; they are never compared with a page.
@@ -43,8 +44,9 @@ HEADER = (
     "# Research pages that do not meet the standard yet (docs/guides/writing-docs.md#legacy-pages), each under the\n"
     "# rules it fails, with the number of findings at the last scan (for `length`, the lines over the limit).\n"
     "# A page here is excused from those rules only. It leaves the file as it passes: remove a rule or a page once\n"
-    "# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new or\n"
-    "# restructured page meets the standard in full. Written first by `coney-tools docs legacy --init`.\n"
+    "# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new\n"
+    "# page meets the standard in full, and a page moved with git keeps only its `evidence` entry. Written first by\n"
+    "# `coney-tools docs legacy --init`.\n"
 )
 
 
@@ -65,10 +67,12 @@ class Legacy:
 
 @dataclass(frozen=True)
 class Touch:
-    """What a change did to a page: the lines it added or changed (None when not known) and whether the page is new."""
+    """What a change did to a page: the lines it added or changed (None when not known), whether the page is new and,
+    for a page git sees as moved from another path, that path (the page is then touched throughout and not new)."""
 
     lines: frozenset[int] | None = None
     new: bool = False
+    moved_from: str | None = None
 
 
 def parse_legacy(text: str, known_rules: Iterable[str], where: str = "research/legacy.toml") -> Legacy:
@@ -131,9 +135,12 @@ def apply_legacy(
     waived: dict[str, list[Finding]] = {rule: [] for rule in excused}
     for finding in findings:
         if finding.rule not in excused:
-            kept.append(finding)
+            if not finding.held:  # a page not excused from the rule has no use for the reminder
+                kept.append(finding)
         elif finding.severity != "error":
-            continue  # a warning of an excused rule is part of what the legacy page is excused from
+            if finding.held:
+                waived[finding.rule].append(finding)  # an old-form claim still owing a run record keeps the entry
+            continue  # any other warning of an excused rule is part of what the legacy page is excused from
         elif _stays_excused(finding, touched):
             waived[finding.rule].append(finding)
         else:

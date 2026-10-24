@@ -936,6 +936,8 @@ class Research:
     files: ResearchFiles
     front_matter: tuple[str, ...]
     owns_keys: tuple[str, ...]
+    #: The git rename score (percent) at which a moved research page keeps its legacy entry's grading exemption.
+    moved_similarity: int
     verified_max_chars: int
     copy_min_chars: int
     #: Old section name to the section it is now (every kind).
@@ -1222,10 +1224,12 @@ def _moment(value: object, where: str) -> datetime:
     return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
 
 
-def _count(value: object, where: str, minimum: int = 1) -> int:
-    """A whole number of at least `minimum` (a YAML boolean is not one)."""
+def _count(value: object, where: str, minimum: int = 1, maximum: int | None = None) -> int:
+    """A whole number of at least `minimum` and, when given, at most `maximum` (a YAML boolean is not one)."""
     if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
         raise _fail(where, f"expected a whole number of {minimum} or more")
+    if maximum is not None and value > maximum:
+        raise _fail(where, f"expected a whole number of {maximum} or less")
     return value
 
 
@@ -2403,6 +2407,7 @@ def _read_research(data: object, where: str) -> Research:
         "files",
         "front_matter",
         "owns_keys",
+        "moved_similarity",
         "verified_max_chars",
         "copy_min_chars",
         "aliases",
@@ -2471,6 +2476,7 @@ def _read_research(data: object, where: str) -> Research:
         ),
         front_matter=_texts(table["front_matter"], _at(where, "front_matter")),
         owns_keys=_texts(table["owns_keys"], _at(where, "owns_keys")),
+        moved_similarity=_count(table["moved_similarity"], _at(where, "moved_similarity"), minimum=50, maximum=100),
         verified_max_chars=_count(table["verified_max_chars"], _at(where, "verified_max_chars"), minimum=40),
         copy_min_chars=_count(table["copy_min_chars"], _at(where, "copy_min_chars"), minimum=40),
         aliases=MappingProxyType(alias_map),

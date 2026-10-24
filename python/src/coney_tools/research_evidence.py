@@ -229,6 +229,15 @@ def _level_forms(
             "(a record in research/runs/)",
             by_section=True,
         )
+    elif levels.bare_runtime or (levels.runs and not catalog.has_records):
+        # A legacy page may keep this claim, but it still owes the run record: the entry that excuses it stays.
+        yield Finding(
+            "evidence",
+            line,
+            "confirmed (runtime) is an old-form claim that still owes a run record: `confirmed (runtime), run <id>`",
+            "warning",
+            held=True,
+        )
     for run in levels.runs if catalog.has_records else ():
         if not catalog.has_run(run):
             yield Finding("evidence", line, f"no run record research/runs/{run}.toml")

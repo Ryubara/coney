@@ -16,7 +16,7 @@ docs/guides/coney-tools-build.md#docs.
 from __future__ import annotations
 
 import bisect
-import re
+import posixpath
 from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -26,6 +26,7 @@ from coney_tools import docs_legacy, local_gate, source_files, standards_check
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Research, load_conventions
+from coney_tools.docs_link_moves import touched_lines
 from coney_tools.docs_page import Finding, Page, kind_of, read_page
 from coney_tools.docs_style import check_style
 from coney_tools.research_catalog import load_catalog
@@ -45,7 +46,6 @@ CHECKED_KINDS: tuple[str, ...] = ("research", "guide", "page")
 #: A warning, because splitting a page is the author's call: the cut is usually along a sub-subject that deserves its
 #: own page. A research page's limit is its kind's `max_lines` in `.github/conventions.yml`.
 LENGTH_WARNING: dict[str, int] = {"guide": 800}
-_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -117,11 +117,21 @@ def _touched(page: Page, lines: frozenset[int]) -> Callable[[Finding], bool]:
     return lambda finding: max(bisect.bisect_right(starts, finding.line) - 1, 0) in changed
 
 
+def _untouched(finding: Finding) -> bool:
+    """The test of a moved page that the change touched nowhere: no finding is in a touched section."""
+    return False
+
+
 def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding]) -> list[Finding]:
     """The research standard for `path` and its `style` findings, with the legacy file's excuses applied. A change that
     touches a listed page ends the excuse for every rule but the length and the grading of the sections it leaves
-    alone (`apply_legacy`)."""
-    listed = path in env.legacy
+    alone (`apply_legacy`). A page git sees as moved is read the same way, from the lines git's diff of the renamed pair
+    changes, but its entry excuses the grading alone: every other rule it lists is checked in full, the length too."""
+    moved = touch.moved_from is not None
+    excused = env.legacy.rules(path)
+    if moved:
+        excused = {rule: count for rule, count in excused.items() if rule == "evidence"}
+    listed = bool(excused)
     findings = [*check_research(path, page, env, legacy_page=listed), *style]
     if not listed:
         return findings
@@ -134,8 +144,11 @@ def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style
             )
         )
         return findings
-    touched = _touched(page, touch.lines) if touch.lines else None
-    return apply_legacy(findings, env.legacy.rules(path), env.research.files.legacy, touched)
+    touched: Callable[[Finding], bool] | None = _touched(page, touch.lines) if touch.lines else None
+    if moved and touched is None:
+        # A move that changed no line still ends the excuse of everything but the grading of its sections.
+        touched = _untouched
+    return apply_legacy(findings, excused, env.research.files.legacy, touched)
 
 
 # --- checking ---------------------------------------------------------------------------------------------------------
@@ -198,25 +211,59 @@ def check_files(root: Path, names: Iterable[str], context: Context, touches: dic
     return result
 
 
-def change_touches(root: Path, base: str, names: Iterable[str]) -> dict[str, Touch]:
-    """For each research page among `names`, what the change since HEAD left `base` did to it: whether it is new, and
-    which lines it added or changed (committed or not)."""
+def change_touches(root: Path, base: str, names: Iterable[str], similarity: int | None = None) -> dict[str, Touch]:
+    """For each research page among `names`, what the change since HEAD left `base` did to it: whether it is new, the
+    page it was moved from when git sees a rename at or above `similarity` percent (the research conventions'
+    `moved_similarity`; git's own 50 when None), and which lines it added or changed (committed or not).
+
+    A line whose only change is a link rewritten to a page the change moved is no touch (`docs_link_moves`)."""
     since = local_gate.merge_base(root, base)
+    moves = local_gate.renamed_files(root, base, similarity)
+    gone = local_gate.removed_files(root, base, similarity)
+    resolves = _link_resolver(root)
     touches: dict[str, Touch] = {}
     for name in names:
         if kind_of(name) != "research":
+            continue
+        if name in moves:
+            # A moved page is read line by line from git's diff of the renamed pair, so only what the move really
+            # changed is touched; its links are read from the folder it left.
+            old = moves[name]
+            detect = "-M" if similarity is None else f"-M{similarity}%"
+            diff = local_gate.run_command(
+                ["git", "-C", str(root), "diff", "-U0", detect, since, "--", old, name], root
+            )[1]
+            lines = touched_lines(diff, posixpath.dirname(name), gone, resolves, posixpath.dirname(old))
+            touches[name] = Touch(lines, moved_from=old)
             continue
         code, _ = local_gate.run_command(["git", "-C", str(root), "cat-file", "-e", f"{since}:{name}"], root)
         if code != 0:
             touches[name] = Touch(None, True)
             continue
         diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
-        lines: set[int] = set()
-        for hunk in _HUNK.finditer(diff):
-            start, count = int(hunk.group("start")), int(hunk.group("count") or 1)
-            lines.update(range(start, start + max(count, 1)))
-        touches[name] = Touch(frozenset(lines))
+        touches[name] = Touch(touched_lines(diff, posixpath.dirname(name), gone, resolves))
     return touches
+
+
+def _link_resolver(root: Path) -> Callable[[str, str], bool]:
+    """A test for "this page exists in the checkout and holds this anchor" (any, when the anchor is empty); each page is
+    read once."""
+    anchors: dict[str, set[str] | None] = {}
+
+    def resolves(path: str, anchor: str) -> bool:
+        """Whether `path` exists and, for a Markdown page, holds `anchor`."""
+        if path not in anchors:
+            file = root / path
+            if not file.is_file():
+                anchors[path] = None
+            elif path.endswith(".md"):
+                anchors[path] = read_page(file.read_text(encoding="utf-8", errors="replace")).anchors
+            else:
+                anchors[path] = set()
+        found = anchors[path]
+        return found is not None and (not anchor or anchor in found)
+
+    return resolves
 
 
 #: What a change can touch that moves the legacy file's truth without editing the file: a research page, the
@@ -244,7 +291,8 @@ def check_changed(root: Path, base: str, context: Context) -> Result:
     """Check the pages changed since the branch left `base`, committed or not, untracked pages included. When the change
     can make the legacy file stale (`legacy_relevant`), the file is checked as a whole too (`docs_legacy.problems`)."""
     names = local_gate.changed_files(root, base)
-    result = check_files(root, names, context, change_touches(root, base, names))
+    similarity = context.research.research.moved_similarity if context.research is not None else None
+    result = check_files(root, names, context, change_touches(root, base, names, similarity))
     if context.research is not None and legacy_relevant(names, context.research.research):
         # A page that now passes must leave the file, and a changed file may only have shrunk.
         found = [Finding("legacy", 1, line) for line in docs_legacy.problems(root, context, base)]

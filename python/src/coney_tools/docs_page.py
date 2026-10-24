@@ -50,13 +50,16 @@ class Finding:
     """One thing a page gets wrong: the rule, the line (1-based) and what to do. `severity` is `error` or `warning`.
     `by_section` marks a finding that grades a block (an address with no level, an old-form runtime claim): a legacy
     page owes that only in the sections a change touches, where every other finding is owed page-wide
-    (writing-docs.md#legacy-pages)."""
+    (writing-docs.md#legacy-pages). `held` marks a warning that stands for what the page's legacy status lets pass (an
+    old-form runtime claim that still owes a run record): it is no error, but it counts as a finding of its rule when a
+    scan decides whether the page still needs its entry."""
 
     rule: str
     line: int
     message: str
     severity: str = "error"
     by_section: bool = False
+    held: bool = False
 
 
 @dataclass(frozen=True)

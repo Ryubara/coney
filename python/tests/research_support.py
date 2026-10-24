@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Mapping
+from pathlib import Path
 
-from conventions_support import real_data
+from conventions_support import REPO, real_data
+from git_support import git
 
+from coney_tools import docs_check
 from coney_tools.conventions import Research, parse_conventions
 from coney_tools.docs_check import Context, Finding, check_page
 from coney_tools.progress_research import ListedFunction
@@ -119,3 +122,39 @@ def rules_of(found: list[Finding], severity: str = "error") -> list[str]:
 def errors(text: str, environment: ResearchEnv | None = None, path: str = RESEARCH_PATH) -> list[str]:
     """The rules a page fails on (warnings left out)."""
     return rules_of(findings(path, text, environment))
+
+
+# --- a made-up checkout with a legacy file ---------------------------------------------------------------------------
+
+LEGACY_FILE = "research/legacy.toml"
+
+
+def write(root: Path, name: str, text: str) -> None:
+    """Write a file of the made-up checkout."""
+    path = root / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
+def checkout(tmp_path: Path, legacy: str | None = None, files: Mapping[str, str] | None = None) -> Path:
+    """A repository with this repository's conventions, a good survey page, a bad page, `files` (path to text) and,
+    perhaps, a legacy file; all committed on `main`, with the branch `work` checked out."""
+    git(tmp_path, "init", "-q", "-b", "main")
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (tmp_path / ".github").mkdir()
+    (tmp_path / ".github/conventions.yml").write_bytes((REPO / ".github/conventions.yml").read_bytes())
+    write(tmp_path, "docs/research/good.md", page(kind="survey", meta="---\nkind: survey\n---\n"))
+    write(tmp_path, "docs/research/old.md", "# Old\n\nNo sections.\n\n## Data\n\nSomething at 0x00123456.\n")
+    for name, text in (files or {}).items():
+        write(tmp_path, name, text)
+    if legacy is not None:
+        write(tmp_path, LEGACY_FILE, legacy)
+    git(tmp_path, "add", "-A")
+    git(tmp_path, "commit", "-q", "-m", "base")
+    git(tmp_path, "checkout", "-q", "-b", "work")
+    return tmp_path
+
+
+def context(root: Path) -> Context:
+    """The context of the made-up checkout."""
+    return docs_check.context_for(root)

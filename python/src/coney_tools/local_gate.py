@@ -97,13 +97,38 @@ def changed_files(root: Path, base: str) -> list[str]:
     return sorted(names)
 
 
-def renamed_files(root: Path, base: str) -> dict[str, str]:
-    """Each file renamed since HEAD left `base` (staged or committed, as git detects renames) -> its old path."""
+def renamed_files(root: Path, base: str, similarity: int | None = None) -> dict[str, str]:
+    """Each file renamed since HEAD left `base` (staged or committed, as git detects renames) -> its old path.
+
+    `similarity` is git's rename score in percent (`-M<n>%`); None leaves git's own default, 50."""
     since = merge_base(root, base)
-    fields = _git(root, "diff", "-z", "--name-status", "-M", "--diff-filter=R", since).split("\0")
+    detect = "-M" if similarity is None else f"-M{similarity}%"
+    fields = _git(root, "diff", "-z", "--name-status", detect, "--diff-filter=R", since).split("\0")
     renamed: dict[str, str] = {}
     # -z gives `R<score>`, the old path and the new path as three fields.
     for i in range(0, len(fields) - 2, 3):
         if fields[i].startswith("R"):
             renamed[fields[i + 2]] = fields[i + 1]
     return renamed
+
+
+def removed_files(root: Path, base: str, similarity: int | None = None) -> set[str]:
+    """Each path that stopped being a file at its name since HEAD left `base`: deleted, or the old path of a rename.
+
+    `similarity` is as for `renamed_files`."""
+    since = merge_base(root, base)
+    detect = "-M" if similarity is None else f"-M{similarity}%"
+    fields = _git(root, "diff", "-z", "--name-status", detect, "--diff-filter=DR", since).split("\0")
+    removed: set[str] = set()
+    i = 0
+    # -z gives `D`, the path; or `R<score>`, the old path and the new path. Anything else (a git warning) is skipped.
+    while i + 1 < len(fields):
+        if fields[i].startswith("R") and i + 2 < len(fields):
+            removed.add(fields[i + 1])
+            i += 3
+        elif fields[i] == "D":
+            removed.add(fields[i + 1])
+            i += 2
+        else:
+            i += 1
+    return removed

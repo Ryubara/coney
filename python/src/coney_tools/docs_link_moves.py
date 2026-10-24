@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""A link rewrite that follows a move is no touch of the page that holds the link.
+
+A legacy research page ends its excuse when a change touches it (`research_legacy`). Moving a page makes every page
+that links to it change a line, and those pages did nothing but keep their links true. So a line whose only change is
+the target of an inline link `[text](target)` does not count as touched when, for every link it changes:
+
+* the old target's page is one the same change renamed or deleted (its anchor is not looked at), and the new target
+  resolves: the page exists after the change and, when the target names an anchor, holds it; or
+* the new target names the same page and anchor as the old one, which a page that moved to another folder needs for
+  every relative link it holds (the old target is read from the page's old folder, the new from its new one).
+
+The text of the link, the rest of the line and the number of links must be equal (spaces and line breaks do not count,
+so a link split over two lines is read whole, and so is the paragraph that a longer target made the editor reflow), so
+any other edit on the line is a touch. A link to a page that was not moved, a link to something outside the pages (a
+scheme, `repo:`, an image) and a target that resolves nowhere are all touches (the last also fails the build: MkDocs
+checks the link).
+
+The functions are pure: the caller says which paths are gone and whether a target resolves.
+"""
+
+from __future__ import annotations
+
+import posixpath
+import re
+from collections.abc import Callable, Collection
+
+#: An inline link, not an image: its text, its target and whatever follows the target inside the parentheses (a title).
+_LINK = re.compile(r"(?<!!)\[(?P<text>[^\]\n]*)\]\((?P<target>[^)\s]*)(?P<tail>[^)\n]*)\)")
+#: A unified diff's hunk header, for the new file's side.
+_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,\d+)? @@")
+#: A target with a scheme (`https:`, `repo:`, `mailto:`) leaves the pages.
+_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+#: A line that starts or ends a Markdown block, so a line break before it is structure, not layout: a heading, a list
+#: item, a quotation, a table row, a code fence or an indented code line.
+_BLOCK_START = re.compile(r"^(?:\s*(?:#|[-*+]\s|>|\||\d+[.)]\s|```|~~~)| {4}|\t)")
+#: Stands in for a target when two lines are compared without their targets.
+_TARGET = "\x00"
+
+
+def _without_targets(line: str) -> str:
+    """`line` with the target of every inline link blanked."""
+    return _LINK.sub(lambda match: f"[{match.group('text')}]({_TARGET}{match.group('tail')})", line)
+
+
+def _split(target: str, folder: str) -> tuple[str, str] | None:
+    """The page a link target names (repository-relative, forward slashes) and its anchor, or None when it names no
+    page of the repository: a scheme, a same-page anchor, an absolute path."""
+    if not target or _SCHEME.match(target) or target.startswith(("#", "/")):
+        return None
+    path, _, anchor = target.partition("#")
+    path = path.split("?", 1)[0]
+    return posixpath.normpath(posixpath.join(folder, path)), anchor
+
+
+def _rewritten(
+    old: str,
+    new: str,
+    folder: str,
+    old_folder: str,
+    gone: Collection[str],
+    resolves: Callable[[str, str], bool],
+) -> bool:
+    """Whether the target `old` (read from `old_folder`) was rewritten to `new` (read from `folder`) because a page
+    moved: the old page is in `gone` and the new target resolves, or both name the same page and anchor."""
+    before, after = _split(old, old_folder), _split(new, folder)
+    if before is None or after is None:
+        return False
+    return before == after or (before[0] in gone and resolves(*after))
+
+
+def link_only_change(
+    old: str,
+    new: str,
+    folder: str,
+    gone: Collection[str],
+    resolves: Callable[[str, str], bool],
+    old_folder: str | None = None,
+) -> bool:
+    """Whether the text `old` (a line, or the lines of a hunk) became `new` by rewriting link targets to moved pages and
+    nothing else; runs of spaces and line breaks count as one space.
+
+    `folder` is the folder of the page that holds the line (targets are relative to it), `gone` the repository-relative
+    paths the change renamed or deleted, and `resolves(path, anchor)` whether `path` exists after the change and holds
+    `anchor` (any, when it is empty). `old_folder` is the folder the page held `old` in when the change moved the page
+    (None: it did not move)."""
+    from_folder = folder if old_folder is None else old_folder
+    old, new = " ".join(old.split()), " ".join(new.split())
+    before, after = list(_LINK.finditer(old)), list(_LINK.finditer(new))
+    if not before or len(before) != len(after) or _without_targets(old) != _without_targets(new):
+        return False
+    changed = [(a.group("target"), b.group("target")) for a, b in zip(before, after, strict=True)]
+    changed = [pair for pair in changed if pair[0] != pair[1]]
+    return bool(changed) and all(_rewritten(a, b, folder, from_folder, gone, resolves) for a, b in changed)
+
+
+def _prose(lines: list[str]) -> bool:
+    """Whether `lines` are the lines of one paragraph, which may be broken anywhere: none is blank or starts a block."""
+    return all(line.strip() and not _BLOCK_START.match(line) for line in lines)
+
+
+def _lead(line: str) -> str:
+    """The whitespace a line starts with, which is structure (an indented list item, a code line)."""
+    return line[: len(line) - len(line.lstrip())]
+
+
+def touched_lines(
+    diff: str,
+    folder: str,
+    gone: Collection[str],
+    resolves: Callable[[str, str], bool],
+    old_folder: str | None = None,
+) -> frozenset[int]:
+    """The lines of the new file that the zero-context `diff` of one file touches, a link rewrite to a moved page
+    (`link_only_change`) left out. A hunk whose removed and added lines read the same but for such rewrites touches
+    nothing, however the lines break, as long as both sides are one paragraph's lines (no blank line, none that starts
+    a heading, a list item, a quotation, a table row or code: a line break there is structure). Otherwise a hunk that
+    removes and adds the same number of lines is read line by line (a line whose indent changed is touched), any other
+    hunk touches all its added lines, and a pure deletion touches the line it sits at. `old_folder` is as for
+    `link_only_change`."""
+    touched: set[int] = set()
+    start = 0
+    removed: list[str] = []
+    added: list[str] = []
+    opened = False
+
+    def close() -> None:
+        """Count the hunk read so far."""
+        if not opened:
+            return
+        if not added:
+            touched.add(start)
+        elif (
+            removed
+            and _prose(removed)
+            and _prose(added)
+            and link_only_change(" ".join(removed), " ".join(added), folder, gone, resolves, old_folder)
+        ):
+            return
+        elif len(removed) != len(added):
+            touched.update(range(start, start + len(added)))
+        else:
+            touched.update(
+                start + offset
+                for offset, (was, now) in enumerate(zip(removed, added, strict=True))
+                if _lead(was) != _lead(now) or not link_only_change(was, now, folder, gone, resolves, old_folder)
+            )
+
+    for raw in diff.splitlines():
+        header = _HUNK.match(raw)
+        if header:
+            close()
+            start, removed, added, opened = int(header.group("start")), [], [], True
+        elif opened and raw.startswith("-"):
+            removed.append(raw[1:])
+        elif opened and raw.startswith("+"):
+            added.append(raw[1:])
+    close()
+    return frozenset(touched)
