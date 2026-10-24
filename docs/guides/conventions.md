@@ -325,7 +325,7 @@ Two checks hold the rule:
 
 - `coney-tools orig copy-check` refuses the mechanical signs in changed lines (`check changed` and CI run it,
   [orig](coney-tools-fidelity.md#orig)). A deliberate case carries `// copy-check: allow <reason>`.
-- The orig-reviewer agent compares each changed `@orig` function with the original on both counts, fidelity and own
+- The reviewer agent compares each changed `@orig` function with the original on both counts, fidelity and own
   expression, before release ([Orig review](review/orig.md)).
 
 ## Coney-only code {#coney-only}

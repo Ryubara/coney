@@ -73,15 +73,17 @@ are open.
 
 ### Who {#who}
 
-`who.agent` is the agent id, type and model that ran the command. A command cannot take these from the agent itself,
-which could write anything, so the hook dispatcher writes them, from the hook input and the model in the agent's
-transcript, to a file named by a random token and puts only that token (`CONEY_AGENT_TOKEN`) in front of every
-`coney-tools` command ([Who runs a command](agents.md#identity)). `who_from_env` reads the file as the command's first
-action. The stamp records `who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise,
-with every field `unknown`, however the environment was set (a person at a terminal, a PowerShell command outside
-`bypassPermissions`, an agent that typed variables or a token of its own). Recording never refuses a command: the check
-that `source` is `hook` will belong to `pr open`. A [run record](research-evidence.md#run-records) takes its
-`who` the same way and marks its source the same way; a run itself is not stamped.
+`who.agent` is the agent id, type and model that ran the command, and the Claude Code session it ran in (`session`,
+when the hook recorded one: every main session has the id `main`, so the id alone names no one,
+`identity.same_agent`). A command cannot take these from the agent itself, which could write anything, so the hook
+dispatcher writes them, from the hook input and the model in the agent's transcript, to a file named by a random token
+and puts only that token (`CONEY_AGENT_TOKEN`) in front of every `coney-tools` command ([Who runs a
+command](agents.md#identity)). `who_from_env` reads the file as the command's first action. The stamp records
+`who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise, with every field `unknown`,
+however the environment was set (a person at a terminal, a PowerShell command outside `bypassPermissions`, an agent
+that typed variables or a token of its own). Recording never refuses a command: the check that `source` is `hook` will
+belong to `pr open`. A [run record](research-evidence.md#run-records) takes its `who` the same way and marks its
+source the same way; a run itself is not stamped.
 
 ### Verifying a log {#verify}
 
@@ -388,5 +390,5 @@ What the three steps bound to the change record (all unsigned, in the local log)
 | Step | `covers` | `detail` (at most 2 KB) |
 | --- | --- | --- |
 | `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `rules` (`base`: the profiles and path classes were read from the base's file; `branch`: the base has no `proof` section yet), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc}, `preset`, `minutes` |
-| `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256` | `verdict`, `functions` (address to a one-letter class), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`; more than 2 KB of per-function verdicts goes to `<scratch>/<task>/review.json`, covered by `review_sha256` |
+| `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/review.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |

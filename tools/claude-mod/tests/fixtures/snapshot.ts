@@ -11,8 +11,8 @@ export default {
   "roles": [
    "coordinator",
    "reviewer",
-   "research-reviewer",
-   "pr-reviewer"
+   "engineer",
+   "tooling"
   ],
   "helpers": [
    "Explore",

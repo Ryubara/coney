@@ -328,7 +328,7 @@ other title area leaves the line out.
 - **Look at each picture before using it.** Open every capture and check that it shows what its caption says:
   gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
   options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
-  it again. The `pr-reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
+  it again. The `reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
   images ([The description review](how-we-work.md#pr-review)).
 - **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
   `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are

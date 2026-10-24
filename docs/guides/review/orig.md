@@ -2,9 +2,10 @@
 
 This is the rubric for comparing a Coney function that carries an `@orig` tag with the original function at that
 address, in the shared Ghidra project (NTSC-U `SLUS_212.15`, [Ghidra](../ghidra.md)). The
-[orig-reviewer agent](../agents.md#orig-reviewer) applies it to a branch's changed functions before release (pr mode)
-and to whole folders of existing code (sweep mode). The [fidelity audit](../how-we-work.md#fidelity-audit) uses it
-as well. The rule it checks is [Porting, not transcribing](../conventions.md#porting).
+[reviewer agent](../agents.md#reviewer) applies it to a task's changed functions ([Task review](task.md): the `orig`
+kind of its packet), to a branch's before release (pr mode) and to whole folders of existing code (sweep mode). The
+[fidelity audit](../how-we-work.md#fidelity-audit) uses it as well. The rule it checks is [Porting, not
+transcribing](../conventions.md#porting).
 
 **Rubric version: 1.** The version is `pull_requests.orig_review.rubric_version` in
 [.github/conventions.yml](repo:.github/conventions.yml). Raise both together when a class or a count changes
@@ -148,10 +149,56 @@ Severity is the optional eighth column of `FINDINGS.tsv`, and it orders the fix 
 
   List what was skipped in `not_reviewed`, and give the reason in `sampled`.
 
+## How the reviewer works {#procedure}
+
+The reviewer only reads. Bash is for read-only commands (`git diff`, `git log`, `git show` and the `coney-tools orig`
+commands below); in Ghidra it uses only the read tools it has. The only files it writes are the ones its mode names,
+and none holds pasted code ([the limits](#limits)).
+
+**In a task review** the packet lists the changed functions and the tool part has checked that each has a current
+`compared` stamp and a clean copy check ([Task review](task.md#tool-part)). The reviewer reads each pair of the pairs
+file and the Coney function it names, decompiles each address (`disassemble_function` where the decompiler is unclear),
+opens callees as far as the comparison needs, gives each function exactly one [class](#classes) and writes it into the
+`functions` of `REVIEW.json` ([format](task.md#verdict)).
+
+**Pr mode**, for the release check that predates `task review`:
+
+1. Run `uv run --project python coney-tools orig review-stamp --branch <branch> --base <base>` from the main checkout
+   (or `--worktree <path>`). It prints the `tip`, the `base` and the `@orig` functions the branch adds or changes: each
+   one's `key`, `where`, `coney`, `addresses` and `body_sha256`. When it lists none, write no verdict and say so: the
+   branch needs none.
+2. Review every listed function. If there are more than can be read with care, sample by risk as the
+   [limits](#limits) say, and name the skipped ones.
+3. Compare each function: read the Coney function at `where` and enough of what it calls to know its behaviour,
+   decompile each address, and judge both counts.
+4. Write the verdict `ORIG-REVIEW.json` next to `PR.md`, in exactly [the format below](#verdict): copy `tip`, `base`,
+   each `key` and `body_sha256` from the stamp, give each function the `addresses` compared, set `rubric_version`, list
+   every compared address in `reviewed`, make each failing function a `blocker` finding at its `file:line` and every
+   other remark a `note`; `verdict` is `pass` only when no class fails and no finding is a blocker.
+5. Write `ORIG-REVIEW.md`: the verdict on the first line, then one line per function (Coney name, `file:line`, address,
+   class, note), then what was sampled and why. The final message is the verdict and the blockers, in a few lines.
+
+**Sweep mode** works on a group folder under the workspace's `scratch/orig-sweep/` and a scope of `src/` folders or
+addresses ([Sweep findings](#findings)):
+
+1. Run `uv run --project python coney-tools orig review-stamp --folder <src/folder/>` (or `--address 0x...`,
+   repeatable) from the main checkout. It lists the functions in scope that the ledger has not reviewed at their
+   current body, with the `commit` it read. When `PROGRESS.md` already exists in the group folder, continue from it.
+2. Compare each function as above and append its row to `FINDINGS.tsv` at once. After each file, update `PROGRESS.md`
+   with the files done and the commit.
+3. Record with `uv run --project python coney-tools orig record <group>/FINDINGS.tsv --ref <commit>`, so the ledger and
+   `orig queue` know what is done.
+4. Summarise in the final message, which the launcher saves as `SUMMARY.md` (the reviewer does not write it): the
+   counts per class, the ten worst findings with their Coney function, `file:line` and address, anything systemic, and
+   the unmatched rows `orig record` printed.
+
+At 500k context, write `PROGRESS.md` and a handover note in the group folder and stop.
+
 ## The pull request verdict {#verdict}
 
-In pr mode the agent writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` next to the description file (`PR.md`). The JSON
-has exactly these keys:
+`task review` records a function's class in its own verdict file ([Task review](task.md#verdict)). The release check
+that predates it, `orig check-review`, reads the file below until `pr open` replaces it. In pr mode the agent writes
+`ORIG-REVIEW.json` and `ORIG-REVIEW.md` next to the description file (`PR.md`). The JSON has exactly these keys:
 
 | Key | Holds |
 | --- | --- |

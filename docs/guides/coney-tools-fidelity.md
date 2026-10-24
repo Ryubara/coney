@@ -104,7 +104,7 @@ It finds these fingerprints:
 A line with `// copy-check: allow <reason>` passes. Each finding names the file, the line, the text and what to do,
 and the exit code is 1 when there is one. `check changed` runs it in its `orig` step, and CI's `python` job runs it
 with `--base HEAD^1`. On 2026-10-21 `--all` found none in `src/`. The check cannot see a transcription's shape; the
-orig-reviewer agent judges that.
+reviewer agent judges that.
 
 ```sh
 uv run --project python coney-tools orig review-stamp (--branch B | --worktree WT) [--base origin/main] [--ledger F]
@@ -114,7 +114,7 @@ uv run --project python coney-tools orig record [FINDINGS.tsv ...] [--ref COMMIT
 ```
 
 These commands feed the orig review, which compares `@orig` functions with the original
-([Orig review](review/orig.md), the [orig-reviewer agent](agents.md#orig-reviewer)). Each one works on **units**. A
+([Orig review](review/orig.md), the [reviewer agent](agents.md#reviewer)). Each one works on **units**. A
 unit is a function definition with a body that a tag covers: its own tag, one in its body, or its declaration's.
 A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a hash of its body
 lines. The source is read from commits, not from the working tree.

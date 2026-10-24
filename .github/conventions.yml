@@ -209,24 +209,24 @@ pull_requests:
     # commits names, matched case-insensitively anywhere on the line; checked where the branch is at hand
     # (docs/guides/coney-tools-repo.md, repo check-body).
     model: {label: "Model:", none: "n/a", names_trailer_models: true}
-  # The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`). The agent
+  # The release gate on the reviewer agent's description verdict (`coney-tools repo review`, `repo check-review`). The agent
   # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
   # reviewed: the branch tip, the description's hash and each local image's hash, so a new commit, an edit or a
   # replaced picture makes it stale and the review runs again. `sha256-lf`: SHA-256 of the description file's UTF-8
   # text with a leading BOM dropped and CRLF or CR turned into LF. Two byte-identical images are refused outright.
   review:
-    agent: pr-reviewer
+    agent: reviewer
     verdict_file: REVIEW.json
     report_file: REVIEW.md
     body_hash: sha256-lf
     identical_images: refused
-  # The release gate on the orig-reviewer agent's verdict (`coney-tools orig check-review`, which the release step
+  # The release gate on the reviewer agent's @orig verdict (`coney-tools orig check-review`, which the release step
   # runs): a branch that adds or changes a function carrying `@orig` needs a passing verdict that covers those
   # functions' bodies, next to the description file. The rubric is docs/guides/review/orig.md. The
   # ledger records every review (pull request and sweep) under the workspace's scratch folder, never committed;
   # `orig queue` orders the functions it has not seen at their current body.
   orig_review:
-    agent: orig-reviewer
+    agent: reviewer
     verdict_file: ORIG-REVIEW.json
     report_file: ORIG-REVIEW.md
     ledger: orig-review/ledger.jsonl
@@ -388,6 +388,26 @@ tasks:
     max_per_source: 8                             # ranked matches listed per source (matches named in the issue are extra)
     index_max_age_hours: 24                       # the cached index is rebuilt when older
     merged_prs: 400                               # merged pull requests read for the index
+  # `task review` (docs/guides/review/task.md): the reviewer agent (.claude/agents/<agent>.md) and the files of a
+  # review, all inside <scratch>/<task>/<folder>/. The tool writes the packet (what to judge and the hashes the verdict
+  # must quote); the reviewer writes the verdict and its report; `task review --record` binds the verdict to the change
+  # and appends the `reviewed` stamp.
+  review:
+    agent: reviewer
+    folder: review
+    packet_file: PACKET.json
+    verdict_file: REVIEW.json
+    report_file: REVIEW.md
+    # Which checklists a change needs (docs/guides/review/index.md): a change under these paths is research work, other
+    # Markdown is documentation, anything else is code; a changed `@orig` function adds the orig review, and the
+    # description and the commits are always reviewed.
+    research_paths: [docs/research/, research/]
+    docs_suffixes: [.md]
+    pages_min_addresses: 2                        # addresses of each touched research page the reviewer checks in Ghidra
+    # Reverse-engineering review runs on Opus (AGENTS.md): a verified reviewer whose model name has none of these
+    # words is refused for a review of these kinds.
+    reverse_engineering_kinds: [research, orig]
+    reverse_engineering_models: [opus]
 
 labels:
   description_max: 100                           # GitHub's limit

@@ -50,10 +50,16 @@ class Identity:
     model: str = UNKNOWN
     #: True only when a valid, unexpired identity file named by the token was found.
     verified: bool = False
+    #: The Claude Code session the caller runs in (empty when the hook did not record one). Every main session has the
+    #: id `main`, so only the session tells two of them apart; a subagent's id is unique on its own.
+    session: str = ""
 
     def agent(self) -> dict[str, str]:
-        """The three fields as a stamp's `who.agent` holds them."""
-        return {"id": self.id, "type": self.type, "model": self.model}
+        """The fields as a stamp's `who.agent` holds them: id, type, model, and the session when it is known."""
+        found = {"id": self.id, "type": self.type, "model": self.model}
+        if self.session:
+            found["session"] = self.session
+        return found
 
 
 def default_folder() -> Path:
@@ -95,7 +101,30 @@ def load(env: Mapping[str, str] | None = None, folder: Path | None = None, now: 
         return Identity()
     agent_id, agent_type, model = fields
     assert agent_id is not None and agent_type is not None and model is not None
-    return Identity(agent_id, agent_type, model, verified=True)
+    if agent_id == MAIN and not _text(data.get("session")):
+        # Every main session is `main`: without a session it names no one, so it is not vouched for.
+        return Identity()
+    return Identity(agent_id, agent_type, model, verified=True, session=_text(data.get("session")) or "")
+
+
+#: The id every main session has: it names no one, so it never identifies a person on its own.
+MAIN = "main"
+
+
+def same_agent(first: Mapping[str, object], second: Mapping[str, object]) -> bool:
+    """Whether two `agent` records (an identity's `agent()` or a stamp's `who.agent`) are the same caller.
+
+    A subagent's id is unique, so equal ids are the same agent. The id `main` is shared by every main session, so two
+    of them are the same only when both name the same session; a record with no session (or no id) is never taken for
+    anyone, so an unknown caller is never refused as a namesake.
+    """
+    first_id, second_id = first.get("id"), second.get("id")
+    if not isinstance(first_id, str) or first_id != second_id or first_id in ("", UNKNOWN):
+        return False
+    if first_id != MAIN:
+        return True
+    first_session, second_session = first.get("session"), second.get("session")
+    return isinstance(first_session, str) and bool(first_session) and first_session == second_session
 
 
 _current: Identity | None = None

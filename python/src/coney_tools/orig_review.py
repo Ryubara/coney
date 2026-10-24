@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The orig review: Coney's `@orig` functions checked against the original, and the record of what was checked.
 
-The orig-reviewer agent (.claude/agents/orig-reviewer.md) compares a Coney function with the original function its
+The reviewer agent (.claude/agents/reviewer.md) compares a Coney function with the original function its
 `@orig` tag names, on fidelity and on own expression (the rubric: docs/guides/review/orig.md). This module gives it
 what to review and holds its results:
 
@@ -388,7 +388,7 @@ def gate(root: Path, body: Path, head: str | None, base: str | None, cwd: str | 
     names = ", ".join(f["coney"] for f in stamp["functions"][:5]) + (" ..." if len(stamp["functions"]) > 5 else "")
     path = body.parent / rules.verdict_file
     how = (
-        f"run the {rules.agent} agent on branch {branch} (docs/guides/agents.md#orig-reviewer) so it writes "
+        f"run the {rules.agent} agent on branch {branch} (docs/guides/agents.md#reviewer) so it writes "
         f"{rules.verdict_file} next to {body.name}"
     )
     if not path.is_file():

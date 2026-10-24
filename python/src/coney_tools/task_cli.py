@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools task ...` commands: create a task from issues, start it, search the leads, refresh the index.
+"""The `coney-tools task ...` commands: create a task from issues, start it, search the leads, refresh the index,
+check it and review it.
 
 `task create` is the coordinator's triage step (docs/guides/issues.md#task-files): it claims the issues through the
 claim Action, waits until the claim is certain and then writes `<scratch>/<task>/TASK.md`. `task start` is the
 engineer's first step (docs/guides/issues.md#starting): it makes the branch, worktree and unit record of a claimed
-task. `task leads` runs the same search without claiming, and `task index` rebuilds the cached index. `gh`, the clock
-and the sleep are injected, so the tests never touch the network or wait.
+task. `task leads` runs the same search without claiming, and `task index` rebuilds the cached index. `task check`
+(task_check.py) is the local gate that writes the `checked` stamp, and `task review` (task_review.py) the review stage
+that records the `reviewed` one. `gh`, the clock and the sleep are injected, so the tests never touch the network or
+wait.
 """
 
 from __future__ import annotations
@@ -27,11 +30,12 @@ from coney_tools.issue_claim_remote import GhRemote, Remote
 from coney_tools.task_create import CreateEnv, CreateRequest, create_task, match_lines
 from coney_tools.task_leads import LeadsResult, Searcher
 from coney_tools.task_leads_index import CachedIndex, prepare_index
+from coney_tools.task_review import add_review_parser, run_review_command
 from coney_tools.task_start import StartEnv, StartRequest, start_task
 
 
 def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add the `task` group: `create`, `start`, `leads` and `index`."""
+    """Add the `task` group: `create`, `start`, `leads`, `index`, `check` and `review`."""
     group = groups.add_parser("task", help="claim issues and write a task file (docs/guides/issues.md#task-files)")
     commands = group.add_subparsers(dest="command", required=True)
     create = commands.add_parser(
@@ -64,6 +68,7 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     index = commands.add_parser("index", help="rebuild the cached leads index")
     index.add_argument("--no-gh", action="store_true", help="leave the merged pull requests out")
     task_check.add_parser(commands)
+    add_review_parser(commands)
 
 
 def _head(root: Path) -> str:
@@ -102,6 +107,8 @@ def run_task(
     """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused."""
     if args.command == "check":
         return task_check.run(args)
+    if args.command == "review":
+        return run_review_command(args)
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     rules = conventions.claims

@@ -121,7 +121,7 @@ helpers = ["Explore", "Plan", "fork"]
 hint = "x"
 
 [roles.reviewer]
-aliases = ["research-reviewer", "pr-reviewer"]
+aliases = ["engineer", "tooling"]
 """
 
 

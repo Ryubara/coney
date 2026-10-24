@@ -14,7 +14,7 @@ passes):
 * `goto`.
 
 A line may carry `// copy-check: allow <reason>` when one of them is deliberate (a `goto` out of nested loops in
-platform code). What it cannot see (the statement-by-statement shape of a function) is the orig-reviewer agent's
+platform code). What it cannot see (the statement-by-statement shape of a function) is the reviewer agent's
 part (docs/guides/review/orig.md).
 """
 

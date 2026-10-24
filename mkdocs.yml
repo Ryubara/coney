@@ -350,3 +350,5 @@ nav:
           - Orig review: guides/review/orig.md
           - Commits: guides/review/commits.md
           - Docs: guides/review/docs.md
+          - Description: guides/review/text.md
+          - Task review: guides/review/task.md

@@ -198,7 +198,7 @@ def test_the_snapshot_reads_builds_and_the_machine(layout: Layout) -> None:
 def test_the_config_has_the_roles_with_aliases_and_the_helpers(layout: Layout) -> None:
     config = collect(sources(layout), github=False)["config"]
     assert config["error"] is None and config["source"] == ".claude/hooks/hooks.toml"
-    assert config["roles"] == ["coordinator", "reviewer", "research-reviewer", "pr-reviewer"]
+    assert config["roles"] == ["coordinator", "reviewer", "engineer", "tooling"]
     assert config["helpers"] == ["Explore", "Plan", "fork"] and config["require_role"] is False
     assert config["claude_code"] == CONVENTIONS.conclave.claude_code
     assert config["intervals"] == {"local": 15, "github": 60, "github_idle": 300}

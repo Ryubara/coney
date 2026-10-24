@@ -102,7 +102,7 @@ want ([Research workflow](docs/guides/research-workflow.md)).
 
 **What is for the project's agents, not for you.** The coordinator's build queue and claims (`pcsx2 claim`,
 `build` slots, `STATUS.md`), the release queue that pushes pull requests, the Tether and Claude Code configuration
-(`.claude/`, `.mcp.json`), `PR.md` and the `pr-reviewer`, and most of [How we work](docs/guides/how-we-work.md) and
+(`.claude/`, `.mcp.json`), `PR.md` and the `reviewer`, and most of [How we work](docs/guides/how-we-work.md) and
 [Running agents](docs/guides/agents.md). You can ignore all of it; a pull request you open yourself follows the
 same rules in the template.
 
@@ -279,7 +279,7 @@ The repository also ships the agent tool configuration (`.mcp.json` for the Ghid
 `.claude/agents/` for the roles, `.claude/settings.json` for shared permissions); what each holds and how to set
 it up: [Setting up an agent tool](docs/guides/agents.md#setup).
 
-If an agent writes your pull request's description, have the `pr-reviewer` agent check it before you open the pull
+If an agent writes your pull request's description, have the `reviewer` agent check it before you open the pull
 request: `uv run --project python coney-tools repo review <PR.md> --worktree <your checkout>`. It opens every
 screenshot and checks the text against the diff and your test logs
 ([The description review](docs/guides/how-we-work.md#pr-review)).

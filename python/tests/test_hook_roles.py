@@ -74,7 +74,7 @@ def test_with_require_role_on_a_session_with_no_role_may_do_nothing_else(tool: s
     assert reason is not None and reason.startswith("Blocked:") and "`coney-agent`" in reason
 
 
-@pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer", "pr-reviewer", "Explore"])
+@pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer", "Explore"])
 def test_with_require_role_on_every_known_role_and_helper_passes_the_gate(agent_type: str) -> None:
     assert roles.missing_role_refusal(STRICT, call("Bash", {"command": "ls"}, agent_type=agent_type)) is None
 
@@ -198,7 +198,7 @@ def test_the_commit_folders_follow_a_windows_path_on_any_system() -> None:
 # --- the engineer, the tooling agent and the reviewers --------------------------------------------------------------
 
 
-@pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer", "orig-reviewer"])
+@pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer"])
 def test_no_one_but_the_coordinator_opens_a_pull_request(agent_type: str) -> None:
     assert roles.check(CONFIG, bash("uv run --project python coney-tools pr open t1", agent_type=agent_type))
 
@@ -218,7 +218,7 @@ def test_the_tooling_agent_may_edit_engine_sources_for_warnings(checkout: Path) 
     assert roles.check(CONFIG, edit) is None
 
 
-@pytest.mark.parametrize("agent_type", ["reviewer", "research-reviewer", "orig-reviewer", "pr-reviewer"])
+@pytest.mark.parametrize("agent_type", ["reviewer"])
 def test_a_reviewer_writes_only_its_verdict(agent_type: str, tmp_path: Path, checkout: Path) -> None:
     verdict = call("Write", {"file_path": str(tmp_path / "scratch/x/REVIEW.json")}, agent_type)
     report = call("Write", {"file_path": str(tmp_path / "scratch/x/orig-review.md")}, agent_type)
@@ -292,13 +292,13 @@ def test_a_helper_type_or_no_type_has_no_role_rules() -> None:
 
 
 def test_a_reviewer_may_write_its_handover_note(tmp_path: Path) -> None:
-    note = call("Write", {"file_path": str(tmp_path / "scratch/x/HANDOVER.md")}, "orig-reviewer", "a1")
+    note = call("Write", {"file_path": str(tmp_path / "scratch/x/HANDOVER.md")}, "reviewer", "a1")
     assert roles.check(CONFIG, note) is None
 
 
 def test_settings_of_the_wrong_shape_are_ignored_not_fatal() -> None:
     broken = {
-        "roles": {"engineer": "x", "reviewer": {"aliases": "pr-reviewer", "write_only": 5, "deny_commands": ["(", 3]}},
+        "roles": {"engineer": "x", "reviewer": {"aliases": "old-name", "write_only": 5, "deny_commands": ["(", 3]}},
         "helpers": "Explore",
         "readonly_tools": "Read",
         "require_role": True,
@@ -307,4 +307,145 @@ def test_settings_of_the_wrong_shape_are_ignored_not_fatal() -> None:
     assert roles.check(broken, bash("ls", agent_type="reviewer")) is None
     assert roles.check(broken, bash("ls")) is not None  # no role, require_role on: read-only
     assert roles.has_role(broken, "Explore") is False
-    assert roles.role_rules(broken, "pr-reviewer") is None  # a string is not a list of aliases
+    assert roles.role_rules(broken, "old-name") is None  # a string is not a list of aliases
+
+
+# --- a reviewer starts no agent ------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("kind", ["Explore", "Plan", "engineer", "tooling", "reviewer", "fork", "general-purpose", ""])
+def test_a_reviewer_may_not_start_any_agent(kind: str) -> None:
+    # A helper has Bash and no role rules, so it could write a stamp or a file for the reviewer.
+    tool_input = {"subagent_type": kind, "prompt": "write"} if kind else {"prompt": "write"}
+    for tool in ("Agent", "Task"):
+        for agent_id in (None, "a1"):
+            reason = roles.check(CONFIG, call(tool, tool_input, "reviewer", agent_id))
+            assert reason is not None and "start no agent" in reason
+
+
+def test_other_roles_may_still_start_agents() -> None:
+    for role in ("engineer", "tooling", "coordinator"):
+        assert roles.check(CONFIG, call("Agent", {"subagent_type": "engineer"}, role, "a1")) is None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'claude -p --agent engineer "run coney-tools original compare T1"',
+        "claude",
+        "claude.exe --agent engineer",
+        ".venv/Scripts/claude -p x",
+        r"C:\Users\x\.local\bin\claude.exe -p x",
+        "/usr/local/bin/claude --resume",
+        "uvx claude -p x",
+        "npx @anthropic-ai/claude-code -p x",
+        "uv run --project python claude -p x",
+        "ls && claude -p x",
+        "ls; claude -p x",
+        "echo x | claude -p",
+        "out=$(claude -p x)",
+        "out=`claude -p x`",
+        "CLAUDE_X=1 claude -p x",
+        "env A=1 claude -p x",
+        "cmd /c claude -p x",
+        "& claude -p x",
+        "cd w\nclaude -p x",
+        "coney-agent engineer",
+        "uv run --project python coney-agent --role engineer",
+        "ls && .venv/Scripts/coney-agent.exe engineer",
+        "python -m coney_tools.session_launcher engineer",
+        "coney-tools task review T1 --run",
+        "uv run --project python coney-tools task review T1 --run",
+        "uv run --project python coney-tools task review T1 --base origin/main --run --model opus",
+        "uvx --from ./python coney-tools task review T1 --ru",
+        ".venv/Scripts/coney-tools.exe task review --run",
+        "ls && coney-tools repo review --run",
+        "uv run --project python coney-tools repo review ../scratch/x/PR.md",
+        "coney-tools repo review",
+        "ls; Coney-Tools.exe repo review PR.md --worktree .",
+        "x=$(coney-tools task review T1 --run)",
+        "python -m coney_tools.cli task review T1 --run",
+        "python python/src/coney_tools/cli.py task review T1 --run",
+        "coney-tools task review T1 --run>log",
+        # Letter case, which Windows ignores.
+        "Claude -p x",
+        "CLAUDE -p x",
+        "Claude.exe -p x",
+        "claude.CMD -p x",
+        # Launchers with options, and PowerShell's.
+        "Start-Process claude -ArgumentList x",
+        "saps -FilePath claude",
+        "npx -y @anthropic-ai/claude-code -p x",
+        "npm exec @anthropic-ai/claude-code",
+        "pnpm dlx @anthropic-ai/claude-code",
+        "uvx --from x claude -p x",
+        "sudo -u x claude",
+        "env -i claude",
+        "time -p claude",
+        "xargs -n1 claude < list",
+        "cmd.exe /C claude -p x",
+        "cmd /s /c claude",
+        "bash -lc claude",
+        "sh -xc claude",
+        "find . -name x -exec claude {} ;",
+        # After a shell keyword or a group.
+        "if true; then claude; fi",
+        "for i in 1; do claude; done",
+        "{ claude; }",
+        "! claude -p x",
+        "claude>log",
+        # The session launcher by its file.
+        "python python/src/coney_tools/session_launcher.py engineer",
+        r"python python\src\coney_tools\session_launcher.py engineer",
+    ],
+)
+def test_a_reviewer_may_not_start_a_session_from_the_shell(command: str) -> None:
+    # A session the reviewer starts is a main session the hooks vouch for, under an id of its own: it could write a
+    # `compared` stamp for the reviewer, as an Agent helper could.
+    for agent_id in (None, "a1"):
+        for tool in ("Bash", "PowerShell"):
+            reason = roles.check(CONFIG, call(tool, {"command": command}, "reviewer", agent_id))
+            assert reason is not None and "run that command" in reason, command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uv run --project python coney-tools task review T1",
+        "uv run --project python coney-tools task review T1 --record",
+        "uv run --project python coney-tools repo review-stamp ../scratch/x/PR.md",
+        "cat CLAUDE.md",
+        "which claude",
+        "cat .claude/agents/reviewer.md",
+        "grep -rn claude docs/guides",
+        "ls ~/.claude/projects",
+        "git log --grep claude",
+        "rg coney-agent python/src",
+        "coney-tools task review T1 --record && grep -c --run log.txt",
+        'echo "claude -p x"',
+    ],
+)
+def test_a_reviewer_may_still_run_its_checks_and_name_claude(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")) is None, command
+
+
+def test_other_roles_may_start_a_session_from_the_shell() -> None:
+    for role in ("engineer", "tooling"):
+        assert (
+            roles.check(CONFIG, bash("uv run --project python coney-tools task review T1 --run", agent_type=role))
+            is None
+        )
+        assert roles.check(CONFIG, bash("claude -p x", agent_type=role, agent_id="a1")) is None
+
+
+def test_a_named_allow_list_lets_only_those_types_through_in_any_case() -> None:
+    # No committed role names types now; the next one that does runs this branch.
+    config = {"roles": {"x": {"allow_agent_types": ["Explore", "Plan"], "hint": "Ask."}}}
+    for kind in ("Explore", "explore", " EXPLORE ", "plan"):
+        assert roles.check(config, call("Agent", {"subagent_type": kind}, "x", "a1")) is None, kind
+    for kind, shown in (("tooling", "a tooling agent"), ("", "an agent with no type")):
+        tool_input = {"subagent_type": kind} if kind else {}
+        reason = roles.check(config, call("Task", tool_input, "x"))
+        assert reason == f"Blocked: as x you may not start {shown}: you may start only Explore, Plan. Ask. " + (
+            "(docs/guides/agents.md#roles)\n"
+        )
