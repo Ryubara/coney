@@ -888,6 +888,16 @@ object on the ground as `HuCreate` does (above), but a human not in a scene (`+0
 short ray (0.5) straight down hits (`0x0023d440`; confirmed (code)). A human in a grab, mount or mugging is first let
 go, its partner playing a reaction clip ([Combat](combat-grabs.md#pair-break)).
 
+<span id="teleport-health"></span>**A teleport keeps the health.** `Human_SetTransform` (`0x0023d440`) breaks the pair,
+marks the human placed (`+0x1b3`, state bit `0x40000000` with the time), sets the transform, the heading and the brain's
+facing, and drops a brain action that cannot survive a move; it does not touch the health, the record at `+0x144`.
+Confirmed (code) at `0x0023d440`; confirmed (runtime), run r-20261024-teleport-keeps-health:
+`HuSetHealthPercent(player, 35)` gave Cleon 535 of 1530 in level80, and `TeleportToFlag(player, fC1Vermin1, -1)` moved
+him from (−193.4, 127.5) to (−199.0, 126.4) with his health still 535 of 1530. So a hurt
+player stays hurt across the scripts' teleports, scene releases and the level99 hand-over: `P2.SetupLesson1` sets
+the new Rembrandt to 35 % and `P3.DealerPoizo` teleports him to the flash dealer still hurt, which is what gives the
+flash lesson something to heal ([The flash](combat-rage.md#flash-teleport)).
+
 **Interiors are below the street.** Starts with `z` near −195 to −215 (`level5` checkpoint 2, `level11` 1 and 2,
 `level20` 1 and 3, the hub ...) are rooms placed about 200 m under the city in the same world (inferred from the values
 and the hub's clubhouse at `z` −194.3).
@@ -2962,7 +2972,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/human/locomotion_gate.*` is the locomotion gate ([Tasks](tasks.md#locomotion-gate)): `stickBusy()`
   (`Human_IsBusy`'s mask `0xaeebf7ff`, in the air or held: no stick step) and `stickVelocityGated()` (`0x110c0880`, or
   state code 5 or 6: the stick turns the human but sets no velocity).
-- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit), its per-player
+- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit; also every teleport
+  and scene release, which keep the health, [A teleport keeps the health](#teleport-health); until issue #234 it
+  filled the health, so the level99 flash lesson had nothing to heal), its per-player
   record (the stick, the camera's forward, the command and the buttons, written by the pad or a brain) and its update
   in three passes ([Tasks](tasks.md#humans-update)): `animate()` (the animation), `updateState()` (root motion of the
   clips that move the body, locomotion through the gate, air control or a climb's move, gravity, move or fall, the
@@ -3227,6 +3239,10 @@ read them yet.
 - **The workout's reach and timing** (answered): the scripts make the player his own target, so the reach always
   passes, and a repetition is each wrap of the loop blend's leading clip ([Workouts](workouts.md#repetitions)).
 - Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
+- <span id="q-teleport-reset"></span>**What else a teleport resets**: `Human_SetTransform` keeps the health
+  ([A teleport keeps the health](#teleport-health)), but what `TeleportToFlag`'s human slot `+0x14c` does is not traced,
+  and whether the rage, power and a stun survive a teleport is not checked. Coney's placement (`Human::spawn`) keeps
+  the health and restarts the rest of the fighter's state as a creation does (a stand-in).
 - What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
 
 - **Clip selection** (answered): [Clip selection](#clip-selection), with the task system on

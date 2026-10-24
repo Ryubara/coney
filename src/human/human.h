@@ -182,8 +182,10 @@ class Human final : public Holdable {
 
     /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
     /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
-    /// again and anything in progress (a jump, a climb) is dropped.
+    /// again and anything in progress (a jump, a climb) is dropped; the health stays as it was (full for a human just
+    /// made), as a teleport's Human_SetTransform leaves it.
     /// @orig 0x00218008 Human_Init (unknown)
+    /// @orig 0x0023d440 Human_SetTransform (unknown)
     void spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees);
 
     /// One update of 1/30 s for this human alone: `input` written into its record, then animate(), updateState() and

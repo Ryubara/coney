@@ -446,6 +446,25 @@ TEST_CASE("a human made another character in place is the human made as that cha
     CHECK(changed.speed() == Approx(fresh.speed()));
 }
 
+TEST_CASE("a human placed again (a teleport) keeps the health it had, as Human_SetTransform leaves it", "[human]") {
+    // Issue #234: level99's P3.DealerPoizo teleports the player hurt to 35 % to the dealer; a placement that filled his
+    // health left the flash nothing to heal, so d-pad right played no clip and no sound.
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    REQUIRE(human.health().value() == human.health().maximum());
+    human.setHealthPercent(35.0F);
+    const int hurt = human.health().value();
+    REQUIRE(hurt < human.health().maximum());
+    human.spawn(mesh.get(), Vec3{20.0F, 30.0F, 0.0F}, 90.0F);
+    CHECK(human.position().x == Approx(20.0F));
+    CHECK(human.health().value() == hurt);
+    // Out of health stays out of health: a placement wakes no one.
+    human.fighter().health().set(0);
+    human.spawn(nullptr, Vec3{25.0F, 30.0F, 0.0F}, 0.0F);
+    CHECK(human.health().depleted());
+}
+
 TEST_CASE("a clip's action event (0x41) is reported in the update that passes it, once", "[human]") {
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));

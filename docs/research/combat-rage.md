@@ -372,6 +372,24 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](combat/index.md#commands)).
 
+### The flash lesson at the level99 dealer {#flash-teleport}
+
+The first mission's last checkpoint teaches the flash, and it only works because the player is hurt when he gets
+there. `P2.SetupLesson1` sets the new Rembrandt to 35 % health when checkpoint 2 hands him the player (a direct start
+at checkpoint 3 gets the same 35 % from `RunLevel`), nothing heals him on the way (inferred from the scripts: no call
+between the two sets his health), and `P3.DealerPoizo` teleports him
+to the dealer still hurt, since a teleport leaves the health alone ([A teleport keeps the
+health](characters.md#teleport-health)). Script locators `level99_lesson1.lua` `P2.SetupLesson1`, `level99.lua`
+`RunLevel`, `level99_lesson2.lua` `P3.DealerPoizo`. After the purchase, `P3.CheckForFlash` sees the flash and
+`P3.FlashSpeak` turns command `0x28` on for pad 0 (its pressed-table entry's mask `0xfe` becomes `0xff`) and sets
+`P3.UseFlash` as the `PadSetHandlerEx` handler. d-pad right then plays 665 and its event uses the flash
+(`Flash_Use` entered from `0x002473c4`, `Human_HandleMessage`, with 665 as the anim), and `P3.UseFlash` schedules
+`P3.MissionOver` 1.5 s later. Confirmed (runtime), run r-20261024-flash-dealer-665: from the `breakable-fence-flash`
+state, 314 of 900 health, the dealer reached with the stick at 60 %.
+
+With full health the press does nothing (no upgrade (6, 8), step 5 above; confirmed (code) at `0x002843f8`) while
+the handler still ends the mission: no clip, no sound, then the closing scene `l99_c9`.
+
 ### Everything rage does {#rage-effects}
 
 One list of what changes from the moment rage starts to after it ends, for the implementer. Confirmed (code) at the

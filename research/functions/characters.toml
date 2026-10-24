@@ -1555,6 +1555,21 @@ coney = "src/human/fighter.h:Fighter::clearSteer"
 status = "legacy"
 
 [[function]]
+address = 0x0023d440
+name = "Human_SetTransform"
+page = "characters.md#teleport-health"
+role = "A human's placement (the scripts' `Teleport` and `TeleportToFlag`): breaks the pair, lowers it onto a short ray's hit outside a scene, sets the transform and facing; the health is left as it was."
+level = "confirmed-code"
+note = "the health kept is also confirmed (runtime)"
+coney = "src/human/human.h:Human::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney's placement also restarts the fighter's state (stun, meters other than health) as a creation does; the original's slot +0x14c after TeleportToFlag is not traced"
+relation = "stand-in"
+question = "characters.md#q-teleport-reset"
+
+[[function]]
 address = 0x0023d8c8
 name = "Human_Move"
 page = "characters.md#original-structure"
