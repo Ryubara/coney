@@ -34,7 +34,8 @@ refuse_pr_create = false
 # cannot be read must not take it away, and no setting may weaken it.
 
 # Rules by agent type. Keys: deny_tool_prefixes (tool names), deny_coney_tools (`coney-tools <words>` commands),
-# deny_commands (regular expressions over the shell command), deny_write_dirs (folders of a checkout that Edit and
+# deny_commands (regular expressions over the shell command), allow_agent_types (the only subagent types the role may
+# start with the Agent tool; an empty list: none), deny_write_dirs (folders of a checkout that Edit and
 # Write may not change), write_only (the only file names Edit and Write may change), deny_commit_under (a git commit
 # whose directory lies under one of these is refused), no_github_writes (push_guard's rules, also for a session with
 # no agent id), hint (what to do instead). Commands and tools that do not exist yet are listed ahead of their phase.
@@ -61,15 +62,32 @@ no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
 [roles.reviewer]
-# The four review types of today are one `reviewer` in the new workflow; they follow its rules meanwhile.
-aliases = ["research-reviewer", "orig-reviewer", "pr-reviewer"]
+# One `reviewer` does every review (docs/guides/review/index.md): code, docs, research, `@orig` and the description.
 write_only = [
   "REVIEW.json", "REVIEW.md", "ORIG-REVIEW.json", "ORIG-REVIEW.md", "VERDICT.json", "VERDICT.md",
   "FINDINGS.tsv", "PROGRESS.md", "HANDOVER.md", "SUMMARY.md",
 ]
 deny_coney_tools = ["pr open"]
+# A reviewer starts no agent: any helper has Bash and no role rules, so it could write a stamp or a file for the
+# reviewer, and the reviewer would then grade work it had done. This refuses the Agent tool; the `deny_commands`
+# below refuse a session started from the shell.
+allow_agent_types = []
 # Every git verb that changes the index, the tree or the worktrees. The options before the verb follow git's grammar
 # (`-C dir` and `-c k=v` take a value, `-P`, `--no-pager` and `--git-dir=x` do not), as hooklib.GIT_COMMIT reads them.
-deny_commands = ['\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+(?:commit|add|rm|mv|reset|restore|merge|rebase|cherry-pick|checkout|switch|apply|am|clean|revert|worktree\s+remove)\b']
+deny_commands = [
+  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+(?:commit|add|rm|mv|reset|restore|merge|rebase|cherry-pick|checkout|switch|apply|am|clean|revert|worktree\s+remove)\b',
+  # Nor a session by the shell, in any letter case (Windows ignores it): `claude`, `coney-agent` or
+  # `npx @anthropic-ai/claude-code` where a command starts (the line start; after `&&`, `;`, `|`, `(`, `{`, `!`, `$(`,
+  # a backtick, `then`, `do`, `else` or `find -exec`), after `NAME=v` and launchers with their options (`uv run
+  # --project python`, `uvx --from x`, `npx -y`, `env -i`, `sudo -u x`, `cmd /s /c`, `bash -lc`, `Start-Process`),
+  # and under any folder (`.venv/Scripts/claude.exe`)...
+  '(?i)(?:^|[;&|(`{!\n]|\$\(|\b(?:then|do|else|elif)\b|\s-(?:exec|execdir|ok|okdir)\b)\s*(?:(?:[A-Za-z_]\w*=\S*|(?:env|exec|command|nohup|time|sudo|doas|xargs|start|call|uvx|npx|pnpx|bunx|start-process|saps|invoke-expression|iex)(?:\s+-\S+(?:\s+[^-\s;&|]\S*)?)*|timeout\s+\S+|npm\s+exec|pnpm\s+dlx|uv(?:\.exe)?\s+(?:tool\s+)?run(?:\s+-\S+(?:\s+[^-\s;&|]\S*)?)*|cmd(?:\.exe)?(?:\s+/\w)*|(?:pwsh|powershell)(?:\.exe)?(?:\s+-\S+)*|(?:ba|z|da)?sh(?:\.exe)?(?:\s+-\w+)*)\s+)*(?:\S*[/\\])?(?:claude(?:-code)?|coney-agent)(?:\.exe|\.cmd|\.ps1)?(?=\s|$|[;&|)`>])',
+  # ...nor the session launcher run as a module or by its file (`python python/src/coney_tools/session_launcher.py`)...
+  '(?i)\bconey_tools[./\\]session_launcher\b',
+  # ...nor a review command that starts one: `task review --run` (or argparse's abbreviation `--ru`), and
+  # `repo review`, which always starts one (its sibling `repo review-stamp` only writes a template).
+  '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*task\s+review(?=\s)[^;&|\n]*\s--run?(?=\s|$|[;&|)>])',
+  '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*repo\s+review(?=\s|$|[;&|)>])',
+]
 no_github_writes = true
 hint = "A reviewer reports; it writes only its verdict file and changes nothing else."

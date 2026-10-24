@@ -47,10 +47,7 @@ WORKTREE_MESSAGE = (
 # Which role to pick, shown with the refusal; roles that do not exist in the folder are left out.
 ADVICE = (
     ("engineer", "anything that writes code, tests, tools, research pages or docs, or opens Ghidra or PCSX2"),
-    ("reviewer", "a review of code, tests, tools, docs or commits"),
-    ("research-reviewer", "a review of research pages and reverse-engineering work"),
-    ("orig-reviewer", "the check of @orig functions against the original"),
-    ("pr-reviewer", "a pull request description (PR.md)"),
+    ("reviewer", "a review of a change: code, tests, tools, docs, research pages, @orig functions, a PR.md"),
 )
 
 

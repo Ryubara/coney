@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the orig review: which `@orig` functions a branch touches, the release gate on the orig-reviewer's
+"""Tests for the orig review: which `@orig` functions a branch touches, the release gate on the reviewer's
 verdict, and the ledger of reviewed functions. Invented code, names and addresses only."""
 
 import json

@@ -10,7 +10,8 @@ agent it was started as (`claude --agent coordinator`). The rules live in `hooks
   the committed file until the maintainer's sessions start that way.
 * **a role's refusals**: tools by name prefix, `coney-tools` commands, shell commands by pattern, folders Edit and
   Write may not change, the only files a role may write, a `git commit` under a unit worktree, and the GitHub writes
-  `push_guard.py` refuses (also for a main session, which has no agent id).
+  `push_guard.py` refuses (also for a main session, which has no agent id), and `allow_agent_types`, the only
+  `subagent_type`s the role may start with the Agent tool.
 
 Like every guard it judges spelling, never a security boundary: a command can be hidden from it. A setting of the
 wrong shape is ignored, and an invalid pattern is skipped, so one bad entry never disables the rest. Standard library
@@ -28,6 +29,8 @@ import hooklib
 #: The tools that change a file, and the input fields that name it.
 WRITE_TOOLS = {"Edit": "file_path", "Write": "file_path", "MultiEdit": "file_path", "NotebookEdit": "notebook_path"}
 SHELLS = ("Bash", "PowerShell")
+#: The tools that start an agent.
+AGENT_TOOLS = ("Agent", "Task")
 
 
 def role_of(payload: dict[str, Any]) -> str:
@@ -112,6 +115,24 @@ def _write_refusal(role: str, rules: dict[str, Any], payload: dict[str, Any]) ->
     return None
 
 
+def _agent_refusal(role: str, rules: dict[str, Any], payload: dict[str, Any]) -> str | None:
+    """The refusal of an Agent call whose type is not one the role may start (`allow_agent_types`), or None.
+
+    A role without the key may start any; an empty list means none. A call with no type runs as the generic agent, so
+    it is refused too."""
+    if not isinstance(rules.get("allow_agent_types"), list):
+        return None
+    allowed = hooklib.strings(rules.get("allow_agent_types"))
+    tool_input = payload.get("tool_input")
+    value = tool_input.get("subagent_type") if isinstance(tool_input, dict) else None
+    requested = value.strip() if isinstance(value, str) else ""
+    if requested.casefold() in [name.casefold() for name in allowed]:
+        return None
+    shown = f"a {requested} agent" if requested else "an agent with no type"
+    only = f"you may start only {', '.join(allowed)}" if allowed else "you may start no agent"
+    return _refuse(role, f"start {shown}: {only}", rules)
+
+
 def _shell_refusal(role: str, rules: dict[str, Any], payload: dict[str, Any]) -> str | None:
     """The refusal of a shell command by this role, or None."""
     text = _command_text(payload)
@@ -144,6 +165,8 @@ def role_refusal(config: dict[str, Any], payload: dict[str, Any]) -> str | None:
     for prefix in hooklib.strings(rules.get("deny_tool_prefixes")):
         if tool.startswith(prefix):
             return _refuse(role, f"use {tool}", rules)
+    if tool in AGENT_TOOLS:
+        return _agent_refusal(role, rules, payload)
     if tool in WRITE_TOOLS:
         return _write_refusal(role, rules, payload)
     if tool in SHELLS:

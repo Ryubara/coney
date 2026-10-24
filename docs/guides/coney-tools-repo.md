@@ -64,7 +64,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 ### The Model line and the branch's trailers {#repo-model-line}
 
 A branch whose commits carry a `Co-Authored-By: <model name> <noreply address>` trailer was written with that model, so
-the description's `Model:` line must say so. Without this check only the `pr-reviewer` agent caught a line that named
+the description's `Model:` line must say so. Without this check only the `reviewer` agent caught a line that named
 the wrong model, and it cost three review rounds (pull requests #460, #466 and #467).
 
 * **What counts.** A trailer on a commit of `base..HEAD` whose key is `commits.trailers.ai_co_author.key` (any case) and
@@ -101,8 +101,8 @@ The gate a description passes before the coordinator pushes it ([The description
 `PR.md` is the description file as agents write it: the title on line 1, then the body; image paths in it are relative
 to its folder.
 
-* `repo review` runs the `pr-reviewer` agent once, headlessly: it reads `.claude/agents/pr-reviewer.md` from the
-  checkout the command runs in, hands it to `claude -p --agents FILE --agent pr-reviewer --model M
+* `repo review` runs the `reviewer` agent once, headlessly: it reads `.claude/agents/reviewer.md` from the
+  checkout the command runs in, hands it to `claude -p --agents FILE --agent reviewer --model M
   --dangerously-skip-permissions` (a throwaway run, in `PR.md`'s folder) with a task naming `PR.md`, the worktree and
   `--base` (default `origin/main`), and then runs `check-review`. Its task has the agent stamp with the same `--base`.
   It removes an old `REVIEW.json` and `REVIEW.md` first, so a run that writes no verdict cannot leave an earlier pass
@@ -392,7 +392,7 @@ coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels] [
 
 ### `repo review` {#repo-review-usage}
 
-Run the pr-reviewer agent headlessly on a description, then check its verdict.
+Run the reviewer agent headlessly on a description, then check its verdict.
 
 ```text
 coney-tools repo review PR_FILE --worktree WORKTREE [--base BASE] [--claude CLAUDE] [--model MODEL] [--effort EFFORT]
@@ -542,6 +542,8 @@ uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--r
 uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
     [--keep-going] [--dry-run] [--max-wait MIN]
+uv run --project python coney-tools task review [TASK] [--text] [--record | --run] [--worktree DIR] [--base REF]
+    [--pr-file FILE] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
 ```
 
 The coordinator's triage step ([Task files](issues.md#task-files)); the rules are `claims` and `tasks` of
@@ -573,6 +575,10 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   `tasks.leads.index_max_age_hours`); `--no-gh` leaves the merged pull requests out. The sources, name splitting and
   ranking are in [Task files](issues.md#task-files).
 * `check` ([below](#task-check)) runs everything a change must pass on this machine and writes the `checked` stamp.
+* `review` is the review stage of a task: the tool part and the packet, the reviewer's verdict recorded as a `reviewed`
+  stamp, or both with a headless reviewer. What it checks, the files, the verdict and the stamp are in [Task
+  review](review/task.md); every option is in [its command table](review/task.md#command). Exit 0 when the reviewer
+  may start or a pass was recorded, 1 when it refused or recorded a fail, 2 when it cannot run.
 
 Every argument and option:
 
@@ -721,4 +727,27 @@ coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT
 | `--keep-going` | flag | off | run every check even after one fails |
 | `--dry-run` | flag | off | print the profile and the checks; run nothing |
 | `--max-wait MIN` | number | `240.0` | minutes the build may wait for a slot before giving up with exit 75 (default 240.0) |
+
+### `task review` {#task-review-usage}
+
+Review a task: prepare what to judge, record the reviewer's verdict as a `reviewed` stamp, or run both.
+
+```text
+coney-tools task review [TASK] [--worktree WORKTREE] [--base BASE] [--pr-file PR_FILE] [--text] [--record | --run]
+    [--claude CLAUDE] [--model MODEL] [--effort EFFORT] [--timeout-minutes TIMEOUT_MINUTES]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--worktree WORKTREE` | path | none | the unit's worktree (default: the current checkout) |
+| `--base BASE` | text | none | what the branch is compared with (default: origin/\<default branch\>) |
+| `--pr-file PR_FILE` | path | none | the description file (default: \<scratch\>/\<task\>/PR.md) |
+| `--text` | flag | off | review the description alone (a full pass must still hold) |
+| `--record` | flag | off | record the reviewer's verdict as a `reviewed` stamp. Not with `--run`. |
+| `--run` | flag | off | prepare, run a headless reviewer and report what it recorded. Not with `--record`. |
+| `--claude CLAUDE` | text | `claude` | the Claude Code executable for --run (default: claude) |
+| `--model MODEL` | text | none | the model for --run (default: the agent file's) |
+| `--effort EFFORT` | choice | none | the effort level for --run. One of `low`, `medium`, `high`, `xhigh`, `max`. |
+| `--timeout-minutes TIMEOUT_MINUTES` | number | `60` | stop a --run review after this long |
 <!-- command-reference:end -->

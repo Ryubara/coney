@@ -1,0 +1,85 @@
+# Description review checklist
+
+For a reviewer of one pull request description, the engineer's `PR.md` (the title on line 1, then the body), the way
+a careful maintainer would read it on GitHub. `coney-tools repo check-body` and the [tool part of `task
+review`](task.md#tool-part) have already checked its structure; the reviewer checks that it is **true**: every
+picture shows what the text says, and every claim is backed by the diff or a log. Report findings in the
+[format on the index page](index.md#finding-format) and never edit. The rules are in [What a pull request
+shows](../testing.md#pr-evidence), the [Runtime line](../testing.md#runtime-line) and the `pull_requests` section of
+[.github/conventions.yml](repo:.github/conventions.yml).
+
+The reviewer reads only: `git diff`, `git log`, `git show` and the logs in the scratch folder (their ends, or with
+grep); it changes no worktree, commits nothing and does not touch GitHub.
+
+## Checklist
+
+- [ ] **Read the description and the change.** `PR.md` whole, then `git diff --stat <base>...HEAD`, `git log
+  <base>..HEAD` and the diff of every file a claim is about.
+- [ ] **Open every picture.** Use the Read tool on each image the description shows (paths are relative to `PR.md`'s
+  folder), every one, before judging it; for a video, open the stills, or say it could not be checked (a blocker when
+  the video is the only evidence). For each, record what it shows and check that:
+    - it is the subject the text names: gameplay when the text says gameplay, not a letterboxed scene, a loading or
+      black screen, a menu, a legal or title screen, the desktop or an error box;
+    - it is the right level, place, character or menu the caption names;
+    - a before and after pair differ where the change says they should (byte-identical files are refused by a
+      program; also flag two shots that look the same where the text claims a visible change);
+    - the frame, settings or options the text states (render size, camera, checkpoint, update number) fit what is
+      seen.
+- [ ] **Each claim in Summary and Testing is backed** by the diff or a log the description cites: test names exist in
+  the diff or the tree, counts ("412 passed") appear in a log, a stated behaviour is in the code, a command named
+  would run. A claim with nothing behind it is Important.
+- [ ] **The `Runtime:` line is true** when the title's area is one a player sees (`gameplay`, `graphics`, `audio`:
+  `pull_requests.runtime`); a program has only checked that the line exists and has numbers or a reason
+  ([the runtime comparison](../testing.md#runtime-comparison)):
+    - with evidence: open the log, trace diff output or captures it names in the scratch folder, and check that the
+      numbers it quotes are in them, that they compare the **original** with Coney (a PCSX2 trace or read next to
+      Coney's, not Coney against itself or against the research page), and that they cover the behaviour the change is
+      about. A line with no log, trace or capture behind it is Important;
+    - with `none (<reason>)`: a reason that is only convenience ("not checked", "no time", "the copy was busy", "hard
+      to capture") when PCSX2 copies and the save states were available is Important; a reason that says why the
+      original cannot show it (a refactor whose trace diff is unchanged, a Coney-only debug feature) is fine;
+    - the before and after pictures have a view of the original from the same spot, or a stated reason why not.
+- [ ] **The rules a program cannot check:**
+    - `Fixes #N` and `Refs #N` fit the change (`gh issue view N` is read only and allowed); a `Fixes` line for work the
+      change does not finish is Important;
+    - nothing is left for later: no "Left for later", "Remaining", "TODO", "follow-up" or "next step" in the body (a
+      pull request merges only when every task in it is finished, [Issues](../how-we-work.md#issues));
+    - `Docs: none` only when the change touches no behaviour, command or finding a doc describes;
+    - AI use is filled and names the model that wrote the commits (their `Co-Authored-By` trailers);
+    - no game data, decompiler output or local path in the text, and "user", never "owner", for the person.
+
+## Severity examples
+
+- **Critical:** game data or decompiler output in the description or a picture it shows.
+- **Important:** a picture that shows a loading screen where the text says gameplay; a count that appears in no log; a
+  `Runtime:` line with no evidence behind it, or a convenience reason when the original was available; a `Fixes` line
+  for unfinished work; "left for later" in the body; a missing or wrong model in AI use.
+- **Minor:** wording ("owner"); a caption that could say more; a local path in a log excerpt.
+
+## The release check that predates `task review` {#legacy-verdict}
+
+`coney-tools repo review PR.md --worktree <worktree>` runs the reviewer on one description and then `repo check-review`.
+The reviewer starts from `repo review-stamp PR.md --worktree <worktree>`, which prints the `tip`, the description's
+`body_sha256` and each local image's `sha256`, and refuses (title and body reasons, no stamp) a description that CI
+would refuse: then the reviewer writes no verdict and the author fixes the description first. It copies the stamp,
+never computes a hash, and writes `REVIEW.json` and `REVIEW.md` next to `PR.md`:
+
+```json
+{
+  "tip": "<from the stamp>",
+  "body_sha256": "<from the stamp>",
+  "verdict": "pass",
+  "images": [{"path": "./shots/after.png", "sha256": "<from the stamp>", "shows": "<what you saw>"}],
+  "findings": [{"severity": "blocker", "where": "Screenshots", "text": "after.png shows a letterboxed scene, not gameplay"}]
+}
+```
+
+- `verdict` is `pass` only when no finding is a `blocker`, otherwise `fail`; a `note` is advice that does not hold the
+  release. A finding the checklist calls Critical or Important is a `blocker` here.
+- `images` lists every image of the stamp, each with its `path` and `sha256` from the stamp and a short `shows`.
+- `findings` is `[]` when there is nothing to say; `where` names the section (or `Title`), and `text` says what is wrong
+  and what would fix it, in one or two sentences.
+
+`REVIEW.md` is the same verdict for a person: the verdict on the first line, one line per picture (what it shows), the
+findings, and which claims were checked against what. The gate that reads the file is [`repo
+check-review`](../how-we-work.md#pr-review).

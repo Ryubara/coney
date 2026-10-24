@@ -44,7 +44,7 @@ def payload(tool_input: object, tool: str = "Agent") -> str:
     return json.dumps({"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input})
 
 
-ROLES = ["engineer", "orig-reviewer", "pr-reviewer", "research-reviewer", "reviewer"]
+ROLES = ["engineer", "reviewer", "tooling"]
 
 
 def agent(subagent_type: object = "engineer", **extra: object) -> dict[str, object]:
@@ -103,9 +103,9 @@ def test_with_no_roles_found_only_the_generic_types_are_refused() -> None:
 
 
 def test_the_advice_names_only_roles_that_exist() -> None:
-    message = GUARD.refusal(agent(None), ["engineer", "pr-reviewer"])
+    message = GUARD.refusal(agent(None), ["engineer"])
     assert message is not None
-    assert "pr-reviewer:" in message and "engineer:" in message and "research-reviewer" not in message
+    assert "engineer:" in message and "reviewer:" not in message
 
 
 def test_the_worktree_refusal_comes_before_the_role_one() -> None:
@@ -134,7 +134,7 @@ def test_a_missing_agents_folder_gives_no_roles(tmp_path: Path) -> None:
 
 
 def test_the_shipped_roles_are_found() -> None:
-    assert {"engineer", "reviewer", "research-reviewer", "pr-reviewer"} <= set(GUARD.roles())
+    assert set(GUARD.roles()) == {"engineer", "reviewer", "tooling"}
 
 
 def test_a_new_role_file_is_allowed_without_editing_the_hook(
@@ -159,7 +159,7 @@ def test_a_generic_call_exits_2_and_names_the_roles(
 ) -> None:
     code, err = run(monkeypatch, capsys, payload({"prompt": "y", "model": "sonnet"}))
     assert code == 2
-    assert "engineer" in err and "pr-reviewer" in err and "docs/guides/agents.md" in err
+    assert "engineer" in err and "reviewer" in err and "docs/guides/agents.md" in err
 
 
 def test_an_ordinary_agent_call_exits_0_silently(

@@ -462,14 +462,15 @@ def test_the_agent_is_told_to_stamp_with_the_base(tmp_path: Path) -> None:
 
 def test_the_committed_agent_definition_reads_as_a_read_only_reviewer() -> None:
     definition = agent_definition(REPO / ".claude" / "agents" / f"{RULES.agent}.md")
-    assert definition["model"] == "sonnet"
+    # The one reviewer covers research and `@orig` review, which AGENTS.md puts on Opus.
+    assert definition["model"] == "opus"
     tools = definition["tools"]
     assert isinstance(tools, list)
-    assert set(tools) == {"Read", "Glob", "Grep", "Bash", "Write"}
+    assert {"Read", "Glob", "Grep", "Bash", "Write"} <= set(tools)
     prompt = definition["prompt"]
     assert isinstance(prompt, str)
     assert "REVIEW.json" in prompt and "review-stamp" in prompt
-    assert "Edit" not in tools
+    assert "Edit" not in tools and "NotebookEdit" not in tools
 
 
 def test_an_agent_file_without_front_matter_is_refused(tmp_path: Path) -> None:
@@ -480,10 +481,10 @@ def test_an_agent_file_without_front_matter_is_refused(tmp_path: Path) -> None:
 
 
 def test_the_review_command_runs_claude_headless_with_the_agent(tmp_path: Path) -> None:
-    command = review_command("claude", tmp_path / "agents.json", "pr-reviewer", "sonnet", "review it")
+    command = review_command("claude", tmp_path / "agents.json", "reviewer", "sonnet", "review it")
     assert command[0] == "claude" and "-p" in command
     assert command[command.index("--agents") + 1] == str(tmp_path / "agents.json")
-    assert command[command.index("--agent") + 1] == "pr-reviewer"
+    assert command[command.index("--agent") + 1] == "reviewer"
     assert command[command.index("--model") + 1] == "sonnet"
     assert "--dangerously-skip-permissions" in command
     assert command[-1] == "review it"

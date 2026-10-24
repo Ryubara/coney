@@ -289,7 +289,7 @@ def _joined(literals: str) -> str:
     return "".join(_unescape(contents) for contents in re.findall(_LITERAL, literals))
 
 
-def _declared_names(text: str) -> set[str]:
+def declared_names(text: str) -> set[str]:
     """The names of the `TEST_CASE`s declared in `text` outside comments, as ctest lists them."""
     return {_joined(match.group(1)) for match in _TEST_CASE.finditer(_without_comments(text))}
 
@@ -300,7 +300,7 @@ def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence
     run nothing under ctest. Adjacent string literals are joined with the comments between them dropped and their
     escapes unescaped, as C++ does; a name a macro builds does not match."""
     text = "".join(_git(root, "show", f"{commit}:{path}") for path in test_files)
-    declared = _declared_names(text)
+    declared = declared_names(text)
     missing = [name for name in names if name not in declared]
     if missing:
         where = ", ".join(test_files)

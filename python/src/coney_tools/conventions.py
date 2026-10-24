@@ -293,7 +293,7 @@ class AiUse:
 
 @dataclass(frozen=True)
 class Review:
-    """The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`)."""
+    """The release gate on the reviewer agent's description verdict (`coney-tools repo review`, `repo check-review`)."""
 
     #: The agent's name; its definition is `.claude/agents/<agent>.md`.
     agent: str
@@ -309,7 +309,7 @@ class Review:
 
 @dataclass(frozen=True)
 class OrigReview:
-    """The release gate on the orig-reviewer agent's verdict (`coney-tools orig check-review`), and its ledger."""
+    """The release gate on the reviewer agent's `@orig` verdict (`coney-tools orig check-review`), and its ledger."""
 
     #: The agent's name; its definition is `.claude/agents/<agent>.md`.
     agent: str
@@ -825,6 +825,37 @@ class LeadsRules:
     merged_prs: int
 
 
+#: The kinds of review a change can need, each with a checklist (docs/guides/review/index.md): the order is the order
+#: the reviewer applies them in.
+REVIEW_KINDS = ("code", "docs", "research", "orig", "text", "commits")
+
+
+@dataclass(frozen=True)
+class TaskReview:
+    """`task review` (docs/guides/review/task.md): the reviewer agent, the files of a review and which model may do
+    reverse-engineering review."""
+
+    #: The agent's name; its definition is `.claude/agents/<agent>.md`.
+    agent: str
+    #: The review's folder inside the task's scratch folder.
+    folder: str
+    #: What the tool prepares for the reviewer (what is to be judged, and the hashes the verdict must quote).
+    packet_file: str
+    #: What the reviewer writes (its judgement, as JSON) and the same for a person.
+    verdict_file: str
+    report_file: str
+    #: A change under one of these (repository-relative prefixes) is research work: it gets the research checklist.
+    research_paths: tuple[str, ...]
+    #: Other changed files with one of these endings are documentation: they get the docs checklist.
+    docs_suffixes: tuple[str, ...]
+    #: How many addresses of each touched research page the reviewer spot-checks in Ghidra.
+    pages_min_addresses: int
+    #: A review of one of these kinds is reverse-engineering work and runs on one of the models below.
+    reverse_engineering_kinds: tuple[str, ...]
+    #: A substring (any case) the reviewer's model name must contain for such a review.
+    reverse_engineering_models: tuple[str, ...]
+
+
 @dataclass(frozen=True)
 class TaskSlots:
     """How many units of work one machine runs at once (docs/guides/issues.md#starting)."""
@@ -848,13 +879,14 @@ class TaskStart:
 
 @dataclass(frozen=True)
 class Tasks:
-    """Task files, the leads search and starting a task."""
+    """Task files, the leads search, starting a task and the review of a task."""
 
     kinds: tuple[str, ...]
     #: The task file's name inside the task's scratch folder.
     file: str
     leads: LeadsRules
     start: TaskStart
+    review: TaskReview
 
 
 @dataclass(frozen=True)
@@ -1661,9 +1693,61 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     )
 
 
+def _read_task_review(data: object, where: str) -> TaskReview:
+    """The `tasks.review` section: the reviewer agent, the files of a review and the model rule."""
+    table = _table(
+        data,
+        where,
+        (
+            "agent",
+            "folder",
+            "packet_file",
+            "verdict_file",
+            "report_file",
+            "research_paths",
+            "docs_suffixes",
+            "pages_min_addresses",
+            "reverse_engineering_kinds",
+            "reverse_engineering_models",
+        ),
+    )
+    agent = _text(table["agent"], _at(where, "agent"))
+    # The agent is a file name under .claude/agents/, so it holds no path separator.
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", agent):
+        raise _fail(_at(where, "agent"), f"'{agent}' must be an agent name (lower case, digits and dashes)")
+    names: dict[str, str] = {}
+    for key in ("folder", "packet_file", "verdict_file", "report_file"):
+        name = _text(table[key], _at(where, key))
+        if "/" in name or "\\" in name or name in (".", ".."):
+            noun = "folder" if key == "folder" else "file"
+            raise _fail(_at(where, key), f"'{name}' must be a {noun} name, not a path")
+        names[key] = name
+    if len({names["packet_file"], names["verdict_file"], names["report_file"]}) != 3:
+        raise _fail(_at(where, "report_file"), "must differ from packet_file and verdict_file")
+    kinds = _texts(table["reverse_engineering_kinds"], _at(where, "reverse_engineering_kinds"))
+    for kind in kinds:
+        if kind not in REVIEW_KINDS:
+            raise _fail(
+                _at(where, "reverse_engineering_kinds"), f"'{kind}' is not a review kind ({', '.join(REVIEW_KINDS)})"
+            )
+    models_where = _at(where, "reverse_engineering_models")
+    return TaskReview(
+        agent=agent,
+        folder=names["folder"],
+        packet_file=names["packet_file"],
+        verdict_file=names["verdict_file"],
+        report_file=names["report_file"],
+        research_paths=_texts(table["research_paths"], _at(where, "research_paths")),
+        docs_suffixes=_texts(table["docs_suffixes"], _at(where, "docs_suffixes")),
+        pages_min_addresses=_count(table["pages_min_addresses"], _at(where, "pages_min_addresses")),
+        reverse_engineering_kinds=kinds,
+        reverse_engineering_models=_texts(table["reverse_engineering_models"], models_where),
+    )
+
+
 def _read_tasks(data: object, where: str) -> Tasks:
-    """The `tasks` section: the task kinds, the task file's name, the leads limits and what `task start` keeps."""
-    table = _table(data, where, ("kinds", "file", "leads", "start"))
+    """The `tasks` section: the task kinds, the task file's name, the leads limits, `task start` and the review."""
+    table = _table(data, where, ("kinds", "file", "leads", "start", "review"))
     leads_where = _at(where, "leads")
     keys = ("rare_max_entries", "common_min_entries", "max_per_source", "index_max_age_hours", "merged_prs")
     leads = _table(table["leads"], leads_where, keys)
@@ -1692,6 +1776,7 @@ def _read_tasks(data: object, where: str) -> Tasks:
                 enforce=_flag(slots["enforce"], _at(slots_where, "enforce")),
             ),
         ),
+        review=_read_task_review(table["review"], _at(where, "review")),
     )
 
 

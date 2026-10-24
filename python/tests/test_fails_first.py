@@ -463,9 +463,9 @@ def test_unescaping_follows_the_c_plus_plus_rules() -> None:
 
 
 def _declared_within(text: str, seconds: float = 20.0) -> set[str]:
-    """`_declared_names(text)`, run in a child process so that a pattern that never finishes fails the test."""
+    """`declared_names(text)`, run in a child process so that a pattern that never finishes fails the test."""
     code = (
-        "import sys; from coney_tools import fails_first; print(sorted(fails_first._declared_names(sys.stdin.read())))"
+        "import sys; from coney_tools import fails_first; print(sorted(fails_first.declared_names(sys.stdin.read())))"
     )
     try:
         done = subprocess.run(

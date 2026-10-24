@@ -1,7 +1,8 @@
 # Reviews
 
-Every change gets a review, and a review is a list of findings written by someone who did not do the work.
-This page says how a review runs; the checklists say what to look at:
+Every change gets a review, and a review is a list of findings written by someone who did not do the work. One agent,
+the `reviewer` ([Running agents](../agents.md#reviewer)), does every kind of review, and `coney-tools task review` runs
+it for a task ([Task review](task.md)). This page says how a review runs; the checklists say what to look at:
 
 | Reviewing | Checklist |
 | --- | --- |
@@ -9,15 +10,18 @@ This page says how a review runs; the checklists say what to look at:
 | Research pages and the research database | [Research](research.md) |
 | A function carrying `@orig`, against the original in Ghidra | [Orig review](orig.md) |
 | A branch's commits or a pull request | [Commits](commits.md) |
+| A pull request description and its pictures | [Description](text.md) |
 | Guides, designs and other pages outside `docs/research/` | [Docs](docs.md) |
+| The command, the file the reviewer writes and the stamp | [Task review](task.md) |
 
 A review of a change that mixes kinds (a research page and the code that uses it) applies each checklist to the files
-it covers.
+it covers; `task review` names the ones that apply in its packet.
 
 ## How a review works
 
-- **One reviewer per change**, who did not write it, plus **a commit review before a pull request is merged**,
-  which reads its title and commits (see [Commits](commits.md)).
+- **One reviewer per change**, who did not write it; the review includes **the commit review before a pull request is
+  merged**, which reads its title and commits (see [Commits](commits.md)), and the description (see
+  [Description](text.md)).
 - **The reviewer reports and never edits.** It does not fix a finding, not even a typo; the author does, in a
   follow-up commit. A reviewer that fixes things hides what was wrong from the next reader and from the history.
 - **The reviewer reads the diff and the files it touches**, not the author's summary of them. Run the checks
@@ -62,9 +66,13 @@ For example:
 
 ## Which model reviews what
 
-Review of research, and of any other reverse-engineering work (Ghidra, disassembly, PCSX2 runtime analysis, claims
-drawn from the binary), runs on Opus 5.5, as AGENTS.md says. Simple changes (docs, tooling) may be reviewed on a
-smaller model.
+Review of research and of `@orig` functions, and of any other reverse-engineering work (Ghidra, disassembly, PCSX2
+runtime analysis, claims drawn from the binary), runs on Opus 5.5, as AGENTS.md says; `task review --record` refuses a
+model without `opus` in its name ([who may record](task.md#who), `tasks.review` in
+[.github/conventions.yml](repo:.github/conventions.yml)).
+Simple changes (docs, tooling) may be reviewed on a smaller model: the coordinator names it when it starts the
+reviewer.
 
-A research reviewer consults the original binary to check an address or a claim. A code reviewer checks code against
-the research page it cites, and may open the original too where the page does not settle a question.
+Where the change has research pages or `@orig` functions the reviewer consults the original binary to check an address,
+a claim or a function. Where it has code, the reviewer checks the code against the research page it cites, and may open
+the original too where the page does not settle a question.

@@ -58,7 +58,8 @@ def test_the_real_pull_request_rules() -> None:
 
 def test_the_real_review_gate() -> None:
     review = load_conventions(REPO).pull_requests.review
-    assert review.agent == "pr-reviewer"
+    # The legacy gate runs the one merged reviewer (docs/guides/review/index.md), like `task review`.
+    assert review.agent == "reviewer"
     assert (review.verdict_file, review.report_file) == ("REVIEW.json", "REVIEW.md")
     assert review.body_hash == "sha256-lf" and review.identical_images == "refused"
     assert (REPO / ".claude" / "agents" / f"{review.agent}.md").is_file()
@@ -66,7 +67,7 @@ def test_the_real_review_gate() -> None:
 
 def test_the_real_orig_review_gate() -> None:
     orig = load_conventions(REPO).pull_requests.orig_review
-    assert (orig.agent, orig.verdict_file, orig.report_file) == ("orig-reviewer", "ORIG-REVIEW.json", "ORIG-REVIEW.md")
+    assert (orig.agent, orig.verdict_file, orig.report_file) == ("reviewer", "ORIG-REVIEW.json", "ORIG-REVIEW.md")
     assert orig.ledger == "orig-review/ledger.jsonl" and orig.rubric_version >= 1
     assert (REPO / ".claude" / "agents" / f"{orig.agent}.md").is_file()
     # The rubric page states the same version.
@@ -207,6 +208,36 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
     ),
     ("a task file with a path", (("tasks.file", "a/TASK.md"),), r"tasks\.file: a file name"),
     ("rare above common", (("tasks.leads.rare_max_entries", 500),), r"must be less than common_min_entries"),
+    (
+        "a review agent with a path",
+        (("tasks.review.agent", "agents/reviewer"),),
+        r"tasks\.review\.agent: .* must be an agent name",
+    ),
+    (
+        "a review folder outside the task",
+        (("tasks.review.folder", "../review"),),
+        r"tasks\.review\.folder: .* must be a folder name",
+    ),
+    (
+        "one file for the verdict and the report",
+        (("tasks.review.report_file", "REVIEW.json"),),
+        r"tasks\.review\.report_file: must differ",
+    ),
+    (
+        "a review kind that is not one",
+        (("tasks.review.reverse_engineering_kinds", ["research", "prose"]),),
+        r"reverse_engineering_kinds: 'prose' is not a review kind",
+    ),
+    (
+        "no research paths",
+        (("tasks.review.research_paths", []),),
+        r"tasks\.review\.research_paths: expected a non-empty",
+    ),
+    (
+        "no addresses to check on a page",
+        (("tasks.review.pages_min_addresses", 0),),
+        r"tasks\.review\.pages_min_addresses: expected a whole number",
+    ),
     (
         "a form with the old title prefix",
         (("issues.forms.task.title_prefix", "Task: "),),
@@ -550,6 +581,17 @@ def test_the_real_task_start_rules() -> None:
 def test_wrong_task_start_rules_are_refused(change: tuple[str, object], why: str) -> None:
     with pytest.raises(ConventionsError, match=why):
         conventions_with(change)
+
+
+def test_the_real_task_review_rules() -> None:
+    review = load_conventions(REPO).tasks.review
+    assert review.agent == "reviewer" and (REPO / ".claude" / "agents" / f"{review.agent}.md").is_file()
+    assert (review.folder, review.packet_file) == ("review", "PACKET.json")
+    assert (review.verdict_file, review.report_file) == ("REVIEW.json", "REVIEW.md")
+    assert review.research_paths == ("docs/research/", "research/") and review.docs_suffixes == (".md",)
+    assert review.pages_min_addresses == 2
+    # Reverse-engineering review runs on Opus (AGENTS.md), so research and `@orig` reviews need that model.
+    assert review.reverse_engineering_kinds == ("research", "orig") and review.reverse_engineering_models == ("opus",)
 
 
 def test_the_real_run_record_rules() -> None:

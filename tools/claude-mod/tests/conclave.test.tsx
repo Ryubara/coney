@@ -580,7 +580,7 @@ test('from the wide width the pane keeps its full rows with the title on the row
 })
 
 /** The agent types the fixture's hook settings allow. */
-const ALLOWED = ['coordinator', 'reviewer', 'research-reviewer', 'pr-reviewer', 'Explore', 'Plan', 'fork']
+const ALLOWED = ['coordinator', 'reviewer', 'engineer', 'tooling', 'Explore', 'Plan', 'fork']
 
 /** Whether the model is offered `agent` now. */
 async function isOffered($: Engine, agent: string): Promise<boolean> {

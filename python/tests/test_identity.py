@@ -7,11 +7,12 @@ role. The folder is a parameter; nothing here touches the real one.
 """
 
 import json
+import time
 from pathlib import Path
 
 import pytest
 
-from coney_tools import identity
+from coney_tools import identity, stamps
 
 TOKEN = "0123456789abcdef0123456789abcdef"
 NOW = 1_000_000.0
@@ -39,8 +40,8 @@ def write(folder: Path, token: str = TOKEN, **fields: object) -> Path:
 def test_a_valid_token_gives_the_identity_the_hook_wrote(tmp_path: Path) -> None:
     write(tmp_path)
     found = identity.load({"CONEY_AGENT_TOKEN": TOKEN}, folder=tmp_path, now=NOW)
-    assert found == identity.Identity(id="a1", type="engineer", model="claude-sonnet-5-5", verified=True)
-    assert found.agent() == {"id": "a1", "type": "engineer", "model": "claude-sonnet-5-5"}
+    assert found == identity.Identity(id="a1", type="engineer", model="claude-sonnet-5-5", verified=True, session="s1")
+    assert found.agent() == {"id": "a1", "type": "engineer", "model": "claude-sonnet-5-5", "session": "s1"}
 
 
 def test_reading_does_not_consume_the_file(tmp_path: Path) -> None:
@@ -119,3 +120,38 @@ def test_the_command_line_reads_it_before_anything_else(monkeypatch: pytest.Monk
     with pytest.raises(SystemExit):
         cli.main(["--no-such-option"])  # argument parsing fails at once; the identity was read before it
     assert identity._current is not None and identity._current.verified
+
+
+def test_main_sessions_share_an_id_so_only_their_session_tells_them_apart() -> None:
+    first = {"id": "main", "type": "engineer", "session": "s1"}
+    assert identity.same_agent(first, {"id": "main", "type": "reviewer", "session": "s1"})
+    assert not identity.same_agent(first, {"id": "main", "type": "engineer", "session": "s2"})
+    # A record without a session names no one: an old stamp, or a caller the hook could not place.
+    assert not identity.same_agent(first, {"id": "main", "type": "engineer"})
+    assert not identity.same_agent({"id": "main"}, {"id": "main"})
+
+
+def test_a_subagent_id_is_unique_on_its_own() -> None:
+    assert identity.same_agent({"id": "a1", "session": "s1"}, {"id": "a1"})
+    assert not identity.same_agent({"id": "a1"}, {"id": "a2"})
+
+
+def test_an_unknown_caller_is_nobodys_namesake() -> None:
+    assert not identity.same_agent({"id": "unknown", "session": "s1"}, {"id": "unknown", "session": "s1"})
+    assert not identity.same_agent({"id": 3}, {"id": 3})
+    assert not identity.same_agent({}, {})
+
+
+def test_a_main_caller_without_a_session_is_not_vouched_for(tmp_path: Path) -> None:
+    write(tmp_path, id="main", session="", issued=time.time() - 5, expires=time.time() + 300)
+    found = identity.load({"CONEY_AGENT_TOKEN": TOKEN}, folder=tmp_path)
+    assert not found.verified and found == identity.Identity()
+    # So a stamp it writes says `unverified`, and the self-review check it skips is visible.
+    assert stamps.who_from_env("coney-tools x", {"CONEY_AGENT_TOKEN": TOKEN}, tmp_path)["source"] == "unverified"
+
+
+def test_a_main_caller_with_a_session_is_vouched_for(tmp_path: Path) -> None:
+    write(tmp_path, id="main", session="s1", issued=time.time() - 5, expires=time.time() + 300)
+    found = identity.load({"CONEY_AGENT_TOKEN": TOKEN}, folder=tmp_path)
+    assert found.verified and found.session == "s1"
+    assert stamps.who_from_env("coney-tools x", {"CONEY_AGENT_TOKEN": TOKEN}, tmp_path)["source"] == "hook"

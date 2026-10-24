@@ -21,16 +21,13 @@ flowchart LR
   study --> port["Tests first,<br/>then port to Coney"]
   port --> compare["Compare with<br/>the original"]
   compare --> local["Local checks"]
-  local --> code["reviewer or<br/>research-reviewer"]
-  code --> orig["orig-reviewer<br/>checks changed<br/>@orig functions"]
-  orig --> desc["pr-reviewer<br/>reads the PR<br/>description"]
-  desc --> queue["Release queue"]
+  local --> review["reviewer<br/>code, docs, research,<br/>@orig, PR text"]
+  review --> queue["Release queue"]
   queue --> push["Coordinator<br/>pushes and<br/>opens the PR"]
   push --> ci["CI required<br/>checks"]
   ci --> merge["Squash merge"]
   merge --> main(["main"])
-  code -. "findings" .-> port
-  orig -. "findings" .-> port
+  review -. "findings" .-> port
   ci -. "red: fixed forward" .-> push
 ```
 
@@ -104,9 +101,7 @@ flowchart TB
     steward["Repo steward"]
   end
   subgraph rev ["Reviewers, who report and never edit"]
-    r1["reviewer<br/>code, tests, docs"]
-    r2["research-reviewer<br/>research pages"]
-    r3["pr-reviewer<br/>PR descriptions"]
+    r1["reviewer<br/>code, docs, research,<br/>@orig, PR descriptions"]
   end
   gh["GitHub<br/>CI and main"]
   maint --> coord
@@ -128,10 +123,10 @@ and reviewers check it; only the coordinator writes to GitHub.*
   [Briefing](agents.md#briefs) describes (a brief may be just "issue #N"), follows the [pipeline](#the-pipeline)
   above, commits locally and hands the finished unit over. The model is chosen per task
   ([Which model](agents.md#models)).
-- **Reviewers read what someone else wrote** and report; they never edit. `reviewer` takes code, tests, tools, docs and
-  commits, `research-reviewer` takes research pages and the research database, and `pr-reviewer` takes every pull
-  request description before it is pushed ([The description review](#pr-review); the roles are in
-  [Setting up an agent tool](agents.md#setup)).
+- **The reviewer reads what someone else wrote** and reports; it never edits. One `reviewer` takes code, tests, tools,
+  docs and commits, research pages and the research database, `@orig` functions against the original and every pull
+  request description before it is pushed ([Task review](review/task.md), [The description review](#pr-review); the
+  roles are in [Setting up an agent tool](agents.md#setup)).
 - **The release queue** is how work reaches GitHub: engineers never push; the coordinator does, when CI has room
   ([below](#release-queue)).
 - **Tether wakes the coordinator.** Between turns the coordinator sees nothing, so the Tether plugin starts a turn
@@ -174,8 +169,8 @@ subsystem at a time, in the order of the `@orig` index, and avoids files that ot
   function to compare with.
 - **Check the expression too.** Each function is judged on two counts: fidelity, and own expression (ported, not
   transcribed: [Porting, not transcribing](conventions.md#porting)). The classes, the snippet limit and the file
-  formats are in one rubric, [Orig review](review/orig.md). A sweep over existing code runs the `orig-reviewer`
-  agent in sweep mode, one folder or address list at a time ([Running agents](agents.md#orig-reviewer)). Every
+  formats are in one rubric, [Orig review](review/orig.md). A sweep over existing code runs the `reviewer`
+  agent in sweep mode, one folder or address list at a time ([Running agents](agents.md#reviewer)). Every
   class but `clean` and `diff-deliberate-ok` becomes a fix unit.
 - **Progress is kept by the tool.** `coney-tools orig index` lists every tagged function with its research page. The
   review ledger records each function reviewed, at which body and with what class, and `orig queue` orders what is
@@ -275,14 +270,18 @@ coordinator, who pushes them when CI has room.
   [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
+- **A task is reviewed with `coney-tools task review`** ([Task review](review/task.md)): the tool checks what a
+  program can (the stamp log, a current `compared` stamp for each `@orig` function, the copy check, `fails-first`
+  stamps, `docs check`, the description), a `reviewer` judges the rest, and the verdict is recorded as a `reviewed`
+  stamp bound to the change. The two release checks below predate it and run until `pr open` replaces them.
 - **Every `@orig` function a branch adds or changes is checked against the original before release.** The
-  `orig-reviewer` agent runs in pr mode on the branch ([Running agents](agents.md#orig-reviewer)). It decompiles
+  `reviewer` agent runs in pr mode on the branch ([Running agents](agents.md#reviewer)). It decompiles
   each address and compares on fidelity and own expression ([Orig review](review/orig.md)), and writes
   `ORIG-REVIEW.json` and `ORIG-REVIEW.md` next to the description. The release step runs
   `coney-tools orig check-review`. That check passes a branch with no changed `@orig` function, and otherwise needs
   a passing verdict that covers each changed function at its current body. A transcription, a behaviour difference
-  with no reason, a deliberate difference with no comment, or a wrong address fails. Run it before pr-reviewer, so a
-  fix to the code does not make the description's review stale.
+  with no reason, a deliberate difference with no comment, or a wrong address fails. Run it before the description
+  review, so a fix to the code does not make the description's review stale.
 - **Every description is reviewed before it is pushed** ([below](#pr-review)). The coordinator runs
   `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
   the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.
@@ -314,8 +313,9 @@ coordinator, who pushes them when CI has room.
 `coney-tools repo check-body` (and CI) only checks a description's structure, and the review itself starts only on a
 description that passes it (below). On 2026-10-12 a pull request was released whose screenshots did not match it:
 three of its four pictures showed a letterboxed scene instead of gameplay, and its before and after pair were the same
-file. So a second reader goes over every description before it is pushed: the `pr-reviewer` agent
-([Running agents](agents.md#setup)). It reads the description, the branch's diff and the logs the description cites,
+file. So a second reader goes over every description before it is pushed: the `reviewer` agent
+([Running agents](agents.md#reviewer); its checklist is [Description](review/text.md)). It reads the description, the
+branch's diff and the logs the description cites,
 opens every picture, and writes a verdict: whether each picture shows what the text says (gameplay, not a scene,
 loading screen or menu; the right level; before and after that differ), whether each claim in Summary and Testing is
 backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later, that `Docs: none` is allowed and
@@ -346,8 +346,8 @@ verdict goes back as a fix to the description or the captures, never as a push. 
 from `pull_requests.review` in [.github/conventions.yml](repo:.github/conventions.yml):
 
 <!-- conventions:begin pr-review -->
-- The `pr-reviewer` agent (`.claude/agents/pr-reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description
-  file: `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
+- The `reviewer` agent (`.claude/agents/reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description file:
+  `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
   `sha256`) and `findings` (each with `severity` `blocker` or `note`, `where` and `text`).
 - `repo check-review` passes only when the description's title (line 1) and body (the rest) pass `repo check-title` and
   `repo check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is `pass` with no `blocker`
@@ -504,7 +504,7 @@ flowchart LR
   hooks["Claude Code hooks<br/>refuse the wrong<br/>command"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
   pre --> gate["check changed<br/>what CI would<br/>fail on"]
   gate --> text["check-title,<br/>check-body,<br/>check-docs"]
-  text --> stamp["pr-reviewer stamp,<br/>check-review"]
+  text --> stamp["reviewer's verdict,<br/>check-review"]
   stamp --> push["Only the coordinator<br/>pushes"]
   push --> ci["CI required<br/>checks"]
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
@@ -525,7 +525,7 @@ The guards, with the rule each one holds (the diagram only orders them):
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | `coney-tools check changed` | What CI would fail on, for the files the change touched: the repository audit, pre-commit, clang-tidy, `mkdocs build --strict`, ruff, mypy and pytest | [The local gate](testing.md#local-gate) |
 | `repo check-title`, `check-body`, `check-docs` | A title that is not `area: Verb the rest`; a description that breaks the template; a change under `src/` or `python/src/` with no docs change and no `Docs: none` line | [Repository conventions](repo-conventions.md#workflows) |
-| `pr-reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
+| `reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
 | Release queue | An agent pushing: only the coordinator pushes, when CI has room | [Local first](#release-queue) |
 | Tether pull request guard | A pull request left with a failed required check, a conflict, a stuck check or auto-merge off: the `prs` poller (`repo pr-health`) wakes the coordinator | [Waking the coordinator](coney-tools-setup.md#coord-wakes) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint` | [What CI runs](building.md#what-ci-runs) |

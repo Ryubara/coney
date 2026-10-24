@@ -86,7 +86,7 @@ def add_parser(groups: Any) -> None:
             "With --branch or --worktree: the functions carrying @orig (their own tag, one in their body or their "
             "declaration's) that the branch adds or changes since it left BASE, read from commits (pr mode). With "
             "--folder or --address: those of the folders or addresses at REF that the ledger has not seen at their "
-            "current body (sweep mode; --every lists the reviewed ones too). The orig-reviewer agent starts here."
+            "current body (sweep mode; --every lists the reviewed ones too). The reviewer agent starts here."
         ),
     )
     side = stamp.add_mutually_exclusive_group(required=True)

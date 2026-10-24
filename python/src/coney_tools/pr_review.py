@@ -3,7 +3,7 @@
 
 `repo check-body` checks a description's structure; it cannot see that a screenshot shows a loading screen instead of
 gameplay, that a before and after pair is the same file, or that a count in Testing appears in no log. The
-`pr-reviewer` agent (`.claude/agents/pr-reviewer.md`) reads the description, the branch's diff, the logs it cites and
+`reviewer` agent (`.claude/agents/reviewer.md`) reads the description, the branch's diff, the logs it cites and
 every picture it shows, and writes a verdict next to the description file. This module binds that verdict to what was
 reviewed and checks it before a push:
 
@@ -55,7 +55,7 @@ VERDICT_KEYS = ("tip", "body_sha256", "verdict", "images", "findings")
 #: The keys of one finding.
 FINDING_KEYS = ("severity", "where", "text")
 #: The agent definition handed to `claude --agents`, written next to the description for the run and removed after.
-AGENTS_FILE = ".pr-reviewer-agents.json"
+AGENTS_FILE = ".reviewer-agents.json"
 #: What a branch is compared with unless told otherwise.
 DEFAULT_BASE = "origin/main"
 #: How long one review may take before it is stopped.
@@ -412,9 +412,9 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     base_help = "what the branch is compared with, for the diff and the commits' trailers (default: %(default)s)"
     review = repo_commands.add_parser(
         "review",
-        help="run the pr-reviewer agent headlessly on a description, then check its verdict",
+        help="run the reviewer agent headlessly on a description, then check its verdict",
         description=(
-            "Runs `claude -p` with the pr-reviewer agent in the description's folder; the agent writes the verdict "
+            "Runs `claude -p` with the reviewer agent in the description's folder; the agent writes the verdict "
             "and a report there. Then runs check-review. Exit 0 when the verdict releases the branch, 1 when not, "
             "2 when the review cannot run."
         ),

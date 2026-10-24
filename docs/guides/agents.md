@@ -19,7 +19,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
-| `.claude/agents/` | The roles: `coordinator` (the main session), `engineer`, `tooling`, `reviewer`, `research-reviewer`, `orig-reviewer`, `pr-reviewer` | Claude Code |
+| `.claude/agents/` | The roles: `coordinator` (the main session), `engineer`, `tooling`, `reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/pr_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `tools/claude-mod/` | Conclave, the Claude Code mod: a band, a status line, a pane and the shorter list of agent types ([Conclave](conclave.md)) | Claude Code, with `--plugin-dir` |
@@ -51,19 +51,13 @@ the call, so those defaults serve a server run outside it. **A hook enforces thi
 tools do: [Driving PCSX2](research-tools.md#driving-pcsx2).
 
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
-guides that role reads; it holds no rules of its own. The engineer and the research reviewer are set to Opus, which
-AGENTS.md requires for reverse engineering (a coordinator may name Sonnet for an engineer whose task needs none, per
-[Which model](#models)); the others take whatever model the coordinator names. The `pr-reviewer` is set to Sonnet:
-it is the release gate on a pull request description ([The description review](how-we-work.md#pr-review)), reads
-the description, the diff, the logs and every picture, and writes only its verdict (`REVIEW.json`) and report
-(`REVIEW.md`) next to `PR.md`. Its tools are Read, Glob, Grep, Bash and Write; its instructions keep Bash to
-read-only commands and Write to those two files. The coordinator runs it headlessly with `coney-tools repo review`
-([repo review](coney-tools-repo.md#repo-review)), or starts it as an agent on a `PR.md`, a worktree and a base branch.
-The engineer uses the Ghidra and PCSX2 MCP tools and writes `src/`. The `tooling` engineer is set to Sonnet: it builds
-the project's own tools and process (`python/`, `.github/`, `.claude/`, the Claude Code mod, build configuration and
-their guides) and does no reverse engineering. The code and research reviewers report and never
-edit (`disallowedTools` withholds Edit, Write and NotebookEdit). Effort, turn and token limits are each user's own
-settings and stay out of the repository.
+guides that role reads; it holds no rules of its own. The engineer and the reviewer are set to Opus, which
+AGENTS.md requires for reverse engineering (a coordinator may name Sonnet for an engineer whose task needs none, or for
+a reviewer of a change with no research page or `@orig` function, per [Which model](#models)); the others take whatever
+model the coordinator names. The engineer uses the Ghidra and PCSX2 MCP tools and writes `src/`. The `tooling` engineer
+is set to Sonnet: it builds the project's own tools and process (`python/`, `.github/`, `.claude/`, the Claude Code mod,
+build configuration and their guides) and does no reverse engineering. The `reviewer` reports and never edits ([The
+reviewer](#reviewer)). Effort, turn and token limits are each user's own settings and stay out of the repository.
 
 **The permissions.** The allowed commands are the project's own read-mostly ones: `coney-tools config show`, the
 `repo` checks, the generators, pytest, ruff, mypy, pre-commit and `coney-tools build`. Commands that start or drive
@@ -85,28 +79,39 @@ Another agent tool needs only its own MCP entries for the two servers (the same
 `uv run --isolated --frozen --project python coney-tools mcp serve <name>` command, run from the checkout) and reads
 the rules from `AGENTS.md`.
 
-## The orig reviewer {#orig-reviewer}
+## The reviewer {#reviewer}
 
-The `orig-reviewer` agent (`.claude/agents/orig-reviewer.md`, Opus, since it reads the original) compares Coney
-functions that carry `@orig` with the original functions in Ghidra, on fidelity and own expression. It follows one
-rubric, [Orig review](review/orig.md). Its tools are Read, Glob, Grep, Bash (read-only commands and the
-`coney-tools orig` commands), Write (its own report files only) and the ghidra-mcp read tools (`decompile_function`,
-`disassemble_function` and the like). It has no Edit tool and no Ghidra tool that writes.
+The `reviewer` agent (`.claude/agents/reviewer.md`, Opus) is the one review of a change, by someone other than its
+author. It covers code, tests, tools, docs and commits, research pages, `@orig` functions against the original in
+Ghidra (fidelity and own expression, the rubric of [Orig review](review/orig.md)), and the pull request description with
+every picture it shows ([Description](review/text.md)). The checklists are the pages of [Reviews](review/index.md); the
+agent file only says which to apply. Its tools are Read, Glob, Grep, Bash (read-only commands and the `coney-tools`
+checks), Write (its verdict and report files only, which the role rules enforce), the ghidra-mcp read tools
+(`decompile_function`, `disassemble_function` and the like) and the PCSX2 MCP tools that only read. It has no Edit
+tool, no Agent tool, no Ghidra tool that writes and no PCSX2 tool that changes state. It starts no agents: the role
+rules refuse the Agent call and, in the shell, `claude`, `coney-agent`, `task review --run` and `repo review`.
 
-Run it in one of two modes:
+Start it for a task with the model the change needs: Opus for research pages and `@orig` functions, which `task review
+--record` insists on, a smaller one for docs and tooling. Its brief names the task; it runs `coney-tools task review
+<task>` (the tool part and the packet), judges, writes `REVIEW.json` and `REVIEW.md` and records the verdict with `task
+review <task> --record` ([Task review](review/task.md)). A person runs `task review <task> --run`, which starts a
+headless reviewer. Any later commit, or an edit to the description, makes a recorded review stale. A fix to the code
+after an `@orig` review therefore comes before the review of the description, which is part of the same pass.
 
-- **pr mode, on every branch whose diff adds or changes an `@orig` function,** after the code review and before
-  pr-reviewer. A fix to the code would otherwise make the description's review stale. Give it the branch (or its
-  worktree), the base and the scratch folder that holds `PR.md`. It runs `coney-tools orig review-stamp --branch`,
-  reviews each listed function, and writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When the stamp lists no
-  function, no run is needed, and the release check passes without one. Any later change to a reviewed function
-  makes the verdict stale; a rebase that leaves the functions as they were does not.
-- **sweep mode, on existing code,** for the [fidelity audit](how-we-work.md#fidelity-audit). Give it a `src/` folder
-  or a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what
-  `orig review-stamp --folder` lists as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the
-  findings with `coney-tools orig record`, and returns a summary that the launcher saves as `SUMMARY.md`. Run one
-  agent per folder, and leave out the folders that another audit or open branch owns. The coordinator turns each
-  finding that is not `clean` or `diff-deliberate-ok` into a fix unit.
+Two release checks that predate `task review` still run the same agent, until `pr open` replaces them:
+
+- **The description**, with `coney-tools repo review` ([repo review](coney-tools-repo.md#repo-review)); the verdict is
+  `REVIEW.json` next to `PR.md` ([Description](review/text.md#legacy-verdict)).
+- **An `@orig` branch, in pr mode** (`orig check-review`): give it the branch (or its worktree), the base and the
+  scratch folder that holds `PR.md`; it writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When `orig review-stamp
+  --branch` lists no function, no run is needed. A rebase that leaves the functions as they were keeps the verdict.
+
+**Sweep mode**, on existing code, serves the [fidelity audit](how-we-work.md#fidelity-audit). Give it a `src/` folder or
+a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what `orig review-stamp --folder` lists
+as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig record`,
+and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out the folders that
+another audit or open branch owns. The coordinator turns each finding that is not `clean` or `diff-deliberate-ok` into
+a fix unit.
 
 ## What a run costs {#cost}
 
@@ -162,7 +167,7 @@ the role from the hook input's `agent_type` (a subagent's type; for the main ses
 | `coordinator` | The main session: triage, briefs, answers, pushes and opens pull requests, merges, the maintainer's contact | Write under `src/`, `tests/`, `python/`, `docs/research/`, `research/`; `git commit` in a unit's worktree; the Ghidra and PCSX2 tools; the study, compare, check and review commands of the new workflow |
 | `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open` |
 | `tooling` | A subagent for the project's own tools and process | The same as the engineer; it may edit `src/` (warning fixes) |
-| `reviewer` (and today's `research-reviewer`, `orig-reviewer`, `pr-reviewer`) | A subagent that reports | Writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`), a git command that changes the index, the tree or the worktrees (`commit`, `add`, `rm`, `mv`, `reset`, `restore`, `checkout`, `switch`, `merge`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `worktree remove`, also after global options such as `--no-pager` or `-C dir`), GitHub writes |
+| `reviewer` | A subagent that reports | Writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`), a git command that changes the index, the tree or the worktrees (`commit`, `add`, `rm`, `mv`, `reset`, `restore`, `checkout`, `switch`, `merge`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `worktree remove`, also after global options such as `--no-pager` or `-C dir`), GitHub writes, any Agent call (`allow_agent_types = []`: a helper has Bash and could write for it), starting a session from the shell (`claude`, `coney-agent`, `task review --run`, `repo review`) |
 | every role, and a session with none | | Naming `~/.coney` ([Who runs a command](#identity)); naming a file in `~/.ssh/` other than a `.pub`, `config` or `known_hosts`; reading another process's command line or environment; deleting keys from the SSH agent (`ssh-add -d`, `-D`; listing with `-l` is fine); Edit or Write under a `stamps/` or `build-runs/` folder and a shell write into one (a stamp log or build record is written by the stage commands only, [Stamps](stamps.md)) |
 
 The role rules are the `[roles.*]` tables of `.claude/hooks/hooks.toml`, read on every call; the rules for every
@@ -173,7 +178,7 @@ words, every string of an MCP tool's input), after folding `./`, `..`, case, bot
 real path of a short name); not a search pattern, a commit message or the text a file is given, so `grep
 ".coney/identity" docs`, `grep "Win32_Process" docs`, `git log -S`, `pytest -k Win32_Process` and
 `git commit -m "Refuse Win32_Process"` are fine (text the shell would run, `$(...)` or a backtick, is still read).
-Some name commands that are planned (`pr open`, `task check`) so that they are held from the day they land. A hook
+Some name commands that are planned (`pr open`) so that they are held from the day they land. A hook
 judges spelling: a command can be hidden from it, so these rules make a break visible and deliberate, not impossible.
 A setting of the wrong shape is ignored and an invalid pattern skipped, so one bad entry never disables the rest.
 
@@ -183,10 +188,7 @@ Pick the role of an Agent call by what the agent does:
 | --- | --- |
 | `engineer` | Anything that writes code, tests, tools, research pages or docs, or opens Ghidra or PCSX2; also upkeep and measurement runs. When unsure, this one |
 | `tooling` | The project's own tools and process: `coney-tools`, workflows, hooks, build configuration and the guides that describe them |
-| `reviewer` | A review of code, tests, tools, docs or commits, by someone other than the author |
-| `research-reviewer` | A review of research pages and other reverse-engineering work |
-| `orig-reviewer` | The check of `@orig` functions against the original ([The orig reviewer](#orig-reviewer)) |
-| `pr-reviewer` | A pull request description (`PR.md`), before the coordinator pushes it |
+| `reviewer` | A review of a change by someone other than the author: code, tests, tools, docs, commits, research pages, `@orig` functions and the pull request description ([The reviewer](#reviewer)) |
 | `Explore`, `Plan`, `claude-code-guide` | A read-only search of many files, a plan that writes nothing, a question about Claude Code |
 | `fork` | A short job that needs the coordinator's conversation ([Who does the work](#who)) |
 
@@ -211,8 +213,8 @@ sends a branch through CI three times, costs more than a stronger one that gets 
 
 | Model | Use it for | Examples |
 | --- | --- | --- |
-| **Claude Opus** | Reverse engineering of any kind, and implementation that needs judgement: reimplementing a system faithfully from a research page (numeric fidelity, timing, AI, physics, rendering, combat), work across several subsystems, diagnosing a failure whose cause is unknown | Engineers in Ghidra or the emulator; combat, physics and renderer work; fixing a red CI with unknown causes |
-| **Claude Sonnet** | Well-specified implementation and upkeep, where the research page or an existing pattern says exactly what to write | Wiring a documented script binding, a HUD panel built to its spec, a new test following an existing one, generators, doc upkeep |
+| **Claude Opus** | Reverse engineering of any kind, and implementation that needs judgement: reimplementing a system faithfully from a research page (numeric fidelity, timing, AI, physics, rendering, combat), work across several subsystems, diagnosing a failure whose cause is unknown | Engineers in Ghidra or the emulator; combat, physics and renderer work; fixing a red CI with unknown causes; the reviewer of research pages or `@orig` functions |
+| **Claude Sonnet** | Well-specified implementation and upkeep, where the research page or an existing pattern says exactly what to write | Wiring a documented script binding, a HUD panel built to its spec, a new test following an existing one, generators, doc upkeep; the reviewer of a docs or tooling change |
 | **Claude Haiku** | Mechanical work with a clear check and nothing to decide | Running a command and reporting the result, measurements, renames, regenerating pages, simple searches |
 
 Claude Fable is not used for agent work. Always name the model when starting an agent; never rely on the default.
