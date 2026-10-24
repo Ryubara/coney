@@ -56,7 +56,8 @@ TEST_CASE("SHA-1 of bytes equals SHA-1 of the same characters", "[sha1]") {
 TEST_CASE("parseSha1Hex reads 40 hex digits and refuses anything else", "[sha1]") {
     const auto digest = coney::parseSha1Hex("A9993E364706816ABA3E25717850C26C9CD0D89D");
     REQUIRE(digest.has_value());
-    CHECK(coney::toHex(*digest) == "a9993e364706816aba3e25717850c26c9cd0d89d");
+    // value_or, not *: clang-tidy does not see REQUIRE as a check on the optional.
+    CHECK(coney::toHex(digest.value_or(coney::Sha1Digest{})) == "a9993e364706816aba3e25717850c26c9cd0d89d");
     CHECK_FALSE(coney::parseSha1Hex("a9993e").has_value());
     CHECK_FALSE(coney::parseSha1Hex("g9993e364706816aba3e25717850c26c9cd0d89d").has_value());
 }
