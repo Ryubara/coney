@@ -38,6 +38,7 @@ Each finding has `check`, `item`, `message`, `severity` and `fix`. Take them in 
 | Check | Command |
 | --- | --- |
 | `files.generated-blocks` | `coney-tools repo render`, then commit the result on a branch (a unit like any other) |
+| `files.command-reference` | `coney-tools docs render`, then commit the result on a branch (a unit like any other) |
 | `gh.labels` | `coney-tools repo labels --apply` |
 | `ws.disk`, `ws.worktrees` | `coney-tools workspace clean --apply` (it never touches busy or unmerged work) |
 
