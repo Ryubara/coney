@@ -28,7 +28,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import orig_pairs, pr_proof, stamps
+from coney_tools import orig_pairs, pr_proof, pr_text_file, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal, TextHashes
@@ -65,6 +65,8 @@ class Image:
 class EngineerText:
     """The engineer's file as data; `problems` are the ways it is not in the form (see `read_engineer_file`)."""
 
+    #: The file read.
+    file: Path
     folder: Path
     title: str
     #: The one paragraph, whitespace made single spaces (a wrapped line is the same paragraph).
@@ -164,7 +166,17 @@ def read_engineer_file(path: Path, conventions: Conventions) -> EngineerText:
         model = _labelled(ai_lines, rules.ai_use.model.label)
         ai_use = (written or "", model or "")
     return EngineerText(
-        path.parent, title.strip(), paragraph, docs_none, runtime, tuple(images), none, ai_use, tuple(problems), extra
+        path,
+        path.parent,
+        title.strip(),
+        paragraph,
+        docs_none,
+        runtime,
+        tuple(images),
+        none,
+        ai_use,
+        tuple(problems),
+        extra,
     )
 
 
@@ -255,23 +267,15 @@ def _screenshots(
     return images, none
 
 
-def _image_hash(image: Image) -> str:
-    """The hash of a picture's file, or `missing` when it is not there."""
-    try:
-        return _sha(image.path.read_bytes())
-    except OSError:
-        return "missing"
+def hashes_of(path: Path) -> TextHashes:
+    """What a review covers of the engineer's file at `path`: the title, the paragraph and the pictures.
 
-
-def hashes_of(text: EngineerText) -> TextHashes:
-    """What a review covers of the engineer's file: the title, the paragraph and the pictures.
-
-    The pictures' hash is the hash of the sorted list of their files' hashes, so renaming a picture does not change
-    it and replacing one does. These three are what `task review` records in `reviewed.covers` and `pr verify`
-    compares (`pr_proof.check_reviewed`).
+    They come from `pr_text_file`, the one reader that `task review` also uses to bind a review, so the two cannot
+    differ: a normalised text (BOM, line endings and trailing spaces ignored) and, for the pictures, the hash of the
+    sorted list of their files' hashes. ConfigError when the file cannot be read or has no title or summary.
     """
-    pictures = "\n".join(sorted(_image_hash(i) for i in text.images))
-    return TextHashes(_sha(text.title), _sha(text.paragraph), _sha(pictures))
+    file = pr_text_file.read(path)
+    return TextHashes(file.title_sha256, file.paragraph_sha256, file.images_sha256)
 
 
 # --- the task file's optional keys ----------------------------------------------------------------------------------
@@ -645,7 +649,7 @@ def generate(
     refusals = tuple(Refusal("text", p, "engineer") for p in (*text.problems, *extra)) + tuple(
         check(subject, text, ctx.models, body)
     )
-    return Generated(text.title, body, ctx.facts, hashes_of(text), _sha(ctx.facts), refusals)
+    return Generated(text.title, body, ctx.facts, _hashes_or_empty(text.file), _sha(ctx.facts), refusals)
 
 
 # --- the checks ----------------------------------------------------------------------------------------------------
@@ -665,6 +669,15 @@ def check(subject: pr_proof.Subject, text: EngineerText, models: Sequence[str], 
             found.append(Refusal("text", f"body: '## {name}' is not filled in ({content.strip()[:60]})", "engineer"))
     found += [Refusal("text", p, "engineer") for p in image_problems(text, conventions)]
     return found
+
+
+def _hashes_or_empty(path: Path) -> TextHashes:
+    """`hashes_of`, or the hashes of nothing when the file has no summary (the refusals say so)."""
+    try:
+        return hashes_of(path)
+    except ConfigError:
+        empty = _sha("")
+        return TextHashes(empty, empty, empty)
 
 
 def _section_texts(body: str) -> dict[str, str]:

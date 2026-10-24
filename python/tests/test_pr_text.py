@@ -317,9 +317,8 @@ def test_a_picture_inside_a_git_checkout_is_refused(tmp_path: Path) -> None:
     (folder / ".git").mkdir(parents=True)
     (folder / "shots").mkdir()
     (folder / "shots" / "x.png").write_bytes(b"png")
-    text = pr_text.EngineerText(
-        folder, "t", "p", False, None, (pr_text.Image("./shots/x.png", "x", folder / "shots" / "x.png"),), None, None
-    )
+    picture = pr_text.Image("./shots/x.png", "x", folder / "shots" / "x.png")
+    text = pr_text.EngineerText(folder / "PR.md", folder, "t", "p", False, None, (picture,), None, None)
     assert pr_text.image_problems(text, built.conventions) == [
         "images: shots/x.png is inside a git checkout; game pictures stay in the scratch folder"
     ]
@@ -378,9 +377,11 @@ def test_the_title_the_paragraph_and_the_pictures_have_stable_hashes(tmp_path: P
     built = make(tmp_path)
     one = built.text_hashes()
     path = built.unit.dir / "PR.md"
-    path.write_text(
-        path.read_text(encoding="utf-8").replace(PARAGRAPH, PARAGRAPH.replace(" the ", "  the\n")), encoding="utf-8"
-    )
-    assert built.text_hashes() == one  # a wrapped line or a doubled space is the same paragraph
-    path.write_text(path.read_text(encoding="utf-8").replace("Fix the", "Fix a"), encoding="utf-8")
+    original = path.read_text(encoding="utf-8")
+    crlf = original.replace("\n", "  \r\n")
+    path.write_bytes(crlf.encode("utf-8"))
+    assert built.text_hashes() == one  # line endings and trailing spaces are not content (as task review reads it)
+    path.write_text(original.replace("waits for", "waits on"), encoding="utf-8")
+    assert built.text_hashes().paragraph_sha256 != one.paragraph_sha256
+    path.write_text(original.replace("Fix the", "Fix a"), encoding="utf-8")
     assert built.text_hashes().title_sha256 != one.title_sha256

@@ -67,7 +67,7 @@ What it refuses, exactly (`<...>` is filled in):
 | `fails-first` | `fails-first: "Widget ready frame" was added and has no passing fails-first stamp`; `... its test file changed since (tests/ai/widget_test.cpp)` | `orig fails-first` |
 | `fails-first` | `fails-first: a feature or fix under src/ai/ needs a test that failed first, or --none with a reason` | `orig fails-first` |
 | `fails-first` | `fails-first: no fails-first stamp; a docs task records orig fails-first --none "<reason>"` (kinds `docs`, `tooling`, `ci-fix` with no test added) | `orig fails-first` |
-| `reviewed` | `reviewed: not reviewed`; `reviewed: Review failed (2 blockers, see the verdict)` | `task review` |
+| `reviewed` | `reviewed: not reviewed`; `reviewed: Review failed (2 blocking findings, see the verdict)` | `task review` |
 | `reviewed` | `reviewed: stale: the branch changed since Review (diff ... now ...)`; `... the pairs changed since Review` | `task review` |
 | `reviewed` | `reviewed: stale: the pull request title changed since Review`; `... the summary paragraph ...`; `... the screenshots ...` | `task review --text` |
 | `reviewed` | `reviewed: 0x00501000 was judged diff-bug`; `reviewed: Review did not cover 0x00501000` | the engineer fixes, then `task check` and `task review`; `task review` |

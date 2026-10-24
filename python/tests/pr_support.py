@@ -275,14 +275,14 @@ class Built:
         """The hashes of the engineer's PR.md as it is now."""
         from coney_tools import pr_text
 
-        return pr_text.hashes_of(pr_text.read_engineer_file(self.unit.dir / "PR.md", self.conventions))
+        return pr_text.hashes_of(self.unit.dir / "PR.md")
 
     def review(
         self, functions: dict[str, str] | None = None, reviewer: dict[str, str] | None = None, **detail: Any
     ) -> None:
         """Stamp a passing Review of the change, the pairs and the text as they are now."""
         text = self.text_hashes()
-        pairs = pr_proof.pairs_set_sha256(self.unit)
+        pairs = pr_proof.pairs_set_sha256(self.unit, [ADDRESS] if self.pairs_path.is_file() else [])
         info: dict[str, Any] = {
             "verdict": "pass",
             "functions": functions if functions is not None else {ADDRESS: "clean"},

@@ -399,8 +399,8 @@ What the three steps bound to the change record (all unsigned, in the local log)
 A `checked` stamp may also list the changed paths as `detail.files`, so a stale Check can name them.
 
 The hashes come from one place each, so the stage that writes a stamp and the check that reads it cannot differ:
-`pr_diff` for the change, `pr_proof.pairs_set_sha256` (the name and hash of every file under `mapping/`, in name order)
-and `pr_text.hashes_of` (the title, the paragraph with its whitespace collapsed, and the sorted hashes of the pictures).
+`pr_diff` for the change, `pr_proof.pairs_set_sha256` (one `<address> <pairs file hash>` line for each changed function,
+sorted) and `pr_text_file` for the title, the paragraph and the pictures (`pr_text.hashes_of` calls it).
 
 A `full` Check names a **build record**, `<scratch>/<task>/build-runs/<sha256>.json`, that `coney-tools build` writes
 and `task check` reads instead of parsing printed text; the stamp's `build_record_sha256` is the SHA-256 of the file.

@@ -112,7 +112,7 @@ def run_verify(args: argparse.Namespace) -> int:
     """`pr verify`: print every stage that does not hold; 0 when all hold."""
     subject, _task, _keys, text_path = _load(args)
     try:
-        hashes = pr_text.hashes_of(pr_text.read_engineer_file(text_path, subject.conventions))
+        hashes = pr_text.hashes_of(text_path)
     except ConfigError:
         hashes = None  # `pr text` says the file is unreadable; Review's three text hashes are then not compared
     result: ProofResult = pr_proof.verify(subject, hashes)

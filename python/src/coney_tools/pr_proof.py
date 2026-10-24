@@ -19,7 +19,7 @@ import hashlib
 import json
 import re
 import subprocess
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -34,6 +34,7 @@ from coney_tools import (
     orig_study,
     pr_diff,
     pr_profile,
+    review_verdict,
     stamps,
 )
 from coney_tools.config import ConfigError
@@ -209,13 +210,22 @@ def load_subject(
     )
 
 
-def pairs_set_sha256(unit: Unit) -> str:
-    """The hash of all the unit's pairs files: each file's name and hash in name order. What `reviewed` covers as
-    `pairs_set_sha256`, so a pairs file edited after Review makes it stale."""
-    folder = unit.dir / "mapping"
-    files = sorted(folder.glob("*.toml")) if folder.is_dir() else []
-    text = "".join(f"{path.name} {orig_pairs.file_sha256(path)}\n" for path in files)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+def pairs_set_sha256(unit: Unit, addresses: Sequence[str]) -> str:
+    """The hash of the pairs files of the changed functions: one `<address> <file hash>` line each, sorted, joined by
+    newlines (what `task review` binds a review to as `pairs_set_sha256`, so a pairs file edited after Review makes it
+    stale). An address with no pairs file is left out; step 3 says it is missing."""
+    lines: list[str] = []
+    for address in addresses:
+        try:
+            lines.append(f"{address} {orig_pairs.file_sha256(unit.mapping(address))}")
+        except ConfigError:
+            continue
+    return hashlib.sha256("\n".join(sorted(lines)).encode("utf-8")).hexdigest()
+
+
+def changed_addresses(subject_changed: Sequence[OrigUnit]) -> list[str]:
+    """The original addresses of the changed functions, in order."""
+    return [address for unit in subject_changed for address in _addresses(unit)]
 
 
 def _hex(value: object, size: int = 8) -> str:
@@ -669,6 +679,17 @@ def _normal_model(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
+#: A class by its one letter, as `review_verdict` writes it to a stamp's small detail.
+_LETTERS = {letter: name for name, letter in review_verdict.CLASS_LETTERS.items()}
+
+
+def _class_name(value: object) -> str | None:
+    """The class a stamp's `functions` entry names: its one letter or its full name; None when there is none."""
+    if not isinstance(value, str):
+        return None
+    return _LETTERS.get(value, value)
+
+
 def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any] | None:
     """The address -> class map of a review: in the stamp, or (when it was too big) in `review.json`, whose hash the
     stamp covers as `review_sha256`."""
@@ -683,8 +704,14 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
     except (OSError, ValueError):
         return None
     if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
-        functions = data.get("functions")
-        return functions if isinstance(functions, dict) else None
+        listed = data.get("functions")
+        if isinstance(listed, list):
+            return {
+                str(address): item.get("class")
+                for item in listed
+                if isinstance(item, dict)
+                for address in item.get("addresses", [])
+            }
     return None
 
 
@@ -710,7 +737,11 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
         return [refuse("not reviewed")]
     if stamp.result != "pass" or stamp.detail.get("verdict", "pass") != "pass":
         blockers = stamp.detail.get("blockers", 0)
-        count = f"{blockers} blocker{'s' if blockers != 1 else ''}" if isinstance(blockers, int) else "blockers"
+        count = (
+            f"{blockers} blocking finding{'s' if blockers != 1 else ''}"
+            if isinstance(blockers, int)
+            else "blocking findings"
+        )
         return [refuse(f"Review failed ({count}, see the verdict)")]
     stale: list[Refusal] = []
     if stamp.covers.get(stamps.CHANGE) != subject.diff_sha256:
@@ -720,7 +751,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
                 f"{_hex(subject.diff_sha256)})"
             )
         )
-    if stamp.covers.get("pairs_set_sha256") != pairs_set_sha256(subject.unit):
+    if stamp.covers.get("pairs_set_sha256") != pairs_set_sha256(subject.unit, changed_addresses(subject.changed)):
         stale.append(refuse("stale: the pairs changed since Review"))
     if text is not None:
         for key, what in (
@@ -736,7 +767,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
     functions = _review_functions(subject, stamp)
     for unit in subject.changed:
         for address in _addresses(unit):
-            judged = None if functions is None else functions.get(address)
+            judged = None if functions is None else _class_name(functions.get(address))
             if judged is None:
                 found.append(refuse(f"Review did not cover {address}"))
             elif judged not in PASSING_CLASSES:

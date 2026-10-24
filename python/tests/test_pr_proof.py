@@ -377,10 +377,10 @@ def test_no_review_is_refused(tmp_path: Path) -> None:
     assert redo(result, "reviewed:") == ["task review"]
 
 
-def test_a_failed_review_is_refused_with_its_blockers(tmp_path: Path) -> None:
+def test_a_failed_review_is_refused_with_its_blocking_findings(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"reviewed"}))
     built.stamp("reviewed", result="fail", covers={"diff_sha256": built.diff}, detail={"blockers": 2})
-    assert texts(built.verify(), "reviewed") == ["reviewed: Review failed (2 blockers, see the verdict)"]
+    assert texts(built.verify(), "reviewed") == ["reviewed: Review failed (2 blocking findings, see the verdict)"]
 
 
 def test_a_review_goes_stale_when_the_branch_the_paragraph_or_the_pairs_change(tmp_path: Path) -> None:
