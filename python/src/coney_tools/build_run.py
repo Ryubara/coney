@@ -165,6 +165,8 @@ class TestScan:
         self._lines_failed: list[str] = []
         #: The tests whose line says they were skipped.
         self.skipped = 0
+        #: Their names, in the order ctest ran them.
+        self.skipped_names: list[str] = []
         self._summary: tuple[int, int] | None = None
         self._listed_failures: list[str] = []
         # True while the lines are the entries under ctest's "The following tests FAILED:" heading.
@@ -236,7 +238,9 @@ class TestScan:
                 self._lines_failed.append(test.group("name"))
             elif state == "Passed" or "Skipped" in state:
                 self._lines_passed += 1
-                self.skipped += "Skipped" in state
+                if "Skipped" in state:
+                    self.skipped += 1
+                    self.skipped_names.append(test.group("name"))
 
 
 def count_dirty_steps(output: str) -> int | None:
@@ -644,13 +648,32 @@ class Context:
     test_jobs: int = 0
 
 
+@dataclass(frozen=True)
+class TestCounts:
+    """What a test run counted, for the build record: ctest's total, the tests that passed, failed and skipped (the
+    three add up to the total), and how many of the skipped ones are disc tests, which skip without the disc."""
+
+    __test__ = False  # not a pytest class, despite the name
+
+    total: int
+    passed: int
+    failed: int
+    skipped: int
+    skipped_disc: int
+
+
 @dataclass
 class Result:
-    """The outcome of a run: whether it succeeded, the exit code, and the short summary to print."""
+    """The outcome of a run: whether it succeeded, the exit code, and the short summary to print. `ran` names the steps
+    that started (`configure`, `build`, `test`) and `tests` holds the counts when the test step ran to its end."""
 
     ok: bool = True
     exit_code: int = 0
     summary: list[str] = field(default_factory=list)
+    ran: tuple[str, ...] = ()
+    tests: TestCounts | None = None
+    #: The build record the run left (build_record.py), or None when it left none.
+    record: Path | None = None
 
 
 def _duration(seconds: float) -> str:
@@ -976,6 +999,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         context.emit(f"measured: {measured} step{'s' if measured != 1 else ''} out of date, so the {lane} lane")
     phase = _Phase(options, context, "build", lane, note)
     ran = phase.run(build_steps)
+    result.ran = tuple(step for step, _, _ in ran)
     if phase.queued is not None:
         return _gave_up(result, "build", phase.queued)
     built = " " + " ".join(options.targets) if options.targets else ""
@@ -1018,6 +1042,10 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     ran = phase.run([("test", command, test_line)])
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
+    result.ran = (*result.ran, "test")
+    result.tests = TestCounts(
+        tests.total, tests.passed, tests.failed_count, tests.skipped, _skipped_disc(options, context, tests)
+    )
     if context.test_costs is not None:
         context.test_costs.record(options.preset, options.folder / COST_DATA)
     _, code, seconds = ran[0]
@@ -1042,6 +1070,18 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     if outside:
         result.summary.append("  " + OUTSIDE.format(what="test"))
     return _failed(result, "test", False, "test" if outside else "", names[:3])
+
+
+def _skipped_disc(options: Options, context: Context, tests: TestScan) -> int:
+    """How many of the skipped tests need the disc. Without a disc every skip counts (the disc tests skip, and the
+    run is not a whole one); with one, a skip counts when `ctest -N -L disc` lists the test."""
+    if not tests.skipped:
+        return 0
+    if options.disc is None or options.disc.source is None:
+        return tests.skipped
+    code, output = context.toolchain.capture(_ctest(options, "-N", "-L", "disc"), None)
+    listed = set(parse_test_names(output)) if code == 0 else set()
+    return sum(1 for name in tests.skipped_names if name in listed)
 
 
 def _report_cache(result: Result, context: Context, step: str) -> None:

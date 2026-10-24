@@ -1536,3 +1536,50 @@ def test_a_cached_build_has_its_own_history_and_reports_the_cache(tmp_path: Path
     run.toolchain.output["build"] = (1, "FAILED: a.obj\n/w/a.cpp:1:1: error: boom\n")
     failed = go()
     assert not failed.ok and failed.summary[1] == "compiler cache: 2 hits, 0 misses (100.0 %)"
+
+
+# -- the counts a run reports for its build record ----------------------------------------------------------------
+
+
+def test_a_result_carries_the_test_counts_for_the_build_record(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["test"] = (8, CTEST_FAILURE)
+    counts = run.go().tests
+    assert counts is not None
+    assert (counts.total, counts.passed, counts.failed, counts.skipped, counts.skipped_disc) == (4, 2, 2, 0, 0)
+    assert run.go().tests is not None  # a second call on a fresh result is independent
+    assert Run(tmp_path / "b").go().tests is None  # a build without tests has none
+
+
+def test_every_skip_counts_as_a_disc_skip_when_the_run_had_no_disc(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, disc=build_run.DiscTests(None, "no disc"))
+    run.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    counts = run.go().tests
+    assert counts is not None and (counts.skipped, counts.skipped_disc) == (2, 2)
+
+
+DISC_LISTING = """\
+Test project C:/work/coney/build/ci
+  Test #2: the disc's level80
+  Test #3: the disc's level99
+
+Total Tests: 2
+"""
+
+
+def test_with_a_disc_only_the_skipped_disc_tests_count_as_disc_skips(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, disc=build_run.DiscTests("the environment"))
+    run.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    run.toolchain.output["ctest-list"] = (0, DISC_LISTING)
+    counts = run.go().tests
+    assert counts is not None and (counts.skipped, counts.skipped_disc) == (2, 2)
+    other = Run(tmp_path / "other", test=True, disc=build_run.DiscTests("the environment"))
+    other.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    other.toolchain.output["ctest-list"] = (0, "Test project x\n  Test #1: core.math\n\nTotal Tests: 1\n")
+    counts = other.go().tests
+    assert counts is not None and (counts.skipped, counts.skipped_disc) == (2, 0)
+
+
+def test_the_result_says_which_steps_ran(tmp_path: Path) -> None:
+    assert Run(tmp_path / "a", test=True, configure=True).go().ran == ("configure", "build", "test")
+    assert Run(tmp_path / "b").go().ran == ("build",)
