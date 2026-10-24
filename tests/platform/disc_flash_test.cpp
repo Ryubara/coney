@@ -440,7 +440,7 @@ TEST_CASE(
     "[disc][story][flash]") {
     // Issue #234, the player's path: a new story's level99, its checkpoints in one session as the story plays them,
     // the dealer reached with the stick and the flash bought with triangle, then d-pad right with the health the game
-    // left him (docs/research/combat-rage.md#flash-teleport). The test calls the end of each checkpoint's play
+    // left him (docs/research/teleports.md#flash-lesson). The test calls the end of each checkpoint's play
     // (P1.Cleanup, P2.NavigationSection) and the fence's break (P3.FenceBroken), as the hand-over, street and fence
     // tests do: the course, the street lesson and the roofs are played by those tests, not here.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();

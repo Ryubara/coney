@@ -346,7 +346,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     // A placement first breaks any pair the human is in (Human_SetTransform calls Human_BreakPair,
     // docs/research/combat-grabs.md#pair-break), so its partner is let go; then the fighting starts afresh and the
     // flags the scripts set stay. So does the health: Human_SetTransform (0x0023d440) never touches it, so a hurt
-    // human teleported (TeleportToFlag, a scene's release) is still hurt (docs/research/characters.md#teleport-health),
+    // human teleported (TeleportToFlag, a scene's release) is still hurt (docs/research/teleports.md#keeps-health),
     // as level99's flash lesson needs. A human just made has full health already, so its first placement leaves it
     // full.
     m_fighter.breakPair();

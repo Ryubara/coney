@@ -912,18 +912,6 @@ steps are on [World flags](flags.md#player-starts).
 **No player**: `level100` (the front end), `level1` (its script only calls `MenuLoadLevel("menu")`), and the levels
 without a `.lev` file.
 
-#### A teleport keeps the health {#teleport-health}
-
-`Human_SetTransform` (`0x0023d440`) breaks the pair, marks the human placed (`+0x1b3`, state bit `0x40000000` with
-the time), sets the transform, the heading and the brain's facing, and drops a brain action that cannot survive a
-move; it does not touch the health, the record at `+0x144`. Confirmed (code) at `0x0023d440`; confirmed (runtime), run
-r-20261024-teleport-keeps-health: `HuSetHealthPercent(player, 35)` gave Cleon 535 of 1530 in level80, and
-`TeleportToFlag(player, fC1Vermin1, -1)` moved him from (−193.4, 127.5) to (−199.0, 126.4) with his health still 535
-of 1530. So a hurt player stays hurt across the scripts' teleports: `P2.SetupLesson1` sets the new Rembrandt to 35 %
-and `P3.DealerPoizo` teleports him to the flash dealer still hurt, which is what gives the flash lesson something to
-heal ([The flash](combat-rage.md#flash-teleport)). That a scene's release keeps it too is inferred from the scripts:
-the level99 lesson needs the 35 % to survive `l99_c2`.
-
 ### The characters' update {#update}
 
 The task manager's play tick (`0x003a3148` → `0x003a2ea0`, called first in mode 1's frame,
@@ -2974,9 +2962,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/human/locomotion_gate.*` is the locomotion gate ([Tasks](tasks.md#locomotion-gate)): `stickBusy()`
   (`Human_IsBusy`'s mask `0xaeebf7ff`, in the air or held: no stick step) and `stickVelocityGated()` (`0x110c0880`, or
   state code 5 or 6: the stick turns the human but sets no velocity).
-- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit; also every teleport
-  and scene release, which keep the health, [A teleport keeps the health](#teleport-health); until issue #234 it
-  filled the health, so the level99 flash lesson had nothing to heal), its per-player
+- `src/human/human.*` is the human: spawn (a 2.5 m ray from 1 m above, feet 0.01 above the hit), its per-player
   record (the stick, the camera's forward, the command and the buttons, written by the pad or a brain) and its update
   in three passes ([Tasks](tasks.md#humans-update)): `animate()` (the animation), `updateState()` (root motion of the
   clips that move the body, locomotion through the gate, air control or a climb's move, gravity, move or fall, the
@@ -3311,10 +3297,3 @@ default ids are known, [Anim slots](#anim-slots)), and the
   409) in `run_circle`'s steps 54-56; which clip of the blend the original stores.
 - **The circling run's turn**: on `run_circle`'s step 75 Coney turns 16.92° against the original's 16.44°, which the
   camera's auto-follow then grows to 6.6°; whether the stick is turned by the camera of this update or the last.
-
-### What else a teleport resets {#q-teleport-reset}
-
-`Human_SetTransform` keeps the health ([A teleport keeps the health](#teleport-health)), but what `TeleportToFlag`'s
-human slot `+0x14c` does is not traced, and whether the rage, the power and a stun survive a teleport is not checked.
-Coney's placement (`Human::spawn`) keeps the health and restarts the rest of the fighter's state as a creation does
-(a stand-in). To settle it: hurt, enrage and stun a human in PCSX2, `TeleportToFlag` it and read the meters.
