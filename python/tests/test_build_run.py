@@ -1580,6 +1580,25 @@ def test_with_a_disc_only_the_skipped_disc_tests_count_as_disc_skips(tmp_path: P
     assert counts is not None and (counts.skipped, counts.skipped_disc) == (2, 0)
 
 
+def test_the_disc_listing_is_asked_with_the_disc_label(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, disc=build_run.DiscTests("the environment"))
+    run.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    run.toolchain.output["ctest-list"] = (0, DISC_LISTING)
+    run.go()
+    listing = next(c for c in run.toolchain.commands if c[0] == "ctest" and "-N" in c)
+    assert listing[listing.index("-L") + 1] == "disc"
+
+
+def test_a_failed_disc_listing_fails_the_run_and_counts_every_skip_as_a_disc_skip(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, disc=build_run.DiscTests("the environment"))
+    run.toolchain.output["test"] = (0, SKIPPING_CTEST)
+    run.toolchain.output["ctest-list"] = (1, "")
+    result = run.go()
+    assert not result.ok and result.exit_code == 1
+    assert any("ctest -N -L disc" in line and "exit 1" in line for line in result.summary)
+    assert result.tests is not None and (result.tests.skipped, result.tests.skipped_disc) == (2, 2)
+
+
 def test_the_result_says_which_steps_ran(tmp_path: Path) -> None:
     assert Run(tmp_path / "a", test=True, configure=True).go().ran == ("configure", "build", "test")
     assert Run(tmp_path / "b").go().ran == ("build",)

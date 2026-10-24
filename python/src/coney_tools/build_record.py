@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The build record: what a run of `coney-tools build` leaves behind so that `task check` and `pr verify` can read
-what happened instead of parsing printed text (docs/guides/stamps.md#build-record).
+"""The build record: what a run of `coney-tools build` leaves behind so that `task check` (and `pr verify`, planned)
+can read what happened instead of parsing printed text (docs/guides/stamps.md#build-record).
 
 At the end of every run that configured, built or tested, `coney-tools build` writes one JSON file to
 `<scratch>/<task>/build-runs/<sha256>.json`, named by the SHA-256 of its bytes (canonical JSON, like a stamp's line), so
@@ -17,7 +17,7 @@ import hashlib
 import json
 import os
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +48,7 @@ def make(
     ran: Sequence[str],
     tests: Mapping[str, int] | None,
     disc: str | None,
+    tool_revision: str | None = None,
     log_sha256: str,
     started: str,
     ended: str,
@@ -68,6 +69,7 @@ def make(
         "ran": list(ran),
         "tests": dict(tests) if tests is not None else None,
         "disc": disc,
+        "tool_revision": tool_revision,
         "log": log,
         "log_sha256": log_sha256,
         "started": started,
@@ -86,6 +88,32 @@ def write(folder: Path, record: Mapping[str, Any]) -> Path:
     temporary.write_bytes(data)
     temporary.replace(path)
     return path
+
+
+_COVERED = re.compile(r'"build_record_sha256"\s*:\s*"([0-9a-f]{64})"')
+
+
+def covered(scratch: Path) -> set[str]:
+    """The hashes of the build records that a stamp in the live log of any task under `scratch` covers
+    (`covers.build_record_sha256`): a stamp can no longer be checked against a record that is gone."""
+    found: set[str] = set()
+    for segment in scratch.glob("*/stamps/*.jsonl"):
+        try:
+            found.update(_COVERED.findall(segment.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue
+    return found
+
+
+def prune(folder: Path, keep: int, protected: Collection[str] = ()) -> None:
+    """Remove the oldest records of `folder` beyond the newest `keep` (by modification time), as the logs they point at
+    are removed, except those whose hash is in `protected` (see `covered`); anything that is not a record's file is
+    left alone."""
+    records = [path for path in folder.glob("*.json") if _NAME.match(path.stem)]
+    records.sort(key=lambda path: (path.stat().st_mtime, path.name))
+    for old in records[:-keep] if keep > 0 else records:
+        if old.stem not in protected:
+            old.unlink(missing_ok=True)
 
 
 def read(folder: Path, sha256: str) -> dict[str, Any]:

@@ -388,9 +388,11 @@ when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new ga
 `@coney-only`), and `repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only
 --agent <id>`: configure, no build). It catches what MSVC lets through: a designated initializer that skips a field
 (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access (`bugprone-unchecked-optional-access`).
-[The command's page](coney-tools-build.md#check) has the options. It does not replace the list below, which is the whole
-gate, and it leaves to CI the warnings only GCC emits, macOS, the sanitizers and the nightly full clang-tidy pass; a
-change to the build setup is checked on its changed files only.
+[The command's page](coney-tools-build.md#check) has the options. It does not replace `coney-tools task check`
+([profiles and checks](coney-tools-repo.md#task-check)), the gate that runs the whole list for the change's kind and
+writes the `checked` stamp, nor the list below, which is the whole gate, and it leaves to CI the warnings only GCC
+emits, macOS, the sanitizers and the nightly full clang-tidy pass; a change to the build setup is checked on its changed
+files only.
 
 clang-tidy waits for a slot of the machine's tidy lane, like a build, and skips every file the shared cache has seen
 clean in the same state, so a rerun after a fix tidies only what the fix reaches ([building](building.md#clang-tidy-cache)).

@@ -440,6 +440,9 @@ def _build(
     )
     print(f"log: {log_path}", flush=True)
     started = datetime.now(UTC)
+    # The commit and the state of the worktree are read before anything runs: a commit made during the run is not the
+    # one that was built.
+    snapshot = _snapshot(root, task)
     toolchain = build_run.ProcessToolchain(root, env)
     lifetime(toolchain)
     with log_path.open("a", encoding="utf-8", buffering=1) as log, _removed_after(stats_log):
@@ -464,7 +467,7 @@ def _build(
             cache_report=lambda: cache_line(cache, folder, stats_log, toolchain),
         )
         result = build_run.execute(options, context)
-    _leave_record(args, root, result, log_path, started, disc, task)
+    _leave_record(args, root, result, log_path, started, disc, snapshot)
     for line in result.summary:
         print(line)
     return result
@@ -477,18 +480,17 @@ def _leave_record(
     log_path: Path,
     started: datetime,
     disc: build_run.DiscTests,
-    task: str | None,
+    snapshot: tuple[str, str, bool] | None,
 ) -> None:
-    """Write the build record of a run that configured, built or tested, and say where it went in the summary. A
-    checkout git cannot describe, or a name that is no task, gets no record: the build itself never fails for it."""
-    if not result.ran:
+    """Write the build record of a run that configured, built or tested, and say where it went in the summary.
+    `snapshot` is (task, tip, dirty) as they were before the run; None (a checkout git cannot describe, or a name that
+    is no task) gets no record: the build itself never fails for it."""
+    if not result.ran or snapshot is None:
         return
+    name, tip, dirty = snapshot
     try:
-        name = unit.task_name(root, task)
-        tip = unit.head_commit(root)
-        dirty = bool(unit.status_lines(root))
         log_bytes = log_path.read_bytes()
-    except (ConfigError, OSError):
+    except OSError:
         return
     counts = result.tests
     record = build_record.make(
@@ -503,16 +505,37 @@ def _leave_record(
         ran=result.ran,
         tests=asdict(counts) if counts is not None else None,
         disc=disc.source,
+        tool_revision=_tool_revision(),
         log_sha256=hashlib.sha256(log_bytes).hexdigest(),
         started=started.strftime("%Y-%m-%dT%H:%M:%SZ"),
         ended=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         log=str(log_path),
     )
     try:
-        result.record = build_record.write(unit.Unit.of(root, name).dir / build_record.FOLDER, record)
+        folder = unit.Unit.of(root, name).dir / build_record.FOLDER
+        result.record = build_record.write(folder, record)
+        build_record.prune(folder, KEEP_LOGS, build_record.covered(folder.parent.parent))
     except OSError:
         return
     result.summary.append(f"build record: {result.record.stem[:12]} ({name})")
+
+
+def _snapshot(root: Path, task: str | None) -> tuple[str, str, bool] | None:
+    """The task, the commit `HEAD` names and whether the worktree has uncommitted changes, or None when git cannot
+    say or the name is no task."""
+    try:
+        return unit.task_name(root, task), unit.head_commit(root), bool(unit.status_lines(root))
+    except (ConfigError, OSError):
+        return None
+
+
+def _tool_revision() -> str | None:
+    """The commit of the coney-tools code that ran (the checkout this file is in), None when it is not a git checkout
+    (an installed copy)."""
+    try:
+        return unit.head_commit(Path(__file__).resolve().parent)
+    except (ConfigError, OSError):
+        return None
 
 
 def _command_line(args: argparse.Namespace) -> list[str]:

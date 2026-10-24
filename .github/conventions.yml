@@ -843,6 +843,33 @@ stamps:
     relations: [same, stand-in, not-ported]
     stand_in_markers: [stand-in, "Coney's choice"]   # a comment at the code carries one (testing.md#stand-ins)
 
+proof:
+  # What a change must pass on this machine before it is opened as a pull request (`coney-tools task check`;
+  # docs/guides/coney-tools-repo.md#task-check): the profile a change needs is the first one below, in the order of this list, whose
+  # `classes` hold the CI scope class (`paths.docs_only`, `tools_only`, `engine`, else `unknown`) of every changed
+  # path. `checks` are the names `task check` runs, in this order, and the `checked` stamp records. A task may ask
+  # for a bigger profile.
+  profiles:
+    - name: docs
+      classes: [docs_only]
+      checks: [docs-check, mkdocs, pre-commit, actionlint]
+    - name: tooling
+      classes: [docs_only, tools_only]
+      checks: [docs-check, mkdocs, pre-commit, ruff, mypy, pytest, actionlint]
+    - name: full
+      classes: [docs_only, tools_only, engine, unknown]
+      checks: [docs-check, mkdocs, pre-commit, ruff, mypy, pytest, actionlint, msvc-ci-build, ctest-full-disc]
+  # A check that applies only when a changed path starts with one of these prefixes (a check not listed always applies
+  # in a profile that names it).
+  only_when:
+    actionlint: [".github/workflows/", ".github/actions/"]
+  # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
+  # answering whether it built and the second whether the suite ran whole with the disc, from the build record a
+  # run of `coney-tools build` leaves (docs/guides/stamps.md#build-record).
+  build:
+    preset: ci
+    checks: [msvc-ci-build, ctest-full-disc]
+
 research:
   # The research pages of docs/research/ (docs/guides/writing-docs.md#research-pages): the kinds a page can be, the
   # sections each keeps and the limits `coney-tools docs check` holds a page to. Pages that do not meet the standard

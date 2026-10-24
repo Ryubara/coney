@@ -135,10 +135,11 @@ another one. The accepted cost is that a clean rebase can combine with upstream 
 
 ## The build record {#build-record}
 
-`task check` and `pr verify` must know that the engine built and the whole suite ran with the disc, without parsing
-printed text. Every run of `coney-tools build` that configured, built or tested therefore ends by writing one record to
-`<scratch>/<task>/build-runs/<sha256>.json` (the task is `CONEY_TASK`, else the branch; no record outside a git
-checkout). The file is canonical JSON, like a stamp's line, and is named by the SHA-256 of its bytes, so the `checked`
+`task check` (and `pr verify`, planned) must know that the engine built and the whole suite ran with the
+disc, without parsing printed text. Every run of `coney-tools build` that configured, built or tested therefore ends
+by writing one record to `<scratch>/<task>/build-runs/<sha256>.json` (the task is `CONEY_TASK`, else the branch; no
+record outside a git checkout). The file is canonical JSON, like a stamp's line, and is named by the SHA-256 of its
+bytes, so the `checked`
 stamp covers it by `build_record_sha256` and an edited record no longer reads. The code is `coney_tools/build_record.py`
 (`make`, `write`, `read`, `problems`).
 
@@ -146,20 +147,24 @@ stamp covers it by `build_record_sha256` and an edited record no longer reads. T
 | --- | --- |
 | `record_version` | The format, `1` |
 | `task`, `agent` | Whose run it was |
-| `tip`, `dirty` | The commit built, and whether the worktree had uncommitted changes |
+| `tip`, `dirty` | The commit built, and whether the worktree had uncommitted changes, both read before the run starts (a commit made during the run is not the one built) |
 | `preset`, `filters`, `command_line` | The CMake preset, the test filters (`-R`, `-L`; any makes it a partial run) and the arguments |
 | `exit_code`, `ran` | The run's exit code, and which of `configure`, `build`, `test` started |
 | `tests` | `total`, `passed`, `failed`, `skipped` and `skipped_disc` (the skipped tests that need the disc: all skips when the run had none, else those `ctest -N -L disc` lists); null when no test run ended |
+| `tool_revision` | The commit of the coney-tools code that ran the build (null for a copy outside a git checkout) |
 | `disc` | Where the disc came from (`CONEY_DISC`, a config file), null when there was none; the ISO is not hashed (slow, and a hash proves nothing about what the player owns) |
 | `log`, `log_sha256` | The run's log in scratch and its hash |
 | `started`, `ended` | Times, UTC |
 
 `problems(record, tip=, preset=)` returns every reason a record is not one whole, clean, full-suite run of the preset
 on the tip with the disc: another preset or version, filters, a non-zero exit, another commit, uncommitted changes, no
-test run, no tests, failed tests, skipped disc tests, a log that no longer matches its hash. `task check` refuses to
-count a record that has one. The record holds no game data and no test output, only counts. Only `coney-tools build`
-writes it and the hooks keep an agent from writing one by hand; neither stops the person at the machine, as with the
-stamps.
+test run, no tests, failed tests, skipped disc tests, a log that no longer matches its hash. A skipped test counts as
+a disc test when `ctest -N -L disc` lists it; if that listing fails the run fails (every skip would otherwise pass as a
+non-disc skip). `task check` refuses to count a record that has one. The record holds no game data and no test output,
+only counts. Only `coney-tools build` writes it, the protect hook refuses an agent's Edit, Write or shell write into
+a `build-runs` folder as it does for `stamps`, and the newest 20 records are kept (the logs' rule), except a record
+that a stamp in any task's live log covers, which is never removed. None of this stops the person at the machine, as
+with the stamps.
 
 ## Study {#study}
 
@@ -382,6 +387,6 @@ What the three steps bound to the change record (all unsigned, in the local log)
 
 | Step | `covers` | `detail` (at most 2 KB) |
 | --- | --- | --- |
-| `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc}, `preset`, `minutes` |
+| `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `rules` (`base`: the profiles and path classes were read from the base's file; `branch`: the base has no `proof` section yet), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc}, `preset`, `minutes` |
 | `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256` | `verdict`, `functions` (address to a one-letter class), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`; more than 2 KB of per-function verdicts goes to `<scratch>/<task>/review.json`, covered by `review_sha256` |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |

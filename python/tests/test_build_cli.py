@@ -19,6 +19,7 @@ import pytest
 from coney_tools import build_cli, build_record, build_run, compiler_cache, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, TIDY_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
+from coney_tools.config import ConfigError
 from coney_tools.process_lifetime import Process
 
 PRESETS = {
@@ -1141,5 +1142,61 @@ def test_the_build_for_a_check_runs_the_whole_suite_and_returns_its_record(
 def test_the_build_for_a_check_refuses_an_unknown_preset_with_a_config_error(
     checkout: Path, fake_toolchain: type[FakeToolchain]
 ) -> None:
-    with pytest.raises(build_cli.ConfigError, match="asan"):
+    with pytest.raises(ConfigError, match="asan"):
         build_cli.build_and_test(checkout, "alice", "asan")
+
+
+def test_the_record_names_the_commit_and_state_from_before_the_run(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    before = subprocess.run(
+        ["git", "-C", str(checkout), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    execute = build_run.execute
+
+    def commit_during_the_run(options: build_run.Options, context: build_run.Context) -> build_run.Result:
+        (checkout / "late.txt").write_text("made while building", encoding="utf-8")
+        for command in (["add", "-A"], ["-c", "user.name=T", "-c", "user.email=t@e.org", "commit", "-q", "-m", "late"]):
+            subprocess.run(["git", "-C", str(checkout), *command], check=True, capture_output=True)
+        return execute(options, context)
+
+    monkeypatch.setattr(build_run, "execute", commit_during_the_run)
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    [path] = records(tmp_path)
+    record = build_record.read(path.parent, path.stem)
+    assert record["tip"] == before and record["dirty"] is False
+    assert "tool_revision" in record
+
+
+def test_only_the_newest_records_are_kept(checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]) -> None:
+    git_checkout(checkout)
+    folder = tmp_path / "scratch" / "main" / "build-runs"
+    folder.mkdir(parents=True)
+    for number in range(build_cli.KEEP_LOGS + 5):
+        old = folder / f"{number:064x}.json"
+        old.write_text("{}", encoding="utf-8")
+        os.utime(old, (1_000_000 + number, 1_000_000 + number))
+    other = folder / "notes.txt"
+    other.write_text("not a record", encoding="utf-8")
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    assert len(records(tmp_path)) == build_cli.KEEP_LOGS and other.exists()
+    assert not (folder / f"{0:064x}.json").exists() and (folder / f"{build_cli.KEEP_LOGS + 4:064x}.json").exists()
+
+
+def test_pruning_after_a_build_keeps_the_record_a_stamp_covers(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    folder = tmp_path / "scratch" / "main" / "build-runs"
+    folder.mkdir(parents=True)
+    for number in range(build_cli.KEEP_LOGS + 5):
+        old = folder / f"{number:064x}.json"
+        old.write_text("{}", encoding="utf-8")
+        os.utime(old, (1_000_000 + number, 1_000_000 + number))
+    stamps = tmp_path / "scratch" / "other-task" / "stamps"
+    stamps.mkdir(parents=True)
+    covers = '{"covers":{"build_record_sha256":"' + f"{0:064x}" + '"}}\n'
+    (stamps / "0001.jsonl").write_text(covers, encoding="utf-8")
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    assert (folder / f"{0:064x}.json").exists() and not (folder / f"{1:064x}.json").exists()

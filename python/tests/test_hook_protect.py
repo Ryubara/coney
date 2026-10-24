@@ -185,6 +185,28 @@ def test_no_one_writes_a_stamp_log_by_hand(agent_type: str, tmp_path: Path) -> N
         assert protect.refusal(bash(command, agent_type)), command
 
 
+@pytest.mark.parametrize("agent_type", EVERYONE)
+def test_no_one_writes_a_build_record_by_hand(agent_type: str, tmp_path: Path) -> None:
+    record = tmp_path / "scratch" / "task-1" / "build-runs" / ("a" * 64 + ".json")
+    for tool, field in (("Write", "file_path"), ("Edit", "file_path"), ("NotebookEdit", "notebook_path")):
+        reason = protect.refusal(call(tool, {field: str(record)}, agent_type))
+        assert reason is not None and "stage commands" in reason, tool
+    for command in (
+        "echo '{}' > scratch/t/build-runs/abc.json",
+        "cp good.json scratch/t/build-runs/abc.json",
+        "rm scratch/t/build-runs/abc.json",
+        "sed -i s/a/b/ scratch/t/build-runs/abc.json",
+        "Set-Content scratch\\t\\build-runs\\abc.json 'x'",
+    ):
+        assert protect.refusal(bash(command, agent_type)), command
+
+
+def test_reading_a_build_record_is_allowed(tmp_path: Path) -> None:
+    record = str(tmp_path / "scratch" / "t" / "build-runs" / "abc.json")
+    assert protect.refusal(call("Read", {"file_path": record}, "engineer")) is None
+    assert protect.refusal(bash("cat scratch/t/build-runs/abc.json")) is None
+
+
 def test_reading_and_verifying_a_stamp_log_is_allowed(tmp_path: Path) -> None:
     log = str(tmp_path / "scratch" / "t" / "stamps" / "0001.jsonl")
     assert protect.refusal(call("Read", {"file_path": log}, "engineer")) is None

@@ -1043,9 +1043,8 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
     result.ran = (*result.ran, "test")
-    result.tests = TestCounts(
-        tests.total, tests.passed, tests.failed_count, tests.skipped, _skipped_disc(options, context, tests)
-    )
+    disc_skips, listing_error = _skipped_disc(options, context, tests)
+    result.tests = TestCounts(tests.total, tests.passed, tests.failed_count, tests.skipped, disc_skips)
     if context.test_costs is not None:
         context.test_costs.record(options.preset, options.folder / COST_DATA)
     _, code, seconds = ran[0]
@@ -1055,6 +1054,10 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     counts += f", {tests.skipped} skipped" if tests.skipped else ""
     if options.disc is not None:
         result.summary.append(options.disc.line(tests.skipped))
+    if listing_error:
+        # Fail closed: a run whose disc tests cannot be told from the others is not a whole one.
+        result.summary.append(f"test: FAILED ({listing_error})")
+        return _failed(result, "test", False)
     if code == 0 and not tests.none_found:
         result.summary.append(f"test: ok in {_duration(seconds)} ({phase.lane_text(selected)}): {counts}")
         result.summary.append("result: ok")
@@ -1072,16 +1075,23 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     return _failed(result, "test", False, "test" if outside else "", names[:3])
 
 
-def _skipped_disc(options: Options, context: Context, tests: TestScan) -> int:
-    """How many of the skipped tests need the disc. Without a disc every skip counts (the disc tests skip, and the
-    run is not a whole one); with one, a skip counts when `ctest -N -L disc` lists the test."""
+def _skipped_disc(options: Options, context: Context, tests: TestScan) -> tuple[int, str]:
+    """How many of the skipped tests need the disc, and why that could not be told (empty when it could). Without a
+    disc every skip counts (the disc tests skip, and the run is not a whole one); with one, a skip counts when
+    `ctest -N -L disc` lists the test. When the listing fails every skip counts and the reason is returned, so the
+    caller fails the run instead of passing a gate it could not check."""
     if not tests.skipped:
-        return 0
+        return 0, ""
     if options.disc is None or options.disc.source is None:
-        return tests.skipped
+        return tests.skipped, ""
     code, output = context.toolchain.capture(_ctest(options, "-N", "-L", "disc"), None)
-    listed = set(parse_test_names(output)) if code == 0 else set()
-    return sum(1 for name in tests.skipped_names if name in listed)
+    if code != 0:
+        return (
+            tests.skipped,
+            f"could not list the disc tests with `ctest -N -L disc` (exit {code}), so the skips are unchecked",
+        )
+    listed = set(parse_test_names(output))
+    return sum(1 for name in tests.skipped_names if name in listed), ""
 
 
 def _report_cache(result: Result, context: Context, step: str) -> None:

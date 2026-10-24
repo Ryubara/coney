@@ -117,3 +117,39 @@ def test_a_record_of_another_version_is_refused() -> None:
     record = make()
     record["record_version"] = 99
     assert any("version" in line for line in build_record.problems(record, tip=TIP, preset="ci"))
+
+
+def test_the_record_holds_the_revision_of_the_tool() -> None:
+    assert make(tool_revision="ef" * 20)["tool_revision"] == "ef" * 20
+    assert make()["tool_revision"] is None
+
+
+def test_prune_keeps_the_newest_records_and_leaves_other_files(tmp_path: Path) -> None:
+    import os
+
+    names = [f"{number:064x}.json" for number in range(5)]
+    for number, name in enumerate(names):
+        (tmp_path / name).write_text("{}", encoding="utf-8")
+        os.utime(tmp_path / name, (1_000 + number, 1_000 + number))
+    (tmp_path / "keep.txt").write_text("x", encoding="utf-8")
+    build_record.prune(tmp_path, 2)
+    assert sorted(p.name for p in tmp_path.iterdir()) == [*names[3:], "keep.txt"]
+
+
+def test_a_record_covered_by_a_stamp_of_any_task_is_never_pruned(tmp_path: Path) -> None:
+    import os
+
+    scratch = tmp_path / "scratch"
+    folder = scratch / "one" / "build-runs"
+    folder.mkdir(parents=True)
+    names = [f"{number:064x}" for number in range(5)]
+    for number, name in enumerate(names):
+        (folder / f"{name}.json").write_text("{}", encoding="utf-8")
+        os.utime(folder / f"{name}.json", (1_000 + number, 1_000 + number))
+    other = scratch / "two" / "stamps"
+    other.mkdir(parents=True)
+    line = '{"covers":{"build_record_sha256":"' + names[0] + '","diff_sha256":"ab"},"step":"checked"}\n'
+    (other / "0001.jsonl").write_text(line, encoding="utf-8")
+    assert build_record.covered(scratch) == {names[0]}
+    build_record.prune(folder, 2, build_record.covered(scratch))
+    assert sorted(p.stem for p in folder.glob("*.json")) == [names[0], names[3], names[4]]
