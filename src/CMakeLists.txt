@@ -15,6 +15,7 @@ add_library(coney_core STATIC
     core/game_random.cpp
     core/game_timer.cpp
     core/input_script.cpp
+    core/json.cpp
     core/name_hash.cpp
     core/parse_number.cpp
     core/clip_recording.cpp
@@ -25,6 +26,7 @@ add_library(coney_core STATIC
     core/pad_handlers.cpp
     core/pads.cpp
     core/sha1.cpp
+    core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
     fileio/file_stream.cpp
@@ -511,4 +513,9 @@ add_library(coney_install STATIC install/install_manifest.cpp install/installer.
 coney_target_defaults(coney_install)
 target_link_libraries(coney_install PUBLIC coney_core)
 target_compile_definitions(coney_install PRIVATE CONEY_VERSION="${PROJECT_VERSION}")
+# The launcher's platform-neutral half: release manifests, versions and update plans; no window, network or file
+# code here (docs/guides/launcher.md).
+add_library(coney_launcher STATIC launcher/release_manifest.cpp launcher/update_plan.cpp)
+coney_target_defaults(coney_launcher)
+target_link_libraries(coney_launcher PUBLIC coney_core)
 add_subdirectory(platform)

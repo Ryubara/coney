@@ -294,6 +294,7 @@ nav:
           - Loading and viewing your disc: guides/running-viewers.md
           - Playing a level, tracing and logs: guides/running-play-level.md
           - Controls and input scripts: guides/running-input.md
+      - The launcher: guides/launcher.md
       - Testing: guides/testing.md
       - Stamps, studies and pairs: guides/stamps.md
       - The sandbox: guides/sandbox.md
