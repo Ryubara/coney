@@ -117,7 +117,10 @@ the table is the one to fix.
   ```
 
   `docs render` fills it, and refuses a group that has no block, a group with two, a marker that names no group and a
-  block that is out of date.
+  block that is out of date. Each stale block is one finding that names its own group, even when its page holds
+  several blocks. The pages are the Markdown files under the `guides` folder of each folder `paths.docs` names in
+  [.github/conventions.yml](repo:.github/conventions.yml) (`docs/guides`), read from that key and not from a path of
+  the tool's own.
 * **The gate.** `coney-tools docs render --check` changes nothing and exits 1 for any of those; it runs as the audit
   check `files.command-reference` (`repo audit --files`), which `check changed` and the `python` workflow run, so a
   pull request that adds or changes a command without rendering its page is refused.

@@ -282,6 +282,38 @@ def test_a_group_whose_block_was_removed_is_found(root: Path) -> None:
     assert problem.item == "doctor" and "no block of its parameters" in problem.message
 
 
+def test_one_stale_block_on_a_page_that_holds_several_names_only_its_group(root: Path) -> None:
+    # coney-tools-setup.md holds eight blocks; the finding is about the one that changed.
+    edit(
+        root,
+        "docs/guides/coney-tools-setup.md",
+        "<!-- command-reference:begin doctor -->\n",
+        "<!-- command-reference:begin doctor -->\nedited by hand\n",
+    )
+    (problem,) = found(af.command_reference_current, context(root))
+    assert problem.item == "docs/guides/coney-tools-setup.md"
+    assert problem.message == "the block for 'doctor' is out of date (run `coney-tools docs render`)"
+
+
+def test_the_guides_are_read_from_the_folder_paths_docs_names(root: Path) -> None:
+    shutil.move(root / "docs" / "guides", root / "manual-guides")
+    (root / "manual").mkdir()
+    shutil.move(root / "manual-guides", root / "manual" / "guides")
+    # Still `docs/` in the conventions: the blocks are not where the key says, so every group lacks one ...
+    assert {p.item for p in found(af.command_reference_current, context(root)) if "no block" in p.message}
+    # ... and when the key names the new folder the check finds them, current.
+    edit_yaml(root, CONVENTIONS_FILE, lambda data: data["paths"].__setitem__("docs", ["manual/", "research/"]))
+    assert found(af.command_reference_current, context(root)) == []
+    edit(
+        root,
+        "manual/guides/coney-tools-setup.md",
+        "<!-- command-reference:begin doctor -->\n",
+        "<!-- command-reference:begin doctor -->\nedited by hand\n",
+    )
+    (problem,) = found(af.command_reference_current, context(root))
+    assert problem.item == "manual/guides/coney-tools-setup.md" and "'doctor'" in problem.message
+
+
 # --- files.ci-scope and files.large-file-limit ------------------------------------------------------------------
 
 
