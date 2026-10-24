@@ -11,10 +11,10 @@
 // in circles at 90 %). It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it
 // prints counts only (LEGAL.md).
 
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <cstdio>
 #include <format>
 #include <numbers>
 #include <optional>
@@ -68,6 +68,24 @@ std::string padScript(std::uint64_t theft) {
 // The health the old player 1 is left with before the hand-over.
 constexpr int kHurt = 100;
 
+// The text "X of Y" at the start of `text` read as the pair (X, Y); nothing when it is not that. std::from_chars, not
+// sscanf: it needs no terminated string and MSVC does not flag it as unsafe.
+std::optional<std::pair<int, int>> parseXOfY(std::string_view text) {
+    constexpr std::string_view kOf = " of ";
+    int value = 0;
+    int maximum = 0;
+    const char* const end = text.data() + text.size();
+    const auto [afterValue, valueError] = std::from_chars(text.data(), end, value);
+    if (valueError != std::errc{} || std::string_view(afterValue, end).substr(0, kOf.size()) != kOf) {
+        return std::nullopt;
+    }
+    const auto [afterMaximum, maximumError] = std::from_chars(afterValue + kOf.size(), end, maximum);
+    if (maximumError != std::errc{}) {
+        return std::nullopt;
+    }
+    return std::pair{value, maximum};
+}
+
 // The health and maximum the play mode's hand-over line gives ("player: handed to human ..., health X of Y"); nothing
 // when there is none.
 std::optional<std::pair<int, int>> handOverHealth(const std::vector<std::string>& lines) {
@@ -78,10 +96,8 @@ std::optional<std::pair<int, int>> handOverHealth(const std::vector<std::string>
         if (line.find(kLine) == std::string::npos || health == std::string::npos) {
             continue;
         }
-        int value = 0;
-        int maximum = 0;
-        if (std::sscanf(line.c_str() + health + kHealth.size(), "%d of %d", &value, &maximum) == 2) {
-            return std::pair{value, maximum};
+        if (const auto parsed = parseXOfY(std::string_view(line).substr(health + kHealth.size()))) {
+            return parsed;
         }
     }
     return std::nullopt;
