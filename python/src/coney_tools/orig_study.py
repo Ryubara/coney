@@ -311,7 +311,6 @@ def study(
     rules: Stamps,
     commit: str,
     who: Mapping[str, Any],
-    sign: stamps.Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> StudyResult:
     """Study the function at `address` (a `0x%08x` string): fetch it from Ghidra (`fetch`), or with `fetch=None` re-cut
@@ -407,7 +406,6 @@ def study(
                 "globals": len(after.globals),
             },
             who=who,
-            sign=sign,
             clock=clock,
         )
         stamped = True

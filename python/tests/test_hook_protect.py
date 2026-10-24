@@ -127,7 +127,7 @@ def test_no_one_reads_a_private_key(agent_type: str) -> None:
         "ls ~/.ssh/",
         "cat ~/./.ssh/id_rsa",
         "type %USERPROFILE%\\.ssh\\id_ed25519",
-        "cat $HOME/.ssh/coney-stamp",
+        "cat $HOME/.ssh/id_rsa_work",
         "cat ~/.s*/id_rsa",
     ):
         assert protect.refusal(bash(command, agent_type)), command
@@ -137,7 +137,7 @@ def test_no_one_reads_a_private_key(agent_type: str) -> None:
 
 def test_a_public_key_the_config_and_known_hosts_may_be_read() -> None:
     for command in (
-        "cat ~/.ssh/coney-stamp.pub",
+        "cat ~/.ssh/id_rsa_work.pub",
         "cat ~/.ssh/config",
         "cat ~/.ssh/known_hosts",
         "ssh-keygen -lf ~/.ssh/id_ed25519.pub",
@@ -195,12 +195,8 @@ def test_reading_and_verifying_a_stamp_log_is_allowed(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("agent_type", EVERYONE)
-def test_no_one_signs_or_loads_keys_or_reads_other_processes(agent_type: str) -> None:
+def test_no_one_reads_other_processes(agent_type: str) -> None:
     for command in (
-        "ssh-keygen -Y sign -f k -n coney-stamp f",
-        "ssh-keygen -U -Y sign -n coney-stamp -f k body",
-        "ssh-add ~/key",
-        "ssh-add -D",
         "cat /proc/1234/environ",
         "tr '\\0' '\\n' < /proc/self/cmdline",
         "wmic process get commandline",
@@ -208,14 +204,10 @@ def test_no_one_signs_or_loads_keys_or_reads_other_processes(agent_type: str) ->
     ):
         reason = protect.refusal(bash(command, agent_type))
         assert reason is not None and "not for agents" in reason, command
-    # Verifying, listing keys and listing processes without their command lines are how a stamp or a hang is debugged.
+    # Listing processes without their command lines is how a hang is debugged.
     for command in (
-        "ssh-keygen -Y verify -f signers -I a -n coney-stamp -s sig",
-        "ssh-keygen -Y find-principals -f signers -s sig",
-        "ssh-keygen -lf key.pub",
-        "ssh-add -l",
-        "ssh-add -L",
         "tasklist",
+        "ps -e",
     ):
         assert protect.refusal(bash(command, agent_type)) is None, command
 
@@ -241,26 +233,26 @@ def test_normalise_folds_every_spelling_to_one() -> None:
 @pytest.mark.parametrize("agent_type", EVERYONE)
 def test_a_search_or_a_message_that_only_mentions_a_command_is_not_that_command(agent_type: str) -> None:
     for command in (
-        'grep -rn "ssh-add" docs',
-        "grep -rn ssh-add .claude",
-        "grep -A 3 -B 1 'ssh-add' docs/guides/agents.md",
+        'grep -rn "Win32_Process" docs',
+        "grep -rn Win32_Process .claude",
+        "grep -A 3 -B 1 'Win32_Process' docs/guides/agents.md",
         "rg Win32_Process .claude",
-        'rg -n "ssh-keygen -Y sign" docs',
-        'git log -S "ssh-keygen -Y sign" --oneline',
-        'git log --grep="ssh-add" --oneline',
+        'rg -n "wmic process" docs',
+        'git log -S "wmic process" --oneline',
+        'git log --grep="Win32_Process" --oneline',
         'git grep -n "/proc/self/environ" -- docs',
         'grep "/proc/self/environ" docs/guides/agents.md',
         'cat docs/a.md | grep -n "wmic process"',
         'Select-String -Pattern "Win32_Process" -Path docs/guides/agents.md',
-        'pytest python/tests -k "ssh_add"',
-        "uv run --project python pytest python/tests/test_hook_protect.py -k ssh_add -q",
-        "python -m pytest -k 'Win32_Process or ssh_keygen'",
-        'git commit -m "tools: Refuse ssh-add and ssh-keygen -Y sign for agents"',
+        'pytest python/tests -k "Win32_Process"',
+        "uv run --project python pytest python/tests/test_hook_protect.py -k Win32_Process -q",
+        "python -m pytest -k 'Win32_Process or wmic'",
+        'git commit -m "tools: Refuse wmic process and /proc/1/environ for agents"',
         'git commit -am "tools: Refuse wmic process and Win32_Process"',
-        'git commit -m"tools: Refuse ssh-add"',
+        'git commit -m"tools: Refuse Win32_Process"',
         'git commit --message="tools: Refuse /proc/1/environ"',
-        'git -C repo commit -m "tools: Refuse ssh-add; also wmic process | x"',
-        'gh issue create --title "Refuse ssh-add" --body "ssh-keygen -Y sign is refused"',
+        'git -C repo commit -m "tools: Refuse Win32_Process; also wmic process | x"',
+        'gh issue create --title "Refuse Win32_Process" --body "/proc/1/environ is refused"',
     ):
         assert protect.refusal(bash(command, agent_type)) is None, command
 
@@ -276,12 +268,12 @@ def test_a_message_that_names_a_private_path_is_not_a_use_of_it() -> None:
 
 def test_the_command_itself_is_still_refused_when_text_surrounds_it() -> None:
     for command in (
-        "grep -rn x docs; ssh-add ~/key",
-        'echo "ssh-add" && ssh-add ~/key',
-        'git commit -m "x" && ssh-keygen -Y sign -f k -n coney-stamp f',
+        "grep -rn x docs; cat /proc/1/environ",
+        'echo "Win32_Process" && cat /proc/1/environ',
+        'git commit -m "x" && cat /proc/2/cmdline',
         "git log -S x | cat /proc/1/environ",
-        'bash -c "ssh-add ~/key"',
-        'sh -c "ssh-keygen -Y sign -f k -n n f"',
+        'bash -c "cat /proc/1/environ"',
+        'sh -c "cat /proc/3/cmdline"',
         "pytest -k x; wmic process get commandline",
         'git commit -m "a" ; echo x > scratch/t/stamps/0001.jsonl',
         'git commit -m "ok" && cat ~/.coney/identity/a.json',
@@ -333,17 +325,32 @@ def test_a_short_name_is_resolved_to_the_real_path_where_the_system_can(monkeypa
 
 def test_text_the_shell_would_run_is_not_skipped() -> None:
     for command in (
-        'git commit -m "$(ssh-add ~/key)"',
-        'git commit -m "`ssh-add ~/key`"',
+        'git commit -m "$(cat /proc/1/environ)"',
+        'git commit -m "`cat /proc/1/environ`"',
         'grep "$(cat ~/.coney/identity/a.json)" docs',
-        'pytest -k "$(ssh-add -D)"',
+        'pytest -k "$(wmic process get commandline)"',
     ):
         assert protect.refusal(bash(command)), command
 
 
 def test_an_unclosed_quote_does_not_hide_a_command() -> None:
     # The rest of the line belongs to the unclosed quote, and is still read as it was before.
-    assert protect.refusal(bash('git commit -m "x; ssh-add ~/key'))
-    assert protect.refusal(call("PowerShell", {"command": 'git commit -m "x"; ssh-add ~/key'}))
-    # In PowerShell a backslash does not escape the quote: the message ends at the second quote and ssh-add runs.
-    assert protect.refusal(call("PowerShell", {"command": 'git commit -m "a\\"; ssh-add ~/key; echo "b"'}))
+    assert protect.refusal(bash('git commit -m "x; cat /proc/1/environ'))
+    assert protect.refusal(call("PowerShell", {"command": 'git commit -m "x"; cat /proc/1/environ'}))
+    # In PowerShell a backslash does not escape the quote: the message ends at the second quote and the read runs.
+    assert protect.refusal(call("PowerShell", {"command": 'git commit -m "a\\"; cat /proc/1/environ; echo "b"'}))
+
+
+@pytest.mark.parametrize("agent_type", EVERYONE)
+def test_deleting_keys_from_the_persons_ssh_agent_is_refused_and_listing_them_is_not(agent_type: str) -> None:
+    for command in ("ssh-add -D", "ssh-add -d key.pub", "ssh-add -d", "ssh-add -D; echo done"):
+        reason = protect.refusal(bash(command, agent_type))
+        assert reason is not None and "SSH agent" in reason and "stamp" not in reason, command
+    for command in ("ssh-add -l", "ssh-add -L", "ssh-add -l -E sha256", "git log -S 'ssh-add -D' --oneline"):
+        assert protect.refusal(bash(command, agent_type)) is None, command
+
+
+@pytest.mark.parametrize("agent_type", EVERYONE)
+def test_signing_is_not_special_any_more(agent_type: str) -> None:
+    # Stamps are not signed (docs/guides/stamps.md), so no command that signs is refused for them.
+    assert protect.refusal(bash("ssh-keygen -Y sign -f k -n some-namespace f", agent_type)) is None

@@ -35,15 +35,12 @@ def add_commands(commands: Any) -> None:
 
 
 def stamp_folder(root: Path, task: str | None, explicit: Path | None) -> Path | None:
-    """The stamp log that backs the code claims: `explicit`, else the task's in the scratch folder, else the one a pull
-    request publishes under research/units/; None when there is none."""
+    """The stamp log that backs the code claims: `explicit`, else the task's in the scratch folder; None when there is
+    none."""
     if explicit is not None:
         return explicit
-    name = unit.task_name(root, task)
-    for folder in (unit.Unit.of(root, name).stamps, root / "research" / "units" / name / "stamps"):
-        if folder.is_dir():
-            return folder
-    return None
+    folder = unit.Unit.of(root, unit.task_name(root, task)).stamps
+    return folder if folder.is_dir() else None
 
 
 def run(args: Any) -> int:

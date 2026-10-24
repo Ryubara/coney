@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the stamp log: records, the append-only chain, segments, signatures and verification."""
+"""Tests for the stamp log: records, the append-only chain, segments and verification."""
 
 import dataclasses
 import json
@@ -9,9 +9,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from stamp_support import allowed_signers, make_key, needs_ssh_keygen, rules
+from conventions_support import REPO
+from stamp_support import rules
 
-from coney_tools import stamp_sign, stamps
+from coney_tools import stamps
 from coney_tools.identity import file_name as identity_file_name
 from coney_tools.stamps import ZERO, StampError
 
@@ -71,11 +72,13 @@ def test_first_stamp_starts_the_chain_and_the_next_links_to_it(tmp_path: Path) -
     assert len(lines(tmp_path)) == 2
 
 
-def test_the_body_leaves_out_the_signature_and_the_hash_covers_the_body(tmp_path: Path) -> None:
+def test_a_stamp_has_no_signature_and_its_hash_covers_the_whole_line(tmp_path: Path) -> None:
     stamp = add(tmp_path)
-    assert b'"sig"' not in stamp.body
+    assert "sig" not in stamp.data and b'"sig"' not in stamp.line.encode("utf-8")
+    assert stamp.body == stamp.line.encode("utf-8")
     assert stamps.sha256_hex(stamp.body) == stamp.hash
     assert stamp.line.encode("utf-8").startswith(b"{")
+    assert set(stamp.data) == set(stamps.FIELDS)
 
 
 @pytest.mark.parametrize(
@@ -255,84 +258,14 @@ def test_latest_and_current_look_at_step_subject_and_covers(tmp_path: Path) -> N
     assert report.head == report.stamps[-1].hash and stamps.verify(tmp_path / "none", rules()).head == ZERO
 
 
-def test_signed_steps_without_a_signature_are_a_warning_locally_and_an_error_for_a_release(tmp_path: Path) -> None:
-    add(tmp_path, step="checked", subject="")
-    local = stamps.verify(tmp_path, rules())
-    assert local.ok and [p.severity for p in local.problems] == ["warning"]
-    strict = stamps.verify(tmp_path, rules(), require_signatures=True)
-    assert not strict.ok and "unsigned" in strict.problems[0].text
-
-
-def fake_signer(body: bytes) -> dict[str, Any]:
-    """A signer that signs by reversing the body's hash, for the log's tests."""
-    return {"signer": "alice", "armor": "SIG:" + stamps.sha256_hex(body)}
-
-
-def fake_verifier(body: bytes, armor: str, when: datetime) -> str:
-    """The matching verifier."""
-    if armor != "SIG:" + stamps.sha256_hex(body):
-        raise stamp_sign.SignError("the signature does not verify: bad")
-    return "alice"
-
-
-def test_a_signed_stamp_verifies_and_a_changed_body_does_not(tmp_path: Path) -> None:
-    clock = Clock()
-    add(tmp_path, step="checked", subject="", sign=fake_signer, clock=clock)
-    ok = stamps.verify(tmp_path, rules(), require_signatures=True, verifier=fake_verifier)
-    assert ok.ok and ok.problems == []
-    edit_line(tmp_path, 0, lambda o: o["detail"].update(statements=99))
-    bad = stamps.verify(tmp_path, rules(), require_signatures=True, verifier=fake_verifier)
-    assert not bad.ok and any("signature" in p.text for p in bad.problems)
-
-
-def test_a_signature_on_an_unsigned_step_is_checked_too(tmp_path: Path) -> None:
-    add(tmp_path, step="studied", sign=fake_signer)
-    edit_line(tmp_path, 0, lambda o: o["sig"].update(armor="SIG:wrong"))
-    assert any("signature" in text for text in problems(tmp_path, verifier=fake_verifier))
-
-
-def test_a_failing_signer_writes_nothing(tmp_path: Path) -> None:
-    def broken(body: bytes) -> dict[str, Any]:
-        raise stamp_sign.SignError("no key in the agent")
-
-    with pytest.raises(StampError, match="no key in the agent"):
-        add(tmp_path, step="checked", subject="", sign=broken)
-    assert lines(tmp_path) == []
-
-
 def test_the_seal_names_the_stamp_before_it(tmp_path: Path) -> None:
     clock = Clock()
     before = add(tmp_path, step="reviewed", subject="", clock=clock)
-    seal = add(tmp_path, step="pr-opened", subject="", sign=fake_signer, covers={"pr_text_sha256": SHA}, clock=clock)
+    seal = add(tmp_path, step="pr-opened", subject="", covers={"title_sha256": SHA}, clock=clock)
     assert seal.covers["chain_head"] == before.hash
-    assert stamps.verify(tmp_path, rules(), verifier=fake_verifier).ok
+    assert stamps.verify(tmp_path, rules()).ok
     edit_line(tmp_path, 1, lambda o: o["covers"].update(chain_head=SHA))
     assert any("chain_head" in text for text in problems(tmp_path))
-
-
-@needs_ssh_keygen
-def test_a_real_signed_chain_verifies_against_the_signers_file(tmp_path: Path) -> None:
-    key = make_key(tmp_path / "keys")
-    signers = allowed_signers(tmp_path / "signers", ("alice", key))
-    folder = tmp_path / "log"
-    rule = rules()
-    sign = stamp_sign.signer_for(key.private, rule.namespace)
-    assert sign is not None
-
-    # signer_for takes the agent path (-U); the test signs with the private key file instead.
-    def by_file(body: bytes) -> dict[str, Any]:
-        return {"signer": "alice", "armor": stamp_sign.sign(body, key.private, rule.namespace, use_agent=False)}
-
-    clock = Clock()
-    add(folder, step="studied", clock=clock)
-    add(folder, step="checked", subject="", sign=by_file, clock=clock)
-    add(folder, step="reviewed", subject="", sign=by_file, clock=clock)
-    add(folder, step="pr-opened", subject="", sign=by_file, covers={"pr_text_sha256": SHA}, clock=clock)
-    report = stamps.verify(folder, rule, signers=signers, require_signatures=True)
-    assert report.problems == [] and report.ok
-    other = make_key(tmp_path / "other", comment="mallory")
-    allowed_signers(signers, ("mallory", other))
-    assert not stamps.verify(folder, rule, signers=signers, require_signatures=True).ok
 
 
 def test_who_is_hook_sourced_only_for_a_token_the_hook_issued(tmp_path: Path) -> None:
@@ -371,11 +304,11 @@ def test_who_is_hook_sourced_only_for_a_token_the_hook_issued(tmp_path: Path) ->
     assert forged["kind"] == "tool" and forged["tool"] == "t"
 
 
-def test_a_release_check_refuses_a_missing_or_empty_log(tmp_path: Path) -> None:
+def test_a_check_that_needs_a_log_refuses_a_missing_or_empty_one(tmp_path: Path) -> None:
     for folder in (tmp_path / "none", tmp_path):
-        report = stamps.verify(folder, rules(), require_signatures=True)
+        report = stamps.verify(folder, rules(), require_stamps=True)
         assert not report.ok and "no stamps" in report.problems[0].text
-        assert stamps.verify(folder, rules()).ok  # outside a release an empty log is just a start
+        assert stamps.verify(folder, rules()).ok  # otherwise an empty log is just a start
 
 
 def test_the_log_must_belong_to_the_expected_task(tmp_path: Path) -> None:
@@ -430,11 +363,55 @@ def test_append_many_writes_all_or_none(tmp_path: Path) -> None:
         stamps.append_many(tmp_path, rules=rules(), task="t", entries=[entry("c"), entry("d", result="maybe")])
     assert [s.subject for s in stamps.verify(tmp_path, rules()).stamps] == ["a", "b"]
 
-    def broken(body: bytes) -> dict[str, Any]:
-        raise stamp_sign.SignError("no key")
 
-    with pytest.raises(StampError, match="no key"):
-        stamps.append_many(
-            tmp_path, rules=rules(), task="t", entries=[entry("e"), entry("f", step="checked")], sign=broken
-        )
-    assert len(stamps.verify(tmp_path, rules()).stamps) == 2
+def legacy_row(seq: int, prev: str, sig: Any, step: str = "studied") -> bytes:
+    """A line as stamps were written while they were signed: the same keys plus `sig`, outside the hashed body."""
+    body: dict[str, Any] = {
+        "v": 1,
+        "seq": seq,
+        "task": "t",
+        "step": step,
+        "subject": "0x00100000",
+        "result": "pass",
+        "commit": COMMIT,
+        "covers": {"decompile_sha256": SHA},
+        "detail": {},
+        "who": {"kind": "tool", "tool": "test"},
+        "time": f"2026-10-22T12:00:0{seq}Z",
+        "prev": prev,
+    }
+    return stamps.canonical({**body, "sig": sig}) + b"\n"
+
+
+def test_a_log_written_with_signature_fields_still_reads_and_can_be_added_to(tmp_path: Path) -> None:
+    armor = {"signer": "alice", "armor": "-----BEGIN SSH SIGNATURE-----\nAAAA\n-----END SSH SIGNATURE-----\n"}
+    first = legacy_row(1, ZERO, None)
+    first_hash = stamps.sha256_hex(stamps.canonical({k: v for k, v in json.loads(first).items() if k != "sig"}))
+    second = legacy_row(2, first_hash, armor, step="checked")
+    tmp_path.mkdir(exist_ok=True)
+    (tmp_path / "0001.jsonl").write_bytes(first + second)
+    report = stamps.verify(tmp_path, rules())
+    assert report.ok and report.problems == [] and [s.seq for s in report.stamps] == [1, 2]
+    assert report.stamps[1].line.encode("utf-8") + b"\n" == second  # the old line is kept as it was
+    third = add(tmp_path, clock=Clock())
+    assert third.prev == report.stamps[1].hash and "sig" not in third.data
+    assert stamps.verify(tmp_path, rules()).ok  # a new stamp chains onto the old ones
+
+
+def test_a_signature_field_that_is_neither_null_nor_an_object_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "0001.jsonl").write_bytes(legacy_row(1, ZERO, "not a signature"))
+    assert any("sig" in text for text in problems(tmp_path))
+
+
+def test_the_signature_of_an_old_stamp_is_not_checked_any_more(tmp_path: Path) -> None:
+    (tmp_path / "0001.jsonl").write_bytes(
+        legacy_row(1, ZERO, {"signer": "mallory", "armor": "nonsense"}, step="checked")
+    )
+    report = stamps.verify(tmp_path, rules())
+    assert report.ok and report.problems == []
+
+
+def test_the_current_rules_know_no_signing() -> None:
+    assert not (REPO / ".github" / "stamp-signers").exists()
+    assert not hasattr(rules(), "signed") and not hasattr(rules(), "namespace") and not hasattr(rules(), "signers_file")
+    assert not hasattr(stamps, "Sign") and not hasattr(stamps, "Verifier")

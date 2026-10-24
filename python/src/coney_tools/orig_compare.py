@@ -156,7 +156,6 @@ def compare(
     base: str = "origin/main",
     key: str | None = None,
     carry: bool = False,
-    sign: stamps.Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     copy_check: Callable[[Path, str], list[orig_copy.Finding]] = orig_copy.check,
 ) -> CompareResult:
@@ -245,7 +244,6 @@ def compare(
         covers=covers,
         detail={**result.counts, "coney": coney.key, "copy_check": "ok"},
         who=dict(who),
-        sign=sign,
         clock=clock,
     )
     result.status = "stamped"

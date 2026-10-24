@@ -32,4 +32,3 @@ pcsx2_mcp_dir   = ""                                    # a PCSX2-MCP fork build
 luac_program    = ""                                    # a stock Lua 4.0 luac for `lua decompile --roundtrip`; default: the one `workspace init --fetch lua` builds in ../../tools/lua-4.0.1/bin
 lua_dir         = ""                                    # the shared folder of decompiled game scripts (`lua decompile --all`); default: ../../scratch/lua beside the main checkout; never in the repo
 ffmpeg_dir      = ""                                    # folder with ffmpeg and ffprobe, for in-game clips (coney-tools clips); default: PATH
-stamp_key       = ""                                    # the PUBLIC half of your stamp signing key (the private half stays in the SSH agent); only maintainers sign: docs/guides/stamps.md#signing

@@ -213,7 +213,6 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `luac_program` | the `luac` that `workspace init --fetch lua` built in `../../tools/lua-4.0.1/bin` | a stock Lua 4.0 `luac`, for [`lua decompile --roundtrip`](coney-tools-fidelity.md#lua) |
 | `lua_dir` | `scratch/lua` in the main checkout's `../..` (`<clone>-workspace/scratch/lua` in a plain clone) | the shared folder of decompiled game scripts, their index and fingerprints ([`lua decompile --all`](coney-tools-fidelity.md#lua)); game data, so never in a checkout |
 | `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-pcsx2.md#clips)); Coney itself reads `CONEY_FFMPEG` |
-| `stamp_key` | none (stamps are then written unsigned) | the *public* half of your stamp signing key, a file; the private half stays in the SSH agent. Only maintainers have one ([Signing](stamps.md#signing)) |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
 comment. A tool that needs a folder that does not exist stops with an

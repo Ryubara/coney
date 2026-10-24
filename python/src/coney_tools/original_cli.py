@@ -12,8 +12,8 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from coney_tools import fails_first, orig_compare, orig_study, research_where, stamp_sign, stamps, unit
-from coney_tools.config import find_repo_root, load_config, local_config_file
+from coney_tools import fails_first, orig_compare, orig_study, research_where, stamps, unit
+from coney_tools.config import find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
 
@@ -111,14 +111,6 @@ def _conventions(root: Path) -> Conventions:
     return load_conventions(root)
 
 
-def signer_for(root: Path, conventions: Conventions, step: str) -> stamps.Sign | None:
-    """A signing function for `step` when it is a signed step and `stamp_key` is configured, else None (unsigned)."""
-    if step not in conventions.stamps.signed or not local_config_file(root):
-        return None
-    key = load_config(root).paths.get("stamp_key")
-    return stamp_sign.signer_for(key, conventions.stamps.namespace)
-
-
 def run(args: argparse.Namespace) -> int:
     """Run an `original` command."""
     root = find_repo_root(Path.cwd())
@@ -152,7 +144,6 @@ def _study(
         rules=conventions.stamps,
         commit=unit.head_commit(root),
         who=who,
-        sign=signer_for(root, conventions, "studied"),
     )
     study = result.study
     kinds: dict[str, int] = {}
@@ -206,7 +197,6 @@ def _compare(
         base=args.base,
         key=args.coney_function,
         carry=args.carry,
-        sign=signer_for(root, conventions, "compared"),
     )
     if args.show or result.status != "stamped":
         print(result.view_path.read_text(encoding="utf-8"), end="")
@@ -237,12 +227,11 @@ def _fails_first(
 ) -> int:
     """`original fails-first`."""
     rules = conventions.stamps
-    sign = signer_for(root, conventions, "fails-first")
     if args.none is not None and (args.test or args.test_commit or args.fix_commit):
         print("original fails-first: --none runs nothing; give it alone, without --test or --test-commit")
         return 2
     if args.none is not None:
-        stamp = fails_first.record_none(folder, root, args.none, rules=rules, who=who, sign=sign)
+        stamp = fails_first.record_none(folder, root, args.none, rules=rules, who=who)
         print(f"original fails-first: none ({stamp.detail['reason']}); stamp #{stamp.seq}")
         return 0
     if not args.test or not args.test_commit:
@@ -262,7 +251,6 @@ def _fails_first(
         runner=fails_first.build_runner(agent),
         rules=rules,
         who=who,
-        sign=sign,
     )
     for stamp in written:
         print(

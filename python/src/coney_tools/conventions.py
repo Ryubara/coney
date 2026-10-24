@@ -12,7 +12,6 @@ instead of leaving a rule silently off.
 from __future__ import annotations
 
 import re
-import subprocess
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -684,18 +683,12 @@ class PairRules:
 
 @dataclass(frozen=True)
 class Stamps:
-    """The stamp log's rules (docs/guides/stamps.md): its steps, which are signed, and how signatures are checked."""
+    """The stamp log's rules (docs/guides/stamps.md): its steps, results and the pairs files' vocabulary."""
 
-    #: The signature namespace (`ssh-keygen -Y sign -n`).
-    namespace: str
-    #: The allowed-signers file, relative to the repository root: one public key per maintainer.
-    signers_file: str
     #: A log segment is closed before it would pass this many bytes (the repository's file check is 512 KB).
     segment_bytes: int
     #: Every step a stamp may name, in the order of the workflow.
     steps: tuple[str, ...]
-    #: The steps whose stamps must carry a valid signature.
-    signed: tuple[str, ...]
     #: The results a stamp may have.
     results: tuple[str, ...]
     pairs: PairRules
@@ -1925,19 +1918,14 @@ def _read_workspace(data: object, where: str) -> Workspace:
 
 def _read_stamps(data: object, where: str) -> Stamps:
     """The `stamps` section: the stamp log's steps, signing and pairs rules."""
-    table = _table(data, where, ("namespace", "signers_file", "segment_bytes", "steps", "signed", "results", "pairs"))
+    table = _table(data, where, ("segment_bytes", "steps", "results", "pairs"))
     steps = _texts(table["steps"], _at(where, "steps"))
-    signed = _texts(table["signed"], _at(where, "signed"))
-    _names_in(signed, steps, _at(where, "signed"), "a step in stamps.steps")
     pairs_where = _at(where, "pairs")
     pairs = _table(table["pairs"], pairs_where, ("kinds", "relations", "stand_in_markers"))
     relations = _texts(pairs["relations"], _at(pairs_where, "relations"))
     return Stamps(
-        namespace=_text(table["namespace"], _at(where, "namespace")),
-        signers_file=_text(table["signers_file"], _at(where, "signers_file")),
         segment_bytes=_count(table["segment_bytes"], _at(where, "segment_bytes"), minimum=4096),
         steps=steps,
-        signed=signed,
         results=_texts(table["results"], _at(where, "results")),
         pairs=PairRules(
             kinds=_texts(pairs["kinds"], _at(pairs_where, "kinds")),
@@ -2116,24 +2104,6 @@ def parse_conventions(data: object) -> Conventions:
         runs=_read_runs(table["runs"], "runs", research.files.runs),
         conclave=_read_conclave(table["conclave"], "conclave"),
     )
-
-
-def load_conventions_at(root: Path, ref: str) -> Conventions:
-    """The conventions as the commit `ref` has them (`git show`), not as the working tree has them: what a check that
-    must not trust the change under review reads. ConventionsError when the ref or its file cannot be read."""
-    done = subprocess.run(
-        ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"],
-        capture_output=True,
-        encoding="utf-8",
-        check=False,
-    )
-    if done.returncode != 0:
-        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: cannot be read ({done.stderr.strip() or 'git failed'})")
-    try:
-        data = yaml.load(done.stdout, Loader=_Loader)
-    except yaml.YAMLError as error:
-        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
-    return parse_conventions(data)
 
 
 def load_conventions(root: Path) -> Conventions:

@@ -381,22 +381,20 @@ coney-tools original fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fi
 ## stamp {#stamp}
 
 ```sh
-uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE | --signers-ref REF]
+uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--require-log]
 uv run --project python coney-tools stamp show [--task T] [--dir LOG]
 ```
 
-`verify` checks a stamp log's chain, every field and every signature that is present, against
-[.github/stamp-signers](repo:.github/stamp-signers). `show` lists the stamps, marks a signature it could not check, and
-exits 1 when the log has errors. Both only read: no command appends a stamp by hand, the stage commands are the only
-writers ([Stamps](stamps.md#log)).
+`verify` checks a stamp log's chain and every field; stamps are not signed, and the `sig` key of an older log is
+ignored ([Stamps](stamps.md#log)). `show` lists the stamps with where each one's identity came from (`hook` or
+`unverified`) and exits 1 when the log has errors. Both only read: no command appends a stamp by hand, the stage
+commands are the only writers ([Stamps](stamps.md#log)).
 
 | Command | Option | What it does |
 | --- | --- | --- |
 | both | `--task T` | The task whose log is read (default: `CONEY_TASK`, else the branch); a log of another task fails |
 | both | `--dir LOG` | Read this log folder instead of the task's. Independent of `--task`: alone, the log's task is not checked; with `--task T`, the log must be task T's |
-| `verify` | `--release` | A release check, which `pr open` and CI will run: a signed step without a signature, or a missing or empty log, fails |
-| `verify` | `--signers FILE` | The allowed-signers file (default: the working tree's `.github/stamp-signers`) |
-| `verify` | `--signers-ref REF` | Read the signers file and the stamp rules from commit REF, not the working tree ([the trust anchor](stamps.md#signing)); CI will pass the pull request's base. Not with `--signers` |
+| `verify` | `--require-log` | A missing or empty log is an error, not just a start |
 
 <!-- command-reference:begin stamp -->
 ## Parameters of `stamp` {#stamp-parameters}
@@ -405,19 +403,17 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 
 ### `stamp verify` {#stamp-verify-usage}
 
-Check the chain, every field and the signatures of a stamp log.
+Check the chain and every field of a stamp log.
 
 ```text
-coney-tools stamp verify [--task TASK] [--dir DIR] [--release] [--signers SIGNERS | --signers-ref REF]
+coney-tools stamp verify [--task TASK] [--dir DIR] [--require-log]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
 | `--dir DIR` | path | none | a stamp log folder (default: the task's, in the scratch folder); with --task, it must be that task's |
-| `--release` | flag | off | a release check (what `pr open` and CI will run): the signed steps must carry valid signatures and the log must not be missing or empty |
-| `--signers SIGNERS` | path | none | the allowed-signers file (default: the working tree's .github/stamp-signers). Not with `--signers-ref`. |
-| `--signers-ref REF` | text | none | read .github/stamp-signers and the stamp rules from this commit (CI will pass the pull request's base, such as origin/main), not from the working tree under review; not with --signers. Not with `--signers`. |
+| `--require-log` | flag | off | a missing or empty log is an error, not just a start |
 
 ### `stamp show` {#stamp-show-usage}
 

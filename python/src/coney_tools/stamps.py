@@ -2,16 +2,19 @@
 """The stamp log: an append-only, hash-chained record of the proof a unit of work carries (docs/guides/stamps.md).
 
 A stamp says that a step ended, with what result, on which commit, covering which hashes, run by whom, when, and what
-the stamp before it hashed to. The stage commands (`original study`, `original compare`, `original fails-first`, later
-`task check`, `task review` and `pr open`) are the only writers: they call `append`, which takes the log's lock, checks
-that the chain is intact and writes one line. `verify` re-reads the log and reports every problem; `pr open` and a CI
-check will call it (neither does yet).
+the stamp before it hashed to. The stage commands (`original study`, `original compare` and `original fails-first`
+today; `task check`, `task review` and `pr open` as they land) are the only writers: they call `append`, which takes
+the log's lock, checks that the chain is intact and writes one line. `verify` re-reads the log and reports every
+problem.
 
 The log is a folder of segments `0001.jsonl`, `0002.jsonl`, ... of canonical JSON lines (UTF-8, sorted keys, no
-spaces). A stamp's *body* is its canonical JSON without `sig`; its *hash* is the SHA-256 of the body; `prev` is the
-previous body's hash, across segments. A signature signs the body, so it covers the whole earlier history, and being
-outside the body it may be added without breaking the chain; the steps in `stamps.signed` must carry a valid one for a
-release.
+spaces). A stamp's *hash* is the SHA-256 of its line without a `sig` key; `prev` is the previous stamp's hash, across
+segments. Stamps are not signed; a stamp written while they were carries a `sig` key, which is read, left out of the
+hash and ignored.
+
+The steps that say a whole change is good (`checked`, `reviewed`, `pr-opened`) are bound to the *change* the branch
+makes, not to a commit: `covers.diff_sha256` (`CHANGE`, computed by `pr_diff`), which a clean rebase keeps and any
+edit of the branch's own lines changes. `commit` stays in each stamp as a record.
 
 A stamp holds hashes, names and counts only: no text from the original, no decompile line, no test output (LEGAL.md).
 """
@@ -31,7 +34,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import identity, stamp_sign
+from coney_tools import identity
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Stamps
 
@@ -39,17 +42,17 @@ from coney_tools.conventions import Stamps
 ZERO = "0" * 64
 #: The format version of a stamp.
 VERSION = 1
-#: A stamp's keys, exactly.
-FIELDS = ("v", "seq", "task", "step", "subject", "result", "commit", "covers", "detail", "who", "time", "prev", "sig")
+#: A stamp's keys, exactly. A stamp of the time they were signed has one more, `sig`, which is ignored (`LEGACY_KEY`).
+FIELDS = ("v", "seq", "task", "step", "subject", "result", "commit", "covers", "detail", "who", "time", "prev")
+#: The key an older stamp may carry: `null`, or `{"signer", "armor"}`. Read, kept in the stamp's line, never hashed.
+LEGACY_KEY = "sig"
+#: The `covers` key that binds a stamp to the change a branch makes (`pr_diff.change_of(...).sha256`).
+CHANGE = "diff_sha256"
 #: The biggest `detail`, canonical bytes (a stamp stays under about a kilobyte).
 MAX_DETAIL = 2048
 _SEGMENT = re.compile(r"^(\d{4})\.jsonl$")
 HEX = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 _TIME = "%Y-%m-%dT%H:%M:%SZ"
-#: Signs a stamp's body: returns the `sig` object, or raises stamp_sign.SignError.
-Sign = Callable[[bytes], dict[str, Any]]
-#: Checks a signature: the principal of the signers file, or raises stamp_sign.SignError.
-Verifier = Callable[[bytes, str, datetime], str]
 
 
 class StampError(ConfigError):
@@ -101,8 +104,8 @@ class Stamp:
 
     @property
     def body(self) -> bytes:
-        """The canonical JSON without the signature: what is hashed and signed."""
-        return canonical({k: v for k, v in self.data.items() if k != "sig"})
+        """The canonical JSON without an old stamp's `sig`: what is hashed."""
+        return canonical({k: v for k, v in self.data.items() if k != LEGACY_KEY})
 
     @property
     def hash(self) -> str:
@@ -230,7 +233,7 @@ def _segments(folder: Path) -> list[Path]:
 
 
 def _read(folder: Path, rules: Stamps) -> Report:
-    """Parse every segment and check the chain, without signatures."""
+    """Parse every segment and check the chain."""
     report = Report()
     previous: Stamp | None = None
     task = ""
@@ -263,8 +266,11 @@ def _parse(row: bytes, where: str, rules: Stamps, report: Report) -> Stamp | Non
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         report.problems.append(Problem("error", where, f"not valid JSON ({error})"))
         return None
-    if not isinstance(data, dict) or set(data) != set(FIELDS):
+    if not isinstance(data, dict) or set(data) - {LEGACY_KEY} != set(FIELDS):
         report.problems.append(Problem("error", where, f"a stamp has exactly the keys {', '.join(FIELDS)}"))
+        return None
+    if data.get(LEGACY_KEY) is not None and not isinstance(data[LEGACY_KEY], dict):
+        report.problems.append(Problem("error", where, "sig: only null or an object (a signature of an older format)"))
         return None
     try:
         if canonical(data) != row:
@@ -320,61 +326,26 @@ def _chain(stamp: Stamp, previous: Stamp | None, task: str, where: str, report: 
         report.problems.append(Problem("error", where, f"seq {stamp.seq}: task {stamp.task!r}, the log is {task!r}'s"))
 
 
-def verify(
-    folder: Path,
-    rules: Stamps,
-    *,
-    signers: Path | None = None,
-    require_signatures: bool = False,
-    verifier: Verifier | None = None,
-    task: str | None = None,
-) -> Report:
-    """Read the log in `folder` and report every problem: the chain, each field, and the signatures.
+def verify(folder: Path, rules: Stamps, *, require_stamps: bool = False, task: str | None = None) -> Report:
+    """Read the log in `folder` and report every problem: the chain and each field.
 
-    A signature that is present is always checked (with `verifier`, else ssh-keygen against `signers`). A stamp of a
-    signed step (`rules.signed`) without one is a warning, or an error with `require_signatures` (what `pr open` and
-    CI will use), which also refuses a missing or empty log. With `task`, a log of another task is an error. A
-    `pr-opened` stamp must name the stamp before it as `chain_head`.
+    With `require_stamps` a missing or empty log is an error (what a check that needs the unit's proof uses). With
+    `task`, a log of another task is an error. A `pr-opened` stamp must name the stamp before it as `chain_head`.
     """
     report = _read(folder, rules)
-    if require_signatures and not report.stamps:
-        report.problems.append(Problem("error", str(folder), "no stamps: a release needs the unit's log"))
+    if require_stamps and not report.stamps:
+        report.problems.append(Problem("error", str(folder), "no stamps: the unit has no log"))
     if task is not None and report.stamps and report.stamps[0].task != task:
         report.problems.append(
             Problem("error", str(folder), f"the log is task {report.stamps[0].task!r}'s, not {task!r}'s")
         )
-    check = verifier or _ssh_verifier(signers, rules.namespace)
     for index, stamp in enumerate(report.stamps):
-        where = f"{folder.name}: seq {stamp.seq}"
         if stamp.step == "pr-opened":
             before = report.stamps[index - 1].hash if index else ZERO
             if stamp.covers.get("chain_head") != before:
+                where = f"{folder.name}: seq {stamp.seq}"
                 report.problems.append(Problem("error", where, "pr-opened: chain_head is not the stamp before it"))
-        sig = stamp.sig
-        if sig is None:
-            if stamp.step in rules.signed:
-                severity = "error" if require_signatures else "warning"
-                report.problems.append(Problem(severity, where, f"{stamp.step}: unsigned"))
-            continue
-        if check is None:
-            report.problems.append(Problem("error", where, "signed, but there is no signers file to check it against"))
-            continue
-        try:
-            check(stamp.body, str(sig.get("armor", "")) if isinstance(sig, dict) else "", stamp.moment)
-        except stamp_sign.SignError as error:
-            report.problems.append(Problem("error", where, f"{stamp.step}: signature: {error}"))
     return report
-
-
-def _ssh_verifier(signers: Path | None, namespace: str) -> Verifier | None:
-    """A Verifier that asks ssh-keygen about `signers`, or None without a signers file."""
-    if signers is None:
-        return None
-
-    def check(body: bytes, armor: str, when: datetime) -> str:
-        return stamp_sign.verify(body, armor, signers, namespace, when)
-
-    return check
 
 
 # --- writing ----------------------------------------------------------------------------------------------------
@@ -428,7 +399,6 @@ def append(
     covers: Mapping[str, str],
     detail: Mapping[str, Any],
     who: Mapping[str, Any],
-    sign: Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> Stamp:
     """Add one stamp to the log in `folder` and return it (see `append_many`)."""
@@ -441,7 +411,7 @@ def append(
         "detail": detail,
         "who": who,
     }
-    return append_many(folder, rules=rules, task=task, entries=[entry], sign=sign, clock=clock)[0]
+    return append_many(folder, rules=rules, task=task, entries=[entry], clock=clock)[0]
 
 
 def append_many(
@@ -450,16 +420,13 @@ def append_many(
     rules: Stamps,
     task: str,
     entries: Sequence[Mapping[str, Any]],
-    sign: Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> list[Stamp]:
     """Add the stamps `entries` describe (each a mapping of step, subject, result, commit, covers, detail, who) to the
     log in `folder` as one write: all of them or none.
 
-    Refuses (StampError, nothing written) when a field is not allowed, when the log is not intact, or when `sign` fails
-    for any of them. Under the lock it assigns `seq` and `prev`, never lets `time` go backwards, and for `pr-opened`
-    fills `chain_head`. `sign` is given for the signed steps when a key is configured; without it the stamps are
-    unsigned.
+    Refuses (StampError, nothing written) when a field of any of them is not allowed or when the log is not intact.
+    Under the lock it assigns `seq` and `prev`, never lets `time` go backwards, and for `pr-opened` fills `chain_head`.
     """
     for entry in entries:
         _check_fields(
@@ -501,15 +468,8 @@ def append_many(
                 "who": dict(entry["who"]),
                 "time": moment.strftime(_TIME),
                 "prev": previous.hash if previous else ZERO,
-                "sig": None,
             }
             stamp = Stamp(data)
-            if sign is not None:
-                try:
-                    data["sig"] = sign(stamp.body)
-                except stamp_sign.SignError as error:
-                    raise StampError(f"the {entry['step']} stamp could not be signed: {error}") from error
-                stamp = Stamp(data)
             written.append(stamp)
             previous = stamp
         _write_lines(folder, "".join(stamp.line + "\n" for stamp in written), rules.segment_bytes)

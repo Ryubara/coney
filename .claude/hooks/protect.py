@@ -3,13 +3,12 @@
 
 * **`~/.coney`**: it holds the identity files the hooks write for `coney-tools` (`identity.py`). The files are named by
   a hash of the token, so a listing does not give a token away, but nobody has a reason to look.
-* **`~/.ssh`**: the stamp key's private half is in the SSH agent, but a key file may sit here. A public key (`.pub`),
-  `config` and `known_hosts` may be read.
+* **`~/.ssh`**: the person's private keys. A public key (`.pub`), `config` and `known_hosts` may be read.
 * **Stamp logs**: Edit and Write may not change a file under a `stamps` folder, and a shell write into one is refused
   (a log is written by the stage commands only, docs/guides/stamps.md).
-* **Signing and processes**: `ssh-keygen -Y sign`, `ssh-add` (listing is fine), and the readers of other processes'
-  command lines and environments (`/proc/<pid>/environ`, `wmic process`, `Win32_Process`), which would show another
-  agent's token.
+* **The SSH agent's keys**: `ssh-add -d` and `-D` delete the person's keys; listing them (`-l`) is fine.
+* **Other processes**: the readers of other processes' command lines and environments (`/proc/<pid>/environ`,
+  `wmic process`, `Win32_Process`), which would show another agent's token.
 
 The rules are built in, not read from `hooks.toml`: a settings file that cannot be read must not take them away, and
 no setting may weaken them. Only the fields of a call that name a path are read (`file_path`, `path`, `notebook_path`,
@@ -47,12 +46,8 @@ STAMP_FOLDERS = ("stamps",)
 #: Shell commands that are not for agents: (pattern over the command, what to do instead).
 COMMANDS = (
     (
-        r"\bssh-keygen\b[^\n;&|]*\s-Y\s*sign\b",
-        "Stamps are signed by the check, review and open commands with the maintainer's key; an agent never signs.",
-    ),
-    (
-        r"\bssh-add\b(?![^\n;&|]*\s-[lL]\b)",
-        "The SSH agent holds the stamp key; an agent may list it (`ssh-add -l`) and nothing more.",
+        r"\bssh-add\b[^\n;&|]*\s-[dD]\b",
+        "Deleting keys from the person's SSH agent is not for agents; listing them (`ssh-add -l`) is fine.",
     ),
     (
         r"(?:>>?|\btee\b|\bcp\b|\bmv\b|\brm\b|\bsed\s+-i|\btruncate\b|\bdd\b|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b)"
@@ -367,5 +362,5 @@ def _path_refusal(path: str) -> str | None:
         )
     used = folder_use(path, KEY_FOLDERS)
     if used and not _key_file_allowed(used[1]):
-        return f"Blocked: ~/{used[0]}/ holds private keys, and the stamp key is never read by an agent.\n"
+        return f"Blocked: ~/{used[0]}/ holds private keys, which an agent never reads.\n"
     return None

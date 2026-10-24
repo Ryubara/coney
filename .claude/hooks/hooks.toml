@@ -30,7 +30,7 @@ powershell_modes = ["bypassPermissions"]
 # may open a pull request. OFF until `pr open` exists; then flip it here.
 refuse_pr_create = false
 
-# What no session may touch (~/.coney, private keys, stamp logs, signing) is built into protect.py: a settings file that
+# What no session may touch (~/.coney, private keys, stamp logs) is built into protect.py: a settings file that
 # cannot be read must not take it away, and no setting may weaken it.
 
 # Rules by agent type. Keys: deny_tool_prefixes (tool names), deny_coney_tools (`coney-tools <words>` commands),
