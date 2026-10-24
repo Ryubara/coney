@@ -39,8 +39,12 @@ fetched, so run `git fetch` first when main has moved.
 
 A worktree with uncommitted changes is refused first (`worktree:`), because the stamps are bound to what is committed
 and the checks read the files. A log that is not intact stops the run after step 1: nothing else in it can be trusted,
-and the unit goes to a maintainer. The `Check` profile the change needs is the smallest of `proof.profiles` that takes
-the [CI scope class](building.md#what-a-pull-request-runs) of every changed path; a path in no class means `full`.
+and the unit goes to a maintainer. The `Check` profile the change needs is the first of `proof.profiles` whose classes
+hold the [CI scope class](building.md#what-a-pull-request-runs) of every changed path (a path in no class means
+`full`), and the checks it must have run are that profile's, less those `proof.only_when` says do not apply: the same
+functions (`proof_profiles`) [`task check`](coney-tools-repo.md#task-check) stamps with. The `proof` section and the
+path classes are read from the remote's default branch (`load_proof_rules_at`), so a branch cannot shrink them; while
+the base has no `proof` section yet, the branch's own are used and the first line says `rules of branch`.
 
 What it refuses, exactly (`<...>` is filled in):
 
@@ -71,9 +75,9 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: stale: the branch changed since Review (diff ... now ...)`; `... the pairs changed since Review` | `task review` |
 | `reviewed` | `reviewed: stale: the pull request title changed since Review`; `... the summary paragraph ...`; `... the screenshots ...` | `task review --text` |
 | `reviewed` | `reviewed: 0x00501000 was judged diff-bug`; `reviewed: Review did not cover 0x00501000` | the engineer fixes, then `task check` and `task review`; `task review` |
-| `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change under `proof.research_paths`) | `task review` |
+| `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change under `tasks.review.research_paths`) | `task review` |
 | `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` | `task review` (another reviewer) |
-| `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: only Claude Opus 5.5 may review a change to an @orig function; this review ran on <model>` (only with `stamps.require_hook_source`) | `task review` |
+| `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: a review of orig work must run on opus; this review ran on <model>` (the agent and the model words of `tasks.review`, the rule `task review --record` applies; only with `stamps.require_hook_source`) | `task review` |
 
 `pr verify` recomputes the change hash itself, against the merge base with the remote default branch, so a `checked`
 stamp made with `task check --base <a branch commit>` (a hash of only the later commits, or rules read from the

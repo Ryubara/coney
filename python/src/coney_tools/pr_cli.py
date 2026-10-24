@@ -99,7 +99,8 @@ def _facts(subject: Subject) -> dict[str, Any]:
         "tip": subject.tip,
         "remote_ref": subject.remote_ref,
         "diff_sha256": subject.diff_sha256,
-        "profile": subject.profile.name,
+        "profile": subject.profile,
+        "rules": subject.rules_from,
         "kind": subject.kind,
     }
 
@@ -131,7 +132,8 @@ def run_verify(args: argparse.Namespace) -> int:
         return 0 if result.ok else 1
     print(
         f"pr verify {subject.task}: change {subject.diff_sha256[:12]} since {subject.remote_ref} "
-        f"({subject.base[:12]}), tip {subject.tip[:12]}, profile {subject.profile.name}"
+        f"({subject.base[:12]}), tip {subject.tip[:12]}, profile {subject.profile} "
+        f"(rules of {subject.rules_from})"
     )
     for note in result.notes:
         print(f"  note: {note}")

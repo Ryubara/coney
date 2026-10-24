@@ -7,8 +7,9 @@ for the change on the branch, each with the exact message and the command to red
 together with all the others, not alone. `pr open` will run the same function before it pushes.
 
 What the stamps are bound to is the *change* (`pr_diff.change_sha256`), not the tip, so a clean rebase keeps them. The
-rules (profiles, the build preset, who may review) are read from the remote's default branch, never from the branch
-being released (`conventions.load_conventions_at`).
+profiles, the checks they need and the build preset are read from the remote's default branch, never from the branch
+being released (`conventions.load_proof_rules_at`, the reader `task check` uses too), and the required profile and
+checks come from `proof_profiles`, the functions `task check` stamps with, so the two always agree.
 
 Nothing here writes: no stamp, no file, no git state.
 """
@@ -17,7 +18,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -33,12 +33,12 @@ from coney_tools import (
     orig_review,
     orig_study,
     pr_diff,
-    pr_profile,
+    proof_profiles,
     review_verdict,
     stamps,
 )
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Conventions, Profile, load_conventions, load_conventions_at
+from coney_tools.conventions import Conventions, ConventionsError, load_conventions, load_proof_rules_at
 from coney_tools.orig_review import Unit as OrigUnit
 from coney_tools.unit import Unit, tracked_files
 
@@ -96,15 +96,19 @@ class Subject:
     task: str
     #: The task's kind (`TASK.md`).
     kind: str
-    #: The rules as the remote's default branch has them.
+    #: The branch's rules, with `proof` and the path scope classes as the remote's default branch has them.
     conventions: Conventions
+    #: Where `proof` came from: `base`, `branch` while the base has no `proof` section yet, or `given` (a test's).
+    rules_from: str
     remote_ref: str
     tip: str
     base: str
     report: stamps.Report
     paths: tuple[str, ...]
     diff_sha256: str
-    profile: Profile
+    #: The Check profile the change needs and the checks of it that apply to its paths.
+    profile: str
+    checks: tuple[str, ...]
     #: The `@orig` functions the branch adds or changes, and those it removes (a note, not a refusal).
     changed: tuple[OrigUnit, ...]
     removed: tuple[OrigUnit, ...]
@@ -178,10 +182,17 @@ def load_subject(
         _git(root, "rev-parse", "--verify", "--quiet", f"{remote_ref}^{{commit}}")
     except ConfigError:
         raise ConfigError(f"{remote_ref} is not known here; run `git fetch {remote} {default}` first") from None
-    rules = conventions or load_conventions_at(root, remote_ref)
+    if conventions is not None:
+        rules, rules_from = conventions, "given"
+    else:
+        try:
+            rules, rules_from = load_proof_rules_at(root, remote_ref, load_conventions(root))
+        except ConventionsError as error:
+            raise ConfigError(str(error)) from error
     tip = _git(root, "rev-parse", "--verify", "HEAD").strip()
     change = pr_diff.change_of(root, remote_ref, tip)
     base, paths = change.base, change.paths
+    profile = proof_profiles.required_profile(rules, paths)
     before = {u.key: u for u in orig_review.units_at(root, base)}
     after = {u.key: u for u in orig_review.units_at(root, tip)}
     changed = tuple(
@@ -196,13 +207,15 @@ def load_subject(
         task=task,
         kind=kind,
         conventions=rules,
+        rules_from=rules_from,
         remote_ref=remote_ref,
         tip=tip,
         base=base,
         report=stamps.verify(unit.stamps, rules.stamps, task=task),
         paths=paths,
         diff_sha256=change.sha256,
-        profile=pr_profile.profile_of(paths, rules),
+        profile=profile,
+        checks=tuple(proof_profiles.required_checks(rules, profile, paths)),
         changed=changed,
         removed=removed,
         dirty=dirty_paths(root),
@@ -422,7 +435,7 @@ def check_checked(subject: Subject) -> list[Refusal]:
         return [Refusal("checked", text, "task check")]
     proof = subject.conventions.proof
     required = subject.profile
-    ran = stamp.detail.get("profile")
+    ran = str(stamp.detail.get("profile"))
     names = [p.name for p in proof.profiles]
     if ran not in names:
         return [
@@ -430,23 +443,24 @@ def check_checked(subject: Subject) -> list[Refusal]:
                 "checked", f"checked: Check ran profile {ran!r}, which is not one of {', '.join(names)}", "task check"
             )
         ]
-    found: list[Refusal] = []
-    if proof.rank(str(ran)) < proof.rank(required.name):
-        ran_classes = proof.profiles[proof.rank(str(ran))].classes
+    if not proof_profiles.at_least(ran, required, subject.conventions):
+        ran_classes = next(p.classes for p in proof.profiles if p.name == ran)
         culprit = next((p for p in subject.paths if subject.conventions.paths.ci_class(p) not in ran_classes), "")
         return [
             Refusal(
                 "checked",
-                f"checked: Check ran profile {ran}, this change needs {required.name} (touches {culprit})",
+                f"checked: Check ran profile {ran}, this change needs {required} (touches {culprit})",
                 "task check",
             )
         ]
+    found: list[Refusal] = []
     listed = stamp.detail.get("checks")
     done = set(listed) if isinstance(listed, list) else set()
-    for check in required.checks:
+    for check in subject.checks:
         if check not in done:
             found.append(Refusal("checked", f"checked: Check did not run: {check}", "task check"))
-    if required.name == proof.profiles[-1].name:
+    # A profile with the build checks has a build record behind them (`proof.build`), as `task check` writes it.
+    if set(subject.checks) & set(proof.build.checks):
         found += _build_record(subject, stamp)
     return found
 
@@ -481,7 +495,7 @@ def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
     if filters:
         shown = " ".join(map(str, filters)) if isinstance(filters, list) else str(filters)
         found += refuse(f"the build record is a filtered run ({shown}); Check needs the full suite")
-    preset = subject.conventions.proof.build_preset
+    preset = subject.conventions.proof.build.preset
     if record.get("preset") != preset:
         found += refuse(f"the build record is for preset {record.get('preset')}, Check needs {preset}")
     if record.get("exit_code") != 0:
@@ -674,11 +688,6 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
 # --- step 4: Review -------------------------------------------------------------------------------------------------
 
 
-def _normal_model(name: str) -> str:
-    """A model's name without case, spaces, dashes or dots, so `Claude Opus 5.5` and `claude-opus-5-5` are one."""
-    return re.sub(r"[^a-z0-9]", "", name.lower())
-
-
 #: A class by its one letter, as `review_verdict` writes it to a stamp's small detail.
 _LETTERS = {letter: name for name, letter in review_verdict.CLASS_LETTERS.items()}
 
@@ -772,7 +781,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
                 found.append(refuse(f"Review did not cover {address}"))
             elif judged not in PASSING_CLASSES:
                 found.append(refuse(f"{address} was judged {judged}", "engineer, then task check and task review"))
-    research = subject.conventions.proof.research_paths
+    research = tuple(subject.conventions.tasks.review.research_paths)
     if any(p.startswith(research) for p in subject.paths):
         pages = stamp.detail.get("pages")
         if not (isinstance(pages, list) and pages):
@@ -782,8 +791,8 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
 
 
 def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refusal]) -> list[Refusal]:
-    """Who reviewed: not someone who worked on the task; when the hook vouches for identities, a reviewer agent, on a
-    model allowed for `@orig` changes."""
+    """Who reviewed: not someone who worked on the task; when the hook vouches for identities, the reviewer agent of
+    `tasks.review`, on a model `tasks.review.reverse_engineering_models` allows for an `@orig` or research change."""
     info = stamp.detail.get("reviewer")
     reviewer = info if isinstance(info, dict) else {}
     found: list[Refusal] = []
@@ -791,16 +800,19 @@ def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refus
         found.append(refuse(f"reviewer {reviewer.get('id')} also worked on this task"))
     if not subject.conventions.stamps.require_hook_source:
         return found
-    if reviewer.get("type") != "reviewer":
-        found.append(refuse(f"the reviewer's type is {reviewer.get('type')}, not reviewer"))
-    allowed = subject.conventions.proof.orig_reviewer_models
-    if subject.changed and _normal_model(str(reviewer.get("model", ""))) not in {_normal_model(m) for m in allowed}:
-        found.append(
-            refuse(
-                f"only {' or '.join(allowed)} may review a change to an @orig function; this review ran on "
-                f"{reviewer.get('model')}"
-            )
-        )
+    review = subject.conventions.tasks.review
+    if reviewer.get("type") != review.agent:
+        found.append(refuse(f"the reviewer's type is {reviewer.get('type')}, not {review.agent}"))
+    # Reverse-engineering review runs on Opus (AGENTS.md): the same rule `task review --record` applies.
+    kinds = {"orig"} if subject.changed else set()
+    if any(p.startswith(tuple(review.research_paths)) for p in subject.paths):
+        kinds.add("research")
+    kinds &= set(review.reverse_engineering_kinds)
+    model = str(reviewer.get("model", ""))
+    words = review.reverse_engineering_models
+    if kinds and not any(word.lower() in model.lower() for word in words):
+        work = " and ".join(sorted(kinds))
+        found.append(refuse(f"a review of {work} work must run on {' or '.join(words)}; this review ran on {model}"))
     return found
 
 

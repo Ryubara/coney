@@ -52,7 +52,7 @@ def test_a_complete_unit_passes(tmp_path: Path) -> None:
     built = make(tmp_path)
     result = built.verify()
     assert texts(result) == [] and result.ok
-    assert result.subject.diff_sha256 == built.diff and result.subject.profile.name == "full"
+    assert result.subject.diff_sha256 == built.diff and result.subject.profile == "full"
     assert [u.coney for u in result.subject.changed] == ["Widget::update"]
 
 
@@ -61,7 +61,7 @@ def test_a_docs_or_tooling_unit_passes_with_a_none_fails_first_and_no_build_reco
     built = make(tmp_path, shape=shape)
     assert texts(built.verify()) == []
     assert not (built.unit.dir / "build-runs").exists()
-    assert built.subject().profile.name == shape
+    assert built.subject().profile == shape
 
 
 # --- step 1: the log ------------------------------------------------------------------------------------------------
@@ -217,7 +217,8 @@ def test_a_check_of_a_smaller_profile_than_the_change_needs_is_refused(tmp_path:
 
 def test_a_check_that_did_not_run_a_listed_check_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"checked"}))
-    built.check("full", checks=["pytest", "ruff", "mypy", "pre-commit", "msvc-ci-build"])
+    full = list(next(p.checks for p in built.conventions.proof.profiles if p.name == "full"))
+    built.check("full", checks=[check for check in full if check != "ctest-full-disc"])
     assert texts(built.verify(), "checked") == ["checked: Check did not run: ctest-full-disc"]
 
 
@@ -445,7 +446,9 @@ def test_the_reviewers_type_and_model_are_held_to_the_rules_only_when_the_flag_i
     strict = with_rules(built, ("stamps.require_hook_source", True))
     refused = texts(built.verify(conventions=strict), "reviewed")
     assert "reviewed: the reviewer's type is engineer, not reviewer" in refused
-    assert any("may review a change to an @orig function" in t and "claude-haiku-5" in t for t in refused), refused
+    assert any("a review of orig work must run on opus" in t and "claude-haiku-5" in t for t in refused), refused
+    built.review(reviewer={"id": "reviewer-2", "type": "reviewer", "model": "claude-opus-5-5"})
+    assert texts(built.verify(conventions=strict), "reviewed") == []
 
 
 def test_a_change_to_research_pages_needs_the_pages_graded(tmp_path: Path) -> None:

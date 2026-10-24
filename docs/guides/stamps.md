@@ -407,5 +407,5 @@ and `task check` reads instead of parsing printed text; the stamp's `build_recor
 Its keys: `tool_revision`, `tip`, `dirty`, `preset`, `filters`, `command_line`, `exit_code`, `tests` (`total`,
 `passed`, `failed`, `skipped`, `skipped_disc`, `disc_hash`), `log_sha256` (the hash of the log saved beside the record
 as `<sha256>.log`, when it still exists), `started` and `ended`. `pr verify` requires a record of the preset
-`proof.build_preset`, with no filter, exit code 0, no failed or disc-skipped test, not dirty, at the commit the
+`proof.build.preset`, with no filter, exit code 0, no failed or disc-skipped test, not dirty, at the commit the
 `checked` stamp names, with the stamp's counts.

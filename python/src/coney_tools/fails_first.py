@@ -168,7 +168,7 @@ def declared_in(root: Path, commit: str, path: str) -> set[str]:
     done = subprocess.run(
         ["git", "-C", str(root), "show", f"{commit}:{path}"], capture_output=True, encoding="utf-8", check=False
     )
-    return _declared_names(done.stdout) if done.returncode == 0 else set()
+    return declared_names(done.stdout) if done.returncode == 0 else set()
 
 
 def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, str, list[str], list[str]]:

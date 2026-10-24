@@ -88,7 +88,10 @@ def test_a_fix_task_continues_its_parents_unit(
     fix = built.unit.dir.parent / "work-fix"
     fix.mkdir()
     task = (built.unit.dir / "TASK.md").read_text(encoding="utf-8")
-    (fix / "TASK.md").write_text(task.replace("task: work", "task: work-fix\nparent: work"), encoding="utf-8")
+    (fix / "TASK.md").write_text(
+        task.replace("task: work", "task: work-fix\nparent: work").replace("kind: feature", "kind: fix"),
+        encoding="utf-8",
+    )
     assert run(built, monkeypatch, "verify", "work-fix") == 0
     assert "pr verify work:" in capsys.readouterr().out
 

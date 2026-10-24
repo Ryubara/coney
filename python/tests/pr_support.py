@@ -266,7 +266,7 @@ class Built:
         tests = {"total": 412, "passed": 412, "failed": 0, "skipped": 0, "skipped_disc": 0}
         if profile == "full":
             covers["build_record_sha256"] = record if record is not None else self.build_record()
-        listed = checks if checks is not None else list(rules.profiles[rules.rank(profile)].checks)
+        listed = checks if checks is not None else list(next(p.checks for p in rules.profiles if p.name == profile))
         detail = {"profile": profile, "checks": listed, "tests": tests, "preset": "ci", "minutes": 21}
         detail.update(more)
         self.stamp("checked", covers=covers, detail=detail)
