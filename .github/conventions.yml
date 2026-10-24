@@ -1060,7 +1060,8 @@ ci:
     log_lines: 40                                # the lines of the failed steps' log quoted in the issue
   # One place per check: where each check of the project runs. `local` is `task check` (which writes the `checked`
   # stamp, running the checks of `proof.profiles`), a stamp command (`original study`, `compare`, `fails-first`) or a
-  # git hook; the CI words are `ci` (every pull request), `main` (a push to main), `nightly` (the scheduled run on
+  # git hook; the CI words are `ci` (every pull request), `main` (a push to main), `release` (a push to a `release/`
+  # branch), `nightly` (the scheduled run on main), `manual` (a run started by hand; the failure issue follows one on
   # main) and `issues` (issue and pull request events, and the sweeps that follow them up). A place that runs in CI
   # names its jobs as <workflow file>/<job id>; `coney-tools repo audit --files` (files.ci-places) fails when a job is
   # missing from the workflows, a job is in no place or a required check (merge.required_checks) is in none.
@@ -1071,7 +1072,7 @@ ci:
     - {id: format, check: "Formatting", where: [local, ci], jobs: ["build/format"], note: "applied by a git pre-commit hook, verified by CI"}
     - {id: compilers, check: "GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds", where: [ci], jobs: ["build/build"]}
     - {id: sanitizers, check: "Linux and macOS sanitizers", where: [ci], jobs: ["build/sanitizers"]}
-    - {id: clang-tidy, check: "clang-tidy: the lines a change touches; the whole codebase nightly and for a build-setup change", where: [ci, main, nightly], jobs: ["build/clang-tidy"]}
+    - {id: clang-tidy, check: "clang-tidy: the lines a change touches; the whole codebase nightly and for a build-setup change", where: [ci, main, release, nightly, manual], jobs: ["build/clang-tidy"]}
     - {id: python, check: "Python: ruff, mypy, pytest, the repository, render and progress checks", where: [local, ci], jobs: ["python/python", "python/python-ok"]}
     - {id: docs, check: "Docs: mkdocs strictly, markdownlint, actionlint, the page standards", where: [local, ci], jobs: ["docs/mkdocs", "docs/markdownlint", "docs/actionlint"]}
     - {id: pull-request, check: "The pull request's title, description and docs", where: [ci], jobs: ["pr/title", "pr/docs", "pr/body"]}
@@ -1080,4 +1081,4 @@ ci:
     - {id: scope, check: "Which jobs a change needs", where: [ci], jobs: ["build/changes", "python/changes"]}
     - {id: caches, check: "Cache upkeep and the docs site", where: [main, nightly], jobs: ["build/cache-prune", "docs/deploy"]}
     - {id: issue-automation, check: "Issue checks, claims, status labels and the weekly report", where: [issues], jobs: ["claim/claim", "hygiene/hygiene", "issue-check/check", "issue-status/status-label"]}
-    - {id: failure-issue, check: "A failure on main opens a P-critical issue", where: [main, nightly], jobs: ["ci-failure/report"]}
+    - {id: failure-issue, check: "A failure on main opens a P-critical issue", where: [main, nightly, manual], jobs: ["ci-failure/report"]}

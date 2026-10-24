@@ -741,6 +741,9 @@ def test_the_ci_places_split_the_checks_between_local_and_ci() -> None:
     local_only = {place.id for place in ci.at("local") if "ci" not in place.where}
     assert {"full-suite", "msvc-ci-build"} <= local_only
     assert "clang-tidy" in {place.id for place in ci.at("nightly")}
+    # build.yml also runs on a push to release/** and by hand, and the failure issue follows a manual run on main
+    assert {"clang-tidy"} <= {place.id for place in ci.at("release")}
+    assert {"clang-tidy", "failure-issue"} <= {place.id for place in ci.at("manual")}
     # a local-only check names no CI job and every CI check names one
     assert all(not place.jobs for place in ci.places if place.where == ("local",))
     assert all(place.jobs for place in ci.places if place.where != ("local",))

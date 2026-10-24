@@ -20,15 +20,16 @@ The `clang-tidy` job of the `build` workflow does the same as the other engine j
 passed) for a draft and for a change that touches no engine file ([what a pull request
 runs](building.md#what-a-pull-request-runs)). Otherwise:
 
-1. `coney-tools ci tidy-plan` reads the pull request's diff (`git diff -U0`) and chooses what to check. A changed source
-   (`.cpp`) is checked itself; a changed header is checked through **one** source that includes it, directly or through
-   other headers (the source with the header's own name if there is one, `brain.h` through `brain.cpp`, else the nearest
-   includer): one is enough to analyse the header's lines, and a header reaches 100 to 280 of the sources. The plan
-   also holds the changed lines of every file. **A change to the build setup** (the top `CMakeLists.txt`, anything
-   under `cmake/`, `CMakePresets.json`, `.clang-tidy`: `ci.tidy.whole_when`) reaches files it does not touch, a compiler
-   flag or a check setting being read by every one, so the plan then says `everything` and the job runs the
-   whole-codebase pass below on that pull request instead of the changed lines. Every other pull request is checked
-   on its changed lines only. The settings (the folders, the extensions, the build-setup files) are `ci.tidy` of
+1. `coney-tools ci tidy-plan` reads the pull request's diff (`git diff -U0 --no-renames`, so a pure rename shows as a
+   deletion and an addition, as in the workflow) and chooses what to check. A changed source (`.cpp`) is checked itself;
+   a changed header is checked through **one** source that includes it, directly or through other headers (the source
+   with the header's own name if there is one, `brain.h` through `brain.cpp`, else the nearest includer): one is enough
+   to analyse the header's lines, and a header reaches 100 to 280 of the sources. The plan also holds the changed lines
+   of every file. **A change to the build setup** (the top `CMakeLists.txt`, anything under `cmake/`,
+   `CMakePresets.json`, `.clang-tidy`: `ci.tidy.whole_when`) reaches files it does not touch, a compiler flag or a check
+   setting being read by every one, so the plan then says `everything` and the job runs the whole-codebase pass below on
+   that pull request instead of the changed lines. Every other pull request is checked on its changed lines only. The
+   settings (the folders, the extensions, the build-setup files) are `ci.tidy` of
    [.github/conventions.yml](repo:.github/conventions.yml).
 2. The job configures and builds the `ci` preset with Clang 19 (through the [compiler cache](building.md#ci-caches),
    which starts from `main`'s), because the build generates the headers clang-tidy needs and writes the compile

@@ -497,6 +497,14 @@ def test_the_places_name_ci_once_and_each_word_in_its_usual_order() -> None:
     assert "| local; CI: a push to main, nightly |" in lines[2]
     text = "\n".join(lines)
     assert "CI, " not in text and "CI: every pull request, CI" not in text
+    # a push to a release branch and a manual run have words of their own, after the others they follow
+    many = conventions_with(
+        ("ci.places.0.where", ["manual", "nightly", "release", "main", "ci"]), ("ci.places.0.jobs", ["x/y"])
+    )
+    assert (
+        "| CI: every pull request, a push to main, a push to a release branch, nightly, a manual run |"
+        in render_block("check-places", many)[2]
+    )
     # the failure issue never runs for a pull request, so its row does not say it does
     issue_row = next(line for line in lines if "P-critical" in line)
     assert "every pull request" not in issue_row

@@ -1000,9 +1000,10 @@ class Conclave:
 
 
 #: Where a check can run (`ci.places[].where`), in the order the table lists them: `local` is `task check` or a git
-#: hook, `ci` every pull request, `main` a push to main, `nightly` the scheduled run on the default branch, `issues`
-#: issue and pull request events and the sweeps that follow them up. Every word but `local` is CI.
-CI_WHERE: tuple[str, ...] = ("local", "ci", "main", "nightly", "issues")
+#: hook, `ci` every pull request, `main` a push to main, `release` a push to a `release/` branch, `nightly` the
+#: scheduled run on the default branch, `manual` a run started by hand, `issues` issue and pull request events and the
+#: sweeps that follow them up. Every word but `local` is CI.
+CI_WHERE: tuple[str, ...] = ("local", "ci", "main", "release", "nightly", "manual", "issues")
 
 
 @dataclass(frozen=True)
@@ -1057,7 +1058,7 @@ class CiPlace:
     check: str
     #: A subset of `CI_WHERE`.
     where: tuple[str, ...]
-    #: For `ci` and `nightly`: the jobs as `<workflow file without .yml>/<job id>`.
+    #: For a check that runs in CI: the jobs as `<workflow file without .yml>/<job id>`.
     jobs: tuple[str, ...]
     note: str
 

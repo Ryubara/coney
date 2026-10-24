@@ -350,7 +350,9 @@ def _audit_checks(conventions: Conventions) -> list[str]:
 _CI_PLACE_WORDS = {
     "ci": "every pull request",
     "main": "a push to main",
+    "release": "a push to a release branch",
     "nightly": "nightly",
+    "manual": "a manual run",
     "issues": "issue and pull request events",
 }
 
