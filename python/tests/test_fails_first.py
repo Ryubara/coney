@@ -11,7 +11,7 @@ import pytest
 from git_support import git
 from stamp_support import rules
 
-from coney_tools import fails_first, stamp_sign, stamps
+from coney_tools import fails_first, stamps
 from coney_tools.fails_first import BuildOutcome, FailsFirstError
 from coney_tools.unit import Unit
 
@@ -404,23 +404,6 @@ def test_a_name_written_as_adjacent_string_literals_matches_when_joined(repo: Re
         fails_first._check_names(repo.root, adjacent, files, ("Widget",))
     with pytest.raises(FailsFirstError, match="split name:"):  # only the whole joined name is a test name
         fails_first._check_names(repo.root, adjacent, files, ("split name",))
-
-
-def test_the_stamps_of_a_multi_name_run_are_written_all_or_none(repo: Repo) -> None:
-    first, second = two_tests(repo)
-
-    def broken(body: bytes) -> dict[str, object]:
-        raise stamp_sign.SignError("no key")
-
-    def runner(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
-        head = git(root, "rev-parse", "HEAD").strip()
-        text = RED_OUTPUT.replace("Widget ready frame", ", ".join(BOTH)) if head == first else GREEN_OUTPUT
-        return fails_first.parse_build_output(text, 0 if "result: ok" in text else 1)
-
-    with pytest.raises(stamps.StampError, match="no key"):
-        run_two(repo, first, second, runner, sign=broken)
-    assert not (repo.unit.stamps / "0001.jsonl").exists()
-    assert len(run_two(repo, first, second, runner)) == 2
 
 
 def test_none_needs_a_short_one_line_reason(repo: Repo) -> None:

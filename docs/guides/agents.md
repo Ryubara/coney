@@ -163,7 +163,7 @@ the role from the hook input's `agent_type` (a subagent's type; for the main ses
 | `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open` |
 | `tooling` | A subagent for the project's own tools and process | The same as the engineer; it may edit `src/` (warning fixes) |
 | `reviewer` (and today's `research-reviewer`, `orig-reviewer`, `pr-reviewer`) | A subagent that reports | Writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`), a git command that changes the index, the tree or the worktrees (`commit`, `add`, `rm`, `mv`, `reset`, `restore`, `checkout`, `switch`, `merge`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `worktree remove`, also after global options such as `--no-pager` or `-C dir`), GitHub writes |
-| every role, and a session with none | | Naming `~/.coney` ([Who runs a command](#identity)); naming a file in `~/.ssh/` other than a `.pub`, `config` or `known_hosts`; reading another process's command line or environment; `ssh-keygen -Y sign` and `ssh-add` (listing with `-l` is fine); Edit or Write under a `stamps/` folder and a shell write into one (a stamp log is written by the stage commands only, [Stamps](stamps.md)) |
+| every role, and a session with none | | Naming `~/.coney` ([Who runs a command](#identity)); naming a file in `~/.ssh/` other than a `.pub`, `config` or `known_hosts`; reading another process's command line or environment; Edit or Write under a `stamps/` folder and a shell write into one (a stamp log is written by the stage commands only, [Stamps](stamps.md)) |
 
 The role rules are the `[roles.*]` tables of `.claude/hooks/hooks.toml`, read on every call; the rules for every
 session are built into `.claude/hooks/protect.py`, so a settings file that cannot be read does not take them away and
@@ -171,11 +171,11 @@ no setting weakens them. They read the fields that name a path (a Read's file, a
 words, every string of an MCP tool's input), after folding `./`, `..`, case, both slashes and `~`, `$HOME` and
 `%USERPROFILE%` together, and the aliases Windows gives a folder (trailing dots and spaces, `SSH~1` for `.ssh`, the
 real path of a short name); not a search pattern, a commit message or the text a file is given, so `grep
-".coney/identity" docs`, `grep "ssh-add" docs`, `git log -S`, `pytest -k ssh_add` and `git commit -m "Refuse ssh-add"`
-are fine (text the shell would run, `$(...)` or a backtick, is still read). Some name commands that are planned (`pr
-open`, `task check`) so that they are held from the day they land. A hook judges spelling: a command can be hidden
-from it, so these rules make a break visible and deliberate, not impossible. A setting of the wrong shape is ignored
-and an invalid pattern skipped, so one bad entry never disables the rest.
+".coney/identity" docs`, `grep "Win32_Process" docs`, `git log -S`, `pytest -k Win32_Process` and
+`git commit -m "Refuse Win32_Process"` are fine (text the shell would run, `$(...)` or a backtick, is still read).
+Some name commands that are planned (`pr open`, `task check`) so that they are held from the day they land. A hook
+judges spelling: a command can be hidden from it, so these rules make a break visible and deliberate, not impossible.
+A setting of the wrong shape is ignored and an invalid pattern skipped, so one bad entry never disables the rest.
 
 Pick the role of an Agent call by what the agent does:
 
@@ -354,7 +354,7 @@ such as a later `coney-tools` in a chain that runs past 10 minutes, finds none a
 and a file 0600.
 
 What an agent can still do: read its own token (it proves only its own identity); write an identity file itself, which
-needs the folder, and the hooks refuse every session to name any of `~/.coney` (and `~/.ssh/`, the stamp logs, signing
+needs the folder, and the hooks refuse every session to name any of `~/.coney` (and `~/.ssh/`, the stamp logs
 and other processes' command lines, [Which role to start](#roles)), but that is spelling, so a deliberately built path
 gets through; or read another command's token from the command line of its running shell, in a process listing (`ps`,
 Task Manager) for as long as that command runs, which no hook can hide (the readers of `/proc/<pid>/cmdline` and

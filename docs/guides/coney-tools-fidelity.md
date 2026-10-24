@@ -381,22 +381,20 @@ coney-tools original fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fi
 ## stamp {#stamp}
 
 ```sh
-uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--release] [--signers FILE | --signers-ref REF]
+uv run --project python coney-tools stamp verify [--task T] [--dir LOG] [--require-log]
 uv run --project python coney-tools stamp show [--task T] [--dir LOG]
 ```
 
-`verify` checks a stamp log's chain, every field and every signature that is present, against
-[.github/stamp-signers](repo:.github/stamp-signers). `show` lists the stamps, marks a signature it could not check, and
-exits 1 when the log has errors. Both only read: no command appends a stamp by hand, the stage commands are the only
-writers ([Stamps](stamps.md#log)).
+`verify` checks a stamp log's chain and every field; stamps are not signed, and the `sig` key of an older log is
+ignored ([Stamps](stamps.md#log)). `show` lists the stamps with where each one's identity came from (`hook` or
+`unverified`) and exits 1 when the log has errors. Both only read: no command appends a stamp by hand, the stage
+commands are the only writers ([Stamps](stamps.md#log)).
 
 | Command | Option | What it does |
 | --- | --- | --- |
 | both | `--task T` | The task whose log is read (default: `CONEY_TASK`, else the branch); a log of another task fails |
 | both | `--dir LOG` | Read this log folder instead of the task's. Independent of `--task`: alone, the log's task is not checked; with `--task T`, the log must be task T's |
-| `verify` | `--release` | A release check, which `pr open` and CI will run: a signed step without a signature, or a missing or empty log, fails |
-| `verify` | `--signers FILE` | The allowed-signers file (default: the working tree's `.github/stamp-signers`) |
-| `verify` | `--signers-ref REF` | Read the signers file and the stamp rules from commit REF, not the working tree ([the trust anchor](stamps.md#signing)); CI will pass the pull request's base. Not with `--signers` |
+| `verify` | `--require-log` | A missing or empty log is an error, not just a start |
 
 <!-- command-reference:begin stamp -->
 ## Parameters of `stamp` {#stamp-parameters}

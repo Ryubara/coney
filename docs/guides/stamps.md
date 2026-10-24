@@ -1,9 +1,17 @@
 # Stamps, studies and pairs
 
-A unit of work carries its proof as a log of **stamps**: records, written only by the stage commands, that a step ended
-with a result on a commit, covering exact hashes. For a function ported from the original the proof is a **study** (the
-original function saved, its lines numbered and cut into pieces) and a **pairs file** (each piece joined to the Coney
-code that does it). This page defines the formats and what each command checks. The commands are in
+Stamps are **local agent bookkeeping**: the stage commands write them on the machine doing agent work, and the hooks
+and `pr open` read them to keep that work in order. They are never checked in CI, and the facts block `pr open` puts
+in a pull request description is a record of them, not proof. A person working by hand needs none
+([CONTRIBUTING.md](repo:CONTRIBUTING.md)).
+
+A unit of work carries its proof as a log of **stamps**: records, written only by the stage commands, that a step
+ended with a result on a commit, covering exact hashes. Stamps are not signed, and the log stays in the task's scratch
+folder, never committed. For a function ported from
+the original the proof is a **study** (the original function saved, its lines numbered and cut into pieces) and a
+**pairs file** (each piece joined to the Coney code that does it). This page defines the formats and what each command
+checks.
+The commands are in
 [the coney-tools reference](coney-tools-fidelity.md#original); the verdict a reviewer gives on the pairs is
 [Orig review](review/orig.md). The names of the commands are placeholders for a renaming pass: a name changes in one
 parser entry and in this page.
@@ -14,7 +22,7 @@ One stamp is one line of canonical JSON (UTF-8, sorted keys, no spaces, no float
 
 ```json
 {"commit":"<40 hex>","covers":{"cut_sha256":"..","decompile_sha256":".."},"detail":{"statements":9},
- "prev":"<64 hex>","result":"pass","seq":4,"sig":null,"step":"studied","subject":"0x00501000","task":"fight-resume",
+ "prev":"<64 hex>","result":"pass","seq":4,"step":"studied","subject":"0x00501000","task":"fight-resume",
  "time":"2026-10-22T14:03:11Z","v":1,"who":{"agent":{"id":"..","model":"..","type":"engineer"},
  "kind":"tool","source":"hook","tool":"coney-tools original study"}}
 ```
@@ -24,20 +32,21 @@ One stamp is one line of canonical JSON (UTF-8, sorted keys, no spaces, no float
 | `step` | One of `stamps.steps` in [.github/conventions.yml](repo:.github/conventions.yml): `assigned`, `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`, `pr-opened`, `finished` |
 | `subject` | What a repeating step is about: an address (`studied`, `compared`), a test name (`fails-first`), empty for the others |
 | `result` | `pass`, `fail` or `none` (`none`: no such step needed, with the reason in `detail`) |
-| `commit` | The unit worktree's HEAD when the step ended |
-| `covers` | Names mapped to hex hashes of what the step covered (a function's decompile, the cut, the pairs file, a Coney body, a test's files, logs). Hashes only |
+| `commit` | The unit worktree's HEAD when the step ended: a record, never compared, because a rebase rewrites it |
+| `covers` | Names mapped to hex hashes of what the step covered (a function's decompile, the cut, the pairs file, a Coney body, a test's files, logs, and for the steps that vouch for the whole change `diff_sha256`: [The change hash](#change)). Hashes only |
 | `detail` | Counts and names for the PR text and the mod, at most 2 KB |
 | `who` | What ran the step, the agent behind it and where that came from ([Who](#who)) |
 | `time` | UTC, never earlier than the stamp before |
-| `prev` | The SHA-256 of the previous stamp's body (64 zeros for the first) |
-| `sig` | `null`, or `{"signer", "armor"}` ([Signing](#signing)) |
+| `prev` | The SHA-256 of the previous stamp's line (64 zeros for the first) |
 
 A stamp holds hashes, names and counts, never text from the original, a decompile line or a test's output
 ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 
-The **body** of a stamp is its canonical JSON without `sig`; its **hash** is the SHA-256 of the body; `prev` links each
-stamp to the one before, so the chain keeps history honest: a stamp cannot be edited, removed or moved without breaking
-the link after it, and a failed attempt stays in the log.
+The **hash** of a stamp is the SHA-256 of its line; `prev` links each stamp to the one before, so the chain keeps
+history honest: a stamp cannot be edited, removed or moved without breaking the link after it, and a failed attempt
+stays in the log. An earlier format signed some stamps, and a log written then has the extra key `sig` on its lines
+(`null`, or `{"signer", "armor"}`): it is still read, left out of the hash (as it always was) and otherwise ignored, and
+nothing writes it. A `sig` that is neither `null` nor an object is refused.
 
 ### Layout {#layout}
 
@@ -49,19 +58,17 @@ functions makes about 120 stamps, one segment.
 | Where | What |
 | --- | --- |
 | `<scratch>/<task>/unit.json` | The unit record `task start` wrote: branch, worktree, base commit, which task's log it writes to ([Starting a task](issues.md#starting)) |
-| `<scratch>/<task>/stamps/` | The log while the work is going on (local) |
+| `<scratch>/<task>/stamps/` | The log (local; `task finish` keeps it, it holds no game data) |
 | `<scratch>/<task>/study/<addr>/` | A function's study: the saved decompile and what was cut from it. Scratch only, never committed |
-| `<scratch>/<task>/mapping/<addr>.toml` | The pairs of one function |
+| `<scratch>/<task>/mapping/<addr>.toml` | The pairs of one function (scratch only, never committed) |
 | `<scratch>/<task>/compare/<addr>.txt` | The side-by-side view (holds decompile text: scratch only) |
-| `research/units/<task>/stamps/` and `research/mappings/<addr>.toml` | Where `pr open` will publish the log and the pairs on the branch, byte for byte |
 
-The task is `--task`, else `CONEY_TASK`, else the branch name. `.gitattributes` keeps the published files at LF
-endings: a log is hashed byte for byte.
+The task is `--task`, else `CONEY_TASK`, else the branch name.
 
 Only the stage commands append, under a lock, and `append` refuses when the log is not intact. There is deliberately
 no command that appends a stamp by hand. The hook dispatcher refuses every Edit or Write under a `stamps/` folder and a
-shell write into one, for every session and role, and any naming of the signing key's files or `ssh-keygen -Y sign`
-([Which role to start](agents.md#roles)); reading and `stamp verify` are open.
+shell write into one, for every session and role ([Which role to start](agents.md#roles)); reading and `stamp verify`
+are open.
 
 ### Who {#who}
 
@@ -72,7 +79,7 @@ transcript, to a file named by a random token and puts only that token (`CONEY_A
 action. The stamp records `who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise,
 with every field `unknown`, however the environment was set (a person at a terminal, a PowerShell command outside
 `bypassPermissions`, an agent that typed variables or a token of its own). Recording never refuses a command: the check
-that `source` is `hook` will belong to `pr open` and CI. A [run record](research-evidence.md#run-records) takes its
+that `source` is `hook` will belong to `pr open`. A [run record](research-evidence.md#run-records) takes its
 `who` the same way and marks its source the same way; a run itself is not stamped.
 
 ### Verifying a log {#verify}
@@ -80,48 +87,42 @@ that `source` is `hook` will belong to `pr open` and CI. A [run record](research
 `coney-tools stamp verify` re-reads the log and reports every problem with the segment and line: a line that is not
 whole, not canonical JSON (a hand edit, even a valid one), of an unknown version or step; a `seq` that skips or repeats;
 a `prev` that is not the hash of the stamp before; a `time` that goes back; a stamp of another task; a missing segment;
-a `pr-opened` seal whose `chain_head` is not the stamp before it; and every signature that does not verify. The chain
-detects edits, removals and reordering inside the log; it does not detect that the unsigned tail of an unsealed log was
-cut off. That is covered by the signatures on `checked` and `reviewed`, by the seal, and (once `pr open` exists) by it
-recomputing every hash it relies on. `stamp verify --task T` fails when the log is another task's; `--release` also
-refuses a missing or empty log. `current(...)` (the question a later stage asks) ignores a pass that a later stamp of
-the same step and subject replaced with a fail. A stamp's `time` is written by the tool, not attested by anything
-else: someone with a key could write back-dated stamps, and a retired key's `valid-before` is checked against that
-stamp time. `pr open` is to bound each stamp's time by its commit's date; until it does, treat the time as a record,
-not a proof.
+and a `pr-opened` stamp whose `chain_head` is not the stamp before it. `--task T` fails when the log is another task's;
+`--require-log` also refuses a missing or empty log. `current(...)` (the question a later stage asks) ignores a pass that
+a later stamp of the same step and subject replaced with a fail.
 
-## Signing {#signing}
+What the chain protects, honestly: without signatures, a log can be rebuilt by whoever can write its files. The protection
+is that only `coney-tools` appends to it, that the hooks refuse an agent's direct write to a `stamps/` folder, and that
+the chain catches an edit made any other way (by hand, a stray tool) and a truncated segment. A stamp's `time` is written
+by the tool and attested by nothing else; `pr open` will bound it by the dates of the commits. The design guards against
+agents and mistakes, not against the person at the machine.
 
-The steps in `stamps.signed` (`checked`, `reviewed`, `pr-opened`) are signed with a dedicated ed25519 key through
-`ssh-keygen -Y sign`, namespace `coney-stamp` (`stamps.namespace`), so a signature made for anything else cannot pass
-for a stamp. Each maintainer has one key: its private half lives in the SSH agent and is never read by a tool or an
-agent, its public half is a line of [.github/stamp-signers](repo:.github/stamp-signers) in the allowed-signers format:
+## The change hash {#change}
 
-```text
-<principal> namespaces="coney-stamp"[,valid-before="YYYYMMDDHHMMSSZ"] ssh-ed25519 AAAA... comment
-```
+`checked`, `reviewed` and `pr-opened` say that the whole change is good, so they are bound to the **change**, not to a
+commit: `covers.diff_sha256`. `pr open` rebases the branch, which rewrites every commit id, and main moves all day, so a
+stamp bound to a commit would be stale the moment it is used. The change hash is the same after a clean rebase and
+different after any edit of the branch's own lines. `commit` stays in each stamp as a record. The code is
+`coney_tools/pr_diff.py`: `change_of(root, target, tip)` finds the merge base with `target` and returns the base, the
+tip, the changed paths and the hash; `change_sha256(root, base, tip)` takes the base. A stage asks "is my stamp still
+good?" with `Report.current(step, subject, {stamps.CHANGE: <the hash now>})`.
 
-A key is added or retired by pull request, and **a new signer's key merges in its own pull request first**: a release
-check reads the allowed-signers file and the `stamps` rules from a trusted commit, not from the change under review (below),
-so a pull request cannot vouch for a key it adds. A retired key gets a `valid-before` in UTC with the `Z` suffix; verification
-passes the stamp's own time (`-Overify-time`), so what a key signed before its retirement keeps verifying. The signer's
-principal is found by `ssh-keygen -Y find-principals`, never read from the stamp.
+The hash is the SHA-256 of one text: a version line (`coney-change 1`), then for every changed path in git's path order,
+with renames off (a moved file is a deletion and an addition):
 
-The setting `stamp_key` of `coney.local.toml` names the public key file; the private half is taken from the agent
-(`-U`). Without it a signed step is written unsigned, which is what a contributor's machine does: `stamp verify` warns,
-`stamp verify --release` (what `pr open` and CI will run; neither does yet) refuses, and the coordinator re-runs the
-check and the review on a machine with a key. A signature covers the stamp's body, and so the whole earlier chain
-through `prev`. It sits outside the body, so a stamp can be signed after the fact without breaking the chain.
+* `file <path>`, `status <A|M|D>` and `mode <old> <new>`;
+* for a text file the removed and added lines of `git diff -U0`, in order, with git's "no newline at end of file"
+  marker, and no hunk header, `index` line or `---`/`+++` line, so neither line numbers (which move when main edits the
+  same file elsewhere) nor the pre-image blob id (which changes with main) take part;
+* for a binary file (as git judges it) `binary <SHA-256 of the file at the tip>`, or `binary deleted`.
 
-**The trust anchor.** `coney-tools stamp verify --release --signers-ref <ref>` reads `.github/stamp-signers` and the
-`stamps:` section of `.github/conventions.yml` (the namespace, the signed steps, the steps) from the commit `<ref>` with
-`git show`. CI will pass the pull request's base (`origin/main`) once it runs the check. Without `--signers-ref` (or
-with `--signers FILE`, which cannot be combined with it) the check reads the working tree, which is what a person
-verifying their own log wants and what a release check must not do.
+Whitespace counts: a tab, a CRLF or a missing final newline is a changed line. The user's `diff.*`, `core.quotepath` and
+`core.autocrlf` settings are overridden, so every machine computes the same value.
 
-Every `ssh-keygen` call is in `coney_tools/stamp_sign.py`, in two functions with one command line each, so the hook
-that keeps agents from signing has one pattern to recognise. Tests use throwaway keys in a temporary folder, never a
-real one.
+A rebase that touches only other files, or other lines of the same files, keeps the hash. A conflict resolved by hand, or
+an upstream change that makes part of the branch a no-op, changes it, and everything bound to it is stale: the change is
+another one. The accepted cost is that a clean rebase can combine with upstream into a build nobody compiled with the
+`ci` preset; CI builds the merge result anyway.
 
 ## Study {#study}
 
@@ -216,9 +217,10 @@ An invented example in Ghidra's style, with the pieces the command cuts (the gut
 ## Pairs {#pairs}
 
 A **pair** joins a piece of the original to the Coney code that does it. One file per function, `mapping/<addr>.toml`,
-usually 10 to 40 pairs. It holds line numbers, Coney locations and notes, no text from the decompile, so it is
-committed. The `[function]` table binds the file to its study and carries the cut as numbers (each piece's lines), so
-CI will be able to check coverage without Ghidra or the disc.
+usually 10 to 40 pairs. It holds line numbers, Coney locations and notes, no text from the decompile, but it stays in
+the task's scratch folder and is never committed: the lasting part, each port's stand-ins and not-ported pieces with
+their issue numbers, goes into the function database (`research/functions/`). The `[function]` table binds the file to
+its study and carries the cut as numbers (each piece's lines), so coverage can be checked without Ghidra or the disc.
 
 ```toml
 version = 1
@@ -333,9 +335,16 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 `task start` (which writes the first two stamps, `assigned` and `claimed`: [Starting a task](issues.md#starting)),
 `task check`, `task review`, `pr open` and the hooks, once written, call the same small API in
 `coney_tools/stamps.py`:
-`append(folder, rules=, task=, step=, subject=, result=, commit=, covers=, detail=, who=, sign=)`,
-`append_many(folder, rules=, task=, entries=, sign=)` (several stamps, all or none),
-`verify(folder, rules, signers=, require_signatures=, task=)` returning a `Report` (`ok`, `problems`, `head`, `latest(step,
-subject)`, `current(step, subject, covers)`) and `who_from_env(tool)`. Signing is `stamp_sign.signer_for(key,
-namespace)`, which gives the `sign` argument or `None` without a key. A `pr-opened` stamp gets `chain_head` filled in by
+`append(folder, rules=, task=, step=, subject=, result=, commit=, covers=, detail=, who=)`,
+`append_many(folder, rules=, task=, entries=)` (several stamps, all or none),
+`verify(folder, rules, require_stamps=, task=)` returning a `Report` (`ok`, `problems`, `head`, `latest(step,
+subject)`, `current(step, subject, covers)`) and `who_from_env(tool)`. A `pr-opened` stamp gets `chain_head` filled in by
 `append`. `current(...)` is how a later stage asks "does the newest passing stamp cover the hash I just recomputed?".
+
+What the three steps bound to the change record (all unsigned, in the local log):
+
+| Step | `covers` | `detail` (at most 2 KB) |
+| --- | --- | --- |
+| `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`), `checks` (the names that ran), `failed` (on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc}, `preset`, `minutes` |
+| `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256` | `verdict`, `functions` (address to a one-letter class), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`; more than 2 KB of per-function verdicts goes to `<scratch>/<task>/review.json`, covered by `review_sha256` |
+| `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |

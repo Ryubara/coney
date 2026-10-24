@@ -4,8 +4,9 @@
 A *pair* joins a piece of the original (orig_cut) to the Coney code that does it: which numbered lines, what kind of
 statement, where in `src/`, how they relate (`same`, `stand-in`, `not-ported`), a note and, for a function not ported
 yet, the issue that ports it. The file holds line numbers, Coney locations and notes only, never text of the
-decompile, so it is committed (`pr open` publishes it to `research/mappings/`). The header carries the cut as numbers
-(each piece's lines), so CI can check coverage without Ghidra.
+decompile; it stays in the task's scratch folder and is never committed (the lasting part, each port's stand-ins and
+not-ported pieces with their issues, goes to the function database). The header carries the cut as numbers (each
+piece's lines), so coverage can be checked without Ghidra.
 
 `prefill` makes the file with one blank pair per piece, the engineer fills it in, and the checks here say what is
 missing: every numbered line in exactly one pair, no piece split, merged pieces adjacent and given a reason, each

@@ -318,7 +318,6 @@ def run(
     runner: Runner,
     rules: Stamps,
     who: Mapping[str, object],
-    sign: stamps.Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> list[stamps.Stamp]:
     """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
@@ -397,7 +396,7 @@ def run(
                 "who": dict(who),
             }
         )
-    return stamps.append_many(unit.stamps, rules=rules, task=unit.task, entries=entries, sign=sign, clock=clock)
+    return stamps.append_many(unit.stamps, rules=rules, task=unit.task, entries=entries, clock=clock)
 
 
 def _need_a_run(label: str, commit: str, outcome: BuildOutcome) -> None:
@@ -417,7 +416,6 @@ def record_none(
     *,
     rules: Stamps,
     who: Mapping[str, object],
-    sign: stamps.Sign | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> stamps.Stamp:
     """Stamp that a task has no fails-first test (docs, tooling), with the reason; nothing is run."""
@@ -434,6 +432,5 @@ def record_none(
         covers={},
         detail={"reason": reason.strip()},
         who=dict(who),
-        sign=sign,
         clock=clock,
     )

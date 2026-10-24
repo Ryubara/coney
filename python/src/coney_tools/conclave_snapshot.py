@@ -94,11 +94,6 @@ def _config(src: Sources) -> dict[str, Any]:
 # --- units ----------------------------------------------------------------------------------------------------------
 
 
-def _no_signature_check(body: bytes, armor: str, moment: datetime) -> str:
-    """Stand-in for the signature check: the snapshot reads the log, `stamp verify` is what proves it."""
-    return ""
-
-
 def _step_rows(report: stamps.Report, steps: tuple[str, ...]) -> tuple[list[dict[str, Any]], str, str | None]:
     """Each step's latest state, the stage (the step after the highest one done) and the step that failed there."""
     latest: dict[str, stamps.Stamp] = {}
@@ -186,7 +181,7 @@ def _unit(
     """One unit's row, or None when it is too old to show (no worktree and unchanged for `unit_days`)."""
     conventions = src.conventions
     task_file = folder / conventions.tasks.file
-    report = stamps.verify(folder / "stamps", conventions.stamps, verifier=_no_signature_check)
+    report = stamps.verify(folder / "stamps", conventions.stamps)
     changed = datetime.fromtimestamp(task_file.stat().st_mtime, UTC)
     if report.stamps:
         changed = max(changed, report.stamps[-1].moment)

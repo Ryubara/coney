@@ -27,7 +27,6 @@ PATH_KEYS: tuple[str, ...] = (
     "ghidra_mcp_repo",
     "pcsx2_mcp_dir",
     "ffmpeg_dir",
-    "stamp_key",
     "luac_program",
     "lua_dir",
 )
