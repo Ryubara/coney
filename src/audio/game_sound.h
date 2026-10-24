@@ -70,6 +70,7 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     [[nodiscard]] std::string summary() const;
     /// The `SA` id of the last animation sound the human with handle `human` asked for (clip event 11); 0 before its
     /// first. For the tests, which check which sound a clip asked for.
+    /// @coney-only a test's view of the sounds asked for; the original keeps no such record
     [[nodiscard]] std::uint32_t lastAnimSound(double human) const {
         const auto found = m_lastAnimSounds.find(human);
         return found != m_lastAnimSounds.end() ? found->second : 0;
