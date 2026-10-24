@@ -334,6 +334,28 @@ class Stacked:
 
 
 @dataclass(frozen=True)
+class Images:
+    """What a picture in a generated description may be (`pr text`): GitHub's own limits, kept here once."""
+
+    #: The biggest picture file, in bytes (GitHub's limit for an attachment is 10 MB).
+    max_bytes: int
+    #: The most pictures a description shows.
+    max_count: int
+    #: The file extensions of a picture, lower case, without the dot; a clip is not one (`clips publish` uploads it).
+    extensions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Markers:
+    """The names of the two generated blocks of a description, written `<!-- name -->` ... `<!-- /name -->`."""
+
+    #: The engineer's one paragraph.
+    summary: str
+    #: The facts block: which stages passed, with their hashes.
+    facts: str
+
+
+@dataclass(frozen=True)
 class PullRequests:
     """The rules for a pull request's description (`coney-tools repo check-body`) and its life."""
 
@@ -355,6 +377,8 @@ class PullRequests:
     review: Review
     orig_review: OrigReview
     stacked: Stacked
+    images: Images
+    markers: Markers
 
 
 @dataclass(frozen=True)
@@ -693,6 +717,9 @@ class Stamps:
     #: The results a stamp may have.
     results: tuple[str, ...]
     pairs: PairRules
+    #: Whether `pr verify` requires every stamp it relies on to say `who.source` is `hook` (the dispatcher vouched
+    #: for the agent). Off until the hooks write the identity everywhere (docs/guides/stamps.md#who).
+    require_hook_source: bool
 
 
 @dataclass(frozen=True)
@@ -1437,6 +1464,8 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "review",
         "orig_review",
         "stacked",
+        "images",
+        "markers",
     )
     table = _table(data, where, keys)
     sections = _texts(table["sections"], _at(where, "sections"))
@@ -1476,6 +1505,14 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     stacked, stacked_where = sub(
         "stacked", "depends_line", "merge_into_base", "auto_merge_on_non_default_base", "after_base_merges"
     )
+    images, images_where = sub("images", "max_bytes", "max_count", "extensions")
+    markers, markers_where = sub("markers", "summary", "facts")
+    marker_names = [_text(markers[name], _at(markers_where, name)) for name in ("summary", "facts")]
+    if marker_names[0] == marker_names[1]:
+        raise _fail(_at(markers_where, "facts"), "must differ from summary")
+    extensions = _texts(images["extensions"], _at(images_where, "extensions"))
+    if any(ext != ext.lower() or ext.startswith(".") for ext in extensions):
+        raise _fail(_at(images_where, "extensions"), "write each in lower case without the dot")
     written_where = _at(ai_where, "written_by")
     written = _table(ai_use["written_by"], written_where, ("label", "choices", "no_ai"))
     model_where = _at(ai_where, "model")
@@ -1561,6 +1598,12 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             ),
             after_base_merges=_text(stacked["after_base_merges"], _at(stacked_where, "after_base_merges")),
         ),
+        images=Images(
+            max_bytes=_count(images["max_bytes"], _at(images_where, "max_bytes")),
+            max_count=_count(images["max_count"], _at(images_where, "max_count")),
+            extensions=extensions,
+        ),
+        markers=Markers(summary=marker_names[0], facts=marker_names[1]),
     )
 
 
@@ -2338,7 +2381,7 @@ def _read_workspace(data: object, where: str) -> Workspace:
 
 def _read_stamps(data: object, where: str) -> Stamps:
     """The `stamps` section: the stamp log's steps, signing and pairs rules."""
-    table = _table(data, where, ("segment_bytes", "steps", "results", "pairs"))
+    table = _table(data, where, ("segment_bytes", "steps", "results", "pairs", "require_hook_source"))
     steps = _texts(table["steps"], _at(where, "steps"))
     pairs_where = _at(where, "pairs")
     pairs = _table(table["pairs"], pairs_where, ("kinds", "relations", "stand_in_markers"))
@@ -2352,6 +2395,7 @@ def _read_stamps(data: object, where: str) -> Stamps:
             relations=relations,
             stand_in_markers=_texts(pairs["stand_in_markers"], _at(pairs_where, "stand_in_markers")),
         ),
+        require_hook_source=_flag(table["require_hook_source"], _at(where, "require_hook_source")),
     )
 
 

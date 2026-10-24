@@ -1,0 +1,790 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Steps 1-4 of a release, read only: the log, Check, the compared functions and Review (docs/guides/pr.md).
+
+`coney-tools pr verify` runs `verify` on a unit: it trusts nothing it can recompute. It re-reads the unit's stamp log,
+recomputes every hash the stamps rely on from the files and the git tree, and reports every stage that does not hold
+for the change on the branch, each with the exact message and the command to redo. A stage that fails is reported
+together with all the others, not alone. `pr open` will run the same function before it pushes.
+
+What the stamps are bound to is the *change* (`pr_diff.change_sha256`), not the tip, so a clean rebase keeps them. The
+rules (profiles, the build preset, who may review) are read from the remote's default branch, never from the branch
+being released (`conventions.load_conventions_at`).
+
+Nothing here writes: no stamp, no file, no git state.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import subprocess
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+from coney_tools import (
+    fails_first,
+    orig_copy,
+    orig_cut,
+    orig_pairs,
+    orig_review,
+    orig_study,
+    pr_diff,
+    pr_profile,
+    stamps,
+)
+from coney_tools.config import ConfigError
+from coney_tools.conventions import Conventions, Profile, load_conventions, load_conventions_at
+from coney_tools.orig_review import Unit as OrigUnit
+from coney_tools.unit import Unit, tracked_files
+
+#: How far a stamp's time may be ahead of this clock before it counts as in the future.
+CLOCK_SKEW = timedelta(minutes=5)
+#: The task kinds that have no game behaviour to test first: a `none` stamp is their fails-first proof.
+NO_TEST_KINDS = ("docs", "tooling", "ci-fix")
+#: What a reviewer may call a function and still let the change through (`orig_review.PASSING` also lets `unclear`
+#: through for a branch's review; a release holds to the two that settle the question).
+PASSING_CLASSES = ("clean", "diff-deliberate-ok")
+#: The longest statement of the original that a note may not repeat, in characters.
+QUOTE_MIN = 20
+#: Where a Check's build records live, in the task's scratch folder.
+BUILD_RUNS = "build-runs"
+
+#: The step that follows each stage's refusal: the command to run again (`{subject}` is the stamp's).
+_REDO = {
+    "assigned": "task start",
+    "claimed": "task start",
+    "studied": "orig study {subject}",
+    "compared": "orig compare {subject}",
+    "fails-first": "orig fails-first",
+    "checked": "task check",
+    "reviewed": "task review",
+}
+
+
+@dataclass(frozen=True)
+class TextHashes:
+    """The hashes of the engineer's text a review covers (`pr_text.hashes_of` makes them)."""
+
+    title_sha256: str
+    paragraph_sha256: str
+    images_sha256: str
+
+
+@dataclass(frozen=True)
+class Refusal:
+    """One reason a release is refused: the stage that found it, the full message and what to redo."""
+
+    #: `worktree`, `log`, `checked`, `compared`, `fails-first`, `reviewed` or (for `pr text`) `text`.
+    stage: str
+    #: The message, starting with the stage's name (`checked: stale: ...`).
+    text: str
+    #: The command to run again, or `engineer` (edit or commit), `none` (the unit is unusable: tell a maintainer).
+    redo: str
+
+
+@dataclass(frozen=True)
+class Subject:
+    """Everything a release check reads once: the branch, the rules at its base and the unit's log."""
+
+    root: Path
+    unit: Unit
+    task: str
+    #: The task's kind (`TASK.md`).
+    kind: str
+    #: The rules as the remote's default branch has them.
+    conventions: Conventions
+    remote_ref: str
+    tip: str
+    base: str
+    report: stamps.Report
+    paths: tuple[str, ...]
+    diff_sha256: str
+    profile: Profile
+    #: The `@orig` functions the branch adds or changes, and those it removes (a note, not a refusal).
+    changed: tuple[OrigUnit, ...]
+    removed: tuple[OrigUnit, ...]
+    #: Paths with uncommitted changes (tracked, or untracked and not ignored).
+    dirty: tuple[str, ...]
+    now: datetime
+
+
+@dataclass
+class ProofResult:
+    """What `verify` found."""
+
+    subject: Subject
+    refusals: list[Refusal] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        """True when nothing is refused."""
+        return not self.refusals
+
+
+# --- reading the unit -----------------------------------------------------------------------------------------------
+
+
+def _git(root: Path, *args: str) -> str:
+    """Run git in `root`; its stdout, or a ConfigError with its message."""
+    try:
+        done = subprocess.run(["git", "-C", str(root), *args], capture_output=True, encoding="utf-8", check=False)
+    except OSError as error:
+        raise ConfigError(f"git cannot be run ({error})") from error
+    if done.returncode != 0:
+        raise ConfigError(f"git {' '.join(args)}: {done.stderr.strip() or 'failed'}")
+    return done.stdout
+
+
+def dirty_paths(root: Path) -> tuple[str, ...]:
+    """The paths of `root` with uncommitted changes: tracked files that differ, and untracked files not ignored."""
+    out = _git(root, "status", "--porcelain", "-z", "--untracked-files=all")
+    entries = [e for e in out.split("\0") if e]
+    paths: list[str] = []
+    skip = False
+    for entry in entries:
+        if skip:  # the old name of a rename
+            skip = False
+            continue
+        if entry[0] in "RC":
+            skip = True
+        paths.append(entry[3:])
+    return tuple(sorted(paths))
+
+
+def load_subject(
+    root: Path,
+    unit: Unit,
+    task: str,
+    kind: str,
+    *,
+    remote: str = "origin",
+    now: datetime | None = None,
+    conventions: Conventions | None = None,
+) -> Subject:
+    """Read the unit at `root` (its worktree): the branch tip, where it left `<remote>/<default branch>`, the rules at
+    that base (`conventions` replaces them, for the tests), the stamp log and the `@orig` functions it changes.
+
+    ConfigError when the base ref is unknown (fetch it first), or git or the rules cannot be read.
+    """
+    default = load_conventions(root).repo.default_branch
+    remote_ref = f"{remote}/{default}"
+    try:
+        _git(root, "rev-parse", "--verify", "--quiet", f"{remote_ref}^{{commit}}")
+    except ConfigError:
+        raise ConfigError(f"{remote_ref} is not known here; run `git fetch {remote} {default}` first") from None
+    rules = conventions or load_conventions_at(root, remote_ref)
+    tip = _git(root, "rev-parse", "--verify", "HEAD").strip()
+    change = pr_diff.change_of(root, remote_ref, tip)
+    base, paths = change.base, change.paths
+    before = {u.key: u for u in orig_review.units_at(root, base)}
+    after = {u.key: u for u in orig_review.units_at(root, tip)}
+    changed = tuple(
+        u
+        for u in after.values()
+        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
+    )
+    removed = tuple(u for key, u in before.items() if key not in after)
+    return Subject(
+        root=root,
+        unit=unit,
+        task=task,
+        kind=kind,
+        conventions=rules,
+        remote_ref=remote_ref,
+        tip=tip,
+        base=base,
+        report=stamps.verify(unit.stamps, rules.stamps, task=task),
+        paths=paths,
+        diff_sha256=change.sha256,
+        profile=pr_profile.profile_of(paths, rules),
+        changed=changed,
+        removed=removed,
+        dirty=dirty_paths(root),
+        now=now or datetime.now(UTC),
+    )
+
+
+def pairs_set_sha256(unit: Unit) -> str:
+    """The hash of all the unit's pairs files: each file's name and hash in name order. What `reviewed` covers as
+    `pairs_set_sha256`, so a pairs file edited after Review makes it stale."""
+    folder = unit.dir / "mapping"
+    files = sorted(folder.glob("*.toml")) if folder.is_dir() else []
+    text = "".join(f"{path.name} {orig_pairs.file_sha256(path)}\n" for path in files)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _hex(value: object, size: int = 8) -> str:
+    """The first `size` characters of a hash, for a message."""
+    return str(value)[:size] if value else "none"
+
+
+def _addresses(unit: OrigUnit) -> list[str]:
+    """A unit's original addresses as `0x00501000`."""
+    return [f"0x{a:08x}" for a in unit.addresses]
+
+
+def _redo(step: str, subject: str = "") -> str:
+    """The command that redoes a stage (`none` for a step nobody redoes)."""
+    return _REDO.get(step, "none").format(subject=subject).strip()
+
+
+# --- the whole ------------------------------------------------------------------------------------------------------
+
+
+def verify(
+    subject: Subject,
+    text: TextHashes | None = None,
+    *,
+    copy_check: Callable[[Path, str], list[orig_copy.Finding]] = orig_copy.check,
+) -> ProofResult:
+    """Steps 1-4 on `subject`: every stage's refusals, in the order of the workflow.
+
+    `text` holds the hashes of the engineer's file now (title, paragraph, pictures), which Review covered; without
+    it those three are not compared. A log that is not intact stops the run after step 1: nothing else in it can be
+    trusted.
+    """
+    result = ProofResult(subject)
+    if subject.dirty:
+        shown = ", ".join(subject.dirty[:5]) + (f" and {len(subject.dirty) - 5} more" if len(subject.dirty) > 5 else "")
+        result.refusals.append(
+            Refusal(
+                "worktree", f"worktree: uncommitted changes: {shown}; the engineer commits or removes them", "engineer"
+            )
+        )
+    log, intact = check_log(subject)
+    result.refusals += log
+    if not intact:
+        return result
+    result.refusals += check_checked(subject)
+    compared, notes = check_compared(subject, copy_check)
+    result.refusals += compared
+    result.notes += notes
+    result.refusals += check_fails_first(subject)
+    result.refusals += check_reviewed(subject, text)
+    return result
+
+
+# --- step 1: the log ------------------------------------------------------------------------------------------------
+
+
+def _author_date(root: Path, commit: str, cache: dict[str, datetime | None]) -> datetime | None:
+    """The author date of `commit`, None when it no longer exists (a rebase rewrote it)."""
+    if commit not in cache:
+        done = subprocess.run(
+            ["git", "-C", str(root), "show", "-s", "--format=%aI", commit],
+            capture_output=True,
+            encoding="utf-8",
+            check=False,
+        )
+        try:
+            cache[commit] = (
+                datetime.fromisoformat(done.stdout.strip()).astimezone(UTC) if done.returncode == 0 else None
+            )
+        except ValueError:
+            cache[commit] = None
+    return cache[commit]
+
+
+def check_log(subject: Subject) -> tuple[list[Refusal], bool]:
+    """Step 1: the log is intact and was written the way the workflow writes it. Returns the refusals and whether the
+    chain itself holds (when it does not, the other steps must not run)."""
+    report, rules = subject.report, subject.conventions
+    found: list[Refusal] = []
+    errors = [p for p in report.problems if p.severity == "error"]
+    for problem in errors:
+        found.append(Refusal("log", f"log: {problem.where}: {problem.text}", "none"))
+    if errors:
+        return found, False
+    if not report.stamps:
+        return [Refusal("log", f"log: {subject.task} has no stamps; run task start", "task start")], False
+    # The start of the log: assigned, then claimed, by an engineer.
+    start = report.stamps[:2]
+    if [s.step for s in start] != ["assigned", "claimed"] or any(s.result != "pass" for s in start):
+        seen = ", ".join(s.step for s in start)
+        found.append(
+            Refusal("log", f"log: the log does not start with assigned and claimed (found: {seen})", "task start")
+        )
+    else:
+        who = start[1].who.get("agent")
+        if not (isinstance(who, dict) and isinstance(who.get("id"), str) and who["id"]):
+            found.append(Refusal("log", "log: the claimed stamp names no engineer", "task start"))
+    # The agent behind each stamp the other steps rely on was vouched for by the hook.
+    if rules.stamps.require_hook_source:
+        latest: dict[tuple[str, str], stamps.Stamp] = {}
+        for stamp in report.stamps:
+            latest[(stamp.step, stamp.subject)] = stamp
+        for stamp in latest.values():
+            if stamp.who.get("source") != "hook":
+                what = f"{stamp.step} {stamp.subject}" if stamp.subject else stamp.step
+                found.append(
+                    Refusal(
+                        "log",
+                        f"log: seq {stamp.seq} {what} was written without the hook identity (source unverified)",
+                        _redo(stamp.step, stamp.subject),
+                    )
+                )
+    # Times: never in the future, never before the commit the stamp names was written.
+    cache: dict[str, datetime | None] = {}
+    for stamp in report.stamps:
+        if stamp.moment > subject.now + CLOCK_SKEW:
+            found.append(Refusal("log", f"log: seq {stamp.seq}: time {stamp.time} is in the future", "none"))
+        authored = _author_date(subject.root, stamp.commit, cache) if stamp.commit else None
+        if authored is not None and stamp.moment < authored.replace(microsecond=0):
+            found.append(
+                Refusal(
+                    "log",
+                    f"log: seq {stamp.seq}: time {stamp.time} is before its commit {stamp.commit[:12]} was authored "
+                    f"({authored.strftime('%Y-%m-%dT%H:%M:%SZ')})",
+                    "none",
+                )
+            )
+    found += _quotes(subject)
+    return found, True
+
+
+def _squash(text: str) -> str:
+    """`text` with every run of whitespace made one space."""
+    return " ".join(text.split())
+
+
+def _quotes(subject: Subject) -> list[Refusal]:
+    """No note or merge reason of a changed function's pairs repeats a statement of the saved decompile (LEGAL.md)."""
+    found: list[Refusal] = []
+    for unit in subject.changed:
+        for address in _addresses(unit):
+            saved = subject.unit.study(address) / "decompile.c"
+            try:
+                statements = orig_cut.cut_decompile(orig_cut.normalise(saved.read_text(encoding="utf-8"))).statements
+                pairs = orig_pairs.load(subject.unit.mapping(address)).pairs
+            except (OSError, ConfigError):
+                continue  # step 3 says what is missing
+            quoted = [s.text for s in statements if len(_squash(s.text)) >= QUOTE_MIN]
+            for number, pair in enumerate(pairs, start=1):
+                for label, value in (("note", pair.note), ("merge_reason", pair.merge_reason)):
+                    flat = _squash(value)
+                    if any(_squash(statement) in flat for statement in quoted):
+                        found.append(
+                            Refusal(
+                                "log",
+                                f"log: mapping/{address}.toml pair {number} {label} repeats a line of the original; "
+                                "say it in your own words",
+                                f"orig compare {address}",
+                            )
+                        )
+    return found
+
+
+# --- step 2: Check --------------------------------------------------------------------------------------------------
+
+
+def _since(saved: object, subject: Subject) -> str:
+    """`; changed since: a, b` from the file list a `checked` stamp may carry, or ""."""
+    if not isinstance(saved, list):
+        return ""
+    moved = sorted(set(map(str, saved)) ^ set(subject.paths))
+    if not moved:
+        return ""
+    shown = ", ".join(moved[:5]) + (f" and {len(moved) - 5} more" if len(moved) > 5 else "")
+    return f"; changed since: {shown}"
+
+
+def check_checked(subject: Subject) -> list[Refusal]:
+    """Step 2: a passing `checked` stamp for this change, of a big enough profile, with the checks it lists and (for a
+    full Check) the build record it names."""
+    stamp = subject.report.latest("checked")
+    if stamp is None:
+        return [Refusal("checked", "checked: no passing Check; run task check", "task check")]
+    if stamp.result != "pass":
+        return [
+            Refusal("checked", "checked: the newest Check failed; fix what it found and run task check", "task check")
+        ]
+    if stamp.covers.get("diff_sha256") != subject.diff_sha256:
+        saved = stamp.covers.get("diff_sha256")
+        text = (
+            f"checked: stale: the branch changed since Check (diff {_hex(saved)} now {_hex(subject.diff_sha256)}"
+            f"{_since(stamp.detail.get('files'), subject)})"
+        )
+        return [Refusal("checked", text, "task check")]
+    proof = subject.conventions.proof
+    required = subject.profile
+    ran = stamp.detail.get("profile")
+    names = [p.name for p in proof.profiles]
+    if ran not in names:
+        return [
+            Refusal(
+                "checked", f"checked: Check ran profile {ran!r}, which is not one of {', '.join(names)}", "task check"
+            )
+        ]
+    found: list[Refusal] = []
+    if proof.rank(str(ran)) < proof.rank(required.name):
+        ran_classes = proof.profiles[proof.rank(str(ran))].classes
+        culprit = next((p for p in subject.paths if subject.conventions.paths.ci_class(p) not in ran_classes), "")
+        return [
+            Refusal(
+                "checked",
+                f"checked: Check ran profile {ran}, this change needs {required.name} (touches {culprit})",
+                "task check",
+            )
+        ]
+    listed = stamp.detail.get("checks")
+    done = set(listed) if isinstance(listed, list) else set()
+    for check in required.checks:
+        if check not in done:
+            found.append(Refusal("checked", f"checked: Check did not run: {check}", "task check"))
+    if required.name == proof.profiles[-1].name:
+        found += _build_record(subject, stamp)
+    return found
+
+
+def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
+    """The `full` Check's build record: it exists, hashes to what the stamp covers, and is a whole, clean, passing
+    `ci` run at the commit the stamp names, whose test counts are the stamp's."""
+    wanted = str(stamp.covers.get("build_record_sha256", ""))
+
+    def refuse(text: str) -> list[Refusal]:
+        return [Refusal("checked", f"checked: {text}", "task check")]
+
+    path = subject.unit.dir / BUILD_RUNS / f"{wanted}.json"
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        raw = b""
+    if not wanted or not raw or hashlib.sha256(raw).hexdigest() != wanted:
+        return refuse(
+            f"the build record {_hex(wanted, 12)} is not in the task's build-runs folder (or differs from the stamp)"
+        )
+    try:
+        record = json.loads(raw)
+    except ValueError:
+        return refuse(f"the build record {_hex(wanted, 12)} is not valid JSON")
+    if not isinstance(record, dict):
+        return refuse(f"the build record {_hex(wanted, 12)} is not a JSON object")
+    counts = record.get("tests")
+    tests: dict[str, Any] = counts if isinstance(counts, dict) else {}
+    found: list[Refusal] = []
+    filters = record.get("filters")
+    if filters:
+        shown = " ".join(map(str, filters)) if isinstance(filters, list) else str(filters)
+        found += refuse(f"the build record is a filtered run ({shown}); Check needs the full suite")
+    preset = subject.conventions.proof.build_preset
+    if record.get("preset") != preset:
+        found += refuse(f"the build record is for preset {record.get('preset')}, Check needs {preset}")
+    if record.get("exit_code") != 0:
+        found += refuse(f"the build record's run failed (exit {record.get('exit_code')})")
+    failed = tests.get("failed", 0)
+    if isinstance(failed, int) and failed > 0:
+        found += refuse(f"the build record has {failed} failed test{'s' if failed != 1 else ''}")
+    skipped = tests.get("skipped_disc", 0)
+    if isinstance(skipped, int) and skipped > 0:
+        found += refuse(f"{skipped} disc tests skipped; Check needs the disc (CONEY_DISC)")
+    if record.get("dirty"):
+        found += refuse("the build record was made with uncommitted changes")
+    if record.get("tip") != stamp.commit:
+        found += refuse(
+            f"the build record is for commit {_hex(record.get('tip'), 12)}, the Check stamp for {stamp.commit[:12]}"
+        )
+    counted = stamp.detail.get("tests")
+    keys = ("total", "passed", "failed", "skipped", "skipped_disc")
+    if not isinstance(counted, dict) or any(counted.get(k) != tests.get(k) for k in keys):
+        found += refuse("the build record's test counts differ from the Check stamp's")
+    log = path.with_suffix(".log")
+    if log.is_file() and hashlib.sha256(log.read_bytes()).hexdigest() != record.get("log_sha256"):
+        found += refuse("the build record's log differs from the one it names")
+    return found
+
+
+# --- step 3: the compared functions and the tests that failed first ---------------------------------------------------
+
+
+def check_compared(
+    subject: Subject, copy_check: Callable[[Path, str], list[orig_copy.Finding]] = orig_copy.check
+) -> tuple[list[Refusal], list[str]]:
+    """Step 3: every `@orig` function the branch adds or changes was studied and compared at the body it has now, at
+    every address it carries, and is clean of decompiler fingerprints. Returns the refusals and the notes (functions
+    the branch removed)."""
+    found: list[Refusal] = []
+    notes = [
+        f"{u.coney} ({', '.join(_addresses(u))}) is no longer in the code: removed or untagged by this change"
+        for u in subject.removed
+    ]
+    tracked = tracked_files(subject.root)
+    files: set[str] = set()
+    for unit in subject.changed:
+        files.add(unit.path)
+        for address in _addresses(unit):
+            found += _compared_one(subject, unit, address, tracked, files)
+    if subject.changed:
+        for finding in copy_check(subject.root, subject.remote_ref):
+            if finding.path in files:
+                found.append(Refusal("compared", f"compared: {finding} (copy-check)", "engineer, then orig compare"))
+    return found, notes
+
+
+def _compared_one(
+    subject: Subject, unit: OrigUnit, address: str, tracked: Mapping[str, str], files: set[str]
+) -> list[Refusal]:
+    """The study, the pairs and the `compared` stamp of one address of a changed function."""
+    report = subject.report
+    redo_study, redo_compare = f"orig study {address}", f"orig compare {address}"
+
+    def refuse(text: str, redo: str = redo_compare) -> Refusal:
+        return Refusal("compared", f"compared: {text}", redo)
+
+    seen = report.latest("studied", address)
+    if seen is None:
+        return [refuse(f"{unit.coney} ({address}) was changed and never studied", redo_study)]
+    try:
+        study = orig_study.load_study(subject.unit, address)
+    except ConfigError as error:
+        return [refuse(f"{address}: the saved study is unusable ({error})", redo_study)]
+    wanted = {k: study.covers[k] for k in ("identity_sha256", "decompile_sha256", "ghidra_function_hash", "cut_sha256")}
+    if report.current("studied", address, wanted) is None:
+        return [refuse(f"{address}: study/decompile.c differs from what the studied stamp covers", redo_study)]
+    path = subject.unit.mapping(address)
+    if not path.is_file():
+        return [refuse(f"{address}: there is no pairs file; the function was never compared")]
+    try:
+        file = orig_pairs.load(path)
+    except ConfigError as error:
+        return [refuse(f"{address}: {error}")]
+    header = orig_pairs.header_from_cut(
+        study.cut,
+        address=address,
+        name=study.name,
+        program=study.program,
+        decompile_sha256=study.decompile_sha256,
+        ghidra_function_hash=study.ghidra_function_hash,
+        coney=unit.key,
+    )
+    rules = subject.conventions.stamps.pairs
+    problems = orig_pairs.check_structure(file, study.cut, address, rules, header)
+    if not problems:
+        problems += orig_pairs.check_code(file, subject.root, rules, tracked)
+    found = [refuse(f"{address}: {p}") for p in problems]
+    files.update(orig_pairs.pair_files(file, tracked))
+    covers = {
+        "decompile_sha256": study.decompile_sha256,
+        "ghidra_function_hash": study.ghidra_function_hash,
+        "cut_sha256": study.cut_sha256,
+        "pairs_sha256": orig_pairs.file_sha256(path),
+        "coney_body_sha256": unit.body_sha256,
+    }
+    if report.current("compared", address, covers) is not None:
+        return found
+    last = report.latest("compared", address)
+    if last is None:
+        found.append(refuse(f"{address}: {unit.coney} was never compared"))
+    elif last.result != "pass":
+        found.append(refuse(f"{address}: the newest compare failed"))
+    elif last.covers.get("coney_body_sha256") != unit.body_sha256:
+        found.append(
+            refuse(
+                f"{address}: {unit.coney} changed after it was compared (body "
+                f"{_hex(last.covers.get('coney_body_sha256'), 4)} now {_hex(unit.body_sha256, 4)})"
+            )
+        )
+    elif last.covers.get("pairs_sha256") != covers["pairs_sha256"]:
+        found.append(refuse(f"{address}: the pairs file changed after it was compared"))
+    else:
+        found.append(refuse(f"{address}: the study changed after it was compared"))
+    return found
+
+
+def _added_tests(subject: Subject) -> dict[str, str]:
+    """The `TEST_CASE` names the branch adds under the C++ test folder -> the file that declares each."""
+    changed = [p for p in subject.paths if p.startswith(fails_first.TEST_DIR)]
+    before: set[str] = set()
+    after: dict[str, str] = {}
+    for path in changed:
+        before |= fails_first.declared_in(subject.root, subject.base, path)
+        for name in fails_first.declared_in(subject.root, subject.tip, path):
+            after.setdefault(name, path)
+    return {name: path for name, path in after.items() if name not in before}
+
+
+def check_fails_first(subject: Subject) -> list[Refusal]:
+    """The tests the branch adds each failed first (a passing stamp over the test files as they are now); a task that
+    has nothing to test says so with a `none` stamp; a gameplay change with no test is refused."""
+    report = subject.report
+    found: list[Refusal] = []
+    added = _added_tests(subject)
+    for name in sorted(added):
+        stamp = report.latest("fails-first", name)
+        if stamp is None or stamp.result != "pass":
+            found.append(
+                Refusal(
+                    "fails-first",
+                    f'fails-first: "{name}" was added and has no passing fails-first stamp',
+                    "orig fails-first",
+                )
+            )
+            continue
+        files = stamp.detail.get("test_files")
+        listed = [str(f) for f in files] if isinstance(files, list) else []
+        if stamp.covers.get("tests_sha256") != fails_first.tests_sha256(subject.root, subject.tip, listed):
+            found.append(
+                Refusal(
+                    "fails-first",
+                    f'fails-first: "{name}": its test file changed since ({", ".join(listed)})',
+                    "orig fails-first",
+                )
+            )
+    if added:
+        return found
+    proofs = [s for s in report.stamps if s.step == "fails-first" and s.result in ("pass", "none")]
+    if subject.kind in NO_TEST_KINDS:
+        if not proofs:
+            found.append(
+                Refusal(
+                    "fails-first",
+                    f"fails-first: no fails-first stamp; a {subject.kind} task records "
+                    '`orig fails-first --none "<reason>"`',
+                    "orig fails-first",
+                )
+            )
+        return found
+    gameplay = next((p for p in subject.paths if subject.conventions.paths.gameplay_dir(p)), "")
+    if gameplay and not any(s.result == "pass" for s in proofs):
+        folder = next(f for f in subject.conventions.paths.gameplay if gameplay.startswith(f))
+        found.append(
+            Refusal(
+                "fails-first",
+                f"fails-first: a feature or fix under {folder} needs a test that failed first, or --none with a reason",
+                "orig fails-first",
+            )
+        )
+    return found
+
+
+# --- step 4: Review -------------------------------------------------------------------------------------------------
+
+
+def _normal_model(name: str) -> str:
+    """A model's name without case, spaces, dashes or dots, so `Claude Opus 5.5` and `claude-opus-5-5` are one."""
+    return re.sub(r"[^a-z0-9]", "", name.lower())
+
+
+def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any] | None:
+    """The address -> class map of a review: in the stamp, or (when it was too big) in `review.json`, whose hash the
+    stamp covers as `review_sha256`."""
+    inline = stamp.detail.get("functions")
+    if isinstance(inline, dict):
+        return inline
+    wanted = stamp.covers.get("review_sha256")
+    path = subject.unit.dir / "review.json"
+    try:
+        raw = path.read_bytes()
+        data = json.loads(raw)
+    except (OSError, ValueError):
+        return None
+    if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
+        functions = data.get("functions")
+        return functions if isinstance(functions, dict) else None
+    return None
+
+
+def _engineer_ids(subject: Subject) -> set[str]:
+    """The agent ids of every engineer that wrote a stamp of the unit."""
+    ids: set[str] = set()
+    for stamp in subject.report.stamps:
+        agent = stamp.who.get("agent")
+        if isinstance(agent, dict) and agent.get("type") == "engineer" and isinstance(agent.get("id"), str):
+            ids.add(agent["id"])
+    return ids
+
+
+def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
+    """Step 4: a passing `reviewed` stamp for this change, these pairs and this text, that covers every changed function
+    with a passing class, by a reviewer who did not work on the task."""
+    stamp = subject.report.latest("reviewed")
+
+    def refuse(message: str, redo: str = "task review") -> Refusal:
+        return Refusal("reviewed", f"reviewed: {message}", redo)
+
+    if stamp is None:
+        return [refuse("not reviewed")]
+    if stamp.result != "pass" or stamp.detail.get("verdict", "pass") != "pass":
+        blockers = stamp.detail.get("blockers", 0)
+        count = f"{blockers} blocker{'s' if blockers != 1 else ''}" if isinstance(blockers, int) else "blockers"
+        return [refuse(f"Review failed ({count}, see the verdict)")]
+    stale: list[Refusal] = []
+    if stamp.covers.get("diff_sha256") != subject.diff_sha256:
+        stale.append(
+            refuse(
+                f"stale: the branch changed since Review (diff {_hex(stamp.covers.get('diff_sha256'))} now "
+                f"{_hex(subject.diff_sha256)})"
+            )
+        )
+    if stamp.covers.get("pairs_set_sha256") != pairs_set_sha256(subject.unit):
+        stale.append(refuse("stale: the pairs changed since Review"))
+    if text is not None:
+        for key, what in (
+            ("title_sha256", "the pull request title"),
+            ("paragraph_sha256", "the summary paragraph"),
+            ("images_sha256", "the screenshots"),
+        ):
+            if stamp.covers.get(key) != getattr(text, key):
+                stale.append(refuse(f"stale: {what} changed since Review", "task review --text"))
+    if stale:
+        return stale
+    found: list[Refusal] = []
+    functions = _review_functions(subject, stamp)
+    for unit in subject.changed:
+        for address in _addresses(unit):
+            judged = None if functions is None else functions.get(address)
+            if judged is None:
+                found.append(refuse(f"Review did not cover {address}"))
+            elif judged not in PASSING_CLASSES:
+                found.append(refuse(f"{address} was judged {judged}", "engineer, then task check and task review"))
+    research = subject.conventions.proof.research_paths
+    if any(p.startswith(research) for p in subject.paths):
+        pages = stamp.detail.get("pages")
+        if not (isinstance(pages, list) and pages):
+            found.append(refuse("Review did not grade the research pages this change touches"))
+    found += _reviewer(subject, stamp, refuse)
+    return found
+
+
+def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refusal]) -> list[Refusal]:
+    """Who reviewed: not someone who worked on the task; when the hook vouches for identities, a reviewer agent, on a
+    model allowed for `@orig` changes."""
+    info = stamp.detail.get("reviewer")
+    reviewer = info if isinstance(info, dict) else {}
+    found: list[Refusal] = []
+    if reviewer.get("id") in _engineer_ids(subject):
+        found.append(refuse(f"reviewer {reviewer.get('id')} also worked on this task"))
+    if not subject.conventions.stamps.require_hook_source:
+        return found
+    if reviewer.get("type") != "reviewer":
+        found.append(refuse(f"the reviewer's type is {reviewer.get('type')}, not reviewer"))
+    allowed = subject.conventions.proof.orig_reviewer_models
+    if subject.changed and _normal_model(str(reviewer.get("model", ""))) not in {_normal_model(m) for m in allowed}:
+        found.append(
+            refuse(
+                f"only {' or '.join(allowed)} may review a change to an @orig function; this review ran on "
+                f"{reviewer.get('model')}"
+            )
+        )
+    return found
+
+
+__all__ = [
+    "ProofResult",
+    "Refusal",
+    "Subject",
+    "TextHashes",
+    "check_checked",
+    "check_compared",
+    "check_fails_first",
+    "check_log",
+    "check_reviewed",
+    "dirty_paths",
+    "load_subject",
+    "pairs_set_sha256",
+    "verify",
+]

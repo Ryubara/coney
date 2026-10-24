@@ -297,6 +297,7 @@ nav:
       - The launcher: guides/launcher.md
       - Testing: guides/testing.md
       - Stamps, studies and pairs: guides/stamps.md
+      - Releasing a pull request: guides/pr.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
       - The coney-tools command line:

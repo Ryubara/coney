@@ -473,9 +473,53 @@ coney-tools repo labels [--apply] [--repo REPO]
 
 ## pr {#pr}
 
-The checks on a pull request and its commits. Today it holds one command. The pull-request checks of [repo](#repo)
+The checks on a pull request and its commits: whether a unit is ready to become a pull request (`pr verify`), the text
+it will carry (`pr text`) and the trailers of a commit (`pr check-commit`). The pull-request checks of [repo](#repo)
 (`check-title`, `check-body`, `check-docs`) are planned to move here when the command groups are renamed
-([Stamps](stamps.md) says the command names are placeholders for that pass).
+([Stamps](stamps.md) says the command names are placeholders for that pass). What the first two check, and what each
+refusal asks you to do, is [Releasing a pull request](pr.md).
+
+### pr verify {#pr-verify}
+
+```sh
+uv run --project python coney-tools pr verify [TASK] [--worktree DIR] [--remote NAME] [--text FILE] [--json]
+```
+
+Steps 1 to 4 of a release, read only: the stamp log is intact, Check ran a big enough profile on this change, every
+`@orig` function the branch changes was studied and compared at its current body, every test it adds failed first, and
+Review passed for this change, these pairs and this text. Prints one block per refusal (the message, then what to
+redo), or `ok`. It changes no stamp, file or git state and does not fetch.
+
+| Argument or option | Default | What it does |
+| --- | --- | --- |
+| `TASK` | `CONEY_TASK`, else the branch | The task whose unit is verified; its `TASK.md` must exist. A task whose front block has `parent: <task>` is a fix: it continues its parent's log and text |
+| `--worktree DIR` | the current checkout | The unit's worktree: its HEAD is the tip, and it must be clean |
+| `--remote NAME` | `origin` | The remote whose default branch is the base; the rules are read from there |
+| `--text FILE` | `PR.md` in the task's scratch folder | The engineer's file whose title, paragraph and pictures Review covered |
+| `--json` | off | Print the result as one JSON object: the facts, `ok`, the refusals (`stage`, `text`, `redo`) and the notes |
+
+Exit codes: 0 everything holds, 1 something is refused, 2 it cannot run (no `TASK.md`, an unknown base, unreadable rules).
+The refusals, one by one: [pr verify](pr.md#verify).
+
+### pr text {#pr-text}
+
+```sh
+uv run --project python coney-tools pr text [TASK] [--worktree DIR] [--remote NAME] [--text FILE] [--dry-run] [--json]
+```
+
+Step 5: generates the pull request's title and description from the engineer's file, `TASK.md` and the stamps, checks
+them with the checks CI runs, and writes `PR-TITLE.txt` and `PR-BODY.md` next to the engineer's file. When a check
+fails it prints each problem with what to redo and writes nothing. `TASK`, `--worktree`, `--remote` and `--json` are
+as for `pr verify`.
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `--text FILE` | `PR.md` in the task's scratch folder | The engineer's file; the generated files are written in its folder |
+| `--dry-run` | off | Check and print; write no file |
+
+With `--json` the result holds the title and the hashes a release records (`title_sha256`, `paragraph_sha256`,
+`images_sha256`, `facts_sha256`). Exit codes as for `pr verify`. The file's form, what is generated and the checks:
+[pr text](pr.md#text).
 
 ### pr check-commit {#pr-check-commit}
 

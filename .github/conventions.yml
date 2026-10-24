@@ -236,6 +236,11 @@ pull_requests:
     merge_into_base: false                       # never merged into a non-default base: retarget to main first
     auto_merge_on_non_default_base: false
     after_base_merges: "git rebase --onto origin/main <old base> <branch>"
+  # The generated description (`coney-tools pr text`, docs/guides/pr.md). Its pictures: GitHub's limits, and what a picture
+  # is (a clip goes up with `clips publish`). Its two blocks the engineer's paragraph and the facts are written between
+  # `<!-- name -->` and `<!-- /name -->`, so a later edit finds them again.
+  images: {max_bytes: 10485760, max_count: 20, extensions: [png, jpg, jpeg, gif]}
+  markers: {summary: "coney:summary", facts: "coney:facts"}
 
 merge:
   # Mirrors the GitHub ruleset "Main" and the repository settings, which only a maintainer changes; the audit (a later
@@ -868,6 +873,9 @@ stamps:
     kinds: [branch, loop, call, field, constant, return]
     relations: [same, stand-in, not-ported]
     stand_in_markers: [stand-in, "Coney's choice"]   # a comment at the code carries one (testing.md#stand-ins)
+  # `pr verify` requires every stamp it relies on to say `who.source: hook` (the dispatcher vouched for the agent). Off
+  # until the hooks write the identity for every stage command, so a log made without them still verifies.
+  require_hook_source: false
 
 proof:
   # What a change must pass on this machine before it is opened as a pull request (`coney-tools task check`;
