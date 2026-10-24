@@ -29,7 +29,7 @@ from pr_support import (
 from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS
 
-from coney_tools import orig_copy, orig_pairs, pr_proof
+from coney_tools import orig_copy, orig_pairs, pr_diff, pr_proof
 from coney_tools.conventions import Conventions, parse_conventions
 
 
@@ -190,6 +190,21 @@ def test_a_check_goes_stale_after_a_source_edit_and_names_the_diffs(tmp_path: Pa
     built.edit("src/ai/placeholder.cpp", "// placeholder changed\n")
     [line] = texts(built.verify(), "checked")
     assert line == (f"checked: stale: the branch changed since Check (diff {before[:8]} now {built.diff[:8]})")
+
+
+def test_a_check_stamped_against_a_later_base_is_stale(tmp_path: Path) -> None:
+    # `task check --base <a branch commit>` hashes only the commits after that base; only the hash against the merge
+    # base with main is the change that merges, so `pr verify` refuses the stamp however its rules say they were read.
+    built = make(tmp_path)
+    earlier = built.tip
+    built.edit("src/ai/placeholder.cpp", "// a later commit\n")
+    partial = pr_diff.change_sha256(built.root, earlier, "HEAD")
+    assert partial != built.diff
+    old = built.subject().report.latest("checked")
+    assert old is not None
+    built.stamp("checked", covers={**old.covers, "diff_sha256": partial}, detail=dict(old.detail))
+    [line] = texts(built.verify(), "checked")
+    assert line == f"checked: stale: the branch changed since Check (diff {partial[:8]} now {built.diff[:8]})"
 
 
 def test_a_check_of_a_smaller_profile_than_the_change_needs_is_refused(tmp_path: Path) -> None:

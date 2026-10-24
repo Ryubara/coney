@@ -75,6 +75,10 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` | `task review` (another reviewer) |
 | `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: only Claude Opus 5.5 may review a change to an @orig function; this review ran on <model>` (only with `stamps.require_hook_source`) | `task review` |
 
+`pr verify` recomputes the change hash itself, against the merge base with the remote default branch, so a `checked`
+stamp made with `task check --base <a branch commit>` (a hash of only the later commits, or rules read from the
+branch) never matches and is refused as stale.
+
 Two notes about the rules behind it. A `none` fails-first stamp is accepted for a docs, tooling or `ci-fix` task and
 refused for a feature or fix that changes a gameplay folder (`paths.gameplay`): a gameplay change is proven by a test
 that failed first. Python tests are not stamped; a tooling task's tests-first rule rests on the reviewer and on pytest
