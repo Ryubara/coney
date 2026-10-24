@@ -31,6 +31,9 @@ _LINK = re.compile(r"(?<!!)\[(?P<text>[^\]\n]*)\]\((?P<target>[^)\s]*)(?P<tail>[
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,\d+)? @@")
 #: A target with a scheme (`https:`, `repo:`, `mailto:`) leaves the pages.
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+#: A line that starts or ends a Markdown block, so a line break before it is structure, not layout: a heading, a list
+#: item, a quotation, a table row, a code fence or an indented code line.
+_BLOCK_START = re.compile(r"^(?:\s*(?:#|[-*+]\s|>|\||\d+[.)]\s|```|~~~)| {4}|\t)")
 #: Stands in for a target when two lines are compared without their targets.
 _TARGET = "\x00"
 
@@ -91,6 +94,16 @@ def link_only_change(
     return bool(changed) and all(_rewritten(a, b, folder, from_folder, gone, resolves) for a, b in changed)
 
 
+def _prose(lines: list[str]) -> bool:
+    """Whether `lines` are the lines of one paragraph, which may be broken anywhere: none is blank or starts a block."""
+    return all(line.strip() and not _BLOCK_START.match(line) for line in lines)
+
+
+def _lead(line: str) -> str:
+    """The whitespace a line starts with, which is structure (an indented list item, a code line)."""
+    return line[: len(line) - len(line.lstrip())]
+
+
 def touched_lines(
     diff: str,
     folder: str,
@@ -100,9 +113,11 @@ def touched_lines(
 ) -> frozenset[int]:
     """The lines of the new file that the zero-context `diff` of one file touches, a link rewrite to a moved page
     (`link_only_change`) left out. A hunk whose removed and added lines read the same but for such rewrites touches
-    nothing, however the lines break. Otherwise a hunk that removes and adds the same number of lines is read line by
-    line, any other hunk touches all its added lines, and a pure deletion touches the line it sits at. `old_folder` is
-    as for `link_only_change`."""
+    nothing, however the lines break, as long as both sides are one paragraph's lines (no blank line, none that starts
+    a heading, a list item, a quotation, a table row or code: a line break there is structure). Otherwise a hunk that
+    removes and adds the same number of lines is read line by line (a line whose indent changed is touched), any other
+    hunk touches all its added lines, and a pure deletion touches the line it sits at. `old_folder` is as for
+    `link_only_change`."""
     touched: set[int] = set()
     start = 0
     removed: list[str] = []
@@ -115,7 +130,12 @@ def touched_lines(
             return
         if not added:
             touched.add(start)
-        elif removed and link_only_change(" ".join(removed), " ".join(added), folder, gone, resolves, old_folder):
+        elif (
+            removed
+            and _prose(removed)
+            and _prose(added)
+            and link_only_change(" ".join(removed), " ".join(added), folder, gone, resolves, old_folder)
+        ):
             return
         elif len(removed) != len(added):
             touched.update(range(start, start + len(added)))
@@ -123,7 +143,7 @@ def touched_lines(
             touched.update(
                 start + offset
                 for offset, (was, now) in enumerate(zip(removed, added, strict=True))
-                if not link_only_change(was, now, folder, gone, resolves, old_folder)
+                if _lead(was) != _lead(now) or not link_only_change(was, now, folder, gone, resolves, old_folder)
             )
 
     for raw in diff.splitlines():

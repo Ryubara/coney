@@ -142,7 +142,7 @@ def test_a_moved_page_whose_entry_is_the_old_form_claims_keeps_it_until_they_cit
 def test_a_moved_page_is_held_to_the_run_ids_of_the_levels_and_the_other_rules() -> None:
     text = page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n", head="")
     listed = env(legacy={RESEARCH_PATH: {"evidence": 1, "verified": 1}}, runs=frozenset({"r-2"}))
-    errored = rules_of(findings(RESEARCH_PATH, text, listed, Touch(frozenset({1}), moved_from=MOVED)))
+    errored = rules_of(findings(RESEARCH_PATH, text, listed, Touch(moved_from="docs/research/widget-old.md")))
     # The entry's 'verified' is ignored for a moved page, and a run id that names no record is no grading.
     assert "verified" in errored and "evidence" in errored
 

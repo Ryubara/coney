@@ -117,6 +117,11 @@ def _touched(page: Page, lines: frozenset[int]) -> Callable[[Finding], bool]:
     return lambda finding: max(bisect.bisect_right(starts, finding.line) - 1, 0) in changed
 
 
+def _untouched(finding: Finding) -> bool:
+    """The test of a moved page that the change touched nowhere: no finding is in a touched section."""
+    return False
+
+
 def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding]) -> list[Finding]:
     """The research standard for `path` and its `style` findings, with the legacy file's excuses applied. A change that
     touches a listed page ends the excuse for every rule but the length and the grading of the sections it leaves
@@ -139,7 +144,10 @@ def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style
             )
         )
         return findings
-    touched = _touched(page, touch.lines) if touch.lines else None
+    touched: Callable[[Finding], bool] | None = _touched(page, touch.lines) if touch.lines else None
+    if moved and touched is None:
+        # A move that changed no line still ends the excuse of everything but the grading of its sections.
+        touched = _untouched
     return apply_legacy(findings, excused, env.research.files.legacy, touched)
 
 

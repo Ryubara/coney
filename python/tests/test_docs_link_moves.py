@@ -269,3 +269,21 @@ def test_a_paragraph_reflowed_after_a_link_rewrite_is_no_touch(tmp_path: Path) -
         root, "docs/research/ai.md", text.replace("combat.md#grab", "combat-grabs.md#grab").replace("the grab", "grabs")
     )
     assert touches(root) == {"docs/research/ai.md": frozenset({3, 4})}
+
+
+def test_a_line_break_that_is_structure_is_a_touch() -> None:
+    def hunk(old: list[str], new: list[str]) -> frozenset[int]:
+        """The touched lines of one hunk at line 3 that turns `old` into `new`."""
+        header = f"@@ -3,{len(old)} +3,{len(new)} @@\n"
+        diff = header + "".join(f"-{line}\n" for line in old) + "".join(f"+{line}\n" for line in new)
+        return touched_lines(diff, FOLDER, GONE, resolves)
+
+    # A heading joined to the line above disappears, and a list item appears where a line was broken.
+    assert hunk(["See [g](combat.md#grab).", "## Data"], ["See [g](combat-grabs.md#grab). ## Data"]) == {3}
+    assert hunk(["See [g](combat.md#grab) - a note."], ["See [g](combat-grabs.md#grab)", "- a note."]) == {3, 4}
+    # So do a blank line, a quotation, a table row and a code fence on either side.
+    for marker in ["", "> quoted", "| a | b |", "```", "1. first", "    code"]:
+        assert hunk(["See [g](combat.md#grab)", marker], ["See [g](combat-grabs.md#grab) " + marker.strip()]) == {3}
+    # A rewrite on one list item, kept a list item, is no touch; a changed indent is.
+    assert hunk(["- See [g](combat.md#grab)."], ["- See [g](combat-grabs.md#grab)."]) == frozenset()
+    assert hunk(["  - See [g](combat.md#grab)."], ["- See [g](combat-grabs.md#grab)."]) == {3}
