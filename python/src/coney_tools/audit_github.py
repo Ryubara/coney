@@ -27,6 +27,7 @@ from coney_tools.log_scan import ScanResult
 from coney_tools.repo_checks import (
     check_body,
     check_title,
+    depends_pattern,
     legacy_remaining_items,
     legacy_uncited_remaining,
     screenshots_problems,
@@ -817,17 +818,11 @@ def pr_idle(context: GithubContext) -> Iterator[Problem]:
             yield _problem(pull, f"open with no activity for {idle} days (limit {limit})")
 
 
-def _depends_pattern(line: str) -> re.Pattern[str]:
-    """The `Depends on #N` line as a pattern (`#N` stands for any number)."""
-    words = r"\s+".join(re.escape(word) for word in line.replace("#N", "").split())
-    return re.compile(rf"^[ \t]*{words}\s+#\d+", re.IGNORECASE | re.MULTILINE)
-
-
 @check("pr.stacked-depends")
 def pr_stacked_depends(context: GithubContext) -> Iterator[Problem]:
     """An open pull request whose base is not the default branch says which pull request it depends on."""
     stacked = context.conventions.pull_requests.stacked
-    pattern = _depends_pattern(stacked.depends_line)
+    pattern = depends_pattern(stacked.depends_line)
     for pull in context.snapshot.pulls_in("open"):
         if pull.base != context.snapshot.default_branch and not pattern.search(audit_text.clean(pull.body)):
             yield _problem(pull, f"is based on {pull.base!r} but has no '{stacked.depends_line}' line")

@@ -15,7 +15,7 @@ from test_workspace_clean import OLD, Space
 from test_workspace_clean_pressure import claim_slot, claims, queue_ticket
 
 from coney_tools import pcsx2_proc, stale_processes, workspace_clean
-from coney_tools.build_claims import FAST_LANE, TIDY_LANE, Slots, live_worktrees
+from coney_tools.build_claims import FAST_LANE, Slots, live_worktrees
 from coney_tools.conventions import load_conventions
 from coney_tools.workspace_clean import BUSY_FILE, DEFAULT_BUILD_HOURS, run_clean
 
@@ -97,12 +97,11 @@ def test_live_worktrees_covers_every_lane_and_the_folder_locks(tmp_path: Path) -
     main_lane = Slots(folder, 2)
     main_lane.try_claim(main_lane.join("a", "wt-main", "dev", False, os.getpid()))
     main_lane.join("b", "wt-waiting", "dev", False, os.getpid())
-    for lane, name in ((FAST_LANE, "wt-fast"), (TIDY_LANE, "wt-tidy")):
-        slots = Slots(folder, 1, lane=lane)
-        slots.try_claim(slots.join("c", name, "dev", False, os.getpid()))
+    fast_lane = Slots(folder, 1, lane=FAST_LANE)
+    fast_lane.try_claim(fast_lane.join("c", "wt-fast", "dev", False, os.getpid()))
     lock = Slots(folder / "folders" / "wt-lock-dev", 1)
     lock.try_claim(lock.join("d", "wt-lock", "dev", False, os.getpid()))
-    assert live_worktrees(folder) == {"wt-main", "wt-waiting", "wt-fast", "wt-tidy", "wt-lock"}
+    assert live_worktrees(folder) == {"wt-main", "wt-waiting", "wt-fast", "wt-lock"}
 
 
 def test_live_worktrees_ignores_dead_builds_and_a_missing_folder(tmp_path: Path) -> None:

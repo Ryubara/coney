@@ -174,3 +174,12 @@ def test_the_disc_for_coney_is_the_one_iso_in_the_folder_else_the_folder(tmp_pat
     (folder / "other.iso").write_bytes(b"")
     assert config.disc_for_coney(folder) == folder  # two images: not guessed
     assert config.disc_for_coney(folder / "warriors.iso") == folder / "warriors.iso"  # an image named itself
+
+
+def test_the_retired_clang_tidy_keys_are_still_accepted_and_ignored(tmp_path: Path) -> None:
+    """A coney.local.toml written while the local clang-tidy gate existed still loads; the keys mean nothing now."""
+    root = make_repo(tmp_path, 'tidy_slots = 2\ntidy_jobs = 4\ntidy_cache_dir = "cache/tidy"\nbuild_slots = 3\n')
+    loaded = load_config(root)
+    assert loaded.numbers["build_slots"] == 3
+    assert "tidy_slots" not in loaded.numbers and "tidy_cache_dir" not in loaded.paths
+    assert set(config.RETIRED_KEYS) == {"tidy_slots", "tidy_jobs", "tidy_cache_dir"}

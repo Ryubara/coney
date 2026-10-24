@@ -79,6 +79,31 @@ def first_line(message: str) -> str:
     return ""
 
 
+def depends_pattern(line: str) -> re.Pattern[str]:
+    """A line of a description that begins with the words of `line` (`Depends on #N`) and names pull requests.
+
+    The group `refs` holds the references: `#12`, or several joined by a comma, `and` or `&` (`#12, #13 and #14`), all
+    on that one line. A sentence that only mentions the words, or a number named after other words, does not count.
+    """
+    words = r"[ \t]+".join(re.escape(word) for word in line.replace("#N", "").split())
+    return re.compile(
+        rf"^[ \t]*{words}[ \t]+(?P<refs>#\d+(?:[ \t]*(?:,|and|&)?[ \t]*#\d+)*)", re.IGNORECASE | re.MULTILINE
+    )
+
+
+def depends_numbers(body: str, line: str) -> tuple[int, ...]:
+    """The pull request numbers a description says it depends on, in the order written, each once.
+
+    HTML comments are ignored: the template's guidance may show the line.
+    """
+    found: dict[int, None] = {}
+    text = strip_comments(body.replace("\r\n", "\n").replace("\r", "\n"))
+    for match in depends_pattern(line).finditer(text):
+        for number in re.findall(r"#(\d+)", match.group("refs")):
+            found[int(number)] = None
+    return tuple(found)
+
+
 def _docs_none_pattern(line: str) -> re.Pattern[str]:
     """A line that starts with `line` (`Docs: none`), however it is spaced or capitalised, as a whole word."""
     words = r"\s*".join(re.escape(word) for word in line.split())

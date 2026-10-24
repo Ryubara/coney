@@ -17,7 +17,7 @@ from typing import Any, ClassVar
 import pytest
 
 from coney_tools import build_cli, build_record, build_run, compiler_cache, pcsx2_proc, process_lifetime
-from coney_tools.build_claims import FAST_LANE, MAIN_LANE, TIDY_LANE, default_slots, folder_lock
+from coney_tools.build_claims import FAST_LANE, MAIN_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
 from coney_tools.config import ConfigError
 from coney_tools.process_lifetime import Process
@@ -317,19 +317,7 @@ def test_status_as_json(checkout: Path, capsys: pytest.CaptureFixture[str]) -> N
     data = json.loads(capsys.readouterr().out)
     assert data["main"]["queue"][0]["agent"] == "bob" and data["main"]["queue"][0]["priority"] is True
     assert len(data["main"]["slots"]) == 2 and len(data["fast"]["slots"]) == 1
-    assert len(data["tidy"]["slots"]) == 1  # tidy_slots defaults to one
-
-
-def test_status_shows_the_clang_tidy_lane(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    tidy = default_slots(TIDY_LANE, checkout)
-    held = tidy.join("dave", "wt-d", "40 files", False, 5004)
-    assert tidy.try_claim(held) is not None
-    tidy.leave(held)
-    tidy.join("erin", "wt-e", "3 files", False, 5005)
-    assert main(["build", "status"]) == 0
-    out = capsys.readouterr().out
-    assert "tidy lane (1 slot)" in out and "slot 1: dave, wt-d, 40 files, starting" in out
-    assert "1. erin, wt-e, 3 files" in out
+    assert "tidy" not in data  # the clang-tidy lane went with the local gate
 
 
 def test_release_frees_the_agents_stale_claim_and_ticket(

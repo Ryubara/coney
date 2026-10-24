@@ -52,6 +52,7 @@ def checkout(root: Path) -> Path:
         shutil.copyfile(REPO / name, root / name)
     (root / "coney.local.example.toml").write_text("", encoding="utf-8")  # marks a Coney checkout
     shutil.copytree(REPO / "docs" / "guides", root / "docs" / "guides")
+    shutil.copytree(REPO / ".github" / "workflows", root / ".github" / "workflows")
     for path in CONVENTIONS.repo.tools.values():
         if not (root / path).exists():
             (root / path).parent.mkdir(parents=True, exist_ok=True)
@@ -584,7 +585,6 @@ SCOPE_CASES = [
     # unknown: everything.
     (["sub/README.md"], "true", ALL_OS),
     (["docs.md/x"], "true", ALL_OS),
-    ([".github/scripts/tidy-files.sh"], "true", ALL_OS),
     ([".github/workflows/new.yml"], "true", ALL_OS),
     ([".gitattributes"], "true", ALL_OS),
     # Mixed: the union.
@@ -736,3 +736,37 @@ def test_a_template_that_forgets_the_runtime_line_is_found(root: Path) -> None:
     edit(root, ".github/pull_request_template.md", "`Runtime: none (<reason>)`", "`Runtime: skip`")
     messages = " | ".join(problem.message for problem in found(af.template_matches, context(root)))
     assert "does not mention Runtime: ..." in messages and "does not mention `Runtime: none (<reason>)`" in messages
+
+
+# --- files.ci-places --------------------------------------------------------------------------------------------
+
+
+def test_a_job_that_is_in_no_place_is_found(root: Path) -> None:
+    def add_job(data: dict[str, Any]) -> None:
+        data["jobs"]["extra"] = {"runs-on": "ubuntu-24.04", "steps": [{"run": "true"}]}
+
+    edit_yaml(root, ".github/workflows/pr.yml", add_job)
+    problems = found(registered()["files.ci-places"], context(root))
+    assert [problem.message for problem in problems] == [
+        "the job pr/extra is in no place of ci.places (one place per check)"
+    ]
+
+
+def test_a_place_that_names_a_missing_job_is_found(root: Path) -> None:
+    def drop_job(data: dict[str, Any]) -> None:
+        del data["jobs"]["body"]
+
+    edit_yaml(root, ".github/workflows/pr.yml", drop_job)
+    problems = found(registered()["files.ci-places"], context(root))
+    assert [problem.message for problem in problems] == ["ci.places names the job pr/body, which no workflow has"]
+
+
+def test_a_new_workflow_must_be_placed_too(root: Path) -> None:
+    (root / ".github" / "workflows" / "new.yml").write_text(
+        "name: new\non: push\njobs:\n  check:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: 'true'\n",
+        encoding="utf-8",
+    )
+    problems = found(registered()["files.ci-places"], context(root))
+    assert [problem.message for problem in problems] == [
+        "the job new/check is in no place of ci.places (one place per check)"
+    ]

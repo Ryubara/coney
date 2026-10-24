@@ -120,6 +120,8 @@ as a courtesy.
 | One feature per pull request; a diff holds only that change | [How we work](how-we-work.md#working-in-parallel) | `reviewer`, the coordinator | judgement |
 | Run the local gate before handing a unit over | [Testing](testing.md#local-gate) | CI finds what it missed, a CI round later | written; best point a stamp `check changed` writes, which the release gate reads |
 | A stacked pull request says `Depends on #N`, has no auto-merge and is never merged into its base | [How we work](how-we-work.md#release-queue) | `repo audit` `pr.stacked-*`, `pr.merged-into-base` | partly (after the fact) |
+| A pull request does not merge while a pull request it `Depends on` is unmerged | [Repository conventions](repo-conventions.md#workflows) | CI `dependencies` (required, `ci dependencies`); it reruns when a dependency merges (`ci rerun-dependencies`) | enforced at CI |
+| A failed run on `main` (nightly, push or manual) is an issue at once | [Repository conventions](repo-conventions.md#workflows) | CI `ci-failure`: `ci report-failure` opens a `P-critical` issue or comments on the open one | enforced at CI |
 | No pull request sits conflicting or failing | [How we work](how-we-work.md#merging) | `hygiene.yml` labels; Tether's `prs` poller blocks the coordinator's turn | enforced (Tether) |
 | Only a maintainer or the coordinator merges, by squash, once required checks pass | [AGENTS.md](repo:AGENTS.md) (`merge`) | GitHub ruleset on `main`; `repo audit` `gh.ruleset` | enforced (GitHub) |
 | The repository's address appears only in the README | [AGENTS.md](repo:AGENTS.md) (`paths.address_allowed_in`) | `repo audit` `files.address` (`check changed`, CI `python`) | enforced |
@@ -156,7 +158,7 @@ as a courtesy.
 | --- | --- | --- | --- |
 | clang-format decides layout | [Conventions](conventions.md#formatting) | pre-commit; CI `format` (required) | enforced |
 | Warning-free on MSVC, GCC, Clang and Apple Clang | [Conventions](conventions.md#standard-and-compilers) | `/WX` and `-Werror` in every CI build | enforced at CI |
-| clang-tidy's checks (`bugprone-*`, `performance-*`, unchecked optional access) | [Conventions](conventions.md#portability-traps) | `check changed` and the nightly CI pass | partly (nightly, after the merge) |
+| clang-tidy's checks (`bugprone-*`, `performance-*`, unchecked optional access) | [Conventions](conventions.md#portability-traps) | CI `clang-tidy` (required) on the lines a pull request changes; the nightly pass on every file | enforced at CI (a finding in a line the pull request did not change waits for the nightly pass) |
 | Only the frame pacer reads the real clock or sleeps | [Conventions](conventions.md#update-and-render) | pre-commit `no-real-clock` | enforced |
 | Every code file starts with the SPDX line | [Conventions](conventions.md#licence-header), [LEGAL.md](repo:LEGAL.md#licences) | None | written: four files lack it; best point pre-commit |
 | The engine throws no exceptions | [AGENTS.md](repo:AGENTS.md), [Conventions](conventions.md#errors) | None (no `throw`, `try` or `catch` in `src/` today) | written; best point the engine targets' compile flags |
@@ -194,7 +196,6 @@ Tracks adding checks now; their rows change when they merge:
   each address, no machine paths or "not yet" wording, on the pages a change touches.
 - **New untagged gameplay code** (`coney-tools orig check`): a new function in a gameplay folder carries `@orig` or a
   Coney-only marker.
-- **clang-tidy scheduling**: when and where clang-tidy runs on a pull request.
 - **Networking checklist**: review items for network code.
 
 ## What stays judgement {#judgement}

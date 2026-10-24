@@ -20,7 +20,6 @@ PATH_KEYS: tuple[str, ...] = (
     "build_claims_dir",
     "ccache_dir",
     "ccache_program",
-    "tidy_cache_dir",
     "deps_dir",
     "scratch_dir",
     "jdk_home",
@@ -39,9 +38,7 @@ PATH_KEYS: tuple[str, ...] = (
 #: cores or a build slot's share when that is more (build_run.py, `parallel_tests_for`);
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
 #: PINE and debug server ports of the first copy, each next copy taking the next port; `ccache_size_gb`: the cap of the
-#: shared compiler cache, 0 turning it off, compiler_cache.py; `tidy_slots`: how many `check changed` clang-tidy runs
-#: go at once, machine-wide; `tidy_jobs`: the clang-tidy processes of each, 0 meaning a build slot's share of the
-#: cores, check_cli.py).
+#: shared compiler cache, 0 turning it off, compiler_cache.py).
 INT_KEYS: dict[str, int] = {
     "build_slots": 2,
     "build_worktree_cap": 7,
@@ -50,22 +47,23 @@ INT_KEYS: dict[str, int] = {
     "build_fast_lane_test_seconds": 300,
     "test_jobs": 0,
     "ccache_size_gb": 25,
-    "tidy_slots": 1,
-    "tidy_jobs": 0,
     "pcsx2_copies": 5,
     "pcsx2_pine_base": 28011,
     "pcsx2_debug_base": 21512,
 }
 
-#: The smallest value a number key accepts (default 0): `build_slots` and `tidy_slots` need a slot, 0 turns a fast
-#: lane off, and a port is above the privileged range.
+#: The smallest value a number key accepts (default 0): `build_slots` needs a slot, 0 turns a fast lane off, and a
+#: port is above the privileged range.
 INT_MINIMUM: dict[str, int] = {
     "build_slots": 1,
-    "tidy_slots": 1,
     "pcsx2_copies": 1,
     "pcsx2_pine_base": 1024,
     "pcsx2_debug_base": 1024,
 }
+
+#: Keys that once meant something and are now ignored, so a `coney.local.toml` written before they went still loads
+#: (the local clang-tidy gate and its slots, cache and process count went when CI began tidying every pull request).
+RETIRED_KEYS: tuple[str, ...] = ("tidy_slots", "tidy_jobs", "tidy_cache_dir")
 
 LOCAL_FILE = "coney.local.toml"
 #: In a plain clone (one not in a workspace's `repos/` folder), what the workspace folder beside it is named after:
@@ -158,7 +156,7 @@ def load_config(root: Path) -> Config:
     except (tomllib.TOMLDecodeError, UnicodeDecodeError, OSError) as error:
         raise ConfigError(f"{path}: {error}") from error
 
-    unknown = sorted(set(data) - set(PATH_KEYS) - set(INT_KEYS))
+    unknown = sorted(set(data) - set(PATH_KEYS) - set(INT_KEYS) - set(RETIRED_KEYS))
     if unknown:
         known = ", ".join((*PATH_KEYS, *INT_KEYS))
         raise ConfigError(f"{path}: unknown key(s) {', '.join(unknown)}; known keys are {known}")

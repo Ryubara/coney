@@ -20,9 +20,8 @@ emulator and no BIOS, and no disc until step 4. Each step links to the page that
 with C++*; Linux: GCC 13+ or Clang 19+ and the SDL packages; macOS: Xcode 16+), CMake 3.28+ and Ninja, Git, and
 [uv](https://docs.astral.sh/uv/) for the `coney-tools` command line. The exact versions and the Linux package list
 are in the [README](README.md#requirements) and [Building and testing](docs/guides/building.md#what-you-need).
-Node.js 18+ makes the formatting hooks faster (otherwise pre-commit downloads its own). A change to C++ is also
-checked with clang-tidy 19 in step 6: on Windows add the Visual Studio component *C++ Clang tools for Windows*, on
-Linux install `clang-tidy-19`, on macOS `brew install llvm@19`. For step 4, your own copy of
+Node.js 18+ makes the formatting hooks faster (otherwise pre-commit downloads its own). clang-tidy needs no
+install: CI runs it on the lines of every pull request. For step 4, your own copy of
 the North American (NTSC-U) game: the research is checked against its executable `SLUS_212.15`; other releases are
 untested. Once uv is there, `uv run --project python coney-tools doctor` in the clone checks all of this, your disc
 included, and prints how to fix each problem ([Check your setup](docs/guides/building.md#doctor)).
@@ -72,8 +71,9 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
    below; talk to a maintainer in the issue first. Write the test first ([Testing](docs/guides/testing.md)) and
    keep the code in the style of [Conventions](docs/guides/conventions.md).
 6. **Check, commit, open the pull request.** Branch from `main`, make the change, then run the one command that does
-   what CI would fail on for the files you touched (it needs the `build/dev` folder from step 2 and, for the docs
-   check, the setup in [Writing these docs](docs/guides/writing-docs.md#setup-once)):
+   what CI would fail on for the files you touched (for the docs check it needs the setup in [Writing these
+   docs](docs/guides/writing-docs.md#setup-once); CI adds clang-tidy on your changed lines, the other compilers and the
+   sanitizers):
 
     ```sh
     uv run --project python coney-tools check changed

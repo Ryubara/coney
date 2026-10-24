@@ -462,7 +462,7 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   holds the folder), so start a build and its tests as one `--test` run rather than two commands, and never run two at
   once in one worktree. Each run writes a log of its own, named for the preset, the agent and the time; read the path
   it prints first.
-- **A second configuration** (the Clang build clang-tidy reads on Linux and macOS) is `--build-dir build/tidy --env
+- **A second configuration** (a Clang build beside the default compiler's) is `--build-dir build/clang --env
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
 - **Exit code 75 means "still queued".** The command left the queue: its wait reached `--max-wait`, or the wait the
   queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first
@@ -493,7 +493,7 @@ its folder until somebody removes it. A rule written in a brief is not enough, s
   workspace](workspace.md#local-config)). It exits `2` at once and lists those worktrees: size, hours idle, and
   whether the branch's pull request merged or the worktree is busy. Builds that already have a folder keep building,
   the main checkout's `build/release` (the coordinator's play build) does not count, and a second folder in a
-  worktree that already holds one (the gate's `build/tidy`) adds none.
+  worktree that already holds one (a second configuration) adds none.
 - **On a refusal**, run `uv run --project python coney-tools workspace clean` (a dry run: it lists what it would do),
   then with `--apply`. It removes worktrees whose pull request merged (when nothing in them is uncommitted) and
   deletes the `build/` folders idle over a day, and never touches a worktree that holds or waits for a build slot,
@@ -521,9 +521,8 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools-build.md#build)).
-- The local gate's clang-tidy waits in the same way, for a slot of the tidy lane: at most 40 minutes in a call you
-  wait on, then exit 75. `coney-tools check changed --detach` runs the whole gate in the background; whoever continues
-  runs `coney-tools check result` in the worktree ([`check`](coney-tools-build.md#check)).
+- `coney-tools check changed --detach` runs the whole local gate in the background; whoever continues runs
+  `coney-tools check result` in the worktree ([`check`](coney-tools-build.md#check)).
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 

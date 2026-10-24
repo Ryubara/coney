@@ -74,6 +74,10 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 * [`issue`](coney-tools-issues.md#issue): drafting, checking and creating issues.
 * [`claim`](coney-tools-issues.md#claim): the issue claims.
 
+### [The CI commands](coney-tools-ci.md)
+
+* [`ci`](coney-tools-ci.md#ci): the commands the CI workflows run.
+
 ### [The check, build and benchmark commands](coney-tools-build.md)
 
 * [`check`](coney-tools-build.md#check): what CI would fail on.

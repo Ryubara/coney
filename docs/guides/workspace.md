@@ -308,7 +308,7 @@ free space before and after.
   [bounded-waits hook](agents.md#bounded-waits) keeps new ones from being started.
 
 **Build slots.** A worktree that holds a build slot, a build folder's lock, or a place in the build queue (the main,
-fast or tidy lane) is never removed and never loses its `build/`, in any mode. `clean` reads that from the build
+fast lane) is never removed and never loses its `build/`, in any mode. `clean` reads that from the build
 queue's own claim and ticket files (`build_claims_dir`, else `scratch/build-claims`; [`build`](coney-tools-build.md#build))
 with the queue's rules for a dead claim (its process is gone, or it is over four hours old), never from a listing
 made earlier, and reads it again just before each deletion: a stale listing once deleted the build folders of two

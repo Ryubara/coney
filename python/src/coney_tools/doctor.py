@@ -2,7 +2,7 @@
 """`coney-tools doctor`: check a contributor's machine and disc, and say how to fix what is missing.
 
 One command for a person setting up (docs/guides/building.md#doctor): the build tools the engine needs (Git, the
-compiler, CMake and Ninja, uv), the ones that make it faster or check it (ccache, clang-tidy 19), the configuration
+compiler, CMake and Ninja, uv), the ones that make it faster or check it (ccache), the configuration
 file, the disc against the NTSC-U release the research refers to, the research tools (a JDK 21, Ghidra and its
 project, Node.js), the ghidra-mcp port and the free disk space. Every check only reads: it runs version options,
 hashes the disc's small files and never installs or changes anything. It prints counts, sizes and hashes only
@@ -21,7 +21,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import local_gate, pcsx2_claims, workspace, workspace_fetch
+from coney_tools import pcsx2_claims, workspace, workspace_fetch
 from coney_tools.build_cli import scratch_root
 from coney_tools.config import (
     ConfigError,
@@ -98,21 +98,6 @@ def uv_check(which: Which) -> Check:
     """uv, which runs every `coney-tools` command (and so this one; a missing one means it ran another way)."""
     found = which("uv")
     return Check("uv", found is not None, found or "not found", "install uv: docs.astral.sh/uv", True)
-
-
-def clang_tidy_check() -> Check:
-    """clang-tidy 19, which `coney-tools check changed` runs on C++ changes."""
-    hint = (
-        "Windows: the Visual Studio component C++ Clang tools for Windows; Linux: clang-tidy-19; "
-        "macOS: brew install llvm@19"
-    )
-    try:
-        path, major = local_gate.find_clang_tidy()
-    except ConfigError:
-        return Check("clang-tidy 19", False, "not found (needed only to check C++ changes)", hint, False)
-    ok = major == local_gate.TIDY_MAJOR
-    version = f"version {major}" if major is not None else "version unknown"
-    return Check("clang-tidy 19", ok, f"{path} ({version})", hint, False)
 
 
 def default_compiler_check(platform: str, which: Which, run: Run, env: Mapping[str, str]) -> Check | None:
@@ -276,7 +261,7 @@ def run(cwd: Path, disc_arg: str | None) -> int:
     build.append(uv_check(shutil.which))
     note = default_compiler_check(name, shutil.which, run_command, env)
     build += [note] if note is not None else []
-    build += [workspace.ccache_check(root), clang_tidy_check()]
+    build += [workspace.ccache_check(root)]
 
     disc, problem = _open_disc(disc_arg, paths.get("game_dir"))
     discs = [problem] if problem is not None else disc_checks(disc)

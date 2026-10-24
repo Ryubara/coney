@@ -328,6 +328,23 @@ def ci_scope_reads_the_file(context: FilesContext) -> Iterator[Problem]:
             )
 
 
+@check("files.ci-places")
+def ci_places_match_the_workflows(context: FilesContext) -> Iterator[Problem]:
+    """Every job of every workflow is in a place of `ci.places`, and every job a place names exists: the table of where
+    each check runs cannot drift from the workflows."""
+    workflows = context.root / ".github" / "workflows"
+    existing: set[str] = set()
+    for path in sorted(workflows.glob("*.yml")) if workflows.is_dir() else []:
+        data = _yaml(context.root, f".github/workflows/{path.name}")
+        jobs = data.get("jobs") if isinstance(data, dict) else None
+        existing.update(f"{path.stem}/{job}" for job in (jobs if isinstance(jobs, dict) else {}))
+    named = set(context.conventions.ci.jobs())
+    for job in sorted(named - existing):
+        yield Problem(CONVENTIONS_FILE, f"ci.places names the job {job}, which no workflow has")
+    for job in sorted(existing - named):
+        yield Problem(CONVENTIONS_FILE, f"the job {job} is in no place of ci.places (one place per check)")
+
+
 #: The pre-commit hook that refuses game data and local records by name (`.pre-commit-config.yaml`).
 GAME_FILES_HOOK = "no-game-files"
 #: One path per kind of game data or local record the no-game-files hook names; it must refuse each.

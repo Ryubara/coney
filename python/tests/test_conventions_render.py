@@ -215,9 +215,9 @@ def test_required_checks_list_every_check_and_the_merge_method() -> None:
 
 
 def test_required_checks_follow_a_changed_list() -> None:
-    conventions = conventions_with(("merge.required_checks", ["title", "tidy"]))
+    conventions = conventions_with(("merge.required_checks", ["title", "body"]))
     text = "\n".join(render_block("required-checks", conventions))
-    assert "`tidy`" in text and "`build-ok`" not in text
+    assert "`body`" in text and "`build-ok`" not in text
 
 
 def test_docs_only_paths_explain_each_kind_of_pattern() -> None:
@@ -489,3 +489,14 @@ def test_a_changed_research_limit_reaches_the_block() -> None:
     conventions = conventions_with(("research.kinds.topic.max_lines", 1234), ("research.verified_max_chars", 150))
     text = " ".join(" ".join(render_block("research-pages", conventions)).split())
     assert "1,234" in text and "at most 150 characters" in text
+
+
+def test_the_places_name_ci_once_and_each_word_in_its_usual_order() -> None:
+    conventions = conventions_with(("ci.places.0.where", ["nightly", "local", "main"]), ("ci.places.0.jobs", ["x/y"]))
+    lines = render_block("check-places", conventions)
+    assert "| local; CI: a push to main, nightly |" in lines[2]
+    text = "\n".join(lines)
+    assert "CI, " not in text and "CI: every pull request, CI" not in text
+    # the failure issue never runs for a pull request, so its row does not say it does
+    issue_row = next(line for line in lines if "P-critical" in line)
+    assert "every pull request" not in issue_row

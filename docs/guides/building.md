@@ -29,7 +29,7 @@ uv run --project python coney-tools doctor [--disc DISC]
 ```
 
 One command checks everything above and the rest a contributor needs, and prints `ok`, `problem` or `note` per line,
-with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, clang-tidy 19, and on Linux
+with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, and on Linux
 an old default `g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
 folder, your disc (`--disc`, else `game_dir`: `SLUS_212.15` and `WARRIORS.DIR` by size and SHA-1, `WARRIORS.WAD` by
 size, against the NTSC-U release the research refers to), the research tools (JDK 21, Node.js, Ghidra, the compiled
@@ -456,64 +456,60 @@ export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-19/bin/llvm-symbolizer
 The preset is not offered on Windows: MSVC's AddressSanitizer has no UBSan and no LeakSanitizer, so it would check
 much less than the Linux and macOS runs that CI does anyway.
 
-## clang-tidy
+## clang-tidy {#clang-tidy}
 
-Pull requests are tidied locally, before they are pushed: CI's clang-tidy runs only nightly on `main` and by hand,
-and no pull request waits on it (a maintainer decision, 2026-10-21: a full pass took 50 to 100 minutes on a GitHub
-runner, most of it spent walking the standard library's and the dependencies' headers). The nightly and manual runs
-check Coney's own sources (`src/` and `tests/`, never the fetched dependencies) with clang-tidy 19, using the
-`compile_commands.json` that every preset writes. To run the same full pass locally on Linux, after a `ci` build with
-Clang 19:
+CI tidies every pull request that changes engine files, **on the lines it changes**, in the required check `clang-tidy`,
+and every push to `main` or a `release/` branch the same way (the pushed commit's change, `HEAD^1` to `HEAD`; findings
+in the log). It tidies every file of Coney's own sources (`src/` and `tests/`, never the fetched dependencies) nightly
+on `main` and when started by hand. There is no local clang-tidy, and no local WSL builds or clang-tidy runs on Windows:
+a full pass takes 50 to 100 minutes on a CI runner (most of it spent in the standard library's and the dependencies'
+headers), and a local gate competed with the builds for cores and memory. The maintainer dropped it on 2026-10-23
+(#514), so a finding comes back as an annotation on the pull request and is fixed forward on the branch.
+
+**On a pull request.** The `clang-tidy` job of the `build` workflow does the same as the other engine jobs: it is
+skipped (and so counts as passed) for a draft and for a change that touches no engine file ([what a pull request
+runs](#what-a-pull-request-runs)). Otherwise:
+
+1. `coney-tools ci tidy-plan` reads the pull request's diff (`git diff -U0`) and chooses what to check. A changed source
+   (`.cpp`) is checked itself; a changed header is checked through **one** source that includes it, directly or through
+   other headers (the source with the header's own name if there is one, `brain.h` through `brain.cpp`, else the nearest
+   includer): one is enough to analyse the header's lines, and a header reaches 100 to 280 of the sources. The plan
+   also holds the changed lines of every file. **A change to the build setup** (the top `CMakeLists.txt`, anything
+   under `cmake/`, `CMakePresets.json`, `.clang-tidy`: `ci.tidy.whole_when`) reaches files it does not touch, a compiler
+   flag or a check setting being read by every one, so the plan then says `everything` and the job runs the
+   whole-codebase pass below on that pull request instead of the changed lines. Every other pull request is checked
+   on its changed lines only. The settings (the folders, the extensions, the build-setup files) are `ci.tidy` of
+   [.github/conventions.yml](repo:.github/conventions.yml).
+2. The job configures and builds the `ci` preset with Clang 19 (through the [compiler cache](#ci-caches), which
+   starts from `main`'s), because the build generates the headers clang-tidy needs and writes the compile database.
+3. `coney-tools ci tidy-run` runs `clang-tidy-19` on the planned sources, several at once, with a line filter of the
+   changed lines: a diagnostic on a line the pull request did not touch is never reported, whichever source it was
+   found through. The checks are the repository's `.clang-tidy`, and its `WarningsAsErrors` makes every finding an
+   error. The job fails on any finding, and also when clang-tidy itself fails (a missing compile database, a crash) or
+   a planned source does not compile (a compiler error on any line, changed or not: clang-tidy could not analyse it).
+4. The findings reach the pull request as annotations on the changed lines: the job writes a SARIF file and uploads it to
+   code scanning (category `clang-tidy`). A pull request from a fork has a read-only token that cannot upload, so the
+   job prints the findings as workflow commands (`::error file=...`), which annotate the diff as well. Either way the
+   job's summary lists the first findings and the log holds all of them.
+
+To check again after a fix, push (the job reruns) or use "Re-run jobs". A finding that is a false positive is
+silenced at its line with `// NOLINT(check-name)` and a reason, rarely. A finding your change causes in a line you did
+not touch (you removed a null check that code elsewhere relied on) is not on the pull request: the nightly run reports
+it, and a failed nightly run opens a `P-critical` issue ([Failures on main](#ci-failure)).
+
+**Nightly, by hand, and for a build-setup change.** The `build` workflow also runs every night on `main` and on demand
+([What CI runs](#what-ci-runs)), and a change to the build setup runs the same pass; all of them check every file in the
+same job. The pass takes close to an hour, its findings are in the log, not annotations, and it **fails on any finding
+anywhere** in `src/` and `tests/`: while the nightly pass is red, a build-setup pull request is red for findings it did
+not cause, so fix those (the open `P-critical` issue lists them) first or in the same pull request.
 
 ```sh
 run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
 ```
 
-A pull request's pass checks only the files it changes: each changed `.cpp`, plus every `.cpp` that includes a
-changed header, directly or through other headers (`.github/scripts/tidy-files.sh <base>` prints the list for a
-change, or `ALL` for a change to the build setup: `CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, the
-build workflow). The nightly run checks everything, so a header included some unusual way, or a build-setup change
-that breaks a file it did not touch, is still caught within a day; whoever sees it red fixes it forward.
-
-`coney-tools check changed` runs that pass for you, and it is the pull request's only clang-tidy gate: the same file
-selection, clang-tidy from
-the Visual Studio LLVM folder (macOS: Homebrew's `llvm@19`) over the `build/dev` compile database, and the GCC and
-Clang warnings that MSVC does not report ([the local gate](testing.md#local-gate), [its options](coney-tools-build.md#check)).
-On Linux, where `dev` builds with GCC, configure a Clang database for it once, with the build tool (a hook refuses a
-raw `cmake`): `coney-tools build --agent <id> --configure-only --preset dev --build-dir build/tidy --env CC=clang-19
---env CXX=clang++-19`, then pass `--build-dir build/tidy` to `check changed`.
-
-### The tidy slots and the result cache {#clang-tidy-cache}
-
-clang-tidy costs about a minute and a gigabyte of memory per file, and a header change reaches 100 to 280 of the 948
-`.cpp` files, so on a machine shared by many agents the gate is held to the same rules as a build:
-
-- **Tidy slots.** `check changed` runs its clang-tidy processes only while it holds a slot of the machine's tidy lane,
-  a lane of the [build slots](coney-tools-build.md#build) with its own queue (`build status` lists it). `tidy_slots` of
-  `coney.local.toml` sets how many gates tidy at once (default 1) and `tidy_jobs` how many clang-tidy processes each
-  runs (default 0: a build slot's share of the cores, `-j` of a build); together they bound clang-tidy's share of the
-  machine. Before the lane, every gate started its own processes: on 2026-10-21 eight gates ran 22 of them (about
-  20 GB) beside five full builds on 16 threads, and the builds queued for over an hour. A run of at most 6 files (a
-  rerun after a fix, a change that reaches a few sources) takes the fast lane's slot instead, so it never waits behind a
-  gate of 250 files. Once a gate has its slot it asks the cache again, as another gate may have tidied the same files
-  while it waited. Ctrl+C or a kill lets the slot go at once: the files not started yet are dropped.
-- **Result cache.** A file clang-tidy found clean is remembered in a cache every worktree shares (`tidy_cache_dir`,
-  default `cache/clang-tidy` in the workspace, beside the [compiler cache](#compiler-cache)), and the next gate that
-  meets the same file in the same state skips it. The key is everything that decides the result: clang-tidy's version,
-  the checks and warning flags, `.clang-tidy`, `cmake/deps.cmake` (the pinned third-party versions), the file's compile
-  command with the checkout's path taken out, the size and date of the compiler it names, the system include
-  variables (`INCLUDE`, `CPATH` and the like, which name the Windows SDK and MSVC versions), and the contents of the
-  file and of every Coney header it includes, transitively (every `#include` line counts, whatever `#if` it sits
-  under). So a rerun after a fix tidies only the files the fix reaches, and a gate whose files are all cached takes no
-  slot and finishes in seconds. Each clean file is stored as soon as it finishes, and only if its key is still the
-  same: a file edited while the gate waited or ran is tidied again next time. A failing file is never cached. Entries
-  unused for 30 days are removed; `--no-cache` ignores the cache for one run.
-
-What the key leaves out, by design: the contents of headers outside the checkout (the standard library, the compiler's
-own, which the compiler and include variables stand for) and of the fetched dependencies under `_deps` (pinned by
-`deps.cmake`). It does not follow forced includes (`-include`, `/FI`), `-idirafter`, `#include MACRO` or the contents of
-`@response` files; Coney's build uses none of them. Delete the cache folder if a toolchain changes in a way none of
-these show.
+On Linux, after a `ci` build with Clang 19, the same command checks the whole codebase and the two `ci` commands above
+(`tidy-plan --diff <(git diff -U0 --no-renames origin/main...HEAD) --out plan.json`, then `tidy-run --plan plan.json
+--build-dir build/ci --clang-tidy clang-tidy-19`) reproduce a pull request's pass; other machines need not.
 
 ## Python tools
 
@@ -572,11 +568,11 @@ build --strict` is the one CI runs) and how to write the pages are in [Writing t
 ## What CI runs
 
 Every pull request, and every push to `main` or a `release/` branch, runs these GitHub Actions workflows. The `build`
-workflow also runs every night on `main` and on demand: open the repository's Actions tab, choose `build`, press
-"Run workflow" and pick a branch that is already on GitHub (or `gh workflow run build.yml --ref <branch>`). Only the
-nightly and manual runs run clang-tidy, over every file. Every compiling job, Windows included, goes through ccache
-and starts from `main`'s cache, so it recompiles only what changed; each job prints its hit rate at the end and in its summary
-([Caches](#ci-caches)).
+workflow also runs every night on `main` and on demand: open the repository's Actions tab, choose `build`, press "Run
+workflow" and pick a branch that is already on GitHub (or `gh workflow run build.yml --ref <branch>`). Only the nightly
+and manual runs tidy every file, where a pull request is tidied on its changed lines. Every compiling job, Windows
+included, goes through ccache and starts from `main`'s cache, so it recompiles only what changed; each job prints its
+hit rate at the end and in its summary ([Caches](#ci-caches)).
 
 A newer push cancels the older run of the same workflow on the same ref, queued or running: on a pull request, and
 on `main` or a `release/` branch too, so a burst of merges builds only the newest commit instead of queueing one full
@@ -585,10 +581,54 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 
 | Workflow | Jobs |
 | --- | --- |
-| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (nightly and manual runs only); pre-commit over every file; the `build-ok` gate |
+| `build` | `ci` preset build and tests on Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (the lines a pull request changes; every file nightly, by hand and for a build-setup change); pre-commit over every file; the `build-ok` gate |
 | `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, `orig check` and `orig copy-check` with `--base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
+| `dependencies` | a pull request whose description says `Depends on #N` waits until #N is merged (`ci dependencies`); when a pull request merges, the waiting ones are rerun (`ci rerun-dependencies`) |
+| `ci-failure` | a failed `build`, `python` or `docs` run on `main` (nightly, push or manual) opens a `P-critical` issue, or comments on the open one (`ci report-failure`) |
 | `docs` | `mkdocs build --strict`, the page standards on a pull request's changed pages ([`docs check`](writing-docs.md#checking)), markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
+
+There is no Windows `ci` (dev) build in CI: MSVC with `/WX` and the C4062 warning runs locally, on the `ci` preset
+(`coney-tools build --preset ci --test`; the preset table in [Build and test](#build-and-test)), and the `ci-release`
+build on Windows still compiles every pull request with MSVC and `/WX`.
+
+### Where each check runs {#where-checks-run}
+
+Each check of the project runs in one place: on your machine (`coney-tools task check`, a stamp command or a git hook),
+or in CI on every pull request, on a push to `main`, nightly, or on issue and pull request events. The table is
+[`ci.places`](repo:.github/conventions.yml), generated from it (`coney-tools repo render`); `coney-tools repo audit
+--files` (`files.ci-places`) fails when a job of the workflows is in no place, a place names a job no workflow has, or a
+required check is in none.
+
+<!-- conventions:begin check-places -->
+| Check | Where | CI jobs |
+| --- | --- | --- |
+| Full suite with the disc | local | none |
+| MSVC `ci` build (/WX, C4062) | local | none |
+| Study, pairs, copy check, fails-first | local | none |
+| Formatting | local; CI: every pull request (applied by a git pre-commit hook, verified by CI) | `build/format` |
+| GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds | CI: every pull request | `build/build` |
+| Linux and macOS sanitizers | CI: every pull request | `build/sanitizers` |
+| clang-tidy: the lines a change touches; the whole codebase nightly and for a build-setup change | CI: every pull request, a push to main, nightly | `build/clang-tidy` |
+| Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request | `python/python`, `python/python-ok` |
+| Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
+| The pull request's title, description and docs | CI: every pull request | `pr/title`, `pr/docs`, `pr/body` |
+| `Depends on #N` pull requests are merged | CI: every pull request, a push to main | `dependencies/dependencies`, `dependencies/rerun` |
+| The gate that stands for the build jobs | CI: every pull request | `build/build-ok` |
+| Which jobs a change needs | CI: every pull request | `build/changes`, `python/changes` |
+| Cache upkeep and the docs site | CI: a push to main, nightly | `build/cache-prune`, `docs/deploy` |
+| Issue checks, claims, status labels and the weekly report | CI: issue and pull request events | `claim/claim`, `hygiene/hygiene`, `issue-check/check`, `issue-status/status-label` |
+| A failure on main opens a P-critical issue | CI: a push to main, nightly | `ci-failure/report` |
+<!-- conventions:end -->
+
+### Failures on main {#ci-failure}
+
+A failed run of `build`, `python` or `docs` on `main` (the nightly build, a push, a manual run) is not on any pull
+request, so nobody is waiting on it. The `ci-failure` workflow reads the failed run and opens an issue in the task form
+labelled `P-critical` (the settings are `ci.failure` of the conventions file): the failed jobs, the errors of the log,
+and the files the log names with the last commits that touched them. While a `P-critical` issue has no claim, only that
+issue can be claimed ([Issues](issues.md#claiming)). A workflow that fails again while its issue is open adds a comment
+to that issue; fix it forward and the issue closes with the pull request.
 
 One more workflow runs on issues, not pull requests: `issue-check` runs `coney-tools issue check` on every issue
 opened or edited and keeps one comment listing the problems ([Filing an issue](issues.md#filing)); it is not a required
@@ -708,7 +748,8 @@ GitHub ruleset and settings, and this block is generated from it (`coney-tools r
 <!-- conventions:begin required-checks -->
 - Merge method: squash only. The commit on `main` has the pull request's title; its message is the pull request's
   description.
-- Required checks: `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`.
+- Required checks: `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`,
+  `dependencies`, `clang-tidy`.
 - Auto-merge is on, the branch is deleted after the merge, history is linear and a branch need not be up to date with
   `main`.
 - Who merges: maintainer and coordinator, never the agent that wrote the work.
@@ -738,7 +779,7 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   after the build jobs outside pull requests, deletes every older entry of the same job (and older dependency entries
   of the same OS) on that branch, so `main` keeps one per job. Before saving, a job drops what it did not use
   (`ccache --evict-older-than` the job's own duration), so the entry is the size of one build, not of the cap.
-- **Sharing.** The nightly clang-tidy job builds with the same compiler, preset and flags as `build (linux-clang-19)`,
+- **Sharing.** The clang-tidy job builds with the same compiler, preset and flags as `build (linux-clang-19)`,
   so it restores that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
 - **What a cache can store.** MSVC's default `/Zi` writes every object's debug information into one shared PDB,
   which ccache refuses; every preset uses `/Z7` instead ([Debug information on MSVC](#debug-info)), so that is
