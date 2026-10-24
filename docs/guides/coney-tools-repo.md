@@ -562,6 +562,41 @@ Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or 
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
+### `pr verify` {#pr-verify-usage}
+
+Steps 1-4 of a release, read only: the stamp log, Check, the compared functions and Review hold for this change
+(docs/guides/pr.md#verify).
+
+```text
+coney-tools pr verify [TASK] [--worktree WORKTREE] [--remote REMOTE] [--json] [--text FILE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--worktree WORKTREE` | path | none | the unit's worktree (default: the current checkout) |
+| `--remote REMOTE` | text | `origin` | the git remote whose default branch is the base |
+| `--json` | flag | off | print the result as one JSON object |
+| `--text FILE` | path | none | the file Review covered (default: PR.md) |
+
+### `pr text` {#pr-text-usage}
+
+Step 5: generate the pull request's title and description from PR.md, the task and the stamps, check them and write
+PR-TITLE.txt and PR-BODY.md (docs/guides/pr.md#text).
+
+```text
+coney-tools pr text [TASK] [--worktree WORKTREE] [--remote REMOTE] [--json] [--text FILE] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--worktree WORKTREE` | path | none | the unit's worktree (default: the current checkout) |
+| `--remote REMOTE` | text | `origin` | the git remote whose default branch is the base |
+| `--json` | flag | off | print the result as one JSON object |
+| `--text FILE` | path | none | the engineer's file (default: PR.md) |
+| `--dry-run` | flag | off | check and print; write no file |
+
 ### `pr check-commit` {#pr-check-commit-usage}
 
 Check a commit message's trailers and e-mail addresses (the git commit-msg hook runs this).
