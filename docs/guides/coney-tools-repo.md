@@ -540,6 +540,8 @@ uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
 uv run --project python coney-tools task index [--no-gh]
+uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
+    [--keep-going] [--dry-run] [--max-wait MIN]
 ```
 
 The coordinator's triage step ([Task files](issues.md#task-files)); the rules are `claims` and `tasks` of
@@ -570,6 +572,7 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
   `tasks.leads.index_max_age_hours`); `--no-gh` leaves the merged pull requests out. The sources, name splitting and
   ranking are in [Task files](issues.md#task-files).
+* `check` ([below](#task-check)) runs everything a change must pass on this machine and writes the `checked` stamp.
 
 Every argument and option:
 
@@ -592,6 +595,44 @@ Every argument and option:
 | `leads` | `--issue N` | none | Also match the addresses, code names, repository paths and `#N` references that issue writes |
 | `leads` | `--refresh` | off | Rebuild the cached index before searching |
 | `index` | `--no-gh` | off | Leave the merged pull requests out of the index (no `gh` call) |
+
+### task check {#task-check}
+
+The local gate that stamps. Before a branch becomes a pull request, `task check` runs here what the change must pass
+and writes one `checked` stamp ([Stamps](stamps.md#api)), `pass` or `fail`, bound to the change (`diff_sha256`), so a
+clean rebase keeps it and any edit makes it stale. What a change needs follows from its paths: the profile is the first
+of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml) whose `classes` hold the CI scope class
+of every changed path. The profiles and path classes are read from the **base's** conventions file (`--base`), so a
+branch cannot shrink its own profile by editing them. Only the base's `proof` section and the scope lists of `paths` are
+read, so a base that gained other keys is still read; the stamp's `detail.rules` says `base`. Only a base with no `proof`
+section at all (while this command is not merged) gets the branch's file (`rules: branch`), said so; a base whose rules
+cannot be read ends the run with exit 2.
+
+| Profile | For | Checks (in this order) |
+| --- | --- | --- |
+| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `actionlint` |
+| `tooling` | documentation and tooling paths (`python/`, `.claude/`, `.github/ISSUE_TEMPLATE/`, `python.yml`, ...; `paths.tools_only`) | the above and `ruff` (check and format), `mypy` (strict), `pytest` |
+| `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` |
+
+`actionlint` runs only when a changed path is under `.github/workflows/` or `.github/actions/` (`proof.only_when`).
+The build checks run `coney-tools build --preset ci --test` once, with the whole suite and the disc, and read the build
+record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other
+whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `check changed`; there
+is no clang-tidy here (CI's nightly run and `check changed` have it).
+
+* A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
+  (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.
+  These write no stamp.
+* Only a profile with a build check needs `--agent` (or a hook identity or default id): the others take no build slot.
+* A `fail` stamp names the checks that failed in `detail.failed`; fix, commit and run again.
+* The stamp covers `diff_sha256`, `checks_sha256` (the checks that ran) and, for `full`, `build_record_sha256` (also
+  when the build failed, if it left a record). Its `detail` holds the profile, the checks, the test counts, the preset
+  and the minutes.
+* A `full` run can take an hour. Start it with `run_in_background`, write STATUS.md and stop; it has no budget cap and
+  waits for a slot up to `--max-wait`.
+
+Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
+cannot stamp (nothing is written); 75 the build gave up waiting for a slot (nothing is written; run it again).
 
 <!-- command-reference:begin task -->
 ## Parameters of `task` {#task-parameters}
@@ -659,4 +700,25 @@ coney-tools task index [--no-gh]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--no-gh` | flag | off | leave the merged pull requests out |
+
+### `task check` {#task-check-usage}
+
+Run every check the change needs (MSVC ci build and the full suite with the disc for engine changes) and stamp the
+result, bound to the change.
+
+```text
+coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT] [--profile PROFILE] [--keep-going]
+    [--dry-run] [--max-wait MIN]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--worktree WORKTREE` | path | none | the task's worktree (default: the current checkout) |
+| `--base BASE` | text | none | the branch the change is measured from (default: origin/\<default branch\>) |
+| `--agent AGENT` | text | none | your id for the build slots (default: the agent the hook vouched for) |
+| `--profile PROFILE` | text | none | run a bigger profile than the change needs (docs, tooling or full) |
+| `--keep-going` | flag | off | run every check even after one fails |
+| `--dry-run` | flag | off | print the profile and the checks; run nothing |
+| `--max-wait MIN` | number | `240.0` | minutes the build may wait for a slot before giving up with exit 75 (default 240.0) |
 <!-- command-reference:end -->

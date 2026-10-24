@@ -104,6 +104,13 @@ def dirty_paths(root: Path, paths: Sequence[str]) -> list[str]:
     return [p for p in paths if p in changed]
 
 
+def status_lines(root: Path) -> list[str]:
+    """What keeps the worktree at `root` from being clean: one `git status --porcelain` line per tracked change and
+    per untracked file that is not ignored (empty when the worktree is clean)."""
+    out = _git(root, "status", "--porcelain", "--untracked-files=all")
+    return [line for line in out.splitlines() if line.strip()]
+
+
 def tracked_files(root: Path) -> dict[str, str]:
     """Every file git tracks in `root`: lower-case name -> the name as git stores it (case and all), so a path spelt
     another way still finds its file."""

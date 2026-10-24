@@ -226,7 +226,10 @@ uv run --project python coney-tools build release --agent ID [--force] [--slot N
 `--dir` names the checkout the command is about and works before or after the subcommand (`build --dir X result` and
 `build result --dir X`).
 
-The one way an agent configures, builds and tests the engine. Several agents share one machine and a full build uses
+The one way an agent configures, builds and tests the engine. A run that configured, built or tested leaves a **build
+record** in the task's scratch folder (preset, tip, exit code, test counts with the skipped disc tests apart, the log's
+hash); `task check` reads it instead of printed text (`pr verify` will)
+([The build record](stamps.md#build-record)). Several agents share one machine and a full build uses
 every core, so a build takes a **slot** like a PCSX2 copy takes a claim, and at most `build_slots` (default 2) run at
 once. The command replaces `cmake --preset`, `cmake --build --preset` and `ctest --preset`; a hook in
 `.claude/settings.json` refuses those, `ctest` and `ninja` typed directly in a shell

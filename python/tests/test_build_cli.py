@@ -4,6 +4,7 @@ and exit codes, `build status` and `build release`. The toolchain is a fake; the
 temporary directory."""
 
 import getpass
+import hashlib
 import json
 import os
 import re
@@ -15,9 +16,10 @@ from typing import Any, ClassVar
 
 import pytest
 
-from coney_tools import build_cli, build_run, compiler_cache, pcsx2_proc, process_lifetime
+from coney_tools import build_cli, build_record, build_run, compiler_cache, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, TIDY_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
+from coney_tools.config import ConfigError
 from coney_tools.process_lifetime import Process
 
 PRESETS = {
@@ -1030,3 +1032,171 @@ def test_the_disc_is_set_for_the_configure_too_and_a_build_without_tests_says_no
     assert main(["build", "--agent", "alice", "--configure-only"]) == 0
     assert fake_toolchain.env["CONEY_DISC"] == str(game)
     assert "disc tests:" not in capsys.readouterr().out
+
+
+# -- the build record ---------------------------------------------------------------------------------------------
+
+
+def git_checkout(checkout: Path) -> Path:
+    """Make the made-up checkout a git repository on `main` with everything committed."""
+    for command in (
+        ["init", "-q", "-b", "main"],
+        ["config", "core.autocrlf", "false"],
+        ["add", "-A"],
+        ["-c", "user.name=T", "-c", "user.email=t@example.org", "commit", "-q", "-m", "base"],
+    ):
+        subprocess.run(["git", "-C", str(checkout), *command], check=True, capture_output=True)
+    return checkout
+
+
+def records(tmp_path: Path) -> list[Path]:
+    """The build records of the task `main`."""
+    return sorted((tmp_path / "scratch" / "main" / "build-runs").glob("*.json"))
+
+
+PASSING_TESTS = "1/1 Test #1: a ... Passed 0.1 sec\n100% tests passed, 0 tests failed out of 1\n"
+
+
+def test_a_run_that_built_and_tested_leaves_a_build_record(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    fake_toolchain.outputs["test"] = (0, PASSING_TESTS)
+    assert main(["build", "--agent", "alice", "--preset", "ci", "--configure", "--test"]) == 0
+    log = Path(capsys.readouterr().out.splitlines()[0].removeprefix("log: "))
+    [path] = records(tmp_path)
+    record = build_record.read(path.parent, path.stem)
+    head = subprocess.run(
+        ["git", "-C", str(checkout), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert (record["tip"], record["dirty"], record["preset"], record["filters"]) == (head, False, "ci", [])
+    assert (record["exit_code"], record["ran"], record["task"], record["agent"]) == (
+        0,
+        ["configure", "build", "test"],
+        "main",
+        "alice",
+    )
+    assert record["tests"] == {"total": 1, "passed": 1, "failed": 0, "skipped": 0, "skipped_disc": 0}
+    assert record["log_sha256"] == hashlib.sha256(log.read_bytes()).hexdigest() and record["log"] == str(log)
+    assert build_record.problems(record, tip=head, preset="ci") == []
+
+
+def test_a_filtered_run_and_a_failed_run_are_recorded_as_such(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    fake_toolchain.outputs["test"] = (0, PASSING_TESTS)
+    assert main(["build", "--agent", "alice", "--test", "-R", "Widget"]) == 0
+    fake_toolchain.outputs["build"] = (1, "C:\a.cpp(3): error C2065: 'x': undeclared identifier\n")
+    assert main(["build", "--agent", "alice", "--configure"]) == 1
+    found = [build_record.read(p.parent, p.stem) for p in records(tmp_path)]
+    assert sorted((r["exit_code"], r["filters"]) for r in found) == [(0, ["-R", "Widget"]), (1, [])]
+
+
+def test_a_dirty_worktree_is_recorded_as_dirty(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    (checkout / "notes.txt").write_text("not committed", encoding="utf-8")
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    [path] = records(tmp_path)
+    assert build_record.read(path.parent, path.stem)["dirty"] is True
+
+
+def test_a_checkout_that_is_not_a_git_repository_builds_without_a_record(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    assert records(tmp_path) == []
+
+
+def test_the_task_environment_variable_names_the_folder_of_the_record(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    monkeypatch.setenv("CONEY_TASK", "757-fix-widget")
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    assert len(list((tmp_path / "scratch" / "757-fix-widget" / "build-runs").glob("*.json"))) == 1
+    assert records(tmp_path) == []
+
+
+def test_the_build_for_a_check_runs_the_whole_suite_and_returns_its_record(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    fake_toolchain.outputs["test"] = (0, PASSING_TESTS)
+    result = build_cli.build_and_test(checkout, "alice", "ci", task="757-fix-widget")
+    assert result.exit_code == 0 and result.record is not None
+    assert result.record.parent == tmp_path / "scratch" / "757-fix-widget" / "build-runs"
+    record = build_record.read(result.record.parent, result.record.stem)
+    assert (record["task"], record["preset"], record["filters"], record["ran"][-1]) == (
+        "757-fix-widget",
+        "ci",
+        [],
+        "test",
+    )
+    assert [c[0] for c in fake_toolchain.commands].count("ctest") == 1
+    assert TIED  # the run is tied to its caller like any other
+
+
+def test_the_build_for_a_check_refuses_an_unknown_preset_with_a_config_error(
+    checkout: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    with pytest.raises(ConfigError, match="asan"):
+        build_cli.build_and_test(checkout, "alice", "asan")
+
+
+def test_the_record_names_the_commit_and_state_from_before_the_run(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    before = subprocess.run(
+        ["git", "-C", str(checkout), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    execute = build_run.execute
+
+    def commit_during_the_run(options: build_run.Options, context: build_run.Context) -> build_run.Result:
+        (checkout / "late.txt").write_text("made while building", encoding="utf-8")
+        for command in (["add", "-A"], ["-c", "user.name=T", "-c", "user.email=t@e.org", "commit", "-q", "-m", "late"]):
+            subprocess.run(["git", "-C", str(checkout), *command], check=True, capture_output=True)
+        return execute(options, context)
+
+    monkeypatch.setattr(build_run, "execute", commit_during_the_run)
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    [path] = records(tmp_path)
+    record = build_record.read(path.parent, path.stem)
+    assert record["tip"] == before and record["dirty"] is False
+    assert "tool_revision" in record
+
+
+def test_only_the_newest_records_are_kept(checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]) -> None:
+    git_checkout(checkout)
+    folder = tmp_path / "scratch" / "main" / "build-runs"
+    folder.mkdir(parents=True)
+    for number in range(build_cli.KEEP_LOGS + 5):
+        old = folder / f"{number:064x}.json"
+        old.write_text("{}", encoding="utf-8")
+        os.utime(old, (1_000_000 + number, 1_000_000 + number))
+    other = folder / "notes.txt"
+    other.write_text("not a record", encoding="utf-8")
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    assert len(records(tmp_path)) == build_cli.KEEP_LOGS and other.exists()
+    assert not (folder / f"{0:064x}.json").exists() and (folder / f"{build_cli.KEEP_LOGS + 4:064x}.json").exists()
+
+
+def test_pruning_after_a_build_keeps_the_record_a_stamp_covers(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    folder = tmp_path / "scratch" / "main" / "build-runs"
+    folder.mkdir(parents=True)
+    for number in range(build_cli.KEEP_LOGS + 5):
+        old = folder / f"{number:064x}.json"
+        old.write_text("{}", encoding="utf-8")
+        os.utime(old, (1_000_000 + number, 1_000_000 + number))
+    stamps = tmp_path / "scratch" / "other-task" / "stamps"
+    stamps.mkdir(parents=True)
+    covers = '{"covers":{"build_record_sha256":"' + f"{0:064x}" + '"}}\n'
+    (stamps / "0001.jsonl").write_text(covers, encoding="utf-8")
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    assert (folder / f"{0:064x}.json").exists() and not (folder / f"{1:064x}.json").exists()

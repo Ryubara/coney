@@ -12,8 +12,9 @@ instead of leaving a rule silently off.
 from __future__ import annotations
 
 import re
+import subprocess
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import MappingProxyType
@@ -695,6 +696,36 @@ class Stamps:
 
 
 @dataclass(frozen=True)
+class ProofProfile:
+    """One profile of `proof.profiles`: the CI scope classes of paths it can vouch for and the checks it runs."""
+
+    name: str
+    classes: tuple[str, ...]
+    checks: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ProofBuild:
+    """The build behind the checks that need one (`proof.build`)."""
+
+    #: The CMake preset: MSVC with /WX, so a warning that fails CI fails here first.
+    preset: str
+    #: The checks one run of `coney-tools build --preset <preset> --test` answers together.
+    checks: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Proof:
+    """What a change must pass before it is opened as a pull request (docs/guides/coney-tools-repo.md#task-check)."""
+
+    #: In order of size: the required profile is the first whose classes hold every changed path's class.
+    profiles: tuple[ProofProfile, ...]
+    #: Checks that apply only when a changed path starts with one of these prefixes.
+    only_when: Mapping[str, tuple[str, ...]]
+    build: ProofBuild
+
+
+@dataclass(frozen=True)
 class Runs:
     """The rules of a run record (`research/runs/<id>.toml`, docs/guides/research-evidence.md#run-records)."""
 
@@ -995,6 +1026,7 @@ class Conventions:
     hygiene: Hygiene
     workspace: Workspace
     stamps: Stamps
+    proof: Proof
     research: Research
     runs: Runs
     conclave: Conclave
@@ -2044,6 +2076,52 @@ def _read_stamps(data: object, where: str) -> Stamps:
     )
 
 
+#: The CI scope classes a changed path can have (`Paths.ci_class`).
+CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
+
+
+def _read_proof(data: object, where: str) -> Proof:
+    """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
+    table = _table(data, where, ("profiles", "only_when", "build"))
+    profiles_where = _at(where, "profiles")
+
+    def read_profile(value: object, here: str) -> ProofProfile:
+        profile = _table(value, here, ("name", "classes", "checks"))
+        classes = _texts(profile["classes"], _at(here, "classes"))
+        _names_in(classes, CI_CLASSES, _at(here, "classes"), "a CI scope class (" + ", ".join(CI_CLASSES) + ")")
+        return ProofProfile(
+            _text(profile["name"], _at(here, "name")), classes, _texts(profile["checks"], _at(here, "checks"))
+        )
+
+    profiles = list(_each(table["profiles"], profiles_where, read_profile))
+    if len({profile.name for profile in profiles}) != len(profiles):
+        raise _fail(profiles_where, "a profile name is written twice")
+    if set(profiles[-1].classes) != set(CI_CLASSES):
+        raise _fail(
+            f"{profiles_where}[{len(profiles) - 1}].classes",
+            "the last profile must hold every class, unknown included, so every path has a profile",
+        )
+    named = {check for profile in profiles for check in profile.checks}
+    only_where = _at(where, "only_when")
+    only_when = {
+        str(check): _texts(prefixes, _at(only_where, str(check)))
+        for check, prefixes in _mapping(table["only_when"], only_where).items()
+    }
+    _names_in(only_when, named, only_where, "a check of a profile")
+    build_where = _at(where, "build")
+    build = _table(table["build"], build_where, ("preset", "checks"))
+    build_checks = _texts(build["checks"], _at(build_where, "checks"))
+    _names_in(build_checks, named, _at(build_where, "checks"), "a check of a profile (proof.build)")
+    return Proof(
+        profiles=tuple(profiles),
+        only_when=MappingProxyType(only_when),
+        build=ProofBuild(
+            preset=_text(build["preset"], _at(build_where, "preset")),
+            checks=build_checks,
+        ),
+    )
+
+
 def _read_research(data: object, where: str) -> Research:
     """The `research` section: the kinds of research page, their sections and limits."""
     keys = (
@@ -2164,6 +2242,7 @@ def parse_conventions(data: object) -> Conventions:
         "hygiene",
         "workspace",
         "stamps",
+        "proof",
         "research",
         "runs",
         "conclave",
@@ -2210,11 +2289,65 @@ def parse_conventions(data: object) -> Conventions:
         hygiene=hygiene,
         workspace=_read_workspace(table["workspace"], "workspace"),
         stamps=_read_stamps(table["stamps"], "stamps"),
+        proof=_read_proof(table["proof"], "proof"),
         research=research,
         runs=_read_runs(table["runs"], "runs", research.files.runs),
         conclave=_read_conclave(table["conclave"], "conclave"),
         standards=_read_standards(table["standards"], "standards"),
     )
+
+
+def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
+    """`own` with its `proof` and path scope classes replaced by those of `.github/conventions.yml` at the git revision
+    `ref` (the rules a branch cannot have edited), and which rules they are: `base`, or `branch` when the file at
+    `ref` has no `proof` key at all (it is older than the section, as while the command is not merged). Only the
+    `proof` section and the three scope lists of `paths` are read, and their unknown keys are ignored, so a base that
+    gained another section or key since the branch forked is still read. Raises ConventionsError when git cannot show
+    the file, it is not YAML, or those sections do not validate: never a quiet fallback to the branch's own rules."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"],
+            capture_output=True,
+            check=False,
+        )
+    except OSError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot be run ({error.strerror or error})") from error
+    if done.returncode != 0:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot show it")
+    try:
+        data = yaml.load(done.stdout.decode("utf-8"), Loader=_Loader)
+    except (UnicodeDecodeError, yaml.YAMLError) as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
+    if not isinstance(data, dict):
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: expected a mapping")
+    if "proof" not in data:
+        return own, "branch"
+    try:
+        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build")), "proof")
+        scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
+        table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))
+        paths = replace(
+            own.paths,
+            docs_only=_scope_patterns(table["docs_only"], "paths.docs_only"),
+            tools_only=_scope_patterns(table["tools_only"], "paths.tools_only"),
+            engine=_scope_patterns(table["engine"], "paths.engine"),
+        )
+    except ConventionsError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: {error}") from error
+    return replace(own, proof=proof, paths=paths), "base"
+
+
+def _keep(value: object, keys: Iterable[str]) -> object:
+    """`value` without the keys of a mapping that are not in `keys` (profiles and the build are filtered the same way);
+    anything that is not a mapping is returned as it is, for the strict reader to refuse."""
+    if not isinstance(value, dict):
+        return value
+    kept = {key: item for key, item in value.items() if key in keys}
+    if "profiles" in kept and isinstance(kept["profiles"], list):
+        kept["profiles"] = [_keep(item, ("name", "classes", "checks")) for item in kept["profiles"]]
+    if "build" in kept:
+        kept["build"] = _keep(kept["build"], ("preset", "checks"))
+    return kept
 
 
 def load_conventions(root: Path) -> Conventions:

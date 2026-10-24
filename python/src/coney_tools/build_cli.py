@@ -8,6 +8,7 @@ import _thread
 import argparse
 import contextlib
 import getpass
+import hashlib
 import json
 import os
 import re
@@ -17,11 +18,21 @@ import threading
 import time
 from collections.abc import Callable, Iterator
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_cap, build_claims, build_run, compiler_cache, pcsx2_proc, process_lifetime, shared_deps
+from coney_tools import (
+    build_cap,
+    build_claims,
+    build_record,
+    build_run,
+    compiler_cache,
+    pcsx2_proc,
+    process_lifetime,
+    shared_deps,
+    unit,
+)
 from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import (
@@ -302,6 +313,40 @@ def run_build(args: argparse.Namespace) -> int:
     return _build(args, root, env, log_path, (max_wait, budget), _tie_to_caller).exit_code
 
 
+def build_and_test(
+    root: Path, agent: str, preset: str, *, task: str | None = None, max_wait: float = DETACHED_MAX_WAIT
+) -> build_run.Result:
+    """The whole suite of `preset` for `coney-tools task check`: configure if needed, build and run every test under
+    the slots, as `build --test` does, but waiting up to `max_wait` minutes for a slot with no budget (the caller
+    outlasts a prompt cache on purpose and says so). The run leaves its build record in the folder of `task`; the
+    result's `record` is its path. Raises ConfigError for a precheck that fails, as the command does."""
+    args = argparse.Namespace(
+        agent=agent,
+        preset=preset,
+        dir=root,
+        configure=False,
+        configure_only=False,
+        test=True,
+        targets=[],
+        regex=None,
+        label=None,
+        build_dir=None,
+        env=[],
+        priority=False,
+        run_lane="auto",
+        max_wait=max_wait,
+        budget=0.0,
+        detach=False,
+        log_file=None,
+        result_file=None,
+        jobs=None,
+        build_command=None,
+    )
+    checkout, env = _precheck(args)
+    log_path = _new_log(checkout, preset, None, agent)
+    return _build(args, checkout, env, log_path, (max_wait, 0.0), _tie_to_caller, task)
+
+
 def _typed_in_a_terminal() -> bool:
     """Whether a person runs the command in a terminal: both stdin and stdout are one. Agent tools (Claude Code,
     Gemini CLI, Codex) capture the output of what they run, so their stdout is never a terminal."""
@@ -360,10 +405,12 @@ def _build(
     log_path: Path,
     limits_minutes: tuple[float, float],
     lifetime: Callable[[build_run.ProcessToolchain], None],
+    task: str | None = None,
 ) -> build_run.Result:
     """Configure, build and test under the slots, writing the full output to `log_path` and the summary to the
     console; `limits_minutes` is (max wait, budget) and `lifetime` ties the toolchain's processes to this run (and the
-    run to its caller, when it has one)."""
+    run to its caller, when it has one). A run that configured, built or tested leaves a build record
+    (build_record.py) in the folder of `task`, default the checkout's task."""
     build_dir = (root / args.build_dir).resolve() if args.build_dir else None
     numbers = _numbers(root)
     folder = build_dir if build_dir is not None else root / "build" / args.preset
@@ -392,6 +439,10 @@ def _build(
         lane=MAIN_LANE if args.run_lane == MAIN_LANE else None,
     )
     print(f"log: {log_path}", flush=True)
+    started = datetime.now(UTC)
+    # The commit and the state of the worktree are read before anything runs: a commit made during the run is not the
+    # one that was built.
+    snapshot = _snapshot(root, task)
     toolchain = build_run.ProcessToolchain(root, env)
     lifetime(toolchain)
     with log_path.open("a", encoding="utf-8", buffering=1) as log, _removed_after(stats_log):
@@ -416,9 +467,87 @@ def _build(
             cache_report=lambda: cache_line(cache, folder, stats_log, toolchain),
         )
         result = build_run.execute(options, context)
+    _leave_record(args, root, result, log_path, started, disc, snapshot)
     for line in result.summary:
         print(line)
     return result
+
+
+def _leave_record(
+    args: argparse.Namespace,
+    root: Path,
+    result: build_run.Result,
+    log_path: Path,
+    started: datetime,
+    disc: build_run.DiscTests,
+    snapshot: tuple[str, str, bool] | None,
+) -> None:
+    """Write the build record of a run that configured, built or tested, and say where it went in the summary.
+    `snapshot` is (task, tip, dirty) as they were before the run; None (a checkout git cannot describe, or a name that
+    is no task) gets no record: the build itself never fails for it."""
+    if not result.ran or snapshot is None:
+        return
+    name, tip, dirty = snapshot
+    try:
+        log_bytes = log_path.read_bytes()
+    except OSError:
+        return
+    counts = result.tests
+    record = build_record.make(
+        task=name,
+        agent=args.agent,
+        tip=tip,
+        dirty=dirty,
+        preset=args.preset,
+        filters=[*(["-R", args.regex] if args.regex is not None else []), *(["-L", args.label] if args.label else [])],
+        command_line=_command_line(args),
+        exit_code=result.exit_code,
+        ran=result.ran,
+        tests=asdict(counts) if counts is not None else None,
+        disc=disc.source,
+        tool_revision=_tool_revision(),
+        log_sha256=hashlib.sha256(log_bytes).hexdigest(),
+        started=started.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        ended=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        log=str(log_path),
+    )
+    try:
+        folder = unit.Unit.of(root, name).dir / build_record.FOLDER
+        result.record = build_record.write(folder, record)
+        build_record.prune(folder, KEEP_LOGS, build_record.covered(folder.parent.parent))
+    except OSError:
+        return
+    result.summary.append(f"build record: {result.record.stem[:12]} ({name})")
+
+
+def _snapshot(root: Path, task: str | None) -> tuple[str, str, bool] | None:
+    """The task, the commit `HEAD` names and whether the worktree has uncommitted changes, or None when git cannot
+    say or the name is no task."""
+    try:
+        return unit.task_name(root, task), unit.head_commit(root), bool(unit.status_lines(root))
+    except (ConfigError, OSError):
+        return None
+
+
+def _tool_revision() -> str | None:
+    """The commit of the coney-tools code that ran (the checkout this file is in), None when it is not a git checkout
+    (an installed copy)."""
+    try:
+        return unit.head_commit(Path(__file__).resolve().parent)
+    except (ConfigError, OSError):
+        return None
+
+
+def _command_line(args: argparse.Namespace) -> list[str]:
+    """The run as a command line a person could type: `coney-tools build` and the flags that shaped it."""
+    command = ["coney-tools", "build", "--agent", args.agent, "--preset", args.preset]
+    command += [flag for flag, on in (("--configure", args.configure), ("--test", args.test)) if on]
+    command += ["--configure-only"] if args.configure_only else []
+    for flag, value in (("-R", args.regex), ("-L", args.label), ("--build-dir", args.build_dir), ("-j", args.jobs)):
+        command += [flag, str(value)] if value is not None else []
+    for target in args.targets:
+        command += ["--target", target]
+    return command
 
 
 @contextlib.contextmanager

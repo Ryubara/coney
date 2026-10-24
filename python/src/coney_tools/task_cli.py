@@ -18,7 +18,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import stamps
+from coney_tools import stamps, task_check
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, load_config, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
@@ -63,6 +63,7 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     leads.add_argument("--refresh", action="store_true", help="rebuild the index first")
     index = commands.add_parser("index", help="rebuild the cached leads index")
     index.add_argument("--no-gh", action="store_true", help="leave the merged pull requests out")
+    task_check.add_parser(commands)
 
 
 def _head(root: Path) -> str:
@@ -99,6 +100,8 @@ def run_task(
     remote: Remote | None = None,
 ) -> int:
     """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused."""
+    if args.command == "check":
+        return task_check.run(args)
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     rules = conventions.claims
