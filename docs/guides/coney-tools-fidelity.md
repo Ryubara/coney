@@ -403,19 +403,17 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 
 ### `stamp verify` {#stamp-verify-usage}
 
-Check the chain, every field and the signatures of a stamp log.
+Check the chain and every field of a stamp log.
 
 ```text
-coney-tools stamp verify [--task TASK] [--dir DIR] [--release] [--signers SIGNERS | --signers-ref REF]
+coney-tools stamp verify [--task TASK] [--dir DIR] [--require-log]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
 | `--dir DIR` | path | none | a stamp log folder (default: the task's, in the scratch folder); with --task, it must be that task's |
-| `--release` | flag | off | a release check (what `pr open` and CI will run): the signed steps must carry valid signatures and the log must not be missing or empty |
-| `--signers SIGNERS` | path | none | the allowed-signers file (default: the working tree's .github/stamp-signers). Not with `--signers-ref`. |
-| `--signers-ref REF` | text | none | read .github/stamp-signers and the stamp rules from this commit (CI will pass the pull request's base, such as origin/main), not from the working tree under review; not with --signers. Not with `--signers`. |
+| `--require-log` | flag | off | a missing or empty log is an error, not just a start |
 
 ### `stamp show` {#stamp-show-usage}
 

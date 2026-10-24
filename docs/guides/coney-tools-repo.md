@@ -618,6 +618,22 @@ coney-tools task create [ISSUE ...] [--terms TERM [TERM ...]] [--scope SCOPE] [-
 | `--resume` | flag | off | continue a claim of yours that landed late |
 | `--dry-run` | flag | off | check and print; post and write nothing |
 
+### `task start` {#task-start-usage}
+
+Make the branch, worktree and unit record of a claimed task and stamp assigned and claimed.
+
+```text
+coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry-run]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task id (default: CONEY_TASK) |
+| `--base REF` | text | none | what the branch starts from (default: \<remote\>/\<default branch\>) |
+| `--remote REMOTE` | text | `origin` | the git remote to fetch from (default: origin) |
+| `--no-fetch` | flag | off | start from the base as it is here, without fetching |
+| `--dry-run` | flag | off | check and print; make, stamp and post nothing |
+
 ### `task leads` {#task-leads-usage}
 
 Search the indexes for the terms (no claim, nothing written).
