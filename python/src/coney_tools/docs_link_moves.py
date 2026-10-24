@@ -10,9 +10,11 @@ the target of an inline link `[text](target)` does not count as touched when, fo
 * the new target names the same page and anchor as the old one, which a page that moved to another folder needs for
   every relative link it holds (the old target is read from the page's old folder, the new from its new one).
 
-The text of the link, the rest of the line and the number of links must be equal, so any other edit on the line is a
-touch. A link to a page that was not moved, a link to something outside the pages (a scheme, `repo:`, an image) and a
-target that resolves nowhere are all touches (the last also fails the build: MkDocs checks the link).
+The text of the link, the rest of the line and the number of links must be equal (spaces and line breaks do not count,
+so a link split over two lines is read whole, and so is the paragraph that a longer target made the editor reflow), so
+any other edit on the line is a touch. A link to a page that was not moved, a link to something outside the pages (a
+scheme, `repo:`, an image) and a target that resolves nowhere are all touches (the last also fails the build: MkDocs
+checks the link).
 
 The functions are pure: the caller says which paths are gone and whether a target resolves.
 """
@@ -72,13 +74,15 @@ def link_only_change(
     resolves: Callable[[str, str], bool],
     old_folder: str | None = None,
 ) -> bool:
-    """Whether the line `old` became `new` by rewriting link targets to moved pages and nothing else.
+    """Whether the text `old` (a line, or the lines of a hunk) became `new` by rewriting link targets to moved pages and
+    nothing else; runs of spaces and line breaks count as one space.
 
     `folder` is the folder of the page that holds the line (targets are relative to it), `gone` the repository-relative
     paths the change renamed or deleted, and `resolves(path, anchor)` whether `path` exists after the change and holds
     `anchor` (any, when it is empty). `old_folder` is the folder the page held `old` in when the change moved the page
     (None: it did not move)."""
     from_folder = folder if old_folder is None else old_folder
+    old, new = " ".join(old.split()), " ".join(new.split())
     before, after = list(_LINK.finditer(old)), list(_LINK.finditer(new))
     if not before or len(before) != len(after) or _without_targets(old) != _without_targets(new):
         return False
@@ -95,9 +99,10 @@ def touched_lines(
     old_folder: str | None = None,
 ) -> frozenset[int]:
     """The lines of the new file that the zero-context `diff` of one file touches, a link rewrite to a moved page
-    (`link_only_change`) left out. A hunk that removes and adds the same number of lines is read line by line; any other
-    hunk touches all its added lines, and a pure deletion touches the line it sits at. `old_folder` is as for
-    `link_only_change`."""
+    (`link_only_change`) left out. A hunk whose removed and added lines read the same but for such rewrites touches
+    nothing, however the lines break. Otherwise a hunk that removes and adds the same number of lines is read line by
+    line, any other hunk touches all its added lines, and a pure deletion touches the line it sits at. `old_folder` is
+    as for `link_only_change`."""
     touched: set[int] = set()
     start = 0
     removed: list[str] = []
@@ -110,6 +115,8 @@ def touched_lines(
             return
         if not added:
             touched.add(start)
+        elif removed and link_only_change(" ".join(removed), " ".join(added), folder, gone, resolves, old_folder):
+            return
         elif len(removed) != len(added):
             touched.update(range(start, start + len(added)))
         else:

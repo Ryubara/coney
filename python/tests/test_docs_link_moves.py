@@ -215,3 +215,57 @@ def test_a_page_moved_to_another_folder_is_graded_only_where_it_changed(tmp_path
     write(root, new, text.replace("(combat-grabs.md", "(../combat-grabs.md").replace("A fact", "An edited fact", 1))
     git(root, "add", "-A")
     assert docs_check.change_touches(root, "main", [new])[new].lines == frozenset({5})
+
+
+# --- a link split over lines, a reflow the rewrite caused -------------------------------------------------------------
+
+SPLIT = """@@ -3,2 +3,2 @@
+-See [the long
+-grabs](combat.md#grab) for it.
++See [the long
++grabs](combat-grabs.md#grab) for it.
+"""
+REFLOWED = """@@ -3,2 +3,3 @@
+-A long sentence about [grabs](combat.md#grab) in the
+-game.
++A long sentence about
++[grabs](combat-grabs.md#grab) in the
++game.
+"""
+
+
+def test_a_link_split_over_two_lines_is_judged_as_one() -> None:
+    assert touched_lines(SPLIT, FOLDER, GONE, resolves) == frozenset()
+    elsewhere = SPLIT.replace("combat-grabs.md#grab", "camera.md#grab")
+    assert touched_lines(elsewhere, FOLDER, GONE, resolves) == frozenset({3, 4})
+
+
+def test_a_reflow_that_only_a_longer_link_target_caused_is_no_touch() -> None:
+    assert touched_lines(REFLOWED, FOLDER, GONE, resolves) == frozenset()
+    # With a word changed, or with no link rewritten at all, it is a touch.
+    assert touched_lines(REFLOWED.replace("+game.", "+games."), FOLDER, GONE, resolves) == {3, 4, 5}
+    plain = REFLOWED.replace("combat-grabs.md#grab", "combat.md#grab")
+    assert touched_lines(plain, FOLDER, GONE, resolves) == frozenset({3, 4, 5})
+
+
+def test_line_breaks_and_spaces_do_not_hide_an_edit_of_the_text() -> None:
+    assert same("See [it](combat.md#grab)   for  the grab.", "See [it](combat-grabs.md#grab) for the grab.")
+    assert not same("See [it](combat.md#grab) for the grab.", "See [it](combat-grabs.md#grab) for the grabs.")
+    assert link_only_change(
+        "See [the\ngrabs](combat.md#grab) now.", "See [the grabs](combat-grabs.md#grab) now.", FOLDER, GONE, resolves
+    )
+
+
+def test_a_paragraph_reflowed_after_a_link_rewrite_is_no_touch(tmp_path: Path) -> None:
+    root = linked_checkout(tmp_path)
+    # The longer target pushed the end of the sentence to a line of its own (markdownlint's 120 columns).
+    text = LINKS.replace(
+        "See [grabs](combat.md#grab) for the grab.", "See [grabs](combat-grabs.md#grab)\nfor the grab."
+    )
+    write(root, "docs/research/ai.md", text.replace("combat.md#grab", "combat-grabs.md#grab"))
+    assert touches(root) == {"docs/research/ai.md": frozenset()}
+    # The same reflow with the sentence changed is a touch of the lines it changed.
+    write(
+        root, "docs/research/ai.md", text.replace("combat.md#grab", "combat-grabs.md#grab").replace("the grab", "grabs")
+    )
+    assert touches(root) == {"docs/research/ai.md": frozenset({3, 4})}

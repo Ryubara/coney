@@ -401,9 +401,11 @@ mv`, or `git add` the new page and the deletion) so git can pair them. Once merg
 not touch the page that holds it when, for each link it changes, the old target's page was renamed or deleted in the same
 change (any anchor) and the new target resolves to an existing page that has the anchor. A page that moved to another
 folder rewrites its own relative links for it: a link to the same page and anchor is no touch either (the old target is
-read from the folder the page left). The link's text, the rest of the line and the number of links must be equal; a link
-to a page that stayed, to a target that resolves nowhere, to a `repo:` path or an address, an image, or any other edit on
-the line is a touch of that line. So moving a page does not end the excuse of every page that links to it.
+read from the folder the page left). The link's text, the rest of the line and the number of links must be equal, read
+whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a longer target made
+the editor reflow (past the 120 columns markdownlint allows), is judged as one. A link to a page that stayed, to a
+target that resolves nowhere, to a `repo:` path or an address, an image, or any other edit on the line is a touch of
+that line. So moving a page does not end the excuse of every page that links to it.
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by
