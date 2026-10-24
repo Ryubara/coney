@@ -559,17 +559,17 @@ job no workflow has, or a required check is in none.
 | Full suite with the disc | local | none |
 | MSVC `ci` build (/WX, C4062) | local | none |
 | Study, pairs, copy check, fails-first | local | none |
-| Formatting | local; CI: every pull request (applied by a git pre-commit hook, verified by CI) | `build/format` |
-| GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds | CI: every pull request | `build/build` |
-| Linux and macOS sanitizers | CI: every pull request | `build/sanitizers` |
-| clang-tidy: the lines a change touches; the whole codebase nightly and for a build-setup change | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
-| Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request | `python/python`, `python/python-ok` |
-| Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
+| Formatting | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run (applied by a git pre-commit hook, verified by CI) | `build/format` |
+| GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/build` |
+| Linux and macOS sanitizers | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/sanitizers` |
+| clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
+| Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request, a push to main, a push to a release branch | `python/python`, `python/python-ok` |
+| Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request, a push to main, a push to a release branch | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
 | The pull request's title, description and docs | CI: every pull request | `pr/title`, `pr/docs`, `pr/body` |
 | `Depends on #N` pull requests are merged | CI: every pull request, a push to main | `dependencies/dependencies`, `dependencies/rerun` |
-| The gate that stands for the build jobs | CI: every pull request | `build/build-ok` |
-| Which jobs a change needs | CI: every pull request | `build/changes`, `python/changes` |
-| Cache upkeep and the docs site | CI: a push to main, nightly | `build/cache-prune`, `docs/deploy` |
+| The gate that stands for the build jobs | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/build-ok` |
+| Which jobs a change needs | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/changes`, `python/changes` |
+| Cache upkeep and the docs site | CI: a push to main, a push to a release branch, nightly, a manual run (the docs site deploys on a push to main only) | `build/cache-prune`, `docs/deploy` |
 | Issue checks, claims, status labels and the weekly report | CI: issue and pull request events | `claim/claim`, `hygiene/hygiene`, `issue-check/check`, `issue-status/status-label` |
 | A failure on main opens a P-critical issue | CI: a push to main, nightly, a manual run | `ci-failure/report` |
 <!-- conventions:end -->
