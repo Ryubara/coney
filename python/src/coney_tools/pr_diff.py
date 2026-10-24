@@ -3,24 +3,32 @@
 
 A stamp bound to a commit would be stale the moment `pr open` rebases the branch, since a rebase rewrites every commit
 id, and main moves all day. So `checked`, `reviewed` and `pr-opened` are bound to the *change*: a hash of what the
-branch itself adds, removes and edits, which a clean rebase keeps. The hash covers, per file and in path order:
+branch itself adds, removes and edits, which a clean rebase keeps. The hash covers, per changed file, in git's path
+order (the byte order of the path):
 
-* the path, the status (`A`, `M` or `D`) and the mode before and after;
+* the path, the status (`A`, `M`, `D` or `T`, a change of file type) and the mode before and after;
 * for a text file the removed and added lines of `git diff -U0`, in order, without the hunk headers, so neither the
   line numbers (which move when main edits the same file elsewhere) nor the pre-image blob id (which changes with
   main) take part;
 * for a binary file the SHA-256 of the file as the branch has it (`deleted` when the branch removes it).
 
 Whitespace counts (a changed tab, a CRLF or a missing final newline is a changed line). Renames are off, so a moved
-file is a deletion and an addition. The base is the merge base of the branch with its target, so a branch that is
-behind main has the same hash as after the rebase. The hash is computed from git's objects alone, with the user's
-`diff.*` and `core.quotepath` settings overridden, so every machine gets the same value. Standard library only.
+file is a deletion and an addition. The base is the merge base of the branch with its target, so a target that is
+older than the branch's own base would pull main's changes into the hash: fetch first.
+
+The same commits give the same hash on every machine. The diff runs with an explicit algorithm (`myers`), the indent
+heuristic on, an empty order file, no context, no external diff, no textconv, no colour, no renames, no prefixes, the
+short submodule form and the user's `GIT_DIFF_OPTS` removed, and `-a`, so a `.gitattributes` rule (`-diff`, `binary`,
+`diff=driver`) never changes what is hashed. What is binary is decided here, not by git: a NUL byte in the first 8000
+bytes of the file (git's own test without attributes). Standard library only.
 """
 
 from __future__ import annotations
 
 import hashlib
+import os
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,8 +36,55 @@ from coney_tools.config import ConfigError
 
 #: The first line of the hashed text: a change to how the text is built changes every hash, on purpose.
 FORMAT = b"coney-change 1\n"
-_GIT = ["-c", "core.quotepath=false", "-c", "diff.renames=false", "-c", "core.autocrlf=false"]
-_DIFF = ["diff", "--no-renames", "--no-color", "--no-ext-diff", "--no-textconv", "--no-prefix", "--full-index"]
+#: How much of a file is searched for the NUL byte that makes it binary (git's own limit).
+BINARY_PROBE = 8000
+#: Overrides of the user's settings that `git diff` reads, so every machine builds the same text.
+_GIT = [
+    "-c",
+    "core.quotepath=false",
+    "-c",
+    "core.autocrlf=false",
+    "-c",
+    "diff.renames=false",
+    "-c",
+    "diff.algorithm=myers",
+    "-c",
+    "diff.indentHeuristic=true",
+    "-c",
+    "diff.interHunkContext=0",
+    "-c",
+    "diff.submodule=short",
+    "-c",
+    "diff.ignoreSubmodules=none",
+    "-c",
+    "diff.colorMoved=false",
+    "-c",
+    "diff.relative=false",
+    "-c",
+    "diff.noprefix=true",
+    "-c",
+    "diff.mnemonicPrefix=false",
+    "-c",
+    "color.ui=false",
+]
+#: The options of every diff: what is compared and how it is printed (see the module docstring).
+_DIFF = [
+    "diff",
+    "--no-renames",
+    "--no-color",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--no-prefix",
+    "--no-relative",
+    "--no-color-moved",
+    "--full-index",
+    "--text",
+    "--diff-algorithm=myers",
+    "--indent-heuristic",
+    "--inter-hunk-context=0",
+    "--submodule=short",
+    "--ignore-submodules=none",
+]
 
 
 @dataclass(frozen=True)
@@ -46,9 +101,16 @@ class Change:
     sha256: str
 
 
-def _git(root: Path, *args: str) -> bytes:
+def _environment() -> dict[str, str]:
+    """The environment of a git call: the user's, without the variables that change a diff."""
+    return {k: v for k, v in os.environ.items() if k not in ("GIT_DIFF_OPTS", "GIT_EXTERNAL_DIFF")}
+
+
+def _git(root: Path, *args: str, stdin: bytes | None = None) -> bytes:
     """Run git in `root` and return its stdout; ConfigError with git's message when it fails."""
-    done = subprocess.run(["git", "-C", str(root), *_GIT, *args], capture_output=True, check=False)
+    done = subprocess.run(
+        ["git", "-C", str(root), *_GIT, *args], capture_output=True, check=False, input=stdin, env=_environment()
+    )
     if done.returncode != 0:
         message = done.stderr.decode("utf-8", "replace").strip() or "failed"
         raise ConfigError(f"git {' '.join(args[:3])}: {message}")
@@ -73,7 +135,8 @@ def merge_base(root: Path, target: str, tip: str) -> str:
 
 
 def change_of(root: Path, target: str, tip: str) -> Change:
-    """The change `tip` makes on top of its merge base with `target`, and its hash (`change_sha256`)."""
+    """The change `tip` makes on top of its merge base with `target`, and its hash (`change_sha256`). `target` must be
+    at least as new as the branch's own base (fetch first), or main's own changes since are part of the change."""
     tip_hash = resolve(root, tip)
     base = merge_base(root, resolve(root, target), tip_hash)
     paths, text = _canonical(root, base, tip_hash)
@@ -85,73 +148,92 @@ def change_sha256(root: Path, base: str, tip: str) -> str:
     return hashlib.sha256(_canonical(root, resolve(root, base), resolve(root, tip))[1]).hexdigest()
 
 
+@dataclass(frozen=True)
+class _Entry:
+    """One line of `git diff --raw`: a changed path with its status, modes and blob ids."""
+
+    path: bytes
+    status: str
+    old_mode: str
+    new_mode: str
+    old_sha: str
+    new_sha: str
+
+
 def _canonical(root: Path, base: str, tip: str) -> tuple[tuple[str, ...], bytes]:
     """The changed paths and the canonical text that is hashed."""
-    raw = _git(root, *_DIFF, "--raw", "-z", base, tip).split(b"\0")
-    entries = _raw_entries(raw)
-    patch = _git(root, *_DIFF, "-U0", base, tip)
+    with tempfile.TemporaryDirectory(prefix="coney-order-") as folder:
+        order = Path(folder) / "empty"
+        order.write_bytes(b"")  # an empty order file: git's own path order, whatever the user's diff.orderFile says
+        options = [*_DIFF, f"-O{order}"]
+        entries = _raw_entries(_git(root, *options, "--raw", "-z", base, tip))
+        patch = _git(root, *options, "-U0", base, tip)
     sections = _sections(patch)
-    if len(sections) != len(entries):
-        raise ConfigError(f"git diff {base[:10]}..{tip[:10]}: {len(entries)} files but {len(sections)} patches")
+    # A change of file type (status T) is printed as two patches, a deletion and an addition, for its one raw entry.
+    wanted = sum(2 if entry.status == "T" else 1 for entry in entries)
+    if len(sections) != wanted:
+        raise ConfigError(f"git diff {base[:10]}..{tip[:10]}: {wanted} patches expected but {len(sections)} found")
+    per_entry: list[list[bytes]] = []
+    taken = 0
+    for entry in entries:
+        count = 2 if entry.status == "T" else 1
+        per_entry.append([line for section in sections[taken : taken + count] for line in section])
+        taken += count
+    blobs = _blobs(root, [e.new_sha if e.status != "D" else e.old_sha for e in entries if e.new_mode != "160000"])
     out = [FORMAT]
-    for (path, status, old_mode, new_mode), section in zip(entries, sections, strict=True):
-        out.append(b"file " + path + b"\n")
-        out.append(f"status {status}\nmode {old_mode} {new_mode}\n".encode("ascii"))
-        if section.binary:
-            out.append(b"binary " + _post_image(root, tip, path) + b"\n")
+    for entry, lines in zip(entries, per_entry, strict=True):
+        out.append(b"file " + entry.path + b"\n")
+        out.append(f"status {entry.status}\nmode {entry.old_mode} {entry.new_mode}\n".encode("ascii"))
+        data = blobs.get(entry.new_sha if entry.status != "D" else entry.old_sha, b"")
+        if b"\0" in data[:BINARY_PROBE]:
+            image = b"deleted" if entry.status == "D" else hashlib.sha256(data).hexdigest().encode("ascii")
+            out.append(b"binary " + image + b"\n")
         else:
-            out.extend(section.lines)
-    return tuple(path.decode("utf-8", "surrogateescape") for path, *_ in entries), b"".join(out)
+            out.extend(lines)
+    return tuple(e.path.decode("utf-8", "surrogateescape") for e in entries), b"".join(out)
 
 
-def _raw_entries(raw: list[bytes]) -> list[tuple[bytes, str, str, str]]:
-    """The `--raw -z` records as (path, status, old mode, new mode), in git's path order."""
-    entries: list[tuple[bytes, str, str, str]] = []
-    fields = [item for item in raw if item]
-    index = 0
-    while index < len(fields):
+def _raw_entries(raw: bytes) -> list[_Entry]:
+    """The `--raw -z` records, in git's path order."""
+    fields = [item for item in raw.split(b"\0") if item]
+    entries: list[_Entry] = []
+    for index in range(0, len(fields) - 1, 2):
         header = fields[index].decode("ascii").lstrip(":").split(" ")
-        old_mode, new_mode, status = header[0], header[1], header[4][:1]
-        entries.append((fields[index + 1], status, old_mode, new_mode))
-        index += 2
+        entries.append(_Entry(fields[index + 1], header[4][:1], header[0], header[1], header[2], header[3]))
     return entries
 
 
-@dataclass
-class _Section:
-    """One file's part of a patch: whether git calls it binary, and its added and removed lines."""
-
-    binary: bool
-    lines: list[bytes]
-
-
-def _sections(patch: bytes) -> list[_Section]:
-    """Split a `git diff -U0` patch into one section per file, keeping only the removed and added lines (and git's
-    "no newline at end of file" marker, which is a change too)."""
-    sections: list[_Section] = []
+def _sections(patch: bytes) -> list[list[bytes]]:
+    """Split a `git diff -U0` patch into one list per file of its removed and added lines (and git's "no newline at end
+    of file" marker, which is a change too); the header lines before the first hunk are left out."""
+    sections: list[list[bytes]] = []
     in_hunk = False
     for line in patch.split(b"\n"):
         if line.startswith(b"diff --git "):
-            sections.append(_Section(False, []))
+            sections.append([])
             in_hunk = False
         elif not sections:
             continue
-        elif line.startswith(b"Binary files ") or line.startswith(b"GIT binary patch"):
-            sections[-1].binary = True
         elif line.startswith(b"@@"):
             in_hunk = True
         elif in_hunk and line[:1] in (b"+", b"-", b"\\"):
-            sections[-1].lines.append(line + b"\n")
+            sections[-1].append(line + b"\n")
     return sections
 
 
-def _post_image(root: Path, tip: str, path: bytes) -> bytes:
-    """The SHA-256 of the file `path` as `tip` has it, as hex bytes, or `deleted`."""
-    shown = subprocess.run(
-        ["git", "-C", str(root), "cat-file", "blob", f"{tip}:{path.decode('utf-8', 'surrogateescape')}"],
-        capture_output=True,
-        check=False,
-    )
-    if shown.returncode != 0:
-        return b"deleted"
-    return hashlib.sha256(shown.stdout).hexdigest().encode("ascii")
+def _blobs(root: Path, shas: list[str]) -> dict[str, bytes]:
+    """The content of each blob, from one `git cat-file --batch`; an object git cannot show is left out."""
+    if not shas:
+        return {}
+    shown = _git(root, "cat-file", "--batch", stdin=("\n".join(shas) + "\n").encode("ascii"))
+    found: dict[str, bytes] = {}
+    position = 0
+    for sha in shas:
+        end = shown.index(b"\n", position)
+        header = shown[position:end].split(b" ")
+        position = end + 1
+        if len(header) == 3 and header[1] == b"blob":
+            size = int(header[2])
+            found[sha] = shown[position : position + size]
+            position += size + 1
+    return found

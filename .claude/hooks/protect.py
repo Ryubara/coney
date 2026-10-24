@@ -6,6 +6,7 @@
 * **`~/.ssh`**: the person's private keys. A public key (`.pub`), `config` and `known_hosts` may be read.
 * **Stamp logs**: Edit and Write may not change a file under a `stamps` folder, and a shell write into one is refused
   (a log is written by the stage commands only, docs/guides/stamps.md).
+* **The SSH agent's keys**: `ssh-add -d` and `-D` delete the person's keys; listing them (`-l`) is fine.
 * **Other processes**: the readers of other processes' command lines and environments (`/proc/<pid>/environ`,
   `wmic process`, `Win32_Process`), which would show another agent's token.
 
@@ -44,6 +45,10 @@ KEY_ALLOWED_SUFFIXES = (".pub",)
 STAMP_FOLDERS = ("stamps",)
 #: Shell commands that are not for agents: (pattern over the command, what to do instead).
 COMMANDS = (
+    (
+        r"\bssh-add\b[^\n;&|]*\s-[dD]\b",
+        "Deleting keys from the person's SSH agent is not for agents; listing them (`ssh-add -l`) is fine.",
+    ),
     (
         r"(?:>>?|\btee\b|\bcp\b|\bmv\b|\brm\b|\bsed\s+-i|\btruncate\b|\bdd\b|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b)"
         r"[^\n;&|]*[/\\]stamps[/\\]",

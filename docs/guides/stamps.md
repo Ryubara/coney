@@ -1,9 +1,9 @@
 # Stamps, studies and pairs
 
-Stamps are **local agent bookkeeping**: the stage commands write them on the machine doing agent work, and the hooks
-and `pr open` read them to keep that work in order. They are never checked in CI, and the facts block `pr open` puts
-in a pull request description is a record of them, not proof. A person working by hand needs none
-([CONTRIBUTING.md](repo:CONTRIBUTING.md)).
+Stamps are **local agent bookkeeping**: the stage commands write them on the machine doing agent work, and what
+reads them today is the stage commands themselves and `stamp verify`; `pr open` will read them too, to keep that
+work in order. They are never checked in CI, and the facts block `pr open` will put in a pull request description is
+a record of them, not proof. A person working by hand needs none ([CONTRIBUTING.md](repo:CONTRIBUTING.md)).
 
 A unit of work carries its proof as a log of **stamps**: records, written only by the stage commands, that a step
 ended with a result on a commit, covering exact hashes. Stamps are not signed, and the log stays in the task's scratch
@@ -42,11 +42,12 @@ One stamp is one line of canonical JSON (UTF-8, sorted keys, no spaces, no float
 A stamp holds hashes, names and counts, never text from the original, a decompile line or a test's output
 ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 
-The **hash** of a stamp is the SHA-256 of its line; `prev` links each stamp to the one before, so the chain keeps
-history honest: a stamp cannot be edited, removed or moved without breaking the link after it, and a failed attempt
-stays in the log. An earlier format signed some stamps, and a log written then has the extra key `sig` on its lines
-(`null`, or `{"signer", "armor"}`): it is still read, left out of the hash (as it always was) and otherwise ignored, and
-nothing writes it. A `sig` that is neither `null` nor an object is refused.
+The **hash** of a stamp is the SHA-256 of its line without a `sig` key (an old line is hashed as if it had none);
+`prev` links each stamp to the one before, so the chain keeps history honest: a stamp cannot be edited, removed or
+moved without breaking the link after it, and a failed attempt stays in the log. An earlier format signed some stamps,
+and a log written then has the extra key `sig` on its lines (`null`, or `{"signer", "armor"}`): it is still read, left
+out of the hash (as it always was) and otherwise ignored, and nothing writes it. A `sig` that is neither `null` nor an
+object is refused.
 
 ### Layout {#layout}
 
@@ -58,7 +59,7 @@ functions makes about 120 stamps, one segment.
 | Where | What |
 | --- | --- |
 | `<scratch>/<task>/unit.json` | The unit record `task start` wrote: branch, worktree, base commit, which task's log it writes to ([Starting a task](issues.md#starting)) |
-| `<scratch>/<task>/stamps/` | The log (local; `task finish` keeps it, it holds no game data) |
+| `<scratch>/<task>/stamps/` | The log (local; it holds no game data, so `task finish`, planned, is to keep it) |
 | `<scratch>/<task>/study/<addr>/` | A function's study: the saved decompile and what was cut from it. Scratch only, never committed |
 | `<scratch>/<task>/mapping/<addr>.toml` | The pairs of one function (scratch only, never committed) |
 | `<scratch>/<task>/compare/<addr>.txt` | The side-by-side view (holds decompile text: scratch only) |
@@ -107,17 +108,25 @@ different after any edit of the branch's own lines. `commit` stays in each stamp
 tip, the changed paths and the hash; `change_sha256(root, base, tip)` takes the base. A stage asks "is my stamp still
 good?" with `Report.current(step, subject, {stamps.CHANGE: <the hash now>})`.
 
-The hash is the SHA-256 of one text: a version line (`coney-change 1`), then for every changed path in git's path order,
-with renames off (a moved file is a deletion and an addition):
+The hash is the SHA-256 of one text: a version line (`coney-change 1`), then for every changed path in git's path order
+(the byte order of the path, from `git diff --raw -z`), with renames off (a moved file is a deletion and an addition):
 
-* `file <path>`, `status <A|M|D>` and `mode <old> <new>`;
+* `file <path>`, `status <A|M|D|T>` (`T`: a change of file type, such as a file made a symlink) and
+  `mode <old> <new>`;
 * for a text file the removed and added lines of `git diff -U0`, in order, with git's "no newline at end of file"
   marker, and no hunk header, `index` line or `---`/`+++` line, so neither line numbers (which move when main edits the
   same file elsewhere) nor the pre-image blob id (which changes with main) take part;
-* for a binary file (as git judges it) `binary <SHA-256 of the file at the tip>`, or `binary deleted`.
+* for a binary file `binary <SHA-256 of the file at the tip>`, or `binary deleted`. A file is binary when its first
+  8000 bytes hold a NUL byte; `.gitattributes` (`-diff`, `binary`, `diff=driver`) is ignored.
 
-Whitespace counts: a tab, a CRLF or a missing final newline is a changed line. The user's `diff.*`, `core.quotepath` and
-`core.autocrlf` settings are overridden, so every machine computes the same value.
+Whitespace counts: a tab, a CRLF or a missing final newline is a changed line. The same commits give the same hash on
+every machine: the diff runs as `git diff --no-renames --no-color --no-ext-diff --no-textconv --no-prefix
+--no-relative --no-color-moved --full-index --text --diff-algorithm=myers --indent-heuristic --inter-hunk-context=0
+--submodule=short --ignore-submodules=none -O<an empty file>` with `-U0` for the patch (`--raw -z` for the list),
+under `-c` overrides of `core.quotepath`, `core.autocrlf`, `color.ui` and the `diff.*` settings that change the
+output, and without `GIT_DIFF_OPTS` and `GIT_EXTERNAL_DIFF`. The base is the merge base of the branch with its
+target, so the target (`origin/main`) must be at least as new as the branch's own base: fetch first, or main's
+changes since are counted as the branch's.
 
 A rebase that touches only other files, or other lines of the same files, keeps the hash. A conflict resolved by hand, or
 an upstream change that makes part of the branch a no-op, changes it, and everything bound to it is stale: the change is

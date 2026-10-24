@@ -2,13 +2,15 @@
 """The stamp log: an append-only, hash-chained record of the proof a unit of work carries (docs/guides/stamps.md).
 
 A stamp says that a step ended, with what result, on which commit, covering which hashes, run by whom, when, and what
-the stamp before it hashed to. The stage commands (`original study`, `original compare`, `original fails-first`,
-`task check`, later `task review` and `pr open`) are the only writers: they call `append`, which takes the log's lock,
-checks that the chain is intact and writes one line. `verify` re-reads the log and reports every problem.
+the stamp before it hashed to. The stage commands (`original study`, `original compare` and `original fails-first`
+today; `task check`, `task review` and `pr open` as they land) are the only writers: they call `append`, which takes
+the log's lock, checks that the chain is intact and writes one line. `verify` re-reads the log and reports every
+problem.
 
 The log is a folder of segments `0001.jsonl`, `0002.jsonl`, ... of canonical JSON lines (UTF-8, sorted keys, no
-spaces). A stamp's *hash* is the SHA-256 of its line; `prev` is the previous stamp's hash, across segments. Stamps are
-not signed; a stamp written while they were carries a `sig` key, which is read, left out of the hash and ignored.
+spaces). A stamp's *hash* is the SHA-256 of its line without a `sig` key; `prev` is the previous stamp's hash, across
+segments. Stamps are not signed; a stamp written while they were carries a `sig` key, which is read, left out of the
+hash and ignored.
 
 The steps that say a whole change is good (`checked`, `reviewed`, `pr-opened`) are bound to the *change* the branch
 makes, not to a commit: `covers.diff_sha256` (`CHANGE`, computed by `pr_diff`), which a clean rebase keeps and any

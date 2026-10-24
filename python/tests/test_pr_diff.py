@@ -194,3 +194,120 @@ def test_the_hash_is_the_same_whatever_the_users_git_settings(repo: Path, monkey
     subprocess.run(["git", "-C", str(repo), "config", "core.quotepath", "true"], check=True)
     subprocess.run(["git", "-C", str(repo), "config", "diff.noprefix", "true"], check=True)
     assert change(repo) == plain
+
+
+# --- the hash does not depend on the user's git settings or on attributes --------------------------------------------
+
+#: Text on which git's diff algorithms and the indent heuristic choose different hunks (they disagree on this pair).
+SLIDER_OLD = "def a():\n    pass\n\ndef c():\n    pass\n"
+SLIDER_NEW = "def a():\n    pass\n\ndef b():\n    pass\n\ndef c():\n    pass\n"
+LETTERS_OLD = "".join(f"{c}\n" for c in "abcabba")
+LETTERS_NEW = "".join(f"{c}\n" for c in "cbabac")
+
+
+def algorithm_repo(tmp_path: Path) -> Path:
+    """A repository whose branch `work` rewrites two files in ways the diff algorithms disagree about."""
+    git(tmp_path, "init", "-q", "-b", "main")
+    git(tmp_path, "config", "core.autocrlf", "false")
+    commit(tmp_path, "f.py", SLIDER_OLD, "base")
+    commit(tmp_path, "g.txt", LETTERS_OLD, "base 2")
+    git(tmp_path, "checkout", "-q", "-b", "work")
+    commit(tmp_path, "f.py", SLIDER_NEW)
+    commit(tmp_path, "g.txt", LETTERS_NEW)
+    return tmp_path
+
+
+def test_the_inputs_of_these_tests_really_make_the_algorithms_disagree(tmp_path: Path) -> None:
+    repo = algorithm_repo(tmp_path)
+    seen = set()
+    for algorithm in ("myers", "patience", "histogram"):
+        for heuristic in ("true", "false"):
+            git(repo, "config", "diff.algorithm", algorithm)
+            git(repo, "config", "diff.indentHeuristic", heuristic)
+            seen.add(git(repo, "diff", "-U0", "main", "HEAD"))
+    assert len(seen) > 1  # if git ever makes them agree, the test below proves nothing and must change
+
+
+@pytest.mark.parametrize("algorithm", ["myers", "minimal", "patience", "histogram"])
+@pytest.mark.parametrize("heuristic", ["true", "false"])
+def test_the_diff_algorithm_and_the_indent_heuristic_of_the_user_do_not_change_the_hash(
+    tmp_path: Path, algorithm: str, heuristic: str
+) -> None:
+    repo = algorithm_repo(tmp_path)
+    plain = change(repo)
+    git(repo, "config", "diff.algorithm", algorithm)
+    git(repo, "config", "diff.indentHeuristic", heuristic)
+    assert change(repo) == plain
+
+
+def test_other_diff_settings_and_variables_do_not_change_the_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = algorithm_repo(tmp_path)
+    plain = change(repo)
+    order = tmp_path.parent / "order.txt"
+    order.write_text("g.txt\n", encoding="utf-8")
+    for key, value in (
+        ("diff.orderFile", str(order)),
+        ("diff.interHunkContext", "5"),
+        ("diff.context", "7"),
+        ("diff.mnemonicPrefix", "true"),
+        ("diff.colorMoved", "zebra"),
+        ("diff.relative", "true"),
+        ("diff.submodule", "log"),
+        ("diff.wsErrorHighlight", "all"),
+        ("color.ui", "always"),
+    ):
+        git(repo, "config", key, value)
+    monkeypatch.setenv("GIT_DIFF_OPTS", "-u9")
+    assert change(repo) == plain
+
+
+def test_attributes_do_not_change_the_hash(tmp_path: Path) -> None:
+    """`-diff` makes git call a text file binary and `diff=driver` runs a converter; the hash ignores both, and decides
+    for itself what is binary (a NUL byte in the first 8000 bytes)."""
+
+    def build(root: Path, attributes: str) -> str:
+        root.mkdir()
+        git(root, "init", "-q", "-b", "main")
+        git(root, "config", "core.autocrlf", "false")
+        commit(root, ".gitattributes", attributes, "attributes")
+        commit(root, "notes.txt", "one\ntwo\n", "base")
+        git(root, "checkout", "-q", "-b", "work")
+        commit(root, "notes.txt", "one\n2\n")
+        return change(root)
+
+    plain = build(tmp_path / "plain", "# nothing\n")
+    marked = build(tmp_path / "marked", "*.txt -diff\n")
+    driver = build(tmp_path / "driver", "*.txt diff=shout\n")
+    assert plain == marked == driver
+
+
+def test_a_text_file_marked_binary_by_an_attribute_is_still_hashed_by_its_lines(tmp_path: Path) -> None:
+    git(tmp_path, "init", "-q", "-b", "main")
+    git(tmp_path, "config", "core.autocrlf", "false")
+    commit(tmp_path, ".gitattributes", "*.txt binary\n", "attributes")
+    commit(tmp_path, "notes.txt", "one\ntwo\n", "base")
+    git(tmp_path, "checkout", "-q", "-b", "work")
+    commit(tmp_path, "notes.txt", "one\n2\n")
+    first = change(tmp_path)
+    commit(tmp_path, "notes.txt", "one\n3\n")
+    assert change(tmp_path) != first  # git itself would say "Binary files differ" for both and hash them alike
+
+
+def test_a_change_of_file_type_is_one_entry_with_the_status_t(repo: Path) -> None:
+    before = change(repo)
+    target = (
+        subprocess.run(
+            ["git", "-C", str(repo), "hash-object", "-w", "--stdin"],
+            input=b"other.cpp",
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
+    git(repo, "update-index", "--cacheinfo", f"120000,{target},src/widget.cpp")
+    git(repo, "commit", "-q", "-m", "make it a symlink")
+    found = pr_diff.change_of(repo, "main", "HEAD")
+    assert found.paths == ("src/widget.cpp",) and found.sha256 != before

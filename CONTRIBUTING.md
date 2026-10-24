@@ -107,9 +107,9 @@ want ([Research workflow](docs/guides/research-workflow.md)).
 same rules in the template.
 
 **Stamps are local agent bookkeeping.** The stamp log (`docs/guides/stamps.md`) is what the project's agents keep on
-their own machine to work in order. Working by hand you need no stamps, no `coney-tools` beyond the checks above and no
-Claude Code. Your pull request gets the same CI as anyone's; the maintainers review it and re-run the disc tests
-locally.
+their own machine to work in order; it is never checked in CI. Working by hand you need no stamps, no `coney-tools`
+and no Claude Code: the local checks are optional, and CI runs them on your pull request like anyone's, which a
+maintainer reviews.
 
 ## Setting up
 

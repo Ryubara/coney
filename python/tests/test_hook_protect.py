@@ -342,7 +342,15 @@ def test_an_unclosed_quote_does_not_hide_a_command() -> None:
 
 
 @pytest.mark.parametrize("agent_type", EVERYONE)
-def test_signing_is_not_special_any_more(agent_type: str) -> None:
-    # Stamps are not signed (docs/guides/stamps.md), so no command that signs or lists keys is refused for them.
-    for command in ("ssh-keygen -Y sign -f k -n some-namespace f", "ssh-add ~/key", "ssh-add -D", "ssh-add -l"):
+def test_deleting_keys_from_the_persons_ssh_agent_is_refused_and_listing_them_is_not(agent_type: str) -> None:
+    for command in ("ssh-add -D", "ssh-add -d key.pub", "ssh-add -d", "ssh-add -D; echo done"):
+        reason = protect.refusal(bash(command, agent_type))
+        assert reason is not None and "SSH agent" in reason and "stamp" not in reason, command
+    for command in ("ssh-add -l", "ssh-add -L", "ssh-add -l -E sha256", "git log -S 'ssh-add -D' --oneline"):
         assert protect.refusal(bash(command, agent_type)) is None, command
+
+
+@pytest.mark.parametrize("agent_type", EVERYONE)
+def test_signing_is_not_special_any_more(agent_type: str) -> None:
+    # Stamps are not signed (docs/guides/stamps.md), so no command that signs is refused for them.
+    assert protect.refusal(bash("ssh-keygen -Y sign -f k -n some-namespace f", agent_type)) is None
