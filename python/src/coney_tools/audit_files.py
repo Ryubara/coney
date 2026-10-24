@@ -273,7 +273,8 @@ def command_reference_current(context: FilesContext) -> Iterator[Problem]:
     # Imported here: the command line imports the audit, so a module-level import would be circular.
     from coney_tools import command_reference
 
-    for finding in command_reference.findings(context.root, command_reference.command_groups()):
+    docs = context.conventions.paths.docs
+    for finding in command_reference.findings(context.root, command_reference.command_groups(), docs):
         yield Problem(finding.item, finding.message)
 
 

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from coney_tools import command_reference, docs_check, docs_legacy
 from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.conventions import load_conventions
 from coney_tools.research_legacy import format_legacy
 
 #: The legacy file is written with LF whatever the system, as the repository's text files are.
@@ -70,7 +71,9 @@ def run_render(check: bool) -> int:
     """Write the generated parameter blocks of the coney-tools guides from the command line, or with `check` only report
     the stale ones. Exit 1 when a block is stale or missing, 2 when the checkout cannot be found."""
     try:
-        return command_reference.run_render(find_repo_root(Path.cwd()), command_reference.command_groups(), check)
+        root = find_repo_root(Path.cwd())
+        docs = load_conventions(root).paths.docs
+        return command_reference.run_render(root, command_reference.command_groups(), check, docs)
     except ConfigError as error:
         print(f"coney-tools docs render: {error}")
         return 2

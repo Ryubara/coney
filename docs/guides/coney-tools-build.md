@@ -99,12 +99,13 @@ named path is missing, outside the checkout or not a page the check covers (`REA
 
 `docs render` writes the parameter reference of every command into the guides: the generated **Parameters of** block
 at the end of each group's section, read from the command line's own definitions ([the parameter
-reference](coney-tools.md#parameter-reference)). `--check` changes nothing and exits 1 naming each page with a stale
-block; either way it exits 1, naming the group, for a group with no block or two, a marker that names no group, and a
-command or parameter that has no `help=` text, which no rendering fixes. It is the audit check
-`files.command-reference` too, so `check changed` and the `python` workflow run it on every change: a command or a
-parameter that is missing from the guides, or a block that is stale, does not merge. Exit 2 when the command is not run
-inside a checkout.
+reference](coney-tools.md#parameter-reference)). The guides are the `guides` folders inside the folders `paths.docs` of
+[.github/conventions.yml](repo:.github/conventions.yml) names. `--check` changes nothing and exits 1 with one line for
+each stale block, naming its group and its page; either way it exits 1, naming the group, for a group with no block or
+two, a marker that names no group, and a command or parameter that has no `help=` text, which no rendering fixes. It is
+the audit check `files.command-reference` too, so `check changed` and the `python` workflow run it on every change: a
+command or a parameter that is missing from the guides, or a block that is stale, does not merge. Exit 2 when the
+command is not run inside a checkout.
 
 A research page is read against the executable's data: `docs/progress/ghidra-functions.tsv` (every function, its size
 and name), `research/elf-sections.toml` (the sections of `SLUS_212.15`) and, once the folder exists, the run records of
