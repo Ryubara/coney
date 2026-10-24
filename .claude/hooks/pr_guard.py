@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Claude Code PreToolUse hook (the PR guard, once `release_guard.py`): a pull request opens or changes only through a
-title and description that pass CI's checks, and, once `coney-tools pr open` exists, only through that command.
+title and description that pass CI's checks, and, with the switch on, only through `coney-tools pr open`.
 
-With `refuse_create` on (`[pr_guard] refuse_pr_create` in `hooks.toml`, off until `pr open` lands) every `gh pr create`
-and every `gh api` call that opens a pull request (a POST to `repos/<owner>/<name>/pulls`, the GraphQL
-`createPullRequest`) is refused in a Claude Code session, whoever types it. `pr open` runs `gh` as its own subprocess,
-which is no tool call, so the hook never sees it. A person at their own terminal runs no hook. With it off, the rest
-of this text is the whole behaviour.
+With `refuse_create` on (`[pr_guard] refuse_pr_create` in `hooks.toml`; `pr open` has landed, the switch stays off
+until a real pull request has gone through it) every `gh pr create` and every `gh api` call that opens a pull request
+(a POST to `repos/<owner>/<name>/pulls`, the GraphQL `createPullRequest`) is refused in a Claude Code session, whoever
+types it. `pr open` runs `gh` as its own subprocess, which is no tool call, so the hook never sees it. A person at
+their own terminal runs no hook. With it off, the rest of this text is the whole behaviour.
 
 The coordinator opens each pull request from an agent's description file with `gh pr create --title ... --body-file
 <file>` (docs/guides/how-we-work.md#release-queue). The rule is that the file passed `coney-tools repo check-review`

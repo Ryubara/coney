@@ -396,6 +396,11 @@ What the three steps bound to the change record (all unsigned, in the local log)
 | `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/review.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |
 
+`pr open` appends the `pr-opened` stamp after the last check and before the push. If the newest stamp of the log is
+already a `pr-opened` whose `covers` are identical, it is reused and nothing is appended, so a rerun after a failed push
+or `gh` call leaves one stamp. The facts block of the description is generated from the log without its `pr-opened`
+stamps, so a rerun produces the same text and the same `facts_sha256` ([pr open](pr.md#open)).
+
 The hashes come from one place each, so the stage that writes a stamp and the check that reads it cannot differ:
 `pr_diff` for the change, `orig_pairs.set_sha256` for the pairs set (one `<address> <pairs file hash>` line for each
 changed function, sorted; `task review` and `pr_proof.pairs_set_sha256` both call it) and `pr_text_file` for the title,

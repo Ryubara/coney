@@ -263,17 +263,19 @@ coordinator, who pushes them when CI has room.
   pull request it depends on. After the earlier one is squash-merged, the later branch is moved onto `main` with
   `git rebase --onto origin/main <old base> <branch>` (the old base is the earlier branch's tip), so the squashed
   commits are not replayed.
-- **The coordinator keeps the release queue** in its state file and releases units while the agents keep working:
-  it checks the queue (`gh run list --status queued` and `--status in_progress`), pushes the branch and opens the
-  pull request with `gh pr create --title "<title>" --body-file <PR.md>` when there is room, run from the author's
-  scratch folder with one `--attach ./shots/<file>.png` per capture the text refers to (gh 2.99+;
-  [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
-  unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
-  ([What CI runs](building.md#what-ci-runs)).
+- **The coordinator keeps the release queue** in its state file and releases units while the agents keep working, one
+  command each: `coney-tools pr open <task>` ([pr open](pr.md#open)) checks the unit's stages, rebases it, pushes it
+  with a lease, opens (or updates) the pull request with the generated title and description and one `--attach` per
+  picture (gh 2.99+; [Capturing and attaching](testing.md#pr-media)), turns on auto-merge and reads it back. It does
+  not wait for CI room: a pull request runs only the jobs its change can break, so a documentation-only one is cheap
+  ([What CI runs](building.md#what-ci-runs)). A refusal lists every stage to redo and goes back to the engineer, never
+  to the coordinator's hands; a rebase conflict (exit 3) goes back with the paths. `pr open --dry-run` tries
+  everything but the push in a throwaway worktree. Priority: engine fixes first, then what unblocks other work.
 - **A task is reviewed with `coney-tools task review`** ([Task review](review/task.md)): the tool checks what a
   program can (the stamp log, a current `compared` stamp for each `@orig` function, the copy check, `fails-first`
   stamps, `docs check`, the description), a `reviewer` judges the rest, and the verdict is recorded as a `reviewed`
-  stamp bound to the change. The two release checks below predate it and run until `pr open` replaces them.
+  stamp bound to the change. `pr open` requires that stamp, so the two release checks below, which predate it, are
+  what a release that does not go through `pr open` still passes; they are retired with the legacy commands.
 - **Every `@orig` function a branch adds or changes is checked against the original before release.** The
   `reviewer` agent runs in pr mode on the branch ([Running agents](agents.md#reviewer)). It decompiles
   each address and compares on fidelity and own expression ([Orig review](review/orig.md)), and writes
@@ -292,10 +294,10 @@ coordinator, who pushes them when CI has room.
   the title or file it changes. On 2026-10-20 and 21 CI's `body` job refused six pull requests for a missing section or
   a local image not attached, mistakes this finds before the push. A relative `--body-file` is found from the folder a
   leading `cd` moved to. A command that names only another repository passes, a title or file the shell fills in
-  (`"$TITLE"`) is not checked, and the hook lets a command through when it cannot run the checks. When
-  `coney-tools pr open` replaces `gh pr create`, one switch (`[pr_guard] refuse_pr_create` in
-  `.claude/hooks/hooks.toml`, off until then) makes the hook refuse every `gh pr create` and every `gh api` call that
-  opens a pull request ([The hooks](agents.md#hooks)).
+  (`"$TITLE"`) is not checked, and the hook lets a command through when it cannot run the checks. Now that
+  `coney-tools pr open` replaces `gh pr create` (its own `gh` calls are subprocesses, which no hook sees), one switch
+  (`[pr_guard] refuse_pr_create` in `.claude/hooks/hooks.toml`, off until the guard task lands) makes the hook refuse
+  every `gh pr create` and every `gh api` call that opens a pull request ([The hooks](agents.md#hooks)).
 - **Stale failures restart themselves.** `coney-tools repo pr-health --rerun --apply` (run from the coordinator's
   watch loop) reruns a required check that failed because the runner or GitHub did (cancelled, never started, timed
   out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or
@@ -530,7 +532,7 @@ The guards, with the rule each one holds (the diagram only orders them):
 | `coney-tools check changed` | What CI would fail on, for the files the change touched: the repository audit, pre-commit, `mkdocs build --strict`, ruff, mypy and pytest | [The local gate](testing.md#local-gate) |
 | `repo check-title`, `check-body`, `check-docs` | A title that is not `area: Verb the rest`; a description that breaks the template; a change under `src/` or `python/src/` with no docs change and no `Docs: none` line | [Repository conventions](repo-conventions.md#workflows) |
 | `reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
-| Release queue | An agent pushing: only the coordinator pushes, when CI has room | [Local first](#release-queue) |
+| Release queue, `pr open` | An agent pushing: only the coordinator pushes, through `pr open`, which refuses an engineer or reviewer identity and a unit whose stages are stale. The stages are enforced here, locally, not in CI | [Local first](#release-queue), [pr open](pr.md#open) |
 | Tether pull request guard | A pull request left with a failed required check, a conflict, a stuck check or auto-merge off: the `prs` poller (`repo pr-health`) wakes the coordinator | [Waking the coordinator](coney-tools-setup.md#coord-wakes) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint` | [What CI runs](building.md#what-ci-runs) |
 | Branch protection (GitHub ruleset on `main`) | A direct push; a merge before every required check passes; a merge that is not a squash | [Merging safely](#merging) |
@@ -551,11 +553,11 @@ Issues are guarded the same way: the `issue_guard` hook, `coney-tools issue chec
 - **Check a branch's diff before merging it.** A branch can be contaminated with unrelated reverted files (a bad
   rebase or a stray copy); a diff against the merge base that touches files outside the track's scope means the
   branch is rebuilt, not merged.
-- **GitHub merges, one pull request at a time.** Auto-merge is on: the maintainer or the coordinator enables it on a
-  pull request that follows the rules, and GitHub squash-merges it as soon as every required check passes, then
-  deletes its branch. The settings are the `merge` section of the conventions file, shown in
-  [What CI runs](building.md#what-ci-runs). No local script merges anything, so there is no lock to take; the only
-  merges done by hand are of `main` into a branch.
+- **GitHub merges, one pull request at a time.** Auto-merge is on: `pr open` enables it (when the viewer may; the
+  maintainer or the coordinator does it by hand otherwise) on a pull request that follows the rules, and GitHub
+  squash-merges it as soon as every required check passes, then deletes its branch. The settings are the `merge` section
+  of the conventions file, shown in [What CI runs](building.md#what-ci-runs). No local script merges anything, so there
+  is no lock to take; the only merges done by hand are of `main` into a branch.
 - **Do not hide a failed command in a pipe.** `git merge origin/main | tail -1 && next` reports the status of `tail`,
   not of the merge. Run the command on its own and test its exit code.
 - **Regenerate, then resolve by hand only what a generator cannot.** On a conflict in a generated file, take either
@@ -588,9 +590,9 @@ Issues are guarded the same way: the `issue_guard` hook, `coney-tools issue chec
   worktree, the scope it owns, the files it must not touch and what "done" means, and points at the rules rather than
   pasting them ([Briefing](agents.md#briefs)).
 - **No agent waits on CI, or pushes.** An agent works local-first and hands each finished unit to the coordinator's
-  [release queue](#release-queue); the coordinator pushes, watches CI and sends a failure to a fresh agent
-  ([When a pull request fails checks](agents.md#ci-failures)). An agent idle past its cache lifetime re-writes its
-  whole context, often hundreds of thousands of tokens, when it resumes.
+  [release queue](#release-queue); the coordinator pushes (`pr open`, which refuses an agent's identity), watches CI and
+  sends a failure to a fresh agent ([When a pull request fails checks](agents.md#ci-failures)). An agent idle past its
+  cache lifetime re-writes its whole context, often hundreds of thousands of tokens, when it resumes.
 - **Long-running tracks keep going.** They hand each finished unit to the release queue and continue with the next
   item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
