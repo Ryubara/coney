@@ -114,6 +114,21 @@ def test_a_moved_page_keeps_an_old_runtime_claim_and_the_missing_run_records() -
     assert rules_of(findings(RESEARCH_PATH, text, env())) == ["evidence"]
 
 
+def test_a_moved_page_whose_entry_is_the_old_form_claims_keeps_it_until_they_cite_records() -> None:
+    claim = f"It spins at {IN_FUNCTION} (confirmed (runtime)).\n"
+    text = page(claim, sections={"How this was checked": "Seen in PCSX2 before run records existed.\n"})
+    listed = env(legacy={RESEARCH_PATH: {"evidence": 1}})
+    moved = Touch(moved_from="docs/research/widget-old.md")
+    found = findings(RESEARCH_PATH, text, listed, moved)
+    assert rules_of(found) == [] and rules_of(found, "warning") == ["evidence"]
+    cited = page(
+        f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n",
+        sections={"How this was checked": "Seen in PCSX2.\n"},
+    )
+    recorded = env(legacy={RESEARCH_PATH: {"evidence": 1}}, runs=frozenset({"r-1"}))
+    assert rules_of(findings(RESEARCH_PATH, cited, recorded, moved)) == ["legacy"]
+
+
 def test_a_moved_page_is_held_to_the_run_ids_of_the_levels_and_the_other_rules() -> None:
     text = page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n", head="")
     listed = env(legacy={RESEARCH_PATH: {"evidence": 1, "verified": 1}}, runs=frozenset({"r-2"}))

@@ -52,7 +52,7 @@ def scan_page(path: str, text: str, context: Context) -> dict[str, int]:
     found.extend(check_style(path, page, "research", context.avoid, context.address_terms))
     counts: dict[str, int] = {}
     for finding in found:
-        if finding.severity == "error" and finding.rule in LEGACY_RULES:
+        if (finding.severity == "error" or finding.held) and finding.rule in LEGACY_RULES:
             counts[finding.rule] = counts.get(finding.rule, 0) + 1
     if "length" in counts:
         kind = read_front_matter(page, env.research)[0].kind or env.research.kind_of_path(path)

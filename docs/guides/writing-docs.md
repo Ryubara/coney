@@ -333,7 +333,9 @@ there):
   ([Run records](research-evidence.md#run-records) says how to write one, and the check names the command). What no
   run observed is `speculative`, with an open question. A page in the [legacy file](#legacy-pages) may keep an old
   runtime claim that names PCSX2 in its Verified line or in How this was checked, and its run ids are not checked
-  while the folder is missing; so does a legacy page [moved with git](#legacy-pages), whichever way it names PCSX2.
+  while the folder is missing; so does a legacy page [moved with git](#legacy-pages). Such a claim is still a finding of
+  the `evidence` rule that its entry excuses (a warning, counted in the entry), so the entry stays, and `docs legacy
+  --prune` keeps it, until the claims cite run records.
 - `speculative` links an open question of the page (`[q-name](#q-name)`) that exists.
 - `inferred` should say what it follows from (`inferred from the call order`): a warning when it does not.
 - A spelling that is no level is refused, and so is "probably" or "likely" in an Evidence cell.

@@ -466,6 +466,68 @@ def test_a_refused_run_id_on_a_touched_legacy_page_stays_page_wide() -> None:
     assert [item.rule for item in touched if item.severity == "error"] == ["front-matter", "evidence"]
 
 
+# --- an old-form runtime claim keeps the entry that excuses it --------------------------------------------------------
+
+OLD_FORM = f"It spins at {IN_FUNCTION} (confirmed (runtime)).\n"
+PCSX2_SEEN = "The claims were seen in PCSX2 before run records existed.\n"
+
+
+def old_form_page(claim: str = OLD_FORM) -> str:
+    """A legacy page whose old-form runtime claim is explained in How this was checked (so it is no error)."""
+    return page(claim, sections={"How this was checked": PCSX2_SEEN}, meta="")
+
+
+def test_an_old_form_runtime_claim_keeps_the_evidence_entry_that_excuses_it() -> None:
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 1}})
+    found = findings(RESEARCH_PATH, old_form_page(), listed)
+    # The claim is no error, and it is not "passing" either: it still owes a run record.
+    assert rules_of(found) == []
+    evidence = [item for item in found if item.rule == "evidence"]
+    assert [item.severity for item in evidence] == ["warning"] and "1 finding excused" in evidence[0].message
+    touched = findings(RESEARCH_PATH, old_form_page(), listed, Touch(frozenset({1})))
+    assert rules_of(touched) == ["front-matter"] and [item.rule for item in touched if item.rule == "evidence"] == [
+        "evidence"
+    ]
+
+
+def test_an_entry_without_evidence_does_not_make_the_old_form_claim_a_finding() -> None:
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1}})
+    found = findings(RESEARCH_PATH, old_form_page(), listed)
+    assert rules_of(found) == [] and "evidence" not in [item.rule for item in found]
+
+
+def test_the_entry_goes_once_the_claim_cites_a_run_record() -> None:
+    cited = f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n"
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 1}}, runs=frozenset({"r-1"}))
+    found = findings(RESEARCH_PATH, old_form_page(cited), listed)
+    assert [(item.rule, item.severity) for item in found if item.rule in ("evidence", "legacy")] == [
+        ("legacy", "error")
+    ]
+    assert any("now passes 'evidence'" in item.message for item in found)
+
+
+def test_a_run_id_that_names_no_record_while_none_exist_is_held_too() -> None:
+    claim = f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n"
+    listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 1}})
+    assert rules_of(findings(RESEARCH_PATH, old_form_page(claim), listed)) == []
+    found = findings(RESEARCH_PATH, old_form_page(claim), listed)
+    assert [item.rule for item in found if item.rule == "evidence"] == ["evidence"]
+
+
+def test_a_scan_counts_the_old_form_claims_so_the_entry_is_kept_and_pruned_with_them(tmp_path: Path) -> None:
+    root = checkout(tmp_path)
+    name = "docs/research/claims.md"
+    write(root, name, old_form_page((OLD_FORM + "\n") * 3))
+    assert docs_legacy.scan(root, context(root))[name]["evidence"] == 3
+    write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
+    assert docs_legacy.problems(root, context(root)) == []
+    assert docs_legacy.pruned(root, context(root)).pages[name]["evidence"] == 3
+    # Once the claims are graded in the current form, the page passes and the rule goes.
+    write(root, name, old_form_page(f"It spins at {IN_FUNCTION} (confirmed (code)).\n"))
+    assert any(f"{name} now passes 'evidence'" in line for line in docs_legacy.problems(root, context(root)))
+    assert "evidence" not in docs_legacy.pruned(root, context(root)).pages.get(name, {})
+
+
 # --- the data the legacy file's truth depends on ----------------------------------------------------------------------
 
 LISTING = "docs/progress/ghidra-functions.tsv"

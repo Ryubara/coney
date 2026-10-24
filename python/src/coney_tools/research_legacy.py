@@ -141,9 +141,12 @@ def apply_legacy(
     waived: dict[str, list[Finding]] = {rule: [] for rule in excused}
     for finding in findings:
         if finding.rule not in excused:
-            kept.append(finding)
+            if not finding.held:  # a page not excused from the rule has no use for the reminder
+                kept.append(finding)
         elif finding.severity != "error":
-            continue  # a warning of an excused rule is part of what the legacy page is excused from
+            if finding.held:
+                waived[finding.rule].append(finding)  # an old-form claim still owing a run record keeps the entry
+            continue  # any other warning of an excused rule is part of what the legacy page is excused from
         elif _stays_excused(finding, touched, moved):
             waived[finding.rule].append(finding)
         else:
