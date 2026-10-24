@@ -18,7 +18,7 @@ clang-tidy on the chosen sources in parallel against the `ci` preset's compile d
 
 A change to the build setup (`ci.tidy.whole_when`: `CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`)
 affects every file, so the plan then says `everything`: the job runs the whole-codebase pass the nightly run does,
-instead of the changed lines (docs/guides/building.md#clang-tidy).
+instead of the changed lines (docs/guides/clang-tidy.md).
 """
 
 from __future__ import annotations

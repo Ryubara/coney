@@ -182,7 +182,7 @@ jobs:
   # manual runs check every file with run-clang-tidy, which takes close to an hour, and so does a change to the build
   # setup (ci.tidy.whole_when in .github/conventions.yml: CMakeLists.txt, cmake/, CMakePresets.json, .clang-tidy),
   # because such a change reaches files it does not touch; its findings are in the log, not annotations.
-  # docs/guides/building.md#clang-tidy has the details.
+  # docs/guides/clang-tidy.md has the details.
   clang-tidy:
     needs: changes
     if: needs.changes.outputs.build == 'true'

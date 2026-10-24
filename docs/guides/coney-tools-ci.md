@@ -39,7 +39,7 @@ conventions could not be read. [What CI runs](building.md#what-ci-runs) says whe
   makes it a plan for every file: the job then runs the whole-codebase pass instead of `tidy-run`, and `tidy-run`
   refuses such a plan. It prints the files, and sets `run` and `all` (`true` or `false`) in `$GITHUB_OUTPUT` when that
   is set: `all=true` sends the job to the whole pass. Only the folders and extensions of `ci.tidy` count otherwise
-  ([clang-tidy](building.md#clang-tidy)).
+  ([clang-tidy](clang-tidy.md)).
 * `tidy-run` runs `clang-tidy` on the plan's sources, `--jobs` at a time (default: the cores), against the compile
   database in `--build-dir`, with the plan's line filter (one too long for an argument, over 100 KB, is left off and
   applied afterwards, with the same result), and prints each finding as `file:line:col: error: message [check]`.

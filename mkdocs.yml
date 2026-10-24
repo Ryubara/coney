@@ -287,6 +287,7 @@ nav:
       - Running agents: guides/agents.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
+      - clang-tidy: guides/clang-tidy.md
       - Running Coney:
           - guides/running.md
           - Window, sound, network, recording and debug options: guides/running-options.md

@@ -626,7 +626,7 @@ The build checks run `coney-tools build --preset ci --test` once, with the whole
 record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other
 whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `check changed`; there
 is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every pull request and on the whole
-codebase nightly ([building](building.md#clang-tidy)).
+codebase nightly ([building](clang-tidy.md)).
 
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
   (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.
