@@ -63,7 +63,12 @@ int main(int argc, char** argv) {
     // A player's options; a developer's is refused with a message that names the debug tools. Exit 2 on a usage
     // error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);
-    auto options = coney::parseOptions(args, coney::OptionSet::Player);
+    // With neither --disc nor --data, the install this executable sits in (if any) is the game to play: how a player
+    // starts the `coney` that `--install` copied (docs/guides/running.md#install).
+    const std::optional<std::string> besideExecutable = coney::platform::installBesideExecutable();
+    auto options =
+        coney::parseOptions(args, coney::OptionSet::Player,
+                            besideExecutable ? std::optional<std::string_view>(*besideExecutable) : std::nullopt);
     if (!options) {
         const std::string usage = coney::usageText(coney::OptionSet::Player);
         std::fprintf(stderr, "coney: %s\n\n%.*s", options.error().message.c_str(), static_cast<int>(usage.size()),
@@ -80,6 +85,13 @@ int main(int argc, char** argv) {
         return coney::platform::runInstallCommand(
             *options, coney::install::knownDiscs(),
             coney::platform::installProgramFiles(options->dataPath.value_or(""), argc > 0 ? argv[0] : nullptr), stderr);
+    }
+    // `--data`: play only from a finished install; an unfinished one says how to finish it.
+    if (const std::optional<std::string> data = options->dataPath; data) {
+        if (auto finished = coney::platform::checkInstallFolder(*data); !finished) {
+            std::fprintf(stderr, "coney: %s\n", finished.error().message.c_str());
+            return 1;
+        }
     }
 
     // The run log (docs/guides/run-log.md), as the debug tools' entry point starts it: the console and `coney.log` in

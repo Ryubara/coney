@@ -83,6 +83,32 @@ int runInstallCommand(const Options& options, std::span<const install::KnownDisc
     return 0;
 }
 
+std::expected<void, Error> checkInstallFolder(const std::filesystem::path& install) {
+    std::error_code ec;
+    const auto manifest = install / install::kManifestPath;
+    if (!std::filesystem::is_regular_file(manifest, ec) ||
+        !std::filesystem::is_directory(install / install::kPs2Folder, ec)) {
+        return fail(ErrorCode::NotFound,
+                    std::format("{}: not a finished Coney install (no {}); install the game into it with coney "
+                                "--install DISC --data \"{}\"",
+                                install.string(), install::kManifestPath, install.string()));
+    }
+    return {};
+}
+
+std::optional<std::string> installBesideExecutable() {
+    const char* base = SDL_GetBasePath(); // owned by SDL; null when the platform cannot tell
+    if (base == nullptr) {
+        return std::nullopt;
+    }
+    const std::filesystem::path folder(base);
+    if (!checkInstallFolder(folder)) {
+        return std::nullopt;
+    }
+    const std::u8string text = folder.u8string();
+    return std::string(text.begin(), text.end());
+}
+
 std::vector<std::filesystem::path> installProgramFiles(const std::filesystem::path& installRoot, const char* argv0) {
     const char* base = SDL_GetBasePath(); // owned by SDL; null when the platform cannot tell
     if (base == nullptr || argv0 == nullptr) {

@@ -2,10 +2,14 @@
 #pragma once
 
 #include <cstdio>
+#include <expected>
 #include <filesystem>
+#include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
+#include "core/error.h"
 #include "core/options.h"
 #include "install/known_discs.h"
 
@@ -25,5 +29,13 @@ namespace coney::platform {
 /// executable's own folder (a file cannot be copied over itself while it runs).
 [[nodiscard]] std::vector<std::filesystem::path> installProgramFiles(const std::filesystem::path& installRoot,
                                                                      const char* argv0);
+
+/// Whether `install` is a finished install to play from: its `index/install.json` (written last by an install) and its
+/// `game/ps2/` are there. Fails with ErrorCode::NotFound and a message saying how to finish it.
+[[nodiscard]] std::expected<void, Error> checkInstallFolder(const std::filesystem::path& install);
+
+/// The install folder this executable sits in (SDL's base folder), when it holds a finished install; nothing otherwise
+/// (a build folder, a copy of the executable elsewhere).
+[[nodiscard]] std::optional<std::string> installBesideExecutable();
 
 } // namespace coney::platform

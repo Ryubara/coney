@@ -275,7 +275,11 @@ int main(int argc, char** argv) {
 
     // Parse the command line; exit 2 on a usage error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);
-    auto options = coney::parseOptions(args);
+    // With neither --disc nor --data, the install this executable sits in (if any) is the game to play.
+    const std::optional<std::string> besideExecutable = coney::platform::installBesideExecutable();
+    auto options =
+        coney::parseOptions(args, coney::OptionSet::All,
+                            besideExecutable ? std::optional<std::string_view>(*besideExecutable) : std::nullopt);
     if (!options) {
         const std::string_view usage = coney::usageText();
         std::fprintf(stderr, "coney: %s\n\n%.*s", options.error().message.c_str(), static_cast<int>(usage.size()),
@@ -291,6 +295,13 @@ int main(int argc, char** argv) {
         return coney::platform::runInstallCommand(
             *options, coney::install::knownDiscs(),
             coney::platform::installProgramFiles(options->dataPath.value_or(""), argc > 0 ? argv[0] : nullptr), stderr);
+    }
+    // `--data`: play only from a finished install; an unfinished one says how to finish it.
+    if (const std::optional<std::string> data = options->dataPath; data) {
+        if (auto finished = coney::platform::checkInstallFolder(*data); !finished) {
+            std::fprintf(stderr, "coney: %s\n", finished.error().message.c_str());
+            return 1;
+        }
     }
 
     // The run log (docs/guides/run-log.md): the console and the log file, as the release build starts it.

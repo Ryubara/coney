@@ -30,7 +30,7 @@ constexpr std::array<std::string_view, 21> kPlayerOptions{
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
     "Usage: coney --install DISC --data DIR [--verify]\n"
-    "       coney [--disc PATH] [--language CODE] [--profiles DIR]\n"
+    "       coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
@@ -40,8 +40,8 @@ constexpr std::string_view kPlayerSynopsis =
 // The text usageText() returns (see its doc comment in options.h).
 constexpr std::string_view kUsage =
     "Usage: coney --install DISC --data DIR [--verify]\n"
-    "       coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N]\n"
-    "             [--screenshot PATH] [--headless] [--help]\n"
+    "       coney [--disc PATH | --data DIR] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET]\n"
+    "             [--frames N] [--screenshot PATH] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--profiles DIR]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
@@ -64,7 +64,9 @@ constexpr std::string_view kUsage =
     "  --install DISC     install the PS2 disc (a mounted disc, a folder of its files or an ISO image)\n"
     "                     into the folder --data names: its files copied as they are and checked,\n"
     "                     then exit; run it again to finish an install that was stopped\n"
-    "  --data DIR         the install folder\n"
+    "  --data DIR         the install folder: where --install puts the game, or, without --install,\n"
+    "                     the installed game to play (in place of --disc). With neither --disc nor\n"
+    "                     --data, Coney plays the install it sits in, if it sits in one\n"
     "  --verify           with --install: read every installed file again and copy any that changed\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -411,9 +413,6 @@ std::expected<void, Error> checkInstall(const Options& options) {
     if (options.verifyInstall && !options.installFrom.has_value()) {
         return invalidArgument("--verify needs --install: it checks the files an install copied");
     }
-    if (options.dataPath.has_value() && !options.installFrom.has_value()) {
-        return invalidArgument("--data needs --install: it names the folder to install into");
-    }
     if (!options.installFrom.has_value()) {
         return {};
     }
@@ -427,6 +426,25 @@ std::expected<void, Error> checkInstall(const Options& options) {
                        options.headless || options.audioTest || options.netHost || options.netJoin || options.netName;
     if (other) {
         return invalidArgument("--install runs on its own and exits: only --data and --verify go with it");
+    }
+    return {};
+}
+
+// Points discPath at an install folder's copy of the disc: the one `--data` names, else, with neither `--disc` nor
+// `--data`, the install beside the executable when there is one. An install's `game/ps2/` is the disc's files as they
+// are, so the same disc code reads it (docs/guides/asset-and-script-architecture.md#install-folder).
+std::expected<void, Error> resolveDataFolder(Options& options, std::optional<std::string_view> besideExecutable) {
+    if (options.installFrom.has_value()) {
+        return {}; // with --install, --data is where the install goes
+    }
+    if (options.dataPath.has_value() && options.discPath.has_value()) {
+        return invalidArgument("--data and --disc cannot be combined: both say where the game's files are");
+    }
+    if (!options.dataPath.has_value() && !options.discPath.has_value() && besideExecutable.has_value()) {
+        options.dataPath = std::string(*besideExecutable);
+    }
+    if (options.dataPath.has_value()) {
+        options.discPath = installGameFolder(*options.dataPath);
     }
     return {};
 }
@@ -727,7 +745,8 @@ bool activatesWindow(const Options& options) {
     return !options.noActivate && !isTestMode(options) && !options.renderReferences.has_value();
 }
 
-std::expected<Options, Error> parseOptions(std::span<const std::string_view> args, OptionSet set) {
+std::expected<Options, Error> parseOptions(std::span<const std::string_view> args, OptionSet set,
+                                           std::optional<std::string_view> installBesideExecutable) {
     Options options;
     std::optional<std::string> languageArg;      // as typed, so a repeat is refused like any other option
     std::optional<std::string> fpsCapArg;        // as typed, likewise
@@ -1198,6 +1217,9 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.traceFile.reset();
         }
     }
+    if (auto data = resolveDataFolder(options, installBesideExecutable); !data) {
+        return std::unexpected(std::move(data.error()));
+    }
     if (auto combined = checkCombinations(options); !combined) {
         return std::unexpected(std::move(combined.error()));
     }
@@ -1237,6 +1259,14 @@ std::string usageText(OptionSet set) {
         at = next;
     }
     return text;
+}
+
+std::string installGameFolder(std::string_view install) {
+    std::string folder(install);
+    if (!folder.empty() && folder.back() != '/' && folder.back() != '\\') {
+        folder.push_back('/');
+    }
+    return folder + "game/ps2";
 }
 
 std::span<const RumbleModeName> rumbleModeNames() { return kRumbleModes; }

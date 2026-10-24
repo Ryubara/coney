@@ -134,6 +134,11 @@ add_test(NAME coney.release.install_refuses_missing_disc
          COMMAND ${_coney_release_exe} --install no-such-disc --data "${CMAKE_CURRENT_BINARY_DIR}/install-smoke-release")
 set_tests_properties(coney.release.install_refuses_missing_disc PROPERTIES PASS_REGULAR_EXPRESSION
                                                                            "not a folder or an ISO image")
+# `--data` plays only from a finished install, and says how to finish one.
+add_test(NAME coney.release.data_refuses_unfinished_install COMMAND ${_coney_release_exe} --data no-such-install
+                                                                    --headless --frames 1)
+set_tests_properties(coney.release.data_refuses_unfinished_install PROPERTIES PASS_REGULAR_EXPRESSION
+                                                                              "not a finished Coney install")
 add_test(NAME coney.release.has_no_debug_tools
          COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -DEXPECT=absent -P
                  "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")
@@ -155,6 +160,9 @@ set_tests_properties(coney.help PROPERTIES PASS_REGULAR_EXPRESSION "--view-sheet
 add_test(NAME coney.install_refuses_missing_disc COMMAND coney --install no-such-disc --data
                                                        "${CMAKE_CURRENT_BINARY_DIR}/install-smoke")
 set_tests_properties(coney.install_refuses_missing_disc PROPERTIES PASS_REGULAR_EXPRESSION "not a folder or an ISO image")
+# `--data` plays only from a finished install, and says how to finish one.
+add_test(NAME coney.data_refuses_unfinished_install COMMAND coney --data no-such-install --headless --frames 1)
+set_tests_properties(coney.data_refuses_unfinished_install PROPERTIES PASS_REGULAR_EXPRESSION "not a finished Coney install")
 add_test(NAME coney.rejects_bad_argument COMMAND coney --frames abc)
 set_tests_properties(coney.rejects_bad_argument PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.load_needs_disc COMMAND coney --load level1.lev)

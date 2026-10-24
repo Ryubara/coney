@@ -966,8 +966,34 @@ TEST_CASE("installing refuses a missing install folder and anything that starts 
     CHECK(withHost.error().message.find("runs on its own") != std::string::npos);
     auto verifyAlone = parse(std::to_array<std::string_view>({"--verify"}));
     REQUIRE_FALSE(verifyAlone.has_value());
-    auto dataAlone = parse(std::to_array<std::string_view>({"--data", "D:/C"}));
-    REQUIRE_FALSE(dataAlone.has_value());
     auto twice = parse(std::to_array<std::string_view>({"--install", "H:/", "--install", "I:/", "--data", "D:/C"}));
     REQUIRE_FALSE(twice.has_value());
+}
+
+TEST_CASE("an install folder's copy of the disc plays through --data", "[options]") {
+    auto result = parse(std::to_array<std::string_view>({"--data", "D:/Coney", "--play-level", "level99"}));
+    REQUIRE(result.has_value());
+    CHECK(result->dataPath == "D:/Coney");
+    CHECK(result->discPath == "D:/Coney/game/ps2");
+    CHECK(coney::installGameFolder("D:/Coney/") == "D:/Coney/game/ps2");
+    auto both = parse(std::to_array<std::string_view>({"--data", "D:/Coney", "--disc", "H:/"}));
+    REQUIRE_FALSE(both.has_value());
+    CHECK(both.error().message.find("cannot be combined") != std::string::npos);
+}
+
+TEST_CASE("with neither --disc nor --data the install beside the executable is played", "[options]") {
+    const std::array<std::string_view, 2> args{"--play-level", "level99"};
+    auto beside = coney::parseOptions(args, coney::OptionSet::All, std::string_view("C:/Games/Coney"));
+    REQUIRE(beside.has_value());
+    CHECK(beside->dataPath == "C:/Games/Coney");
+    CHECK(beside->discPath == "C:/Games/Coney/game/ps2");
+    // A disc on the command line wins over the install.
+    const std::array<std::string_view, 2> withDisc{"--disc", "H:/"};
+    auto disc = coney::parseOptions(withDisc, coney::OptionSet::All, std::string_view("C:/Games/Coney"));
+    REQUIRE(disc.has_value());
+    CHECK(disc->discPath == "H:/");
+    CHECK_FALSE(disc->dataPath.has_value());
+    // Without an install beside it, --play-level still needs a disc.
+    auto none = coney::parseOptions(args);
+    REQUIRE_FALSE(none.has_value());
 }

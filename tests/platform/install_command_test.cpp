@@ -91,3 +91,20 @@ TEST_CASE("coney --install refuses a folder that is not the game's disc", "[inst
     CHECK(text.find("not a disc of The Warriors") != std::string::npos);
     CHECK_FALSE(std::filesystem::exists(dir.path() / "Coney" / "index" / "install.json"));
 }
+
+TEST_CASE("only a finished install is one to play from", "[install]") {
+    TempDir dir;
+    const FixtureRelease release = smallRelease();
+    for (const auto& [name, data] : release.contents()) {
+        dir.write("disc/" + name, data);
+    }
+    const auto root = dir.path() / "Coney";
+    const auto unfinished = coney::platform::checkInstallFolder(root);
+    REQUIRE_FALSE(unfinished.has_value());
+    CHECK(unfinished.error().message.find("not a finished Coney install") != std::string::npos);
+    coney::Options options;
+    options.installFrom = (dir.path() / "disc").string();
+    options.dataPath = root.string();
+    REQUIRE(run(options, release).first == 0);
+    CHECK(coney::platform::checkInstallFolder(root).has_value());
+}

@@ -4,9 +4,9 @@ Every option of the `coney` executable and what each mode does. This page says h
 command line, says how to [install the game from your disc](#install), and lists the pages that document the options:
 the window, sound and network, loading and viewing your disc, playing a level with its traces and logs, and the
 controls. It assumes you have built Coney ([Building and testing](building.md)); the viewers and the game need your own
-copy of the game (`--disc`), while `--headless`, `--sandbox` and `--audio-test` do not ([Local workspace](workspace.md)
-says where to keep it). How tests drive the executable, and what a change must show before it is done, is in
-[Testing](testing.md); the debug menus have [their own page](debug-menu.md).
+copy of the game (`--disc`, or an install with `--data`), while `--headless`, `--sandbox` and `--audio-test` do not
+([Local workspace](workspace.md) says where to keep it). How tests drive the executable, and what a change must show
+before it is done, is in [Testing](testing.md); the debug menus have [their own page](debug-menu.md).
 
 ## Starting Coney {#run-coney}
 
@@ -43,7 +43,7 @@ refuses any other with a message that names the debug tools; `coney --help` list
 
 ```text
 coney --install DISC --data DIR [--verify]
-coney [--disc PATH] [--language CODE] [--profiles DIR]
+coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
       [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
@@ -124,6 +124,13 @@ refused or failed, with the reason. The game text is not extracted: the install 
 
 The install is a library (`src/install/`, the folder writes in `src/platform/install_folder_fs.cpp`) with a progress
 callback that can cancel, so a launcher can run the same steps behind its own screen.
+
+**Playing from an install.** `--data DIR` without `--install` plays the installed game: it stands in for `--disc` in
+every mode (`coney --data ../../Coney --play-level level99`), reading `DIR/game/ps2/`, the disc's files as they are,
+with the same code as a disc folder. It refuses a folder whose install has not finished (no `index/install.json`) and
+says how to finish it, and cannot be given with `--disc`. With neither `--disc` nor `--data`, Coney looks in its own
+folder: run from a finished install (the `coney` that `--install` copied there), it plays that install, so a player
+just starts `coney`. A `--disc` on the command line always wins.
 
 ## The pages {#pages}
 
