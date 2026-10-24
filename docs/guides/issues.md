@@ -229,7 +229,11 @@ later. It differs from `S-blocked` (waiting for another issue or a decision, wit
 A claimed issue that is put on hold keeps its claim like one that is blocked: `S-on-hold` is one of the
 `claims.paused_labels`, so the claim Action leaves it in place and the release clock waits ([Claiming](#claiming)).
 It is also a hold label (`claims.hold_labels`): the claim Action takes `S-in-progress` (or `S-pending-review`) off,
-so a held issue has one status label, and puts it back when the hold comes off while the claim still stands.
+so a held issue has no status label of the claim's own, and puts it back when the hold comes off while the claim still
+stands. It takes off only the claim's label. A held issue that also carries `S-blocked` or `S-needs-info` keeps both
+labels (a maintainer put each there): the claim stays, its clock waits, and the claim's label comes back only when the
+last of them is gone. Such an issue has two status labels, so the audit reports it (`issue.labels`: one is expected)
+until one of them is taken off.
 By convention (nothing checks it) the issue body names the branch and what remains.
 
 `S-conflict` and `S-failing` are for pull requests, not issues, and nobody sets them by hand: the `hygiene` workflow
@@ -266,7 +270,7 @@ Every open issue has exactly one status label, and the coordinator moves it:
 | `S-in-progress` | An agent or person claims an `S-ready-to-start` issue ([Claiming](#claiming)); a release or `/unclaim` sets `S-ready-to-start` again. |
 | `S-pending-review` | The pull request is open, with `Fixes #N` in its body (the claim Action sets it on a claimed issue). |
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
-| `S-on-hold` | The maintainer paused the work by decision (a held unit: a branch may exist, nobody is working on it). It is not in progress and not claimable; on an issue that is already claimed it keeps the claim and pauses the release clock like `S-blocked`. On a claimed issue it replaces `S-in-progress` until it comes off, and then the claim's label returns. To pick the work up as a new task, the coordinator first gives the claim up with `/unclaim` (the issue keeps `S-on-hold`), then swaps `S-on-hold` for `S-ready-to-start`; to resume the same claim, it just takes `S-on-hold` off. |
+| `S-on-hold` | The maintainer paused the work by decision (a held unit: a branch may exist, nobody is working on it). It is not in progress and not claimable; on an issue that is already claimed it keeps the claim and pauses the release clock like `S-blocked`. On a claimed issue it replaces `S-in-progress` until it comes off, and then the claim's label returns (with `S-blocked` or `S-needs-info` also on, both stay and it returns when the last of them is off). To pick the work up as a new task, the coordinator first gives the claim up with `/unclaim` (the issue keeps `S-on-hold`), then swaps `S-on-hold` for `S-ready-to-start`; to resume the same claim, it just takes `S-on-hold` off. |
 
 An issue is closed automatically when its pull request is squash-merged into `main`, because the body says
 `Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue;

@@ -402,13 +402,26 @@ class Engine:
         kept = tuple(label for label in work.issue.labels if not label.startswith(self._status_prefix))
         work.issue = replace(work.issue, labels=(*kept, want))
 
-    def _drop_unpaused_status(self, work: _Pass) -> None:
-        """Remove every status label that is not a paused one: a hold leaves the issue with its paused labels only."""
-        drop = [
+    def _unpaused_status(self, work: _Pass) -> list[str]:
+        """The status labels on the issue that are not paused ones."""
+        return [
             label
             for label in work.issue.labels
             if label.startswith(self._status_prefix) and label not in self.rules.paused_labels
         ]
+
+    def _status_label_changes(self, work: _Pass, want: str) -> bool:
+        """Whether `_set_status_label(work, want)` would write a label now: no on a paused issue (a block keeps its
+        labels; a hold writes only to take the claim's label off, once), otherwise when `want` is missing. One write
+        it does not see: with no paused label, a second status label is removed without the guard."""
+        labels = work.issue.labels
+        if any(label in self.rules.paused_labels for label in labels):
+            return any(label in self.rules.hold_labels for label in labels) and bool(self._unpaused_status(work))
+        return want not in labels
+
+    def _drop_unpaused_status(self, work: _Pass) -> None:
+        """Remove every status label that is not a paused one: a hold leaves the issue with its paused labels only."""
+        drop = self._unpaused_status(work)
         for label in drop:
             self.remote.remove_label(work.issue.number, label)
         if drop:
@@ -709,7 +722,9 @@ class Engine:
         mine = [pr for pr in linked if pr.state == "open" and pr.author == card.claimant and not pr.draft]
         work.in_review = mine[0].number if mine else None
         want = self.rules.review_label if open_pr else self.rules.working_label
-        if want not in work.issue.labels:
+        # Only a label write needs the stale-read guard. A held issue writes once, to take the claim's label off, and
+        # nothing after that, though `want` stays missing: no guard on those passes.
+        if self._status_label_changes(work, want):
             self._still_current(work)
         self._set_status_label(work, want)
         self._save(work, stored, card.changed(**changes))
