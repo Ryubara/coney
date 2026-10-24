@@ -311,3 +311,136 @@ def test_a_change_of_file_type_is_one_entry_with_the_status_t(repo: Path) -> Non
     git(repo, "commit", "-q", "-m", "make it a symlink")
     found = pr_diff.change_of(repo, "main", "HEAD")
     assert found.paths == ("src/widget.cpp",) and found.sha256 != before
+
+
+# --- the binary rule, the object ids, the other entry point and a pinned hash --------------------------------------
+
+
+def canonical_text(repo: Path) -> str:
+    """The text that is hashed for the change of HEAD against `main`, decoded for a readable assertion."""
+    tip = pr_diff.resolve(repo, "HEAD")
+    base = pr_diff.merge_base(repo, "main", tip)
+    return pr_diff._canonical(repo, base, tip)[1].decode("utf-8", "replace")
+
+
+def test_a_binary_file_the_branch_deletes_is_recorded_as_deleted(repo: Path) -> None:
+    git(repo, "checkout", "-q", "main")
+    commit(repo, "assets/pic.bin", b"\x00\x01\x02binary", "main has a picture")
+    git(repo, "checkout", "-q", "work")
+    git(repo, "merge", "-q", "main")
+    before = change(repo)
+    git(repo, "rm", "-q", "assets/pic.bin")
+    git(repo, "commit", "-q", "-m", "delete the picture")
+    # The merge base is the merge commit's main parent, so the change is only the deletion.
+    text = canonical_text(repo)
+    assert "file assets/pic.bin\nstatus D\n" in text and "binary deleted\n" in text
+    assert change(repo) != before
+
+
+def test_the_deleted_binary_rule_looks_at_the_old_file(repo: Path) -> None:
+    # A deleted file has no new side: the NUL byte is searched for in the file the branch removes, and a text file that
+    # is removed is hashed by its removed lines, not as `binary deleted`.
+    git(repo, "checkout", "-q", "main")
+    commit(repo, "assets/pic.bin", b"\x00\x01\x02binary", "main has a picture")
+    commit(repo, "assets/note.txt", "one\ntwo\n", "main has a note")
+    git(repo, "checkout", "-q", "work")
+    git(repo, "merge", "-q", "main")
+    git(repo, "rm", "-q", "assets/pic.bin", "assets/note.txt")
+    git(repo, "commit", "-q", "-m", "delete both")
+    text = canonical_text(repo)
+    assert "file assets/note.txt\nstatus D\nmode 100644 000000\n-one\n-two\n" in text
+    assert "file assets/pic.bin\nstatus D\nmode 100644 000000\nbinary deleted\n" in text
+
+
+@pytest.mark.parametrize(("nul_at", "binary"), [(0, True), (7999, True), (8000, False), (8001, False)])
+def test_a_nul_byte_makes_a_file_binary_only_within_the_first_8000_bytes(repo: Path, nul_at: int, binary: bool) -> None:
+    data = bytearray(b"a" * 8100)
+    data[nul_at] = 0
+    commit(repo, "assets/probe.dat", bytes(data))
+    text = canonical_text(repo)
+    assert ("binary " in text) is binary
+    assert (b"\0".decode() in text) is not binary  # a text file's lines are hashed, NUL byte and all (git runs with -a)
+
+
+def test_change_sha256_agrees_with_change_of(repo: Path) -> None:
+    commit(repo, "src/widget.cpp", NINE.replace("line 5", "LINE 5"))
+    commit(repo, "assets/pic.bin", b"\x00\x01\x02binary")
+    found = pr_diff.change_of(repo, "main", "HEAD")
+    assert pr_diff.change_sha256(repo, found.base, found.tip) == found.sha256
+    # The base may be named any way git accepts, the answer is the same.
+    assert pr_diff.change_sha256(repo, "main", "HEAD") == found.sha256
+
+
+def test_git_external_diff_of_the_user_is_dropped_like_git_diff_opts(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    commit(repo, "src/widget.cpp", NINE.replace("line 5", "LINE 5"))
+    plain = change(repo)
+    monkeypatch.setenv("GIT_EXTERNAL_DIFF", "this-program-does-not-exist")
+    monkeypatch.setenv("GIT_DIFF_OPTS", "-u9")
+    assert "GIT_EXTERNAL_DIFF" not in pr_diff._environment() and "GIT_DIFF_OPTS" not in pr_diff._environment()
+    assert change(repo) == plain
+
+
+def test_core_abbrev_does_not_change_the_hash_of_a_binary_change(repo: Path) -> None:
+    commit(repo, "assets/pic.bin", b"\x00\x01\x02binary")
+    commit(repo, "src/widget.cpp", NINE.replace("line 5", "LINE 5"))
+    plain = change(repo)
+    git(repo, "config", "core.abbrev", "4")
+    assert change(repo) == plain
+    git(repo, "config", "core.abbrev", "no")
+    assert change(repo) == plain
+
+
+def test_object_ids_are_asked_for_in_full_and_looked_up_in_full(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # `--full-index` does not touch the `--raw` listing, so without `--no-abbrev` the ids follow the user's core.abbrev
+    # and a prefix can turn ambiguous between the listing and the lookup that follows it.
+    commit(repo, "assets/pic.bin", b"\x00\x01\x02binary")
+    git(repo, "config", "core.abbrev", "4")
+    calls: list[tuple[str, ...]] = []
+    looked_up: list[list[str]] = []
+    real_git, real_blobs = pr_diff._git, pr_diff._blobs
+
+    def spy_git(root: Path, *args: str, stdin: bytes | None = None) -> bytes:
+        calls.append(args)
+        return real_git(root, *args, stdin=stdin)
+
+    def spy_blobs(root: Path, shas: list[str]) -> dict[str, bytes]:
+        looked_up.append(list(shas))
+        return real_blobs(root, shas)
+
+    monkeypatch.setattr(pr_diff, "_git", spy_git)
+    monkeypatch.setattr(pr_diff, "_blobs", spy_blobs)
+    change(repo)
+    raw_calls = [args for args in calls if "--raw" in args]
+    assert len(raw_calls) == 1 and "--no-abbrev" in raw_calls[0]
+    assert looked_up and all(len(sha) == 40 for shas in looked_up for sha in shas)
+
+
+def pinned_repo(tmp_path: Path) -> Path:
+    """A known change: an edit, an added text file, a deleted file, an added binary and an added executable."""
+    git(tmp_path, "init", "-q", "-b", "main")
+    git(tmp_path, "config", "core.autocrlf", "false")
+    commit(tmp_path, "src/widget.cpp", NINE, "base")
+    commit(tmp_path, "src/other.cpp", "other\n", "base 2")
+    git(tmp_path, "checkout", "-q", "-b", "work")
+    commit(tmp_path, "src/widget.cpp", NINE.replace("line 5", "LINE 5").replace("line 9\n", "line 9"))
+    commit(tmp_path, "docs/new.md", "# New\r\n\r\nA page.\r\n")
+    git(tmp_path, "rm", "-q", "src/other.cpp")
+    git(tmp_path, "commit", "-q", "-m", "delete")
+    commit(tmp_path, "assets/pic.bin", b"\x00\x01\x02binary\xff")
+    commit(tmp_path, "tools/run.sh", "#!/bin/sh\necho hi\n")
+    git(tmp_path, "update-index", "--chmod=+x", "tools/run.sh")
+    git(tmp_path, "commit", "-q", "-m", "executable")
+    return tmp_path
+
+
+#: The hash of `pinned_repo`'s change. It is a pin on the format: a change to how the text is built must change FORMAT
+#: (every stamp bound to a change then reads as stale, on purpose) and this value in the same commit.
+PINNED_HASH = "6d97ef4a2dc23661be24a305d80cf81d75a74c154d18361359de6dadf6964347"
+
+
+def test_a_known_change_has_a_pinned_hash(tmp_path: Path) -> None:
+    repo = pinned_repo(tmp_path)
+    assert pr_diff.FORMAT == b"coney-change 1\n"
+    assert change(repo) == PINNED_HASH

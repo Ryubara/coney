@@ -7,11 +7,9 @@ a record of them, not proof. A person working by hand needs none ([CONTRIBUTING.
 
 A unit of work carries its proof as a log of **stamps**: records, written only by the stage commands, that a step
 ended with a result on a commit, covering exact hashes. Stamps are not signed, and the log stays in the task's scratch
-folder, never committed. For a function ported from
-the original the proof is a **study** (the original function saved, its lines numbered and cut into pieces) and a
-**pairs file** (each piece joined to the Coney code that does it). This page defines the formats and what each command
-checks.
-The commands are in
+folder, never committed. For a function ported from the original the proof is a **study** (the original function
+saved, its lines numbered and cut into pieces) and a **pairs file** (each piece joined to the Coney code that does
+it). This page defines the formats and what each command checks. The commands are in
 [the coney-tools reference](coney-tools-fidelity.md#original); the verdict a reviewer gives on the pairs is
 [Orig review](review/orig.md). The names of the commands are placeholders for a renaming pass: a name changes in one
 parser entry and in this page.
@@ -119,12 +117,15 @@ The hash is the SHA-256 of one text: a version line (`coney-change 1`), then for
   marker, and no hunk header, `index` line or `---`/`+++` line, so neither line numbers (which move when main edits the
   same file elsewhere) nor the pre-image blob id (which changes with main) take part;
 * for a binary file `binary <SHA-256 of the file at the tip>`, or `binary deleted`. A file is binary when its first
-  8000 bytes hold a NUL byte; `.gitattributes` (`-diff`, `binary`, `diff=driver`) is ignored.
+  8000 bytes hold a NUL byte: the new file's bytes, or the old file's for a deletion (a deleted file has no new side).
+  `.gitattributes` (`-diff`, `binary`, `diff=driver`) is ignored.
 
 Whitespace counts: a tab, a CRLF or a missing final newline is a changed line. The same commits give the same hash on
 every machine: the diff runs as `git diff --no-renames --no-color --no-ext-diff --no-textconv --no-prefix
---no-relative --no-color-moved --full-index --text --diff-algorithm=myers --indent-heuristic --inter-hunk-context=0
---submodule=short --ignore-submodules=none -O<an empty file>` with `-U0` for the patch (`--raw -z` for the list),
+--no-relative --no-color-moved --full-index --no-abbrev --text --diff-algorithm=myers --indent-heuristic
+--inter-hunk-context=0 --submodule=short --ignore-submodules=none -O<an empty file>` with `-U0` for the patch (`--raw
+-z` for the list). `--no-abbrev` is what gives the `--raw` list full object ids, whatever the user's `core.abbrev`
+says: `--full-index` only fills the `index` line of a patch, which is not hashed. The call runs
 under `-c` overrides of `core.quotepath`, `core.autocrlf`, `color.ui` and the `diff.*` settings that change the
 output, and without `GIT_DIFF_OPTS` and `GIT_EXTERNAL_DIFF`. The base is the merge base of the branch with its
 target, so the target (`origin/main`) must be at least as new as the branch's own base: fetch first, or main's
