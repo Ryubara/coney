@@ -20,6 +20,7 @@ only; `check` returns the reason to refuse a call, or None.
 
 from __future__ import annotations
 
+import fnmatch
 import re
 from pathlib import Path
 from typing import Any
@@ -106,7 +107,10 @@ def _write_refusal(role: str, rules: dict[str, Any], payload: dict[str, Any]) ->
     if not isinstance(path, str) or not path:
         return None
     only = hooklib.strings(rules.get("write_only"))
-    if only and Path(path).name.casefold() not in [name.casefold() for name in only]:
+    # An entry is a file name or a pattern for one (`CODE-REVIEW*.md`), matched against the last part of the path in any
+    # letter case (Windows ignores it).
+    name = Path(path).name.casefold()
+    if only and not any(fnmatch.fnmatchcase(name, entry.casefold()) for entry in only):
         return _refuse(role, f"write {Path(path).name}: you write only {', '.join(only)}", rules)
     relative = hooklib.relative_path(path)
     for folder in hooklib.strings(rules.get("deny_write_dirs")):
