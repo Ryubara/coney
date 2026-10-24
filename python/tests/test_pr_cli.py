@@ -55,6 +55,22 @@ def test_verify_json_has_the_facts_and_the_refusals(
     assert data["refusals"] == [{"stage": "reviewed", "text": "reviewed: not reviewed", "redo": "task review"}]
 
 
+@pytest.mark.parametrize("text", [None, "# tools: Add the widget\n\n## Testing\n\nRan it.\n"])
+def test_verify_refuses_when_the_text_review_covered_cannot_be_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None, text: str | None
+) -> None:
+    built = make(tmp_path)
+    path = built.unit.dir / "PR.md"
+    if text is None:
+        path.unlink()
+    else:
+        path.write_text(text, encoding="utf-8")
+    assert run(built, monkeypatch, "verify") == 1
+    out = capsys.readouterr().out
+    assert "  reviewed: the text Review covered cannot be read (" in out
+    assert "redo: engineer, then task review --text" in out and "ok:" not in out
+
+
 def test_verify_changes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, at: None) -> None:
     built = make(tmp_path, skip=frozenset({"checked"}))
     before = (git(built.root, "status", "--porcelain"), sorted(p.name for p in built.unit.dir.rglob("*")))

@@ -78,7 +78,7 @@ def _load(args: argparse.Namespace) -> tuple[Subject, TaskFile, dict[str, Any], 
         raise ConfigError(f"pr: {path}: {error}") from error
     keys = pr_text.optional_task_keys(raw)
     # A fix task continues its parent's unit: the log, the branch and the text are the parent's (D6).
-    owner = str(keys.get("parent") or task)
+    owner = task_file.parent or task
     unit = Unit.of(root, owner)
     subject = pr_proof.load_subject(root, unit, owner, task_file.kind, remote=args.remote)
     return subject, task_file, keys, args.text if args.text is not None else unit.dir / TEXT_FILE
@@ -112,11 +112,20 @@ def _refusal_json(refusal: Refusal) -> dict[str, str]:
 def run_verify(args: argparse.Namespace) -> int:
     """`pr verify`: print every stage that does not hold; 0 when all hold."""
     subject, _task, _keys, text_path = _load(args)
+    unreadable: Refusal | None = None
     try:
-        hashes = pr_text.hashes_of(text_path)
-    except ConfigError:
-        hashes = None  # `pr text` says the file is unreadable; Review's three text hashes are then not compared
+        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path)
+    except ConfigError as error:
+        # Review covered the title, paragraph and pictures: with no readable text they cannot hold, so it is refused.
+        hashes = None
+        unreadable = Refusal(
+            "reviewed",
+            f"reviewed: the text Review covered cannot be read ({error})",
+            "engineer, then task review --text",
+        )
     result: ProofResult = pr_proof.verify(subject, hashes)
+    if unreadable is not None:
+        result.refusals.append(unreadable)
     if args.json:
         print(
             json.dumps(

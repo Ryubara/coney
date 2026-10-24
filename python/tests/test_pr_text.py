@@ -2,6 +2,7 @@
 """Tests for step 5: the pull request text generated from the engineer's file, the task and the stamps, then checked."""
 
 import dataclasses
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -11,8 +12,12 @@ from pr_support import PARAGRAPH, Built, make
 from coney_tools import pr_proof, pr_text, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import parse_conventions
+from coney_tools.issue_claim_remote import IssueView
+from coney_tools.issue_form import section_heading
 from coney_tools.pr_text import Generated
-from coney_tools.task_file import parse_task_file
+from coney_tools.task_create import CreateRequest, build_task_file
+from coney_tools.task_file import parse_task_file, render_task_file
+from coney_tools.task_leads import LeadsResult
 
 
 def generate(built: Built, text: str | None = None, trailers: tuple[str, ...] = (), **more: object) -> Generated:
@@ -193,6 +198,45 @@ def test_the_checklist_has_one_ticked_item_per_done_criterion(tmp_path: Path) ->
     assert "Done:\n\n- [x] The widget waits for its ready frame.\n- [x] A test proves it.\n" in body
 
 
+def created_task(built: Built, done: str | None) -> None:
+    """Write the unit's TASK.md as `task create` writes it for issue 757, whose "done" section is `done` (None: the
+    issue has none)."""
+    conventions = built.conventions
+    heading = section_heading(conventions, "done")
+    body = "### Summary\n\nPort the widget update.\n\n" + (f"### {heading}\n\n{done}\n" if done is not None else "")
+    issue = IssueView(757, "gameplay: Port the widget", "open", None, False, ("task",), (), body)
+    claimed = datetime(2026, 10, 22, 11, 0, tzinfo=UTC)
+    task = build_task_file(
+        CreateRequest(issues=(757,)), "work", built.kind, "alice", claimed, [issue], LeadsResult(), [], conventions
+    )
+    (built.unit.dir / "TASK.md").write_text(render_task_file(task), encoding="utf-8")
+
+
+def checklist(body: str) -> str:
+    """The text of the generated Checklist section."""
+    return body.split("## Checklist\n\n", 1)[1].split("\n## ", 1)[0]
+
+
+def test_the_checklist_reads_the_quoted_done_section_task_create_writes(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, "- The widget waits for its ready frame.\n- A test proves it.")
+    assert "> - The widget waits" in (built.unit.dir / "TASK.md").read_text(encoding="utf-8")
+    generated = generate(built)
+    expected = "Done:\n\n- [x] The widget waits for its ready frame.\n- [x] A test proves it."
+    assert checklist(generated.body).startswith(expected)
+    assert not any("Done section" in p for p in problems(generated))
+    created_task(built, "The widget waits for its\nready frame.\n\nA test proves it.")
+    assert checklist(generate(built).body).startswith(expected)
+
+
+def test_a_done_section_with_no_criterion_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, None)
+    assert "> See issue #757." in (built.unit.dir / "TASK.md").read_text(encoding="utf-8")
+    message = "text: TASK.md: the Done section gives no item for the Checklist; write what done means there"
+    assert any(p.startswith(message) for p in problems(generate(built)))
+
+
 def test_the_paragraph_and_the_facts_sit_between_their_markers(tmp_path: Path) -> None:
     built = make(tmp_path)
     generated = generate(built)
@@ -208,7 +252,7 @@ def test_the_facts_name_every_stage_with_its_stamp_the_change_and_the_chain_head
     report = subject.report
     assert facts.startswith(
         f"Stages (local log of `work`, chain head `{report.head[:12]}`; change `diff {built.diff[:12]}` "
-        f"on main `{built.base[:12]}`):"
+        f"on `origin/main` `{built.base[:12]}`):"
     )
     for step, name in (("studied", "Studied"), ("compared", "Compared"), ("checked", "Check"), ("reviewed", "Review")):
         stamp = report.latest(step)
@@ -256,6 +300,26 @@ def test_the_facts_are_at_most_the_limit_whatever_the_unit(tmp_path: Path, monke
     assert len(pr_text.facts_block(built.subject())) <= 120
 
 
+def test_the_facts_are_cut_at_a_line_so_no_code_span_is_left_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    monkeypatch.setattr(pr_text, "FACTS_LIMIT", 200)
+    facts = pr_text.facts_block(built.subject())
+    assert len(facts) <= 200
+    assert all(line.count("`") % 2 == 0 for line in facts.split("\n")), facts
+
+
+def test_a_check_or_review_of_an_older_change_is_shown_stale_in_the_facts(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    old = built.diff
+    built.edit("src/ai/widget.cpp", built.root.joinpath("src/ai/widget.cpp").read_text(encoding="utf-8") + "// more\n")
+    facts = pr_text.facts_block(built.subject())
+    assert f"- Check: stale (made for change `{old[:12]}`), profile `full`" in facts
+    assert f"- Review: stale (made for change `{old[:12]}`), Claude Opus 5.5" in facts
+    assert "- Review: pass" not in facts
+
+
 # --- images ---------------------------------------------------------------------------------------------------------
 
 
@@ -299,6 +363,19 @@ def test_a_bad_picture_is_refused(tmp_path: Path, files: dict[str, bytes], messa
     assert message in problems(generate(built))
 
 
+@pytest.mark.parametrize(
+    "ref", ["C:/Users/someone/scratch/work/shots/a.png", "/home/someone/shots/a.png", "./shots/../a.png", "a.png"]
+)
+def test_a_picture_that_is_not_a_relative_path_under_the_shots_folder_is_refused(tmp_path: Path, ref: str) -> None:
+    built = make(tmp_path)
+    shots(built, **{"a.png": b"\x89PNG one"})
+    path = built.unit.dir / "PR.md"
+    path.write_text(path.read_text(encoding="utf-8").replace("./shots/a.png", ref), encoding="utf-8")
+    generated = generate(built)
+    assert any(f"the picture {ref} is not a relative path under ./shots/" in p for p in problems(generated))
+    assert ref not in generated.body
+
+
 def test_a_picture_over_the_limit_or_beyond_the_count_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path)
     shots(built, **{"big.png": b"x" * 2048, "other.png": b"y"})
@@ -322,17 +399,6 @@ def test_a_picture_inside_a_git_checkout_is_refused(tmp_path: Path) -> None:
     assert pr_text.image_problems(text, built.conventions) == [
         "images: shots/x.png is inside a git checkout; game pictures stay in the scratch folder"
     ]
-
-
-def test_a_picture_that_is_not_under_shots_is_refused(tmp_path: Path) -> None:
-    built = make(tmp_path)
-    (built.unit.dir / "elsewhere.png").write_bytes(b"png")
-    text = (
-        (built.unit.dir / "PR.md")
-        .read_text(encoding="utf-8")
-        .replace("Screenshots: none (no visible change)", "![x](./elsewhere.png)")
-    )
-    assert "images: elsewhere.png is not under shots/ next to PR.md" in problems(generate(built, text))
 
 
 def test_a_picture_replaced_after_review_makes_the_review_stale(tmp_path: Path) -> None:

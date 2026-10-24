@@ -169,6 +169,14 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def set_sha256(file_hashes: Mapping[str, str]) -> str:
+    """The hash of a set of pairs files, from each address's `file_sha256`: one `<address> <file hash>` line each,
+    sorted, joined by newlines. The one definition of a review's `pairs_set_sha256`: `task review` binds a review to
+    it and `pr verify` recomputes it, so the two cannot drift apart."""
+    lines = sorted(f"{address} {digest}" for address, digest in file_hashes.items())
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+
+
 def load(path: Path) -> PairsFile:
     """Read a pairs file; PairsError for a file that is missing, not TOML, of another version or with unknown keys."""
     try:

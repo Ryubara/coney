@@ -140,7 +140,7 @@ another one. The accepted cost is that a clean rebase can combine with upstream 
 
 ## The build record {#build-record}
 
-`task check` (and `pr verify`, planned) must know that the engine built and the whole suite ran with the
+`task check` and `pr verify` must know that the engine built and the whole suite ran with the
 disc, without parsing printed text. Every run of `coney-tools build` that configured, built or tested therefore ends
 by writing one record to `<scratch>/<task>/build-runs/<sha256>.json` (the task is `CONEY_TASK`, else the branch; no
 record outside a git checkout). The file is canonical JSON, like a stamp's line, and is named by the SHA-256 of its
@@ -396,16 +396,14 @@ What the three steps bound to the change record (all unsigned, in the local log)
 | `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/review.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |
 
-A `checked` stamp may also list the changed paths as `detail.files`, so a stale Check can name them.
-
 The hashes come from one place each, so the stage that writes a stamp and the check that reads it cannot differ:
-`pr_diff` for the change, `pr_proof.pairs_set_sha256` (one `<address> <pairs file hash>` line for each changed function,
-sorted) and `pr_text_file` for the title, the paragraph and the pictures (`pr_text.hashes_of` calls it).
+`pr_diff` for the change, `orig_pairs.set_sha256` for the pairs set (one `<address> <pairs file hash>` line for each
+changed function, sorted; `task review` and `pr_proof.pairs_set_sha256` both call it) and `pr_text_file` for the title,
+the paragraph and the pictures (`pr_text.hashes_of` calls it).
 
 A `full` Check names a **build record**, `<scratch>/<task>/build-runs/<sha256>.json`, that `coney-tools build` writes
 and `task check` reads instead of parsing printed text; the stamp's `build_record_sha256` is the SHA-256 of the file.
-Its keys: `tool_revision`, `tip`, `dirty`, `preset`, `filters`, `command_line`, `exit_code`, `tests` (`total`,
-`passed`, `failed`, `skipped`, `skipped_disc`, `disc_hash`), `log_sha256` (the hash of the log saved beside the record
-as `<sha256>.log`, when it still exists), `started` and `ended`. `pr verify` requires a record of the preset
-`proof.build.preset`, with no filter, exit code 0, no failed or disc-skipped test, not dirty, at the commit the
-`checked` stamp names, with the stamp's counts.
+Its keys are those of [the build record](#build-record). `pr verify` reads it with `build_record.read` and applies
+`build_record.problems`, the rule `task check` applies, with the preset `proof.build.preset` and the commit the
+`checked` stamp names (so the log the record's `log` names must still match `log_sha256` when it exists), and
+also requires the stamp's test counts.

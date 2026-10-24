@@ -26,7 +26,9 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import (
+    build_record,
     fails_first,
+    identity,
     orig_copy,
     orig_cut,
     orig_pairs,
@@ -52,7 +54,6 @@ PASSING_CLASSES = ("clean", "diff-deliberate-ok")
 #: The longest statement of the original that a note may not repeat, in characters.
 QUOTE_MIN = 20
 #: Where a Check's build records live, in the task's scratch folder.
-BUILD_RUNS = "build-runs"
 
 #: The step that follows each stage's refusal: the command to run again (`{subject}` is the stamp's).
 _REDO = {
@@ -224,16 +225,16 @@ def load_subject(
 
 
 def pairs_set_sha256(unit: Unit, addresses: Sequence[str]) -> str:
-    """The hash of the pairs files of the changed functions: one `<address> <file hash>` line each, sorted, joined by
-    newlines (what `task review` binds a review to as `pairs_set_sha256`, so a pairs file edited after Review makes it
-    stale). An address with no pairs file is left out; step 3 says it is missing."""
-    lines: list[str] = []
+    """The `pairs_set_sha256` of the changed functions now (`orig_pairs.set_sha256`, the definition `task review`
+    binds a review to), so a pairs file edited after Review makes it stale. An address with no pairs file is left
+    out; step 3 says it is missing."""
+    hashes: dict[str, str] = {}
     for address in addresses:
         try:
-            lines.append(f"{address} {orig_pairs.file_sha256(unit.mapping(address))}")
+            hashes[address] = orig_pairs.file_sha256(unit.mapping(address))
         except ConfigError:
             continue
-    return hashlib.sha256("\n".join(sorted(lines)).encode("utf-8")).hexdigest()
+    return orig_pairs.set_sha256(hashes)
 
 
 def changed_addresses(subject_changed: Sequence[OrigUnit]) -> list[str]:
@@ -405,17 +406,6 @@ def _quotes(subject: Subject) -> list[Refusal]:
 # --- step 2: Check --------------------------------------------------------------------------------------------------
 
 
-def _since(saved: object, subject: Subject) -> str:
-    """`; changed since: a, b` from the file list a `checked` stamp may carry, or ""."""
-    if not isinstance(saved, list):
-        return ""
-    moved = sorted(set(map(str, saved)) ^ set(subject.paths))
-    if not moved:
-        return ""
-    shown = ", ".join(moved[:5]) + (f" and {len(moved) - 5} more" if len(moved) > 5 else "")
-    return f"; changed since: {shown}"
-
-
 def check_checked(subject: Subject) -> list[Refusal]:
     """Step 2: a passing `checked` stamp for this change, of a big enough profile, with the checks it lists and (for a
     full Check) the build record it names."""
@@ -428,10 +418,7 @@ def check_checked(subject: Subject) -> list[Refusal]:
         ]
     if stamp.covers.get(stamps.CHANGE) != subject.diff_sha256:
         saved = stamp.covers.get(stamps.CHANGE)
-        text = (
-            f"checked: stale: the branch changed since Check (diff {_hex(saved)} now {_hex(subject.diff_sha256)}"
-            f"{_since(stamp.detail.get('files'), subject)})"
-        )
+        text = f"checked: stale: the branch changed since Check (diff {_hex(saved)} now {_hex(subject.diff_sha256)})"
         return [Refusal("checked", text, "task check")]
     proof = subject.conventions.proof
     required = subject.profile
@@ -466,59 +453,28 @@ def check_checked(subject: Subject) -> list[Refusal]:
 
 
 def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
-    """The `full` Check's build record: it exists, hashes to what the stamp covers, and is a whole, clean, passing
-    `ci` run at the commit the stamp names, whose test counts are the stamp's."""
+    """The `full` Check's build record: it exists and hashes to what the stamp covers, `build_record.problems` (the
+    rule `task check` applies) finds nothing wrong with it at the commit the stamp names, and its test counts are the
+    stamp's."""
     wanted = str(stamp.covers.get("build_record_sha256", ""))
 
     def refuse(text: str) -> list[Refusal]:
         return [Refusal("checked", f"checked: {text}", "task check")]
 
-    path = subject.unit.dir / BUILD_RUNS / f"{wanted}.json"
     try:
-        raw = path.read_bytes()
-    except OSError:
-        raw = b""
-    if not wanted or not raw or hashlib.sha256(raw).hexdigest() != wanted:
-        return refuse(
-            f"the build record {_hex(wanted, 12)} is not in the task's build-runs folder (or differs from the stamp)"
-        )
-    try:
-        record = json.loads(raw)
-    except ValueError:
-        return refuse(f"the build record {_hex(wanted, 12)} is not valid JSON")
-    if not isinstance(record, dict):
-        return refuse(f"the build record {_hex(wanted, 12)} is not a JSON object")
+        record = build_record.read(subject.unit.dir / build_record.FOLDER, wanted)
+    except build_record.BuildRecordError as error:
+        return refuse(f"the build record {_hex(wanted, 12)} cannot be read: {error}")
+    preset = subject.conventions.proof.build.preset
+    found: list[Refusal] = []
+    for problem in build_record.problems(record, tip=stamp.commit, preset=preset):
+        found += refuse(problem)
     counts = record.get("tests")
     tests: dict[str, Any] = counts if isinstance(counts, dict) else {}
-    found: list[Refusal] = []
-    filters = record.get("filters")
-    if filters:
-        shown = " ".join(map(str, filters)) if isinstance(filters, list) else str(filters)
-        found += refuse(f"the build record is a filtered run ({shown}); Check needs the full suite")
-    preset = subject.conventions.proof.build.preset
-    if record.get("preset") != preset:
-        found += refuse(f"the build record is for preset {record.get('preset')}, Check needs {preset}")
-    if record.get("exit_code") != 0:
-        found += refuse(f"the build record's run failed (exit {record.get('exit_code')})")
-    failed = tests.get("failed", 0)
-    if isinstance(failed, int) and failed > 0:
-        found += refuse(f"the build record has {failed} failed test{'s' if failed != 1 else ''}")
-    skipped = tests.get("skipped_disc", 0)
-    if isinstance(skipped, int) and skipped > 0:
-        found += refuse(f"{skipped} disc tests skipped; Check needs the disc (CONEY_DISC)")
-    if record.get("dirty"):
-        found += refuse("the build record was made with uncommitted changes")
-    if record.get("tip") != stamp.commit:
-        found += refuse(
-            f"the build record is for commit {_hex(record.get('tip'), 12)}, the Check stamp for {stamp.commit[:12]}"
-        )
     counted = stamp.detail.get("tests")
     keys = ("total", "passed", "failed", "skipped", "skipped_disc")
     if not isinstance(counted, dict) or any(counted.get(k) != tests.get(k) for k in keys):
         found += refuse("the build record's test counts differ from the Check stamp's")
-    log = path.with_suffix(".log")
-    if log.is_file() and hashlib.sha256(log.read_bytes()).hexdigest() != record.get("log_sha256"):
-        found += refuse("the build record's log differs from the one it names")
     return found
 
 
@@ -724,14 +680,15 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
     return None
 
 
-def _engineer_ids(subject: Subject) -> set[str]:
-    """The agent ids of every engineer that wrote a stamp of the unit."""
-    ids: set[str] = set()
-    for stamp in subject.report.stamps:
-        agent = stamp.who.get("agent")
-        if isinstance(agent, dict) and agent.get("type") == "engineer" and isinstance(agent.get("id"), str):
-            ids.add(agent["id"])
-    return ids
+def _worked_on(subject: Subject, reviewer: Mapping[str, object]) -> bool:
+    """Whether `reviewer` wrote any stamp of the unit other than a `reviewed` one: the rule `task review --record`
+    applies, by `identity.same_agent`, whatever the agent's type (an engineer, a tooling agent or the coordinator)."""
+    return any(
+        stamp.step != "reviewed"
+        and isinstance(stamp.who.get("agent"), dict)
+        and identity.same_agent(reviewer, stamp.who["agent"])
+        for stamp in subject.report.stamps
+    )
 
 
 def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
@@ -796,7 +753,9 @@ def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refus
     info = stamp.detail.get("reviewer")
     reviewer = info if isinstance(info, dict) else {}
     found: list[Refusal] = []
-    if reviewer.get("id") in _engineer_ids(subject):
+    if not isinstance(reviewer.get("id"), str) or not reviewer.get("id"):
+        found.append(refuse("the Review stamp names no reviewer"))
+    elif _worked_on(subject, reviewer):
         found.append(refuse(f"reviewer {reviewer.get('id')} also worked on this task"))
     if not subject.conventions.stamps.require_hook_source:
         return found

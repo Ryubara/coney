@@ -9,8 +9,9 @@ Checklist from `TASK.md`, the facts block from the stamp log, the AI use section
 other section the template has. The generated description therefore cannot disagree with the stamps, and the sections
 it has are the template's: they are read from `pull_requests.sections` in `.github/conventions.yml`, never listed here.
 
-`generate` is pure: it reads no file but the pictures and writes none; `pr text` writes `PR-TITLE.txt` and
-`PR-BODY.md`.
+`generate` writes no file and reads none but the pictures, with one exception: a section only a person can fill
+("Issues affected") that the engineer's file leaves out is suggested by running `coney-tools issue impact`, which
+reads GitHub, when that command exists (`issues_affected`). `pr text` writes `PR-TITLE.txt` and `PR-BODY.md`.
 """
 
 from __future__ import annotations
@@ -256,6 +257,17 @@ def _screenshots(
         reason = none_line.match(stripped.replace("**", ""))
         if image:
             ref = image.group("ref")
+            # The reference is copied into the body as written, so only a relative path under the shots folder is
+            # taken: an absolute path or `..` would put a folder of the author's machine into the description.
+            parts = ref.replace("\\", "/").split("/")
+            if parts[:1] == ["."]:
+                parts = parts[1:]
+            if len(parts) < 2 or parts[0] != SHOTS or ".." in parts or ":" in ref or ref.startswith(("/", "\\")):
+                problems.append(
+                    f"text: {name}: the picture {ref[:60]} is not a relative path under ./{SHOTS}/ "
+                    f"(write ![alt](./{SHOTS}/file.png))"
+                )
+                continue
             images.append(Image(ref, image.group("alt"), folder / ref))
         elif reason:
             none = reason.group("reason").strip()
@@ -282,9 +294,9 @@ def hashes_of(path: Path) -> TextHashes:
 
 
 def optional_task_keys(task_file_text: str) -> dict[str, Any]:
-    """The optional keys of `TASK.md`'s front block that `pr text` reads: `finishes` (false for a task that does not
-    finish its issue, so no `Fixes` line is written; default true) and `parent` (a fix task's parent task, whose
-    log, branch and text it uses)."""
+    """The optional key of `TASK.md`'s front block that `pr text` reads besides `TaskFile`: `finishes` (false for a
+    task that does not finish its issue, so no `Fixes` line is written; default true). A fix task's `parent` is
+    `TaskFile.parent`."""
     text = task_file_text.replace("\r\n", "\n")
     head = text.split("\n---\n", 1)[0].removeprefix("---\n")
     try:
@@ -293,17 +305,26 @@ def optional_task_keys(task_file_text: str) -> dict[str, Any]:
         return {}
     if not isinstance(front, dict):
         return {}
-    return {key: front[key] for key in ("finishes", "parent") if key in front}
+    return {"finishes": front["finishes"]} if "finishes" in front else {}
+
+
+#: The Done section `task create` writes when the issue has none: it names no criterion.
+_DONE_PLACEHOLDER = re.compile(r"^See issue #\d+\.$")
 
 
 def done_criteria(task: TaskFile) -> list[str]:
-    """The bullets of the task's Done section (D7): one Checklist item each; none when it is still the placeholder."""
-    items: list[str] = []
-    for line in task.sections.get("Done", "").splitlines():
-        match = re.match(r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?(?P<text>\S.*)$", line)
-        if match:
-            items.append(_squash(match.group("text")))
-    return items
+    """The criteria of the task's Done section (D7), one Checklist item each.
+
+    `task create` quotes the issue's text line by line (`> `), so the quote marks are read past first. Each bullet is
+    an item; a section of prose with no bullet gives one item per paragraph. The placeholder `task create` writes for
+    an issue with no Done section (`See issue #N.`) gives none, and `generate` refuses a Checklist with no item.
+    """
+    lines = [re.sub(r"^\s*>\s?", "", line) for line in task.sections.get("Done", "").splitlines()]
+    bullets = [re.match(r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?(?P<text>\S.*)$", line) for line in lines]
+    items = [_squash(match.group("text")) for match in bullets if match]
+    if not items:
+        items = [_squash(paragraph) for paragraph in re.split(r"\n\s*\n", "\n".join(lines)) if paragraph.strip()]
+    return [item for item in items if not _DONE_PLACEHOLDER.match(item)]
 
 
 # --- the facts ------------------------------------------------------------------------------------------------------
@@ -404,7 +425,8 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         record = checked.covers.get("build_record_sha256")
         extra = f", build record `{record[:12]}`" if record else ""
         lines.append(
-            f"- Check: profile {code(d.get('profile', ''))}, preset {code(d.get('preset', ''))}, "
+            f"- Check: {_stale(subject, checked)}profile {code(d.get('profile', ''))}, "
+            f"preset {code(d.get('preset', ''))}, "
             f"{tests.get('passed', 0)} passed, "
             f"{tests.get('failed', 0)} failed, {tests.get('skipped', 0)} skipped (stamp `{_h(checked)}`{extra})"
         )
@@ -426,8 +448,16 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
             counted = f"{noun} {next(iter(classes))}"
         else:
             counted = f"{noun}: " + ", ".join(f"{n} {name}" for name, n in sorted(classes.items()))
-        lines.append(f"- Review: pass, {model}, {counted} (stamp `{_h(reviewed)}`)")
+        verdict = _stale(subject, reviewed) or "pass, "
+        lines.append(f"- Review: {verdict}{model}, {counted} (stamp `{_h(reviewed)}`)")
     return lines
+
+
+def _stale(subject: pr_proof.Subject, stamp: stamps.Stamp) -> str:
+    """`stale (made for change X), ` for a stamp made for another change than this one, which `pr verify` refuses;
+    else empty, so the facts never show a Check or a Review of an older change as if it held."""
+    made_for = str(stamp.covers.get(stamps.CHANGE, ""))
+    return "" if made_for == subject.diff_sha256 else f"stale (made for change `{made_for[:12]}`), "
 
 
 def facts_block(subject: pr_proof.Subject) -> str:
@@ -438,7 +468,7 @@ def facts_block(subject: pr_proof.Subject) -> str:
     """
     head = (
         f"Stages (local log of {code(subject.task)}, chain head `{subject.report.head[:12]}`; "
-        f"change `diff {subject.diff_sha256[:12]}` on main `{subject.base[:12]}`):"
+        f"change `diff {subject.diff_sha256[:12]}` on {code(subject.remote_ref)} `{subject.base[:12]}`):"
     )
     stand_ins = _stand_ins(subject)
     long = "\n".join([head, *_stage_lines(subject, False), *(["Stand-ins:", *stand_ins] if stand_ins else [])])
@@ -449,7 +479,13 @@ def facts_block(subject: pr_proof.Subject) -> str:
         if stand_ins
         else []
     )
-    return "\n".join([head, *_stage_lines(subject, True), *note])[:FACTS_LIMIT]
+    # Cut at a line, never inside one: half a code span would pair its backtick with one later in the body.
+    kept: list[str] = []
+    for line in [head, *_stage_lines(subject, True), *note]:
+        if len("\n".join([*kept, line])) > FACTS_LIMIT:
+            break
+        kept.append(line)
+    return "\n".join(kept)
 
 
 # --- the whole description ------------------------------------------------------------------------------------------
@@ -644,6 +680,11 @@ def generate(
         blocks.append(f"## {name}\n\n{content}".rstrip())
     body = "\n\n".join(blocks) + "\n"
     extra = []
+    if not done_criteria(task):
+        extra.append(
+            f"text: TASK.md: the Done section gives no item for the {rules.checklist.section}; write what done means "
+            "there (a bullet per criterion)"
+        )
     if ctx.models and text.ai_use is not None:
         extra.append(f'text: PR.md: "## {rules.ai_use.section}" is generated from the log and the commits; remove it')
     refusals = tuple(Refusal("text", p, "engineer") for p in (*text.problems, *extra)) + tuple(

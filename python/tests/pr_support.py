@@ -11,7 +11,6 @@ stage command would write), and no network is used.
 import atexit
 import dataclasses
 import hashlib
-import json
 import shutil
 import subprocess
 import tempfile
@@ -25,6 +24,7 @@ from git_support import git
 from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS, FakeGhidra
 
+from coney_tools import build_record as build_record_module
 from coney_tools import fails_first, orig_compare, orig_copy, orig_pairs, orig_study, pr_diff, pr_proof, stamps
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.task_file import TaskFile, render_task_file
@@ -235,27 +235,38 @@ class Built:
             detail={"red": "failed", "green": "passed", "test_files": [TEST_FILE], "stubs": [], **detail},
         )
 
-    def build_record(self, **more: Any) -> str:
-        """Write a build record of a passing full run at the tip; returns its hash."""
-        record: dict[str, Any] = {
-            "tool_revision": "test",
+    def record_fields(self, **more: Any) -> dict[str, Any]:
+        """What `coney-tools build` gives `build_record.make` for a passing full run at the tip, with `more` over it;
+        the run's log is written as a file in the unit, as the record's `log` names it."""
+        log = self.unit.dir / "build-logs" / "ci.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_bytes(b"log")
+        fields: dict[str, Any] = {
+            "task": self.unit.task,
+            "agent": ENGINEER["agent"]["id"],
             "tip": self.tip,
             "dirty": False,
             "preset": "ci",
             "filters": [],
             "command_line": ["build", "--preset", "ci", "--test"],
             "exit_code": 0,
-            "tests": {"total": 412, "passed": 412, "failed": 0, "skipped": 0, "skipped_disc": 0, "disc_hash": sha("d")},
-            "log_sha256": sha("log"),
+            "ran": ["configure", "build", "test"],
+            "tests": {"total": 412, "passed": 412, "failed": 0, "skipped": 0, "skipped_disc": 0},
+            "disc": "env",
+            "tool_revision": "test",
+            "log": str(log),
+            "log_sha256": sha(b"log"),
             "started": "2026-10-22T12:00:00Z",
             "ended": "2026-10-22T12:20:00Z",
         }
-        record.update(more)
-        data = json.dumps(record, sort_keys=True, indent=1).encode("utf-8")
-        folder = self.unit.dir / "build-runs"
-        folder.mkdir(parents=True, exist_ok=True)
-        (folder / f"{sha(data)}.json").write_bytes(data)
-        return sha(data)
+        fields.update(more)
+        return fields
+
+    def build_record(self, **more: Any) -> str:
+        """Write a build record of a passing full run at the tip, made by `build_record.make` and `write` as
+        `coney-tools build` makes it; returns its hash."""
+        record = build_record_module.make(**self.record_fields(**more))
+        return build_record_module.write(self.unit.dir / build_record_module.FOLDER, record).stem
 
     def check(
         self, profile: str = "full", checks: list[str] | None = None, record: str | None = None, **more: Any

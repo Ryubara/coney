@@ -24,7 +24,9 @@ A stage that fails is reported together with all the others, each with the comma
 | 5 | `text` | The generated title and description pass the checks CI runs (`pr text` only) |
 
 Stamps are bound to the change, not to the tip, so a clean rebase keeps them valid and a stamp whose commit a rebase
-rewrote is still accepted. A stamp's `commit` is a record; only its `time` is checked against it.
+rewrote is still accepted. A stamp's `commit` is a record, checked in two ways only: the stamp's `time` is not before
+that commit's author date, and a `full` Check's build record must name that same commit as its `tip` (the record and
+the stamp come from one run).
 
 ## pr verify {#verify}
 
@@ -58,11 +60,11 @@ What it refuses, exactly (`<...>` is filled in):
 | `log` | `log: seq 9: time <t> is in the future`; `... is before its commit <12 digits> was authored (<t>)` | none: report to a maintainer |
 | `log` | `log: mapping/0x00501000.toml pair 7 note repeats a line of the original; say it in your own words` (a statement of 20 or more characters of the saved decompile appears in a note or merge reason) | `orig compare <addr>` |
 | `checked` | `checked: no passing Check; run task check`; `checked: the newest Check failed; fix what it found and run task check` | `task check` |
-| `checked` | `checked: stale: the branch changed since Check (diff a1b2c3d4 now c3d4e5f6)`, with `; changed since: <files>` when the stamp lists its files | `task check` |
+| `checked` | `checked: stale: the branch changed since Check (diff a1b2c3d4 now c3d4e5f6)` | `task check` |
 | `checked` | `checked: Check ran profile docs, this change needs full (touches src/ai/brain.cpp)` | `task check` |
 | `checked` | `checked: Check did not run: ctest-full-disc` (one line per missing check of the profile) | `task check` |
-| `checked` | `checked: the build record <12 digits> is not in the task's build-runs folder (or differs from the stamp)` | `task check` |
-| `checked` | `checked: the build record is a filtered run (-R ...); Check needs the full suite`; `... is for preset dev, Check needs ci`; `... run failed (exit 1)`; `... has 1 failed test`; `41 disc tests skipped; Check needs the disc (CONEY_DISC)`; `... was made with uncommitted changes`; `... is for commit <12 digits>, the Check stamp for <12 digits>`; `... test counts differ from the Check stamp's` | `task check` |
+| `checked` | `checked: the build record <12 digits> cannot be read: <why>` (missing, edited, not JSON) | `task check` |
+| `checked` | every problem [`build_record.problems`](stamps.md#build-record) finds, the rule `task check` applies, at the commit the `checked` stamp names: `checked: the build record is a filtered run (-R ...); Check needs the full suite`; `... is preset dev, Check needs ci`; `... has version None, this tool reads 1`; `... has no test run`; `checked: no tests ran`; `checked: 1 test failed`; `checked: 41 disc tests skipped; Check needs the disc (CONEY_DISC)`; `... was made from a worktree with uncommitted changes`; `... is for another commit (<10 digits>, the tip is <10 digits>)`; `checked: the log <file> differs from the hash the build record kept (it was edited)`; and `checked: the build record's test counts differ from the Check stamp's` | `task check` |
 | `compared` | `compared: Widget::update (0x00501000) was changed and never studied` | `orig study <addr>` |
 | `compared` | `compared: 0x00501000: study/decompile.c differs from what the studied stamp covers`; `... the saved study is unusable (<why>)` | `orig study <addr>` |
 | `compared` | `compared: 0x00501000: line 14 (piece 5, lines 14-16) is in no pair` (any pairs check: coverage, relations, the Coney locations) | `orig compare <addr>` |
@@ -74,9 +76,10 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: not reviewed`; `reviewed: Review failed (2 blocking findings, see the verdict)` | `task review` |
 | `reviewed` | `reviewed: stale: the branch changed since Review (diff ... now ...)`; `... the pairs changed since Review` | `task review` |
 | `reviewed` | `reviewed: stale: the pull request title changed since Review`; `... the summary paragraph ...`; `... the screenshots ...` | `task review --text` |
+| `reviewed` | `reviewed: the text Review covered cannot be read (<why>)` (no `PR.md`, or one with no title or summary: the three text hashes cannot be compared, so nothing holds) | the engineer, then `task review --text` |
 | `reviewed` | `reviewed: 0x00501000 was judged diff-bug`; `reviewed: Review did not cover 0x00501000` | the engineer fixes, then `task check` and `task review`; `task review` |
 | `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change under `tasks.review.research_paths`) | `task review` |
-| `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` | `task review` (another reviewer) |
+| `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` (the reviewer wrote any stamp of the unit other than a `reviewed` one, whatever its agent type: the rule `task review --record` applies); `reviewed: the Review stamp names no reviewer` | `task review` (another reviewer) |
 | `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: a review of orig work must run on opus; this review ran on <model>` (the agent and the model words of `tasks.review`, the rule `task review --record` applies; only with `stamps.require_hook_source`) | `task review` |
 
 `pr verify` recomputes the change hash itself, against the merge base with the remote default branch, so a `checked`
@@ -140,32 +143,36 @@ line and refused by the checks until it is.
 | Section | Generated from |
 | --- | --- |
 | Summary | The paragraph between `<!-- coney:summary -->` markers, the `Docs: none` line, and one `Fixes #N` line per issue of `TASK.md` (none for a task whose front block says `finishes: false`) |
-| Checklist | One ticked item per bullet of the task's Done section |
+| Checklist | One ticked item per bullet of the task's Done section, read past the quote marks (`>`) `task create` writes; a Done section of prose gives one item per paragraph. A Done section with no criterion (the `See issue #N.` placeholder) is refused |
 | Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` line |
 | Screenshots | The engineer's section, as written |
 | AI use | `Commits written by: an AI` and the models the branch's `Co-Authored-By` trailers name, else the models of the engineers in the log. No trailer lines are added to the description: GitHub copies the branch commits' trailers into the squash commit |
-| Issues affected | The engineer's section of `PR.md`, as written (only a person can say how an issue is affected); without it, a `TODO:` line listing the candidates of `coney-tools issue impact` to confirm, or a bare `TODO:` when that command is not there |
+| Issues affected | The engineer's section of `PR.md`, as written (only a person can say how an issue is affected). Without it, a bare `TODO:`, which is refused; once `coney-tools issue impact` exists, the `TODO:` lists its candidates to confirm |
 
 The marker names (`pull_requests.markers`) let a later pass find the two generated blocks again.
 
 ### The facts block {#facts}
 
-The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and chain
-head, the change and the main it is on, then one line each for the functions studied and compared (pairs counted by
-relation), the tests that failed first, Check (profile, preset, counts, build record) and Review (verdict, model,
-functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp reads `Check: not run`
-or `Review: not reviewed`. Every name from a stamp or a pairs file is a code span with backticks and `@` neutralised,
-because those strings are not trusted text. The block is at most 8,000 characters; past that the per-stage lines become
-counts. It is a record for the reader, not proof: nothing in CI reads it, and the local log stays the source.
+The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and
+chain head, the change and the `<remote>/<default branch>` commit it is on, then one line each for the functions studied
+and compared (pairs counted by relation), the tests that failed first, Check (profile, preset, counts, build record) and
+Review (verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp
+reads `Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for
+change <12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a
+code span with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000
+characters; past that the per-stage lines become counts, and it is cut at a whole line, never inside a code span. It is
+a record for the reader, not proof: nothing in CI reads it, and the local log stays the source.
 
 ### The checks {#checks}
 
 On the generated text it runs `check-title` and `check-body` as the old description gate ran them (a local picture is
 accepted where CI wants an uploaded one, because `gh --attach` uploads it), `check-docs` with the changed paths (so
-`Docs: none` is honoured), the `TODO:` rule, and the pictures: each must be under `shots/` next to the file, outside any
-git checkout, one of `pull_requests.images.extensions` (a clip is refused: `clips publish` is the only video upload), at
-most `max_bytes` and not byte-identical to another, and there are at most `max_count`. Its output also holds the hashes
-a release records: the title, paragraph, pictures and facts (`--json`).
+`Docs: none` is honoured), the `TODO:` rule, and the pictures: each reference must be a relative path under `./shots/`
+(an absolute path, a drive or `..` is refused, as it would put a folder of the author's machine into the description),
+the file under `shots/` next to PR.md, outside any git checkout, one of `pull_requests.images.extensions` (a clip is
+refused: `clips publish` is the only video upload), at most `max_bytes` and not byte-identical to another, and there are
+at most `max_count`. Its output also holds the hashes a release records: the title, paragraph, pictures and facts
+(`--json`).
 
 ## What this does not do {#limits}
 

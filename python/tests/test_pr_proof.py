@@ -29,7 +29,7 @@ from pr_support import (
 from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS
 
-from coney_tools import orig_copy, orig_pairs, pr_diff, pr_proof
+from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof
 from coney_tools.conventions import Conventions, parse_conventions
 
 
@@ -226,14 +226,15 @@ def test_a_missing_or_changed_build_record_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"checked"}))
     record = built.build_record()
     built.check("full", record=record)
-    path = built.unit.dir / "build-runs" / f"{record}.json"
+    path = built.unit.dir / build_record.FOLDER / f"{record}.json"
     path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
     [line] = texts(built.verify(), "checked")
-    assert line == (
-        f"checked: the build record {record[:12]} is not in the task's build-runs folder (or differs from the stamp)"
-    )
+    assert line.startswith(f"checked: the build record {record[:12]} cannot be read: ")
+    assert "does not hash to its name" in line
     path.unlink()
-    assert texts(built.verify(), "checked") == [line]
+    [line] = texts(built.verify(), "checked")
+    assert line.startswith(f"checked: the build record {record[:12]} cannot be read: ")
+    assert "is not in" in line
 
 
 @pytest.mark.parametrize(
@@ -243,18 +244,24 @@ def test_a_missing_or_changed_build_record_is_refused(tmp_path: Path) -> None:
             {"filters": ["-R", "widget"]},
             "checked: the build record is a filtered run (-R widget); Check needs the full suite",
         ),
-        ({"preset": "dev"}, "checked: the build record is for preset dev, Check needs ci"),
+        ({"preset": "dev"}, "checked: the build record is preset dev, Check needs ci"),
         ({"exit_code": 1}, "checked: the build record's run failed (exit 1)"),
         (
-            {"tests": {"total": 412, "passed": 371, "failed": 0, "skipped": 41, "skipped_disc": 41, "disc_hash": ""}},
+            {"tests": {"total": 412, "passed": 371, "failed": 0, "skipped": 41, "skipped_disc": 41}},
             "checked: 41 disc tests skipped; Check needs the disc (CONEY_DISC)",
         ),
         (
-            {"tests": {"total": 412, "passed": 411, "failed": 1, "skipped": 0, "skipped_disc": 0, "disc_hash": ""}},
-            "checked: the build record has 1 failed test",
+            {"tests": {"total": 412, "passed": 411, "failed": 1, "skipped": 0, "skipped_disc": 0}},
+            "checked: 1 test failed",
         ),
-        ({"dirty": True}, "checked: the build record was made with uncommitted changes"),
-        ({"tip": "ab" * 20}, "checked: the build record is for commit abababababab, the Check stamp for "),
+        (
+            {"tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "skipped_disc": 0}},
+            "checked: no tests ran",
+        ),
+        ({"ran": ["configure", "build"]}, "checked: the build record has no test run"),
+        ({"tests": None}, "checked: the build record has no test run"),
+        ({"dirty": True}, "checked: the build record was made from a worktree with uncommitted changes"),
+        ({"tip": "ab" * 20}, "checked: the build record is for another commit (ababababab, the tip is "),
     ],
 )
 def test_a_build_record_that_is_not_a_full_ci_run_is_refused(
@@ -264,6 +271,25 @@ def test_a_build_record_that_is_not_a_full_ci_run_is_refused(
     built.check("full", record=built.build_record(**more))
     refused = texts(built.verify(), "checked")
     assert any(t.startswith(message) for t in refused), refused
+
+
+def test_a_build_record_of_another_version_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    record = build_record.make(**built.record_fields())
+    record["record_version"] = None
+    built.check("full", record=build_record.write(built.unit.dir / build_record.FOLDER, record).stem)
+    refused = texts(built.verify(), "checked")
+    assert any(t.startswith("checked: the build record has version None") for t in refused), refused
+
+
+def test_a_build_record_whose_log_was_edited_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", record=built.build_record())
+    assert texts(built.verify(), "checked") == []
+    (built.unit.dir / "build-logs" / "ci.log").write_bytes(b"another log")
+    assert texts(built.verify(), "checked") == [
+        "checked: the log ci.log differs from the hash the build record kept (it was edited)"
+    ]
 
 
 def test_a_record_whose_counts_differ_from_the_stamps_is_refused(tmp_path: Path) -> None:
@@ -437,6 +463,22 @@ def test_a_reviewer_who_also_worked_on_the_task_is_refused(tmp_path: Path) -> No
     built = make(tmp_path, skip=frozenset({"reviewed"}))
     built.review(reviewer=ENGINEER["agent"])
     assert texts(built.verify(), "reviewed") == ["reviewed: reviewer engineer-1 also worked on this task"]
+
+
+def test_a_reviewer_who_wrote_any_other_stamp_is_refused_whatever_its_type(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    checked = built.subject().report.latest("checked")
+    assert checked is not None
+    tooling = agent("tooling", 3)
+    built.stamp("checked", covers=dict(checked.covers), detail=dict(checked.detail), who=tooling)
+    built.review(reviewer=tooling["agent"])
+    assert texts(built.verify(), "reviewed") == ["reviewed: reviewer tooling-3 also worked on this task"]
+
+
+def test_a_review_stamp_that_names_no_reviewer_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    built.review(reviewer={"type": "reviewer", "model": "claude-opus-5-5"})
+    assert texts(built.verify(), "reviewed") == ["reviewed: the Review stamp names no reviewer"]
 
 
 def test_the_reviewers_type_and_model_are_held_to_the_rules_only_when_the_flag_is_on(tmp_path: Path) -> None:
