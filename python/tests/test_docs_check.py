@@ -173,6 +173,8 @@ def test_a_relative_link_that_leaves_docs_is_reported() -> None:
     "link",
     [
         "[x](repo:LEGAL.md#x)",
+        "[#123](issue:123)",
+        "[l]: issue:123",
         "[x](testing.md#done)",
         "[x](../research/camera.md)",
         "[x](#here)",

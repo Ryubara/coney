@@ -2,10 +2,11 @@
 
 No file names the repository's or the site's address: they come from the build. Pages link files outside `docs/` as
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
-built from. It also adds the Changelog page, written from the git history at build time, fills the progress page's
-tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress numbers into the
-site, writes each research system's function list page from research/functions/ and fills the source map's file
-tables from research/source-files.toml, so none of those is committed.
+built from, and an issue or pull request as `issue:<number>`, which it turns into that issue's page. Neither is
+rewritten inside code. It also adds the Changelog page, written from the git history at build time, fills the
+progress page's tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress
+numbers into the site, writes each research system's function list page from research/functions/ and fills the
+source map's file tables from research/source-files.toml, so none of those is committed.
 """
 
 import os
@@ -17,6 +18,13 @@ from pathlib import Path
 
 # A `repo:` link target in Markdown: `](repo:LEGAL.md#no-game-data)`.
 _REPO_LINK = re.compile(r"\]\(repo:([^)\s]+)\)")
+# An `issue:<number>` link target: inline, `](issue:123)`, or in a link reference definition, `[ref]: issue:123`.
+_ISSUE_LINK = re.compile(r"\]\(issue:(\d+)\)|^( {0,3}\[[^\]\n]+\]:[ \t]*)issue:(\d+)[ \t]*$", re.MULTILINE)
+# Code, where a link is not a link: a fenced block (to its closing fence or the end) or an inline code span.
+_CODE = re.compile(
+    r"(?sm)^ {0,3}(?P<fence>`{3,}|~{3,}).*?(?:^ {0,3}(?P=fence)[`~]*[ \t]*$|\Z)"
+    r"|(?P<ticks>`+)(?!`)[^\n]*?(?<!`)(?P=ticks)(?!`)"
+)
 
 
 def _repo_url():
@@ -186,7 +194,8 @@ def progress_badge_files(state):
 
 
 def on_page_markdown(markdown, config, page=None, **_):
-    """Rewrites `repo:<path>` links to the file on the default branch, before MkDocs validates links.
+    """Rewrites `repo:<path>` links to the file on the default branch and `issue:<number>` links to the issue's page,
+    before MkDocs validates links (`resolve_repo_links`).
 
     On the progress page it first replaces the marker with the generated tables and pictures, on the history page with
     the chart and the table of days, on the source map with the file tables.
@@ -199,11 +208,34 @@ def on_page_markdown(markdown, config, page=None, **_):
     config_file = getattr(config, "config_file_path", None)
     if page is not None and config_file and is_source_map_page(page.file.src_uri, Path(config_file).parent):
         markdown = fill_source_map_page(markdown, Path(config_file).parent)
-    base = config.get("repo_url")
-    if not base:
-        # No repository to point at (a copy without git): an empty anchor keeps the strict build passing.
-        return _REPO_LINK.sub("](#)", markdown)
-    return _REPO_LINK.sub(lambda m: f"]({base.rstrip('/')}/blob/main/{m.group(1)})", markdown)
+    return resolve_repo_links(markdown, config.get("repo_url"))
+
+
+def resolve_repo_links(markdown, base):
+    """`markdown` with each `repo:<path>` link made a link to the file on the default branch of the repository at `base`
+    and each `issue:<number>` link a link to that issue's page, outside code (a fenced block or a code span shows the
+    form it documents).
+
+    Both come from the one repository address, `repo_url`, which the build works out. Without one (a copy without git)
+    an empty anchor keeps the strict build passing.
+    """
+    root = base.rstrip("/") if base else None
+
+    def issue(match):
+        """The issue link in the form it was written, inline or as a definition."""
+        target = f"{root}/issues/{match.group(1) or match.group(3)}" if root else "#"
+        return f"]({target})" if match.group(1) else f"{match.group(2)}{target}"
+
+    def resolve(text):
+        """One stretch of text outside code."""
+        text = _REPO_LINK.sub(lambda m: f"]({root}/blob/main/{m.group(1)})" if root else "](#)", text)
+        return _ISSUE_LINK.sub(issue, text)
+
+    parts, end = [], 0
+    for code in _CODE.finditer(markdown):
+        parts += [resolve(markdown[end : code.start()]), code.group(0)]
+        end = code.end()
+    return "".join(parts) + resolve(markdown[end:])
 
 
 # Markdown punctuation that could change how a commit title renders; each is backslash-escaped.

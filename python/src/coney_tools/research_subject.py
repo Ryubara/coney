@@ -27,6 +27,13 @@ ADDRESS = re.compile(r"(?<![\w])0x0(?:0[1-9a-fA-F]|1[0-9a-fA-F])[0-9a-fA-F]{5}\b
 #: A script locator (`level99.lua:f31`: function prototype 31 of the chunk), which mission pages cite instead of an
 #: address.
 LOCATOR = re.compile(r"\b[\w-]+\.lua:f\d+\b")
+#: A date, and an issue or pull request number: history, which lives in git and the pull requests (the `history` rule of
+#: the research pages and of the engine pages).
+DATE = re.compile(r"\b(?:19|20)\d\d-\d\d-\d\d\b")
+ISSUE = re.compile(r"(?<![\w&/#])#\d+\b|\b(?:issue|pull request|PR)s?\s+\d+\b")
+#: Inline code, and the target of a Markdown link, which the history rule does not read.
+CODE_SPAN = re.compile(r"`[^`\n]*`")
+LINK_TARGET = re.compile(r"\]\([^)\n]*\)")
 VERIFIED_LINE = re.compile(r"^[ \t>*_]*verified against\b[ \t*_]*:?[ \t*_]*(?P<rest>.*)$", re.IGNORECASE)
 
 

@@ -43,6 +43,10 @@ from coney_tools.research_owners import check_function_entries, check_owned_file
 from coney_tools.research_pages import key_line, owner_conflicts, paragraph_key, read_front_matter
 from coney_tools.research_subject import (
     ADDRESS,
+    CODE_SPAN,
+    DATE,
+    ISSUE,
+    LINK_TARGET,
     VERIFIED_LINE,
     ResearchEnv,
     Rule,
@@ -74,10 +78,6 @@ _GLOBAL_SECTIONS = frozenset({".data", ".sdata", ".sbss", ".bss"})
 #: The end of a range written `0x00284920-0x00288000`: the first address after it need not be a function.
 _RANGE_END = re.compile(r"0x[0-9a-fA-F]{8}[`\s]*(?:-|\u2013|\u2014|\bto\b)[`\s]*$")
 
-_DATE = re.compile(r"\b(?:19|20)\d\d-\d\d-\d\d\b")
-_ISSUE = re.compile(r"(?<![\w&/#])#\d+\b|\b(?:issue|pull request|PR)s?\s+\d+\b")
-_CODE_SPAN = re.compile(r"`[^`\n]*`")
-_LINK_TARGET = re.compile(r"\]\([^)\n]*\)")
 #: A name written beside an address: `` `0x00149160` `Name` `` or `` `Name` (`0x00149160`) ``.
 _NAME_AFTER = re.compile(
     r"`(?P<addr>0x[0-9a-fA-F]{8})`\s*[:\u2013\u2014-]?\s*`(?P<name>~?[A-Za-z_][\w:~<>]*)(?:\(\))?`"
@@ -112,7 +112,7 @@ def check_research(path: str, page: Page, env: ResearchEnv, *, legacy_page: bool
     found.extend(_check_sections(subject))
     found.extend(_check_verified(subject))
     found.extend(check_evidence(subject))
-    found.extend(_check_addresses(subject))
+    found.extend(check_addresses(subject))
     found.extend(_check_decompile(subject))
     found.extend(_check_copies(subject))
     found.extend(_check_history(subject))
@@ -255,7 +255,7 @@ def _lines_by_section(subject: Subject) -> Iterable[tuple[Line, str]]:
         yield line, current
 
 
-def _check_addresses(subject: Subject) -> Iterable[Finding]:
+def check_addresses(subject: Subject) -> Iterable[Finding]:
     """Every address is `0x` and eight digits (a short form of a function entry is refused), resolves in the executable
     and is named as Ghidra names it."""
     catalog = subject.env.catalog
@@ -378,8 +378,8 @@ def _check_history(subject: Subject) -> Iterable[Finding]:
     for line, current in _lines_by_section(subject):
         if line.fenced or not line.text.strip() or current.casefold() in allowed:
             continue
-        plain = _LINK_TARGET.sub("]", _CODE_SPAN.sub(" ", line.text))
-        found = _DATE.search(plain) or _ISSUE.search(plain)
+        plain = LINK_TARGET.sub("]", CODE_SPAN.sub(" ", line.text))
+        found = DATE.search(plain) or ISSUE.search(plain)
         if found:
             yield Finding(
                 "history",

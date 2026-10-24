@@ -27,8 +27,9 @@ LEVEL_COLUMN = re.compile(r"(?:evidence(?: level)?|confidence)", re.IGNORECASE)
 
 
 def kind_of(path: str) -> str:
-    """The kind of file at `path` (forward slashes, relative to the repository): `research`, `guide`, `page` (any other
-    hand-written page of the site), `generated` (rebuilt from its source, so never edited or checked) or `other`."""
+    """The kind of file at `path` (forward slashes, relative to the repository): `research`, `engine` (how Coney works,
+    `docs_engine`), `guide`, `page` (any other hand-written page of the site), `generated` (rebuilt from its source, so
+    never edited or checked) or `other`."""
     if not path.endswith(".md") or not path.startswith("docs/"):
         return "other"
     if path.startswith(("docs/missions/", "docs/progress/", "docs/research/find/")):
@@ -42,6 +43,8 @@ def kind_of(path: str) -> str:
         return "generated" if path.endswith("/functions.md") else "research"
     if path.startswith("docs/guides/"):
         return "guide"
+    if path.startswith("docs/engine/"):
+        return "engine"
     return "page"
 
 

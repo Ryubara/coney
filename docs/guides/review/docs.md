@@ -29,6 +29,10 @@ Report findings in the [format on the index page](index.md#finding-format) and n
 - [ ] **A living doc moves with its change.** A change to behaviour, a command or what we know updates its page in
   the same commit; a pull request that changes `src/` or `python/src/` has a change under `docs/` or a `Docs: none`
   line.
+- [ ] **An engine page says nothing about what the original does.** A page under `docs/engine/` describes Coney's own
+  code and port notes; a sentence about the original's behaviour belongs on a
+  [research page](../writing-docs.md#research-pages) and is linked from the engine page. No program checks this
+  ([Engine pages](../writing-docs.md#engine-pages)).
 - [ ] **No game data.** No file bytes, game text or script source, and no decompiler output
   ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 - [ ] **The page standards pass.** `uv run --project python coney-tools docs check` is clean for every page the diff
