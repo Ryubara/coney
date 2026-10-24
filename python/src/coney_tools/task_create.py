@@ -14,7 +14,6 @@ the time limit ends it with nothing written), settle, write `TASK.md`, post `/pr
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -27,10 +26,8 @@ from coney_tools.issue_claim_model import Card, Command, parse_command, reply_ta
 from coney_tools.issue_claim_remote import IssueView, Remote
 from coney_tools.issue_claim_rules import check_claim
 from coney_tools.issue_form import section_heading, section_text
-from coney_tools.task_file import NO_FAILING_TEST, TaskFile, quote_block, render_task_file, slug
+from coney_tools.task_file import NO_FAILING_TEST, TASK_ID, TaskFile, quote_block, render_task_file, slug
 from coney_tools.task_leads import LeadsResult, Match
-
-_TASK_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
 
 
 @dataclass(frozen=True)
@@ -145,8 +142,9 @@ def build_task_file(
     leads: LeadsResult,
     overlaps: list[str],
     conventions: Conventions,
+    parent: str = "",
 ) -> TaskFile:
-    """The task file for a claim that held."""
+    """The task file for a claim that held; `parent` is the task a fix task works in."""
     first = issues[0]
     summary_heading = section_heading(conventions, "summary")
     done_heading = section_heading(conventions, "done")
@@ -180,6 +178,7 @@ def build_task_file(
         scope=request.scope,
         terms=request.terms,
         sections=sections,
+        parent=parent,
     )
 
 
@@ -313,7 +312,7 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
     held_tasks = [held[i.number].task for i in issues if i.number in held and held[i.number].claimant == user]
     resumed_id = next((task for task in held_tasks if task), None) if request.resume else None
     task_id = request.name or resumed_id or f"{issues[0].number}-{slug(issues[0].title)}"
-    if not _TASK_ID.match(task_id):
+    if not TASK_ID.match(task_id):
         out(f"refused: '{task_id}' is not a task id (lower case letters, digits and hyphens, 60 at most)")
         return 1
     if (env.scratch / task_id / env.conventions.tasks.file).exists():
@@ -410,14 +409,22 @@ def _fix_task(request: CreateRequest, env: CreateEnv, user: str, issue: IssueVie
     if card is None or card.claimant != user:
         out(f"refused: a fix task needs your own held claim on #{issue.number}")
         return 1
+    if not card.task:
+        out(
+            f"refused: the claim on #{issue.number} was made without a task id, so there is no unit to fix "
+            "(a fix task works in the unit of the task that holds the claim)"
+        )
+        return 1
     task_id = _unique_dir(env.scratch, request.name or f"{issue.number}-fix")
-    if not _TASK_ID.match(task_id):
+    if not TASK_ID.match(task_id):
         out(f"refused: '{task_id}' is not a task id (lower case letters, digits and hyphens, 60 at most)")
         return 1
     leads = env.leads(list(request.terms), f"{issue.title}\n{issue.body}")
     scope = request.scope or card.scope
     fix_request = CreateRequest((issue.number,), request.terms, scope, "fix", task_id, request.fix_of)
-    task = build_task_file(fix_request, task_id, "fix", user, card.claimed_at, [issue], leads, [], env.conventions)
+    task = build_task_file(
+        fix_request, task_id, "fix", user, card.claimed_at, [issue], leads, [], env.conventions, parent=card.task
+    )
     if request.dry_run:
         out(f"dry run: would write {env.scratch / task_id / env.conventions.tasks.file}\n")
         out(render_task_file(task))

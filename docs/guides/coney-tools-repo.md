@@ -537,6 +537,7 @@ coney-tools pr check-commit FILE [--model MODEL]
 uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM ...] [--scope "a, b"] [--kind K]
     [--name ID] [--resume] [--dry-run]
 uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
+uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
 uv run --project python coney-tools task index [--no-gh]
 ```
@@ -554,6 +555,16 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   The task id is `--name` or `<first issue>-<words of its title>`; `--kind` is one of `tasks.kinds` (default from the
   labels). A fix task is `--fix-of ISSUE`: it reuses your claim, posts `/progress fix` and writes `<issue>-fix`.
   `--dry-run` posts and writes nothing and prints the file. Exit 1 when it stopped, 0 when the file was written.
+* `start` is the engineer's first step for a task `create` made ([Starting a task](issues.md#starting)). It checks that
+  the claim is still yours for this task, that you are within your limit of open claims and that the branch and folder
+  are free and its stamp log is usable, then makes the branch (named like the task id) and its worktree in the folder
+  `workspace.worktrees` names (`../../worktrees/coney/<task id>/`) from
+  the tip of the default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed`
+  in the task's log and posts `/progress claimed`. It prints the branch, worktree, the
+  stamps written and `slots: N of L task slots in use`; the limit (`tasks.start.slots`) is only reported until
+  `tasks.start.slots.enforce` is on. Nothing is made when a check fails (exit 1); a git or fetch failure stops it with
+  exit 2; running it again for a started task finishes what is missing and changes nothing else. A fix task opens its
+  parent's unit instead of making one. The coordinator's role may not run it (`.claude/hooks/hooks.toml`).
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
@@ -572,6 +583,11 @@ Every argument and option:
 | `create` | `--fix-of ISSUE` | none | Make a fix task for an issue whose claim you hold: no `/claim`, no limit; posts `/progress fix` and writes `<issue>-fix` (`-2`, `-3` for the next ones) |
 | `create` | `--resume` | off | Continue a claim of yours that landed after the wait ended: issues you hold are not claimed again, and the task id must match the one on their cards |
 | `create` | `--dry-run` | off | Check, search and print the claims it would post and the file it would write; post and write nothing |
+| `start` | `TASK` | `CONEY_TASK` | The task id, the name of its scratch folder; without it and without `CONEY_TASK` the command stops (it does not guess from the branch: it is run from the main checkout, which is on `main`) |
+| `start` | `--base REF` | `<remote>/<default branch>` (`repo.default_branch`) | What the branch starts from: any commit, branch or remote-tracking ref. A `<remote>/<branch>` ref is fetched first |
+| `start` | `--remote NAME` | `origin` | The git remote that is fetched and that names the default base |
+| `start` | `--no-fetch` | off (fetch) | Start from the base as it is in this checkout, for example without network |
+| `start` | `--dry-run` | off | Run every check, print the branch, base, worktree and stamps that would be made (for a task already started: what would be finished), and change nothing: no branch, no files, no stamps and no comment |
 | `leads` | `--terms TERM ...` | required | The names to search for |
 | `leads` | `--issue N` | none | Also match the addresses, code names, repository paths and `#N` references that issue writes |
 | `leads` | `--refresh` | off | Rebuild the cached index before searching |

@@ -800,13 +800,35 @@ class LeadsRules:
 
 
 @dataclass(frozen=True)
+class TaskSlots:
+    """How many units of work one machine runs at once (docs/guides/issues.md#starting)."""
+
+    #: Task units in work (from `task start` until they pass Review).
+    task: int
+    #: Fix units in work (a fix of a pull request that failed in CI).
+    fix: int
+    #: Whether `task start` refuses a unit over the limit; false until the cutover, when it only reports.
+    enforce: bool
+
+
+@dataclass(frozen=True)
+class TaskStart:
+    """What `task start` writes and counts."""
+
+    #: The unit record's file name inside the task's scratch folder.
+    unit_file: str
+    slots: TaskSlots
+
+
+@dataclass(frozen=True)
 class Tasks:
-    """Task files and the leads search."""
+    """Task files, the leads search and starting a task."""
 
     kinds: tuple[str, ...]
     #: The task file's name inside the task's scratch folder.
     file: str
     leads: LeadsRules
+    start: TaskStart
 
 
 @dataclass(frozen=True)
@@ -1564,8 +1586,8 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
 
 
 def _read_tasks(data: object, where: str) -> Tasks:
-    """The `tasks` section: the task kinds, the task file's name and the leads limits."""
-    table = _table(data, where, ("kinds", "file", "leads"))
+    """The `tasks` section: the task kinds, the task file's name, the leads limits and what `task start` keeps."""
+    table = _table(data, where, ("kinds", "file", "leads", "start"))
     leads_where = _at(where, "leads")
     keys = ("rare_max_entries", "common_min_entries", "max_per_source", "index_max_age_hours", "merged_prs")
     leads = _table(table["leads"], leads_where, keys)
@@ -1575,7 +1597,26 @@ def _read_tasks(data: object, where: str) -> Tasks:
     file = _text(table["file"], _at(where, "file"))
     if "/" in file or "\\" in file:
         raise _fail(_at(where, "file"), "a file name, not a path")
-    return Tasks(kinds=_texts(table["kinds"], _at(where, "kinds")), file=file, leads=LeadsRules(**numbers))
+    start_where = _at(where, "start")
+    start = _table(table["start"], start_where, ("unit_file", "slots"))
+    unit_file = _text(start["unit_file"], _at(start_where, "unit_file"))
+    if "/" in unit_file or "\\" in unit_file or unit_file == file:
+        raise _fail(_at(start_where, "unit_file"), "a file name, not a path, and not the task file's")
+    slots_where = _at(start_where, "slots")
+    slots = _table(start["slots"], slots_where, ("task", "fix", "enforce"))
+    return Tasks(
+        kinds=_texts(table["kinds"], _at(where, "kinds")),
+        file=file,
+        leads=LeadsRules(**numbers),
+        start=TaskStart(
+            unit_file=unit_file,
+            slots=TaskSlots(
+                task=_count(slots["task"], _at(slots_where, "task")),
+                fix=_count(slots["fix"], _at(slots_where, "fix")),
+                enforce=_flag(slots["enforce"], _at(slots_where, "enforce")),
+            ),
+        ),
+    )
 
 
 def _read_conclave(data: object, where: str) -> Conclave:

@@ -8,8 +8,9 @@
               compare/<addr>.txt    the side-by-side view
 ```
 
-The task is `--task`, else `CONEY_TASK`, else the checkout's branch. The unit record that `task start` writes belongs
-to the task commands; this module only knows the folders, so a change of layout is a change here.
+The task is `--task`, else `CONEY_TASK`, else the checkout's branch. The unit record that `task start` writes
+(`unit.json`, `unit_record.py`) says where the branch and worktree are; this module only knows the folders, so a change
+of layout is a change here.
 """
 
 from __future__ import annotations

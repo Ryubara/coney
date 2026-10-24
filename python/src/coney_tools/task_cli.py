@@ -1,21 +1,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools task ...` commands: create a task from issues, search the leads, refresh the index.
+"""The `coney-tools task ...` commands: create a task from issues, start it, search the leads, refresh the index.
 
 `task create` is the coordinator's triage step (docs/guides/issues.md#task-files): it claims the issues through the
-claim Action, waits until the claim is certain and then writes `<scratch>/<task>/TASK.md`. `task leads` runs the same
-search without claiming, and `task index` rebuilds the cached index. `gh`, the clock and the sleep are injected, so
-the tests never touch the network or wait.
+claim Action, waits until the claim is certain and then writes `<scratch>/<task>/TASK.md`. `task start` is the
+engineer's first step (docs/guides/issues.md#starting): it makes the branch, worktree and unit record of a claimed
+task. `task leads` runs the same search without claiming, and `task index` rebuilds the cached index. `gh`, the clock
+and the sleep are injected, so the tests never touch the network or wait.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
+from coney_tools import stamps
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, load_config, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
@@ -24,10 +27,11 @@ from coney_tools.issue_claim_remote import GhRemote, Remote
 from coney_tools.task_create import CreateEnv, CreateRequest, create_task, match_lines
 from coney_tools.task_leads import LeadsResult, Searcher
 from coney_tools.task_leads_index import CachedIndex, prepare_index
+from coney_tools.task_start import StartEnv, StartRequest, start_task
 
 
 def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add the `task` group: `create`, `leads` and `index`."""
+    """Add the `task` group: `create`, `start`, `leads` and `index`."""
     group = groups.add_parser("task", help="claim issues and write a task file (docs/guides/issues.md#task-files)")
     commands = group.add_subparsers(dest="command", required=True)
     create = commands.add_parser(
@@ -44,6 +48,15 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     create.add_argument("--fix-of", type=int, metavar="ISSUE", help="a fix task: reuse your claim on this issue")
     create.add_argument("--resume", action="store_true", help="continue a claim of yours that landed late")
     create.add_argument("--dry-run", action="store_true", help="check and print; post and write nothing")
+    start = commands.add_parser(
+        "start",
+        help="make the branch, worktree and unit record of a claimed task and stamp assigned and claimed",
+    )
+    start.add_argument("task", nargs="?", help="the task id (default: CONEY_TASK)")
+    start.add_argument("--base", metavar="REF", help="what the branch starts from (default: <remote>/<default branch>)")
+    start.add_argument("--remote", default="origin", help="the git remote to fetch from (default: origin)")
+    start.add_argument("--no-fetch", action="store_true", help="start from the base as it is here, without fetching")
+    start.add_argument("--dry-run", action="store_true", help="check and print; make, stamp and post nothing")
     leads = commands.add_parser("leads", help="search the indexes for the terms (no claim, nothing written)")
     leads.add_argument("--terms", nargs="+", required=True, metavar="TERM", help="names to search for")
     leads.add_argument("--issue", type=int, metavar="N", help="also match the identifiers this issue writes")
@@ -95,7 +108,15 @@ def run_task(
         for notice in index.notices:
             print(f"note: {notice}")
         return 0
+    # The identity the hook vouched for lives for minutes: read it before anything slow (git, GitHub) happens.
+    who = stamps.who_from_env("coney-tools task start") if args.command == "start" else {}
     github: Remote = remote or GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, run)
+    if args.command == "start":
+        name = args.task or os.environ.get("CONEY_TASK")
+        if not name:
+            raise ConfigError("task start: name the task (an argument, or CONEY_TASK)")
+        start_env = StartEnv(root, github, conventions, scratch_folder(root), now, lambda: who)
+        return start_task(StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run), start_env)
     if args.command == "leads":
         text = ""
         if args.issue is not None:

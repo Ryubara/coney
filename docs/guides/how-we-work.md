@@ -432,8 +432,9 @@ comment listing the problems. The audit flags what slips past all three ([Filing
 **Claiming is one comment.** Whoever takes an issue (a person, an agent, the coordinator) claims it with `/claim`, and a
 GitHub Action assigns it, sets the status label and keeps a claim card with the deadline; a claim idle for 72 hours is
 released. The coordinator's `coney-tools task create` makes the claim and writes the task file
-([Claiming an issue](issues.md#claiming), [Task files](issues.md#task-files)). It is available now and becomes
-required with the new workflow's cutover.
+([Claiming an issue](issues.md#claiming), [Task files](issues.md#task-files)); the engineer then runs
+`coney-tools task start`, which makes the branch, worktree and unit record ([Starting a task](issues.md#starting)).
+Both are available now and become required with the new workflow's cutover.
 
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
 CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its

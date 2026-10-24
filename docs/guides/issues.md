@@ -433,15 +433,17 @@ held:
 
 `--resume` skips posting when a held claim of yours is already there (after a timeout, the claim may still have landed);
 the task id is the one on the card, and a `--name` that differs is refused. A **fix task** is `--fix-of <issue>`: it
-reuses the claim you hold (no `/claim`, no limit) and posts `/progress fix`. The kinds are `feature`, `fix`, `docs`,
+reuses the claim you hold (no `/claim`, no limit) and posts `/progress fix`; its task file names the task of that claim
+as `parent`, because the fix works in that task's unit ([Starting a task](#starting)). The kinds are `feature`, `fix`, `docs`,
 `tooling` and `ci-fix` (`tasks.kinds`); `ci-fix` repairs main or a nightly run through its `P-critical` issue and is an
 ordinary claim.
 
 The task file starts with a small YAML block the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
-`scope`, `terms`) and has these sections, in this order: Issues, Goal, Done, Scope, Where to look, Searched, not
-related, Expected tests, Decision points, Related PRs and open questions. Goal and Done start as the issue's Summary and
-"What done means", quoted line by line (with a leading `>`) so that no line of issue text can start a section of the
-file; Expected tests says "no fails-first test" for `docs` and `tooling`; the coordinator prunes the rest.
+`scope`, `terms`, and `parent` in a fix task) and has these sections, in this order: Issues, Goal, Done, Scope, Where
+to look, Searched, not related, Expected tests, Decision points, Related PRs and open questions. Goal and Done start as
+the issue's Summary and "What done means", quoted line by line (with a leading `>`) so that no line of issue text can
+start a section of the file; Expected tests says "no fails-first test" for `docs` and `tooling`; the coordinator prunes
+the rest.
 
 **Where to look** comes from a search of prepared indexes with the terms the coordinator chose (`--terms`): the
 headings and cited addresses of the research pages, the reimplemented functions of the function database, the
@@ -451,6 +453,63 @@ in few entries ranks above a common one, and the exact identifiers, addresses, p
 issue are always included, outside the limits. Every match carries the reason it matched, and the terms that matched
 nothing go to "Searched, not related". The limits are `tasks.leads`; `coney-tools task leads` runs the same search
 without claiming anything.
+
+## Starting a task {#starting}
+
+The engineer assigned a task runs `coney-tools task start <task id>` once ([coney-tools](coney-tools-repo.md#task)); the
+coordinator never does (a hook refuses it). It turns the claimed task into a **unit** (the task's branch, worktree,
+scratch folder and proof log) and makes everything the later stages look for, so none of them guesses where the work is.
+
+**It checks first** and makes nothing until all of it holds, so a refused start leaves nothing behind:
+
+1. `<scratch>/<task>/TASK.md` exists, is the task's own and belongs to the account that is signed in.
+2. Every issue of the task is open and its claim card is held by that account for this task id: a claim the Action has
+   released, or one made for another task, is refused, and the coordinator claims again.
+3. The account does not hold more open claims than [the limit](#claiming): the Action enforces it when it assigns,
+   and this is the backstop. A fix task reuses its claim and is not counted.
+4. The engineer slots ([below](#slots)).
+5. The task's stamp log (a fix task's: its parent's) can be written to: it is intact and is this task's own. A damaged
+   log is refused here, before anything is made, rather than after the branch exists.
+6. The branch and the folder are free, and the base is a commit: `<remote>/<default branch>` after
+   `git fetch`, or `--base`. A fetch that fails stops the command (`--no-fetch` starts from the ref as it is).
+
+**It makes**, in this order:
+
+| What | Where |
+| --- | --- |
+| The branch, named like the task id, and its worktree, from the tip of the default branch | The folder `workspace.worktrees` names, in the workspace ([Worktrees](workspace.md#worktrees)); the branch name is the task id, so `CONEY_TASK` is not needed inside the worktree |
+| The **unit record**: task, kind, issues, claimant, branch, worktree, the base ref and commit, the time, and whether `/progress claimed` was posted | `<scratch>/<task>/unit.json` (`tasks.start.unit_file`); `task check`, `task review`, `pr open` and the mod read it |
+| The stamps `assigned` and `claimed` ([Stamps](stamps.md#log)): `assigned` covers the task file's YAML block (`task_sha256`) and lists the issues, kind, claimant and claim time; `claimed` covers the base commit and names the branch, base ref and kind. Both carry the agent the hook vouched for, so the log says which engineer took the task | `<scratch>/<task>/stamps/` |
+| `/progress claimed` on each issue, which restarts the claim's idle clock | the issue's claim card |
+
+Running it again is safe. A task with a unit record is not made twice: the command finishes what a stopped start left
+(a missing stamp, a `/progress` that failed) and says `already started`; if the worktree has been removed meanwhile it
+refuses and leaves the record. A `/progress` comment that cannot be posted is a warning, not a failure.
+`--dry-run` prints the branch, worktree and stamps it would make (for a started task: what it would finish) and
+changes nothing, posts nothing and runs the same checks. If the hook did not vouch for who runs the command, the
+command warns: its stamps then say `unverified`, which `pr open` refuses, and a rerun cannot rewrite them.
+
+It does not write the `.coney-busy` marker: one with an id in it protects the worktree from `workspace clean` until
+someone deletes it, so the engineer writes it only for a stretch where files do not change
+([the busy file](workspace.md#cleanup)).
+
+**A fix task** (`kind: fix`, from `task create --fix-of`) makes no branch or worktree. It opens the unit of the task
+named by its `parent`: the parent must have a unit, its worktree must still exist and its log must hold a `pr-opened`
+stamp (there is a pull request to fix). The fix gets a record of its own that points at the parent's branch and
+worktree, and a second `claimed` stamp with `detail.fix` set to the fix's id is appended to the **parent's** log, which
+is the one log all the stage commands write (`UnitRecord.log_task` in `coney_tools/unit_record.py`). The claim check
+uses the parent's task id, because the claim is the parent's.
+
+### Slots {#slots}
+
+A machine runs a limited number of task units and of fix units at a time (`tasks.start.slots` in
+[.github/conventions.yml](repo:.github/conventions.yml)). A unit holds its slot from
+`task start` until a passing `reviewed` stamp follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until
+its worktree is gone; a unit whose log cannot be trusted keeps its slot. The limit is for code work under the finished
+workflow, so until the cutover `task start` only reports the count (`slots: N of L task slots in use`, with a note
+when N is over L) and design, documentation and tooling work runs in parallel; the cutover sets
+`tasks.start.slots.enforce`, and a start over the limit is then refused. Work in other repositories (Tether, Conclave's
+own plugin repository) has no unit here and is not counted.
 
 ## Working from an issue {#agents}
 
