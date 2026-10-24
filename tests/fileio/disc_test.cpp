@@ -143,3 +143,17 @@ TEST_CASE("an ISO image with a damaged root directory is refused", "[disc]") {
     REQUIRE_FALSE(cutFiles.has_value());
     CHECK(cutFiles.error().code == ErrorCode::Truncated);
 }
+
+TEST_CASE("names lists the root's files and those of the folders below it, sorted", "[disc]") {
+    TempDir dir;
+    const auto image = coney::test::buildIso(
+        {{"B.BIN;1", payload(4, 1)}, {"SUBDIR/C.SND;1", payload(4, 2)}, {"A.BIN;1", payload(4, 3)}});
+    auto iso = Disc::open(dir.write("game.iso", image));
+    REQUIRE(iso.has_value());
+    CHECK(iso->names() == std::vector<std::string>{"A.BIN", "B.BIN", "SUBDIR/C.SND"});
+    dir.write("folder/b.bin", payload(4, 1));
+    dir.write("folder/Iop/bfw.snd", payload(4, 2));
+    auto folder = Disc::open(dir.path() / "folder");
+    REQUIRE(folder.has_value());
+    CHECK(folder->names() == std::vector<std::string>{"B.BIN", "IOP/BFW.SND"});
+}

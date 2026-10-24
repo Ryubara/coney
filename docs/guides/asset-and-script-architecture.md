@@ -162,9 +162,12 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
 ```
 
 - **The installer** is a front end over one library call per step: copy the disc's files and check them against
-  the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The first
-  version can be a `coney-tools install` command next to `extract`. The installer study track owns the launcher
-  ([coney-tools: extract](coney-tools-disc.md#extract) owns the names).
+  the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The PS2 step
+  is built, in C++ so that the launcher runs it without Python: `src/install/` (`install::install()`, with a progress
+  callback that can cancel) and `coney --install DISC --data DIR` ([Running Coney](running.md#install)); the known
+  SHA-1s are on [The discs Coney installs from](../research/discs.md). The Xbox disc, the Xbox index and the modding
+  kit come after it. The installer track owns the launcher ([coney-tools: extract](coney-tools-disc.md#extract) owns
+  the names).
 - **Name and lookup per kind**:
 
 | Kind | Order | Note |
@@ -408,7 +411,8 @@ data.
 After the game plays 1:1 ([The whole game](../roadmap.md#the-whole-game) for the core; earlier where a maintainer
 says):
 
-1. **Installer**: `coney-tools install` (copy, verify, `index/install.json`), then the launcher.
+1. **Installer**: copy, verify, `index/install.json` (done for the PS2 disc: `coney --install`,
+   [Running Coney](running.md#install); started early, as a maintainer asked), then the launcher, then the Xbox disc.
 2. **Overrides** for presentation kinds, with PNG and WAV loaders; test mode stays PS2-only.
 3. **Xbox source**: textures via the `ResourceResolver` (F4) and HD movies ([Xbox assets](../research/xbox-assets.md)).
 4. **Native list** (`buildNatives`), the `ScriptScheduler` as the one entry, and the call tracer.

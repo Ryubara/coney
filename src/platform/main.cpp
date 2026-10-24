@@ -66,6 +66,7 @@
 #include "gui/text_layout.h"
 #include "human/locomotion.h"
 #include "human/player.h"
+#include "install/known_discs.h"
 #include "platform/audio_output.h"
 #include "platform/audio_output_controls.h"
 #include "platform/character_viewer_mode.h"
@@ -78,6 +79,7 @@
 #include "platform/game_session_debug.h"
 #include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
+#include "platform/install_command.h"
 #include "platform/log_output.h"
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
@@ -283,6 +285,12 @@ int main(int argc, char** argv) {
     if (options->showHelp) {
         printText(coney::usageText());
         return 0;
+    }
+    // `--install`: copy the disc into the install folder and exit, before anything opens a window or a device.
+    if (options->installFrom.has_value()) {
+        return coney::platform::runInstallCommand(
+            *options, coney::install::knownDiscs(),
+            coney::platform::installProgramFiles(options->dataPath.value_or(""), argc > 0 ? argv[0] : nullptr), stderr);
     }
 
     // The run log (docs/guides/run-log.md): the console and the log file, as the release build starts it.

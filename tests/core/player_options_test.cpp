@@ -3,6 +3,7 @@
 // (docs/guides/building.md#debug-tools, docs/guides/running.md).
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -56,6 +57,16 @@ TEST_CASE("the release build takes a player's options", "[options]") {
     CHECK(options->showHelp);
 }
 
+TEST_CASE("the release build takes the install's options", "[options]") {
+    // The player installs their disc with the executable they got (docs/guides/running.md#install).
+    const std::array<std::string_view, 5> args{"--install", "game.iso", "--data", "Coney", "--verify"};
+    auto options = parsePlayer(args);
+    REQUIRE(options.has_value());
+    CHECK(options->installFrom == std::optional<std::string>("game.iso"));
+    CHECK(options->dataPath == std::optional<std::string>("Coney"));
+    CHECK(options->verifyInstall);
+}
+
 TEST_CASE("the release build keeps test mode for its smoke tests", "[options]") {
     const std::array<std::string_view, 5> args{"--headless", "--frames", "10", "--input-script", "pad.txt"};
     auto options = parsePlayer(args);
@@ -102,6 +113,9 @@ TEST_CASE("the release build's usage text lists only a player's options", "[opti
     CHECK(usage.find("--host") != std::string::npos);
     CHECK(usage.find("--join") != std::string::npos);
     CHECK(usage.find("--net-name") != std::string::npos);
+    CHECK(usage.find("--install DISC") != std::string::npos);
+    CHECK(usage.find("--data DIR") != std::string::npos);
+    CHECK(usage.find("--verify") != std::string::npos);
     CHECK(usage.find("--play-level") == std::string::npos);
     CHECK(usage.find("--sandbox") == std::string::npos);
     CHECK(usage.find("--tunables") == std::string::npos);

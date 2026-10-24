@@ -17,7 +17,7 @@ from coney_tools.build_cli import PRESETS
 ROOT = Path(__file__).resolve().parents[2]
 
 #: The libraries a player's build is made of.
-GAME_TARGETS = ("coney_core", "coney_audio", "coney_movies", "coney_net", "coney_platform")
+GAME_TARGETS = ("coney_core", "coney_audio", "coney_install", "coney_movies", "coney_net", "coney_platform")
 #: The debug tools' libraries.
 DEBUG_TARGETS = ("coney_debug", "coney_devtools")
 

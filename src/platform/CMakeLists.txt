@@ -41,6 +41,8 @@ target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp m
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The one game set-up over a disc that every way into a level shares (docs/guides/testing.md#test-through-the-players-path).
 target_sources(coney_platform PRIVATE game_session.cpp)
+# `coney --install`: the player's disc into a portable install folder (docs/guides/running.md#install).
+target_sources(coney_platform PRIVATE install_command.cpp install_folder_fs.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # What both entry points (main_release.cpp and main.cpp) set up the same way (docs/guides/building.md#debug-tools).
@@ -51,7 +53,8 @@ target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
 coney_target_defaults(coney_platform)
 # Never coney_debug or Dear ImGui: the game reaches the debug tools only through hooks it offers
 # (docs/guides/building.md#debug-tools).
-target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies coney_net SDL3::SDL3-static librw::librw)
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_install coney_movies coney_net SDL3::SDL3-static
+                                            librw::librw)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
 
 # The executables (docs/guides/building.md#debug-tools). With the debug tools, `coney` is main.cpp over them, and
@@ -126,6 +129,11 @@ set_tests_properties(coney.release.joins_headless PROPERTIES TIMEOUT 30)
 add_test(NAME coney.release.host_and_join_refused COMMAND ${_coney_release_exe} --headless --frames 3 --host 0 --join
                                                             127.0.0.1)
 set_tests_properties(coney.release.host_and_join_refused PROPERTIES WILL_FAIL TRUE)
+# The player's `--install` (docs/guides/running.md#install): a disc that is not there is refused with a message.
+add_test(NAME coney.release.install_refuses_missing_disc
+         COMMAND ${_coney_release_exe} --install no-such-disc --data "${CMAKE_CURRENT_BINARY_DIR}/install-smoke-release")
+set_tests_properties(coney.release.install_refuses_missing_disc PROPERTIES PASS_REGULAR_EXPRESSION
+                                                                           "not a folder or an ISO image")
 add_test(NAME coney.release.has_no_debug_tools
          COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -DEXPECT=absent -P
                  "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")
@@ -143,6 +151,10 @@ add_test(NAME coney.runs_headless COMMAND coney --headless --frames 3)
 set_tests_properties(coney.runs_headless PROPERTIES TIMEOUT 30)
 add_test(NAME coney.help COMMAND coney --help)
 set_tests_properties(coney.help PROPERTIES PASS_REGULAR_EXPRESSION "--view-sheet SHEET")
+# `--install` refuses a disc that is not there with a message (it exits 1; the message is what is checked).
+add_test(NAME coney.install_refuses_missing_disc COMMAND coney --install no-such-disc --data
+                                                       "${CMAKE_CURRENT_BINARY_DIR}/install-smoke")
+set_tests_properties(coney.install_refuses_missing_disc PROPERTIES PASS_REGULAR_EXPRESSION "not a folder or an ISO image")
 add_test(NAME coney.rejects_bad_argument COMMAND coney --frames abc)
 set_tests_properties(coney.rejects_bad_argument PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.load_needs_disc COMMAND coney --load level1.lev)

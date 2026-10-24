@@ -1,12 +1,12 @@
 # Running Coney
 
 Every option of the `coney` executable and what each mode does. This page says how to start Coney, shows the whole
-command line, and lists the pages that document the options: the window, sound and network, loading and viewing your
-disc, playing a level with its traces and logs, and the controls. It assumes you have built Coney ([Building and
-testing](building.md)); the viewers and the game need your own copy of the game (`--disc`), while `--headless`,
-`--sandbox` and `--audio-test` do not ([Local workspace](workspace.md) says where to keep it). How tests drive the
-executable, and what a change must show before it is done, is in [Testing](testing.md); the debug menus have [their own
-page](debug-menu.md).
+command line, says how to [install the game from your disc](#install), and lists the pages that document the options:
+the window, sound and network, loading and viewing your disc, playing a level with its traces and logs, and the
+controls. It assumes you have built Coney ([Building and testing](building.md)); the viewers and the game need your own
+copy of the game (`--disc`), while `--headless`, `--sandbox` and `--audio-test` do not ([Local workspace](workspace.md)
+says where to keep it). How tests drive the executable, and what a change must show before it is done, is in
+[Testing](testing.md); the debug menus have [their own page](debug-menu.md).
 
 ## Starting Coney {#run-coney}
 
@@ -19,6 +19,7 @@ Everything is drawn into the original's 640 × 448 screen, shown at a television
 allows and centred; a window of another shape gets black bars at the sides or at the top and bottom.
 
 ```text
+coney --install DISC --data DIR [--verify]
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
@@ -41,6 +42,7 @@ That is the command line of a build with the debug tools (`dev`, `playtest`, `ci
 refuses any other with a message that names the debug tools; `coney --help` lists what a build takes:
 
 ```text
+coney --install DISC --data DIR [--verify]
 coney [--disc PATH] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
       [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
@@ -76,6 +78,52 @@ The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
 Support/Coney/Coney/` on macOS); `--profiles DIR` names another folder. A test-mode run without `--profiles` keeps
 its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)).
+
+## Installing from your disc {#install}
+
+`--install DISC --data DIR` copies your PS2 disc into an install folder, so the game runs from it with no disc or
+image afterwards, then exits. `DISC` is a mounted disc, a folder of its files or an ISO image, read directly on every
+system (no mounting); `DIR` is the folder you pick, made if needed. The layout is the one on
+[The install folder](asset-and-script-architecture.md#install-folder):
+
+```sh
+build/dev/src/platform/coney --install /path/to/warriors.iso --data ../../Coney
+build/dev/src/platform/coney --install H:/ --data ../../Coney --verify
+```
+
+```text
+<DIR>/
+  coney(.exe)            this executable, copied (unless it already runs from DIR)
+  game/ps2/              every file of the disc as it is: WARRIORS.DIR, WARRIORS.WAD, SLUS_212.15, IOP/, PSS/, ...
+  overrides/             empty: packs/, textures/, audio/sounds/, audio/music/, movies/, files/
+  index/install.json     what was installed: the disc, Coney's version, every file's size and SHA-1, digests
+```
+
+What it does, in order:
+
+1. **Checks the disc** against the known releases ([The discs Coney installs from](../research/discs.md)): a disc that
+   is not the game, another release, or a copy with a missing or resized file is refused with the reason before
+   anything is written. Today only the NTSC-U disc (SLUS-21215) is known.
+2. **Checks the space**: the drive must hold the files still to copy (4.27 GB for a new install) and 64 MB more.
+3. **Copies each file as it is**, computing its SHA-1 while it copies. It is written as `<name>.part` and renamed only
+   once its SHA-1 matches the known one, so a stopped install (closed, crashed, the drive full) never leaves a
+   half-copied file under its real name. A file whose SHA-1 differs is not kept and the install stops, naming it.
+4. **Copies Coney's own executable** into `DIR` and writes the empty override folders.
+5. **Writes `index/install.json` last.** It is removed when an install starts and exists only once one has finished.
+   It records the disc's id, title, path and digest, Coney's version, per type (`ps2/archive`, `ps2/sound`,
+   `ps2/movies`, `ps2/modules`, `ps2/executable`, `ps2/system`) the count, bytes and digest, and each file's path,
+   size and SHA-1 ([digests](../research/discs.md#digests)). The same disc gives the same file, byte for byte,
+   whatever the folder.
+
+Running the same command again continues where it stopped: a file already there with its size is kept (only a file
+whose SHA-1 was checked ever gets its name), and the rest are copied. `--verify` reads every installed file again and
+copies any that no longer matches. Coney prints one line per file and one each tenth of the way, then a summary of
+counts, bytes and the disc's digest; never a file's contents. It exits 0 when the install finished and 1 when it was
+refused or failed, with the reason. The game text is not extracted: the install copies the disc's files as they are
+([Maintainer decisions](asset-and-script-architecture.md#maintainer-decisions)). The Xbox disc is not taken yet.
+
+The install is a library (`src/install/`, the folder writes in `src/platform/install_folder_fs.cpp`) with a progress
+callback that can cancel, so a launcher can run the same steps behind its own screen.
 
 ## The pages {#pages}
 

@@ -24,6 +24,7 @@ add_library(coney_core STATIC
     core/pad.cpp
     core/pad_handlers.cpp
     core/pads.cpp
+    core/sha1.cpp
     fileio/disc.cpp
     fileio/executable.cpp
     fileio/file_stream.cpp
@@ -502,4 +503,12 @@ if(CONEY_DEBUG_TOOLS)
     coney_target_defaults(coney_debug)
     target_link_libraries(coney_debug PUBLIC coney_core)
 endif()
+
+# The install: the player's disc copied as it is into a portable install folder, checked against the known SHA-1s,
+# with index/install.json; no host file-system code here, the folder is platform/install_folder_fs.cpp
+# (docs/guides/running.md#install).
+add_library(coney_install STATIC install/install_manifest.cpp install/installer.cpp install/known_discs.cpp)
+coney_target_defaults(coney_install)
+target_link_libraries(coney_install PUBLIC coney_core)
+target_compile_definitions(coney_install PRIVATE CONEY_VERSION="${PROJECT_VERSION}")
 add_subdirectory(platform)

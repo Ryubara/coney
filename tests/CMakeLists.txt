@@ -15,6 +15,7 @@ add_executable(coney_tests
     core/name_hash_test.cpp
     core/parse_number_test.cpp
     core/ps2_float_test.cpp
+    core/sha1_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
     core/pad_test.cpp
@@ -36,6 +37,8 @@ add_executable(coney_tests
     fileio/stream_test.cpp
     fileio/wad_index_test.cpp
     fileio/wad_test.cpp
+    install/install_manifest_test.cpp
+    install/installer_test.cpp
     gamemodes/disc_front_end_test.cpp
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
@@ -99,6 +102,9 @@ add_executable(coney_tests
     hud/lock_pick_hud_test.cpp
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
+    platform/disc_install_test.cpp
+    platform/install_command_test.cpp
+    platform/install_folder_fs_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_gang_count_test.cpp
     platform/disc_rumble_test.cpp

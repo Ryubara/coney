@@ -123,6 +123,12 @@ struct Options {
     std::optional<int> frameLimit;
     /// `--disc`: the player's disc, a folder (a mounted disc) or an ISO 9660 image, exactly as typed.
     std::optional<std::string> discPath;
+    /// `--install DISC`: install the PS2 disc (a mounted disc, a folder of its files or an ISO image) into the folder
+    /// dataPath names, then exit (docs/guides/running.md#install). Only dataPath and verifyInstall go with it.
+    std::optional<std::string> installFrom;
+    /// `--data DIR`: the install folder (docs/guides/asset-and-script-architecture.md#install-folder). Requires
+    /// installFrom.
+    std::optional<std::string> dataPath;
     /// `--load`, in the order given: WAD entries to load through the chunk system, each a name or a `0x` hash.
     /// Requires discPath.
     std::vector<std::string> loads;
@@ -252,6 +258,8 @@ struct Options {
     // The flags and the one-byte settings last, so the fields above pack without padding.
     /// `--help` was given: print usageText() and exit 0.
     bool showHelp = false;
+    /// `--verify`: with installFrom, re-read every file already installed and copy again any that changed.
+    bool verifyInstall = false;
     /// `--headless`: no window and librw's NULL renderer, so nothing needs a display or a GPU. CI runs this way.
     bool headless = false;
     /// `--freeze-world`: after the first step of play nothing in the world advances (pedestrians, cars, particles,
@@ -348,9 +356,9 @@ enum class OptionSet : std::uint8_t {
     Player, ///< A player's options and the three of test mode the release build's smoke tests use.
 };
 
-/// The options the release build takes, as typed (`--disc`): a player's (the disc, the language, the profiles, the
-/// frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window) and test mode's
-/// `--headless`, `--frames` and `--input-script`, which its smoke tests need.
+/// The options the release build takes, as typed (`--disc`): a player's (the install, the disc, the language, the
+/// profiles, the frame rate and vsync, the PS2 look, the sound, the FPS counter, skipping movies, the window, network
+/// play) and test mode's `--headless`, `--frames` and `--input-script`, which its smoke tests need.
 [[nodiscard]] std::span<const std::string_view> playerOptions();
 
 /// Whether `option` (as typed, `--disc`) is one of playerOptions().
