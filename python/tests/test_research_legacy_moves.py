@@ -24,8 +24,7 @@ from research_support import (
 
 from coney_tools import docs_check, docs_legacy
 from coney_tools.docs_legacy import LEGACY_RULES
-from coney_tools.docs_page import Finding
-from coney_tools.research_legacy import Legacy, Touch, apply_legacy, format_legacy, parse_legacy
+from coney_tools.research_legacy import Legacy, Touch, format_legacy, parse_legacy
 
 LISTING = "docs/progress/ghidra-functions.tsv"
 OLD = "docs/research/widget.md"
@@ -43,9 +42,10 @@ def old_text(extra: str = "") -> str:
     return page(CLAIM + FILLER + extra, meta="")
 
 
-def new_text(extra: str = "", head: str = VERIFIED) -> str:
-    """The same page restructured to the standard but for the grading: a system page of its own."""
-    return page(CLAIM + FILLER + extra, kind="system", head=head)
+def new_text(extra: str = "", head: str = VERIFIED, data: str = "Nothing more to say.\n") -> str:
+    """The same page restructured to the standard but for the grading: a system page of its own. `extra` ends the
+    Behaviour section, which holds the ungraded address, and `data` is the body of the Data section."""
+    return page(CLAIM + FILLER + extra, kind="system", head=head, sections={"Data": data})
 
 
 def listed(root: Path) -> dict[str, dict[str, int]]:
@@ -87,20 +87,30 @@ def errors_of(root: Path, name: str) -> list[str]:
 # --- what a moved page is excused from --------------------------------------------------------------------------------
 
 
-def finding(rule: str, line: int, by_section: bool = False) -> Finding:
-    """An error of `rule` on `line`."""
-    return Finding(rule, line, f"{rule} at {line}", "error", by_section)
+MOVED = "docs/research/widget-old.md"
 
 
-def test_a_moved_page_is_excused_the_grading_of_every_section_and_no_other_error() -> None:
-    found = [finding("evidence", 5, True), finding("evidence", 9), finding("history", 3), finding("length", 1)]
-    kept = apply_legacy(found, {"evidence": 2}, LEGACY_FILE, None, moved=True)
-    assert [(item.rule, item.line, item.severity) for item in kept] == [
-        ("length", 1, "error"),
-        ("history", 3, "error"),
-        ("evidence", 5, "warning"),
-        ("evidence", 9, "error"),
-    ]
+def test_a_moved_page_is_graded_where_the_move_changed_it_and_excused_elsewhere() -> None:
+    text = page(f"The widget spins at {IN_FUNCTION}.\n", sections={"Data": f"The table sits at {IN_FUNCTION}.\n"})
+    lines = text.splitlines()
+    behaviour = next(i for i, line in enumerate(lines, 1) if line.startswith("The widget"))
+    data = next(i for i, line in enumerate(lines, 1) if line.startswith("The table"))
+    listed = env(legacy={RESEARCH_PATH: {"evidence": 2}})
+    # Only the Data section changed in the move: its address owes a level, the one in Behaviour is still excused.
+    changed = findings(RESEARCH_PATH, text, listed, Touch(frozenset({data}), moved_from=MOVED))
+    graded = sorted((item.line, item.severity) for item in changed if item.rule == "evidence")
+    assert graded == sorted([(data, "error"), (behaviour, "warning")])
+    # A move that changed no line (a pure rename) leaves the grading excused page-wide.
+    pure = findings(RESEARCH_PATH, text, listed, Touch(frozenset(), moved_from=MOVED))
+    assert rules_of(pure) == [] and rules_of(pure, "warning") == ["evidence"]
+
+
+def test_a_moved_page_is_excused_the_grading_of_the_sections_it_did_not_change_and_no_other_rule() -> None:
+    # The entry lists more than 'evidence' and 'length', yet a moved page keeps only the grading.
+    text = page("The widget spins.\n", head="")
+    listed = env(legacy={RESEARCH_PATH: {"evidence": 1, "verified": 1, "length": 4}})
+    errored = rules_of(findings(RESEARCH_PATH, text, listed, Touch(frozenset(), moved_from=MOVED)))
+    assert "verified" in errored
 
 
 def test_a_moved_page_keeps_an_old_runtime_claim_and_the_missing_run_records() -> None:
@@ -132,7 +142,7 @@ def test_a_moved_page_whose_entry_is_the_old_form_claims_keeps_it_until_they_cit
 def test_a_moved_page_is_held_to_the_run_ids_of_the_levels_and_the_other_rules() -> None:
     text = page(f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n", head="")
     listed = env(legacy={RESEARCH_PATH: {"evidence": 1, "verified": 1}}, runs=frozenset({"r-2"}))
-    errored = rules_of(findings(RESEARCH_PATH, text, listed, Touch(moved_from="docs/research/widget-old.md")))
+    errored = rules_of(findings(RESEARCH_PATH, text, listed, Touch(frozenset({1}), moved_from=MOVED)))
     # The entry's 'verified' is ignored for a moved page, and a run id that names no record is no grading.
     assert "verified" in errored and "evidence" in errored
 
@@ -148,6 +158,34 @@ def test_a_moved_page_passes_with_its_grading_still_a_warning(tmp_path: Path) ->
     result = docs_check.check_changed(root, "main", context(root))
     assert result.failed == {}
     assert [item.severity for item in result.findings[NEW] if item.rule == "evidence"] == ["warning"]
+
+
+def test_a_section_the_move_leaves_alone_keeps_its_grading_excused(tmp_path: Path) -> None:
+    root = moved_checkout(tmp_path)
+    move(root, new_text(data="The Data section gained a line in the move.\n"))
+    follow(root)
+    touch = docs_check.change_touches(root, "main", [NEW])[NEW]
+    assert touch.moved_from == OLD and touch.lines
+    result = docs_check.check_changed(root, "main", context(root))
+    assert result.failed == {}
+    assert [item.severity for item in result.findings[NEW] if item.rule == "evidence"] == ["warning"]
+
+
+def test_a_section_the_move_changes_is_graded(tmp_path: Path) -> None:
+    root = moved_checkout(tmp_path)
+    # A line added to the Behaviour section, beside the address that has no level.
+    move(root, new_text("The move added this line.\n\n"))
+    follow(root)
+    assert errors_of(root, NEW) == ["evidence"]
+
+
+def test_an_address_the_move_adds_owes_its_level_and_the_untouched_ones_do_not(tmp_path: Path) -> None:
+    root = moved_checkout(tmp_path)
+    move(root, new_text(data=f"A fact the move added, at {IN_FUNCTION}.\n"))
+    follow(root)
+    result = docs_check.check_changed(root, "main", context(root))
+    graded = sorted((item.line, item.severity) for item in result.findings[NEW] if item.rule == "evidence")
+    assert [severity for _, severity in graded] == ["error", "warning"] and "evidence" in errors_of(root, NEW)
 
 
 def test_a_moved_page_is_checked_in_full_for_everything_but_the_grading(tmp_path: Path) -> None:
@@ -244,3 +282,12 @@ def test_an_unstaged_new_page_is_new(tmp_path: Path, staged: bool) -> None:
     # Staged, git pairs the deletion with the new file; unstaged, the new file is untracked and git cannot.
     touch = docs_check.change_touches(root, "main", [NEW])[NEW]
     assert (touch.moved_from == OLD) is staged and touch.new is (not staged)
+
+
+def test_an_old_entry_left_beside_the_entry_that_followed_is_to_be_removed(tmp_path: Path) -> None:
+    root = moved_checkout(tmp_path)
+    move(root, new_text())
+    kept = listed(root)
+    write(root, LEGACY_FILE, format_legacy(Legacy({**kept, NEW: {"evidence": 1}})))
+    found = docs_check.check_changed(root, "main", context(root)).failed[LEGACY_FILE]
+    assert any(f"{OLD} moved to {NEW}, which is listed: remove the old entry" in item.message for item in found)

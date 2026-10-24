@@ -168,3 +168,50 @@ def test_a_rewrite_next_to_another_edit_touches_the_line_of_the_edit_only(tmp_pa
     text = LINKS.replace("combat.md#grab", "combat-grabs.md#grab").replace("for the grab", "for the grabs")
     write(root, "docs/research/ai.md", text)
     assert touches(root) == {"docs/research/ai.md": frozenset({3})}
+
+
+# --- a page that moved to another folder ------------------------------------------------------------------------------
+
+
+def test_a_moved_pages_links_rewritten_for_its_new_folder_are_no_touch() -> None:
+    def moved(old: str, new: str) -> bool:
+        return link_only_change(old, new, "docs/research/ai", GONE, resolves, old_folder="docs/research")
+
+    assert moved("[a](combat-grabs.md#grab)", "[a](../combat-grabs.md#grab)")
+    assert moved(
+        "[a](combat-grabs.md#grab) and [b](old-name.md)", "[a](../combat-grabs.md#grab) and [b](../combat/index.md)"
+    )
+    assert not moved("[a](combat-grabs.md#grab)", "[a](../combat-grabs.md#release)")  # another anchor
+    assert not moved("[a](combat-grabs.md#grab)", "[a](../camera.md#grab)")  # another page
+    assert not moved("[a](combat-grabs.md#grab)", "[b](../combat-grabs.md#grab)")  # another text
+    assert not moved("[a](combat-grabs.md#grab)", "[a](combat-grabs.md#grab)")  # no change at all
+
+
+def test_the_lines_of_a_moved_page_leave_out_its_own_relative_links() -> None:
+    diff = (
+        "@@ -3 +3 @@\n-See [grabs](combat-grabs.md#grab).\n+See [grabs](../combat-grabs.md#grab).\n"
+        "@@ -5 +5 @@\n-Plain.\n+Plain, edited.\n"
+    )
+    assert touched_lines(diff, "docs/research/ai", GONE, resolves, "docs/research") == frozenset({5})
+
+
+def test_a_page_moved_to_another_folder_is_graded_only_where_it_changed(tmp_path: Path) -> None:
+    old, new = "docs/research/ai.md", "docs/research/ai/index.md"
+    text = "# Links\n\nSee [grabs](combat-grabs.md#grab) for the grab.\n\n" + "A fact about the page.\n\n" * 30
+    root = checkout(
+        tmp_path, files={old: text, "docs/research/combat-grabs.md": "# Grabs\n\n## Grab {#grab}\n\nText.\n"}
+    )
+    write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "legacy")
+    git(root, "checkout", "-q", "-B", "main")
+    git(root, "checkout", "-q", "-b", "move")
+    (root / "docs/research/ai").mkdir()
+    git(root, "mv", old, new)
+    write(root, new, text.replace("(combat-grabs.md", "(../combat-grabs.md"))
+    git(root, "add", "-A")
+    touch = docs_check.change_touches(root, "main", [new])[new]
+    assert touch.moved_from == old and touch.lines == frozenset()
+    write(root, new, text.replace("(combat-grabs.md", "(../combat-grabs.md").replace("A fact", "An edited fact", 1))
+    git(root, "add", "-A")
+    assert docs_check.change_touches(root, "main", [new])[new].lines == frozenset({5})

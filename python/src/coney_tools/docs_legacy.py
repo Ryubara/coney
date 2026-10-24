@@ -129,7 +129,9 @@ def problems(root: Path, context: Context, base: str | None = None) -> list[str]
     moved_to = {old: new for new, old in moved.items()}
     for path, rules in env.legacy.pages.items():
         if not (root / path).is_file():
-            if path in moved_to:
+            if path in moved_to and moved_to[path] in env.legacy.pages:
+                found.append(f"{file}: {path} moved to {moved_to[path]}, which is listed: remove the old entry")
+            elif path in moved_to:
                 found.append(
                     f"{file}: {path} moved to {moved_to[path]}: its entry follows, grading only "
                     "(`coney-tools docs legacy --prune`)"
@@ -160,7 +162,8 @@ def problems(root: Path, context: Context, base: str | None = None) -> list[str]
 def _added(file: str, path: str, rules: Mapping[str, int], earlier: Legacy, moved: Mapping[str, str]) -> list[str]:
     """What is wrong with an entry for `path`, which the file did not list where the branch left `base`: all of it,
     unless `path` is the new path of a listed page that moved, which may be listed under `evidence` if the old entry
-    was."""
+    was. Its count is not compared with the old entry's: counts say how much is left, and are never compared with a
+    page."""
     origin = earlier.pages.get(moved.get(path, ""))
     if origin is None:
         return [f"{file}: {path} is added: a page that does not meet the standard is fixed, not listed"]

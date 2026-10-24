@@ -18,15 +18,11 @@ and grades the touched section"):
   heading) the change touches and stays a warning elsewhere;
 * `length`: waived until the page's restructure.
 
-A page that moved with git (a rename the change's diff detects, `Touch.moved_from`) is touched on every line, and keeps
-its entry's grading exemption only: its `evidence` entry still excuses the grading findings of every section
-(`Finding.by_section`), and every other finding, `length` included, is an error. The entry follows the page to its new
-path (`docs_legacy`), so the grading exemption lasts until the page is touched section by section like any other.
-
-Every other finding of a listed rule (front matter, sections, the Verified line, address forms, addresses that do not
-resolve, Ghidra's names, copies, dates, stale wording, refused level spellings and run ids that name no record) is an
-error on a touched page. A rule the page now passes is an error until it is removed from the file, so the file only
-shrinks.
+A page that moved with git (a rename the change's diff detects, `Touch.moved_from`) is read as any touched page, from
+the lines git's diff of the renamed pair changes, with one difference: its entry excuses the grading alone. Only its
+`evidence` entry counts; the front matter, sections, length and every other rule it lists are checked in full. The entry
+follows the page to its new path (`docs_legacy`), so the grading of the sections the move left alone stays excused until
+a later change touches them.
 
 No new page may be listed, and nothing but a scan with `coney-tools docs legacy --init` ever adds one. The numbers
 tell people deciding what to fix first how much is left; they are never compared with a page.
@@ -125,8 +121,6 @@ def apply_legacy(
     excused: Mapping[str, int],
     legacy_file: str,
     touched: Callable[[Finding], bool] | None,
-    *,
-    moved: bool = False,
 ) -> list[Finding]:
     """`findings` of a listed page with its excuses applied.
 
@@ -135,7 +129,7 @@ def apply_legacy(
     section the change touches, and only `length` and a grading finding (`Finding.by_section`) outside those sections
     stay excused; every other finding of an excused rule is an error. A rule in `excused` without any finding is an
     error: take it out of the file. Findings of other rules, warnings included, pass through; a warning of an excused
-    rule is dropped. For a `moved` page the whole page is touched: only a grading finding stays excused, wherever it is.
+    rule is dropped.
     """
     kept: list[Finding] = []
     waived: dict[str, list[Finding]] = {rule: [] for rule in excused}
@@ -147,7 +141,7 @@ def apply_legacy(
             if finding.held:
                 waived[finding.rule].append(finding)  # an old-form claim still owing a run record keeps the entry
             continue  # any other warning of an excused rule is part of what the legacy page is excused from
-        elif _stays_excused(finding, touched, moved):
+        elif _stays_excused(finding, touched):
             waived[finding.rule].append(finding)
         else:
             kept.append(finding)
@@ -175,12 +169,9 @@ def apply_legacy(
     return sorted(kept, key=lambda item: item.line)
 
 
-def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None, moved: bool = False) -> bool:
+def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None) -> bool:
     """Whether an error of an excused rule is still excused: always while the change leaves the page alone, and on a
-    touched page only the length and the grading of a section the change does not touch. On a moved page, the grading
-    alone."""
-    if moved:
-        return finding.by_section
+    touched page only the length and the grading of a section the change does not touch."""
     if touched is None or finding.rule == "length":
         return True
     return finding.by_section and not touched(finding)

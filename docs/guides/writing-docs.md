@@ -381,26 +381,29 @@ the rules it fails and with the number of findings at the last scan. `docs check
 - refuses a new page in the file. A new page meets the standard in full.
 
 **A page moved with git keeps its grading exemption and nothing else.** When a restructure moves a legacy page (a
-rename, say `combat.md` to `combat/index.md`), the page is read as touched throughout, and as the research-page design
-intends ("grading may still lag"), its entry's `evidence` rule goes on excusing the grading: an address with no level, and
-a runtime claim of the old form or with no run record to cite (the rule that a page outside the file may not make one
-while `research/runs/` is missing). Every other rule is checked as for any touched page, `length` and the front matter,
-sections, Verified line, address forms and resolution, history and copied paragraphs included; so are the spelling of a
-level and a run id that names no record. What counts as moved is what git says, not what the file says: a rename that
-`git diff -M` finds against the commit where the branch left `main`, at the similarity `research.moved_similarity` of
-`.github/conventions.yml` (50%, git's default) or more. So the entry cannot be used to launder a new page: a copy of a
-legacy page, or a new page beside a deleted one with too little of its text, is new and cannot be listed. The entry
-follows the page: `coney-tools docs legacy --prune` moves the old path's entry to the new path, keeping `evidence` alone,
-and the check refuses an entry for the new path that lists any other rule, or `evidence` when the old entry did not.
-Stage the move (`git mv`, or `git add` the new page and the deletion) so git can pair them. Once merged, the page is an
-ordinary legacy page: the next change to it grades the sections it touches.
+rename, say `combat.md` to `combat/index.md`), it is read as any touched page, from the lines git's diff of the renamed
+pair changes. Its entry's `evidence` rule goes on excusing the grading of the sections the move left alone, as the
+research-page design intends ("grading may still lag"): an address with no level, and a runtime claim of the old form or
+with no run record to cite (the rule that a page outside the file may not make one while `research/runs/` is missing).
+The grading of a section the move changed is owed like any touched section's. Every other rule is checked in full, on
+the whole page, whatever the entry lists: `length`, the front matter, sections, Verified line, address forms and
+resolution, history and copied paragraphs, and the spelling of a level and a run id that names no record. What counts as
+moved is what git says, not what the file says: a rename that `git diff -M` finds against the commit where the branch
+left `main`, at the similarity `research.moved_similarity` of `.github/conventions.yml` (50%, git's default) or more. So
+the entry cannot be used to launder a new page: a copy of a legacy page, or a new page beside a deleted one with too
+little of its text, is new and cannot be listed. The entry follows the page: `coney-tools docs legacy --prune` moves the
+old path's entry to the new path, keeping `evidence` alone, and the check refuses an entry for the new path that lists
+any other rule, or `evidence` when the old entry did not, and an old entry left beside the new one. The count is not
+compared with the old entry's: counts say how much is left, and are never compared with a page. Stage the move (`git
+mv`, or `git add` the new page and the deletion) so git can pair them. Once merged, the page is an ordinary legacy page.
 
 **A link rewrite that follows a move is no touch.** A line whose only change is the target of a link `[text](target)` does
 not touch the page that holds it when, for each link it changes, the old target's page was renamed or deleted in the same
-change (any anchor) and the new target resolves to an existing page that has the anchor. The link's text, the rest of the
-line and the number of links must be equal; a link to a page that stayed, to a target that resolves nowhere, to a
-`repo:` path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end
-the excuse of every page that links to it.
+change (any anchor) and the new target resolves to an existing page that has the anchor. A page that moved to another
+folder rewrites its own relative links for it: a link to the same page and anchor is no touch either (the old target is
+read from the folder the page left). The link's text, the rest of the line and the number of links must be equal; a link
+to a page that stayed, to a target that resolves nowhere, to a `repo:` path or an address, an image, or any other edit on
+the line is a touch of that line. So moving a page does not end the excuse of every page that links to it.
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by

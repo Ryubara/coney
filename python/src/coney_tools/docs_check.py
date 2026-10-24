@@ -120,7 +120,8 @@ def _touched(page: Page, lines: frozenset[int]) -> Callable[[Finding], bool]:
 def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding]) -> list[Finding]:
     """The research standard for `path` and its `style` findings, with the legacy file's excuses applied. A change that
     touches a listed page ends the excuse for every rule but the length and the grading of the sections it leaves
-    alone (`apply_legacy`). A page git sees as moved keeps the grading exemption of its entry and nothing else."""
+    alone (`apply_legacy`). A page git sees as moved is read the same way, from the lines git's diff of the renamed pair
+    changes, but its entry excuses the grading alone: every other rule it lists is checked in full, the length too."""
     moved = touch.moved_from is not None
     excused = env.legacy.rules(path)
     if moved:
@@ -139,7 +140,7 @@ def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style
         )
         return findings
     touched = _touched(page, touch.lines) if touch.lines else None
-    return apply_legacy(findings, excused, env.research.files.legacy, touched, moved=moved)
+    return apply_legacy(findings, excused, env.research.files.legacy, touched)
 
 
 # --- checking ---------------------------------------------------------------------------------------------------------
@@ -217,7 +218,15 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
         if kind_of(name) != "research":
             continue
         if name in moves:
-            touches[name] = Touch(moved_from=moves[name])
+            # A moved page is read line by line from git's diff of the renamed pair, so only what the move really
+            # changed is touched; its links are read from the folder it left.
+            old = moves[name]
+            detect = "-M" if similarity is None else f"-M{similarity}%"
+            diff = local_gate.run_command(
+                ["git", "-C", str(root), "diff", "-U0", detect, since, "--", old, name], root
+            )[1]
+            lines = touched_lines(diff, posixpath.dirname(name), gone, resolves, posixpath.dirname(old))
+            touches[name] = Touch(lines, moved_from=old)
             continue
         code, _ = local_gate.run_command(["git", "-C", str(root), "cat-file", "-e", f"{since}:{name}"], root)
         if code != 0:
