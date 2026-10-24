@@ -330,6 +330,118 @@ def test_a_held_claim_keeps_s_on_hold_through_sweeps_and_is_not_released(
     assert [label for label in github.view(10).labels if label.startswith("S-")] == ["S-in-progress"]
 
 
+def labels_of(github: FakeGitHub, number: int = 10) -> list[str]:
+    """The status labels of an issue, sorted."""
+    return sorted(label for label in github.view(number).labels if label.startswith("S-"))
+
+
+def test_a_held_claim_with_an_open_pull_request_loses_pending_review_and_gets_it_back(
+    engine: Engine, github: FakeGitHub, clock: Clock
+) -> None:
+    say(github, 10)
+    engine.reconcile(10)
+    github.add_pr(60)
+    github.link_pr(10, 60, "open", head_date=clock.now(), author="alice")
+    engine.reconcile(10)
+    assert labels_of(github) == ["S-pending-review"] and card_of(github, 10).status == "pr-open"
+    # The hold takes the claim's own label off, even the one the pull request set; the claim and the pull request stay.
+    github.add_label(10, "S-on-hold")
+    clock.advance(hours=100)
+    engine.reconcile(10)
+    engine.sweep()
+    assert labels_of(github) == ["S-on-hold"]
+    assert github.view(10).assignees == ("alice",) and card_of(github, 10).status == "pr-open"
+    # Lifting the hold while the pull request is open brings back the label for the pull request, not S-in-progress.
+    github.remove_label(10, "S-on-hold")
+    engine.reconcile(10)
+    assert labels_of(github) == ["S-pending-review"]
+
+
+def test_a_hold_and_a_block_on_one_claim_both_stay_and_the_claim_label_waits_for_both_to_go(
+    engine: Engine, github: FakeGitHub, clock: Clock
+) -> None:
+    say(github, 10)
+    engine.reconcile(10)
+    github.add_label(10, "S-blocked")
+    github.add_label(10, "S-on-hold")
+    clock.advance(hours=100)
+    for _ in range(3):
+        engine.reconcile(10)
+    # Both paused labels stay (a maintainer put each there), the hold takes S-in-progress off and the claim keeps.
+    assert labels_of(github) == ["S-blocked", "S-on-hold"]
+    assert github.view(10).assignees == ("alice",) and github.others(10) == []
+    assert "waits while" in github.cards(10)[-1].body
+    # Lifting only the hold leaves the block: the claim's label comes back when the last paused label is gone.
+    github.remove_label(10, "S-on-hold")
+    engine.reconcile(10)
+    assert labels_of(github) == ["S-blocked"] and github.view(10).assignees == ("alice",)
+    github.remove_label(10, "S-blocked")
+    engine.reconcile(10)
+    assert labels_of(github) == ["S-in-progress"]
+
+
+def count_comment_reads(github: FakeGitHub, number: int) -> list[int | str]:
+    """Make `github.comments` record each call (the list it returns grows as the engine reads comments)."""
+    original = github.comments
+    calls: list[int | str] = []
+
+    def comments(n: int):  # type: ignore[no-untyped-def]
+        calls.append(n)
+        return original(n)
+
+    github.comments = comments  # type: ignore[method-assign,assignment]
+    return calls
+
+
+@pytest.mark.parametrize("with_pull_request", [False, True])
+def test_a_held_claim_costs_no_comments_request_beyond_the_one_that_starts_the_pass(
+    engine: Engine, github: FakeGitHub, clock: Clock, with_pull_request: bool
+) -> None:
+    say(github, 10)
+    engine.reconcile(10)
+    if with_pull_request:
+        github.add_pr(60)
+        github.link_pr(10, 60, "open", head_date=clock.now(), author="alice")
+    github.add_label(10, "S-on-hold")
+    engine.reconcile(10)  # the pass that takes the claim's label off and writes the card's waiting note
+    reads = count_comment_reads(github, 10)
+    clock.advance(hours=1)
+    engine.reconcile(10)
+    # Once the hold has taken the claim's label off, the wanted label stays missing but nothing is written for it, so
+    # there is no write to guard: the pass reads the comments once, to see the cards, and not again for a skipped label.
+    assert reads == [10]
+    reads.clear()
+    engine.sweep()
+    assert reads == [10]
+
+
+def test_a_held_claim_that_still_has_its_label_is_guarded_before_the_label_is_taken_off(
+    engine: Engine, github: FakeGitHub, clock: Clock
+) -> None:
+    # The pass after the hold writes (it removes S-in-progress), so the stale-read guard runs before that write. A card
+    # edited just before the second comments read (the guard's) stops that pass before it writes anything; the label
+    # goes only in the pass that starts over, after a third read sees the edit. Unguarded, it went right after read 1.
+    say(github, 10)
+    engine.reconcile(10)
+    github.add_label(10, "S-on-hold")
+    newer = card_of(github, 10).changed(last_activity=clock.now(), last_activity_why="progress")
+    comment_id = github.cards(10)[-1].id
+    inject_on_read(github, 10, 2, lambda: github.edit_comment(comment_id, model.render_card(newer, RULES)))
+    events = count_comment_reads(github, 10)
+    remove_label = github.remove_label
+
+    # Each label removal goes into the same list as the comment reads, so the test sees their order.
+    def record_removal(number: int, label: str) -> None:
+        events.append(f"remove {label}")
+        remove_label(number, label)
+
+    github.remove_label = record_removal  # type: ignore[method-assign]
+    engine.reconcile(10)
+    removed = events.index("remove S-in-progress")
+    assert events[:removed].count(10) >= 3
+    assert labels_of(github) == ["S-on-hold"] and card_of(github, 10).last_activity_why == "progress"
+
+
 def test_a_hold_lifted_after_unclaim_leaves_the_status_to_the_coordinator(engine: Engine, github: FakeGitHub) -> None:
     say(github, 10)
     engine.reconcile(10)
