@@ -802,8 +802,12 @@ void ScriptedBrains::humanTeleported(double handle, const world_objects::Placeme
     if (found == nullptr || found->type() == BrainType::Player) {
         return;
     }
+    // TeleportToFlag's two steps: the placement (Human_SetTransform), then the motion reset (Human_ResetMotion).
+    // **Coney's choice**: `Teleport` (Object_Teleport, the Rumble arenas') takes the same path, though the original
+    // makes no motion reset after it (docs/research/teleports.md#motion-reset).
     const std::array<float, 3>& p = placement.position;
-    found->human().spawn(nullptr, anim::Vec3{p[0], p[1], p[2]}, placement.headingDegrees);
+    found->human().place(placeGround(handle), anim::Vec3{p[0], p[1], p[2]}, placement.headingDegrees);
+    found->human().resetMotion();
 }
 
 std::optional<world_objects::Placement> ScriptedBrains::humanPlacement(double handle) const {

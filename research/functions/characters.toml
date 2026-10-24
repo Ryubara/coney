@@ -1557,17 +1557,17 @@ status = "legacy"
 [[function]]
 address = 0x0023d440
 name = "Human_SetTransform"
-page = "teleports.md#keeps-health"
-role = "A human's placement (the scripts' `Teleport` and `TeleportToFlag`): breaks the pair, lowers it onto a short ray's hit outside a scene, sets the transform and facing; the health is left as it was."
+page = "teleports.md#placement"
+role = "A human's placement (the scripts' `Teleport` and `TeleportToFlag`, a skipped scene's end): breaks the pair, drops the point 0.5 straight down onto a hit outside a scene, sets the transform and facing; no meter, stun or clip is written."
 level = "confirmed-code"
 note = "the health kept is also confirmed (runtime)"
-coney = "src/human/human.h:Human::spawn"
+coney = "src/human/human.h:Human::place"
 status = "compared"
 
 [[function.gaps]]
-what = "Coney's placement also restarts the fighter's state (stun, meters other than health) as a creation does; the original's slot +0x14c after TeleportToFlag is not traced"
+what = "the brain's front action (type 1) is not popped, and a climb in progress ends"
 relation = "stand-in"
-question = "teleports.md#q-teleport-reset"
+question = "teleports.md#q-placement-rest"
 
 [[function]]
 address = 0x0023d8c8
@@ -1613,6 +1613,15 @@ role = "1.5 m ray down from 1 m above the feet"
 level = "confirmed-code"
 coney = "src/ai/hiding.h:updateHiding"
 status = "legacy"
+
+[[function]]
+address = 0x0023f158
+name = "Human_ResetMotion"
+page = "teleports.md#motion-reset"
+role = "Slot `+0x14c`: the move velocity zeroed (`Human_SetMoveVelocity`), the steer `+0x300`-`+0x332` cleared, `+0x2e0`-`+0x2ec` set to (0, 0, 0, 1), the transform set again; `TeleportToFlag` and a scene's start call it."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::resetMotion"
+status = "compared"
 
 [[function]]
 address = 0x0023fea8

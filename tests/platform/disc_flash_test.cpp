@@ -55,6 +55,8 @@ constexpr std::uint32_t kFlashClip = 665;
 constexpr int kEventUpdate = 19;
 // The interface cue `Flash_Use` plays: 23, `vags/misc/flash`.
 constexpr std::size_t kFlashCue = 23;
+// The animation sound 665's event 11 asks for: 70 (docs/research/combat-rage.md#rage).
+constexpr std::uint32_t kFlashAnimSound = 70;
 // How long anything here may take: 60 s of frames.
 constexpr std::uint64_t kLimit = 1800;
 // A forward stick that walks (under the run's 0.95) and one that runs, as fractions of full deflection.
@@ -160,6 +162,7 @@ struct Use {
     int healUpdate = -1;              // the update the flash was spent and the health filled
     int cueUpdate = -1;               // the update interface cue 23's sound was asked for
     int animSoundUpdate = -1;         // the update the humans' animation sounds count rose
+    std::uint32_t animSound = 0;      // the animation sound player 1 asked for last, on that update
     int flashesAfter = -1;            // the flashes left at the end
     int healthAfter = -1;             // the health at the end
     int healthBefore = -1;            // the health at the press
@@ -261,6 +264,9 @@ Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, in
         const std::uint64_t now = animSoundsAsked(run.audio().game());
         if (now > animSounds && use.animSoundUpdate < 0 && use.healUpdate >= 0) {
             use.animSoundUpdate = update;
+            // The player's own: on that update other humans' clips ask for theirs too (a footstep's).
+            const coney::HumanCreation* player = run.session().flow().humans().player(1);
+            use.animSound = player != nullptr ? run.audio().game().lastAnimSound(player->handle) : 0;
         }
         animSounds = now;
     }
@@ -276,11 +282,12 @@ Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, in
 // health filled (not before: it stays as it was until then), cue 23 and the clip's animation sound 70 sound on that
 // update, and nothing the engine was asked to play was left silent.
 void checkUse(const Use& use, const char* what) {
-    std::printf("  %s: 665 %s from update %d; spent at %d, cue 23 at %d (x%d), animation sound at %d; flashes 1 -> %d, "
-                "health %d -> %d of %d, full from update %d; %llu plays silent\n",
+    std::printf("  %s: 665 %s from update %d; spent at %d, cue 23 at %d (x%d), animation sound %u at %d; flashes 1 -> "
+                "%d, health %d -> %d of %d, full from update %d; %llu plays silent\n",
                 what, use.played ? "plays" : "does not play", use.startUpdate, use.healUpdate, use.cueUpdate,
-                use.cueSounds, use.animSoundUpdate, use.flashesAfter, use.healthBefore, use.healthAfter,
-                use.healthMaximum, use.healthFilledUpdate, static_cast<unsigned long long>(use.unheard));
+                use.cueSounds, static_cast<unsigned>(use.animSound), use.animSoundUpdate, use.flashesAfter,
+                use.healthBefore, use.healthAfter, use.healthMaximum, use.healthFilledUpdate,
+                static_cast<unsigned long long>(use.unheard));
     INFO(what);
     CHECK(use.played);
     CHECK(use.flashesAfter == 0);
@@ -293,6 +300,7 @@ void checkUse(const Use& use, const char* what) {
     CHECK(use.cueUpdate == use.healUpdate);
     CHECK(use.cueSounds == 1);
     CHECK(use.animSoundUpdate == use.healUpdate);
+    CHECK(use.animSound == kFlashAnimSound);
     CHECK(use.unheard == 0);
 }
 
@@ -435,14 +443,15 @@ TEST_CASE("the disc's level99 dealer: buying a flash plays the money pair, then 
 }
 
 TEST_CASE(
-    "the disc's level99 from the story: hurt at checkpoint 2, teleported to the dealer, the flash bought heals at "
-    "665's event",
+    "the disc's level99 from a new story, checkpoint ends called: hurt at checkpoint 2, teleported to the dealer, the "
+    "flash bought heals at 665's event",
     "[disc][story][flash]") {
-    // Issue #234, the player's path: a new story's level99, its checkpoints in one session as the story plays them,
-    // the dealer reached with the stick and the flash bought with triangle, then d-pad right with the health the game
-    // left him (docs/research/teleports.md#flash-lesson). The test calls the end of each checkpoint's play
-    // (P1.Cleanup, P2.NavigationSection) and the fence's break (P3.FenceBroken), as the hand-over, street and fence
-    // tests do: the course, the street lesson and the roofs are played by those tests, not here.
+    // Issue #234: a new story's level99 from checkpoint 1, its checkpoints in one session, the dealer reached with the
+    // stick and the flash bought with triangle, then d-pad right with the health the game left him
+    // (docs/research/teleports.md#flash-lesson). The course, the street lesson and the roofs are not played: the test
+    // calls the end of each (P1.Cleanup; P2.NavigationSection with player 1's handle for both of its arguments; the
+    // fence's break P3.FenceBroken), as the hand-over, street and fence tests do, and every scene is skipped with
+    // cross. The teleports and the scenes between are the game's own.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -475,6 +484,7 @@ TEST_CASE(
     const int hurt = health().value();
     const int maximum = health().maximum();
     std::printf("  level99 story: checkpoint 2, health %d of %d\n", hurt, maximum);
+    // Coney's 35 % in exact arithmetic (315 of 900); the original's single-precision product gives 314 (issue #820).
     CHECK(hurt == maximum * 35 / 100);
 
     // Checkpoint 3: the street lesson's end (walking back to Vermin) sets it and loads the roofs' chapter.

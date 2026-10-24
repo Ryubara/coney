@@ -346,7 +346,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
                      float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
 
-    /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
+    /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play: placed (dropped onto the ground at most
+    /// 0.5 m below, unless a scene holds him) with his health, meters and clip kept (human::Player::teleport()).
     void teleportPlayer(const world_objects::Placement& placement) override;
     /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
     bool startTagSpray(const std::array<float, 3>& point) override;
@@ -458,6 +459,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void placeReleased(const SceneStage::Release& release);
     // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
     [[nodiscard]] bool sceneHoldsPlayer() const;
+    // The ground a placement of `human` drops onto (human::Human::place()): the level's collision, or null while a
+    // scene holds the human.
+    [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const;
     // The handle the scripts name a cast AI human by (its brain's); 0 for one with no brain.
     [[nodiscard]] double castHandleOf(const ai::AiHuman& fighter);
     // The cast AI human the scripts name `handle`; null when none is.

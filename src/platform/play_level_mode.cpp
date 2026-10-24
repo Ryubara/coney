@@ -911,8 +911,8 @@ void PlayLevelMode::teleport(const human::Place& place) {
     if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, point)) {
         point.z = place.feet.z;
     }
-    m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
-                                                 .headingDegrees = place.headingDegrees});
+    m_player->standAt(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
+                                                .headingDegrees = place.headingDegrees});
 }
 
 void PlayLevelMode::startAt(const StartPlace& place) {
@@ -922,18 +922,26 @@ void PlayLevelMode::startAt(const StartPlace& place) {
     if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, point)) {
         point.z = place.z;
     }
-    m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
-                                                 .headingDegrees = place.headingDegrees});
+    m_player->standAt(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
+                                                .headingDegrees = place.headingDegrees});
     if (place.cameraDistance.has_value() && place.cameraYawDegrees.has_value()) {
         m_player->placeCamera(*place.cameraDistance, *place.cameraYawDegrees * std::numbers::pi_v<float> / 180.0F);
     }
 }
 
 void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
-    // TeleportToFlag sets the transform without a ground snap: spawned without the mesh.
+    // TeleportToFlag's placement drops him onto what is at most 0.5 m below the flag, unless a scene holds him.
     const std::array<float, 3>& p = placement.position;
-    m_player->teleport(nullptr, human::PlayerStart{.position = anim::Vec3{p[0], p[1], p[2]},
-                                                   .headingDegrees = placement.headingDegrees});
+    m_player->teleport(placeGround(m_playerHandle), human::PlayerStart{.position = anim::Vec3{p[0], p[1], p[2]},
+                                                                       .headingDegrees = placement.headingDegrees});
+}
+
+const raycast::CollisionMesh* PlayLevelMode::placeGround(double human) const {
+    // Human_SetTransform drops no human a scene holds (human +0x280 not -1).
+    if (m_scenery == nullptr || (m_scenes != nullptr && m_stage->holds(human))) {
+        return nullptr;
+    }
+    return &m_scenery->collision();
 }
 
 bool PlayLevelMode::startTagSpray(const std::array<float, 3>& point) {

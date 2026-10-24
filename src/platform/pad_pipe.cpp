@@ -132,8 +132,8 @@ std::string observationJson(std::uint64_t frame, const PipeView& view, const std
         number(eye.y), number(target.x), number(target.y), humansJson(mode), objects);
 }
 
-PadPipe::PadPipe(std::istream& in, std::ostream& out, Viewer viewer)
-    : m_in(in), m_out(out), m_viewer(std::move(viewer)) {}
+PadPipe::PadPipe(std::istream& in, std::ostream& out, Viewer viewer, Caller caller)
+    : m_in(in), m_out(out), m_viewer(std::move(viewer)), m_caller(std::move(caller)) {}
 
 bool PadPipe::parsePad(std::string_view fields, PadSample& pad) {
     // Five numbers: the buttons in hexadecimal, then four stick bytes.
@@ -183,6 +183,17 @@ PortSamples PadPipe::sample(std::uint64_t frame) {
                 m_out << "@error bad pad line: " << line << '\n';
             }
             return samples;
+        }
+        if (text.starts_with("call ")) {
+            const std::string_view name = text.substr(5);
+            if (!m_caller) {
+                m_out << "@error no script to call " << name << " in\n";
+            } else {
+                // Called first: what the function prints (an event line) must not split the answer.
+                const bool called = m_caller(name);
+                m_out << "@called " << name << (called ? " ok" : " failed") << '\n';
+            }
+            continue;
         }
         if (text.starts_with("observe")) {
             m_prefixes.clear();

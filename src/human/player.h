@@ -136,6 +136,14 @@ struct PlayerClass {
 /// as the original writes the class's damage when any human is made (docs/research/combat/index.md#damage-table).
 [[nodiscard]] PlayerClass playerClassOf(const characters::CharacterTypes& types, int type);
 
+/// Gives `player` the meters a human has when the game makes it a player (`HuChangePlayerGang` handing player 1 to
+/// `chosen`): `chosen`'s own health and maximum, each times the Warrior class's health percentage `healthPercent`
+/// (byte `+0x05`; 0 leaves them as they are) and rounded, the power and the stamina full, and `chosen`'s rage
+/// (docs/research/teleports.md#handover). Coney's hand-over moves player 1's human onto `chosen` (a stand-in), so it
+/// copies them; the original's chosen human keeps its own and is scaled where it stands.
+/// @orig 0x00229c40 Human_MakePlayer (unknown)
+void takeMetersOf(Human& player, const Human& chosen, int healthPercent);
+
 /// The noclip's flying speed across the ground with the left stick pushed fully, and its rise and descent with a
 /// trigger pulled fully, in metres a second: **Coney's choice**, a little under the run's 7.5 so that a short push
 /// places him exactly (docs/guides/debug-menu.md#noclip).
@@ -177,9 +185,14 @@ class Player {
     /// no flow for yet).
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
-    /// Puts the human at `start` on `mesh` (spawned there as at a level start) and the camera behind it, with nothing
-    /// to blend from: the debug menus' teleport. Coney's own tool; the original has none.
+    /// Moves the human to `start` as `TeleportToFlag` moves a human (Human::place() with `mesh` as the ground, null for
+    /// none, then Human::resetMotion()), so its health, meters and clip stay, and puts the camera behind it with
+    /// nothing to blend from. The scripts' teleports, a scene's release and the hand-over use it.
     void teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    /// teleport(), then the human settled as after a walk (Human::settle()): the debug menus' teleport and `--start`,
+    /// which stand for the walk there.
+    /// @coney-only a test aid's walk stand-in; the original has none
+    void standAt(const raycast::CollisionMesh* mesh, const PlayerStart& start);
     /// Places the camera behind the human again with the current follow settings (camera::followDefaults()), with
     /// nothing to blend from: the debug menus' camera reset.
     void resetCamera();

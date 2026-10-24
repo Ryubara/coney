@@ -326,8 +326,7 @@ Traversal Human::traversal() const {
     return Traversal::None;
 }
 
-void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees) {
-    m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
+void Human::standAfresh(bool keepMeters) {
     m_velocity = anim::Vec3{};
     m_airborne = false;
     m_outOfWorld = false;
@@ -336,6 +335,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_landingPending = false;
     m_turn = TurnState{};
     m_lastStick = StickIntent{};
+    const Stamina stamina = m_stamina;
     m_stamina =
         Stamina(m_profile.powerClass.staminaMax, static_cast<float>(m_profile.powerClass.staminaRefillPerSecond));
     m_sprinting = false;
@@ -343,30 +343,39 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_strikes.clear();
     m_chargeStopped = false;
     m_lean = 0.0F;
-    // A placement first breaks any pair the human is in (Human_SetTransform calls Human_BreakPair,
-    // docs/research/combat-grabs.md#pair-break), so its partner is let go; then the fighting starts afresh and the
-    // flags the scripts set stay. So does the health: Human_SetTransform (0x0023d440) never touches it, so a hurt
-    // human teleported (TeleportToFlag, a scene's release) is still hurt (docs/research/teleports.md#keeps-health),
-    // as level99's flash lesson needs. A human just made has full health already, so its first placement leaves it
-    // full.
+    // The fighting starts afresh (no stun, no stance, no attack; for a creation full health and meters too) with the
+    // flags the scripts set kept. **Coney's choice** for a character change or a settle of a human in a pair: the
+    // pair is broken first (Human_BreakPair), so its partner is let go.
     m_fighter.breakPair();
     const std::uint64_t flags = m_fighter.flags();
     const std::optional<TargetState> broken = m_fighter.takeBrokenHold();
-    const int health = m_fighter.health().value();
+    const combat::Health health = m_fighter.health();
+    const int power = m_fighter.combat().power().value();
+    const int rage = m_fighter.combat().rage().value();
     m_fighter = Fighter(m_ranges, 1, m_profile);
-    m_fighter.health().set(health);
+    if (keepMeters) {
+        m_stamina = stamina;
+        m_fighter.health() = health;
+        m_fighter.combat().power().set(power);
+        m_fighter.combat().rage().set(rage);
+    }
     m_fighter.setFlags(flags);
     m_fighter.setLogName(m_logName);
     m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();
-    // A working-out human's clips stay, on every spawn (not only a teleport's): workout.StartWorkout teleports the
-    // player onto the station's flag before HuWorkout, but Coney applies a script's teleport of player 1 at the end of
-    // the frame, after the workout may have begun (docs/research/workouts.md#start). Any other spawn of a human that
-    // is working out (a respawn, a character change) keeps them too, until the workout ends.
+    // A working-out human's clips stay: a character change of a human that is working out keeps them until the
+    // workout ends (docs/research/workouts.md#start).
     if (m_animator.state() != AnimState::Idle && !m_script.workingOut) {
         m_animator.stopToIdle();
     }
+}
+
+void Human::settle() { standAfresh(true); }
+
+void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees) {
+    m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
+    standAfresh(false);
     // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it.
     if (mesh != nullptr) {
         const raycast::Ray ray{.origin = toMesh(anim::add(position, anim::Vec3{0.0F, 0.0F, kSnapAbove})),
@@ -380,6 +389,51 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     }
     m_position = position;
     m_lastGround = position;
+}
+
+void Human::place(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees) {
+    // Any pair is broken first, its partner playing its reaction on its next update (Human_BreakPair,
+    // docs/research/combat-grabs.md#pair-break).
+    m_fighter.breakPair();
+    // The drop: a 0.5 m ray straight down from the point itself; on a hit the feet go onto it, with no gap. A human in
+    // a scene (no ground given) stands exactly where put.
+    if (ground != nullptr) {
+        const raycast::Ray ray{.origin = toMesh(position), .direction = raycast::kDown, .length = kPlaceDrop};
+        if (const auto hit = ground->rayCast(ray, {}, 0); hit) {
+            position.z -= hit->t;
+        }
+    }
+    m_position = position;
+    m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
+    // The stick's last angle (+0x5d8) is the new facing's angle from x, its push (+0x5dc) none, so an idle's fade
+    // turns the human nowhere.
+    m_lastStick = StickIntent{.angle = wrapAngle(m_heading + (kPi / 2.0F)), .magnitude = 0.0F};
+    // **Coney's choice**: a climb in progress ends; how the original's climb goes on after a placement is not traced
+    // (docs/research/teleports.md#q-placement-rest).
+    endClimb();
+}
+
+void Human::resetMotion() {
+    // Human_SetMoveVelocity with the zero vector: the move velocity across the ground; the vertical speed is a field of
+    // its own (+0x3a0) and stays.
+    m_velocity.x = 0.0F;
+    m_velocity.y = 0.0F;
+    // Human_ClearTurn's fields (+0x300, +0x304, +0x331, +0x332): the attack's steer.
+    m_fighter.clearSteer();
+}
+
+void Human::putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees) {
+    // Out of the fall: standing and still, then placed as a teleport places, so the health, meters and stamina stay.
+    m_outOfWorld = false;
+    m_airborne = false;
+    m_jumping = false;
+    m_landingPending = false;
+    m_airborneUpdates = 0;
+    m_blockedUpdates = 0;
+    m_velocity = anim::Vec3{};
+    place(ground, position, headingDegrees);
+    resetMotion();
+    m_lastGround = m_position;
 }
 
 void Human::locomote(bool gated) {

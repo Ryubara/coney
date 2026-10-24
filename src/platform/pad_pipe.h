@@ -52,6 +52,9 @@ struct PipeView {
 /// - `pad BUTTONS RX RY LX LY`: the buttons as a hexadecimal word (pad::kL2 ... pad::kLeft) and the four raw stick
 ///   bytes, for this frame; pressure buttons held read 255.
 /// - `observe PREFIX...`: the world objects to report from now on (observationJson()).
+/// - `call NAME`: runs the level script's function `NAME` (no arguments) now, before the frame, and answers
+///   `@called NAME ok` or `@called NAME failed`; a test aid for putting a level at a given step (a capture at the
+///   level99 dealer calls `P3.DealerPoizo`). Without a caller it answers `@error`.
 ///
 /// At the end of its input it gives a released pad. Port 2 stays disconnected. Lines the game prints itself go to the
 /// same output, so a driver reads only the lines starting with `@`.
@@ -59,9 +62,12 @@ class PadPipe final : public InputSource {
   public:
     /// The view of the level in play when a frame is sampled.
     using Viewer = std::function<PipeView()>;
+    /// Runs a script function by name; false when it is not there or fails.
+    using Caller = std::function<bool(std::string_view name)>;
 
-    /// Reads pads from `in` and writes observations to `out` (both must outlive the pipe).
-    PadPipe(std::istream& in, std::ostream& out, Viewer viewer);
+    /// Reads pads from `in` and writes observations to `out` (both must outlive the pipe); `call` lines go to
+    /// `caller` (empty: refused).
+    PadPipe(std::istream& in, std::ostream& out, Viewer viewer, Caller caller = {});
 
     /// The observation of the last frame, then the driver's pad for frame `frame`.
     [[nodiscard]] PortSamples sample(std::uint64_t frame) override;
@@ -73,6 +79,7 @@ class PadPipe final : public InputSource {
     std::istream& m_in;
     std::ostream& m_out;
     Viewer m_viewer;
+    Caller m_caller;
     std::vector<std::string> m_prefixes; // `observe`'s object type prefixes
     bool m_ended = false;                // the input ended: released pads from now on
 };

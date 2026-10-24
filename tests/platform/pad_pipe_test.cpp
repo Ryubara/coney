@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -34,6 +36,34 @@ TEST_CASE("the pad pipe answers each frame with the driver's pad after the obser
     // No level in play: the observations say so, one per frame asked for before the input ended.
     CHECK(out.str() == "@obs {\"frame\":0,\"play\":false}\n@obs {\"frame\":1,\"play\":false}\n"
                        "@obs {\"frame\":2,\"play\":false}\n");
+}
+
+TEST_CASE("a call line runs a script function before the frame's pad and says how it went", "[pad_pipe]") {
+    std::istringstream in("call P3.DealerPoizo\ncall Missing\npad 0 128 128 128 128\ncall Late\n");
+    std::ostringstream out;
+    std::vector<std::string> called;
+    PadPipe pipe(
+        in, out, [] { return PipeView{}; },
+        [&called](std::string_view name) {
+            called.emplace_back(name);
+            return name != "Missing";
+        });
+
+    static_cast<void>(pipe.sample(0));
+    CHECK(called == std::vector<std::string>{"P3.DealerPoizo", "Missing"});
+    // The last call comes with no pad after it: it still runs, then the input has ended.
+    static_cast<void>(pipe.sample(1));
+    CHECK(called.size() == 3);
+    CHECK(out.str() == "@obs {\"frame\":0,\"play\":false}\n@called P3.DealerPoizo ok\n@called Missing failed\n"
+                       "@obs {\"frame\":1,\"play\":false}\n@called Late ok\n");
+}
+
+TEST_CASE("without a caller a call line is refused", "[pad_pipe]") {
+    std::istringstream in("call P3.DealerPoizo\npad 0 128 128 128 128\n");
+    std::ostringstream out;
+    PadPipe pipe(in, out, [] { return PipeView{}; });
+    static_cast<void>(pipe.sample(0));
+    CHECK(out.str() == "@obs {\"frame\":0,\"play\":false}\n@error no script to call P3.DealerPoizo in\n");
 }
 
 TEST_CASE("a pad line needs five numbers in range", "[pad_pipe]") {

@@ -190,15 +190,20 @@ void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
 }
 
 void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
-    // Player 1 and the cast, let go, stand where the scene left them (their end marks after a skip), on the ground.
-    // The placement breaks any pair the human is in, its partner playing its reaction (Human::spawn()).
-    // **Coney's choice** for a cast human: placed as a spawn places it (Human_Init), its stamina full again.
+    // Player 1 and the cast, let go, stand where the scene left them, placed as a teleport places (Human::place()), so
+    // they keep their health, meters and clip, and a pair is broken, the partner playing its reaction. After a skip the
+    // original places each at its end pose through Human_SetTransform once it is out of the scene, so the drop onto the
+    // ground applies (docs/research/scenes.md#ending). **Coney's choice** after a clip played to its end: the original
+    // places no one (its clip moved the human there), but Coney's scene drives a frame, not the human, so it is placed
+    // where the clip left it, with no drop. The motion reset is the one the original makes at the scene's start
+    // (scenes.md#humans); Coney's held human has not moved since.
     const float headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>;
+    const raycast::CollisionMesh* ground = release.skipped ? &m_scenery->collision() : nullptr;
     if (release.human == m_playerHandle) {
-        m_player->teleport(&m_scenery->collision(),
-                           human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
+        m_player->teleport(ground, human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
     } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
-        fighter->human->spawn(&m_scenery->collision(), release.feet, headingDegrees);
+        fighter->human->place(ground, release.feet, headingDegrees);
+        fighter->human->resetMotion();
     }
 }
 

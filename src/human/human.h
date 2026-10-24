@@ -147,6 +147,8 @@ class Human final : public Holdable {
     /// After this many airborne updates with the body unable to move as long, the human is put back on its last
     /// ground.
     static constexpr std::uint32_t kStuckUpdates = 60;
+    /// A placement's drop: the ray straight down from the placed point is this long (`0x0023d440`).
+    static constexpr float kPlaceDrop = 0.5F;
     /// The landing test's segment starts this far above the feet. **Coney's choice** for the body's upper point
     /// (`+0x4e8` − 0.16 × scale, `+0x4e8` not researched).
     static constexpr float kLandingTestHeight = 1.0F;
@@ -180,13 +182,39 @@ class Human final : public Holdable {
     void changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
                          std::span<const std::int16_t> classDamage, int damagePercent, const FighterProfile& profile);
 
-    /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
-    /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
-    /// again and anything in progress (a jump, a climb) is dropped; the health stays as it was (full for a human just
-    /// made), as a teleport's Human_SetTransform leaves it.
+    /// Stands a human just made (or made another character) at `position` (the feet, game axes) facing
+    /// `headingDegrees` (0 faces +y), snapped to the ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m
+    /// above; 0.01 above the hit. Everything starts afresh: full health, meters and stamina, nothing in progress (a
+    /// jump, a climb, a pair), the idle. Only a creation does this; moving a human that exists is place().
     /// @orig 0x00218008 Human_Init (unknown)
-    /// @orig 0x0023d440 Human_SetTransform (unknown)
     void spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees);
+
+    /// Moves a human that exists (a script's teleport, a scene's placement): any pair it is in is broken (its partner
+    /// plays its reaction), the feet go to `position` lowered onto what a 0.5 m ray straight down from it hits (no ray
+    /// with `ground` null, as for a human in a scene), facing `headingDegrees`, and the stick's last angle turns to the
+    /// new facing with no push. Nothing else changes: the health and its maximum, the stamina, the rage and power
+    /// meters, a stun and the clip all stay (docs/research/teleports.md#placement). **Coney's choice**: a climb in
+    /// progress ends (teleports.md#q-placement-rest).
+    /// @orig 0x0023d440 Human_SetTransform (unknown)
+    void place(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees);
+
+    /// The motion reset `TeleportToFlag` makes after its placement: the move velocity across the ground is zero
+    /// (`Human_SetMoveVelocity` with the zero vector) and the attack's steer is cleared; the clip, the vertical speed
+    /// and the meters stay (docs/research/teleports.md#motion-reset).
+    /// @orig 0x0023f158 Human_ResetMotion (unknown)
+    void resetMotion();
+
+    /// Stands the human as after a walk, where it is: idle, out of any stance, attack, stun, pair or traversal, its
+    /// health and its maximum, stamina and meters kept. For Coney's own placements that stand for a walk (the debug
+    /// menus' teleport, `--start`), done after the placement.
+    /// @coney-only a test aid's walk stand-in; the original has no such call
+    void settle();
+
+    /// Puts a human that fell out of the world back at `position` facing `headingDegrees`: standing, still, as a
+    /// placement leaves it otherwise (its health kept). The original has no put-back: the fall fails the mission
+    /// (docs/research/teleports.md#out-of-world).
+    /// @coney-only a fallen player put back, where the original fails the mission
+    void putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees);
 
     /// One update of 1/30 s for this human alone: `input` written into its record, then animate(), updateState() and
     /// updateActions() in turn. human::Humans runs the same passes across every human in the original's order.
@@ -373,6 +401,8 @@ class Human final : public Holdable {
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }
+    /// Fills the stamina to its maximum (a human made a player, human::takeMetersOf()).
+    void fillStamina() { m_stamina.fill(); }
     /// Whether a sprint is asked for (state flag `0x1000000`): L2 held with stamina left.
     [[nodiscard]] bool sprinting() const { return m_sprinting; }
     /// The body's lean, radians (`+0x29c`), positive leaning left.
@@ -921,6 +951,10 @@ class Human final : public Holdable {
     // @orig 0x00281450 Climb_RunningClipEnd (unknown)
     // @orig 0x00281838 Climb_StandingClipEnd (unknown)
     void followClimb(const raycast::CollisionMesh* mesh);
+    // Everything a human just made starts with, and what a settle drops (spawn(), settle()): no motion, traversal,
+    // stance, attack or stun, the idle; with `keepMeters` the health and its maximum, stamina, power and rage stay.
+    // @orig 0x00218008 Human_Init (unknown)
+    void standAfresh(bool keepMeters);
     // Ends a climb.
     void endClimb();
     // The state update while flying (setFlight()): the move by the stick and the climb, through everything.

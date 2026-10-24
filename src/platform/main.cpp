@@ -673,8 +673,9 @@ int main(int argc, char** argv) {
         // `--pad-pipe`: a driver program plays player 1 by what it sees of the level in play. With `--play-level` the
         // pipe starts at the level's first frame of play (DeferredInput), as a script does, so the driver's first view
         // is of the level and not of its loading screen.
-        auto pipe =
-            std::make_unique<coney::platform::PadPipe>(std::cin, std::cout, [&playLevel, &sessionPlayMode, &session]() {
+        auto pipe = std::make_unique<coney::platform::PadPipe>(
+            std::cin, std::cout,
+            [&playLevel, &sessionPlayMode, &session]() {
                 coney::platform::PipeView view;
                 view.mode = playLevel ? playLevel.get() : sessionPlayMode();
                 view.cars = view.mode != nullptr ? view.mode->cars() : nullptr;
@@ -683,7 +684,9 @@ int main(int argc, char** argv) {
                     view.pickups = session->gameplay().pickups();
                 }
                 return view;
-            });
+            },
+            // `call NAME`: the level script's function, for a test run that puts the level at a given step.
+            [&session](std::string_view name) { return session && session->flow().scripts().call(name); });
         if (commandLineLevel) {
             levelPipe = std::move(pipe);
             auto deferred =

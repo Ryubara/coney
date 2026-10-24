@@ -16,6 +16,9 @@
 #include "characters/character_list.h"
 #include "characters/character_rig.h"
 #include "combat/combat_tuning.h"
+#include "combat/meters.h"
+#include "combat/player_combat.h"
+#include "human/fighter.h"
 #include "human/script_state.h"
 
 namespace coney::human {
@@ -158,6 +161,25 @@ PlayerClass playerClassOf(const characters::CharacterTypes& types, int type) {
                        .rage = traits->rage};
 }
 
+void takeMetersOf(Human& player, const Human& chosen, int healthPercent) {
+    // The health and its maximum scaled in single precision and rounded, as Human_MakePlayer writes record +0x144 and
+    // +0x146.
+    const auto scaled = [healthPercent](int value) {
+        if (healthPercent <= 0) {
+            return value;
+        }
+        const float factor = static_cast<float>(healthPercent) * 0.01F;
+        return static_cast<int>((static_cast<float>(value) * factor) + 0.5F);
+    };
+    const combat::Health& own = chosen.health();
+    player.fighter().health() = combat::Health(scaled(own.value()), std::max(scaled(own.maximum()), 1));
+    // The power (+0x148) and the stamina (+0x14a) at their maximums; the rage is the human's own.
+    combat::PowerMeter& power = player.fighter().combat().power();
+    power.set(power.maximum());
+    player.fillStamina();
+    player.fighter().combat().rage().set(chosen.fighter().combat().rage().value());
+}
+
 FighterProfile playerProfileOf(const PlayerClass& playerClass) {
     FighterProfile profile;
     profile.player = true;
@@ -196,8 +218,15 @@ void Player::changeCharacter(const PlayerCharacter& character, const raycast::Co
 }
 
 void Player::teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
-    m_driven->spawn(mesh, start.position, start.headingDegrees);
+    // TeleportToFlag's two steps: the placement (Human_SetTransform), then the motion reset (Human_ResetMotion).
+    m_driven->place(mesh, start.position, start.headingDegrees);
+    m_driven->resetMotion();
     resetCamera();
+}
+
+void Player::standAt(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
+    m_driven->settle();
+    teleport(mesh, start);
 }
 
 void Player::resetCamera() {
@@ -412,7 +441,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     }
     if (m_driven->outOfWorld()) {
         // Put back, the camera reset behind him with its configuration kept.
-        m_driven->spawn(mesh, m_start.position, m_start.headingDegrees);
+        m_driven->putBack(mesh, m_start.position, m_start.headingDegrees);
         m_camera.observe(followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled));
         m_camera.reset();
         ++m_respawns;
