@@ -888,16 +888,6 @@ object on the ground as `HuCreate` does (above), but a human not in a scene (`+0
 short ray (0.5) straight down hits (`0x0023d440`; confirmed (code)). A human in a grab, mount or mugging is first let
 go, its partner playing a reaction clip ([Combat](combat-grabs.md#pair-break)).
 
-<span id="teleport-health"></span>**A teleport keeps the health.** `Human_SetTransform` (`0x0023d440`) breaks the pair,
-marks the human placed (`+0x1b3`, state bit `0x40000000` with the time), sets the transform, the heading and the brain's
-facing, and drops a brain action that cannot survive a move; it does not touch the health, the record at `+0x144`.
-Confirmed (code) at `0x0023d440`; confirmed (runtime), run r-20261024-teleport-keeps-health:
-`HuSetHealthPercent(player, 35)` gave Cleon 535 of 1530 in level80, and `TeleportToFlag(player, fC1Vermin1, -1)` moved
-him from (−193.4, 127.5) to (−199.0, 126.4) with his health still 535 of 1530. So a hurt
-player stays hurt across the scripts' teleports, scene releases and the level99 hand-over: `P2.SetupLesson1` sets
-the new Rembrandt to 35 % and `P3.DealerPoizo` teleports him to the flash dealer still hurt, which is what gives the
-flash lesson something to heal ([The flash](combat-rage.md#flash-teleport)).
-
 **Interiors are below the street.** Starts with `z` near −195 to −215 (`level5` checkpoint 2, `level11` 1 and 2,
 `level20` 1 and 3, the hub ...) are rooms placed about 200 m under the city in the same world (inferred from the values
 and the hub's clubhouse at `z` −194.3).
@@ -921,6 +911,18 @@ steps are on [World flags](flags.md#player-starts).
 
 **No player**: `level100` (the front end), `level1` (its script only calls `MenuLoadLevel("menu")`), and the levels
 without a `.lev` file.
+
+#### A teleport keeps the health {#teleport-health}
+
+`Human_SetTransform` (`0x0023d440`) breaks the pair, marks the human placed (`+0x1b3`, state bit `0x40000000` with
+the time), sets the transform, the heading and the brain's facing, and drops a brain action that cannot survive a
+move; it does not touch the health, the record at `+0x144`. Confirmed (code) at `0x0023d440`; confirmed (runtime), run
+r-20261024-teleport-keeps-health: `HuSetHealthPercent(player, 35)` gave Cleon 535 of 1530 in level80, and
+`TeleportToFlag(player, fC1Vermin1, -1)` moved him from (−193.4, 127.5) to (−199.0, 126.4) with his health still 535
+of 1530. So a hurt player stays hurt across the scripts' teleports: `P2.SetupLesson1` sets the new Rembrandt to 35 %
+and `P3.DealerPoizo` teleports him to the flash dealer still hurt, which is what gives the flash lesson something to
+heal ([The flash](combat-rage.md#flash-teleport)). That a scene's release keeps it too is inferred from the scripts:
+the level99 lesson needs the 35 % to survive `l99_c2`.
 
 ### The characters' update {#update}
 
@@ -3239,10 +3241,6 @@ read them yet.
 - **The workout's reach and timing** (answered): the scripts make the player his own target, so the reach always
   passes, and a repetition is each wrap of the loop blend's leading clip ([Workouts](workouts.md#repetitions)).
 - Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
-- <span id="q-teleport-reset"></span>**What else a teleport resets**: `Human_SetTransform` keeps the health
-  ([A teleport keeps the health](#teleport-health)), but what `TeleportToFlag`'s human slot `+0x14c` does is not traced,
-  and whether the rage, power and a stun survive a teleport is not checked. Coney's placement (`Human::spawn`) keeps
-  the health and restarts the rest of the fighter's state as a creation does (a stand-in).
 - What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
 
 - **Clip selection** (answered): [Clip selection](#clip-selection), with the task system on
@@ -3313,3 +3311,10 @@ default ids are known, [Anim slots](#anim-slots)), and the
   409) in `run_circle`'s steps 54-56; which clip of the blend the original stores.
 - **The circling run's turn**: on `run_circle`'s step 75 Coney turns 16.92° against the original's 16.44°, which the
   camera's auto-follow then grows to 6.6°; whether the stick is turned by the camera of this update or the last.
+
+### What else a teleport resets {#q-teleport-reset}
+
+`Human_SetTransform` keeps the health ([A teleport keeps the health](#teleport-health)), but what `TeleportToFlag`'s
+human slot `+0x14c` does is not traced, and whether the rage, the power and a stun survive a teleport is not checked.
+Coney's placement (`Human::spawn`) keeps the health and restarts the rest of the fighter's state as a creation does
+(a stand-in). To settle it: hurt, enrage and stun a human in PCSX2, `TeleportToFlag` it and read the meters.
