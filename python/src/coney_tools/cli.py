@@ -48,6 +48,7 @@ from coney_tools import (
     run_records_cli,
     stale_processes,
     stamp_cli,
+    standards_cli,
     task_cli,
     trace_cli,
     wad_cli,
@@ -402,6 +403,7 @@ def _build_parser() -> argparse.ArgumentParser:
     doctor_parser.add_argument("--disc", help="a mounted disc, folder or .iso to check (default: game_dir)")
     coord_cli.add_parser(groups)
     conclave_cli.add_parser(groups)
+    standards_cli.add_parser(groups)
     perf_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
@@ -1157,6 +1159,8 @@ def _run(args: argparse.Namespace) -> int:
         return coord_cli.run(args)
     if args.group == "conclave":
         return conclave_cli.run(args)
+    if args.group == "standards":
+        return standards_cli.run(args)
     if args.group == "perf":
         return perf_cli.run(args)
     if args.group == "trace":

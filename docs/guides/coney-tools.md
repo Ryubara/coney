@@ -50,6 +50,10 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 * [`research`](coney-tools-fidelity.md#research): the function database and the claims report.
 * [`lua`](coney-tools-fidelity.md#lua): the game's scripts, decompiled.
 
+### [The standards commands](coney-tools-standards.md)
+
+* [`standards`](coney-tools-standards.md#standards): the legacy marks and the standards of touched files.
+
 ### [The PCSX2 and clip commands](coney-tools-pcsx2.md)
 
 * [`pcsx2`](coney-tools-pcsx2.md#pcsx2): drive PCSX2 and record the original.

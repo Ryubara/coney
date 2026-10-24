@@ -19,8 +19,10 @@ are `research/source-files.toml`), the Ghidra listing `docs/progress/ghidra-func
 uv run --project python coney-tools progress show [--json]
 ```
 
-Prints the reimplemented and researched shares, the milestones and the subsystems that have reimplemented code.
-`--json` prints everything, per subsystem and per coverage category, for other tools. It exits with 1 when the
+Prints the reimplemented and researched shares, the compared share (a `compared:` line: how much of the reimplemented
+code is `compared` with the original, in bytes and functions), the milestones and the subsystems that have
+reimplemented code. `--json` prints everything, per subsystem and per coverage category, for other tools; the
+compared share is its `compared` key (`bytes`, `total`, `percent` and `functions`). It exits with 1 when the
 database's `coney` entries and the `@orig` tags in `src/` disagree, and lists each problem.
 
 ```sh

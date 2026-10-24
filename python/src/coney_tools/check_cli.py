@@ -35,6 +35,7 @@ from coney_tools import (
     orig_check,
     orig_copy,
     process_lifetime,
+    standards_check,
     tidy_cache,
 )
 from coney_tools.audit import Report, run_checks, specs_in
@@ -377,11 +378,14 @@ def _standards(root: Path, base: str) -> tuple[int, list[str], list[str]]:
 
 def _step_docs(root: Path, base: str, changed: list[str]) -> StepResult:
     """The page standards on the changed pages, then `mkdocs build --strict` into a throwaway folder, when docs or the
-    site setup changed. Both run, so one run shows every problem."""
-    if not _docs_changed(changed, load_conventions(root).paths):
+    site setup changed. Both run, so one run shows every problem. A change to source or test files runs the standards
+    alone: they also hold the touched files and the legacy marks (`standards_check`), as CI's `docs check` does."""
+    conventions = load_conventions(root)
+    site = _docs_changed(changed, conventions.paths)
+    if not site and not standards_check.relevant(changed, conventions):
         return _skipped("docs", "no docs changed")
     pages, problems, notes = _standards(root, base)
-    built = _mkdocs_build(root)
+    built = _mkdocs_build(root) if site else StepResult("docs", True, "no docs changed: mkdocs build skipped")
     ok = built.ok and not problems
     parts = [f"{pages} pages meet the standards" if not problems else "page standards failed"]
     if problems:

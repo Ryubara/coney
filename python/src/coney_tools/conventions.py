@@ -935,6 +935,50 @@ class Conclave:
 
 
 @dataclass(frozen=True)
+class CodeStandard:
+    """Which source files the code standard covers (comments on every function, a doc comment on every public type, a
+    tag on every gameplay function)."""
+
+    folders: tuple[str, ...]
+    suffixes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CitationRule:
+    """How a test cites where an expected value comes from: `// Expected: <page>#<anchor>, <level>` or the
+    `unverified` form with the issue that verifies it."""
+
+    marker: str
+    unverified: str
+    reference: str
+
+
+@dataclass(frozen=True)
+class TestsStandard:
+    """Which test files the test standard covers and what each test case must carry."""
+
+    folders: tuple[str, ...]
+    suffixes: tuple[str, ...]
+    macros: tuple[str, ...]
+    citation: CitationRule
+
+
+@dataclass(frozen=True)
+class Standards:
+    """The standards a touched file is held to and where the files that do not meet them yet are listed
+    (docs/guides/coney-tools-standards.md#standards)."""
+
+    #: The legacy file of code and test files, relative to the checkout.
+    legacy_file: str
+    #: Whether a touched file or `@orig` function below standard fails the check. False until the cutover (a warning).
+    enforce: bool
+    #: The day the workflow went live, or None before it. From then on nothing new may be marked legacy.
+    cutover: datetime | None
+    code: CodeStandard
+    tests: TestsStandard
+
+
+@dataclass(frozen=True)
 class Conventions:
     """Everything in `.github/conventions.yml`."""
 
@@ -954,6 +998,7 @@ class Conventions:
     research: Research
     runs: Runs
     conclave: Conclave
+    standards: Standards
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
@@ -1648,6 +1693,64 @@ def _read_conclave(data: object, where: str) -> Conclave:
     )
 
 
+def _folder_list(value: object, where: str) -> tuple[str, ...]:
+    """Folders inside the checkout, each written with a trailing slash."""
+    folders = _texts(value, where)
+    for folder in folders:
+        if not folder.endswith("/") or folder.startswith(("/", "\\")) or ".." in folder or ":" in folder:
+            raise _fail(where, f"'{folder}' is not a folder inside the checkout written with a trailing slash")
+    return folders
+
+
+def _suffix_list(value: object, where: str) -> tuple[str, ...]:
+    """File endings, each starting with a dot."""
+    suffixes = _texts(value, where)
+    for suffix in suffixes:
+        if not suffix.startswith(".") or len(suffix) < 2:
+            raise _fail(where, f"'{suffix}' is not a file ending such as .cpp")
+    return suffixes
+
+
+def _read_standards(data: object, where: str) -> Standards:
+    """The `standards` section: the code and test standards and the legacy file of the files that fail them."""
+    table = _table(data, where, ("legacy_file", "enforce", "cutover", "code", "tests"))
+    legacy_file = _text(table["legacy_file"], _at(where, "legacy_file"))
+    if legacy_file.startswith(("/", "\\")) or ".." in legacy_file or ":" in legacy_file:
+        raise _fail(_at(where, "legacy_file"), "a path inside the checkout")
+    cutover_value = table["cutover"]
+    cutover = None if cutover_value in ("", None) else _moment(cutover_value, _at(where, "cutover"))
+    code_where = _at(where, "code")
+    code = _table(table["code"], code_where, ("folders", "suffixes"))
+    tests_where = _at(where, "tests")
+    tests = _table(table["tests"], tests_where, ("folders", "suffixes", "macros", "citation"))
+    citation_where = _at(tests_where, "citation")
+    citation = _table(tests["citation"], citation_where, ("marker", "unverified", "reference"))
+    reference = _text(citation["reference"], _at(citation_where, "reference"))
+    try:
+        re.compile(reference)
+    except re.error as error:
+        raise _fail(_at(citation_where, "reference"), f"not a regular expression ({error})") from None
+    return Standards(
+        legacy_file=legacy_file,
+        enforce=_flag(table["enforce"], _at(where, "enforce")),
+        cutover=cutover,
+        code=CodeStandard(
+            folders=_folder_list(code["folders"], _at(code_where, "folders")),
+            suffixes=_suffix_list(code["suffixes"], _at(code_where, "suffixes")),
+        ),
+        tests=TestsStandard(
+            folders=_folder_list(tests["folders"], _at(tests_where, "folders")),
+            suffixes=_suffix_list(tests["suffixes"], _at(tests_where, "suffixes")),
+            macros=_texts(tests["macros"], _at(tests_where, "macros")),
+            citation=CitationRule(
+                marker=_text(citation["marker"], _at(citation_where, "marker")),
+                unverified=_text(citation["unverified"], _at(citation_where, "unverified")),
+                reference=reference,
+            ),
+        ),
+    )
+
+
 def _read_label(item: object, where: str, description_max: int) -> Label:
     """One entry of `labels.list`; a colour YAML read as a number must have been quoted."""
     table = _table(item, where, ("name", "color", "description"))
@@ -2064,6 +2167,7 @@ def parse_conventions(data: object) -> Conventions:
         "research",
         "runs",
         "conclave",
+        "standards",
     )
     table = _table(data, "", ("version", *keys))
     version = table["version"]
@@ -2109,6 +2213,7 @@ def parse_conventions(data: object) -> Conventions:
         research=research,
         runs=_read_runs(table["runs"], "runs", research.files.runs),
         conclave=_read_conclave(table["conclave"], "conclave"),
+        standards=_read_standards(table["standards"], "standards"),
     )
 
 

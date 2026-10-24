@@ -131,6 +131,11 @@ it; every other page meets the standard in full.
 A page that has grown past its length limit is split along a sub-subject that has its own page, in the same pull
 request or in one that follows at once.
 
+The same rule holds for the other things a change touches: a source file meets the comment and tag rules of
+[the conventions](conventions.md#comments-and-orig) as a whole, a test file cites the source of its expected values
+([testing](testing.md#citations)), and a ported function is compared with the original. What is below the standard
+today is listed, and `coney-tools standards` holds the touched ones to it ([the standards](coney-tools-standards.md#standards)).
+
 ## Adding a page
 
 1. Put it where its kind says (above). Before creating a research page, check that no existing page covers the

@@ -46,17 +46,18 @@ from coney_tools.research_evidence import (
     levels_in,
 )
 from coney_tools.research_subject import ADDRESS, LOCATOR, ResearchEnv, Subject
+from coney_tools.standards_scan import cited_sections
 
 #: The pages whose claims are listed, as repository-relative paths.
 RESEARCH_DIR = "docs/research/"
 #: How alike two blocks are (the share of their words in common) for the later one to count as an edit of the earlier.
 SAME_BLOCK = 0.5
-#: Where tests cite a claim's section: `// Expected: research/combat/grabs.md#grab-intro, confirmed (code)`.
+#: Where tests cite a claim's section: `// Expected: combat/grabs.md#grab-intro, confirmed (code)` (`research/` before
+#: the page is read too). The form is `standards.tests.citation` in .github/conventions.yml, read by `standards_scan`.
 TEST_FOLDERS = ("tests", "python/tests")
 TEST_SUFFIXES = (".cpp", ".h", ".py")
 
 _PCSX2_VERSION = re.compile(r"PCSX2\s+v?\d+\.\d+", re.IGNORECASE)
-_EXPECTED = re.compile(r"research/(?P<page>[A-Za-z0-9_./-]+\.md)#(?P<anchor>[A-Za-z0-9_-]+)")
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@")
 
 CODE, RUNTIME, INFERRED, SPECULATIVE, NOT_NEEDED = "code", "runtime", "inferred", "speculative", "not-needed"
@@ -176,6 +177,7 @@ def studied_addresses(folder: Path | None, root: Path) -> set[str]:
 def test_citations(root: Path) -> dict[tuple[str, str], list[str]]:
     """The tests that cite a section: (page relative to docs/research, anchor) -> `path:line` of each `Expected:`."""
     cited: dict[tuple[str, str], list[str]] = {}
+    rule = load_conventions(root).standards.tests.citation
     for folder in TEST_FOLDERS:
         base = root / folder
         if not base.is_dir():
@@ -188,10 +190,8 @@ def test_citations(root: Path) -> dict[tuple[str, str], list[str]]:
             except (OSError, UnicodeDecodeError):
                 continue
             for number, text in enumerate(lines, start=1):
-                if "Expected:" in text:
-                    for match in _EXPECTED.finditer(text):
-                        key = (match.group("page"), match.group("anchor"))
-                        cited.setdefault(key, []).append(f"{path.relative_to(root).as_posix()}:{number}")
+                for key in cited_sections(text, rule):
+                    cited.setdefault(key, []).append(f"{path.relative_to(root).as_posix()}:{number}")
     return cited
 
 
