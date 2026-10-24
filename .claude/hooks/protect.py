@@ -46,7 +46,8 @@ STAMP_FOLDERS = ("stamps", "build-runs")
 #: Shell commands that are not for agents: (pattern over the command, what to do instead).
 COMMANDS = (
     (
-        r"\bssh-add\b[^\n;&|]*\s-[dD]\b",
+        # Any short-flag group that holds `d` or `D`: `-d`, `-D`, `-qD`, `-Dq`.
+        r"\bssh-add\b[^\n;&|]*\s-[A-Za-z]*[dD][A-Za-z]*(?![\w-])",
         "Deleting keys from the person's SSH agent is not for agents; listing them (`ssh-add -l`) is fine.",
     ),
     (

@@ -18,9 +18,10 @@ older than the branch's own base would pull main's changes into the hash: fetch 
 
 The same commits give the same hash on every machine. The diff runs with an explicit algorithm (`myers`), the indent
 heuristic on, an empty order file, no context, no external diff, no textconv, no colour, no renames, no prefixes, the
-short submodule form and the user's `GIT_DIFF_OPTS` removed, and `-a`, so a `.gitattributes` rule (`-diff`, `binary`,
-`diff=driver`) never changes what is hashed. What is binary is decided here, not by git: a NUL byte in the first 8000
-bytes of the file (git's own test without attributes). Standard library only.
+short submodule form, full object ids (`--no-abbrev`) and the user's `GIT_DIFF_OPTS` and `GIT_EXTERNAL_DIFF` removed,
+and `-a`, so a `.gitattributes` rule (`-diff`, `binary`, `diff=driver`) never changes what is hashed. What is binary is
+decided here, not by git: a NUL byte in the first 8000 bytes of the file as the branch has it, or of the file it
+removes for a deletion (git's own test without attributes). Standard library only.
 """
 
 from __future__ import annotations
@@ -78,6 +79,10 @@ _DIFF = [
     "--no-relative",
     "--no-color-moved",
     "--full-index",
+    # `--full-index` fills the `index` line of a patch; the `--raw` list has its own abbreviation, which `--no-abbrev`
+    # turns off, so the blob ids it prints never follow the user's core.abbrev (and a prefix cannot turn ambiguous
+    # between that list and the `cat-file` lookup that reads the blobs).
+    "--no-abbrev",
     "--text",
     "--diff-algorithm=myers",
     "--indent-heuristic",

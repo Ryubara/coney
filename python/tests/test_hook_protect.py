@@ -365,10 +365,33 @@ def test_an_unclosed_quote_does_not_hide_a_command() -> None:
 
 @pytest.mark.parametrize("agent_type", EVERYONE)
 def test_deleting_keys_from_the_persons_ssh_agent_is_refused_and_listing_them_is_not(agent_type: str) -> None:
-    for command in ("ssh-add -D", "ssh-add -d key.pub", "ssh-add -d", "ssh-add -D; echo done"):
+    for command in (
+        "ssh-add -D",
+        "ssh-add -d key.pub",
+        "ssh-add -d",
+        "ssh-add -D; echo done",
+        # Flags bundled in one group: the `d` or `D` is a deletion wherever it stands.
+        "ssh-add -qD",
+        "ssh-add -Dq",
+        "ssh-add -qd key.pub",
+        "ssh-add -vDq",
+        "ssh-add -q -D",
+        "ssh-add -l -qD",
+        "ssh-add -t 3600 -Dq",
+    ):
         reason = protect.refusal(bash(command, agent_type))
         assert reason is not None and "SSH agent" in reason and "stamp" not in reason, command
-    for command in ("ssh-add -l", "ssh-add -L", "ssh-add -l -E sha256", "git log -S 'ssh-add -D' --oneline"):
+    for command in (
+        "ssh-add -l",
+        "ssh-add -L",
+        "ssh-add -l -E sha256",
+        "git log -S 'ssh-add -D' --oneline",
+        "ssh-add -lq",
+        "ssh-add -qL",
+        "ssh-add -t 3600 key",
+        "ssh-add -E md5 -l",
+        "ssh-add --help",
+    ):
         assert protect.refusal(bash(command, agent_type)) is None, command
 
 
