@@ -58,9 +58,11 @@ struct Release {
 [[nodiscard]] std::string pathKey(std::string_view path);
 
 /// Parses a `launcher.json`. Fails with ErrorCode::Invalid, naming the field, for a format other than 1, a version
-/// that does not parse, a file path that is not printable ASCII, is absolute, climbs out (`..`), is empty or appears
-/// twice (case aside, as pathKey compares), a size that is not a whole number, a SHA-256 that is not 64 hex digits, or
-/// an asset name that is not a plain file name (a folder in it, `.` or `..`).
+/// that does not parse, a file path that would not name one file inside the install folder on every platform (not
+/// printable ASCII, absolute, climbing out with `..`, an empty or `.` part, a part ending in `.` or a space, a
+/// character Windows forbids, a Windows device name such as `CON` or `nul.txt`), a path that appears twice or is also
+/// the folder of another (case aside, as pathKey compares), a size that is not a whole number, a SHA-256 that is not
+/// 64 hex digits, or an asset name that is not a plain file name by the same rules.
 [[nodiscard]] std::expected<Release, Error> parseRelease(std::string_view json);
 
 } // namespace coney::launcher

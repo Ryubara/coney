@@ -2,6 +2,7 @@
 #include "launcher/release_manifest.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <format>
 #include <set>
@@ -84,17 +85,33 @@ bool printableAscii(std::string_view text) {
     return std::ranges::all_of(text, [](char c) { return c >= 0x20 && c < 0x7F; });
 }
 
-// Whether `path` is a relative path that stays inside the install folder: printable ASCII, no root, no drive, no `..`,
-// no `\`, no empty part.
+// Whether `part` names one file or folder the same way on every platform. Refused: empty, `.` and `..`; a `/` or
+// `\`, a drive's `:` or another character Windows forbids in a name; a trailing `.` or space, which Windows strips
+// (`coney.exe.` is `coney.exe` there); and Windows' device names (`CON`, `nul.txt`, `COM1`: any case, any extension).
+bool safePart(std::string_view part) {
+    if (part.empty() || part == "." || part == ".." || part.find_first_of("/\\:*?\"<>|") != std::string_view::npos ||
+        part.back() == '.' || part.back() == ' ') {
+        return false;
+    }
+    std::string_view stem = part.substr(0, part.find('.'));
+    while (!stem.empty() && stem.back() == ' ') {
+        stem.remove_suffix(1);
+    }
+    static constexpr std::array<std::string_view, 24> kDevices{
+        "con",  "prn",  "aux",  "nul",  "com1", "com2", "com3", "com4", "com5", "com6", "com7",   "com8",
+        "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9", "conin$", "conout$"};
+    return std::ranges::find(kDevices, pathKey(stem)) == kDevices.end();
+}
+
+// Whether `path` is a relative path that stays inside the install folder and names one file on every platform:
+// printable ASCII, no root, and every part one that safePart accepts (so no `..`, no empty part, no trailing `/`).
 bool safeRelativePath(std::string_view path) {
-    if (path.empty() || !printableAscii(path) || path.front() == '/' || path.find('\\') != std::string_view::npos ||
-        path.find(':') != std::string_view::npos) {
+    if (path.empty() || !printableAscii(path) || path.front() == '/') {
         return false;
     }
     while (!path.empty()) {
         const auto slash = path.find('/');
-        const std::string_view part = path.substr(0, slash);
-        if (part.empty() || part == "." || part == "..") {
+        if (!safePart(path.substr(0, slash))) {
             return false;
         }
         if (slash == std::string_view::npos) {
@@ -139,10 +156,20 @@ std::expected<std::vector<ReleaseFile>, Error> parseFiles(const json::Value& lis
         }
         // The asset is downloaded under its own name before it is moved into place, so it is held to the rules of one
         // part of a path: `.` or `..` would name the download folder or its parent.
-        if (asset == nullptr || !safeRelativePath(*asset) || asset->find('/') != std::string::npos) {
+        if (asset == nullptr || !printableAscii(*asset) || !safePart(*asset)) {
             return invalid(where, "has no asset name (a plain file name, not . or ..)");
         }
         files.push_back({*path, static_cast<std::uint64_t>(*size->asInteger()), *digest, *asset});
+    }
+    // A file cannot also be a folder: `a` and `a/b` (case aside) cannot both be written. In sorted order the paths
+    // under `a/` come at or after `a/` itself, so the first key from there tells.
+    for (const std::string& key : seen) {
+        const std::string folder = key + "/";
+        const auto next = seen.lower_bound(folder);
+        if (next != seen.end() && next->starts_with(folder)) {
+            return invalid(std::format("platforms.{}", platform),
+                           std::format("has the path {} as a file and as the folder of {}", key, *next));
+        }
     }
     return files;
 }

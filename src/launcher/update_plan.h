@@ -35,13 +35,21 @@ struct UpdatePlan {
     std::uint64_t downloadBytes = 0;
 };
 
+/// How the install folder's file system compares names: the platform layer, which knows the volume, says.
+enum class PathCase : std::uint8_t {
+    Exact,  ///< Case-sensitive (Linux, a case-sensitive macOS volume): `Coney.exe` and `coney.exe` are two files.
+    Folded, ///< Case-insensitive (Windows, a default macOS volume): they are one file, compared as pathKey does.
+};
+
 /// Compares a release with what is installed: which files to download (the ones whose size or SHA-256 differs, or that
 /// are missing), and which installed program files to remove. A release no newer than `installedVersion` is NotNewer
 /// unless `repair` asks to restore the installed version's own files (the VERIFY tile). Only program files are ever
-/// listed for removal: the game's files and the player's overrides are not the launcher's. Paths are matched as pathKey
-/// compares them, so a file whose name changed only in case is neither downloaded again unchanged nor removed.
+/// listed for removal: the game's files and the player's overrides are not the launcher's. Paths are matched as
+/// `pathCase` says: folded, a file whose name changed only in case is the same file (neither downloaded again unchanged
+/// nor removed after its new spelling is downloaded); exact, it is two files (the new spelling downloaded, the old one
+/// removed).
 [[nodiscard]] UpdatePlan planUpdate(const Release& release, std::string_view platform,
                                     std::span<const InstalledFile> installed, const Version& installedVersion,
-                                    const Version& launcherVersion, bool repair = false);
+                                    const Version& launcherVersion, PathCase pathCase, bool repair = false);
 
 } // namespace coney::launcher

@@ -2,6 +2,7 @@
 #include "launcher/release_manifest.h"
 
 #include <string>
+#include <utility>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -60,7 +61,8 @@ TEST_CASE("a release manifest is read with its files per platform", "[launcher]"
 }
 
 TEST_CASE("a release manifest that could write outside the install is refused", "[launcher]") {
-    for (const char* path : {"../coney.exe", "/etc/coney", "C:/coney.exe", "a\\\\b", "a//b", "a/", "./a", ""}) {
+    for (const char* path :
+         {"../coney.exe", "/etc/coney", "C:/coney.exe", "a\\\\b", "a//b", "a/", "./a", "a/../b", "a/./b", "a/..", ""}) {
         INFO(path);
         const auto release = parseRelease(manifest(path));
         REQUIRE_FALSE(release.has_value());
@@ -71,9 +73,43 @@ TEST_CASE("a release manifest that could write outside the install is refused", 
     CHECK_FALSE(parseRelease(manifest("caf\xc3\xa9.txt")).has_value());
 }
 
+TEST_CASE("a release manifest path names one file on every platform", "[launcher]") {
+    // Windows strips a trailing `.` or space (`coney.exe.` is `coney.exe`), forbids some characters, and keeps device
+    // names whatever their case or extension.
+    for (const char* path : {"coney.exe.",       "coney.exe ", "a./b", "a /b", "a*b",      "a?b",
+                             "a\\\"b",           "a<b",        "a>b",  "a|b",  "CON",      "con.txt",
+                             "licences/Nul.txt", "aux",        "PRN",  "com1", "LPT9.log", "conin$",
+                             "CONOUT$.x",        "con .txt"}) {
+        INFO(path);
+        const auto release = parseRelease(manifest(path));
+        REQUIRE_FALSE(release.has_value());
+        CHECK(release.error().message.find("path") != std::string::npos);
+    }
+    for (const char* path : {"console.exe", "com10", "lpt.txt", "a.b/c", ".hidden"}) {
+        INFO(path);
+        CHECK(parseRelease(manifest(path)).has_value());
+    }
+}
+
+TEST_CASE("a release manifest path that is also another's folder is refused", "[launcher]") {
+    // `a` cannot be a file and a folder at once, whatever the case or the order.
+    for (const auto& [first, second] : {std::pair{"a", "a/b"}, std::pair{"A/b/c", "a/B"}, std::pair{"x/y/z", "X"}}) {
+        INFO(first << " and " << second);
+        const auto release =
+            parseRelease(manifest(first, std::string(R"(, {"path": ")") + second + R"(", "size": 1, "sha256": ")" +
+                                             std::string(64, 'b') + R"(", "asset": "x"})"));
+        REQUIRE_FALSE(release.has_value());
+        CHECK(release.error().message.find("as a file and as the folder of") != std::string::npos);
+    }
+    CHECK(parseRelease(manifest("ab", R"(, {"path": "a/b", "size": 1, "sha256": ")" + std::string(64, 'b') +
+                                          R"(", "asset": "x"})"))
+              .has_value());
+}
+
 TEST_CASE("a release manifest asset name is a plain file name", "[launcher]") {
     // The asset is downloaded under its name, so `.` and `..` would name the download folder or its parent.
-    for (const char* asset : {".", "..", "", "a/b", "../coney.exe", "a\\\\b", "C:coney.exe"}) {
+    for (const char* asset :
+         {".", "..", "...", ". ", "", "a/b", "../coney.exe", "a\\\\b", "C:coney.exe", "x.exe.", "nul", "a*b"}) {
         INFO(asset);
         std::string text = manifest();
         text.replace(text.find("coney-windows.exe"), 17, asset);

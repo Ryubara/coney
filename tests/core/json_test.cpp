@@ -54,7 +54,7 @@ TEST_CASE("JSON numbers follow RFC 8259", "[json]") {
     }
 }
 
-TEST_CASE("text JSON refuses is refused with where it went wrong", "[json]") {
+TEST_CASE("JSON that RFC 8259 refuses is refused, naming the byte", "[json]") {
     for (const char* bad : {"", "{", "[1,]", "{\"a\":1,}", "{\"a\" 1}", "{a: 1}", "'x'", "[1] 2", "// c\n1",
                             "\"tab\there\"", "\"\\x\"", "\"\\ud83d\"", "\"\\ude00\"", "{\"a\":1,\"a\":2}", "tru"}) {
         INFO(bad);
@@ -68,17 +68,28 @@ TEST_CASE("text JSON refuses is refused with where it went wrong", "[json]") {
 TEST_CASE("JSON strings must be UTF-8", "[json]") {
     // Two, three and four bytes, at the edges of what each length may hold.
     const auto good =
-        parse("[\"\xc2\x80\", \"\xed\x9f\xbf\", \"\xee\x80\x80\", \"\xf4\x8f\xbf\xbf\", \"caf\xc3\xa9\"]");
+        parse("[\"\xc2\x80\", \"\xe0\xa0\x80\", \"\xed\x9f\xbf\", \"\xee\x80\x80\", \"\xf0\x90\x80\x80\", "
+              "\"\xf4\x8f\xbf\xbf\", \"caf\xc3\xa9\"]");
     REQUIRE(good.has_value());
-    CHECK(*(*good->asArray())[4].asString() == "caf\xc3\xa9");
-    // A stray continuation byte, an overlong '/', an overlong three-byte form, a surrogate (U+D800), a code point past
-    // U+10FFFF, a byte that never starts a sequence, a sequence cut short by the quote, and one cut short by the end.
-    for (const char* bad : {"\"\x80\"", "\"\xc0\xaf\"", "\"\xe0\x80\xaf\"", "\"\xed\xa0\x80\"", "\"\xf4\x90\x80\x80\"",
-                            "\"\xff\"", "\"\xe2\x82\"", "\"\xf0\x9f\x98"}) {
-        INFO(bad);
-        const auto doc = parse(bad);
+    CHECK(*(*good->asArray())[1].asString() == "\xe0\xa0\x80");
+    CHECK(*(*good->asArray())[4].asString() == "\xf0\x90\x80\x80");
+    CHECK(*(*good->asArray())[6].asString() == "caf\xc3\xa9");
+    // Each bad sequence starts after `"ab`, at byte 3, which the error names.
+    struct Bad {
+        const char* text;
+        const char* why;
+    };
+    for (const Bad& bad :
+         {Bad{"\"ab\x80\"", "a stray continuation byte"}, Bad{"\"ab\xc0\xaf\"", "an overlong '/'"},
+          Bad{"\"ab\xe0\x80\xaf\"", "an overlong three-byte form"}, Bad{"\"ab\xed\xa0\x80\"", "a surrogate, U+D800"},
+          Bad{"\"ab\xf4\x90\x80\x80\"", "past U+10FFFF"}, Bad{"\"ab\xf5\x80\x80\x80\"", "lead F5"},
+          Bad{"\"ab\xf6\x80\x80\x80\"", "lead F6"}, Bad{"\"ab\xf7\x80\x80\x80\"", "lead F7"},
+          Bad{"\"ab\xff\"", "a byte that never starts a sequence"}, Bad{"\"ab\xe2\x82\"", "cut short by the quote"},
+          Bad{"\"ab\xf0\x9f\x98", "cut short by the end of the text"}}) {
+        INFO(bad.why);
+        const auto doc = parse(bad.text);
         REQUIRE_FALSE(doc.has_value());
-        CHECK(doc.error().message.find("not UTF-8") != std::string::npos);
+        CHECK(doc.error().message.find("not UTF-8 at byte 3") != std::string::npos);
     }
 }
 

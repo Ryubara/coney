@@ -8,7 +8,7 @@
 namespace coney::launcher {
 
 UpdatePlan planUpdate(const Release& release, std::string_view platform, std::span<const InstalledFile> installed,
-                      const Version& installedVersion, const Version& launcherVersion, bool repair) {
+                      const Version& installedVersion, const Version& launcherVersion, PathCase pathCase, bool repair) {
     UpdatePlan plan;
     const auto files = release.platforms.find(platform);
     if (files == release.platforms.end()) {
@@ -25,16 +25,19 @@ UpdatePlan planUpdate(const Release& release, std::string_view platform, std::sp
         return plan;
     }
 
-    // Paths are matched case aside: on Windows and macOS `Coney.exe` and `coney.exe` are one file, and removing the
-    // old spelling after downloading the new one would delete the file just downloaded.
+    // Where the file system folds case, `Coney.exe` and `coney.exe` are one file, and removing the old spelling after
+    // downloading the new one would delete the file just downloaded; where it does not, they are two files.
+    const auto key = [pathCase](std::string_view path) {
+        return pathCase == PathCase::Folded ? pathKey(path) : std::string(path);
+    };
     std::map<std::string, const InstalledFile*, std::less<>> byPath;
     for (const InstalledFile& file : installed) {
-        byPath.emplace(pathKey(file.path), &file);
+        byPath.emplace(key(file.path), &file);
     }
     std::set<std::string, std::less<>> wanted;
     for (const ReleaseFile& file : files->second) {
-        wanted.insert(pathKey(file.path));
-        const auto it = byPath.find(pathKey(file.path));
+        wanted.insert(key(file.path));
+        const auto it = byPath.find(key(file.path));
         const bool same = it != byPath.end() && it->second->size == file.size && it->second->sha256 == file.sha256;
         if (!same) {
             plan.download.push_back(file);
@@ -42,7 +45,7 @@ UpdatePlan planUpdate(const Release& release, std::string_view platform, std::sp
         }
     }
     for (const InstalledFile& file : installed) {
-        if (!wanted.contains(pathKey(file.path))) {
+        if (!wanted.contains(key(file.path))) {
             plan.remove.push_back(file.path);
         }
     }
