@@ -412,10 +412,12 @@ macOS, the sanitizers and clang-tidy.
 
 **clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):
 every pull request that changes engine files gets a required `clang-tidy` check on the lines it changes, and the whole
-codebase is tidied nightly ([building](building.md#clang-tidy)). It catches what MSVC lets through: a designated
-initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
-(`bugprone-unchecked-optional-access`), a use after a move. A finding is an annotation on the pull request; fix it
-forward on the branch and let CI check again.
+codebase is tidied nightly ([clang-tidy](clang-tidy.md)). It catches what MSVC lets through, such as an unchecked
+`std::optional` access (`bugprone-unchecked-optional-access`) or a use after a move. A finding is an annotation on the
+pull request; fix it forward on the branch and let CI check again. A designated initializer that skips a field
+(`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
+warnings are errors in the `ci`, `ci-release` and `asan` presets (`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns
+off its compiler diagnostics.
 
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's

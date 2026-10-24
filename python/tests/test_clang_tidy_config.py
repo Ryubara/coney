@@ -3,7 +3,7 @@
 
 A wildcard (`bugprone-*`) lets a newer clang-tidy add checks nobody chose, so a pull request can go red after a runner
 image update with no change of ours. The file lists the checks it runs by name, sorted as `clang-tidy --list-checks`
-prints them, so a new check is one added line (`docs/guides/building.md#clang-tidy`).
+prints them, so a new check is one added line (`docs/guides/clang-tidy.md`).
 """
 
 import re

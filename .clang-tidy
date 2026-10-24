@@ -1,7 +1,7 @@
 # Every check is named, none by wildcard: a wildcard (bugprone-*) lets a newer clang-tidy add checks nobody chose, and
 # a pull request goes red after a runner image update with no change of ours. The list is what clang-tidy 19 (the
 # version CI runs) enabled for the wildcards this file used before, as `clang-tidy-19 --list-checks` prints it. Add a
-# check by its full name, in its place in the sorted list (docs/guides/building.md#clang-tidy); the first entry, -*,
+# check by its full name, in its place in the sorted list (docs/guides/clang-tidy.md); the first entry, -*,
 # turns off clang-tidy's own defaults (clang-diagnostic-*, clang-analyzer-*), so only the names below run.
 Checks: >
   -*,
@@ -235,6 +235,9 @@ Checks: >
   performance-unnecessary-copy-initialization,
   performance-unnecessary-value-param,
 # Left out of the list on purpose: bugprone-easily-swappable-parameters, and the two clang-analyzer-optin checks below.
+# bugprone-easily-swappable-parameters is off: it flags every function with two neighbouring parameters of one type
+# (an x and a y, a width and a height), which is much of the engine, and its fix (a type per argument) costs more
+# than the mix-ups it would find.
 # optin.cplusplus.VirtualCall is off: it reports librw's own rw::StreamMemory destructor (a path that ends inside
 # librw's header, which SYSTEM does not hide from the analyzer), and Coney itself calls no virtual method from a
 # constructor or destructor.

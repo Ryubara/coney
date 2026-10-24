@@ -28,7 +28,7 @@ line, and any failure makes the command exit 1:
 
 **clang-tidy is not a step.** It is not run locally, on Windows least of all (no local WSL builds or clang-tidy
 runs): CI tidies every pull request on the lines it changes, in its own required check, and the whole codebase
-nightly ([building](building.md#clang-tidy)). A finding comes back as an annotation on the pull request and is fixed
+nightly ([building](clang-tidy.md)). A finding comes back as an annotation on the pull request and is fixed
 forward on the branch. Every program the command starts runs below normal priority, like a build's (Windows:
 below-normal priority class; elsewhere `nice -n 5`).
 
