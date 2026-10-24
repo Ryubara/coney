@@ -71,7 +71,7 @@ do not invent it.
 | `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `repo check-body`. |
 | `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `repo check-body`. |
 | `pr.remaining-uncited` | File an issue for each unchecked Remaining item and write its number into the merged pull request's description. |
-| `pr.affected-unedited` | Edit each open issue the merged pull request lists under Issues affected, as [After a merge](../../../docs/guides/issues.md#after-a-merge) says: change what the pull request made out of date, tick what it finished, relabel or close the issue, with `coney-tools issue edit N --body FILE`. An issue the line no longer concerns needs a one-line note in its body saying so (a comment does not count as the edit). |
+| `pr.affected-unedited` | Edit each open issue the merged pull request lists under Issues affected, as [After a merge](../../../docs/guides/issues.md#after-a-merge) says: change what the pull request made out of date, tick what it finished, relabel or close the issue, with `coney-tools issue edit N --body FILE`. An issue the line no longer concerns: see step 2 there. |
 | `pr.idle` | Ask the author; close the pull request with a comment when the work is abandoned. |
 | `pr.stacked-depends` | Add the `Depends on #N` line to the description. |
 | `pr.stacked-automerge` | `gh pr merge N --disable-auto`; auto-merge waits until the base merges. |
@@ -94,8 +94,8 @@ For each pull request that merged, take the issues from two places and bring eac
 1. **The issues it lists.** Its Issues affected section names each open issue it partly fixed, changed or made out of
    date, with a line on how (`gh pr view N --json body`). Edit each one (`coney-tools issue edit N --body FILE`):
    tick what the pull request finished, rewrite what it made untrue, set the status label, close an issue that is now
-   done. An issue listed with a line you cannot act on gets a note in its body saying what the
-   pull request did (a comment does not count for the audit).
+   done. An issue listed with a line you cannot act on: step 2 of
+   [After a merge](../../../docs/guides/issues.md#after-a-merge).
    `pr.affected-unedited` finds the ones left unedited.
 2. **The issues that cite it.** Search the open issues that name the pull request
    (`gh issue list --state open --search "#N"`), change "open" to "merged" where the text names it, tick the

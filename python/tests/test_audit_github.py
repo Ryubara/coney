@@ -714,6 +714,59 @@ def graphql_page(*nodes: dict[str, Any]) -> str:
     return json.dumps({"data": {"repository": {"issues": page}}})
 
 
+def edit_page(numbers: list[int], cursor: str | None, more: bool) -> str:
+    """A `gh api graphql` answer with one page of issues numbered `numbers`."""
+    nodes = [
+        {"number": n, "createdAt": "2026-10-01T00:00:00Z", "lastEditedAt": None, "timelineItems": {"nodes": []}}
+        for n in numbers
+    ]
+    page = {"pageInfo": {"hasNextPage": more, "endCursor": cursor}, "nodes": nodes}
+    return json.dumps({"data": {"repository": {"issues": page}}})
+
+
+def test_two_pages_of_edit_times_are_both_read() -> None:
+    pages = iter([edit_page([1], "c1", True), edit_page([2], None, False)])
+    asked: list[list[str]] = []
+
+    def run(arguments: list[str]) -> str:
+        asked.append(arguments)
+        return next(pages)
+
+    assert sorted(gh.fetch_edit_times(run, "a/b")) == [1, 2]
+    assert "after=c1" in asked[1] and not any(token.startswith("after=") for token in asked[0])
+
+
+@pytest.mark.parametrize("cursor", [None, "", "c1"])
+def test_a_next_page_with_no_or_a_repeated_cursor_stops_with_a_notice(cursor: str | None) -> None:
+    pages = iter([edit_page([1], "c1", True)] + [edit_page([2], cursor, True)] * 5)
+
+    def run(arguments: list[str]) -> str:
+        if arguments[:2] == ["repo", "view"]:
+            return json.dumps({"nameWithOwner": "a/b", "defaultBranchRef": {"name": "main"}})
+        if arguments[:2] == ["api", "graphql"]:
+            return next(pages)
+        if arguments[0] == "api":
+            raise OSError("no admin")
+        return "[]"
+
+    raw = gh.fetch_raw(run)
+    assert any("paging does not end" in n and "pr.affected-unedited did not run" in n for n in raw["notices"])
+
+
+def test_endless_paging_is_capped(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gh, "EDIT_PAGE_LIMIT", 3)
+    counter = iter(range(100))
+    calls: list[int] = []
+
+    def run(arguments: list[str]) -> str:
+        calls.append(1)
+        return edit_page([next(counter)], f"c{next(counter)}", True)
+
+    with pytest.raises(ValueError, match="more than 3 pages"):
+        gh.fetch_edit_times(run, "a/b")
+    assert len(calls) == 3
+
+
 def test_fetch_reads_the_body_edit_and_label_times_and_a_failure_is_a_notice() -> None:
     def run(arguments: list[str]) -> str:
         if arguments[:2] == ["repo", "view"]:
@@ -726,7 +779,12 @@ def test_fetch_reads_the_body_edit_and_label_times_and_a_failure_is_a_notice() -
                     "number": 1,
                     "createdAt": "2026-10-01T00:00:00Z",
                     "lastEditedAt": "2026-10-05T00:00:00Z",
-                    "timelineItems": {"nodes": [{"createdAt": "2026-10-07T00:00:00Z"}]},
+                    "timelineItems": {
+                        "nodes": [
+                            {"createdAt": "2026-10-07T00:00:00Z", "actor": {"__typename": "User", "login": "ann"}},
+                            {"createdAt": "2026-10-09T00:00:00Z", "actor": {"__typename": "Bot", "login": "gha"}},
+                        ]
+                    },
                 },
                 {
                     "number": 2,

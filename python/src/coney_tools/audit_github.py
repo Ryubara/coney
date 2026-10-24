@@ -241,8 +241,11 @@ _EDIT_QUERY = """query($owner: String!, $name: String!, $after: String) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number lastEditedAt createdAt
-        timelineItems(last: 1, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]) {
-          nodes { ... on LabeledEvent { createdAt } ... on UnlabeledEvent { createdAt } }
+        timelineItems(last: 20, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]) {
+          nodes {
+            ... on LabeledEvent { createdAt actor { __typename login } }
+            ... on UnlabeledEvent { createdAt actor { __typename login } }
+          }
         }
       }
     }
@@ -250,27 +253,44 @@ _EDIT_QUERY = """query($owner: String!, $name: String!, $after: String) {
 }"""
 
 
+#: The most pages of open issues read (100 each); a repository with more is not read, with a notice.
+EDIT_PAGE_LIMIT = 50
+
+
+def _by_a_person(event: Mapping[str, Any]) -> bool:
+    """Whether a label event was made by a person: its actor is a `User`, not a `Bot` such as the workflow token."""
+    actor = event.get("actor")
+    return isinstance(actor, dict) and actor.get("__typename") == "User"
+
+
 def fetch_edit_times(run: Runner, name: str) -> dict[int, str]:
     """For each open issue, when its body was last edited or a label last changed (the creation time if neither).
 
-    Reads GraphQL through `gh api graphql`; OSError, ValueError, KeyError or TypeError when it cannot be read. A
-    comment moves `updatedAt` but is neither, which is why the audit cannot use `updatedAt` for the edit.
+    Reads GraphQL through `gh api graphql`; OSError, ValueError, KeyError or TypeError when it cannot be read, and
+    ValueError when the paging does not end (a next page with no cursor, a repeated cursor, more than `EDIT_PAGE_LIMIT`
+    pages). A comment moves `updatedAt` but is neither, which is why the audit cannot use `updatedAt` for the edit; a
+    label changed by a bot (the workflow token, the claim Action) is not an edit either.
     """
     owner, repo = name.split("/", 1)
     found: dict[int, str] = {}
     after = ""
-    while True:
+    seen: set[str] = set()
+    for _ in range(EDIT_PAGE_LIMIT):
         command = ["api", "graphql", "-f", f"query={_EDIT_QUERY}", "-f", f"owner={owner}", "-f", f"name={repo}"]
         if after:
             command += ["-f", f"after={after}"]
         page = json.loads(run(command))["data"]["repository"]["issues"]
         for node in page["nodes"]:
             times = [node["createdAt"], node.get("lastEditedAt")]
-            times += [event["createdAt"] for event in node["timelineItems"]["nodes"] if event]
+            times += [event["createdAt"] for event in node["timelineItems"]["nodes"] if event and _by_a_person(event)]
             found[int(node["number"])] = max(time for time in times if time)
         if not page["pageInfo"]["hasNextPage"]:
             return found
         after = page["pageInfo"]["endCursor"]
+        if not after or after in seen:
+            raise ValueError(f"the issue paging does not end (cursor {after!r} after {len(seen)} pages)")
+        seen.add(after)
+    raise ValueError(f"more than {EDIT_PAGE_LIMIT} pages of open issues; the edit times were not read")
 
 
 def fetch_raw(run: Runner = run_gh, now: datetime | None = None) -> dict[str, Any]:
@@ -863,9 +883,9 @@ def pr_affected_unedited(context: GithubContext) -> Iterator[Problem]:
     """A pull request merged since the Issues affected rule began has its listed open issues edited after the merge.
 
     The section names the open issues the change partly fixed, changed or made out of date; an issue whose body was
-    not edited and whose labels did not change since the merge was not brought up to date. A comment does not count
-    (a bot or a bystander writes those), and neither does an issue whose edit time was not read. A closed issue, a
-    number that is no issue and a pull request that lists none are not held to it.
+    not edited and whose labels no person changed since the merge was not brought up to date. A comment and a label
+    a bot changed do not count (a bot or a bystander writes those), and neither does an issue whose edit time was
+    not read. A closed issue, a number that is no issue and a pull request that lists none are not held to it.
     """
     rule = context.conventions.pull_requests.issues_affected
     for pull in context.snapshot.pulls_in("merged"):
