@@ -190,7 +190,7 @@ def test_check_docs_with_an_unreadable_body_exits_2(
 def body_checkout(tmp_path: Path) -> Path:
     """A made-up checkout whose description rules ask for a Summary and an AI use section."""
     data = changed(
-        ("pull_requests.sections", ["Summary", "Checklist", "Screenshots", "AI use"]),
+        ("pull_requests.sections", ["Summary", "Issues affected", "Checklist", "Screenshots", "AI use"]),
         ("pull_requests.filled", ["Summary"]),
         ("pull_requests.runtime.section", "Summary"),
         ("pull_requests.ai_use.written_by.label", "By:"),
@@ -200,7 +200,8 @@ def body_checkout(tmp_path: Path) -> Path:
 
 
 GOOD_BODY = (
-    "## Summary\n\nAdds a check.\n\n## Checklist\n\nDone:\n\n- [x] The check\n\n"
+    "## Summary\n\nAdds a check.\n\n## Issues affected\n\nNone (nothing cites it)\n\n"
+    "## Checklist\n\nDone:\n\n- [x] The check\n\n"
     "## Screenshots\n\nScreenshots: none (no change)\n\n"
     "## AI use\n\n- By: an AI\n- Model: Claude Sonnet 5.5\n"
 )
@@ -355,7 +356,7 @@ RUNTIME_BODY = GOOD_BODY.replace("## Checklist", "## Testing\n\n- `pytest`: 3 pa
 def runtime_checkout(tmp_path: Path) -> Path:
     """A made-up checkout whose rules are the real ones for the Runtime line (the Testing section is needed)."""
     data = changed(
-        ("pull_requests.sections", ["Summary", "Checklist", "Testing", "Screenshots", "AI use"]),
+        ("pull_requests.sections", ["Summary", "Issues affected", "Checklist", "Testing", "Screenshots", "AI use"]),
         ("pull_requests.filled", ["Summary", "Testing"]),
         ("pull_requests.ai_use.written_by.label", "By:"),
         ("pull_requests.ai_use.written_by.choices", ["a person", "an AI"]),

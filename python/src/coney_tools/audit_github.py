@@ -25,6 +25,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, IssueForm, Wording
 from coney_tools.log_scan import ScanResult
 from coney_tools.repo_checks import (
+    affected_issues,
     check_body,
     check_title,
     depends_pattern,
@@ -806,6 +807,32 @@ def pr_remaining_uncited(context: GithubContext) -> Iterator[Problem]:
         if loose:
             shown = "; ".join(repr(_short(item, 50)) for item in loose[:3])
             yield _problem(pull, f"merged with {len(loose)} Remaining item(s) naming no issue: {shown}")
+
+
+@check("pr.affected-unedited")
+def pr_affected_unedited(context: GithubContext) -> Iterator[Problem]:
+    """A pull request merged since the Issues affected rule began has its listed open issues edited after the merge.
+
+    The section names the open issues the change partly fixed, changed or made out of date; an issue whose last update
+    is older than the merge was not brought up to date (a label, a comment or an edit counts as an update). A closed
+    issue, a number that is no issue and a pull request that lists none are not held to it.
+    """
+    rule = context.conventions.pull_requests.issues_affected
+    for pull in context.snapshot.pulls_in("merged"):
+        if pull.merged is None or pull.merged < rule.since:
+            continue
+        stale = [
+            number
+            for number in affected_issues(pull.body, context.conventions.pull_requests)
+            if (listed := context.snapshot.issue(number)) is not None and listed.open and listed.updated <= pull.merged
+        ]
+        if stale:
+            shown = ", ".join(f"#{number}" for number in stale)
+            yield _problem(
+                pull,
+                f"merged {pull.merged:%Y-%m-%d} listing {shown} under '{rule.section}', not edited since it merged: "
+                "bring each up to date (body, checklist, labels) or close it",
+            )
 
 
 @check("pr.idle")

@@ -170,6 +170,13 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         f"{rules.checklist.section}: every item is ticked (`- [x]`): a pull request lists only the work it finishes, "
         "and a task it does not finish is left out and lives in its own issue."
     )
+    affected = rules.issues_affected
+    lines += _bullet(
+        f"{affected.section}: one line `- #N: how it is affected` for each open issue the pull request partly fixes, "
+        f"changes the behaviour of or makes out of date, or the single line `{affected.none} (<reason>)` with any "
+        f"short reason, for example `{affected.example}`. `coney-tools issue impact` suggests the list; running it "
+        "is optional."
+    )
     shots = rules.screenshots
     lines += _bullet(
         f"{shots.section}: "

@@ -512,6 +512,96 @@ def runtime_problems(section: str, title: str, rules: PullRequests) -> list[str]
     return []
 
 
+#: An item of the Issues affected section once its list marker is gone: `#12: how it is affected`.
+_ORDERED_MARKER = re.compile(r"^\d+[.)][ \t]+")
+_AFFECTED_ITEM = re.compile(r"^#(?P<number>\d+)\b[ \t]*[:;,\u2014\u2013-]?[ \t]*(?P<how>.*)$")
+
+
+def _affected_entries(section: str, rules: PullRequests) -> tuple[list[tuple[int, str]], str | None, list[str]]:
+    """Read the Issues affected section: its items `(number, how)` in order, the text of its `None` line (None when it
+    has none) and the lines that are neither (prose, an item with no number).
+
+    A line indented under an item continues it. Placeholders (`- ...`) and empty lines are skipped.
+    """
+    items: list[tuple[int, str]] = []
+    none_text: str | None = None
+    strays: list[str] = []
+    continuing = False
+    none_word = re.escape(rules.issues_affected.none)
+    for line in section.splitlines():
+        content = _ORDERED_MARKER.sub("", LIST_MARKER.sub("", line.replace("**", "").strip())).strip()
+        if not content or content in rules.placeholders:
+            continue
+        item = _AFFECTED_ITEM.match(content)
+        if continuing and line[:1] in (" ", "\t") and not LIST_MARKER.match(line.strip()):
+            number, how = items[-1]
+            items[-1] = (number, f"{how} {content}".strip())
+        elif item:
+            items.append((int(item.group("number")), item.group("how").strip()))
+            continuing = True
+        elif re.match(rf"^{none_word}\b", content, re.IGNORECASE):
+            none_text = content
+            continuing = False
+        else:
+            strays.append(content)
+            continuing = False
+    return items, none_text, strays
+
+
+def issues_affected_problems(section: str, rules: PullRequests) -> list[str]:
+    """Check the Issues affected section against `pull_requests.issues_affected`.
+
+    The section holds one item per open issue the change partly fixes, changes the behaviour of or makes out of date,
+    `- #N: how it is affected`, or the single line `None (<reason>)`. Whether the list is complete is the reviewer's
+    job (`coney-tools issue impact` suggests it, but is a helper nobody has to run: a hand-made pull request writes
+    `None (one-line fix)`); this check refuses a section that is empty, a `None` with no reason,
+    an item with no line on how, a line that is not an item, a number listed twice and `None` beside items.
+    """
+    rule = rules.issues_affected
+    name = f"'## {rule.section}'"
+    items, none_text, strays = _affected_entries(section, rules)
+    shape = (
+        f"one line '- #N: how it is affected' for each open issue this change affects, or, when there is none, the "
+        f"single line '{rule.none} (<reason>)' with any short reason, for example '{rule.example}'"
+    )
+    if not items and none_text is None and not strays:
+        return [f"{name} is empty; write {shape}"]
+    problems: list[str] = []
+    if none_text is not None:
+        reason = re.match(rf"^{re.escape(rule.none)}\b\s*(?:\((?P<reason>.*)\))?[\s.]*$", none_text, re.IGNORECASE)
+        given = ((reason.group("reason") if reason else None) or "").strip()
+        if not given or given in rules.placeholders:
+            problems.append(
+                f"{name}: '{rule.none}' needs its reason in parentheses; write '{rule.none} (<reason>)' with any short "
+                f"reason, for example '{rule.example}'"
+            )
+        if items:
+            problems.append(f"{name}: {rule.none} and issues together; list the issues or say {rule.none}, not both")
+    seen: set[int] = set()
+    for number, how in items:
+        if number in seen:
+            problems.append(f"{name}: #{number} is listed twice; one item says how the change affects it")
+        seen.add(number)
+        if not re.search(r"[A-Za-z]{2,}", re.sub(r"<[^>]*>", "", how)) or how in rules.placeholders:
+            problems.append(f"{name}: #{number} needs a line on how: '- #{number}: how it is affected'")
+    for stray in strays:
+        shown = stray if len(stray) <= 60 else stray[:57] + "..."
+        problems.append(f"{name}: '{shown}' is not an item; write {shape}")
+    return problems
+
+
+def affected_issues(body: str, rules: PullRequests) -> list[int]:
+    """The issue numbers the Issues affected section of a description lists, in order, each once.
+
+    A `None` section, a missing one and a comment list nothing. The after-merge check of the audit and
+    `coney-tools pr text` read the list from here.
+    """
+    section = _split_sections(strip_comments(body)).get(rules.issues_affected.section.casefold())
+    if section is None:
+        return []
+    return list(dict.fromkeys(number for number, _ in _affected_entries(section, rules)[0]))
+
+
 def check_body(
     body: str, rules: PullRequests, branch_models: Sequence[str] = (), title: str | None = None
 ) -> list[str]:
@@ -521,10 +611,12 @@ def check_body(
     own, the Screenshots section must hold an image that is an uploaded URL (not a local path) or a
     `Screenshots: none (<reason>)` line, no text may name a path on the author's machine, and the AI use
     section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and no
-    Checklist item may be left unticked (`- [ ]`). With `branch_models` (the models the branch's commits credit in
-    `Co-Authored-By` trailers, see `branch_trailer_models`) the Model line must also name each of them, whoever wrote
-    the commits; a description alone has no branch, so CI passes none. With the pull request's `title`, a title area a
-    player sees (`pull_requests.runtime`) also needs the Testing section's `Runtime:` line (`runtime_problems`);
+    Checklist item may be left unticked (`- [ ]`), and the Issues affected section must list the issues the change
+    affects or say `None (<reason>)` (`issues_affected_problems`). With `branch_models` (the models the branch's
+    commits credit in `Co-Authored-By` trailers, see `branch_trailer_models`) the Model line must also name each of
+    them, whoever wrote the commits; a description alone has no branch, so CI passes none. With the pull request's
+    `title`, a title area a player sees (`pull_requests.runtime`) also needs the Testing section's `Runtime:` line
+    (`runtime_problems`);
     without a title that rule cannot be applied and is skipped, so every caller that has the title passes it.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
@@ -536,6 +628,8 @@ def check_body(
         text = sections.get(name.casefold())
         if text is None:
             problems.append(f"missing the section '## {name}'")
+        elif name == rules.issues_affected.section:
+            problems.extend(issues_affected_problems(text, rules))
         elif name in rules.filled and _is_blank(text, rules):
             problems.append(f"'## {name}' is empty (a comment or the template's placeholder does not count)")
     testing = sections.get(rules.runtime.section.casefold())

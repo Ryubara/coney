@@ -3,6 +3,7 @@
 
 import json
 from dataclasses import replace
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -649,3 +650,62 @@ def test_settings_that_could_not_be_read_are_not_compared() -> None:
 def test_every_github_check_has_code_and_an_entry() -> None:
     assert set(GITHUB_CHECKS) <= set(registered())
     assert raw_snapshot()["settings"] is None  # the default snapshot reads no settings
+
+
+# --- pr.affected-unedited -----------------------------------------------------------------------------------------
+
+#: The rule began on the 9th, a day before the pull requests below merged (at MERGED_AT).
+MERGED_AT = "2026-10-10T08:00:00Z"
+#: Days before the snapshot (2026-10-11 12:00): the merge was 1.17 days before it.
+EDITED_BEFORE_THE_MERGE, EDITED_AFTER_THE_MERGE = 3.0, 0.5
+AFFECTED = PR_BODY.replace("None (nothing cites it)", "- #20: step 2 is done\n- #21: now cites the old file\n- #22: x")
+
+
+def affected_context(**kwargs: Any) -> Any:
+    """A context whose Issues affected rule began on 2026-10-09."""
+    rules = CONVENTIONS.pull_requests
+    began = replace(rules.issues_affected, since=datetime(2026, 10, 9, tzinfo=UTC))
+    return context(replace(CONVENTIONS, pull_requests=replace(rules, issues_affected=began)), **kwargs)
+
+
+def test_a_merged_pull_request_whose_listed_issues_were_not_edited_since_is_found() -> None:
+    ctx = affected_context(
+        issues=[
+            issue(20, updated=EDITED_BEFORE_THE_MERGE),
+            issue(21, updated=EDITED_AFTER_THE_MERGE),
+            issue(22, updated=EDITED_BEFORE_THE_MERGE),
+        ],
+        pulls=[pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
+    )
+    (problem,) = found(gh.pr_affected_unedited, ctx)
+    assert problem.item == "#5" and "#20, #22" in problem.message and "#21" not in problem.message
+    assert "not edited since it merged" in problem.message
+
+
+def test_listed_issues_edited_after_the_merge_are_fine() -> None:
+    ctx = affected_context(
+        issues=[issue(n, updated=EDITED_AFTER_THE_MERGE) for n in (20, 21, 22)],
+        pulls=[pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
+    )
+    assert found(gh.pr_affected_unedited, ctx) == []
+
+
+def test_a_closed_issue_a_pull_request_and_a_missing_number_are_not_held_to_the_edit() -> None:
+    ctx = affected_context(
+        issues=[issue(20, state="CLOSED", updated=EDITED_BEFORE_THE_MERGE)],
+        pulls=[pull(21, state="OPEN"), pull(5, state="MERGED", body=AFFECTED, merged=MERGED_AT)],
+    )
+    assert found(gh.pr_affected_unedited, ctx) == []
+
+
+def test_a_pull_request_merged_before_the_rule_or_listing_none_or_still_open_is_not_held_to_it() -> None:
+    ctx = affected_context(
+        issues=[issue(n, updated=EDITED_BEFORE_THE_MERGE) for n in (20, 21, 22)],
+        pulls=[
+            pull(1, state="MERGED", body=AFFECTED, merged="2026-10-08T08:00:00Z"),
+            pull(2, state="MERGED", merged=MERGED_AT),
+            pull(3, state="OPEN", body=AFFECTED),
+            pull(4, state="CLOSED", body=AFFECTED),
+        ],
+    )
+    assert found(gh.pr_affected_unedited, ctx) == []

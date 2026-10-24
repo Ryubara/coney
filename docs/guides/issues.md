@@ -553,6 +553,47 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
 - **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
+## Issues a pull request changes {#affected}
+
+A pull request names the issue it finishes (`Fixes #N`), and merging closes that one. It also partly fixes other
+issues, changes the behaviour an issue describes, or makes an issue's text untrue (a file it cites is renamed, a pull
+request it waits for is replaced). Until 2026-10-23 nobody was told: an audit that day found 175 of 311 open issues out
+of date, with bodies calling merged pull requests open and issues left `S-in-progress` with no work. So every pull
+request lists them, and the list is checked.
+
+- **The section.** The description has an **Issues affected** section after Summary: one line `- #N: how it is
+  affected` for each open issue the change partly fixes, changes the behaviour of or makes out of date, for example
+  `- #12: step 2 of its fix list is done`. When there is none, the single line `None (<reason>)` with any short reason,
+  for example `None (one-line fix)`. An issue the change finishes is `Fixes #N` in Summary and is not listed here.
+  `repo check-body` (CI's `body` job, and the release step) refuses a description without the section, an empty one, a
+  `None` with no reason and an item with no line on how, and its message says what to write
+  ([What CI checks](testing.md#pr-evidence)). Nothing needs Claude Code or `coney-tools` to meet it: a person who
+  edits one line on a fork writes `None (one-line fix)`.
+- **Finding the issues.** `coney-tools issue impact` suggests them from the diff: open issues whose bodies cite a file,
+  folder, function name, `@orig` address or page section the branch touches, or a pull request or branch it replaces
+  ([issue impact](coney-tools-repo.md#issue-impact)). Read each candidate before you list it: a match is a reason to
+  look, not a verdict. It is a helper, never required to have been run.
+- **A pull request opened before the rule** has no such section. The check applies when its description is next
+  edited or its branch is next pushed (the `body` job runs on those events); until then the audit's `pr.body` reports
+  it, and the author adds the section when the description is next touched.
+
+### After a merge {#after-a-merge}
+
+The coordinator brings each listed issue up to date as soon as the pull request merges, in the same round as the issues
+that cite it ([Merging safely](how-we-work.md#merging)):
+
+1. Read the pull request's Issues affected section (`gh pr view N --json body`).
+2. For each issue: change what the pull request made untrue (a pull request called open is merged, a renamed file), tick
+   the fix-list items it finished, set the status label (`S-in-progress` when work remains, `S-ready-to-start` when
+   nobody is on it), and close it if it is now done. Edit the body with `coney-tools issue edit N --body FILE`; a
+   label or a comment is `gh`. An issue the line does not change after all gets a one-line comment saying so.
+3. Look for what the author missed: `coney-tools issue impact --base <merge base> --head <the pull request's tip>`
+   run on the merged branch's commits lists the other issues that cite what changed.
+4. The audit's `pr.affected-unedited` reports a pull request merged since the rule began whose listed open issues have
+   not been updated since the merge; `/repo-hygiene` fixes those first
+   ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)). The check counts any update of the issue (a body
+   edit, a label, a comment) after the merge time as the edit.
+
 ## Work found along the way becomes its own issue {#follow-up-work}
 
 A pull request merges only when every task in it is finished. Its Checklist lists what it finishes, each item ticked,

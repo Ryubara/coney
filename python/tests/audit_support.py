@@ -76,7 +76,8 @@ def issue(
 
 
 PR_BODY = (
-    "## Summary\n\nAdds a check.\n\n## Checklist\n\nDone:\n\n- [x] the check\n\n"
+    "## Summary\n\nAdds a check.\n\n## Issues affected\n\nNone (nothing cites it)\n\n"
+    "## Checklist\n\nDone:\n\n- [x] the check\n\n"
     "## Testing\n\n- 3 tests passed\n\n## Screenshots\n\nScreenshots: none (tooling)\n\n"
     "## AI use\n\n- **Commits written by:** a person\n- **Model:** n/a\n"
 )

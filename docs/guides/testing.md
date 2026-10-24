@@ -247,7 +247,7 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
 (`coney-tools repo render`):
 
 <!-- conventions:begin pr-rules -->
-- Sections, in this order: Summary, Checklist, Testing, Screenshots, AI use.
+- Sections, in this order: Summary, Issues affected, Checklist, Testing, Screenshots, AI use.
 - Summary and Testing must hold text of their own: a section left as the template has it (its comments, `...`,
   `<reason>`) counts as empty.
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
@@ -255,6 +255,9 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
 - Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
   finish is left out and lives in its own issue.
+- Issues affected: one line `- #N: how it is affected` for each open issue the pull request partly fixes, changes the
+  behaviour of or makes out of date, or the single line `None (<reason>)` with any short reason, for example
+  `None (one-line fix)`. `coney-tools issue impact` suggests the list; running it is optional.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - Testing: when the title's area is one a player sees (`gameplay`, `graphics`, `audio`), a line starting `Runtime:` with

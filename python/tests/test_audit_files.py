@@ -802,3 +802,12 @@ def test_a_new_workflow_must_be_placed_too(root: Path) -> None:
     assert [problem.message for problem in problems] == [
         "the job new/check is in no place of ci.places (one place per check)"
     ]
+
+
+def test_a_template_that_forgets_the_issues_affected_none_line_is_found(root: Path) -> None:
+    edit(root, ".github/pull_request_template.md", "`None (<reason>)`", "`nothing`")
+    messages = " | ".join(problem.message for problem in found(af.template_matches, context(root)))
+    assert "does not mention `None (<reason>)`" in messages and "pull_requests.issues_affected" in messages
+    edit(root, ".github/pull_request_template.md", "`None (one-line fix)`", "`None (x)`")
+    messages = " | ".join(problem.message for problem in found(af.template_matches, context(root)))
+    assert "does not mention `None (one-line fix)`" in messages

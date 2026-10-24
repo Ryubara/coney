@@ -50,7 +50,7 @@ def test_the_real_title_rules() -> None:
 
 def test_the_real_pull_request_rules() -> None:
     rules = load_conventions(REPO).pull_requests
-    assert rules.sections == ("Summary", "Checklist", "Testing", "Screenshots", "AI use")
+    assert rules.sections == ("Summary", "Issues affected", "Checklist", "Testing", "Screenshots", "AI use")
     assert rules.filled == ("Summary", "Testing") and rules.checklist.section == "Checklist"
     assert rules.docs_none.line == "Docs: none"
     assert rules.ai_use.written_by.no_ai == "a person"
@@ -851,3 +851,18 @@ def test_a_wrong_text_key_is_refused(path: str, value: object, message: str) -> 
     data = changed((path, value))
     with pytest.raises(ConventionsError, match=message):
         parse_conventions(data)
+
+
+def test_the_issues_affected_example_is_a_none_line_with_a_reason() -> None:
+    assert load_conventions(REPO).pull_requests.issues_affected.example == "None (one-line fix)"
+    for bad in ("None", "None ()", "Nothing (one-line fix)", "one-line fix"):
+        with pytest.raises(ConventionsError, match=r"issues_affected.example"):
+            conventions_with(("pull_requests.issues_affected.example", bad))
+
+
+def test_the_impact_limits_are_whole_numbers_of_one_or_more() -> None:
+    impact = load_conventions(REPO).issues.impact
+    assert (impact.cache_minutes, impact.common_max_issues, impact.max_reasons) == (30, 6, 3)
+    for key in ("cache_minutes", "common_max_issues", "max_reasons"):
+        with pytest.raises(ConventionsError, match=key):
+            conventions_with((f"issues.impact.{key}", 0))
