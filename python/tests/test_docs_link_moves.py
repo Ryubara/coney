@@ -1,0 +1,170 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Tests for the link rewrite that is no touch: a line whose only change is the target of a link to a page the same
+change renamed or deleted (docs/guides/writing-docs.md#legacy-pages)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from git_support import git
+from research_support import LEGACY_FILE, checkout, context, page, write
+
+from coney_tools import docs_check, docs_legacy
+from coney_tools.docs_link_moves import link_only_change, touched_lines
+
+FOLDER = "docs/research"
+#: The pages the made-up change renamed or deleted, and the pages and anchors that exist after it.
+GONE = {"docs/research/combat.md", "docs/research/old-name.md"}
+PAGES = {"docs/research/combat-grabs.md": {"grab", "release"}, "docs/research/combat/index.md": {"summary"}}
+
+
+def resolves(path: str, anchor: str) -> bool:
+    """Whether `path` exists after the change and holds `anchor` (any, when empty)."""
+    return path in PAGES and (not anchor or anchor in PAGES[path])
+
+
+def same(old: str, new: str) -> bool:
+    """Whether the change of `old` to `new` is only a link rewrite."""
+    return link_only_change(old, new, FOLDER, GONE, resolves)
+
+
+# --- one line ---------------------------------------------------------------------------------------------------------
+
+
+def test_a_link_to_a_renamed_page_rewritten_to_its_new_path_is_no_touch() -> None:
+    assert same("See [the grabs](combat.md#grab).", "See [the grabs](combat/index.md#summary).")
+    assert same("See [it](old-name.md).", "See [it](combat/index.md).")
+
+
+def test_a_link_rewritten_to_another_page_and_anchor_is_no_touch() -> None:
+    # The stub's own target, not the renamed page's new path.
+    assert same("See [grabs](combat.md#grab).", "See [grabs](combat-grabs.md#grab).")
+    assert same("See [grabs](combat.md#anything).", "See [grabs](combat-grabs.md#release).")
+
+
+def test_each_changed_link_of_a_line_is_judged_and_unchanged_ones_pass() -> None:
+    old = "[a](combat.md#grab), [b](https://example.org/x) and [c](combat.md#release)"
+    new = "[a](combat-grabs.md#grab), [b](https://example.org/x) and [c](combat-grabs.md#release)"
+    assert same(old, new)
+
+
+def test_a_link_to_a_page_that_was_not_renamed_is_a_touch() -> None:
+    assert not same("See [it](camera.md#a).", "See [it](combat-grabs.md#grab).")
+
+
+def test_a_target_that_does_not_resolve_is_a_touch() -> None:
+    assert not same("See [it](combat.md#grab).", "See [it](combat-grabs.md#nowhere).")
+    assert not same("See [it](combat.md#grab).", "See [it](missing.md#grab).")
+
+
+def test_a_link_rewrite_with_any_other_edit_on_the_line_is_a_touch() -> None:
+    assert not same("See [the grabs](combat.md#grab).", "See [the grab](combat-grabs.md#grab).")
+    assert not same("See [the grabs](combat.md#grab).", "See also [the grabs](combat-grabs.md#grab).")
+    assert not same("See [the grabs](combat.md#grab).", "See [the grabs](combat-grabs.md#grab) too.")
+    assert not same("See [a](combat.md#grab).", "See [a](combat-grabs.md#grab) and [b](combat-grabs.md#release).")
+
+
+def test_a_line_that_did_not_change_its_links_is_no_link_rewrite() -> None:
+    assert not same("Plain text.", "Plain text, edited.")
+    assert not same("See [it](combat-grabs.md#grab).", "See [it](combat-grabs.md#release).")
+
+
+def test_an_image_or_an_address_outside_the_pages_is_no_link_rewrite() -> None:
+    assert not same("![a](combat.md)", "![a](combat-grabs.md)")
+    assert not same("See [it](combat.md).", "See [it](repo:src/a.cpp).")
+    assert not same("See [it](combat.md).", "See [it](https://example.org/).")
+
+
+def test_targets_are_read_from_the_pages_own_folder() -> None:
+    assert link_only_change(
+        "[a](../research/combat.md#grab)", "[a](../research/combat-grabs.md#grab)", "docs/guides", GONE, resolves
+    )
+    assert not link_only_change("[a](combat.md#grab)", "[a](combat-grabs.md#grab)", "docs/guides", GONE, resolves)
+
+
+# --- a diff -----------------------------------------------------------------------------------------------------------
+
+DIFF = """diff --git a/docs/research/ai.md b/docs/research/ai.md
+index 1..2 100644
+--- a/docs/research/ai.md
++++ b/docs/research/ai.md
+@@ -3 +3 @@ Heading
+-See [grabs](combat.md#grab).
++See [grabs](combat-grabs.md#grab).
+@@ -10,2 +10,2 @@ Heading
+-A [grab](combat.md#grab) line.
+-B [grab](combat.md#grab) line.
++A [grab](combat-grabs.md#grab) line.
++B grab line, [edited](combat-grabs.md#grab).
+@@ -20 +20,2 @@
+-Old [x](combat.md).
++New [x](combat-grabs.md).
++Added.
+@@ -30,2 +31,0 @@
+-Removed one.
+-Removed two.
+@@ -40 +39 @@
+-Plain.
++Plain, edited.
+\\ No newline at end of file
+"""
+
+
+def test_the_lines_a_diff_touches_leave_out_the_link_rewrites() -> None:
+    # Line 3 and line 10 are link rewrites; 11 is edited; 20 and 21 come with an added line; a deletion marks the line
+    # it was at (31); 39 is edited.
+    assert touched_lines(DIFF, FOLDER, GONE, resolves) == frozenset({11, 20, 21, 31, 39})
+
+
+# --- a whole change ---------------------------------------------------------------------------------------------------
+
+LINKS = "# Links\n\nSee [grabs](combat.md#grab) for the grab.\n\nSee [more](combat.md#grab) too.\n"
+
+
+def linked_checkout(tmp_path: Path) -> Path:
+    """`ai.md` listed as legacy, linking to `combat.md`, with `combat.md` moved to `combat/index.md` on the branch."""
+    root = checkout(
+        tmp_path,
+        files={
+            "docs/research/combat.md": page("Combat.\n\n" + "A fact about combat.\n\n" * 40, meta=""),
+            "docs/research/ai.md": LINKS,
+            "docs/research/combat-grabs.md": "# Grabs\n\n## Grab {#grab}\n\nText.\n",
+        },
+    )
+    write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "legacy")
+    git(root, "checkout", "-q", "-B", "main")
+    git(root, "checkout", "-q", "-b", "links")
+    git(root, "mv", "docs/research/combat.md", "docs/research/combat-gone.md")
+    return root
+
+
+def touches(root: Path) -> dict[str, frozenset[int] | None]:
+    """The lines the change touches of `ai.md`."""
+    return {
+        name: touch.lines for name, touch in docs_check.change_touches(root, "main", ["docs/research/ai.md"]).items()
+    }
+
+
+def test_a_page_whose_only_change_is_links_to_a_moved_page_is_untouched(tmp_path: Path) -> None:
+    root = linked_checkout(tmp_path)
+    write(root, "docs/research/ai.md", LINKS.replace("combat.md#grab", "combat-grabs.md#grab"))
+    assert touches(root) == {"docs/research/ai.md": frozenset()}
+    result = docs_check.check_changed(root, "main", context(root))
+    assert result.findings["docs/research/ai.md"][0].severity == "warning"
+    assert "docs/research/ai.md" not in result.failed
+
+
+def test_a_link_to_a_page_that_stays_is_a_touch(tmp_path: Path) -> None:
+    root = linked_checkout(tmp_path)
+    write(root, "docs/research/ai.md", LINKS.replace("combat.md#grab", "good.md#grab", 1))
+    assert touches(root) == {"docs/research/ai.md": frozenset({3})}
+    assert "docs/research/ai.md" in docs_check.check_changed(root, "main", context(root)).failed
+
+
+def test_a_rewrite_next_to_another_edit_touches_the_line_of_the_edit_only(tmp_path: Path) -> None:
+    root = linked_checkout(tmp_path)
+    text = LINKS.replace("combat.md#grab", "combat-grabs.md#grab").replace("for the grab", "for the grabs")
+    write(root, "docs/research/ai.md", text)
+    assert touches(root) == {"docs/research/ai.md": frozenset({3})}

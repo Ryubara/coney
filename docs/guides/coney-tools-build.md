@@ -113,13 +113,16 @@ and name), `research/elf-sections.toml` (the sections of `SLUS_212.15`) and, onc
 `docs legacy` keeps `research/legacy.toml`, the research pages that do not meet the standard yet
 ([Legacy pages](writing-docs.md#legacy-pages)). Without an option it scans every research page and prints how many fail
 each rule. `--init` writes the file from a scan and refuses when it exists; `--prune` takes out the pages and rules that
-now pass and lowers the counts, and adds nothing; `--check` exits 1 when the file lists a page that is gone or a rule
-that now passes, or (when `--base` has the file) adds a page or a rule since the branch left `--base`. `docs check`
-runs the same check on the file whenever the change touches a research page, a data file the checks read (the function
-listing, the sections, the run records, the function database or the file itself), the conventions or the checks, so
-it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it fails every
-mechanical rule page-wide and the grading of the sections the change touches (an address with no level, an old-form
-runtime claim); an entry may list any research rule or `stale-wording`.
+now pass and lowers the counts, and adds nothing (but, against `--base`, the entry of a page git sees as moved follows
+it to its new path, keeping the grading rule `evidence` only); `--check` exits 1 when the file lists a page that is gone
+or a rule that now passes, or (when `--base` has the file) adds a page or a rule since the branch left `--base`.
+`docs check` runs the same check on the file whenever the change touches a research page, a data file the checks read
+(the function listing, the sections, the run records, the function database or the file itself), the conventions or the
+checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
+fails every mechanical rule page-wide and the grading of the sections the change touches (an address with no level, an
+old-form runtime claim); an entry may list any research rule or `stale-wording`. A page moved with git keeps its entry's
+grading exemption and nothing else, and a line that only rewrites link targets to a page the change moved is no touch
+(both under [Legacy pages](writing-docs.md#legacy-pages)).
 
 <!-- command-reference:begin docs -->
 ## Parameters of `docs` {#docs-parameters}

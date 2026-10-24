@@ -329,11 +329,11 @@ paragraph will say so. The forms are checked too ([the spellings](research-evide
 there):
 
 - `confirmed (runtime)` says `, run <id>`, and the record `research/runs/<id>.toml` must exist. There is no such folder
-  yet, so a new or restructured page cannot make a runtime claim until the first run record is committed
+  yet, so a new page cannot make a runtime claim until the first run record is committed
   ([Run records](research-evidence.md#run-records) says how to write one, and the check names the command). What no
   run observed is `speculative`, with an open question. A page in the [legacy file](#legacy-pages) may keep an old
   runtime claim that names PCSX2 in its Verified line or in How this was checked, and its run ids are not checked
-  while the folder is missing.
+  while the folder is missing; so does a legacy page [moved with git](#legacy-pages), whichever way it names PCSX2.
 - `speculative` links an open question of the page (`[q-name](#q-name)`) that exists.
 - `inferred` should say what it follows from (`inferred from the call order`): a warning when it does not.
 - A spelling that is no level is refused, and so is "probably" or "likely" in an Evidence cell.
@@ -376,7 +376,29 @@ the rules it fails and with the number of findings at the last scan. `docs check
   that does not name PCSX2). Elsewhere they stay warnings. The page's length stays waived too, both until the page's
   restructure;
 - fails a rule the page now passes until it is removed from the file, so the file only shrinks; and
-- refuses a new page in the file. A new or restructured page meets the standard in full.
+- refuses a new page in the file. A new page meets the standard in full.
+
+**A page moved with git keeps its grading exemption and nothing else.** When a restructure moves a legacy page (a
+rename, say `combat.md` to `combat/index.md`), the page is read as touched throughout, and as the research-page design
+intends ("grading may still lag"), its entry's `evidence` rule goes on excusing the grading: an address with no level, and
+a runtime claim of the old form or with no run record to cite (the rule that a page outside the file may not make one
+while `research/runs/` is missing). Every other rule is checked as for any touched page, `length` and the front matter,
+sections, Verified line, address forms and resolution, history and copied paragraphs included; so are the spelling of a
+level and a run id that names no record. What counts as moved is what git says, not what the file says: a rename that
+`git diff -M` finds against the commit where the branch left `main`, at the similarity `research.moved_similarity` of
+`.github/conventions.yml` (50%, git's default) or more. So the entry cannot be used to launder a new page: a copy of a
+legacy page, or a new page beside a deleted one with too little of its text, is new and cannot be listed. The entry
+follows the page: `coney-tools docs legacy --prune` moves the old path's entry to the new path, keeping `evidence` alone,
+and the check refuses an entry for the new path that lists any other rule, or `evidence` when the old entry did not.
+Stage the move (`git mv`, or `git add` the new page and the deletion) so git can pair them. Once merged, the page is an
+ordinary legacy page: the next change to it grades the sections it touches.
+
+**A link rewrite that follows a move is no touch.** A line whose only change is the target of a link `[text](target)` does
+not touch the page that holds it when, for each link it changes, the old target's page was renamed or deleted in the same
+change (any anchor) and the new target resolves to an existing page that has the anchor. The link's text, the rest of the
+line and the number of links must be equal; a link to a page that stayed, to a target that resolves nowhere, to a
+`repo:` path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end
+the excuse of every page that links to it.
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by

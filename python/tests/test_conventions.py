@@ -391,6 +391,16 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         (("research.kinds.topic.max_lines", 5),),
         r"research\.kinds\.topic\.max_lines: expected a whole number of 100 or more",
     ),
+    (
+        "a rename score below git's default",
+        (("research.moved_similarity", 30),),
+        r"research\.moved_similarity: expected a whole number of 50 or more",
+    ),
+    (
+        "a rename score over 100",
+        (("research.moved_similarity", 101),),
+        r"research\.moved_similarity: expected a whole number of 100 or less",
+    ),
 ]
 
 
@@ -625,6 +635,7 @@ def test_the_real_research_page_kinds() -> None:
     assert all(research.kinds[name].max_lines == 1000 for name in ("format", "mission", "feature", "survey"))
     assert (research.verified_max_chars, research.copy_min_chars) == (200, 200)
     assert research.files.legacy == "research/legacy.toml"
+    assert research.moved_similarity == 50
 
 
 def test_a_research_section_is_found_by_its_name_or_an_old_name() -> None:

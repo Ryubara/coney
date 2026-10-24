@@ -910,6 +910,10 @@ research:
     glossary: research/glossary.yaml                       # the player's words, each linked to its page and functions
   front_matter: [kind, system, owns]                       # the keys a page's YAML front matter may hold
   owns_keys: [files, ranges, functions]                    # the keys of its `owns`
+  # A research page moved with git (a rename the base diff detects at or above this score, in percent; git's own
+  # similarity) keeps its legacy entry's grading exemption and nothing else (writing-docs.md#legacy-pages). 50 is
+  # git's default; lower is refused.
+  moved_similarity: 50
   verified_max_chars: 200                                  # the "Verified against" line: one line, at most this long
   copy_min_chars: 200                                      # a paragraph this long on two pages is a copy
   # Old section names every kind accepts as the new ones, until a page is renamed.

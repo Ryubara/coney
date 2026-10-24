@@ -93,7 +93,7 @@ def run_legacy(mode: str, base: str) -> int:
             print(f"wrote {env.research.files.legacy}")
             return 0
         if mode == "prune":
-            left = docs_legacy.pruned(root, context)
+            left = docs_legacy.pruned(root, context, base)
             before = len(env.legacy.pages)
             path.write_text(format_legacy(left), encoding="utf-8", newline=NEWLINE)
             print(f"{env.research.files.legacy}: {before} pages listed before, {len(left.pages)} now")

@@ -18,6 +18,11 @@ and grades the touched section"):
   heading) the change touches and stays a warning elsewhere;
 * `length`: waived until the page's restructure.
 
+A page that moved with git (a rename the change's diff detects, `Touch.moved_from`) is touched on every line, and keeps
+its entry's grading exemption only: its `evidence` entry still excuses the grading findings of every section
+(`Finding.by_section`), and every other finding, `length` included, is an error. The entry follows the page to its new
+path (`docs_legacy`), so the grading exemption lasts until the page is touched section by section like any other.
+
 Every other finding of a listed rule (front matter, sections, the Verified line, address forms, addresses that do not
 resolve, Ghidra's names, copies, dates, stale wording, refused level spellings and run ids that name no record) is an
 error on a touched page. A rule the page now passes is an error until it is removed from the file, so the file only
@@ -43,8 +48,9 @@ HEADER = (
     "# Research pages that do not meet the standard yet (docs/guides/writing-docs.md#legacy-pages), each under the\n"
     "# rules it fails, with the number of findings at the last scan (for `length`, the lines over the limit).\n"
     "# A page here is excused from those rules only. It leaves the file as it passes: remove a rule or a page once\n"
-    "# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new or\n"
-    "# restructured page meets the standard in full. Written first by `coney-tools docs legacy --init`.\n"
+    "# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new\n"
+    "# page meets the standard in full, and a page moved with git keeps only its `evidence` entry. Written first by\n"
+    "# `coney-tools docs legacy --init`.\n"
 )
 
 
@@ -65,10 +71,12 @@ class Legacy:
 
 @dataclass(frozen=True)
 class Touch:
-    """What a change did to a page: the lines it added or changed (None when not known) and whether the page is new."""
+    """What a change did to a page: the lines it added or changed (None when not known), whether the page is new and,
+    for a page git sees as moved from another path, that path (the page is then touched throughout and not new)."""
 
     lines: frozenset[int] | None = None
     new: bool = False
+    moved_from: str | None = None
 
 
 def parse_legacy(text: str, known_rules: Iterable[str], where: str = "research/legacy.toml") -> Legacy:
@@ -117,6 +125,8 @@ def apply_legacy(
     excused: Mapping[str, int],
     legacy_file: str,
     touched: Callable[[Finding], bool] | None,
+    *,
+    moved: bool = False,
 ) -> list[Finding]:
     """`findings` of a listed page with its excuses applied.
 
@@ -125,7 +135,7 @@ def apply_legacy(
     section the change touches, and only `length` and a grading finding (`Finding.by_section`) outside those sections
     stay excused; every other finding of an excused rule is an error. A rule in `excused` without any finding is an
     error: take it out of the file. Findings of other rules, warnings included, pass through; a warning of an excused
-    rule is dropped.
+    rule is dropped. For a `moved` page the whole page is touched: only a grading finding stays excused, wherever it is.
     """
     kept: list[Finding] = []
     waived: dict[str, list[Finding]] = {rule: [] for rule in excused}
@@ -134,7 +144,7 @@ def apply_legacy(
             kept.append(finding)
         elif finding.severity != "error":
             continue  # a warning of an excused rule is part of what the legacy page is excused from
-        elif _stays_excused(finding, touched):
+        elif _stays_excused(finding, touched, moved):
             waived[finding.rule].append(finding)
         else:
             kept.append(finding)
@@ -162,9 +172,12 @@ def apply_legacy(
     return sorted(kept, key=lambda item: item.line)
 
 
-def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None) -> bool:
+def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None, moved: bool = False) -> bool:
     """Whether an error of an excused rule is still excused: always while the change leaves the page alone, and on a
-    touched page only the length and the grading of a section the change does not touch."""
+    touched page only the length and the grading of a section the change does not touch. On a moved page, the grading
+    alone."""
+    if moved:
+        return finding.by_section
     if touched is None or finding.rule == "length":
         return True
     return finding.by_section and not touched(finding)

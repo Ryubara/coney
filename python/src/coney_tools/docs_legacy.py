@@ -9,14 +9,18 @@
 * `initial_text` is the file's first text, from a scan; it refuses to overwrite a file, because afterwards the file
   only shrinks;
 * `pruned` is the file with every rule a page now passes taken out, every page that passes or is gone taken out and the
-  counts lowered to the scan's, and nothing added;
-* `problems` finds what is wrong with the file as it is: a page that is gone, a rule a page now passes, and (against a
-  base) a page or a rule added to a file that already existed where the branch left it.
+  counts lowered to the scan's, and nothing added, except that (against a base) the entry of a page git sees as moved
+  follows it to its new path, keeping the grading (`evidence`) alone;
+* `problems` finds what is wrong with the file as it is: a page that is gone (or moved, whose entry has not followed), a
+  rule a page now passes, and (against a base) a page or a rule added to a file that already existed where the branch
+  left it. The one page that may be added is the new path of a moved page, under `evidence` and only if the old entry
+  had it: a moved page keeps its grading exemption and nothing else (docs/guides/writing-docs.md#legacy-pages).
 """
 
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -79,14 +83,32 @@ def initial_text(root: Path, context: Context) -> str:
     return format_legacy(Legacy(scan(root, context)))
 
 
-def pruned(root: Path, context: Context) -> Legacy:
-    """The current legacy file with what is fixed taken out and the counts lowered; nothing is added."""
+def moved_pages(root: Path, context: Context, base: str | None) -> dict[str, str]:
+    """The pages git sees as moved since the branch left `base` (a rename at or above the conventions' similarity),
+    as new path to old path. Empty without a base."""
+    env = context.research
+    if env is None:
+        raise ConfigError("the research standard is not loaded")
+    if base is None:
+        return {}
+    return local_gate.renamed_files(root, base, env.research.moved_similarity)
+
+
+def pruned(root: Path, context: Context, base: str | None = None) -> Legacy:
+    """The current legacy file with what is fixed taken out and the counts lowered; nothing is added. Against a `base`,
+    the entry of a page git sees as moved follows it to the new path and keeps only the grading, `evidence`."""
     env = context.research
     if env is None:
         raise ConfigError("the research standard is not loaded")
     now = scan(root, context)
+    moved = moved_pages(root, context, base)
+    moved_to = {old: new for new, old in moved.items()}
     kept: dict[str, dict[str, int]] = {}
     for path, rules in env.legacy.pages.items():
+        if path in moved_to and not (root / path).is_file():
+            path, rules = moved_to[path], {rule: count for rule, count in rules.items() if rule == "evidence"}
+        elif path in moved:
+            rules = {rule: count for rule, count in rules.items() if rule == "evidence"}
         current = now.get(path, {})
         left = {rule: min(count, current[rule]) for rule, count in rules.items() if rule in current}
         if left:
@@ -103,9 +125,17 @@ def problems(root: Path, context: Context, base: str | None = None) -> list[str]
     found: list[str] = []
     file = env.research.files.legacy
     now = scan(root, context)
+    moved = moved_pages(root, context, base)
+    moved_to = {old: new for new, old in moved.items()}
     for path, rules in env.legacy.pages.items():
         if not (root / path).is_file():
-            found.append(f"{file}: {path} is gone: remove it")
+            if path in moved_to:
+                found.append(
+                    f"{file}: {path} moved to {moved_to[path]}: its entry follows, grading only "
+                    "(`coney-tools docs legacy --prune`)"
+                )
+            else:
+                found.append(f"{file}: {path} is gone: remove it")
             continue
         for rule in rules:
             if rule not in now.get(path, {}):
@@ -117,13 +147,30 @@ def problems(root: Path, context: Context, base: str | None = None) -> list[str]
         earlier = parse_legacy(before, LEGACY_RULES, f"{base}:{file}")
         for path, rules in env.legacy.pages.items():
             if path not in earlier.pages:
-                found.append(f"{file}: {path} is added: a page that does not meet the standard is fixed, not listed")
+                found.extend(_added(file, path, rules, earlier, moved))
             else:
                 found.extend(
                     f"{file}: {path} is excused from '{rule}' that it was not before"
                     for rule in rules
                     if rule not in earlier.pages[path]
                 )
+    return found
+
+
+def _added(file: str, path: str, rules: Mapping[str, int], earlier: Legacy, moved: Mapping[str, str]) -> list[str]:
+    """What is wrong with an entry for `path`, which the file did not list where the branch left `base`: all of it,
+    unless `path` is the new path of a listed page that moved, which may be listed under `evidence` if the old entry
+    was."""
+    origin = earlier.pages.get(moved.get(path, ""))
+    if origin is None:
+        return [f"{file}: {path} is added: a page that does not meet the standard is fixed, not listed"]
+    found = [
+        f"{file}: {path} is excused from '{rule}': a moved page keeps only its grading exemption ('evidence')"
+        for rule in rules
+        if rule != "evidence"
+    ]
+    if "evidence" in rules and "evidence" not in origin:
+        found.append(f"{file}: {path} is excused from 'evidence' that it was not before")
     return found
 
 

@@ -94,6 +94,29 @@ def test_changed_files_leaves_out_deleted_files_and_work_only_on_the_base(repo: 
     assert local_gate.changed_files(repo, "main") == []
 
 
+def test_renamed_and_removed_files_follow_git_and_its_similarity(repo: Path) -> None:
+    prose = "".join(f"line {n} of a page that is long enough to be recognised\n" for n in range(40))
+    write(repo, "docs/moved.md", prose)
+    write(repo, "docs/rewritten.md", prose)
+    write(repo, "docs/deleted.md", "gone\n")
+    commit_all(repo, "pages")
+    git(repo, "switch", "-q", "-c", "next")
+    (repo / "docs/new").mkdir()
+    git(repo, "mv", "docs/moved.md", "docs/new/moved.md")
+    git(repo, "mv", "docs/rewritten.md", "docs/new/rewritten.md")
+    write(repo, "docs/new/rewritten.md", prose[: len(prose) * 7 // 10] + "other text entirely, written new\n" * 5)
+    git(repo, "rm", "-q", "docs/deleted.md")
+    git(repo, "add", "-A")
+    assert local_gate.renamed_files(repo, "work") == {
+        "docs/new/moved.md": "docs/moved.md",
+        "docs/new/rewritten.md": "docs/rewritten.md",
+    }
+    # A higher score keeps only the rename that is mostly the same text; the one rewritten is a deletion and a new file.
+    assert local_gate.renamed_files(repo, "work", 90) == {"docs/new/moved.md": "docs/moved.md"}
+    assert local_gate.removed_files(repo, "work") == {"docs/moved.md", "docs/rewritten.md", "docs/deleted.md"}
+    assert local_gate.removed_files(repo, "work", 90) == {"docs/moved.md", "docs/rewritten.md", "docs/deleted.md"}
+
+
 def test_unknown_base_is_a_config_error(repo: Path) -> None:
     with pytest.raises(ConfigError):
         local_gate.changed_files(repo, "origin/nowhere")

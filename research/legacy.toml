@@ -1,8 +1,9 @@
 # Research pages that do not meet the standard yet (docs/guides/writing-docs.md#legacy-pages), each under the
 # rules it fails, with the number of findings at the last scan (for `length`, the lines over the limit).
 # A page here is excused from those rules only. It leaves the file as it passes: remove a rule or a page once
-# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new or
-# restructured page meets the standard in full. Written first by `coney-tools docs legacy --init`.
+# `coney-tools docs check` says it passes, or run `coney-tools docs legacy --prune`. Never add a page: a new
+# page meets the standard in full, and a page moved with git keeps only its `evidence` entry. Written first by
+# `coney-tools docs legacy --init`.
 
 ["docs/research/ai-code.md"]
 front-matter = 1
