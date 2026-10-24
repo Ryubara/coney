@@ -385,11 +385,14 @@ class Engine:
     def _set_status_label(self, work: _Pass, want: str) -> None:
         """Leave exactly one status label on the issue: `want`.
 
-        A paused label (`S-blocked`, `S-needs-info`) a maintainer put on a claimed issue stays: the claim keeps and
-        nothing else is set.
+        A paused label (`S-blocked`, `S-needs-info`, `S-on-hold`) a maintainer put on a claimed issue stays: the claim
+        keeps and nothing else is set. A hold label (`S-on-hold`) also takes the place of the claim's label, so the
+        other status labels go; once it is off, the next pass sets `want` again.
         """
         number = work.issue.number
         if any(label in self.rules.paused_labels for label in work.issue.labels):
+            if any(label in self.rules.hold_labels for label in work.issue.labels):
+                self._drop_unpaused_status(work)
             return
         for label in work.issue.labels:
             if label.startswith(self._status_prefix) and label != want:
@@ -398,6 +401,20 @@ class Engine:
             self.remote.add_label(number, want)
         kept = tuple(label for label in work.issue.labels if not label.startswith(self._status_prefix))
         work.issue = replace(work.issue, labels=(*kept, want))
+
+    def _drop_unpaused_status(self, work: _Pass) -> None:
+        """Remove every status label that is not a paused one: a hold leaves the issue with its paused labels only."""
+        drop = [
+            label
+            for label in work.issue.labels
+            if label.startswith(self._status_prefix) and label not in self.rules.paused_labels
+        ]
+        for label in drop:
+            self.remote.remove_label(work.issue.number, label)
+        if drop:
+            kept = tuple(label for label in work.issue.labels if label not in drop)
+            work.issue = replace(work.issue, labels=kept)
+            work.log.append(f"#{work.issue.number}: removed {', '.join(drop)}: the issue is on hold")
 
     def _save(self, work: _Pass, stored: Stored, card: Card) -> None:
         """Write `card` into its comment (post it first if it is new) when its text changed, and keep the cache."""

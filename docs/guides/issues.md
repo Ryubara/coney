@@ -214,6 +214,7 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `S-in-progress` | Status: an agent or person is working on it |
 | | `S-pending-review` | Status: a pull request is open |
 | | `S-blocked` | Status: waiting for another issue or a decision |
+| | `S-on-hold` | Status: paused by decision; a branch may exist; not in progress |
 | | `S-conflict` | Status: a pull request conflicts with main (set by CI) |
 | | `S-failing` | Status: a pull request fails a required check (set by CI) |
 | GitHub's own | `good first issue` | Good for newcomers |
@@ -221,6 +222,15 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
 <!-- conventions:end -->
+
+`S-on-hold` is for work that was started and then paused on purpose, such as a held branch that becomes a task
+later. It differs from `S-blocked` (waiting for another issue or a decision, with the work still wanted next) and from
+`S-in-progress` (someone is working on it now): the idle check (`issue.progress-idle`) looks only at `S-in-progress`.
+A claimed issue that is put on hold keeps its claim like one that is blocked: `S-on-hold` is one of the
+`claims.paused_labels`, so the claim Action leaves it in place and the release clock waits ([Claiming](#claiming)).
+It is also a hold label (`claims.hold_labels`): the claim Action takes `S-in-progress` (or `S-pending-review`) off,
+so a held issue has one status label, and puts it back when the hold comes off while the claim still stands.
+By convention (nothing checks it) the issue body names the branch and what remains.
 
 `S-conflict` and `S-failing` are for pull requests, not issues, and nobody sets them by hand: the `hygiene` workflow
 puts them on an open pull request that conflicts with `main` or fails a required check, and takes them off when that
@@ -256,6 +266,7 @@ Every open issue has exactly one status label, and the coordinator moves it:
 | `S-in-progress` | An agent or person claims an `S-ready-to-start` issue ([Claiming](#claiming)); a release or `/unclaim` sets `S-ready-to-start` again. |
 | `S-pending-review` | The pull request is open, with `Fixes #N` in its body (the claim Action sets it on a claimed issue). |
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
+| `S-on-hold` | The maintainer paused the work by decision (a held unit: a branch may exist, nobody is working on it). It is not in progress and not claimable; on an issue that is already claimed it keeps the claim and pauses the release clock like `S-blocked`. On a claimed issue it replaces `S-in-progress` until it comes off, and then the claim's label returns. To pick the work up as a new task, the coordinator first gives the claim up with `/unclaim` (the issue keeps `S-on-hold`), then swaps `S-on-hold` for `S-ready-to-start`; to resume the same claim, it just takes `S-on-hold` off. |
 
 An issue is closed automatically when its pull request is squash-merged into `main`, because the body says
 `Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue;
@@ -295,8 +306,10 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
 - A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
   2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
-- A claimed issue that carries `S-blocked`, `S-needs-info` keeps that label; the claim stays and its release clock
-  waits, as it does while the claimant's pull request is open.
+- A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
+  release clock waits, as it does while the claimant's pull request is open.
+- `S-on-hold` also takes the place of the claim's own label: while it is on, the claimed issue loses `S-in-progress` (or
+  `S-pending-review`), and when it comes off while the claim stands, that label comes back.
 - Release is off until the cutover: a claim is released after 72 hours without activity (`/progress`, a pull request
   opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is mentioned at 48 hours. The
   stages `/progress` accepts: `assigned`, `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`,
@@ -333,7 +346,7 @@ mentions the claimant (its title), and so does the 48-hour warning.
 
 1. It is an open issue, not a pull request.
 2. Nobody holds it: no assignee, no claim card, no `S-in-progress` or `S-pending-review`.
-3. It carries `S-ready-to-start` (not `S-needs-triage`, `S-needs-info`, `S-needs-research` or `S-blocked`).
+3. It carries `S-ready-to-start` (not `S-needs-triage`, `S-needs-info`, `S-needs-research`, `S-blocked` or `S-on-hold`).
 4. While an open `P-critical` issue that can be claimed (ready, unassigned) has no claim, only a `P-critical` issue can
    be claimed; one that is blocked or already held does not stop anyone.
 5. Every issue in its "Blocked by" section is done: closed as completed by a merged pull request (a listed pull
@@ -363,11 +376,13 @@ claimant, the status, the pull request and the labels are recomputed from the as
 requests on every pass, so a card that drifted is repaired, not trusted.
 
 **Status labels.** A claimed issue has exactly one `S-` label: `S-in-progress`, or `S-pending-review` while the
-claimant's pull request is open. The exception is a maintainer's `S-blocked` or `S-needs-info` (`claims.paused_labels`):
-it stays on the claimed issue, the claim keeps, and the release clock waits until the label is taken off (it then starts
-again from that moment). The clock also waits while the claimant's own pull request is open and ready for review,
-however long the review takes; a draft, or a maintainer's pull request, is activity but does not stop the clock. The
-card says what it waits for and is written once when the wait starts, not every hour.
+claimant's pull request is open. The exception is a maintainer's `S-blocked`, `S-needs-info` or `S-on-hold`
+(`claims.paused_labels`): it stays on the claimed issue, the claim keeps, and the release clock waits until the label
+is taken off (it then starts again from that moment). `S-blocked` and `S-needs-info` sit beside `S-in-progress`;
+`S-on-hold` (`claims.hold_labels`) replaces it until the hold comes off. The clock also waits while the claimant's
+own pull request is open and ready for review, however long the review takes; a draft, or a maintainer's pull
+request, is activity but does not stop the clock. The card says what it waits for and is written once when the wait
+starts, not every hour.
 
 **What moves the card.** A command; a pull request with `Fixes #N` (at most 10 such lines of one event are acted on)
 that is opened, reopened, made ready for review or pushed to by the claimant or a maintainer (activity; the issue gets

@@ -309,6 +309,42 @@ def test_a_blocked_claim_keeps_its_label_and_its_clock_waits(engine: Engine, git
     assert github.view(10).assignees == ()
 
 
+def test_a_held_claim_keeps_s_on_hold_through_sweeps_and_is_not_released(
+    engine: Engine, github: FakeGitHub, clock: Clock
+) -> None:
+    say(github, 10)
+    engine.reconcile(10)
+    github.add_label(10, "S-on-hold")
+    # Past the 72 h deadline, with a sweep every hour as the schedule runs it: the hold stays, the claim keeps, and
+    # the hold replaces S-in-progress (a hold label, unlike S-blocked), so the issue has one status label.
+    for _ in range(100):
+        clock.advance(hours=1)
+        engine.sweep()
+    assert github.view(10).assignees == ("alice",) and github.others(10) == []
+    assert [label for label in github.view(10).labels if label.startswith("S-")] == ["S-on-hold"]
+    assert "waits while S-on-hold" in github.cards(10)[-1].body
+    # Taking the hold off starts the clock again from that moment, like S-blocked, and the claim's label returns.
+    github.remove_label(10, "S-on-hold")
+    engine.reconcile(10)
+    assert card_of(github, 10).last_activity_why == "S-on-hold ended"
+    assert [label for label in github.view(10).labels if label.startswith("S-")] == ["S-in-progress"]
+
+
+def test_a_hold_lifted_after_unclaim_leaves_the_status_to_the_coordinator(engine: Engine, github: FakeGitHub) -> None:
+    say(github, 10)
+    engine.reconcile(10)
+    github.add_label(10, "S-on-hold")
+    engine.reconcile(10)
+    say(github, 10, "alice", "/unclaim")
+    engine.reconcile(10)
+    assert github.view(10).assignees == ()
+    assert [label for label in github.view(10).labels if label.startswith("S-")] == ["S-on-hold"]
+    # No claim stands, so lifting the hold puts no S-in-progress back: the coordinator sets the next status.
+    github.remove_label(10, "S-on-hold")
+    engine.reconcile(10)
+    assert [label for label in github.view(10).labels if label.startswith("S-")] == []
+
+
 def test_otherwise_a_claimed_issue_has_exactly_one_status_label(engine: Engine, github: FakeGitHub) -> None:
     say(github, 10)
     engine.reconcile(10)

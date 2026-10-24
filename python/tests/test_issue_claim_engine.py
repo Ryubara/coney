@@ -82,6 +82,7 @@ def test_a_second_pass_changes_nothing(engine: Engine, github: FakeGitHub) -> No
         (("task", "S-needs-triage"), "`S-ready-to-start` can be claimed"),
         (("task", "S-blocked"), "`S-ready-to-start` can be claimed"),
         (("task", "S-needs-info"), "`S-ready-to-start` can be claimed"),
+        (("task", "S-on-hold"), "`S-ready-to-start` can be claimed"),
         (("task",), "no status label"),
     ],
 )

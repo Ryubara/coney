@@ -52,7 +52,7 @@ jobs:
                 && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
                || (github.event_name == 'issues'
                    && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
-                   && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name))) }}
+                   && !contains(fromJSON('["S-blocked","S-needs-info","S-on-hold"]'), github.event.label.name))) }}
     # One group for every claim job: one at a time, in order. An event that is skipped gets a group of its own, so it
     # can never take the pending place of a real one.
     concurrency:
@@ -63,7 +63,7 @@ jobs:
                  && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
              || (github.event_name == 'issues'
                  && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
-                 && !contains(fromJSON('["S-blocked","S-needs-info"]'), github.event.label.name)))
+                 && !contains(fromJSON('["S-blocked","S-needs-info","S-on-hold"]'), github.event.label.name)))
             && format('claim-skip-{0}', github.run_id) || 'claim' }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04

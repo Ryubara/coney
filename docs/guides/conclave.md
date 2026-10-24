@@ -52,8 +52,8 @@ waits for `/conclave` where it is not; the engine seats a pane the person opens 
   started and merged ones (merged units stay for `merged_visible_minutes`).
 - **Claims** lists every held claim with its countdown. The countdown runs on the mod's own clock, once a second while
   the pane is shown, from the deadline in the snapshot, so the display never waits for a read. A claim whose release
-  clock waits (a `S-blocked` or `S-needs-info` issue) says why instead of a time, and while `claims.release` is off the
-  line reads "would expire in ..." because nothing releases it yet.
+  clock waits (an `S-blocked`, `S-needs-info` or `S-on-hold` issue) says why instead of a time, and while
+  `claims.release` is off the line reads "would expire in ..." because nothing releases it yet.
 
 Marks are single-width coloured symbols (`⚠ ● ✔ ✖`) on the terminal, which depends on the font, and emoji on the
 desktop, VS Code and mobile surfaces.
