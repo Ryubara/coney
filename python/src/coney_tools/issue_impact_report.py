@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The report of `coney-tools issue impact`: text for a person, JSON for tools.
 
-Documented in docs/guides/coney-tools-repo.md#issue-impact.
+Documented in docs/guides/coney-tools-issues.md#issue-impact.
 """
 
 from __future__ import annotations

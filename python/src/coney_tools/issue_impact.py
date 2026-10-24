@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """`coney-tools issue impact`: which open issues a branch may have changed.
 
-Documented in docs/guides/coney-tools-repo.md#issue-impact.
+Documented in docs/guides/coney-tools-issues.md#issue-impact.
 
 A pull request names the issue it fixes (`Fixes #N`) and, until the Issues affected section existed, nothing else, so
 the issues it half-fixed or made untrue stayed as they were (the audit of 2026-10-23 found 175 of 311 open issues out

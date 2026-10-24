@@ -113,7 +113,7 @@ def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
         "--replaces",
         action="append",
         default=[],
-        metavar="N|BRANCH",
+        metavar="PR_OR_BRANCH",
         help="a pull request number or a branch the change replaces; the commits' 'Replaces #N' lines count too",
     )
     impact.add_argument(

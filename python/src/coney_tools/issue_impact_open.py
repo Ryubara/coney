@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The open issues `coney-tools issue impact` matches a branch against, read from `gh` or its cache.
 
-Documented in docs/guides/coney-tools-repo.md#issue-impact. `gh` is injected, so the tests never touch the network.
+Documented in docs/guides/coney-tools-issues.md#issue-impact. `gh` is injected, so the tests never touch the network.
 """
 
 from __future__ import annotations

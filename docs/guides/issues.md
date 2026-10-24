@@ -571,7 +571,7 @@ request lists them, and the list is checked.
   edits one line on a fork writes `None (one-line fix)`.
 - **Finding the issues.** `coney-tools issue impact` suggests them from the diff: open issues whose bodies cite a file,
   folder, function name, `@orig` address or page section the branch touches, or a pull request or branch it replaces
-  ([issue impact](coney-tools-repo.md#issue-impact)). Read each candidate before you list it: a match is a reason to
+  ([issue impact](coney-tools-issues.md#issue-impact)). Read each candidate before you list it: a match is a reason to
   look, not a verdict. It is a helper, never required to have been run.
 - **A pull request opened before the rule** has no such section. The check applies when its description is next
   edited or its branch is next pushed (the `body` job runs on those events); until then the audit's `pr.body` reports

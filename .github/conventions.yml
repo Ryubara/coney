@@ -330,7 +330,7 @@ issues:
     link_form: "../blob/main/<path>"
     must_exist_on: main                          # the path and its {#anchor}; a branch-only page is named as such
   status_text: truthful                          # a cited pull request called "open" must be open, "merged" merged
-  # `coney-tools issue impact` (docs/guides/coney-tools-repo.md#issue-impact): the open issues are read once and kept
+  # `coney-tools issue impact` (docs/guides/coney-tools-issues.md#issue-impact): the open issues are read once and kept
   # `cache_minutes`; a name, address or path that more than `common_max_issues` open issues cite is too common to say
   # which of them a change affects and is skipped; the text output lists `max_reasons` reasons per issue.
   impact: {cache_minutes: 30, common_max_issues: 6, max_reasons: 3}
